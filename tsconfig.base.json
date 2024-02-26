@@ -14,7 +14,13 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@etendo/hello": ["hello/src/index.ts"],
+      "component-library/Module": [
+        "apps/component-library/src/remote-entry.ts"
+      ],
+      "component-library/Button": ["apps/component-library/src/app/components/index.ts"],
+    }
   },
   "exclude": ["node_modules", "tmp"]
 }
