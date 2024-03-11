@@ -1,26 +1,14 @@
 {
-  "compileOnSave": false,
   "compilerOptions": {
-    "rootDir": ".",
-    "sourceMap": true,
-    "declaration": false,
-    "moduleResolution": "node",
+    "strict": true,
+    "strictNullChecks": true,
+    "esModuleInterop": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "importHelpers": true,
-    "target": "es2015",
-    "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "noUnusedLocals": true,
     "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "@etendo/hello": ["hello/src/index.ts"],
-      "component-library/Module": [
-        "apps/component-library/src/remote-entry.ts"
-      ],
-      "component-library/Button": ["apps/component-library/src/app/components/index.ts"],
-    }
-  },
-  "exclude": ["node_modules", "tmp"]
+    "sourceMap": true,
+    "jsx": "react-jsx",
+    "moduleResolution": "node"
+  }
 }
