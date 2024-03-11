@@ -1,0 +1,9 @@
+[submodule "packages/MainUI"]
+	path = packages/MainUI
+	url = https://github.com/sjcuello/MainUI.git
+[submodule "packages/ComponentLibrary"]
+	path = packages/ComponentLibrary
+	url = https://github.com/sjcuello/ComponentLibrary.git
+[submodule "packages/EtendoHookBinder"]
+	path = packages/EtendoHookBinder
+	url = https://github.com/sjcuello/EtendoHookBinder
