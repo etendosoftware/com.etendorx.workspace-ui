@@ -2,6 +2,8 @@
 
 ## Workflow for a monorepo with pnpm and submodules (dev environment)
 
+Note: This project is part of EtendoRX 
+
 ### 1- Clone the repository
 
 **Note:** This repository must be cloned in the modules_rx folder
@@ -22,7 +24,21 @@ git submodule update --init --recursive
 pnpm install
 ```
 
-### 4- Run the main repository
+### 4a- Production Mode
+
+install in a EtendoRX environment:
+
+```bash
+ pnpm --filter @workspaceui/mainui build
+```
+
+run UI service
+
+```bash
+ ./gradlew :com.etendorx.workspace-ui:bootRun
+```
+
+### 4b- Run the main repository
 
 ```bash
  pnpm --filter @workspaceui/mainui dev
@@ -144,6 +160,9 @@ Create a repository and then excute the following command:
 ```bash
 git submodule add <repository-url> packages/<project-name>
 ```
+
+you can access with the URL [http://localhost:3000](http://localhost:3000) to the new service.
+
 
 #### 5.1- Each repository have to have the same BASE package.json configuration:
 
