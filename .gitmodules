@@ -1,9 +1,0 @@
-[submodule "packages/MainUI"]
-	path = packages/MainUI
-	url = https://github.com/etendosoftware/com.etendorx.mainui.git
-[submodule "packages/ComponentLibrary"]
-	path = packages/ComponentLibrary
-	url = https://github.com/etendosoftware/com.etendorx.componentlibrary.git
-[submodule "packages/EtendoHookBinder"]
-	path = packages/EtendoHookBinder
-	url = https://github.com/etendosoftware/com.etendorx.etendohookbinder.git

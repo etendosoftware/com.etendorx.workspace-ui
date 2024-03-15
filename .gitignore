@@ -4,21 +4,9 @@ node_modules
 
 pnpm-lock.yaml
 
-
-[submodule "packages/MainUI"]
-    path = packages/MainUI
-    url = https://github.com/sjcuello/MainUI.git
-    ignore = dirty
-
-[submodule "packages/ComponentLibrary"]
-    path = packages/ComponentLibrary
-    url = https://github.com/sjcuello/ComponentLibrary.git
-    ignore = dirty
-
-[submodule "packages/EtendoHookBinder"]
-    path = packages/EtendoHookBinder
-    url = https://github.com/sjcuello/EtendoHookBinder.git
-    ignore = dirty
+packages/MainUI/node_modules
+packages/ComponentLibrary/node_modules
+packages/EtendoHookBinder/node_modules
 
 /build
 /src/main/resources/static/
