@@ -19,3 +19,6 @@ pnpm-lock.yaml
     path = packages/EtendoHookBinder
     url = https://github.com/sjcuello/EtendoHookBinder.git
     ignore = dirty
+
+/build
+/src/main/resources/static/
