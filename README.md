@@ -2,7 +2,7 @@
 
 ## Workflow for a monorepo with pnpm and submodules (dev environment)
 
-Note: This project is part of EtendoRX 
+Note: This project is part of EtendoRX
 
 ### 1- Clone the repository
 
@@ -10,6 +10,20 @@ Note: This project is part of EtendoRX
 
 ```bash
 git clone <repository-url>
+```
+
+### 1.1- Install pnpm
+
+Install pnpm globally if you haven't already.
+
+```bash
+npm install -g pnpm
+```
+
+or using brew (MacOS)
+
+```bash
+brew install pnpm
 ```
 
 ### 2- Pull git submodules
@@ -162,7 +176,6 @@ git submodule add <repository-url> packages/<project-name>
 ```
 
 you can access with the URL [http://localhost:3000](http://localhost:3000) to the new service.
-
 
 #### 5.1- Each repository have to have the same BASE package.json configuration:
 
