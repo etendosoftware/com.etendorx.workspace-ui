@@ -76,6 +76,7 @@ function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
 
 type Order = 'asc' | 'desc';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getComparator<Key extends keyof any>(
   order: Order,
   orderBy: Key,
@@ -274,7 +275,7 @@ export default function TableMUI() {
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
   const handleRequestSort = (
-    event: React.MouseEvent<unknown>,
+    _event: React.MouseEvent<unknown>,
     property: keyof Data,
   ) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -291,7 +292,7 @@ export default function TableMUI() {
     setSelected([]);
   };
 
-  const handleClick = (event: React.MouseEvent<unknown>, id: number) => {
+  const handleClick = (_event: React.MouseEvent<unknown>, id: number) => {
     const selectedIndex = selected.indexOf(id);
     let newSelected: readonly number[] = [];
 
@@ -310,7 +311,7 @@ export default function TableMUI() {
     setSelected(newSelected);
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 

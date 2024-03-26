@@ -26,19 +26,13 @@ or using brew (MacOS)
 brew install pnpm
 ```
 
-### 2- Pull git submodules
-
-```bash
-git submodule update --init --recursive
-```
-
-### 3- Install packages using pnpm
+### 2- Install packages using pnpm
 
 ```bash
 pnpm install
 ```
 
-### 4a- Production Mode
+### 3a- Production Mode
 
 install in a EtendoRX environment:
 
@@ -52,7 +46,7 @@ run UI service
  ./gradlew :com.etendorx.workspace-ui:bootRun
 ```
 
-### 4b- Run the main repository
+### 3b- Run the main repository
 
 ```bash
  pnpm --filter @workspaceui/mainui dev
