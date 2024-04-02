@@ -14,4 +14,6 @@ public class DemoApplication {
 	public void addViewControllers(ViewControllerRegistry registry) {
 		registry.addViewController("/").setViewName("index.html");
 	}
+
+	//Comment test
 }

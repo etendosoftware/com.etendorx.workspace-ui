@@ -40,7 +40,7 @@ export const theme = createTheme({
       },
       styleOverrides: {
         root: {
-          borderRadius: 8,
+          borderRadius: 6,
           textTransform: 'none',
         },
         contained: {

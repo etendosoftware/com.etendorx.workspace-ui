@@ -9,7 +9,7 @@ import { Tab } from '@workspaceui/componentlibrary/src/components';
 const Home = () => {
   const tabArray: TabContent[] = [
     {
-      title: '🎹 Buttons',
+      title: '🎹 Buttons2',
       children: (
         <Grid container spacing={2}>
           <Grid xs={12} spacing={2}>

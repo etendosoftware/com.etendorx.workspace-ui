@@ -80,4 +80,4 @@ export const PROCESS_500 = '#FBA643';
 export const PROCESS_600 = '#D78330';
 export const PROCESS_700 = '#B46321';
 export const PROCESS_800 = '#914615';
-export const PROCESS_900 = '#78320C';
+export const PROCESS_900 = '#78320A';
