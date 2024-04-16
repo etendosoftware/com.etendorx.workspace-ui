@@ -1,12 +1,8 @@
-import axiosPrivate from "../api";
+import { pageMetadata } from "../api/sales-order.api";
+import { SalesOrderColumnsDTO, mapSalesOrderColumnsResponseToDTO } from "../dtos/sales-order.dto";
 
+export const columsPageMetadata = async (): Promise<SalesOrderColumnsDTO[]> => { 
+  const response = await pageMetadata();
+  return mapSalesOrderColumnsResponseToDTO(response);
 
-export const pageMetadata = (): Promise<unknown> => {
-  return axiosPrivate.get('/sws/view');
-};
-export const dataSet = (page: number, size: number): Promise<unknown> => {
-  return axiosPrivate.post('/etendo/org.openbravo.service.datasource/Order', {
-    params: { page, size },
-  } );
-};
-
+}

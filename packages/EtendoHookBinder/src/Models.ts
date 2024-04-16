@@ -683,6 +683,7 @@ export interface ViewForm {
 }
 
 export interface IndecentField {
+    description: any;
     clientClass?:             string;
     columnName?:              string;
     defaultPopupFilterField?: string;
