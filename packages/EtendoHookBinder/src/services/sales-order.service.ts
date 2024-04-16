@@ -9,3 +9,4 @@ export const dataSet = (page: number, size: number): Promise<unknown> => {
     params: { page, size },
   } );
 };
+

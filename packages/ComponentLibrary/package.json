@@ -10,16 +10,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.0",
-    "@mui/icons-material": "^5.15.10",
+    "@mui/icons-material": "^5.15.14",
     "@mui/lab": "^5.0.0-alpha.165",
-    "@mui/material": "^5.15.11",
+    "@mui/material": "^5.15.14",
     "@mui/utils": "^5.15.11",
     "@mui/x-data-grid-generator": "^6.19.4",
-    "@mui/x-data-grid-pro": "^6.19.4"
+    "@mui/x-data-grid-pro": "^6.19.4",
+    "@mui/x-date-pickers": "^7.1.1",
+    "material-react-table": "^2.12.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.56",
