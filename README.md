@@ -6,7 +6,7 @@ Note: This project is part of EtendoRX
 
 ### 1- Clone the repository
 
-**Note:** This repository must be cloned in the modules_rx folder
+**Note:** This repository must be cloned in the modules_rx folder.
 
 ```bash
 git clone <repository-url>

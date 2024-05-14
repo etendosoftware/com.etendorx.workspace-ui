@@ -1,4 +1,4 @@
-import { DataGrid, Table } from '@workspaceui/componentlibrary/src/components';
+import { DataGrid, Table, TableV2 } from '@workspaceui/componentlibrary/src/components';
 import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import {
   Button,
@@ -71,6 +71,7 @@ const Home = () => {
       children: <Table />,
     },
     { title: '⚡️ Data Grid', children: <DataGrid /> },
+    { title: '🧩 TableV2', children: <TableV2 /> },
   ];
 
   return (
