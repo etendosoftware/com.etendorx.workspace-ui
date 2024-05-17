@@ -1,10 +1,18 @@
-import { DataGrid, Table, TableV2 } from '@workspaceui/componentlibrary/src/components';
+import {
+  DataGrid,
+  ModalCustom,
+  Table,
+  TableV2,
+} from '@workspaceui/componentlibrary/src/components';
 import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import {
   Button,
   Grid,
 } from '@workspaceui/componentlibrary/src/components//MUI';
 import { Tab } from '@workspaceui/componentlibrary/src/components';
+import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/modal.constants';
+import List from '@mui/material/List';
+import MenuItem from '@mui/material/MenuItem';
 
 const Home = () => {
   const tabArray: TabContent[] = [
@@ -72,6 +80,18 @@ const Home = () => {
     },
     { title: '⚡️ Data Grid', children: <DataGrid /> },
     { title: '🧩 TableV2', children: <TableV2 /> },
+    {
+      title: 'Modal',
+      children: (
+        <ModalCustom height={300} width={400}>
+          <List>
+            {MENU_ITEMS.map(item => (
+              <MenuItem key={item.key}>{item.label}</MenuItem>
+            ))}
+          </List>
+        </ModalCustom>
+      ),
+    },
   ];
 
   return (
