@@ -2,58 +2,75 @@ import * as React from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Modal from '@mui/material/Modal';
-import modalStyles from './modal.styles';
+import styles from './styles';
+import { useState } from 'react';
 
 interface ModalCustomProps {
-  height?: number;
-  width?: number;
-  posX?: number;
-  posY?: number;
+  height?: string | number;
+  width?: string | number;
+  posX?: string | number;
+  posY?: string | number;
   children: React.ReactNode;
 }
 
-const ModalCustom: React.FC<ModalCustomProps> = ({
-  height,
-  width,
+const ModalMUI: React.FC<ModalCustomProps> = ({
+  height = 'auto',
+  width = 'auto',
   posX = 'center',
   posY = 'center',
   children,
 }) => {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState<boolean>(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
+  const calculateTop = (posY: string | number): string => {
+    if (typeof posY === 'number') {
+      return posY + '%';
+    }
+    if (posY === 'center') {
+      return '50%';
+    }
+    return posY;
+  };
+
+  const calculateLeft = (posX: string | number): string => {
+    if (typeof posX === 'number') {
+      return posX + '%';
+    }
+    if (posX === 'center') {
+      return '50%';
+    }
+    return posX;
+  };
+
+  const calculateTransform = (
+    posX: string | number,
+    posY: string | number,
+  ): string => {
+    return posX === 'center' && posY === 'center'
+      ? 'translate(-50%, -50%)'
+      : 'none';
+  };
+
   return (
-    <div>
-      <Button onClick={handleOpen}>Open modal</Button>
-      <Modal
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
+    <>
+      <Button onClick={handleOpen}>Modal</Button>
+      <Modal open={open} onClose={handleClose} style={styles.modalStyles}>
         <Box
           sx={{
-            ...modalStyles,
-            height: height ?? 'auto',
-            width: width ?? 'auto',
-            position: 'absolute',
-            top: posY === 'center' ? '50%' : posY,
-            left: posX === 'center' ? '50%' : posX,
-            transform:
-              posX === 'center' && posY === 'center'
-                ? 'translate(-50%, -50%)'
-                : 'none',
+            ...styles.boxStyles,
+            height: height,
+            width: width,
+            top: calculateTop(posY),
+            left: calculateLeft(posX),
+            transform: calculateTransform(posX, posY),
           }}>
           {children}
         </Box>
       </Modal>
-    </div>
+    </>
   );
 };
 
-export default ModalCustom;
+export default ModalMUI;

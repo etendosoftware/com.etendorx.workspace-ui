@@ -1,6 +1,6 @@
 import {
   DataGrid,
-  ModalCustom,
+  Modal,
   Table,
   TableV2,
   Tab,
@@ -10,7 +10,7 @@ import {
   Button,
   Grid,
 } from '@workspaceui/componentlibrary/src/components//MUI';
-import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/modal.constants';
+import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/constants';
 import List from '@mui/material/List';
 import MenuItem from '@mui/material/MenuItem';
 
@@ -83,13 +83,13 @@ const Home = () => {
     {
       title: 'Modal',
       children: (
-        <ModalCustom height={300} width={400}>
+        <Modal height={300} width={400}>
           <List>
             {MENU_ITEMS.map(item => (
               <MenuItem key={item.key}>{item.label}</MenuItem>
             ))}
           </List>
-        </ModalCustom>
+        </Modal>
       ),
     },
   ];
