@@ -55,7 +55,9 @@ const ModalMUI: React.FC<ModalCustomProps> = ({
 
   return (
     <>
-      <Button onClick={handleOpen}>Modal</Button>
+      <Button onClick={handleOpen} variant="contained">
+        Modal
+      </Button>
       <Modal open={open} onClose={handleClose} style={styles.modalStyles}>
         <Box
           sx={{
