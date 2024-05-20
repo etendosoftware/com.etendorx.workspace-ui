@@ -10,3 +10,4 @@ packages/EtendoHookBinder/node_modules
 
 /build
 /src/main/resources/static/
+.gradle

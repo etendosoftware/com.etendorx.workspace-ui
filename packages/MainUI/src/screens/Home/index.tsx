@@ -3,13 +3,13 @@ import {
   ModalCustom,
   Table,
   TableV2,
+  Tab,
 } from '@workspaceui/componentlibrary/src/components';
 import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import {
   Button,
   Grid,
 } from '@workspaceui/componentlibrary/src/components//MUI';
-import { Tab } from '@workspaceui/componentlibrary/src/components';
 import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/modal.constants';
 import List from '@mui/material/List';
 import MenuItem from '@mui/material/MenuItem';
