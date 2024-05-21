@@ -1,13 +1,19 @@
 // Primary color
+export const PRIMARY_0 = '#FFFFFF';
+export const PRIMARY_50 = '#FCFCFD';
 export const PRIMARY_100 = '#D8DBF6';
+export const PRIMARY_150 = '#D3D7E9';
 export const PRIMARY_200 = '#B3B9ED';
 export const PRIMARY_300 = '#8087CB';
 export const PRIMARY_400 = '#525897';
+export const PRIMARY_450 = '#030303';
 export const PRIMARY_500 = '#202452';
 export const PRIMARY_600 = '#171A46';
 export const PRIMARY_700 = '#10123B';
 export const PRIMARY_800 = '#0A0C2F';
 export const PRIMARY_900 = '#060727';
+export const PRIMARY_950 = '#0303030D';
+export const PRIMARY_1000 = '#030303B2';
 // Secondary color
 export const SECONDARY_100 = '#FEFACF';
 export const SECONDARY_200 = '#FEF4A0';
@@ -21,6 +27,7 @@ export const SECONDARY_900 = '#775E03';
 // Tertiary color
 export const TERTIARY_50 = '#EDF1FF';
 export const TERTIARY_100 = '#E2E7FF';
+export const TERTIARY_150 = '#E6EDFA';
 export const TERTIARY_200 = '#C6CFFF';
 export const TERTIARY_300 = '#A9B6FF';
 export const TERTIARY_400 = '#94A2FF';
@@ -29,9 +36,11 @@ export const TERTIARY_600 = '#5261DB';
 export const TERTIARY_700 = '#3844B7';
 export const TERTIARY_800 = '#242D93';
 export const TERTIARY_900 = '#151C7A';
+export const TERTIARY_1000 = '#00030D0D';
+
 // Neutral color
 export const NEUTRAL_50 = '#FAFAFA';
-export const NEUTRAL_100 = '#FAFAFA';
+export const NEUTRAL_100 = '#F2F2F2';
 export const NEUTRAL_200 = '#EEEEEE';
 export const NEUTRAL_300 = '#E0E0E0';
 export const NEUTRAL_400 = '#BDBDBD';
@@ -39,6 +48,7 @@ export const NEUTRAL_500 = '#9E9E9E';
 export const NEUTRAL_600 = '#757575';
 export const NEUTRAL_700 = '#616161';
 export const NEUTRAL_800 = '#424242';
+export const NEUTRAL_850 = '#4F4F4F';
 export const NEUTRAL_900 = '#212121';
 export const NEUTRAL_1000 = '#121212';
 // Success color
@@ -69,6 +79,7 @@ export const START_400 = '#6EB7FF';
 export const START_500 = '#3E97FF';
 export const START_600 = '#2D75DB';
 export const START_700 = '#1F57B7';
+export const START_750 = '#004ACA';
 export const START_800 = '#133D93';
 export const START_900 = '#0B2A7A';
 // Warning color

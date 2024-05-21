@@ -23,9 +23,10 @@ import {
   spanOpacityStyle,
   tabIconStyles,
 } from './TextInput.styles';
-import { BLACK_100, BLACK_200, GREY_50, LIGHT_BLUE_100, LIGHT_BLUE_50, WHITE_100 } from '../../styles/colors';
+
 import { LABELS } from './TextInput.labels';
 import { CONSTANTS } from './TextInput.constants';
+import { PRIMARY_950, PRIMARY_1000, NEUTRAL_850, START_750, TERTIARY_150, NEUTRAL_50 } from '../../colors';
 
 const TextInput = (props: TextInputProps) => {
   const {
@@ -121,7 +122,7 @@ const TextInput = (props: TextInputProps) => {
               ...inputStyles,
               "& .MuiOutlinedInput-input": {
                 '&::placeholder': {
-                  color: BLACK_200,
+                  color: PRIMARY_1000,
                   opacity: isFocused ? 0 : 1,
                   transition: `opacity ${CONSTANTS.PLACEHOLDER_OPACITY_TRANSITION_DURATION}s`,
                 },
@@ -140,7 +141,7 @@ const TextInput = (props: TextInputProps) => {
                     leftIcon ? (
                       <IconButton onClick={onLeftIconClick}>{leftIcon}</IconButton>
                     ) : (
-                      <SearchIcon sx={{ color: !props.disabled ? isFocused && value.length === 0 ? LIGHT_BLUE_100 : GREY_50 : GREY_50 }} />
+                      <SearchIcon sx={{ color: !props.disabled ? isFocused && value.length === 0 ? START_750 : NEUTRAL_850 : NEUTRAL_850 }} />
                     )
                   )}
                 </Box>
@@ -159,7 +160,7 @@ const TextInput = (props: TextInputProps) => {
                   <IconButton sx={rightButtonStyles()}>
                     <FilterIcon
                       sx={{
-                        color: !props.disabled ? (isFocused && value.length === 0 ? LIGHT_BLUE_100 : GREY_50) : GREY_50,
+                        color: !props.disabled ? (isFocused && value.length === 0 ? START_750 : NEUTRAL_850) : NEUTRAL_850,
                         ...iconWidthStyle,
                       }}
                     />
@@ -171,14 +172,21 @@ const TextInput = (props: TextInputProps) => {
           {...textFieldProps}
           sx={{
             ...inputCommonStyles,
-            backgroundColor: !props.disabled ? WHITE_100 : BLACK_100,
+            backgroundColor: !props.disabled ? NEUTRAL_50 : PRIMARY_950,
             '& .MuiOutlinedInput-root': {
+              '& fieldset': {
+                borderColor: PRIMARY_950,
+              },
               '&:hover fieldset': {
                 borderWidth: !isFocused ? 0 : undefined,
               },
-              '&.Mui-focused': {
-                backgroundColor: value ? WHITE_100 : LIGHT_BLUE_50,
+              '&.Mui-focused fieldset': {
+                borderColor: START_750,
               },
+              '&.Mui-focused': {
+                backgroundColor: value ? NEUTRAL_50 : TERTIARY_150,
+              },
+              borderRadius: '100px',
             },
             ...(props.disabled && {
               pointerEvents: 'none',
