@@ -1,9 +1,5 @@
-import { DataGrid, Table, TableV2 } from '@workspaceui/componentlibrary/src/components';
+import { DataGrid, Table, TableV2, Button, Grid, TextInput } from '@workspaceui/componentlibrary/src/components';
 import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
-import {
-  Button,
-  Grid,
-} from '@workspaceui/componentlibrary/src/components//MUI';
 import { Tab } from '@workspaceui/componentlibrary/src/components';
 
 const Home = () => {
@@ -13,10 +9,7 @@ const Home = () => {
       children: (
         <Grid container spacing={2}>
           <Grid xs={12} spacing={2}>
-            <Button
-              sx={{ margin: '1rem' }}
-              variant="text"
-              onClick={() => console.log('click')}>
+            <Button sx={{ margin: '1rem' }} variant="text" onClick={() => console.log('click')}>
               Primary
             </Button>
             <Button sx={{ margin: '1rem' }} variant="contained">
@@ -33,33 +26,18 @@ const Home = () => {
             </Button>
           </Grid>
           <Grid xs={12}>
-            <Button
-              sx={{ margin: '1rem' }}
-              variant="contained"
-              color="secondary"
-              onClick={() => console.log('token')}>
+            <Button sx={{ margin: '1rem' }} variant="contained" color="secondary" onClick={() => console.log('token')}>
               Secondary
             </Button>
-            <Button
-              sx={{ margin: '1rem' }}
-              disabled={true}
-              variant="contained"
-              color="secondary">
+            <Button sx={{ margin: '1rem' }} disabled={true} variant="contained" color="secondary">
               Secondary
             </Button>
           </Grid>
           <Grid xs={12}>
-            <Button
-              sx={{ margin: '1rem' }}
-              variant="contained"
-              color="tertiary">
+            <Button sx={{ margin: '1rem' }} variant="contained" color="tertiary">
               Tertiary
             </Button>
-            <Button
-              sx={{ margin: '1rem' }}
-              disabled={true}
-              variant="contained"
-              color="tertiary">
+            <Button sx={{ margin: '1rem' }} disabled={true} variant="contained" color="tertiary">
               Tertiary
             </Button>
           </Grid>
@@ -72,6 +50,17 @@ const Home = () => {
     },
     { title: '⚡️ Data Grid', children: <DataGrid /> },
     { title: '🧩 TableV2', children: <TableV2 /> },
+    {
+      title: '🔍 Input',
+      children: (
+        <Grid sx={{ backgroundColor: "white", padding: '1rem', borderRadius: '0.5rem' }} container spacing={2}>
+          <Grid xs={12}>
+            <TextInput autoCompleteTexts={["gestión de dependencias", "autocompletado"]} placeholder="Buscar..." />
+            <TextInput placeholder="No es posible buscar en Home..." sx={{ marginTop: '1rem' }} disabled />
+          </Grid>
+        </Grid>
+      ),
+    },
   ];
 
   return (
