@@ -10,7 +10,7 @@ import {
   Button,
   Grid,
 } from '@workspaceui/componentlibrary/src/components//MUI';
-import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/constants';
+import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/mockConstants';
 import List from '@mui/material/List';
 import MenuItem from '@mui/material/MenuItem';
 

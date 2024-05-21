@@ -4,6 +4,8 @@ import Button from '@mui/material/Button';
 import Modal from '@mui/material/Modal';
 import styles from './styles';
 import { useState } from 'react';
+import { Container, Position } from '../enums';
+import { calculateTransform } from '../../utils/transformUtil';
 
 interface ModalCustomProps {
   height?: string | number;
@@ -14,43 +16,40 @@ interface ModalCustomProps {
 }
 
 const ModalMUI: React.FC<ModalCustomProps> = ({
-  height = 'auto',
-  width = 'auto',
-  posX = 'center',
-  posY = 'center',
+  height = Container.Auto,
+  width = Container.Auto,
+  posX = Position.Center,
+  posY = Position.Center,
   children,
 }) => {
   const [open, setOpen] = useState<boolean>(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
-  const calculateTop = (posY: string | number): string => {
-    if (typeof posY === 'number') {
-      return posY + '%';
-    }
-    if (posY === 'center') {
+  const calculateTop = (posY: string | number): number | string => {
+    if (posY === Position.Center) {
       return '50%';
+    }
+    if (posY === Position.Bottom) {
+      return '65%';
+    }
+    if (posY === Position.Top) {
+      return '5%';
     }
     return posY;
   };
 
-  const calculateLeft = (posX: string | number): string => {
-    if (typeof posX === 'number') {
-      return posX + '%';
-    }
-    if (posX === 'center') {
+  const calculateLeft = (posX: string | number): number | string => {
+    if (posX === Position.Center) {
       return '50%';
     }
+    if (posX === Position.Left) {
+      return '5%';
+    }
+    if (posX === Position.Right) {
+      return '75%';
+    }
     return posX;
-  };
-
-  const calculateTransform = (
-    posX: string | number,
-    posY: string | number,
-  ): string => {
-    return posX === 'center' && posY === 'center'
-      ? 'translate(-50%, -50%)'
-      : 'none';
   };
 
   return (
