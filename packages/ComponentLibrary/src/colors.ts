@@ -31,6 +31,7 @@ export const TERTIARY_800 = '#242D93';
 export const TERTIARY_900 = '#151C7A';
 // Neutral color
 export const NEUTRAL_50 = '#FAFAFA';
+export const NEUTAL_50_DARK = '#00030D1A'
 export const NEUTRAL_100 = '#FAFAFA';
 export const NEUTRAL_200 = '#EEEEEE';
 export const NEUTRAL_300 = '#E0E0E0';
