@@ -6,16 +6,9 @@ import styles from './styles';
 import { useState } from 'react';
 import { Container, Position } from '../enums';
 import { calculateTransform } from '../../utils/transformUtil';
+import { ModalIProps } from './types';
 
-interface ModalCustomProps {
-  height?: string | number;
-  width?: string | number;
-  posX?: string | number;
-  posY?: string | number;
-  children: React.ReactNode;
-}
-
-const ModalMUI: React.FC<ModalCustomProps> = ({
+const ModalMUI: React.FC<ModalIProps> = ({
   height = Container.Auto,
   width = Container.Auto,
   posX = Position.Center,
