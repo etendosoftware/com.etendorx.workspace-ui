@@ -1,14 +1,14 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Modal from '@mui/material/Modal';
+import ModalMUI from '@mui/material/Modal';
 import styles from './styles';
 import { useState } from 'react';
 import { Container, Position } from '../enums';
 import { calculateTransform } from '../../utils/transformUtil';
 import { ModalIProps } from './types';
 
-const ModalMUI: React.FC<ModalIProps> = ({
+const Modal: React.FC<ModalIProps> = ({
   height = Container.Auto,
   width = Container.Auto,
   posX = Position.Center,
@@ -50,7 +50,7 @@ const ModalMUI: React.FC<ModalIProps> = ({
       <Button onClick={handleOpen} variant="contained">
         Modal
       </Button>
-      <Modal open={open} onClose={handleClose} style={styles.modalStyles}>
+      <ModalMUI open={open} onClose={handleClose} style={styles.modalStyles}>
         <Box
           sx={{
             ...styles.boxStyles,
@@ -62,9 +62,9 @@ const ModalMUI: React.FC<ModalIProps> = ({
           }}>
           {children}
         </Box>
-      </Modal>
+      </ModalMUI>
     </>
   );
 };
 
-export default ModalMUI;
+export default Modal;

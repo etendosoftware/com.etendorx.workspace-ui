@@ -10,4 +10,4 @@ enum Position {
     Right = 'right'
 }
 
-export {Container, Position }
+export { Container, Position }
