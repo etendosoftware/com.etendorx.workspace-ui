@@ -1,6 +1,5 @@
 // styles.ts
 import { Theme } from '@mui/material/styles';
-import { CSSProperties } from 'react';
 import { TERTIARY_900, SECONDARY_600, NEUTRAL_50, NEUTRAL_600 } from "../../colors";
 
 const switchStyles = (theme: Theme) => ({
@@ -51,11 +50,4 @@ const switchStyles = (theme: Theme) => ({
   },
 });
 
-const formControlLabelStyles: CSSProperties = {
-  backgroundColor: 'white',
-  borderRadius: '2rem',
-  position: 'relative',
-  maxWidth: '3rem',
-};
-
-export { switchStyles, formControlLabelStyles };
+export default switchStyles ;
