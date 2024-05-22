@@ -6,8 +6,8 @@ const styles: { [key: string]: CSSProperties} = {
     position: 'absolute',
     width: '18.75rem',
     backgroundColor: NEUTRAL_50,
-    border: `2px solid ${NEUTAL_50_DARK}`,
-    borderRadius: '1rem',
+    border: `1px solid ${NEUTAL_50_DARK}`,
+    borderRadius: '0.75em',
     boxShadow: `0px 0.25rem 0.625rem 0px ${NEUTRAL_900}`,
   },
   modalStyles: {
