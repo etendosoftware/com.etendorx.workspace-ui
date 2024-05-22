@@ -5,6 +5,7 @@ import TableCustom from './Table';
 import TableV2Custom from './TableV2';
 import ModalCustom from './Modal';
 import ApplyHOC from '../utils/applyHOC';
+import ToggleChip from './Toggle/ToggleChip';
 
 // ApplyHOC is a higher order component that applies the theme to the component
 const Button = ApplyHOC(ButtonMUI);
@@ -14,5 +15,7 @@ const Table = ApplyHOC(TableCustom);
 const Tab = ApplyHOC(TabCustom);
 const TableV2 = ApplyHOC(TableV2Custom);
 const Modal = ApplyHOC(ModalCustom);
+const Chip = ApplyHOC(ToggleChip);
 
-export { Button, Grid, DataGrid, Tab, Table, TableV2, Modal };
+export { Button, Grid, DataGrid, Tab, Table, TableV2, Modal, Chip };
+
