@@ -1,8 +1,11 @@
-import { DataGrid, Table, TableV2, Button, Grid, TextInput } from '@workspaceui/componentlibrary/src/components';
+import { DataGrid, Table, TableV2, Button, Grid, TextInput, Tab } from '@workspaceui/componentlibrary/src/components';
 import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
-import { Tab } from '@workspaceui/componentlibrary/src/components';
 import { PRIMARY_0 } from '@workspaceui/componentlibrary/src/colors';
-import { CONSTANTS } from '@workspaceui/componentlibrary/src/components/TextInput/TextInput.constants';
+import { MOCK_AUTO_COMPLETE_TEXTS, MOCK_PLACEHOLDERS } from '@workspaceui/componentlibrary/src/components/TextInput/TextInput.mock';
+import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/mock';
+import Modal from '@workspaceui/componentlibrary/src/components/Modal';
+import List from '@mui/material/List';
+import MenuItem from '@mui/material/MenuItem';
 
 const Home = () => {
   const tabArray: TabContent[] = [
@@ -57,10 +60,22 @@ const Home = () => {
       children: (
         <Grid sx={{ backgroundColor: PRIMARY_0, padding: '1rem', borderRadius: '0.5rem' }} container spacing={2}>
           <Grid xs={12}>
-            <TextInput autoCompleteTexts={CONSTANTS.AUTO_COMPLETE_TEXTS} placeholder={CONSTANTS.PLACEHOLDERS.SEARCH} />
-            <TextInput placeholder={CONSTANTS.PLACEHOLDERS.DISABLED} sx={{ marginTop: '1rem' }} disabled />
+            <TextInput autoCompleteTexts={MOCK_AUTO_COMPLETE_TEXTS} placeholder={MOCK_PLACEHOLDERS.SEARCH} />
+            <TextInput placeholder={MOCK_PLACEHOLDERS.DISABLED} sx={{ marginTop: '1rem' }} disabled />
           </Grid>
         </Grid>
+      ),
+    },
+    {
+      title: 'Modal',
+      children: (
+        <Modal height={300} width={400}>
+          <List>
+            {MENU_ITEMS.map(item => (
+              <MenuItem key={item.key}>{item.label}</MenuItem>
+            ))}
+          </List>
+        </Modal>
       ),
     },
   ];
