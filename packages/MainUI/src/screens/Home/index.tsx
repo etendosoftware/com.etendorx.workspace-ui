@@ -4,6 +4,7 @@ import {
   Table,
   TableV2,
   Tab,
+  Chip,
 } from '@workspaceui/componentlibrary/src/components';
 import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import {
@@ -91,6 +92,10 @@ const Home = () => {
           </List>
         </Modal>
       ),
+    },
+    {
+      title: 'Toggle Chip',
+      children: <Chip />,
     },
   ];
 
