@@ -2,7 +2,7 @@ import * as React from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import ModalMUI from '@mui/material/Modal';
-import styles from './styles';
+import styles from './Modal.styles';
 import { useState } from 'react';
 import { Container, Position } from '../enums';
 import { calculateTransform } from '../../utils/transformUtil';
