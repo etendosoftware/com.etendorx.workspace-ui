@@ -36,6 +36,7 @@ export const TERTIARY_600 = '#5261DB';
 export const TERTIARY_700 = '#3844B7';
 export const TERTIARY_800 = '#242D93';
 export const TERTIARY_900 = '#151C7A';
+export const TERTIARY_950 = '#3F4A7E';
 export const TERTIARY_1000 = '#00030D0D';
 
 // Neutral color

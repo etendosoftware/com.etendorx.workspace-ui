@@ -3,10 +3,10 @@ import { TextField, InputAdornment, IconButton, Box } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterIcon from '@mui/icons-material/FilterList';
 import CircularProgress from '@mui/material/CircularProgress';
+import CloseIcon from '@mui/icons-material/Close';
 import { TextInputProps } from './TextInput.types';
 import { CSS_STYLES, SX_STYLES } from './TextInput.styles';
 import { DEFAULT_CONSTANTS } from './TextInput.constants';
-import t from './TextInput.translations.json';
 import { PRIMARY_950, PRIMARY_1000, NEUTRAL_850, START_750, TERTIARY_150, NEUTRAL_50 } from '../../colors';
 import SuggestionBox from './SuggestionBox';
 
@@ -121,21 +121,28 @@ const TextInput = (props: TextInputProps) => {
 
   // Define end adornment
   const endAdornment = !props.disabled && (
-    <InputAdornment sx={{ backgroundColor: "none" }} position="end">
+    <InputAdornment position="end">
       {value && (
-        <IconButton onClick={handleClear} sx={SX_STYLES.clearButton}>
-          <span style={CSS_STYLES.cleanText}>{t.clean}</span>
+        <IconButton
+          onClick={handleClear}
+          sx={SX_STYLES.clearButtonHover}
+        >
+          <CloseIcon sx={SX_STYLES.iconDefault} />
         </IconButton>
       )}
       {rightIcon ? (
-        <IconButton onClick={onRightIconClick}>{rightIcon}</IconButton>
+        <IconButton
+          onClick={onRightIconClick}
+          sx={SX_STYLES.rightButtonHover}
+        >
+          {rightIcon}
+        </IconButton>
       ) : (
-        <IconButton sx={SX_STYLES.rightButton}>
+        <IconButton
+          sx={SX_STYLES.rightButtonHover}
+        >
           <FilterIcon
-            sx={{
-              color: !props.disabled ? (isFocused && value.length === 0 ? START_750 : NEUTRAL_850) : NEUTRAL_850,
-              ...SX_STYLES.iconWidth,
-            }}
+            sx={SX_STYLES.iconDefault}
           />
         </IconButton>
       )}
@@ -159,7 +166,7 @@ const TextInput = (props: TextInputProps) => {
       '&.Mui-focused': {
         backgroundColor: value ? NEUTRAL_50 : TERTIARY_150,
       },
-      borderRadius: '100px',
+      borderRadius: '6.25rem',
     },
     ...(props.disabled && {
       pointerEvents: 'none',
@@ -180,7 +187,7 @@ const TextInput = (props: TextInputProps) => {
     <Box sx={SX_STYLES.containerBox}>
       <Box sx={SX_STYLES.innerBox}>
         <TextField
-          placeholder="Buscar..."
+          placeholder={props.placeholder}
           variant="outlined"
           fullWidth
           value={value}

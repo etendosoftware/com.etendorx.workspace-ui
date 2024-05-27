@@ -1,6 +1,5 @@
-import { CSSProperties } from 'react';
 import { SxProps, Theme } from '@mui/material';
-import { NEUTRAL_100, NEUTRAL_850, PRIMARY_1000, PRIMARY_150, PRIMARY_450, PRIMARY_50, PRIMARY_950, START_750, TERTIARY_1000 } from '../../colors';
+import { NEUTRAL_100, NEUTRAL_200, NEUTRAL_850, NEUTRAL_1000, PRIMARY_450, PRIMARY_50, PRIMARY_950, START_750, TERTIARY_950, TERTIARY_1000, PRIMARY_150, PRIMARY_1000 } from '../../colors';
 
 // Font sizes
 const FONT_SIZE_14 = 14;
@@ -9,7 +8,7 @@ const FONT_SIZE_14 = 14;
 const WIDTH_FULL = '100%';
 
 // Styles
-export const CSS_STYLES: { [key: string]: CSSProperties | any } = {
+export const CSS_STYLES: { [key: string]: any } = {
   inputProps: {
     position: 'relative',
     color: PRIMARY_450,
@@ -112,5 +111,32 @@ export const SX_STYLES: { [key: string]: SxProps<Theme> } = {
   tabIcon: {
     fontSize: FONT_SIZE_14,
     color: NEUTRAL_850,
+  },
+  clearButtonHover: {
+    width: '2rem',
+    height: '2rem',
+    transition: 'background-color 0.3s, color 0.3s',
+    '&:hover': {
+      backgroundColor: NEUTRAL_200,
+      borderRadius: '50%',
+      '& .MuiSvgIcon-root': {
+        color: NEUTRAL_1000,
+      },
+    },
+  },
+  rightButtonHover: {
+    width: '2rem',
+    height: '2rem',
+    transition: 'background-color 0.3s, color 0.3s',
+    '&:hover': {
+      backgroundColor: NEUTRAL_200,
+      borderRadius: '50%',
+      '& .MuiSvgIcon-root': {
+        color: NEUTRAL_1000,
+      },
+    },
+  },
+  iconDefault: {
+    color: TERTIARY_950,
   },
 };
