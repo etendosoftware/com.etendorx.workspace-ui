@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import SortableItem from './SortableItem';
-import { Person } from './types';
+import { Person } from './DragModal.types';
 import ModalDivider from '../ModalDivider';
 import { containerStyles, showAllStyles } from './DragModal.styles';
 

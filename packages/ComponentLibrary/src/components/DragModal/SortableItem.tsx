@@ -9,7 +9,7 @@ import {
   menuItemStyles,
   personLabelStyles,
 } from './DragModal.styles';
-import { SortableItemProps } from './types';
+import { SortableItemProps } from './DragModal.types';
 
 const SortableItem: React.FC<SortableItemProps> = ({ id, person }) => {
   const { attributes, listeners, setNodeRef, transform, transition } =

@@ -1,4 +1,4 @@
-import { Person } from './types';
+import { Person } from './DragModal.types';
 
 export const people: Person[] = [
   { id: '1', label: 'Person 1' },

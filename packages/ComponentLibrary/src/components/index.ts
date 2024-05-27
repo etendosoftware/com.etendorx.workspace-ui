@@ -6,7 +6,7 @@ import TableV2Custom from './TableV2';
 import ModalCustom from './Modal';
 import ApplyHOC from '../utils/applyHOC';
 import ToggleChip from './Toggle/ToggleChip';
-import DndModal from './DndModal/DndModal'
+import DndModal from './DragModal/DragModal'
 
 // ApplyHOC is a higher order component that applies the theme to the component
 const Button = ApplyHOC(ButtonMUI);
