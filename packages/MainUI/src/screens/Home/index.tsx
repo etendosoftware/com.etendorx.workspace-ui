@@ -5,6 +5,7 @@ import {
   TableV2,
   Tab,
   Chip,
+  DragModal,
 } from '@workspaceui/componentlibrary/src/components';
 import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import {
@@ -96,6 +97,10 @@ const Home = () => {
     {
       title: 'Toggle Chip',
       children: <Chip />,
+    },
+    {
+      title: 'Dnd Modal',
+      children: <DragModal />,
     },
   ];
 
