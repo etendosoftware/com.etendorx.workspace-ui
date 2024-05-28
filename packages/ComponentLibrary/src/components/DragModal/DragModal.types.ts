@@ -6,6 +6,7 @@ export interface Person {
 }
 
 export interface SortableItemProps {
-    id: UniqueIdentifier;
-    person: Person;
-  }
+  id: UniqueIdentifier;
+  person: Person;
+}
+

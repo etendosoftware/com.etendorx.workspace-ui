@@ -6,6 +6,7 @@ import {
   Tab,
   Chip,
   DragModal,
+  Navbar,
 } from '@workspaceui/componentlibrary/src/components';
 import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import {
@@ -101,6 +102,10 @@ const Home = () => {
     {
       title: 'Dnd Modal',
       children: <DragModal />,
+    },
+    {
+      title: 'Navbar',
+      children: <Navbar />,
     },
   ];
 
