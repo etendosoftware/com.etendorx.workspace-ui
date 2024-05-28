@@ -1,7 +1,7 @@
 import React from 'react';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
-import { iconActions } from '../Nav.icons.Mock';
+import { iconActions } from '../Mock';
 import { avatarStyles } from '../Nav.styles';
 
 const IconButtons: React.FC = () => {

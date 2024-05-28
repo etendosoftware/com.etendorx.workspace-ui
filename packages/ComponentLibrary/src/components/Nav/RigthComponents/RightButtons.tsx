@@ -6,7 +6,7 @@ import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import { Divider, ListItemIcon } from '@mui/material';
-import IconButtons from './Nav.IconButtons';
+import IconButtons from './IconButtons';
 import { Logout, PersonAdd, Settings } from '@mui/icons-material';
 import { boxStyles, avatarStyles } from '../Nav.styles';
 

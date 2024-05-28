@@ -4,7 +4,7 @@ import {
   logoStyles,
   companyNameStyles,
 } from '../Nav.styles';
-import LogoImage from '../../assets/images/logo.svg';
+import LogoImage from '../../../assets/images/logo.svg';
 
 const Logo: React.FC = () => {
   return (

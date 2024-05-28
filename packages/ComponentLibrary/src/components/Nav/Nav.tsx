@@ -1,9 +1,9 @@
 import React from 'react';
 import SearchIcon from '@mui/icons-material/Search';
 import { NavStyles, boxStyles } from './Nav.styles';
-import RigthButtons from './RigthButtons/Nav.RightButtons';
+import RigthButtons from './RigthComponents/RightButtons';
 import Logo from './LeftComponents/Logo';
-import { AppIcon } from './LeftComponents/App.Icon';
+import { AppIcon } from './LeftComponents/IconApp';
 
 const Nav: React.FC = () => {
   return (
@@ -12,9 +12,7 @@ const Nav: React.FC = () => {
       <nav style={NavStyles}>
         <Logo />
         <SearchIcon />
-        <div>
-          <RigthButtons />
-        </div>
+        <RigthButtons />
       </nav>
     </div>
   );
