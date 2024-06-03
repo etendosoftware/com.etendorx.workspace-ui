@@ -7,6 +7,7 @@ import {
   Chip,
   DragModal,
   Navbar,
+  Profile,
 } from '@workspaceui/componentlibrary/src/components';
 import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import {
@@ -106,6 +107,10 @@ const Home = () => {
     {
       title: 'Navbar',
       children: <Navbar />,
+    },
+    {
+      title: 'Profile Modal',
+      children: <Profile />,
     },
   ];
 
