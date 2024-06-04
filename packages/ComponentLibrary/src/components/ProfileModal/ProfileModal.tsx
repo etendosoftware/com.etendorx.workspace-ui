@@ -9,23 +9,36 @@ import {
   saveButtonStyles,
 } from './ProfileModal.styles';
 import { Button } from '@mui/material';
-import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import { toggleSectionStyles } from './ToggleSection/ToggleSection.styles';
 
-const ProfileModal: React.FC = () => {
-  const [section, setSection] = useState<'profile' | 'password'>('profile');
+import TaskAltIcon from '@mui/icons-material/TaskAlt';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import LockIcon from '@mui/icons-material/Lock';
+import { Section } from './ToggleSection/ToggleSection.types';
 
-  const handleToggle = (selectedSection: 'profile' | 'password') => {
-    setSection(selectedSection);
+const sections: Section<string>[] = [
+  { id: 'profile', label: 'Perfil', icon: <PersonOutlineIcon /> },
+  { id: 'password', label: 'Contraseña', icon: <LockIcon /> },
+];
+
+const ProfileModal: React.FC = () => {
+  const [currentSection, setCurrentSection] = useState<string>('profile');
+
+  const handleToggle = (selectedSection: string) => {
+    setCurrentSection(selectedSection);
   };
 
   return (
     <Modal width={332}>
       <UserProfile />
       <div style={toggleSectionStyles}>
-        <ToggleSection section={section} onToggle={handleToggle} />
+        <ToggleSection
+          sections={sections}
+          currentSection={currentSection}
+          onToggle={handleToggle}
+        />
       </div>
-      <SelectorList section={section} />
+      <SelectorList section={currentSection} />
       <div style={buttonContainerStyles}>
         <Button sx={buttonStyles} variant="contained" color="primary">
           Cancelar

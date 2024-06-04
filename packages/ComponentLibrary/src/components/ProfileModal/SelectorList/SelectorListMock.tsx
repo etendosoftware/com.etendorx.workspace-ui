@@ -16,14 +16,16 @@ import {
   iconStyles,
   formStyle,
 } from './SelectorList.styles';
-import { SelectorListProps, Item } from './SelectorList.types';
 import RoleIcon from '@mui/icons-material/AccountCircle';
 import ClientIcon from '@mui/icons-material/Business';
 import OrganizationIcon from '@mui/icons-material/Domain';
 import WarehouseIcon from '@mui/icons-material/Store';
 import LanguageIcon from '@mui/icons-material/Language';
+import { SelectorListProps } from './SelectorList.types';
 
-const items: Item[] = ['Rol', 'Cliente', 'Organización', 'Almacén', 'Lenguaje'];
+const items = ['Rol', 'Cliente', 'Organización', 'Almacén', 'Lenguaje'];
+
+type Item = (typeof items)[number];
 
 const icons: Record<Item, React.ReactElement> = {
   Rol: <RoleIcon style={iconStyles} />,
@@ -33,7 +35,7 @@ const icons: Record<Item, React.ReactElement> = {
   Lenguaje: <LanguageIcon style={iconStyles} />,
 };
 
-const SelectorList: React.FC<SelectorListProps> = ({ section }) => {
+const SelectorList = <T extends string>({ section }: SelectorListProps<T>) => {
   const relevantItems = section === 'profile' ? items : [];
 
   const [selectedValues, setSelectedValues] = React.useState<{
@@ -62,7 +64,11 @@ const SelectorList: React.FC<SelectorListProps> = ({ section }) => {
               onChange={event => handleChange(event, item)}
               label={item}
               renderValue={selected => (
-                <div style={{ display: 'flex', alignItems: 'center' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}>
                   <ListItemIcon>{icons[item]}</ListItemIcon>
                   <Typography>{`${item} ${selected}`}</Typography>
                 </div>
