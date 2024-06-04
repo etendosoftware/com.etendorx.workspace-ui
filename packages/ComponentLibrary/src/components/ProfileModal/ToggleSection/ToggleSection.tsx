@@ -1,41 +1,29 @@
-import React from 'react';
+import { Button } from '@mui/material';
 import {
   toggleContainerStyles,
   toggleButtonStyles,
 } from './ToggleSection.styles';
-import { Button } from '@mui/material';
-import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
-import LockIcon from '@mui/icons-material/Lock';
+import { ToggleSectionsProps } from './ToggleSection.types';
 
-interface ToggleSectionsProps {
-  section: 'profile' | 'password';
-  onToggle: (section: 'profile' | 'password') => void;
-}
-
-const ToggleSections: React.FC<ToggleSectionsProps> = ({
-  section,
+const ToggleSections = <T extends string>({
+  sections,
+  currentSection,
   onToggle,
-}) => {
+}: ToggleSectionsProps<T>) => {
   return (
     <div style={toggleContainerStyles}>
-      <Button
-        style={{
-          ...toggleButtonStyles,
-          backgroundColor: section === 'profile' ? '#fff' : '',
-        }}
-        onClick={() => onToggle('profile')}
-        startIcon={section === 'profile' ? <PersonOutlineIcon /> : null}>
-        Perfil
-      </Button>
-      <Button
-        style={{
-          ...toggleButtonStyles,
-          backgroundColor: section === 'password' ? '#fff' : '',
-        }}
-        onClick={() => onToggle('password')}
-        startIcon={section === 'password' ? <LockIcon /> : null}>
-        Contraseña
-      </Button>
+      {sections.map(section => (
+        <Button
+          key={section.id}
+          style={{
+            ...toggleButtonStyles,
+            backgroundColor: currentSection === section.id ? '#fff' : '',
+          }}
+          onClick={() => onToggle(section.id)}
+          startIcon={currentSection === section.id ? section.icon : null}>
+          {section.label}
+        </Button>
+      ))}
     </div>
   );
 };
