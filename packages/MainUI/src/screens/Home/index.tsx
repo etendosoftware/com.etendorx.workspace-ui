@@ -7,6 +7,7 @@ import {
   Chip,
   DragModal,
   Navbar,
+  IconButton,
 } from '@workspaceui/componentlibrary/src/components';
 import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import {
@@ -16,7 +17,7 @@ import {
 import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/mock';
 import List from '@mui/material/List';
 import MenuItem from '@mui/material/MenuItem';
-
+import reactIcon from '../../assets/react.svg';
 const Home = () => {
   const tabArray: TabContent[] = [
     {
@@ -106,6 +107,18 @@ const Home = () => {
     {
       title: 'Navbar',
       children: <Navbar />,
+    },
+    {
+      title: 'IconButton',
+      children: (
+        <IconButton
+          icon={reactIcon}
+          alt="*"
+          onClick={() => {
+            console.log('React Icon Pressed');
+          }}
+        />
+      ),
     },
   ];
 
