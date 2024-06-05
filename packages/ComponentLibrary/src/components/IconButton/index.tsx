@@ -1,12 +1,13 @@
 import React from 'react';
-import { IconButtonProps, IconButton as MUIIconButton } from '@mui/material';
+import { IconButton as MUIIconButton } from '@mui/material';
+import { IIconButton } from './types';
 
-interface IIconButton extends IconButtonProps {
-  icon: string;
-  alt?: string;
-}
-
-const IconButton: React.FC<IIconButton> = ({ icon, alt, ...props }) => {
+/**
+ * A custom IconButton component that displays an icon.
+ * @param {IIconButton} props - The properties for the IconButton component.
+ * @returns {JSX.Element} The rendered IconButton component.
+ */
+const IconButton: React.FC<IIconButton> = ({ icon, alt = "icon", ...props }) => {
   return (
     <MUIIconButton {...props}>
       <img src={icon} alt={alt} />

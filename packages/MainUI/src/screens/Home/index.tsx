@@ -113,9 +113,8 @@ const Home = () => {
       children: (
         <IconButton
         icon={reactIcon}
-        alt="custom icon"
-        onClick={()=>{console.log('hello')}}
-        color="error"
+        alt="*"
+        onClick={()=>{console.log('React Icon Pressed')}}
       />
       ),
     },
