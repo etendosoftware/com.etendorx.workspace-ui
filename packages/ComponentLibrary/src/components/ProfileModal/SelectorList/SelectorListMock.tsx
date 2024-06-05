@@ -24,7 +24,7 @@ import LanguageIcon from '@mui/icons-material/Language';
 import { SelectorListProps, Item } from './SelectorList.types';
 import { references } from './SelectorList.reference';
 
-const icons: Record<Item, React.ReactElement> = {
+const icons: { [key in Item]: React.ReactElement } = {
   [Item.Rol]: <RoleIcon style={iconStyles} />,
   [Item.Cliente]: <ClientIcon style={iconStyles} />,
   [Item.Organización]: <OrganizationIcon style={iconStyles} />,
