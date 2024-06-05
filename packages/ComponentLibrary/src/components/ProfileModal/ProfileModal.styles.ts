@@ -1,5 +1,5 @@
 import { CSSProperties } from 'react';
-import { NEUTRAL_50, PRIMARY_500, START_100, START_700 } from "../../colors";
+import { NEUTRAL_50, PRIMARY_500, START_100, START_700 } from '../../colors';
 
 export const userProfileStyles: CSSProperties = {
   display: 'flex',
@@ -8,7 +8,7 @@ export const userProfileStyles: CSSProperties = {
   borderRadius: '0.75rem',
   background: NEUTRAL_50,
   position: 'relative',
-  overflow: 'hidden', 
+  overflow: 'hidden',
 };
 
 export const profileImageContainerStyles: CSSProperties = {
@@ -42,7 +42,7 @@ export const profileImageStyles: CSSProperties = {
   height: '100%',
   borderRadius: '50%',
   position: 'relative',
-  zIndex: 2, 
+  zIndex: 2,
 };
 
 export const svgContainerStyles: CSSProperties = {
@@ -56,7 +56,7 @@ export const profileDetailsStyles: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  zIndex: 2, 
+  zIndex: 2,
   padding: '0rem 0.5rem',
   background: START_100,
   borderRadius: '12.5rem',
@@ -64,14 +64,14 @@ export const profileDetailsStyles: CSSProperties = {
 
 export const nameStyles: CSSProperties = {
   margin: 0,
-  zIndex: 2, 
-  padding: '0 0 0.25rem 0'
+  zIndex: 2,
+  padding: '0 0 0.25rem 0',
 };
 
 export const emailStyles: CSSProperties = {
   margin: 0,
   color: START_700,
-  zIndex: 2, 
+  zIndex: 2,
 };
 
 //Toggle Styles
@@ -96,7 +96,7 @@ export const toggleButtonStyles: CSSProperties = {
   border: '0px solid',
   borderRadius: '12.5rem',
 };
-  
+
 export const toggleSectionStyles: CSSProperties = {
   display: 'flex',
   padding: '1rem 0.75rem 0.5rem 0.75rem',
@@ -128,7 +128,7 @@ export const buttonStyles: CSSProperties = {
   color: 'black',
   background: 'white',
 };
-  
+
 export const saveButtonStyles: CSSProperties = {
   fontWeight: '600',
   fontSize: '0.875rem',
@@ -139,4 +139,4 @@ export const saveButtonStyles: CSSProperties = {
   borderRadius: '6.25rem',
   border: '1px solid rgba(0, 3, 13, 0.20)',
   height: '2.5rem',
-}
+};
