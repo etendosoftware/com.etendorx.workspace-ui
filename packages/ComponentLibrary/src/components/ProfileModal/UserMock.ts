@@ -6,3 +6,4 @@ export const user = {
     name: 'Ayelén García',
     email: 'ayelen.garcia@etendo.software',
   };
+  
