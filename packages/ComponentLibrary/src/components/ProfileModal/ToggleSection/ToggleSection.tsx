@@ -1,3 +1,4 @@
+import React from 'react';
 import { Button } from '@mui/material';
 import {
   toggleContainerStyles,
@@ -5,23 +6,23 @@ import {
 } from './ToggleSection.styles';
 import { ToggleSectionsProps } from './ToggleSection.types';
 
-const ToggleSections = <T extends string>({
+const ToggleSections: React.FC<ToggleSectionsProps> = ({
   sections,
   currentSection,
   onToggle,
-}: ToggleSectionsProps<T>) => {
+}) => {
   return (
     <div style={toggleContainerStyles}>
-      {sections.map(section => (
+      {sections.map(({ id, label, icon }) => (
         <Button
-          key={section.id}
+          key={id}
           style={{
             ...toggleButtonStyles,
-            backgroundColor: currentSection === section.id ? '#fff' : '',
+            backgroundColor: currentSection === id ? '#fff' : '',
           }}
-          onClick={() => onToggle(section.id)}
-          startIcon={currentSection === section.id ? section.icon : null}>
-          {section.label}
+          onClick={() => onToggle(id)}
+          startIcon={icon}>
+          {label}
         </Button>
       ))}
     </div>

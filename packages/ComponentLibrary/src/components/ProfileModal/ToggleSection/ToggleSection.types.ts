@@ -1,11 +1,13 @@
-export interface Section<T extends string> {
-  id: T;
+import React from 'react';
+
+export interface Section {
+  id: string;
   label: string;
   icon: React.ReactElement;
 }
 
-export interface ToggleSectionsProps<T extends string> {
-  sections: Section<T>[];
-  currentSection: T;
-  onToggle: (section: T) => void;
+export interface ToggleSectionsProps {
+  sections: Section[];
+  currentSection: string;
+  onToggle: (section: string) => void;
 }
