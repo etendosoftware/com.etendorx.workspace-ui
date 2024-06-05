@@ -21,22 +21,19 @@ import ClientIcon from '@mui/icons-material/Business';
 import OrganizationIcon from '@mui/icons-material/Domain';
 import WarehouseIcon from '@mui/icons-material/Store';
 import LanguageIcon from '@mui/icons-material/Language';
-import { SelectorListProps } from './SelectorList.types';
-
-const items = ['Rol', 'Cliente', 'Organización', 'Almacén', 'Lenguaje'];
-
-type Item = (typeof items)[number];
+import { SelectorListProps, Item } from './SelectorList.types';
+import { references } from './SelectorList.reference';
 
 const icons: Record<Item, React.ReactElement> = {
-  Rol: <RoleIcon style={iconStyles} />,
-  Cliente: <ClientIcon style={iconStyles} />,
-  Organización: <OrganizationIcon style={iconStyles} />,
-  Almacén: <WarehouseIcon style={iconStyles} />,
-  Lenguaje: <LanguageIcon style={iconStyles} />,
+  [Item.Rol]: <RoleIcon style={iconStyles} />,
+  [Item.Cliente]: <ClientIcon style={iconStyles} />,
+  [Item.Organización]: <OrganizationIcon style={iconStyles} />,
+  [Item.Almacén]: <WarehouseIcon style={iconStyles} />,
+  [Item.Lenguaje]: <LanguageIcon style={iconStyles} />,
 };
 
-const SelectorList = <T extends string>({ section }: SelectorListProps<T>) => {
-  const relevantItems = section === 'profile' ? items : [];
+const SelectorList: React.FC<SelectorListProps> = ({ section }) => {
+  const relevantItems = references[section] || [];
 
   const [selectedValues, setSelectedValues] = React.useState<{
     [key in Item]?: string;
@@ -51,7 +48,7 @@ const SelectorList = <T extends string>({ section }: SelectorListProps<T>) => {
 
   return (
     <div style={selectorListStyles}>
-      {relevantItems.map(item => (
+      {relevantItems.map(({ item, values }) => (
         <React.Fragment key={item}>
           <FormControl fullWidth variant="standard" style={formStyle}>
             <InputLabel id={`${item}-label`} style={labelStyles}>
@@ -64,18 +61,16 @@ const SelectorList = <T extends string>({ section }: SelectorListProps<T>) => {
               onChange={event => handleChange(event, item)}
               label={item}
               renderValue={selected => (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
                   <ListItemIcon>{icons[item]}</ListItemIcon>
                   <Typography>{`${item} ${selected}`}</Typography>
                 </div>
               )}>
-              <MenuItem value="1">{item} 1</MenuItem>
-              <MenuItem value="2">{item} 2</MenuItem>
-              <MenuItem value="3">{item} 3</MenuItem>
+              {values.map(value => (
+                <MenuItem key={value} value={value}>
+                  {item} {value}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </React.Fragment>

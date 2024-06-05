@@ -16,7 +16,7 @@ import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockIcon from '@mui/icons-material/Lock';
 import { Section } from './ToggleSection/ToggleSection.types';
 
-const sections: Section<string>[] = [
+const sections: Section[] = [
   { id: 'profile', label: 'Perfil', icon: <PersonOutlineIcon /> },
   { id: 'password', label: 'Contraseña', icon: <LockIcon /> },
 ];

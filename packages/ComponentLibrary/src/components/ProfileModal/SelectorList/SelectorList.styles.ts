@@ -18,4 +18,3 @@ export const labelStyles: CSSProperties = {
 export const iconStyles: CSSProperties = {
   paddingLeft: '0.5rem'  
 };
-  

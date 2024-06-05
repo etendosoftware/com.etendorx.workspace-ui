@@ -1,5 +1,7 @@
-export type Item = 'Rol' | 'Cliente' | 'Organización' | 'Almacén' | 'Lenguaje';
+import { Item } from '../../enums/index';
 
-export interface SelectorListProps<T extends string> {
-  section: T;
+export interface SelectorListProps {
+  section: string;
 }
+
+export { Item };

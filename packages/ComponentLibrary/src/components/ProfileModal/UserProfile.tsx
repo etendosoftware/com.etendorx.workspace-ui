@@ -9,17 +9,11 @@ import {
   emailStyles,
   logoutButtonStyles,
 } from './ProfileModal.styles';
-import profilePicture from '../../assets/images/profile_picture.png';
 import BackgroundGradient from '../../assets/images/backgroundGradient.svg';
 import Logout from '@mui/icons-material/Logout';
+import { user } from './UserMock';
 
 const UserProfile: React.FC = () => {
-  const user = {
-    photoUrl: profilePicture,
-    name: 'Ayelén García',
-    email: 'ayelen.garcia@etendo.software',
-  };
-
   return (
     <div style={userProfileStyles}>
       <div style={svgContainerStyles}>
