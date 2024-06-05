@@ -112,10 +112,12 @@ const Home = () => {
       title: 'IconButton',
       children: (
         <IconButton
-        icon={reactIcon}
-        alt="*"
-        onClick={()=>{console.log('React Icon Pressed')}}
-      />
+          icon={reactIcon}
+          alt="*"
+          onClick={() => {
+            console.log('React Icon Pressed');
+          }}
+        />
       ),
     },
   ];

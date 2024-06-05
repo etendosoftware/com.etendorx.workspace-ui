@@ -1,8 +1,5 @@
 import { IconButtonProps } from '@mui/material';
 
-/**
- * Interface for Icon Button properties
- */
 export interface IIconButton extends IconButtonProps {
   /**
    * The URL or path of the icon to be displayed.
