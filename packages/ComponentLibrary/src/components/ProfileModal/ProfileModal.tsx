@@ -4,6 +4,7 @@ import UserProfile from './UserProfile';
 import ToggleSection from './ToggleSection/ToggleSection';
 import SelectorList from './SelectorList/SelectorListMock';
 import {
+  MODAL_WIDTH,
   buttonContainerStyles,
   buttonStyles,
   saveButtonStyles,
@@ -29,7 +30,7 @@ const ProfileModal: React.FC = () => {
   };
 
   return (
-    <Modal width={332}>
+    <Modal width={MODAL_WIDTH}>
       <UserProfile />
       <div style={toggleSectionStyles}>
         <ToggleSection

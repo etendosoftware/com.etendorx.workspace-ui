@@ -1,6 +1,8 @@
 import { CSSProperties } from 'react';
 import { NEUTRAL_50, PRIMARY_500, START_100, START_700 } from '../../colors';
 
+export const MODAL_WIDTH = 332;
+
 export const userProfileStyles: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
