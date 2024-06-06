@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
 import TabIcon from '@mui/icons-material/KeyboardTab';
-import { SX_STYLES, CSS_STYLES } from '../TextInput.styles';
-import t from '../TextInput.translations.json';
+import { SX_STYLES, CSS_STYLES } from '../TextInputAutocomplete.styles';
+import t from '../TextInputAutocomplete.translations.json';
 
 interface SuggestionBoxProps {
     suggestion: string;

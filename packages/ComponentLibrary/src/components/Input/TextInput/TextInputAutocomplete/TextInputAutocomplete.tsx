@@ -4,13 +4,13 @@ import SearchIcon from '@mui/icons-material/Search';
 import FilterIcon from '@mui/icons-material/FilterList';
 import CircularProgress from '@mui/material/CircularProgress';
 import CloseIcon from '@mui/icons-material/Close';
-import { TextInputProps } from './TextInput.types';
-import { CSS_STYLES, SX_STYLES } from './TextInput.styles';
-import { DEFAULT_CONSTANTS } from './TextInput.constants';
-import { PRIMARY_950, PRIMARY_1000, NEUTRAL_850, START_750, TERTIARY_150, NEUTRAL_50 } from '../../colors';
+import { TextInputProps } from './TextInputComplete.types';
+import { CSS_STYLES, SX_STYLES } from './TextInputAutocomplete.styles';
+import { DEFAULT_CONSTANTS } from './TextInputAutocomplete.constants';
+import { PRIMARY_950, PRIMARY_1000, NEUTRAL_850, START_750, TERTIARY_150, NEUTRAL_50 } from '../../../../colors';
 import SuggestionBox from './SuggestionBox';
 
-const TextInput = (props: TextInputProps) => {
+const TextInputAutoComplete = (props: TextInputProps) => {
   const {
     autoCompleteTexts = [],
     fetchSuggestions,
@@ -21,13 +21,11 @@ const TextInput = (props: TextInputProps) => {
     ...textFieldProps
   } = props;
 
-  // States
   const [value, setValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const [suggestion, setSuggestion] = useState<string>('');
 
-  // Fetch suggestions or simulate loading when value changes
   useEffect(() => {
     const fetchData = async () => {
       if (fetchSuggestions) {
@@ -51,7 +49,6 @@ const TextInput = (props: TextInputProps) => {
     fetchData();
   }, [value, fetchSuggestions]);
 
-  // Update suggestion based on autocomplete texts and focus state
   useEffect(() => {
     if (autoCompleteTexts && isFocused) {
       const match = autoCompleteTexts.find(text => text.toLowerCase().startsWith(value.toLowerCase()));
@@ -63,13 +60,11 @@ const TextInput = (props: TextInputProps) => {
     }
   }, [value, isFocused, autoCompleteTexts]);
 
-  // Clear the input and suggestion
   const handleClear = () => {
     setValue('');
     setSuggestion('');
   };
 
-  // Handle Tab key press to accept suggestion
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Tab' && suggestion) {
       e.preventDefault();
@@ -78,7 +73,6 @@ const TextInput = (props: TextInputProps) => {
     }
   };
 
-  // Handle input change and call onChange prop if provided
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValue(e.target.value);
     if (textFieldProps.onChange) {
@@ -86,7 +80,6 @@ const TextInput = (props: TextInputProps) => {
     }
   };
 
-  // Define input styles with conditions
   const inputStyles = {
     ...CSS_STYLES.input,
     "& .MuiOutlinedInput-input": {
@@ -102,7 +95,6 @@ const TextInput = (props: TextInputProps) => {
     ...props.InputProps?.sx,
   };
 
-  // Define start adornment
   const startAdornment = (
     <InputAdornment position="start">
       <Box sx={SX_STYLES.startAdornment}>
@@ -119,7 +111,6 @@ const TextInput = (props: TextInputProps) => {
     </InputAdornment>
   );
 
-  // Define end adornment
   const endAdornment = !props.disabled && (
     <InputAdornment position="end">
       {value && (
@@ -149,7 +140,6 @@ const TextInput = (props: TextInputProps) => {
     </InputAdornment>
   );
 
-  // Define main TextField sx
   const textFieldSx = {
     ...CSS_STYLES.inputCommon,
     backgroundColor: !props.disabled ? NEUTRAL_50 : PRIMARY_950,
@@ -174,7 +164,6 @@ const TextInput = (props: TextInputProps) => {
     ...props.sx,
   };
 
-  // Define inputProps
   const inputProps = {
     ...props.inputProps,
     style: {
@@ -212,4 +201,4 @@ const TextInput = (props: TextInputProps) => {
   );
 };
 
-export default TextInput;
+export default TextInputAutoComplete;

@@ -1,5 +1,5 @@
 import { SxProps, Theme } from '@mui/material';
-import { NEUTRAL_100, NEUTRAL_200, NEUTRAL_850, NEUTRAL_1000, PRIMARY_450, PRIMARY_50, PRIMARY_950, START_750, TERTIARY_950, TERTIARY_1000, PRIMARY_150, PRIMARY_1000 } from '../../colors';
+import { NEUTRAL_200, NEUTRAL_850, NEUTRAL_1000, PRIMARY_450, PRIMARY_50, PRIMARY_950, TERTIARY_950, NEUTRAL_5, PRIMARY_150, PRIMARY_1000, NEUTRAL_150, NEUTRAL_10 } from '../../../../colors';
 
 // Font sizes
 const FONT_SIZE_14 = 14;
@@ -21,7 +21,7 @@ export const CSS_STYLES: { [key: string]: any } = {
     backgroundColor: PRIMARY_50,
     transition: 'background-color 0.5s ease',
     '&:hover': {
-      backgroundColor: TERTIARY_1000,
+      backgroundColor: NEUTRAL_5,
     },
     '&.Mui-disabled': {
       backgroundColor: PRIMARY_950,
@@ -43,11 +43,6 @@ export const CSS_STYLES: { [key: string]: any } = {
     fontWeight: 500,
     color: NEUTRAL_850,
     marginLeft: '0.25rem',
-  },
-  cleanText: {
-    color: START_750,
-    fontSize: FONT_SIZE_14,
-    fontWeight: 500,
   },
   suggestionText: {
     color: PRIMARY_150,
@@ -75,10 +70,12 @@ export const SX_STYLES: { [key: string]: SxProps<Theme> } = {
     display: 'flex',
     alignItems: 'center',
     marginLeft: '0.25rem',
-    backgroundColor: NEUTRAL_100,
+    backgroundColor: NEUTRAL_150,
     height: '1.5rem',
     padding: '0.5rem',
     borderRadius: 100,
+    border: `1px solid ${NEUTRAL_10}`,
+
   },
   suggestionBox: {
     position: 'absolute',

@@ -1,19 +1,29 @@
-import { DataGrid, Table, TableV2, Button, Grid, TextInput, Tab } from '@workspaceui/componentlibrary/src/components';
+import { DataGrid, Table, TableV2, Button, Grid, Tab, TextInputBase } from '@workspaceui/componentlibrary/src/components';
 import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import { PRIMARY_0 } from '@workspaceui/componentlibrary/src/colors';
-import { MOCK_AUTO_COMPLETE_TEXTS, MOCK_PLACEHOLDERS } from '@workspaceui/componentlibrary/src/components/TextInput/TextInput.mock';
+import { MOCK_AUTO_COMPLETE_TEXTS, MOCK_PLACEHOLDERS } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
 import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/mock';
 import Modal from '@workspaceui/componentlibrary/src/components/Modal';
 import List from '@mui/material/List';
 import MenuItem from '@mui/material/MenuItem';
+import { useState } from 'react';
+import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import { VisibilityOutlined, VisibilityOffOutlined } from '@mui/icons-material';
 
 const Home = () => {
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+
+  const handleClickShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
   const tabArray: TabContent[] = [
     {
       title: '🎹 Buttons',
       children: (
         <Grid container spacing={2}>
-          <Grid xs={12} spacing={2}>
+          <Grid item xs={12} spacing={2}>
             <Button sx={{ margin: '1rem' }} variant="text" onClick={() => console.log('click')}>
               Primary
             </Button>
@@ -30,7 +40,7 @@ const Home = () => {
               Primary
             </Button>
           </Grid>
-          <Grid xs={12}>
+          <Grid item xs={12}>
             <Button sx={{ margin: '1rem' }} variant="contained" color="secondary" onClick={() => console.log('token')}>
               Secondary
             </Button>
@@ -38,7 +48,7 @@ const Home = () => {
               Secondary
             </Button>
           </Grid>
-          <Grid xs={12}>
+          <Grid item xs={12}>
             <Button sx={{ margin: '1rem' }} variant="contained" color="tertiary">
               Tertiary
             </Button>
@@ -59,9 +69,15 @@ const Home = () => {
       title: '🔍 Input',
       children: (
         <Grid sx={{ backgroundColor: PRIMARY_0, padding: '1rem', borderRadius: '0.5rem' }} container spacing={2}>
-          <Grid xs={12}>
-            <TextInput autoCompleteTexts={MOCK_AUTO_COMPLETE_TEXTS} placeholder={MOCK_PLACEHOLDERS.SEARCH} />
-            <TextInput placeholder={MOCK_PLACEHOLDERS.DISABLED} sx={{ marginTop: '1rem' }} disabled />
+          <Grid item xs={12}>
+            <TextInputAutocomplete autoCompleteTexts={MOCK_AUTO_COMPLETE_TEXTS} placeholder={MOCK_PLACEHOLDERS.SEARCH} />
+            <TextInputAutocomplete placeholder={MOCK_PLACEHOLDERS.DISABLED} sx={{ marginTop: '1rem' }} disabled />
+            <TextInputBase
+              leftIcon={<LockOutlinedIcon />}
+              rightIcon={showPassword ? <VisibilityOutlined /> : <VisibilityOffOutlined />}
+              onRightIconClick={handleClickShowPassword}
+              sx={{ marginTop: '1rem' }}
+            />
           </Grid>
         </Grid>
       ),

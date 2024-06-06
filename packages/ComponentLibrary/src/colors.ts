@@ -37,12 +37,15 @@ export const TERTIARY_700 = '#3844B7';
 export const TERTIARY_800 = '#242D93';
 export const TERTIARY_900 = '#151C7A';
 export const TERTIARY_950 = '#3F4A7E';
-export const TERTIARY_1000 = '#00030D0D';
 
 // Neutral color
+export const NEUTRAL_5 = '#00030D0D';
+export const NEUTRAL_10 = '#00030D1A'
+export const NEUTRAL_20 = '#00030D33';
 export const NEUTRAL_50 = '#FAFAFA';
-export const NEUTRAL_100 = '#F2F2F2';
-export const NEUTAL_50_DARK = '#00030D1A'
+export const NEUTRAL_80 = '#2E365C';
+export const NEUTRAL_100 = '#00030D';
+export const NEUTRAL_150 = '#F2F2F2';
 export const NEUTRAL_200 = '#EEEEEE';
 export const NEUTRAL_300 = '#E0E0E0';
 export const NEUTRAL_400 = '#BDBDBD';
@@ -73,6 +76,7 @@ export const DANGER_600 = '#D0474B';
 export const DANGER_700 = '#AE313F';
 export const DANGER_800 = '#8C1F34';
 export const DANGER_900 = '#74122E';
+export const ERROR_MAIN = '#DC143C';
 // Information color
 export const START_100 = '#D8F1FF';
 export const START_200 = '#B1E0FF';
