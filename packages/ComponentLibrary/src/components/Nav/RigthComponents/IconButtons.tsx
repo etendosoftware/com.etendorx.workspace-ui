@@ -10,7 +10,7 @@ const IconButtons: React.FC = () => {
       {iconActions.map((action, index) => {
         const IconComponent = action.icon;
         return (
-          <Tooltip key={index} title={action.label}>
+          <Tooltip key={index} title={action.label} arrow>
             <IconButton onClick={action.onClick} style={avatarStyles}>
               <IconComponent />
             </IconButton>
