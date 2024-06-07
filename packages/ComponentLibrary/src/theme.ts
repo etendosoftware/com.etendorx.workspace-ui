@@ -2,6 +2,7 @@ import { createTheme } from '@mui/material/styles';
 import {
   NEUTRAL_300,
   NEUTRAL_50,
+  NEUTRAL_1000,
   PRIMARY_100,
   PRIMARY_500,
   SECONDARY_100,
@@ -34,6 +35,24 @@ export const theme = createTheme({
     },
   },
   components: {
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          fontSize: '0.875rem',
+          backgroundColor: NEUTRAL_1000,
+          color: NEUTRAL_50,
+          borderRadius: '0.25rem',
+          padding: '0.25rem, 0.35rem, 0.25rem, 0.35rem',
+          maxWidth: 500,
+        },
+        arrow: {
+          color: NEUTRAL_1000,
+          '&::before': {
+            borderRadius: '0.1rem',
+          },
+        },
+      },
+    },
     MuiButton: {
       defaultProps: {
         disableElevation: true,
