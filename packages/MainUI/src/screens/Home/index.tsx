@@ -8,6 +8,7 @@ import {
   DragModal,
   Navbar,
   Profile,
+  ConfigurationModal,
 } from '@workspaceui/componentlibrary/src/components';
 import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import {
@@ -17,6 +18,8 @@ import {
 import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/mock';
 import List from '@mui/material/List';
 import MenuItem from '@mui/material/MenuItem';
+import logo from '../../assets/react.svg';
+import { sectionsModal } from '../../../../ComponentLibrary/src/components/ConfigurationModal/mock';
 
 const Home = () => {
   const tabArray: TabContent[] = [
@@ -111,6 +114,18 @@ const Home = () => {
     {
       title: 'Profile Modal',
       children: <Profile />,
+    },
+    {
+      title: 'Configuration Modal',
+      children: (
+        <ConfigurationModal
+          icon={logo}
+          title={{ icon: logo, label: 'Apariencia' }}
+          linkTitle={{label:'Ver todos los ajustes', url:'/settings'}}
+          sections={sectionsModal}
+          onChangeSelect={console.log}
+        />
+      ),
     },
   ];
 
