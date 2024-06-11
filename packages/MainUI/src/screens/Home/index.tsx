@@ -1,15 +1,23 @@
-import { DataGrid, Table, TableV2, Button, Grid, Tab, TextInputBase } from '@workspaceui/componentlibrary/src/components';
-import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
-import { PRIMARY_0 } from '@workspaceui/componentlibrary/src/colors';
-import { MOCK_AUTO_COMPLETE_TEXTS, MOCK_PLACEHOLDERS } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
-import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/mock';
-import Modal from '@workspaceui/componentlibrary/src/components/Modal';
+import { useState } from 'react';
+import {
+  DataGrid,
+  Table,
+  TableV2,
+  Button,
+  Grid,
+  Tab,
+  TextInputBase
+} from '@workspaceui/componentlibrary/src/components';
 import List from '@mui/material/List';
 import MenuItem from '@mui/material/MenuItem';
-import { useState } from 'react';
-import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import { PRIMARY_0 } from '@workspaceui/componentlibrary/src/colors';
+import Modal from '@workspaceui/componentlibrary/src/components/Modal';
+import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import { VisibilityOutlined, VisibilityOffOutlined } from '@mui/icons-material';
+import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/mock';
+import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
+import { MOCK_AUTO_COMPLETE_TEXTS, MOCK_PLACEHOLDERS } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
 
 const Home = () => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -24,35 +32,72 @@ const Home = () => {
       children: (
         <Grid container spacing={2}>
           <Grid item xs={12} spacing={2}>
-            <Button sx={{ margin: '1rem' }} variant="text" onClick={() => console.log('click')}>
+            <Button
+              sx={{ margin: '1rem' }}
+              variant="text"
+              onClick={() => console.log('click')}
+            >
               Primary
             </Button>
-            <Button sx={{ margin: '1rem' }} variant="contained">
+            <Button
+              sx={{ margin: '1rem' }}
+              variant="contained"
+            >
               Primary
             </Button>
-            <Button sx={{ margin: '1rem' }} disabled={true} variant="contained">
+            <Button
+              sx={{ margin: '1rem' }}
+              disabled={true}
+              variant="contained"
+            >
               Primary
             </Button>
-            <Button sx={{ margin: '1rem' }} variant="outlined">
+            <Button
+              sx={{ margin: '1rem' }}
+              variant="outlined"
+            >
               Primary
             </Button>
-            <Button sx={{ margin: '1rem' }} disabled={true} variant="outlined">
+            <Button
+              sx={{ margin: '1rem' }}
+              disabled={true}
+              variant="outlined"
+            >
               Primary
             </Button>
           </Grid>
           <Grid item xs={12}>
-            <Button sx={{ margin: '1rem' }} variant="contained" color="secondary" onClick={() => console.log('token')}>
+            <Button
+              sx={{ margin: '1rem' }}
+              variant="contained"
+              color="secondary"
+              onClick={() => console.log('token')}
+            >
               Secondary
             </Button>
-            <Button sx={{ margin: '1rem' }} disabled={true} variant="contained" color="secondary">
+            <Button
+              sx={{ margin: '1rem' }}
+              disabled={true}
+              variant="contained"
+              color="secondary"
+            >
               Secondary
             </Button>
           </Grid>
           <Grid item xs={12}>
-            <Button sx={{ margin: '1rem' }} variant="contained" color="tertiary">
+            <Button
+              sx={{ margin: '1rem' }}
+              variant="contained"
+              color="tertiary"
+            >
               Tertiary
             </Button>
-            <Button sx={{ margin: '1rem' }} disabled={true} variant="contained" color="tertiary">
+            <Button
+              sx={{ margin: '1rem' }}
+              disabled={true}
+              variant="contained"
+              color="tertiary"
+            >
               Tertiary
             </Button>
           </Grid>
@@ -63,15 +108,36 @@ const Home = () => {
       title: '📦 Simple Table',
       children: <Table />,
     },
-    { title: '⚡️ Data Grid', children: <DataGrid /> },
-    { title: '🧩 TableV2', children: <TableV2 /> },
+    {
+      title: '⚡️ Data Grid',
+      children: <DataGrid />
+    },
+    {
+      title: '🧩 TableV2',
+      children: <TableV2 />
+    },
     {
       title: '🔍 Input',
       children: (
-        <Grid sx={{ backgroundColor: PRIMARY_0, padding: '1rem', borderRadius: '0.5rem' }} container spacing={2}>
+        <Grid
+          sx={{
+            backgroundColor: PRIMARY_0,
+            padding: '1rem',
+            borderRadius: '0.5rem'
+          }}
+          container
+          spacing={2}
+        >
           <Grid item xs={12}>
-            <TextInputAutocomplete autoCompleteTexts={MOCK_AUTO_COMPLETE_TEXTS} placeholder={MOCK_PLACEHOLDERS.SEARCH} />
-            <TextInputAutocomplete placeholder={MOCK_PLACEHOLDERS.DISABLED} sx={{ marginTop: '1rem' }} disabled />
+            <TextInputAutocomplete
+              autoCompleteTexts={MOCK_AUTO_COMPLETE_TEXTS}
+              placeholder={MOCK_PLACEHOLDERS.SEARCH}
+            />
+            <TextInputAutocomplete
+              placeholder={MOCK_PLACEHOLDERS.DISABLED}
+              sx={{ marginTop: '1rem' }}
+              disabled
+            />
             <TextInputBase
               leftIcon={<LockOutlinedIcon />}
               rightIcon={showPassword ? <VisibilityOutlined /> : <VisibilityOffOutlined />}
