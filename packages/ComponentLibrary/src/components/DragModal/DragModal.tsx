@@ -20,7 +20,11 @@ import {
 import SortableItem from './SortableItem';
 import { Person } from './DragModal.types';
 import ModalDivider from '../ModalDivider';
-import { containerStyles, showAllStyles } from './DragModal.styles';
+import {
+  MODAL_WIDTH,
+  containerStyles,
+  showAllStyles,
+} from './DragModal.styles';
 import { DragIndicator } from '@mui/icons-material';
 
 const DragModal: React.FC = () => {
@@ -69,7 +73,7 @@ const DragModal: React.FC = () => {
   };
 
   return (
-    <Modal width={240}>
+    <Modal width={MODAL_WIDTH}>
       <p>Volver</p>
       <ModalDivider />
       <div style={containerStyles}>

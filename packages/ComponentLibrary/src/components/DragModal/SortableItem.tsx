@@ -6,6 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import ToggleChip from '../Toggle/ToggleChip';
 import { DragIndicator } from '@mui/icons-material';
 import {
+  PRIMARY_BLUE,
   itemsContainer,
   leftContainer,
   listStyles,
@@ -38,7 +39,7 @@ const SortableItem: React.FC<SortableItemProps> = ({
         sx={{
           '&:hover': {
             borderRadius: '0.5rem',
-            color: '#242D93',
+            color: PRIMARY_BLUE,
           },
         }}>
         <div style={itemsContainer}>
