@@ -26,7 +26,7 @@ export default function RightButtons() {
     <>
       <Box style={boxStyles}>
         <IconButtons />
-        <Tooltip title="Account settings">
+        <Tooltip title="Account settings" arrow>
           <IconButton
             onClick={handleClick}
             size="small"

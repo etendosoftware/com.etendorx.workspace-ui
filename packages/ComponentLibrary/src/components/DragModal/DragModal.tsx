@@ -10,6 +10,7 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  UniqueIdentifier,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -19,7 +20,12 @@ import {
 import SortableItem from './SortableItem';
 import { Person } from './DragModal.types';
 import ModalDivider from '../ModalDivider';
-import { containerStyles, showAllStyles } from './DragModal.styles';
+import {
+  MODAL_WIDTH,
+  containerStyles,
+  showAllStyles,
+} from './DragModal.styles';
+import { DragIndicator } from '@mui/icons-material';
 
 const DragModal: React.FC = () => {
   const [people, setPeople] = useState<Person[]>(initialPeople);
@@ -29,26 +35,52 @@ const DragModal: React.FC = () => {
     useSensor(TouchSensor, { activationConstraint: { distance: 5 } }),
   );
 
+  const logState = (updatedPeople: Person[]) => {
+    updatedPeople.forEach(person => {
+      console.log(`${person.id}: ${person.label} = ${person.isActive}`);
+    });
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
       setPeople(items => {
         const oldIndex = items.findIndex(item => item.id === active.id);
         const newIndex = items.findIndex(item => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
+        const newItems = arrayMove(items, oldIndex, newIndex);
+        logState(newItems);
+        return newItems;
       });
     }
   };
 
+  const handleToggleAll = () => {
+    const allActivated = people.every(person => person.isActive);
+    const newPeople = people.map(person => ({
+      ...person,
+      isActive: !allActivated,
+    }));
+    setPeople(newPeople);
+    logState(newPeople);
+  };
+
+  const handleToggle = (id: UniqueIdentifier) => {
+    const newPeople = people.map(person =>
+      person.id === id ? { ...person, isActive: !person.isActive } : person,
+    );
+    setPeople(newPeople);
+    logState(newPeople);
+  };
+
   return (
-    <Modal height={300} width={240}>
+    <Modal width={MODAL_WIDTH}>
       <p>Volver</p>
       <ModalDivider />
       <div style={containerStyles}>
         <p>Botones</p>
-        <a href="#" style={showAllStyles}>
-          Mostrar Todo
-        </a>
+        <button style={showAllStyles} onClick={handleToggleAll}>
+          Activar todo
+        </button>
       </div>
       <DndContext
         sensors={sensors}
@@ -59,7 +91,14 @@ const DragModal: React.FC = () => {
           strategy={verticalListSortingStrategy}>
           <List>
             {people.map(person => (
-              <SortableItem key={person.id} id={person.id} person={person} />
+              <SortableItem
+                key={person.id}
+                id={person.id}
+                person={person}
+                icon={<DragIndicator />}
+                onToggle={() => handleToggle(person.id)}
+                isActive={false}
+              />
             ))}
           </List>
         </SortableContext>

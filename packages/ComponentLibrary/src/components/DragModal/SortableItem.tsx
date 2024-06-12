@@ -4,14 +4,22 @@ import MenuItem from '@mui/material/MenuItem';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import ToggleChip from '../Toggle/ToggleChip';
+import { DragIndicator } from '@mui/icons-material';
 import {
+  PRIMARY_BLUE,
+  itemsContainer,
+  leftContainer,
   listStyles,
   menuItemStyles,
   personLabelStyles,
 } from './DragModal.styles';
 import { SortableItemProps } from './DragModal.types';
 
-const SortableItem: React.FC<SortableItemProps> = ({ id, person }) => {
+const SortableItem: React.FC<SortableItemProps> = ({
+  id,
+  person,
+  onToggle,
+}) => {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id });
 
@@ -23,9 +31,32 @@ const SortableItem: React.FC<SortableItemProps> = ({ id, person }) => {
 
   return (
     <List style={listStyles}>
-      <MenuItem ref={setNodeRef} style={style} {...attributes} {...listeners}>
-        <span style={personLabelStyles}>{person.label}</span>
-        <ToggleChip />
+      <MenuItem
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        sx={{
+          '&:hover': {
+            borderRadius: '0.5rem',
+            color: PRIMARY_BLUE,
+          },
+        }}>
+        <div style={itemsContainer}>
+          <div style={leftContainer}>
+            <DragIndicator
+              style={{
+                maxWidth: '1rem',
+                maxHeight: '1rem',
+                marginRight: '0.5rem',
+              }}
+            />
+            <span style={personLabelStyles} title={person.label}>
+              {person.label}
+            </span>
+          </div>
+          <ToggleChip isActive={person.isActive} onToggle={onToggle} />
+        </div>
       </MenuItem>
     </List>
   );

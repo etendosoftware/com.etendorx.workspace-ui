@@ -1,0 +1,185 @@
+import { Grid, Link, Menu } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import {
+  BORDER_SELECT_1,
+  BORDER_SELECT_2,
+  COLUMN_SPACING,
+  DYNAMIC_COLOR_MAIN,
+  FIRST_MARGIN_TOP,
+  NEUTRAL_30,
+  NEUTRAL_90,
+  menuSyle,
+  styles,
+} from './style';
+import IconButton from '../IconButton';
+import { IConfigurationModalProps, ISection } from './types';
+import { ALT } from './constants';
+import checkIcon from '../../assets/icons/check-circle-filled.svg';
+import './style.css';
+
+const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
+  icon,
+  title,
+  linkTitle,
+  sections = [],
+  open,
+  onChangeSelect,
+  ...props
+}) => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [sectionsState, setSectionsState] = useState<ISection[]>(sections);
+  const [hoveredItem, setHoveredItem] = useState<{
+    sectionIndex: number;
+    imageIndex: number;
+  } | null>(null);
+
+  useEffect(() => {
+    setSectionsState(sections);
+  }, [sections]);
+
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleOpen = (): boolean => {
+    if (open !== undefined) {
+      return open;
+    }
+    return Boolean(anchorEl);
+  };
+
+  const handleImageClick = (sectionIndex: number, imageIndex: number) => {
+    setSectionsState(prevSections => {
+      const newSections = [...prevSections];
+      newSections[sectionIndex] = {
+        ...newSections[sectionIndex],
+        selectedItem: imageIndex,
+      };
+      return newSections;
+    });
+
+    if (onChangeSelect) {
+      const selectedItem = sectionsState[sectionIndex].items[imageIndex];
+      onChangeSelect(selectedItem.id, sectionIndex, imageIndex);
+    }
+  };
+
+  const handleMouseEnter = (sectionIndex: number, imageIndex: number) => {
+    setHoveredItem({ sectionIndex, imageIndex });
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredItem(null);
+  };
+
+  const addBorder = (
+    selectedImageIndex: number,
+    imageIndex: number,
+    sectionIndex: number,
+  ) => {
+    if (isSelected(selectedImageIndex, imageIndex)) {
+      return BORDER_SELECT_2 + DYNAMIC_COLOR_MAIN;
+    }
+    if (isHovered(sectionIndex, imageIndex)) {
+      return BORDER_SELECT_2 + NEUTRAL_90;
+    }
+    return BORDER_SELECT_1 + NEUTRAL_30;
+  };
+
+  const isSelected = (
+    selectedImageIndex: number,
+    imageIndex: number,
+  ): boolean => {
+    return selectedImageIndex === imageIndex;
+  };
+
+  const isHovered = (sectionIndex: number, imageIndex: number): boolean => {
+    return (
+      hoveredItem !== null &&
+      hoveredItem.sectionIndex === sectionIndex &&
+      hoveredItem.imageIndex === imageIndex
+    );
+  };
+
+  const removeFirstMargin = (index: number): number | string => {
+    return index === 0 ? 0 : FIRST_MARGIN_TOP;
+  };
+
+  return (
+    <>
+      <IconButton onClick={handleClick} icon={icon} />
+      <Menu
+        {...props}
+        anchorEl={anchorEl}
+        open={handleOpen()}
+        onClose={handleClose}
+        slotProps={{
+          paper: { sx: styles.paperStyleMenu },
+        }}
+        MenuListProps={{ sx: menuSyle }}>
+        <div style={styles.titleModalContainer}>
+          <div style={styles.titleModalImageContainer}>
+            {title?.icon && (
+              <div style={styles.titleModalImageRadius}>
+                <img style={styles.titleModalImage} src={title?.icon} />
+              </div>
+            )}
+            <div style={styles.titleModal}>{title?.label}</div>
+          </div>
+          <Link style={styles.titleButton} href={linkTitle?.url}>
+            {linkTitle?.label}
+          </Link>
+        </div>
+        <div style={styles.listContainer}>
+          {sectionsState.map((section, sectionIndex) => (
+            <div
+              key={sectionIndex}
+              style={{
+                ...styles.gridSectionContainer,
+                marginTop: removeFirstMargin(sectionIndex),
+              }}>
+              <div style={styles.title}>{section.name}</div>
+              <Grid columnSpacing={COLUMN_SPACING} container>
+                {section.items.map(({ img, id, label }, imageIndex) => (
+                  <Grid item key={id}>
+                    <div
+                      onClick={() => handleImageClick(sectionIndex, imageIndex)}
+                      onMouseEnter={() =>
+                        handleMouseEnter(sectionIndex, imageIndex)
+                      }
+                      onMouseLeave={handleMouseLeave}
+                      style={{
+                        border: addBorder(
+                          section.selectedItem,
+                          imageIndex,
+                          sectionIndex,
+                        ),
+                        ...styles.imgContainer,
+                      }}>
+                      <img src={img} alt={`${ALT}-${imageIndex}`} />
+                    </div>
+                    <div style={styles.labelIconContainer}>
+                      {isSelected(section.selectedItem, imageIndex) && (
+                        <img
+                          className="fade-in-left"
+                          style={styles.labelIcon}
+                          src={checkIcon}></img>
+                      )}
+                      <div style={styles.label}>{label}</div>
+                    </div>
+                  </Grid>
+                ))}
+              </Grid>
+            </div>
+          ))}
+        </div>
+      </Menu>
+    </>
+  );
+};
+
+export default ConfigurationModal;

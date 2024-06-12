@@ -8,8 +8,8 @@ const StyledSwitch = styled(Switch)(({ theme }: { theme: Theme }) =>
   switchStyles(theme),
 );
 
-const ToggleChip: React.FC<ToggleChipProps> = props => (
-  <StyledSwitch {...props} />
+const ToggleChip: React.FC<ToggleChipProps> = ({ isActive, onToggle }) => (
+  <StyledSwitch checked={isActive} onChange={onToggle} />
 );
 
 export default ToggleChip;
