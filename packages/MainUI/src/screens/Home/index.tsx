@@ -39,8 +39,7 @@ const Home = () => {
 
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
-
-  
+  };
 
   const tabArray: TabContent[] = [
     {
