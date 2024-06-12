@@ -1,7 +1,12 @@
+
+
 import { createTheme } from '@mui/material/styles';
+import InterTTF from '../src/styles/fonts/Inter-Regular.ttf';
+
 import {
   NEUTRAL_300,
   NEUTRAL_50,
+  NEUTRAL_1000,
   PRIMARY_100,
   PRIMARY_500,
   SECONDARY_100,
@@ -33,7 +38,43 @@ export const theme = createTheme({
       contrastText: PRIMARY_500,
     },
   },
+  typography: {
+    fontFamily: [
+      'Inter',
+      'sans-serif',
+    ].join(','),
+  },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: `
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-display: swap;
+          font-weight: 400;
+          src: local('inter'), local('inter'), url(${InterTTF}) format('truetype');
+          unicodeRange: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF;
+        }
+      `,
+    },
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          fontSize: '0.875rem',
+          backgroundColor: NEUTRAL_1000,
+          color: NEUTRAL_50,
+          borderRadius: '0.25rem',
+          padding: '0.25rem, 0.35rem, 0.25rem, 0.35rem',
+          maxWidth: 500,
+        },
+        arrow: {
+          color: NEUTRAL_1000,
+          '&::before': {
+            borderRadius: '0.1rem',
+          },
+        },
+      },
+    },
     MuiButton: {
       defaultProps: {
         disableElevation: true,

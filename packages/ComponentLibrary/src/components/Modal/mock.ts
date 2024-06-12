@@ -1,8 +1,8 @@
 export const MENU_ITEMS = [
-  { label: '💼 New Job', key: 'newJob' },
-  { label: '💳 New Sales Order', key: 'newSalesOrder' },
-  { label: '💳 New Sales Invoice', key: 'newInvoice' },
-  { label: '📦 New Product', key: 'newProduct' },
-  { label: '📊 New Accounting Sheet', key: 'newAccountingSheet' },
-  { label: '📝 Customize', key: 'customize' },
+  { emoji: '💼', label: 'New Job', key: 'newJob' },
+  { emoji: '💳', label: 'New Sales Order', key: 'newSalesOrder' },
+  { emoji: '💳', label: 'New Sales Invoice', key: 'newInvoice' },
+  { emoji: '📦', label: 'New Product', key: 'newProduct' },
+  { emoji: '📊', label: 'New Accounting Sheet', key: 'newAccountingSheet' },
+  { emoji: '📝', label: 'Customize', key: 'customize' },
 ];
