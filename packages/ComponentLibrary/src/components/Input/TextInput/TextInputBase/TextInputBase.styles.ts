@@ -24,11 +24,11 @@ export const inputBaseStyles = {
     paddingY: '4px',
   } as SxProps,
   inputStyle: {
-    padding: '8px 0', // Adjust the vertical padding here
-    fontSize: '14px', // Set font size of the input
-    color: NEUTRAL_100, // Set the color of the input
-    fontFamily: 'Inter, sans-serif', // Set font family of the input
-    fontWeight: 500, // Set font weight of the input
+    padding: '0.25rem 0',
+    fontSize: '14px',
+    color: NEUTRAL_100,
+    fontFamily: 'Inter, sans-serif',
+    fontWeight: 500,
   },
   cssStyles: `
     #password-input::placeholder {
