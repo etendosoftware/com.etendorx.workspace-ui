@@ -3,9 +3,13 @@ import {
   DataGrid,
   Table,
   TableV2,
+  Tab,
+  Chip,
+  DragModal,
+  Navbar,
+  Profile,
   Button,
   Grid,
-  Tab,
   TextInputBase,
   InputPassword
 } from '@workspaceui/componentlibrary/src/components';
@@ -178,6 +182,22 @@ const Home = () => {
           </List>
         </Modal>
       ),
+    },
+    {
+      title: 'Toggle Chip',
+      children: <Chip />,
+    },
+    {
+      title: 'Dnd Modal',
+      children: <DragModal />,
+    },
+    {
+      title: 'Navbar',
+      children: <Navbar />,
+    },
+    {
+      title: 'Profile Modal',
+      children: <Profile />,
     },
   ];
 
