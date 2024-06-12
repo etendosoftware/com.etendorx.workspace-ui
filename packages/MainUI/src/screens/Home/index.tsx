@@ -11,6 +11,7 @@ import {
   Button,
   Grid,
   TextInputBase,
+  InputPassword
 } from '@workspaceui/componentlibrary/src/components';
 import List from '@mui/material/List';
 import { Search } from '@mui/icons-material';
@@ -26,6 +27,7 @@ import { MOCK_AUTO_COMPLETE_TEXTS, MOCK_PLACEHOLDERS } from '@workspaceui/compon
 const Home = () => {
   const [searchValue, setSearchValue] = useState<string>('');
   const [disabledValue, setDisabledValue] = useState<string>('');
+  const [passwordValue, setPasswordValue] = useState<string>('');
   const [inputBaseValue, setInputBaseValue] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
@@ -157,6 +159,13 @@ const Home = () => {
               value={inputBaseValue}
               setValue={setInputBaseValue}
               placeholder={MOCK_PLACEHOLDERS.SEARCH}
+            />
+            <InputPassword
+              leftIcon={<LockOutlinedIcon />}
+              value={passwordValue}
+              setValue={setPasswordValue}
+              label={MOCK_PLACEHOLDERS.PASSWORD_LABEL}
+              sx={{ marginTop: '1rem' }}
             />
           </Grid>
         </Grid>
