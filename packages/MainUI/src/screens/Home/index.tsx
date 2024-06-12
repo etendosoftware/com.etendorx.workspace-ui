@@ -9,17 +9,20 @@ import {
   TextInputBase
 } from '@workspaceui/componentlibrary/src/components';
 import List from '@mui/material/List';
+import { Search } from '@mui/icons-material';
 import MenuItem from '@mui/material/MenuItem';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { PRIMARY_0 } from '@workspaceui/componentlibrary/src/colors';
 import Modal from '@workspaceui/componentlibrary/src/components/Modal';
 import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
-import { VisibilityOutlined, VisibilityOffOutlined } from '@mui/icons-material';
 import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/mock';
 import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
 import { MOCK_AUTO_COMPLETE_TEXTS, MOCK_PLACEHOLDERS } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
 
 const Home = () => {
+  const [searchValue, setSearchValue] = useState<string>('');
+  const [disabledValue, setDisabledValue] = useState<string>('');
+  const [inputBaseValue, setInputBaseValue] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
   const handleClickShowPassword = () => {
@@ -130,19 +133,26 @@ const Home = () => {
         >
           <Grid item xs={12}>
             <TextInputAutocomplete
+              value={searchValue}
+              setValue={setSearchValue}
               autoCompleteTexts={MOCK_AUTO_COMPLETE_TEXTS}
               placeholder={MOCK_PLACEHOLDERS.SEARCH}
             />
             <TextInputAutocomplete
+              value={disabledValue}
+              setValue={setDisabledValue}
               placeholder={MOCK_PLACEHOLDERS.DISABLED}
               sx={{ marginTop: '1rem' }}
               disabled
             />
             <TextInputBase
               leftIcon={<LockOutlinedIcon />}
-              rightIcon={showPassword ? <VisibilityOutlined /> : <VisibilityOffOutlined />}
+              rightIcon={<Search />}
               onRightIconClick={handleClickShowPassword}
               sx={{ marginTop: '1rem' }}
+              value={inputBaseValue}
+              setValue={setInputBaseValue}
+              placeholder={MOCK_PLACEHOLDERS.SEARCH}
             />
           </Grid>
         </Grid>

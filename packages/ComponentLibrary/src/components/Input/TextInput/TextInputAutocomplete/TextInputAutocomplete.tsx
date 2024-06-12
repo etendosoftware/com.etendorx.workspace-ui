@@ -12,6 +12,8 @@ import SuggestionBox from './SuggestionBox';
 
 const TextInputAutoComplete = (props: TextInputProps) => {
   const {
+    value,
+    setValue,
     autoCompleteTexts = [],
     fetchSuggestions,
     leftIcon,
@@ -21,7 +23,6 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     ...textFieldProps
   } = props;
 
-  const [value, setValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const [suggestion, setSuggestion] = useState<string>('');
@@ -61,20 +62,20 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   }, [value, isFocused, autoCompleteTexts]);
 
   const handleClear = () => {
-    setValue('');
+    setValue?.('');
     setSuggestion('');
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Tab' && suggestion) {
       e.preventDefault();
-      setValue(suggestion);
+      setValue?.(suggestion);
       setSuggestion('');
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(e.target.value);
+    setValue?.(e.target.value);
     if (textFieldProps.onChange) {
       textFieldProps.onChange(e);
     }
