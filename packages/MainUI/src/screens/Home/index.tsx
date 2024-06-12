@@ -26,13 +26,14 @@ import logo from '../../assets/react.svg';
 import { sectionsModal } from '../../../../ComponentLibrary/src/components/ConfigurationModal/mock';
 import { PRIMARY_0 } from '@workspaceui/componentlibrary/src/colors';
 import Modal from '@workspaceui/componentlibrary/src/components/Modal';
-import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/mock';
 import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
 import {
   MOCK_AUTO_COMPLETE_TEXTS,
   MOCK_PLACEHOLDERS,
 } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
+import { topFilms } from '../../../../ComponentLibrary/src/components/Input/Select/mock';
+import { TabContent } from '@workspaceui/componentlibrary/src/interfaces';
 
 const Home = () => {
   const [isActive, setIsActive] = useState(false);
@@ -218,6 +219,10 @@ const Home = () => {
     {
       title: 'Profile Modal',
       children: <Profile />,
+    },
+    {
+      title: 'Select',
+      children: <Select label="aa" options={topFilms} />,
     },
     {
       title: 'Waterfall Modal',
