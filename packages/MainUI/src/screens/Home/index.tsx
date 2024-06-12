@@ -14,8 +14,15 @@ import {
 import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/mock';
 import List from '@mui/material/List';
 import MenuItem from '@mui/material/MenuItem';
+import { useState } from 'react';
 
 const Home = () => {
+  const [isActive, setIsActive] = useState(false);
+
+  const handleToggle = () => {
+    setIsActive(prevState => !prevState);
+  };
+
   const tabArray: TabContent[] = [
     {
       title: '🎹 Buttons',
@@ -95,7 +102,7 @@ const Home = () => {
     },
     {
       title: 'Toggle Chip',
-      children: <Chip />,
+      children: <Chip isActive={isActive} onToggle={handleToggle} />,
     },
   ];
 
