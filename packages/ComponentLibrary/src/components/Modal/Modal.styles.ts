@@ -1,6 +1,7 @@
 import { CSSProperties } from "react";
 import { NEUTRAL_50, NEUTRAL_900 } from "../../colors";
 
+
 const styles: { [key: string]: CSSProperties } = {
   boxStyles: {
     position: 'absolute',
