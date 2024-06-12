@@ -8,6 +8,10 @@ import ModalCustom from './Modal';
 import ApplyHOC from '../utils/applyHOC';
 import TextInputMUI from './Input/TextInput/TextInputAutocomplete';
 import TextInputBaseMUI from './Input/TextInput/TextInputBase';
+import ToggleChip from './Toggle/ToggleChip';
+import DndModal from './DragModal/DragModal';
+import Nav from './Nav/Nav';
+import ProfileModal from './ProfileModal/ProfileModal';
 
 // ApplyHOC is a higher order component that applies the theme to the component
 const Button = ApplyHOC(ButtonMUI);
@@ -20,5 +24,24 @@ const Tab = ApplyHOC(TabCustom);
 const TableV2 = ApplyHOC(TableV2Custom);
 const TextInput = ApplyHOC(TextInputMUI);
 const TextInputBase = ApplyHOC(TextInputBaseMUI);
+const Chip = ApplyHOC(ToggleChip);
+const DragModal = ApplyHOC(DndModal);
+const Navbar = ApplyHOC(Nav);
+const Profile = ApplyHOC(ProfileModal);
 
-export { Button, Grid, TextField, DataGrid, Tab, Table, TableV2, Modal, TextInput, TextInputBase };
+export {
+    Button,
+    Grid,
+    TextField,
+    DataGrid,
+    Tab,
+    Table,
+    TableV2,
+    Modal,
+    TextInput,
+    TextInputBase,
+    Chip,
+    DragModal,
+    Navbar,
+    Profile
+};
