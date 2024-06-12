@@ -7,6 +7,7 @@ import {
   DYNAMIC_COLOR_MAIN,
   FIRST_MARGIN_TOP,
   NEUTRAL_30,
+  NEUTRAL_90,
   menuSyle,
   styles,
 } from './style';
@@ -14,7 +15,7 @@ import IconButton from '../IconButton';
 import { IConfigurationModalProps, ISection } from './types';
 import { ALT } from './constants';
 import checkIcon from '../../assets/icons/check-circle-filled.svg';
-import './stlye.css';
+import './style.css';
 
 const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
   icon,
@@ -27,6 +28,10 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [sectionsState, setSectionsState] = useState<ISection[]>(sections);
+  const [hoveredItem, setHoveredItem] = useState<{
+    sectionIndex: number;
+    imageIndex: number;
+  } | null>(null);
 
   useEffect(() => {
     setSectionsState(sections);
@@ -63,10 +68,26 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
     }
   };
 
-  const addBorder = (selectedImageIndex: number, imageIndex: number) => {
-    return isSelected(selectedImageIndex, imageIndex)
-      ? BORDER_SELECT_2 + DYNAMIC_COLOR_MAIN
-      : BORDER_SELECT_1 + NEUTRAL_30;
+  const handleMouseEnter = (sectionIndex: number, imageIndex: number) => {
+    setHoveredItem({ sectionIndex, imageIndex });
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredItem(null);
+  };
+
+  const addBorder = (
+    selectedImageIndex: number,
+    imageIndex: number,
+    sectionIndex: number,
+  ) => {
+    if (isSelected(selectedImageIndex, imageIndex)) {
+      return BORDER_SELECT_2 + DYNAMIC_COLOR_MAIN;
+    }
+    if (isHovered(sectionIndex, imageIndex)) {
+      return BORDER_SELECT_2 + NEUTRAL_90;
+    }
+    return BORDER_SELECT_1 + NEUTRAL_30;
   };
 
   const isSelected = (
@@ -74,6 +95,14 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
     imageIndex: number,
   ): boolean => {
     return selectedImageIndex === imageIndex;
+  };
+
+  const isHovered = (sectionIndex: number, imageIndex: number): boolean => {
+    return (
+      hoveredItem !== null &&
+      hoveredItem.sectionIndex === sectionIndex &&
+      hoveredItem.imageIndex === imageIndex
+    );
   };
 
   const removeFirstMargin = (index: number): number | string => {
@@ -117,21 +146,21 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
               <Grid columnSpacing={COLUMN_SPACING} container>
                 {section.items.map(({ img, id, label }, imageIndex) => (
                   <Grid item key={id}>
-                    <div style={styles.imgWrapper}>
-                      <div
-                        onClick={() =>
-                          handleImageClick(sectionIndex, imageIndex)
-                        }
-                        style={{
-                          border: addBorder(section.selectedItem, imageIndex),
-                          ...styles.imgContainer,
-                        }}>
-                        <img
-                          src={img}
-                          alt={`${ALT}-${imageIndex}`}
-                          style={styles.img}
-                        />
-                      </div>
+                    <div
+                      onClick={() => handleImageClick(sectionIndex, imageIndex)}
+                      onMouseEnter={() =>
+                        handleMouseEnter(sectionIndex, imageIndex)
+                      }
+                      onMouseLeave={handleMouseLeave}
+                      style={{
+                        border: addBorder(
+                          section.selectedItem,
+                          imageIndex,
+                          sectionIndex,
+                        ),
+                        ...styles.imgContainer,
+                      }}>
+                      <img src={img} alt={`${ALT}-${imageIndex}`} />
                     </div>
                     <div style={styles.labelIconContainer}>
                       {isSelected(section.selectedItem, imageIndex) && (

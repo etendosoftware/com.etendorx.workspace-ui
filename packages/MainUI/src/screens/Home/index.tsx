@@ -10,35 +10,36 @@ import {
   Profile,
   ConfigurationModal,
 } from '@workspaceui/componentlibrary/src/components';
-import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import {
   Button,
   Grid,
   TextInputBase,
   InputPassword,
   SearchInputWithVoice,
-  Box
+  Box,
 } from '@workspaceui/componentlibrary/src/components';
 import List from '@mui/material/List';
-import { Search } from '@mui/icons-material';
+import { LockOutlined, Search } from '@mui/icons-material';
 import MenuItem from '@mui/material/MenuItem';
 import logo from '../../assets/react.svg';
 import { sectionsModal } from '../../../../ComponentLibrary/src/components/ConfigurationModal/mock';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { PRIMARY_0 } from '@workspaceui/componentlibrary/src/colors';
 import Modal from '@workspaceui/componentlibrary/src/components/Modal';
 import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/mock';
 import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
-import { MOCK_AUTO_COMPLETE_TEXTS, MOCK_PLACEHOLDERS } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
+import {
+  MOCK_AUTO_COMPLETE_TEXTS,
+  MOCK_PLACEHOLDERS,
+} from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
 
 const Home = () => {
   const [isActive, setIsActive] = useState(false);
 
   const handleToggle = () => {
     setIsActive(prevState => !prevState);
-   };
-    
+  };
+
   const [micValue, setMicValue] = useState<string>('');
   const [searchValue, setSearchValue] = useState<string>('');
   const [disabledValue, setDisabledValue] = useState<string>('');
@@ -63,34 +64,19 @@ const Home = () => {
             <Button
               sx={{ margin: '1rem' }}
               variant="text"
-              onClick={() => console.log('click')}
-            >
+              onClick={() => console.log('click')}>
               Primary
             </Button>
-            <Button
-              sx={{ margin: '1rem' }}
-              variant="contained"
-            >
+            <Button sx={{ margin: '1rem' }} variant="contained">
               Primary
             </Button>
-            <Button
-              sx={{ margin: '1rem' }}
-              disabled={true}
-              variant="contained"
-            >
+            <Button sx={{ margin: '1rem' }} disabled={true} variant="contained">
               Primary
             </Button>
-            <Button
-              sx={{ margin: '1rem' }}
-              variant="outlined"
-            >
+            <Button sx={{ margin: '1rem' }} variant="outlined">
               Primary
             </Button>
-            <Button
-              sx={{ margin: '1rem' }}
-              disabled={true}
-              variant="outlined"
-            >
+            <Button sx={{ margin: '1rem' }} disabled={true} variant="outlined">
               Primary
             </Button>
           </Grid>
@@ -99,16 +85,14 @@ const Home = () => {
               sx={{ margin: '1rem' }}
               variant="contained"
               color="secondary"
-              onClick={() => console.log('token')}
-            >
+              onClick={() => console.log('token')}>
               Secondary
             </Button>
             <Button
               sx={{ margin: '1rem' }}
               disabled={true}
               variant="contained"
-              color="secondary"
-            >
+              color="secondary">
               Secondary
             </Button>
           </Grid>
@@ -116,16 +100,14 @@ const Home = () => {
             <Button
               sx={{ margin: '1rem' }}
               variant="contained"
-              color="tertiary"
-            >
+              color="tertiary">
               Tertiary
             </Button>
             <Button
               sx={{ margin: '1rem' }}
               disabled={true}
               variant="contained"
-              color="tertiary"
-            >
+              color="tertiary">
               Tertiary
             </Button>
           </Grid>
@@ -138,11 +120,11 @@ const Home = () => {
     },
     {
       title: '⚡️ Data Grid',
-      children: <DataGrid />
+      children: <DataGrid />,
     },
     {
       title: '🧩 TableV2',
-      children: <TableV2 />
+      children: <TableV2 />,
     },
     {
       title: '🔍 Input',
@@ -151,11 +133,10 @@ const Home = () => {
           sx={{
             backgroundColor: PRIMARY_0,
             padding: '1rem',
-            borderRadius: '0.5rem'
+            borderRadius: '0.5rem',
           }}
           container
-          spacing={2}
-        >
+          spacing={2}>
           <Grid item xs={12}>
             <TextInputAutocomplete
               value={searchValue}
@@ -171,7 +152,7 @@ const Home = () => {
               disabled
             />
             <TextInputBase
-              leftIcon={<LockOutlinedIcon />}
+              leftIcon={<LockOutlined />}
               rightIcon={<Search />}
               onRightIconClick={handleClickShowPassword}
               sx={{ marginTop: '1rem' }}
@@ -180,7 +161,7 @@ const Home = () => {
               placeholder={MOCK_PLACEHOLDERS.SEARCH}
             />
             <InputPassword
-              leftIcon={<LockOutlinedIcon />}
+              leftIcon={<LockOutlined />}
               value={passwordValue}
               setValue={setPasswordValue}
               label={MOCK_PLACEHOLDERS.PASSWORD_LABEL}

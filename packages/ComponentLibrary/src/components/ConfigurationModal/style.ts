@@ -1,12 +1,26 @@
 import { CSSProperties } from 'react';
 
+const NEUTRAL_10 = '#F5F6FA';
+const NEUTRAL_0 = '#FCFCFD';
+const TRANSPARENT_NEUTRAL_5 = '#00030D1A';
+const PRIMARY_CONTRAST = '#F5F8FF';
+
+export const menuSyle = { paddingY: 0 };
+export const COLUMN_SPACING = '0.75rem';
+export const NEUTRAL_30 = '#B1B8D8';
+export const FIRST_MARGIN_TOP = '0.75rem';
+export const BORDER_SELECT_1 = '1px solid ';
+export const BORDER_SELECT_2 = '2px solid ';
+export const DYNAMIC_COLOR_MAIN = '#004ACA';
+export const NEUTRAL_90 = '#1D223A';
+
 export const styles: { [key: string]: CSSProperties } = {
   titleModalContainer: {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    background: '#FCFCFD',
+    background: NEUTRAL_0,
     padding: '0.75rem',
   },
   titleModalImageContainer: {
@@ -20,7 +34,7 @@ export const styles: { [key: string]: CSSProperties } = {
     alignItems: 'center',
     justifyContent: 'center',
     display: 'flex',
-    background: '#F5F8FF',
+    background: PRIMARY_CONTRAST,
     borderRadius: '2rem',
     marginRight: '0.25rem',
   },
@@ -38,22 +52,16 @@ export const styles: { [key: string]: CSSProperties } = {
     fontSize: '0.875rem',
     fontWeight: '500',
     lineHeight: '1.063rem',
-    color: '#004ACA',
+    color: DYNAMIC_COLOR_MAIN,
     textDecoration: 'none',
   },
   imgContainer: {
     borderRadius: '0.75rem',
-    width: '112px',
-    height: '72px',
+    width: '7rem',
+    height: '4.5rem',
     cursor: 'pointer',
     overflow: 'hidden',
-    transition: 'border-color 0.3s ease-in-out',
-  },
-  imgWrapper: {
-    height: '74px',
-    alignItems: 'center',
-    justifyContent: 'center',
-    display: 'flex',
+    transition: 'border-color 0.25s ease',
   },
   img: { width: '100%', height: '100%' },
   title: {
@@ -84,21 +92,13 @@ export const styles: { [key: string]: CSSProperties } = {
     padding: '0.75rem 1rem',
   },
   gridSectionContainer: {
-    border: '1px solid #00030D1A',
-    background: '#FCFCFD',
+    border: `1px solid ${TRANSPARENT_NEUTRAL_5}`,
+    background: NEUTRAL_0,
     padding: '0.75rem 1rem 0.75rem 1rem',
     borderRadius: '0.75rem',
   },
-  paperStyleMenu: { background: '#F5F6FA', borderRadius: '0.75rem' },
+  paperStyleMenu: { background: NEUTRAL_10, borderRadius: '0.75rem' },
   listContainer: {
     padding: '0.75rem',
   },
 };
-
-export const menuSyle = { paddingY: 0 };
-export const COLUMN_SPACING = '0.75rem';
-export const NEUTRAL_30 = '#B1B8D8';
-export const DYNAMIC_COLOR_MAIN = '#004ACA';
-export const FIRST_MARGIN_TOP = '0.75rem';
-export const BORDER_SELECT_1 = '1px solid ';
-export const BORDER_SELECT_2 = '2px solid ';
