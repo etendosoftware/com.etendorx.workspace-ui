@@ -27,6 +27,12 @@ import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/
 import { MOCK_AUTO_COMPLETE_TEXTS, MOCK_PLACEHOLDERS } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
 
 const Home = () => {
+  const [isActive, setIsActive] = useState(false);
+
+  const handleToggle = () => {
+    setIsActive(prevState => !prevState);
+   };
+    
   const [micValue, setMicValue] = useState<string>('');
   const [searchValue, setSearchValue] = useState<string>('');
   const [disabledValue, setDisabledValue] = useState<string>('');
@@ -211,7 +217,7 @@ const Home = () => {
     },
     {
       title: 'Toggle Chip',
-      children: <Chip />,
+      children: <Chip isActive={isActive} onToggle={handleToggle} />,
     },
     {
       title: 'Dnd Modal',
