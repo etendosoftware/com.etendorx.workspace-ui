@@ -11,7 +11,9 @@ import {
   Button,
   Grid,
   TextInputBase,
-  InputPassword
+  InputPassword,
+  SearchInputWithVoice,
+  Box
 } from '@workspaceui/componentlibrary/src/components';
 import List from '@mui/material/List';
 import { Search } from '@mui/icons-material';
@@ -25,11 +27,16 @@ import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/
 import { MOCK_AUTO_COMPLETE_TEXTS, MOCK_PLACEHOLDERS } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
 
 const Home = () => {
+  const [micValue, setMicValue] = useState<string>('');
   const [searchValue, setSearchValue] = useState<string>('');
   const [disabledValue, setDisabledValue] = useState<string>('');
   const [passwordValue, setPasswordValue] = useState<string>('');
   const [inputBaseValue, setInputBaseValue] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
+
+  const handleVoiceClick = () => {
+    console.log('Voice button clicked');
+  };
 
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
@@ -167,6 +174,14 @@ const Home = () => {
               label={MOCK_PLACEHOLDERS.PASSWORD_LABEL}
               sx={{ marginTop: '1rem' }}
             />
+            <Box sx={{ marginTop: '1rem' }}>
+              <SearchInputWithVoice
+                value={micValue}
+                setValue={setMicValue}
+                placeholder={MOCK_PLACEHOLDERS.SEARCH}
+                onVoiceClick={handleVoiceClick}
+              />
+            </Box>
           </Grid>
         </Grid>
       ),
