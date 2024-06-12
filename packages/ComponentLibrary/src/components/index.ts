@@ -8,6 +8,7 @@ import ModalCustom from './Modal';
 import ApplyHOC from '../utils/applyHOC';
 import TextInputMUI from './Input/TextInput/TextInputAutocomplete';
 import TextInputBaseMUI from './Input/TextInput/TextInputBase';
+import InputPasswordMUI from './Input/TextInput/TextInputBase/InputPassword';
 
 // ApplyHOC is a higher order component that applies the theme to the component
 const Button = ApplyHOC(ButtonMUI);
@@ -20,5 +21,6 @@ const Tab = ApplyHOC(TabCustom);
 const TableV2 = ApplyHOC(TableV2Custom);
 const TextInput = ApplyHOC(TextInputMUI);
 const TextInputBase = ApplyHOC(TextInputBaseMUI);
+const InputPassword = ApplyHOC(InputPasswordMUI);
 
-export { Button, Grid, TextField, DataGrid, Tab, Table, TableV2, Modal, TextInput, TextInputBase };
+export { Button, Grid, TextField, DataGrid, Tab, Table, TableV2, Modal, TextInput, TextInputBase, InputPassword };
