@@ -8,6 +8,7 @@ import {
   DragModal,
   Navbar,
   Profile,
+  Waterfall,
 } from '@workspaceui/componentlibrary/src/components';
 import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import {
@@ -111,6 +112,10 @@ const Home = () => {
     {
       title: 'Profile Modal',
       children: <Profile />,
+    },
+    {
+      title: 'Waterfall Modal',
+      children: <Waterfall />,
     },
   ];
 
