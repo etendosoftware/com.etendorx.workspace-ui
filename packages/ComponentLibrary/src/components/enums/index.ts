@@ -10,4 +10,12 @@ enum Position {
     Right = 'right'
 }
 
-export { Container, Position }
+enum Item {
+    Rol = 'Rol',
+    Cliente = 'Cliente',
+    Organización = 'Organización',
+    Almacén = 'Almacén',
+    Lenguaje = 'Lenguaje'
+  }
+
+export { Container, Position, Item }
