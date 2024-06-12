@@ -1,5 +1,10 @@
 // src/components/index.ts
-import { Button as ButtonMUI, Grid as GridMUI, TextField as TextFieldMUI, Box as BoxMUI } from './MUI';
+import {
+  Button as ButtonMUI,
+  Grid as GridMUI,
+  TextField as TextFieldMUI,
+  Box as BoxMUI,
+} from './MUI';
 import DataGridCustom from './DataGrid';
 import TabCustom from './Tab';
 import TableCustom from './Table';
@@ -14,6 +19,7 @@ import ToggleChip from './Toggle/ToggleChip';
 import DndModal from './DragModal/DragModal';
 import Nav from './Nav/Nav';
 import ProfileModal from './ProfileModal/ProfileModal';
+import ConfigurationModalCustom from './ConfigurationModal';
 
 // ApplyHOC is a higher order component that applies the theme to the component
 const Button = ApplyHOC(ButtonMUI);
@@ -33,23 +39,25 @@ const Chip = ApplyHOC(ToggleChip);
 const DragModal = ApplyHOC(DndModal);
 const Navbar = ApplyHOC(Nav);
 const Profile = ApplyHOC(ProfileModal);
+const ConfigurationModal = ApplyHOC(ConfigurationModalCustom);
 
 export {
-    Button,
-    Grid,
-    Box,
-    TextField,
-    DataGrid,
-    Tab,
-    Table,
-    TableV2,
-    Modal,
-    TextInput,
-    TextInputBase,
-    InputPassword,
-    SearchInputWithVoice,
-    Chip,
-    DragModal,
-    Navbar,
-    Profile
+  Button,
+  Grid,
+  Box,
+  TextField,
+  DataGrid,
+  Tab,
+  Table,
+  TableV2,
+  Modal,
+  TextInput,
+  TextInputBase,
+  InputPassword,
+  SearchInputWithVoice,
+  Chip,
+  DragModal,
+  Navbar,
+  Profile,
+  ConfigurationModal,
 };

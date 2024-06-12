@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Capa_1" data-name="Capa 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 112 72">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #efeff1;
+      }
+
+      .cls-1, .cls-2, .cls-3, .cls-4, .cls-5 {
+        stroke-width: 0px;
+      }
+
+      .cls-2 {
+        fill: #fcfcfd;
+        filter: url(#drop-shadow-5);
+      }
+
+      .cls-3 {
+        opacity: .5;
+      }
+
+      .cls-3, .cls-4 {
+        fill: #d3d7e9;
+      }
+
+      .cls-5 {
+        fill: #e3e3e5;
+      }
+    </style>
+    <filter id="drop-shadow-5" filterUnits="userSpaceOnUse">
+      <feOffset dx="4" dy="4"/>
+      <feGaussianBlur result="blur" stdDeviation="4"/>
+      <feFlood flood-color="#000" flood-opacity=".1"/>
+      <feComposite in2="blur" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <rect class="cls-1" width="112" height="72"/>
+  <path class="cls-2" d="M91,18H0v24h91c6.63,0,12-5.37,12-12s-5.37-12-12-12Z"/>
+  <path class="cls-3" d="M3.14,24C1.99,24,.91,24.33,0,24.89v10.21c.91.56,1.99.89,3.14.89,3.31,0,6-2.69,6-6s-2.69-6-6-6Z"/>
+  <rect class="cls-5" x="15.29" y="24" width=".5" height="12"/>
+  <g>
+    <path class="cls-4" d="M26.02,27h29.98c1.66,0,3,1.34,3,3h0c0,1.66-1.34,3-3,3h-29.98c-1.66,0-3-1.34-3-3h0c0-1.66,1.34-3,3-3Z"/>
+    <path class="cls-4" d="M66,27h27c1.66,0,3,1.34,3,3h0c0,1.66-1.34,3-3,3h-27c-1.66,0-3-1.34-3-3h0c0-1.66,1.34-3,3-3Z"/>
+  </g>
+</svg>
