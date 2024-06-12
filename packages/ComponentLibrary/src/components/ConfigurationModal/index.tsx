@@ -1,6 +1,8 @@
 import { Grid, Link, Menu } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import {
+  BORDER_SELECT_1,
+  BORDER_SELECT_2,
   COLUMN_SPACING,
   DYNAMIC_COLOR_MAIN,
   FIRST_MARGIN_TOP,
@@ -12,6 +14,7 @@ import IconButton from '../IconButton';
 import { IConfigurationModalProps, ISection } from './types';
 import { ALT } from './constants';
 import checkIcon from '../../assets/icons/check-circle-filled.svg';
+import './stlye.css';
 
 const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
   icon,
@@ -62,8 +65,8 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
 
   const addBorder = (selectedImageIndex: number, imageIndex: number) => {
     return isSelected(selectedImageIndex, imageIndex)
-      ? '2px solid ' + DYNAMIC_COLOR_MAIN
-      : '1px solid ' + NEUTRAL_30;
+      ? BORDER_SELECT_2 + DYNAMIC_COLOR_MAIN
+      : BORDER_SELECT_1 + NEUTRAL_30;
   };
 
   const isSelected = (
@@ -132,7 +135,10 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
                     </div>
                     <div style={styles.labelIconContainer}>
                       {isSelected(section.selectedItem, imageIndex) && (
-                        <img style={styles.labelIcon} src={checkIcon}></img>
+                        <img
+                          className="fade-in-left"
+                          style={styles.labelIcon}
+                          src={checkIcon}></img>
                       )}
                       <div style={styles.label}>{label}</div>
                     </div>

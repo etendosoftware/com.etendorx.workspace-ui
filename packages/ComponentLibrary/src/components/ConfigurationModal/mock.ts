@@ -1,4 +1,4 @@
-import image from '../../assets/images/ConfigurationModal/theme-light.svg'
+import image from '../../assets/images/ConfigurationModal/theme-light.svg';
 import image1 from '../../assets/images/ConfigurationModal/theme-dark.svg';
 import image2 from '../../assets/images/ConfigurationModal/theme-automatic.svg';
 

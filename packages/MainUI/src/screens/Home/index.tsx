@@ -121,7 +121,7 @@ const Home = () => {
         <ConfigurationModal
           icon={logo}
           title={{ icon: logo, label: 'Apariencia' }}
-          linkTitle={{label:'Ver todos los ajustes', url:'/settings'}}
+          linkTitle={{ label: 'Ver todos los ajustes', url: '/settings' }}
           sections={sectionsModal}
           onChangeSelect={console.log}
         />

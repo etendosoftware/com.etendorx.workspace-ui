@@ -47,7 +47,7 @@ export const styles: { [key: string]: CSSProperties } = {
     height: '72px',
     cursor: 'pointer',
     overflow: 'hidden',
-    transition: 'border-color 0.1s ease-in-out',
+    transition: 'border-color 0.3s ease-in-out',
   },
   imgWrapper: {
     height: '74px',
@@ -97,7 +97,8 @@ export const styles: { [key: string]: CSSProperties } = {
 
 export const menuSyle = { paddingY: 0 };
 export const COLUMN_SPACING = '0.75rem';
-
 export const NEUTRAL_30 = '#B1B8D8';
 export const DYNAMIC_COLOR_MAIN = '#004ACA';
 export const FIRST_MARGIN_TOP = '0.75rem';
+export const BORDER_SELECT_1 = '1px solid ';
+export const BORDER_SELECT_2 = '2px solid ';
