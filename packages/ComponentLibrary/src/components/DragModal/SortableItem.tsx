@@ -4,29 +4,21 @@ import MenuItem from '@mui/material/MenuItem';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import ToggleChip from '../Toggle/ToggleChip';
-<<<<<<< Updated upstream
-import {
-=======
 import { DragIndicator } from '@mui/icons-material';
 import {
   itemsContainer,
   leftContainer,
->>>>>>> Stashed changes
   listStyles,
   menuItemStyles,
   personLabelStyles,
 } from './DragModal.styles';
 import { SortableItemProps } from './DragModal.types';
 
-<<<<<<< Updated upstream
-const SortableItem: React.FC<SortableItemProps> = ({ id, person }) => {
-=======
 const SortableItem: React.FC<SortableItemProps> = ({
   id,
   person,
   onToggle,
 }) => {
->>>>>>> Stashed changes
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id });
 
@@ -38,11 +30,6 @@ const SortableItem: React.FC<SortableItemProps> = ({
 
   return (
     <List style={listStyles}>
-<<<<<<< Updated upstream
-      <MenuItem ref={setNodeRef} style={style} {...attributes} {...listeners}>
-        <span style={personLabelStyles}>{person.label}</span>
-        <ToggleChip />
-=======
       <MenuItem
         ref={setNodeRef}
         style={style}
@@ -69,7 +56,6 @@ const SortableItem: React.FC<SortableItemProps> = ({
           </div>
           <ToggleChip isActive={person.isActive} onToggle={onToggle} />
         </div>
->>>>>>> Stashed changes
       </MenuItem>
     </List>
   );
