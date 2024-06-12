@@ -19,6 +19,7 @@ import ToggleChip from './Toggle/ToggleChip';
 import DndModal from './DragModal/DragModal';
 import Nav from './Nav/Nav';
 import ProfileModal from './ProfileModal/ProfileModal';
+import WaterfallModal from './Waterfall/WaterfallModal';
 import ConfigurationModalCustom from './ConfigurationModal';
 
 // ApplyHOC is a higher order component that applies the theme to the component
@@ -39,6 +40,7 @@ const Chip = ApplyHOC(ToggleChip);
 const DragModal = ApplyHOC(DndModal);
 const Navbar = ApplyHOC(Nav);
 const Profile = ApplyHOC(ProfileModal);
+const Waterfall = ApplyHOC(WaterfallModal);
 const ConfigurationModal = ApplyHOC(ConfigurationModalCustom);
 
 export {
@@ -59,5 +61,6 @@ export {
   DragModal,
   Navbar,
   Profile,
+  Waterfall,
   ConfigurationModal,
 };
