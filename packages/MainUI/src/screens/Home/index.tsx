@@ -86,7 +86,18 @@ const Home = () => {
         <Modal height={300} width={400}>
           <List>
             {MENU_ITEMS.map(item => (
-              <MenuItem key={item.key}>{item.label}</MenuItem>
+              <MenuItem
+                key={item.key}
+                sx={{
+                  '&:hover': {
+                    color: '#242D93',
+                  },
+                  display: 'flex',
+                  alignItems: 'center',
+                }}>
+                <span style={{ marginRight: '0.5rem' }}>{item.emoji}</span>
+                <span>{item.label}</span>
+              </MenuItem>
             ))}
           </List>
         </Modal>
