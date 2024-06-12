@@ -1,6 +1,6 @@
 // styles.ts
 import { Theme } from '@mui/material/styles';
-import { TERTIARY_900, SECONDARY_600, NEUTRAL_50, NEUTRAL_600 } from "../../colors";
+import { TERTIARY_900, SECONDARY_600, NEUTRAL_50, NEUTRAL_600, NEUTRAL_400 } from "../../colors";
 
 const switchStyles = (theme: Theme) => ({
   width: '2.5rem', 
@@ -27,7 +27,7 @@ const switchStyles = (theme: Theme) => ({
       border: `0.375rem solid ${NEUTRAL_50}`,
     },
     '&.Mui-disabled .MuiSwitch-thumb': {
-      color: theme.palette.mode === 'light'
+      color: theme.palette.mode === 'light' 
         ? theme.palette.grey[100]
         : theme.palette.grey[600],
     },
@@ -42,7 +42,7 @@ const switchStyles = (theme: Theme) => ({
   },
   '& .MuiSwitch-track': {
     borderRadius: '1.625rem',
-    backgroundColor: theme.palette.mode === 'light' ? NEUTRAL_50 : NEUTRAL_600,
+    backgroundColor: theme.palette.mode === 'light' ? NEUTRAL_400 : NEUTRAL_600,
     opacity: 1,
     transition: theme.transitions.create(['background-color'], {
       duration: 500,
