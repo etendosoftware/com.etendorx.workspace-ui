@@ -1,9 +1,9 @@
 // src/components/index.ts
 import {
-    Button as ButtonMUI,
-    Grid as GridMUI,
-    TextField as TextFieldMUI,
-    Box as BoxMUI,
+  Button as ButtonMUI,
+  Grid as GridMUI,
+  TextField as TextFieldMUI,
+  Box as BoxMUI,
 } from './MUI';
 import DataGridCustom from './DataGrid';
 import TabCustom from './Tab';
@@ -46,24 +46,24 @@ const ConfigurationModal = ApplyHOC(ConfigurationModalCustom);
 const Tag = ApplyHOC(TagMUI);
 
 export {
-    Button,
-    Grid,
-    Box,
-    TextField,
-    DataGrid,
-    Tab,
-    Table,
-    TableV2,
-    Modal,
-    TextInput,
-    TextInputBase,
-    InputPassword,
-    SearchInputWithVoice,
-    ToggleChip,
-    DragModal,
-    Navbar,
-    Profile,
-    Waterfall,
-    ConfigurationModal,
-    Tag,
+  Button,
+  Grid,
+  Box,
+  TextField,
+  DataGrid,
+  Tab,
+  Table,
+  TableV2,
+  Modal,
+  TextInput,
+  TextInputBase,
+  InputPassword,
+  SearchInputWithVoice,
+  ToggleChip,
+  DragModal,
+  Navbar,
+  Profile,
+  Waterfall,
+  ConfigurationModal,
+  Tag,
 };
