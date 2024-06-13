@@ -19,15 +19,13 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     },
   },
   iconStyles: {
-    width: '1.25rem',
-    height: '1.375rem',
+    width: '1.5rem',
+    height: '1.5rem',
     color: '#2E365C',
   },
   badgeStyles: {
     '.MuiBadge-badge': {
       fontSize: '0.75rem',
-      height: '1rem',
-      minWidth: '1rem',
     },
   },
 };
