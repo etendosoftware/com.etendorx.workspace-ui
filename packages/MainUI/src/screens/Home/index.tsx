@@ -14,7 +14,6 @@ import {
   ToggleChip,
 } from '@workspaceui/componentlibrary/src/components';
 import {
->>>>>>> develop
   Button,
   Grid,
   TextInputBase,
