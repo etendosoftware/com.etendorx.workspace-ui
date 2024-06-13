@@ -7,7 +7,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { TextInputProps } from './TextInputComplete.types';
 import { CSS_STYLES, SX_STYLES } from './TextInputAutocomplete.styles';
 import { DEFAULT_CONSTANTS } from './TextInputAutocomplete.constants';
-import { PRIMARY_950, PRIMARY_1000, NEUTRAL_850, START_750, TERTIARY_150, NEUTRAL_50 } from '../../../../colors';
+import { PRIMARY_950, PRIMARY_1000, NEUTRAL_850, PRIMARY_MAIN, TERTIARY_150, NEUTRAL_50 } from '../../../../colors';
 import SuggestionBox from './SuggestionBox';
 
 const TextInputAutoComplete = (props: TextInputProps) => {
@@ -105,7 +105,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
           leftIcon ? (
             <IconButton onClick={onLeftIconClick}>{leftIcon}</IconButton>
           ) : (
-            <SearchIcon sx={{ color: !props.disabled ? isFocused && value.length === 0 ? START_750 : NEUTRAL_850 : NEUTRAL_850 }} />
+            <SearchIcon sx={{ color: !props.disabled ? isFocused && value.length === 0 ? PRIMARY_MAIN : NEUTRAL_850 : NEUTRAL_850 }} />
           )
         )}
       </Box>
@@ -152,7 +152,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
         borderWidth: !isFocused ? 0 : undefined,
       },
       '&.Mui-focused fieldset': {
-        borderColor: START_750,
+        borderColor: PRIMARY_MAIN,
       },
       '&.Mui-focused': {
         backgroundColor: value ? NEUTRAL_50 : TERTIARY_150,
