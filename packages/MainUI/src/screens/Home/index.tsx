@@ -10,8 +10,7 @@ import {
   Profile,
   Waterfall,
   ConfigurationModal,
-} from '@workspaceui/componentlibrary/src/components';
-import {
+  NotificationBase,
   Button,
   Grid,
   TextInputBase,
@@ -33,8 +32,12 @@ import {
   MOCK_AUTO_COMPLETE_TEXTS,
   MOCK_PLACEHOLDERS,
 } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
+import { NOTIFICATIONS } from '@workspaceui/componentlibrary/src/components/NotificationsButton/mock';
 
 const Home = () => {
+  const handleOpenModal = () => {
+    console.log('Abrir menú de notificaciones');
+  };
   const [isActive, setIsActive] = useState(false);
 
   const handleToggle = () => {
@@ -232,6 +235,15 @@ const Home = () => {
           linkTitle={{ label: 'Ver todos los ajustes', url: '/settings' }}
           sections={sectionsModal}
           onChangeSelect={console.log}
+        />
+      ),
+    },
+    {
+      title: 'Notification Button',
+      children: (
+        <NotificationBase
+          onClick={handleOpenModal}
+          notifications={NOTIFICATIONS}
         />
       ),
     },
