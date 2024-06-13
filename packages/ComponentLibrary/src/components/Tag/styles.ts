@@ -32,20 +32,6 @@ export const getTextColor = (type: TagType): string => {
   }
 };
 
-export const getIconColor = (type: TagType): string => {
-  switch (type) {
-    case 'primary':
-    case 'success':
-    case 'error':
-      return PRIMARY_CONTRAST;
-    case 'warning':
-    case 'draft':
-      return NEUTRAL_100;
-    default:
-      return PRIMARY_CONTRAST;
-  }
-};
-
 export const chipStyles = (type: TagType) => ({
   backgroundColor: getColor(type),
   color: getTextColor(type),
