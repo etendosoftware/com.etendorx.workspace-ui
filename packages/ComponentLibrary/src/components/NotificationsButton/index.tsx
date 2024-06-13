@@ -7,26 +7,28 @@ import {
   MenuItem,
   Tooltip,
 } from '@mui/material';
-import { NOTIFICATIONS } from './mock';
 import { NotificationsOutlined } from '@mui/icons-material';
 import { styles, sx } from './styles';
 import { NotificationButtonProps } from './types';
 
 const NotificationButton: React.FC<NotificationButtonProps> = ({
   notifications,
-  onClick,
+  ...iconButtonProps
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
+    if (iconButtonProps.onClick) {
+      iconButtonProps.onClick(event);
+    }
   };
 
   const handleClose = () => {
     setAnchorEl(null);
   };
 
-  const notificationCount = NOTIFICATIONS.length;
+  const notificationCount: number = notifications?.length ?? 0;
 
   return (
     <>
@@ -45,7 +47,7 @@ const NotificationButton: React.FC<NotificationButtonProps> = ({
       </Tooltip>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
         <List>
-          {notifications.map(notification => (
+          {notifications?.map(notification => (
             <MenuItem key={notification.id} onClick={handleClose}>
               {notification.message}
             </MenuItem>

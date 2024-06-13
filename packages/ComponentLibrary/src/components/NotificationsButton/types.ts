@@ -1,9 +1,10 @@
+import { IconButtonProps } from '@mui/material';
+
 export interface Inotifications {
   id: string;
   message: string;
 }
 
-export interface NotificationButtonProps {
-  onClick: () => void;
+export interface NotificationButtonProps extends IconButtonProps {
   notifications?: Inotifications[];
 }

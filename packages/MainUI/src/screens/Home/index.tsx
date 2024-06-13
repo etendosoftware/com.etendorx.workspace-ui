@@ -22,7 +22,13 @@ import {
   Box,
 } from '@workspaceui/componentlibrary/src/components';
 import List from '@mui/material/List';
-import { CheckOutlined, Error, InfoOutlined, LockOutlined, Search } from '@mui/icons-material';
+import {
+  CheckOutlined,
+  Error,
+  InfoOutlined,
+  LockOutlined,
+  Search,
+} from '@mui/icons-material';
 import MenuItem from '@mui/material/MenuItem';
 import logo from '../../assets/react.svg';
 import { sectionsModal } from '../../../../ComponentLibrary/src/components/ConfigurationModal/mock';
@@ -35,7 +41,10 @@ import {
   MOCK_AUTO_COMPLETE_TEXTS,
   MOCK_PLACEHOLDERS,
 } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
-import { NOTIFICATIONS } from '@workspaceui/componentlibrary/src/components/NotificationsButton/mock';
+import {
+  NOTIFICATIONS,
+  NOTIFICATIONS_FULL,
+} from '@workspaceui/componentlibrary/src/components/NotificationsButton/mock';
 
 const Home = () => {
   const handleOpenModal = () => {
@@ -244,10 +253,16 @@ const Home = () => {
     {
       title: 'Notification Button',
       children: (
-        <NotificationBase
-          onClick={handleOpenModal}
-          notifications={NOTIFICATIONS}
-        />
+        <>
+          <NotificationBase
+            onClick={handleOpenModal}
+            notifications={NOTIFICATIONS}
+          />
+          <NotificationBase
+            onClick={handleOpenModal}
+            notifications={NOTIFICATIONS_FULL}
+          />
+        </>
       ),
     },
     {
@@ -261,7 +276,11 @@ const Home = () => {
             <Tag type="primary" label="Registrado" />
           </Grid>
           <Grid item>
-            <Tag type="warning" icon={<CheckOutlined />} label="Período Cerrado" />
+            <Tag
+              type="warning"
+              icon={<CheckOutlined />}
+              label="Período Cerrado"
+            />
           </Grid>
           <Grid item>
             <Tag type="error" icon={<Error />} label="Anulado" />
