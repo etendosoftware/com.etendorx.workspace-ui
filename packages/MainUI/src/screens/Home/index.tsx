@@ -4,13 +4,17 @@ import {
   Table,
   TableV2,
   Tab,
-  Chip,
+  Tag,
   DragModal,
   Navbar,
   Profile,
   Waterfall,
   ConfigurationModal,
   NotificationBase,
+  ToggleChip,
+} from '@workspaceui/componentlibrary/src/components';
+import {
+>>>>>>> develop
   Button,
   Grid,
   TextInputBase,
@@ -19,7 +23,7 @@ import {
   Box,
 } from '@workspaceui/componentlibrary/src/components';
 import List from '@mui/material/List';
-import { LockOutlined, Search } from '@mui/icons-material';
+import { CheckOutlined, Error, InfoOutlined, LockOutlined, Search } from '@mui/icons-material';
 import MenuItem from '@mui/material/MenuItem';
 import logo from '../../assets/react.svg';
 import { sectionsModal } from '../../../../ComponentLibrary/src/components/ConfigurationModal/mock';
@@ -208,7 +212,7 @@ const Home = () => {
     },
     {
       title: 'Toggle Chip',
-      children: <Chip isActive={isActive} onToggle={handleToggle} />,
+      children: <ToggleChip isActive={isActive} onToggle={handleToggle} />,
     },
     {
       title: 'Dnd Modal',
@@ -245,6 +249,28 @@ const Home = () => {
           onClick={handleOpenModal}
           notifications={NOTIFICATIONS}
         />
+      ),
+    },
+    {
+      title: 'Tag Variants',
+      children: (
+        <Grid container spacing={2}>
+          <Grid item>
+            <Tag type="success" icon={<InfoOutlined />} label="Registrado" />
+          </Grid>
+          <Grid item>
+            <Tag type="primary" label="Registrado" />
+          </Grid>
+          <Grid item>
+            <Tag type="warning" icon={<CheckOutlined />} label="Período Cerrado" />
+          </Grid>
+          <Grid item>
+            <Tag type="error" icon={<Error />} label="Anulado" />
+          </Grid>
+          <Grid item>
+            <Tag type="draft" label="En Borrador" />
+          </Grid>
+        </Grid>
       ),
     },
   ];

@@ -15,13 +15,14 @@ import TextInputMUI from './Input/TextInput/TextInputAutocomplete';
 import SearchInputWithVoiceMUI from './Input/TextInput/TextInputAutocomplete/SearchInputWithVoice';
 import TextInputBaseMUI from './Input/TextInput/TextInputBase';
 import InputPasswordMUI from './Input/TextInput/TextInputBase/InputPassword';
-import ToggleChip from './Toggle/ToggleChip';
+import ToggleChipMUI from './Toggle/ToggleChip';
 import DndModal from './DragModal/DragModal';
 import Nav from './Nav/Nav';
 import ProfileModal from './ProfileModal/ProfileModal';
 import WaterfallModal from './Waterfall/WaterfallModal';
 import ConfigurationModalCustom from './ConfigurationModal';
 import NotificationButton from './NotificationsButton';
+import TagMUI from './Tag';
 
 // ApplyHOC is a higher order component that applies the theme to the component
 const Button = ApplyHOC(ButtonMUI);
@@ -37,13 +38,14 @@ const TextInput = ApplyHOC(TextInputMUI);
 const TextInputBase = ApplyHOC(TextInputBaseMUI);
 const InputPassword = ApplyHOC(InputPasswordMUI);
 const SearchInputWithVoice = ApplyHOC(SearchInputWithVoiceMUI);
-const Chip = ApplyHOC(ToggleChip);
+const ToggleChip = ApplyHOC(ToggleChipMUI);
 const DragModal = ApplyHOC(DndModal);
 const Navbar = ApplyHOC(Nav);
 const Profile = ApplyHOC(ProfileModal);
 const Waterfall = ApplyHOC(WaterfallModal);
 const ConfigurationModal = ApplyHOC(ConfigurationModalCustom);
 const NotificationBase = ApplyHOC(NotificationButton);
+const Tag = ApplyHOC(TagMUI);
 
 export {
   Button,
@@ -59,11 +61,12 @@ export {
   TextInputBase,
   InputPassword,
   SearchInputWithVoice,
-  Chip,
+  ToggleChip,
   DragModal,
   Navbar,
   Profile,
   Waterfall,
   ConfigurationModal,
   NotificationBase,
+  Tag,
 };
