@@ -1,6 +1,6 @@
 import React from 'react';
 import { Chip as MuiChip } from '@mui/material';
-import { chipStyles, chipLabelStyles, getTextColor } from './styles';
+import { chipStyles, chipLabelStyles, getColoredIcon } from './styles';
 import { TagProps } from './types';
 
 const Tag: React.FC<TagProps> = ({
@@ -9,9 +9,7 @@ const Tag: React.FC<TagProps> = ({
   icon,
   onClick,
 }) => {
-  const coloredIcon = icon && React.cloneElement(icon, {
-    style: { ...icon.props.style, color: getTextColor(type), width: '1rem', height: '1rem', margin: '0', padding: '0' }
-  });
+  const coloredIcon = icon && getColoredIcon(icon, type);
 
   return (
     <MuiChip

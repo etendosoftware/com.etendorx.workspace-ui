@@ -1,3 +1,4 @@
+import React from 'react';
 import { ERROR_MAIN, WARNING_MAIN, PRIMARY_MAIN, SUCCESS_MAIN, DRAFT_MAIN, PRIMARY_CONTRAST, NEUTRAL_100 } from '../../colors';
 import { TagType } from './types';
 
@@ -31,6 +32,20 @@ export const getTextColor = (type: TagType): string => {
       return PRIMARY_CONTRAST;
   }
 };
+
+export const getColoredIcon = (icon: React.ReactElement, type: TagType): React.ReactElement => {
+  return React.cloneElement(icon, {
+    style: { ...icon.props.style, ...getColoredIconStyle(type) }
+  });
+};
+
+export const getColoredIconStyle = (type: TagType) => ({
+  color: getTextColor(type),
+  width: '1rem',
+  height: '1rem',
+  margin: '0',
+  padding: '0'
+});
 
 export const chipStyles = (type: TagType) => ({
   backgroundColor: getColor(type),
