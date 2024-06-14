@@ -47,9 +47,6 @@ import {
 } from '@workspaceui/componentlibrary/src/components/NotificationsButton/mock';
 
 const Home = () => {
-  const handleOpenModal = () => {
-    console.log('Abrir menú de notificaciones');
-  };
   const [isActive, setIsActive] = useState(false);
 
   const handleToggle = () => {
@@ -254,14 +251,8 @@ const Home = () => {
       title: 'Notification Button',
       children: (
         <>
-          <NotificationBase
-            onClick={handleOpenModal}
-            notifications={NOTIFICATIONS}
-          />
-          <NotificationBase
-            onClick={handleOpenModal}
-            notifications={NOTIFICATIONS_FULL}
-          />
+          <NotificationBase notifications={NOTIFICATIONS} />
+          <NotificationBase notifications={NOTIFICATIONS_FULL} />
         </>
       ),
     },

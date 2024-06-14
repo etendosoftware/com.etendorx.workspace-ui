@@ -10,6 +10,7 @@ import {
 import { NotificationsOutlined } from '@mui/icons-material';
 import { styles, sx } from './styles';
 import { NotificationButtonProps } from './types';
+import { notificationMax } from './constants';
 
 const NotificationButton: React.FC<NotificationButtonProps> = ({
   notifications,
@@ -38,7 +39,11 @@ const NotificationButton: React.FC<NotificationButtonProps> = ({
           style={styles.iconButtonStyles}
           sx={sx.hoverStyles}>
           <Badge
-            badgeContent={notificationCount > 99 ? '99+' : notificationCount}
+            badgeContent={
+              notificationCount > notificationMax
+                ? notificationMax + '+'
+                : notificationCount
+            }
             color="error"
             sx={sx.badgeStyles}>
             <NotificationsOutlined sx={sx.iconStyles} />
