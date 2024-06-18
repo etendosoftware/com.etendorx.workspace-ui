@@ -12,8 +12,7 @@ import {
   ConfigurationModal,
   NotificationBase,
   ToggleChip,
-} from '@workspaceui/componentlibrary/src/components';
-import {
+  NotificationModal,
   Button,
   Grid,
   TextInputBase,
@@ -45,6 +44,7 @@ import {
   NOTIFICATIONS,
   NOTIFICATIONS_FULL,
 } from '@workspaceui/componentlibrary/src/components/NotificationsButton/mock';
+import image from '../../../../ComponentLibrary/src/assets/images/NotificationModal/empty-state-notifications.svg';
 
 const Home = () => {
   const [isActive, setIsActive] = useState(false);
@@ -254,6 +254,29 @@ const Home = () => {
           <NotificationBase notifications={NOTIFICATIONS} />
           <NotificationBase notifications={NOTIFICATIONS_FULL} />
         </>
+      ),
+    },
+    {
+      title: 'Notification Modal',
+      children: (
+        <NotificationBase
+          notifications={[]}
+          renderMenuContent={(notifications, handleClose, anchorEl, open) => (
+            <NotificationModal
+              title={{ icon: logo, label: 'Notificaciones' }}
+              linkTitle={{ label: 'Marcar todas como leídas', url: '/home' }}
+              notifications={notifications}
+              handleClose={handleClose}
+              anchorEl={anchorEl}
+              open={open}
+              emptyStateImage={image}
+              emptyStateImageAlt="Sin Notificaciones"
+              emptyStateMessage="No tienes notificaciones"
+              emptyStateDescription="¡Genial! Estás al día con todo. Te notificaremos aquí si hay algo nuevo."
+              actionButtonLabel="Configurar notificaciones"
+            />
+          )}
+        />
       ),
     },
     {
