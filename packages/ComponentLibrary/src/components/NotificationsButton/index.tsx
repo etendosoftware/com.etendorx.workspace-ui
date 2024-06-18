@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
-import {
-  Badge,
-  IconButton,
-  List,
-  Menu,
-  MenuItem,
-  Tooltip,
-} from '@mui/material';
+import { Badge, IconButton, Tooltip } from '@mui/material';
 import { NotificationsOutlined } from '@mui/icons-material';
-import { styles, sx } from './styles';
-import { NotificationButtonProps } from './types';
+import { ExtendedNotificationButtonProps } from './types';
 import { notificationMax } from './constants';
+import { styles, sx } from './styles';
 
-const NotificationButton: React.FC<NotificationButtonProps> = ({
-  notifications,
+const NotificationButton: React.FC<ExtendedNotificationButtonProps> = ({
+  notifications = [],
+  icon = <NotificationsOutlined sx={sx.iconStyles} />,
+  tooltipTitle = 'Notificaciones',
+  renderMenuContent,
   ...iconButtonProps
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -29,13 +25,14 @@ const NotificationButton: React.FC<NotificationButtonProps> = ({
     setAnchorEl(null);
   };
 
-  const notificationCount: number = notifications?.length ?? 0;
+  const notificationCount: number = notifications.length;
 
   return (
     <>
-      <Tooltip title="Notificaciones" arrow>
+      <Tooltip title={tooltipTitle} arrow>
         <IconButton
           onClick={handleClick}
+          {...iconButtonProps}
           style={styles.iconButtonStyles}
           sx={sx.hoverStyles}>
           <Badge
@@ -46,19 +43,16 @@ const NotificationButton: React.FC<NotificationButtonProps> = ({
             }
             color="error"
             sx={sx.badgeStyles}>
-            <NotificationsOutlined sx={sx.iconStyles} />
+            {icon}
           </Badge>
         </IconButton>
       </Tooltip>
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
-        <List>
-          {notifications?.map(notification => (
-            <MenuItem key={notification.id} onClick={handleClose}>
-              {notification.message}
-            </MenuItem>
-          ))}
-        </List>
-      </Menu>
+      {renderMenuContent?.(
+        notifications,
+        handleClose,
+        anchorEl,
+        Boolean(anchorEl),
+      )}
     </>
   );
 };
