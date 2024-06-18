@@ -1,5 +1,12 @@
 import { CSSProperties } from 'react';
 
+const NEUTRAL_10 = '#F5F6FA';
+const NEUTRAL_0 = '#FCFCFD';
+
+export const PRIMARY_CONTRAST = '#F5F8FF';
+export const TRANSPARENT_NEUTRAL_5 = '#00030D1A';
+export const DYNAMIC_COLOR_MAIN = '#004ACA';
+export const NEUTRAL_90 = '#1D223A';
 export const menuSyle = { padding: 0 };
 
 export const styles: { [key: string]: CSSProperties } = {
@@ -11,8 +18,8 @@ export const styles: { [key: string]: CSSProperties } = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '0.75rem',
-    background: '#FCFCFD',
-    borderBottom: '1px solid #F5F6FA',
+    background: NEUTRAL_0,
+    borderBottom: `1px solid ${NEUTRAL_10}`,
   },
   titleModalImageContainer: {
     display: 'flex',
@@ -25,12 +32,12 @@ export const styles: { [key: string]: CSSProperties } = {
     alignItems: 'center',
     justifyContent: 'center',
     display: 'flex',
-    background: '#F5F8FF',
+    background: PRIMARY_CONTRAST,
     borderRadius: '2rem',
     marginRight: '0.25rem',
   },
   titleButton: {
-    color: '#004ACA',
+    color: DYNAMIC_COLOR_MAIN,
   },
   rigthContainer: { alignItems: 'center', display: 'flex' },
   titleModal: {
@@ -40,7 +47,7 @@ export const styles: { [key: string]: CSSProperties } = {
   listContainer: {},
   emptyState: {
     width: '28.75rem',
-    background: '#F5F6FA',
+    background: NEUTRAL_10,
     padding: '1.25rem',
     display: 'flex',
     flexDirection: 'column',
@@ -61,7 +68,7 @@ export const styles: { [key: string]: CSSProperties } = {
     padding: '0.5rem',
     fontSize: '1.375rem',
     fontWeight: '600',
-    color: '#2E365C',
+    color: NEUTRAL_90,
   },
   emptyText: {
     fontSize: '0.875rem',
@@ -69,10 +76,10 @@ export const styles: { [key: string]: CSSProperties } = {
     lineHeight: '1.25rem',
     paddingBottom: '0.5rem',
     textAlign: 'center',
-    color: '#00030DB2',
+    color: TRANSPARENT_NEUTRAL_5,
   },
   actionButton: {
-    border: '1px solid #00030D33',
+    border: `1px solid ${TRANSPARENT_NEUTRAL_5}`,
     borderRadius: '6.25rem',
     padding: '0.5rem 1rem',
   },
@@ -82,6 +89,6 @@ export const styles: { [key: string]: CSSProperties } = {
   },
   paperStyleMenu: {
     borderRadius: '0.75rem',
-    background: '#F5F6FA',
+    background: NEUTRAL_10,
   },
 };
