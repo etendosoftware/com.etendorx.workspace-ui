@@ -11,6 +11,7 @@ import {
   Waterfall,
   ConfigurationModal,
   ToggleChip,
+  SecondaryTabs,
 } from '@workspaceui/componentlibrary/src/components';
 import {
   Button,
@@ -34,6 +35,7 @@ import {
   MOCK_AUTO_COMPLETE_TEXTS,
   MOCK_PLACEHOLDERS,
 } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
+import { TABS_CONFIG } from '@workspaceui/componentlibrary/src/components/SecondaryTabs/constants/mock';
 
 const Home = () => {
   const [isActive, setIsActive] = useState(false);
@@ -258,6 +260,10 @@ const Home = () => {
         </Grid>
       ),
     },
+    {
+      title: 'Secondary Tabs',
+      children: <SecondaryTabs tabsConfig={TABS_CONFIG} />
+    }
   ];
 
   return (

@@ -22,6 +22,7 @@ import ProfileModal from './ProfileModal/ProfileModal';
 import WaterfallModal from './Waterfall/WaterfallModal';
 import ConfigurationModalCustom from './ConfigurationModal';
 import TagMUI from './Tag';
+import SecondaryTabsMUI from './SecondaryTabs';
 
 // ApplyHOC is a higher order component that applies the theme to the component
 const Button = ApplyHOC(ButtonMUI);
@@ -44,6 +45,7 @@ const Profile = ApplyHOC(ProfileModal);
 const Waterfall = ApplyHOC(WaterfallModal);
 const ConfigurationModal = ApplyHOC(ConfigurationModalCustom);
 const Tag = ApplyHOC(TagMUI);
+const SecondaryTabs = ApplyHOC(SecondaryTabsMUI);
 
 export {
   Button,
@@ -66,4 +68,5 @@ export {
   Waterfall,
   ConfigurationModal,
   Tag,
+  SecondaryTabs,
 };

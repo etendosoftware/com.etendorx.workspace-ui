@@ -48,6 +48,7 @@ export const NEUTRAL_5 = '#00030D0D';
 export const NEUTRAL_10 = '#00030D1A'
 export const NEUTRAL_20 = '#00030D33';
 export const NEUTRAL_50 = '#FAFAFA';
+export const NEUTRAL_90 = '#1D223A';
 export const NEUTRAL_80 = '#2E365C';
 export const NEUTRAL_100 = '#00030D';
 export const NEUTRAL_150 = '#F2F2F2';
@@ -110,3 +111,7 @@ export const PROCESS_900 = '#78320C';
 
 // Draft color
 export const DRAFT_MAIN = '#E5E5E6';
+
+// Dynamic color
+export const DYNAMIC_MAIN = '#004ACA';
+export const DYNAMIC_CONSTRAST = '#E5EFFF';
