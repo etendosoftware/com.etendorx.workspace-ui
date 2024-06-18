@@ -9,13 +9,7 @@ import {
   IconButton,
 } from '@mui/material';
 import { INotificationModalProps } from './types';
-import {
-  DYNAMIC_COLOR_MAIN,
-  PRIMARY_CONTRAST,
-  TRANSPARENT_NEUTRAL_5,
-  menuSyle,
-  styles,
-} from './styles';
+import { menuSyle, styles, sx } from './styles';
 import { MoreVert, Settings } from '@mui/icons-material';
 
 const NotificationModalCustom: React.FC<INotificationModalProps> = ({
@@ -62,13 +56,7 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
             </Link>
           )}
           <IconButton style={styles.titleModalImage}>
-            <MoreVert
-              sx={{
-                '&:hover': {
-                  color: TRANSPARENT_NEUTRAL_5,
-                },
-              }}
-            />
+            <MoreVert sx={sx.vertHover} />
           </IconButton>
         </div>
       </div>
@@ -90,15 +78,7 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
                 onClick={handleClose}
                 variant="contained"
                 startIcon={<Settings />}
-                sx={{
-                  background: PRIMARY_CONTRAST,
-                  color: TRANSPARENT_NEUTRAL_5,
-                  '&:hover': {
-                    border: 'none',
-                    background: DYNAMIC_COLOR_MAIN,
-                    color: PRIMARY_CONTRAST,
-                  },
-                }}>
+                sx={sx.actionButton}>
                 <div style={styles.actionButtonText}>{actionButtonLabel}</div>
               </Button>
             </div>
