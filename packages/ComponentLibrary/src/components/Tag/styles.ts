@@ -1,35 +1,37 @@
 import React from 'react';
-import { ERROR_MAIN, WARNING_MAIN, PRIMARY_MAIN, SUCCESS_MAIN, DRAFT_MAIN, PRIMARY_CONTRAST, NEUTRAL_100 } from '../../colors';
+import { useTheme } from '@mui/material/styles';
 import { TagType } from './types';
 
 export const getColor = (type: TagType): string => {
+  const theme = useTheme();
   switch (type) {
     case 'primary':
-      return PRIMARY_MAIN;
+      return theme.palette.baselineColor.etendoPrimary.main;
     case 'success':
-      return SUCCESS_MAIN;
+      return theme.palette.specificColor.success.main;
     case 'warning':
-      return WARNING_MAIN;
+      return theme.palette.specificColor.warning.main;
     case 'error':
-      return ERROR_MAIN;
+      return theme.palette.specificColor.error.main;
     case 'draft':
-      return DRAFT_MAIN;
+      return theme.palette.specificColor.draft.contrastText;
     default:
-      return PRIMARY_MAIN;
+      return theme.palette.baselineColor.etendoPrimary.main;
   }
 };
 
 export const getTextColor = (type: TagType): string => {
+  const theme = useTheme();
   switch (type) {
     case 'primary':
     case 'success':
     case 'error':
-      return PRIMARY_CONTRAST;
+      return theme.palette.baselineColor.etendoPrimary.contrastText;
     case 'warning':
     case 'draft':
-      return NEUTRAL_100;
+      return theme.palette.baselineColor.neutral[100];
     default:
-      return PRIMARY_CONTRAST;
+      return theme.palette.baselineColor.etendoPrimary.contrastText;
   }
 };
 
