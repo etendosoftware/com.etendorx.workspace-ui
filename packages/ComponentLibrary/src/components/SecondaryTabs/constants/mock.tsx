@@ -1,11 +1,13 @@
+import { TabConfig } from "../types";
 import { Typography } from "@mui/material";
 import { AttachMoneyOutlined, BarChartOutlined, LineStyleOutlined, LocalOfferOutlined, ReceiptOutlined, StackedBarChartOutlined } from "@mui/icons-material";
 
-export const TABS_CONFIG = [
+export const TABS_CONFIG: Array<TabConfig> = [
   {
     icon: <LineStyleOutlined />,
     label: "Líneas",
     numberOfItems: 20,
+    isLoading: true,
     onClick: () => console.log("Navigating to Líneas"),
     content: <Typography>Contenido de Líneas</Typography>,
   },
@@ -20,6 +22,7 @@ export const TABS_CONFIG = [
     icon: <StackedBarChartOutlined />,
     label: "Impuesto",
     numberOfItems: 2,
+    isLoading: true,
     onClick: () => console.log("Navigating to Impuesto"),
     content: <Typography>Contenido de Impuesto</Typography>,
   },
@@ -34,6 +37,7 @@ export const TABS_CONFIG = [
     icon: <ReceiptOutlined />,
     label: "Pedido de venta",
     numberOfItems: 12,
+    isLoading: true,
     onClick: () => console.log("Navigating to Pedido de venta"),
     content: <Typography>Contenido de Pedido de venta</Typography>,
   },

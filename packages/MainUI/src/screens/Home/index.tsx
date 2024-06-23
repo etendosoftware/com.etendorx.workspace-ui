@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   DataGrid,
   Table,
@@ -39,6 +39,19 @@ import { TABS_CONFIG } from '@workspaceui/componentlibrary/src/components/Second
 
 const Home = () => {
   const [isActive, setIsActive] = useState(false);
+  const [tabsConfig, setTabsConfig] = useState(TABS_CONFIG);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const updatedTabs = tabsConfig.map(tab => ({
+        ...tab,
+        isLoading: false
+      }));
+      setTabsConfig(updatedTabs);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleToggle = () => {
     setIsActive(prevState => !prevState);
@@ -262,7 +275,7 @@ const Home = () => {
     },
     {
       title: 'Secondary Tabs',
-      children: <SecondaryTabs tabsConfig={TABS_CONFIG} />
+      children: <SecondaryTabs tabsConfig={tabsConfig} />
     }
   ];
 
