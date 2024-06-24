@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   DataGrid,
   Table,
@@ -12,6 +12,8 @@ import {
   ConfigurationModal,
   NotificationButton,
   ToggleChip,
+  SecondaryTabs,
+  NotificationModal
 } from '@workspaceui/componentlibrary/src/components';
 import {
   Button,
@@ -41,10 +43,24 @@ import {
   MOCK_AUTO_COMPLETE_TEXTS,
   MOCK_PLACEHOLDERS,
 } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
+import { TABS_CONFIG } from '@workspaceui/componentlibrary/src/components/SecondaryTabs/constants/mock';
 import { NOTIFICATIONS } from '@workspaceui/componentlibrary/src/components/NotificationItem/mock';
 
 const Home = () => {
   const [isActive, setIsActive] = useState(false);
+  const [tabsConfig, setTabsConfig] = useState(TABS_CONFIG);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const updatedTabs = tabsConfig.map(tab => ({
+        ...tab,
+        isLoading: false
+      }));
+      setTabsConfig(updatedTabs);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleToggle = () => {
     setIsActive(prevState => !prevState);
@@ -289,6 +305,10 @@ const Home = () => {
         </Grid>
       ),
     },
+    {
+      title: 'Secondary Tabs',
+      children: <SecondaryTabs tabsConfig={tabsConfig} />
+    }
   ];
 
   return (
