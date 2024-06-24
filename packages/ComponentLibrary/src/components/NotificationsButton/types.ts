@@ -3,7 +3,7 @@ import { Inotifications } from '../../commons';
 import { ReactElement } from 'react';
 
 export interface NotificationButtonProps {
-  children: ReactElement<NotificationModalProps>;
+  children?: ReactElement<NotificationModalProps>;
   notifications: Inotifications[];
 }
 

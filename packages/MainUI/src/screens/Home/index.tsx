@@ -12,10 +12,9 @@ import {
   ConfigurationModal,
   NotificationButton,
   ToggleChip,
+  NotificationModal,
   SecondaryTabs,
   NotificationModal
-} from '@workspaceui/componentlibrary/src/components';
-import {
   Button,
   Grid,
   TextInputBase,
