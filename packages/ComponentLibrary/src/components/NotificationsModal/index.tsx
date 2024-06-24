@@ -4,7 +4,6 @@ import { INotificationModalProps } from './types';
 import { menuSyle, styles, sx } from './styles';
 import { MoreVert, Settings } from '@mui/icons-material';
 import NotificationItem from '../NotificationItem';
-import { NOTIFICATIONS } from '../NotificationItem/mock';
 import Image from '../../assets/images/NotificationModal/empty-state-notifications.svg';
 
 const NotificationModalCustom: React.FC<INotificationModalProps> = ({
@@ -14,14 +13,10 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
   emptyStateMessage,
   emptyStateDescription,
   actionButtonLabel,
-  notifications = NOTIFICATIONS,
+  notifications = [],
   onClose,
   ...props
 }) => {
-  const handleClose = () => {
-    console.log('hey');
-  };
-
   return (
     <Menu
       open
@@ -72,7 +67,6 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
             <div style={styles.actionButtonContainer}>
               <Button
                 style={styles.actionButton}
-                onClick={handleClose}
                 variant="contained"
                 startIcon={<Settings />}
                 sx={sx.actionButton}>
@@ -82,7 +76,7 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
           </div>
         ) : (
           <List>
-            {NOTIFICATIONS.map(notification => (
+            {notifications.map(notification => (
               <NotificationItem
                 key={notification.id}
                 description={notification.description}

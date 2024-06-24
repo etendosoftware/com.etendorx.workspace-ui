@@ -7,9 +7,6 @@ import {
 } from './types';
 import { notificationMax } from './constants';
 import { styles, sx } from './styles';
-import { NotificationButtonProps } from './types';
-import { notificationMax } from './constants';
-import { styles, sx } from './styles';
 
 const NotificationButton: React.FC<ExtendedNotificationButtonProps> = ({
   notifications = [],
