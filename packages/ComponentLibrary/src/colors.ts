@@ -110,3 +110,7 @@ export const PROCESS_900 = '#78320C';
 
 // Draft color
 export const DRAFT_MAIN = '#E5E5E6';
+
+// Dynamic color
+export const DYNAMIC_MAIN = '#004ACA';
+export const DYNAMIC_CONTRAST = '#E5EFFF';

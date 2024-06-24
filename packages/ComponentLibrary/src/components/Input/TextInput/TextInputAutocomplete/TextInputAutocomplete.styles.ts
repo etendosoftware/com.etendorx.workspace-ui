@@ -1,5 +1,5 @@
 import { SxProps, Theme } from '@mui/material';
-import { NEUTRAL_200, NEUTRAL_850, NEUTRAL_1000, PRIMARY_450, PRIMARY_50, PRIMARY_950, TERTIARY_950, NEUTRAL_5, PRIMARY_150, PRIMARY_1000, NEUTRAL_150, NEUTRAL_10 } from '../../../../colors';
+import { NEUTRAL_200, NEUTRAL_850, NEUTRAL_1000, PRIMARY_450, PRIMARY_50, PRIMARY_950, TERTIARY_950, NEUTRAL_5, PRIMARY_150, PRIMARY_1000, NEUTRAL_150, NEUTRAL_10, PRIMARY_0 } from '../../../../colors';
 
 // Font sizes
 const FONT_SIZE_14 = 14;
@@ -21,13 +21,13 @@ export const CSS_STYLES: { [key: string]: any } = {
     backgroundColor: PRIMARY_50,
     transition: 'background-color 0.5s ease',
     '&:hover': {
-      backgroundColor: NEUTRAL_5,
+      // backgroundColor: NEUTRAL_5,
     },
     '&.Mui-disabled': {
       backgroundColor: PRIMARY_950,
     },
     '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
-      borderColor: "transparent",
+      // borderColor: "transparent",
     },
   },
   inputCommon: {
@@ -75,7 +75,6 @@ export const SX_STYLES: { [key: string]: SxProps<Theme> } = {
     padding: '0.5rem',
     borderRadius: 100,
     border: `1px solid ${NEUTRAL_10}`,
-
   },
   suggestionBox: {
     position: 'absolute',
@@ -122,6 +121,8 @@ export const SX_STYLES: { [key: string]: SxProps<Theme> } = {
     },
   },
   rightButtonHover: {
+    backgroundColor: PRIMARY_0,
+    borderRadius: '50%',
     width: '2rem',
     height: '2rem',
     transition: 'background-color 0.3s, color 0.3s',
@@ -133,7 +134,10 @@ export const SX_STYLES: { [key: string]: SxProps<Theme> } = {
       },
     },
   },
-  iconDefault: {
-    color: TERTIARY_950,
-  },
+};
+
+export const containerIconStyle: SxProps<Theme> = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.25rem',
 };
