@@ -15,7 +15,6 @@ export const menuSyle = { padding: 0 };
 export const styles: { [key: string]: CSSProperties } = {
   menuContainer: {},
   titleModalContainer: {
-    width: '28.75rem',
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
@@ -39,8 +38,28 @@ export const styles: { [key: string]: CSSProperties } = {
     borderRadius: '2rem',
     marginRight: '0.25rem',
   },
+  titleModalButtonContainer: {
+    width: '2rem',
+    height: '2rem',
+    alignItems: 'center',
+    justifyContent: 'center',
+    display: 'flex',
+  },
+  titleModalImage: {
+    width: '1rem',
+    height: '1rem',
+  },
+  titleModalIcon: {
+    width: '2rem',
+    height: '2rem',
+  },
   titleButton: {
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    lineHeight: '1.063rem',
     color: PRIMARY_MAIN,
+    textDecoration: 'none',
+    paddingRight: '0.5rem',
   },
   rigthContainer: {
     alignItems: 'center',
@@ -111,7 +130,9 @@ export const sx: { [key: string]: SxProps<Theme> } = {
   },
   vertHover: {
     '&:hover': {
-      color: NEUTRAL_10,
+      width: '2rem',
+      height: '2rem',
+      background: NEUTRAL_10,
     },
   },
   badgeStyles: {

@@ -1,37 +1,32 @@
 import React from 'react';
-import {
-  List,
-  ListItem,
-  ListItemText,
-  Link,
-  Menu,
-  Button,
-  IconButton,
-} from '@mui/material';
+import { List, Link, Menu, Button, IconButton } from '@mui/material';
 import { INotificationModalProps } from './types';
 import { menuSyle, styles, sx } from './styles';
 import { MoreVert, Settings } from '@mui/icons-material';
+import NotificationItem from '../NotificationItem';
+import { NOTIFICATIONS } from '../NotificationItem/mock';
+import Image from '../../assets/images/NotificationModal/empty-state-notifications.svg';
 
 const NotificationModalCustom: React.FC<INotificationModalProps> = ({
-  notifications,
-  handleClose,
   title,
   linkTitle,
-  anchorEl,
-  open,
-  emptyStateImage,
   emptyStateImageAlt,
   emptyStateMessage,
   emptyStateDescription,
   actionButtonLabel,
+  notifications = NOTIFICATIONS,
+  onClose,
   ...props
 }) => {
+  const handleClose = () => {
+    console.log('hey');
+  };
+
   return (
     <Menu
+      open
       {...props}
-      anchorEl={anchorEl}
-      open={open}
-      onClose={handleClose}
+      onClose={onClose}
       slotProps={{
         paper: { sx: styles.paperStyleMenu },
       }}
@@ -55,16 +50,18 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
               {linkTitle.label}
             </Link>
           )}
-          <IconButton style={styles.titleModalImage}>
-            <MoreVert sx={sx.vertHover} />
-          </IconButton>
+          <div style={styles.titleModalButtonContainer}>
+            <IconButton style={styles.titleModalIcon} sx={sx.vertHover}>
+              <MoreVert />
+            </IconButton>
+          </div>
         </div>
       </div>
       <div style={styles.listContainer}>
         {notifications.length === 0 ? (
           <div style={styles.emptyState}>
             <img
-              src={emptyStateImage}
+              src={Image}
               alt={emptyStateImageAlt}
               style={styles.emptyStateImage}
             />
@@ -85,13 +82,16 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
           </div>
         ) : (
           <List>
-            {notifications.map(notification => (
-              <ListItem
+            {NOTIFICATIONS.map(notification => (
+              <NotificationItem
                 key={notification.id}
-                onClick={handleClose}
-                component="div">
-                <ListItemText primary={notification.message} />
-              </ListItem>
+                description={notification.description}
+                priority={notification.priority}
+                date={notification.date}
+                icon={notification.icon}
+                tagType={notification.tagType}
+                ctaButtons={notification.ctaButtons}
+              />
             ))}
           </List>
         )}
