@@ -1,5 +1,6 @@
 import { CSSProperties } from 'react';
 import { SxProps, Theme } from '@mui/material/styles';
+import { PRIMARY_MAIN, PRIMARY_50, NEUTRAL_80 } from '../../colors';
 
 export const styles: { [key: string]: CSSProperties } = {
   iconButtonStyles: {
@@ -12,16 +13,16 @@ export const sx: { [key: string]: SxProps<Theme> } = {
   hoverStyles: {
     background: 'white',
     '&:hover': {
-      backgroundColor: '#004ACA',
+      backgroundColor: PRIMARY_MAIN,
       '& .MuiSvgIcon-root': {
-        color: '#ffffff',
+        color: PRIMARY_50,
       },
     },
   },
   iconStyles: {
     width: '1.5rem',
     height: '1.5rem',
-    color: '#2E365C',
+    color: NEUTRAL_80,
   },
   badgeStyles: {
     '.MuiBadge-badge': {
