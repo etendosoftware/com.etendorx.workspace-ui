@@ -19,6 +19,60 @@ import {
 
 export const theme = createTheme({
   palette: {
+    dynamicColor: {
+      main: '#004ACA',
+      dark: '#00296F',
+      light: '#D5E3FC',
+      contrastText: '#E5EFFF',
+    },
+    baselineColor: {
+      neutral: {
+        0: '#FCFCFD',
+        10: '#F5F6FA',
+        20: '#D3D7E9',
+        30: '#B1B8D8',
+        40: '#8F99C7',
+        50: '#6D7AB6',
+        60: '#505EA0',
+        70: '#3F4A7E',
+        80: '#2E365C',
+        90: '#1D223A',
+        100: '#00030D',
+      },
+      transparentNeutral: {
+        5: 'rgba(0, 0, 48, 0.05)',
+        10: 'rgba(0, 0, 48, 0.10)',
+        20: 'rgba(0, 0, 48, 0.20)',
+        30: 'rgba(0, 0, 48, 0.30)',
+        40: 'rgba(0, 0, 48, 0.40)',
+        50: 'rgba(0, 0, 48, 0.50)',
+        60: 'rgba(0, 0, 48, 0.60)',
+        70: 'rgba(0, 0, 48, 0.70)',
+        80: 'rgba(0, 0, 48, 0.80)',
+      },
+      etendoPrimary: {
+        main: '#004ACA',
+        dark: '#00296F',
+        light: '#D5E3FC',
+        contrastText: '#E5EFFF',
+      },
+    },
+    specificColor: {
+      success: {
+        main: '#008000',
+        light: '#BFFF8F',
+      },
+      warning: {
+        main: '#FFCC00',
+      },
+      error: {
+        main: '#DC143C',
+      },
+      draft: {
+        main: '#3F4A7E',
+        contrastText: '#E5E5E6'
+      },
+    },
     primary: {
       light: PRIMARY_100,
       main: PRIMARY_500,

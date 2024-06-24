@@ -1,4 +1,3 @@
-// src/components/index.ts
 import {
   Button as ButtonMUI,
   Grid as GridMUI,
@@ -21,6 +20,8 @@ import Nav from './Nav/Nav';
 import ProfileModal from './ProfileModal/ProfileModal';
 import WaterfallModal from './Waterfall/WaterfallModal';
 import ConfigurationModalCustom from './ConfigurationModal';
+import NotificationBase from './NotificationsButton';
+import NotificationModalCustom from './NotificationsModal';
 import TagMUI from './Tag';
 import SecondaryTabsMUI from './SecondaryTabs';
 
@@ -44,6 +45,8 @@ const Navbar = ApplyHOC(Nav);
 const Profile = ApplyHOC(ProfileModal);
 const Waterfall = ApplyHOC(WaterfallModal);
 const ConfigurationModal = ApplyHOC(ConfigurationModalCustom);
+const NotificationButton = ApplyHOC(NotificationBase);
+const NotificationModal = ApplyHOC(NotificationModalCustom);
 const Tag = ApplyHOC(TagMUI);
 const SecondaryTabs = ApplyHOC(SecondaryTabsMUI);
 
@@ -67,6 +70,8 @@ export {
   Profile,
   Waterfall,
   ConfigurationModal,
+  NotificationButton,
+  NotificationModal,
   Tag,
   SecondaryTabs,
 };

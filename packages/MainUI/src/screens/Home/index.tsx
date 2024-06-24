@@ -10,8 +10,10 @@ import {
   Profile,
   Waterfall,
   ConfigurationModal,
+  NotificationButton,
   ToggleChip,
   SecondaryTabs,
+  NotificationModal
 } from '@workspaceui/componentlibrary/src/components';
 import {
   Button,
@@ -22,7 +24,13 @@ import {
   Box,
 } from '@workspaceui/componentlibrary/src/components';
 import List from '@mui/material/List';
-import { CheckOutlined, Error, InfoOutlined, LockOutlined, Search } from '@mui/icons-material';
+import {
+  CheckOutlined,
+  Error,
+  InfoOutlined,
+  LockOutlined,
+  Search,
+} from '@mui/icons-material';
 import MenuItem from '@mui/material/MenuItem';
 import logo from '../../assets/react.svg';
 import { sectionsModal } from '../../../../ComponentLibrary/src/components/ConfigurationModal/mock';
@@ -36,6 +44,7 @@ import {
   MOCK_PLACEHOLDERS,
 } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
 import { TABS_CONFIG } from '@workspaceui/componentlibrary/src/components/SecondaryTabs/constants/mock';
+import { NOTIFICATIONS } from '@workspaceui/componentlibrary/src/components/NotificationItem/mock';
 
 const Home = () => {
   const [isActive, setIsActive] = useState(false);
@@ -252,6 +261,25 @@ const Home = () => {
       ),
     },
     {
+      title: 'Notification Button',
+      children: <NotificationButton notifications={NOTIFICATIONS} />,
+    },
+    {
+      title: 'Notification Modal',
+      children: (
+        <NotificationButton notifications={NOTIFICATIONS}>
+          <NotificationModal
+            title={{ icon: logo, label: 'Notificaciones' }}
+            linkTitle={{ label: 'Marcar todas como leídas', url: '/home' }}
+            emptyStateImageAlt="Sin Notificaciones"
+            emptyStateMessage="No tienes notificaciones"
+            emptyStateDescription="¡Genial! Estás al día con todo. Te notificaremos aquí si hay algo nuevo."
+            actionButtonLabel="Configurar notificaciones"
+          />
+        </NotificationButton>
+      ),
+    },
+    {
       title: 'Tag Variants',
       children: (
         <Grid container spacing={2}>
@@ -262,7 +290,11 @@ const Home = () => {
             <Tag type="primary" label="Registrado" />
           </Grid>
           <Grid item>
-            <Tag type="warning" icon={<CheckOutlined />} label="Período Cerrado" />
+            <Tag
+              type="warning"
+              icon={<CheckOutlined />}
+              label="Período Cerrado"
+            />
           </Grid>
           <Grid item>
             <Tag type="error" icon={<Error />} label="Anulado" />

@@ -2,7 +2,7 @@ import { CSSProperties } from 'react';
 import { TERTIARY_800 } from '../../colors';
 
 export const listStyles: CSSProperties = {
-  margin: '0.5rem',
+  padding: '0.5rem',
 };
 
 export const menuItemStyles: CSSProperties = {
