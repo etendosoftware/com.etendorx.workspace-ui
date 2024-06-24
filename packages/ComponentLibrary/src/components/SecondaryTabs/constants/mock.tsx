@@ -1,0 +1,100 @@
+import { TabConfig } from "../types";
+import { Typography } from "@mui/material";
+import { AttachMoneyOutlined, BarChartOutlined, LineStyleOutlined, LocalOfferOutlined, ReceiptOutlined, StackedBarChartOutlined } from "@mui/icons-material";
+
+export const TABS_CONFIG: Array<TabConfig> = [
+  {
+    icon: <LineStyleOutlined />,
+    label: "Líneas",
+    numberOfItems: 20,
+    isLoading: true,
+    onClick: () => console.log("Navigating to Líneas"),
+    content: <Typography>Contenido de Líneas</Typography>,
+  },
+  {
+    icon: '🏬',
+    label: "Descuentos",
+    numberOfItems: 0,
+    onClick: () => console.log("Navigating to Descuentos"),
+    content: <Typography>Contenido de Descuentos</Typography>,
+  },
+  {
+    icon: <StackedBarChartOutlined />,
+    label: "Impuesto",
+    numberOfItems: 2,
+    isLoading: true,
+    onClick: () => console.log("Navigating to Impuesto"),
+    content: <Typography>Contenido de Impuesto</Typography>,
+  },
+  {
+    icon: '🇦🇷',
+    label: "Plan de cobro",
+    numberOfItems: 0,
+    onClick: () => console.log("Navigating to Plan de cobro"),
+    content: <Typography>Contenido de Plan de cobro</Typography>,
+  },
+  {
+    icon: <ReceiptOutlined />,
+    label: "Pedido de venta",
+    numberOfItems: 12,
+    isLoading: true,
+    onClick: () => console.log("Navigating to Pedido de venta"),
+    content: <Typography>Contenido de Pedido de venta</Typography>,
+  },
+  {
+    icon: '📦',
+    label: "Compras",
+    numberOfItems: 3,
+    onClick: () => console.log("Navigating to Compras"),
+    content: <Typography>Contenido de Compras</Typography>,
+  },
+  {
+    icon: <BarChartOutlined />,
+    label: "Reportes",
+    numberOfItems: 8,
+    onClick: () => console.log("Navigating to Reportes"),
+    content: <Typography>Contenido de Reportes</Typography>,
+  },
+  {
+    icon: <AttachMoneyOutlined />,
+    label: "Finanzas",
+    numberOfItems: 6,
+    onClick: () => console.log("Navigating to Finanzas"),
+    content: <Typography>Contenido de Finanzas</Typography>,
+  },
+  {
+    icon: <LineStyleOutlined />,
+    label: "Proyectos",
+    numberOfItems: 5,
+    onClick: () => console.log("Navigating to Proyectos"),
+    content: <Typography>Contenido de Proyectos</Typography>,
+  },
+  {
+    icon: <LocalOfferOutlined />,
+    label: "Marketing",
+    numberOfItems: 4,
+    onClick: () => console.log("Navigating to Marketing"),
+    content: <Typography>Contenido de Marketing</Typography>,
+  },
+  {
+    icon: <StackedBarChartOutlined />,
+    label: "Análisis",
+    numberOfItems: 7,
+    onClick: () => console.log("Navigating to Análisis"),
+    content: <Typography>Contenido de Análisis</Typography>,
+  },
+  {
+    icon: '🇪🇸',
+    label: "Cartera",
+    numberOfItems: 9,
+    onClick: () => console.log("Navigating to Cartera"),
+    content: <Typography>Contenido de Cartera</Typography>,
+  },
+  {
+    icon: <ReceiptOutlined />,
+    label: "Facturación",
+    numberOfItems: 11,
+    onClick: () => console.log("Navigating to Facturación"),
+    content: <Typography>Contenido de Facturación</Typography>,
+  },
+];
