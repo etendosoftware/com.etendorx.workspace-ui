@@ -14,6 +14,9 @@ export const PRIMARY_800 = '#0A0C2F';
 export const PRIMARY_900 = '#060727';
 export const PRIMARY_950 = '#0303030D';
 export const PRIMARY_1000 = '#030303B2';
+export const PRIMARY_MAIN = '#004ACA';
+export const PRIMARY_CONTRAST = '#F5F8FF';
+
 // Secondary color
 export const SECONDARY_100 = '#FEFACF';
 export const SECONDARY_200 = '#FEF4A0';
@@ -24,6 +27,8 @@ export const SECONDARY_600 = '#D7B40E';
 export const SECONDARY_700 = '#B3930A';
 export const SECONDARY_800 = '#907406';
 export const SECONDARY_900 = '#775E03';
+export const WARNING_MAIN = '#FFCC00';
+
 // Tertiary color
 export const TERTIARY_50 = '#EDF1FF';
 export const TERTIARY_100 = '#E2E7FF';
@@ -43,6 +48,9 @@ export const NEUTRAL_5 = '#00030D0D';
 export const NEUTRAL_10 = '#00030D1A'
 export const NEUTRAL_20 = '#00030D33';
 export const NEUTRAL_50 = '#FAFAFA';
+export const NEUTRAL_60 = '#505EA0';
+export const NEUTRAL_70 = '#3F4A7E';
+export const NEUTRAL_90 = '#1D223A';
 export const NEUTRAL_80 = '#2E365C';
 export const NEUTRAL_100 = '#00030D';
 export const NEUTRAL_150 = '#F2F2F2';
@@ -56,6 +64,7 @@ export const NEUTRAL_800 = '#424242';
 export const NEUTRAL_850 = '#4F4F4F';
 export const NEUTRAL_900 = '#212121';
 export const NEUTRAL_1000 = '#121212';
+
 // Success color
 export const SUCCESS_100 = '#C8FBCA';
 export const SUCCESS_200 = '#94F7A0';
@@ -66,6 +75,8 @@ export const SUCCESS_600 = '#009950';
 export const SUCCESS_700 = '#008050';
 export const SUCCESS_800 = '#00674B';
 export const SUCCESS_900 = '#005546';
+export const SUCCESS_MAIN = '#008000';
+
 // Error color
 export const DANGER_100 = '#FEEBE0';
 export const DANGER_200 = '#FDD3C1';
@@ -77,6 +88,7 @@ export const DANGER_700 = '#AE313F';
 export const DANGER_800 = '#8C1F34';
 export const DANGER_900 = '#74122E';
 export const ERROR_MAIN = '#DC143C';
+
 // Information color
 export const START_100 = '#D8F1FF';
 export const START_200 = '#B1E0FF';
@@ -85,9 +97,9 @@ export const START_400 = '#6EB7FF';
 export const START_500 = '#3E97FF';
 export const START_600 = '#2D75DB';
 export const START_700 = '#1F57B7';
-export const START_750 = '#004ACA';
 export const START_800 = '#133D93';
 export const START_900 = '#0B2A7A';
+
 // Warning color
 export const PROCESS_100 = '#FEF4D9';
 export const PROCESS_200 = '#FEE6B3';
@@ -98,3 +110,10 @@ export const PROCESS_600 = '#D78330';
 export const PROCESS_700 = '#B46321';
 export const PROCESS_800 = '#914615';
 export const PROCESS_900 = '#78320C';
+
+// Draft color
+export const DRAFT_MAIN = '#E5E5E6';
+
+// Dynamic color
+export const DYNAMIC_MAIN = '#004ACA';
+export const DYNAMIC_CONSTRAST = '#E5EFFF';

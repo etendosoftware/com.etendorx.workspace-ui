@@ -1,26 +1,35 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   DataGrid,
   Table,
   TableV2,
   Tab,
-  Chip,
+  Tag,
   DragModal,
   Navbar,
   Profile,
   Waterfall,
   ConfigurationModal,
-} from '@workspaceui/componentlibrary/src/components';
-import {
+  NotificationButton,
+  ToggleChip,
+  NotificationModal,
+  SecondaryTabs,
   Button,
   Grid,
   TextInputBase,
   InputPassword,
   SearchInputWithVoice,
   Box,
+  Select,
 } from '@workspaceui/componentlibrary/src/components';
 import List from '@mui/material/List';
-import { LockOutlined, Search } from '@mui/icons-material';
+import {
+  CheckOutlined,
+  Error,
+  InfoOutlined,
+  LockOutlined,
+  Search,
+} from '@mui/icons-material';
 import MenuItem from '@mui/material/MenuItem';
 import logo from '../../assets/react.svg';
 import { sectionsModal } from '../../../../ComponentLibrary/src/components/ConfigurationModal/mock';
@@ -34,9 +43,24 @@ import {
 } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
 import { topFilms } from '../../../../ComponentLibrary/src/components/Input/Select/mock';
 import { TabContent } from '@workspaceui/componentlibrary/src/interfaces';
+import { TABS_CONFIG } from '@workspaceui/componentlibrary/src/components/SecondaryTabs/constants/mock';
+import { NOTIFICATIONS } from '@workspaceui/componentlibrary/src/components/NotificationItem/mock';
 
 const Home = () => {
   const [isActive, setIsActive] = useState(false);
+  const [tabsConfig, setTabsConfig] = useState(TABS_CONFIG);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const updatedTabs = tabsConfig.map(tab => ({
+        ...tab,
+        isLoading: false
+      }));
+      setTabsConfig(updatedTabs);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleToggle = () => {
     setIsActive(prevState => !prevState);
@@ -206,7 +230,7 @@ const Home = () => {
     },
     {
       title: 'Toggle Chip',
-      children: <Chip isActive={isActive} onToggle={handleToggle} />,
+      children: <ToggleChip isActive={isActive} onToggle={handleToggle} />,
     },
     {
       title: 'Dnd Modal',
@@ -222,7 +246,7 @@ const Home = () => {
     },
     {
       title: 'Select',
-      children: <Select label="aa" options={topFilms} />,
+      children: <Select title="aa" options={topFilms} />,
     },
     {
       title: 'Waterfall Modal',
@@ -240,6 +264,55 @@ const Home = () => {
         />
       ),
     },
+    {
+      title: 'Notification Button',
+      children: <NotificationButton notifications={NOTIFICATIONS} />,
+    },
+    {
+      title: 'Notification Modal',
+      children: (
+        <NotificationButton notifications={NOTIFICATIONS}>
+          <NotificationModal
+            title={{ icon: logo, label: 'Notificaciones' }}
+            linkTitle={{ label: 'Marcar todas como leídas', url: '/home' }}
+            emptyStateImageAlt="Sin Notificaciones"
+            emptyStateMessage="No tienes notificaciones"
+            emptyStateDescription="¡Genial! Estás al día con todo. Te notificaremos aquí si hay algo nuevo."
+            actionButtonLabel="Configurar notificaciones"
+          />
+        </NotificationButton>
+      ),
+    },
+    {
+      title: 'Tag Variants',
+      children: (
+        <Grid container spacing={2}>
+          <Grid item>
+            <Tag type="success" icon={<InfoOutlined />} label="Registrado" />
+          </Grid>
+          <Grid item>
+            <Tag type="primary" label="Registrado" />
+          </Grid>
+          <Grid item>
+            <Tag
+              type="warning"
+              icon={<CheckOutlined />}
+              label="Período Cerrado"
+            />
+          </Grid>
+          <Grid item>
+            <Tag type="error" icon={<Error />} label="Anulado" />
+          </Grid>
+          <Grid item>
+            <Tag type="draft" label="En Borrador" />
+          </Grid>
+        </Grid>
+      ),
+    },
+    {
+      title: 'Secondary Tabs',
+      children: <SecondaryTabs tabsConfig={tabsConfig} />
+    }
   ];
 
   return (

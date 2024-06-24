@@ -23,8 +23,7 @@ export const CustomizeButton: CSSProperties = {
 };
 
 export const StartIconStyles: CSSProperties = {
-  paddingLeft: '0.5rem',
-  paddingRight: '0.5rem',
+  marginLeft: '0.5rem',
   maxHeight: '1rem',
   maxWidth: '1rem',
 };
