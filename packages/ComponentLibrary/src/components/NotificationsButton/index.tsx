@@ -1,24 +1,27 @@
 import React, { useState } from 'react';
 import { Badge, IconButton, Tooltip } from '@mui/material';
 import { NotificationsOutlined } from '@mui/icons-material';
-import { ExtendedNotificationButtonProps } from './types';
+import {
+  ExtendedNotificationButtonProps,
+  NotificationModalProps,
+} from './types';
+import { notificationMax } from './constants';
+import { styles, sx } from './styles';
+import { NotificationButtonProps } from './types';
 import { notificationMax } from './constants';
 import { styles, sx } from './styles';
 
 const NotificationButton: React.FC<ExtendedNotificationButtonProps> = ({
   notifications = [],
+  children,
   icon = <NotificationsOutlined sx={sx.iconStyles} />,
   tooltipTitle = 'Notificaciones',
-  renderMenuContent,
   ...iconButtonProps
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
-    if (iconButtonProps.onClick) {
-      iconButtonProps.onClick(event);
-    }
   };
 
   const handleClose = () => {
@@ -47,12 +50,13 @@ const NotificationButton: React.FC<ExtendedNotificationButtonProps> = ({
           </Badge>
         </IconButton>
       </Tooltip>
-      {renderMenuContent?.(
-        notifications,
-        handleClose,
-        anchorEl,
-        Boolean(anchorEl),
-      )}
+      {children &&
+        React.cloneElement(children, {
+          anchorEl,
+          open: Boolean(anchorEl),
+          onClose: handleClose,
+          notifications,
+        } as NotificationModalProps)}
     </>
   );
 };

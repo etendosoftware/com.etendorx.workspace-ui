@@ -1,4 +1,3 @@
-// src/components/index.ts
 import {
   Button as ButtonMUI,
   Grid as GridMUI,
@@ -21,7 +20,8 @@ import Nav from './Nav/Nav';
 import ProfileModal from './ProfileModal/ProfileModal';
 import WaterfallModal from './Waterfall/WaterfallModal';
 import ConfigurationModalCustom from './ConfigurationModal';
-import NotificationButton from './NotificationsButton';
+import NotificationBase from './NotificationsButton';
+import NotificationModalCustom from './NotificationsModal';
 import TagMUI from './Tag';
 
 // ApplyHOC is a higher order component that applies the theme to the component
@@ -44,7 +44,8 @@ const Navbar = ApplyHOC(Nav);
 const Profile = ApplyHOC(ProfileModal);
 const Waterfall = ApplyHOC(WaterfallModal);
 const ConfigurationModal = ApplyHOC(ConfigurationModalCustom);
-const NotificationBase = ApplyHOC(NotificationButton);
+const NotificationButton = ApplyHOC(NotificationBase);
+const NotificationModal = ApplyHOC(NotificationModalCustom);
 const Tag = ApplyHOC(TagMUI);
 
 export {
@@ -67,6 +68,7 @@ export {
   Profile,
   Waterfall,
   ConfigurationModal,
-  NotificationBase,
+  NotificationButton,
+  NotificationModal,
   Tag,
 };

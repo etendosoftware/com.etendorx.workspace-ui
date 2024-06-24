@@ -10,7 +10,7 @@ import {
   Profile,
   Waterfall,
   ConfigurationModal,
-  NotificationBase,
+  NotificationButton,
   ToggleChip,
 } from '@workspaceui/componentlibrary/src/components';
 import {
@@ -41,10 +41,7 @@ import {
   MOCK_AUTO_COMPLETE_TEXTS,
   MOCK_PLACEHOLDERS,
 } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
-import {
-  NOTIFICATIONS,
-  NOTIFICATIONS_FULL,
-} from '@workspaceui/componentlibrary/src/components/NotificationsButton/mock';
+import { NOTIFICATIONS } from '@workspaceui/componentlibrary/src/components/NotificationItem/mock';
 
 const Home = () => {
   const [isActive, setIsActive] = useState(false);
@@ -249,11 +246,21 @@ const Home = () => {
     },
     {
       title: 'Notification Button',
+      children: <NotificationButton notifications={NOTIFICATIONS} />,
+    },
+    {
+      title: 'Notification Modal',
       children: (
-        <>
-          <NotificationBase notifications={NOTIFICATIONS} />
-          <NotificationBase notifications={NOTIFICATIONS_FULL} />
-        </>
+        <NotificationButton notifications={NOTIFICATIONS}>
+          <NotificationModal
+            title={{ icon: logo, label: 'Notificaciones' }}
+            linkTitle={{ label: 'Marcar todas como leídas', url: '/home' }}
+            emptyStateImageAlt="Sin Notificaciones"
+            emptyStateMessage="No tienes notificaciones"
+            emptyStateDescription="¡Genial! Estás al día con todo. Te notificaremos aquí si hay algo nuevo."
+            actionButtonLabel="Configurar notificaciones"
+          />
+        </NotificationButton>
       ),
     },
     {

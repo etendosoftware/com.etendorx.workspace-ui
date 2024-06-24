@@ -1,14 +1,18 @@
-import { IconButtonProps, SvgIconProps } from '@mui/material';
+import { MenuProps, SvgIconProps } from '@mui/material';
+import { Inotifications } from '../../commons';
+import { ReactElement } from 'react';
 
-export interface Inotifications {
-  id: string;
-  message: string;
+export interface NotificationButtonProps {
+  children: ReactElement<NotificationModalProps>;
+  notifications: Inotifications[];
 }
 
-export interface NotificationButtonProps extends IconButtonProps {
-  notifications?: Inotifications[];
+export interface NotificationModalProps extends Omit<MenuProps, 'open'> {
+  notifications: Inotifications[];
+  anchorEl: HTMLElement | null;
+  open: boolean;
+  onClose: () => void;
 }
-
 export interface ExtendedNotificationButtonProps
   extends NotificationButtonProps {
   icon?: React.ReactElement<SvgIconProps>;
@@ -16,7 +20,5 @@ export interface ExtendedNotificationButtonProps
   renderMenuContent?: (
     notifications: Inotifications[],
     handleClose: () => void,
-    anchorEl: HTMLElement | null,
-    open: boolean,
   ) => React.ReactNode;
 }
