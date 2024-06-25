@@ -29,8 +29,8 @@ const Select: React.FC<ISelectInput> = ({
   helperText,
   ...props
 }) => {
-  const [inputValue, setInputValue] = useState('');
-  const [focused, setFocused] = useState(false);
+  const [inputValue, setInputValue] = useState<string>('');
+  const [focused, setFocused] = useState<boolean>(false);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(event.target.value);
