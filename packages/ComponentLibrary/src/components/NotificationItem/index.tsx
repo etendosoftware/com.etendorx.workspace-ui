@@ -15,6 +15,10 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   icon: IconComponent,
   ctaButtons,
 }) => {
+  const markdownComponents = {
+    a: ({ ...props }) => <a style={styles.anchorStyles} {...props} />,
+    p: ({ ...props }) => <div {...props} />,
+  };
   return (
     <ListItem component="div" style={styles.listContainer}>
       <StyledListItem>
@@ -25,10 +29,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
           <IconComponent />
         </div>
         <div style={styles.textContainerStyles} className="textContainer">
-          <ReactMarkdown
-            components={{
-              p: props => <div {...props} />,
-            }}>
+          <ReactMarkdown components={markdownComponents}>
             {description}
           </ReactMarkdown>
           {priority && tagType && <Tag type={tagType} label={priority} />}

@@ -5,7 +5,6 @@ import {
   NEUTRAL_300,
   NEUTRAL_50,
   PRIMARY_1000,
-  PRIMARY_150,
   PRIMARY_50,
   PRIMARY_CONTRAST,
   PRIMARY_MAIN,
@@ -52,6 +51,13 @@ export const styles: { [key: string]: CSSProperties } = {
     fontWeight: '500',
     marginTop: '0.25rem',
   },
+  anchorStyles: {
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    lineHeight: '1.063rem',
+    color: PRIMARY_MAIN,
+    textDecoration: 'none',
+  },
   closeIcon: {
     position: 'absolute',
     top: '0.5rem',
@@ -75,7 +81,7 @@ export const sx: { [key: string]: SxProps<Theme> } = {
       color: PRIMARY_CONTRAST,
     },
   },
-  rigthButton: {
+  rightButton: {
     background: NEUTRAL_100,
     color: NEUTRAL_50,
     height: '2rem',
@@ -103,8 +109,8 @@ export const StyledListItem = styled('div')(() => ({
     outline: `2px solid ${PRIMARY_MAIN}`,
     '& .closeIcon': {
       visibility: 'visible',
-      background: PRIMARY_150,
       borderRadius: '100%',
+      color: PRIMARY_1000,
     },
     '& > .textContainer': {
       paddingRight: '1.5rem',
