@@ -17,7 +17,7 @@
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.15.14",
     "@mui/lab": "^5.0.0-alpha.165",
-    "@mui/material": "^5.15.14",
+    "@mui/material": "^5.15.19",
     "@mui/utils": "^5.15.11",
     "@mui/x-data-grid-generator": "^6.19.4",
     "@mui/x-data-grid-pro": "^6.19.4",

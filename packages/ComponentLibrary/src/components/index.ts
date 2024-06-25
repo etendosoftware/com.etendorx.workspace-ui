@@ -20,6 +20,7 @@ import Nav from './Nav/Nav';
 import ProfileModal from './ProfileModal/ProfileModal';
 import WaterfallModal from './Waterfall/WaterfallModal';
 import ConfigurationModalCustom from './ConfigurationModal';
+import SelectCustom from './Input/Select';
 import NotificationBase from './NotificationsButton';
 import NotificationModalCustom from './NotificationsModal';
 import TagMUI from './Tag';
@@ -45,6 +46,7 @@ const Navbar = ApplyHOC(Nav);
 const Profile = ApplyHOC(ProfileModal);
 const Waterfall = ApplyHOC(WaterfallModal);
 const ConfigurationModal = ApplyHOC(ConfigurationModalCustom);
+const Select = ApplyHOC(SelectCustom);
 const NotificationButton = ApplyHOC(NotificationBase);
 const NotificationModal = ApplyHOC(NotificationModalCustom);
 const Tag = ApplyHOC(TagMUI);
@@ -70,6 +72,7 @@ export {
   Profile,
   Waterfall,
   ConfigurationModal,
+  Select,
   NotificationButton,
   NotificationModal,
   Tag,
