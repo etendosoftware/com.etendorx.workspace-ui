@@ -105,7 +105,7 @@ export const styles = {
     borderRadius: '0.5rem',
     display: 'flex',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: '0.5rem',
   },
   optionText: {
     flex: 1,
@@ -121,7 +121,7 @@ export const styles = {
   autocomplete: {
     '& .MuiAutocomplete-endAdornment': { marginRight: '0.5rem' },
     '& .MuiAutocomplete-clearIndicator': {
-      marginRight: '1px',
+      marginRight: '0.063rem',
     },
   },
   listBox: {
