@@ -10,6 +10,9 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: '../../src/main/resources/static'
+    outDir: '../../src/main/resources/static',
+    rollupOptions: {
+      external: ['@mui/material']
+    }
   }
 })
