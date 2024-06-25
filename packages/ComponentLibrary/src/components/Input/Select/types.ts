@@ -1,10 +1,11 @@
 import { AutocompleteProps } from '@mui/material';
 
-export interface OptionType {
-  title: string;
-}
-
-export interface ISelectInput extends Omit<AutocompleteProps<OptionType, false, false, false>, 'renderInput'> {
-  label?: string;
-  options: Array<OptionType>;
+export interface ISelectInput
+  extends Omit<AutocompleteProps<any, false, false, false>, 'renderInput'> {
+  helperText?: { label?: string; icon?: string };
+  title?: string;
+  iconLeft?: string;
+  options: Array<any>;
+  value?: any;
+  onChange?: (event: React.SyntheticEvent, value: any) => void;
 }

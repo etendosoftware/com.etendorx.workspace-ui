@@ -22,6 +22,7 @@ import {
   Box,
   Select,
 } from '@workspaceui/componentlibrary/src/components';
+
 import List from '@mui/material/List';
 import {
   CheckOutlined,
@@ -246,7 +247,17 @@ const Home = () => {
     },
     {
       title: 'Select',
-      children: <Select title="aa" options={topFilms} />,
+      children: (
+        <div style={{ background: 'white', padding: 20, width: 300 }}>
+          <Select
+            iconLeft={logo}
+            title="Peliculas"
+            helperText={{ label: 'Top 15', icon: logo }}
+            options={topFilms}
+            getOptionLabel={(option: any) => option.title}
+          />
+        </div>
+      ),
     },
     {
       title: 'Waterfall Modal',
