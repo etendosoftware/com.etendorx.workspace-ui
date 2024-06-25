@@ -14,13 +14,13 @@ import {
   ToggleChip,
   NotificationModal,
   SecondaryTabs,
-  NotificationModal
   Button,
   Grid,
   TextInputBase,
   InputPassword,
   SearchInputWithVoice,
   Box,
+  NotificationStates,
 } from '@workspaceui/componentlibrary/src/components';
 import List from '@mui/material/List';
 import {
@@ -44,6 +44,7 @@ import {
 } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
 import { TABS_CONFIG } from '@workspaceui/componentlibrary/src/components/SecondaryTabs/constants/mock';
 import { NOTIFICATIONS } from '@workspaceui/componentlibrary/src/components/NotificationItem/mock';
+import { notificationsStates } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/mock';
 
 const Home = () => {
   const [isActive, setIsActive] = useState(false);
@@ -53,7 +54,7 @@ const Home = () => {
     const timer = setTimeout(() => {
       const updatedTabs = tabsConfig.map(tab => ({
         ...tab,
-        isLoading: false
+        isLoading: false,
       }));
       setTabsConfig(updatedTabs);
     }, 5000);
@@ -279,6 +280,45 @@ const Home = () => {
       ),
     },
     {
+      title: 'Notification Item States',
+      children: (
+        <Grid container spacing={1}>
+          <Grid item>
+            <NotificationStates
+              notifications={notificationsStates}
+              type="informatives"
+            />
+          </Grid>
+          <Grid item>
+            <NotificationStates
+              notifications={notificationsStates}
+              type="withButtons"
+            />
+          </Grid>
+          <Grid item>
+            <NotificationStates
+              notifications={notificationsStates}
+              type="withButtonsAndTags"
+            />
+          </Grid>
+          <Grid item>
+            <NotificationStates
+              notifications={notificationsStates}
+              type="tags"
+            />
+            ,
+          </Grid>
+          <Grid item>
+            <NotificationStates
+              notifications={notificationsStates}
+              type="avatar"
+            />
+            ,
+          </Grid>
+        </Grid>
+      ),
+    },
+    {
       title: 'Tag Variants',
       children: (
         <Grid container spacing={2}>
@@ -306,8 +346,8 @@ const Home = () => {
     },
     {
       title: 'Secondary Tabs',
-      children: <SecondaryTabs tabsConfig={tabsConfig} />
-    }
+      children: <SecondaryTabs tabsConfig={tabsConfig} />,
+    },
   ];
 
   return (
