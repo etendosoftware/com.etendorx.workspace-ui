@@ -55,7 +55,7 @@ const Home = () => {
     const timer = setTimeout(() => {
       const updatedTabs = tabsConfig.map(tab => ({
         ...tab,
-        isLoading: false
+        isLoading: false,
       }));
       setTabsConfig(updatedTabs);
     }, 5000);
@@ -248,7 +248,7 @@ const Home = () => {
     {
       title: 'Select',
       children: (
-        <div style={{ background: 'white', padding: 20, width: 300 }}>
+        <Box style={{ background: PRIMARY_0, padding: 20, width: 300 }}>
           <Select
             iconLeft={logo}
             title="Peliculas"
@@ -256,7 +256,7 @@ const Home = () => {
             options={topFilms}
             getOptionLabel={(option: any) => option.title}
           />
-        </div>
+        </Box>
       ),
     },
     {
@@ -322,8 +322,8 @@ const Home = () => {
     },
     {
       title: 'Secondary Tabs',
-      children: <SecondaryTabs tabsConfig={tabsConfig} />
-    }
+      children: <SecondaryTabs tabsConfig={tabsConfig} />,
+    },
   ];
 
   return (
