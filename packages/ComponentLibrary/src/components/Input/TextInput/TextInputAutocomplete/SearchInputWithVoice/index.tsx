@@ -6,7 +6,7 @@ import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
 import { TextInputProps } from '../TextInputComplete.types';
 import TextInputAutoComplete from '../TextInputAutocomplete';
-import { NEUTRAL_850 } from '../../../../../colors';
+import { theme } from '../../../../../theme';
 
 interface SearchInputWithVoiceProps extends TextInputProps {
     onVoiceClick: () => void;
@@ -23,14 +23,14 @@ const SearchInputWithVoice = (props: SearchInputWithVoiceProps) => {
 
     const startAdornment = (
         <InputAdornment position="start">
-            <SearchIcon sx={{ color: NEUTRAL_850 }} />
+            <SearchIcon sx={{ color: theme.palette.baselineColor.neutral[85] }} />
         </InputAdornment>
     );
 
     const endAdornment = (
         <InputAdornment position="end">
             <IconButton size="small">
-                <FilterIcon sx={{ color: NEUTRAL_850 }} />
+                <FilterIcon sx={{ color: theme.palette.baselineColor.neutral[85] }} />
             </IconButton>
         </InputAdornment>
     );
@@ -56,7 +56,7 @@ const SearchInputWithVoice = (props: SearchInputWithVoiceProps) => {
                         justifyContent: 'center'
                     }}
                 >
-                    {isRecording ? <MicOffIcon sx={{ color: NEUTRAL_850, fontSize: 30 }} /> : <MicIcon sx={{ color: NEUTRAL_850, fontSize: 30 }} />}
+                    {isRecording ? <MicOffIcon sx={{ color: theme.palette.baselineColor.neutral[85], fontSize: 30 }} /> : <MicIcon sx={{ color: theme.palette.baselineColor.neutral[85], fontSize: 30 }} />}
                 </IconButton>
             </Box>
         </Box>

@@ -7,8 +7,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import { TextInputProps } from './TextInputComplete.types';
 import { CSS_STYLES, SX_STYLES } from './TextInputAutocomplete.styles';
 import { DEFAULT_CONSTANTS } from './TextInputAutocomplete.constants';
-import { PRIMARY_950, PRIMARY_1000, NEUTRAL_850, PRIMARY_MAIN, TERTIARY_150, NEUTRAL_50 } from '../../../../colors';
 import SuggestionBox from './SuggestionBox';
+import { theme } from '../../../../theme';
 
 const TextInputAutoComplete = (props: TextInputProps) => {
   const {
@@ -85,7 +85,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     ...CSS_STYLES.input,
     "& .MuiOutlinedInput-input": {
       '&::placeholder': {
-        color: PRIMARY_1000,
+        color: theme.palette.baselineColor.transparentNeutral[70],
         opacity: isFocused ? 0 : 1,
         transition: `opacity ${DEFAULT_CONSTANTS.PLACEHOLDER_OPACITY_TRANSITION_DURATION}s`,
       },
@@ -105,7 +105,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
           leftIcon ? (
             <IconButton onClick={onLeftIconClick}>{leftIcon}</IconButton>
           ) : (
-            <SearchIcon sx={{ color: !props.disabled ? isFocused && value.length === 0 ? PRIMARY_MAIN : NEUTRAL_850 : NEUTRAL_850 }} />
+            <SearchIcon sx={{ color: !props.disabled ? isFocused && value.length === 0 ? theme.palette.baselineColor.etendoPrimary.main : theme.palette.baselineColor.neutral[85] : theme.palette.baselineColor.neutral[85] }} />
           )
         )}
       </Box>
@@ -143,19 +143,19 @@ const TextInputAutoComplete = (props: TextInputProps) => {
 
   const textFieldSx = {
     ...CSS_STYLES.inputCommon,
-    backgroundColor: !props.disabled ? NEUTRAL_50 : PRIMARY_950,
+    backgroundColor: !props.disabled ? theme.palette.baselineColor.neutral[0] : theme.palette.baselineColor.transparentNeutral[5],
     '& .MuiOutlinedInput-root': {
       '& fieldset': {
-        borderColor: PRIMARY_950,
+        borderColor: theme.palette.baselineColor.transparentNeutral[5],
       },
       '&:hover fieldset': {
         borderWidth: !isFocused ? 0 : undefined,
       },
       '&.Mui-focused fieldset': {
-        borderColor: PRIMARY_MAIN,
+        borderColor: theme.palette.baselineColor.etendoPrimary.main,
       },
       '&.Mui-focused': {
-        backgroundColor: value ? NEUTRAL_50 : TERTIARY_150,
+        backgroundColor: value ? theme.palette.baselineColor.neutral[0] : theme.palette.dynamicColor.contrastText,
       },
       borderRadius: '6.25rem',
     },
