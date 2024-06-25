@@ -5,6 +5,7 @@ import {
   toggleButtonStyles,
 } from './ToggleSection.styles';
 import { ToggleSectionsProps } from './ToggleSection.types';
+import { theme } from '../../../theme';
 
 const ToggleSections: React.FC<ToggleSectionsProps> = ({
   sections,
@@ -18,7 +19,7 @@ const ToggleSections: React.FC<ToggleSectionsProps> = ({
           key={id}
           style={{
             ...toggleButtonStyles,
-            backgroundColor: currentSection === id ? '#fff' : '',
+            backgroundColor: currentSection === id ? theme.palette.baselineColor.neutral[0] : '',
           }}
           onClick={() => onToggle(id)}
           startIcon={icon}>

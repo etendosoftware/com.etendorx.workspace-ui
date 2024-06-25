@@ -105,7 +105,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
           leftIcon ? (
             <IconButton onClick={onLeftIconClick}>{leftIcon}</IconButton>
           ) : (
-            <SearchIcon sx={{ color: !props.disabled ? isFocused && value.length === 0 ? theme.palette.baselineColor.etendoPrimary.main : theme.palette.baselineColor.neutral[85] : theme.palette.baselineColor.neutral[85] }} />
+            <SearchIcon sx={{ color: !props.disabled ? isFocused && value.length === 0 ? theme.palette.dynamicColor.main : theme.palette.baselineColor.neutral[85] : theme.palette.baselineColor.neutral[85] }} />
           )
         )}
       </Box>
@@ -152,7 +152,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
         borderWidth: !isFocused ? 0 : undefined,
       },
       '&.Mui-focused fieldset': {
-        borderColor: theme.palette.baselineColor.etendoPrimary.main,
+        borderColor: theme.palette.dynamicColor.main,
       },
       '&.Mui-focused': {
         backgroundColor: value ? theme.palette.baselineColor.neutral[0] : theme.palette.dynamicColor.contrastText,

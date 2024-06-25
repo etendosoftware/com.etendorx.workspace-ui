@@ -10,14 +10,13 @@ import {
   EndIconStyles,
   FadeWrapper,
   MODAL_WIDTH,
-  PRIMARY_BLUE,
-  PRIMARY_GREY,
   SectionContainer,
   StartIconStyles,
 } from './WaterfallModal.styles';
 import { Edit, NavigateNext } from '@mui/icons-material';
 import { UniqueIdentifier } from '@dnd-kit/core';
 import { MENU_ITEMS } from '../Modal/mock';
+import { theme } from '../../theme';
 
 const WaterfallModal: React.FC = () => {
   const [showDragModal, setShowDragModal] = useState(false);
@@ -71,7 +70,7 @@ const WaterfallModal: React.FC = () => {
                   '&:hover': {
                     background: '',
                     borderRadius: '0.5rem',
-                    color: PRIMARY_BLUE,
+                    color: theme.palette.baselineColor.neutral[80],
                   },
                 }}>
                 <span style={{ paddingRight: '0.5rem' }}>{item.emoji}</span>
@@ -83,14 +82,14 @@ const WaterfallModal: React.FC = () => {
           <div style={SectionContainer}>
             <Box
               sx={{
-                '&:hover': { background: PRIMARY_GREY, borderRadius: '0.5rem' },
+                '&:hover': { background: theme.palette.dynamicColor.contrastText, borderRadius: '0.5rem' },
               }}>
               <Button
                 onClick={handleOpenDragModal}
                 style={CustomizeButton}
                 sx={{
                   '&:hover': {
-                    color: PRIMARY_BLUE,
+                    color: theme.palette.baselineColor.neutral[80],
                     border: 'none',
                   },
                 }}

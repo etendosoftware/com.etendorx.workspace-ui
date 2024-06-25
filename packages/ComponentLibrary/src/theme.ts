@@ -3,20 +3,20 @@
 import { createTheme } from '@mui/material/styles';
 import InterTTF from '../src/styles/fonts/Inter-Regular.ttf';
 
-import {
-  NEUTRAL_300,
-  NEUTRAL_50,
-  NEUTRAL_1000,
-  PRIMARY_100,
-  PRIMARY_500,
-  SECONDARY_100,
-  SECONDARY_300,
-  SECONDARY_500,
-  TERTIARY_100,
-  TERTIARY_50,
-  TERTIARY_900,
-} from './colors';
+// Colors for MUI attributes 
+export const PRIMARY_100 = '#D8DBF6';
+export const PRIMARY_500 = '#202452';
+export const SECONDARY_100 = '#FEFACF';
+export const SECONDARY_300 = '#FDEC71';
+export const SECONDARY_500 = '#FAD614';
+export const TERTIARY_50 = '#EDF1FF';
+export const TERTIARY_100 = '#E2E7FF';
+export const TERTIARY_900 = '#151C7A';
+export const NEUTRAL_50 = '#FAFAFA';
+export const NEUTRAL_300 = '#E0E0E0';
+export const NEUTRAL_1000 = '#121212';
 
+// Theme for MUI components
 export const theme = createTheme({
   palette: {
     dynamicColor: {
@@ -44,13 +44,13 @@ export const theme = createTheme({
       transparentNeutral: {
         5: 'rgba(0, 3, 13, 0.05)',
         10: 'rgba(0, 3, 13, 0.1)',
-        20: 'rgba(0, 0, 48, 0.20)',
-        30: 'rgba(0, 0, 48, 0.30)',
-        40: 'rgba(0, 0, 48, 0.40)',
-        50: 'rgba(0, 0, 48, 0.50)',
-        60: 'rgba(0, 0, 48, 0.60)',
+        20: 'rgba(0, 3, 13, 1)',
+        30: 'rgba(0, 3, 13, 0.3)',
+        40: 'rgba(0, 3, 13, 0.4)',
+        50: 'rgba(0, 3, 13, 0.5)',
+        60: 'rgba(0, 3, 13, 0.6)',
         70: 'rgba(0, 3, 13, 0.7)',
-        80: 'rgba(0, 0, 48, 0.80)',
+        80: 'rgba(0, 3, 13, 0.8)',
       },
       etendoPrimary: {
         main: '#004ACA',

@@ -1,14 +1,6 @@
 import { CSSProperties } from 'react';
-
-import {
-  PRIMARY_50,
-  PRIMARY_CONTRAST,
-  TERTIARY_50,
-  NEUTRAL_10,
-  PRIMARY_MAIN,
-  PRIMARY_500,
-} from '../../colors';
 import { SxProps, Theme } from '@mui/material';
+import { theme } from '../../theme';
 
 export const menuSyle = { padding: 0 };
 
@@ -20,8 +12,8 @@ export const styles: { [key: string]: CSSProperties } = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '0.75rem',
-    background: PRIMARY_50,
-    borderBottom: `1px solid ${TERTIARY_50}`,
+    background: theme.palette.baselineColor.neutral[0],
+    borderBottom: `1px solid ${theme.palette.dynamicColor.contrastText}`,
   },
   titleModalImageContainer: {
     display: 'flex',
@@ -34,7 +26,7 @@ export const styles: { [key: string]: CSSProperties } = {
     alignItems: 'center',
     justifyContent: 'center',
     display: 'flex',
-    background: PRIMARY_CONTRAST,
+    background: theme.palette.baselineColor.neutral[10],
     borderRadius: '2rem',
     marginRight: '0.25rem',
   },
@@ -57,7 +49,7 @@ export const styles: { [key: string]: CSSProperties } = {
     fontSize: '0.875rem',
     fontWeight: '500',
     lineHeight: '1.063rem',
-    color: PRIMARY_MAIN,
+    color: theme.palette.dynamicColor.main,
     textDecoration: 'none',
     paddingRight: '0.5rem',
   },
@@ -72,7 +64,7 @@ export const styles: { [key: string]: CSSProperties } = {
   listContainer: {},
   emptyState: {
     width: '28.75rem',
-    background: TERTIARY_50,
+    background: theme.palette.dynamicColor.contrastText,
     padding: '1.25rem',
     display: 'flex',
     flexDirection: 'column',
@@ -93,7 +85,7 @@ export const styles: { [key: string]: CSSProperties } = {
     padding: '0.5rem',
     fontSize: '1.375rem',
     fontWeight: '600',
-    color: PRIMARY_500,
+    color: theme.palette.baselineColor.neutral[80],
   },
   emptyText: {
     fontSize: '0.875rem',
@@ -101,10 +93,10 @@ export const styles: { [key: string]: CSSProperties } = {
     lineHeight: '1.25rem',
     paddingBottom: '0.5rem',
     textAlign: 'center',
-    color: NEUTRAL_10,
+    color: theme.palette.baselineColor.transparentNeutral[10],
   },
   actionButton: {
-    border: `1px solid ${NEUTRAL_10}`,
+    border: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
     borderRadius: '6.25rem',
     padding: '0.5rem 1rem',
   },
@@ -114,25 +106,25 @@ export const styles: { [key: string]: CSSProperties } = {
   },
   paperStyleMenu: {
     borderRadius: '0.75rem',
-    background: TERTIARY_50,
+    background: theme.palette.dynamicColor.contrastText,
   },
 };
 
 export const sx: { [key: string]: SxProps<Theme> } = {
   actionButton: {
-    background: PRIMARY_CONTRAST,
-    color: NEUTRAL_10,
+    background: theme.palette.baselineColor.neutral[10],
+    color: theme.palette.baselineColor.transparentNeutral[10],
     '&:hover': {
       border: 'none',
-      background: PRIMARY_MAIN,
-      color: PRIMARY_CONTRAST,
+      background: theme.palette.dynamicColor.main,
+      color: theme.palette.baselineColor.neutral[10],
     },
   },
   vertHover: {
     '&:hover': {
       width: '2rem',
       height: '2rem',
-      background: NEUTRAL_10,
+      background: theme.palette.baselineColor.transparentNeutral[10],
     },
   },
   badgeStyles: {

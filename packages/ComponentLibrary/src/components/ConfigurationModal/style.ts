@@ -45,7 +45,7 @@ export const styles: { [key: string]: CSSProperties } = {
     fontSize: '0.875rem',
     fontWeight: '500',
     lineHeight: '1.063rem',
-    color: theme.palette.baselineColor.etendoPrimary.main,
+    color: theme.palette.dynamicColor.main,
     textDecoration: 'none',
   },
   imgContainer: {

@@ -80,7 +80,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
     sectionIndex: number,
   ) => {
     if (isSelected(selectedImageIndex, imageIndex)) {
-      return BORDER_SELECT_2 + theme.palette.baselineColor.etendoPrimary.main;
+      return BORDER_SELECT_2 + theme.palette.dynamicColor.main;
     }
     if (isHovered(sectionIndex, imageIndex)) {
       return BORDER_SELECT_2 + theme.palette.baselineColor.neutral[90];

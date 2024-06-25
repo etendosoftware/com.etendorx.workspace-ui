@@ -1,16 +1,6 @@
 import { CSSProperties } from 'react';
-import {
-  NEUTRAL_10,
-  NEUTRAL_100,
-  NEUTRAL_300,
-  NEUTRAL_50,
-  PRIMARY_1000,
-  PRIMARY_150,
-  PRIMARY_50,
-  PRIMARY_CONTRAST,
-  PRIMARY_MAIN,
-} from '../../colors';
 import { SxProps, Theme, styled } from '@mui/material';
+import { theme } from '../../theme';
 
 export const styles: { [key: string]: CSSProperties } = {
   listContainer: {
@@ -23,7 +13,7 @@ export const styles: { [key: string]: CSSProperties } = {
     justifyContent: 'center',
     alignContent: 'center',
     flexWrap: 'wrap',
-    background: NEUTRAL_300,
+    background: theme.palette.dynamicColor.contrastText,
     borderRadius: '100%',
   },
   textContainerStyles: {
@@ -57,34 +47,34 @@ export const styles: { [key: string]: CSSProperties } = {
     top: '0.5rem',
     right: '0.5rem',
     visibility: 'hidden',
-    color: PRIMARY_MAIN,
+    color: theme.palette.dynamicColor.main,
   },
 };
 
 export const sx: { [key: string]: SxProps<Theme> } = {
   leftButton: {
-    background: PRIMARY_50,
-    color: PRIMARY_1000,
+    background: theme.palette.baselineColor.transparentNeutral[0],
+    color: theme.palette.baselineColor.transparentNeutral[70],
     height: '2rem',
     borderRadius: '6.25rem',
     padding: '0.5rem 1rem',
-    border: `1px solid ${NEUTRAL_10}`,
+    border: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
     '&:hover': {
       border: 'none',
-      background: PRIMARY_MAIN,
-      color: PRIMARY_CONTRAST,
+      background: theme.palette.dynamicColor.main,
+      color: theme.palette.baselineColor.neutral[10],
     },
   },
   rigthButton: {
-    background: NEUTRAL_100,
-    color: NEUTRAL_50,
+    background: theme.palette.baselineColor.neutral[100],
+    color: theme.palette.baselineColor.neutral[0],
     height: '2rem',
     borderRadius: '6.25rem',
     padding: '0.5rem 1rem',
     '&:hover': {
       border: 'none',
-      background: PRIMARY_MAIN,
-      color: PRIMARY_CONTRAST,
+      background: theme.palette.dynamicColor.main,
+      color: theme.palette.baselineColor.neutral[10],
     },
   },
 };
@@ -96,14 +86,14 @@ export const StyledListItem = styled('div')(() => ({
   padding: '0.75rem 1rem',
   display: 'flex',
   position: 'relative',
-  backgroundColor: PRIMARY_50,
-  border: `1px solid ${NEUTRAL_10}`,
+  backgroundColor: theme.palette.baselineColor.neutral[0],
+  border: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
   '&:hover': {
-    backgroundColor: PRIMARY_CONTRAST,
-    outline: `2px solid ${PRIMARY_MAIN}`,
+    backgroundColor: theme.palette.baselineColor.neutral[10],
+    outline: `2px solid ${theme.palette.dynamicColor.main}`,
     '& .closeIcon': {
       visibility: 'visible',
-      background: PRIMARY_150,
+      background: theme.palette.baselineColor.neutral[20],
       borderRadius: '100%',
     },
     '& > .textContainer': {

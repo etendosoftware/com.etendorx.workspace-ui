@@ -1,5 +1,5 @@
 import { CSSProperties } from 'react';
-import { PRIMARY_500 } from '../../../colors';
+import { theme } from '../../../theme';
 
 export const selectorListStyles: CSSProperties = {
   padding: '0rem 1rem 0.75rem 1rem',
@@ -10,7 +10,7 @@ export const formStyle: CSSProperties = {
 };
 
 export const labelStyles: CSSProperties = {
-  color: PRIMARY_500,
+  color: theme.palette.baselineColor.neutral[80],
   fontWeight: '600',
 };
 

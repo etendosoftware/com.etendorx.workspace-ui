@@ -1,5 +1,5 @@
 import { CSSProperties } from 'react';
-import { NEUTRAL_50, PRIMARY_500, START_100, START_700 } from '../../colors';
+import { theme } from '../../theme';
 
 export const MODAL_WIDTH = 332;
 
@@ -8,7 +8,7 @@ export const userProfileStyles: CSSProperties = {
   flexDirection: 'column',
   alignItems: 'center',
   borderRadius: '0.75rem',
-  background: NEUTRAL_50,
+  background: theme.palette.baselineColor.neutral[0],
   position: 'relative',
   overflow: 'hidden',
 };
@@ -20,7 +20,7 @@ export const profileImageContainerStyles: CSSProperties = {
   height: '4.5rem',
   zIndex: '2',
   borderRadius: '4.5rem',
-  border: `4px solid ${NEUTRAL_50}`,
+  border: `4px solid ${theme.palette.baselineColor.neutral[0]}`,
 };
 
 export const logoutButtonStyles: CSSProperties = {
@@ -33,7 +33,7 @@ export const logoutButtonStyles: CSSProperties = {
   justifyContent: 'center',
   alignItems: 'center',
   cursor: 'pointer',
-  color: PRIMARY_500,
+  color: theme.palette.baselineColor.neutral[80],
   background: 'white',
   borderRadius: '50%',
   zIndex: '1',
@@ -60,7 +60,7 @@ export const profileDetailsStyles: CSSProperties = {
   alignItems: 'center',
   zIndex: 2,
   padding: '0rem 0.5rem',
-  background: START_100,
+  background: theme.palette.dynamicColor.light,
   borderRadius: '12.5rem',
 };
 
@@ -72,7 +72,7 @@ export const nameStyles: CSSProperties = {
 
 export const emailStyles: CSSProperties = {
   margin: 0,
-  color: START_700,
+  color: theme.palette.dynamicColor.main,
   zIndex: 2,
 };
 
@@ -85,7 +85,7 @@ export const toggleContainerStyles: CSSProperties = {
   alignItems: 'center',
   alignSelf: 'stretch',
   borderRadius: '12.5rem',
-  background: 'rgba(0, 3, 13, 0.05)',
+  background: theme.palette.baselineColor.transparentNeutral[50],
 };
 
 export const toggleButtonStyles: CSSProperties = {
@@ -125,7 +125,7 @@ export const buttonStyles: CSSProperties = {
   cursor: 'pointer',
   height: '2.5rem',
   borderRadius: '6.25rem',
-  border: '1px solid rgba(0, 3, 13, 0.20)',
+  border: `1px solid ${theme.palette.baselineColor.transparentNeutral[80]}`,
   flex: '1 0 0',
   color: 'black',
   background: 'white',
@@ -139,6 +139,6 @@ export const saveButtonStyles: CSSProperties = {
   background: 'black',
   flex: '1 0 0',
   borderRadius: '6.25rem',
-  border: '1px solid rgba(0, 3, 13, 0.20)',
+  border: `1px solid ${theme.palette.baselineColor.transparentNeutral[80]}`,
   height: '2.5rem',
 };

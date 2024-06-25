@@ -1,12 +1,11 @@
 import React from 'react';
-import { useTheme } from '@mui/material/styles';
 import { TagType } from './types';
+import { theme } from '../../theme';
 
 export const getColor = (type: TagType): string => {
-  const theme = useTheme();
   switch (type) {
     case 'primary':
-      return theme.palette.baselineColor.etendoPrimary.main;
+      return theme.palette.dynamicColor.main;
     case 'success':
       return theme.palette.specificColor.success.main;
     case 'warning':
@@ -16,22 +15,21 @@ export const getColor = (type: TagType): string => {
     case 'draft':
       return theme.palette.specificColor.draft.contrastText;
     default:
-      return theme.palette.baselineColor.etendoPrimary.main;
+      return theme.palette.dynamicColor.main;
   }
 };
 
 export const getTextColor = (type: TagType): string => {
-  const theme = useTheme();
   switch (type) {
     case 'primary':
     case 'success':
     case 'error':
-      return theme.palette.baselineColor.etendoPrimary.contrastText;
+      return theme.palette.dynamicColor.contrastText;
     case 'warning':
     case 'draft':
       return theme.palette.baselineColor.neutral[100];
     default:
-      return theme.palette.baselineColor.etendoPrimary.contrastText;
+      return theme.palette.dynamicColor.contrastText;
   }
 };
 
