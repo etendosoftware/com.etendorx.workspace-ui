@@ -29,6 +29,7 @@ export const theme = createTheme({
       neutral: {
         0: '#FCFCFD',
         10: '#F5F6FA',
+        15: '#F5F8FF',
         20: '#D3D7E9',
         30: '#B1B8D8',
         40: '#8F99C7',
@@ -41,7 +42,7 @@ export const theme = createTheme({
       },
       transparentNeutral: {
         5: 'rgba(0, 0, 48, 0.05)',
-        10: 'rgba(0, 0, 48, 0.10)',
+        10: 'rgba(0, 3, 13, 0.1)',
         20: 'rgba(0, 0, 48, 0.20)',
         30: 'rgba(0, 0, 48, 0.30)',
         40: 'rgba(0, 0, 48, 0.40)',

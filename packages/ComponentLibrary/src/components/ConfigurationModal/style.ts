@@ -1,18 +1,11 @@
 import { CSSProperties } from 'react';
-
-const NEUTRAL_10 = '#F5F6FA';
-const NEUTRAL_0 = '#FCFCFD';
-const TRANSPARENT_NEUTRAL_5 = '#00030D1A';
-const PRIMARY_CONTRAST = '#F5F8FF';
+import { theme } from '../../theme';
 
 export const menuSyle = { paddingY: 0 };
 export const COLUMN_SPACING = '0.75rem';
-export const NEUTRAL_30 = '#B1B8D8';
 export const FIRST_MARGIN_TOP = '0.75rem';
 export const BORDER_SELECT_1 = '1px solid ';
 export const BORDER_SELECT_2 = '2px solid ';
-export const DYNAMIC_COLOR_MAIN = '#004ACA';
-export const NEUTRAL_90 = '#1D223A';
 
 export const styles: { [key: string]: CSSProperties } = {
   titleModalContainer: {
@@ -20,7 +13,7 @@ export const styles: { [key: string]: CSSProperties } = {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    background: NEUTRAL_0,
+    background: theme.palette.baselineColor.neutral[0],
     padding: '0.75rem',
   },
   titleModalImageContainer: {
@@ -34,7 +27,7 @@ export const styles: { [key: string]: CSSProperties } = {
     alignItems: 'center',
     justifyContent: 'center',
     display: 'flex',
-    background: PRIMARY_CONTRAST,
+    background: theme.palette.baselineColor.neutral[15],
     borderRadius: '2rem',
     marginRight: '0.25rem',
   },
@@ -52,7 +45,7 @@ export const styles: { [key: string]: CSSProperties } = {
     fontSize: '0.875rem',
     fontWeight: '500',
     lineHeight: '1.063rem',
-    color: DYNAMIC_COLOR_MAIN,
+    color: theme.palette.baselineColor.etendoPrimary.main,
     textDecoration: 'none',
   },
   imgContainer: {
@@ -92,12 +85,12 @@ export const styles: { [key: string]: CSSProperties } = {
     padding: '0.75rem 1rem',
   },
   gridSectionContainer: {
-    border: `1px solid ${TRANSPARENT_NEUTRAL_5}`,
-    background: NEUTRAL_0,
+    border: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
+    background: theme.palette.baselineColor.neutral[0],
     padding: '0.75rem 1rem 0.75rem 1rem',
     borderRadius: '0.75rem',
   },
-  paperStyleMenu: { background: NEUTRAL_10, borderRadius: '0.75rem' },
+  paperStyleMenu: { background: theme.palette.baselineColor.neutral[10], borderRadius: '0.75rem' },
   listContainer: {
     padding: '0.75rem',
   },

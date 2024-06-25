@@ -14,7 +14,6 @@ import {
   ToggleChip,
   NotificationModal,
   SecondaryTabs,
-  NotificationModal
   Button,
   Grid,
   TextInputBase,
