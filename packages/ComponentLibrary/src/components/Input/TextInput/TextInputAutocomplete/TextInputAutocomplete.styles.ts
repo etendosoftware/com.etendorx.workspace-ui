@@ -41,7 +41,7 @@ export const CSS_STYLES: { [key: string]: any } = {
   tabText: {
     fontSize: FONT_SIZE_14,
     fontWeight: 500,
-    color: theme.palette.baselineColor.neutral[85],
+    color: theme.palette.baselineColor.transparentNeutral[5],
     marginLeft: '0.25rem',
   },
   suggestionText: {
@@ -107,7 +107,7 @@ export const SX_STYLES: { [key: string]: SxProps<Theme> } = {
   },
   tabIcon: {
     fontSize: FONT_SIZE_14,
-    color: theme.palette.baselineColor.neutral[85],
+    color: theme.palette.baselineColor.transparentNeutral[5],
   },
   clearButtonHover: {
     width: '2rem',

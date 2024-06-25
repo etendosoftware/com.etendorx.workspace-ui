@@ -27,7 +27,7 @@ export const styles: { [key: string]: CSSProperties } = {
     alignItems: 'center',
     justifyContent: 'center',
     display: 'flex',
-    background: theme.palette.baselineColor.neutral[15],
+    background: theme.palette.baselineColor.neutral[10],
     borderRadius: '2rem',
     marginRight: '0.25rem',
   },

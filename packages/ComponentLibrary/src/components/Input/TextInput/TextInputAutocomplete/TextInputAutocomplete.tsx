@@ -105,7 +105,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
           leftIcon ? (
             <IconButton onClick={onLeftIconClick}>{leftIcon}</IconButton>
           ) : (
-            <SearchIcon sx={{ color: !props.disabled ? isFocused && value.length === 0 ? theme.palette.dynamicColor.main : theme.palette.baselineColor.neutral[85] : theme.palette.baselineColor.neutral[85] }} />
+            <SearchIcon sx={{ color: !props.disabled ? isFocused && value.length === 0 ? theme.palette.dynamicColor.main : theme.palette.baselineColor.transparentNeutral[5] : theme.palette.baselineColor.transparentNeutral[5] }} />
           )
         )}
       </Box>
