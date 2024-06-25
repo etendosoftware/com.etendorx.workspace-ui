@@ -14,7 +14,6 @@ import {
   ToggleChip,
   NotificationModal,
   SecondaryTabs,
-  NotificationModal
   Button,
   Grid,
   TextInputBase,
@@ -53,7 +52,7 @@ const Home = () => {
     const timer = setTimeout(() => {
       const updatedTabs = tabsConfig.map(tab => ({
         ...tab,
-        isLoading: false
+        isLoading: false,
       }));
       setTabsConfig(updatedTabs);
     }, 5000);
@@ -306,8 +305,8 @@ const Home = () => {
     },
     {
       title: 'Secondary Tabs',
-      children: <SecondaryTabs tabsConfig={tabsConfig} />
-    }
+      children: <SecondaryTabs tabsConfig={tabsConfig} />,
+    },
   ];
 
   return (
