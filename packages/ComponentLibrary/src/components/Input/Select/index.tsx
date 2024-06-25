@@ -15,7 +15,7 @@ import CheckIcon from '../../../assets/icons/check-circle-filled.svg';
 import { START_700 } from '../../../colors';
 import { NEUTRAL_90 } from '../../ConfigurationModal/style';
 import { ISelectInput } from './types';
-import './style.css'
+import './style.css';
 
 const CustomPaper: React.FC<PaperProps> = props => {
   return <Paper {...props} sx={styles.optionsContainer} />;

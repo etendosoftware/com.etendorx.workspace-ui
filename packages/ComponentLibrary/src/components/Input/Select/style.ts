@@ -136,5 +136,4 @@ export const styles = {
       backgroundColor: TRASNPARENT_NEUTRAL_50,
     },
   },
-  
 };
