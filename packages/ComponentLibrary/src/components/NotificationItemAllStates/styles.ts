@@ -1,38 +1,30 @@
-import {
-  PRIMARY_CONTRAST,
-  NEUTRAL_10,
-  PRIMARY_MAIN,
-  NEUTRAL_100,
-  NEUTRAL_50,
-  PRIMARY_1000,
-  PRIMARY_50,
-} from '../../colors';
 import { SxProps, Theme } from '@mui/material';
+import { theme } from '../../theme';
 
 export const sx: { [key: string]: SxProps<Theme> } = {
   rightButton: {
-    background: NEUTRAL_100,
-    color: NEUTRAL_50,
+    background: theme.palette.baselineColor.neutral[100],
+    color: theme.palette.baselineColor.neutral[0],
     height: '2rem',
     borderRadius: '6.25rem',
     padding: '0.5rem 1rem',
     '&:hover': {
       border: 'none',
-      background: PRIMARY_MAIN,
-      color: PRIMARY_CONTRAST,
+      background: theme.palette.dynamicColor.main,
+      color: theme.palette.dynamicColor.contrastText,
     },
   },
   leftButton: {
-    background: PRIMARY_50,
-    color: PRIMARY_1000,
+    background: theme.palette.baselineColor.neutral[10],
+    color: theme.palette.baselineColor.transparentNeutral[1000],
     height: '2rem',
     borderRadius: '6.25rem',
     padding: '0.5rem 1rem',
-    border: `1px solid ${NEUTRAL_10}`,
+    border: `1px solid ${theme.palette.baselineColor.neutral[10]}`,
     '&:hover': {
       border: 'none',
-      background: PRIMARY_MAIN,
-      color: PRIMARY_CONTRAST,
+      background: theme.palette.dynamicColor.main,
+      color: theme.palette.dynamicColor.contrastText,
     },
   },
 };

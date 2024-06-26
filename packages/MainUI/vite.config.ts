@@ -8,10 +8,8 @@ export default defineConfig({
     react(),
     svgr({
       include: '**/*.svg',
-    }),
+    })
   ],
-});
-  plugins: [react()],
   server: {
     proxy: {
       '/sws/view': 'http://localhost:8092'
@@ -23,4 +21,4 @@ export default defineConfig({
       external: ['@mui/material']
     }
   }
-})
+});

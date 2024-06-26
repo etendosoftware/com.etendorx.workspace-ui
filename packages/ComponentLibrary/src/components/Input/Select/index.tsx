@@ -12,10 +12,9 @@ import { PRIMARY_CONTRAST, styles } from './style';
 import ChevronDown from '../../../assets/icons/chevron-down.svg';
 import XIcon from '../../../assets/icons/x.svg';
 import CheckIcon from '../../../assets/icons/check-circle-filled.svg';
-import { START_700 } from '../../../colors';
-import { NEUTRAL_90 } from '../../ConfigurationModal/style';
 import { ISelectInput } from './types';
 import './style.css';
+import { theme } from '../../../theme';
 
 const CustomPaper: React.FC<PaperProps> = props => {
   return <Paper {...props} sx={styles.optionsContainer} />;
@@ -131,7 +130,7 @@ const Select: React.FC<ISelectInput> = ({
           {...props}>
           <Typography
             className="textOption"
-            color={selected ? START_700 : NEUTRAL_90}
+            color={selected ? theme.palette.dynamicColor.dark : theme.palette.baselineColor.neutral[90]}
             style={styles.optionText}>
             {option.title}
           </Typography>

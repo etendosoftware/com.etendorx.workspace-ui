@@ -4,7 +4,6 @@ import {
   Table,
   TableV2,
   Tab,
-  Tag,
   DragModal,
   Navbar,
   Profile,
@@ -26,9 +25,6 @@ import {
 
 import List from '@mui/material/List';
 import {
-  CheckOutlined,
-  Error,
-  InfoOutlined,
   LockOutlined,
   Search,
 } from '@mui/icons-material';
@@ -249,7 +245,7 @@ const Home = () => {
     {
       title: 'Select',
       children: (
-        <Box style={{ background: PRIMARY_0, padding: 20, width: 300 }}>
+        <Box style={{ background: 'white', padding: 20, width: 300 }}>
           <Select
             iconLeft={logo}
             title="Peliculas"
@@ -330,32 +326,6 @@ const Home = () => {
               type="avatar"
             />
             ,
-          </Grid>
-        </Grid>
-      ),
-    },
-    {
-      title: 'Tag Variants',
-      children: (
-        <Grid container spacing={2}>
-          <Grid item>
-            <Tag type="success" icon={<InfoOutlined />} label="Registrado" />
-          </Grid>
-          <Grid item>
-            <Tag type="primary" label="Registrado" />
-          </Grid>
-          <Grid item>
-            <Tag
-              type="warning"
-              icon={<CheckOutlined />}
-              label="Período Cerrado"
-            />
-          </Grid>
-          <Grid item>
-            <Tag type="error" icon={<Error />} label="Anulado" />
-          </Grid>
-          <Grid item>
-            <Tag type="draft" label="En Borrador" />
           </Grid>
         </Grid>
       ),

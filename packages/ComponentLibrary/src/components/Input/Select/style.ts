@@ -1,4 +1,4 @@
-import { NEUTRAL_100, START_700 } from '../../../colors';
+import { theme } from "../../../theme";
 
 const TRASNPARENT_NEUTRAL_10 = '#00030D1A';
 const TRASNPARENT_NEUTRAL_50 = '#00030D80';
@@ -11,7 +11,7 @@ export const styles = {
       fontSize: '0.875rem',
       fontWeight: 500,
       textAlign: 'left',
-      color: NEUTRAL_100,
+      color: theme.palette.baselineColor.neutral[100],
       borderRadius: '0.75rem 0.75rem 0 0',
       '&:before': {
         borderColor: TRASNPARENT_NEUTRAL_10,
@@ -96,7 +96,7 @@ export const styles = {
     },
     '& .MuiAutocomplete-listbox .MuiAutocomplete-option.Mui-focused .textOption':
       {
-        color: START_700,
+        color: theme.palette.dynamicColor.dark,
       },
   },
   optionContainer: {
