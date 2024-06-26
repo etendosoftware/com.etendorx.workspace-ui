@@ -330,10 +330,6 @@ const Home = () => {
         </Grid>
       ),
     },
-    {
-      title: 'Secondary Tabs',
-      children: <SecondaryTabs tabsConfig={tabsConfig} />,
-    },
   ];
 
   return (
