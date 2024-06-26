@@ -21,7 +21,9 @@ import {
   SearchInputWithVoice,
   Box,
   NotificationStates,
+  Select,
 } from '@workspaceui/componentlibrary/src/components';
+
 import List from '@mui/material/List';
 import {
   CheckOutlined,
@@ -35,13 +37,14 @@ import logo from '../../assets/react.svg';
 import { sectionsModal } from '../../../../ComponentLibrary/src/components/ConfigurationModal/mock';
 import { PRIMARY_0 } from '@workspaceui/componentlibrary/src/colors';
 import Modal from '@workspaceui/componentlibrary/src/components/Modal';
-import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/mock';
 import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
 import {
   MOCK_AUTO_COMPLETE_TEXTS,
   MOCK_PLACEHOLDERS,
 } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
+import { topFilms } from '../../../../ComponentLibrary/src/components/Input/Select/mock';
+import { TabContent } from '@workspaceui/componentlibrary/src/interfaces';
 import { TABS_CONFIG } from '@workspaceui/componentlibrary/src/components/SecondaryTabs/constants/mock';
 import { NOTIFICATIONS } from '@workspaceui/componentlibrary/src/components/NotificationItem/mock';
 import { notificationsStates } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/mock';
@@ -243,6 +246,20 @@ const Home = () => {
     {
       title: 'Profile Modal',
       children: <Profile />,
+    },
+    {
+      title: 'Select',
+      children: (
+        <Box style={{ background: PRIMARY_0, padding: 20, width: 300 }}>
+          <Select
+            iconLeft={logo}
+            title="Peliculas"
+            helperText={{ label: 'Top 15', icon: logo }}
+            options={topFilms}
+            getOptionLabel={(option: any) => option.title}
+          />
+        </Box>
+      ),
     },
     {
       title: 'Waterfall Modal',
