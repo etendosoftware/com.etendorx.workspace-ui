@@ -1,5 +1,5 @@
 import React from 'react';
-import SearchIcon from '@mui/icons-material/Search';
+import SearchIcon from '../../assets/icons/search.svg';
 import { NavStyles, boxStyles } from './Nav.styles';
 import RigthButtons from './RigthComponents/RightButtons';
 import Logo from './LeftComponents/Logo';
@@ -11,7 +11,7 @@ const Nav: React.FC = () => {
       <AppIcon />
       <nav style={NavStyles}>
         <Logo />
-        <SearchIcon />
+        <SearchIcon fill="blue" width={100} height={100} />
         <RigthButtons />
       </nav>
     </div>
