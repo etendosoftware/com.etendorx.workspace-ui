@@ -42,6 +42,13 @@ export const styles: { [key: string]: CSSProperties } = {
     fontWeight: '500',
     marginTop: '0.25rem',
   },
+  anchorStyles: {
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    lineHeight: '1.063rem',
+    color: theme.palette.dynamicColor.main,
+    textDecoration: 'none',
+  },
   closeIcon: {
     position: 'absolute',
     top: '0.5rem',
@@ -95,6 +102,7 @@ export const StyledListItem = styled('div')(() => ({
       visibility: 'visible',
       background: theme.palette.baselineColor.neutral[20],
       borderRadius: '100%',
+      color: theme.palette.baselineColor.neutral[100],
     },
     '& > .textContainer': {
       paddingRight: '1.5rem',
