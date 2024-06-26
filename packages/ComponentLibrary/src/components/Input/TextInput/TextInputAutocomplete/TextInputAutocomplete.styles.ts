@@ -1,5 +1,5 @@
 import { SxProps, Theme } from '@mui/material';
-import { NEUTRAL_200, NEUTRAL_850, NEUTRAL_1000, PRIMARY_450, PRIMARY_50, PRIMARY_950, TERTIARY_950, NEUTRAL_5, PRIMARY_150, PRIMARY_1000, NEUTRAL_150, NEUTRAL_10, PRIMARY_0 } from '../../../../colors';
+import { theme } from '../../../../theme';
 
 // Font sizes
 const FONT_SIZE_14 = 14;
@@ -11,20 +11,20 @@ const WIDTH_FULL = '100%';
 export const CSS_STYLES: { [key: string]: any } = {
   inputProps: {
     position: 'relative',
-    color: PRIMARY_450,
+    color: theme.palette.baselineColor.neutral[100],
     fontSize: FONT_SIZE_14,
   },
   input: {
     padding: '0.5rem 0.75rem 0.5rem 0.75rem',
     height: '2.5rem',
     borderRadius: '6.25rem',
-    backgroundColor: PRIMARY_50,
+    backgroundColor: theme.palette.baselineColor.neutral[0],
     transition: 'background-color 0.5s ease',
     '&:hover': {
-      // backgroundColor: NEUTRAL_5,
+      backgroundColor: theme.palette.baselineColor.transparentNeutral[5],
     },
     '&.Mui-disabled': {
-      backgroundColor: PRIMARY_950,
+      backgroundColor: theme.palette.baselineColor.transparentNeutral[5],
     },
     '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
       // borderColor: "transparent",
@@ -35,17 +35,17 @@ export const CSS_STYLES: { [key: string]: any } = {
     position: 'relative',
     transition: 'background-color 0.3s, border-color 0.3s',
     '&:hover': {
-      backgroundColor: PRIMARY_950,
+      backgroundColor: theme.palette.baselineColor.transparentNeutral[5],
     },
   },
   tabText: {
     fontSize: FONT_SIZE_14,
     fontWeight: 500,
-    color: NEUTRAL_850,
+    color: theme.palette.baselineColor.transparentNeutral[5],
     marginLeft: '0.25rem',
   },
   suggestionText: {
-    color: PRIMARY_150,
+    color: theme.palette.baselineColor.neutral[20],
   },
   spanOpacity: {
     opacity: 0,
@@ -70,18 +70,19 @@ export const SX_STYLES: { [key: string]: SxProps<Theme> } = {
     display: 'flex',
     alignItems: 'center',
     marginLeft: '0.25rem',
-    backgroundColor: NEUTRAL_150,
+    backgroundColor: theme.palette.baselineColor.neutral[5],
     height: '1.5rem',
     padding: '0.5rem',
     borderRadius: 100,
-    border: `1px solid ${NEUTRAL_10}`,
+    border: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
+
   },
   suggestionBox: {
     position: 'absolute',
     top: '50%',
     left: 44,
     transform: 'translateY(-50%)',
-    color: PRIMARY_1000,
+    color: theme.palette.baselineColor.transparentNeutral[70],
     fontSize: FONT_SIZE_14,
     pointerEvents: 'none',
     whiteSpace: 'nowrap',
@@ -106,33 +107,36 @@ export const SX_STYLES: { [key: string]: SxProps<Theme> } = {
   },
   tabIcon: {
     fontSize: FONT_SIZE_14,
-    color: NEUTRAL_850,
+    color: theme.palette.baselineColor.transparentNeutral[5],
   },
   clearButtonHover: {
     width: '2rem',
     height: '2rem',
     transition: 'background-color 0.3s, color 0.3s',
     '&:hover': {
-      backgroundColor: NEUTRAL_200,
+      backgroundColor: theme.palette.baselineColor.neutral[0],
       borderRadius: '50%',
       '& .MuiSvgIcon-root': {
-        color: NEUTRAL_1000,
+        color: theme.palette.baselineColor.neutral[100],
       },
     },
   },
   rightButtonHover: {
-    backgroundColor: PRIMARY_0,
+    backgroundColor: theme.palette.baselineColor.neutral[0],
     borderRadius: '50%',
     width: '2rem',
     height: '2rem',
     transition: 'background-color 0.3s, color 0.3s',
     '&:hover': {
-      backgroundColor: NEUTRAL_200,
+      backgroundColor: theme.palette.baselineColor.neutral[0],
       borderRadius: '50%',
       '& .MuiSvgIcon-root': {
-        color: NEUTRAL_1000,
+        color: theme.palette.baselineColor.neutral[100],
       },
     },
+  },
+  iconDefault: {
+    color: theme.palette.baselineColor.neutral[70],
   },
 };
 

@@ -1,5 +1,5 @@
 import { CSSProperties } from "react";
-import { NEUTRAL_50, NEUTRAL_800, PRIMARY_600, PRIMARY_100 } from "../../colors";
+import { theme } from "../../theme";
 
 export const NavStyles: CSSProperties = {
     display: 'flex',
@@ -8,8 +8,8 @@ export const NavStyles: CSSProperties = {
     justifyContent: 'space-between',
     alignItems: 'center',
     borderRadius: '12.5rem',
-    background: `var(--Neutral-0, ${NEUTRAL_50})`,
-    boxShadow: `0rem 0.125rem 0.25rem 0rem var(--transparent-neutral-10, ${NEUTRAL_800})`,
+    background: `var(--Neutral-0, ${theme.palette.baselineColor.neutral[0]})`,
+    boxShadow: `0rem 0.125rem 0.25rem 0rem var(--transparent-neutral-10, ${theme.palette.baselineColor.neutral[80]})`,
 }
 
 export const boxStyles: CSSProperties = {
@@ -37,15 +37,15 @@ export const logoStyles: CSSProperties = {
   
 export const companyNameStyles: CSSProperties = {
   fontSize: '1rem',
-  color: `var(--Neutral-90, ${PRIMARY_600})`,
+  color: `var(--Neutral-90, ${theme.palette.baselineColor.neutral[90]})`,
   fontWeight: '600',
 };
   
 export const AppStyles: CSSProperties = {
   width: '3rem', 
   height: '3rem', 
-  background: NEUTRAL_50, 
+  background: theme.palette.baselineColor.neutral[0], 
   margin: '1rem',
   padding: '1rem',
-  border: `0.25rem solid ${PRIMARY_100}`,
+  border: `0.25rem solid ${theme.palette.baselineColor.neutral[20]}`,
 }

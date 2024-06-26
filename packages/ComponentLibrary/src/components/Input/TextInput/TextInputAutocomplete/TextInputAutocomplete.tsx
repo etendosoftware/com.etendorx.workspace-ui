@@ -7,10 +7,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import { TextInputProps } from './TextInputComplete.types';
 import { containerIconStyle, CSS_STYLES, SX_STYLES } from './TextInputAutocomplete.styles';
 import { DEFAULT_CONSTANTS } from './TextInputAutocomplete.constants';
-import { PRIMARY_950, PRIMARY_1000, NEUTRAL_850, PRIMARY_MAIN, TERTIARY_150, NEUTRAL_50, NEUTRAL_100, NEUTRAL_200, DYNAMIC_CONTRAST } from '../../../../colors';
 import SuggestionBox from './SuggestionBox';
-import SmartSearchIcon from '@mui/icons-material/Stars';
-import { DYNAMIC_COLOR_MAIN } from '../../../ConfigurationModal/style';
+import { theme } from '../../../../theme';
 
 const TextInputAutoComplete = (props: TextInputProps) => {
   const {
@@ -38,15 +36,15 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   };
 
   const getIconStyle = (iconName: string) => ({
-    backgroundColor: activeIcon === iconName ? DYNAMIC_COLOR_MAIN : 'transparent',
-    color: activeIcon === iconName ? DYNAMIC_CONTRAST : 'inherit',
+    backgroundColor: activeIcon === iconName ? theme.palette.dynamicColor.main : 'transparent',
+    color: activeIcon === iconName ? theme.palette.dynamicColor.contrastText : 'inherit',
     borderRadius: '50%',
     width: '2rem',
     height: '2rem',
     transition: 'background-color 0.3s, color 0.3s',
     '&:hover': {
-      backgroundColor: activeIcon === iconName ? 'blue' : NEUTRAL_200,
-      color: activeIcon === iconName ? DYNAMIC_CONTRAST : 'inherit',
+      backgroundColor: activeIcon === iconName ? 'blue' : theme.palette.baselineColor.neutral[20],
+      color: activeIcon === iconName ? theme.palette.dynamicColor.contrastText : 'inherit',
     }
   });
 
@@ -133,7 +131,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     ...CSS_STYLES.input,
     "& .MuiOutlinedInput-input": {
       '&::placeholder': {
-        color: PRIMARY_1000,
+        color: theme.palette.baselineColor.transparentNeutral[70],
         opacity: isFocused ? 0 : 1,
         transition: `opacity ${DEFAULT_CONSTANTS.PLACEHOLDER_OPACITY_TRANSITION_DURATION}s`,
       },
@@ -148,12 +146,12 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     <InputAdornment position="start">
       <Box sx={SX_STYLES.startAdornment}>
         {loading ? (
-          <CircularProgress sx={{ color: NEUTRAL_100 }} size={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_SIZE} thickness={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_THICKNESS} />
+          <CircularProgress sx={{ color: theme.palette.baselineColor.neutral[10] }} size={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_SIZE} thickness={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_THICKNESS} />
         ) : (
           leftIcon ? (
             <IconButton onClick={onLeftIconClick}>{leftIcon}</IconButton>
           ) : (
-            <SearchIcon sx={{ color: !props.disabled ? isFocused && value.length === 0 ? PRIMARY_MAIN : NEUTRAL_850 : NEUTRAL_850 }} />
+            <SearchIcon sx={{ color: !props.disabled ? isFocused && value.length === 0 ? theme.palette.dynamicColor.main : theme.palette.baselineColor.transparentNeutral[5] : theme.palette.baselineColor.transparentNeutral[5] }} />
           )
         )}
       </Box>
@@ -180,31 +178,20 @@ const TextInputAutoComplete = (props: TextInputProps) => {
 
   const textFieldSx = {
     ...CSS_STYLES.inputCommon,
-    backgroundColor: !props.disabled ? NEUTRAL_50 : PRIMARY_950,
+    backgroundColor: !props.disabled ? theme.palette.baselineColor.neutral[0] : theme.palette.baselineColor.transparentNeutral[5],
     '& .MuiOutlinedInput-root': {
       '& fieldset': {
-        borderColor: smartIconActive ? 'transparent' : PRIMARY_950,
-        border: smartIconActive ? '2px solid' : undefined,
-        borderImage: smartIconActive ? 'linear-gradient(90deg, #5D9FFF, #FFEA7D, #F3A6FA, #A685FF) 1' : undefined,
-        background: smartIconActive ? 'linear-gradient(90deg, #5D9FFF, #FFEA7D, #F3A6FA, #A685FF)' : undefined,
-        WebkitMask: `
-          linear-gradient(#fff 0 0) padding-box,
-          linear-gradient(#fff 0 0)
-        `,
-        WebkitMaskComposite: 'xor',
-        maskComposite: 'exclude',
-        transition: 'border-color 0.5s',
-        borderRadius: '6.25rem',
+        borderColor: theme.palette.baselineColor.transparentNeutral[5],
       },
       '&:hover fieldset': {
         borderWidth: 2,
-        borderColor: NEUTRAL_100,
+        borderColor: theme.palette.baselineColor.neutral[10],
       },
       '&.Mui-focused fieldset': {
-        borderColor: PRIMARY_MAIN,
+        borderColor: theme.palette.dynamicColor.main,
       },
       '&.Mui-focused': {
-        backgroundColor: props.value ? NEUTRAL_50 : TERTIARY_150,
+        backgroundColor: value ? theme.palette.baselineColor.neutral[0] : theme.palette.dynamicColor.contrastText,
       },
     },
     ...(props.disabled && {

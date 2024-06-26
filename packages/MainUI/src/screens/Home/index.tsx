@@ -1,53 +1,64 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   DataGrid,
   Table,
   TableV2,
   Tab,
-  Tag,
   DragModal,
   Navbar,
   Profile,
   Waterfall,
   ConfigurationModal,
-  NotificationBase,
+  NotificationButton,
   ToggleChip,
-} from '@workspaceui/componentlibrary/src/components';
-import {
+  NotificationModal,
+  SecondaryTabs,
   Button,
   Grid,
   TextInputBase,
   InputPassword,
   SearchInputWithVoice,
   Box,
+  NotificationStates,
+  Select,
 } from '@workspaceui/componentlibrary/src/components';
+
 import List from '@mui/material/List';
 import {
-  CheckOutlined,
-  Error,
-  InfoOutlined,
   LockOutlined,
   Search,
 } from '@mui/icons-material';
 import MenuItem from '@mui/material/MenuItem';
 import logo from '../../assets/react.svg';
 import { sectionsModal } from '../../../../ComponentLibrary/src/components/ConfigurationModal/mock';
-import { PRIMARY_0 } from '@workspaceui/componentlibrary/src/colors';
 import Modal from '@workspaceui/componentlibrary/src/components/Modal';
-import { TabContent } from '@workspaceui/componentlibrary/src/Interfaces';
 import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/mock';
 import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
 import {
   MOCK_AUTO_COMPLETE_TEXTS,
   MOCK_PLACEHOLDERS,
 } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
-import {
-  NOTIFICATIONS,
-  NOTIFICATIONS_FULL,
-} from '@workspaceui/componentlibrary/src/components/NotificationsButton/mock';
+import { topFilms } from '../../../../ComponentLibrary/src/components/Input/Select/mock';
+import { TabContent } from '@workspaceui/componentlibrary/src/interfaces';
+import { TABS_CONFIG } from '@workspaceui/componentlibrary/src/components/SecondaryTabs/constants/mock';
+import { NOTIFICATIONS } from '@workspaceui/componentlibrary/src/components/NotificationItem/mock';
+import { notificationsStates } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/mock';
 
 const Home = () => {
   const [isActive, setIsActive] = useState(false);
+  const [tabsConfig, setTabsConfig] = useState(TABS_CONFIG);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const updatedTabs = tabsConfig.map(tab => ({
+        ...tab,
+        isLoading: false,
+      }));
+      setTabsConfig(updatedTabs);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleToggle = () => {
     setIsActive(prevState => !prevState);
@@ -144,7 +155,7 @@ const Home = () => {
       children: (
         <Grid
           sx={{
-            backgroundColor: PRIMARY_0,
+            backgroundColor: 'white',
             padding: '1rem',
             borderRadius: '0.5rem',
           }}
@@ -232,6 +243,20 @@ const Home = () => {
       children: <Profile />,
     },
     {
+      title: 'Select',
+      children: (
+        <Box style={{ background: 'white', padding: 20, width: 300 }}>
+          <Select
+            iconLeft={logo}
+            title="Peliculas"
+            helperText={{ label: 'Top 15', icon: logo }}
+            options={topFilms}
+            getOptionLabel={(option: any) => option.title}
+          />
+        </Box>
+      ),
+    },
+    {
       title: 'Waterfall Modal',
       children: <Waterfall />,
     },
@@ -249,35 +274,58 @@ const Home = () => {
     },
     {
       title: 'Notification Button',
+      children: <NotificationButton notifications={NOTIFICATIONS} />,
+    },
+    {
+      title: 'Notification Modal',
       children: (
-        <>
-          <NotificationBase notifications={NOTIFICATIONS} />
-          <NotificationBase notifications={NOTIFICATIONS_FULL} />
-        </>
+        <NotificationButton notifications={NOTIFICATIONS}>
+          <NotificationModal
+            title={{ icon: logo, label: 'Notificaciones' }}
+            linkTitle={{ label: 'Marcar todas como leídas', url: '/home' }}
+            emptyStateImageAlt="Sin Notificaciones"
+            emptyStateMessage="No tienes notificaciones"
+            emptyStateDescription="¡Genial! Estás al día con todo. Te notificaremos aquí si hay algo nuevo."
+            actionButtonLabel="Configurar notificaciones"
+          />
+        </NotificationButton>
       ),
     },
     {
-      title: 'Tag Variants',
+      title: 'Notification Item States',
       children: (
-        <Grid container spacing={2}>
+        <Grid container spacing={1}>
           <Grid item>
-            <Tag type="success" icon={<InfoOutlined />} label="Registrado" />
-          </Grid>
-          <Grid item>
-            <Tag type="primary" label="Registrado" />
-          </Grid>
-          <Grid item>
-            <Tag
-              type="warning"
-              icon={<CheckOutlined />}
-              label="Período Cerrado"
+            <NotificationStates
+              notifications={notificationsStates}
+              type="informatives"
             />
           </Grid>
           <Grid item>
-            <Tag type="error" icon={<Error />} label="Anulado" />
+            <NotificationStates
+              notifications={notificationsStates}
+              type="withButtons"
+            />
           </Grid>
           <Grid item>
-            <Tag type="draft" label="En Borrador" />
+            <NotificationStates
+              notifications={notificationsStates}
+              type="withButtonsAndTags"
+            />
+          </Grid>
+          <Grid item>
+            <NotificationStates
+              notifications={notificationsStates}
+              type="tags"
+            />
+            ,
+          </Grid>
+          <Grid item>
+            <NotificationStates
+              notifications={notificationsStates}
+              type="avatar"
+            />
+            ,
           </Grid>
         </Grid>
       ),

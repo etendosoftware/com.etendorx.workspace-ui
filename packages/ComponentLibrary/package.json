@@ -17,14 +17,15 @@
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.15.14",
     "@mui/lab": "^5.0.0-alpha.165",
-    "@mui/material": "^5.15.14",
+    "@mui/material": "^5.15.19",
     "@mui/utils": "^5.15.11",
     "@mui/x-data-grid-generator": "^6.19.4",
     "@mui/x-data-grid-pro": "^6.19.4",
     "@mui/x-date-pickers": "^7.1.1",
     "material-react-table": "^2.12.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-markdown": "^9.0.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.56",
@@ -36,6 +37,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "typescript": "^5.2.2",
-    "vite": "^5.1.4"
+    "vite": "^5.1.4",
+    "vite-plugin-svgr": "^4.2.0"
   }
 }

@@ -1,8 +1,8 @@
 // styles.ts
 import { Theme } from '@mui/material/styles';
-import { TERTIARY_900, SECONDARY_600, NEUTRAL_50, NEUTRAL_600, NEUTRAL_400 } from "../../colors";
+import { theme } from '../../theme';
 
-const switchStyles = (theme: Theme) => ({
+const switchStyles = (themeParam: Theme) => ({
   width: '2.5rem', 
   height: '1.25rem', 
   padding: 0,
@@ -12,9 +12,9 @@ const switchStyles = (theme: Theme) => ({
     transitionDuration: '300ms',
     '&.Mui-checked': {
       transform: 'translateX(1.25rem)',
-      color: NEUTRAL_50,
+      color: theme.palette.baselineColor.neutral[0],
       '& + .MuiSwitch-track': {
-        backgroundColor: theme.palette.mode === 'dark' ? SECONDARY_600 : TERTIARY_900,
+        backgroundColor: themeParam.palette.mode === 'dark' ? theme.palette.specificColor.warning : theme.palette.baselineColor.neutral[80],
         opacity: 1,
         border: 0,
       },
@@ -23,16 +23,16 @@ const switchStyles = (theme: Theme) => ({
       },
     },
     '&.Mui-focusVisible .MuiSwitch-thumb': {
-      color: SECONDARY_600,
-      border: `0.375rem solid ${NEUTRAL_50}`,
+      color: theme.palette.specificColor.warning,
+      border: `0.375rem solid ${theme.palette.baselineColor.neutral[0]}`,
     },
     '&.Mui-disabled .MuiSwitch-thumb': {
-      color: theme.palette.mode === 'light' 
-        ? theme.palette.grey[100]
-        : theme.palette.grey[600],
+      color: themeParam.palette.mode === 'light' 
+        ? themeParam.palette.grey[100]
+        : themeParam.palette.grey[600],
     },
     '&.Mui-disabled + .MuiSwitch-track': {
-      opacity: theme.palette.mode === 'light' ? 0.7 : 0.3,
+      opacity: themeParam.palette.mode === 'light' ? 0.7 : 0.3,
     },
   },
   '& .MuiSwitch-thumb': {
@@ -42,9 +42,9 @@ const switchStyles = (theme: Theme) => ({
   },
   '& .MuiSwitch-track': {
     borderRadius: '1.625rem',
-    backgroundColor: theme.palette.mode === 'light' ? NEUTRAL_400 : NEUTRAL_600,
+    backgroundColor: themeParam.palette.mode === 'light' ? theme.palette.baselineColor.neutral[30] : theme.palette.specificColor.draft.contrastText,
     opacity: 1,
-    transition: theme.transitions.create(['background-color'], {
+    transition: themeParam.transitions.create(['background-color'], {
       duration: 500,
     }),
   },
