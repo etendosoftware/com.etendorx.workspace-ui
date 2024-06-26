@@ -1,4 +1,5 @@
 import { CSSProperties } from 'react';
+import { theme } from '../../../theme';
 
 export const toggleContainerStyles: CSSProperties = {
     display: 'flex',
@@ -7,7 +8,7 @@ export const toggleContainerStyles: CSSProperties = {
     alignItems: 'center',
     alignSelf: 'stretch',
     borderRadius: '12.5rem',
-    background: 'rgba(0, 3, 13, 0.05)',
+    background: theme.palette.baselineColor.transparentNeutral[50],
   };
   
   export const toggleButtonStyles: CSSProperties = {

@@ -22,13 +22,12 @@ import { containerStyles, showAllStyles } from '../DragModal/DragModal.styles';
 import { DragIndicator, NavigateBefore } from '@mui/icons-material';
 import {
   CustomizeButton,
-  PRIMARY_BLUE,
-  PRIMARY_GREY,
   SectionContainer,
   StartIconStyles,
 } from './WaterfallModal.styles';
 import { Box, Button } from '@mui/material';
 import { WaterfallModalProps } from './WaterfallModal.types';
+import { theme } from '../../theme';
 
 const DragModalContent: React.FC<WaterfallModalProps> = ({
   people,
@@ -80,7 +79,7 @@ const DragModalContent: React.FC<WaterfallModalProps> = ({
       <div style={SectionContainer}>
         <Box
           sx={{
-            '&:hover': { background: PRIMARY_GREY, borderRadius: '0.5rem' },
+            '&:hover': { background: theme.palette.dynamicColor.contrastText, borderRadius: '0.5rem' },
           }}>
           <Button
             onClick={onBack}
@@ -89,7 +88,7 @@ const DragModalContent: React.FC<WaterfallModalProps> = ({
             sx={{
               '&:hover': {
                 border: 'none',
-                color: PRIMARY_BLUE,
+                color: theme.palette.baselineColor.neutral[80],
               },
             }}>
             Volver

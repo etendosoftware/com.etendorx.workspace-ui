@@ -1,6 +1,6 @@
 import { SxProps } from '@mui/material';
-import { NEUTRAL_5, NEUTRAL_100 } from '../../../../colors';
 import { CSSProperties } from 'react';
+import { theme } from '../../../../theme';
 
 export const tabLabelContainerStyles: SxProps = {
     display: 'flex',
@@ -10,8 +10,8 @@ export const tabLabelContainerStyles: SxProps = {
 export const badgeStyles: SxProps = {
     marginLeft: '0.875rem',
     '& .MuiBadge-badge': {
-        backgroundColor: NEUTRAL_5,
-        color: NEUTRAL_100,
+        backgroundColor: theme.palette.baselineColor.transparentNeutral[5],
+        color: theme.palette.baselineColor.neutral[100],
         fontSize: '0.875rem',
         fontWeight: 500,
         height: '1.5rem',

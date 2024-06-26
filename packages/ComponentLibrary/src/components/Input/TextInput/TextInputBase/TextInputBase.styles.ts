@@ -1,6 +1,6 @@
 // TextInputBaseStyles.ts
 import { SxProps } from '@mui/system';
-import { ERROR_MAIN, NEUTRAL_100, NEUTRAL_80 } from '../../../../colors';
+import { theme } from '../../../../theme';
 
 export const inputBaseStyles = {
   inputBase: {
@@ -26,7 +26,7 @@ export const inputBaseStyles = {
   inputStyle: {
     padding: '0.25rem 0',
     fontSize: '14px',
-    color: NEUTRAL_100,
+    color: theme.palette.baselineColor.transparentNeutral[10],
     fontFamily: 'Inter, sans-serif',
     fontWeight: 500,
   },
@@ -36,12 +36,12 @@ export const inputBaseStyles = {
     }
     #password-input-label {
       font-weight: 500;
-      color: ${NEUTRAL_80};
+      color: ${theme.palette.baselineColor.neutral[80]};
       font-size: 18px;
       font-family: 'Inter', sans-serif;
     }
     .MuiFormLabel-asterisk {
-      color: ${ERROR_MAIN};
+      color: ${theme.palette.specificColor.error};
     }
     #password-input {
       font-size: 14px;

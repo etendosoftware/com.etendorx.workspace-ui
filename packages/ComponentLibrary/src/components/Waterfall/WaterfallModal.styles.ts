@@ -1,10 +1,7 @@
 import { styled } from '@mui/material';
 import { CSSProperties } from 'react';
-import { TERTIARY_800, NEUTRAL_300 } from '../../colors';
 
 export const MODAL_WIDTH = 240;
-export const PRIMARY_BLUE = TERTIARY_800;
-export const PRIMARY_GREY = NEUTRAL_300;
 
 export const SectionContainer: CSSProperties = {
   padding: '0.5rem',

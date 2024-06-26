@@ -4,10 +4,7 @@ import {
   BORDER_SELECT_1,
   BORDER_SELECT_2,
   COLUMN_SPACING,
-  DYNAMIC_COLOR_MAIN,
   FIRST_MARGIN_TOP,
-  NEUTRAL_30,
-  NEUTRAL_90,
   menuSyle,
   styles,
 } from './style';
@@ -16,6 +13,7 @@ import { IConfigurationModalProps, ISection } from './types';
 import { ALT } from './constants';
 import checkIcon from '../../assets/icons/check-circle-filled.svg';
 import './style.css';
+import { theme } from '../../theme';
 
 const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
   icon,
@@ -82,12 +80,12 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
     sectionIndex: number,
   ) => {
     if (isSelected(selectedImageIndex, imageIndex)) {
-      return BORDER_SELECT_2 + DYNAMIC_COLOR_MAIN;
+      return BORDER_SELECT_2 + theme.palette.dynamicColor.main;
     }
     if (isHovered(sectionIndex, imageIndex)) {
-      return BORDER_SELECT_2 + NEUTRAL_90;
+      return BORDER_SELECT_2 + theme.palette.baselineColor.neutral[90];
     }
-    return BORDER_SELECT_1 + NEUTRAL_30;
+    return BORDER_SELECT_1 + theme.palette.baselineColor.neutral[30];
   };
 
   const isSelected = (

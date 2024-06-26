@@ -1,6 +1,6 @@
 import { SxProps } from '@mui/material';
-import { DYNAMIC_CONSTRAST, DYNAMIC_MAIN, NEUTRAL_10, NEUTRAL_60, NEUTRAL_70, NEUTRAL_90, PRIMARY_0, PRIMARY_500, PRIMARY_CONTRAST } from '../../colors';
 import { CSSProperties } from 'react';
+import { theme } from '../../theme';
 
 export const containerStyles: SxProps = {
     display: 'flex',
@@ -14,46 +14,46 @@ export const tabsContainerStyles: SxProps = {
 
 export const tabStyles = (numberOfItems?: number, isLoading?: boolean): SxProps => ({
     minWidth: 'auto',
-    borderBottom: `1px solid ${NEUTRAL_10}`,
+    borderBottom: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
     transition: 'border-bottom-color 0.5s ease-in-out',
     padding: '0.625rem',
     paddingRight: isLoading ? '0rem' : numberOfItems ? '1.25rem' : '0.625rem',
+    backgroundColor: 'transparent',
     '&.Mui-selected': {
-        backgroundColor: 'transparent',
         borderBottom: '2px solid',
         paddingBottom: 'calc(0.625rem - 1px)',
-        color: NEUTRAL_90,
+        color: theme.palette.baselineColor.neutral[90],
     },
     '&:hover': {
         borderBottom: '2px solid',
         paddingBottom: 'calc(0.625rem - 1px)',
         backgroundColor: 'transparent',
-        color: NEUTRAL_90,
+        color: theme.palette.baselineColor.neutral[90],
     },
 });
 
 export const commonStyles: SxProps = {
     width: '2rem',
     height: '2rem',
-    backgroundColor: PRIMARY_0,
+    backgroundColor: theme.palette.baselineColor.neutral[0],
     borderRadius: '12.5rem',
     marginTop: '0.375rem',
 };
 
 export const rightButtonContainerStyles: SxProps = {
-    borderBottom: `1px solid ${NEUTRAL_10}`,
+    borderBottom: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
 };
 
 export const rightButtonStyles = (open: boolean) => ({
     ...commonStyles,
-    color: open ? PRIMARY_CONTRAST : PRIMARY_500,
-    backgroundColor: open ? PRIMARY_500 : PRIMARY_0,
+    color: open ? theme.palette.dynamicColor.contrastText : theme.palette.baselineColor.neutral[80],
+    backgroundColor: open ? theme.palette.baselineColor.neutral[80] : theme.palette.baselineColor.neutral[0],
     borderRadius: '50%',
     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)',
     transition: 'background-color 0.5s ease, color 0.5s ease, border-radius 0.5s ease, box-shadow 0.5s ease',
     '&:hover': {
-        color: PRIMARY_CONTRAST,
-        backgroundColor: PRIMARY_500,
+        color: theme.palette.dynamicColor.contrastText,
+        backgroundColor: theme.palette.baselineColor.neutral[80],
         boxShadow: '0px 4px 10px 0px #00030D1A',
         borderRadius: '12.5rem',
     },
@@ -72,14 +72,14 @@ export const iconStyles: SxProps = {
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: '14px',
-    color: NEUTRAL_90,
+    color: theme.palette.baselineColor.neutral[90],
 };
 
 export const menuPaperProps: SxProps = {
     marginTop: '4px',
-    border: `1px solid ${NEUTRAL_10}`,
+    border: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
     padding: '0.5rem',
-    boxShadow: `0px 4px 10px 0px ${NEUTRAL_10}`,
+    boxShadow: `0px 4px 10px 0px ${theme.palette.baselineColor.transparentNeutral[10]}`,
     borderRadius: '12px',
 };
 
@@ -98,8 +98,8 @@ export const menuItemStyles: SxProps = {
     borderRadius: '0.5rem',
     transition: 'background-color 500ms, color 500ms',
     '&:hover': {
-        backgroundColor: DYNAMIC_CONSTRAST,
-        color: DYNAMIC_MAIN,
+        backgroundColor: theme.palette.dynamicColor.contrastText,
+        color: theme.palette.dynamicColor.main,
     },
 };
 
@@ -107,7 +107,7 @@ export const menuItemTypographyStyles: CSSProperties | undefined = {
     marginRight: '0.5rem',
     fontSize: '0.875rem',
     fontWeight: 500,
-    color: NEUTRAL_90,
+    color: theme.palette.baselineColor.neutral[90],
     transition: 'color 0.5s ease',
 };
 
@@ -115,11 +115,11 @@ export const menuItemIconModalStyles: SxProps = {
     width: '1rem',
     height: '1rem',
     marginRight: '0.5rem',
-    color: NEUTRAL_60,
+    color: theme.palette.baselineColor.neutral[60],
 };
 
 export const menuItemIconStyles = {
     width: '1rem',
     height: '1rem',
-    color: NEUTRAL_70,
+    color: theme.palette.baselineColor.neutral[70],
 };

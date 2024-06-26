@@ -1,5 +1,4 @@
 import { CSSProperties } from 'react';
-import { TERTIARY_800 } from '../../colors';
 
 export const listStyles: CSSProperties = {
   padding: '0.5rem',
@@ -50,4 +49,3 @@ export const personLabelStyles: CSSProperties = {
 };
 
 export const MODAL_WIDTH = 240;
-export const PRIMARY_BLUE = TERTIARY_800;

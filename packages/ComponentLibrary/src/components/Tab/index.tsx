@@ -2,8 +2,8 @@ import * as React from 'react';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import { TabContext, TabList, TabPanel } from '@mui/lab';
-import { TERTIARY_50 } from '../../colors';
 import { TabContent } from '../../interfaces';
+import { theme } from '../../theme';
 
 interface TabsMUIProps {
   tabArray: TabContent[];
@@ -16,7 +16,7 @@ const TabsMUI = ({ tabArray }: TabsMUIProps) => {
   };
 
   return (
-    <Box sx={{ width: '100%', height: '100%', backgroundColor: TERTIARY_50 }}>
+    <Box sx={{ width: '100%', height: '100%', backgroundColor: theme.palette.dynamicColor.contrastText }}>
       <TabContext value={value}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <TabList

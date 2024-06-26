@@ -35,7 +35,6 @@ import {
 import MenuItem from '@mui/material/MenuItem';
 import logo from '../../assets/react.svg';
 import { sectionsModal } from '../../../../ComponentLibrary/src/components/ConfigurationModal/mock';
-import { PRIMARY_0 } from '@workspaceui/componentlibrary/src/colors';
 import Modal from '@workspaceui/componentlibrary/src/components/Modal';
 import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/mock';
 import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
@@ -160,7 +159,7 @@ const Home = () => {
       children: (
         <Grid
           sx={{
-            backgroundColor: PRIMARY_0,
+            backgroundColor: 'white',
             padding: '1rem',
             borderRadius: '0.5rem',
           }}
