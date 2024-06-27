@@ -9,10 +9,10 @@ export const inputBaseStyles = {
       borderBottomStyle: 'solid',
     },
     '& .MuiInput-underline:hover:before': {
-      borderBottomColor: 'red',
+      borderBottomColor: theme.palette.baselineColor.neutral[80],
     },
     '& .MuiInput-underline:after': {
-      borderBottomColor: 'red',
+      borderBottomColor: theme.palette.baselineColor.neutral[80],
     },
     '& .MuiInputBase-input': {
       fontFamily: 'Inter, sans-serif',

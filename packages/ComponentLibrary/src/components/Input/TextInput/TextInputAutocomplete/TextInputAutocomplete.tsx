@@ -208,6 +208,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
       },
       '&.Mui-focused': {
         backgroundColor: value ? theme.palette.baselineColor.neutral[0] : theme.palette.dynamicColor.contrastText,
+        borderRadius: '12.25rem',
       },
     },
     ...props.sx,
