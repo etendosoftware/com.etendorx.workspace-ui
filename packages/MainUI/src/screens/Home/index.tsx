@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   DataGrid,
   Table,
@@ -7,11 +7,10 @@ import {
   DragModal,
   Navbar,
   Profile,
-  ConfigurationModal,
+  Waterfall,
   NotificationButton,
   ToggleChip,
   NotificationModal,
-  SecondaryTabs,
   Button,
   Grid,
   TextInputBase,
@@ -23,7 +22,6 @@ import {
 } from '@workspaceui/componentlibrary/src/components';
 import { LockOutlined, Search } from '@mui/icons-material';
 import logo from '../../assets/react.svg';
-import { sectionsModal } from '../../../../ComponentLibrary/src/components/ConfigurationModal/mock';
 import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
 import {
   MOCK_AUTO_COMPLETE_TEXTS,
@@ -31,25 +29,11 @@ import {
 } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
 import { topFilms } from '../../../../ComponentLibrary/src/components/Input/Select/mock';
 import { TabContent } from '@workspaceui/componentlibrary/src/interfaces';
-import { TABS_CONFIG } from '@workspaceui/componentlibrary/src/components/SecondaryTabs/constants/mock';
 import { NOTIFICATIONS } from '@workspaceui/componentlibrary/src/components/NotificationItem/mock';
 import { notificationsStates } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/mock';
 
 const Home = () => {
   const [isActive, setIsActive] = useState(false);
-  const [tabsConfig, setTabsConfig] = useState(TABS_CONFIG);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const updatedTabs = tabsConfig.map(tab => ({
-        ...tab,
-        isLoading: false,
-      }));
-      setTabsConfig(updatedTabs);
-    }, 5000);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   const handleToggle = () => {
     setIsActive(prevState => !prevState);
@@ -225,18 +209,6 @@ const Home = () => {
       ),
     },
     {
-      title: 'Configuration Modal',
-      children: (
-        <ConfigurationModal
-          icon={logo}
-          title={{ icon: logo, label: 'Apariencia' }}
-          linkTitle={{ label: 'Ver todos los ajustes', url: '/settings' }}
-          sections={sectionsModal}
-          onChangeSelect={console.log}
-        />
-      ),
-    },
-    {
       title: 'Notification Button',
       children: <NotificationButton notifications={NOTIFICATIONS} />,
     },
@@ -289,7 +261,6 @@ const Home = () => {
               notifications={notificationsStates}
               type="avatar"
             />
-            ,
           </Grid>
         </Grid>
       ),
