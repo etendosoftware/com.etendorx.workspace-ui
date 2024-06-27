@@ -18,7 +18,6 @@ import {
 import SortableItem from '../DragModal/SortableItem';
 import { Person } from '../DragModal/DragModal.types';
 import ModalDivider from '../ModalDivider';
-import { containerStyles, showAllStyles } from '../DragModal/DragModal.styles';
 import { DragIndicator, NavigateBefore } from '@mui/icons-material';
 import { styles, sx } from './WaterfallModal.styles';
 import { Box, Button } from '@mui/material';
@@ -28,9 +27,10 @@ const DragModalContent: React.FC<WaterfallModalProps> = ({
   people,
   onBack,
   setPeople,
-  backButtonText = 'Back',
-  activateAllText = 'Activate All',
-  deactivateAllText = 'Deactivate All',
+  backButtonText,
+  activateAllText,
+  deactivateAllText,
+  buttonText,
 }) => {
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
@@ -86,9 +86,9 @@ const DragModalContent: React.FC<WaterfallModalProps> = ({
         </Box>
       </div>
       <ModalDivider />
-      <div style={containerStyles}>
-        <p>Botones</p>
-        <button style={showAllStyles} onClick={handleToggleAll}>
+      <div style={styles.containerStyles}>
+        <p>{buttonText}</p>
+        <button style={styles.showAllStyles} onClick={handleToggleAll}>
           {people.every(person => person.isActive)
             ? deactivateAllText
             : activateAllText}
