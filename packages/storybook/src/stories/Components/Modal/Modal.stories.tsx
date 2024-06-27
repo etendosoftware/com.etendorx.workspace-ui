@@ -3,7 +3,7 @@ import ModalDivider from '../../../../../ComponentLibrary/src/components/ModalDi
 import { List, MenuItem } from '@mui/material';
 import { Position } from '../../../../../ComponentLibrary/src/components/enums';
 import { styles, sx } from '../../../styles/Modal.stories.styles';
-import { menuItems } from '../constants';
+import { menuItems } from '../mock';
 
 interface MenuItem {
   emoji: string;

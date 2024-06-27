@@ -1,6 +1,6 @@
 import WaterfallModal from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal';
 import { WaterfallModalProps } from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal.types';
-import { initialPeople, menuItems } from '../constants';
+import { initialPeople, menuItems } from '../mock';
 
 export default {
   title: 'Components/WaterfallModal',
