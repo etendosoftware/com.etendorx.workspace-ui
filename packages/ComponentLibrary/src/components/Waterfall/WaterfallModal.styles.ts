@@ -1,34 +1,37 @@
-import { styled } from '@mui/material';
+import { SxProps, Theme, styled } from '@mui/material';
 import { CSSProperties } from 'react';
+import { theme } from '../../theme';
 
 export const MODAL_WIDTH = 240;
 
-export const SectionContainer: CSSProperties = {
-  padding: '0.5rem',
-};
-
-export const CustomizeButton: CSSProperties = {
-  fontWeight: '500',
-  fontSize: '1rem',
-  width: '100%',
-  height: '2.25rem',
-  borderRadius: '0.5rem',
-  display: 'flex',
-  justifyContent: 'flex-start',
-  alignItems: 'center',
-  position: 'relative',
-};
-
-export const StartIconStyles: CSSProperties = {
-  marginLeft: '0.5rem',
-  maxHeight: '1rem',
-  maxWidth: '1rem',
-};
-
-export const EndIconStyles: CSSProperties = {
-  position: 'absolute',
-  right: '0',
-  paddingLeft: '0 0.5rem',
+export const styles: { [key: string]: CSSProperties } = {
+  CustomizeButton: {
+    fontWeight: '500',
+    fontSize: '1rem',
+    width: '100%',
+    height: '2.25rem',
+    borderRadius: '0.5rem',
+    display: 'flex',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  StartIconStyles: {
+    marginLeft: '0.5rem',
+    maxHeight: '1rem',
+    maxWidth: '1rem',
+  },
+  EndIconStyles: {
+    position: 'absolute',
+    right: '0',
+    paddingLeft: '0 0.5rem',
+  },
+  SectionContainer: {
+    padding: '0.5rem',
+  },
+  SpanStyles: {
+    paddingRight: '0.5rem',
+  },
 };
 
 export const FadeWrapper = styled('div')({
@@ -38,3 +41,27 @@ export const FadeWrapper = styled('div')({
     opacity: 0,
   },
 });
+
+export const sx: { [key: string]: SxProps<Theme> } = {
+  customizeButton: {
+    '&:hover': {
+      border: 'none',
+      color: theme.palette.baselineColor.neutral[80],
+    },
+  },
+  headerBox: {
+    '&:hover': {
+      background: theme.palette.dynamicColor.contrastText,
+      borderRadius: '0.5rem',
+    },
+  },
+  menuItemStyles: {
+    margin: '0 0.5rem',
+    padding: '0.5rem',
+    '&:hover': {
+      background: '',
+      borderRadius: '0.5rem',
+      color: theme.palette.baselineColor.neutral[80],
+    },
+  },
+};

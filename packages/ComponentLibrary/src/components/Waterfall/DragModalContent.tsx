@@ -20,19 +20,17 @@ import { Person } from '../DragModal/DragModal.types';
 import ModalDivider from '../ModalDivider';
 import { containerStyles, showAllStyles } from '../DragModal/DragModal.styles';
 import { DragIndicator, NavigateBefore } from '@mui/icons-material';
-import {
-  CustomizeButton,
-  SectionContainer,
-  StartIconStyles,
-} from './WaterfallModal.styles';
+import { styles, sx } from './WaterfallModal.styles';
 import { Box, Button } from '@mui/material';
 import { WaterfallModalProps } from './WaterfallModal.types';
-import { theme } from '../../theme';
 
 const DragModalContent: React.FC<WaterfallModalProps> = ({
   people,
   onBack,
   setPeople,
+  backButtonText = 'Back',
+  activateAllText = 'Activate All',
+  deactivateAllText = 'Deactivate All',
 }) => {
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
@@ -76,22 +74,14 @@ const DragModalContent: React.FC<WaterfallModalProps> = ({
 
   return (
     <>
-      <div style={SectionContainer}>
-        <Box
-          sx={{
-            '&:hover': { background: theme.palette.dynamicColor.contrastText, borderRadius: '0.5rem' },
-          }}>
+      <div style={styles.SectionContainer}>
+        <Box sx={sx.headerBox}>
           <Button
             onClick={onBack}
-            startIcon={<NavigateBefore style={StartIconStyles} />}
-            style={CustomizeButton}
-            sx={{
-              '&:hover': {
-                border: 'none',
-                color: theme.palette.baselineColor.neutral[80],
-              },
-            }}>
-            Volver
+            startIcon={<NavigateBefore style={styles.StartIconStyles} />}
+            style={styles.CustomizeButton}
+            sx={sx.customizeButton}>
+            {backButtonText}
           </Button>
         </Box>
       </div>
@@ -100,8 +90,8 @@ const DragModalContent: React.FC<WaterfallModalProps> = ({
         <p>Botones</p>
         <button style={showAllStyles} onClick={handleToggleAll}>
           {people.every(person => person.isActive)
-            ? 'Desactivar todo'
-            : 'Activar todo'}
+            ? deactivateAllText
+            : activateAllText}
         </button>
       </div>
       <DndContext
