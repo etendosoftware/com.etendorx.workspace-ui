@@ -7,7 +7,6 @@ import {
   DragModal,
   Navbar,
   Profile,
-  Waterfall,
   ConfigurationModal,
   NotificationButton,
   ToggleChip,
@@ -22,10 +21,7 @@ import {
   NotificationStates,
   Select,
 } from '@workspaceui/componentlibrary/src/components';
-import {
-  LockOutlined,
-  Search,
-} from '@mui/icons-material';
+import { LockOutlined, Search } from '@mui/icons-material';
 import logo from '../../assets/react.svg';
 import { sectionsModal } from '../../../../ComponentLibrary/src/components/ConfigurationModal/mock';
 import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
@@ -227,10 +223,6 @@ const Home = () => {
           />
         </Box>
       ),
-    },
-    {
-      title: 'Waterfall Modal',
-      children: <Waterfall />,
     },
     {
       title: 'Configuration Modal',
