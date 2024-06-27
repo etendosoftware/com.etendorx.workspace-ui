@@ -2,6 +2,7 @@ import React from 'react';
 import { TextField, InputAdornment, IconButton } from '@mui/material';
 import { TextInputProps } from '../TextInputAutocomplete/TextInputComplete.types';
 import { inputBaseStyles } from './TextInputBase.styles';
+import { theme } from '../../../../theme';
 
 const TextInputBase = (props: TextInputProps) => {
   const { value, setValue, label, leftIcon, rightIcon, onLeftIconClick, onRightIconClick, type, ...otherProps } = props;
@@ -33,6 +34,7 @@ const TextInputBase = (props: TextInputProps) => {
                 aria-label="left icon"
                 onClick={onLeftIconClick}
                 size="small"
+                sx={{ color: theme.palette.baselineColor.neutral[60] }}
               >
                 {leftIcon}
               </IconButton>
@@ -44,6 +46,7 @@ const TextInputBase = (props: TextInputProps) => {
                 aria-label="right-icon"
                 onClick={onRightIconClick}
                 size="small"
+                sx={{ color: theme.palette.baselineColor.neutral[60] }}
               >
                 {rightIcon}
               </IconButton>

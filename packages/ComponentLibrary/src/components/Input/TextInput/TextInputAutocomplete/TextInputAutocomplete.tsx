@@ -5,10 +5,11 @@ import FilterIcon from '@mui/icons-material/FilterList';
 import CircularProgress from '@mui/material/CircularProgress';
 import CloseIcon from '@mui/icons-material/Close';
 import { TextInputProps } from './TextInputComplete.types';
-import { containerIconStyle, CSS_STYLES, SX_STYLES } from './TextInputAutocomplete.styles';
+import { containerIconStyle, CSS_STYLES, gradients, SX_STYLES } from './TextInputAutocomplete.styles';
 import { DEFAULT_CONSTANTS } from './TextInputAutocomplete.constants';
 import SuggestionBox from './SuggestionBox';
 import { theme } from '../../../../theme';
+import { SmartButton } from '@mui/icons-material';
 
 const TextInputAutoComplete = (props: TextInputProps) => {
   const {
@@ -36,21 +37,26 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   };
 
   const getIconStyle = (iconName: string) => ({
-    backgroundColor: activeIcon === iconName ? theme.palette.dynamicColor.main : 'transparent',
-    color: activeIcon === iconName ? theme.palette.dynamicColor.contrastText : 'inherit',
+    backgroundColor: activeIcon === iconName ? theme.palette.dynamicColor.main : isFocused ? theme.palette.baselineColor.neutral[0] : 'transparent',
+    color: activeIcon === iconName ? theme.palette.dynamicColor.contrastText : theme.palette.baselineColor.neutral[70],
     borderRadius: '50%',
     width: '2rem',
     height: '2rem',
     transition: 'background-color 0.3s, color 0.3s',
     '&:hover': {
-      backgroundColor: activeIcon === iconName ? 'blue' : theme.palette.baselineColor.neutral[20],
-      color: activeIcon === iconName ? theme.palette.dynamicColor.contrastText : 'inherit',
+      backgroundColor: theme.palette.dynamicColor.main,
+      color: theme.palette.dynamicColor.contrastText,
     }
   });
 
   const handleSmartIconClick = () => {
-    setSmartIconActive(prev => !prev);
-    inputRef.current?.focus();
+    if (!smartIconActive) {
+      setSmartIconActive(true);
+      setActiveIcon('smart');
+    } else {
+      setSmartIconActive(false);
+      setActiveIcon('');
+    }
   };
 
   const handleBlur = () => {
@@ -136,9 +142,6 @@ const TextInputAutoComplete = (props: TextInputProps) => {
         transition: `opacity ${DEFAULT_CONSTANTS.PLACEHOLDER_OPACITY_TRANSITION_DURATION}s`,
       },
     },
-    ...(props.disabled && {
-      pointerEvents: 'none',
-    }),
     ...props.InputProps?.sx,
   };
 
@@ -146,12 +149,16 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     <InputAdornment position="start">
       <Box sx={SX_STYLES.startAdornment}>
         {loading ? (
-          <CircularProgress sx={{ color: theme.palette.baselineColor.neutral[10] }} size={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_SIZE} thickness={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_THICKNESS} />
+          <CircularProgress sx={{ color: theme.palette.baselineColor.neutral[80] }} size={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_SIZE} thickness={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_THICKNESS} />
         ) : (
           leftIcon ? (
-            <IconButton onClick={onLeftIconClick}>{leftIcon}</IconButton>
+            <IconButton onClick={onLeftIconClick} sx={{ color: theme.palette.baselineColor.neutral[70] }}>{leftIcon}</IconButton>
           ) : (
-            <SearchIcon sx={{ color: !props.disabled ? isFocused && value.length === 0 ? theme.palette.dynamicColor.main : theme.palette.baselineColor.transparentNeutral[5] : theme.palette.baselineColor.transparentNeutral[5] }} />
+            <SearchIcon sx={{
+              color: (isFocused && value.length === 0)
+                ? theme.palette.dynamicColor.main
+                : theme.palette.baselineColor.neutral[70]
+            }} />
           )
         )}
       </Box>
@@ -162,12 +169,12 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     <InputAdornment position="end">
       {value && (
         <IconButton onClick={handleClear} sx={SX_STYLES.clearButtonHover}>
-          <CloseIcon />
+          <CloseIcon sx={{ color: theme.palette.baselineColor.neutral[70] }} />
         </IconButton>
       )}
       <Box sx={containerIconStyle}>
         <IconButton onClick={() => { handleIconClick('smart'); handleSmartIconClick(); }} sx={getIconStyle('smart')}>
-          <SmartSearchIcon />
+          <SmartButton />
         </IconButton>
         <IconButton onClick={() => handleIconClick('filter')} sx={getIconStyle('filter')}>
           <FilterIcon />
@@ -178,14 +185,23 @@ const TextInputAutoComplete = (props: TextInputProps) => {
 
   const textFieldSx = {
     ...CSS_STYLES.inputCommon,
-    backgroundColor: !props.disabled ? theme.palette.baselineColor.neutral[0] : theme.palette.baselineColor.transparentNeutral[5],
+    opacity: props.disabled && 0.4,
+    backgroundColor: theme.palette.baselineColor.neutral[0],
     '& .MuiOutlinedInput-root': {
       '& fieldset': {
-        borderColor: theme.palette.baselineColor.transparentNeutral[5],
+        borderColor: smartIconActive ? 'transparent' : theme.palette.baselineColor.neutral[20],
+        border: smartIconActive ? '2px solid' : undefined,
+        borderImage: smartIconActive ? `${gradients.linearGradient} 1` : undefined,
+        background: smartIconActive ? gradients.linearGradient : undefined,
+        WebkitMask: `${gradients.webkitMaskGradient}`,
+        WebkitMaskComposite: 'xor',
+        maskComposite: 'exclude',
+        transition: 'border-color 0.5s',
+        borderRadius: '6.25rem',
       },
       '&:hover fieldset': {
-        borderWidth: 2,
-        borderColor: theme.palette.baselineColor.neutral[10],
+        borderWidth: !props.disabled && 2,
+        borderColor: !props.disabled && theme.palette.baselineColor.neutral[100],
       },
       '&.Mui-focused fieldset': {
         borderColor: theme.palette.dynamicColor.main,
@@ -194,9 +210,6 @@ const TextInputAutoComplete = (props: TextInputProps) => {
         backgroundColor: value ? theme.palette.baselineColor.neutral[0] : theme.palette.dynamicColor.contrastText,
       },
     },
-    ...(props.disabled && {
-      pointerEvents: 'none',
-    }),
     ...props.sx,
   };
 
