@@ -205,10 +205,6 @@ const Home = () => {
       ),
     },
     {
-      title: 'Notification Button',
-      children: <NotificationButton notifications={NOTIFICATIONS} />,
-    },
-    {
       title: 'Notification Modal',
       children: (
         <NotificationButton notifications={NOTIFICATIONS}>
