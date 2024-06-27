@@ -54,8 +54,8 @@ const Modal: React.FC<ModalIProps> = ({
         <Box
           sx={{
             ...styles.boxStyles,
-            height: height,
-            width: width,
+            height: `${height}px`,
+            width: `${width}px`,
             top: calculateTop(posY),
             left: calculateLeft(posX),
             transform: calculateTransform(posX, posY),

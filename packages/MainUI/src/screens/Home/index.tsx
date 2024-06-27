@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   DataGrid,
   Table,
@@ -20,16 +20,8 @@ import {
   NotificationStates,
   Select,
 } from '@workspaceui/componentlibrary/src/components';
-
-import List from '@mui/material/List';
-import {
-  LockOutlined,
-  Search,
-} from '@mui/icons-material';
-import MenuItem from '@mui/material/MenuItem';
+import { LockOutlined, Search } from '@mui/icons-material';
 import logo from '../../assets/react.svg';
-import Modal from '@workspaceui/componentlibrary/src/components/Modal';
-import { MENU_ITEMS } from '@workspaceui/componentlibrary/src/components/Modal/mock';
 import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
 import {
   MOCK_AUTO_COMPLETE_TEXTS,
@@ -187,29 +179,6 @@ const Home = () => {
       ),
     },
     {
-      title: 'Modal',
-      children: (
-        <Modal height={300} width={400}>
-          <List>
-            {MENU_ITEMS.map(item => (
-              <MenuItem
-                key={item.key}
-                sx={{
-                  '&:hover': {
-                    color: '#242D93',
-                  },
-                  display: 'flex',
-                  alignItems: 'center',
-                }}>
-                <span style={{ marginRight: '0.5rem' }}>{item.emoji}</span>
-                <span>{item.label}</span>
-              </MenuItem>
-            ))}
-          </List>
-        </Modal>
-      ),
-    },
-    {
       title: 'Toggle Chip',
       children: <ToggleChip isActive={isActive} onToggle={handleToggle} />,
     },
@@ -238,10 +207,6 @@ const Home = () => {
           />
         </Box>
       ),
-    },
-    {
-      title: 'Waterfall Modal',
-      children: <Waterfall />,
     },
     {
       title: 'Notification Button',
@@ -296,7 +261,6 @@ const Home = () => {
               notifications={notificationsStates}
               type="avatar"
             />
-            ,
           </Grid>
         </Grid>
       ),
