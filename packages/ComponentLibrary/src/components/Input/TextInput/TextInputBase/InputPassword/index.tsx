@@ -3,6 +3,7 @@ import { IconButton } from '@mui/material';
 import { VisibilityOutlined, VisibilityOffOutlined } from '@mui/icons-material';
 import TextInputBase from '../TextInputBase';
 import { TextInputProps } from '../../TextInputAutocomplete/TextInputComplete.types';
+import { theme } from '../../../../../theme';
 
 const InputPassword = (props: TextInputProps) => {
     const { value, setValue, label, leftIcon, onLeftIconClick, ...otherProps } = props;
@@ -31,6 +32,7 @@ const InputPassword = (props: TextInputProps) => {
                     onClick={handleClickShowPassword}
                     onMouseDown={handleMouseDownPassword}
                     size="small"
+                    sx={{ color: theme.palette.baselineColor.neutral[60] }}
                 >
                     {showPassword ? <VisibilityOutlined sx={{ width: 20 }} /> : <VisibilityOffOutlined sx={{ width: 20 }} />}
                 </IconButton>

@@ -5,7 +5,6 @@ import { theme } from '../../../../theme';
 export const inputBaseStyles = {
   inputBase: {
     '& .MuiInput-underline:before': {
-      borderBottomColor: 'red',
       borderBottomWidth: '1px',
       borderBottomStyle: 'solid',
     },
@@ -26,7 +25,7 @@ export const inputBaseStyles = {
   inputStyle: {
     padding: '0.25rem 0',
     fontSize: '14px',
-    color: theme.palette.baselineColor.transparentNeutral[10],
+    color: theme.palette.baselineColor.transparentNeutral[100],
     fontFamily: 'Inter, sans-serif',
     fontWeight: 500,
   },
@@ -36,12 +35,17 @@ export const inputBaseStyles = {
     }
     #password-input-label {
       font-weight: 500;
-      color: ${theme.palette.baselineColor.neutral[80]};
       font-size: 18px;
       font-family: 'Inter', sans-serif;
     }
+    .MuiFormLabel-root {
+      color: ${theme.palette.baselineColor.neutral[80]};
+    }
+    .MuiFormLabel-root.Mui-focused {
+      color: ${theme.palette.baselineColor.neutral[80]};
+    }
     .MuiFormLabel-asterisk {
-      color: ${theme.palette.specificColor.error};
+      color: ${theme.palette.specificColor.error.main};
     }
     #password-input {
       font-size: 14px;

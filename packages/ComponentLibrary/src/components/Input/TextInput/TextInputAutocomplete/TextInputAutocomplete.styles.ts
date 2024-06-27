@@ -20,14 +20,8 @@ export const CSS_STYLES: { [key: string]: any } = {
     borderRadius: '6.25rem',
     backgroundColor: theme.palette.baselineColor.neutral[0],
     transition: 'background-color 0.5s ease',
-    '&:hover': {
-      backgroundColor: theme.palette.baselineColor.transparentNeutral[5],
-    },
     '&.Mui-disabled': {
       backgroundColor: theme.palette.baselineColor.transparentNeutral[5],
-    },
-    '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
-      borderColor: "transparent",
     },
   },
   inputCommon: {
@@ -75,7 +69,6 @@ export const SX_STYLES: { [key: string]: SxProps<Theme> } = {
     padding: '0.5rem',
     borderRadius: 100,
     border: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
-
   },
   suggestionBox: {
     position: 'absolute',
@@ -114,7 +107,6 @@ export const SX_STYLES: { [key: string]: SxProps<Theme> } = {
     height: '2rem',
     transition: 'background-color 0.3s, color 0.3s',
     '&:hover': {
-      backgroundColor: theme.palette.baselineColor.neutral[0],
       borderRadius: '50%',
       '& .MuiSvgIcon-root': {
         color: theme.palette.baselineColor.neutral[100],
@@ -122,6 +114,8 @@ export const SX_STYLES: { [key: string]: SxProps<Theme> } = {
     },
   },
   rightButtonHover: {
+    backgroundColor: theme.palette.baselineColor.neutral[0],
+    borderRadius: '50%',
     width: '2rem',
     height: '2rem',
     transition: 'background-color 0.3s, color 0.3s',
@@ -136,4 +130,18 @@ export const SX_STYLES: { [key: string]: SxProps<Theme> } = {
   iconDefault: {
     color: theme.palette.baselineColor.neutral[70],
   },
+};
+
+export const containerIconStyle: SxProps<Theme> = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.25rem',
+};
+
+export const gradients = {
+  linearGradient: 'linear-gradient(90deg, #5D9FFF, #FFEA7D, #F3A6FA, #A685FF)',
+  webkitMaskGradient: `
+    linear-gradient(white 0 0) padding-box,
+    linear-gradient(white 0 0)
+  `,
 };
