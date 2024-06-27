@@ -6,9 +6,7 @@ import {
   Tab,
   Navbar,
   Profile,
-  Waterfall,
   NotificationButton,
-  ToggleChip,
   NotificationModal,
   Button,
   Grid,
@@ -32,12 +30,6 @@ import { NOTIFICATIONS } from '@workspaceui/componentlibrary/src/components/Noti
 import { notificationsStates } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/mock';
 
 const Home = () => {
-  const [isActive, setIsActive] = useState(false);
-
-  const handleToggle = () => {
-    setIsActive(prevState => !prevState);
-  };
-
   const [micValue, setMicValue] = useState<string>('');
   const [searchValue, setSearchValue] = useState<string>('');
   const [disabledValue, setDisabledValue] = useState<string>('');
@@ -177,11 +169,6 @@ const Home = () => {
         </Grid>
       ),
     },
-    {
-      title: 'Toggle Chip',
-      children: <ToggleChip isActive={isActive} onToggle={handleToggle} />,
-    },
-
     {
       title: 'Navbar',
       children: <Navbar />,
