@@ -13,4 +13,5 @@ export interface WaterfallModalProps {
   activateAllText?: string;
   deactivateAllText?: string;
   customizeText?: string;
+  buttonText?: string;
 }

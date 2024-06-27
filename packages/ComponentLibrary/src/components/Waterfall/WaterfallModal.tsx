@@ -12,7 +12,7 @@ import { WaterfallModalProps } from './WaterfallModal.types';
 const WaterfallModal: React.FC<WaterfallModalProps> = ({
   menuItems,
   initialPeople,
-  customizeText = 'Customize',
+  customizeText,
 }) => {
   const [showDragModal, setShowDragModal] = useState(false);
   const [fade, setFade] = useState(false);

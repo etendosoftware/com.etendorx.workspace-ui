@@ -20,4 +20,5 @@ export interface DragModalProps {
   backButtonText?: string;
   activateAllText?: string;
   deactivateAllText?: string;
+  buttonText?: string;
 }

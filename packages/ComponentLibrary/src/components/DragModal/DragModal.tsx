@@ -27,9 +27,10 @@ import { sx } from '../Waterfall/WaterfallModal.styles';
 const DragModal: React.FC<DragModalProps> = ({
   initialPeople = [],
   onBack,
-  backButtonText = 'Volver',
-  activateAllText = 'Activar Todo',
-  deactivateAllText = 'Desactivar Todo',
+  backButtonText,
+  activateAllText,
+  deactivateAllText,
+  buttonText,
 }) => {
   const [people, setPeople] = useState<Person[]>(initialPeople);
 
@@ -77,7 +78,7 @@ const DragModal: React.FC<DragModalProps> = ({
       </Button>
       <ModalDivider />
       <div style={styles.containerStyles}>
-        <p>Botones</p>
+        <p>{buttonText}</p>
         <button style={styles.showAllStyles} onClick={handleToggleAll}>
           {people.every(person => person.isActive)
             ? deactivateAllText

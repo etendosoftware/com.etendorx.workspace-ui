@@ -27,9 +27,10 @@ const DragModalContent: React.FC<WaterfallModalProps> = ({
   people,
   onBack,
   setPeople,
-  backButtonText = 'Back',
-  activateAllText = 'Activate All',
-  deactivateAllText = 'Deactivate All',
+  backButtonText,
+  activateAllText,
+  deactivateAllText,
+  buttonText,
 }) => {
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
@@ -86,7 +87,7 @@ const DragModalContent: React.FC<WaterfallModalProps> = ({
       </div>
       <ModalDivider />
       <div style={styles.containerStyles}>
-        <p>Botones</p>
+        <p>{buttonText}</p>
         <button style={styles.showAllStyles} onClick={handleToggleAll}>
           {people.every(person => person.isActive)
             ? deactivateAllText
