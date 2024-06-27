@@ -7,26 +7,16 @@ import {
   DragModal,
   Navbar,
   Profile,
-  Waterfall,
   NotificationButton,
   ToggleChip,
   NotificationModal,
   Button,
   Grid,
-  TextInputBase,
-  InputPassword,
-  SearchInputWithVoice,
   Box,
   NotificationStates,
   Select,
 } from '@workspaceui/componentlibrary/src/components';
-import { LockOutlined, Search } from '@mui/icons-material';
 import logo from '../../assets/react.svg';
-import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
-import {
-  MOCK_AUTO_COMPLETE_TEXTS,
-  MOCK_PLACEHOLDERS,
-} from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
 import { topFilms } from '../../../../ComponentLibrary/src/components/Input/Select/mock';
 import { TabContent } from '@workspaceui/componentlibrary/src/interfaces';
 import { NOTIFICATIONS } from '@workspaceui/componentlibrary/src/components/NotificationItem/mock';
@@ -37,21 +27,6 @@ const Home = () => {
 
   const handleToggle = () => {
     setIsActive(prevState => !prevState);
-  };
-
-  const [micValue, setMicValue] = useState<string>('');
-  const [searchValue, setSearchValue] = useState<string>('');
-  const [disabledValue, setDisabledValue] = useState<string>('');
-  const [passwordValue, setPasswordValue] = useState<string>('');
-  const [inputBaseValue, setInputBaseValue] = useState<string>('');
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-
-  const handleVoiceClick = () => {
-    console.log('Voice button clicked');
-  };
-
-  const handleClickShowPassword = () => {
-    setShowPassword(!showPassword);
   };
 
   const tabArray: TabContent[] = [
@@ -124,59 +99,6 @@ const Home = () => {
     {
       title: '🧩 TableV2',
       children: <TableV2 />,
-    },
-    {
-      title: '🔍 Input',
-      children: (
-        <Grid
-          sx={{
-            backgroundColor: 'white',
-            padding: '1rem',
-            borderRadius: '0.5rem',
-          }}
-          container
-          spacing={2}>
-          <Grid item xs={12}>
-            <TextInputAutocomplete
-              value={searchValue}
-              setValue={setSearchValue}
-              autoCompleteTexts={MOCK_AUTO_COMPLETE_TEXTS}
-              placeholder={MOCK_PLACEHOLDERS.SEARCH}
-            />
-            <TextInputAutocomplete
-              value={disabledValue}
-              setValue={setDisabledValue}
-              placeholder={MOCK_PLACEHOLDERS.DISABLED}
-              sx={{ marginTop: '1rem' }}
-              disabled
-            />
-            <TextInputBase
-              leftIcon={<LockOutlined />}
-              rightIcon={<Search />}
-              onRightIconClick={handleClickShowPassword}
-              sx={{ marginTop: '1rem' }}
-              value={inputBaseValue}
-              setValue={setInputBaseValue}
-              placeholder={MOCK_PLACEHOLDERS.SEARCH}
-            />
-            <InputPassword
-              leftIcon={<LockOutlined />}
-              value={passwordValue}
-              setValue={setPasswordValue}
-              label={MOCK_PLACEHOLDERS.PASSWORD_LABEL}
-              sx={{ marginTop: '1rem' }}
-            />
-            <Box sx={{ marginTop: '1rem' }}>
-              <SearchInputWithVoice
-                value={micValue}
-                setValue={setMicValue}
-                placeholder={MOCK_PLACEHOLDERS.SEARCH}
-                onVoiceClick={handleVoiceClick}
-              />
-            </Box>
-          </Grid>
-        </Grid>
-      ),
     },
     {
       title: 'Toggle Chip',
