@@ -11,7 +11,7 @@ const IconButton: React.FC<IIconButton> = ({
 }) => {
   return (
     <MUIIconButton style={DEFAULT_SIZE} {...props}>
-      <img src={icon} alt={alt} style={styleIcon} />
+      {React.cloneElement(icon, { style: styleIcon, alt })}{' '}
     </MUIIconButton>
   );
 };
