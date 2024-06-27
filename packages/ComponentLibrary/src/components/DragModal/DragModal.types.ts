@@ -13,3 +13,11 @@ export interface SortableItemProps {
   isActive: boolean;
   onToggle: () => void;
 }
+
+export interface DragModalProps {
+  initialPeople: Person[];
+  onBack: () => void;
+  backButtonText?: string;
+  activateAllText?: string;
+  deactivateAllText?: string;
+}

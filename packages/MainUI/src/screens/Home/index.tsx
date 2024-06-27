@@ -4,14 +4,12 @@ import {
   Table,
   TableV2,
   Tab,
-  DragModal,
   Navbar,
   Profile,
   ConfigurationModal,
   NotificationButton,
   ToggleChip,
   NotificationModal,
-  SecondaryTabs,
   Button,
   Grid,
   TextInputBase,
@@ -198,10 +196,7 @@ const Home = () => {
       title: 'Toggle Chip',
       children: <ToggleChip isActive={isActive} onToggle={handleToggle} />,
     },
-    {
-      title: 'Dnd Modal',
-      children: <DragModal />,
-    },
+
     {
       title: 'Navbar',
       children: <Navbar />,

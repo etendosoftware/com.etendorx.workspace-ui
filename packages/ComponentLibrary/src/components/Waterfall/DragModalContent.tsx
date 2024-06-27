@@ -18,7 +18,6 @@ import {
 import SortableItem from '../DragModal/SortableItem';
 import { Person } from '../DragModal/DragModal.types';
 import ModalDivider from '../ModalDivider';
-import { containerStyles, showAllStyles } from '../DragModal/DragModal.styles';
 import { DragIndicator, NavigateBefore } from '@mui/icons-material';
 import { styles, sx } from './WaterfallModal.styles';
 import { Box, Button } from '@mui/material';
@@ -86,9 +85,9 @@ const DragModalContent: React.FC<WaterfallModalProps> = ({
         </Box>
       </div>
       <ModalDivider />
-      <div style={containerStyles}>
+      <div style={styles.containerStyles}>
         <p>Botones</p>
-        <button style={showAllStyles} onClick={handleToggleAll}>
+        <button style={styles.showAllStyles} onClick={handleToggleAll}>
           {people.every(person => person.isActive)
             ? deactivateAllText
             : activateAllText}

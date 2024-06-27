@@ -15,7 +15,6 @@ import SearchInputWithVoiceMUI from './Input/TextInput/TextInputAutocomplete/Sea
 import TextInputBaseMUI from './Input/TextInput/TextInputBase';
 import InputPasswordMUI from './Input/TextInput/TextInputBase/InputPassword';
 import ToggleChipMUI from './Toggle/ToggleChip';
-import DndModal from './DragModal/DragModal';
 import Nav from './Nav/Nav';
 import ProfileModal from './ProfileModal/ProfileModal';
 import WaterfallModal from './Waterfall/WaterfallModal';
@@ -42,7 +41,6 @@ const TextInputBase = ApplyHOC(TextInputBaseMUI);
 const InputPassword = ApplyHOC(InputPasswordMUI);
 const SearchInputWithVoice = ApplyHOC(SearchInputWithVoiceMUI);
 const ToggleChip = ApplyHOC(ToggleChipMUI);
-const DragModal = ApplyHOC(DndModal);
 const Navbar = ApplyHOC(Nav);
 const Profile = ApplyHOC(ProfileModal);
 const Waterfall = ApplyHOC(WaterfallModal);
@@ -69,7 +67,6 @@ export {
   InputPassword,
   SearchInputWithVoice,
   ToggleChip,
-  DragModal,
   Navbar,
   Profile,
   Waterfall,

@@ -5,13 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import ToggleChip from '../Toggle/ToggleChip';
 import { DragIndicator } from '@mui/icons-material';
-import {
-  itemsContainer,
-  leftContainer,
-  listStyles,
-  menuItemStyles,
-  personLabelStyles,
-} from './DragModal.styles';
+import { styles } from './DragModal.styles';
 import { SortableItemProps } from './DragModal.types';
 import { theme } from '../../theme';
 
@@ -26,11 +20,11 @@ const SortableItem: React.FC<SortableItemProps> = ({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    ...menuItemStyles,
+    ...styles.menuItemStyles,
   };
 
   return (
-    <List style={listStyles}>
+    <List style={styles.listStyles}>
       <MenuItem
         ref={setNodeRef}
         style={style}
@@ -42,16 +36,10 @@ const SortableItem: React.FC<SortableItemProps> = ({
             color: theme.palette.baselineColor.neutral[80],
           },
         }}>
-        <div style={itemsContainer}>
-          <div style={leftContainer}>
-            <DragIndicator
-              style={{
-                maxWidth: '1rem',
-                maxHeight: '1rem',
-                marginRight: '0.5rem',
-              }}
-            />
-            <span style={personLabelStyles} title={person.label}>
+        <div style={styles.itemsContainer}>
+          <div style={styles.leftContainer}>
+            <DragIndicator style={styles.dragStyles} />
+            <span style={styles.personLabelStyles} title={person.label}>
               {person.label}
             </span>
           </div>
