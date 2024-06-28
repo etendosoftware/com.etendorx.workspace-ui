@@ -1,10 +1,7 @@
 import React from 'react';
 import { Button } from '@mui/material';
-import {
-  toggleContainerStyles,
-  toggleButtonStyles,
-} from './ToggleSection.styles';
-import { ToggleSectionsProps } from './ToggleSection.types';
+import { toggleContainerStyles, toggleButtonStyles } from './styles';
+import { ToggleSectionsProps } from './types';
 import { theme } from '../../../theme';
 
 const ToggleSections: React.FC<ToggleSectionsProps> = ({
@@ -19,7 +16,10 @@ const ToggleSections: React.FC<ToggleSectionsProps> = ({
           key={id}
           style={{
             ...toggleButtonStyles,
-            backgroundColor: currentSection === id ? theme.palette.baselineColor.neutral[0] : '',
+            backgroundColor:
+              currentSection === id
+                ? theme.palette.baselineColor.neutral[0]
+                : '',
           }}
           onClick={() => onToggle(id)}
           startIcon={icon}>
