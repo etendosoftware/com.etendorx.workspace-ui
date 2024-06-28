@@ -9,7 +9,7 @@ import {
   NoteAltOutlined,
   FileDownloadOutlined,
 } from '@mui/icons-material';
-import { sx } from '../../../../ComponentLibrary/src/components/NotificationsButton/styles';
+import { sx } from '../../../../ComponentLibrary/src/components/NotificationItem/styles';
 
 export const NOTIFICATIONS: Inotifications[] = [
   {

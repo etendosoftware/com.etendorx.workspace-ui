@@ -7,9 +7,7 @@ import {
   Navbar,
   Profile,
   Waterfall,
-  NotificationButton,
   ToggleChip,
-  NotificationModal,
   Button,
   Grid,
   TextInputBase,
@@ -28,7 +26,6 @@ import {
 } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
 import { topFilms } from '../../../../ComponentLibrary/src/components/Input/Select/mock';
 import { TabContent } from '@workspaceui/componentlibrary/src/interfaces';
-import { NOTIFICATIONS } from '@workspaceui/componentlibrary/src/components/NotificationItem/mock';
 import { notificationsStates } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/mock';
 
 const Home = () => {
@@ -202,21 +199,6 @@ const Home = () => {
             getOptionLabel={(option: any) => option.title}
           />
         </Box>
-      ),
-    },
-    {
-      title: 'Notification Modal',
-      children: (
-        <NotificationButton notifications={NOTIFICATIONS}>
-          <NotificationModal
-            title={{ icon: logo, label: 'Notificaciones' }}
-            linkTitle={{ label: 'Marcar todas como leídas', url: '/home' }}
-            emptyStateImageAlt="Sin Notificaciones"
-            emptyStateMessage="No tienes notificaciones"
-            emptyStateDescription="¡Genial! Estás al día con todo. Te notificaremos aquí si hay algo nuevo."
-            actionButtonLabel="Configurar notificaciones"
-          />
-        </NotificationButton>
       ),
     },
     {

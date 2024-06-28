@@ -11,8 +11,8 @@ export default {
 
 const Template = args => <NotificationButton {...args} />;
 
-export const Default = Template.bind({});
-Default.args = {
+export const NotificationButtonDefault = Template.bind({});
+NotificationButtonDefault.args = {
   notifications: NOTIFICATIONS,
   tooltipTitle: 'Notificaciones',
 };
