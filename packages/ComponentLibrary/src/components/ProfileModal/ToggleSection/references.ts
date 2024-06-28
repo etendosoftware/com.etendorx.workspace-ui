@@ -1,4 +1,4 @@
-import { Item } from './SelectorList.types';
+import { Item } from './types';
 
 export const references: Record<string, { item: Item; values: string[] }[]> = {
   profile: [
