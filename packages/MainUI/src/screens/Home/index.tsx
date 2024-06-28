@@ -165,8 +165,18 @@ const Home = () => {
       children: <Profile />,
     },
     {
-      title: 'Notification Button',
-      children: <NotificationButton notifications={NOTIFICATIONS} />,
+      title: 'Select',
+      children: (
+        <Box style={{ background: 'white', padding: 20, width: 300 }}>
+          <Select
+            iconLeft={logo}
+            title="Peliculas"
+            helperText={{ label: 'Top 15', icon: logo }}
+            options={topFilms}
+            getOptionLabel={(option: any) => option.title}
+          />
+        </Box>
+      ),
     },
     {
       title: 'Notification Modal',
@@ -222,6 +232,7 @@ const Home = () => {
       ),
     },
   ];
+ }
 
   return (
     <div className="container">
