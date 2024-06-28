@@ -6,38 +6,18 @@ import {
   Tab,
   Navbar,
   Profile,
-  Waterfall,
   NotificationButton,
-  ToggleChip,
   NotificationModal,
   Button,
   Grid,
-  TextInputBase,
-  InputPassword,
-  SearchInputWithVoice,
-  Box,
   NotificationStates,
-  Select,
 } from '@workspaceui/componentlibrary/src/components';
-import { LockOutlined, Search } from '@mui/icons-material';
 import logo from '../../assets/react.svg';
-import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
-import {
-  MOCK_AUTO_COMPLETE_TEXTS,
-  MOCK_PLACEHOLDERS,
-} from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
-import { topFilms } from '../../../../ComponentLibrary/src/components/Input/Select/mock';
 import { TabContent } from '@workspaceui/componentlibrary/src/interfaces';
 import { NOTIFICATIONS } from '@workspaceui/componentlibrary/src/components/NotificationItem/mock';
 import { notificationsStates } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/mock';
 
 const Home = () => {
-  const [isActive, setIsActive] = useState(false);
-
-  const handleToggle = () => {
-    setIsActive(prevState => !prevState);
-  };
-
   const [micValue, setMicValue] = useState<string>('');
   const [searchValue, setSearchValue] = useState<string>('');
   const [disabledValue, setDisabledValue] = useState<string>('');
@@ -51,7 +31,6 @@ const Home = () => {
 
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
-  };
 
   const tabArray: TabContent[] = [
     {
@@ -178,11 +157,6 @@ const Home = () => {
       ),
     },
     {
-      title: 'Toggle Chip',
-      children: <ToggleChip isActive={isActive} onToggle={handleToggle} />,
-    },
-
-    {
       title: 'Navbar',
       children: <Navbar />,
     },
@@ -258,6 +232,7 @@ const Home = () => {
       ),
     },
   ];
+ }
 
   return (
     <div className="container">

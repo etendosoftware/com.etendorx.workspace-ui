@@ -9,9 +9,9 @@ import {
   Typography,
 } from '@mui/material';
 import { PRIMARY_CONTRAST, styles } from './style';
-import ChevronDown from '../../../assets/icons/chevron-down.svg';
-import XIcon from '../../../assets/icons/x.svg';
-import CheckIcon from '../../../assets/icons/check-circle-filled.svg';
+import CancelIcon from '@mui/icons-material/Cancel';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { ISelectInput } from './types';
 import './style.css';
 import { theme } from '../../../theme';
@@ -72,9 +72,7 @@ const Select: React.FC<ISelectInput> = ({
       InputProps={{
         ...params.InputProps,
         sx: styles.props,
-        startAdornment: iconLeft && (
-          <img alt="leftIcon" src={iconLeft} style={styles.imgIconLeft} />
-        ),
+        startAdornment: iconLeft && (iconLeft),
         endAdornment: (
           <div style={styles.buttonsContainer}>
             {params.InputProps.endAdornment}
@@ -85,13 +83,7 @@ const Select: React.FC<ISelectInput> = ({
       variant="standard"
       helperText={
         <FormHelperText style={styles.helperTextContainer}>
-          {helperText?.icon && (
-            <img
-              alt="helperIcon"
-              src={helperText?.icon}
-              style={styles.helperTextIcon}
-            />
-          )}
+          {helperText?.icon && (helperText?.icon)}
           {helperText?.label && (
             <span style={styles.helperText}>{helperText?.label}</span>
           )}
@@ -108,12 +100,8 @@ const Select: React.FC<ISelectInput> = ({
       {...props}
       disabled={disabled}
       options={options}
-      clearIcon={
-        <img alt="clearIcon" src={XIcon} style={styles.dropdownIcons} />
-      }
-      popupIcon={
-        <img alt="popupIcon" src={ChevronDown} style={styles.dropdownIcons} />
-      }
+      clearIcon={<CancelIcon style={styles.dropdownIcons} />}
+      popupIcon={<ExpandMoreIcon style={styles.dropdownIcons} />}
       renderInput={renderInput}
       sx={styles.autocomplete}
       PaperComponent={CustomPaper}
@@ -134,9 +122,7 @@ const Select: React.FC<ISelectInput> = ({
             style={styles.optionText}>
             {option.title}
           </Typography>
-          {selected && (
-            <img alt="selectIcon" src={CheckIcon} style={styles.checkIcon} />
-          )}
+          {selected && <CheckCircleIcon style={styles.checkIcon} />}
         </li>
       )}
     />
