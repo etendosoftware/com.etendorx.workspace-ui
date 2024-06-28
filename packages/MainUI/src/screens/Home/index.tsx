@@ -5,17 +5,16 @@ import {
   TableV2,
   Tab,
   Navbar,
-  Profile,
-  ToggleChip,
-  NotificationButton,
-  NotificationModal,
   Button,
   Grid,
-  NotificationStates,
+  TextInputBase,
+  InputPassword,
+  SearchInputWithVoice,
+  Box,
+  Select,
 } from '@workspaceui/componentlibrary/src/components';
 import logo from '../../assets/react.svg';
 import { TabContent } from '@workspaceui/componentlibrary/src/interfaces';
-import { notificationsStates } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/mock';
 
 const Home = () => {
   const [micValue, setMicValue] = useState<string>('');
@@ -172,44 +171,6 @@ const Home = () => {
             getOptionLabel={(option: any) => option.title}
           />
         </Box>
-      ),
-    },
-    {
-      title: 'Notification Item States',
-      children: (
-        <Grid container spacing={1}>
-          <Grid item>
-            <NotificationStates
-              notifications={notificationsStates}
-              type="informatives"
-            />
-          </Grid>
-          <Grid item>
-            <NotificationStates
-              notifications={notificationsStates}
-              type="withButtons"
-            />
-          </Grid>
-          <Grid item>
-            <NotificationStates
-              notifications={notificationsStates}
-              type="withButtonsAndTags"
-            />
-          </Grid>
-          <Grid item>
-            <NotificationStates
-              notifications={notificationsStates}
-              type="tags"
-            />
-            ,
-          </Grid>
-          <Grid item>
-            <NotificationStates
-              notifications={notificationsStates}
-              type="avatar"
-            />
-          </Grid>
-        </Grid>
       ),
     },
   ];
