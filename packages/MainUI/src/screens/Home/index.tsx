@@ -6,6 +6,7 @@ import {
   Tab,
   Navbar,
   Profile,
+  ToggleChip,
   NotificationButton,
   NotificationModal,
   Button,
@@ -14,7 +15,6 @@ import {
 } from '@workspaceui/componentlibrary/src/components';
 import logo from '../../assets/react.svg';
 import { TabContent } from '@workspaceui/componentlibrary/src/interfaces';
-import { NOTIFICATIONS } from '@workspaceui/componentlibrary/src/components/NotificationItem/mock';
 import { notificationsStates } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/mock';
 
 const Home = () => {
@@ -172,21 +172,6 @@ const Home = () => {
             getOptionLabel={(option: any) => option.title}
           />
         </Box>
-      ),
-    },
-    {
-      title: 'Notification Modal',
-      children: (
-        <NotificationButton notifications={NOTIFICATIONS}>
-          <NotificationModal
-            title={{ icon: logo, label: 'Notificaciones' }}
-            linkTitle={{ label: 'Marcar todas como leídas', url: '/home' }}
-            emptyStateImageAlt="Sin Notificaciones"
-            emptyStateMessage="No tienes notificaciones"
-            emptyStateDescription="¡Genial! Estás al día con todo. Te notificaremos aquí si hay algo nuevo."
-            actionButtonLabel="Configurar notificaciones"
-          />
-        </NotificationButton>
       ),
     },
     {

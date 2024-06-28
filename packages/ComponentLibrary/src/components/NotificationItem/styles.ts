@@ -60,7 +60,7 @@ export const styles: { [key: string]: CSSProperties } = {
 
 export const sx: { [key: string]: SxProps<Theme> } = {
   leftButton: {
-    background: theme.palette.baselineColor.transparentNeutral[0],
+    background: theme.palette.baselineColor.transparentNeutral[10],
     color: theme.palette.baselineColor.transparentNeutral[70],
     height: '2rem',
     borderRadius: '6.25rem',
@@ -72,7 +72,7 @@ export const sx: { [key: string]: SxProps<Theme> } = {
       color: theme.palette.baselineColor.neutral[10],
     },
   },
-  rigthButton: {
+  rightButton: {
     background: theme.palette.baselineColor.neutral[100],
     color: theme.palette.baselineColor.neutral[0],
     height: '2rem',
