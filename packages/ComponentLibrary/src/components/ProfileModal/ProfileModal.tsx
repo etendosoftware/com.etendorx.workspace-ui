@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Modal from '../Modal';
 import UserProfile from './UserProfile';
 import ToggleSection from './ToggleButton';
-import SelectorList from './SelectorList/SelectorListMock';
+import SelectorList from './ToggleSection';
 import {
   MODAL_WIDTH,
   buttonContainerStyles,
