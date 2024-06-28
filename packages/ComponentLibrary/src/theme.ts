@@ -1,9 +1,7 @@
-
-
 import { createTheme } from '@mui/material/styles';
 import InterTTF from '../src/styles/fonts/Inter-Regular.ttf';
 
-// Colors for MUI attributes 
+// Colors for MUI attributes
 export const PRIMARY_100 = '#D8DBF6';
 export const PRIMARY_500 = '#202452';
 export const SECONDARY_100 = '#FEFACF';
@@ -70,7 +68,7 @@ export const theme = createTheme({
       },
       draft: {
         main: '#3F4A7E',
-        contrastText: '#E5E5E6'
+        contrastText: '#E5E5E6',
       },
     },
     primary: {
@@ -93,10 +91,7 @@ export const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: [
-      'Inter',
-      'sans-serif',
-    ].join(','),
+    fontFamily: ['Inter', 'sans-serif'].join(','),
   },
   components: {
     MuiCssBaseline: {
@@ -123,9 +118,6 @@ export const theme = createTheme({
         },
         arrow: {
           color: NEUTRAL_1000,
-          '&::before': {
-            borderRadius: '0.1rem',
-          },
         },
       },
     },

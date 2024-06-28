@@ -20,12 +20,12 @@ export default {
 const Template = args => (
   <NotificationButton notifications={args.notifications}>
     <NotificationModal
-      title={{ icon: logo, label: 'Notificaciones' }}
-      linkTitle={{ label: 'Marcar todas como leídas', url: '/home' }}
-      emptyStateImageAlt="Sin Notificaciones"
-      emptyStateMessage="No tienes notificaciones"
-      emptyStateDescription="¡Genial! Estás al día con todo. Te notificaremos aquí si hay algo nuevo."
-      actionButtonLabel="Configurar notificaciones"
+      title={{ icon: logo, label: 'Notifications' }}
+      linkTitle={{ label: 'Mark all as read', url: '/home' }}
+      emptyStateImageAlt="No Notifications"
+      emptyStateMessage="You have no notifications"
+      emptyStateDescription="Great! You are up to date with everything. We will notify you here if there is anything new."
+      actionButtonLabel="Configure notifications"
     />
   </NotificationButton>
 );
