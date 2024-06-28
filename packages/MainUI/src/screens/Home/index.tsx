@@ -7,7 +7,6 @@ import {
   Navbar,
   Profile,
   NotificationButton,
-  ToggleChip,
   NotificationModal,
   Button,
   Grid,
@@ -19,11 +18,19 @@ import { NOTIFICATIONS } from '@workspaceui/componentlibrary/src/components/Noti
 import { notificationsStates } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/mock';
 
 const Home = () => {
-  const [isActive, setIsActive] = useState(false);
+  const [micValue, setMicValue] = useState<string>('');
+  const [searchValue, setSearchValue] = useState<string>('');
+  const [disabledValue, setDisabledValue] = useState<string>('');
+  const [passwordValue, setPasswordValue] = useState<string>('');
+  const [inputBaseValue, setInputBaseValue] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
-  const handleToggle = () => {
-    setIsActive(prevState => !prevState);
+  const handleVoiceClick = () => {
+    console.log('Voice button clicked');
   };
+
+  const handleClickShowPassword = () => {
+    setShowPassword(!showPassword);
 
   const tabArray: TabContent[] = [
     {
@@ -97,10 +104,58 @@ const Home = () => {
       children: <TableV2 />,
     },
     {
-      title: 'Toggle Chip',
-      children: <ToggleChip isActive={isActive} onToggle={handleToggle} />,
+      title: '🔍 Input',
+      children: (
+        <Grid
+          sx={{
+            backgroundColor: 'white',
+            padding: '1rem',
+            borderRadius: '0.5rem',
+          }}
+          container
+          spacing={2}>
+          <Grid item xs={12}>
+            <TextInputAutocomplete
+              value={searchValue}
+              setValue={setSearchValue}
+              autoCompleteTexts={MOCK_AUTO_COMPLETE_TEXTS}
+              placeholder={MOCK_PLACEHOLDERS.SEARCH}
+            />
+            <TextInputAutocomplete
+              value={disabledValue}
+              setValue={setDisabledValue}
+              placeholder={MOCK_PLACEHOLDERS.DISABLED}
+              sx={{ marginTop: '1rem' }}
+              disabled
+            />
+            <TextInputBase
+              leftIcon={<LockOutlined />}
+              rightIcon={<Search />}
+              onRightIconClick={handleClickShowPassword}
+              sx={{ marginTop: '1rem' }}
+              value={inputBaseValue}
+              setValue={setInputBaseValue}
+              placeholder={MOCK_PLACEHOLDERS.SEARCH}
+            />
+            <InputPassword
+              leftIcon={<LockOutlined />}
+              value={passwordValue}
+              setValue={setPasswordValue}
+              label={MOCK_PLACEHOLDERS.PASSWORD_LABEL}
+              sx={{ marginTop: '1rem' }}
+            />
+            <Box sx={{ marginTop: '1rem' }}>
+              <SearchInputWithVoice
+                value={micValue}
+                setValue={setMicValue}
+                placeholder={MOCK_PLACEHOLDERS.SEARCH}
+                onVoiceClick={handleVoiceClick}
+              />
+            </Box>
+          </Grid>
+        </Grid>
+      ),
     },
-
     {
       title: 'Navbar',
       children: <Navbar />,
