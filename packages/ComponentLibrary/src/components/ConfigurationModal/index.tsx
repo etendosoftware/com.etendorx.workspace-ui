@@ -1,4 +1,4 @@
-import { Grid, Link, Menu } from '@mui/material';
+import { Checkbox, Grid, Link, Menu } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import {
   BORDER_SELECT_1,
@@ -8,7 +8,6 @@ import {
   menuSyle,
   styles,
 } from './style';
-import IconButton from '../IconButton';
 import { IConfigurationModalProps, ISection } from './types';
 import { ALT } from './constants';
 import checkIcon from '../../assets/icons/check-circle-filled.svg';
@@ -109,7 +108,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
 
   return (
     <>
-      <IconButton onClick={handleClick} icon={icon} />
+      <Checkbox onClick={handleClick} />
       <Menu
         {...props}
         anchorEl={anchorEl}
