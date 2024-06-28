@@ -23,14 +23,14 @@ const SearchInputWithVoice = (props: SearchInputWithVoiceProps) => {
 
     const startAdornment = (
         <InputAdornment position="start">
-            <SearchIcon sx={{ color: theme.palette.baselineColor.transparentNeutral[5] }} />
+            <SearchIcon sx={{ color: theme.palette.baselineColor.neutral[70] }} />
         </InputAdornment>
     );
 
     const endAdornment = (
         <InputAdornment position="end">
             <IconButton size="small">
-                <FilterIcon sx={{ color: theme.palette.baselineColor.transparentNeutral[5] }} />
+                <FilterIcon sx={{ color: theme.palette.baselineColor.neutral[70] }} />
             </IconButton>
         </InputAdornment>
     );
@@ -56,7 +56,7 @@ const SearchInputWithVoice = (props: SearchInputWithVoiceProps) => {
                         justifyContent: 'center'
                     }}
                 >
-                    {isRecording ? <MicOffIcon sx={{ color: theme.palette.baselineColor.transparentNeutral[5], fontSize: 30 }} /> : <MicIcon sx={{ color: theme.palette.baselineColor.transparentNeutral[5], fontSize: 30 }} />}
+                    {isRecording ? <MicOffIcon sx={{ color: theme.palette.baselineColor.neutral[70], fontSize: 30 }} /> : <MicIcon sx={{ color: theme.palette.baselineColor.neutral[70], fontSize: 30 }} />}
                 </IconButton>
             </Box>
         </Box>
