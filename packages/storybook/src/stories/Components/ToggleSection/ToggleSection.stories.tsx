@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Meta } from '@storybook/react';
-import SelectorList from '../../../../../ComponentLibrary/src/components/ProfileModal/SelectorList/SelectorListMock';
+import SelectorList from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleSection';
 import { sectionsMock } from './mock';
-import ToggleSection from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleSection';
+import ToggleSections from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleButton';
 
 export default {
   title: 'Components/SelectorList',
@@ -26,7 +26,7 @@ const Template = args => {
 
   return (
     <>
-      <ToggleSection
+      <ToggleSections
         sections={sectionsMock}
         currentSection={currentSection}
         onToggle={handleToggle}
