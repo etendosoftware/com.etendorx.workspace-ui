@@ -15,14 +15,14 @@ import {
   labelStyles,
   iconStyles,
   formStyle,
-} from './SelectorList.styles';
+} from './styles';
 import RoleIcon from '@mui/icons-material/AccountCircle';
 import ClientIcon from '@mui/icons-material/Business';
 import OrganizationIcon from '@mui/icons-material/Domain';
 import WarehouseIcon from '@mui/icons-material/Store';
 import LanguageIcon from '@mui/icons-material/Language';
-import { SelectorListProps, Item } from './SelectorList.types';
-import { references } from './SelectorList.reference';
+import { SelectorListProps, Item } from './types';
+import { references } from './references';
 
 const icons: { [key in Item]: React.ReactElement } = {
   [Item.Rol]: <RoleIcon style={iconStyles} />,
