@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import List from '@mui/material/List';
 import Modal from '../Modal';
-import { people as initialPeople } from './mock';
 import {
   DndContext,
   closestCenter,
@@ -18,28 +17,27 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import SortableItem from './SortableItem';
-import { Person } from './DragModal.types';
+import { DragModalProps, Person } from './DragModal.types';
 import ModalDivider from '../ModalDivider';
-import {
-  MODAL_WIDTH,
-  containerStyles,
-  showAllStyles,
-} from './DragModal.styles';
-import { DragIndicator } from '@mui/icons-material';
+import { MODAL_WIDTH, styles } from './DragModal.styles';
+import { DragIndicator, NavigateBefore } from '@mui/icons-material';
+import { Button } from '..';
+import { sx } from '../Waterfall/WaterfallModal.styles';
 
-const DragModal: React.FC = () => {
+const DragModal: React.FC<DragModalProps> = ({
+  initialPeople = [],
+  onBack,
+  backButtonText,
+  activateAllText,
+  deactivateAllText,
+  buttonText,
+}) => {
   const [people, setPeople] = useState<Person[]>(initialPeople);
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { distance: 5 } }),
   );
-
-  const logState = (updatedPeople: Person[]) => {
-    updatedPeople.forEach(person => {
-      console.log(`${person.id}: ${person.label} = ${person.isActive}`);
-    });
-  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -48,7 +46,6 @@ const DragModal: React.FC = () => {
         const oldIndex = items.findIndex(item => item.id === active.id);
         const newIndex = items.findIndex(item => item.id === over.id);
         const newItems = arrayMove(items, oldIndex, newIndex);
-        logState(newItems);
         return newItems;
       });
     }
@@ -61,7 +58,6 @@ const DragModal: React.FC = () => {
       isActive: !allActivated,
     }));
     setPeople(newPeople);
-    logState(newPeople);
   };
 
   const handleToggle = (id: UniqueIdentifier) => {
@@ -69,17 +65,24 @@ const DragModal: React.FC = () => {
       person.id === id ? { ...person, isActive: !person.isActive } : person,
     );
     setPeople(newPeople);
-    logState(newPeople);
   };
 
   return (
     <Modal width={MODAL_WIDTH}>
-      <p>Volver</p>
+      <Button
+        onClick={onBack}
+        startIcon={<NavigateBefore style={styles.StartIconStyles} />}
+        style={styles.CustomizeButton}
+        sx={sx.customizeButton}>
+        {backButtonText}
+      </Button>
       <ModalDivider />
-      <div style={containerStyles}>
-        <p>Botones</p>
-        <button style={showAllStyles} onClick={handleToggleAll}>
-          Activar todo
+      <div style={styles.containerStyles}>
+        <p>{buttonText}</p>
+        <button style={styles.showAllStyles} onClick={handleToggleAll}>
+          {people.every(person => person.isActive)
+            ? deactivateAllText
+            : activateAllText}
         </button>
       </div>
       <DndContext

@@ -5,6 +5,13 @@ import { initialPeople, menuItems } from '../mock';
 export default {
   title: 'Components/WaterfallModal',
   component: WaterfallModal,
+  argTypes: {
+    backButtonText: { control: 'text' },
+    activateAllText: { control: 'text' },
+    deactivateAllText: { control: 'text' },
+    buttonText: { control: 'text' },
+    customizeText: { control: 'text' },
+  },
 };
 
 const Template = (args: WaterfallModalProps) => <WaterfallModal {...args} />;
@@ -13,4 +20,9 @@ export const DefaultWaterfallModal = Template.bind({});
 DefaultWaterfallModal.args = {
   menuItems,
   initialPeople,
+  backButtonText: 'Back',
+  activateAllText: 'Activate all',
+  deactivateAllText: 'Deactivate all',
+  buttonText: 'Buttons',
+  customizeText: 'Customize',
 };

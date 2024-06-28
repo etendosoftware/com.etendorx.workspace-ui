@@ -32,6 +32,22 @@ export const styles: { [key: string]: CSSProperties } = {
   SpanStyles: {
     paddingRight: '0.5rem',
   },
+  containerStyles: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '0.75rem 1.25rem 0 1.25rem',
+    maxHeight: '2.25rem',
+  },
+  showAllStyles: {
+    textDecoration: 'none',
+    color: 'blue',
+    cursor: 'pointer',
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    font: 'inherit',
+  },
 };
 
 export const FadeWrapper = styled('div')({
