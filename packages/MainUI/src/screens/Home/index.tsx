@@ -14,7 +14,6 @@ import {
   InputPassword,
   SearchInputWithVoice,
   Box,
-  NotificationStates,
   Select,
 } from '@workspaceui/componentlibrary/src/components';
 import { LockOutlined, Search } from '@mui/icons-material';
@@ -26,7 +25,6 @@ import {
 } from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete/TextInputAutocomplete.mock';
 import { topFilms } from '../../../../ComponentLibrary/src/components/Input/Select/mock';
 import { TabContent } from '@workspaceui/componentlibrary/src/interfaces';
-import { notificationsStates } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/mock';
 
 const Home = () => {
   const [isActive, setIsActive] = useState(false);
@@ -199,44 +197,6 @@ const Home = () => {
             getOptionLabel={(option: any) => option.title}
           />
         </Box>
-      ),
-    },
-    {
-      title: 'Notification Item States',
-      children: (
-        <Grid container spacing={1}>
-          <Grid item>
-            <NotificationStates
-              notifications={notificationsStates}
-              type="informatives"
-            />
-          </Grid>
-          <Grid item>
-            <NotificationStates
-              notifications={notificationsStates}
-              type="withButtons"
-            />
-          </Grid>
-          <Grid item>
-            <NotificationStates
-              notifications={notificationsStates}
-              type="withButtonsAndTags"
-            />
-          </Grid>
-          <Grid item>
-            <NotificationStates
-              notifications={notificationsStates}
-              type="tags"
-            />
-            ,
-          </Grid>
-          <Grid item>
-            <NotificationStates
-              notifications={notificationsStates}
-              type="avatar"
-            />
-          </Grid>
-        </Grid>
       ),
     },
   ];
