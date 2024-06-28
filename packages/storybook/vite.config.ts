@@ -4,17 +4,9 @@ import svgr from 'vite-plugin-svgr';
 
 export default defineConfig({
   plugins: [
-    react(),
-    svgr({
-      include: '**/*.svg',
-    }),
+    react()
   ],
   optimizeDeps: {
-    include: ['@mui/material']
-  },
-  build: {
-    rollupOptions: {
-      external: ['@mui/material']
-    }
+    include: ['@mui/material', '@mui/icons-material']
   }
 });

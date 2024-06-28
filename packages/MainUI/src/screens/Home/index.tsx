@@ -1,36 +1,14 @@
-import { useState } from 'react';
 import {
   DataGrid,
   Table,
   TableV2,
-  Tab,
-  Navbar,
   Button,
   Grid,
-  TextInputBase,
-  InputPassword,
-  SearchInputWithVoice,
-  Box,
-  Select,
+  Tab
 } from '@workspaceui/componentlibrary/src/components';
-import logo from '../../assets/react.svg';
 import { TabContent } from '@workspaceui/componentlibrary/src/interfaces';
 
 const Home = () => {
-  const [micValue, setMicValue] = useState<string>('');
-  const [searchValue, setSearchValue] = useState<string>('');
-  const [disabledValue, setDisabledValue] = useState<string>('');
-  const [passwordValue, setPasswordValue] = useState<string>('');
-  const [inputBaseValue, setInputBaseValue] = useState<string>('');
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-
-  const handleVoiceClick = () => {
-    console.log('Voice button clicked');
-  };
-
-  const handleClickShowPassword = () => {
-    setShowPassword(!showPassword);
-
   const tabArray: TabContent[] = [
     {
       title: '🎹 Buttons',
@@ -102,85 +80,14 @@ const Home = () => {
       title: '🧩 TableV2',
       children: <TableV2 />,
     },
-    {
-      title: '🔍 Input',
-      children: (
-        <Grid
-          sx={{
-            backgroundColor: 'white',
-            padding: '1rem',
-            borderRadius: '0.5rem',
-          }}
-          container
-          spacing={2}>
-          <Grid item xs={12}>
-            <TextInputAutocomplete
-              value={searchValue}
-              setValue={setSearchValue}
-              autoCompleteTexts={MOCK_AUTO_COMPLETE_TEXTS}
-              placeholder={MOCK_PLACEHOLDERS.SEARCH}
-            />
-            <TextInputAutocomplete
-              value={disabledValue}
-              setValue={setDisabledValue}
-              placeholder={MOCK_PLACEHOLDERS.DISABLED}
-              sx={{ marginTop: '1rem' }}
-              disabled
-            />
-            <TextInputBase
-              leftIcon={<LockOutlined />}
-              rightIcon={<Search />}
-              onRightIconClick={handleClickShowPassword}
-              sx={{ marginTop: '1rem' }}
-              value={inputBaseValue}
-              setValue={setInputBaseValue}
-              placeholder={MOCK_PLACEHOLDERS.SEARCH}
-            />
-            <InputPassword
-              leftIcon={<LockOutlined />}
-              value={passwordValue}
-              setValue={setPasswordValue}
-              label={MOCK_PLACEHOLDERS.PASSWORD_LABEL}
-              sx={{ marginTop: '1rem' }}
-            />
-            <Box sx={{ marginTop: '1rem' }}>
-              <SearchInputWithVoice
-                value={micValue}
-                setValue={setMicValue}
-                placeholder={MOCK_PLACEHOLDERS.SEARCH}
-                onVoiceClick={handleVoiceClick}
-              />
-            </Box>
-          </Grid>
-        </Grid>
-      ),
-    },
-    {
-      title: 'Navbar',
-      children: <Navbar />,
-    },
-    {
-      title: 'Select',
-      children: (
-        <Box style={{ background: 'white', padding: 20, width: 300 }}>
-          <Select
-            iconLeft={logo}
-            title="Peliculas"
-            helperText={{ label: 'Top 15', icon: logo }}
-            options={topFilms}
-            getOptionLabel={(option: any) => option.title}
-          />
-        </Box>
-      ),
-    },
   ];
- }
+
 
   return (
     <div className="container">
       <Tab tabArray={tabArray} />
     </div>
   );
-};
+}
 
 export default Home;
