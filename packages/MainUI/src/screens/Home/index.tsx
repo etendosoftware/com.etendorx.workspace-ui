@@ -187,10 +187,6 @@ const Home = () => {
       children: <Navbar />,
     },
     {
-      title: 'Profile Modal',
-      children: <Profile />,
-    },
-    {
       title: 'Select',
       children: (
         <Box style={{ background: 'white', padding: 20, width: 300 }}>
