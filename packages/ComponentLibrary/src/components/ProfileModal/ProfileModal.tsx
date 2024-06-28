@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Modal from '../Modal';
 import UserProfile from './UserProfile';
-import ToggleSection from './ToggleSection/ToggleSection';
+import ToggleSection from './ToggleButton';
 import SelectorList from './SelectorList/SelectorListMock';
 import {
   MODAL_WIDTH,
@@ -10,12 +10,11 @@ import {
   saveButtonStyles,
 } from './ProfileModal.styles';
 import { Button } from '@mui/material';
-import { toggleSectionStyles } from './ToggleSection/ToggleSection.styles';
-
+import { toggleSectionStyles } from './ToggleButton/styles';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockIcon from '@mui/icons-material/Lock';
-import { Section } from './ToggleSection/ToggleSection.types';
+import { Section } from './ToggleButton/types';
 
 interface ProfileModalProps {
   cancelButtonText?: string;
