@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   FormControl,
   InputLabel,
@@ -9,6 +9,7 @@ import {
   Typography,
   FormControlLabel,
   Checkbox,
+  Grid,
 } from '@mui/material';
 import {
   selectorListStyles,
@@ -23,6 +24,8 @@ import WarehouseIcon from '@mui/icons-material/Store';
 import LanguageIcon from '@mui/icons-material/Language';
 import { SelectorListProps, Item } from './types';
 import { references } from './references';
+import { InputPassword } from '../..';
+import { LockOutlined } from '@mui/icons-material';
 
 const icons: { [key in Item]: React.ReactElement } = {
   [Item.Rol]: <RoleIcon style={iconStyles} />,
@@ -32,12 +35,20 @@ const icons: { [key in Item]: React.ReactElement } = {
   [Item.Lenguaje]: <LanguageIcon style={iconStyles} />,
 };
 
-const SelectorList: React.FC<SelectorListProps> = ({ section }) => {
+const SelectorList: React.FC<SelectorListProps> = ({
+  section,
+  passwordLabel,
+  newPasswordLabel,
+  confirmPasswordLabel,
+}) => {
   const relevantItems = references[section] || [];
-
-  const [selectedValues, setSelectedValues] = React.useState<{
+  const [selectedValues, setSelectedValues] = useState<{
     [key in Item]?: string;
   }>({});
+
+  const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
   const handleChange = (event: SelectChangeEvent<string>, item: Item) => {
     setSelectedValues({
@@ -80,6 +91,28 @@ const SelectorList: React.FC<SelectorListProps> = ({ section }) => {
           control={<Checkbox />}
           label="Guardar perfil por defecto"
         />
+      )}
+      {section === 'password' && (
+        <Grid sx={{ margin: '0.5rem' }}>
+          <InputPassword
+            label={passwordLabel}
+            value={password}
+            setValue={setPassword}
+            leftIcon={<LockOutlined />}
+          />
+          <InputPassword
+            label={newPasswordLabel}
+            value={newPassword}
+            setValue={setNewPassword}
+            leftIcon={<LockOutlined />}
+          />
+          <InputPassword
+            label={confirmPasswordLabel}
+            value={confirmNewPassword}
+            setValue={setConfirmNewPassword}
+            leftIcon={<LockOutlined />}
+          />
+        </Grid>
       )}
     </div>
   );
