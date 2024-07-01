@@ -28,6 +28,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,
   saveButtonText,
   tooltipModal = 'Account Settings',
+  passwordLabel,
+  newPasswordLabel,
+  confirmPasswordLabel,
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
 
@@ -53,7 +56,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           onToggle={handleToggle}
         />
       </div>
-      <SelectorList section={currentSection} />
+      <SelectorList
+        section={currentSection}
+        passwordLabel={passwordLabel}
+        newPasswordLabel={newPasswordLabel}
+        confirmPasswordLabel={confirmPasswordLabel}
+      />
       <div style={buttonContainerStyles}>
         <Button sx={buttonStyles} variant="contained" color="primary">
           {cancelButtonText}
