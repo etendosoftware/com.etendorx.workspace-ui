@@ -12,6 +12,10 @@ import { WaterfallModalProps } from './WaterfallModal.types';
 const WaterfallModal: React.FC<WaterfallModalProps> = ({
   menuItems,
   initialPeople,
+  backButtonText,
+  activateAllText,
+  deactivateAllText,
+  buttonText,
   customizeText,
 }) => {
   const [showDragModal, setShowDragModal] = useState(false);
@@ -90,6 +94,10 @@ const WaterfallModal: React.FC<WaterfallModalProps> = ({
             setPeople={setPeople}
             menuItems={[]}
             initialPeople={[]}
+            backButtonText={backButtonText}
+            activateAllText={activateAllText}
+            deactivateAllText={deactivateAllText}
+            buttonText={buttonText}
           />
         </FadeWrapper>
       )}
