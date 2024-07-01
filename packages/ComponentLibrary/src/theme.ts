@@ -181,29 +181,29 @@ export const theme = createTheme({
         },
       },
     },
-    MuiTab: {
-      defaultProps: {
-        disableRipple: true,
-      },
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          fontSize: '1rem',
-          borderTopRightRadius: '.5rem',
-          borderTopLeftRadius: '.5rem',
-          backgroundColor: TERTIARY_50,
+    // MuiTab: {
+    //   defaultProps: {
+    //     disableRipple: true,
+    //   },
+    //   styleOverrides: {
+    //     root: {
+    //       textTransform: 'none',
+    //       fontSize: '1rem',
+    //       borderTopRightRadius: '.5rem',
+    //       borderTopLeftRadius: '.5rem',
+    //       backgroundColor: TERTIARY_50,
 
-          [':hover']: {
-            backgroundColor: NEUTRAL_50,
-          },
-          ':focus': {
-            backgroundColor: NEUTRAL_50,
-          },
-          ':selected': {
-            backgroundColor: NEUTRAL_50,
-          },
-        },
-      },
-    },
+    //       [':hover']: {
+    //         backgroundColor: NEUTRAL_50,
+    //       },
+    //       ':focus': {
+    //         backgroundColor: NEUTRAL_50,
+    //       },
+    //       ':selected': {
+    //         backgroundColor: NEUTRAL_50,
+    //       },
+    //     },
+    //   },
+    // },
   },
 });
