@@ -6,13 +6,21 @@ export default {
   argTypes: {
     cancelButtonText: { control: 'text' },
     saveButtonText: { control: 'text' },
+    passwordLabel: { control: 'text' },
+    newPasswordLabel: { control: 'text' },
+    confirmPasswordLabel: { control: 'text' },
+    section: { control: 'text' },
   },
 };
 
 const Template = args => <ProfileModal {...args} />;
 
-export const Default = Template.bind({});
-Default.args = {
-  cancelButtonText: 'Cancelar',
-  saveButtonText: 'Guardar',
+export const ProfileDefault = Template.bind({});
+ProfileDefault.args = {
+  section: 'profile',
+  cancelButtonText: 'Cancel',
+  saveButtonText: 'Save',
+  passwordLabel: 'Password',
+  newPasswordLabel: 'New Password',
+  confirmPasswordLabel: 'Confirm New Password',
 };

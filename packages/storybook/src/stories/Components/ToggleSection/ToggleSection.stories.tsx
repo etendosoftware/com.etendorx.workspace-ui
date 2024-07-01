@@ -1,42 +1,31 @@
-import { useState } from 'react';
-import { Meta } from '@storybook/react';
 import SelectorList from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleSection';
-import { sectionsMock } from './mock';
-import ToggleSections from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleButton';
+import { SelectorListProps } from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleSection/types';
 
 export default {
-  title: 'Components/SelectorList',
+  title: 'Components/Sections',
   component: SelectorList,
   argTypes: {
-    section: {
-      control: {
-        type: 'select',
-        options: ['profile', 'password'],
-      },
-    },
+    section: { control: 'text' },
+    passwordLabel: { control: 'text' },
+    newPasswordLabel: { control: 'text' },
+    confirmPasswordLabel: { control: 'text' },
   },
-} as Meta;
-
-const Template = args => {
-  const [currentSection, setCurrentSection] = useState<string>('profile');
-
-  const handleToggle = (section: string) => {
-    setCurrentSection(section);
-  };
-
-  return (
-    <>
-      <ToggleSections
-        sections={sectionsMock}
-        currentSection={currentSection}
-        onToggle={handleToggle}
-      />
-      <SelectorList {...args} section={currentSection} />
-    </>
-  );
 };
 
-export const Default = Template.bind({});
-Default.args = {
+const Template = (args: SelectorListProps) => <SelectorList {...args} />;
+
+export const PasswordSection = Template.bind({});
+PasswordSection.args = {
+  section: 'password',
+  passwordLabel: 'Password',
+  newPasswordLabel: 'New Password',
+  confirmPasswordLabel: 'Confirm New Password',
+};
+
+export const ProfileSection = Template.bind({});
+ProfileSection.args = {
   section: 'profile',
+  passwordLabel: '',
+  newPasswordLabel: '',
+  confirmPasswordLabel: '',
 };

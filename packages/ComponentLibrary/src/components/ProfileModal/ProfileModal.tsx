@@ -15,11 +15,7 @@ import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockIcon from '@mui/icons-material/Lock';
 import { Section } from './ToggleButton/types';
-
-interface ProfileModalProps {
-  cancelButtonText?: string;
-  saveButtonText?: string;
-}
+import { ProfileModalProps } from './UserProfile.types';
 
 const sections: Section[] = [
   { id: 'profile', label: 'Perfil', icon: <PersonOutlineIcon /> },
@@ -29,6 +25,9 @@ const sections: Section[] = [
 const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,
   saveButtonText,
+  passwordLabel,
+  newPasswordLabel,
+  confirmPasswordLabel,
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
 
@@ -46,7 +45,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           onToggle={handleToggle}
         />
       </div>
-      <SelectorList section={currentSection} />
+      <SelectorList
+        section={currentSection}
+        passwordLabel={passwordLabel}
+        newPasswordLabel={newPasswordLabel}
+        confirmPasswordLabel={confirmPasswordLabel}
+      />
       <div style={buttonContainerStyles}>
         <Button sx={buttonStyles} variant="contained" color="primary">
           {cancelButtonText}
