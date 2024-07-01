@@ -10,10 +10,10 @@ export const menuItems = [
 ];
 
 export const initialPeople: Person[] = [
-  { id: '1', label: 'Trabajo', isActive: true },
-  { id: '2', label: 'Pedido de venta', isActive: false },
-  { id: '3', label: 'Factura de venta', isActive: true },
-  { id: '4', label: 'Producto', isActive: false },
-  { id: '5', label: 'Factura de tercero pagada', isActive: false },
-  { id: '6', label: 'Comprobante de tercero para devolución', isActive: true },
+  { id: '1', label: 'Work', isActive: true },
+  { id: '2', label: 'Sales Order', isActive: false },
+  { id: '3', label: 'Sales Invoice', isActive: true },
+  { id: '4', label: 'Product', isActive: false },
+  { id: '5', label: 'Third-Party Invoice Paid', isActive: false },
+  { id: '6', label: 'Third-Party Credit Memo', isActive: true },
 ];
