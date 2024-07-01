@@ -19,10 +19,6 @@ export const tabStyles = (numberOfItems?: number, isLoading?: boolean): SxProps 
     padding: '0.625rem',
     paddingRight: isLoading ? '0rem' : numberOfItems ? '1.25rem' : '0.625rem',
     backgroundColor: 'transparent',
-    textTransform: 'none',
-    fontSize: '1rem',
-    borderTopRightRadius: '.5rem',
-    borderTopLeftRadius: '.5rem',
     '&.Mui-selected': {
         borderBottom: '2px solid',
         paddingBottom: 'calc(0.625rem - 1px)',
