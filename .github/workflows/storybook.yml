@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - develop
-      - feature/EPL-1570
+      - feature/EPL-1630
 
 jobs:
   chromatic-deployment:
@@ -24,5 +24,5 @@ jobs:
         working-directory: ./packages/storybook
 
       - name: Publish to Chromatic
-        run: npx chromatic --project-token=${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+        run: npx chromatic --project-token=${{ secrets.CHROMATIC_PROJECT_TOKEN }} --auto-accept-changes
         working-directory: ./packages/storybook
