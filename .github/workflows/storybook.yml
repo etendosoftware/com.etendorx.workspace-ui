@@ -20,7 +20,11 @@ jobs:
         run: npm install -g pnpm && pnpm install
 
       - name: Install dependencies
-        run: rm -rf node_modules && yarn cache clean && yarn install && yarn build-storybook
+        run: |
+          rm -rf node_modules
+          yarn cache clean
+          yarn install
+          yarn build-storybook
         working-directory: ./packages/storybook
 
       - name: Publish to Chromatic
