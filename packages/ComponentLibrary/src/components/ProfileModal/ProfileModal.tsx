@@ -9,16 +9,18 @@ import {
   buttonStyles,
   saveButtonStyles,
 } from './ProfileModal.styles';
-import { Button } from '@mui/material';
+import { Button, IconButton, Tooltip } from '@mui/material';
 import { toggleSectionStyles } from './ToggleButton/styles';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockIcon from '@mui/icons-material/Lock';
 import { Section } from './ToggleButton/types';
-
+import { Person } from '@mui/icons-material';
+import { sx, styles } from '../Waterfall/WaterfallModal.styles';
 interface ProfileModalProps {
   cancelButtonText?: string;
   saveButtonText?: string;
+  tooltipModal?: string;
 }
 
 const sections: Section[] = [
@@ -29,6 +31,7 @@ const sections: Section[] = [
 const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,
   saveButtonText,
+  tooltipModal = 'Account Settings',
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
 
@@ -37,7 +40,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   };
 
   return (
-    <Modal width={MODAL_WIDTH}>
+    <Modal
+      width={MODAL_WIDTH}
+      customTrigger={
+        <Tooltip title={tooltipModal} arrow>
+          <IconButton style={styles.iconButtonStyles} sx={sx.hoverStyles}>
+            <Person sx={sx.iconStyles} />
+          </IconButton>
+        </Tooltip>
+      }>
       <UserProfile />
       <div style={toggleSectionStyles}>
         <ToggleSection

@@ -14,6 +14,7 @@ const Modal: React.FC<ModalIProps> = ({
   posX = Position.Center,
   posY = Position.Center,
   children,
+  customTrigger,
 }) => {
   const [open, setOpen] = useState<boolean>(false);
   const handleOpen = () => setOpen(true);
@@ -47,9 +48,15 @@ const Modal: React.FC<ModalIProps> = ({
 
   return (
     <>
-      <Button onClick={handleOpen} variant="contained">
-        Modal
-      </Button>
+      {customTrigger ? (
+        React.cloneElement(customTrigger as React.ReactElement, {
+          onClick: handleOpen,
+        })
+      ) : (
+        <Button onClick={handleOpen} variant="contained">
+          Modal
+        </Button>
+      )}
       <ModalMUI open={open} onClose={handleClose} style={styles.modalStyles}>
         <Box
           sx={{

@@ -6,6 +6,7 @@ export default {
   argTypes: {
     cancelButtonText: { control: 'text' },
     saveButtonText: { control: 'text' },
+    tooltipModal: { control: 'text' },
   },
 };
 
@@ -15,4 +16,5 @@ export const Default = Template.bind({});
 Default.args = {
   cancelButtonText: 'Cancelar',
   saveButtonText: 'Guardar',
+  tooltipModal: 'Account Settings',
 };

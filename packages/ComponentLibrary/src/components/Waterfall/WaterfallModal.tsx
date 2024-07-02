@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
-import { Box, Button, List, MenuItem } from '@mui/material';
+import {
+  Box,
+  Button,
+  IconButton,
+  List,
+  MenuItem,
+  Tooltip,
+} from '@mui/material';
 import Modal from '../Modal';
 import DragModalContent from './DragModalContent';
 import { Person } from '../DragModal/DragModal.types';
 import ModalDivider from '../ModalDivider';
 import { FadeWrapper, MODAL_WIDTH, styles, sx } from './WaterfallModal.styles';
-import { Edit, NavigateNext } from '@mui/icons-material';
+import { Edit, NavigateNext, Add } from '@mui/icons-material';
 import { UniqueIdentifier } from '@dnd-kit/core';
 import { WaterfallModalProps } from './WaterfallModal.types';
 
@@ -17,6 +24,7 @@ const WaterfallModal: React.FC<WaterfallModalProps> = ({
   deactivateAllText,
   buttonText,
   customizeText,
+  tooltipModal,
 }) => {
   const [showDragModal, setShowDragModal] = useState(false);
   const [fade, setFade] = useState(false);
@@ -54,7 +62,15 @@ const WaterfallModal: React.FC<WaterfallModalProps> = ({
   };
 
   return (
-    <Modal width={MODAL_WIDTH}>
+    <Modal
+      width={MODAL_WIDTH}
+      customTrigger={
+        <Tooltip title={tooltipModal} arrow>
+          <IconButton style={styles.iconButtonStyles} sx={sx.hoverStyles}>
+            <Add sx={sx.iconStyles} />
+          </IconButton>
+        </Tooltip>
+      }>
       {!showDragModal ? (
         <FadeWrapper className={fade ? 'fade-out' : ''}>
           <List>

@@ -48,6 +48,11 @@ export const styles: { [key: string]: CSSProperties } = {
     padding: 0,
     font: 'inherit',
   },
+  iconButtonStyles: {
+    width: '2.5rem',
+    height: '2.5rem',
+    color: theme.palette.baselineColor.neutral[80],
+  },
 };
 
 export const FadeWrapper = styled('div')({
@@ -78,6 +83,15 @@ export const sx: { [key: string]: SxProps<Theme> } = {
       background: '',
       borderRadius: '0.5rem',
       color: theme.palette.baselineColor.neutral[80],
+    },
+  },
+  hoverStyles: {
+    background: 'white',
+    '&:hover': {
+      backgroundColor: theme.palette.dynamicColor.main,
+      '& .MuiSvgIcon-root': {
+        color: theme.palette.baselineColor.neutral[0],
+      },
     },
   },
 };
