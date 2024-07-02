@@ -8,7 +8,8 @@
     "build": "vite build",
     "serve": "vite preview",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "rm -rf storybook-static && storybook build",
+    "build-storybook-local": "rm -rf storybook-static && yarn build-storybook && cd storybook-static && npx http-server"
   },
   "dependencies": {
     "react": "^18.2.0",

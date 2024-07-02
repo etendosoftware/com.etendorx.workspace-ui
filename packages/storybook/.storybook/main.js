@@ -11,9 +11,6 @@ const config = {
     name: '@storybook/react-vite',
     options: {},
   },
-  features: {
-    emotionAlias: false,
-  },
 };
 
 export default config;
