@@ -21,10 +21,15 @@ jobs:
       - name: Install dependencies
         run: |
           rm -rf node_modules
+<<<<<<< HEAD
           rm -rf storybook-static
           yarn cache clean
           yarn install
           pnpm install
+=======
+          yarn cache clean
+          yarn install
+>>>>>>> 997038d (Feature EPL-1630: Update vite.config.js)
           yarn build-storybook
         working-directory: ./packages/storybook
 
