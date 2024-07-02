@@ -9,19 +9,19 @@ interface NavProps {
 const Nav: React.FC<NavProps> = ({ children }) => {
   const [value, setValue] = useState('');
   return (
-      <nav style={styles.NavStyles}>
-        <div style={styles.LeftItems}>
-          <SearchInputWithVoice
-            value={value}
-            setValue={setValue}
-            placeholder="Search"
-            onVoiceClick={() => alert('Voice activated')}
-          />
-        </div>
-        <div style={styles.RightItems}>
-          <RightButtons>{children}</RightButtons>
-        </div>
-      </nav>
+    <nav style={styles.NavStyles}>
+      <div style={styles.LeftItems}>
+        <SearchInputWithVoice
+          value={value}
+          setValue={setValue}
+          placeholder="Search"
+          onVoiceClick={() => alert('Voice activated')}
+        />
+      </div>
+      <div style={styles.RightItems}>
+        <RightButtons>{children}</RightButtons>
+      </div>
+    </nav>
   );
 };
 

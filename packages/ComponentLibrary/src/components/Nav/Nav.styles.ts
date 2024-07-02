@@ -6,7 +6,7 @@ const styles: { [key: string]: CSSProperties } = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    width: '91rem'
+    width: '91rem',
   },
   LeftItems: {
     width: '22.75rem',
