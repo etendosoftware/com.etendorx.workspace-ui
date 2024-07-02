@@ -25,6 +25,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   passwordLabel,
   newPasswordLabel,
   confirmPasswordLabel,
+  tooltipModal = 'Account Settings',
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
