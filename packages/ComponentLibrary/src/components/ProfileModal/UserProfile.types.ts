@@ -1,4 +1,4 @@
-import { SelectorListProps } from "./ToggleSection/types";
+import { SelectorListProps } from './ToggleSection/types';
 
 export interface User {
   photoUrl: string;
@@ -6,7 +6,7 @@ export interface User {
   email: string;
 }
 
-export interface ProfileModalProps extends SelectorListProps{
+export interface ProfileModalProps extends SelectorListProps {
   cancelButtonText?: string;
   saveButtonText?: string;
   tooltipButtonProfile?: string;

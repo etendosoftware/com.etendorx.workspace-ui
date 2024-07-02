@@ -10,7 +10,11 @@ export default {
     newPasswordLabel: { control: 'text' },
     confirmPasswordLabel: { control: 'text' },
     section: { control: 'text' },
+<<<<<<< HEAD
     tooltipButtonProfile: { control: 'text' },
+=======
+    tooltipModal: { control: 'text' },
+>>>>>>> 6546670 (Feature EPL-1493: Fix conflicts)
   },
 };
 
@@ -24,5 +28,9 @@ ProfileDefault.args = {
   passwordLabel: 'Password',
   newPasswordLabel: 'New Password',
   confirmPasswordLabel: 'Confirm New Password',
+<<<<<<< HEAD
   tooltipButtonProfile: 'Account Settings',
+=======
+  tooltipModal: 'Account Settings',
+>>>>>>> 6546670 (Feature EPL-1493: Fix conflicts)
 };
