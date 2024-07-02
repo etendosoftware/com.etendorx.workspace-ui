@@ -17,11 +17,7 @@ import LockIcon from '@mui/icons-material/Lock';
 import { Section } from './ToggleButton/types';
 import { Person } from '@mui/icons-material';
 import { sx, styles } from '../Waterfall/WaterfallModal.styles';
-interface ProfileModalProps {
-  cancelButtonText?: string;
-  saveButtonText?: string;
-  tooltipModal?: string;
-}
+import { ProfileModalProps } from './UserProfile.types';
 
 const sections: Section[] = [
   { id: 'profile', label: 'Perfil', icon: <PersonOutlineIcon /> },

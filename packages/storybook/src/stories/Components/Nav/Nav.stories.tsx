@@ -82,7 +82,7 @@ DefaultNav.args = {
   buttonText: 'Buttons',
   customizeText: 'Customize',
   //Profile Modal
-  cancelButtonText: 'Cancelar',
-  saveButtonText: 'Guardar',
+  cancelButtonText: 'Cancel',
+  saveButtonText: 'Save',
   tooltipModal: 'Account Settings',
 };
