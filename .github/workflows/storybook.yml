@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - develop
-      - feature/EPL-1570
 
 jobs:
   chromatic-deployment:
@@ -20,9 +19,15 @@ jobs:
         run: npm install -g pnpm && pnpm install
 
       - name: Install dependencies
-        run: rm -rf node_modules && yarn cache clean && yarn install
+        run: |
+          rm -rf node_modules
+          rm -rf storybook-static
+          yarn cache clean
+          yarn install
+          pnpm install
+          yarn build-storybook
         working-directory: ./packages/storybook
 
       - name: Publish to Chromatic
-        run: npx chromatic --project-token=${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+        run: npx chromatic --project-token=${{ secrets.CHROMATIC_PROJECT_TOKEN }} --auto-accept-changes
         working-directory: ./packages/storybook

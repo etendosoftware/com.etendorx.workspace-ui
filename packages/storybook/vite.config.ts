@@ -5,8 +5,5 @@ import svgr from 'vite-plugin-svgr';
 export default defineConfig({
   plugins: [
     react()
-  ],
-  optimizeDeps: {
-    include: ['@mui/material', '@mui/icons-material']
-  }
+  ]
 });
