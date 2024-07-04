@@ -2,7 +2,7 @@ import { SxProps, Theme, styled } from '@mui/material';
 import { CSSProperties } from 'react';
 import { theme } from '../../theme';
 
-export const MODAL_WIDTH = 240;
+export const menuSyle = { paddingY: 0 };
 
 export const styles: { [key: string]: CSSProperties } = {
   CustomizeButton: {
@@ -52,6 +52,9 @@ export const styles: { [key: string]: CSSProperties } = {
     width: '2.5rem',
     height: '2.5rem',
     color: theme.palette.baselineColor.neutral[80],
+  },
+  paperStyleMenu: {
+    borderRadius: '0.75rem',
   },
 };
 

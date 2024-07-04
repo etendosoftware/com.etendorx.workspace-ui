@@ -1,6 +1,8 @@
 import { WaterfallModalProps } from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal.types';
 
 export interface NavArgs extends WaterfallModalProps {
+  cancelButtonText: string;
+  saveButtonText: string;
   notifications: [];
   anchorEl: HTMLElement | null;
   open: boolean;
@@ -16,4 +18,10 @@ export interface NavArgs extends WaterfallModalProps {
   deactivateAllText: string;
   buttonText: string;
   customizeText: string;
+  passwordLabel: string;
+  newPasswordLabel: string;
+  confirmPasswordLabel: string;
+  tooltipButtonProfile: string;
+  tooltipWaterfallButton: string;
+  section: string;
 }

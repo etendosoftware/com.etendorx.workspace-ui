@@ -59,33 +59,34 @@ const SelectorList: React.FC<SelectorListProps> = ({
 
   return (
     <div style={selectorListStyles}>
-      {relevantItems.map(({ item, values }) => (
-        <React.Fragment key={item}>
-          <FormControl fullWidth variant="standard" style={formStyle}>
-            <InputLabel id={`${item}-label`} style={labelStyles}>
-              {item}
-            </InputLabel>
-            <Select
-              labelId={`${item}-label`}
-              id={`${item}-select`}
-              value={selectedValues[item] ?? ''}
-              onChange={event => handleChange(event, item)}
-              label={item}
-              renderValue={selected => (
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <ListItemIcon>{icons[item]}</ListItemIcon>
-                  <Typography>{`${item} ${selected}`}</Typography>
-                </div>
-              )}>
-              {values.map(value => (
-                <MenuItem key={value} value={value}>
-                  {item} {value}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </React.Fragment>
-      ))}
+      {section === 'profile' &&
+        relevantItems.map(({ item, values }) => (
+          <React.Fragment key={item}>
+            <FormControl fullWidth variant="standard" style={formStyle}>
+              <InputLabel id={`${item}-label`} style={labelStyles}>
+                {item}
+              </InputLabel>
+              <Select
+                labelId={`${item}-label`}
+                id={`${item}-select`}
+                value={selectedValues[item] ?? ''}
+                onChange={event => handleChange(event, item)}
+                label={item}
+                renderValue={selected => (
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <ListItemIcon>{icons[item]}</ListItemIcon>
+                    <Typography>{`${item} ${selected}`}</Typography>
+                  </div>
+                )}>
+                {values.map(value => (
+                  <MenuItem key={value} value={value}>
+                    {item} {value}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </React.Fragment>
+        ))}
       {section === 'profile' && (
         <FormControlLabel
           control={<Checkbox />}

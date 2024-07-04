@@ -14,5 +14,5 @@ export interface WaterfallModalProps {
   deactivateAllText?: string;
   customizeText?: string;
   buttonText?: string;
-  tooltipModal?: string;
+  tooltipWaterfallButton?: string;
 }

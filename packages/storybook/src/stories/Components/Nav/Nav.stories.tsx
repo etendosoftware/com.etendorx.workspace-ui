@@ -30,6 +30,7 @@ const Template = (args: NavArgs) => (
         backButtonText={args.backButtonText}
         activateAllText={args.activateAllText}
         deactivateAllText={args.deactivateAllText}
+        tooltipWaterfallButton={args.tooltipWaterfallButton}
         buttonText={args.buttonText}
         customizeText={args.customizeText}
         people={[]}
@@ -42,7 +43,6 @@ const Template = (args: NavArgs) => (
         <NotificationModal
           notifications={args.notifications}
           anchorEl={args.anchorEl}
-          open={args.open}
           onClose={args.onClose}
           title={args.title}
           linkTitle={args.linkTitle}
@@ -55,7 +55,11 @@ const Template = (args: NavArgs) => (
       <ProfileModal
         cancelButtonText={args.cancelButtonText}
         saveButtonText={args.saveButtonText}
-        tooltipModal={args.tooltipModal}
+        tooltipButtonProfile={args.tooltipButtonProfile}
+        section={args.section}
+        passwordLabel={args.passwordLabel}
+        newPasswordLabel={args.newPasswordLabel}
+        confirmPasswordLabel={args.confirmPasswordLabel}
       />
     </div>
   </Nav>
@@ -85,4 +89,8 @@ DefaultNav.args = {
   cancelButtonText: 'Cancel',
   saveButtonText: 'Save',
   tooltipModal: 'Account Settings',
+  passwordLabel: 'Password',
+  newPasswordLabel: 'New Password',
+  confirmPasswordLabel: 'Confirm New Password',
+  section: 'profile',
 };

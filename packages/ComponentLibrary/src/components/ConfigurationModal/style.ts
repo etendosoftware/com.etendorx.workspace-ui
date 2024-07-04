@@ -1,5 +1,7 @@
 import { CSSProperties } from 'react';
 import { theme } from '../../theme';
+import { Theme } from '@emotion/react';
+import { SxProps } from '@mui/material';
 
 export const menuSyle = { paddingY: 0 };
 export const COLUMN_SPACING = '0.75rem';

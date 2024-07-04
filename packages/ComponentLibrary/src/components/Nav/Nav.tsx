@@ -9,7 +9,6 @@ interface NavProps {
 const Nav: React.FC<NavProps> = ({ children }) => {
   const [value, setValue] = useState('');
   return (
-    <div style={styles.boxStyles}>
       <nav style={styles.NavStyles}>
         <div style={styles.LeftItems}>
           <SearchInputWithVoice
@@ -23,7 +22,6 @@ const Nav: React.FC<NavProps> = ({ children }) => {
           <RightButtons>{children}</RightButtons>
         </div>
       </nav>
-    </div>
   );
 };
 

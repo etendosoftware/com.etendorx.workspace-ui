@@ -10,7 +10,7 @@ export default {
     newPasswordLabel: { control: 'text' },
     confirmPasswordLabel: { control: 'text' },
     section: { control: 'text' },
-    tooltipModal: { control: 'text' },
+    tooltipButtonProfile: { control: 'text' },
   },
 };
 
@@ -24,5 +24,5 @@ ProfileDefault.args = {
   passwordLabel: 'Password',
   newPasswordLabel: 'New Password',
   confirmPasswordLabel: 'Confirm New Password',
-  tooltipModal: 'Account Settings',
+  tooltipButtonProfile: 'Account Settings',
 };

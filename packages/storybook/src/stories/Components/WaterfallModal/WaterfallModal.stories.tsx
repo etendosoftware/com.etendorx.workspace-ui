@@ -11,6 +11,7 @@ export default {
     deactivateAllText: { control: 'text' },
     buttonText: { control: 'text' },
     customizeText: { control: 'text' },
+    tooltipWaterfallProfile: { control: 'text' },
   },
 };
 
@@ -25,4 +26,5 @@ DefaultWaterfallModal.args = {
   deactivateAllText: 'Deactivate all',
   buttonText: 'Buttons',
   customizeText: 'Customize',
+  tooltipWaterfallProfile: 'Waterfall'
 };
