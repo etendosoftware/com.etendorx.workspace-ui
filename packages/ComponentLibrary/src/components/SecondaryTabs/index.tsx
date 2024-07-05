@@ -29,7 +29,7 @@ const SecondaryTabs: React.FC<any> = ({ tabsContent, selectedTab = 0, onChange }
     const updateVisibleCount = () => {
       const width = tabsRef.current?.clientWidth || 0;
       const tabWidth = 150;
-      const newVisibleCount = Math.floor((width - 40) / tabWidth); // Restamos 40px para el botón de más opciones
+      const newVisibleCount = Math.floor((width - 40) / tabWidth);
       setVisibleCount(newVisibleCount);
     };
 

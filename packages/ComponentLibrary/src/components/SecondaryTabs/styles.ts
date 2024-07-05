@@ -16,7 +16,7 @@ export const tabsContainerStyles: SxProps = {
     alignItems: 'center',
     padding: '0 0.5rem',
     width: '100%',
-    position: 'relative', // Añadimos esta línea
+    position: 'relative',
 };
 
 export const rightButtonContainerStyles: SxProps = {
@@ -46,7 +46,7 @@ export const tabStyles = (numberOfItems?: number, isLoading?: boolean): SxProps 
         backgroundColor: theme.palette.baselineColor.neutral[90],
         transform: 'scaleX(0)',
         transition: 'transform 0.3s ease',
-        top: '40px', // Añadimos esta línea para posicionar el borde a 36px desde arriba
+        top: '2.5rem',
     },
     '&.Mui-selected': {
         color: theme.palette.baselineColor.neutral[90],
