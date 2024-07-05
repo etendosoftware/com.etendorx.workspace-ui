@@ -19,7 +19,7 @@ import {
   rightButtonContainerStyles,
 } from './styles';
 
-const SecondaryTabs: React.FC<any> = ({ tabsConfig, selectedTab = 0, onChange }) => {
+const SecondaryTabs: React.FC<any> = ({ tabsContent, selectedTab = 0, onChange }) => {
   const [visibleCount, setVisibleCount] = useState(5);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -62,19 +62,8 @@ const SecondaryTabs: React.FC<any> = ({ tabsConfig, selectedTab = 0, onChange })
           onChange={handleChange}
           variant="scrollable"
           scrollButtons="auto"
-          sx={{
-            minHeight: '36px',
-            height: '36px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: "flex-start",
-            width: 'calc(100% - 40px)', // Restamos 40px para el botón de más opciones
-            '& .MuiTabs-indicator': {
-              display: 'none',
-            },
-          }}
         >
-          {tabsConfig.slice(0, visibleCount).map((tab: any, index) => (
+          {tabsContent.slice(0, visibleCount).map((tab: any, index: number) => (
             <Tab
               key={index}
               label={
@@ -98,7 +87,7 @@ const SecondaryTabs: React.FC<any> = ({ tabsConfig, selectedTab = 0, onChange })
             />
           ))}
         </Tabs>
-        {tabsConfig.length > visibleCount && (
+        {tabsContent.length > visibleCount && (
           <Box sx={rightButtonContainerStyles}>
             <IconButton onClick={handleMenu} sx={rightButtonStyles(open)}>
               <KeyboardDoubleArrowRightIcon />
@@ -113,7 +102,7 @@ const SecondaryTabs: React.FC<any> = ({ tabsConfig, selectedTab = 0, onChange })
         PaperProps={{ sx: menuPaperProps }}
         slotProps={{ root: { sx: menuItemRootStyles } }}
       >
-        {tabsConfig.slice(visibleCount).map((tab: any, index) => (
+        {tabsContent.slice(visibleCount).map((tab: any, index: number) => (
           <MenuItem
             key={index}
             onClick={() => { onChange(index + visibleCount); handleClose(); }}
