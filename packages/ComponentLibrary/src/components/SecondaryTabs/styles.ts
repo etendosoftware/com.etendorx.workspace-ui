@@ -10,23 +10,51 @@ export const containerStyles: SxProps = {
 export const tabsContainerStyles: SxProps = {
     overflow: 'hidden',
     cursor: 'grab',
+    height: '36px',
+    borderBottom: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
+    display: 'flex',
+    alignItems: 'center',
+    padding: '0 0.5rem',
+    width: '100%',
+    position: 'relative', // Añadimos esta línea
+};
+
+export const rightButtonContainerStyles: SxProps = {
+    position: 'absolute',
+    right: '0.5rem',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    display: 'flex',
+    alignItems: 'center',
+    height: '100%',
 };
 
 export const tabStyles = (numberOfItems?: number, isLoading?: boolean): SxProps => ({
     minWidth: 'auto',
-    borderBottom: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
-    transition: 'border-bottom-color 0.5s ease-in-out',
-    padding: '0.625rem',
-    paddingRight: isLoading ? '0rem' : numberOfItems ? '1.25rem' : '0.625rem',
+    padding: '0 0.625rem',
+    paddingRight: isLoading ? '0rem' : numberOfItems ? '1.25rem' : '1.25rem',
     backgroundColor: 'transparent',
+    position: 'relative',
+    transition: 'color 0.3s ease',
+    '&::after': {
+        content: '""',
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        width: '100%',
+        height: '2px',
+        backgroundColor: theme.palette.baselineColor.neutral[90],
+        transform: 'scaleX(0)',
+        transition: 'transform 0.3s ease',
+        top: '40px', // Añadimos esta línea para posicionar el borde a 36px desde arriba
+    },
     '&.Mui-selected': {
-        borderBottom: '2px solid',
-        paddingBottom: 'calc(0.625rem - 1px)',
         color: theme.palette.baselineColor.neutral[90],
+        '&::after': {
+            transform: 'scaleX(1)',
+        },
     },
     '&:hover': {
-        borderBottom: '2px solid',
-        paddingBottom: 'calc(0.625rem - 1px)',
         backgroundColor: 'transparent',
         color: theme.palette.baselineColor.neutral[90],
     },
@@ -40,12 +68,7 @@ export const commonStyles: SxProps = {
     marginTop: '0.375rem',
 };
 
-export const rightButtonContainerStyles: SxProps = {
-    borderBottom: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
-};
-
 export const rightButtonStyles = (open: boolean) => ({
-    ...commonStyles,
     color: open ? theme.palette.dynamicColor.contrastText : theme.palette.baselineColor.neutral[80],
     backgroundColor: open ? theme.palette.baselineColor.neutral[80] : theme.palette.baselineColor.neutral[0],
     borderRadius: '50%',
@@ -57,8 +80,12 @@ export const rightButtonStyles = (open: boolean) => ({
         boxShadow: '0px 4px 10px 0px #00030D1A',
         borderRadius: '12.5rem',
     },
-    marginLeft: '0.5rem',
-
+    padding: 0,
+    height: '28px',
+    width: '28px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
 });
 
 export const iconContainerStyles: SxProps = {

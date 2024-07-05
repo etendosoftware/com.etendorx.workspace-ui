@@ -1,4 +1,4 @@
-import { create } from '@storybook/theming/create';
+import { create } from '@storybook/theming';
 import EtendoLogo from '../src/assets/logo/Etendo.png';
 
 export default create({
