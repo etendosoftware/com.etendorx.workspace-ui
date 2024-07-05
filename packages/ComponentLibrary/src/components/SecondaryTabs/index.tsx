@@ -2,10 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Tabs, Tab, Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
 
-import TabPanel from './components/TabPanel';
 import TabLabel from './components/TabLabel';
 
-import { SecondaryTabsProps } from './types';
 import {
   containerStyles,
   menuItemStyles,
@@ -21,8 +19,7 @@ import {
   rightButtonContainerStyles,
 } from './styles';
 
-const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ tabsConfig }) => {
-  const [value, setValue] = useState(0);
+const SecondaryTabs: React.FC<any> = ({ tabsConfig, selectedTab = 0, onChange }) => {
   const [visibleCount, setVisibleCount] = useState(5);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -32,7 +29,7 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ tabsConfig }) => {
     const updateVisibleCount = () => {
       const width = tabsRef.current?.clientWidth || 0;
       const tabWidth = 150;
-      const newVisibleCount = Math.floor(width / tabWidth);
+      const newVisibleCount = Math.floor((width - 40) / tabWidth); // Restamos 40px para el botón de más opciones
       setVisibleCount(newVisibleCount);
     };
 
@@ -46,8 +43,7 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ tabsConfig }) => {
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: number) => {
     event.preventDefault();
-    setValue(newValue);
-    tabsConfig[newValue].onClick();
+    onChange(newValue);
   };
 
   const handleMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -62,10 +58,21 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ tabsConfig }) => {
     <Box sx={containerStyles}>
       <Box ref={tabsRef} sx={tabsContainerStyles}>
         <Tabs
-          value={value}
+          value={selectedTab}
           onChange={handleChange}
-          indicatorColor="primary"
-          textColor="primary"
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            minHeight: '36px',
+            height: '36px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: "flex-start",
+            width: 'calc(100% - 40px)', // Restamos 40px para el botón de más opciones
+            '& .MuiTabs-indicator': {
+              display: 'none',
+            },
+          }}
         >
           {tabsConfig.slice(0, visibleCount).map((tab: any, index) => (
             <Tab
@@ -84,47 +91,41 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ tabsConfig }) => {
                   text={tab.label}
                   isLoading={tab.isLoading}
                   count={tab.numberOfItems}
-                  isSelected={index === value}
                 />
               }
               iconPosition="start"
               sx={tabStyles(tab.numberOfItems, tab.isLoading)}
             />
           ))}
-          {tabsConfig.length > visibleCount && (
-            <Box sx={rightButtonContainerStyles}>
-              <IconButton onClick={handleMenu} sx={rightButtonStyles(open)}>
-                <KeyboardDoubleArrowRightIcon />
-              </IconButton>
-            </Box>
-          )}
-          <Menu
-            anchorEl={anchorEl}
-            open={open}
-            onClose={handleClose}
-            PaperProps={{ sx: menuPaperProps }}
-            slotProps={{ root: { sx: menuItemRootStyles } }}
-          >
-            {tabsConfig.slice(visibleCount).map((tab: any, index) => (
-              <MenuItem
-                key={index}
-                onClick={() => { setValue(index + visibleCount); handleClose(); }}
-                sx={menuItemStyles}
-              >
-                {typeof tab.icon === 'string' ? <Typography style={menuItemTypographyStyles}>{tab.icon}</Typography> : React.cloneElement(tab.icon, {
-                  style: menuItemTypographyStyles
-                })}
-                {tab.label}
-              </MenuItem>
-            ))}
-          </Menu>
         </Tabs>
+        {tabsConfig.length > visibleCount && (
+          <Box sx={rightButtonContainerStyles}>
+            <IconButton onClick={handleMenu} sx={rightButtonStyles(open)}>
+              <KeyboardDoubleArrowRightIcon />
+            </IconButton>
+          </Box>
+        )}
       </Box>
-      {tabsConfig.map((tab, index) => (
-        <TabPanel value={value} index={index} key={index}>
-          {tab.content}
-        </TabPanel>
-      ))}
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        PaperProps={{ sx: menuPaperProps }}
+        slotProps={{ root: { sx: menuItemRootStyles } }}
+      >
+        {tabsConfig.slice(visibleCount).map((tab: any, index) => (
+          <MenuItem
+            key={index}
+            onClick={() => { onChange(index + visibleCount); handleClose(); }}
+            sx={menuItemStyles}
+          >
+            {typeof tab.icon === 'string' ? <Typography style={menuItemTypographyStyles}>{tab.icon}</Typography> : React.cloneElement(tab.icon, {
+              style: menuItemTypographyStyles
+            })}
+            {tab.label}
+          </MenuItem>
+        ))}
+      </Menu>
     </Box>
   );
 };
