@@ -10,5 +10,5 @@ export interface TabConfig {
 }
 
 export interface SecondaryTabsProps {
-    tabsConfig: TabConfig[];
+    tabsContent: TabConfig[];
 }

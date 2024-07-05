@@ -8,20 +8,20 @@ export default {
 };
 
 const SecondaryTabsTemplate = () => {
-  const [tabsConfig, setTabsConfig] = useState(TABS_CONFIG);
+  const [tabsContent, setTabsContent] = useState(TABS_CONFIG);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const updatedTabs: any = tabsConfig.map(tab => ({
+      const updatedTabs: any = tabsContent.map(tab => ({
         ...tab,
         isLoading: false,
       }));
-      setTabsConfig(updatedTabs);
+      setTabsContent(updatedTabs);
     }, 5000);
     return () => clearTimeout(timer);
-  }, [tabsConfig]);
+  }, [tabsContent]);
 
-  return <SecondaryTabs tabsConfig={tabsConfig} />;
+  return <SecondaryTabs tabsContent={tabsContent} />;
 };
 
 export const Default = () => <SecondaryTabsTemplate />;
