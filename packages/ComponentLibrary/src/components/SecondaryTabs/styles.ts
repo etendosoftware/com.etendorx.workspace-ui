@@ -10,7 +10,7 @@ export const containerStyles: SxProps = {
 export const tabsContainerStyles: SxProps = {
     overflow: 'hidden',
     cursor: 'grab',
-    height: '36px',
+    height: '2.25rem',
     borderBottom: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
     display: 'flex',
     alignItems: 'center',
@@ -72,17 +72,17 @@ export const rightButtonStyles = (open: boolean) => ({
     color: open ? theme.palette.dynamicColor.contrastText : theme.palette.baselineColor.neutral[80],
     backgroundColor: open ? theme.palette.baselineColor.neutral[80] : theme.palette.baselineColor.neutral[0],
     borderRadius: '50%',
-    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)',
+    boxShadow: `0 0.25rem 0.5rem rgba(0, 0, 0, 0.15)`,
     transition: 'background-color 0.5s ease, color 0.5s ease, border-radius 0.5s ease, box-shadow 0.5s ease',
     '&:hover': {
         color: theme.palette.dynamicColor.contrastText,
         backgroundColor: theme.palette.baselineColor.neutral[80],
-        boxShadow: '0px 4px 10px 0px #00030D1A',
+        boxShadow: '0 0.25rem 0.625rem 0 #00030D1A',
         borderRadius: '12.5rem',
     },
     padding: 0,
-    height: '28px',
-    width: '28px',
+    height: '1.75rem',
+    width: '1.75rem',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -98,16 +98,16 @@ export const iconStyles: SxProps = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '14px',
+    fontSize: '0.875rem',
     color: theme.palette.baselineColor.neutral[90],
 };
 
 export const menuPaperProps: SxProps = {
-    marginTop: '4px',
+    marginTop: '0.25rem',
     border: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
     padding: '0.5rem',
-    boxShadow: `0px 4px 10px 0px ${theme.palette.baselineColor.transparentNeutral[10]}`,
-    borderRadius: '12px',
+    boxShadow: `0 0.25rem 0.625rem 0 ${theme.palette.baselineColor.transparentNeutral[10]}`,
+    borderRadius: '0.75rem',
 };
 
 export const menuItemRootStyles: SxProps = {
