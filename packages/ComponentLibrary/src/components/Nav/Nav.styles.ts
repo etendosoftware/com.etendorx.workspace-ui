@@ -6,7 +6,7 @@ const styles: { [key: string]: CSSProperties } = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    width: '91rem',
+    width: '100%',
   },
   LeftItems: {
     width: '22.75rem',
@@ -17,7 +17,7 @@ const styles: { [key: string]: CSSProperties } = {
   RightItems: {
     height: '3rem',
     padding: '0.25rem',
-    width: '14rem',
+    display: 'flex',
     borderRadius: '6.25rem',
     background: `var(--Neutral-0, ${theme.palette.baselineColor.transparentNeutral[5]})`,
   },

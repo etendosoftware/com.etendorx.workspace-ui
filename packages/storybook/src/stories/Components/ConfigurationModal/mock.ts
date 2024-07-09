@@ -54,5 +54,5 @@ export const modalConfig = {
       selectedItem: 0,
     },
   ],
-  onChangeSelect: console.log
+  onChangeSelect: console.log,
 };
