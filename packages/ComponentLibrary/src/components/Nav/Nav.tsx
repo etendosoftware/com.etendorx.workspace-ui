@@ -1,20 +1,27 @@
-import React from 'react';
-import SearchIcon from '../../assets/icons/search.svg';
-import { NavStyles, boxStyles } from './Nav.styles';
-import RigthButtons from './RigthComponents/RightButtons';
-import Logo from './LeftComponents/Logo';
-import { AppIcon } from './LeftComponents/IconApp';
+import React, { ReactNode, useState } from 'react';
+import styles from './Nav.styles';
+import RightButtons from './RigthComponents/RightButtons';
+import SearchInputWithVoice from '../Input/TextInput/TextInputAutocomplete/SearchInputWithVoice';
+interface NavProps {
+  children?: ReactNode;
+}
 
-const Nav: React.FC = () => {
+const Nav: React.FC<NavProps> = ({ children }) => {
+  const [value, setValue] = useState('');
   return (
-    <div style={boxStyles}>
-      <AppIcon />
-      <nav style={NavStyles}>
-        <Logo />
-        <SearchIcon fill="blue" width={100} height={100} />
-        <RigthButtons />
-      </nav>
-    </div>
+    <nav style={styles.NavStyles}>
+      <div style={styles.LeftItems}>
+        <SearchInputWithVoice
+          value={value}
+          setValue={setValue}
+          placeholder="Search"
+          onVoiceClick={() => alert('Voice activated')}
+        />
+      </div>
+      <div style={styles.RightItems}>
+        <RightButtons>{children}</RightButtons>
+      </div>
+    </nav>
   );
 };
 

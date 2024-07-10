@@ -15,7 +15,7 @@ enum Item {
     Cliente = 'Cliente',
     Organización = 'Organización',
     Almacén = 'Almacén',
-    Lenguaje = 'Lenguaje'
+    Lenguaje = 'Lenguaje',
   }
 
 export { Container, Position, Item }

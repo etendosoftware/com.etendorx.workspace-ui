@@ -1,5 +1,7 @@
 import { CSSProperties } from 'react';
 import { theme } from '../../theme';
+import { Theme } from '@emotion/react';
+import { SxProps } from '@mui/material';
 
 export const menuSyle = { paddingY: 0 };
 export const COLUMN_SPACING = '0.75rem';
@@ -90,8 +92,28 @@ export const styles: { [key: string]: CSSProperties } = {
     padding: '0.75rem 1rem 0.75rem 1rem',
     borderRadius: '0.75rem',
   },
-  paperStyleMenu: { background: theme.palette.baselineColor.neutral[10], borderRadius: '0.75rem' },
+  paperStyleMenu: {
+    background: theme.palette.baselineColor.neutral[10],
+    borderRadius: '0.75rem',
+  },
   listContainer: {
     padding: '0.75rem',
+  },
+  iconButtonStyles: {
+    width: '2.5rem',
+    height: '2.5rem',
+    color: theme.palette.baselineColor.neutral[80],
+  },
+};
+
+export const sx: { [key: string]: SxProps<Theme> } = {
+  hoverStyles: {
+    background: 'white',
+    '&:hover': {
+      backgroundColor: theme.palette.dynamicColor.main,
+      '& .MuiSvgIcon-root': {
+        color: theme.palette.baselineColor.neutral[0],
+      },
+    },
   },
 };

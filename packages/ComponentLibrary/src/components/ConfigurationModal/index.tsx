@@ -7,6 +7,7 @@ import {
   FIRST_MARGIN_TOP,
   menuSyle,
   styles,
+  sx,
 } from './style';
 import { IConfigurationModalProps, ISection } from './types';
 import { ALT } from './constants';
@@ -108,7 +109,11 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
 
   return (
     <>
-      <Checkbox onClick={handleClick} />
+      <Checkbox
+        onClick={handleClick}
+        style={styles.iconButtonStyles}
+        sx={sx.hoverStyles}
+      />
       <Menu
         {...props}
         anchorEl={anchorEl}
