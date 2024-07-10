@@ -1,4 +1,4 @@
-import DrawerComponent from '../../../../../ComponentLibrary/src/components/GeneralDrawer';
+import DrawerComponent from '../../../../../ComponentLibrary/src/components/Drawer';
 import Nav from '../../../../../ComponentLibrary/src/components/Nav/Nav';
 import NotificationModal from '../../../../../ComponentLibrary/src/components/NotificationsModal';
 import NotificationButton from '../../../../../ComponentLibrary/src/components/NotificationsButton';
@@ -16,15 +16,15 @@ import {
   styles,
 } from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal.styles';
 import profilePicture from '../.././../../../ComponentLibrary/src/assets/images/profile_picture_mock.png';
-import { sectionGroups } from './mock';
+import { sectionGroups } from '../../../../../MainUI/src/mocks';
 
 export default {
   title: 'Components/Drawer',
   component: DrawerComponent,
   argTypes: {
     tooltipTitle: { control: 'text' },
-    companyName: { control: 'text' },
-    companyLogo: { control: 'text' },
+    headerTitle: { control: 'text' },
+    headerImage: { control: 'text' },
   },
 };
 
@@ -32,8 +32,8 @@ const Template = args => <DrawerComponent {...args} />;
 
 export const GeneralDrawer = Template.bind({});
 GeneralDrawer.args = {
-  companyName: 'Etendo',
-  companyLogo: logo,
+  headerTitle: 'Etendo',
+  headerImage: logo,
   sectionGroups: sectionGroups,
 };
 
@@ -117,7 +117,7 @@ DrawerWithNav.args = {
   userName: 'Ayelén García',
   userEmail: 'ayelen.garcia@etendo.software',
   //Drawer
-  companyName: 'Etendo',
-  companyLogo: logo,
+  headerTitle: 'Etendo',
+  headerImage: logo,
   sectionGroups: sectionGroups,
 };

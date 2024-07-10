@@ -11,11 +11,11 @@ const mainSections = [
         label: 'Devolución de cliente',
         icon: '↩️',
         subSections: [
-          { id: 1321, label: 'Devolución parcial', },
-          { id: 1322, label: 'Devolución total', }
-        ]
+          { id: 1321, label: 'Devolución parcial' },
+          { id: 1322, label: 'Devolución total' },
+        ],
       },
-    ]
+    ],
   },
   { id: 5, label: 'Jobs', icon: '💼', badge: 'Nuevo' },
   { id: 6, label: 'Datos Maestros', icon: '📁' },
@@ -30,25 +30,25 @@ const mainSections = [
     label: 'Ventas',
     icon: '💰',
     subSections: [
-      { id: 131, label: 'Albarán (Cliente)', icon: '📄' },
+      { id: 141, label: 'Albarán (Cliente)', icon: '📄' },
       {
-        id: 132,
+        id: 142,
         label: 'Devolución de cliente',
         icon: '↩️',
         subSections: [
-          { id: 1321, label: 'Devolución parcial', },
-          { id: 1322, label: 'Devolución total', }
-        ]
+          { id: 1323, label: 'Devolución parcial' },
+          { id: 1324, label: 'Devolución total' },
+        ],
       },
-    ]
+    ],
   },
   { id: 14, label: 'Proyectos y servicios', icon: '📈' },
-  { id: 15, label: 'Finanzas', icon: '🏦', badge: '+99' }
+  { id: 15, label: 'Finanzas', icon: '🏦', badge: '+99' },
 ];
 
 export const sectionGroups: any = [
   {
     id: 1,
-    sections: mainSections
-  }
+    sections: mainSections,
+  },
 ];

@@ -4,21 +4,16 @@ import svgr from 'vite-plugin-svgr';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    react(),
-    svgr({
-      include: '**/*.svg',
-    })
-  ],
+  plugins: [react(), svgr()],
   server: {
     proxy: {
-      '/sws/view': 'http://localhost:8092'
-    }
+      '/sws/view': 'http://localhost:8092',
+    },
   },
   build: {
     outDir: '../../src/main/resources/static',
     rollupOptions: {
-      external: ['@mui/material']
-    }
-  }
+      external: ['@mui/material'],
+    },
+  },
 });

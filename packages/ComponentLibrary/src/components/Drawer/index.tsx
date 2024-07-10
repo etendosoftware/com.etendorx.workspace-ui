@@ -11,14 +11,22 @@ import { styles } from './styles';
 import DrawerSection from './DrawerSection';
 import { DrawerProps, SectionGroup, Section } from './types';
 
-const Drawer: React.FC<DrawerProps> = ({ children, sectionGroups, headerImage, headerTitle }) => {
+const Drawer: React.FC<DrawerProps> = ({
+  children,
+  sectionGroups,
+  headerImage,
+  headerTitle,
+}) => {
   // States
-  const [open, setOpen] = useState<boolean>(true);
+  const [open, setOpen] = useState<boolean>(false);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [expandedSections, setExpandedSections] = useState<
+    Record<string, boolean>
+  >({});
 
   // Boolean functions
-  const isExpanded = (sectionId: string): boolean => expandedSections[sectionId] || false;
+  const isExpanded = (sectionId: string): boolean =>
+    expandedSections[sectionId] || false;
 
   // Event handlers
   const handleDrawerToggle = (): void => {
@@ -29,7 +37,10 @@ const Drawer: React.FC<DrawerProps> = ({ children, sectionGroups, headerImage, h
     }
   };
 
-  const handleSectionSelect = (sectionId: string, parentId: string | null = null): void => {
+  const handleSectionSelect = (
+    sectionId: string,
+    parentId: string | null = null,
+  ): void => {
     if (parentId === null) {
       if (selectedSection === sectionId) {
         setSelectedSection(null);
@@ -45,20 +56,23 @@ const Drawer: React.FC<DrawerProps> = ({ children, sectionGroups, headerImage, h
   };
 
   // Main Effects
-  const updateSectionsWithSelection = (sections: Section[], selectedId: string | null): Section[] => {
+  const updateSectionsWithSelection = (
+    sections: Section[],
+    selectedId: string | null,
+  ): Section[] => {
     return sections.map(section => ({
       ...section,
       isSelected: section.id === selectedId,
       isExpanded: isExpanded(section.id),
       subSections: section.subSections
         ? updateSectionsWithSelection(section.subSections, selectedId)
-        : undefined
+        : undefined,
     }));
   };
 
   const updatedSectionGroups: SectionGroup[] = sectionGroups.map(group => ({
     ...group,
-    sections: updateSectionsWithSelection(group.sections, selectedSection)
+    sections: updateSectionsWithSelection(group.sections, selectedSection),
   }));
 
   // Secondary Effects
@@ -70,7 +84,7 @@ const Drawer: React.FC<DrawerProps> = ({ children, sectionGroups, headerImage, h
   }, [open]);
 
   return (
-    <React.Fragment>
+    <>
       <MuiDrawer
         variant="permanent"
         open={open}
@@ -86,13 +100,13 @@ const Drawer: React.FC<DrawerProps> = ({ children, sectionGroups, headerImage, h
                 duration: theme.transitions.duration.enteringScreen,
               }),
           },
-        }}
-      >
-        <Box sx={{
-          ...styles.drawerHeader,
-          justifyContent: open ? 'space-between' : 'center',
-          padding: open ? '0.5rem 1rem' : '0.5rem 0',
         }}>
+        <Box
+          sx={{
+            ...styles.drawerHeader,
+            justifyContent: open ? 'space-between' : 'center',
+            padding: open ? '0.5rem 1rem' : '0.5rem 0',
+          }}>
           {open && (
             <Box sx={styles.drawerHeaderImgBox}>
               <img
@@ -107,24 +121,26 @@ const Drawer: React.FC<DrawerProps> = ({ children, sectionGroups, headerImage, h
           )}
           <IconButton
             onClick={handleDrawerToggle}
-            sx={styles.iconButtonBoxStyles}
-          >
+            sx={styles.iconButtonBoxStyles}>
             <MenuOpen sx={{ transform: open ? 'none' : 'rotate(180deg)' }} />
           </IconButton>
         </Box>
-        <Box sx={{
-          ...styles.subsectionsContainer,
-          alignItems: open ? 'flex-start' : 'center',
-        }}>
-          {updatedSectionGroups.map((group) => (
+        <Box
+          sx={{
+            ...styles.subsectionsContainer,
+            alignItems: open ? 'flex-start' : 'center',
+          }}>
+          {updatedSectionGroups.map(group => (
             <React.Fragment key={group.id}>
-              {group.sections.map((section) => (
+              {group.sections.map(section => (
                 <DrawerSection
                   key={section.id}
                   section={section}
                   open={open}
                   onSelect={handleSectionSelect}
-                  onExpand={(sectionId: string) => handleSectionSelect(sectionId, section.id)}
+                  onExpand={(sectionId: string) =>
+                    handleSectionSelect(sectionId, section.id)
+                  }
                   isExpanded={isExpanded}
                 />
               ))}
@@ -139,11 +155,10 @@ const Drawer: React.FC<DrawerProps> = ({ children, sectionGroups, headerImage, h
           backgroundColor: 'transparent',
           width: `calc(100% - ${open ? styles.drawerWidth : styles.drawerWidthClosed}px)`,
           marginLeft: open ? styles.drawerWidth : styles.drawerWidthClosed,
-        }}
-      >
+        }}>
         {children}
       </MuiAppBar>
-    </React.Fragment>
+    </>
   );
 };
 

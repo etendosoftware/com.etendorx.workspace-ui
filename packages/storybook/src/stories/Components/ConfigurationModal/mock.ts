@@ -1,4 +1,4 @@
-import logo from '../../../../../MainUI/src/assets/react.svg';
+import logoUrl from '../../../../../MainUI/src/assets/react.svg';
 import image from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/theme-light.svg';
 import image1 from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/theme-dark.svg';
 import image2 from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/theme-automatic.svg';
@@ -13,7 +13,7 @@ import image10 from '../../../../../ComponentLibrary/src/assets/images/Configura
 import image11 from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/specific-toolbar buttons-text.svg';
 
 export const modalConfig = {
-  icon: logo,
+  icon: logoUrl,
   title: { icon: image, label: 'Appearance' },
   linkTitle: { label: 'View all settings', url: '/settings' },
   sections: [

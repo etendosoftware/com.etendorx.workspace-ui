@@ -1,4 +1,4 @@
-import { theme } from "../../theme";
+import { theme } from '../../theme';
 
 const DRAWER_WIDTH = 260;
 const DRAWER_WIDTH_CLOSED = 56;
@@ -14,7 +14,7 @@ export const styles = {
     borderRight: 'none',
     borderTopRightRadius: '0.75rem',
     borderBottomRightRadius: '0.75rem',
-    border: '0, 1px, 0, 0'
+    border: '0, 1px, 0, 0',
   },
   drawerOpen: {
     transition: () =>
@@ -117,8 +117,7 @@ export const styles = {
     minWidth: '1.25rem',
     textAlign: 'center',
   },
-  toggleButton: {
-  },
+  toggleButton: {},
   drawerWidth: DRAWER_WIDTH,
   drawerWidthClosed: DRAWER_WIDTH_CLOSED,
   drawerSectionBox: {
@@ -129,7 +128,7 @@ export const styles = {
   drawerHeaderTitle: {
     fontWeight: 600,
     color: theme.palette.baselineColor.neutral[90],
-    fontSize: '1rem'
+    fontSize: '1rem',
   },
   drawerHeaderImgBox: {
     display: 'flex',
