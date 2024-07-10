@@ -45,7 +45,7 @@ const Home = () => {
               people={[]}
             />
             <ConfigurationModal {...modalConfig} />
-            <IconButton style={styles.iconButtonStyles} sx={sx.hoverStyles}>
+            <IconButton sx={sx.hoverStyles}>
               <AutoAwesome sx={sx.iconStyles} />
             </IconButton>
             <NotificationButton notifications={NOTIFICATIONS}>

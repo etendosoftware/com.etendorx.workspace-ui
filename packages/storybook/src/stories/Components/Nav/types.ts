@@ -24,4 +24,7 @@ export interface NavArgs extends WaterfallModalProps {
   tooltipButtonProfile: string;
   tooltipWaterfallButton: string;
   section: string;
+  userPhotoUrl: string;
+  userName: string;
+  userEmail: string;
 }

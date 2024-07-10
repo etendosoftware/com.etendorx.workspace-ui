@@ -6,7 +6,7 @@ import ProfileModal from '../../../../../ComponentLibrary/src/components/Profile
 import WaterfallModal from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal';
 import ConfigurationModal from '../../../../../ComponentLibrary/src/components/ConfigurationModal';
 import { NOTIFICATIONS } from '../notifications.mock';
-import logo from '../../../../../MainUI/src/assets/react.svg';
+import logo from '../../../../../ComponentLibrary/src/assets/images/logo.svg';
 import { modalConfig } from '../ConfigurationModal/mock';
 import { menuItems, initialPeople } from '../mock';
 import { AutoAwesome } from '@mui/icons-material';
@@ -15,19 +15,27 @@ import {
   sx,
   styles,
 } from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal.styles';
+import profilePicture from '../.././../../../ComponentLibrary/src/assets/images/profile_picture_mock.png';
+import { sectionGroups } from './mock';
 
 export default {
   title: 'Components/Drawer',
   component: DrawerComponent,
   argTypes: {
     tooltipTitle: { control: 'text' },
+    companyName: { control: 'text' },
+    companyLogo: { control: 'text' },
   },
 };
 
 const Template = args => <DrawerComponent {...args} />;
 
 export const GeneralDrawer = Template.bind({});
-GeneralDrawer.args = {};
+GeneralDrawer.args = {
+  companyName: 'Etendo',
+  companyLogo: logo,
+  sectionGroups: sectionGroups,
+};
 
 const DrawerWithNavTemplate = args => (
   <DrawerComponent {...args}>
@@ -69,6 +77,9 @@ const DrawerWithNavTemplate = args => (
           passwordLabel={args.passwordLabel}
           newPasswordLabel={args.newPasswordLabel}
           confirmPasswordLabel={args.confirmPasswordLabel}
+          userPhotoUrl={args.userPhotoUrl}
+          userName={args.userName}
+          userEmail={args.userEmail}
         />
       </div>
     </Nav>
@@ -102,4 +113,11 @@ DrawerWithNav.args = {
   passwordLabel: 'Password',
   newPasswordLabel: 'New Password',
   confirmPasswordLabel: 'Confirm New Password',
+  userPhotoUrl: profilePicture,
+  userName: 'Ayelén García',
+  userEmail: 'ayelen.garcia@etendo.software',
+  //Drawer
+  companyName: 'Etendo',
+  companyLogo: logo,
+  sectionGroups: sectionGroups,
 };

@@ -10,4 +10,7 @@ export interface ProfileModalProps extends SelectorListProps {
   cancelButtonText?: string;
   saveButtonText?: string;
   tooltipButtonProfile?: string;
+  userPhotoUrl: string;
+  userName: string;
+  userEmail: string;
 }
