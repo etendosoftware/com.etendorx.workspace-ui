@@ -25,6 +25,7 @@ import NotificationModalCustom from './NotificationsModal';
 import TagMUI from './Tag';
 import SecondaryTabsMUI from './SecondaryTabs';
 import NotificationItemStates from './NotificationItemAllStates';
+import Drawer from './GeneralDrawer';
 
 // ApplyHOC is a higher order component that applies the theme to the component
 const Button = ApplyHOC(ButtonMUI);
@@ -51,6 +52,7 @@ const NotificationModal = ApplyHOC(NotificationModalCustom);
 const Tag = ApplyHOC(TagMUI);
 const SecondaryTabs = ApplyHOC(SecondaryTabsMUI);
 const NotificationStates = ApplyHOC(NotificationItemStates);
+const DrawerGeneral = ApplyHOC(Drawer);
 
 export {
   Button,
@@ -77,4 +79,5 @@ export {
   Tag,
   SecondaryTabs,
   NotificationStates,
+  DrawerGeneral,
 };
