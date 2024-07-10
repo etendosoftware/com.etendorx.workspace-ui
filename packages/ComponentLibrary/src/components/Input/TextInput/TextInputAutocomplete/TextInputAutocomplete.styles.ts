@@ -28,9 +28,6 @@ export const CSS_STYLES: { [key: string]: any } = {
     borderRadius: '6.25rem',
     position: 'relative',
     transition: 'background-color 0.3s, border-color 0.3s',
-    '&:hover': {
-      backgroundColor: theme.palette.baselineColor.transparentNeutral[5],
-    },
   },
   tabText: {
     fontSize: FONT_SIZE_14,
