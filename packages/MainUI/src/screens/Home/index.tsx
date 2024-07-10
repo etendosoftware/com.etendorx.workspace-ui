@@ -23,7 +23,9 @@ import {
   sx,
   styles,
 } from '@workspaceui/componentlibrary/src/components/Waterfall/WaterfallModal.styles';
-import { sectionGroups } from '@workspaceui/componentlibrary/src/components/GeneralDrawer/mock';
+import { sectionGroups } from '../../../../storybook/src/stories/Components/GeneralDrawer/mock';
+import companyLogo from '../../../../ComponentLibrary/src/assets/images/logo.svg';
+import profilePicture from '../../../../ComponentLibrary/src/assets/images/profile_picture_mock.png';
 
 const Home = () => {
   const handleClose = () => {
@@ -73,6 +75,9 @@ const Home = () => {
                 passwordLabel="Password"
                 newPasswordLabel="New Password"
                 confirmPasswordLabel="Confirm New Password"
+                userPhotoUrl={profilePicture}
+                userName="Ayelén García"
+                userEmail="ayelen.garcia@etendo.software"
               />
             </div>
           </Nav>
@@ -82,7 +87,10 @@ const Home = () => {
     {
       title: 'Drawer ',
       children: (
-        <DrawerGeneral sectionGroups={sectionGroups}>
+        <DrawerGeneral
+          sectionGroups={sectionGroups}
+          companyName={'Etendo'}
+          companyLogo={companyLogo}>
           <Nav>
             <div style={{ gap: '4px', display: 'flex' }}>
               <WaterfallModal
@@ -121,6 +129,9 @@ const Home = () => {
                 passwordLabel="Password"
                 newPasswordLabel="New Password"
                 confirmPasswordLabel="Confirm New Password"
+                userPhotoUrl={profilePicture}
+                userName="Ayelén García"
+                userEmail="ayelen.garcia@etendo.software"
               />
             </div>
           </Nav>

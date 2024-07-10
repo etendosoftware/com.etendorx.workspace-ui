@@ -9,19 +9,14 @@ import { NOTIFICATIONS } from '../notifications.mock';
 import logo from '../../../../../ComponentLibrary/src/assets/images/logo.svg';
 import { modalConfig } from '../ConfigurationModal/mock';
 import { menuItems, initialPeople } from '../mock';
-import {
-  AutoAwesome,
-  Build,
-  ContactMail,
-  Home,
-  Info,
-} from '@mui/icons-material';
+import { AutoAwesome } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import {
   sx,
   styles,
 } from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal.styles';
 import profilePicture from '../.././../../../ComponentLibrary/src/assets/images/profile_picture_mock.png';
+import { sectionGroups } from './mock';
 
 export default {
   title: 'Components/Drawer',
@@ -32,23 +27,6 @@ export default {
     companyLogo: { control: 'text' },
   },
 };
-
-const sectionGroups = [
-  {
-    id: 1,
-    sections: [
-      { label: 'Home', icon: <Home />, id: 1 },
-      { label: 'About', icon: <Info />, id: 2 },
-    ],
-  },
-  {
-    id: 2,
-    sections: [
-      { label: 'Services', icon: <Build />, id: 3 },
-      { label: 'Contact', icon: <ContactMail />, id: 4 },
-    ],
-  },
-];
 
 const Template = args => <DrawerComponent {...args} />;
 
@@ -138,4 +116,8 @@ DrawerWithNav.args = {
   userPhotoUrl: profilePicture,
   userName: 'Ayelén García',
   userEmail: 'ayelen.garcia@etendo.software',
+  //Drawer
+  companyName: 'Etendo',
+  companyLogo: logo,
+  sectionGroups: sectionGroups,
 };
