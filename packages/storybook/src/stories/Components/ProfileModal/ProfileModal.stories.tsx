@@ -1,4 +1,5 @@
 import ProfileModal from '../../../../../ComponentLibrary/src/components/ProfileModal/ProfileModal';
+import profilePicture from '../.././../../../ComponentLibrary/src/assets/images/profile_picture_mock.png';
 
 export default {
   title: 'Components/ProfileModal',
@@ -11,6 +12,9 @@ export default {
     confirmPasswordLabel: { control: 'text' },
     section: { control: 'text' },
     tooltipButtonProfile: { control: 'text' },
+    userPhotoUrl: { control: 'text' },
+    userName: { control: 'text' },
+    userEmail: { control: 'text' },
   },
 };
 
@@ -25,4 +29,7 @@ ProfileDefault.args = {
   newPasswordLabel: 'New Password',
   confirmPasswordLabel: 'Confirm New Password',
   tooltipButtonProfile: 'Account Settings',
+  userPhotoUrl: profilePicture,
+  userName: 'Ayelén García',
+  userEmail: 'ayelen.garcia@etendo.software',
 };

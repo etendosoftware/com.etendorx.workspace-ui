@@ -15,6 +15,7 @@ import {
   sx,
   styles,
 } from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal.styles';
+import profilePicture from '../.././../../../ComponentLibrary/src/assets/images/profile_picture_mock.png';
 
 export default {
   title: 'Components/Nav',
@@ -60,6 +61,9 @@ const Template = (args: NavArgs) => (
         passwordLabel={args.passwordLabel}
         newPasswordLabel={args.newPasswordLabel}
         confirmPasswordLabel={args.confirmPasswordLabel}
+        userPhotoUrl={args.userPhotoUrl}
+        userName={args.userName}
+        userEmail={args.userEmail}
       />
     </div>
   </Nav>
@@ -93,4 +97,7 @@ DefaultNav.args = {
   newPasswordLabel: 'New Password',
   confirmPasswordLabel: 'Confirm New Password',
   section: 'profile',
+  userPhotoUrl: profilePicture,
+  userName: 'Ayelén García',
+  userEmail: 'ayelen.garcia@etendo.software',
 };

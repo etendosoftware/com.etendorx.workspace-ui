@@ -25,7 +25,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   passwordLabel,
   newPasswordLabel,
   confirmPasswordLabel,
-  tooltipModal = 'Account Settings',
+  userPhotoUrl,
+  userName,
+  userEmail,
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -65,7 +67,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           },
         }}
         MenuListProps={{ sx: menuSyle }}>
-        <UserProfile />
+        <UserProfile
+          photoUrl={userPhotoUrl}
+          name={userName}
+          email={userEmail}
+        />
         <div style={toggleSectionStyles}>
           <ToggleSection
             sections={sections}
