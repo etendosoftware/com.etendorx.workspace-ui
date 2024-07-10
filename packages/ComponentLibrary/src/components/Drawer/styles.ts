@@ -12,8 +12,9 @@ export const styles = {
   drawerPaper: {
     backgroundColor: theme.palette.baselineColor.neutral[0],
     borderRight: 'none',
-    borderRadius: '0px, 0.75rem, 0.75rem, 0px',
-    border: '0px, 1px, 0px, 0px'
+    borderTopRightRadius: '0.75rem',
+    borderBottomRightRadius: '0.75rem',
+    border: '0, 1px, 0, 0'
   },
   drawerOpen: {
     transition: () =>
