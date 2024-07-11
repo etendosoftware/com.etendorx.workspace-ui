@@ -1,4 +1,4 @@
-import { theme } from "../../../theme";
+import { theme } from '../../../theme';
 
 const TRASNPARENT_NEUTRAL_10 = '#00030D1A';
 const TRASNPARENT_NEUTRAL_50 = '#00030D80';

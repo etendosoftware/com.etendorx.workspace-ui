@@ -1,22 +1,6 @@
 import React, { useState } from 'react';
-import {
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-  SelectChangeEvent,
-  ListItemIcon,
-  Typography,
-  FormControlLabel,
-  Checkbox,
-  Grid,
-} from '@mui/material';
-import {
-  selectorListStyles,
-  labelStyles,
-  iconStyles,
-  formStyle,
-} from './styles';
+import { FormControl, Grid, FormControlLabel, Checkbox } from '@mui/material';
+import { selectorListStyles, formStyle } from './styles';
 import RoleIcon from '@mui/icons-material/AccountCircle';
 import ClientIcon from '@mui/icons-material/Business';
 import OrganizationIcon from '@mui/icons-material/Domain';
@@ -26,13 +10,14 @@ import { SelectorListProps, Item } from './types';
 import { references } from './references';
 import { InputPassword } from '../..';
 import { LockOutlined } from '@mui/icons-material';
+import Select from '../../Input/Select';
 
 const icons: { [key in Item]: React.ReactElement } = {
-  [Item.Rol]: <RoleIcon style={iconStyles} />,
-  [Item.Cliente]: <ClientIcon style={iconStyles} />,
-  [Item.Organización]: <OrganizationIcon style={iconStyles} />,
-  [Item.Almacén]: <WarehouseIcon style={iconStyles} />,
-  [Item.Lenguaje]: <LanguageIcon style={iconStyles} />,
+  [Item.Rol]: <RoleIcon />,
+  [Item.Cliente]: <ClientIcon />,
+  [Item.Organización]: <OrganizationIcon />,
+  [Item.Almacén]: <WarehouseIcon />,
+  [Item.Lenguaje]: <LanguageIcon />,
 };
 
 const SelectorList: React.FC<SelectorListProps> = ({
@@ -42,48 +27,22 @@ const SelectorList: React.FC<SelectorListProps> = ({
   confirmPasswordLabel,
 }) => {
   const relevantItems = references[section] || [];
-  const [selectedValues, setSelectedValues] = useState<{
-    [key in Item]?: string;
-  }>({});
-
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
-
-  const handleChange = (event: SelectChangeEvent<string>, item: Item) => {
-    setSelectedValues({
-      ...selectedValues,
-      [item]: event.target.value,
-    });
-  };
 
   return (
     <div style={selectorListStyles}>
       {section === 'profile' &&
         relevantItems.map(({ item, values }) => (
           <React.Fragment key={item}>
-            <FormControl fullWidth variant="standard" style={formStyle}>
-              <InputLabel id={`${item}-label`} style={labelStyles}>
-                {item}
-              </InputLabel>
+            <FormControl fullWidth style={formStyle}>
               <Select
-                labelId={`${item}-label`}
                 id={`${item}-select`}
-                value={selectedValues[item] ?? ''}
-                onChange={event => handleChange(event, item)}
-                label={item}
-                renderValue={selected => (
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <ListItemIcon>{icons[item]}</ListItemIcon>
-                    <Typography>{`${item} ${selected}`}</Typography>
-                  </div>
-                )}>
-                {values.map(value => (
-                  <MenuItem key={value} value={value}>
-                    {item} {value}
-                  </MenuItem>
-                ))}
-              </Select>
+                title={item}
+                options={values.map(value => ({ title: value, value }))}
+                iconLeft={icons[item]}
+              />
             </FormControl>
           </React.Fragment>
         ))}

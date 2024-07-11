@@ -19,6 +19,11 @@ export const styles: { [key: string]: CSSProperties } = {
     height: '2.5rem',
     color: theme.palette.baselineColor.neutral[80],
   },
+  iconStyles: {
+    width: '1.25rem',
+    height: '1.25rem',
+    color: theme.palette.baselineColor.neutral[80],
+  },
   profileImageContainerStyles: {
     position: 'relative',
     marginTop: '1rem',
@@ -39,7 +44,6 @@ export const styles: { [key: string]: CSSProperties } = {
     alignItems: 'center',
     cursor: 'pointer',
     color: theme.palette.baselineColor.neutral[80],
-    background: 'white',
     borderRadius: '50%',
     zIndex: '1',
   },
@@ -86,7 +90,7 @@ export const styles: { [key: string]: CSSProperties } = {
     alignItems: 'center',
     alignSelf: 'stretch',
     borderRadius: '12.5rem',
-    background: theme.palette.baselineColor.transparentNeutral[50],
+    background: 'red',
   },
   toggleButtonStyles: {
     height: '2.5rem',
