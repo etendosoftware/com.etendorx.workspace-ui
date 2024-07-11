@@ -16,11 +16,10 @@ import {
   menuItems,
   initialPeople,
 } from '../../../../storybook/src/stories/Components/mock';
-import {
-  sx,
-} from '@workspaceui/componentlibrary/src/components/Waterfall/WaterfallModal.styles';
+import { sx } from '@workspaceui/componentlibrary/src/components/Waterfall/WaterfallModal.styles';
 import { sectionGroups } from '../../mocks';
 import EtendoLogotype from '../../assets/etendo-logotype.png';
+import profilePicture from '../../../../ComponentLibrary/src/assets/images/profile_picture_mock.png';
 import { styles } from './styles';
 
 const Home = () => {
@@ -30,7 +29,10 @@ const Home = () => {
 
   return (
     <Box sx={styles.fullScreenBox}>
-      <Drawer headerImage={EtendoLogotype} headerTitle='Etendo' sectionGroups={sectionGroups}>
+      <Drawer
+        headerImage={EtendoLogotype}
+        headerTitle="Etendo"
+        sectionGroups={sectionGroups}>
         <Nav>
           <div style={{ gap: '4px', display: 'flex' }}>
             <WaterfallModal
@@ -69,6 +71,9 @@ const Home = () => {
               passwordLabel="Password"
               newPasswordLabel="New Password"
               confirmPasswordLabel="Confirm New Password"
+              userPhotoUrl={profilePicture}
+              userName={'Ayelén García'}
+              userEmail={'ayelen.garcia@etendo.software'}
             />
           </div>
         </Nav>
