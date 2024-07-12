@@ -12,7 +12,7 @@ import { PRIMARY_CONTRAST, styles } from './style';
 import CancelIcon from '@mui/icons-material/Cancel';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { ISelectInput, Option } from './types'; // Asegúrate de que Option está tipado
+import { ISelectInput, Option } from './types';
 import './style.css';
 import { theme } from '../../../theme';
 

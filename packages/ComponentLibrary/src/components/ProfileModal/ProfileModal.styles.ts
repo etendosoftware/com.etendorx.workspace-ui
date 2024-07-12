@@ -90,7 +90,6 @@ export const styles: { [key: string]: CSSProperties } = {
     alignItems: 'center',
     alignSelf: 'stretch',
     borderRadius: '12.5rem',
-    background: 'red',
   },
   toggleButtonStyles: {
     height: '2.5rem',
