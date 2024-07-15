@@ -21,7 +21,7 @@ export const typographyStyles = {
   caption: {
     fontWeight: 600,
     fontSize: '0.75rem',
-  }
+  },
 };
 
 export const typographyTitleStyles = {
@@ -29,5 +29,5 @@ export const typographyTitleStyles = {
   marginBottom: 0,
   color: theme.palette.baselineColor.neutral[90],
   fontWeight: 500,
-  fontSize: '1.5rem'
+  fontSize: '1.5rem',
 };

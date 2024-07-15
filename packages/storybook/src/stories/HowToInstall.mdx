@@ -1,12 +1,5 @@
 import { Meta } from '@storybook/blocks';
-import ButtonIcon from '../assets/button.svg';
-import InputIcon from '../assets/input.svg';
-import NavbarIcon from '../assets/navbar.svg';
-import PaginationIcon from '../assets/pagination.svg';
-import TabIcon from '../assets/tab.svg';
-import TableIcon from '../assets/table.svg';
-import CardIcon from '../assets/card.svg';
-import CopyIcon from '../assets/copy.svg';
+import CopyIcon from '../assets/copy.svg?url';
 
 import {
   INITIAL_90,
@@ -210,7 +203,8 @@ import {
 <h1 className="inter">How to Use The New Etendo UI</h1>
 
 <p className="description inter">
-  Follow the steps below to set up and use the New Etendo UI in your development environment:
+  Follow the steps below to set up and use the New Etendo UI in your development
+  environment:
 </p>
 
 <div className="subheading inter">Setup and Usage Guide</div>
@@ -238,70 +232,113 @@ import {
     </div>
   </div>
 
-  <div className="link-item">
-    <div>
-      <strong className="step-title inter">📦 Step 2: Install Packages</strong>
-      <br />
-      <span className="inter">Install packages using pnpm:</span>
-      <br />
-      <br />
-      <div className="code-container">
-        <img src={CopyIcon} onClick={() => navigator.clipboard.writeText("pnpm install")} />
-        <pre><code>pnpm install</code></pre>
-      </div>
-    </div>
-  </div>
+{' '}
 
-  <div className="link-item">
-    <div>
-      <strong className="step-title inter">👨‍💻 Step 3: Development Mode</strong>
-      <br />
-      <span className="inter">Run the main repository:</span>
-      <br />
-      <br />
-      <div className="code-container">
-        <img src={CopyIcon} onClick={() => navigator.clipboard.writeText("pnpm --filter @workspaceui/mainui dev")} />
-        <pre><code>pnpm --filter @workspaceui/mainui dev</code></pre>
-      </div>
-      <br />
-      <span className="inter">Or navigate to the package folder and run:</span>
-      <br />
-      <br />
-      <div className="code-container">
-        <img src={CopyIcon} onClick={() => navigator.clipboard.writeText("pnpm dev")} />
-        <pre><code>pnpm dev</code></pre>
-      </div>
+<div className="link-item">
+  <div>
+    <strong className="step-title inter">📦 Step 2: Install Packages</strong>
+    <br />
+    <span className="inter">Install packages using pnpm:</span>
+    <br />
+    <br />
+    <div className="code-container">
+      <img
+        src={CopyIcon}
+        onClick={() => navigator.clipboard.writeText('pnpm install')}
+      />
+      <pre>
+        <code>pnpm install</code>
+      </pre>
     </div>
   </div>
+</div>
 
-  <div className="link-item">
-    <div>
-      <strong className="step-title inter">🌐 Step 4: Production Mode</strong>
-      <br />
-      <span className="inter">Install in an EtendoRX environment:</span>
-      <br />
-      <br />
-      <div className="code-container">
-        <img src={CopyIcon} onClick={() => navigator.clipboard.writeText("pnpm --filter @workspaceui/mainui build")} />
-        <pre><code>pnpm --filter @workspaceui/mainui build</code></pre>
-      </div>
-      <br />
-      <span className="inter">Run UI service:</span>
-      <br />
-      <br />
-      <div className="code-container">
-        <img src={CopyIcon} onClick={() => navigator.clipboard.writeText("./gradlew :com.etendorx.workspace-ui:bootRun")} />
-        <pre><code>./gradlew :com.etendorx.workspace-ui:bootRun</code></pre>
-      </div>
+{' '}
+
+<div className="link-item">
+  <div>
+    <strong className="step-title inter">👨‍💻 Step 3: Development Mode</strong>
+    <br />
+    <span className="inter">Run the main repository:</span>
+    <br />
+    <br />
+    <div className="code-container">
+      <img
+        src={CopyIcon}
+        onClick={() =>
+          navigator.clipboard.writeText('pnpm --filter @workspaceui/mainui dev')
+        }
+      />
+      <pre>
+        <code>pnpm --filter @workspaceui/mainui dev</code>
+      </pre>
+    </div>
+    <br />
+    <span className="inter">Or navigate to the package folder and run:</span>
+    <br />
+    <br />
+    <div className="code-container">
+      <img
+        src={CopyIcon}
+        onClick={() => navigator.clipboard.writeText('pnpm dev')}
+      />
+      <pre>
+        <code>pnpm dev</code>
+      </pre>
     </div>
   </div>
+</div>
+
+{' '}
+
+<div className="link-item">
+  <div>
+    <strong className="step-title inter">🌐 Step 4: Production Mode</strong>
+    <br />
+    <span className="inter">Install in an EtendoRX environment:</span>
+    <br />
+    <br />
+    <div className="code-container">
+      <img
+        src={CopyIcon}
+        onClick={() =>
+          navigator.clipboard.writeText(
+            'pnpm --filter @workspaceui/mainui build',
+          )
+        }
+      />
+      <pre>
+        <code>pnpm --filter @workspaceui/mainui build</code>
+      </pre>
+    </div>
+    <br />
+    <span className="inter">Run UI service:</span>
+    <br />
+    <br />
+    <div className="code-container">
+      <img
+        src={CopyIcon}
+        onClick={() =>
+          navigator.clipboard.writeText(
+            './gradlew :com.etendorx.workspace-ui:bootRun',
+          )
+        }
+      />
+      <pre>
+        <code>./gradlew :com.etendorx.workspace-ui:bootRun</code>
+      </pre>
+    </div>
+  </div>
+</div>
 
 </div>
 
 <p className="inter">
-  After following these steps, you should be able to utilize the full capabilities of New Etendo UI in your project!
+  After following these steps, you should be able to utilize the full
+  capabilities of New Etendo UI in your project!
 </p>
 
 <p className="inter">
-  > <span className="keyword">Note:</span> Ensure you adjust the versions of the dependencies as necessary to meet your project's requirements.
+  > <span className="keyword">Note:</span> Ensure you adjust the versions of the
+  dependencies as necessary to meet your project's requirements.
 </p>

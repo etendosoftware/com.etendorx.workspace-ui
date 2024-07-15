@@ -1,4 +1,4 @@
-import { MenuProps, SvgIconProps } from '@mui/material';
+import { MenuProps } from '@mui/material';
 import { Inotifications } from '../../commons';
 import { ReactElement } from 'react';
 
@@ -15,7 +15,7 @@ export interface NotificationModalProps extends Omit<MenuProps, 'open'> {
 }
 export interface ExtendedNotificationButtonProps
   extends NotificationButtonProps {
-  icon?: React.ReactElement<SvgIconProps>;
+  icon: string | React.ReactNode;
   tooltipTitle?: string;
   renderMenuContent?: (
     notifications: Inotifications[],

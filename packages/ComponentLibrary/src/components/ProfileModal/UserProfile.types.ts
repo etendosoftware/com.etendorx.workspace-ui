@@ -1,3 +1,4 @@
+import { ReactNode } from 'react';
 import { SelectorListProps } from './ToggleSection/types';
 
 export interface User {
@@ -7,6 +8,7 @@ export interface User {
 }
 
 export interface ProfileModalProps extends SelectorListProps {
+  icon: string | ReactNode;
   cancelButtonText?: string;
   saveButtonText?: string;
   tooltipButtonProfile?: string;

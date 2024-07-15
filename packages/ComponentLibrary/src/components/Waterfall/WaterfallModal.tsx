@@ -1,20 +1,13 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  Button,
-  IconButton,
-  List,
-  Menu,
-  MenuItem,
-  Tooltip,
-} from '@mui/material';
+import { Box, Button, List, Menu, MenuItem } from '@mui/material';
 import DragModalContent from './DragModalContent';
 import { Person } from '../DragModal/DragModal.types';
 import ModalDivider from '../ModalDivider';
 import { FadeWrapper, menuSyle, styles, sx } from './WaterfallModal.styles';
-import { Edit, NavigateNext, Add } from '@mui/icons-material';
+import { Edit, NavigateNext } from '@mui/icons-material';
 import { UniqueIdentifier } from '@dnd-kit/core';
 import { WaterfallModalProps } from './WaterfallModal.types';
+import IconButton from '../IconButton';
 
 const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
   menuItems,
@@ -25,6 +18,7 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
   buttonText,
   customizeText,
   tooltipWaterfallButton,
+  icon,
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [showDragModal, setShowDragModal] = useState(false);
@@ -73,14 +67,9 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
 
   return (
     <>
-      <Tooltip title={tooltipWaterfallButton} arrow>
-        <IconButton
-          onClick={handleClick}
-          style={styles.iconButtonStyles}
-          sx={sx.hoverStyles}>
-          <Add sx={sx.iconStyles} />
-        </IconButton>
-      </Tooltip>
+      <IconButton tooltip={tooltipWaterfallButton} onClick={handleClick}>
+        {icon}
+      </IconButton>
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}

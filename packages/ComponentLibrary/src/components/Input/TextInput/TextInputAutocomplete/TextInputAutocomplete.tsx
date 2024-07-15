@@ -5,7 +5,12 @@ import FilterIcon from '@mui/icons-material/FilterList';
 import CircularProgress from '@mui/material/CircularProgress';
 import CloseIcon from '@mui/icons-material/Close';
 import { TextInputProps } from './TextInputComplete.types';
-import { containerIconStyle, CSS_STYLES, gradients, SX_STYLES } from './TextInputAutocomplete.styles';
+import {
+  containerIconStyle,
+  CSS_STYLES,
+  gradients,
+  SX_STYLES,
+} from './TextInputAutocomplete.styles';
 import { DEFAULT_CONSTANTS } from './TextInputAutocomplete.constants';
 import SuggestionBox from './SuggestionBox';
 import { theme } from '../../../../theme';
@@ -37,8 +42,16 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   };
 
   const getIconStyle = (iconName: string) => ({
-    backgroundColor: activeIcon === iconName ? theme.palette.dynamicColor.main : isFocused ? theme.palette.baselineColor.neutral[0] : 'transparent',
-    color: activeIcon === iconName ? theme.palette.dynamicColor.contrastText : theme.palette.baselineColor.neutral[70],
+    backgroundColor:
+      activeIcon === iconName
+        ? theme.palette.dynamicColor.main
+        : isFocused
+          ? theme.palette.baselineColor.neutral[0]
+          : 'transparent',
+    color:
+      activeIcon === iconName
+        ? theme.palette.dynamicColor.contrastText
+        : theme.palette.baselineColor.neutral[70],
     borderRadius: '50%',
     width: '2rem',
     height: '2rem',
@@ -46,7 +59,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     '&:hover': {
       backgroundColor: theme.palette.dynamicColor.main,
       color: theme.palette.dynamicColor.contrastText,
-    }
+    },
   });
 
   const handleSmartIconClick = () => {
@@ -89,7 +102,10 @@ const TextInputAutoComplete = (props: TextInputProps) => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
+      if (
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
         setActiveIcon('');
         setSmartIconActive(false);
       }
@@ -104,7 +120,9 @@ const TextInputAutoComplete = (props: TextInputProps) => {
 
   useEffect(() => {
     if (autoCompleteTexts && isFocused) {
-      const match = autoCompleteTexts.find(text => text.toLowerCase().startsWith(value.toLowerCase()));
+      const match = autoCompleteTexts.find(text =>
+        text.toLowerCase().startsWith(value.toLowerCase()),
+      );
       if (match && value && match.toLowerCase() !== value.toLowerCase()) {
         setSuggestion(match);
       } else {
@@ -135,7 +153,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
 
   const inputStyles = {
     ...CSS_STYLES.input,
-    "& .MuiOutlinedInput-input": {
+    '& .MuiOutlinedInput-input': {
       '&::placeholder': {
         color: theme.palette.baselineColor.transparentNeutral[70],
         opacity: isFocused ? 0 : 1,
@@ -149,17 +167,26 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     <InputAdornment position="start">
       <Box sx={SX_STYLES.startAdornment}>
         {loading ? (
-          <CircularProgress sx={{ color: theme.palette.baselineColor.neutral[80] }} size={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_SIZE} thickness={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_THICKNESS} />
+          <CircularProgress
+            sx={{ color: theme.palette.baselineColor.neutral[80] }}
+            size={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_SIZE}
+            thickness={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_THICKNESS}
+          />
+        ) : leftIcon ? (
+          <IconButton
+            onClick={onLeftIconClick}
+            sx={{ color: theme.palette.baselineColor.neutral[70] }}>
+            {leftIcon}
+          </IconButton>
         ) : (
-          leftIcon ? (
-            <IconButton onClick={onLeftIconClick} sx={{ color: theme.palette.baselineColor.neutral[70] }}>{leftIcon}</IconButton>
-          ) : (
-            <SearchIcon sx={{
-              color: (isFocused && value.length === 0)
-                ? theme.palette.dynamicColor.main
-                : theme.palette.baselineColor.neutral[70]
-            }} />
-          )
+          <SearchIcon
+            sx={{
+              color:
+                isFocused && value.length === 0
+                  ? theme.palette.dynamicColor.main
+                  : theme.palette.baselineColor.neutral[70],
+            }}
+          />
         )}
       </Box>
     </InputAdornment>
@@ -173,10 +200,17 @@ const TextInputAutoComplete = (props: TextInputProps) => {
         </IconButton>
       )}
       <Box sx={containerIconStyle}>
-        <IconButton onClick={() => { handleIconClick('smart'); handleSmartIconClick(); }} sx={getIconStyle('smart')}>
+        <IconButton
+          onClick={() => {
+            handleIconClick('smart');
+            handleSmartIconClick();
+          }}
+          sx={getIconStyle('smart')}>
           <SmartButton />
         </IconButton>
-        <IconButton onClick={() => handleIconClick('filter')} sx={getIconStyle('filter')}>
+        <IconButton
+          onClick={() => handleIconClick('filter')}
+          sx={getIconStyle('filter')}>
           <FilterIcon />
         </IconButton>
       </Box>
@@ -189,9 +223,13 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     backgroundColor: theme.palette.baselineColor.neutral[0],
     '& .MuiOutlinedInput-root': {
       '& fieldset': {
-        borderColor: smartIconActive ? 'transparent' : theme.palette.baselineColor.neutral[20],
+        borderColor: smartIconActive
+          ? 'transparent'
+          : theme.palette.baselineColor.neutral[20],
         border: smartIconActive ? '2px solid' : undefined,
-        borderImage: smartIconActive ? `${gradients.linearGradient} 1` : undefined,
+        borderImage: smartIconActive
+          ? `${gradients.linearGradient} 1`
+          : undefined,
         background: smartIconActive ? gradients.linearGradient : undefined,
         WebkitMask: `${gradients.webkitMaskGradient}`,
         WebkitMaskComposite: 'xor',
@@ -201,19 +239,21 @@ const TextInputAutoComplete = (props: TextInputProps) => {
       },
       '&:hover fieldset': {
         borderWidth: !props.disabled && 2,
-        borderColor: !props.disabled && theme.palette.baselineColor.neutral[100],
+        borderColor:
+          !props.disabled && theme.palette.baselineColor.neutral[100],
       },
       '&.Mui-focused fieldset': {
         borderColor: theme.palette.dynamicColor.main,
       },
       '&.Mui-focused': {
-        backgroundColor: value ? theme.palette.baselineColor.neutral[0] : theme.palette.dynamicColor.contrastText,
+        backgroundColor: value
+          ? theme.palette.baselineColor.neutral[0]
+          : theme.palette.dynamicColor.contrastText,
         borderRadius: '12.25rem',
       },
     },
     ...props.sx,
   };
-
 
   const inputProps = {
     ...props.inputProps,

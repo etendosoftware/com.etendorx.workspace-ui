@@ -88,13 +88,4 @@ export const sx: { [key: string]: SxProps<Theme> } = {
       color: theme.palette.baselineColor.neutral[80],
     },
   },
-  hoverStyles: {
-    background: 'white',
-    '&:hover': {
-      backgroundColor: theme.palette.dynamicColor.main,
-      '& .MuiSvgIcon-root': {
-        color: theme.palette.baselineColor.neutral[0],
-      },
-    },
-  },
 };

@@ -1,5 +1,6 @@
 import ProfileModal from '../../../../../ComponentLibrary/src/components/ProfileModal/ProfileModal';
 import profilePicture from '../.././../../../ComponentLibrary/src/assets/images/profile_picture_mock.png';
+import PersonIcon from '../../../../../ComponentLibrary/src/assets/icons/user.svg';
 
 export default {
   title: 'Components/ProfileModal',
@@ -15,6 +16,7 @@ export default {
     userPhotoUrl: { control: 'text' },
     userName: { control: 'text' },
     userEmail: { control: 'text' },
+    icon: { control: 'object' },
   },
 };
 
@@ -32,4 +34,5 @@ ProfileDefault.args = {
   userPhotoUrl: profilePicture,
   userName: 'Ayelén García',
   userEmail: 'ayelen.garcia@etendo.software',
+  icon: <PersonIcon fill="#2E365C" />,
 };

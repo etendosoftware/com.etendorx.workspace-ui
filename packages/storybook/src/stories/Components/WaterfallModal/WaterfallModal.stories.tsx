@@ -1,6 +1,7 @@
 import WaterfallModal from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal';
 import { WaterfallModalProps } from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal.types';
 import { initialPeople, menuItems } from '../mock';
+import AddIcon from '../../../../../ComponentLibrary/src/assets/icons/plus.svg';
 
 export default {
   title: 'Components/WaterfallModal',
@@ -11,7 +12,7 @@ export default {
     deactivateAllText: { control: 'text' },
     buttonText: { control: 'text' },
     customizeText: { control: 'text' },
-    tooltipWaterfallProfile: { control: 'text' },
+    tooltipWaterfallButton: { control: 'text' },
   },
 };
 
@@ -26,5 +27,6 @@ DefaultWaterfallModal.args = {
   deactivateAllText: 'Deactivate all',
   buttonText: 'Buttons',
   customizeText: 'Customize',
-  tooltipWaterfallProfile: 'Waterfall'
+  tooltipWaterfallButton: 'Waterfall',
+  icon: <AddIcon />,
 };
