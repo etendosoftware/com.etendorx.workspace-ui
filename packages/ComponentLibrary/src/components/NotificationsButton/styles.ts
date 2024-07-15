@@ -1,13 +1,5 @@
-import { CSSProperties } from 'react';
 import { SxProps, Theme } from '@mui/material/styles';
 import { theme } from '../../theme';
-
-export const styles: { [key: string]: CSSProperties } = {
-  iconButtonStyles: {
-    width: '2.5rem',
-    height: '2.5rem',
-  },
-};
 
 export const sx: { [key: string]: SxProps<Theme> } = {
   hoverStyles: {
@@ -25,7 +17,9 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     color: theme.palette.baselineColor.neutral[80],
   },
   badgeStyles: {
-    '.MuiBadge-badge': {
+    '& .MuiBadge-badge': {
+      top: '25%',
+      right: '30%',
       fontSize: '0.75rem',
     },
   },

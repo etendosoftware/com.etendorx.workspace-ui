@@ -4,7 +4,7 @@ import { INotificationModalProps } from './types';
 import { menuSyle, styles, sx } from './styles';
 import { MoreVert, Settings } from '@mui/icons-material';
 import NotificationItem from '../NotificationItem';
-import Image from '../../assets/images/NotificationModal/empty-state-notifications.svg';
+import Image from '../../assets/images/NotificationModal/empty-state-notifications.svg?url';
 
 const NotificationModalCustom: React.FC<INotificationModalProps> = ({
   title,
@@ -29,13 +29,7 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
       <div style={styles.titleModalContainer}>
         <div style={styles.titleModalImageContainer}>
           {title?.icon && (
-            <div style={styles.titleModalImageRadius}>
-              <img
-                style={styles.titleModalImage}
-                src={title.icon}
-                alt="Notification Icon"
-              />
-            </div>
+            <div style={styles.titleModalImageRadius}>{title?.icon}</div>
           )}
           <div style={styles.titleModal}>{title?.label}</div>
         </div>
@@ -82,9 +76,9 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
                 description={notification.description}
                 priority={notification.priority}
                 date={notification.date}
-                icon={notification.icon}
                 tagType={notification.tagType}
                 ctaButtons={notification.ctaButtons}
+                icon={notification.icon}
               />
             ))}
           </List>

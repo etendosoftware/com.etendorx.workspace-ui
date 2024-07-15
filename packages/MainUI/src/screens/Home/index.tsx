@@ -1,5 +1,4 @@
-import { AutoAwesome } from '@mui/icons-material';
-import { Box, IconButton } from '@mui/material';
+import { Box } from '@mui/material';
 import {
   ConfigurationModal,
   Drawer,
@@ -10,17 +9,20 @@ import Nav from '@workspaceui/componentlibrary/src/components/Nav/Nav';
 import ProfileModal from '@workspaceui/componentlibrary/src/components/ProfileModal/ProfileModal';
 import WaterfallModal from '@workspaceui/componentlibrary/src/components/Waterfall/WaterfallModal';
 import { NOTIFICATIONS } from '../../../../storybook/src/stories/Components/notifications.mock';
-import logo from '../../assets/react.svg';
 import { modalConfig } from '../../../../storybook/src/stories/Components/ConfigurationModal/mock';
 import {
   menuItems,
   initialPeople,
 } from '../../../../storybook/src/stories/Components/mock';
-import { sx } from '@workspaceui/componentlibrary/src/components/Waterfall/WaterfallModal.styles';
 import { sectionGroups } from '../../mocks';
 import EtendoLogotype from '../../assets/etendo-logotype.png';
 import profilePicture from '../../../../ComponentLibrary/src/assets/images/profile_picture_mock.png';
 import { styles } from './styles';
+import ActivityIcon from '../../../../ComponentLibrary/src/assets/icons/activity.svg';
+import NotificationIcon from '../../../../ComponentLibrary/src/assets/icons/bell.svg';
+import PersonIcon from '../../../../ComponentLibrary/src/assets/icons/user.svg';
+import AddIcon from '../../../../ComponentLibrary/src/assets/icons/plus.svg';
+import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 
 const Home = () => {
   const handleClose = () => {
@@ -41,21 +43,30 @@ const Home = () => {
               backButtonText="Back"
               activateAllText="Activate all"
               deactivateAllText="Deactivate all"
-              tooltipWaterfallButton="Tooltip for waterfall button"
+              tooltipWaterfallButton="Waterfall Tooltip"
               buttonText="Buttons"
               customizeText="Customize"
               people={[]}
+              icon={<AddIcon />}
             />
-            <ConfigurationModal {...modalConfig} />
-            <IconButton sx={sx.hoverStyles}>
-              <AutoAwesome sx={sx.iconStyles} />
+            <ConfigurationModal
+              {...modalConfig}
+              tooltipButtonProfile="Settings"
+            />
+            <IconButton tooltip="Activity">
+              <ActivityIcon />
             </IconButton>
-            <NotificationButton notifications={NOTIFICATIONS}>
+            <NotificationButton
+              notifications={NOTIFICATIONS}
+              icon={<NotificationIcon />}>
               <NotificationModal
                 notifications={NOTIFICATIONS}
                 anchorEl={null}
                 onClose={handleClose}
-                title={{ icon: logo, label: 'Notifications' }}
+                title={{
+                  icon: <NotificationIcon fill="#2E365C" />,
+                  label: 'Notifications',
+                }}
                 linkTitle={{ label: 'Mark all as read', url: '/home' }}
                 emptyStateImageAlt="No Notifications"
                 emptyStateMessage="You have no notifications"
@@ -74,6 +85,7 @@ const Home = () => {
               userPhotoUrl={profilePicture}
               userName={'Ayelén García'}
               userEmail={'ayelen.garcia@etendo.software'}
+              icon={<PersonIcon />}
             />
           </div>
         </Nav>

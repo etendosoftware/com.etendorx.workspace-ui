@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import { Button, IconButton, Tooltip, Menu } from '@mui/material';
+import { Button, Menu } from '@mui/material';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockIcon from '@mui/icons-material/Lock';
-import { Person } from '@mui/icons-material';
 import UserProfile from './UserProfile';
 import ToggleSection from './ToggleButton';
 import SelectorList from './ToggleSection';
 import { ProfileModalProps } from './UserProfile.types';
 import { MODAL_WIDTH, menuSyle, styles } from './ProfileModal.styles';
 import { Section } from './ToggleButton/types';
-import { sx } from '../Waterfall/WaterfallModal.styles';
 import { toggleSectionStyles } from './ToggleButton/styles';
+import IconButton from '../IconButton';
 
 const sections: Section[] = [
   { id: 'profile', label: 'Perfil', icon: <PersonOutlineIcon /> },
@@ -28,6 +27,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   userPhotoUrl,
   userName,
   userEmail,
+  icon,
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -46,14 +46,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   return (
     <>
-      <Tooltip title={tooltipButtonProfile} arrow>
-        <IconButton
-          onClick={handleClick}
-          style={styles.iconButtonStyles}
-          sx={sx.hoverStyles}>
-          <Person sx={sx.iconStyles} />
-        </IconButton>
-      </Tooltip>
+      <IconButton tooltip={tooltipButtonProfile} onClick={handleClick}>
+        {icon}
+      </IconButton>
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}

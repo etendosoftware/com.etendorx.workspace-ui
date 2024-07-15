@@ -1,4 +1,4 @@
-import { Checkbox, Grid, Link, Menu } from '@mui/material';
+import { Grid, Link, Menu } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import {
   BORDER_SELECT_1,
@@ -10,13 +10,21 @@ import {
   sx,
 } from './style';
 import { IConfigurationModalProps, ISection } from './types';
-import { ALT } from './constants';
-import checkIcon from '../../assets/icons/check-circle-filled.svg';
+import checkIconUrl from '../../assets/icons/check-circle-filled.svg?url';
 import './style.css';
 import { theme } from '../../theme';
+import IconButton from '../IconButton';
+
+const IconRenderer = ({ icon }: { icon: string | React.ReactNode }) => {
+  if (typeof icon === 'string') {
+    return <img src={icon} alt="icon" />;
+  }
+  return icon;
+};
 
 const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
   icon,
+  tooltipButtonProfile,
   title,
   linkTitle,
   sections = [],
@@ -109,11 +117,13 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
 
   return (
     <>
-      <Checkbox
+      <IconButton
         onClick={handleClick}
         style={styles.iconButtonStyles}
         sx={sx.hoverStyles}
-      />
+        tooltip={tooltipButtonProfile}>
+        {icon}
+      </IconButton>
       <Menu
         {...props}
         anchorEl={anchorEl}
@@ -127,7 +137,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
           <div style={styles.titleModalImageContainer}>
             {title?.icon && (
               <div style={styles.titleModalImageRadius}>
-                <img style={styles.titleModalImage} src={title?.icon} />
+                <IconRenderer icon={title.icon} />
               </div>
             )}
             <div style={styles.titleModal}>{title?.label}</div>
@@ -146,7 +156,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
               }}>
               <div style={styles.title}>{section.name}</div>
               <Grid columnSpacing={COLUMN_SPACING} container>
-                {section.items.map(({ img, id, label }, imageIndex) => (
+                {section.items.map(({ id, label, img }, imageIndex) => (
                   <Grid item key={id}>
                     <div
                       onClick={() => handleImageClick(sectionIndex, imageIndex)}
@@ -162,14 +172,15 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
                         ),
                         ...styles.imgContainer,
                       }}>
-                      <img src={img} alt={`${ALT}-${imageIndex}`} />
+                      <IconRenderer icon={img} />
                     </div>
                     <div style={styles.labelIconContainer}>
                       {isSelected(section.selectedItem, imageIndex) && (
                         <img
+                          alt="Selected Item Icon"
                           className="fade-in-left"
                           style={styles.labelIcon}
-                          src={checkIcon}></img>
+                          src={checkIconUrl}></img>
                       )}
                       <div style={styles.label}>{label}</div>
                     </div>

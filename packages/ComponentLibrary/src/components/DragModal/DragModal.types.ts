@@ -1,4 +1,5 @@
 import { UniqueIdentifier } from '@dnd-kit/core';
+import { ReactNode } from 'react';
 
 export interface Person {
   id: UniqueIdentifier;
@@ -21,4 +22,5 @@ export interface DragModalProps {
   activateAllText?: string;
   deactivateAllText?: string;
   buttonText?: string;
+  icon?: string | ReactNode;
 }

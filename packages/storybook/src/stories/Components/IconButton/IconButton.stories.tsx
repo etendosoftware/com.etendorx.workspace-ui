@@ -1,22 +1,38 @@
 import IconButton from '../../../../../ComponentLibrary/src/components/IconButton';
-import { Favorite as FavoriteIcon } from '@mui/icons-material';
-import { DEFAULT_SIZE } from '../../../../../ComponentLibrary/src/components/IconButton/default';
+import NotificationIcon from '../../../../../ComponentLibrary/src/assets/icons/heart.svg';
+import { ComponentStory, ComponentMeta } from '@storybook/react';
+import { theme } from '../../../../../ComponentLibrary/src/theme';
+import { sx } from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal.styles';
 
 export default {
   title: 'Components/IconButton',
   component: IconButton,
-  argTypes: {
-    icon: { control: 'text' },
-    alt: { control: 'text' },
-    styleIcon: { control: 'object' },
-  },
-};
+} as ComponentMeta<typeof IconButton>;
 
-const Template = args => <IconButton {...args} />;
+const Template: ComponentStory<typeof IconButton> = args => (
+  <IconButton {...args} />
+);
 
 export const Default = Template.bind({});
 Default.args = {
-  icon: <FavoriteIcon />,
-  alt: 'search icon',
-  styleIcon: DEFAULT_SIZE,
+  tooltip: 'Default IconButton',
+  children: <NotificationIcon />,
+  sx: sx.hoverStyles,
+};
+
+export const CustomFill = Template.bind({});
+CustomFill.args = {
+  tooltip: 'Custom Fill IconButton',
+  fill: theme.palette.primary.main,
+  children: <NotificationIcon />,
+  sx: sx.hoverStyles,
+};
+
+export const HoverFill = Template.bind({});
+HoverFill.args = {
+  tooltip: 'Hover Fill IconButton',
+  fill: theme.palette.baselineColor.neutral[80],
+  hoverFill: theme.palette.baselineColor.neutral[0],
+  children: <NotificationIcon />,
+  sx: sx.hoverStyles,
 };

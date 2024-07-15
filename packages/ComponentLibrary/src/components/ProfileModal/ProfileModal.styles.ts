@@ -34,13 +34,6 @@ export const styles: { [key: string]: CSSProperties } = {
     right: '1rem',
     height: '2rem',
     width: '2rem',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    cursor: 'pointer',
-    color: theme.palette.baselineColor.neutral[80],
-    background: 'white',
-    borderRadius: '50%',
     zIndex: '1',
   },
   profileImageStyles: {
