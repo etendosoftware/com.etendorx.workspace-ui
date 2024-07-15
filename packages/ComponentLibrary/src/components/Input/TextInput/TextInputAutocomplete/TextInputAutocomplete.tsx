@@ -182,7 +182,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
           <SearchIcon
             sx={{
               color:
-                isFocused && value.length === 0
+                isFocused && !value.length === 0
                   ? theme.palette.dynamicColor.main
                   : theme.palette.baselineColor.neutral[70],
             }}
