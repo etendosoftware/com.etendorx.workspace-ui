@@ -94,8 +94,9 @@ DrawerWithNav.args = {
   // Notification Modal
   notifications: NOTIFICATIONS,
   anchorEl: null,
+  open: true,
   onClose: () => console.log('Modal closed'),
-  title: { icon: logo, label: 'Notifications' },
+  title: { icon: <NotificationIcon fill="#2E365C" />, label: 'Notifications' },
   linkTitle: { label: 'Mark all as read', url: '/home' },
   emptyStateImageAlt: 'No Notifications',
   emptyStateMessage: 'You have no notifications',
