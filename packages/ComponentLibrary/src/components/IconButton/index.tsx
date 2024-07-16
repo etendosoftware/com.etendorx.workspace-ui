@@ -1,21 +1,8 @@
 import React, { useState } from 'react';
-import {
-  Tooltip,
-  IconButton as MUIIconButton,
-  IconButtonProps,
-} from '@mui/material';
-import { SxProps, Theme } from '@mui/material/styles';
+import { Tooltip, IconButton as MUIIconButton } from '@mui/material';
 import { theme } from '../../theme';
 import { defaultStyles } from './styles';
-
-interface IIconComponentProps extends IconButtonProps {
-  fill?: string;
-  hoverFill?: string;
-  width?: number;
-  height?: number;
-  tooltip?: string;
-  sx?: SxProps<Theme>;
-}
+import { IIconComponentProps } from './types';
 
 const IconButton: React.FC<IIconComponentProps> = ({
   fill = theme.palette.baselineColor.neutral[80],
