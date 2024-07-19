@@ -3,8 +3,7 @@ import { styles } from './ProfileModal.styles';
 import BackgroundGradientUrl from '../../assets/images/backgroundGradient.svg?url';
 import Logout from '../../assets/icons/log-out.svg';
 import { User } from './UserProfile.types';
-import { IconButton } from '@mui/material';
-import { sx } from '../Waterfall/WaterfallModal.styles';
+import IconButton from '../IconButton';
 
 const UserProfile: React.FC<User> = ({ photoUrl, name, email }) => {
   return (
@@ -12,8 +11,8 @@ const UserProfile: React.FC<User> = ({ photoUrl, name, email }) => {
       <div style={styles.svgContainerStyles}>
         <img src={BackgroundGradientUrl} alt="Background Gradient" />
       </div>
-      <IconButton style={styles.logoutButtonStyles} sx={sx.hoverStyles}>
-        <Logout sx={styles.iconStyles} />
+      <IconButton style={styles.logoutButtonStyles}>
+        <Logout />
       </IconButton>
       <div style={styles.profileImageContainerStyles}>
         <img src={photoUrl} alt="Profile" style={styles.profileImageStyles} />
