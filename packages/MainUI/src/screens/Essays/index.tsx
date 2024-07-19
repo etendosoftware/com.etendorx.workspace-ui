@@ -1,6 +1,5 @@
 import {
   DataGrid,
-  Table,
   TableV2,
   Button,
   Grid,
@@ -67,10 +66,6 @@ const Tests = () => {
           </Grid>
         </Grid>
       ),
-    },
-    {
-      title: '📦 Simple Table',
-      children: <Table />,
     },
     {
       title: '⚡️ Data Grid',
