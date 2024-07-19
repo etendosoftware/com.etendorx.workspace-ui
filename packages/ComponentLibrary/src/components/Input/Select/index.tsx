@@ -12,7 +12,7 @@ import { PRIMARY_CONTRAST, styles } from './style';
 import CancelIcon from '@mui/icons-material/Cancel';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { ISelectInput } from './types';
+import { ISelectInput, Option } from './types';
 import './style.css';
 import { theme } from '../../../theme';
 
@@ -44,8 +44,11 @@ const Select: React.FC<ISelectInput> = ({
     setInputValue('');
   };
 
-  const handleSelectionChange = (value: any) => {
-    setInputValue(value?.title || '');
+  const handleSelectionChange = (
+    event: React.SyntheticEvent<Element, Event>,
+    value: Option | null,
+  ) => {
+    props.onChange?.(event, value);
   };
 
   const getBackgroundFocus = (): string => {
@@ -72,7 +75,7 @@ const Select: React.FC<ISelectInput> = ({
       InputProps={{
         ...params.InputProps,
         sx: styles.props,
-        startAdornment: iconLeft && (iconLeft),
+        startAdornment: iconLeft && iconLeft,
         endAdornment: (
           <div style={styles.buttonsContainer}>
             {params.InputProps.endAdornment}
@@ -83,7 +86,7 @@ const Select: React.FC<ISelectInput> = ({
       variant="standard"
       helperText={
         <FormHelperText style={styles.helperTextContainer}>
-          {helperText?.icon && (helperText?.icon)}
+          {helperText?.icon && helperText?.icon}
           {helperText?.label && (
             <span style={styles.helperText}>{helperText?.label}</span>
           )}
@@ -100,6 +103,7 @@ const Select: React.FC<ISelectInput> = ({
       {...props}
       disabled={disabled}
       options={options}
+      getOptionLabel={option => option.title}
       clearIcon={<CancelIcon style={styles.dropdownIcons} />}
       popupIcon={<ExpandMoreIcon style={styles.dropdownIcons} />}
       renderInput={renderInput}
@@ -108,7 +112,7 @@ const Select: React.FC<ISelectInput> = ({
       ListboxProps={{
         sx: styles.listBox,
       }}
-      onChange={(event, value) => handleSelectionChange(value)}
+      onChange={handleSelectionChange}
       renderOption={(props, option, { selected }) => (
         <li
           style={{
@@ -118,7 +122,11 @@ const Select: React.FC<ISelectInput> = ({
           {...props}>
           <Typography
             className="textOption"
-            color={selected ? theme.palette.dynamicColor.dark : theme.palette.baselineColor.neutral[90]}
+            color={
+              selected
+                ? theme.palette.dynamicColor.dark
+                : theme.palette.baselineColor.neutral[90]
+            }
             style={styles.optionText}>
             {option.title}
           </Typography>
