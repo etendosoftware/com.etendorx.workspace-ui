@@ -5,7 +5,17 @@ import { inputBaseStyles } from './TextInputBase.styles';
 import { theme } from '../../../../theme';
 
 const TextInputBase = (props: TextInputProps) => {
-  const { value, setValue, label, leftIcon, rightIcon, onLeftIconClick, onRightIconClick, type, ...otherProps } = props;
+  const {
+    value,
+    setValue,
+    label,
+    leftIcon,
+    rightIcon,
+    onLeftIconClick,
+    onRightIconClick,
+    type,
+    ...otherProps
+  } = props;
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue?.(event.target.value);
@@ -29,13 +39,14 @@ const TextInputBase = (props: TextInputProps) => {
         type={type}
         InputProps={{
           startAdornment: leftIcon && (
-            <InputAdornment position="start" sx={inputBaseStyles.inputAdornment}>
+            <InputAdornment
+              position="start"
+              sx={inputBaseStyles.inputAdornment}>
               <IconButton
                 aria-label="left icon"
                 onClick={onLeftIconClick}
                 size="small"
-                sx={{ color: theme.palette.baselineColor.neutral[60] }}
-              >
+                sx={{ color: theme.palette.baselineColor.neutral[60] }}>
                 {leftIcon}
               </IconButton>
             </InputAdornment>
@@ -46,8 +57,7 @@ const TextInputBase = (props: TextInputProps) => {
                 aria-label="right-icon"
                 onClick={onRightIconClick}
                 size="small"
-                sx={{ color: theme.palette.baselineColor.neutral[60] }}
-              >
+                sx={{ color: theme.palette.baselineColor.neutral[60] }}>
                 {rightIcon}
               </IconButton>
             </InputAdornment>

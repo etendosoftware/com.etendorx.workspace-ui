@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { InputAdornment, IconButton, Box } from '@mui/material';
+import { InputAdornment, Box } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterIcon from '@mui/icons-material/FilterList';
 import MicIcon from '@mui/icons-material/Mic';
@@ -7,6 +7,7 @@ import MicOffIcon from '@mui/icons-material/MicOff';
 import { TextInputProps } from '../TextInputComplete.types';
 import TextInputAutoComplete from '../TextInputAutocomplete';
 import { theme } from '../../../../../theme';
+import IconButton from '../../../../IconButton';
 
 interface SearchInputWithVoiceProps extends TextInputProps {
   onVoiceClick: () => void;

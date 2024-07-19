@@ -1,8 +1,10 @@
-import { IconButtonProps } from '@mui/material';
-import { ReactElement } from 'react';
+import { IconButtonProps, SxProps, Theme } from '@mui/material';
 
-export interface IIconButton extends IconButtonProps {
-  icon: ReactElement;
-  alt?: string;
-  styleIcon?: React.CSSProperties;
+export interface IIconComponentProps extends IconButtonProps {
+  fill?: string;
+  hoverFill?: string;
+  width?: number;
+  height?: number;
+  tooltip?: string;
+  sx?: SxProps<Theme>;
 }

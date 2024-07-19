@@ -1,5 +1,6 @@
 import { UniqueIdentifier } from '@dnd-kit/core';
 import { Person } from '../DragModal/DragModal.types';
+import { ReactNode } from 'react';
 
 export interface WaterfallModalProps {
   menuItems: { emoji: string; label: string; key: string }[];
@@ -15,4 +16,5 @@ export interface WaterfallModalProps {
   customizeText?: string;
   buttonText?: string;
   tooltipWaterfallButton?: string;
+  icon?: string | ReactNode;
 }

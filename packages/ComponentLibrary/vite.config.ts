@@ -3,7 +3,15 @@ import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
 
 export default defineConfig({
-  plugins: [react(), svgr()],
+  plugins: [
+    react(),
+    svgr({
+      include: '**/*.svg',
+      svgrOptions: {
+        icon: true,
+      },
+    }),
+  ],
   optimizeDeps: {
     include: ['@mui/material'],
   },

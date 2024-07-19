@@ -6,17 +6,16 @@ import ProfileModal from '../../../../../ComponentLibrary/src/components/Profile
 import WaterfallModal from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal';
 import ConfigurationModal from '../../../../../ComponentLibrary/src/components/ConfigurationModal';
 import { NOTIFICATIONS } from '../notifications.mock';
-import logo from '../../../../../ComponentLibrary/src/assets/images/logo.svg';
+import logo from '../../../../../ComponentLibrary/src/assets/images/logo.svg?url';
 import { modalConfig } from '../ConfigurationModal/mock';
 import { menuItems, initialPeople } from '../mock';
-import { AutoAwesome } from '@mui/icons-material';
-import { IconButton } from '@mui/material';
-import {
-  sx,
-  styles,
-} from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal.styles';
 import profilePicture from '../.././../../../ComponentLibrary/src/assets/images/profile_picture_mock.png';
 import { sectionGroups } from '../../../../../MainUI/src/mocks';
+import NotificationIcon from '../../../../../ComponentLibrary/src/assets/icons/bell.svg';
+import PersonIcon from '../../../../../ComponentLibrary/src/assets/icons/user.svg';
+import ActivityIcon from '../../../../../ComponentLibrary/src/assets/icons/activity.svg';
+import IconButton from '../../../../../ComponentLibrary/src/components/IconButton';
+import AddIcon from '../../../../../ComponentLibrary/src/assets/icons/plus.svg';
 
 export default {
   title: 'Components/Drawer',
@@ -51,12 +50,15 @@ const DrawerWithNavTemplate = args => (
           buttonText={args.buttonText}
           customizeText={args.customizeText}
           people={[]}
+          icon={<AddIcon />}
         />
         <ConfigurationModal {...modalConfig} />
-        <IconButton style={styles.iconButtonStyles} sx={sx.hoverStyles}>
-          <AutoAwesome sx={sx.iconStyles} />
+        <IconButton tooltip="Activity">
+          <ActivityIcon />
         </IconButton>
-        <NotificationButton notifications={args.notifications}>
+        <NotificationButton
+          notifications={args.notifications}
+          icon={<NotificationIcon />}>
           <NotificationModal
             notifications={args.notifications}
             anchorEl={args.anchorEl}
@@ -80,6 +82,7 @@ const DrawerWithNavTemplate = args => (
           userPhotoUrl={args.userPhotoUrl}
           userName={args.userName}
           userEmail={args.userEmail}
+          icon={<PersonIcon fill="#2E365C" />}
         />
       </div>
     </Nav>
@@ -91,8 +94,9 @@ DrawerWithNav.args = {
   // Notification Modal
   notifications: NOTIFICATIONS,
   anchorEl: null,
+  open: true,
   onClose: () => console.log('Modal closed'),
-  title: { icon: logo, label: 'Notifications' },
+  title: { icon: <NotificationIcon fill="#2E365C" />, label: 'Notifications' },
   linkTitle: { label: 'Mark all as read', url: '/home' },
   emptyStateImageAlt: 'No Notifications',
   emptyStateMessage: 'You have no notifications',

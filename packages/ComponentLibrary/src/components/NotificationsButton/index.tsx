@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
-import { Badge, IconButton, Tooltip } from '@mui/material';
-import { NotificationsOutlined } from '@mui/icons-material';
+import { Badge } from '@mui/material';
 import {
   ExtendedNotificationButtonProps,
   NotificationModalProps,
 } from './types';
 import { notificationMax } from './constants';
-import { styles, sx } from './styles';
+import { sx } from './styles';
+import IconButton from '../IconButton';
 
 const NotificationButton: React.FC<ExtendedNotificationButtonProps> = ({
   notifications = [],
   children,
-  icon = <NotificationsOutlined sx={sx.iconStyles} />,
-  tooltipTitle = 'Notificaciones',
-  ...iconButtonProps
+  icon,
+  tooltipTitle = 'Notifications',
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -29,24 +28,19 @@ const NotificationButton: React.FC<ExtendedNotificationButtonProps> = ({
 
   return (
     <>
-      <Tooltip title={tooltipTitle} arrow>
-        <IconButton
-          onClick={handleClick}
-          {...iconButtonProps}
-          style={styles.iconButtonStyles}
-          sx={sx.hoverStyles}>
-          <Badge
-            badgeContent={
-              notificationCount > notificationMax
-                ? notificationMax + '+'
-                : notificationCount
-            }
-            color="error"
-            sx={sx.badgeStyles}>
-            {icon}
-          </Badge>
+      <Badge
+        badgeContent={
+          notificationCount > notificationMax
+            ? notificationMax + '+'
+            : notificationCount
+        }
+        color="error"
+        sx={sx.badgeStyles}
+        component="div">
+        <IconButton tooltip={tooltipTitle} onClick={handleClick}>
+          {icon}
         </IconButton>
-      </Tooltip>
+      </Badge>
       {children &&
         React.cloneElement(children, {
           anchorEl,
