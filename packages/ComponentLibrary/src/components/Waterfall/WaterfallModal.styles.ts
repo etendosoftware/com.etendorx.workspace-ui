@@ -5,16 +5,8 @@ import { theme } from '../../theme';
 export const menuSyle = { paddingY: 0 };
 
 export const styles: { [key: string]: CSSProperties } = {
-  CustomizeButton: {
-    fontWeight: '500',
-    fontSize: '1rem',
-    width: '100%',
-    height: '2.25rem',
-    borderRadius: '0.5rem',
-    display: 'flex',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    position: 'relative',
+  SectionContainer: {
+    padding: '0.5rem',
   },
   StartIconStyles: {
     marginLeft: '0.5rem',
@@ -24,34 +16,10 @@ export const styles: { [key: string]: CSSProperties } = {
   EndIconStyles: {
     position: 'absolute',
     right: '0',
-    paddingLeft: '0 0.5rem',
-  },
-  SectionContainer: {
-    padding: '0.5rem',
+    marginRight: '0.5rem',
   },
   SpanStyles: {
     paddingRight: '0.5rem',
-  },
-  containerStyles: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '0.75rem 1.25rem 0 1.25rem',
-    maxHeight: '2.25rem',
-  },
-  showAllStyles: {
-    textDecoration: 'none',
-    color: 'blue',
-    cursor: 'pointer',
-    background: 'none',
-    border: 'none',
-    padding: 0,
-    font: 'inherit',
-  },
-  iconButtonStyles: {
-    width: '2.5rem',
-    height: '2.5rem',
-    color: theme.palette.baselineColor.neutral[80],
   },
   paperStyleMenu: {
     borderRadius: '0.75rem',
@@ -67,7 +35,24 @@ export const FadeWrapper = styled('div')({
 });
 
 export const sx: { [key: string]: SxProps<Theme> } = {
+  menuItemStyles: {
+    margin: '0 0.5rem',
+    padding: '0.5rem',
+    '&:hover': {
+      borderRadius: '0.5rem',
+      background: theme.palette.dynamicColor.contrastText,
+    },
+  },
   customizeButton: {
+    fontWeight: '500',
+    fontSize: '1rem',
+    width: '100%',
+    height: '2.25rem',
+    borderRadius: '0.5rem',
+    display: 'flex',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    position: 'relative',
     '&:hover': {
       border: 'none',
       color: theme.palette.baselineColor.neutral[80],
@@ -77,15 +62,6 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     '&:hover': {
       background: theme.palette.dynamicColor.contrastText,
       borderRadius: '0.5rem',
-    },
-  },
-  menuItemStyles: {
-    margin: '0 0.5rem',
-    padding: '0.5rem',
-    '&:hover': {
-      background: '',
-      borderRadius: '0.5rem',
-      color: theme.palette.baselineColor.neutral[80],
     },
   },
 };
