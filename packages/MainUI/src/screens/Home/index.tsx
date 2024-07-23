@@ -87,6 +87,7 @@ const Home = () => {
               userPhotoUrl={profilePicture}
               userName={'Ayelén García'}
               userEmail={'ayelen.garcia@etendo.software'}
+              sestionTooltip={'Sign off'}
               icon={<PersonIcon />}
             />
           </div>

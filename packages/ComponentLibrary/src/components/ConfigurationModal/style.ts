@@ -43,13 +43,6 @@ export const styles: { [key: string]: CSSProperties } = {
     lineHeight: '1.21rem',
     textAlign: 'left',
   },
-  titleButton: {
-    fontSize: '0.875rem',
-    fontWeight: '500',
-    lineHeight: '1.063rem',
-    color: theme.palette.dynamicColor.main,
-    textDecoration: 'none',
-  },
   imgContainer: {
     borderRadius: '0.75rem',
     width: '7rem',
@@ -114,6 +107,18 @@ export const sx: { [key: string]: SxProps<Theme> } = {
       '& .MuiSvgIcon-root': {
         color: theme.palette.baselineColor.neutral[0],
       },
+    },
+  },
+  linkStyles: {
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    lineHeight: '1.063rem',
+    color: theme.palette.dynamicColor.main,
+    textDecoration: 'none',
+    paddingRight: '0.5rem',
+    cursor: 'pointer',
+    '&:hover': {
+      textDecoration: 'underline',
     },
   },
 };

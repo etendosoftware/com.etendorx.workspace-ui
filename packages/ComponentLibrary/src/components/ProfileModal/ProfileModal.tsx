@@ -1,20 +1,30 @@
 import React, { useState } from 'react';
 import { Button, Menu } from '@mui/material';
-import TaskAltIcon from '@mui/icons-material/TaskAlt';
-import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
-import LockIcon from '@mui/icons-material/Lock';
+import CheckCircle from '../../assets/icons/check-circle.svg';
+import PersonOutlineIcon from '../../assets/icons/user.svg';
+import LockIcon from '../../assets/icons/lock.svg';
 import UserProfile from './UserProfile';
 import ToggleSection from './ToggleButton';
 import SelectorList from './ToggleSection';
 import { ProfileModalProps } from './UserProfile.types';
-import { MODAL_WIDTH, menuSyle, styles } from './ProfileModal.styles';
+import { MODAL_WIDTH, menuSyle, styles, sx } from './ProfileModal.styles';
 import { Section } from './ToggleButton/types';
 import { toggleSectionStyles } from './ToggleButton/styles';
 import IconButton from '../IconButton';
+import { defaultFill } from './ToggleSection/styles';
+import { theme } from '../../theme';
 
 const sections: Section[] = [
-  { id: 'profile', label: 'Perfil', icon: <PersonOutlineIcon /> },
-  { id: 'password', label: 'Contraseña', icon: <LockIcon /> },
+  {
+    id: 'profile',
+    label: 'Perfil',
+    icon: <PersonOutlineIcon fill={defaultFill} />,
+  },
+  {
+    id: 'password',
+    label: 'Contraseña',
+    icon: <LockIcon fill={defaultFill} />,
+  },
 ];
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
@@ -27,6 +37,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   userPhotoUrl,
   userName,
   userEmail,
+  sestionTooltip,
   icon,
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
@@ -66,6 +77,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           photoUrl={userPhotoUrl}
           name={userName}
           email={userEmail}
+          sestionTooltip={sestionTooltip}
         />
         <div style={toggleSectionStyles}>
           <ToggleSection
@@ -81,14 +93,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           confirmPasswordLabel={confirmPasswordLabel}
         />
         <div style={styles.buttonContainerStyles}>
-          <Button sx={styles.buttonStyles} variant="contained" color="primary">
-            {cancelButtonText}
-          </Button>
+          <Button sx={sx.buttonStyles}>{cancelButtonText}</Button>
           <Button
-            variant="contained"
-            color="primary"
-            startIcon={<TaskAltIcon />}
-            sx={styles.saveButtonStyles}>
+            startIcon={
+              <CheckCircle fill={theme.palette.baselineColor.neutral[0]} />
+            }
+            sx={sx.saveButtonStyles}>
             {saveButtonText}
           </Button>
         </div>

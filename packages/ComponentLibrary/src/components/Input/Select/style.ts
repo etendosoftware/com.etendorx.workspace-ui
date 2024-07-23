@@ -68,7 +68,10 @@ export const styles = {
     height: '1rem',
     marginRight: '0.5rem',
   },
-  buttonsContainer: { display: 'flex', alignItems: 'center' },
+  buttonsContainer: {
+    display: 'flex',
+    alignItems: 'center',
+  },
   helperTextContainer: {
     display: 'flex',
     alignItems: 'center',
@@ -112,6 +115,9 @@ export const styles = {
     fontSize: '0.875rem',
     fontWeight: '500',
     lineHeight: '1.25rem',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
   dropdownIcons: {
     width: '0.938rem',
