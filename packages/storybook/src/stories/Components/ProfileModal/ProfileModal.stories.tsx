@@ -34,5 +34,6 @@ ProfileDefault.args = {
   userPhotoUrl: profilePicture,
   userName: 'Ayelén García',
   userEmail: 'ayelen.garcia@etendo.software',
+  sestionTooltip: 'Close Sesion',
   icon: <PersonIcon fill="#2E365C" />,
 };

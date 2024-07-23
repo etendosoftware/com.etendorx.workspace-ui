@@ -18,7 +18,8 @@ const Template = (args: DragModalProps) => <DragModal {...args} />;
 export const Default = Template.bind({});
 Default.args = {
   initialPeople,
-  onBack: () => console.log('Volver clicked'),
+  onBack: () => console.log('Back clicked'),
+  onClose: () => console.log('Close clicked'),
   backButtonText: 'Back',
   activateAllText: 'Activate all',
   deactivateAllText: 'Deactivate all',

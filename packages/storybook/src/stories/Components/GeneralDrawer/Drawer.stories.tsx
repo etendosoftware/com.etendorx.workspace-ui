@@ -82,6 +82,7 @@ const DrawerWithNavTemplate = args => (
           userPhotoUrl={args.userPhotoUrl}
           userName={args.userName}
           userEmail={args.userEmail}
+          sestionTooltip={args.sestionTooltip}
           icon={<PersonIcon fill="#2E365C" />}
         />
       </div>
@@ -120,6 +121,7 @@ DrawerWithNav.args = {
   userPhotoUrl: profilePicture,
   userName: 'Ayelén García',
   userEmail: 'ayelen.garcia@etendo.software',
+  sestionTooltip: 'Sign off',
   //Drawer
   headerTitle: 'Etendo',
   headerImage: logo,
