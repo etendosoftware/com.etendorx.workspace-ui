@@ -38,3 +38,8 @@ export interface TopToolbarProps {
   isFullScreen: boolean;
   toggleFullScreen: () => void;
 }
+export interface TopToolbarProps {
+  table: MRT_TableInstance<Organization>;
+  isFullScreen: boolean;
+  toggleFullScreen: () => void;
+}
