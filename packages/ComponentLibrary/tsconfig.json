@@ -21,10 +21,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": [
-    "src",
-    "svg.d.ts",
-    "../storybook/src/stories/Components/Table/columns.tsx"
-  ],
+  "include": ["src", "svg.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
