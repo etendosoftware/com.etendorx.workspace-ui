@@ -6,6 +6,7 @@ export const TOOLTIPS = {
   FULL_SCREEN: 'Full Screen',
   EXIT_FULL_SCREEN: 'Exit Full Screen',
   DETAILS: 'Details',
+  REFRESH: 'Refresh',
 };
 
 export const PLACEHOLDERS = {

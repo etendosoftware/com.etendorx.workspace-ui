@@ -1,34 +1,58 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useRef, useCallback } from 'react';
 import {
   MaterialReactTable,
   MRT_Row,
+  MRT_TableOptions,
   useMaterialReactTable,
 } from 'material-react-table';
 import { Box, Paper } from '@mui/material';
-import { Organization, TableProps } from './types';
+import {
+  Organization,
+  TableProps,
+} from '../../../../storybook/src/stories/Components/Table/types';
 import { tableStyles } from './styles';
 import { theme } from '../../theme';
 import { getColumns } from '../../../../storybook/src/stories/Components/Table/columns';
 import CustomExpandButton from './customExpandButton';
-import TopToolbar from './topToolbar';
+import TopToolbar from './Toolbar';
+import BackgroundGradientUrl from '../../assets/images/Sidebar-bg.svg?url';
+import SideIcon from '../../assets/icons/codesandbox.svg';
+import Sidebar from './Sidebar';
 
-const Table: React.FC<TableProps> = ({
-  data,
-  isTreeStructure = false,
-  customLabels = {},
-}) => {
-  const [isFullScreen, setIsFullScreen] = React.useState(false);
+const widgets = [];
 
-  const toggleFullScreen = () => {
-    setIsFullScreen(!isFullScreen);
+const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<Organization | null>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
   };
+
+  const handleRowClick = (row: MRT_Row<Organization>) => {
+    setSelectedItem(row.original);
+  };
+
+  const handleOutsideClick = useCallback((event: MouseEvent) => {
+    if (tableRef.current && !tableRef.current.contains(event.target as Node)) {
+      setSelectedItem(null);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [handleOutsideClick]);
 
   const tableData = useMemo(
     () => (isTreeStructure ? data.filter(org => !org.parentId) : data),
     [data, isTreeStructure],
   );
 
-  const columns = useMemo(() => getColumns(customLabels), [customLabels]);
+  const columns = useMemo(() => getColumns(), []);
 
   const expandColumnDef = useMemo(() => {
     if (!isTreeStructure) return undefined;
@@ -61,6 +85,10 @@ const Table: React.FC<TableProps> = ({
     initialState: {
       density: 'compact',
     },
+    muiTableBodyRowProps: ({ row }) => ({
+      onClick: () => handleRowClick(row),
+      sx: { cursor: 'pointer' },
+    }),
     muiTableBodyProps: {
       sx: {
         '& tr': {
@@ -100,27 +128,68 @@ const Table: React.FC<TableProps> = ({
         },
       },
     },
-  });
+  } as MRT_TableOptions<Organization>);
 
   return (
-    <Box
-      sx={
-        isFullScreen ? tableStyles.fullScreenContainer : tableStyles.container
-      }>
+    <Box sx={{ ...tableStyles.container }} ref={tableRef}>
       <TopToolbar
         table={table}
-        isFullScreen={isFullScreen}
-        toggleFullScreen={toggleFullScreen}
+        isDropdownOpen={isDropdownOpen}
+        toggleDropdown={toggleDropdown}
+        isItemSelected={!!selectedItem}
       />
-      <Paper
-        elevation={4}
+      <Box
         sx={{
-          ...tableStyles.tablePaper,
-          borderRadius: '1rem',
-          overflow: 'hidden',
+          display: 'flex',
+          flexGrow: 1,
+          transition: 'all 0.3s ease',
+          position: 'relative',
         }}>
-        <MaterialReactTable table={table} />
-      </Paper>
+        <Paper
+          elevation={4}
+          sx={{
+            ...tableStyles.tablePaper,
+            borderRadius: '1rem',
+            overflow: 'auto',
+            width: isDropdownOpen ? 'calc(70% - 0.5rem)' : '100%',
+            transition: 'width 0.3s ease',
+          }}>
+          <MaterialReactTable table={table} />
+        </Paper>
+        <Paper
+          elevation={4}
+          sx={{
+            position: 'absolute',
+            top: 0,
+            right: isDropdownOpen ? 0 : -4,
+            width: '30%',
+            height: '50rem',
+            backgroundColor: theme.palette.baselineColor.neutral[10],
+            boxShadow: '-4px 0 10px rgba(0, 0, 0, 0.1)',
+            padding: '0.5rem',
+            transition: 'transform 0.3s ease',
+            borderRadius: '1rem',
+            transform: isDropdownOpen ? 'translateX(0)' : 'translateX(100%)',
+            backgroundImage: `url(${BackgroundGradientUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}>
+          <Sidebar
+            isOpen={isDropdownOpen}
+            onClose={toggleDropdown}
+            selectedItem={{
+              icon: (
+                <SideIcon fill={theme.palette.baselineColor.neutral[100]} />
+              ),
+              identifier: selectedItem?.identificator ?? 'No item selected',
+              title:
+                'Its revenue is expected to increase later this year. Congratulations',
+            }}
+            widgets={widgets}
+          />
+        </Paper>
+      </Box>
     </Box>
   );
 };

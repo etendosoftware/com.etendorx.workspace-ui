@@ -15,8 +15,7 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
     alignItems: 'center',
   },
   tablePaper: {
-    width: '50%',
-    borderRadius: '5rem',
+    borderRadius: '15rem',
   },
   fullScreenContainer: {
     position: 'fixed',
@@ -65,13 +64,34 @@ export const sx: { [key: string]: SxProps<Theme> } = {
   linkStyles: {
     fontSize: '0.875rem',
     fontWeight: '500',
-    lineHeight: '1.063rem',
+    lineHeight: '1rem',
     color: theme.palette.dynamicColor.main,
     textDecoration: 'none',
     paddingRight: '0.5rem',
     cursor: 'pointer',
     '&:hover': {
       textDecoration: 'underline',
+    },
+  },
+  leftSection: {
+    background: theme.palette.baselineColor.neutral[0],
+    display: 'flex',
+    padding: '0.25rem',
+    gap: '0.25rem',
+    borderRadius: '6.25rem',
+  },
+  newLineButton: {
+    background: theme.palette.baselineColor.neutral[100],
+    width: '9.375rem',
+    borderRadius: '6.25rem',
+    padding: '0.25rem 0 0.25rem 0.75rem',
+    justifyContent: 'flex-start',
+    paddingLeft: '0.75rem',
+    color: theme.palette.baselineColor.neutral[0],
+    '&:hover': {
+      border: 'none',
+      background: theme.palette.dynamicColor.main,
+      borderRadius: '6.25rem',
     },
   },
 };

@@ -3,8 +3,8 @@ import IconButton from '../../IconButton';
 import Search from '../../../assets/icons/search.svg';
 import Filter from '../../../assets/icons/filter.svg';
 import Columns from '../../../assets/icons/columns.svg';
-import Preview from '../../../assets/icons/eye.svg';
-import Details from '../../../assets/icons/list.svg';
+import Sidebar from '../../../assets/icons/sidebar.svg';
+import LowerFlap from '../../../assets/icons/lower-flap.svg';
 import ChevronDown from '../../../assets/icons/chevrons-down.svg';
 import {
   Box,
@@ -16,21 +16,13 @@ import {
   Popover,
 } from '@mui/material';
 import { theme } from '../../../theme';
-import { MRT_TableInstance } from 'material-react-table';
-import { Organization } from '../../../../../storybook/src/stories/Components/Table/types';
 import { TOOLTIPS, PLACEHOLDERS } from '../tableConstants';
-
-interface RightSectionProps {
-  table: MRT_TableInstance<Organization>;
-  isFullScreen: boolean;
-  toggleFullScreen: () => void;
-  searchPlaceholder: string;
-}
+import { RightSectionProps } from '../../../../../storybook/src/stories/Components/Table/types';
 
 const RightSection: React.FC<RightSectionProps> = ({
   table,
-  isFullScreen,
-  toggleFullScreen,
+  isDropdownOpen,
+  toggleDropdown,
   searchPlaceholder = PLACEHOLDERS.SEARCH,
 }) => {
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<null | HTMLElement>(
@@ -95,15 +87,33 @@ const RightSection: React.FC<RightSectionProps> = ({
         }}>
         <IconButton
           tooltip={
-            isFullScreen ? TOOLTIPS.EXIT_FULL_SCREEN : TOOLTIPS.FULL_SCREEN
+            isDropdownOpen ? TOOLTIPS.EXIT_FULL_SCREEN : TOOLTIPS.FULL_SCREEN
           }
           width={16}
           height={16}
-          onClick={toggleFullScreen}>
-          <Preview />
+          onClick={toggleDropdown}
+          fill={
+            isDropdownOpen
+              ? theme.palette.baselineColor.neutral[0]
+              : theme.palette.baselineColor.neutral[80]
+          }
+          hoverFill={
+            isDropdownOpen
+              ? theme.palette.baselineColor.neutral[20]
+              : theme.palette.baselineColor.neutral[0]
+          }
+          sx={{
+            ...(isDropdownOpen && {
+              backgroundColor: theme.palette.dynamicColor.main,
+              '&: hover': {
+                background: theme.palette.baselineColor.neutral[80],
+              },
+            }),
+          }}>
+          <Sidebar />
         </IconButton>
         <IconButton tooltip={TOOLTIPS.DETAILS} width={16} height={16}>
-          <Details />
+          <LowerFlap />
         </IconButton>
         {/* Columns menu */}
         <Menu

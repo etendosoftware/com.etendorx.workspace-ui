@@ -1,5 +1,4 @@
 import { MRT_TableInstance } from 'material-react-table';
-
 export interface Organization {
   identificator: string;
   name: string;
@@ -40,6 +39,42 @@ export interface TopToolbarProps {
 }
 export interface TopToolbarProps {
   table: MRT_TableInstance<Organization>;
-  isFullScreen: boolean;
-  toggleFullScreen: () => void;
+  isDropdownOpen: boolean;
+  toggleDropdown: () => void;
+  isItemSelected: boolean;
+}
+
+export interface SidebarContentProps {
+  icon: React.ReactNode;
+  identifier: string | null;
+  title: string | null;
+  widgets: Widget[];
+  onClose: () => void;
+}
+export interface Widget {
+  id: string;
+  content: React.ReactNode;
+  size: string;
+}
+
+export interface ContentGridProps {
+  widgets: Widget[];
+}
+
+export interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+  selectedItem: {
+    icon: React.ReactNode;
+    identifier: string | null;
+    title: string | null;
+  };
+  widgets: Widget[];
+}
+
+export interface RightSectionProps {
+  table: MRT_TableInstance<Organization>;
+  isDropdownOpen: boolean;
+  toggleDropdown: () => void;
+  searchPlaceholder?: string;
 }
