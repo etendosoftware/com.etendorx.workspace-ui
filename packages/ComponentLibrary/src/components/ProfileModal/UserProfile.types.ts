@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { SelectorListProps } from './ToggleSection/types';
+import { Section } from './ToggleButton/types';
 
 export interface User {
   photoUrl: string;
@@ -17,4 +18,5 @@ export interface ProfileModalProps extends SelectorListProps {
   userName: string;
   userEmail: string;
   sestionTooltip: string;
+  sections: Section[];
 }

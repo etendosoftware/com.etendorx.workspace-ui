@@ -18,17 +18,20 @@ import {
 import { theme } from '../../../theme';
 import { MRT_TableInstance } from 'material-react-table';
 import { Organization } from '../../../../../storybook/src/stories/Components/Table/types';
+import { TOOLTIPS, PLACEHOLDERS } from '../tableConstants';
 
 interface RightSectionProps {
   table: MRT_TableInstance<Organization>;
   isFullScreen: boolean;
   toggleFullScreen: () => void;
+  searchPlaceholder: string;
 }
 
 const RightSection: React.FC<RightSectionProps> = ({
   table,
   isFullScreen,
   toggleFullScreen,
+  searchPlaceholder = PLACEHOLDERS.SEARCH,
 }) => {
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<null | HTMLElement>(
     null,
@@ -57,28 +60,24 @@ const RightSection: React.FC<RightSectionProps> = ({
           gap: '0.25rem',
         }}>
         <IconButton
-          tooltip="Search"
+          tooltip={TOOLTIPS.SEARCH}
           onClick={e => setSearchAnchor(e.currentTarget)}
           width={16}
           height={16}>
           <Search />
         </IconButton>
         <IconButton
-          tooltip="Views"
+          tooltip={TOOLTIPS.VIEWS}
           width={16}
           height={16}
           onClick={toggleDensity}>
           <ChevronDown />
         </IconButton>
-        <IconButton
-          tooltip="Filter"
-          width={16}
-          height={16}
-          onClick={() => console.log('Filter')}>
+        <IconButton tooltip={TOOLTIPS.FILTER} width={16} height={16}>
           <Filter />
         </IconButton>
         <IconButton
-          tooltip="Columns"
+          tooltip={TOOLTIPS.COLUMNS}
           width={16}
           height={16}
           onClick={e => setColumnMenuAnchor(e.currentTarget)}>
@@ -95,17 +94,15 @@ const RightSection: React.FC<RightSectionProps> = ({
           gap: '0.25rem',
         }}>
         <IconButton
-          tooltip={isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
+          tooltip={
+            isFullScreen ? TOOLTIPS.EXIT_FULL_SCREEN : TOOLTIPS.FULL_SCREEN
+          }
           width={16}
           height={16}
           onClick={toggleFullScreen}>
           <Preview />
         </IconButton>
-        <IconButton
-          tooltip="Details"
-          onClick={() => console.log('Details')}
-          width={16}
-          height={16}>
+        <IconButton tooltip={TOOLTIPS.DETAILS} width={16} height={16}>
           <Details />
         </IconButton>
         {/* Columns menu */}
@@ -140,7 +137,7 @@ const RightSection: React.FC<RightSectionProps> = ({
           }}>
           <TextField
             autoFocus
-            placeholder="Buscar..."
+            placeholder={searchPlaceholder}
             onChange={e => handleSearch(e.target.value)}
             variant="outlined"
             size="small"

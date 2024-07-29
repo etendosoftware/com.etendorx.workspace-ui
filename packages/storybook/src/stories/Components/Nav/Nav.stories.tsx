@@ -14,6 +14,7 @@ import PersonIcon from '../../../../../ComponentLibrary/src/assets/icons/user.sv
 import IconButton from '../../../../../ComponentLibrary/src/components/IconButton';
 import NotificationIcon from '../../../../../ComponentLibrary/src/assets/icons/bell.svg';
 import AddIcon from '../../../../../ComponentLibrary/src/assets/icons/plus.svg';
+import { sections } from '../ProfileModal/mock';
 
 export default {
   title: 'Components/Nav',
@@ -105,4 +106,5 @@ DefaultNav.args = {
   userName: 'Ayelén García',
   userEmail: 'ayelen.garcia@etendo.software',
   sestionTooltip: 'Sign off',
+  sections: sections,
 };

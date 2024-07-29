@@ -72,7 +72,7 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
 
   return (
     <>
-      <div style={styles.SectionContainer}>
+      <div style={styles.sectionContainer}>
         <Box sx={sx.headerBox}>
           <Button
             onClick={onBack}

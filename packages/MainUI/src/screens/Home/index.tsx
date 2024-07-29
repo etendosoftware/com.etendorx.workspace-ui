@@ -25,6 +25,7 @@ import PersonIcon from '../../../../ComponentLibrary/src/assets/icons/user.svg';
 import AddIcon from '../../../../ComponentLibrary/src/assets/icons/plus.svg';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import { FlatData } from '../../../../storybook/src/stories/Components/Table/mock';
+import { sections } from '../../../../storybook/src/stories/Components/ProfileModal/mock';
 
 const Home = () => {
   const handleClose = () => {
@@ -89,6 +90,7 @@ const Home = () => {
               userEmail={'ayelen.garcia@etendo.software'}
               sestionTooltip={'Sign off'}
               icon={<PersonIcon />}
+              sections={sections}
             />
           </div>
         </Nav>

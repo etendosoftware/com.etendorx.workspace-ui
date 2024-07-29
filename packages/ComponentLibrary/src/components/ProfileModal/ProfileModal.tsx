@@ -1,31 +1,14 @@
 import React, { useState } from 'react';
 import { Button, Menu } from '@mui/material';
 import CheckCircle from '../../assets/icons/check-circle.svg';
-import PersonOutlineIcon from '../../assets/icons/user.svg';
-import LockIcon from '../../assets/icons/lock.svg';
 import UserProfile from './UserProfile';
 import ToggleSection from './ToggleButton';
 import SelectorList from './ToggleSection';
 import { ProfileModalProps } from './UserProfile.types';
 import { MODAL_WIDTH, menuSyle, styles, sx } from './ProfileModal.styles';
-import { Section } from './ToggleButton/types';
 import { toggleSectionStyles } from './ToggleButton/styles';
 import IconButton from '../IconButton';
-import { defaultFill } from './ToggleSection/styles';
 import { theme } from '../../theme';
-
-const sections: Section[] = [
-  {
-    id: 'profile',
-    label: 'Perfil',
-    icon: <PersonOutlineIcon fill={defaultFill} />,
-  },
-  {
-    id: 'password',
-    label: 'Contraseña',
-    icon: <LockIcon fill={defaultFill} />,
-  },
-];
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,
@@ -39,6 +22,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   userEmail,
   sestionTooltip,
   icon,
+  sections,
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);

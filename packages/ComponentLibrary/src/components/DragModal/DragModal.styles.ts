@@ -51,7 +51,7 @@ export const styles: { [key: string]: CSSProperties } = {
     maxHeight: '1rem',
     marginRight: '0.5rem',
   },
-  SectionContainer: {
+  sectionContainer: {
     padding: '0.5rem',
   },
   sortableItemContainer: {
