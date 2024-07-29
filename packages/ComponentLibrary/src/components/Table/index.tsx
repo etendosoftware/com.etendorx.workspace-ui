@@ -11,10 +11,14 @@ import CenterSection from './sections/CenterSection';
 import LeftSection from './sections/LeftSection';
 import RightSection from './sections/RightSection';
 import { theme } from '../../theme';
-import { getColumns } from './columns';
+import { getColumns } from '../../../../storybook/src/stories/Components/Table/columns';
 import CustomExpandButton from './customExpandButton';
 
-const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
+const Table: React.FC<TableProps> = ({
+  data,
+  isTreeStructure = false,
+  customLabels = {},
+}) => {
   const [isFullScreen, setIsFullScreen] = React.useState(false);
 
   const toggleFullScreen = () => {
@@ -26,7 +30,7 @@ const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
     [data, isTreeStructure],
   );
 
-  const columns = useMemo(() => getColumns(), []);
+  const columns = useMemo(() => getColumns(customLabels), [customLabels]);
 
   const expandColumnDef = useMemo(() => {
     if (!isTreeStructure) return undefined;

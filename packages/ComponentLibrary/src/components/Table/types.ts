@@ -16,7 +16,12 @@ export interface Organization {
   parentId: string | null;
 }
 
+export type OrganizationLabels = {
+  [K in keyof Organization]: string;
+};
+
 export interface TableProps {
   data: Organization[];
   isTreeStructure?: boolean;
+  customLabels?: Partial<OrganizationLabels>;
 }

@@ -5,18 +5,10 @@ import { Box } from '@mui/material';
 
 const LeftSection = () => (
   <Box sx={{ display: 'flex', gap: '0.25rem' }}>
-    <IconButton
-      tooltip="New Line"
-      onClick={() => console.log('Add new row')}
-      width={16}
-      height={16}>
+    <IconButton tooltip="New Line" onClick={() => {}} width={16} height={16}>
       <ChevronDown />
     </IconButton>
-    <IconButton
-      tooltip="Refresh"
-      onClick={() => console.log('Refresh table')}
-      width={16}
-      height={16}>
+    <IconButton tooltip="Refresh" onClick={() => {}} width={16} height={16}>
       <Refresh />
     </IconButton>
   </Box>

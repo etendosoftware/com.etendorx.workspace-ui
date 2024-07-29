@@ -1,15 +1,21 @@
 import { MRT_ColumnDef } from 'material-react-table';
 import { Box, Link } from '@mui/material';
-import { Organization } from './types';
-import FolderIcon from '../../assets/icons/folder-minus.svg';
-import FolderOpenIcon from '../../assets/icons/folder-plus.svg';
-import { theme } from '../../theme';
-import Tag from '../Tag';
+import {
+  Organization,
+  OrganizationLabels,
+} from '../../../../../ComponentLibrary/src/components/Table/types';
+import FolderIcon from '../../../../../ComponentLibrary/src/assets/icons/folder-minus.svg';
+import FolderOpenIcon from '../../../../../ComponentLibrary/src/assets/icons/folder-plus.svg';
+import { theme } from '../../../../../ComponentLibrary/src/theme';
+import Tag from '../../../../../ComponentLibrary/src/components/Tag';
+import { styles } from '../../../../../ComponentLibrary/src/components/NotificationsModal/styles';
 
-export const getColumns = (): MRT_ColumnDef<Organization>[] => [
+export const getColumns = (
+  labels: Partial<OrganizationLabels> = {},
+): MRT_ColumnDef<Organization>[] => [
   {
     accessorKey: 'identificator',
-    header: 'Identificator',
+    header: labels.identificator ?? 'Identificator',
     Cell: ({ row, cell }) => (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         {row.getCanExpand() ? (
@@ -35,18 +41,7 @@ export const getColumns = (): MRT_ColumnDef<Organization>[] => [
             e.preventDefault();
             console.log(`Clicked on ${cell.getValue<string>()}`);
           }}
-          sx={{
-            fontSize: '0.875rem',
-            fontWeight: '500',
-            lineHeight: '1.063rem',
-            color: theme.palette.dynamicColor.main,
-            textDecoration: 'none',
-            paddingRight: '0.5rem',
-            cursor: 'pointer',
-            '&:hover': {
-              textDecoration: 'underline',
-            },
-          }}>
+          sx={styles.titleButton}>
           {cell.getValue<string>()}
         </Link>
       </Box>
@@ -67,15 +62,15 @@ export const getColumns = (): MRT_ColumnDef<Organization>[] => [
   },
   {
     accessorKey: 'name',
-    header: 'Name',
+    header: labels.name ?? 'Name',
   },
   {
     accessorKey: 'description',
-    header: 'Description',
+    header: labels.description ?? 'Description',
   },
   {
     accessorKey: 'active',
-    header: 'Active',
+    header: labels.active ?? 'Active',
     Cell: ({ cell }) => {
       const isActive = cell.getValue<boolean>();
       return (
@@ -88,7 +83,7 @@ export const getColumns = (): MRT_ColumnDef<Organization>[] => [
   },
   {
     accessorKey: 'groupLevel',
-    header: 'Group Level',
+    header: labels.groupLevel ?? 'Group Level',
     Cell: ({ cell }) => {
       const isGroup = cell.getValue<boolean>();
       return (
@@ -101,15 +96,15 @@ export const getColumns = (): MRT_ColumnDef<Organization>[] => [
   },
   {
     accessorKey: 'socialName',
-    header: 'Social Name',
+    header: labels.socialName ?? 'Social Name',
   },
   {
     accessorKey: 'organizationType',
-    header: 'Organization Type',
+    header: labels.organizationType ?? 'Organization Type',
   },
   {
     accessorKey: 'currency',
-    header: 'Currency',
+    header: labels.currency ?? 'Currency',
     Cell: ({ cell }) => {
       const currency = cell.getValue<string>();
       return <Tag type="draft" label={'$ ' + currency} />;
@@ -117,24 +112,24 @@ export const getColumns = (): MRT_ColumnDef<Organization>[] => [
   },
   {
     accessorKey: 'allowPeriodControl',
-    header: 'Period Control',
+    header: labels.allowPeriodControl ?? 'Period Control',
     Cell: ({ cell }) => (cell.getValue<boolean>() ? 'Yes' : 'No'),
   },
   {
     accessorKey: 'calendar',
-    header: 'Calendar',
+    header: labels.calendar ?? 'Calendar',
   },
   {
     accessorKey: 'files',
-    header: 'Files',
+    header: labels.files ?? 'Files',
   },
   {
     accessorKey: 'tags',
-    header: 'Tags',
+    header: labels.tags ?? 'Tags',
     Cell: ({ cell }) => cell.getValue<string[]>().join(', '),
   },
   {
     accessorKey: 'reactions',
-    header: 'Reactions',
+    header: labels.reactions ?? 'Reactions',
   },
 ];

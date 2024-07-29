@@ -91,7 +91,13 @@ const Home = () => {
             />
           </div>
         </Nav>
-        <Table data={FlatData} isTreeStructure={false} />
+        <Table
+          data={FlatData}
+          isTreeStructure={false}
+          customLabels={{
+            identificator: 'Custom Identificator',
+          }}
+        />
       </Drawer>
     </Box>
   );

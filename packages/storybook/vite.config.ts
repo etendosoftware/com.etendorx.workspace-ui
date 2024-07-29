@@ -12,12 +12,4 @@ export default defineConfig({
       },
     }),
   ],
-  optimizeDeps: {
-    include: ['@mui/material'],
-  },
-  build: {
-    rollupOptions: {
-      external: ['@mui/material'],
-    },
-  },
 });
