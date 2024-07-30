@@ -4,8 +4,8 @@ import styles from './styles.module.css';
 
 export default function MetadataTest() {
   const [windowId, setWindowId] = useState('100');
-  const [data, setData] = useState<Etendo.Metadata>();
-  const [error, setError] = useState<unknown>();
+  const [data, setData] = useState<Etendo.Metadata>('');
+  const [error, setError] = useState();
 
   const handleWindowIdChange = useCallback(
     (e: React.SyntheticEvent<HTMLInputElement>) => {
@@ -23,9 +23,10 @@ export default function MetadataTest() {
         try {
           const response = await Metadata.fetchMetadata(windowId);
 
+          setError(undefined);
           setData(response);
         } catch (e) {
-          setError(e);
+          setError(e as never);
 
           throw e;
         }
@@ -50,11 +51,8 @@ export default function MetadataTest() {
       <button type="submit" className={styles.button}>
         Load records
       </button>
-      {data?.data instanceof Array ? (
-        <div>Total results: {data?.data?.length}</div>
-      ) : null}
       <pre className={styles.code}>
-        <code>{JSON.stringify(error ?? data, null, 2)}</code>
+        <code>{error ?? data}</code>
       </pre>
     </form>
   );

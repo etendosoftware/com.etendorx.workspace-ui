@@ -6,7 +6,7 @@ declare global {
 
     type Entity = 'Order' | 'Invoice' | 'Product' | 'OrderLine';
 
-    interface Metadata extends Record<string, unknown> {}
+    type Metadata = string;
 
     interface CachedData<T> {
       updatedAt: number;

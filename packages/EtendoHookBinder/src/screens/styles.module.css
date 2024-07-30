@@ -1,7 +1,6 @@
 .container {
   display: flex;
   flex-direction: column;
-  overflow-x: auto;
   gap: 0.5rem;
   flex: 1;
 }
@@ -58,7 +57,6 @@
   text-align: left;
   padding: 1rem;
   margin: 0;
-  overflow: auto;
   font-size: small;
   font-family: 'Ubuntu Mono', 'SF Mono', 'Courier New', Courier, monospace;
 }
