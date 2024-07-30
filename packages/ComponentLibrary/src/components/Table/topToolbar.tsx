@@ -5,7 +5,8 @@ import LeftSection from './sections/LeftSection';
 import CenterSection from './sections/CenterSection';
 import RightSection from './sections/RightSection';
 import { tableStyles } from './styles';
-import { Organization } from './types';
+import { Organization } from '../../../../storybook/src/stories/Components/Table/types';
+import { PLACEHOLDERS } from './tableConstants';
 
 interface TopToolbarProps {
   table: MRT_TableInstance<Organization>;
@@ -34,6 +35,7 @@ const TopToolbar: React.FC<TopToolbarProps> = ({
         table={table}
         isFullScreen={isFullScreen}
         toggleFullScreen={toggleFullScreen}
+        searchPlaceholder={PLACEHOLDERS.SEARCH}
       />
     </Box>
   );

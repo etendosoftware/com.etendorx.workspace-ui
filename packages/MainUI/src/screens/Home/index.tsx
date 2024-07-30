@@ -96,9 +96,9 @@ const Home = () => {
         </Nav>
         <Table
           data={FlatData}
-          isTreeStructure={false}
+          isTreeStructure={true}
           customLabels={{
-            identificator: 'Custom Identificator',
+            identificator: 'Home Identificator',
           }}
         />
       </Drawer>
