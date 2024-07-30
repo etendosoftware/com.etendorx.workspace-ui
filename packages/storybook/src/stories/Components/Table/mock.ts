@@ -1,4 +1,4 @@
-import { Organization } from '../../../../../ComponentLibrary/src/components/Table/types';
+import { Organization } from './types';
 
 export const FlatData: Organization[] = [
   {

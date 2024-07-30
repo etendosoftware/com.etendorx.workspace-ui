@@ -4,7 +4,7 @@ import IconButton from '../IconButton';
 import ChevronDownIcon from '../../assets/icons/chevron-down.svg';
 import ChevronUpIcon from '../../assets/icons/chevron-up.svg';
 import ChevronRightIcon from '../../assets/icons/chevron-right.svg';
-import { Organization } from './types';
+import { Organization } from '../../../../storybook/src/stories/Components/Table/types';
 
 interface CustomExpandButtonProps {
   row: MRT_Row<Organization>;

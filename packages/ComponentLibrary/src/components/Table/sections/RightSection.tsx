@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import { theme } from '../../../theme';
 import { MRT_TableInstance } from 'material-react-table';
-import { Organization } from '../types';
+import { Organization } from '../../../../../storybook/src/stories/Components/Table/types';
 
 interface RightSectionProps {
   table: MRT_TableInstance<Organization>;
@@ -144,7 +144,7 @@ const RightSection: React.FC<RightSectionProps> = ({
             onChange={e => handleSearch(e.target.value)}
             variant="outlined"
             size="small"
-            sx={{ m: 1, width: '200px' }}
+            sx={{ m: 1, width: '12.5rem' }}
           />
         </Popover>
       </Box>

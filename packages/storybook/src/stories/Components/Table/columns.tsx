@@ -1,9 +1,6 @@
 import { MRT_ColumnDef } from 'material-react-table';
 import { Box, Link } from '@mui/material';
-import {
-  Organization,
-  OrganizationLabels,
-} from '../../../../../ComponentLibrary/src/components/Table/types';
+import { Organization, OrganizationLabels } from './types';
 import FolderIcon from '../../../../../ComponentLibrary/src/assets/icons/folder-minus.svg';
 import FolderOpenIcon from '../../../../../ComponentLibrary/src/assets/icons/folder-plus.svg';
 import { theme } from '../../../../../ComponentLibrary/src/theme';

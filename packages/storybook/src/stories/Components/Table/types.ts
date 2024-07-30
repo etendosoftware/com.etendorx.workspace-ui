@@ -20,8 +20,17 @@ export type OrganizationLabels = {
   [K in keyof Organization]: string;
 };
 
+export interface ToolbarButtonConfig {
+  icon: React.ReactNode;
+  tooltip: string;
+  onClick: () => void;
+}
+
 export interface TableProps {
   data: Organization[];
   isTreeStructure?: boolean;
-  customLabels?: Partial<OrganizationLabels>;
+  customLabels?: Record<string, string>;
+  leftButtons?: ToolbarButtonConfig[];
+  centerButtons?: ToolbarButtonConfig[];
+  rightButtons?: ToolbarButtonConfig[];
 }
