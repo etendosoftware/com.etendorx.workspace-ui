@@ -1,11 +1,14 @@
 import axios from 'axios';
-import { API_METADATA_URL } from '../constants';
+import { API_METADATA_URL, TOKEN } from './constants';
 
 export class Metadata {
   private static cache: Etendo.CacheStore<Etendo.Metadata> = {};
   private static client = axios.create({
     baseURL: API_METADATA_URL,
-    withCredentials: true,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      'Authorization': `Basic ${TOKEN}`,
+    },
   });
 
   private static hasValidCache(windowId: Etendo.WindowId) {
@@ -25,7 +28,7 @@ export class Metadata {
     }
 
     try {
-      const response = await this.client.get(`View?viewId=_${windowId}`, {});
+      const response = await this.client.get(`View?viewId=_${windowId}`);
 
       this.cache[windowId] = {
         updatedAt: Date.now(),

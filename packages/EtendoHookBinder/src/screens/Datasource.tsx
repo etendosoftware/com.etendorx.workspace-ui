@@ -1,9 +1,9 @@
 import { useCallback, useState } from 'react';
-import { get } from '../api/datasource/client';
+import { Datasource } from '../api/datasource';
 import { entities } from '../api/constants';
 import styles from './styles.module.css';
 
-export default function Datasource() {
+export default function DatasourceTest() {
   const [entity, setEntity] = useState<Etendo.Entity>(entities[0]);
   const [page, setPage] = useState<number>(1);
   const [size, setSize] = useState<number>(1);
@@ -39,29 +39,35 @@ export default function Datasource() {
     [],
   );
 
-  const handleClick = useCallback(() => {
-    const f = async () => {
-      try {
-        const _startRow = ((page - 1) * size).toString();
-        const _endRow = (page * size - 1).toString();
-        const { data } = await get(entity, {
-          _startRow,
-          _endRow,
-        });
+  const handleSubmit = useCallback(
+    (e: React.SyntheticEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-        setData(data?.response ?? data);
-      } catch (e) {
-        setError(e);
+      const f = async () => {
+        try {
+          const startRow = (page - 1) * size;
+          const endRow = page * size - 1;
+          const { data } = await Datasource.get(entity, {
+            startRow,
+            endRow,
+          });
 
-        throw e;
-      }
-    };
+          setData(data?.response ?? data);
+        } catch (e) {
+          setError(e);
 
-    return f().catch(console.warn);
-  }, [entity, page, size]);
+          throw e;
+        }
+      };
+
+      return f().catch(console.warn);
+    },
+    [entity, page, size],
+  );
 
   return (
-    <div className={styles.container}>
+    <form onSubmit={handleSubmit} className={styles.container}>
       <div className={styles.field}>
         <label htmlFor="entity">Entity</label>
         <select
@@ -93,7 +99,7 @@ export default function Datasource() {
           onChange={handleSizeChange}
         />
       </div>
-      <button className={styles.button} onClick={handleClick}>
+      <button type="submit" className={styles.button}>
         Load records
       </button>
       {data?.data instanceof Array ? (
@@ -102,6 +108,6 @@ export default function Datasource() {
       <pre className={styles.code}>
         <code>{JSON.stringify(error ?? data, null, 2)}</code>
       </pre>
-    </div>
+    </form>
   );
 }

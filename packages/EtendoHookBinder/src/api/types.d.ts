@@ -10,21 +10,29 @@ declare global {
 
     interface CachedData<T> {
       updatedAt: number;
-      data: T
+      data: T;
     }
 
     interface CacheStore<T> {
-      [key: string]: CachedData<T>
+      [key: string]: CachedData<T>;
+    }
+    interface MetadataParams {
+      windowId: string;
+      mode: 'SHOW_COLUMNS' | 'GET_DATA';
+      columns?: string[];
+      startRow?: number;
+      endRow?: number;
+      targetRecordId?: string;
+      sortBy?: string;
+      criteria?: Array<{
+        fieldName: string;
+        operator: string;
+        value: string;
+      }>;
+      writeToFile?: boolean;
     }
 
-    interface XHROptions extends Record<string, string | number> {}
-
-    interface GETOptions {
-      _startRow: string;
-      _endRow: string;
-      sortBy: string;
-      columns: string;
-    }
+    interface Object extends Record<string, unknown> {}
   }
 }
 

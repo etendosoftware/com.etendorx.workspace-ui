@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
+import MetadataTest from './screens/Metadata';
+import DatasourceTest from './screens/Datasource';
 import styles from './App.module.css';
 import './App.css';
-import Datasource from './screens/Datasource';
 
 function App() {
   const [tab, setTab] = useState<'metadata' | 'datasource'>('datasource');
@@ -24,7 +25,7 @@ function App() {
           DATASOURCE TEST
         </button>
       </div>
-      {tab === 'metadata' ? null : <Datasource />}
+      {tab === 'metadata' ? <MetadataTest /> : <DatasourceTest />}
     </main>
   );
 }

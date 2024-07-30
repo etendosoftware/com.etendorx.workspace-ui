@@ -1,96 +1,61 @@
 import { useCallback, useState } from 'react';
-import { get } from '../api/datasource/client';
-import { entities } from '../api/constants';
+import { Metadata } from '../api/metadata';
 import styles from './styles.module.css';
 
-export default function Metadata() {
-  const [entity, setEntity] = useState<Etendo.Entity>(entities[0]);
-  const [page, setPage] = useState<number>(1);
-  const [size, setSize] = useState<number>(1);
-  const [data, setData] = useState<Record<string, never>>({});
+export default function MetadataTest() {
+  const [windowId, setWindowId] = useState('100');
+  const [data, setData] = useState<Etendo.Metadata>();
+  const [error, setError] = useState<unknown>();
 
-  const handleEntityChange = useCallback(
-    (e: React.SyntheticEvent<HTMLSelectElement>) => {
-      setEntity(e.currentTarget.value as Etendo.Entity);
-    },
-    [],
-  );
-
-  const handleSizeChange = useCallback(
+  const handleWindowIdChange = useCallback(
     (e: React.SyntheticEvent<HTMLInputElement>) => {
-      const _size = parseInt(e.currentTarget.value);
-
-      if (_size > 0) {
-        setSize(_size);
-      }
+      setWindowId(e.currentTarget.value);
     },
     [],
   );
 
-  const handlePageChange = useCallback(
-    (e: React.SyntheticEvent<HTMLInputElement>) => {
-      const _page = parseInt(e.currentTarget.value);
+  const handleSubmit = useCallback(
+    (e: React.SyntheticEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-      if (_page > 0) {
-        setPage(_page);
-      }
+      const f = async () => {
+        try {
+          const response = await Metadata.fetchMetadata(windowId);
+
+          setData(response);
+        } catch (e) {
+          setError(e);
+
+          throw e;
+        }
+      };
+
+      return f().catch(console.warn);
     },
-    [],
+    [windowId],
   );
-
-  const handleClick = useCallback(() => {
-    const f = async () => {
-      const _startRow = ((page - 1) * size - 1).toString();
-      const _endRow = (page * size).toString();
-      const response = (await get(entity, {
-        _startRow,
-        _endRow,
-      })) as { data: { response: never } };
-      setData(response.data.response);
-    };
-
-    return f().catch(console.warn);
-  }, [entity, page, size]);
 
   return (
-    <div className={styles.container}>
+    <form onSubmit={handleSubmit} className={styles.container}>
       <div className={styles.field}>
-        <label htmlFor="entity">Entity</label>
-        <select
-          className={styles.select}
-          value={entity}
-          onChange={handleEntityChange}>
-          {entities.map(e => (
-            <option value={e} key={e}>
-              {e}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.field}>
-        <label htmlFor="page">Page</label>
+        <label htmlFor="windowId">Window ID</label>
         <input
           className={styles.input}
           type="text"
-          value={page}
-          onChange={handlePageChange}
+          value={windowId}
+          onChange={handleWindowIdChange}
         />
       </div>
-      <div className={styles.field}>
-        <label htmlFor="size">Size</label>
-        <input
-          type="text"
-          className={styles.input}
-          value={size}
-          onChange={handleSizeChange}
-        />
-      </div>
-      <button className={styles.button} onClick={handleClick}>
+      <button type="submit" className={styles.button}>
         Load records
       </button>
+      {data?.data instanceof Array ? (
+        <div>Total results: {data?.data?.length}</div>
+      ) : null}
       <pre className={styles.code}>
-        <code>{JSON.stringify(data, null, 2)}</code>
+        <code>{JSON.stringify(error ?? data, null, 2)}</code>
       </pre>
-    </div>
+    </form>
   );
 }
