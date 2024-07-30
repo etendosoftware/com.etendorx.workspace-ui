@@ -1,0 +1,64 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.field {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  text-align: left;
+  flex: 1;
+  gap: 0.5rem;
+}
+
+.field label {
+  flex: 0;
+  min-width: 3rem;
+}
+
+.input, .select {
+  flex: 1;
+  outline: 0 !important;
+  border: none ;
+  background-color: #1f1a10;
+  min-height: 2.5rem;
+  padding: 0 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.input {
+  min-height: 2.5rem;
+  padding: 0 0.5rem;
+  outline: 0 !important;
+  background-color: #1f1a10;
+  appearance: none;
+  border: none;
+}
+
+.select option {
+  outline: 0 !important;
+}
+
+.button {
+  font-size: small;
+  font-weight: bold;
+  height: 2.5rem;
+  text-transform: uppercase;
+  background-color: #FFAA00;
+  color: #000000;
+  border-radius: 0.2rem;
+}
+
+.code {
+  text-align: left;
+  padding: 1rem;
+  margin: 0;
+  overflow: auto;
+  font-size: small;
+  font-family: 'Ubuntu Mono', 'SF Mono', 'Courier New', Courier, monospace;
+}

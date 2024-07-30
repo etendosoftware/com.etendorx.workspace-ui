@@ -1,11 +1,10 @@
 import axios from 'axios';
-import { API_METADATA_URL } from './constants';
+import { API_METADATA_URL } from '../constants';
 
 export class Metadata {
   private static cache: Etendo.CacheStore<Etendo.Metadata> = {};
   private static client = axios.create({
     baseURL: API_METADATA_URL,
-    // Implement JWT authentication and drop coookies auth
     withCredentials: true,
   });
 
