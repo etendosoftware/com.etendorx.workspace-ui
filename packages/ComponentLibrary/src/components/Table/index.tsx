@@ -9,6 +9,7 @@ import { Box, Paper } from '@mui/material';
 import {
   Organization,
   TableProps,
+  Widget,
 } from '../../../../storybook/src/stories/Components/Table/types';
 import { tableStyles } from './styles';
 import { theme } from '../../theme';
@@ -18,17 +19,18 @@ import TopToolbar from './Toolbar';
 import BackgroundGradientUrl from '../../assets/images/Sidebar-bg.svg?url';
 import SideIcon from '../../assets/icons/codesandbox.svg';
 import Sidebar from './Sidebar';
+import { createToolbarConfig } from '../../../../storybook/src/stories/Components/Table/toolbarMock';
 
-const widgets = [];
+const widgets: Widget[] = [];
 
 const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Organization | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
 
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
+  const toggleDropdown = useCallback(() => {
+    setIsDropdownOpen(prev => !prev);
+  }, []);
 
   const handleRowClick = (row: MRT_Row<Organization>) => {
     setSelectedItem(row.original);
@@ -130,14 +132,14 @@ const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
     },
   } as MRT_TableOptions<Organization>);
 
+  const toolbarConfig = useMemo(
+    () => createToolbarConfig(toggleDropdown, isDropdownOpen),
+    [isDropdownOpen, toggleDropdown],
+  );
+
   return (
     <Box sx={{ ...tableStyles.container }} ref={tableRef}>
-      <TopToolbar
-        table={table}
-        isDropdownOpen={isDropdownOpen}
-        toggleDropdown={toggleDropdown}
-        isItemSelected={!!selectedItem}
-      />
+      <TopToolbar {...toolbarConfig} isItemSelected={!!selectedItem} />
       <Box
         sx={{
           display: 'flex',

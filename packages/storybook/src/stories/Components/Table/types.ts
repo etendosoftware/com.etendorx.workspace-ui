@@ -1,3 +1,5 @@
+import { Theme } from '@emotion/react';
+import { SxProps } from '@mui/material';
 import { MRT_TableInstance } from 'material-react-table';
 export interface Organization {
   identificator: string;
@@ -20,28 +22,10 @@ export interface Organization {
 export type OrganizationLabels = {
   [K in keyof Organization]: string;
 };
-
-export interface ToolbarButtonConfig {
-  icon: React.ReactNode;
-  tooltip: string;
-  onClick: () => void;
-}
-
 export interface TableProps {
   data: Organization[];
   isTreeStructure?: boolean;
   customLabels?: Record<string, string>;
-}
-export interface TopToolbarProps {
-  table: MRT_TableInstance<Organization>;
-  isFullScreen: boolean;
-  toggleFullScreen: () => void;
-}
-export interface TopToolbarProps {
-  table: MRT_TableInstance<Organization>;
-  isDropdownOpen: boolean;
-  toggleDropdown: () => void;
-  isItemSelected: boolean;
 }
 
 export interface SidebarContentProps {
@@ -71,10 +55,28 @@ export interface SidebarProps {
   };
   widgets: Widget[];
 }
+export interface ToolbarButton {
+  key: string;
+  icon: React.ReactNode;
+  tooltip: string;
+  onClick: () => void;
+  disabled?: boolean;
+  fill?: string;
+  hoverFill?: string;
+  width?: number;
+  height?: number;
+  sx?: SxProps<Theme>;
+}
 
-export interface RightSectionProps {
-  table: MRT_TableInstance<Organization>;
-  isDropdownOpen: boolean;
-  toggleDropdown: () => void;
-  searchPlaceholder?: string;
+export interface ToolbarSectionConfig {
+  buttons: ToolbarButton[];
+  style?: React.CSSProperties;
+  isItemSelected?: boolean;
+}
+
+export interface TopToolbarProps {
+  leftSection: ToolbarSectionConfig;
+  centerSection: ToolbarSectionConfig;
+  rightSection: ToolbarSectionConfig;
+  isItemSelected: boolean;
 }

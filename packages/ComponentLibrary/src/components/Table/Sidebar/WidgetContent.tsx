@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Grid } from '@mui/material';
-import { ContentGridProps } from '../types';
+import { ContentGridProps } from '../../../../../storybook/src/stories/Components/Table/types';
 import { theme } from '../../../theme';
 
 const ContentGrid: React.FC<ContentGridProps> = ({ widgets }) => {

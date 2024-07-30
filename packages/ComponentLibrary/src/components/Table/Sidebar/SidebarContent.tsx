@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 import { theme } from '../../../theme';
-import { SidebarContentProps } from '../types';
+import { SidebarContentProps } from '../../../../../storybook/src/stories/Components/Table/types';
 import ContentGrid from './WidgetContent';
 
 export const SidebarContent: React.FC<SidebarContentProps> = ({
@@ -48,7 +48,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
     </Box>
     <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
       <ContentGrid widgets={widgets} />
-    </Box>{' '}
+    </Box>
   </Box>
 );
 

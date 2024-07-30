@@ -1,20 +1,24 @@
 import React from 'react';
 import { Box } from '@mui/material';
-import LeftSection from './LeftSection';
-import CenterSection from './CenterSection';
-import RightSection from './RightSection';
+import ToolbarSection from './ToolbarSection';
 import { tableStyles } from '../styles';
 import { TopToolbarProps } from '../../../../../storybook/src/stories/Components/Table/types';
 
 const TopToolbar: React.FC<TopToolbarProps> = ({
-  table,
-  isDropdownOpen,
-  toggleDropdown,
+  leftSection,
+  centerSection,
+  rightSection,
   isItemSelected,
 }) => {
   return (
-    <Box sx={tableStyles.topToolbar}>
-      <LeftSection onNewLineClick={() => {}} onChevronClick={() => {}} />
+    <Box
+      sx={{
+        ...tableStyles.topToolbar,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1rem',
+      }}>
+      <ToolbarSection {...leftSection} />
       <Box
         sx={{
           flex: 1,
@@ -22,13 +26,9 @@ const TopToolbar: React.FC<TopToolbarProps> = ({
           justifyContent: 'flex-start',
           marginLeft: '1rem',
         }}>
-        <CenterSection isItemSelected={isItemSelected} />
+        <ToolbarSection {...centerSection} isItemSelected={isItemSelected} />
       </Box>
-      <RightSection
-        table={table}
-        isDropdownOpen={isDropdownOpen}
-        toggleDropdown={toggleDropdown}
-      />
+      <ToolbarSection {...rightSection} />
     </Box>
   );
 };

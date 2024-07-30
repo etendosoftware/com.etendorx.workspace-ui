@@ -12,12 +12,13 @@ const IconButton: React.FC<IIconComponentProps> = ({
   tooltip,
   sx,
   children,
+  disabled,
   ...props
 }) => {
   const [iconFill, setIconFill] = useState<string>(fill);
 
-  const handleMouseEnter = () => setIconFill(hoverFill);
-  const handleMouseLeave = () => setIconFill(fill);
+  const handleMouseEnter = () => !disabled && setIconFill(hoverFill);
+  const handleMouseLeave = () => !disabled && setIconFill(fill);
 
   const combinedStyles = {
     ...defaultStyles,
@@ -25,18 +26,35 @@ const IconButton: React.FC<IIconComponentProps> = ({
   };
 
   const clonedIcon = React.cloneElement(children as React.ReactElement, {
-    style: { fill: iconFill, width, height },
+    style: {
+      fill: disabled ? theme.palette.action.disabled : iconFill,
+      width,
+      height,
+    },
   });
 
+  const button = (
+    <MUIIconButton
+      sx={combinedStyles}
+      {...props}
+      disabled={disabled}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}>
+      {clonedIcon}
+    </MUIIconButton>
+  );
+
+  if (disabled) {
+    return (
+      <Tooltip title={tooltip} arrow>
+        <span>{button}</span>
+      </Tooltip>
+    );
+  }
+
   return (
-    <Tooltip title={tooltip ?? ''} arrow>
-      <MUIIconButton
-        sx={combinedStyles}
-        {...props}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}>
-        {clonedIcon}
-      </MUIIconButton>
+    <Tooltip title={tooltip} arrow>
+      {button}
     </Tooltip>
   );
 };

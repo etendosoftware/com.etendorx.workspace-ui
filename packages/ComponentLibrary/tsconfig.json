@@ -21,6 +21,10 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "svg.d.ts"],
+  "include": [
+    "src",
+    "svg.d.ts",
+    "../storybook/src/stories/Components/Table/toolbarMocktsx"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

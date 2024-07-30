@@ -3,8 +3,8 @@ export const TOOLTIPS = {
   VIEWS: 'Views',
   FILTER: 'Filter',
   COLUMNS: 'Columns',
-  FULL_SCREEN: 'Full Screen',
-  EXIT_FULL_SCREEN: 'Exit Full Screen',
+  OPEN_SIDEBAR: 'Open Sidebar',
+  CLOSE_SIDEBAR: 'Close Sidebar',
   DETAILS: 'Details',
   REFRESH: 'Refresh',
 };
