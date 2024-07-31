@@ -8,7 +8,6 @@ export default function DatasourceTest() {
   const [page, setPage] = useState<number>(1);
   const [size, setSize] = useState<number>(1);
   const [data, setData] = useState<Record<string, unknown | { data: [] }>>();
-  const [error, setError] = useState<unknown>();
 
   const handleEntityChange = useCallback(
     (e: React.SyntheticEvent<HTMLSelectElement>) => {
@@ -45,21 +44,14 @@ export default function DatasourceTest() {
       e.stopPropagation();
 
       const f = async () => {
-        try {
-          const _startRow = (page - 1) * size;
-          const _endRow = page * size - 1;
-          const { response } = await Datasource.get(entity, {
-            _startRow: _startRow.toString(),
-            _endRow: _endRow.toString(),
-          });
+        const _startRow = (page - 1) * size;
+        const _endRow = page * size - 1;
+        const { response } = await Datasource.get(entity, {
+          _startRow: _startRow.toString(),
+          _endRow: _endRow.toString(),
+        });
 
-          setError(undefined);
-          setData(response);
-        } catch (e) {
-          setError(e);
-
-          throw e;
-        }
+        setData(response);
       };
 
       return f().catch(console.warn);
@@ -104,11 +96,16 @@ export default function DatasourceTest() {
         Load records
       </button>
       {data?.data instanceof Array ? (
-        <div>Total results: {data?.data?.length}</div>
+        <div className={styles.summary}>
+          Total results: {data?.data?.length}
+        </div>
       ) : null}
-      <pre className={styles.code}>
-        <code>{JSON.stringify(error ?? data, null, 2)}</code>
-      </pre>
+      <textarea
+        className={styles.code}
+        value={data ? JSON.stringify(data, null, 2) : ''}
+        rows={16}
+        readOnly
+      />
     </form>
   );
 }

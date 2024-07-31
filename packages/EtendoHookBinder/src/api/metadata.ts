@@ -8,9 +8,9 @@ export class Metadata {
 
   private static hasValidCache(windowId: Etendo.WindowId) {
     if (this.cache[windowId]?.data) {
-      // To Do: Replace hardcoded 1 hour value (360000ms) with configurable setting
-      return Date.now() - this.cache[windowId].updatedAt > 3600000;
-    }
+      // TO DO: Replace hardcoded 1 hour value (360000ms) with configurable setting
+      return Date.now() - this.cache[windowId].updatedAt < 3600000;
+    } 
 
     return false;
   }
@@ -19,13 +19,17 @@ export class Metadata {
     setup();
 
     if (this.hasValidCache(windowId)) {
+      console.log('cache hit')
       return this.cache[windowId].data;
+    } else {
+      console.log('cache miss')
     }
 
     try {
       const response = await this.client.get(`View?viewId=_${windowId}`);
 
-      eval(response.data.replace('this.standardWindow', '{}'));
+      // TO DO: Avoid the .replace and fix standardWindow issue
+      eval(response.data.replace('this.standardWindow', 'null '));
 
       this.cache[windowId] = {
         updatedAt: Date.now(),

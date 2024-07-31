@@ -54,6 +54,7 @@ declare global {
     interface Object extends Record<string, unknown> {}
 
     interface Klass {
+      name: string;
       superClass: string;
       properties: unknown[];
     }

@@ -21,6 +21,7 @@ const isc = {
 
           if (!classes[newClassName]) {
             classes[newClassName] = {
+              name: className,
               superClass: superClass,
               properties: [],
             };

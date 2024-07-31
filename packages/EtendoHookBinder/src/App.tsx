@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import MetadataTest from './screens/Metadata';
 import DatasourceTest from './screens/Datasource';
-import styles from './App.module.css';
 import './App.css';
 import { setup } from './api/isc';
 
@@ -18,13 +17,13 @@ function App() {
   }, []);
 
   return (
-    <main className={styles.container}>
+    <main>
       <h4>Etendo Hook Binder</h4>
-      <div className={styles.group}>
-        <button className={styles.button} onClick={handle.metadataClick}>
+      <div className="button-group">
+        <button onClick={handle.metadataClick}>
           METADATA TEST
         </button>
-        <button className={styles.button} onClick={handle.datasourceClick}>
+        <button onClick={handle.datasourceClick}>
           DATASOURCE TEST
         </button>
       </div>

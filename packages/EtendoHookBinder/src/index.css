@@ -43,13 +43,21 @@ button {
   background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
+  box-shadow: 0.1rem 0.1rem 0.2rem #00000010;
 }
+
 button:hover {
   border-color: #646cff;
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: none;
+}
+
+input, select, textarea {
+  background-color: #444444;
+  border: 1px solid #ffffff50;
+  outline: none;
 }
 
 @media (prefers-color-scheme: light) {
@@ -61,6 +69,10 @@ button:focus-visible {
     color: #747bff;
   }
   button {
-    background-color: #f9f9f9;
+    background-color: #dadada;
+  }
+  input, select, textarea {
+    background-color: #f0f0f0;
+    border: 1px solid #00000050;
   }
 }
