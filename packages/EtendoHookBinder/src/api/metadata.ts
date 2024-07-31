@@ -3,7 +3,7 @@ import { API_METADATA_URL, TOKEN } from './constants';
 import { setupIsc } from './isc';
 
 export class Metadata {
-  private static cache: Etendo.CacheStore<Etendo.Metadata> = {};
+  private static cache: Etendo.CacheStore<Etendo.Klass> = {};
   private static client = axios.create({
     baseURL: API_METADATA_URL,
     headers: {
@@ -21,7 +21,7 @@ export class Metadata {
     return false;
   }
 
-  public static async get(windowId: Etendo.WindowId): Promise<Etendo.Metadata> {
+  public static async get(windowId: Etendo.WindowId): Promise<Etendo.Klass> {
     setupIsc();
 
     if (this.hasValidCache(windowId)) {
@@ -31,9 +31,13 @@ export class Metadata {
     try {
       const response = await this.client.get(`View?viewId=_${windowId}`);
 
+      eval(
+        response.data.replace('this.standardWindow', '{}'),
+      );
+
       this.cache[windowId] = {
         updatedAt: Date.now(),
-        data: response.data,
+        data: window.isc.classes[`_${windowId}`],
       };
 
       return this.cache[windowId].data;

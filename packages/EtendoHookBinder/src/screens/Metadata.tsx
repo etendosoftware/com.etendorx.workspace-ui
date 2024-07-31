@@ -4,8 +4,7 @@ import styles from './styles.module.css';
 
 export default function MetadataTest() {
   const [windowId, setWindowId] = useState('100');
-  const [data, setData] = useState<Etendo.Metadata>('');
-  const [error, setError] = useState();
+  const [data, setData] = useState('');
 
   const handleWindowIdChange = useCallback(
     (e: React.SyntheticEvent<HTMLInputElement>) => {
@@ -15,24 +14,15 @@ export default function MetadataTest() {
   );
 
   const handleSubmit = useCallback(
-    (e: React.SyntheticEvent<HTMLFormElement>) => {
+    async (e: React.SyntheticEvent<HTMLFormElement>) => {
       e.preventDefault();
       e.stopPropagation();
 
       const f = async () => {
-        try {
-          await Metadata.get(windowId);
-
-          setError(undefined);
-          setData(JSON.stringify(window.isc.classes[`_${windowId}`], null, 2));
-        } catch (e) {
-          setError(e as never);
-
-          throw e;
-        }
+        setData(JSON.stringify(await Metadata.get(windowId), null, 2));
       };
 
-      return f().catch(console.warn);
+      return f().catch(console.error);
     },
     [windowId],
   );
@@ -51,7 +41,7 @@ export default function MetadataTest() {
       <button type="submit" className={styles.button}>
         Load records
       </button>
-      <textarea className={styles.code} value={error ?? data} rows={16} readOnly />
+      <textarea className={styles.code} value={data} rows={16} readOnly />
     </form>
   );
 }
