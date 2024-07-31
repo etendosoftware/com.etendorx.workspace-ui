@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useCallback, useRef } from 'react';
 import List from '@mui/material/List';
 import {
   DndContext,
@@ -16,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import SortableItem from './SortableItem';
-import { DragModalContentProps } from './DragModal.types';
+import type { DragModalContentProps } from './DragModal.types';
 import ModalDivider from '../ModalDivider';
 import DragIndicator from '../../assets/icons/drag.svg';
 import NavigateBefore from '../../assets/icons/chevron-left.svg';
@@ -44,32 +44,37 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setPeople(items => {
-        const oldIndex = items.findIndex(item => item.id === active.id);
-        const newIndex = items.findIndex(item => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (over && active.id !== over.id) {
+        setPeople(items => {
+          const oldIndex = items.findIndex(item => item.id === active.id);
+          const newIndex = items.findIndex(item => item.id === over.id);
+          return arrayMove(items, oldIndex, newIndex);
+        });
+      }
+    },
+    [setPeople],
+  );
 
-  const handleToggleAll = () => {
+  const handleToggleAll = useCallback(() => {
     const allActivated = people.every(person => person.isActive);
     setPeople(prev =>
       prev.map(person => ({ ...person, isActive: !allActivated })),
     );
-  };
+  }, [people, setPeople]);
 
-  const handleToggle = (id: UniqueIdentifier) => {
-    setPeople(prev =>
-      prev.map(person =>
-        person.id === id ? { ...person, isActive: !person.isActive } : person,
-      ),
-    );
-  };
-
+  const handleToggle = useCallback(
+    (id: UniqueIdentifier) => {
+      setPeople(prev =>
+        prev.map(person =>
+          person.id === id ? { ...person, isActive: !person.isActive } : person,
+        ),
+      );
+    },
+    [setPeople],
+  );
   return (
     <>
       <div style={styles.sectionContainer}>
