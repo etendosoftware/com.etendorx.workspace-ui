@@ -9,8 +9,9 @@ function createProxy(obj: Record<string, unknown>) {
   });
 }
 
+const classes: Etendo.ClassMap = {};
+
 const isc = {
-  classes: {} as Etendo.ClassMap,
   ClassFactory: {
     defineClass: function (className: string, superClass: string) {
       return {
@@ -18,14 +19,14 @@ const isc = {
           const cn = className.split('_');
           const newClassName = '_' + cn[1].toString();
 
-          if (!isc.classes[newClassName]) {
-            isc.classes[newClassName] = {
+          if (!classes[newClassName]) {
+            classes[newClassName] = {
               superClass: superClass,
               properties: [],
             };
           }
 
-          isc.classes[newClassName].properties.push(properties);
+          classes[newClassName].properties.push(properties);
 
           return isc.ClassFactory;
         },
@@ -34,14 +35,16 @@ const isc = {
   },
 };
 
-const OB = createProxy({});
+const OB = createProxy({
+  KernelUtilities: createProxy({
+    handleSystemException: function (err: unknown) {
+      throw err;
+    },
+  }),
+});
 
-export function setupIsc() {
-  if (!Object.prototype.hasOwnProperty.call(window, 'isc')) {
-    window.isc = isc;
-  }
-
-  if (!Object.prototype.hasOwnProperty.call(window, 'OB')) {
-    window.OB = OB;
-  }
+export function setup() {
+  window.isc = window.isc ?? isc;
+  window.OB = window.OB ?? OB;
+  window.classes = window.classes ?? classes;
 }

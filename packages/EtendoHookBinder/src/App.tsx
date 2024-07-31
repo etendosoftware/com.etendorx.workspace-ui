@@ -3,7 +3,9 @@ import MetadataTest from './screens/Metadata';
 import DatasourceTest from './screens/Datasource';
 import styles from './App.module.css';
 import './App.css';
+import { setup } from './api/isc';
 
+setup();
 
 function App() {
   const [tab, setTab] = useState<'metadata' | 'datasource'>('datasource');

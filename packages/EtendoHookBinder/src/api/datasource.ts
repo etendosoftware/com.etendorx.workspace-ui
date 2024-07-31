@@ -1,14 +1,8 @@
-import axios from 'axios';
-import { API_DATASOURCE_URL, TOKEN } from './constants';
+import { API_DATASOURCE_URL } from './constants';
+import { newClient } from './client';
 
 export class Datasource {
-  private static client = axios.create({
-    baseURL: API_DATASOURCE_URL,
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      Authorization: `Basic ${TOKEN}`,
-    },
-  });
+  private static client = newClient(API_DATASOURCE_URL)
 
   public static async get(
     entity: Etendo.Entity,

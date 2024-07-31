@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react';
-import { Metadata } from '../api/metadata';
 import styles from './styles.module.css';
+import { useMetadata } from '../hooks/useMetadata';
 
 export default function MetadataTest() {
   const [windowId, setWindowId] = useState('100');
-  const [data, setData] = useState('');
+  const { load, loading, data, error } = useMetadata(windowId);
 
   const handleWindowIdChange = useCallback(
     (e: React.SyntheticEvent<HTMLInputElement>) => {
@@ -13,22 +13,8 @@ export default function MetadataTest() {
     [],
   );
 
-  const handleSubmit = useCallback(
-    async (e: React.SyntheticEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const f = async () => {
-        setData(JSON.stringify(await Metadata.get(windowId), null, 2));
-      };
-
-      return f().catch(console.error);
-    },
-    [windowId],
-  );
-
   return (
-    <form onSubmit={handleSubmit} className={styles.container}>
+    <div className={styles.container}>
       <div className={styles.field}>
         <label htmlFor="windowId">Window ID</label>
         <input
@@ -38,10 +24,16 @@ export default function MetadataTest() {
           onChange={handleWindowIdChange}
         />
       </div>
-      <button type="submit" className={styles.button}>
-        Load records
+      {error ? <div className={styles.error}>{error.message}</div> : null}
+      <button onClick={load} className={styles.button} disabled={loading}>
+        {loading ? 'Loading...' : 'Load Window'}
       </button>
-      <textarea className={styles.code} value={data} rows={16} readOnly />
-    </form>
+      <textarea
+        className={styles.code}
+        value={data?.toString() ?? ''}
+        rows={16}
+        readOnly
+      />
+    </div>
   );
 }

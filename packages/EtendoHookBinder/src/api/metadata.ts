@@ -1,16 +1,10 @@
-import axios from 'axios';
-import { API_METADATA_URL, TOKEN } from './constants';
-import { setupIsc } from './isc';
+import { API_METADATA_URL } from './constants';
+import { setup } from './isc';
+import { newClient } from './client';
 
 export class Metadata {
   private static cache: Etendo.CacheStore<Etendo.Klass> = {};
-  private static client = axios.create({
-    baseURL: API_METADATA_URL,
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      'Authorization': `Basic ${TOKEN}`,
-    },
-  });
+  private static client = newClient(API_METADATA_URL);
 
   private static hasValidCache(windowId: Etendo.WindowId) {
     if (this.cache[windowId]?.data) {
@@ -22,7 +16,7 @@ export class Metadata {
   }
 
   public static async get(windowId: Etendo.WindowId): Promise<Etendo.Klass> {
-    setupIsc();
+    setup();
 
     if (this.hasValidCache(windowId)) {
       return this.cache[windowId].data;
@@ -31,19 +25,17 @@ export class Metadata {
     try {
       const response = await this.client.get(`View?viewId=_${windowId}`);
 
-      eval(
-        response.data.replace('this.standardWindow', '{}'),
-      );
+      eval(response.data.replace('this.standardWindow', '{}'));
 
       this.cache[windowId] = {
         updatedAt: Date.now(),
-        data: window.isc.classes[`_${windowId}`],
+        data: window.classes[`_${windowId}`],
       };
 
       return this.cache[windowId].data;
     } catch (error) {
       throw new Error(
-        `Error fetching metadata for window ${windowId}: ${error}`,
+        `Error fetching metadata for window ${windowId}:\n${error}`,
       );
     }
   }

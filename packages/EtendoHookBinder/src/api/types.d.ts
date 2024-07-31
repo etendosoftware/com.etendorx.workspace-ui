@@ -1,7 +1,6 @@
 declare global {
   interface Window {
     isc: {
-      classes: Etendo.ClassMap;
       ClassFactory: {
         defineClass: (
           className: string,
@@ -13,7 +12,8 @@ declare global {
         };
       };
     };
-    OB: unknown;
+    OB: Record<string, unknown>;
+    classes: Etendo.ClassMap;
   }
   export namespace Etendo {
     type WindowId = string;

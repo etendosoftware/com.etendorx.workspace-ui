@@ -62,3 +62,7 @@
   border: none;
   outline: none;
 }
+
+.error {
+  white-space: pre;
+}
