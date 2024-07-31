@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_METADATA_URL, TOKEN } from './constants';
+import { setupIsc } from './isc';
 
 export class Metadata {
   private static cache: Etendo.CacheStore<Etendo.Metadata> = {};
@@ -20,9 +21,9 @@ export class Metadata {
     return false;
   }
 
-  public static async get(
-    windowId: Etendo.WindowId,
-  ): Promise<Etendo.Metadata> {
+  public static async get(windowId: Etendo.WindowId): Promise<Etendo.Metadata> {
+    setupIsc();
+
     if (this.hasValidCache(windowId)) {
       return this.cache[windowId].data;
     }

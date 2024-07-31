@@ -24,7 +24,7 @@ export default function MetadataTest() {
           const response = await Metadata.get(windowId);
 
           setError(undefined);
-          setData(response);
+          setData(JSON.stringify(Object.keys(window.isc.classes), null, 2));
         } catch (e) {
           setError(e as never);
 
@@ -51,9 +51,7 @@ export default function MetadataTest() {
       <button type="submit" className={styles.button}>
         Load records
       </button>
-      <pre className={styles.code}>
-        <code>{error ?? data}</code>
-      </pre>
+      <textarea className={styles.code} value={error ?? data} rows={16} readOnly />
     </form>
   );
 }

@@ -16,7 +16,7 @@ function App() {
 
   return (
     <main className={styles.container}>
-      <h1>Etendo Hook Binder</h1>
+      <h4>Etendo Hook Binder</h4>
       <div className={styles.group}>
         <button className={styles.button} onClick={handle.metadataClick}>
           METADATA TEST

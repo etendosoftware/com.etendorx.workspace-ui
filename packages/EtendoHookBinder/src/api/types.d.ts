@@ -1,4 +1,20 @@
 declare global {
+  interface Window {
+    isc: {
+      classes: Etendo.ClassMap;
+      ClassFactory: {
+        defineClass: (
+          className: string,
+          superClass: string,
+        ) => {
+          addProperties: (
+            properties: unknown[],
+          ) => typeof window.isc.ClassFactory;
+        };
+      };
+    };
+    OB: unknown;
+  }
   export namespace Etendo {
     type WindowId = string;
 
@@ -36,6 +52,13 @@ declare global {
     }
 
     interface Object extends Record<string, unknown> {}
+
+    interface Klass {
+      superClass: string;
+      properties: unknown[];
+    }
+
+    interface ClassMap extends Record<string, Klass> {}
   }
 }
 
