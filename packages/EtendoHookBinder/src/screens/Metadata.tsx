@@ -21,7 +21,7 @@ export default function MetadataTest() {
 
       const f = async () => {
         try {
-          const response = await Metadata.get(windowId);
+          await Metadata.get(windowId);
 
           setError(undefined);
           setData(JSON.stringify(Object.keys(window.isc.classes), null, 2));
