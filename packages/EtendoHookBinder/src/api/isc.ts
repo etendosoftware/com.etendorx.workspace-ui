@@ -1,9 +1,8 @@
-function createProxy(obj) {
+function createProxy(obj: Record<string, unknown>) {
   return new Proxy(obj, {
-    get(target, prop) {
+    get(target, prop: string) {
       if (!(prop in target)) {
-        target[prop] = {};
-        target[prop] = createProxy(target[prop]);
+        target[prop] = createProxy({});
       }
       return target[prop];
     },
@@ -18,13 +17,16 @@ const isc = {
         addProperties: function (properties: unknown[]) {
           const cn = className.split('_');
           const newClassName = '_' + cn[1].toString();
+
           if (!isc.classes[newClassName]) {
             isc.classes[newClassName] = {
               superClass: superClass,
               properties: [],
             };
           }
+
           isc.classes[newClassName].properties.push(properties);
+
           return isc.ClassFactory;
         },
       };
@@ -37,10 +39,9 @@ const OB = createProxy({});
 export function setupIsc() {
   if (!Object.prototype.hasOwnProperty.call(window, 'isc')) {
     window.isc = isc;
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(window, 'OB')) {
     window.OB = OB;
-    console.log('setup ISC done');
-  } else {
-    console.log('rehusing ISC instance');
   }
 }
-

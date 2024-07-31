@@ -24,7 +24,7 @@ export default function MetadataTest() {
           await Metadata.get(windowId);
 
           setError(undefined);
-          setData(JSON.stringify(Object.keys(window.isc.classes), null, 2));
+          setData(JSON.stringify(window.isc.classes[`_${windowId}`], null, 2));
         } catch (e) {
           setError(e as never);
 
