@@ -20,7 +20,7 @@ export class Metadata {
     return false;
   }
 
-  public static async fetchMetadata(
+  public static async get(
     windowId: Etendo.WindowId,
   ): Promise<Etendo.Metadata> {
     if (this.hasValidCache(windowId)) {

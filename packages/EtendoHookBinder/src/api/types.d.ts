@@ -16,20 +16,23 @@ declare global {
     interface CacheStore<T> {
       [key: string]: CachedData<T>;
     }
-    interface MetadataParams {
-      windowId: string;
-      mode: 'SHOW_COLUMNS' | 'GET_DATA';
-      columns?: string[];
-      startRow?: number;
-      endRow?: number;
-      targetRecordId?: string;
-      sortBy?: string;
-      criteria?: Array<{
-        fieldName: string;
-        operator: string;
-        value: string;
-      }>;
-      writeToFile?: boolean;
+
+    interface Criteria {
+      fieldName: string;
+      operator: string;
+      value: string;
+    }
+    interface MetadataParams extends Record<string, string> {
+      _windowId?: string;
+      _columns?: string[];
+      _startRow?: string;
+      _endRow?: string;
+      _targetRecordId?: string;
+      _sortBy?: string;
+      _writeToFile?: boolean;
+      _criteria?: Criteria[];
+      _mode?: 'SHOW_COLUMNS' | 'GET_DATA';
+      _operationType?: 'fetch' | 'add' | 'update' | 'remove';
     }
 
     interface Object extends Record<string, unknown> {}

@@ -21,7 +21,7 @@ export default function MetadataTest() {
 
       const f = async () => {
         try {
-          const response = await Metadata.fetchMetadata(windowId);
+          const response = await Metadata.get(windowId);
 
           setError(undefined);
           setData(response);

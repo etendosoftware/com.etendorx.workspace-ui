@@ -6,20 +6,27 @@ export class Datasource {
     baseURL: API_DATASOURCE_URL,
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      'Authorization': `Basic ${TOKEN}`,
+      Authorization: `Basic ${TOKEN}`,
     },
   });
 
-  public static get(
+  public static async get(
     entity: Etendo.Entity,
-    options: Partial<Etendo.MetadataParams> = {},
+    options: Etendo.MetadataParams = {},
   ) {
-    return this.client.post(
-      entity,
-      new URLSearchParams({
-        _operationType: 'fetch',
-        ...(options as Etendo.Object),
-      }),
-    );
+    try {
+      options._operationType = 'fetch';
+
+      const result = await this.client.post(
+        entity,
+        new URLSearchParams(options),
+      );
+
+      return result.data;
+    } catch (error) {
+      throw new Error(
+        `Error fetching from datasource for entity ${entity}: ${error}`,
+      );
+    }
   }
 }

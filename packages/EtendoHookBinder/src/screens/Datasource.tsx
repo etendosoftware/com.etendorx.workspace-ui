@@ -46,14 +46,15 @@ export default function DatasourceTest() {
 
       const f = async () => {
         try {
-          const startRow = (page - 1) * size;
-          const endRow = page * size - 1;
-          const { data } = await Datasource.get(entity, {
-            startRow,
-            endRow,
+          const _startRow = (page - 1) * size;
+          const _endRow = page * size - 1;
+          const { response } = await Datasource.get(entity, {
+            _startRow,
+            _endRow,
           });
 
-          setData(data?.response ?? data);
+          setError(undefined)
+          setData(response);
         } catch (e) {
           setError(e);
 
