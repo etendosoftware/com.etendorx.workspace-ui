@@ -13,22 +13,16 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: '1rem',
+  },
+  topToolbarCenter: {
+    flex: 1,
+    display: 'flex',
+    justifyContent: 'flex-start',
+    marginLeft: '1rem',
   },
   tablePaper: {
     borderRadius: '15rem',
-  },
-  fullScreenContainer: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 9999,
-    padding: '1rem',
-    gap: '1rem',
-    backgroundColor: 'white',
-    display: 'flex',
-    flexDirection: 'column',
   },
   actionButton: {
     minWidth: 120,
@@ -93,5 +87,38 @@ export const sx: { [key: string]: SxProps<Theme> } = {
       background: theme.palette.dynamicColor.main,
       borderRadius: '6.25rem',
     },
+  },
+  sidebarContainer: {
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  headerContainer: {
+    display: 'flex',
+    alignItems: 'start',
+    gap: 2,
+    padding: '1rem',
+  },
+  iconContainer: {
+    flexShrink: 0,
+    height: '3rem',
+    width: '3rem',
+    background: theme.palette.baselineColor.neutral[0],
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '50%',
+  },
+  identifier: {
+    color: theme.palette.baselineColor.transparentNeutral[70],
+    fontWeight: 500,
+  },
+  title: {
+    color: theme.palette.baselineColor.neutral[100],
+    fontWeight: 600,
+  },
+  contentContainer: {
+    flexGrow: 1,
+    overflowY: 'auto',
   },
 };

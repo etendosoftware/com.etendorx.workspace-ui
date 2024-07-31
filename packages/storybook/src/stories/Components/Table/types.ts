@@ -1,6 +1,5 @@
 import { Theme } from '@emotion/react';
 import { SxProps } from '@mui/material';
-import { MRT_TableInstance } from 'material-react-table';
 export interface Organization {
   identificator: string;
   name: string;
@@ -54,6 +53,8 @@ export interface SidebarProps {
     title: string | null;
   };
   widgets: Widget[];
+  noIdentifierLabel?: string;
+  noTitleLabel?: string;
 }
 export interface ToolbarButton {
   key: string;

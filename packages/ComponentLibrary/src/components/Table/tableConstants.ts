@@ -12,3 +12,13 @@ export const TOOLTIPS = {
 export const PLACEHOLDERS = {
   SEARCH: 'Search...',
 };
+
+export const LABELS = {
+  NO_IDENTIFIER: 'No item selected',
+  NO_TITLE: 'No title',
+};
+
+export const CONTENT = {
+  CURRENT_TITLE:
+    'Its revenue is expected to increase later this year. Congratulations',
+};

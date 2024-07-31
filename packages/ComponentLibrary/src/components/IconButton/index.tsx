@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Tooltip, IconButton as MUIIconButton } from '@mui/material';
 import { theme } from '../../theme';
 import { defaultStyles } from './styles';
@@ -17,8 +17,17 @@ const IconButton: React.FC<IIconComponentProps> = ({
 }) => {
   const [iconFill, setIconFill] = useState<string>(fill);
 
-  const handleMouseEnter = () => !disabled && setIconFill(hoverFill);
-  const handleMouseLeave = () => !disabled && setIconFill(fill);
+  const handleMouseEnter = useCallback(() => {
+    if (!disabled) {
+      setIconFill(hoverFill);
+    }
+  }, [disabled, hoverFill]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (!disabled) {
+      setIconFill(fill);
+    }
+  }, [disabled, fill]);
 
   const combinedStyles = {
     ...defaultStyles,

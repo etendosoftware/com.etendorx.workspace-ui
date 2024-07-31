@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useCallback } from 'react';
+import { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import {
   MaterialReactTable,
   MRT_Row,
@@ -20,6 +20,7 @@ import BackgroundGradientUrl from '../../assets/images/Sidebar-bg.svg?url';
 import SideIcon from '../../assets/icons/codesandbox.svg';
 import Sidebar from './Sidebar';
 import { createToolbarConfig } from '../../../../storybook/src/stories/Components/Table/toolbarMock';
+import { CONTENT, LABELS } from './tableConstants';
 
 const widgets: Widget[] = [];
 
@@ -42,7 +43,7 @@ const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
     }
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     document.addEventListener('mousedown', handleOutsideClick);
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
@@ -184,9 +185,8 @@ const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
               icon: (
                 <SideIcon fill={theme.palette.baselineColor.neutral[100]} />
               ),
-              identifier: selectedItem?.identificator ?? 'No item selected',
-              title:
-                'Its revenue is expected to increase later this year. Congratulations',
+              identifier: selectedItem?.identificator ?? LABELS.NO_IDENTIFIER,
+              title: CONTENT.CURRENT_TITLE ?? LABELS.NO_TITLE,
             }}
             widgets={widgets}
           />
