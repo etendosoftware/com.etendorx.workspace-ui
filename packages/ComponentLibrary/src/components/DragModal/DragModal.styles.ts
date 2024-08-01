@@ -147,7 +147,6 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     zIndex: 1000,
     borderRadius: '0',
     background: theme.palette.baselineColor.neutral[10],
-    boxShadow: '0 0 10px rgba(0,0,0,0.1)',
     border: `1px solid ${theme.palette.dynamicColor.main}`,
   } as SxProps<Theme>,
 };
