@@ -4,16 +4,16 @@ export declare global {
       ClassFactory: {
         defineClass: (
           className: string,
-          superClass: string
+          superClass: string,
         ) => {
           addProperties: (
-            properties: Etendo.WindowMetadataProperties
+            properties: Etendo.WindowMetadataProperties,
           ) => typeof window.isc.ClassFactory;
         };
       };
     };
     OB: Record<string, unknown>;
-    classes: Etendo.WindowMetadataMap;
+    Metadata: unknown;
   }
 
   export namespace Etendo {

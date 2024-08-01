@@ -5,6 +5,7 @@ import { onChange } from './helpers';
 export class Metadata {
   private static cache: Etendo.CacheStore<Etendo.WindowMetadata> = {};
   private static client = createClient(API_METADATA_URL);
+  private static CACHE_DURATION = 6e5;
 
   private static isc = {
     classes: {} as Etendo.WindowMetadataMap,
@@ -23,11 +24,10 @@ export class Metadata {
               };
             }
 
-            this.isc.classes[newClassName].properties = Object.assign(
-              {},
-              this.isc.classes[newClassName].properties,
-              properties,
-            );
+            this.isc.classes[newClassName].properties = {
+              ...this.isc.classes[newClassName].properties,
+              ...properties,
+            };
 
             return this.isc.ClassFactory;
           },
@@ -37,12 +37,10 @@ export class Metadata {
   };
 
   private static createProxy(obj: Record<string, unknown>) {
-    const createProxy = (args: typeof obj) => this.createProxy(args);
-
     return new Proxy(obj, {
       get(target, prop: string) {
         if (!(prop in target)) {
-          target[prop] = createProxy({});
+          target[prop] = Metadata.createProxy({});
         }
         return target[prop];
       },
@@ -76,20 +74,23 @@ export class Metadata {
     }),
   });
 
-  public static setup() {
-    window.OB = window.OB ?? this.OB;
-    window.isc = window.isc ?? this.isc;
+  private static setup() {
+    window.OB = window.OB || this.OB;
+    window.isc = window.isc || this.isc;
+    window.Metadata = window.Metadata || this;
   }
 
-  public static hasValidCache(windowId: Etendo.WindowId) {
+  private static hasValidCache(windowId: Etendo.WindowId) {
     if (this.cache[windowId]?.data) {
-      // TO DO: Replace hardcoded 1 hour value (3600000ms) with configurable setting
-      return Date.now() - this.cache[windowId].updatedAt < 3600000;
+      return (
+        Date.now() - this.cache[windowId].updatedAt < Metadata.CACHE_DURATION
+      );
     }
 
     return false;
   }
 
+  // TODO: Remove empty object and update with the right value
   public static standardWindow = {};
 
   public static async getWindow(
@@ -115,12 +116,20 @@ export class Metadata {
         data: this.isc.classes[`_${windowId}`],
       };
 
-
       return this.cache[windowId].data;
     } catch (error) {
       throw new Error(
         `Error fetching metadata for window ${windowId}:\n${(error as Error).message}`,
       );
     }
+  }
+
+  public static async getColumns(windowId: string) {
+    const metadata = await this.getWindow(windowId);
+
+    return metadata.properties.viewProperties.fields.map(field => ({
+      name: field.name,
+      targetEntity: field.targetEntity,
+    }));
   }
 }
