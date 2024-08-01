@@ -7,6 +7,7 @@ import {
   MenuItem,
   ListItemIcon,
   Tooltip,
+  tabsClasses,
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import { PrimaryTabsProps, TabItem } from './types';
@@ -55,6 +56,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = ({ tabs, onChange, icon }) => {
 
     return refs.current[id];
   }, []);
+
   const handleLeave = useCallback(() => setHoveredTab(null), []);
 
   const buildTabs = useCallback(
@@ -62,12 +64,17 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = ({ tabs, onChange, icon }) => {
       const isSelected = selectedTab === tab.id;
       const isHovered = hoveredTab === tab.id;
 
+      const showIcon =
+        tab.showInTab !== 'label' &&
+        tab.icon &&
+        (isSelected || tab.showInTab === 'icon');
+
       return (
         <Tab
           key={tab.id}
           value={tab.id}
           icon={
-            tab.showInTab !== 'label' && tab.icon
+            showIcon
               ? cloneElement(tab.icon as React.ReactElement, {
                   style: {
                     fill: isSelected
@@ -90,7 +97,6 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = ({ tabs, onChange, icon }) => {
     },
     [hadleMouseEnter, handleLeave, hoveredTab, selectedTab],
   );
-
   return (
     <Box style={styles.containerBox}>
       <Box style={styles.tabsContainer}>
@@ -101,7 +107,12 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = ({ tabs, onChange, icon }) => {
           scrollButtons="auto"
           TabIndicatorProps={tabIndicatorProps}
           aria-label="primary tabs"
-          sx={sx.tabs}>
+          sx={{
+            ...sx.tabs,
+            [`& .${tabsClasses.scrollButtons}`]: {
+              '&.Mui-disabled': { opacity: 0.3 },
+            },
+          }}>
           {tabs.map(buildTabs)}
         </Tabs>
       </Box>
@@ -122,7 +133,10 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = ({ tabs, onChange, icon }) => {
             <MenuItem
               key={tab.id}
               onClick={() => handleMenuItemClick(tab.id)}
-              sx={sx.menuItem}>
+              sx={() => ({
+                ...sx.menuItem,
+                ...(isSelected ? sx.selectedMenuItem : {}),
+              })}>
               <Box sx={sx.iconBox}>
                 {tab.icon &&
                   cloneElement(tab.icon as React.ReactElement, {
