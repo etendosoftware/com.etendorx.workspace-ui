@@ -10,7 +10,7 @@ export class Metadata {
     ClassFactory: {
       defineClass: (className: string, superClass: string) => {
         return {
-          addProperties: (properties: unknown[]) => {
+          addProperties: (properties: Etendo.ClassProperties) => {
             const cn = className.split('_');
             const newClassName = '_' + cn[1].toString();
 
@@ -18,11 +18,15 @@ export class Metadata {
               this.classes[newClassName] = {
                 name: className,
                 superClass: superClass,
-                properties: [],
+                properties: {} as Etendo.ClassProperties,
               };
             }
 
-            this.classes[newClassName].properties.push(properties);
+            this.classes[newClassName].properties = Object.assign(
+              {},
+              this.classes[newClassName].properties,
+              properties,
+            );
 
             return this.isc.ClassFactory;
           },
@@ -50,6 +54,16 @@ export class Metadata {
         throw err;
       },
     }),
+    PropertyStore: this.createProxy({
+      get: (...args: unknown[]) => {
+        console.log(
+          'OB.PropertyStore.get called with the following args: ',
+          args,
+        );
+
+        return args;
+      },
+    }),
   });
 
   public static setup() {
@@ -67,6 +81,8 @@ export class Metadata {
     return false;
   }
 
+  public static standardWindow = {};
+
   public static async get(windowId: Etendo.WindowId): Promise<Etendo.Klass> {
     this.setup();
 
@@ -78,7 +94,7 @@ export class Metadata {
       const response = await this.client.get(`View?viewId=_${windowId}`);
 
       // TO DO: Avoid the .replace and fix standardWindow issue
-      eval(response.data.replace('this.standardWindow', 'null '));
+      eval(response.data);
 
       this.cache[windowId] = {
         updatedAt: Date.now(),
@@ -91,5 +107,28 @@ export class Metadata {
         `Error fetching metadata for window ${windowId}:\n${error}`,
       );
     }
+  }
+
+  public static async getWindowFields(windowId: Etendo.WindowId) {
+    const data = await this.get(windowId);
+
+    return data.properties.viewProperties.fields;
+  }
+
+  public static async getWindow(windowId: Etendo.WindowId) {
+    const {
+      properties: { viewProperties, multiDocumentEnabled },
+    } = await this.get(windowId);
+
+    return {
+      title: viewProperties.tabTitle,
+      entity: viewProperties.entity,
+      isDeleteableTable: viewProperties.isDeleteableTable,
+      multiDocumentEnabled,
+      fields: viewProperties.fields.map(f => ({
+        column: f.columnName,
+        name: f.name,
+      })),
+    };
   }
 }

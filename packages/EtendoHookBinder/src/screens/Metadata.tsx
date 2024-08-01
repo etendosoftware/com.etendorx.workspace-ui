@@ -4,7 +4,7 @@ import { useMetadata } from '../hooks/useMetadata';
 
 export default function MetadataTest() {
   const [windowId, setWindowId] = useState('100');
-  const { load, loading, data, error, loaded } = useMetadata(windowId);
+  const { loading, data, error, loaded, load } = useMetadata(windowId);
 
   const handleWindowIdChange = useCallback(
     (e: React.SyntheticEvent<HTMLInputElement>) => {
@@ -34,6 +34,12 @@ export default function MetadataTest() {
       <button onClick={load} className={styles.button} disabled={loading}>
         {loading ? 'Loading...' : 'Load Window'}
       </button>
+      <textarea
+        className={styles.code}
+        value={data ? JSON.stringify(data, null, 2) : ''}
+        rows={16}
+        readOnly
+      />
     </div>
   );
 }
