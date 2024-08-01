@@ -1,8 +1,8 @@
 import { API_DATASOURCE_URL } from './constants';
-import { newClient } from './client';
+import { createClient } from './client';
 
 export class Datasource {
-  private static client = newClient(API_DATASOURCE_URL)
+  private static client = createClient(API_DATASOURCE_URL)
 
   public static async get(
     entity: Etendo.Entity,

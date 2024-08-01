@@ -1,10 +1,10 @@
 import { API_METADATA_URL } from './constants';
-import { newClient } from './client';
+import { createClient } from './client';
 import { onChange } from './helpers';
 
 export class Metadata {
   private static cache: Etendo.CacheStore<Etendo.WindowMetadata> = {};
-  private static client = newClient(API_METADATA_URL);
+  private static client = createClient(API_METADATA_URL);
 
   private static isc = {
     classes: {} as Etendo.WindowMetadataMap,
@@ -103,13 +103,18 @@ export class Metadata {
 
     try {
       const response = await this.client.get(`View?viewId=_${windowId}`);
+      const script = document.createElement('script');
 
-      eval(response.data);
+      script.type = 'text/javascript';
+      script.textContent = response.data;
+      document.head.appendChild(script);
+      document.head.removeChild(script);
 
       this.cache[windowId] = {
         updatedAt: Date.now(),
         data: this.isc.classes[`_${windowId}`],
       };
+
 
       return this.cache[windowId].data;
     } catch (error) {

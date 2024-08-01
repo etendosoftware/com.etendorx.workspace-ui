@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { TOKEN } from './constants';
 
-export function newClient(baseURL: string) {
+export function createClient(baseURL: string) {
   return axios.create({
     baseURL,
     headers: {
