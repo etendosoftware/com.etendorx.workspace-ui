@@ -1,26 +1,15 @@
 import React from 'react';
 import { Box, Grid } from '@mui/material';
 import { ContentGridProps } from '../../../../../storybook/src/stories/Components/Table/types';
-import { theme } from '../../../theme';
+import { sx } from '../styles';
 
 const ContentGrid: React.FC<ContentGridProps> = ({ widgets }) => {
   return (
-    <Box sx={{ padding: '1rem' }}>
+    <Box sx={sx.gridContainer}>
       <Grid container spacing={2}>
         {widgets.map(widget => (
           <Grid item key={widget.id} xs={widget.size === 'full' ? 12 : 6}>
-            <Box
-              sx={{
-                border: `1px solid ${theme.palette.baselineColor.neutral[20]}`,
-                borderRadius: '0.25rem',
-                height: '18.75rem',
-                minHeight: '18.75rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-              {widget.content}
-            </Box>
+            <Box sx={sx.widgetBox}>{widget.content}</Box>
           </Grid>
         ))}
       </Grid>

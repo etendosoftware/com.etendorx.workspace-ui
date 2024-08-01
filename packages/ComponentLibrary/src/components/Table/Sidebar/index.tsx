@@ -11,7 +11,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   noTitleLabel = '',
 }) => {
   return (
-    <div className={`sidebar ${isOpen ? 'open' : ''}`}>
+    <div className={`sidebar ${isOpen && 'open'}`}>
       <SidebarContent
         icon={selectedItem.icon}
         identifier={selectedItem.identifier ?? noIdentifierLabel}

@@ -2,13 +2,6 @@ import { SxProps, Theme } from '@mui/material';
 import { theme } from '../../theme';
 
 export const tableStyles: Record<string, SxProps<Theme>> = {
-  container: {
-    display: 'flex',
-    width: '100%',
-    padding: '1rem 0 1rem 0',
-    flexDirection: 'column',
-    gap: '1rem',
-  },
   topToolbar: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -21,17 +14,8 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
     justifyContent: 'flex-start',
     marginLeft: '1rem',
   },
-  tablePaper: {
-    borderRadius: '15rem',
-  },
   actionButton: {
     minWidth: 120,
-  },
-  salaryCell: {
-    backgroundColor: theme.palette.success.light,
-    borderRadius: '4px',
-    padding: '4px 8px',
-    display: 'inline-block',
   },
   tableContainer: {
     '& .MuiPaper-root': {
@@ -51,6 +35,61 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
     '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
       marginBottom: 0,
     },
+  },
+  container: {
+    display: 'flex',
+    flexGrow: 1,
+    transition: 'all 0.3s ease',
+    position: 'relative',
+    width: '100%',
+    padding: '1rem 0 1rem 0',
+    flexDirection: 'column',
+    gap: '1rem',
+  },
+  tablePaper: {
+    borderRadius: '1rem',
+    overflow: 'auto',
+    transition: 'width 0.3s ease',
+  },
+  sidebarPaper: {
+    position: 'absolute',
+    top: 0,
+    height: '50rem',
+    backgroundColor: theme.palette.baselineColor.neutral[10],
+    boxShadow: '-4px 0 10px rgba(0, 0, 0, 0.1)',
+    padding: '0.5rem',
+    transition: 'transform 0.3s ease',
+    borderRadius: '1rem',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+  },
+  tableBodyRow: {
+    cursor: 'pointer',
+  },
+  tableBody: {
+    '& tr': {
+      backgroundColor: theme.palette.background.paper,
+    },
+  },
+  tableHeadCell: {
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    borderRight: `1px solid ${theme.palette.divider}`,
+    '&:last-child': {
+      borderRight: 'none',
+    },
+    background: theme.palette.baselineColor.transparentNeutral[5],
+    fontWeight: 'bold',
+    color: theme.palette.text.primary,
+  },
+  tableBodyCell: {
+    borderRight: `1px solid ${theme.palette.divider}`,
+  },
+  expandColumn: {
+    borderRight: 'none',
+    background: theme.palette.baselineColor.transparentNeutral[5],
   },
 };
 
@@ -107,7 +146,7 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: '50%',
+    borderRadius: '1.5rem',
   },
   identifier: {
     color: theme.palette.baselineColor.transparentNeutral[70],
@@ -120,5 +159,17 @@ export const sx: { [key: string]: SxProps<Theme> } = {
   contentContainer: {
     flexGrow: 1,
     overflowY: 'auto',
+  },
+  container: {
+    gridContainer: '1rem',
+  },
+  widgetBox: {
+    border: `1px solid ${theme.palette.baselineColor.neutral[20]}`,
+    borderRadius: '0.25rem',
+    height: '18.75rem',
+    minHeight: '18.75rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 };

@@ -56,6 +56,7 @@ export interface SidebarProps {
   noIdentifierLabel?: string;
   noTitleLabel?: string;
 }
+
 export interface ToolbarButton {
   key: string;
   icon: React.ReactNode;
