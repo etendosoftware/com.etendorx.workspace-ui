@@ -1,4 +1,4 @@
-import { Meta } from '@storybook/react';
+import { Meta, StoryObj } from '@storybook/react';
 import PrimaryTabs from '../../../../../ComponentLibrary/src/components/PrimaryTab';
 import {
   defaultTabs,
@@ -7,27 +7,32 @@ import {
   defaultIcon,
 } from './mock';
 
-export default {
+const meta: Meta<typeof PrimaryTabs> = {
   title: 'Components/PrimaryTabs',
   component: PrimaryTabs,
-} as Meta;
-
-const Template = args => <PrimaryTabs {...args} />;
-
-export const Default = Template.bind({});
-Default.args = {
-  tabs: defaultTabs,
-  icon: defaultIcon,
 };
 
-export const OnlyIcons = Template.bind({});
-OnlyIcons.args = {
-  tabs: onlyIconsTabs,
-  icon: defaultIcon,
+export default meta;
+
+type Story = StoryObj<typeof PrimaryTabs>;
+
+export const Default: Story = {
+  args: {
+    tabs: defaultTabs,
+    icon: defaultIcon,
+  },
 };
 
-export const OnlyLabels = Template.bind({});
-OnlyLabels.args = {
-  tabs: onlyLabelsTabs,
-  icon: defaultIcon,
+export const OnlyIcons: Story = {
+  args: {
+    tabs: onlyIconsTabs,
+    icon: defaultIcon,
+  },
+};
+
+export const OnlyLabels: Story = {
+  args: {
+    tabs: onlyLabelsTabs,
+    icon: defaultIcon,
+  },
 };
