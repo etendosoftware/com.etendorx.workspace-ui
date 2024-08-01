@@ -1,23 +1,23 @@
-declare global {
+export declare global {
   interface Window {
     isc: {
       ClassFactory: {
         defineClass: (
           className: string,
-          superClass: string,
+          superClass: string
         ) => {
           addProperties: (
-            properties: unknown[],
+            properties: Etendo.WindowMetadataProperties
           ) => typeof window.isc.ClassFactory;
         };
       };
     };
     OB: Record<string, unknown>;
-    classes: Etendo.ClassMap;
+    classes: Etendo.WindowMetadataMap;
   }
+
   export namespace Etendo {
     type WindowId = string;
-
     type ColumnId = string;
 
     type Entity = 'Order' | 'Invoice' | 'Product' | 'OrderLine';
@@ -38,6 +38,7 @@ declare global {
       operator: string;
       value: string;
     }
+
     interface MetadataParams extends Record<string, string> {
       _windowId?: string;
       _columns?: string[];
@@ -80,10 +81,12 @@ declare global {
       refColumnName: string;
       targetEntity: string;
       gridProps: GridProps;
-      type: string;
+      type: string; // Consider specifying possible values if known
     }
 
-    interface ViewStandardProperties extends Record<string, unknown> {}
+    interface ViewStandardProperties extends Record<string, unknown> {
+      // Define known properties if possible
+    }
 
     interface WindowMetadataProperties {
       windowId: string;
@@ -103,7 +106,7 @@ declare global {
         standardProperties: ViewStandardProperties;
         showParentButtons: boolean;
         buttonsHaveSessionLogic: boolean;
-        initialPropertyToColumns: [];
+        initialPropertyToColumns: unknown[]; // Define if known
       };
     }
 
@@ -116,5 +119,3 @@ declare global {
     interface WindowMetadataMap extends Record<string, WindowMetadata> {}
   }
 }
-
-export {};

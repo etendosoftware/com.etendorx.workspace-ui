@@ -5,9 +5,9 @@ import { onChange } from './helpers';
 export class Metadata {
   private static cache: Etendo.CacheStore<Etendo.WindowMetadata> = {};
   private static client = newClient(API_METADATA_URL);
-  private static classes: Etendo.WindowMetadataMap = {};
 
   private static isc = {
+    classes: {} as Etendo.WindowMetadataMap,
     ClassFactory: {
       defineClass: (className: string, superClass: string) => {
         return {
@@ -15,17 +15,17 @@ export class Metadata {
             const cn = className.split('_');
             const newClassName = '_' + cn[1].toString();
 
-            if (!this.classes[newClassName]) {
-              this.classes[newClassName] = {
+            if (!this.isc.classes[newClassName]) {
+              this.isc.classes[newClassName] = {
                 name: className,
                 superClass: superClass,
                 properties: {} as Etendo.WindowMetadataProperties,
               };
             }
 
-            this.classes[newClassName].properties = Object.assign(
+            this.isc.classes[newClassName].properties = Object.assign(
               {},
-              this.classes[newClassName].properties,
+              this.isc.classes[newClassName].properties,
               properties,
             );
 
@@ -79,12 +79,11 @@ export class Metadata {
   public static setup() {
     window.OB = window.OB ?? this.OB;
     window.isc = window.isc ?? this.isc;
-    window.classes = window.classes ?? this.classes;
   }
 
   public static hasValidCache(windowId: Etendo.WindowId) {
     if (this.cache[windowId]?.data) {
-      // TO DO: Replace hardcoded 1 hour value (360000ms) with configurable setting
+      // TO DO: Replace hardcoded 1 hour value (3600000ms) with configurable setting
       return Date.now() - this.cache[windowId].updatedAt < 3600000;
     }
 
@@ -93,7 +92,7 @@ export class Metadata {
 
   public static standardWindow = {};
 
-  public static async get(
+  public static async getWindow(
     windowId: Etendo.WindowId,
   ): Promise<Etendo.WindowMetadata> {
     this.setup();
@@ -109,34 +108,14 @@ export class Metadata {
 
       this.cache[windowId] = {
         updatedAt: Date.now(),
-        data: window.classes[`_${windowId}`],
+        data: this.isc.classes[`_${windowId}`],
       };
 
       return this.cache[windowId].data;
     } catch (error) {
       throw new Error(
-        `Error fetching metadata for window ${windowId}:\n${error}`,
+        `Error fetching metadata for window ${windowId}:\n${(error as Error).message}`,
       );
     }
-  }
-
-  public static async getWindowFields(windowId: Etendo.WindowId) {
-    const data = await this.get(windowId);
-
-    return data.properties.viewProperties.fields;
-  }
-
-  public static async getWindow(windowId: Etendo.WindowId) {
-    const {
-      properties: { viewProperties, multiDocumentEnabled },
-    } = await this.get(windowId);
-
-    return {
-      title: viewProperties.tabTitle,
-      entity: viewProperties.entity,
-      isDeleteableTable: viewProperties.isDeleteableTable,
-      multiDocumentEnabled,
-      fields: viewProperties.fields,
-    };
   }
 }
