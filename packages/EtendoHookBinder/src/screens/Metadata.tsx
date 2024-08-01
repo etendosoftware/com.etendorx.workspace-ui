@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import styles from './styles.module.css';
 import { useMetadata } from '../hooks/useMetadata';
 
 export default function MetadataTest() {
   const [windowId, setWindowId] = useState('100');
-  const { loading, data, error, loaded, load } = useMetadata(windowId);
+  const { loading, data, error, load } = useMetadata(windowId);
 
   const handleWindowIdChange = useCallback(
     (e: React.SyntheticEvent<HTMLInputElement>) => {
@@ -12,12 +12,6 @@ export default function MetadataTest() {
     },
     [],
   );
-
-  useEffect(() => {
-    if (loaded) {
-      console.debug(data);
-    }
-  }, [data, loaded]);
 
   return (
     <div className={styles.container}>

@@ -51,8 +51,6 @@ declare global {
       _operationType?: 'fetch' | 'add' | 'update' | 'remove';
     }
 
-    interface Object extends Record<string, unknown> {}
-
     interface GridProps {
       sort: number;
       autoExpand: boolean;
@@ -87,7 +85,7 @@ declare global {
 
     interface ViewStandardProperties extends Record<string, unknown> {}
 
-    interface ClassProperties {
+    interface WindowMetadataProperties {
       windowId: string;
       multiDocumentEnabled: boolean;
       viewProperties: {
@@ -109,15 +107,13 @@ declare global {
       };
     }
 
-    interface Klass {
+    interface WindowMetadata {
       name: string;
-      superClass: string;
-      properties: ClassProperties;
+      superClass?: string;
+      properties: WindowMetadataProperties;
     }
 
-    interface ClassMap extends Record<string, Klass> {}
-
-    interface WindowMetadata extends Record<string, unknown> {}
+    interface WindowMetadataMap extends Record<string, WindowMetadata> {}
   }
 }
 

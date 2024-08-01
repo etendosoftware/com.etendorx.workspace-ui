@@ -4,7 +4,7 @@ import DatasourceTest from './screens/Datasource';
 import './App.css';
 
 function App() {
-  const [tab, setTab] = useState<'metadata' | 'datasource'>('datasource');
+  const [tab, setTab] = useState<'metadata' | 'datasource'>('metadata');
 
   const handle = useMemo(() => {
     return {
@@ -30,3 +30,4 @@ function App() {
 }
 
 export default App;
+ 

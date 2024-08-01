@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Metadata } from '../api/metadata';
 
+type Data = Awaited<ReturnType<typeof Metadata.getWindow>>;
+
 export function useMetadata(
   windowId: string,
   { autoLoad }: { autoLoad?: boolean } = { autoLoad: false },
 ) {
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<Etendo.WindowMetadata>();
+  const [data, setData] = useState<Data>();
   const [error, setError] = useState<Error>();
   const [loaded, setLoaded] = useState(false);
 

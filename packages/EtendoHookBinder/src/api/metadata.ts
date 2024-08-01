@@ -1,16 +1,17 @@
 import { API_METADATA_URL } from './constants';
 import { newClient } from './client';
+import { onChange } from './helpers';
 
 export class Metadata {
-  private static cache: Etendo.CacheStore<Etendo.Klass> = {};
+  private static cache: Etendo.CacheStore<Etendo.WindowMetadata> = {};
   private static client = newClient(API_METADATA_URL);
-  private static classes: Etendo.ClassMap = {};
+  private static classes: Etendo.WindowMetadataMap = {};
 
   private static isc = {
     ClassFactory: {
       defineClass: (className: string, superClass: string) => {
         return {
-          addProperties: (properties: Etendo.ClassProperties) => {
+          addProperties: (properties: Etendo.WindowMetadataProperties) => {
             const cn = className.split('_');
             const newClassName = '_' + cn[1].toString();
 
@@ -18,7 +19,7 @@ export class Metadata {
               this.classes[newClassName] = {
                 name: className,
                 superClass: superClass,
-                properties: {} as Etendo.ClassProperties,
+                properties: {} as Etendo.WindowMetadataProperties,
               };
             }
 
@@ -64,6 +65,15 @@ export class Metadata {
         return args;
       },
     }),
+    OnChange: this.createProxy({
+      organizationCurrency: onChange('organizationCurrency'),
+      processDefinitionUIPattern: onChange('processDefinitionUIPattern'),
+      agingProcessDefinitionOverdue: onChange('agingProcessDefinitionOverdue'),
+      colorSelection: onChange('colorSelection'),
+      agingProcessDefinitionOrganization: onChange(
+        'agingProcessDefinitionOrganization',
+      ),
+    }),
   });
 
   public static setup() {
@@ -83,7 +93,9 @@ export class Metadata {
 
   public static standardWindow = {};
 
-  public static async get(windowId: Etendo.WindowId): Promise<Etendo.Klass> {
+  public static async get(
+    windowId: Etendo.WindowId,
+  ): Promise<Etendo.WindowMetadata> {
     this.setup();
 
     if (this.hasValidCache(windowId)) {
@@ -93,7 +105,6 @@ export class Metadata {
     try {
       const response = await this.client.get(`View?viewId=_${windowId}`);
 
-      // TO DO: Avoid the .replace and fix standardWindow issue
       eval(response.data);
 
       this.cache[windowId] = {
@@ -125,10 +136,7 @@ export class Metadata {
       entity: viewProperties.entity,
       isDeleteableTable: viewProperties.isDeleteableTable,
       multiDocumentEnabled,
-      fields: viewProperties.fields.map(f => ({
-        column: f.columnName,
-        name: f.name,
-      })),
+      fields: viewProperties.fields,
     };
   }
 }
