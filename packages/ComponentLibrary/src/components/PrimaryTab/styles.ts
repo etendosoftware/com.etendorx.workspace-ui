@@ -43,7 +43,6 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     },
     '&.Mui-selected': {
       background: theme.palette.baselineColor.neutral[0],
-      fontWeight: 'bold',
       color: theme.palette.baselineColor.neutral[90],
     },
     '&:hover:not(.Mui-selected)': {
@@ -73,6 +72,9 @@ export const sx: { [key: string]: SxProps<Theme> } = {
       background: '',
       color: theme.palette.baselineColor.neutral[80],
     },
+  },
+  selectedMenuItem: {
+    backgroundColor: theme.palette.dynamicColor.contrastText,
   },
   iconBox: {
     display: 'flex',

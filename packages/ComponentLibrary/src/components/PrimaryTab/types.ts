@@ -1,5 +1,3 @@
-import { ReactNode } from 'react';
-
 export interface TabItem {
   id: string;
   icon?: React.ReactNode;
@@ -10,7 +8,7 @@ export interface TabItem {
 }
 
 export interface PrimaryTabsProps {
-  icon: string | ReactNode;
+  icon: string | React.ReactNode;
   tabs: TabItem[];
   onChange?: (tabId: string) => void;
 }
