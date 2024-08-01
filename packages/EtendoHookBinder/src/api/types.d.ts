@@ -60,6 +60,8 @@ declare global {
     }
 
     interface ClassMap extends Record<string, Klass> {}
+
+    interface WindowMetadata extends Record<string, unknown> {}
   }
 }
 

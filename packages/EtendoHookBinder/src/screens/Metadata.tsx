@@ -1,10 +1,10 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import styles from './styles.module.css';
 import { useMetadata } from '../hooks/useMetadata';
 
 export default function MetadataTest() {
   const [windowId, setWindowId] = useState('100');
-  const { load, loading, data, error } = useMetadata(windowId);
+  const { load, loading, data, error, loaded } = useMetadata(windowId);
 
   const handleWindowIdChange = useCallback(
     (e: React.SyntheticEvent<HTMLInputElement>) => {
@@ -13,19 +13,11 @@ export default function MetadataTest() {
     [],
   );
 
-  const value = useMemo(() => {
-    if (typeof data === 'undefined') {
-      return '';
+  useEffect(() => {
+    if (loaded) {
+      console.debug(data);
     }
-
-    const replacer = (key: string, value: unknown) => {
-      if (key === 'lucho') return undefined;
-
-      return value;
-    };
-
-    return JSON.stringify(data, replacer, 2);
-  }, [data]);
+  }, [data, loaded]);
 
   return (
     <div className={styles.container}>
@@ -42,7 +34,6 @@ export default function MetadataTest() {
       <button onClick={load} className={styles.button} disabled={loading}>
         {loading ? 'Loading...' : 'Load Window'}
       </button>
-      <textarea className={styles.code} value={value} rows={16} readOnly />
     </div>
   );
 }
