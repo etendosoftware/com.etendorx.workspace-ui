@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react';
 import styles from './styles.module.css';
-import { useMetadata } from '../hooks/useMetadata';
+import { useWindow } from '../hooks/useWindow';
 
 export default function MetadataTest() {
   const [windowId, setWindowId] = useState('100');
-  const { loading, data, error, load } = useMetadata(windowId);
+  const { loading, data, error, load } = useWindow(windowId);
 
   const handleWindowIdChange = useCallback(
     (e: React.SyntheticEvent<HTMLInputElement>) => {

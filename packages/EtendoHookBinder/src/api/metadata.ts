@@ -3,7 +3,6 @@ import { Client } from './client';
 import { onChange } from './helpers';
 
 export class Metadata {
-  private static cache: Etendo.CacheStore<Etendo.WindowMetadata> = {};
   private static client = new Client(API_METADATA_URL);
   private static CACHE_DURATION = API_DEFAULT_CACHE_DURATION;
 
@@ -78,17 +77,6 @@ export class Metadata {
     window.OB = window.OB || Metadata.OB;
     window.isc = window.isc || Metadata.isc;
     window.Metadata = window.Metadata || Metadata;
-  }
-
-  private static hasValidCache(windowId: Etendo.WindowId) {
-    if (Metadata.cache[windowId]?.data) {
-      return (
-        Date.now() - Metadata.cache[windowId].updatedAt <
-        Metadata.CACHE_DURATION
-      );
-    }
-
-    return false;
   }
 
   // TODO: Remove empty object and update with the right value

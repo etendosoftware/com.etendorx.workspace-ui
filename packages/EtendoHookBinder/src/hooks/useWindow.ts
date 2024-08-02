@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Metadata } from '../api/metadata';
 
-export function useMetadata(
+export function useWindow(
   windowId: string,
   { autoLoad }: { autoLoad?: boolean } = { autoLoad: false },
 ) {
