@@ -1,15 +1,11 @@
-import { PaletteColor } from '@mui/material/styles';
+import '@mui/material/styles';
 
 declare module '@mui/material/styles' {
   interface Palette {
     dynamicColor: PaletteColor;
     baselineColor: {
-      neutral: {
-        [key: string]: string;
-      };
-      transparentNeutral: {
-        [key: string]: string;
-      };
+      neutral: { [key: number]: string };
+      transparentNeutral: { [key: number]: string };
       etendoPrimary: PaletteColor;
     };
     specificColor: {
@@ -19,15 +15,12 @@ declare module '@mui/material/styles' {
       draft: PaletteColor;
     };
   }
+
   interface PaletteOptions {
     dynamicColor?: PaletteColorOptions;
     baselineColor?: {
-      neutral?: {
-        [key: string]: string;
-      };
-      transparentNeutral?: {
-        [key: string]: string;
-      };
+      neutral?: { [key: number]: string };
+      transparentNeutral?: { [key: number]: string };
       etendoPrimary?: PaletteColorOptions;
     };
     specificColor?: {
@@ -37,18 +30,4 @@ declare module '@mui/material/styles' {
       draft?: PaletteColorOptions;
     };
   }
-}
-
-interface PaletteColorOptions {
-  main: string;
-  dark?: string;
-  light?: string;
-  contrastText?: string;
-}
-
-interface PaletteColor {
-  main: string;
-  dark?: string;
-  light?: string;
-  contrastText?: string;
 }

@@ -1,5 +1,5 @@
 import { CSSProperties } from 'react';
-import { SxProps, Theme, styled } from '@mui/material';
+import { SxProps, Theme } from '@mui/material';
 import { theme } from '../../theme';
 
 export const styles: { [key: string]: CSSProperties } = {
@@ -84,24 +84,3 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     },
   },
 };
-
-export const StyledListItem = styled('div')(() => ({
-  width: '27.25rem',
-  borderRadius: '0.75rem',
-  margin: '-0.25rem',
-  padding: '0.75rem 1rem',
-  display: 'flex',
-  position: 'relative',
-  backgroundColor: theme.palette.baselineColor.neutral[0],
-  border: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
-  '&:hover': {
-    backgroundColor: theme.palette.baselineColor.neutral[10],
-    outline: `2px solid ${theme.palette.dynamicColor.main}`,
-    '& .closeIcon': {
-      visibility: 'visible',
-    },
-    '& > .textContainer': {
-      paddingRight: '1.5rem',
-    },
-  },
-}));

@@ -15,16 +15,23 @@ import './style.css';
 import { theme } from '../../theme';
 import IconButton from '../IconButton';
 
-const IconRenderer = ({ icon }: { icon: string | React.ReactNode }) => {
+const IconRenderer = ({
+  icon,
+}: {
+  icon: string | React.ReactNode;
+}): JSX.Element => {
   if (typeof icon === 'string') {
     return <img src={icon} alt="icon" />;
   }
-  return icon;
+  if (React.isValidElement(icon)) {
+    return icon;
+  }
+  return <span>Invalid icon</span>;
 };
 
 const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
   icon,
-  tooltipButtonProfile,
+  tooltipButtonProfile = '',
   title,
   linkTitle,
   sections = [],

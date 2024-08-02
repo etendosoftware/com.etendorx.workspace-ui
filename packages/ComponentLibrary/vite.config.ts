@@ -13,11 +13,19 @@ export default defineConfig({
     }),
   ],
   optimizeDeps: {
-    include: ['@mui/material'],
+    include: [
+      '@mui/material',
+      '@mui/material/styles',
+      '@emotion/react',
+      '@emotion/styled',
+    ],
   },
   build: {
     rollupOptions: {
       external: ['@mui/material'],
     },
+  },
+  esbuild: {
+    logOverride: { 'this-is-undefined-in-esm': 'silent' },
   },
 });

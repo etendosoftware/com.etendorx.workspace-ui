@@ -1,15 +1,12 @@
-import React from 'react';
-import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
-import Button from '@mui/material/Button';
-import Tooltip from '@mui/material/Tooltip';
+import { FC } from 'react';
+import { Grid, Tooltip, Button, Box } from '@mui/material';
 
 export default {
   title: 'Components/Tooltip',
   component: Tooltip,
 };
 
-const TooltipDemo: React.FC = () => {
+const TooltipDemo: FC = () => {
   return (
     <Box sx={{ margin: '10rem 35rem', width: 500 }}>
       <Grid container justifyContent="center">

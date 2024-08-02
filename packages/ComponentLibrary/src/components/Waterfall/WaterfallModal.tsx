@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Box, Button, List, Menu, MenuItem } from '@mui/material';
+import { Box, Button, List, Menu, MenuItem, styled } from '@mui/material';
 import DragModalContent from '../DragModal/DragModalContent';
 import { Person } from '../DragModal/DragModal.types';
 import ModalDivider from '../ModalDivider';
-import { FadeWrapper, menuSyle, styles, sx } from './WaterfallModal.styles';
+import { menuSyle, styles, sx } from './WaterfallModal.styles';
 import NavigateNext from '../../assets/icons/chevron-right.svg';
 import Edit from '../../assets/icons/edit.svg';
 import { WaterfallModalProps } from './WaterfallModal.types';
@@ -21,6 +21,14 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
   tooltipWaterfallButton,
   icon,
 }) => {
+  const FadeWrapper = styled('div')({
+    transition: 'opacity 0.2s ease-in-out',
+    opacity: 1,
+    '&.fade-out': {
+      opacity: 0,
+    },
+  });
+
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [showDragModal, setShowDragModal] = useState(false);
   const [fade, setFade] = useState(false);

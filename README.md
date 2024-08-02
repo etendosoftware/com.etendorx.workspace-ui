@@ -32,18 +32,27 @@ brew install pnpm
 pnpm install
 ```
 
-### 3a- Production Mode
+### 3- Production Mode
 
 install in a EtendoRX environment:
 
 ```bash
- pnpm --filter @workspaceui/mainui build
+ pnpm build:all
 ```
 
 run UI service
 
 ```bash
  ./gradlew :com.etendorx.workspace-ui:bootRun
+```
+
+### 3a- Production Mode
+
+If have is an old clone of the repository is recommended to do
+
+```bash
+ pnpm clear
+ pnpm build:all
 ```
 
 ### 3b- Run the main repository
@@ -56,6 +65,26 @@ or navigate to the package folder and run:
 
 ```bash
 pnpm dev
+```
+
+## Storybook dev and build correctly
+
+**Note:** This use both pnpm and yarn, so first of all we'll be working inside ./packages/storybook
+
+```bash
+  rm -rf node_modules
+  rm -rf storybook-static
+  yarn cache clean
+  yarn install
+  yarn build
+  pnpm install
+  yarn build
+```
+
+We can now run dev enviroment and build correctly
+
+```bash
+  yarn storybook
 ```
 
 ## Add a new package to the workspace (from scratch)

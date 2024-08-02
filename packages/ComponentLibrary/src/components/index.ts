@@ -4,18 +4,17 @@ import {
   TextField as TextFieldMUI,
   Box as BoxMUI,
 } from './MUI';
-import DataGridCustom from './DataGrid';
-import TabCustom from './Tab';
 import TableCustom from './Table';
-import TableV2Custom from './TableV2';
 import ModalCustom from './Modal';
 import ApplyHOC from '../utils/applyHOC';
 import TextInputMUI from './Input/TextInput/TextInputAutocomplete';
-import SearchInputWithVoiceMUI from './Input/TextInput/TextInputAutocomplete/SearchInputWithVoice';
+import SearchInputWithVoiceMUI, {
+  SearchInputWithVoiceProps,
+} from './Input/TextInput/TextInputAutocomplete/SearchInputWithVoice';
 import TextInputBaseMUI from './Input/TextInput/TextInputBase';
 import InputPasswordMUI from './Input/TextInput/TextInputBase/InputPassword';
 import ToggleChipMUI from './Toggle/ToggleChip';
-import Nav from './Nav/Nav';
+import Nav, { NavProps } from './Nav/Nav';
 import ProfileModal from './ProfileModal/ProfileModal';
 import WaterfallModal from './Waterfall/WaterfallModal';
 import ConfigurationModalCustom from './ConfigurationModal';
@@ -26,23 +25,27 @@ import TagMUI from './Tag';
 import SecondaryTabsMUI from './SecondaryTabs';
 import NotificationItemStates from './NotificationItemAllStates';
 import DrawerMUI from './Drawer';
+import IButton from './IconButton';
+import { BoxProps } from '@mui/material';
+
+export * from '../theme';
 
 // ApplyHOC is a higher order component that applies the theme to the component
+
 const Button = ApplyHOC(ButtonMUI);
 const Grid = ApplyHOC(GridMUI);
-const Box = ApplyHOC(BoxMUI);
+const Box = ApplyHOC<BoxProps>(BoxMUI);
 const TextField = ApplyHOC(TextFieldMUI);
-const DataGrid = ApplyHOC(DataGridCustom);
 const Modal = ApplyHOC(ModalCustom);
 const Table = ApplyHOC(TableCustom);
-const Tab = ApplyHOC(TabCustom);
-const TableV2 = ApplyHOC(TableV2Custom);
 const TextInput = ApplyHOC(TextInputMUI);
 const TextInputBase = ApplyHOC(TextInputBaseMUI);
 const InputPassword = ApplyHOC(InputPasswordMUI);
-const SearchInputWithVoice = ApplyHOC(SearchInputWithVoiceMUI);
+const SearchInputWithVoice = ApplyHOC<SearchInputWithVoiceProps>(
+  SearchInputWithVoiceMUI,
+);
 const ToggleChip = ApplyHOC(ToggleChipMUI);
-const Navbar = ApplyHOC(Nav);
+const Navbar = ApplyHOC<NavProps>(Nav);
 const Profile = ApplyHOC(ProfileModal);
 const Waterfall = ApplyHOC(WaterfallModal);
 const ConfigurationModal = ApplyHOC(ConfigurationModalCustom);
@@ -53,16 +56,14 @@ const Tag = ApplyHOC(TagMUI);
 const SecondaryTabs = ApplyHOC(SecondaryTabsMUI);
 const NotificationStates = ApplyHOC(NotificationItemStates);
 const Drawer = ApplyHOC(DrawerMUI);
+const IconButton = ApplyHOC(IButton);
 
 export {
   Button,
   Grid,
   Box,
   TextField,
-  DataGrid,
-  Tab,
   Table,
-  TableV2,
   Modal,
   TextInput,
   TextInputBase,
@@ -80,4 +81,5 @@ export {
   SecondaryTabs,
   NotificationStates,
   Drawer,
+  IconButton,
 };

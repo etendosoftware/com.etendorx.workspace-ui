@@ -1,11 +1,16 @@
 {
-  "name": "storybook",
+  "name": "@workspaceui/storybook",
   "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc && vite build",
     "serve": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "rm -rf storybook-static && storybook build",
@@ -19,7 +24,9 @@
     "@mui/icons-material": "^5.15.19",
     "@mui/material": "^5.15.19",
     "react-markdown": "^9.0.1",
-    "vite-plugin-svgr": "^4.2.0"
+    "vite-plugin-svgr": "^4.2.0",
+    "@mui/x-date-pickers": "^7.1.1",
+    "material-react-table": "^2.12.1"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^1.5.0",

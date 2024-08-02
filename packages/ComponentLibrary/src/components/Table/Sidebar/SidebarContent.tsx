@@ -1,10 +1,10 @@
-import React from 'react';
+import { FC } from 'react';
 import { Box, Typography } from '@mui/material';
 import { SidebarContentProps } from '../../../../../storybook/src/stories/Components/Table/types';
 import ContentGrid from './WidgetContent';
 import { sx } from '../styles';
 
-export const SidebarContent: React.FC<SidebarContentProps> = ({
+export const SidebarContent: FC<SidebarContentProps> = ({
   icon,
   identifier,
   title,

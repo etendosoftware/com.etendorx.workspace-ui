@@ -2,7 +2,7 @@ import React, { ReactNode, useState } from 'react';
 import styles from './Nav.styles';
 import RightButtons from './RigthComponents/RightButtons';
 import SearchInputWithVoice from '../Input/TextInput/TextInputAutocomplete/SearchInputWithVoice';
-interface NavProps {
+export interface NavProps {
   children?: ReactNode;
 }
 

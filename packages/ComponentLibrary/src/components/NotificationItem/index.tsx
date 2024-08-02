@@ -1,9 +1,15 @@
 import React from 'react';
-import { ListItem, Typography, IconButton, Button } from '@mui/material';
+import {
+  ListItem,
+  Typography,
+  IconButton,
+  Button,
+  styled,
+} from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import { NotificationItemProps } from './types';
 import Tag from '../Tag';
-import { styles, StyledListItem } from './styles';
+import { styles } from './styles';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 import CloseIcon from '../../assets/icons/x.svg';
 import { theme } from '../../theme';
@@ -16,6 +22,27 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   icon: IconComponent,
   ctaButtons,
 }) => {
+  const StyledListItem = styled('div')(() => ({
+    width: '27.25rem',
+    borderRadius: '0.75rem',
+    margin: '-0.25rem',
+    padding: '0.75rem 1rem',
+    display: 'flex',
+    position: 'relative',
+    backgroundColor: theme.palette.baselineColor.neutral[0],
+    border: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
+    '&:hover': {
+      backgroundColor: theme.palette.baselineColor.neutral[10],
+      outline: `2px solid ${theme.palette.dynamicColor.main}`,
+      '& .closeIcon': {
+        visibility: 'visible',
+      },
+      '& > .textContainer': {
+        paddingRight: '1.5rem',
+      },
+    },
+  }));
+
   const markdownComponents = {
     a: ({ ...props }) => <a style={styles.anchorStyles} {...props} />,
     p: ({ ...props }) => <div {...props} />,
