@@ -1,7 +1,9 @@
-import Grid from '@mui/material/Grid';
+import { Grid } from '@mui/material';
 import NotificationButton from '../../../../../ComponentLibrary/src/components/NotificationsButton';
+import { NotificationsOutlined } from '@mui/icons-material';
+import { ExtendedNotificationButtonProps } from '../../../../../ComponentLibrary/src/components/NotificationsButton/types';
 
-export default {
+const NotificationButtonDef = {
   title: 'Components/NotificationButton',
   component: NotificationButton,
   argTypes: {
@@ -9,14 +11,17 @@ export default {
   },
 };
 
-// Mock de notificaciones extendido
-const generateMockNotifications = count => {
-  return Array.from({ length: count }, (_, index) => ({
-    id: `${index + 1}`,
-  }));
-};
+export default NotificationButtonDef;
 
-const Template = args => (
+const generateMockNotifications = (count: number) =>
+  Array.from({ length: count }, (_, index) => ({
+    id: `${index + 1}`,
+    description: `${index + 1} notification`,
+    date: new Date().toLocaleString(),
+    icon: NotificationsOutlined,
+  }));
+
+const Template = (args: ExtendedNotificationButtonProps) => (
   <Grid container spacing={6}>
     <Grid item xs={1}>
       <NotificationButton
@@ -43,6 +48,7 @@ const Template = args => (
 );
 
 export const NotificationButtonDefault = Template.bind({});
+// @ts-expect-error - Required by storybook
 NotificationButtonDefault.args = {
   tooltipTitle: 'Notificaciones',
 };
