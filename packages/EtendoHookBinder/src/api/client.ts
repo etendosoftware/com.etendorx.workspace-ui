@@ -56,10 +56,6 @@ export class Client {
         this.setContentType(options);
       }
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
       const data = await (this.isJson(response)
         ? response.json()
         : response.text());
@@ -69,7 +65,12 @@ export class Client {
         data,
       };
     } catch (error) {
-      console.error('Request failed:', error);
+      console.error('API client request failed', {
+        url,
+        options,
+        error: (error as Error).message,
+      });
+
       throw error;
     }
   }

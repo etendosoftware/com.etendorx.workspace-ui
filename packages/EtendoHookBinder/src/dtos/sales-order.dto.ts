@@ -1,5 +1,3 @@
-import { IndecentField, Models } from "../Models";
-
 export class SalesOrderColumnsDTO {
 
   public columnName: string;

@@ -1,11 +1,11 @@
-import { API_METADATA_URL } from './constants';
+import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL } from './constants';
 import { Client } from './client';
 import { onChange } from './helpers';
 
 export class Metadata {
   private static cache: Etendo.CacheStore<Etendo.WindowMetadata> = {};
   private static client = new Client(API_METADATA_URL);
-  private static CACHE_DURATION = 6e5;
+  private static CACHE_DURATION = API_DEFAULT_CACHE_DURATION;
 
   private static isc = {
     classes: {} as Etendo.WindowMetadataMap,
@@ -16,20 +16,20 @@ export class Metadata {
             const cn = className.split('_');
             const newClassName = '_' + cn[1].toString();
 
-            if (!this.isc.classes[newClassName]) {
-              this.isc.classes[newClassName] = {
+            if (!Metadata.isc.classes[newClassName]) {
+              Metadata.isc.classes[newClassName] = {
                 name: className,
                 superClass: superClass,
                 properties: {} as Etendo.WindowMetadataProperties,
               };
             }
 
-            this.isc.classes[newClassName].properties = {
-              ...this.isc.classes[newClassName].properties,
+            Metadata.isc.classes[newClassName].properties = {
+              ...Metadata.isc.classes[newClassName].properties,
               ...properties,
             };
 
-            return this.isc.ClassFactory;
+            return Metadata.isc.ClassFactory;
           },
         };
       },
@@ -47,13 +47,13 @@ export class Metadata {
     });
   }
 
-  private static OB = this.createProxy({
-    KernelUtilities: this.createProxy({
+  private static OB = Metadata.createProxy({
+    KernelUtilities: Metadata.createProxy({
       handleSystemException: (err: unknown) => {
         throw err;
       },
     }),
-    PropertyStore: this.createProxy({
+    PropertyStore: Metadata.createProxy({
       get: (...args: unknown[]) => {
         console.log(
           'OB.PropertyStore.get called with the following args: ',
@@ -63,7 +63,7 @@ export class Metadata {
         return args;
       },
     }),
-    OnChange: this.createProxy({
+    OnChange: Metadata.createProxy({
       organizationCurrency: onChange('organizationCurrency'),
       processDefinitionUIPattern: onChange('processDefinitionUIPattern'),
       agingProcessDefinitionOverdue: onChange('agingProcessDefinitionOverdue'),
@@ -75,15 +75,16 @@ export class Metadata {
   });
 
   private static setup() {
-    window.OB = window.OB || this.OB;
-    window.isc = window.isc || this.isc;
-    window.Metadata = window.Metadata || this;
+    window.OB = window.OB || Metadata.OB;
+    window.isc = window.isc || Metadata.isc;
+    window.Metadata = window.Metadata || Metadata;
   }
 
   private static hasValidCache(windowId: Etendo.WindowId) {
-    if (this.cache[windowId]?.data) {
+    if (Metadata.cache[windowId]?.data) {
       return (
-        Date.now() - this.cache[windowId].updatedAt < Metadata.CACHE_DURATION
+        Date.now() - Metadata.cache[windowId].updatedAt <
+        Metadata.CACHE_DURATION
       );
     }
 
@@ -96,14 +97,14 @@ export class Metadata {
   public static async getWindow(
     windowId: Etendo.WindowId,
   ): Promise<Etendo.WindowMetadata> {
-    this.setup();
+    Metadata.setup();
 
-    if (this.hasValidCache(windowId)) {
-      return this.cache[windowId].data;
+    if (Metadata.hasValidCache(windowId)) {
+      return Metadata.cache[windowId].data;
     }
 
     try {
-      const response = await this.client.get(`View?viewId=_${windowId}`);
+      const response = await Metadata.client.get(`View?viewId=_${windowId}`);
       const script = document.createElement('script');
 
       script.type = 'text/javascript';
@@ -111,12 +112,12 @@ export class Metadata {
       document.head.appendChild(script);
       document.head.removeChild(script);
 
-      this.cache[windowId] = {
+      Metadata.cache[windowId] = {
         updatedAt: Date.now(),
-        data: this.isc.classes[`_${windowId}`],
+        data: Metadata.isc.classes[`_${windowId}`],
       };
 
-      return this.cache[windowId].data;
+      return Metadata.cache[windowId].data;
     } catch (error) {
       throw new Error(
         `Error fetching metadata for window ${windowId}:\n${(error as Error).message}`,
@@ -125,11 +126,8 @@ export class Metadata {
   }
 
   public static async getColumns(windowId: string) {
-    const metadata = await this.getWindow(windowId);
+    const metadata = await Metadata.getWindow(windowId);
 
-    return metadata.properties.viewProperties.fields.map(field => ({
-      name: field.name,
-      targetEntity: field.targetEntity,
-    }));
+    return metadata.properties.viewProperties.fields;
   }
 }

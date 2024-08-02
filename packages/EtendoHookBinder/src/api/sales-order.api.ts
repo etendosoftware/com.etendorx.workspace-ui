@@ -1,4 +1,3 @@
-import { Models } from '../Models';
 import { Client } from './client';
 import { API_BASE_URL } from './constants';
 
@@ -9,7 +8,10 @@ export const pageMetadata = async (): Promise<Models> => {
 };
 
 export const dataSet = (page: number, size: number): Promise<unknown> => {
-  return axiosPrivate.post('/etendo/org.openbravo.service.datasource/Order', {
-    body: JSON.stringify({ page, size }),
-  });
+  return axiosPrivate.post(
+    '/etendo/org.openbravo.service.datasource/Order',
+    JSON.stringify({
+      params: { page, size },
+    }),
+  );
 };

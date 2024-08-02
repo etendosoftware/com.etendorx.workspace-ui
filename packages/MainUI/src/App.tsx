@@ -1,24 +1,33 @@
 import { useEffect } from 'react';
+import MetadataProvider from '@workspaceui/etendohookbinder/src/contexts/metadata';
+import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
 import Home from './screens/Home';
-import { columsPageMetadata } from '@workspaceui/etendohookbinder/src/services/sales-order.service.ts';
-import { pageMetadata } from '@workspaceui/etendohookbinder/src/api/sales-order.api';
 
 function App() {
-  //Example for DEMO: The importance to use the DTOs insted of the raw data
+  const { getWindow, getColumns } = useMetadataContext();
+
   useEffect(() => {
-    pageMetadata().then(res => {
-      console.log('pageMetadata:', res);
+    getWindow('100').then(w => {
+      console.debug('Window Metadata for Window ID 100');
+      console.debug(w);
     });
-    columsPageMetadata().then(res => {
-      console.log('columsPageMetadata:', res);
+    getColumns('100').then(cols => {
+      console.debug('Window Columns for Window ID 100');
+      console.debug(cols);
     });
-  }, []);
+  }, [getColumns, getWindow]);
 
   return (
-    <>
+    <MetadataProvider>
       <Home />
-    </>
+    </MetadataProvider>
   );
 }
 
-export default App;
+export default function Main() {
+  return (
+    <MetadataProvider>
+      <App />
+    </MetadataProvider>
+  );
+}
