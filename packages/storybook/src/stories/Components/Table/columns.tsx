@@ -5,7 +5,7 @@ import FolderIcon from '../../../../../ComponentLibrary/src/assets/icons/folder-
 import FolderOpenIcon from '../../../../../ComponentLibrary/src/assets/icons/folder-plus.svg';
 import { theme } from '../../../../../ComponentLibrary/src/theme';
 import Tag from '../../../../../ComponentLibrary/src/components/Tag';
-import { sx } from '../../../../../ComponentLibrary/src/components/Table/styles';
+import { sx } from '../../../../../ComponentLibrary/src/components/NotificationsModal/styles';
 
 export const getColumns = (
   labels: Partial<OrganizationLabels> = {},
@@ -42,7 +42,6 @@ export const getColumns = (
           href="#"
           onClick={e => {
             e.preventDefault();
-            console.log(`Clicked on ${cell.getValue<string>()}`);
           }}
           sx={sx.linkStyles}>
           {cell.getValue<string>()}

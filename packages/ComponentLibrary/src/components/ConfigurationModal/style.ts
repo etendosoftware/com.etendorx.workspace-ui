@@ -112,7 +112,7 @@ export const sx: { [key: string]: SxProps<Theme> } = {
   linkStyles: {
     fontSize: '0.875rem',
     fontWeight: '500',
-    lineHeight: '1.063rem',
+    lineHeight: '1rem',
     color: theme.palette.dynamicColor.main,
     textDecoration: 'none',
     paddingRight: '0.5rem',
