@@ -1,3 +1,5 @@
+import { Theme } from '@emotion/react';
+import { SxProps } from '@mui/material';
 export interface Organization {
   identificator: string;
   name: string;
@@ -19,18 +21,64 @@ export interface Organization {
 export type OrganizationLabels = {
   [K in keyof Organization]: string;
 };
-
-export interface ToolbarButtonConfig {
-  icon: React.ReactNode;
-  tooltip: string;
-  onClick: () => void;
-}
-
 export interface TableProps {
   data: Organization[];
   isTreeStructure?: boolean;
   customLabels?: Record<string, string>;
-  leftButtons?: ToolbarButtonConfig[];
-  centerButtons?: ToolbarButtonConfig[];
-  rightButtons?: ToolbarButtonConfig[];
+}
+
+export interface SidebarContentProps {
+  icon: React.ReactNode;
+  identifier: string | null;
+  title: string | null;
+  widgets: Widget[];
+  onClose: () => void;
+}
+export interface Widget {
+  id: string;
+  content: React.ReactNode;
+  size: string;
+}
+
+export interface ContentGridProps {
+  widgets: Widget[];
+}
+
+export interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+  selectedItem: {
+    icon: React.ReactNode;
+    identifier: string | null;
+    title: string | null;
+  };
+  widgets: Widget[];
+  noIdentifierLabel?: string;
+  noTitleLabel?: string;
+}
+
+export interface ToolbarButton {
+  key: string;
+  icon: React.ReactNode;
+  tooltip: string;
+  onClick: () => void;
+  disabled?: boolean;
+  fill?: string;
+  hoverFill?: string;
+  width?: number;
+  height?: number;
+  sx?: SxProps<Theme>;
+}
+
+export interface ToolbarSectionConfig {
+  buttons: ToolbarButton[];
+  style?: React.CSSProperties;
+  isItemSelected?: boolean;
+}
+
+export interface TopToolbarProps {
+  leftSection: ToolbarSectionConfig;
+  centerSection: ToolbarSectionConfig;
+  rightSection: ToolbarSectionConfig;
+  isItemSelected: boolean;
 }

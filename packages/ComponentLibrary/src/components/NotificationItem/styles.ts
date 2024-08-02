@@ -54,7 +54,6 @@ export const styles: { [key: string]: CSSProperties } = {
     top: '0.5rem',
     right: '0.5rem',
     visibility: 'hidden',
-    color: theme.palette.dynamicColor.main,
   },
 };
 
@@ -100,9 +99,6 @@ export const StyledListItem = styled('div')(() => ({
     outline: `2px solid ${theme.palette.dynamicColor.main}`,
     '& .closeIcon': {
       visibility: 'visible',
-      background: theme.palette.baselineColor.neutral[20],
-      borderRadius: '100%',
-      color: theme.palette.baselineColor.neutral[100],
     },
     '& > .textContainer': {
       paddingRight: '1.5rem',

@@ -1,10 +1,13 @@
 import React from 'react';
-import { List, Link, Menu, Button, IconButton } from '@mui/material';
+import { List, Link, Menu, Button } from '@mui/material';
+import IconButton from '../IconButton/index';
 import { INotificationModalProps } from './types';
 import { menuSyle, styles, sx } from './styles';
-import { MoreVert, Settings } from '@mui/icons-material';
+import { Settings } from '@mui/icons-material';
+import MoreVert from '../../assets/icons/more-vertical.svg';
 import NotificationItem from '../NotificationItem';
 import Image from '../../assets/images/NotificationModal/empty-state-notifications.svg?url';
+import { theme } from '../../theme';
 
 const NotificationModalCustom: React.FC<INotificationModalProps> = ({
   title,
@@ -35,12 +38,22 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
         </div>
         <div style={styles.rigthContainer}>
           {linkTitle && (
-            <Link style={styles.titleButton} href={linkTitle.url}>
+            <Link sx={sx.linkStyles} href={linkTitle.url}>
               {linkTitle.label}
             </Link>
           )}
           <div style={styles.titleModalButtonContainer}>
-            <IconButton style={styles.titleModalIcon} sx={sx.vertHover}>
+            <IconButton
+              width={20}
+              height={20}
+              fill={theme.palette.baselineColor.neutral[70]}
+              hoverFill={theme.palette.baselineColor.neutral[100]}
+              sx={{
+                '&:hover': {
+                  background:
+                    theme.palette.baselineColor.transparentNeutral[10],
+                },
+              }}>
               <MoreVert />
             </IconButton>
           </div>

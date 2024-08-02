@@ -5,7 +5,8 @@ import { NotificationItemProps } from './types';
 import Tag from '../Tag';
 import { styles, StyledListItem } from './styles';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
-import CloseIcon from '@mui/icons-material/Close';
+import CloseIcon from '../../assets/icons/x.svg';
+import { theme } from '../../theme';
 
 const NotificationItem: React.FC<NotificationItemProps> = ({
   description,
@@ -23,7 +24,12 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     <ListItem component="div" style={styles.listContainer}>
       <StyledListItem>
         <IconButton style={styles.closeIcon}>
-          <CloseIcon className="closeIcon" />
+          <CloseIcon
+            fill={theme.palette.baselineColor.neutral[80]}
+            width={'1.094rem'}
+            height={'1.094rem'}
+            className="closeIcon"
+          />
         </IconButton>
         <div style={styles.iconContainerStyles}>
           <IconComponent />

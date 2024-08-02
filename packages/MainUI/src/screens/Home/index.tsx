@@ -25,6 +25,7 @@ import PersonIcon from '../../../../ComponentLibrary/src/assets/icons/user.svg';
 import AddIcon from '../../../../ComponentLibrary/src/assets/icons/plus.svg';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import { FlatData } from '../../../../storybook/src/stories/Components/Table/mock';
+import { sections } from '../../../../storybook/src/stories/Components/ProfileModal/mock';
 
 const Home = () => {
   const handleClose = () => {
@@ -87,15 +88,17 @@ const Home = () => {
               userPhotoUrl={profilePicture}
               userName={'Ayelén García'}
               userEmail={'ayelen.garcia@etendo.software'}
+              sestionTooltip={'Sign off'}
               icon={<PersonIcon />}
+              sections={sections}
             />
           </div>
         </Nav>
         <Table
           data={FlatData}
-          isTreeStructure={false}
+          isTreeStructure={true}
           customLabels={{
-            identificator: 'Custom Identificator',
+            identificator: 'Home Identificator',
           }}
         />
       </Drawer>

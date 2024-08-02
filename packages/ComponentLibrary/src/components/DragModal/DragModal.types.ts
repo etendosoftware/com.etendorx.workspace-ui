@@ -17,10 +17,21 @@ export interface SortableItemProps {
 
 export interface DragModalProps {
   initialPeople: Person[];
-  onBack: () => void;
+  onBack?: () => void;
+  onClose: () => void;
   backButtonText?: string;
   activateAllText?: string;
   deactivateAllText?: string;
   buttonText?: string;
   icon?: string | ReactNode;
+}
+
+export interface DragModalContentProps {
+  people: Person[];
+  setPeople: React.Dispatch<React.SetStateAction<Person[]>>;
+  onBack?: () => void;
+  backButtonText?: string;
+  activateAllText?: string;
+  deactivateAllText?: string;
+  buttonText?: string;
 }

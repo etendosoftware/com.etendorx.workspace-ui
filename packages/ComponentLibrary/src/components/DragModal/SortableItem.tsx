@@ -1,52 +1,62 @@
 import React from 'react';
-import List from '@mui/material/List';
 import MenuItem from '@mui/material/MenuItem';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import ToggleChip from '../Toggle/ToggleChip';
-import { DragIndicator } from '@mui/icons-material';
-import { styles } from './DragModal.styles';
+import { styles, sx } from './DragModal.styles';
 import { SortableItemProps } from './DragModal.types';
-import { theme } from '../../theme';
+import { SxProps, Theme } from '@mui/material/styles';
 
 const SortableItem: React.FC<SortableItemProps> = ({
   id,
   person,
   onToggle,
+  icon,
 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    ...styles.menuItemStyles,
   };
 
+  const menuItemSx = {
+    ...sx.menuItemStyles,
+    ...(isDragging ? sx.menuItemDragging : {}),
+  } as SxProps<Theme>;
+
   return (
-    <List style={styles.listStyles}>
-      <MenuItem
-        ref={setNodeRef}
-        style={style}
-        {...attributes}
-        {...listeners}
-        sx={{
-          '&:hover': {
-            borderRadius: '0.5rem',
-            color: theme.palette.baselineColor.neutral[80],
-          },
-        }}>
-        <div style={styles.itemsContainer}>
-          <div style={styles.leftContainer}>
-            <DragIndicator style={styles.dragStyles} />
-            <span style={styles.personLabelStyles} title={person.label}>
-              {person.label}
-            </span>
-          </div>
+    <MenuItem
+      ref={setNodeRef}
+      style={style}
+      sx={menuItemSx}
+      {...attributes}
+      {...listeners}
+      disableRipple>
+      <div style={styles.sortableItemContainer}>
+        <div style={styles.sortableItemLeftContainer}>
+          {React.cloneElement(icon as React.ReactElement, {
+            style: styles.dragStyles,
+          })}
+          <span
+            className="person-label"
+            style={styles.sortableItemLabel}
+            title={person.label}>
+            {person.label}
+          </span>
+        </div>
+        <div className="toggle-chip" style={styles.sortableItemChipContainer}>
           <ToggleChip isActive={person.isActive} onToggle={onToggle} />
         </div>
-      </MenuItem>
-    </List>
+      </div>
+    </MenuItem>
   );
 };
 
