@@ -61,11 +61,17 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
   },
 };
 
-export const getConditionalStyles = (theme: Theme) => ({
-  lowSalary: {
-    color: theme.palette.error.dark,
+export const sx: { [key: string]: SxProps<Theme> } = {
+  linkStyles: {
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    lineHeight: '1.063rem',
+    color: theme.palette.dynamicColor.main,
+    textDecoration: 'none',
+    paddingRight: '0.5rem',
+    cursor: 'pointer',
+    '&:hover': {
+      textDecoration: 'underline',
+    },
   },
-  highSalary: {
-    color: theme.palette.error.light,
-  },
-});
+};

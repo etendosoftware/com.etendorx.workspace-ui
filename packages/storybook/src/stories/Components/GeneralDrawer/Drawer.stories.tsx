@@ -16,6 +16,7 @@ import PersonIcon from '../../../../../ComponentLibrary/src/assets/icons/user.sv
 import ActivityIcon from '../../../../../ComponentLibrary/src/assets/icons/activity.svg';
 import IconButton from '../../../../../ComponentLibrary/src/components/IconButton';
 import AddIcon from '../../../../../ComponentLibrary/src/assets/icons/plus.svg';
+import { sections } from '../ProfileModal/mock';
 
 export default {
   title: 'Components/Drawer',
@@ -82,7 +83,9 @@ const DrawerWithNavTemplate = args => (
           userPhotoUrl={args.userPhotoUrl}
           userName={args.userName}
           userEmail={args.userEmail}
+          sestionTooltip={args.sestionTooltip}
           icon={<PersonIcon fill="#2E365C" />}
+          sections={args.sections}
         />
       </div>
     </Nav>
@@ -120,6 +123,8 @@ DrawerWithNav.args = {
   userPhotoUrl: profilePicture,
   userName: 'Ayelén García',
   userEmail: 'ayelen.garcia@etendo.software',
+  sestionTooltip: 'Sign off',
+  sections: sections,
   //Drawer
   headerTitle: 'Etendo',
   headerImage: logo,

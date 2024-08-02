@@ -1,3 +1,5 @@
+import { MRT_TableInstance } from 'material-react-table';
+
 export interface Organization {
   identificator: string;
   name: string;
@@ -30,7 +32,9 @@ export interface TableProps {
   data: Organization[];
   isTreeStructure?: boolean;
   customLabels?: Record<string, string>;
-  leftButtons?: ToolbarButtonConfig[];
-  centerButtons?: ToolbarButtonConfig[];
-  rightButtons?: ToolbarButtonConfig[];
+}
+export interface TopToolbarProps {
+  table: MRT_TableInstance<Organization>;
+  isFullScreen: boolean;
+  toggleFullScreen: () => void;
 }

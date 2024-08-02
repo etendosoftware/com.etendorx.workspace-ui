@@ -51,20 +51,25 @@ export const theme = createTheme({
       etendoPrimary: {
         main: '#004ACA',
         dark: '#00296F',
-        light: '#D5E3FC',
         contrastText: '#E5EFFF',
+        light: ' rgba(0, 74, 202, 0.05)',
       },
     },
     specificColor: {
       success: {
         main: '#008000',
         light: '#BFFF8F',
+        contrastText: 'rgba(0, 128, 0, 0.05)',
       },
       warning: {
         main: '#FFCC00',
+        light: '#FFEB99',
+        contrastText: 'rgba(255, 204, 0, 0.05)',
       },
       error: {
         main: '#DC143C',
+        light: '#FFCCD6',
+        contrastText: 'rgba(220, 20, 60, 0.05)',
       },
       draft: {
         main: '#3F4A7E',

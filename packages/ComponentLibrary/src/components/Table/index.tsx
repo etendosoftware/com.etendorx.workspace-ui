@@ -7,12 +7,10 @@ import {
 import { Box, Paper } from '@mui/material';
 import { Organization, TableProps } from './types';
 import { tableStyles } from './styles';
-import CenterSection from './sections/CenterSection';
-import LeftSection from './sections/LeftSection';
-import RightSection from './sections/RightSection';
 import { theme } from '../../theme';
 import { getColumns } from '../../../../storybook/src/stories/Components/Table/columns';
 import CustomExpandButton from './customExpandButton';
+import TopToolbar from './topToolbar';
 
 const Table: React.FC<TableProps> = ({
   data,
@@ -109,23 +107,11 @@ const Table: React.FC<TableProps> = ({
       sx={
         isFullScreen ? tableStyles.fullScreenContainer : tableStyles.container
       }>
-      <Box sx={tableStyles.topToolbar}>
-        <LeftSection />
-        <Box
-          sx={{
-            flex: 1,
-            display: 'flex',
-            justifyContent: 'flex-start',
-            marginLeft: '1rem',
-          }}>
-          <CenterSection />
-        </Box>
-        <RightSection
-          table={table}
-          isFullScreen={isFullScreen}
-          toggleFullScreen={toggleFullScreen}
-        />
-      </Box>
+      <TopToolbar
+        table={table}
+        isFullScreen={isFullScreen}
+        toggleFullScreen={toggleFullScreen}
+      />
       <Paper
         elevation={4}
         sx={{

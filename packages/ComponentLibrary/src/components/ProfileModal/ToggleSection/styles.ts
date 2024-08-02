@@ -1,6 +1,8 @@
 import { CSSProperties } from 'react';
 import { theme } from '../../../theme';
 
+export const defaultFill = theme.palette.baselineColor.neutral[60];
+
 export const selectorListStyles: CSSProperties = {
   padding: '0rem 1rem 0.75rem 1rem',
 };
