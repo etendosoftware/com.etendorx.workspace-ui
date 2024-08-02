@@ -1,13 +1,19 @@
 import { TOKEN } from './constants';
+interface ClientOptions extends RequestInit {
+  headers?: Record<string, string>;
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+}
 
 export class Client {
-  private baseHeaders: HeadersInit = {};
+  private baseHeaders: HeadersInit;
   private baseUrl: string;
+  private readonly JSON_CONTENT_TYPE = 'application/json'!;
+  private readonly FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded'!;
 
-  constructor(url: string) {
+  constructor(url: string, baseHeaders: ClientOptions['headers'] = {}) {
     this.baseUrl = url.endsWith('/') ? url : url + '/';
     this.baseHeaders = {
-      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      ...baseHeaders,
       Authorization: `Basic ${TOKEN}`,
     };
   }
@@ -17,33 +23,66 @@ export class Client {
   }
 
   private isJson(response: Response) {
-    return !!response.headers.get('Content-Type')?.match('application/json');
+    return (
+      response.headers.get('Content-Type')?.includes('application/json') ??
+      false
+    );
   }
 
-  private async request(url: string, options: RequestInit = {}) {
-    const response = await fetch(`${this.baseUrl}${this.cleanUrl(url)}`, {
-      ...options,
-      headers: {
-        ...this.baseHeaders,
-        ...options.headers,
-      },
-    });
+  private setContentType(options: ClientOptions) {
+    const { headers = {}, body } = options;
 
-    const data = await (this.isJson(response)
-      ? response.json()
-      : response.text());
+    if (!headers['Content-Type']) {
+      headers['Content-Type'] =
+        body instanceof URLSearchParams || typeof body === 'string'
+          ? this.FORM_CONTENT_TYPE
+          : this.JSON_CONTENT_TYPE;
+    }
 
-    return {
-      ...response,
-      data,
-    };
+    options.headers = headers;
   }
 
-  public async get(url: string, options: RequestInit = {}) {
+  private async request(url: string, options: ClientOptions = {}) {
+    try {
+      const response = await fetch(`${this.baseUrl}${this.cleanUrl(url)}`, {
+        ...options,
+        headers: {
+          ...this.baseHeaders,
+          ...options.headers,
+        },
+      });
+
+      if (options.method !== 'GET') {
+        this.setContentType(options);
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await (this.isJson(response)
+        ? response.json()
+        : response.text());
+
+      return {
+        ...response,
+        data,
+      };
+    } catch (error) {
+      console.error('Request failed:', error);
+      throw error;
+    }
+  }
+
+  public async get(url: string, options: ClientOptions = {}) {
     return this.request(url, { ...options, method: 'GET' });
   }
 
-  public async post(url: string, options: RequestInit = {}) {
-    return this.request(url, { ...options, method: 'POST' });
+  public async post(
+    url: string,
+    payload: ClientOptions['body'],
+    options: ClientOptions = {},
+  ) {
+    return this.request(url, { ...options, body: payload, method: 'POST' });
   }
 }

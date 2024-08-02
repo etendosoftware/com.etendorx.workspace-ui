@@ -11,9 +11,7 @@ export class Datasource {
     try {
       options._operationType = 'fetch';
 
-      const result = await this.client.post(entity, {
-        body: new URLSearchParams(options),
-      });
+      const result = await this.client.post(entity, new URLSearchParams(options));
 
       return result.data;
     } catch (error) {
