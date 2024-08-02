@@ -1,8 +1,8 @@
 import { API_DATASOURCE_URL } from './constants';
-import { createClient } from './client';
+import { Client } from './client';
 
 export class Datasource {
-  private static client = createClient(API_DATASOURCE_URL)
+  private static client = new Client(API_DATASOURCE_URL);
 
   public static async get(
     entity: Etendo.Entity,
@@ -11,10 +11,9 @@ export class Datasource {
     try {
       options._operationType = 'fetch';
 
-      const result = await this.client.post(
-        entity,
-        new URLSearchParams(options),
-      );
+      const result = await this.client.post(entity, {
+        body: new URLSearchParams(options),
+      });
 
       return result.data;
     } catch (error) {

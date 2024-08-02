@@ -1,10 +1,10 @@
 import { API_METADATA_URL } from './constants';
-import { createClient } from './client';
+import { Client } from './client';
 import { onChange } from './helpers';
 
 export class Metadata {
   private static cache: Etendo.CacheStore<Etendo.WindowMetadata> = {};
-  private static client = createClient(API_METADATA_URL);
+  private static client = new Client(API_METADATA_URL);
   private static CACHE_DURATION = 6e5;
 
   private static isc = {

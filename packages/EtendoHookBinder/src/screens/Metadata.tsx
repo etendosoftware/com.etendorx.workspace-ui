@@ -25,7 +25,7 @@ export default function MetadataTest() {
         />
       </div>
       {error ? <div className={styles.error}>{error.message}</div> : null}
-      <button onClick={load} className={styles.button} disabled={loading}>
+      <button onClick={load} className="" disabled={loading}>
         {loading ? 'Loading...' : 'Load Window'}
       </button>
       <textarea

@@ -15,12 +15,12 @@ function App() {
 
   return (
     <main>
-      <h4>Etendo Hook Binder</h4>
-      <div className="button-group">
-        <button onClick={handle.metadataClick}>
+      <div className="p-2 text-3xl font-bold">Etendo Hook Binder</div>
+      <div className="flex flex-1 p-2 gap-2 justify-center">
+        <button onClick={handle.metadataClick} className="bg-purple-700 border-0">
           METADATA TEST
         </button>
-        <button onClick={handle.datasourceClick}>
+        <button onClick={handle.datasourceClick} className="bg-yellow-500 text-black border-0">
           DATASOURCE TEST
         </button>
       </div>
