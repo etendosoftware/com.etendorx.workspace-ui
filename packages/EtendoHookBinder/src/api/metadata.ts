@@ -12,29 +12,27 @@ export class Metadata {
   private static isc = {
     classes: {} as Etendo.WindowMetadataMap,
     ClassFactory: {
-      defineClass: (className: string, superClass: string) => {
-        return {
-          addProperties: (properties: Etendo.WindowMetadataProperties) => {
-            const cn = className.split('_');
-            const newClassName = '_' + cn[1].toString();
+      defineClass: (className: string, superClass: string) => ({
+        addProperties: (properties: Etendo.WindowMetadataProperties) => {
+          const cn = className.split('_');
+          const newClassName = '_' + cn[1].toString();
 
-            if (!Metadata.isc.classes[newClassName]) {
-              Metadata.isc.classes[newClassName] = {
-                name: className,
-                superClass: superClass,
-                properties: {} as Etendo.WindowMetadataProperties,
-              };
-            }
-
-            Metadata.isc.classes[newClassName].properties = {
-              ...Metadata.isc.classes[newClassName].properties,
-              ...properties,
+          if (!Metadata.isc.classes[newClassName]) {
+            Metadata.isc.classes[newClassName] = {
+              name: className,
+              superClass: superClass,
+              properties: {} as Etendo.WindowMetadataProperties,
             };
+          }
 
-            return Metadata.isc.ClassFactory;
-          },
-        };
-      },
+          Metadata.isc.classes[newClassName].properties = {
+            ...Metadata.isc.classes[newClassName].properties,
+            ...properties,
+          };
+
+          return Metadata.isc.ClassFactory;
+        },
+      }),
     },
   };
 
