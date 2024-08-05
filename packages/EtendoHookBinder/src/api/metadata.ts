@@ -1,10 +1,13 @@
 import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL } from './constants';
 import { Client } from './client';
 import { onChange } from './helpers';
+import { CacheStore } from './cache';
 
 export class Metadata {
   private static client = new Client(API_METADATA_URL);
-  private static CACHE_DURATION = API_DEFAULT_CACHE_DURATION;
+  private static cache = new CacheStore<Etendo.WindowMetadata>(
+    API_DEFAULT_CACHE_DURATION,
+  );
 
   private static isc = {
     classes: {} as Etendo.WindowMetadataMap,
@@ -73,7 +76,7 @@ export class Metadata {
     }),
   });
 
-  private static setup() {
+  private static setup = () => {
     window.OB = window.OB || Metadata.OB;
     window.isc = window.isc || Metadata.isc;
     window.Metadata = window.Metadata || Metadata;
@@ -87,8 +90,10 @@ export class Metadata {
   ): Promise<Etendo.WindowMetadata> {
     Metadata.setup();
 
-    if (Metadata.hasValidCache(windowId)) {
-      return Metadata.cache[windowId].data;
+    const cached = Metadata.cache.get(windowId);
+
+    if (cached) {
+      return cached;
     }
 
     try {
@@ -100,12 +105,11 @@ export class Metadata {
       document.head.appendChild(script);
       document.head.removeChild(script);
 
-      Metadata.cache[windowId] = {
-        updatedAt: Date.now(),
-        data: Metadata.isc.classes[`_${windowId}`],
-      };
+      const value = Metadata.isc.classes[`_${windowId}`];
 
-      return Metadata.cache[windowId].data;
+      Metadata.cache.set(windowId, value);
+
+      return value;
     } catch (error) {
       throw new Error(
         `Error fetching metadata for window ${windowId}:\n${(error as Error).message}`,
@@ -113,7 +117,7 @@ export class Metadata {
     }
   }
 
-  public static async getColumns(windowId: string) {
+  public static async getColumns (windowId: string) {
     const metadata = await Metadata.getWindow(windowId);
 
     return metadata.properties.viewProperties.fields;

@@ -12,9 +12,8 @@ export declare global {
       data: T;
     }
 
-    interface CacheStore<T> {
-      [key: string]: CachedData<T>;
-    }
+    interface CacheStore<T>
+      extends Map<string, { updatedAt: number; value: T }> {}
 
     interface Criteria {
       fieldName: string;
