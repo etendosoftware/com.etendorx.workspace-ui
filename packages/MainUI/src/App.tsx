@@ -22,9 +22,7 @@ function App() {
   }, [getColumns, getWindow]);
 
   return (
-    <MetadataProvider>
-      <Home />
-    </MetadataProvider>
+    <Home />
   );
 }
 
