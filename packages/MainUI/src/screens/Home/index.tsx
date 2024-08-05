@@ -4,7 +4,6 @@ import {
   Drawer,
   NotificationButton,
   NotificationModal,
-  Table,
 } from '@workspaceui/componentlibrary/src/components';
 import Nav from '@workspaceui/componentlibrary/src/components/Nav/Nav';
 import ProfileModal from '@workspaceui/componentlibrary/src/components/ProfileModal/ProfileModal';
@@ -24,10 +23,9 @@ import NotificationIcon from '../../../../ComponentLibrary/src/assets/icons/bell
 import PersonIcon from '../../../../ComponentLibrary/src/assets/icons/user.svg';
 import AddIcon from '../../../../ComponentLibrary/src/assets/icons/plus.svg';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
-import { FlatData } from '../../../../storybook/src/stories/Components/Table/mock';
 import { sections } from '../../../../storybook/src/stories/Components/ProfileModal/mock';
 
-const Home = () => {
+const Home = (props: React.PropsWithChildren) => {
   const handleClose = () => {
     console.log('Modal closed');
   };
@@ -94,13 +92,7 @@ const Home = () => {
             />
           </div>
         </Nav>
-        <Table
-          data={FlatData}
-          isTreeStructure={true}
-          customLabels={{
-            identificator: 'Home Identificator',
-          }}
-        />
+        {props.children}
       </Drawer>
     </Box>
   );

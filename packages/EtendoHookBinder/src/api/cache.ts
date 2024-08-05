@@ -4,7 +4,7 @@ export class CacheStore<T> {
 
   constructor(duration: number) {
     this.duration = duration;
-    this.store = new Map();
+    this.store = new Map<string, Etendo.CachedData<T>>();
   }
 
   public has(id: string) {

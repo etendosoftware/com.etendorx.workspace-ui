@@ -6,11 +6,10 @@ export declare global {
 
     interface CachedData<T> {
       updatedAt: number;
-      data: T;
+      value: T;
     }
 
-    interface CacheStore<T>
-      extends Map<string, { updatedAt: number; value: T }> {}
+    interface CacheStore<T> extends Map<string, CachedData<T>> {}
 
     interface Criteria {
       fieldName: string;
@@ -47,6 +46,7 @@ export declare global {
       filterEditorProperties: {
         keyProperty: string;
       };
+      showIf: string;
     }
 
     interface Field {

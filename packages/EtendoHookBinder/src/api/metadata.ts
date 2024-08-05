@@ -2,6 +2,7 @@ import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL } from './constants';
 import { Client } from './client';
 import { onChange } from './helpers';
 import { CacheStore } from './cache';
+export type * from '../etendo.d.ts';
 
 export class Metadata {
   private static client = new Client(API_METADATA_URL);
@@ -116,10 +117,14 @@ export class Metadata {
   }
 
   public static async getColumns(tabId: string) {
-    const item = Object.values(Metadata.isc.classes).find(windowObj => windowObj.properties.viewProperties.tabId === tabId);
+    const item = Object.values(Metadata.isc.classes).find(
+      windowObj =>
+        windowObj.properties.viewProperties.tabId.toString() ===
+        tabId.toString(),
+    );
 
     if (!item) {
-      throw new Error(`Missing window for tab id ${tabId}`);
+      return []; // throw new Error(`Missing window for tab id ${tabId}`);
     }
 
     return item.properties.viewProperties.fields;

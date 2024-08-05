@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Metadata } from '../api/metadata';
 
 export function useColumns(
-  tabId: string,
-  { autoLoad }: { autoLoad?: boolean } = { autoLoad: false },
+  tabId: string | undefined,
+  { autoLoad }: { autoLoad?: boolean } = { autoLoad: true },
 ) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<Etendo.Field[]>();
@@ -12,6 +12,10 @@ export function useColumns(
 
   const load = useCallback(() => {
     const f = async () => {
+      if (!tabId) {
+        return;
+      }
+
       try {
         setLoading(true);
         setError(undefined);

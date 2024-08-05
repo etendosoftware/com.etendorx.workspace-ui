@@ -3,7 +3,7 @@ import { Metadata } from '../api/metadata';
 
 export function useWindow(
   windowId: string,
-  { autoLoad }: { autoLoad?: boolean } = { autoLoad: false },
+  { autoLoad }: { autoLoad?: boolean } = { autoLoad: true },
 ) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<Etendo.WindowMetadata>();
