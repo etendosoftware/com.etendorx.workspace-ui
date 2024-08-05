@@ -4,14 +4,14 @@ import { entities } from '../api/constants';
 import styles from './styles.module.css';
 
 export default function DatasourceTest() {
-  const [entity, setEntity] = useState<Etendo.Entity>(entities[0]);
+  const [entity, setEntity] = useState(entities[0]);
   const [page, setPage] = useState<number>(1);
   const [size, setSize] = useState<number>(1);
   const [data, setData] = useState<Record<string, unknown | { data: [] }>>();
 
   const handleEntityChange = useCallback(
     (e: React.SyntheticEvent<HTMLSelectElement>) => {
-      setEntity(e.currentTarget.value as Etendo.Entity);
+      setEntity(e.currentTarget.value);
     },
     [],
   );

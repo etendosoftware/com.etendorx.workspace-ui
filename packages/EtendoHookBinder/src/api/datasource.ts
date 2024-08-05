@@ -5,7 +5,7 @@ export class Datasource {
   private static client = new Client(API_DATASOURCE_URL);
 
   public static async get(
-    entity: Etendo.Entity,
+    entity: string,
     options: Etendo.MetadataParams = {},
   ) {
     try {
