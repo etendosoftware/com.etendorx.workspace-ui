@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Box, Button, List, Menu, MenuItem } from '@mui/material';
-import DragModalContent from './DragModalContent';
+import DragModalContent from '../DragModal/DragModalContent';
 import { Person } from '../DragModal/DragModal.types';
 import ModalDivider from '../ModalDivider';
 import { FadeWrapper, menuSyle, styles, sx } from './WaterfallModal.styles';
-import { Edit, NavigateNext } from '@mui/icons-material';
-import { UniqueIdentifier } from '@dnd-kit/core';
+import NavigateNext from '../../assets/icons/chevron-right.svg';
+import Edit from '../../assets/icons/edit.svg';
 import { WaterfallModalProps } from './WaterfallModal.types';
 import IconButton from '../IconButton';
+import { theme } from '../../theme';
 
 const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
   menuItems,
@@ -50,21 +51,6 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
     }, 200);
   };
 
-  const handleToggleAll = () => {
-    const allActivated = people.every(person => person.isActive);
-    setPeople(prev =>
-      prev.map(person => ({ ...person, isActive: !allActivated })),
-    );
-  };
-
-  const handleToggle = (id: UniqueIdentifier) => {
-    setPeople(prev =>
-      prev.map(person =>
-        person.id === id ? { ...person, isActive: !person.isActive } : person,
-      ),
-    );
-  };
-
   return (
     <>
       <IconButton tooltip={tooltipWaterfallButton} onClick={handleClick}>
@@ -76,55 +62,58 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
         onClose={handleClose}
         MenuListProps={{ sx: menuSyle }}
         slotProps={{
-          paper: { sx: styles.paperStyleMenu },
+          paper: { sx: styles.paperStyleMenu, elevation: 3 },
         }}>
-        {!showDragModal ? (
-          <FadeWrapper className={fade ? 'fade-out' : ''}>
-            <List>
-              {menuItems.map((item, index) => (
-                <MenuItem
-                  key={item.key}
-                  sx={{
-                    ...sx.menuItemStyles,
-                    marginBottom:
-                      index !== menuItems.length - 1 ? '0.5rem' : '0',
-                  }}>
-                  <span style={styles.SpanStyles}>{item.emoji}</span>
-                  <span>{item.label}</span>
-                </MenuItem>
-              ))}
-            </List>
-            <ModalDivider />
-            <div style={styles.SectionContainer}>
-              <Box sx={sx.headerBox}>
-                <Button
-                  onClick={handleOpenDragModal}
-                  style={styles.CustomizeButton}
-                  sx={sx.customizeButton}
-                  startIcon={<Edit style={styles.StartIconStyles} />}>
-                  {customizeText}
-                  <NavigateNext style={styles.EndIconStyles} />
-                </Button>
-              </Box>
-            </div>
-          </FadeWrapper>
-        ) : (
-          <FadeWrapper className={fade ? 'fade-out' : ''}>
+        <FadeWrapper className={fade ? 'fade-out' : ''}>
+          {!showDragModal ? (
+            <>
+              <List>
+                {menuItems.map((item, index) => (
+                  <MenuItem
+                    key={item.key}
+                    sx={{
+                      ...sx.menuItemStyles,
+                      marginBottom:
+                        index !== menuItems.length - 1 ? '0.5rem' : '0',
+                    }}>
+                    <span style={styles.SpanStyles}>{item.emoji}</span>
+                    <span>{item.label}</span>
+                  </MenuItem>
+                ))}
+              </List>
+              <ModalDivider />
+              <div style={styles.SectionContainer}>
+                <Box sx={sx.headerBox}>
+                  <Button
+                    onClick={handleOpenDragModal}
+                    sx={sx.customizeButton}
+                    startIcon={
+                      <Edit
+                        fill={theme.palette.baselineColor.neutral[60]}
+                        style={styles.StartIconStyles}
+                      />
+                    }>
+                    {customizeText}
+                    <NavigateNext
+                      fill={theme.palette.baselineColor.neutral[60]}
+                      style={styles.EndIconStyles}
+                    />
+                  </Button>
+                </Box>
+              </div>
+            </>
+          ) : (
             <DragModalContent
               people={people}
-              onBack={handleBack}
-              onToggleAll={handleToggleAll}
-              onToggle={handleToggle}
               setPeople={setPeople}
-              menuItems={[]}
-              initialPeople={[]}
+              onBack={handleBack}
               backButtonText={backButtonText}
               activateAllText={activateAllText}
               deactivateAllText={deactivateAllText}
               buttonText={buttonText}
             />
-          </FadeWrapper>
-        )}
+          )}
+        </FadeWrapper>
       </Menu>
     </>
   );

@@ -1,5 +1,7 @@
 import { CSSProperties } from 'react';
 import { theme } from '../../theme';
+import { Theme } from '@emotion/react';
+import { SxProps } from '@mui/material';
 
 export const MODAL_WIDTH = 332;
 export const menuSyle = { paddingY: 0 };
@@ -111,6 +113,9 @@ export const styles: { [key: string]: CSSProperties } = {
     gap: '0.5rem',
     flex: '1 0 0',
   },
+};
+
+export const sx: { [key: string]: SxProps<Theme> } = {
   buttonStyles: {
     fontWeight: '600',
     fontSize: '0.875rem',
@@ -118,20 +123,30 @@ export const styles: { [key: string]: CSSProperties } = {
     cursor: 'pointer',
     height: '2.5rem',
     borderRadius: '6.25rem',
-    border: `1px solid ${theme.palette.baselineColor.transparentNeutral[80]}`,
+    border: `1px solid ${theme.palette.baselineColor.transparentNeutral[20]}`,
     flex: '1 0 0',
-    color: 'black',
-    background: 'white',
+    color: theme.palette.baselineColor.transparentNeutral[70],
+    background: theme.palette.baselineColor.neutral[0],
+    '&:hover': {
+      borderRadius: '6.25rem',
+      background: theme.palette.dynamicColor.main,
+      color: theme.palette.baselineColor.neutral[0],
+    },
   },
   saveButtonStyles: {
     fontWeight: '600',
     fontSize: '0.875rem',
-    color: 'white',
+    color: theme.palette.baselineColor.neutral[0],
     padding: '0.5rem 1rem',
-    background: 'black',
+    background: theme.palette.baselineColor.neutral[100],
     flex: '1 0 0',
     borderRadius: '6.25rem',
     border: `1px solid ${theme.palette.baselineColor.transparentNeutral[80]}`,
     height: '2.5rem',
+    '&:hover': {
+      borderRadius: '6.25rem',
+      background: theme.palette.dynamicColor.main,
+      color: theme.palette.baselineColor.neutral[0],
+    },
   },
 };

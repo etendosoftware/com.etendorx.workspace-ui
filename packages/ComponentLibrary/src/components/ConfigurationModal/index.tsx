@@ -142,7 +142,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
             )}
             <div style={styles.titleModal}>{title?.label}</div>
           </div>
-          <Link style={styles.titleButton} href={linkTitle?.url}>
+          <Link sx={sx.linkStyles} href={linkTitle?.url}>
             {linkTitle?.label}
           </Link>
         </div>

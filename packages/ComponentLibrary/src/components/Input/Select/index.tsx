@@ -3,9 +3,11 @@ import {
   Autocomplete,
   AutocompleteRenderInputParams,
   FormHelperText,
+  InputAdornment,
   Paper,
   PaperProps,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { PRIMARY_CONTRAST, styles } from './style';
@@ -59,43 +61,47 @@ const Select: React.FC<ISelectInput> = ({
   };
 
   const renderInput = (params: AutocompleteRenderInputParams) => (
-    <TextField
-      {...params}
-      sx={{
-        ...styles.root,
-        '& .MuiInput-root': {
-          ...styles.root['& .MuiInput-root'],
-          backgroundColor: getBackgroundFocus(),
-        },
-      }}
-      InputLabelProps={{
-        style: styles.labelProps,
-        shrink: true,
-      }}
-      InputProps={{
-        ...params.InputProps,
-        sx: styles.props,
-        startAdornment: iconLeft && iconLeft,
-        endAdornment: (
-          <div style={styles.buttonsContainer}>
-            {params.InputProps.endAdornment}
-          </div>
-        ),
-      }}
-      label={title}
-      variant="standard"
-      helperText={
-        <FormHelperText style={styles.helperTextContainer}>
-          {helperText?.icon && helperText?.icon}
-          {helperText?.label && (
-            <span style={styles.helperText}>{helperText?.label}</span>
-          )}
-        </FormHelperText>
-      }
-      onChange={handleInputChange}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-    />
+    <Tooltip title={inputValue} arrow>
+      <TextField
+        {...params}
+        sx={{
+          ...styles.root,
+          '& .MuiInput-root': {
+            ...styles.root['& .MuiInput-root'],
+            backgroundColor: getBackgroundFocus(),
+          },
+        }}
+        InputLabelProps={{
+          style: styles.labelProps,
+          shrink: true,
+        }}
+        InputProps={{
+          ...params.InputProps,
+          sx: styles.props,
+          startAdornment: iconLeft && (
+            <InputAdornment position="start">{iconLeft}</InputAdornment>
+          ),
+          endAdornment: (
+            <div style={styles.buttonsContainer}>
+              {params.InputProps.endAdornment}
+            </div>
+          ),
+        }}
+        label={title}
+        variant="standard"
+        helperText={
+          <FormHelperText style={styles.helperTextContainer}>
+            {helperText?.icon && helperText?.icon}
+            {helperText?.label && (
+              <span style={styles.helperText}>{helperText?.label}</span>
+            )}
+          </FormHelperText>
+        }
+        onChange={handleInputChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+      />
+    </Tooltip>
   );
 
   return (
@@ -127,7 +133,12 @@ const Select: React.FC<ISelectInput> = ({
                 ? theme.palette.dynamicColor.dark
                 : theme.palette.baselineColor.neutral[90]
             }
-            style={styles.optionText}>
+            style={{
+              ...styles.optionText,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}>
             {option.title}
           </Typography>
           {selected && <CheckCircleIcon style={styles.checkIcon} />}

@@ -14,6 +14,7 @@ import PersonIcon from '../../../../../ComponentLibrary/src/assets/icons/user.sv
 import IconButton from '../../../../../ComponentLibrary/src/components/IconButton';
 import NotificationIcon from '../../../../../ComponentLibrary/src/assets/icons/bell.svg';
 import AddIcon from '../../../../../ComponentLibrary/src/assets/icons/plus.svg';
+import { sections } from '../ProfileModal/mock';
 
 export default {
   title: 'Components/Nav',
@@ -65,6 +66,7 @@ const Template = (args: NavArgs) => (
         userPhotoUrl={args.userPhotoUrl}
         userName={args.userName}
         userEmail={args.userEmail}
+        sestionTooltip={args.sestionTooltip}
         icon={<PersonIcon fill="#2E365C" />}
       />
     </div>
@@ -103,4 +105,6 @@ DefaultNav.args = {
   userPhotoUrl: profilePicture,
   userName: 'Ayelén García',
   userEmail: 'ayelen.garcia@etendo.software',
+  sestionTooltip: 'Sign off',
+  sections: sections,
 };

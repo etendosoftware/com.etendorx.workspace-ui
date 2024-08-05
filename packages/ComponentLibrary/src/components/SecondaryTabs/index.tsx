@@ -1,5 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Tabs, Tab, Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import {
+  Tabs,
+  Tab,
+  Box,
+  IconButton,
+  Menu,
+  MenuItem,
+  Typography,
+} from '@mui/material';
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
 
 import TabLabel from './components/TabLabel';
@@ -19,7 +27,11 @@ import {
   rightButtonContainerStyles,
 } from './styles';
 
-const SecondaryTabs: React.FC<any> = ({ tabsContent, selectedTab = 0, onChange }) => {
+const SecondaryTabs: React.FC<any> = ({
+  tabsContent,
+  selectedTab = 0,
+  onChange,
+}) => {
   const [visibleCount, setVisibleCount] = useState(5);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -61,8 +73,7 @@ const SecondaryTabs: React.FC<any> = ({ tabsContent, selectedTab = 0, onChange }
           value={selectedTab}
           onChange={handleChange}
           variant="scrollable"
-          scrollButtons="auto"
-        >
+          scrollButtons="auto">
           {tabsContent.slice(0, visibleCount).map((tab: any, index: number) => (
             <Tab
               key={index}
@@ -71,9 +82,11 @@ const SecondaryTabs: React.FC<any> = ({ tabsContent, selectedTab = 0, onChange }
                   icon={
                     <Box component="span" sx={iconContainerStyles}>
                       <Box component="span" sx={iconStyles}>
-                        {typeof tab.icon === 'string' ? tab.icon : React.cloneElement(tab?.icon, {
-                          sx: menuItemIconStyles
-                        })}
+                        {typeof tab.icon === 'string'
+                          ? tab.icon
+                          : React.cloneElement(tab?.icon, {
+                              sx: menuItemIconStyles,
+                            })}
                       </Box>
                     </Box>
                   }
@@ -100,17 +113,24 @@ const SecondaryTabs: React.FC<any> = ({ tabsContent, selectedTab = 0, onChange }
         open={open}
         onClose={handleClose}
         PaperProps={{ sx: menuPaperProps }}
-        slotProps={{ root: { sx: menuItemRootStyles } }}
-      >
+        slotProps={{ root: { sx: menuItemRootStyles } }}>
         {tabsContent.slice(visibleCount).map((tab: any, index: number) => (
           <MenuItem
             key={index}
-            onClick={() => { onChange(index + visibleCount); handleClose(); }}
-            sx={menuItemStyles}
-          >
-            {typeof tab.icon === 'string' ? <Typography style={menuItemTypographyStyles}>{tab.icon}</Typography> : React.cloneElement(tab.icon, {
-              style: menuItemTypographyStyles
-            })}
+            onClick={() => {
+              onChange(index + visibleCount);
+              handleClose();
+            }}
+            sx={menuItemStyles}>
+            {typeof tab.icon === 'string' ? (
+              <Typography style={menuItemTypographyStyles}>
+                {tab.icon}
+              </Typography>
+            ) : (
+              React.cloneElement(tab.icon, {
+                style: menuItemTypographyStyles,
+              })
+            )}
             {tab.label}
           </MenuItem>
         ))}

@@ -41,18 +41,6 @@ export const styles: { [key: string]: CSSProperties } = {
     width: '1rem',
     height: '1rem',
   },
-  titleModalIcon: {
-    width: '2rem',
-    height: '2rem',
-  },
-  titleButton: {
-    fontSize: '0.875rem',
-    fontWeight: '500',
-    lineHeight: '1.063rem',
-    color: theme.palette.dynamicColor.main,
-    textDecoration: 'none',
-    paddingRight: '0.5rem',
-  },
   rigthContainer: {
     alignItems: 'center',
     display: 'flex',
@@ -120,13 +108,19 @@ export const sx: { [key: string]: SxProps<Theme> } = {
       color: theme.palette.baselineColor.neutral[10],
     },
   },
-  vertHover: {
+  linkStyles: {
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    lineHeight: '1rem',
+    color: theme.palette.dynamicColor.main,
+    textDecoration: 'none',
+    paddingRight: '0.5rem',
+    cursor: 'pointer',
     '&:hover': {
-      width: '2rem',
-      height: '2rem',
-      background: theme.palette.baselineColor.transparentNeutral[10],
+      textDecoration: 'underline',
     },
   },
+
   badgeStyles: {
     '.MuiBadge-badge': {
       fontSize: '0.75rem',
