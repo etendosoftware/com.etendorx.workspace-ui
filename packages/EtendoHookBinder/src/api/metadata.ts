@@ -78,7 +78,7 @@ export class Metadata {
     window.OB = window.OB || Metadata.OB;
     window.isc = window.isc || Metadata.isc;
     window.Metadata = window.Metadata || Metadata;
-  }
+  };
 
   // TODO: Remove empty object and update with the right value
   public static standardWindow = {};
@@ -115,9 +115,13 @@ export class Metadata {
     }
   }
 
-  public static async getColumns (windowId: string) {
-    const metadata = await Metadata.getWindow(windowId);
+  public static async getColumns(tabId: string) {
+    const item = Object.values(Metadata.isc.classes).find(windowObj => windowObj.properties.viewProperties.tabId === tabId);
 
-    return metadata.properties.viewProperties.fields;
+    if (!item) {
+      throw new Error(`Missing window for tab id ${tabId}`);
+    }
+
+    return item.properties.viewProperties.fields;
   }
 }

@@ -3,7 +3,7 @@ import styles from './styles.module.css';
 import { useWindow } from '../hooks/useWindow';
 
 export default function MetadataTest() {
-  const [windowId, setWindowId] = useState('100');
+  const [windowId, setWindowId] = useState('143');
   const { loading, data, error, load } = useWindow(windowId);
 
   const handleWindowIdChange = useCallback(

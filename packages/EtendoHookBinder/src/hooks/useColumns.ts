@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Metadata } from '../api/metadata';
 
 export function useColumns(
-  windowId: string,
+  tabId: string,
   { autoLoad }: { autoLoad?: boolean } = { autoLoad: false },
 ) {
   const [loading, setLoading] = useState(false);
@@ -15,7 +15,7 @@ export function useColumns(
       try {
         setLoading(true);
         setError(undefined);
-        setData(await Metadata.getColumns(windowId));
+        setData(await Metadata.getColumns(tabId));
         setLoaded(true);
       } catch (e) {
         setError(e as Error);
@@ -25,7 +25,7 @@ export function useColumns(
     };
 
     return f();
-  }, [windowId]);
+  }, [tabId]);
 
   useEffect(() => {
     if (autoLoad) {

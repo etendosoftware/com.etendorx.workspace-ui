@@ -2,9 +2,6 @@ export declare global {
   export namespace Etendo {
     type WindowId = string;
     type ColumnId = string;
-
-    type Entity = 'Order' | 'Invoice' | 'Product' | 'OrderLine';
-
     type Metadata = string;
 
     interface CachedData<T> {
@@ -101,3 +98,5 @@ export declare global {
     interface WindowMetadataMap extends Record<string, WindowMetadata> {}
   }
 }
+
+export { Etendo };
