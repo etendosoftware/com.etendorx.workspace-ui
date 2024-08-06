@@ -1,0 +1,48 @@
+import {
+  BreadcrumbProps,
+  BreadcrumbAction,
+} from '../../../../../ComponentLibrary/src/components/Breadcrums/types';
+import HomeIcon from '../../../../../ComponentLibrary/src/assets/icons/home.svg';
+import FavoriteIcon from '../../../../../ComponentLibrary/src/assets/icons/star.svg';
+import ContentCopyIcon from '../../../../../ComponentLibrary/src/assets/icons/copy.svg';
+import HelpIcon from '../../../../../ComponentLibrary/src/assets/icons/help-circle.svg';
+import SettingsIcon from '../../../../../ComponentLibrary/src/assets/icons/settings.svg';
+import { theme } from '../../../../../ComponentLibrary/src/theme';
+
+export const mockDefaultActions: BreadcrumbAction[] = [
+  {
+    id: 'favorite',
+    label: 'Add to favorites',
+    icon: <FavoriteIcon fill={theme.palette.baselineColor.neutral[60]} />,
+    toggle: true,
+  },
+  {
+    id: 'duplicate',
+    label: 'Copy window',
+    icon: <ContentCopyIcon fill={theme.palette.baselineColor.neutral[60]} />,
+    onClick: () => {},
+  },
+  {
+    id: 'help',
+    label: 'Help',
+    icon: <HelpIcon fill={theme.palette.baselineColor.neutral[60]} />,
+    onClick: () => {},
+  },
+  {
+    id: 'settings',
+    label: 'Settings',
+    icon: <SettingsIcon fill={theme.palette.baselineColor.neutral[60]} />,
+    onClick: () => {},
+  },
+];
+
+export const mockDefaultArgs: BreadcrumbProps = {
+  homeIcon: <HomeIcon fill={theme.palette.baselineColor.neutral[80]} />,
+  homeText: 'Dashboard',
+  onHomeClick: () => console.log('Home clicked'),
+  items: [
+    { id: '1', label: 'Item 1' },
+    { id: '2', label: 'Item 2' },
+    { id: '3', label: 'Item 3', actions: mockDefaultActions },
+  ],
+};
