@@ -11,7 +11,7 @@ export default function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Home>
-          <DynamicTable windowId="143" />
+          <DynamicTable windowId="144" />
         </Home>
       </ThemeProvider>
     </MetadataProvider>
