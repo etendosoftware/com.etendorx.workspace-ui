@@ -149,12 +149,19 @@ const Drawer: React.FC<DrawerProps> = ({
         </Box>
       </MuiDrawer>
       <MuiAppBar
-        position="fixed"
+        position="sticky"
         sx={{
           ...styles.appBar,
-          backgroundColor: 'transparent',
-          width: `calc(100% - ${open ? styles.drawerWidth : styles.drawerWidthClosed}px)`,
-          marginLeft: open ? styles.drawerWidth : styles.drawerWidthClosed,
+          left: 0,
+          paddingLeft: `calc(${open ? styles.drawerWidth : styles.drawerWidthClosed}px + 1rem)`,
+          right: 0,
+          overflowX: 'hidden',
+          zIndex: 100,
+          transition: theme =>
+            theme.transitions.create('padding', {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
         }}>
         {children}
       </MuiAppBar>

@@ -9,7 +9,6 @@ import TabCustom from './Tab';
 import TableCustom from './Table';
 import TableV2Custom from './TableV2';
 import ModalCustom from './Modal';
-import ApplyHOC from '../utils/applyHOC';
 import TextInputMUI from './Input/TextInput/TextInputAutocomplete';
 import SearchInputWithVoiceMUI from './Input/TextInput/TextInputAutocomplete/SearchInputWithVoice';
 import TextInputBaseMUI from './Input/TextInput/TextInputBase';
@@ -29,32 +28,32 @@ import DrawerMUI from './Drawer';
 import DynamicTableCmp from './DynamicTable';
 
 // ApplyHOC is a higher order component that applies the theme to the component
-const Button = ApplyHOC(ButtonMUI);
-const Grid = ApplyHOC(GridMUI);
-const Box = ApplyHOC(BoxMUI);
-const TextField = ApplyHOC(TextFieldMUI);
-const DataGrid = ApplyHOC(DataGridCustom);
-const Modal = ApplyHOC(ModalCustom);
-const Table = ApplyHOC(TableCustom);
-const Tab = ApplyHOC(TabCustom);
-const TableV2 = ApplyHOC(TableV2Custom);
-const TextInput = ApplyHOC(TextInputMUI);
-const TextInputBase = ApplyHOC(TextInputBaseMUI);
-const InputPassword = ApplyHOC(InputPasswordMUI);
-const SearchInputWithVoice = ApplyHOC(SearchInputWithVoiceMUI);
-const ToggleChip = ApplyHOC(ToggleChipMUI);
-const Navbar = ApplyHOC(Nav);
-const Profile = ApplyHOC(ProfileModal);
-const Waterfall = ApplyHOC(WaterfallModal);
-const ConfigurationModal = ApplyHOC(ConfigurationModalCustom);
-const Select = ApplyHOC(SelectCustom);
-const NotificationButton = ApplyHOC(NotificationBase);
-const NotificationModal = ApplyHOC(NotificationModalCustom);
-const Tag = ApplyHOC(TagMUI);
-const SecondaryTabs = ApplyHOC(SecondaryTabsMUI);
-const NotificationStates = ApplyHOC(NotificationItemStates);
-const Drawer = ApplyHOC(DrawerMUI);
-const DynamicTable = ApplyHOC(DynamicTableCmp)
+const Button = ButtonMUI;
+const Grid = GridMUI;
+const Box = BoxMUI;
+const TextField = TextFieldMUI;
+const DataGrid = DataGridCustom;
+const Modal = ModalCustom;
+const Table = TableCustom;
+const Tab = TabCustom;
+const TableV2 = TableV2Custom;
+const TextInput = TextInputMUI;
+const TextInputBase = TextInputBaseMUI;
+const InputPassword = InputPasswordMUI;
+const SearchInputWithVoice = SearchInputWithVoiceMUI;
+const ToggleChip = ToggleChipMUI;
+const Navbar = Nav;
+const Profile = ProfileModal;
+const Waterfall = WaterfallModal;
+const ConfigurationModal = ConfigurationModalCustom;
+const Select = SelectCustom;
+const NotificationButton = NotificationBase;
+const NotificationModal = NotificationModalCustom;
+const Tag = TagMUI;
+const SecondaryTabs = SecondaryTabsMUI;
+const NotificationStates = NotificationItemStates;
+const Drawer = DrawerMUI;
+const DynamicTable = DynamicTableCmp;
 
 export {
   Button,

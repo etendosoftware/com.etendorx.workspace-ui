@@ -2,7 +2,6 @@ import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL } from './constants';
 import { Client } from './client';
 import { onChange } from './helpers';
 import { CacheStore } from './cache';
-export type * from '../etendo.d.ts';
 
 export class Metadata {
   private static client = new Client(API_METADATA_URL);
@@ -84,17 +83,9 @@ export class Metadata {
   // TODO: Remove empty object and update with the right value
   public static standardWindow = {};
 
-  public static async getWindow(
+  private static async _getWindow(
     windowId: Etendo.WindowId,
   ): Promise<Etendo.WindowMetadata> {
-    Metadata.setup();
-
-    const cached = Metadata.cache.get(windowId);
-
-    if (cached) {
-      return cached;
-    }
-
     try {
       const response = await Metadata.client.get(`View?viewId=_${windowId}`);
       const script = document.createElement('script');
@@ -116,6 +107,20 @@ export class Metadata {
     }
   }
 
+  public static async getWindow(
+    windowId: Etendo.WindowId,
+  ): Promise<Etendo.WindowMetadata> {
+    Metadata.setup();
+
+    const cached = Metadata.cache.get(windowId);
+
+    if (cached) {
+      return cached;
+    } else {
+      return Metadata._getWindow(windowId);
+    }
+  }
+
   public static async getColumns(tabId: string) {
     const item = Object.values(Metadata.isc.classes).find(
       windowObj =>
@@ -124,7 +129,7 @@ export class Metadata {
     );
 
     if (!item) {
-      return []; // throw new Error(`Missing window for tab id ${tabId}`);
+      return [];
     }
 
     return item.properties.viewProperties.fields;

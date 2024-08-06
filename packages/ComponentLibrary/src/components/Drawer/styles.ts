@@ -1,7 +1,7 @@
 import { theme } from '../../theme';
 
-const DRAWER_WIDTH = 260;
-const DRAWER_WIDTH_CLOSED = 56;
+export const DRAWER_WIDTH = 260;
+export const DRAWER_WIDTH_CLOSED = 56;
 
 export const styles = {
   drawer: {
@@ -42,6 +42,7 @@ export const styles = {
     height: '3.5rem',
     display: 'flex',
     alignItems: 'center',
+    backgroundColor: 'transparent',
     padding: '0.25rem 0.25rem',
     zIndex: () => theme.zIndex.drawer + 1,
     transition: () =>
