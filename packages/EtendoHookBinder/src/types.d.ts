@@ -1,4 +1,4 @@
-export declare global {
+declare global {
   interface Window {
     isc: {
       ClassFactory: {
@@ -16,3 +16,5 @@ export declare global {
     Metadata: unknown;
   }
 }
+
+export {};

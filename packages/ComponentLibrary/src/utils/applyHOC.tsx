@@ -3,7 +3,7 @@ import React from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import { theme } from '../theme';
 
-import "../App.css";
+import '../App.css';
 import '../declarations.d.ts';
 import { CssBaseline } from '@mui/material';
 

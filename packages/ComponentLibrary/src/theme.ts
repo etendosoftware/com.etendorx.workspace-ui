@@ -1,5 +1,6 @@
 import { createTheme } from '@mui/material/styles';
 import InterTTF from '../src/styles/fonts/Inter-Regular.ttf';
+export type * from './custom.d.ts';
 
 // Colors for MUI attributes
 export const PRIMARY_100 = '#D8DBF6';

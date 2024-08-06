@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box, Typography } from '@mui/material';
 import { SidebarContentProps } from '../../../../../storybook/src/stories/Components/Table/types';
 import ContentGrid from './WidgetContent';

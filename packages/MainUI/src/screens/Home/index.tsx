@@ -4,17 +4,12 @@ import {
   Drawer,
   NotificationButton,
   NotificationModal,
+  Table,
+  IconButton,
+  Navbar,
+  Profile,
+  Waterfall,
 } from '@workspaceui/componentlibrary/src/components';
-import useSession from '@workspaceui/etendohookbinder/src/hooks/useSession';
-import Nav from '@workspaceui/componentlibrary/src/components/Nav/Nav';
-import ProfileModal from '@workspaceui/componentlibrary/src/components/ProfileModal/ProfileModal';
-import WaterfallModal from '@workspaceui/componentlibrary/src/components/Waterfall/WaterfallModal';
-import { NOTIFICATIONS } from '../../../../storybook/src/stories/Components/notifications.mock';
-import { modalConfig } from '../../../../storybook/src/stories/Components/ConfigurationModal/mock';
-import {
-  menuItems,
-  initialPeople,
-} from '../../../../storybook/src/stories/Components/mock';
 import { sectionGroups } from '../../mocks';
 import EtendoLogotype from '../../assets/etendo-logotype.png';
 import profilePicture from '../../../../ComponentLibrary/src/assets/images/profile_picture_mock.png';
@@ -23,20 +18,19 @@ import ActivityIcon from '../../../../ComponentLibrary/src/assets/icons/activity
 import NotificationIcon from '../../../../ComponentLibrary/src/assets/icons/bell.svg';
 import PersonIcon from '../../../../ComponentLibrary/src/assets/icons/user.svg';
 import AddIcon from '../../../../ComponentLibrary/src/assets/icons/plus.svg';
-import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
-import { sections } from '../../../../storybook/src/stories/Components/ProfileModal/mock';
-import { useEffect } from 'react';
+import {
+  modalConfig,
+  menuItems,
+  initialPeople,
+  sections,
+  NOTIFICATIONS,
+  FlatData,
+} from '@workspaceui/storybook/mocks';
 
 const Home = (props: React.PropsWithChildren) => {
-  const session = useSession();
-
   const handleClose = () => {
     console.log('Modal closed');
   };
-
-  useEffect(() => {
-    console.log(session)
-  }, [session]);
 
   return (
     <Box sx={styles.fullScreenBox}>
@@ -44,9 +38,9 @@ const Home = (props: React.PropsWithChildren) => {
         headerImage={EtendoLogotype}
         headerTitle="Etendo"
         sectionGroups={sectionGroups}>
-        <Nav>
-          <div style={styles.navContainer}>
-            <WaterfallModal
+        <Navbar>
+          <div style={{ gap: '4px', display: 'flex' }}>
+            <Waterfall
               menuItems={menuItems}
               initialPeople={initialPeople}
               backButtonText="Back"
@@ -83,7 +77,7 @@ const Home = (props: React.PropsWithChildren) => {
                 actionButtonLabel="Configure notifications"
               />
             </NotificationButton>
-            <ProfileModal
+            <Profile
               cancelButtonText="Cancel"
               saveButtonText="Save"
               tooltipButtonProfile="Account Settings"
@@ -99,7 +93,14 @@ const Home = (props: React.PropsWithChildren) => {
               sections={sections}
             />
           </div>
-        </Nav>
+        </Navbar>
+        <Table
+          data={FlatData}
+          isTreeStructure={true}
+          customLabels={{
+            identificator: 'Home Identificator',
+          }}
+        />
       </Drawer>
       {props.children}
     </Box>

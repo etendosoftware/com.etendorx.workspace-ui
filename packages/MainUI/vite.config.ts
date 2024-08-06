@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 import svgr from 'vite-plugin-svgr';
 
 export default defineConfig({
@@ -12,12 +13,21 @@ export default defineConfig({
       },
     }),
   ],
-  optimizeDeps: {
-    include: ['@mui/material'],
+  resolve: {
+    alias: {
+      '@workspaceui/storybook': path.resolve(__dirname, '../storybook/src'),
+      '@mui/material': path.resolve(__dirname, './node_modules/@mui/material'),
+    },
   },
   build: {
-    rollupOptions: {
-      external: ['@mui/material'],
+    commonjsOptions: {
+      transformMixedEsModules: true,
     },
+    rollupOptions: {
+      external: ['@workspaceui/storybook'],
+    },
+  },
+  optimizeDeps: {
+    include: ['@mui/material'],
   },
 });

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Datasource } from '../api/datasource';
 
-export function useDatasource(entity: string) {
+export function useDatasource(entity?: string) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState<Error>();
@@ -10,6 +10,10 @@ export function useDatasource(entity: string) {
   const load = useCallback(() => {
     const f = async () => {
       try {
+        if (!entity) {
+          return;
+        }
+
         setLoading(true);
         setError(undefined);
         const result = await Datasource.get(entity, {

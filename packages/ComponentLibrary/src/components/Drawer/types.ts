@@ -4,6 +4,7 @@ export interface Section {
   icon: React.ReactNode;
   isSelected?: boolean;
   subSections?: Section[];
+  badge?: string;
 }
 
 export interface DrawerProps {
@@ -14,7 +15,7 @@ export interface DrawerProps {
 }
 
 export interface SectionGroup {
-  id: string;
+  id: string | number;
   sections: Section[];
 }
 

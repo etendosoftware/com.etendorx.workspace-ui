@@ -1,9 +1,8 @@
 import React from 'react';
-import { ThemeProvider } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
+import { CssBaseline, ThemeProvider } from '@mui/material';
 import { theme } from '../../ComponentLibrary/src/theme';
 
-const withThemeProvider = (Story) => (
+const withThemeProvider = Story => (
   <ThemeProvider theme={theme}>
     <CssBaseline />
     <Story />
@@ -19,7 +18,7 @@ const preview = {
       },
     },
   },
-  decorators: [withThemeProvider]
+  decorators: [withThemeProvider],
 };
 
 export default preview;

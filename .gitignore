@@ -9,6 +9,12 @@ packages/ComponentLibrary/node_modules
 packages/EtendoHookBinder/node_modules
 
 /build
+/dist
 /src/main/resources/static/
 .gradle
 .env
+
+*.d.ts
+*.d.ts.map
+
+/storybook-static

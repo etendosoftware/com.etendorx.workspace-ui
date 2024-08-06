@@ -1,9 +1,28 @@
+import React from 'react';
 import ProfileModal from '../../../../../ComponentLibrary/src/components/ProfileModal/ProfileModal';
 import profilePicture from '../.././../../../ComponentLibrary/src/assets/images/profile_picture_mock.png';
 import PersonIcon from '../../../../../ComponentLibrary/src/assets/icons/user.svg';
 import { sections } from './mock';
+import type { Meta, StoryObj } from '@storybook/react';
+import { Section } from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleButton/types';
 
-export default {
+interface ProfileModalProps {
+  cancelButtonText: string;
+  saveButtonText: string;
+  passwordLabel: string;
+  newPasswordLabel: string;
+  confirmPasswordLabel: string;
+  section: string;
+  tooltipButtonProfile: string;
+  userPhotoUrl: string;
+  userName: string;
+  userEmail: string;
+  sestionTooltip: string;
+  icon: React.ReactElement;
+  sections: Section[];
+}
+
+const meta: Meta<typeof ProfileModal> = {
   title: 'Components/ProfileModal',
   component: ProfileModal,
   argTypes: {
@@ -21,21 +40,25 @@ export default {
   },
 };
 
-const Template = args => <ProfileModal {...args} />;
+export default meta;
 
-export const ProfileDefault = Template.bind({});
-ProfileDefault.args = {
-  section: 'profile',
-  cancelButtonText: 'Cancel',
-  saveButtonText: 'Save',
-  passwordLabel: 'Password',
-  newPasswordLabel: 'New Password',
-  confirmPasswordLabel: 'Confirm New Password',
-  tooltipButtonProfile: 'Account Settings',
-  userPhotoUrl: profilePicture,
-  userName: 'Ayelén García',
-  userEmail: 'ayelen.garcia@etendo.software',
-  sestionTooltip: 'Close Sesion',
-  icon: <PersonIcon fill="#2E365C" />,
-  sections: sections,
+type Story = StoryObj<ProfileModalProps>;
+
+export const ProfileDefault: Story = {
+  render: args => <ProfileModal {...args} />,
+  args: {
+    section: 'profile',
+    cancelButtonText: 'Cancel',
+    saveButtonText: 'Save',
+    passwordLabel: 'Password',
+    newPasswordLabel: 'New Password',
+    confirmPasswordLabel: 'Confirm New Password',
+    tooltipButtonProfile: 'Account Settings',
+    userPhotoUrl: profilePicture,
+    userName: 'Ayelén García',
+    userEmail: 'ayelen.garcia@etendo.software',
+    sestionTooltip: 'Close Session',
+    icon: <PersonIcon fill="#2E365C" />,
+    sections: sections,
+  },
 };

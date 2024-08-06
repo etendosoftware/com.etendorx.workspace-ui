@@ -14,7 +14,7 @@ import Printer from '../../../../../ComponentLibrary/src/assets/icons/printer.sv
 import Copy from '../../../../../ComponentLibrary/src/assets/icons/copy.svg';
 import Mail from '../../../../../ComponentLibrary/src/assets/icons/mail.svg';
 import LinkIcon from '../../../../../ComponentLibrary/src/assets/icons/link.svg';
-import { ToolbarSectionConfig } from './types';
+import { ToolbarSectionConfig } from '../../../../../storybook/src/stories/Components/Table/types';
 import { TOOLTIPS } from '../../../../../ComponentLibrary/src/components/Table/tableConstants';
 import { theme } from '../../../../../ComponentLibrary/src/theme';
 

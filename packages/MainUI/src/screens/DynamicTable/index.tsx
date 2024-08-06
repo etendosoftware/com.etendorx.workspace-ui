@@ -1,7 +1,6 @@
 import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
 import { useColumns } from '@workspaceui/etendohookbinder/src/hooks/useColumns';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import type { Etendo } from '@workspaceui/etendohookbinder/src/etendo';
 import { DRAWER_WIDTH_CLOSED } from '@workspaceui/componentlibrary/src/components/Drawer/styles';
 import {
   Box,
@@ -19,7 +18,7 @@ export default function DynamicTableScreen(props: { windowId: string }) {
     windowData?.properties.viewProperties.tabId,
   );
   const { data: records, loading: loadingData } = useDatasource(
-    (windowData as Etendo.WindowMetadata).properties.viewProperties.entity,
+    windowData?.properties.viewProperties.entity,
   );
 
   const columns = useMemo(() => parseColumns(columnsData), [columnsData]);

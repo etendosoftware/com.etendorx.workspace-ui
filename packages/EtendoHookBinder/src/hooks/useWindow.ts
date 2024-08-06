@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Metadata } from '../api/metadata';
+import type { WindowMetadata } from 'Etendo';
 
 export function useWindow(windowId: string) {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<Etendo.WindowMetadata>();
+  const [data, setData] = useState<WindowMetadata>();
   const [error, setError] = useState<Error>();
   const [loaded, setLoaded] = useState(false);
 

@@ -9,22 +9,26 @@ export default {
 };
 
 export const DefaultVariant = () => (
-  <SearchModal defaultContent={DEFAULT_CONTENT} variant='default' />
+  <SearchModal defaultContent={DEFAULT_CONTENT} variant="default" />
 );
 
 export const TabsVariant = () => (
-  <SearchModal tabsContent={TABS_CONTENT} variant='tabs' />
+  <SearchModal tabsContent={TABS_CONTENT} variant="tabs" />
 );
 
 export const BothVariants = () => (
   <Box sx={{ display: 'flex', gap: '20px' }}>
     <Box>
-      <Typography variant="h6" style={typographyTitleStyles}>Default Variant</Typography>
-      <SearchModal defaultContent={DEFAULT_CONTENT} variant='default' />
+      <Typography variant="h6" style={typographyTitleStyles}>
+        Default Variant
+      </Typography>
+      <SearchModal defaultContent={DEFAULT_CONTENT} variant="default" />
     </Box>
     <Box>
-      <Typography variant="h6" style={typographyTitleStyles}>Tabs Variant</Typography>
-      <SearchModal tabsContent={TABS_CONTENT} variant='tabs' />
+      <Typography variant="h6" style={typographyTitleStyles}>
+        Tabs Variant
+      </Typography>
+      <SearchModal tabsContent={TABS_CONTENT} variant="tabs" />
     </Box>
   </Box>
 );

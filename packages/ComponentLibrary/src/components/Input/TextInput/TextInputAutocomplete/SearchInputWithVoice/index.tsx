@@ -9,7 +9,7 @@ import TextInputAutoComplete from '../TextInputAutocomplete';
 import { theme } from '../../../../../theme';
 import IconButton from '../../../../IconButton';
 
-interface SearchInputWithVoiceProps extends TextInputProps {
+export interface SearchInputWithVoiceProps extends TextInputProps {
   onVoiceClick: () => void;
 }
 

@@ -1,18 +1,32 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TABS_CONFIG } from './mock';
 import SecondaryTabs from '../../../../../ComponentLibrary/src/components/SecondaryTabs';
+import type { Meta, StoryObj } from '@storybook/react';
 
-export default {
+type TabContent = {
+  icon: React.ReactElement | string;
+  label: string;
+  numberOfItems: number;
+  isLoading?: boolean;
+  onClick: () => void;
+  content: React.ReactElement;
+};
+
+const meta: Meta<typeof SecondaryTabs> = {
   title: 'Components/SecondaryTabs',
   component: SecondaryTabs,
 };
 
-const SecondaryTabsTemplate = () => {
-  const [tabsContent, setTabsContent] = useState(TABS_CONFIG);
+export default meta;
+
+type Story = StoryObj<typeof SecondaryTabs>;
+
+const SecondaryTabsTemplate: React.FC = () => {
+  const [tabsContent, setTabsContent] = useState<TabContent[]>(TABS_CONFIG);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const updatedTabs: any = tabsContent.map(tab => ({
+      const updatedTabs = tabsContent.map(tab => ({
         ...tab,
         isLoading: false,
       }));
@@ -24,4 +38,6 @@ const SecondaryTabsTemplate = () => {
   return <SecondaryTabs tabsContent={tabsContent} />;
 };
 
-export const Default = () => <SecondaryTabsTemplate />;
+export const Default: Story = {
+  render: () => <SecondaryTabsTemplate />,
+};

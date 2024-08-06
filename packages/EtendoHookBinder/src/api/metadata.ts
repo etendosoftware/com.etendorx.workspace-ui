@@ -2,19 +2,24 @@ import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL } from './constants';
 import { Client } from './client';
 import { onChange } from './helpers';
 import { CacheStore } from './cache';
-
+import type {
+  WindowMetadata,
+  WindowMetadataMap,
+  WindowMetadataProperties,
+  WindowId,
+} from 'Etendo';
 export class Metadata {
   private static client = new Client(API_METADATA_URL);
-  private static cache = new CacheStore<Etendo.WindowMetadata>(
+  private static cache = new CacheStore<WindowMetadata>(
     API_DEFAULT_CACHE_DURATION,
   );
   private static initialized = false;
 
   private static isc = {
-    classes: {} as Etendo.WindowMetadataMap,
+    classes: {} as WindowMetadataMap,
     ClassFactory: {
       defineClass: (className: string, superClass: string) => ({
-        addProperties: (properties: Etendo.WindowMetadataProperties) => {
+        addProperties: (properties: WindowMetadataProperties) => {
           const cn = className.split('_');
           const newClassName = '_' + cn[1].toString();
 
@@ -22,7 +27,7 @@ export class Metadata {
             Metadata.isc.classes[newClassName] = {
               name: className,
               superClass: superClass,
-              properties: {} as Etendo.WindowMetadataProperties,
+              properties: {} as WindowMetadataProperties,
             };
           }
 
@@ -94,9 +99,7 @@ export class Metadata {
   // TODO: Remove empty object and update with the right value
   public static standardWindow = {};
 
-  private static async _getWindow(
-    windowId: Etendo.WindowId,
-  ): Promise<Etendo.WindowMetadata> {
+  private static async _getWindow(windowId: WindowId): Promise<WindowMetadata> {
     try {
       const response = await Metadata.client.get(
         `OBUIAPP_MainLayout/View?viewId=_${windowId}`,
@@ -120,9 +123,7 @@ export class Metadata {
     }
   }
 
-  public static async getWindow(
-    windowId: Etendo.WindowId,
-  ): Promise<Etendo.WindowMetadata> {
+  public static async getWindow(windowId: WindowId): Promise<WindowMetadata> {
     Metadata.setup();
 
     const cached = Metadata.cache.get(windowId);
