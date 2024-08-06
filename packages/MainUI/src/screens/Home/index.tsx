@@ -5,6 +5,7 @@ import {
   NotificationButton,
   NotificationModal,
 } from '@workspaceui/componentlibrary/src/components';
+import useSession from '@workspaceui/etendohookbinder/src/hooks/useSession';
 import Nav from '@workspaceui/componentlibrary/src/components/Nav/Nav';
 import ProfileModal from '@workspaceui/componentlibrary/src/components/ProfileModal/ProfileModal';
 import WaterfallModal from '@workspaceui/componentlibrary/src/components/Waterfall/WaterfallModal';
@@ -24,11 +25,18 @@ import PersonIcon from '../../../../ComponentLibrary/src/assets/icons/user.svg';
 import AddIcon from '../../../../ComponentLibrary/src/assets/icons/plus.svg';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import { sections } from '../../../../storybook/src/stories/Components/ProfileModal/mock';
+import { useEffect } from 'react';
 
 const Home = (props: React.PropsWithChildren) => {
+  const session = useSession();
+
   const handleClose = () => {
     console.log('Modal closed');
   };
+
+  useEffect(() => {
+    console.log(session)
+  }, [session]);
 
   return (
     <Box sx={styles.fullScreenBox}>

@@ -8,21 +8,32 @@ import {
 } from '@workspaceui/componentlibrary/src/components';
 import { useMemo } from 'react';
 import { parseColumns } from '../../helpers/metadata';
+import CircularProgress from '@mui/material/CircularProgress';
 
 export default function DynamicTableScreen(props: { windowId: string }) {
-  const { data: windowData } = useWindow(props.windowId);
-  const { data: columnsData } = useColumns(
+  const { data: windowData, loading: loadingWindow } = useWindow(
+    props.windowId,
+  );
+  const { data: columnsData, loading: loadingColumns } = useColumns(
     windowData?.properties.viewProperties.tabId,
   );
-  const { data: records } = useDatasource('Order');
+  const { data: records, loading: loadingData } = useDatasource('Order');
 
   const columns = useMemo(() => parseColumns(columnsData), [columnsData]);
 
-
   return (
-    <Box height="100%" paddingLeft={`${DRAWER_WIDTH_CLOSED}px`}>
-      <Box padding="0.5rem" height="100%" overflow="auto">
-        <DynamicTable columns={columns} data={records} />
+    <Box height="100%" paddingLeft={`${DRAWER_WIDTH_CLOSED}px`} overflow="auto">
+      <Box
+        padding="0.5rem"
+        justifyContent="center"
+        alignItems="center"
+        display="flex"
+        width="100%">
+        {loadingData || loadingWindow || loadingColumns ? (
+          <CircularProgress />
+        ) : (
+          <DynamicTable columns={columns} data={records} />
+        )}
       </Box>
     </Box>
   );

@@ -8,6 +8,7 @@ export class Metadata {
   private static cache = new CacheStore<Etendo.WindowMetadata>(
     API_DEFAULT_CACHE_DURATION,
   );
+  private static initialized = false;
 
   private static isc = {
     classes: {} as Etendo.WindowMetadataMap,
@@ -75,9 +76,19 @@ export class Metadata {
   });
 
   private static setup = () => {
+    if (Metadata.initialized) {
+      return;
+    }
+
     window.OB = window.OB || Metadata.OB;
     window.isc = window.isc || Metadata.isc;
     window.Metadata = window.Metadata || Metadata;
+    Object.defineProperty(Array.prototype, 'sortByProperty', {
+      value: () => null,
+    });
+    Metadata.getSession();
+
+    Metadata.initialized = true;
   };
 
   // TODO: Remove empty object and update with the right value
@@ -87,7 +98,9 @@ export class Metadata {
     windowId: Etendo.WindowId,
   ): Promise<Etendo.WindowMetadata> {
     try {
-      const response = await Metadata.client.get(`View?viewId=_${windowId}`);
+      const response = await Metadata.client.get(
+        `OBUIAPP_MainLayout/View?viewId=_${windowId}`,
+      );
       const script = document.createElement('script');
 
       script.type = 'text/javascript';
@@ -133,5 +146,18 @@ export class Metadata {
     }
 
     return item.properties.viewProperties.fields;
+  }
+
+  public static async getSession() {
+    const response = await Metadata.client.get(
+      `/OBCLKER_Kernel/SessionDynamic`,
+    );
+    const script = document.createElement('script');
+
+    script.type = 'text/javascript';
+    script.textContent = response.data;
+    console.log(script.textContent);
+    document.head.appendChild(script);
+    document.head.removeChild(script);
   }
 }

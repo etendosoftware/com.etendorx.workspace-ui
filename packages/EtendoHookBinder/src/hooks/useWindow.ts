@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Metadata } from '../api/metadata';
 
-export function useWindow(
-  windowId: string,
-  { autoLoad }: { autoLoad?: boolean } = { autoLoad: true },
-) {
-  const [loading, setLoading] = useState(false);
+export function useWindow(windowId: string) {
+  const [loading, setLoading] = useState(true);
   const [data, setData] = useState<Etendo.WindowMetadata>();
   const [error, setError] = useState<Error>();
   const [loaded, setLoaded] = useState(false);
@@ -28,10 +25,8 @@ export function useWindow(
   }, [windowId]);
 
   useEffect(() => {
-    if (autoLoad) {
-      load();
-    }
-  }, [autoLoad, load]);
+    load();
+  }, [load]);
 
   return useMemo(
     () => ({ loading, data, error, loaded, load }),

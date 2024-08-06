@@ -3,9 +3,8 @@ import { Metadata } from '../api/metadata';
 
 export function useColumns(
   tabId: string | undefined,
-  { autoLoad }: { autoLoad?: boolean } = { autoLoad: true },
 ) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [data, setData] = useState<Etendo.Field[]>();
   const [error, setError] = useState<Error>();
   const [loaded, setLoaded] = useState(false);
@@ -32,10 +31,8 @@ export function useColumns(
   }, [tabId]);
 
   useEffect(() => {
-    if (autoLoad) {
-      load();
-    }
-  }, [autoLoad, load]);
+    load();
+  }, [load]);
 
   return useMemo(
     () => ({ loading, data, error, loaded, load }),
