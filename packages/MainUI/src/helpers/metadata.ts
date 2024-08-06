@@ -1,3 +1,5 @@
+import type { Etendo } from '@workspaceui/etendohookbinder/src/api/metadata';
+
 export const parseColumns = (columns?: Etendo.Field[]) => {
   if (!columns) {
     return [];
@@ -21,7 +23,7 @@ export const parseColumns = (columns?: Etendo.Field[]) => {
     .map(column => ({
       header: column.title ?? column.name ?? column.columnName,
       id: column.name,
-      accessorFn: v => {
+      accessorFn: (v: Record<string, unknown>) => {
         const identifier = column.name + '$_identifier';
 
         return typeof v[identifier] !== 'undefined'

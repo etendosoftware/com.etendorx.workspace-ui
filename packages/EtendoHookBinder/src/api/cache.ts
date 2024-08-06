@@ -1,3 +1,5 @@
+import type { Etendo } from "./metadata";
+
 export class CacheStore<T> {
   private store: Etendo.CacheStore<T>;
   private duration: number;

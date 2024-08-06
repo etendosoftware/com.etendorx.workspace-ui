@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Metadata } from '../api/metadata';
+import { Field } from '../api/types';
 
 export function useColumns(
   tabId: string | undefined,
 ) {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<Etendo.Field[]>();
+  const [data, setData] = useState<Field[]>();
   const [error, setError] = useState<Error>();
   const [loaded, setLoaded] = useState(false);
 

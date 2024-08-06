@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Metadata } from '../api/metadata';
-import type { WindowMetadata } from 'Etendo';
+import { WindowMetadata } from '../api/types';
 
 export function useWindow(windowId: string) {
   const [loading, setLoading] = useState(true);

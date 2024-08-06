@@ -2,24 +2,22 @@ import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL } from './constants';
 import { Client } from './client';
 import { onChange } from './helpers';
 import { CacheStore } from './cache';
-import type {
-  WindowMetadata,
-  WindowMetadataMap,
-  WindowMetadataProperties,
-  WindowId,
-} from 'Etendo';
+import * as Etendo from './types';
+
+export type { Etendo };
+
 export class Metadata {
   private static client = new Client(API_METADATA_URL);
-  private static cache = new CacheStore<WindowMetadata>(
+  private static cache = new CacheStore<Etendo.WindowMetadata>(
     API_DEFAULT_CACHE_DURATION,
   );
   private static initialized = false;
 
-  private static isc = {
-    classes: {} as WindowMetadataMap,
+  public static isc = {
+    classes: {} as Etendo.WindowMetadataMap,
     ClassFactory: {
       defineClass: (className: string, superClass: string) => ({
-        addProperties: (properties: WindowMetadataProperties) => {
+        addProperties: (properties: Etendo.WindowMetadataProperties) => {
           const cn = className.split('_');
           const newClassName = '_' + cn[1].toString();
 
@@ -27,7 +25,7 @@ export class Metadata {
             Metadata.isc.classes[newClassName] = {
               name: className,
               superClass: superClass,
-              properties: {} as WindowMetadataProperties,
+              properties: {} as Etendo.WindowMetadataProperties,
             };
           }
 
@@ -53,7 +51,7 @@ export class Metadata {
     });
   }
 
-  private static OB = Metadata.createProxy({
+  public static OB = Metadata.createProxy({
     KernelUtilities: Metadata.createProxy({
       handleSystemException: (err: unknown) => {
         throw err;
@@ -85,9 +83,10 @@ export class Metadata {
       return;
     }
 
+    //@ts-expect-error Need to mock original OB object
     window.OB = window.OB || Metadata.OB;
+    //@ts-expect-error Need to mock original isc object
     window.isc = window.isc || Metadata.isc;
-    window.Metadata = window.Metadata || Metadata;
     Object.defineProperty(Array.prototype, 'sortByProperty', {
       value: () => null,
     });
@@ -99,7 +98,7 @@ export class Metadata {
   // TODO: Remove empty object and update with the right value
   public static standardWindow = {};
 
-  private static async _getWindow(windowId: WindowId): Promise<WindowMetadata> {
+  private static async _getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
     try {
       const response = await Metadata.client.get(
         `OBUIAPP_MainLayout/View?viewId=_${windowId}`,
@@ -123,7 +122,7 @@ export class Metadata {
     }
   }
 
-  public static async getWindow(windowId: WindowId): Promise<WindowMetadata> {
+  public static async getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
     Metadata.setup();
 
     const cached = Metadata.cache.get(windowId);
