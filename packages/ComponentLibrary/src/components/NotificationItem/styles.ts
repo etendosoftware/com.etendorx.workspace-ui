@@ -3,9 +3,6 @@ import { SxProps, Theme } from '@mui/material';
 import { theme } from '../../theme';
 
 export const styles: { [key: string]: CSSProperties } = {
-  listContainer: {
-    gap: '0.5rem',
-  },
   iconContainerStyles: {
     width: '2.25rem',
     height: '2.25rem',
@@ -49,15 +46,42 @@ export const styles: { [key: string]: CSSProperties } = {
     color: theme.palette.dynamicColor.main,
     textDecoration: 'none',
   },
-  closeIcon: {
+};
+
+export const sx: { [key: string]: SxProps<Theme> } = {
+  listItem: {
+    padding: 0,
+  },
+  notificationBox: {
+    width: '27.25rem',
+    borderRadius: '0.75rem',
+    margin: '0.25rem 0.75rem',
+    padding: '0.75rem 1rem',
+    display: 'flex',
+    backgroundColor: theme.palette.baselineColor.neutral[0],
+    border: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
+    '&:hover': {
+      backgroundColor: theme.palette.baselineColor.neutral[10],
+      outline: `2px solid ${theme.palette.dynamicColor.main}`,
+      '& .closeIcon': {
+        visibility: 'visible',
+      },
+      '& > .textContainer': {
+        paddingRight: '1.5rem',
+      },
+    },
+  },
+  closeIconButton: {
     position: 'absolute',
     top: '0.5rem',
     right: '0.5rem',
     visibility: 'hidden',
+    '& .closeIcon': {
+      fill: theme.palette.baselineColor.neutral[80],
+      width: '1rem',
+      height: '1rem',
+    },
   },
-};
-
-export const sx: { [key: string]: SxProps<Theme> } = {
   leftButton: {
     background: theme.palette.baselineColor.transparentNeutral[10],
     color: theme.palette.baselineColor.transparentNeutral[70],

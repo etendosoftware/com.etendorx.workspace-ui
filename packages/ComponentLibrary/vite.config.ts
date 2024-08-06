@@ -25,7 +25,4 @@ export default defineConfig({
       external: ['@mui/material'],
     },
   },
-  esbuild: {
-    logOverride: { 'this-is-undefined-in-esm': 'silent' },
-  },
 });
