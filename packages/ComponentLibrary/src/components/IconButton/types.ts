@@ -6,5 +6,5 @@ export interface IIconComponentProps
   hoverFill?: string;
   width?: number;
   height?: number;
-  tooltip: string;
+  tooltip?: string;
 }

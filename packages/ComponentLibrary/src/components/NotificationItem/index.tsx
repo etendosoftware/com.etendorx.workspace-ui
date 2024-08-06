@@ -1,12 +1,10 @@
-import React from 'react';
-import { ListItem, Typography, IconButton, Button } from '@mui/material';
+import { ListItem, Typography, IconButton, Button, Box } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import { NotificationItemProps } from './types';
 import Tag from '../Tag';
-import { styles, StyledListItem } from './styles';
+import { styles, sx } from './styles';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 import CloseIcon from '../../assets/icons/x.svg';
-import { theme } from '../../theme';
 
 const NotificationItem: React.FC<NotificationItemProps> = ({
   description,
@@ -20,16 +18,12 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     a: ({ ...props }) => <a style={styles.anchorStyles} {...props} />,
     p: ({ ...props }) => <div {...props} />,
   };
+
   return (
-    <ListItem component="div" style={styles.listContainer}>
-      <StyledListItem>
-        <IconButton style={styles.closeIcon}>
-          <CloseIcon
-            fill={theme.palette.baselineColor.neutral[80]}
-            width={'1.094rem'}
-            height={'1.094rem'}
-            className="closeIcon"
-          />
+    <ListItem component="div" sx={sx.listItem}>
+      <Box sx={sx.notificationBox}>
+        <IconButton sx={sx.closeIconButton}>
+          <CloseIcon className="closeIcon" />
         </IconButton>
         <div style={styles.iconContainerStyles}>
           <IconComponent />
@@ -63,7 +57,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
             </Typography>
           </div>
         </div>
-      </StyledListItem>
+      </Box>
     </ListItem>
   );
 };

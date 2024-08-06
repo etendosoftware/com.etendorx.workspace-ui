@@ -1,6 +1,9 @@
 import { MRT_ColumnDef } from 'material-react-table';
-import { Box, Link } from '@mui/material';
-import { Organization, OrganizationLabels } from './types';
+import { Box, Link, SxProps, Theme } from '@mui/material';
+import {
+  Organization,
+  OrganizationLabels,
+} from '../../../../../storybook/src/stories/Components/Table/types';
 import FolderIcon from '../../../../../ComponentLibrary/src/assets/icons/folder-minus.svg';
 import FolderOpenIcon from '../../../../../ComponentLibrary/src/assets/icons/folder-plus.svg';
 import { theme } from '../../../../../ComponentLibrary/src/theme';
@@ -40,10 +43,10 @@ export const getColumns = (
         )}
         <Link
           href="#"
-          onClick={e => {
+          onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
             e.preventDefault();
           }}
-          sx={sx.linkStyles}>
+          sx={sx.linkStyles as SxProps<Theme>}>
           {cell.getValue<string>()}
         </Link>
       </Box>

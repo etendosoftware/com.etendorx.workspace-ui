@@ -1,5 +1,4 @@
-// TextInputBaseStyles.ts
-import { SxProps } from '@mui/system';
+import { SxProps } from '@mui/material';
 import { theme } from '../../../../theme';
 
 export const inputBaseStyles = {

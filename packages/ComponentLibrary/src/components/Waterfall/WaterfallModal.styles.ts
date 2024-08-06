@@ -1,4 +1,4 @@
-import { SxProps, Theme, styled } from '@mui/material';
+import { SxProps, Theme } from '@mui/material';
 import { CSSProperties } from 'react';
 import { theme } from '../../theme';
 
@@ -25,14 +25,6 @@ export const styles: { [key: string]: CSSProperties } = {
     borderRadius: '0.75rem',
   },
 };
-
-export const FadeWrapper = styled('div')({
-  transition: 'opacity 0.2s ease-in-out',
-  opacity: 1,
-  '&.fade-out': {
-    opacity: 0,
-  },
-});
 
 export const sx: { [key: string]: SxProps<Theme> } = {
   menuItemStyles: {

@@ -1,8 +1,8 @@
 import DragModal from '../../../../../ComponentLibrary/src/components/DragModal/DragModal';
-import { DragModalProps } from '../../../../../ComponentLibrary/src/components/DragModal/DragModal.types';
 import { initialPeople } from '../mock';
+import type { Meta, StoryObj } from '@storybook/react';
 
-export default {
+const meta: Meta<typeof DragModal> = {
   title: 'Components/DragModal',
   component: DragModal,
   argTypes: {
@@ -13,15 +13,18 @@ export default {
   },
 };
 
-const Template = (args: DragModalProps) => <DragModal {...args} />;
+export default meta;
 
-export const Default = Template.bind({});
-Default.args = {
-  initialPeople,
-  onBack: () => console.log('Back clicked'),
-  onClose: () => console.log('Close clicked'),
-  backButtonText: 'Back',
-  activateAllText: 'Activate all',
-  deactivateAllText: 'Deactivate all',
-  buttonText: 'Buttons',
+type Story = StoryObj<typeof DragModal>;
+
+export const Default: Story = {
+  args: {
+    initialPeople,
+    onBack: () => console.log('Back clicked'),
+    onClose: () => console.log('Close clicked'),
+    backButtonText: 'Back',
+    activateAllText: 'Activate all',
+    deactivateAllText: 'Deactivate all',
+    buttonText: 'Buttons',
+  },
 };

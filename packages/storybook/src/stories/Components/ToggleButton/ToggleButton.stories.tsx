@@ -1,8 +1,16 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import ToggleButton from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleButton';
 import { sectionsMock, sectionsMock3, sectionsMock4 } from './mock';
+import type { Meta, StoryObj } from '@storybook/react';
+import { Section } from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleButton/types';
 
-export default {
+interface ToggleButtonProps {
+  sections: Section[];
+  currentSection: string;
+  onToggle: (section: string) => void;
+}
+
+const meta: Meta<typeof ToggleButton> = {
   title: 'Components/ToggleButton',
   component: ToggleButton,
   argTypes: {
@@ -12,7 +20,11 @@ export default {
   },
 };
 
-const Template = args => {
+export default meta;
+
+type Story = StoryObj<ToggleButtonProps>;
+
+const ToggleButtonTemplate: React.FC<ToggleButtonProps> = args => {
   const [currentSection, setCurrentSection] = useState(args.currentSection);
 
   const handleToggle = (section: string) => {
@@ -29,20 +41,29 @@ const Template = args => {
   );
 };
 
-export const Default = Template.bind({});
-Default.args = {
-  sections: sectionsMock,
-  currentSection: 'profile',
+export const Default: Story = {
+  render: args => <ToggleButtonTemplate {...args} />,
+  args: {
+    sections: sectionsMock,
+    currentSection: 'profile',
+    onToggle: (section: string) => console.log('Toggled to:', section),
+  },
 };
 
-export const TripleButton = Template.bind({});
-TripleButton.args = {
-  sections: sectionsMock3,
-  currentSection: 'profile',
+export const TripleButton: Story = {
+  render: args => <ToggleButtonTemplate {...args} />,
+  args: {
+    sections: sectionsMock3,
+    currentSection: 'profile',
+    onToggle: (section: string) => console.log('Toggled to:', section),
+  },
 };
 
-export const QuadButton = Template.bind({});
-QuadButton.args = {
-  sections: sectionsMock4,
-  currentSection: 'profile',
+export const QuadButton: Story = {
+  render: args => <ToggleButtonTemplate {...args} />,
+  args: {
+    sections: sectionsMock4,
+    currentSection: 'profile',
+    onToggle: (section: string) => console.log('Toggled to:', section),
+  },
 };
