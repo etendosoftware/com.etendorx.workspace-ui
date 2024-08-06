@@ -5,4 +5,8 @@ export const styles = {
     width: '100vw',
     overflow: 'hidden',
   },
+  navContainer: {
+    gap: '4px',
+    display: 'flex',
+  },
 };

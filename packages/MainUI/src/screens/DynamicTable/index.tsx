@@ -1,16 +1,21 @@
 import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
 import { useColumns } from '@workspaceui/etendohookbinder/src/hooks/useColumns';
 import { Datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
-import { Box, DynamicTable } from '@workspaceui/componentlibrary/src/components';
-import { parseColumns } from '../../helpers/metadata';
+import {
+  Box,
+  DynamicTable,
+} from '@workspaceui/componentlibrary/src/components';
 import { useEffect, useMemo, useState } from 'react';
+import { parseColumns } from '../../helpers/metadata';
+import { DRAWER_WIDTH_CLOSED } from '@workspaceui/componentlibrary/src/components/Drawer/styles';
 
-export default function SalesOrder() {
+export default function DynamicTableScreen(props: { windowId: string }) {
   const [records, setRecords] = useState([]);
-  const { data: windowData } = useWindow('143');
+  const { data: windowData } = useWindow(props.windowId);
   const { data: columnsData } = useColumns(
     windowData?.properties.viewProperties.tabId,
   );
+
   const columns = useMemo(() => parseColumns(columnsData), [columnsData]);
 
   useEffect(() => {
@@ -26,8 +31,10 @@ export default function SalesOrder() {
   }, []);
 
   return (
-    <Box width="100%" padding="0.25rem">
-      <DynamicTable columns={columns} data={records} />
+    <Box height="100%" paddingLeft={`${DRAWER_WIDTH_CLOSED}px`}>
+      <Box padding="0.5rem" height="100%" overflow="auto">
+        <DynamicTable columns={columns} data={records} />
+      </Box>
     </Box>
   );
 }

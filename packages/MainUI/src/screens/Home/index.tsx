@@ -37,7 +37,7 @@ const Home = (props: React.PropsWithChildren) => {
         headerTitle="Etendo"
         sectionGroups={sectionGroups}>
         <Nav>
-          <div style={{ gap: '4px', display: 'flex' }}>
+          <div style={styles.navContainer}>
             <WaterfallModal
               menuItems={menuItems}
               initialPeople={initialPeople}
@@ -92,8 +92,8 @@ const Home = (props: React.PropsWithChildren) => {
             />
           </div>
         </Nav>
-        {props.children}
       </Drawer>
+      {props.children}
     </Box>
   );
 };
