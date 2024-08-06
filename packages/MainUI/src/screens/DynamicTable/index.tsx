@@ -6,7 +6,7 @@ import {
   Box,
   DynamicTable,
 } from '@workspaceui/componentlibrary/src/components';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { parseColumns } from '../../helpers/metadata';
 
 export default function DynamicTableScreen(props: { windowId: string }) {

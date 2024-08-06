@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Metadata } from '../api/metadata';
 import { Datasource } from '../api/datasource';
 
 export function useDatasource(entity: string) {
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<unknown>([]);
+  const [data, setData] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState<Error>();
   const [loaded, setLoaded] = useState(false);
 
