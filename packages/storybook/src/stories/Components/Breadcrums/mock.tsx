@@ -41,8 +41,13 @@ export const mockDefaultArgs: BreadcrumbProps = {
   homeText: 'Dashboard',
   onHomeClick: () => console.log('Home clicked'),
   items: [
-    { id: '1', label: 'Item 1' },
-    { id: '2', label: 'Item 2' },
-    { id: '3', label: 'Item 3', actions: mockDefaultActions },
+    { id: '1', label: 'Super long item text name' },
+    { id: '2', label: 'Super long item text name 2' },
+    { id: '3', label: 'Super long item text name 3' },
+    {
+      id: '4',
+      label: 'Super long item text name 4',
+      actions: mockDefaultActions,
+    },
   ],
 };

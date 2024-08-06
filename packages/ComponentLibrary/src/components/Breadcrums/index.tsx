@@ -11,9 +11,10 @@ import {
 import NavigateNextIcon from '../../assets/icons/chevron-right.svg';
 import ArrowLeftIcon from '../../assets/icons/arrow-left.svg';
 import ChevronDown from '../../assets/icons/chevron-down.svg';
+import MoreHorizIcon from '../../assets/icons/more-horizontal.svg';
 import { theme } from '../../theme';
 import { menuStyle, sx } from './styles';
-import { BreadcrumbProps, BreadcrumbAction } from './types';
+import { BreadcrumbProps, BreadcrumbAction, BreadcrumbItem } from './types';
 import ToggleChip from '../Toggle/ToggleChip';
 
 const Breadcrumb: FC<BreadcrumbProps> = ({
@@ -29,6 +30,8 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
 }) => {
   const [isHomeHovered, setIsHomeHovered] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [middleMenuAnchorEl, setMiddleMenuAnchorEl] =
+    useState<null | HTMLElement>(null);
   const [currentActions, setCurrentActions] = useState<BreadcrumbAction[]>([]);
   const [toggleStates, setToggleStates] = useState<Record<string, boolean>>({});
   const actionButtonRef = useRef<HTMLButtonElement>(null);
@@ -39,9 +42,18 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
       setCurrentActions(actions);
     }
   }, []);
+
   const handleActionMenuClose = useCallback(() => {
     setAnchorEl(null);
   }, []);
+
+  const handleMiddleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setMiddleMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleMiddleMenuClose = () => {
+    setMiddleMenuAnchorEl(null);
+  };
 
   const handleToggle = useCallback((actionId: string) => {
     setToggleStates(prevStates => ({
@@ -67,6 +79,91 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
     return null;
   }, [homeIcon, isHomeHovered]);
 
+  const renderBreadcrumbItems = () => {
+    if (items.length <= 2) {
+      return items.map((item, index) =>
+        renderBreadcrumbItem(item, index === items.length - 1),
+      );
+    } else {
+      const firstItem = items[0];
+      const lastItem = items[items.length - 1];
+      const middleItems = items.slice(1, -1);
+
+      return (
+        <>
+          {renderBreadcrumbItem(firstItem, false)}
+          {middleItems.length > 0 && (
+            <Box sx={sx.breadcrumbItem}>
+              <IconButton onClick={handleMiddleMenuOpen} size="small">
+                <MoreHorizIcon fill={theme.palette.baselineColor.neutral[80]} />
+              </IconButton>
+              <Menu
+                anchorEl={middleMenuAnchorEl}
+                open={Boolean(middleMenuAnchorEl)}
+                onClose={handleMiddleMenuClose}
+                slotProps={{
+                  paper: { sx: sx.menu, elevation: 3 },
+                }}
+                MenuListProps={{ sx: menuStyle }}>
+                {middleItems.map(item => (
+                  <MenuItem
+                    key={item.id}
+                    onClick={() => {
+                      item.onClick && item.onClick();
+                      handleMiddleMenuClose();
+                    }}
+                    sx={sx.menuItem}>
+                    {item.label}
+                  </MenuItem>
+                ))}
+              </Menu>
+            </Box>
+          )}
+          {renderBreadcrumbItem(lastItem, true)}
+        </>
+      );
+    }
+  };
+  const renderBreadcrumbItem = (item: BreadcrumbItem, isLast: boolean) => (
+    <Box key={item.id} sx={sx.breadcrumbItem}>
+      {isLast ? (
+        <>
+          <Typography
+            noWrap
+            sx={sx.lastItemTypography}
+            onClick={() => {
+              if (item.actions && item.actions.length > 0) {
+                handleActionMenuOpen(item.actions);
+              }
+            }}>
+            {item.label}
+          </Typography>
+          {item.actions && item.actions.length > 0 && (
+            <IconButton
+              size="small"
+              ref={actionButtonRef}
+              onClick={() => handleActionMenuOpen(item.actions!)}
+              sx={sx.actionButton}>
+              <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
+            </IconButton>
+          )}
+        </>
+      ) : (
+        <Link
+          href="#"
+          onClick={e => {
+            e.preventDefault();
+            item.onClick && item.onClick();
+          }}
+          sx={sx.link}>
+          <Typography noWrap sx={sx.breadcrumbTypography}>
+            {item.label}
+          </Typography>
+        </Link>
+      )}
+    </Box>
+  );
+
   return (
     <Box sx={sx.container}>
       <Breadcrumbs
@@ -89,51 +186,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
             {homeText}
           </Typography>
         </Box>
-        {items.map((item, index) => {
-          const isLast = index === items.length - 1;
-          return (
-            <Box key={item.id} sx={sx.breadcrumbItem}>
-              {isLast ? (
-                <>
-                  <Typography
-                    noWrap
-                    sx={sx.lastItemTypography}
-                    onClick={() => {
-                      if (item.actions && item.actions.length > 0) {
-                        handleActionMenuOpen(item.actions);
-                      }
-                    }}>
-                    {' '}
-                    {item.label}
-                  </Typography>
-                  {item.actions && item.actions.length > 0 && (
-                    <IconButton
-                      size="small"
-                      ref={actionButtonRef}
-                      onClick={() => handleActionMenuOpen(item.actions!)}
-                      sx={sx.actionButton}>
-                      <ChevronDown
-                        fill={theme.palette.baselineColor.neutral[80]}
-                      />
-                    </IconButton>
-                  )}
-                </>
-              ) : (
-                <Link
-                  href="#"
-                  onClick={e => {
-                    e.preventDefault();
-                    item.onClick && item.onClick();
-                  }}
-                  sx={sx.link}>
-                  <Typography noWrap sx={sx.breadcrumbTypography}>
-                    {item.label}
-                  </Typography>
-                </Link>
-              )}
-            </Box>
-          );
-        })}
+        {renderBreadcrumbItems()}
       </Breadcrumbs>
       <Menu
         anchorEl={anchorEl}

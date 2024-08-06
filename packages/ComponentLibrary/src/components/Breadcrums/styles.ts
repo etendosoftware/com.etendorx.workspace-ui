@@ -30,9 +30,6 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     textDecoration: 'none',
   },
   breadcrumbTypography: {
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
     fontSize: '1.5rem',
     fontWeight: '600',
     color: theme.palette.baselineColor.neutral[100],
@@ -45,7 +42,7 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     height: '3rem',
     padding: '0 1rem',
     borderRadius: '6.5rem',
-    maxWidth: '18.75rem',
+    maxWidth: '100%',
     display: 'inline-flex',
     alignItems: 'center',
   },
