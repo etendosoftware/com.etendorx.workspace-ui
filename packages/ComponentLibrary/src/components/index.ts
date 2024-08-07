@@ -27,6 +27,7 @@ import DrawerMUI from './Drawer';
 import IButton from './IconButton';
 import { BoxProps } from '@mui/material';
 import DynamicTableCmp from './DynamicTable';
+import SpinnerComponent from './Spinner';
 import ApplyHOC from '../utils/applyHOC';
 
 export * from '../theme';
@@ -59,6 +60,7 @@ const NotificationStates = ApplyHOC(NotificationItemStates);
 const Drawer = ApplyHOC(DrawerMUI);
 const IconButton = ApplyHOC(IButton);
 const DynamicTable = ApplyHOC(DynamicTableCmp);
+const Spinner = ApplyHOC(SpinnerComponent);
 
 export {
   Button,
@@ -85,4 +87,5 @@ export {
   Drawer,
   IconButton,
   DynamicTable,
+  Spinner,
 };

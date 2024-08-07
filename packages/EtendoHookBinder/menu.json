@@ -1,0 +1,3320 @@
+[
+    {
+        "title": "General Setup",
+        "singleRecord": false,
+        "readOnly": false,
+        "editOrDeleteOnly": false,
+        "type": "folder",
+        "submenu": [
+            {
+                "title": "Integrations Configuration",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Connector Suscription",
+                        "type": "window",
+                        "tabId": "51B309205E6B4F0AB512A33D4024C05F",
+                        "windowId": "E41E6244047F4EF3AF3EF5CA69915C61",
+                        "optionType": "tab",
+                        "id": "0BCBD343FBEF4A7583CC547EFD878B43",
+                        "viewValue": "51B309205E6B4F0AB512A33D4024C05F",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Connector",
+                        "type": "window",
+                        "tabId": "E0C188BE228A4C7FAD8C3EE0B70168CD",
+                        "windowId": "6BB0E398351542C98EF446C5B17F2751",
+                        "optionType": "tab",
+                        "id": "58490E2941D14C029F85A2C67A9E43E6",
+                        "viewValue": "E0C188BE228A4C7FAD8C3EE0B70168CD",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Attachments Configuration",
+                "type": "window",
+                "tabId": "9E448DCAFFF34174B15C19376FDEE003",
+                "windowId": "7AE5333578E84E3CAEA6F1943ACF324F",
+                "optionType": "tab",
+                "id": "F5D9F31EA76449129DE7F1EF7878572D",
+                "viewValue": "9E448DCAFFF34174B15C19376FDEE003",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false
+            },
+            {
+                "title": "Application",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Create Sequences",
+                        "type": "processDefinition",
+                        "optionType": "processDefinition",
+                        "viewId": "processDefinition_B0985AF0989E40A7B664917C0EA203BE",
+                        "uiPattern": "A",
+                        "processId": "B0985AF0989E40A7B664917C0EA203BE",
+                        "id": "D114F00F9B614440B04FDB16433B68E5",
+                        "viewValue": "processDefinition_B0985AF0989E40A7B664917C0EA203BE",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Currency",
+                        "type": "window",
+                        "tabId": "151",
+                        "windowId": "115",
+                        "optionType": "tab",
+                        "id": "52118BF1A1E84D84E040007F01005FEC",
+                        "viewValue": "151",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Conversion Rates",
+                        "type": "window",
+                        "tabId": "198",
+                        "windowId": "116",
+                        "optionType": "tab",
+                        "id": "52118BF1A1E94D84E040007F01005FEC",
+                        "viewValue": "198",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Country and Region",
+                        "type": "window",
+                        "tabId": "135",
+                        "windowId": "122",
+                        "optionType": "tab",
+                        "id": "52118BF1A1EF4D84E040007F01005FEC",
+                        "viewValue": "135",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Preference",
+                        "type": "window",
+                        "tabId": "156",
+                        "windowId": "129",
+                        "optionType": "tab",
+                        "id": "52118BF1A1F44D84E040007F01005FEC",
+                        "viewValue": "156",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Session Preferences",
+                        "type": "form",
+                        "optionType": "url",
+                        "manualUrl": "/ad_forms/ShowSessionPreferences.html",
+                        "formId": "1003100000",
+                        "id": "52118BF1A3E04D84E040007F01005FEC",
+                        "viewValue": "/ad_forms/ShowSessionPreferences.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Alert Management",
+                        "type": "view",
+                        "optionType": "url",
+                        "viewId": "OBUIAPP_AlertManagement",
+                        "tabTitle": "Alert Management",
+                        "id": "9E88163FFD3D4B41E040007F01005CF5",
+                        "viewValue": "OBUIAPP_AlertManagement",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Direct Process Import Entries",
+                        "type": "processDefinition",
+                        "optionType": "processDefinition",
+                        "viewId": "processDefinition_C1A39F72074A4FAC8F354CF7CA1BF704",
+                        "uiPattern": "OBUIAPP_PickAndExecute",
+                        "processId": "C1A39F72074A4FAC8F354CF7CA1BF704",
+                        "id": "21B1F5DA774D4701A6B335E2D98E6465",
+                        "viewValue": "processDefinition_C1A39F72074A4FAC8F354CF7CA1BF704",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Data Import Entries",
+                        "type": "window",
+                        "tabId": "DA845735FBB34548B04F1908E2089CEC",
+                        "windowId": "17F3B5BC762145B9AAD2F6483BC12CF4",
+                        "optionType": "tab",
+                        "id": "4E22D28CB0D240C19D92DEF74C402239",
+                        "viewValue": "DA845735FBB34548B04F1908E2089CEC",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Data Import Entry Archive",
+                        "type": "window",
+                        "tabId": "A55C6E2F874F4CD0B7AEDE4362701EA2",
+                        "windowId": "F88B1280DE564BDBB1D80D159F0D2889",
+                        "optionType": "tab",
+                        "id": "E4A1D5C890444A32B206697920497AFF",
+                        "viewValue": "A55C6E2F874F4CD0B7AEDE4362701EA2",
+                        "singleRecord": false,
+                        "readOnly": true,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Window Personalization",
+                        "type": "window",
+                        "tabId": "FF8081813157AED2013157BF6D810023",
+                        "windowId": "FF8081813157AED2013157BE93460020",
+                        "optionType": "tab",
+                        "id": "76DC645312694D7A8E686BF48C3B490C",
+                        "viewValue": "FF8081813157AED2013157BF6D810023",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Alert",
+                        "type": "window",
+                        "tabId": "800265",
+                        "windowId": "276",
+                        "optionType": "tab",
+                        "id": "52118BF1A3494D84E040007F01005FEC",
+                        "viewValue": "800265",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Client",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Client",
+                        "type": "window",
+                        "tabId": "145",
+                        "windowId": "109",
+                        "optionType": "tab",
+                        "id": "52118BF1A2104D84E040007F01005FEC",
+                        "viewValue": "145",
+                        "singleRecord": true,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Export Client",
+                        "type": "process",
+                        "optionType": "process",
+                        "manualUrl": "/ad_actionButton/ActionButtonJava_Responser.html",
+                        "processId": "D85D5B5E368A49B1A6293BA4AE15F0F9",
+                        "modal": "true",
+                        "id": "8CB53124C58211DDB9A9001D09C4A2FE",
+                        "viewValue": "/ad_actionButton/ActionButtonJava_Responser.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "CRM Connector",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "CRM Connector Configuration",
+                        "type": "window",
+                        "tabId": "64B041991B3C48EB9F0E85D35DD40825",
+                        "windowId": "B282F5FA893E4339A548F2E224B15162",
+                        "optionType": "tab",
+                        "id": "6739AEF7D1444A4C85F1AC239151D60B",
+                        "viewValue": "64B041991B3C48EB9F0E85D35DD40825",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Enterprise Model",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Initial organization setup",
+                        "type": "form",
+                        "optionType": "url",
+                        "manualUrl": "/ad_forms/InitialOrgSetup.html",
+                        "formId": "DE2329ABCAA84D5F99B59043CFFFE454",
+                        "id": "5849002C5F1154C3E040007F0100223C",
+                        "viewValue": "/ad_forms/InitialOrgSetup.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Enterprise module management",
+                        "type": "form",
+                        "optionType": "url",
+                        "manualUrl": "/ad_forms/UpdateReferenceData.html",
+                        "formId": "C09B000F160B47BE938A77FDE3207643",
+                        "id": "58BBB318FED2DB0CE040007F01002A2C",
+                        "viewValue": "/ad_forms/UpdateReferenceData.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Organization Type",
+                        "type": "window",
+                        "tabId": "5DD4A4D36D71411FB3BE2783C3D55473",
+                        "windowId": "11E11FE8445B4621A9989DD406C1B374",
+                        "optionType": "tab",
+                        "id": "7AC6A56E80D711DDADB69B718A17D8D7",
+                        "viewValue": "5DD4A4D36D71411FB3BE2783C3D55473",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Organization",
+                        "type": "window",
+                        "tabId": "143",
+                        "windowId": "110",
+                        "optionType": "tab",
+                        "id": "52118BF1A2114D84E040007F01005FEC",
+                        "viewValue": "143",
+                        "singleRecord": true,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Security",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "User",
+                        "type": "window",
+                        "tabId": "118",
+                        "windowId": "108",
+                        "optionType": "tab",
+                        "id": "52118BF1A20F4D84E040007F01005FEC",
+                        "viewValue": "118",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Role",
+                        "type": "window",
+                        "tabId": "119",
+                        "windowId": "111",
+                        "optionType": "tab",
+                        "id": "52118BF1A2124D84E040007F01005FEC",
+                        "viewValue": "119",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Role Access",
+                        "type": "window",
+                        "tabId": "485",
+                        "windowId": "268",
+                        "optionType": "tab",
+                        "id": "52118BF1A2934D84E040007F01005FEC",
+                        "viewValue": "485",
+                        "singleRecord": false,
+                        "readOnly": true,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Audit Trail",
+                        "type": "window",
+                        "tabId": "3690EB6BA1614375A6F058BBA61B19BC",
+                        "windowId": "FEB8679CAA0D47E5978F10E22566FCEA",
+                        "optionType": "tab",
+                        "id": "D0E4A95994554D6590625F6D302336D8",
+                        "viewValue": "3690EB6BA1614375A6F058BBA61B19BC",
+                        "singleRecord": false,
+                        "readOnly": true,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Process Scheduling",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Process Request",
+                        "type": "window",
+                        "tabId": "CD573DF1E351485EA2B2DE487DCACA6F",
+                        "windowId": "48E7EDE7D1104A59B46FC7449D9FB267",
+                        "optionType": "tab",
+                        "id": "573E1252E5C4F7E8E040007F01014BB3",
+                        "viewValue": "CD573DF1E351485EA2B2DE487DCACA6F",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Process Monitor",
+                        "type": "window",
+                        "tabId": "8E5972CF3664486D9D887BDEDA88627D",
+                        "windowId": "EF3E837705944F4DBF398D683D36ACE0",
+                        "optionType": "tab",
+                        "id": "57A00DE05C04B8C8E040007F01011C10",
+                        "viewValue": "8E5972CF3664486D9D887BDEDA88627D",
+                        "singleRecord": false,
+                        "readOnly": true,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Process Group",
+                        "type": "window",
+                        "tabId": "538F938952AC44A182A9AB92DD7895DB",
+                        "windowId": "C846A9EFF5D741A693029D516432BF6C",
+                        "optionType": "tab",
+                        "id": "955B7E22F1B94135A25F867F8DC7A35D",
+                        "viewValue": "538F938952AC44A182A9AB92DD7895DB",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Workspace",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Widget Instance",
+                        "type": "window",
+                        "tabId": "B013F445508A41D5908F48575C9CE045",
+                        "windowId": "F222C5956BC84B538924F626DFC8DBBB",
+                        "optionType": "tab",
+                        "id": "927E451CB84085BDE040A8C0CF0729E0",
+                        "viewValue": "B013F445508A41D5908F48575C9CE045",
+                        "singleRecord": false,
+                        "readOnly": true,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Widget",
+                        "type": "window",
+                        "tabId": "EA867498578C4E98A4935A53A3A5F6AE",
+                        "windowId": "519E5DF804FD4BC4B0FBE6DD51F3EDA8",
+                        "optionType": "tab",
+                        "id": "927E451CB83E85BDE040A8C0CF0729E0",
+                        "viewValue": "EA867498578C4E98A4935A53A3A5F6AE",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "title": "Jobs",
+        "singleRecord": false,
+        "readOnly": false,
+        "editOrDeleteOnly": false,
+        "type": "folder",
+        "submenu": [
+            {
+                "title": "Job",
+                "type": "window",
+                "tabId": "DFBDC61B34724D91A62D49BB5F5BA29D",
+                "windowId": "75BBE231421E4812B1691FF33D371CE0",
+                "optionType": "tab",
+                "id": "D3695A80145045DDBBCB657B98E58E32",
+                "viewValue": "DFBDC61B34724D91A62D49BB5F5BA29D",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false
+            },
+            {
+                "title": "Job Result",
+                "type": "window",
+                "tabId": "13D28FB960EC46FD8592CCA43602DAE1",
+                "windowId": "FD5A74DAE9B84D42824F04C3EE1C40DB",
+                "optionType": "tab",
+                "id": "62746FB96E494B9C8186B91FA8B0F1D9",
+                "viewValue": "13D28FB960EC46FD8592CCA43602DAE1",
+                "singleRecord": false,
+                "readOnly": true,
+                "editOrDeleteOnly": false
+            }
+        ]
+    },
+    {
+        "title": "Master Data Management",
+        "singleRecord": false,
+        "readOnly": false,
+        "editOrDeleteOnly": false,
+        "type": "folder",
+        "submenu": [
+            {
+                "title": "Business Partner",
+                "type": "window",
+                "tabId": "220",
+                "windowId": "123",
+                "optionType": "tab",
+                "id": "52118BF1A1F04D84E040007F01005FEC",
+                "viewValue": "220",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false
+            },
+            {
+                "title": "Business Partner Info",
+                "type": "window",
+                "tabId": "550",
+                "windowId": "291",
+                "optionType": "tab",
+                "id": "52118BF1A2A64D84E040007F01005FEC",
+                "viewValue": "550",
+                "singleRecord": false,
+                "readOnly": true,
+                "editOrDeleteOnly": false
+            },
+            {
+                "title": "Product",
+                "type": "window",
+                "tabId": "180",
+                "windowId": "140",
+                "optionType": "tab",
+                "id": "52118BF1A1FD4D84E040007F01005FEC",
+                "viewValue": "180",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false
+            },
+            {
+                "title": "Business Partner Setup",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Business Partner Set",
+                        "type": "window",
+                        "tabId": "BF972A02844E43AFAD23F3B25338E970",
+                        "windowId": "3E459D89D8FE4E399E2183AE1A9E78FA",
+                        "optionType": "tab",
+                        "id": "E859E2EA026441B3BE04A837E8850CAC",
+                        "viewValue": "BF972A02844E43AFAD23F3B25338E970",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Business Partner Category",
+                        "type": "window",
+                        "tabId": "322",
+                        "windowId": "192",
+                        "optionType": "tab",
+                        "id": "52118BF1A2534D84E040007F01005FEC",
+                        "viewValue": "322",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Invoice Schedule",
+                        "type": "window",
+                        "tabId": "193",
+                        "windowId": "147",
+                        "optionType": "tab",
+                        "id": "52118BF1A2034D84E040007F01005FEC",
+                        "viewValue": "193",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Title",
+                        "type": "window",
+                        "tabId": "282",
+                        "windowId": "178",
+                        "optionType": "tab",
+                        "id": "52118BF1A2324D84E040007F01005FEC",
+                        "viewValue": "282",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Payment Term",
+                        "type": "window",
+                        "tabId": "184",
+                        "windowId": "141",
+                        "optionType": "tab",
+                        "id": "52118BF1A1FE4D84E040007F01005FEC",
+                        "viewValue": "184",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Return Reasons",
+                        "type": "window",
+                        "tabId": "2AABA620227C4531B9466831C8063F5A",
+                        "windowId": "0CFFACC0F91C4DFDA429CCF80EBF4BC4",
+                        "optionType": "tab",
+                        "id": "EB68A542EF0F4B68B33711E733E850B3",
+                        "viewValue": "2AABA620227C4531B9466831C8063F5A",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Volume Discount",
+                        "type": "window",
+                        "tabId": "800014",
+                        "windowId": "800003",
+                        "optionType": "tab",
+                        "id": "52118BF1A2BE4D84E040007F01005FEC",
+                        "viewValue": "800014",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Basic Discount",
+                        "type": "window",
+                        "tabId": "800058",
+                        "windowId": "800017",
+                        "optionType": "tab",
+                        "id": "52118BF1A2F44D84E040007F01005FEC",
+                        "viewValue": "800058",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Salary Category",
+                        "type": "window",
+                        "tabId": "800225",
+                        "windowId": "800084",
+                        "optionType": "tab",
+                        "id": "52118BF1A3344D84E040007F01005FEC",
+                        "viewValue": "800225",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Product Setup",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Product Characteristic",
+                        "type": "window",
+                        "tabId": "A661A0A05DCD4650BCB14B010C87F0AA",
+                        "windowId": "6FAD464D6C5C487F956B49E8B5EFC761",
+                        "optionType": "tab",
+                        "id": "D6A0FB95EFF947A0E040007F01001FEA",
+                        "viewValue": "A661A0A05DCD4650BCB14B010C87F0AA",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Update Product Characteristics Description",
+                        "type": "process",
+                        "optionType": "process",
+                        "manualUrl": "/ad_actionButton/ActionButtonJava_Responser.html",
+                        "processId": "58591E3E0F7648E4A09058E037CE49FC",
+                        "modal": "true",
+                        "id": "DA90463294F8E647E040007F010048CB",
+                        "viewValue": "/ad_actionButton/ActionButtonJava_Responser.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Unit of Measure",
+                        "type": "window",
+                        "tabId": "133",
+                        "windowId": "120",
+                        "optionType": "tab",
+                        "id": "52118BF1A1ED4D84E040007F01005FEC",
+                        "viewValue": "133",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Product Category",
+                        "type": "window",
+                        "tabId": "189",
+                        "windowId": "144",
+                        "optionType": "tab",
+                        "id": "52118BF1A2014D84E040007F01005FEC",
+                        "viewValue": "189",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Attribute",
+                        "type": "window",
+                        "tabId": "462",
+                        "windowId": "260",
+                        "optionType": "tab",
+                        "id": "52118BF1A2914D84E040007F01005FEC",
+                        "viewValue": "462",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Attribute Set",
+                        "type": "window",
+                        "tabId": "461",
+                        "windowId": "256",
+                        "optionType": "tab",
+                        "id": "52118BF1A28C4D84E040007F01005FEC",
+                        "viewValue": "461",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Lot Number Sequence",
+                        "type": "window",
+                        "tabId": "465",
+                        "windowId": "258",
+                        "optionType": "tab",
+                        "id": "52118BF1A28E4D84E040007F01005FEC",
+                        "viewValue": "465",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Serial Number Sequence",
+                        "type": "window",
+                        "tabId": "466",
+                        "windowId": "259",
+                        "optionType": "tab",
+                        "id": "52118BF1A28D4D84E040007F01005FEC",
+                        "viewValue": "466",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Brand",
+                        "type": "window",
+                        "tabId": "C65FEEACC44241A1966AD608DD76CD88",
+                        "windowId": "11A2976F05D841EFAE654A8B83EB4204",
+                        "optionType": "tab",
+                        "id": "D6C7353227EA90EEE040007F01000722",
+                        "viewValue": "C65FEEACC44241A1966AD608DD76CD88",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Pricing",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Price List Schema",
+                        "type": "window",
+                        "tabId": "404",
+                        "windowId": "233",
+                        "optionType": "tab",
+                        "id": "52118BF1A26F4D84E040007F01005FEC",
+                        "viewValue": "404",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Price List",
+                        "type": "window",
+                        "tabId": "191",
+                        "windowId": "146",
+                        "optionType": "tab",
+                        "id": "52118BF1A2024D84E040007F01005FEC",
+                        "viewValue": "191",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Create All Price Lists",
+                        "type": "processManual",
+                        "optionType": "processManual",
+                        "manualUrl": "/ad_process/PriceListCreateAll.html",
+                        "manualProcessId": "800040",
+                        "id": "52118BF1A2CE4D84E040007F01005FEC",
+                        "viewValue": "/ad_process/PriceListCreateAll.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Discounts and Promotions",
+                        "type": "window",
+                        "tabId": "800079",
+                        "windowId": "800028",
+                        "optionType": "tab",
+                        "id": "52118BF1A3054D84E040007F01005FEC",
+                        "viewValue": "800079",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Service Price Rule",
+                        "type": "window",
+                        "tabId": "361A63248C2942868C6248F8613130C8",
+                        "windowId": "B2C0C2AE3B7B49B1A68F864FA8FC603C",
+                        "optionType": "tab",
+                        "id": "5CA494535DCC47A5809628CC212D58C9",
+                        "viewValue": "361A63248C2942868C6248F8613130C8",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "title": "Procurement Management",
+        "singleRecord": false,
+        "readOnly": false,
+        "editOrDeleteOnly": false,
+        "type": "folder",
+        "submenu": [
+            {
+                "title": "Transactions",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Requisition",
+                        "type": "window",
+                        "tabId": "800249",
+                        "windowId": "800092",
+                        "optionType": "tab",
+                        "id": "52118BF1A3404D84E040007F01005FEC",
+                        "viewValue": "800249",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Manage Requisitions",
+                        "type": "window",
+                        "tabId": "1004400001",
+                        "windowId": "1004400000",
+                        "optionType": "tab",
+                        "id": "52118BF1A3E24D84E040007F01005FEC",
+                        "viewValue": "1004400001",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Requisition To Order",
+                        "type": "form",
+                        "optionType": "url",
+                        "manualUrl": "/ad_forms/RequisitionToOrder.html",
+                        "formId": "1004400000",
+                        "id": "52118BF1A3E34D84E040007F01005FEC",
+                        "viewValue": "/ad_forms/RequisitionToOrder.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Purchase Order",
+                        "type": "window",
+                        "tabId": "294",
+                        "windowId": "181",
+                        "optionType": "tab",
+                        "id": "52118BF1A23E4D84E040007F01005FEC",
+                        "viewValue": "294",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Goods Receipt",
+                        "type": "window",
+                        "tabId": "296",
+                        "windowId": "184",
+                        "optionType": "tab",
+                        "id": "52118BF1A23D4D84E040007F01005FEC",
+                        "viewValue": "296",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Pending Goods Receipts",
+                        "type": "form",
+                        "optionType": "url",
+                        "manualUrl": "/ad_forms/MaterialReceiptPending.html",
+                        "formId": "800009",
+                        "id": "52118BF1A2F64D84E040007F01005FEC",
+                        "viewValue": "/ad_forms/MaterialReceiptPending.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Purchase Invoice",
+                        "type": "window",
+                        "tabId": "290",
+                        "windowId": "183",
+                        "optionType": "tab",
+                        "id": "52118BF1A23F4D84E040007F01005FEC",
+                        "viewValue": "290",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Matched Invoices",
+                        "type": "window",
+                        "tabId": "408",
+                        "windowId": "107",
+                        "optionType": "tab",
+                        "id": "52118BF1A2714D84E040007F01005FEC",
+                        "viewValue": "408",
+                        "singleRecord": false,
+                        "readOnly": true,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Return to Vendor",
+                        "type": "window",
+                        "tabId": "5A5CCFC8359B4D79BA705DC487FE8173",
+                        "windowId": "C50A8AEE6F044825B5EF54FAAE76826F",
+                        "optionType": "tab",
+                        "id": "831DD90FBAF44F79B1124959BCAC5A46",
+                        "viewValue": "5A5CCFC8359B4D79BA705DC487FE8173",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Return to Vendor Shipment",
+                        "type": "window",
+                        "tabId": "728DBD16A1F14A4D82335E37BA433E33",
+                        "windowId": "273673D2ED914C399A6C51DB758BE0F9",
+                        "optionType": "tab",
+                        "id": "80C68CDB5E77494C95DDBBDC8805713F",
+                        "viewValue": "728DBD16A1F14A4D82335E37BA433E33",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Landed Cost",
+                        "type": "window",
+                        "tabId": "F25CBC61CDD64F5E8A6FDC41C6E23C96",
+                        "windowId": "D1B11CBC0FEF4CA0B44D3BECEBA219BC",
+                        "optionType": "tab",
+                        "id": "005A8D995E99A821E050007F0100050A",
+                        "viewValue": "F25CBC61CDD64F5E8A6FDC41C6E23C96",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Analysis Tools",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Purchase Order Report",
+                        "type": "processDefinition",
+                        "optionType": "processDefinition",
+                        "viewId": "processDefinition_4BDE0AF5E8C44B6C9575E388AAECDF69",
+                        "uiPattern": "OBUIAPP_Report",
+                        "processId": "4BDE0AF5E8C44B6C9575E388AAECDF69",
+                        "id": "52118BF1A34A4D84E040007F01005FEC",
+                        "viewValue": "processDefinition_4BDE0AF5E8C44B6C9575E388AAECDF69",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Purchase Dimensional Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportPurchaseDimensionalAnalysesFilterJR.html",
+                        "manualProcessId": "800181",
+                        "id": "52118BF1A36A4D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportPurchaseDimensionalAnalysesFilterJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Goods Receipts Dimensional Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportMaterialDimensionalAnalysesFilterJR.html",
+                        "manualProcessId": "800182",
+                        "id": "52118BF1A36B4D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportMaterialDimensionalAnalysesFilterJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Purchase Invoice Dimensional Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportInvoiceVendorDimensionalAnalysesFilterJR.html",
+                        "manualProcessId": "800183",
+                        "id": "52118BF1A36C4D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportInvoiceVendorDimensionalAnalysesFilterJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Matched Purchase Orders",
+                        "type": "window",
+                        "tabId": "409",
+                        "windowId": "228",
+                        "optionType": "tab",
+                        "id": "52118BF1A2724D84E040007F01005FEC",
+                        "viewValue": "409",
+                        "singleRecord": false,
+                        "readOnly": true,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Vendor Invoice Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportInvoiceVendorFilterJR.html",
+                        "manualProcessId": "800180",
+                        "id": "52118BF1A3694D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportInvoiceVendorFilterJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "title": "Warehouse Management",
+        "singleRecord": false,
+        "readOnly": false,
+        "editOrDeleteOnly": false,
+        "type": "folder",
+        "submenu": [
+            {
+                "title": "Transactions",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Physical Inventory",
+                        "type": "window",
+                        "tabId": "255",
+                        "windowId": "168",
+                        "optionType": "tab",
+                        "id": "52118BF1A22A4D84E040007F01005FEC",
+                        "viewValue": "255",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Goods Movements",
+                        "type": "window",
+                        "tabId": "259",
+                        "windowId": "170",
+                        "optionType": "tab",
+                        "id": "52118BF1A22C4D84E040007F01005FEC",
+                        "viewValue": "259",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Bill of Materials Production",
+                        "type": "window",
+                        "tabId": "319",
+                        "windowId": "191",
+                        "optionType": "tab",
+                        "id": "52118BF1A2504D84E040007F01005FEC",
+                        "viewValue": "319",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Goods Transaction",
+                        "type": "window",
+                        "tabId": "384",
+                        "windowId": "223",
+                        "optionType": "tab",
+                        "id": "52118BF1A5D24D84E040007F01005FEC",
+                        "viewValue": "384",
+                        "singleRecord": false,
+                        "readOnly": true,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Incoterm",
+                        "type": "window",
+                        "tabId": "800008",
+                        "windowId": "800002",
+                        "optionType": "tab",
+                        "id": "52118BF1A2B64D84E040007F01005FEC",
+                        "viewValue": "800008",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Stock Reservation",
+                        "type": "window",
+                        "tabId": "D53F675ADB2745059623175D8870A721",
+                        "windowId": "C85110C9334B4C26BA29BB3B91000689",
+                        "optionType": "tab",
+                        "id": "CAAE0973314D6706E040007F01003FCE",
+                        "viewValue": "D53F675ADB2745059623175D8870A721",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Inventory Amount Update",
+                        "type": "window",
+                        "tabId": "4CD2099689D74243A0DE7910C6C86AD0",
+                        "windowId": "E7754848A0314B018B37C1428ECB4D21",
+                        "optionType": "tab",
+                        "id": "336590D9E14D4C269480543BA8A31321",
+                        "viewValue": "4CD2099689D74243A0DE7910C6C86AD0",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Cost Adjustment",
+                        "type": "window",
+                        "tabId": "45A6D51BFBB74C079AC559A4240A296D",
+                        "windowId": "1688A758BDA04C88A5C1D370EB979C53",
+                        "optionType": "tab",
+                        "id": "FD0F90C3F8CFD46CE040007F01002D90",
+                        "viewValue": "45A6D51BFBB74C079AC559A4240A296D",
+                        "singleRecord": false,
+                        "readOnly": true,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Referenced Inventory",
+                        "type": "window",
+                        "tabId": "AACB828AC82341EF80674E8E4CD04F53",
+                        "windowId": "6A5963EA222743ACB44F9C65DF7F658C",
+                        "optionType": "tab",
+                        "id": "BA561251126345D2816FFDA12F12F550",
+                        "viewValue": "AACB828AC82341EF80674E8E4CD04F53",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Analysis Tools",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Pareto Product Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportParetoProduct.html",
+                        "manualProcessId": "75F83D534E764C7C8781FFA6C08E87ED",
+                        "id": "0892B6AE549941E0B9113759E19ED97D",
+                        "viewValue": "/ad_reports/ReportParetoProduct.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Expiration Date Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportGuaranteeDateJR.html",
+                        "manualProcessId": "800179",
+                        "id": "52118BF1A3684D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportGuaranteeDateJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Offers Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportOffer.html",
+                        "manualProcessId": "800148",
+                        "id": "52118BF1A3334D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportOffer.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Shipper Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportShipper.html",
+                        "manualProcessId": "800143",
+                        "id": "52118BF1A32E4D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportShipper.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Traceability Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/MInOutTraceReports.html",
+                        "manualProcessId": "800079",
+                        "id": "52118BF1A2EE4D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/MInOutTraceReports.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Material Transaction Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportMaterialTransactionFilter.html",
+                        "manualProcessId": "800018",
+                        "id": "52118BF1A2BC4D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportMaterialTransactionFilter.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Warehouse Control Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportWarehouseControl.html",
+                        "manualProcessId": "800032",
+                        "id": "52118BF1A2CB4D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportWarehouseControl.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Stock Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportWarehousePartnerJR.html",
+                        "manualProcessId": "800185",
+                        "id": "52118BF1A36E4D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportWarehousePartnerJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Product Movements Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportProductMovement.html",
+                        "manualProcessId": "800046",
+                        "id": "52118BF1A2D24D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportProductMovement.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Valued Stock Report",
+                        "type": "processDefinition",
+                        "optionType": "processDefinition",
+                        "viewId": "processDefinition_71E00A0E964E43AE81C5AFBCDCA5F87C",
+                        "uiPattern": "OBUIAPP_Report",
+                        "processId": "71E00A0E964E43AE81C5AFBCDCA5F87C",
+                        "id": "4592F6FF824C45E68A280F48F29B2134",
+                        "viewValue": "processDefinition_71E00A0E964E43AE81C5AFBCDCA5F87C",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "BOM Production Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportProductionJR.html",
+                        "manualProcessId": "800174",
+                        "id": "52118BF1A3634D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportProductionJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Setup",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Reset Unit Cost",
+                        "type": "processDefinition",
+                        "optionType": "processDefinition",
+                        "viewId": "processDefinition_281704CE41444AC4BF9410A725234BFB",
+                        "uiPattern": "OBUIAPP_PickAndExecute",
+                        "processId": "281704CE41444AC4BF9410A725234BFB",
+                        "id": "4FE0EA8A71C54E2488E4BD90EC73AA7F",
+                        "viewValue": "processDefinition_281704CE41444AC4BF9410A725234BFB",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Process Price Difference Adjustment",
+                        "type": "processDefinition",
+                        "optionType": "processDefinition",
+                        "viewId": "processDefinition_B05273730AA14DAEA91EAC7A828C8026",
+                        "uiPattern": "OBUIAPP_PickAndExecute",
+                        "processId": "B05273730AA14DAEA91EAC7A828C8026",
+                        "id": "2A811D661ACE49AEB0E93419A4A4C2F3",
+                        "viewValue": "processDefinition_B05273730AA14DAEA91EAC7A828C8026",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Warehouse and Storage Bins",
+                        "type": "window",
+                        "tabId": "177",
+                        "windowId": "139",
+                        "optionType": "tab",
+                        "id": "52118BF1A1FC4D84E040007F01005FEC",
+                        "viewValue": "177",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Shipping Company",
+                        "type": "window",
+                        "tabId": "185",
+                        "windowId": "142",
+                        "optionType": "tab",
+                        "id": "52118BF1A1FF4D84E040007F01005FEC",
+                        "viewValue": "185",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Freight Category",
+                        "type": "window",
+                        "tabId": "514",
+                        "windowId": "282",
+                        "optionType": "tab",
+                        "id": "52118BF1A29F4D84E040007F01005FEC",
+                        "viewValue": "514",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Costing Rules",
+                        "type": "window",
+                        "tabId": "6868B706DA8340158DE353A6C252A564",
+                        "windowId": "3E945A9102144C16BD211D211089C2DF",
+                        "optionType": "tab",
+                        "id": "B961EABB2F042079E040007F0100177E",
+                        "viewValue": "6868B706DA8340158DE353A6C252A564",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Costing Algorithm",
+                        "type": "window",
+                        "tabId": "AC5EA97A85F14F28B417421F69963FDF",
+                        "windowId": "6CB90FC76E2E4CD3A6AF472E39C042B6",
+                        "optionType": "tab",
+                        "id": "B80D533A74D16959E040007F01001FE1",
+                        "viewValue": "AC5EA97A85F14F28B417421F69963FDF",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Landed Cost Type",
+                        "type": "window",
+                        "tabId": "5EE59CF00EF846DD953BB27BBF44E696",
+                        "windowId": "944C49CE80BE4F71B9917BD680A052A8",
+                        "optionType": "tab",
+                        "id": "001EB76ECE78E879E050007F01000E57",
+                        "viewValue": "5EE59CF00EF846DD953BB27BBF44E696",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Warehouse Rules",
+                        "type": "window",
+                        "tabId": "8A7BC392A4D548E1B97E11548E20E5F2",
+                        "windowId": "FC404D2406A9491CBD905D0D38F04846",
+                        "optionType": "tab",
+                        "id": "CB8D7C97A32FBEAEE040007F01000D19",
+                        "viewValue": "8A7BC392A4D548E1B97E11548E20E5F2",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Referenced Inventory Type",
+                        "type": "window",
+                        "tabId": "D8E2185F2F7E4AA58EC41B1B99FAA0C8",
+                        "windowId": "3DA7267B2FEC42B287B4428DF658C7E5",
+                        "optionType": "tab",
+                        "id": "7E4C8C564A1640FA830F58DEE544363F",
+                        "viewValue": "D8E2185F2F7E4AA58EC41B1B99FAA0C8",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "title": "Production Management",
+        "singleRecord": false,
+        "readOnly": false,
+        "editOrDeleteOnly": false,
+        "type": "folder",
+        "submenu": [
+            {
+                "title": "Transactions",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Work Requirement",
+                        "type": "window",
+                        "tabId": "800111",
+                        "windowId": "800052",
+                        "optionType": "tab",
+                        "id": "52118BF1A3104D84E040007F01005FEC",
+                        "viewValue": "800111",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Work Effort",
+                        "type": "window",
+                        "tabId": "800114",
+                        "windowId": "800053",
+                        "optionType": "tab",
+                        "id": "52118BF1A3114D84E040007F01005FEC",
+                        "viewValue": "800114",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Production Run",
+                        "type": "window",
+                        "tabId": "C9B5394DBA8C465C9CE26A361696B06E",
+                        "windowId": "FF808181323E504701323E57E08D0017",
+                        "optionType": "tab",
+                        "id": "3887BEFE9C8C43B892367AA37B0FC04A",
+                        "viewValue": "C9B5394DBA8C465C9CE26A361696B06E",
+                        "singleRecord": true,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Quality Control Report",
+                        "type": "window",
+                        "tabId": "800158",
+                        "windowId": "800064",
+                        "optionType": "tab",
+                        "id": "52118BF1A3174D84E040007F01005FEC",
+                        "viewValue": "800158",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Periodic Quality Control Data",
+                        "type": "window",
+                        "tabId": "800161",
+                        "windowId": "800067",
+                        "optionType": "tab",
+                        "id": "52118BF1A3194D84E040007F01005FEC",
+                        "viewValue": "800161",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Internal Consumption",
+                        "type": "window",
+                        "tabId": "800202",
+                        "windowId": "800076",
+                        "optionType": "tab",
+                        "id": "52118BF1A3254D84E040007F01005FEC",
+                        "viewValue": "800202",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Maintenance Order",
+                        "type": "window",
+                        "tabId": "800189",
+                        "windowId": "800075",
+                        "optionType": "tab",
+                        "id": "52118BF1A3234D84E040007F01005FEC",
+                        "viewValue": "800189",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Insert Maintenances",
+                        "type": "process",
+                        "optionType": "process",
+                        "manualUrl": "/ad_actionButton/ActionButton_Responser.html",
+                        "processId": "800130",
+                        "modal": "true",
+                        "id": "52118BF1A3244D84E040007F01005FEC",
+                        "viewValue": "/ad_actionButton/ActionButton_Responser.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Maintenance Plan",
+                        "type": "window",
+                        "tabId": "800188",
+                        "windowId": "800074",
+                        "optionType": "tab",
+                        "id": "52118BF1A3224D84E040007F01005FEC",
+                        "viewValue": "800188",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Calculate Standard Costs",
+                        "type": "process",
+                        "optionType": "process",
+                        "manualUrl": "/ad_actionButton/ActionButton_Responser.html",
+                        "processId": "800109",
+                        "modal": "true",
+                        "id": "52118BF1A3144D84E040007F01005FEC",
+                        "viewValue": "/ad_actionButton/ActionButton_Responser.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Analysis Tools",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Standard Costs Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportStandardCostJR.html",
+                        "manualProcessId": "800204",
+                        "id": "52118BF1A3744D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportStandardCostJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Production Run Status Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportProductionRunJR.html",
+                        "manualProcessId": "800173",
+                        "id": "52118BF1A3624D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportProductionRunJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Pending Work Requirement",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportWorkRequirementJR.html",
+                        "manualProcessId": "800177",
+                        "id": "52118BF1A3664D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportWorkRequirementJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Production Cost Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportProductionCost.html",
+                        "manualProcessId": "800155",
+                        "id": "52118BF1A33B4D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportProductionCost.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Setup",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Section",
+                        "type": "window",
+                        "tabId": "800084",
+                        "windowId": "800029",
+                        "optionType": "tab",
+                        "id": "52118BF1A3094D84E040007F01005FEC",
+                        "viewValue": "800084",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Work Center",
+                        "type": "window",
+                        "tabId": "800087",
+                        "windowId": "800032",
+                        "optionType": "tab",
+                        "id": "52118BF1A30C4D84E040007F01005FEC",
+                        "viewValue": "800087",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Process Plan",
+                        "type": "window",
+                        "tabId": "800108",
+                        "windowId": "800051",
+                        "optionType": "tab",
+                        "id": "52118BF1A30F4D84E040007F01005FEC",
+                        "viewValue": "800108",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Activity",
+                        "type": "window",
+                        "tabId": "800143",
+                        "windowId": "800060",
+                        "optionType": "tab",
+                        "id": "52118BF1A3134D84E040007F01005FEC",
+                        "viewValue": "800143",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Toolset",
+                        "type": "window",
+                        "tabId": "800096",
+                        "windowId": "800035",
+                        "optionType": "tab",
+                        "id": "52118BF1A30D4D84E040007F01005FEC",
+                        "viewValue": "800096",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Machine Category",
+                        "type": "window",
+                        "tabId": "800182",
+                        "windowId": "800071",
+                        "optionType": "tab",
+                        "id": "52118BF1A3204D84E040007F01005FEC",
+                        "viewValue": "800182",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Machine",
+                        "type": "window",
+                        "tabId": "800086",
+                        "windowId": "800031",
+                        "optionType": "tab",
+                        "id": "52118BF1A30B4D84E040007F01005FEC",
+                        "viewValue": "800086",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Manufacturing Cost Center",
+                        "type": "window",
+                        "tabId": "800085",
+                        "windowId": "800030",
+                        "optionType": "tab",
+                        "id": "52118BF1A30A4D84E040007F01005FEC",
+                        "viewValue": "800085",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Periodic Quality Control",
+                        "type": "window",
+                        "tabId": "800159",
+                        "windowId": "800066",
+                        "optionType": "tab",
+                        "id": "52118BF1A3184D84E040007F01005FEC",
+                        "viewValue": "800159",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Quality Control Point",
+                        "type": "window",
+                        "tabId": "800151",
+                        "windowId": "800063",
+                        "optionType": "tab",
+                        "id": "52118BF1A3164D84E040007F01005FEC",
+                        "viewValue": "800151",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Work Incidence",
+                        "type": "window",
+                        "tabId": "800104",
+                        "windowId": "800048",
+                        "optionType": "tab",
+                        "id": "52118BF1A30E4D84E040007F01005FEC",
+                        "viewValue": "800104",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Maintenance Task",
+                        "type": "window",
+                        "tabId": "800184",
+                        "windowId": "800072",
+                        "optionType": "tab",
+                        "id": "52118BF1A3214D84E040007F01005FEC",
+                        "viewValue": "800184",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Indirect Cost",
+                        "type": "window",
+                        "tabId": "800229",
+                        "windowId": "800085",
+                        "optionType": "tab",
+                        "id": "52118BF1A3354D84E040007F01005FEC",
+                        "viewValue": "800229",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "title": "Etendo RX",
+        "singleRecord": false,
+        "readOnly": false,
+        "editOrDeleteOnly": false,
+        "type": "folder",
+        "submenu": [
+            {
+                "title": "Rx Services",
+                "type": "window",
+                "tabId": "FEA30AE0F67241F5AAAD4BFD0D96EE3D",
+                "windowId": "58DE285D8E5C413989C3B61F515290C4",
+                "optionType": "tab",
+                "id": "33B58F58D6EA4349BEC86801D5433D26",
+                "viewValue": "FEA30AE0F67241F5AAAD4BFD0D96EE3D",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false
+            }
+        ]
+    },
+    {
+        "title": "Material Requirement Planning",
+        "singleRecord": false,
+        "readOnly": false,
+        "editOrDeleteOnly": false,
+        "type": "folder",
+        "submenu": [
+            {
+                "title": "Transactions",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Manufacturing Plan",
+                        "type": "window",
+                        "tabId": "800255",
+                        "windowId": "800096",
+                        "optionType": "tab",
+                        "id": "52118BF1A3424D84E040007F01005FEC",
+                        "viewValue": "800255",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Purchasing Plan",
+                        "type": "window",
+                        "tabId": "800258",
+                        "windowId": "800097",
+                        "optionType": "tab",
+                        "id": "52118BF1A3434D84E040007F01005FEC",
+                        "viewValue": "800258",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "MRP Forecast",
+                        "type": "window",
+                        "tabId": "800246",
+                        "windowId": "800090",
+                        "optionType": "tab",
+                        "id": "52118BF1A33F4D84E040007F01005FEC",
+                        "viewValue": "800246",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Setup",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Planning Method",
+                        "type": "window",
+                        "tabId": "800252",
+                        "windowId": "800094",
+                        "optionType": "tab",
+                        "id": "52118BF1A3414D84E040007F01005FEC",
+                        "viewValue": "800252",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Planner",
+                        "type": "window",
+                        "tabId": "800245",
+                        "windowId": "800088",
+                        "optionType": "tab",
+                        "id": "52118BF1A33E4D84E040007F01005FEC",
+                        "viewValue": "800245",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "title": "Sales Management",
+        "singleRecord": false,
+        "readOnly": false,
+        "editOrDeleteOnly": false,
+        "type": "folder",
+        "submenu": [
+            {
+                "title": "Transactions",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Sales Quotation",
+                        "type": "window",
+                        "tabId": "F87F1EB7EB404F1F916EBAFAD1A0A334",
+                        "windowId": "6CB5B67ED33F47DFA334079D3EA2340E",
+                        "optionType": "tab",
+                        "id": "DB87F157696645F2A3B31F8DCCC51B03",
+                        "viewValue": "F87F1EB7EB404F1F916EBAFAD1A0A334",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Sales Order",
+                        "type": "window",
+                        "tabId": "186",
+                        "windowId": "143",
+                        "optionType": "tab",
+                        "id": "52118BF1A2004D84E040007F01005FEC",
+                        "viewValue": "186",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Goods Shipment",
+                        "type": "window",
+                        "tabId": "257",
+                        "windowId": "169",
+                        "optionType": "tab",
+                        "id": "52118BF1A22B4D84E040007F01005FEC",
+                        "viewValue": "257",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Return from Customer",
+                        "type": "window",
+                        "tabId": "AF4090093CFF1431E040007F010048A5",
+                        "windowId": "FF808081330213E60133021822E40007",
+                        "optionType": "tab",
+                        "id": "AF4248C29A225927E040007F01004FF2",
+                        "viewValue": "AF4090093CFF1431E040007F010048A5",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Return Material Receipt",
+                        "type": "window",
+                        "tabId": "30576C6ABD12419F9D19D497216FC9B8",
+                        "windowId": "123271B9AD60469BAE8A924841456B63",
+                        "optionType": "tab",
+                        "id": "ACB30FD4F8454E2E80FE239623BF7D75",
+                        "viewValue": "30576C6ABD12419F9D19D497216FC9B8",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Create Shipments from Orders",
+                        "type": "form",
+                        "optionType": "url",
+                        "manualUrl": "/ad_forms/GenerateShipmentsmanual.html",
+                        "formId": "110",
+                        "id": "52118BF1A2874D84E040007F01005FEC",
+                        "viewValue": "/ad_forms/GenerateShipmentsmanual.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Sales Invoice",
+                        "type": "window",
+                        "tabId": "263",
+                        "windowId": "167",
+                        "optionType": "tab",
+                        "id": "52118BF1A2294D84E040007F01005FEC",
+                        "viewValue": "263",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Create Invoices From Orders",
+                        "type": "processDefinition",
+                        "optionType": "processDefinition",
+                        "viewId": "processDefinition_C044DDAA929E40D780C36154FBB968F7",
+                        "uiPattern": "A",
+                        "processId": "C044DDAA929E40D780C36154FBB968F7",
+                        "id": "B513E72BDECA4D4B8CC158B32CBB67AE",
+                        "viewValue": "processDefinition_C044DDAA929E40D780C36154FBB968F7",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Generate Invoices",
+                        "type": "process",
+                        "optionType": "process",
+                        "manualUrl": "/ad_actionButton/ActionButton_Responser.html",
+                        "processId": "119",
+                        "modal": "true",
+                        "id": "52118BF1A2334D84E040007F01005FEC",
+                        "viewValue": "/ad_actionButton/ActionButton_Responser.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Commission Payment",
+                        "type": "window",
+                        "tabId": "362",
+                        "windowId": "210",
+                        "optionType": "tab",
+                        "id": "52118BF1A2644D84E040007F01005FEC",
+                        "viewValue": "362",
+                        "singleRecord": false,
+                        "readOnly": true,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Analysis Tools",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Sales Dimensional Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportSalesDimensionalAnalyzeJRFilter.html",
+                        "manualProcessId": "800184",
+                        "id": "52118BF1A36D4D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportSalesDimensionalAnalyzeJRFilter.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Shipments Dimensional Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportShipmentDimensionalAnalyzeJRFilter.html",
+                        "manualProcessId": "800058",
+                        "id": "52118BF1A2D94D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportShipmentDimensionalAnalyzeJRFilter.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Discount Invoice Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportInvoiceDiscountJR.html",
+                        "manualProcessId": "800196",
+                        "id": "52118BF1A3704D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportInvoiceDiscountJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Sales Order Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportSalesOrderFilterJR.html",
+                        "manualProcessId": "800176",
+                        "id": "52118BF1A3654D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportSalesOrderFilterJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Stock for Open Orders",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportPendingProductionEditJr.html",
+                        "manualProcessId": "800198",
+                        "id": "52118BF1A3724D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportPendingProductionEditJr.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Invoiced Sales Order Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportSalesOrderInvoicedJasper.html",
+                        "manualProcessId": "800190",
+                        "id": "52118BF1A2DA4D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportSalesOrderInvoicedJasper.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Orders Awaiting Invoice Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportOrderNotInvoiceFilterJR.html",
+                        "manualProcessId": "800178",
+                        "id": "52118BF1A3674D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportOrderNotInvoiceFilterJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Delivered Sales Order Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportSalesOrderProvidedJR.html",
+                        "manualProcessId": "800192",
+                        "id": "52118BF1A2C54D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportSalesOrderProvidedJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Shipment Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportShipmentEditionJR.html",
+                        "manualProcessId": "800189",
+                        "id": "52118BF1A2BA4D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportShipmentEditionJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Orders Awaiting Delivery Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/org.openbravo.reports.ordersawaitingdelivery.ad_reports/ReportOrderNotShipped.html",
+                        "manualProcessId": "3DAA5E63A30D45A8ABF87701F8BD91EF",
+                        "id": "C7FA62AA617111DEB014001B388C05F0",
+                        "viewValue": "/org.openbravo.reports.ordersawaitingdelivery.ad_reports/ReportOrderNotShipped.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Invoice Detail",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportInvoicesJR.html",
+                        "manualProcessId": "800201",
+                        "id": "52118BF1A3734D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportInvoicesJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Customer Invoice Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportInvoiceCustomerFilterJR.html",
+                        "manualProcessId": "800175",
+                        "id": "52118BF1A3644D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportInvoiceCustomerFilterJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Sales Invoice Dimensional Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportInvoiceCustomerDimensionalAnalysesJREdition.html",
+                        "manualProcessId": "6D3B1C36BF594A51878281B505F6CECF",
+                        "id": "71161DBBE17642CDA04A56E2D2FF7DE8",
+                        "viewValue": "/ad_reports/ReportInvoiceCustomerDimensionalAnalysesJREdition.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Setup",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Condition of the goods",
+                        "type": "window",
+                        "tabId": "840A4F0860034F9F984F3FF363506D65",
+                        "windowId": "B43A89704D864A6995BD5AC32201DBD9",
+                        "optionType": "tab",
+                        "id": "BF4B7C5FF61945AAA6357DE56CA92157",
+                        "viewValue": "840A4F0860034F9F984F3FF363506D65",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Sales Region",
+                        "type": "window",
+                        "tabId": "206",
+                        "windowId": "152",
+                        "optionType": "tab",
+                        "id": "52118BF1A2064D84E040007F01005FEC",
+                        "viewValue": "206",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Commission",
+                        "type": "window",
+                        "tabId": "355",
+                        "windowId": "207",
+                        "optionType": "tab",
+                        "id": "52118BF1A2604D84E040007F01005FEC",
+                        "viewValue": "355",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Channel",
+                        "type": "window",
+                        "tabId": "202",
+                        "windowId": "150",
+                        "optionType": "tab",
+                        "id": "52118BF1A2054D84E040007F01005FEC",
+                        "viewValue": "202",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Sales Campaign",
+                        "type": "window",
+                        "tabId": "201",
+                        "windowId": "149",
+                        "optionType": "tab",
+                        "id": "52118BF1A2044D84E040007F01005FEC",
+                        "viewValue": "201",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Reject Reason",
+                        "type": "window",
+                        "tabId": "74FF24CE63D9406FBDABA3BA1D20B09A",
+                        "windowId": "AB30B4B4C94540849D221C4BC31A9816",
+                        "optionType": "tab",
+                        "id": "2A12FD95176347A98ECE6FA7832E15ED",
+                        "viewValue": "74FF24CE63D9406FBDABA3BA1D20B09A",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "title": "Project and Service Management",
+        "singleRecord": false,
+        "readOnly": false,
+        "editOrDeleteOnly": false,
+        "type": "folder",
+        "submenu": [
+            {
+                "title": "Transactions",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Multiphase Project",
+                        "type": "window",
+                        "tabId": "157",
+                        "windowId": "130",
+                        "optionType": "tab",
+                        "id": "52118BF1A1F54D84E040007F01005FEC",
+                        "viewValue": "157",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Expense Sheet",
+                        "type": "window",
+                        "tabId": "412",
+                        "windowId": "235",
+                        "optionType": "tab",
+                        "id": "52118BF1A2744D84E040007F01005FEC",
+                        "viewValue": "412",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Create Sales Orders from Expenses",
+                        "type": "processManual",
+                        "optionType": "processManual",
+                        "manualUrl": "/ad_actionButton/ExpenseSOrder.html",
+                        "manualProcessId": "186",
+                        "id": "52118BF1A27A4D84E040007F01005FEC",
+                        "viewValue": "/ad_actionButton/ExpenseSOrder.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Create AP Expense Invoices",
+                        "type": "processManual",
+                        "optionType": "processManual",
+                        "manualUrl": "/ad_process/ExpenseAPInvoice.html",
+                        "manualProcessId": "187",
+                        "id": "52118BF1A27B4D84E040007F01005FEC",
+                        "viewValue": "/ad_process/ExpenseAPInvoice.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Analysis Tools",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Project Progress",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportProjectProgress.html",
+                        "manualProcessId": "1005900000",
+                        "id": "F97035E495D911DDB78D001B388C05F0",
+                        "viewValue": "/ad_reports/ReportProjectProgress.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Project Profitability",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportProjectProfitabilityJR.html",
+                        "manualProcessId": "800199",
+                        "id": "52118BF1A3394D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportProjectProfitabilityJR.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Expense Report",
+                        "type": "report",
+                        "optionType": "url",
+                        "manualUrl": "/ad_reports/ReportExpense.html",
+                        "manualProcessId": "800061",
+                        "id": "52118BF1A2DB4D84E040007F01005FEC",
+                        "viewValue": "/ad_reports/ReportExpense.html",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Invoiceable Expenses",
+                        "type": "window",
+                        "tabId": "431",
+                        "windowId": "242",
+                        "optionType": "tab",
+                        "id": "52118BF1A2794D84E040007F01005FEC",
+                        "viewValue": "431",
+                        "singleRecord": false,
+                        "readOnly": true,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Employee Expenses",
+                        "type": "window",
+                        "tabId": "456",
+                        "windowId": "254",
+                        "optionType": "tab",
+                        "id": "52118BF1A2894D84E040007F01005FEC",
+                        "viewValue": "456",
+                        "singleRecord": false,
+                        "readOnly": true,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            },
+            {
+                "title": "Setup",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Project Type",
+                        "type": "window",
+                        "tabId": "476",
+                        "windowId": "265",
+                        "optionType": "tab",
+                        "id": "52118BF1A2954D84E040007F01005FEC",
+                        "viewValue": "476",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "title": "Financial Management",
+        "singleRecord": false,
+        "readOnly": false,
+        "editOrDeleteOnly": false,
+        "type": "folder",
+        "submenu": [
+            {
+                "title": "Receivables and Payables",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Transactions",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false,
+                        "type": "folder",
+                        "submenu": [
+                            {
+                                "title": "Purchase Invoice Payment Plan",
+                                "type": "window",
+                                "tabId": "2ECAED4620B840BA8DD738140F58A629",
+                                "windowId": "6EFB8443A1C64F3D926CE42A0E40631C",
+                                "optionType": "tab",
+                                "id": "66058A0A822145A086F7AD3B4AAFE99D",
+                                "viewValue": "2ECAED4620B840BA8DD738140F58A629",
+                                "singleRecord": true,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Payment Out",
+                                "type": "window",
+                                "tabId": "F7A52FDAAA0346EFA07D53C125B40404",
+                                "windowId": "6F8F913FA60F4CBD93DC1D3AA696E76E",
+                                "optionType": "tab",
+                                "id": "5E9BF82654A14831A72FD96432F48791",
+                                "viewValue": "F7A52FDAAA0346EFA07D53C125B40404",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Payment Proposal",
+                                "type": "window",
+                                "tabId": "2DD6F1E2CAE0456AA9797A1D627BFF5E",
+                                "windowId": "1B7B3BB7FEAF41ED8D9727AB98779D3C",
+                                "optionType": "tab",
+                                "id": "CB2BE2D77323437585E4D48634E0CF5D",
+                                "viewValue": "2DD6F1E2CAE0456AA9797A1D627BFF5E",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Sales Invoice Payment Plan",
+                                "type": "window",
+                                "tabId": "15ECCF8974044A81982F57F9F1E1A67B",
+                                "windowId": "FC6A51DF5F32451987C0C84D7B338B94",
+                                "optionType": "tab",
+                                "id": "B168E54212B7498FA049DF8FAD75C282",
+                                "viewValue": "15ECCF8974044A81982F57F9F1E1A67B",
+                                "singleRecord": true,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Payment In",
+                                "type": "window",
+                                "tabId": "C4B6506838E14A349D6717D6856F1B56",
+                                "windowId": "E547CE89D4C04429B6340FFA44E70716",
+                                "optionType": "tab",
+                                "id": "7C541AC0C76DFDD7E040007F01016B4D",
+                                "viewValue": "C4B6506838E14A349D6717D6856F1B56",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Financial Account",
+                                "type": "window",
+                                "tabId": "2845D761A8394468BD3BA4710AA888D4",
+                                "windowId": "94EAA455D2644E04AB25D93BE5157B6D",
+                                "optionType": "tab",
+                                "id": "8266E9ACD87C92BFE040007F01004ECB",
+                                "viewValue": "2845D761A8394468BD3BA4710AA888D4",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Tax Payment",
+                                "type": "window",
+                                "tabId": "1002100011",
+                                "windowId": "1002100004",
+                                "optionType": "tab",
+                                "id": "52118BF1A3DE4D84E040007F01005FEC",
+                                "viewValue": "1002100011",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Payment Execution",
+                                "type": "processDefinition",
+                                "optionType": "processDefinition",
+                                "viewId": "processDefinition_60F1E2DEB1B544908CDD4CF99ACA80EB",
+                                "uiPattern": "OBUIAPP_PickAndExecute",
+                                "processId": "60F1E2DEB1B544908CDD4CF99ACA80EB",
+                                "id": "3EBBD8C91DFA44918E1A32FF831803D9",
+                                "viewValue": "processDefinition_60F1E2DEB1B544908CDD4CF99ACA80EB",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Doubtful Debt",
+                                "type": "window",
+                                "tabId": "9D859A2A50F44562AFA21AAF2DF91B8A",
+                                "windowId": "4A35B1C57B4243F4A1E42D882C8DDA3D",
+                                "optionType": "tab",
+                                "id": "BB42B2A4BF7546818E81A691D29ADA29",
+                                "viewValue": "9D859A2A50F44562AFA21AAF2DF91B8A",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": true
+                            },
+                            {
+                                "title": "Doubtful Debt Run",
+                                "type": "window",
+                                "tabId": "FA66A130BE8B48E88BF4F5A6E2FA0CDD",
+                                "windowId": "681E982F747A48A6AF328A236A067559",
+                                "optionType": "tab",
+                                "id": "0F3CA3B4D1C842F78C1DC5BBD9740711",
+                                "viewValue": "FA66A130BE8B48E88BF4F5A6E2FA0CDD",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Analysis Tools",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false,
+                        "type": "folder",
+                        "submenu": [
+                            {
+                                "title": "Cashflow Forecast Report",
+                                "type": "processDefinition",
+                                "optionType": "processDefinition",
+                                "viewId": "processDefinition_1B0BF927933A4F41A73739CB6E4A9AD0",
+                                "uiPattern": "OBUIAPP_Report",
+                                "processId": "1B0BF927933A4F41A73739CB6E4A9AD0",
+                                "id": "D7ADE5FF9B6B451AB2CD187B540FD02A",
+                                "viewValue": "processDefinition_1B0BF927933A4F41A73739CB6E4A9AD0",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Receivables Aging Schedule",
+                                "type": "processDefinition",
+                                "optionType": "processDefinition",
+                                "viewId": "processDefinition_0D37A9F6109549DEB058373EF2DAEB6A",
+                                "uiPattern": "OBUIAPP_Report",
+                                "processId": "0D37A9F6109549DEB058373EF2DAEB6A",
+                                "id": "CE5ADCA04BDB4532847412CF010DDA8C",
+                                "viewValue": "processDefinition_0D37A9F6109549DEB058373EF2DAEB6A",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Payables Aging Schedule",
+                                "type": "processDefinition",
+                                "optionType": "processDefinition",
+                                "viewId": "processDefinition_EB4C4053F3B94A17A08D1DD7E89CEB7E",
+                                "uiPattern": "OBUIAPP_Report",
+                                "processId": "EB4C4053F3B94A17A08D1DD7E89CEB7E",
+                                "id": "719D34CDB22244C6A0C6B43EDB2BF9B7",
+                                "viewValue": "processDefinition_EB4C4053F3B94A17A08D1DD7E89CEB7E",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Payment Report",
+                                "type": "report",
+                                "optionType": "url",
+                                "manualUrl": "/org.openbravo.financial.paymentreport/erpCommon/ad_reports/PaymentReport.html",
+                                "manualProcessId": "6AD04479EC134BD4826077F36B709876",
+                                "id": "F9BE4668C1364632994640749A50B33B",
+                                "viewValue": "/org.openbravo.financial.paymentreport/erpCommon/ad_reports/PaymentReport.html",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Payment Run",
+                                "type": "window",
+                                "tabId": "C65BA4DF317D46CDA72EF9414A3A23ED",
+                                "windowId": "AFE6BDF360C44B99ACA6FB5E9F51EA45",
+                                "optionType": "tab",
+                                "id": "3FD746883F8840E1BED768193D141802",
+                                "viewValue": "C65BA4DF317D46CDA72EF9414A3A23ED",
+                                "singleRecord": false,
+                                "readOnly": true,
+                                "editOrDeleteOnly": false
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Setup",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false,
+                        "type": "folder",
+                        "submenu": [
+                            {
+                                "title": "Tax Register Type",
+                                "type": "window",
+                                "tabId": "1002100009",
+                                "windowId": "1002100003",
+                                "optionType": "tab",
+                                "id": "52118BF1A37B4D84E040007F01005FEC",
+                                "viewValue": "1002100009",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Payment Method",
+                                "type": "window",
+                                "tabId": "A4A463FA34F946BFA3F687DC8754ED93",
+                                "windowId": "3CAAC7D54593489384452416ACF356DD",
+                                "optionType": "tab",
+                                "id": "876C8F3CA2294D159A5862A73E3D0D34",
+                                "viewValue": "A4A463FA34F946BFA3F687DC8754ED93",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Matching Algorithm",
+                                "type": "window",
+                                "tabId": "4764AA8524BC4D3DAA9A86181C778595",
+                                "windowId": "D1D0C603DFC0423099D897A0DB388AC2",
+                                "optionType": "tab",
+                                "id": "BD7493B3CDBE4A94AE860FC889FFB3F3",
+                                "viewValue": "4764AA8524BC4D3DAA9A86181C778595",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Bank File Format",
+                                "type": "window",
+                                "tabId": "FBC60525011346D6B026D7F8C68199B4",
+                                "windowId": "557A0AA1D0D745F9A61557C05483072C",
+                                "optionType": "tab",
+                                "id": "17343F20BFD54B3D84900698BBD51451",
+                                "viewValue": "FBC60525011346D6B026D7F8C68199B4",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Execution Process",
+                                "type": "window",
+                                "tabId": "449063A42EFD4B80A0A6D415684C8BC4",
+                                "windowId": "24DDE1DDF13942D78B6D6F216979E56A",
+                                "optionType": "tab",
+                                "id": "876F414A10E1D426E040007F010007C3",
+                                "viewValue": "449063A42EFD4B80A0A6D415684C8BC4",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Doubtful Debt Method",
+                                "type": "window",
+                                "tabId": "7BE8B207C88947C498677C172ECDDECC",
+                                "windowId": "EB6621E5513F41449E77D68C58C3C409",
+                                "optionType": "tab",
+                                "id": "0DEE2086F5BE4AB3AAC5D87E89A807CB",
+                                "viewValue": "7BE8B207C88947C498677C172ECDDECC",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "title": "Accounting",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Transactions",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false,
+                        "type": "folder",
+                        "submenu": [
+                            {
+                                "title": "Simple G/L Journal",
+                                "type": "window",
+                                "tabId": "5A6F0ED7230C462BA4010653BA3F816A",
+                                "windowId": "B917E8A7B0864ACEA9D941E3B7494E53",
+                                "optionType": "tab",
+                                "id": "7549414588CE48CBA7164E80F86AF6E2",
+                                "viewValue": "5A6F0ED7230C462BA4010653BA3F816A",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "G/L Journal",
+                                "type": "window",
+                                "tabId": "159",
+                                "windowId": "132",
+                                "optionType": "tab",
+                                "id": "52118BF1A1F74D84E040007F01005FEC",
+                                "viewValue": "159",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "End Year Close",
+                                "type": "window",
+                                "tabId": "97E1F35BE08840AFB1DA4FE66D329542",
+                                "windowId": "B5673F73F613496C8BEA22FB55E4E1E4",
+                                "optionType": "tab",
+                                "id": "D2969BC407FB44FC8267C3F03F7BEF32",
+                                "viewValue": "97E1F35BE08840AFB1DA4FE66D329542",
+                                "singleRecord": false,
+                                "readOnly": true,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "GL Posting by DB Tables",
+                                "type": "form",
+                                "optionType": "url",
+                                "manualUrl": "/ad_forms/CallAcctServer.html",
+                                "formId": "800003",
+                                "id": "52118BF1A2CA4D84E040007F01005FEC",
+                                "viewValue": "/ad_forms/CallAcctServer.html",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Budget",
+                                "type": "window",
+                                "tabId": "800205",
+                                "windowId": "800077",
+                                "optionType": "tab",
+                                "id": "52118BF1A3274D84E040007F01005FEC",
+                                "viewValue": "800205",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Create Budget Reports in Excel",
+                                "type": "report",
+                                "optionType": "url",
+                                "manualUrl": "/ad_reports/ReportBudgetGenerateExcel.html",
+                                "manualProcessId": "800137",
+                                "id": "52118BF1A3284D84E040007F01005FEC",
+                                "viewValue": "/ad_reports/ReportBudgetGenerateExcel.html",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Not Posted Transaction Report",
+                                "type": "report",
+                                "optionType": "url",
+                                "manualUrl": "/ad_reports/ReportNotPosted.html",
+                                "manualProcessId": "800168",
+                                "id": "52118BF1A3464D84E040007F01005FEC",
+                                "viewValue": "/ad_reports/ReportNotPosted.html",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Reset Accounting",
+                                "type": "processDefinition",
+                                "optionType": "processDefinition",
+                                "viewId": "processDefinition_C6ED4B93E0D54C08A57072AEEC40E6EC",
+                                "uiPattern": "OBUIAPP_PickAndExecute",
+                                "processId": "C6ED4B93E0D54C08A57072AEEC40E6EC",
+                                "id": "3754425FEBD3407FAAE48E832F330E5A",
+                                "viewValue": "processDefinition_C6ED4B93E0D54C08A57072AEEC40E6EC",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Analysis Tools",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false,
+                        "type": "folder",
+                        "submenu": [
+                            {
+                                "title": "Accounting Transaction Details",
+                                "type": "window",
+                                "tabId": "242",
+                                "windowId": "162",
+                                "optionType": "tab",
+                                "id": "52118BF1A2224D84E040007F01005FEC",
+                                "viewValue": "242",
+                                "singleRecord": true,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Balance sheet and P&L structure",
+                                "type": "report",
+                                "optionType": "url",
+                                "manualUrl": "/ad_reports/GeneralAccountingReports.html",
+                                "manualProcessId": "800021",
+                                "id": "52118BF1A2BF4D84E040007F01005FEC",
+                                "viewValue": "/ad_reports/GeneralAccountingReports.html",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Trial Balance",
+                                "type": "report",
+                                "optionType": "url",
+                                "manualUrl": "/ad_reports/ReportTrialBalance.html",
+                                "manualProcessId": "800039",
+                                "id": "52118BF1A2CD4D84E040007F01005FEC",
+                                "viewValue": "/ad_reports/ReportTrialBalance.html",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "General Ledger Report",
+                                "type": "report",
+                                "optionType": "url",
+                                "manualUrl": "/ad_reports/ReportGeneralLedger.html",
+                                "manualProcessId": "800001",
+                                "id": "52118BF1A2B44D84E040007F01005FEC",
+                                "viewValue": "/ad_reports/ReportGeneralLedger.html",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Journal Entries Report",
+                                "type": "report",
+                                "optionType": "url",
+                                "manualUrl": "/ad_reports/ReportGeneralLedgerJournal.html",
+                                "manualProcessId": "800000",
+                                "id": "52118BF1A2B34D84E040007F01005FEC",
+                                "viewValue": "/ad_reports/ReportGeneralLedgerJournal.html",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "User Defined Accounting Report",
+                                "type": "processManual",
+                                "optionType": "processManual",
+                                "manualUrl": "/ad_process/CreateAccountingReport.html",
+                                "manualProcessId": "800144",
+                                "id": "52118BF1A32F4D84E040007F01005FEC",
+                                "viewValue": "/ad_process/CreateAccountingReport.html",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Create Tax Report",
+                                "type": "processManual",
+                                "optionType": "processManual",
+                                "manualUrl": "/ad_process/CreateTaxReport.html",
+                                "manualProcessId": "800169",
+                                "id": "52118BF1A3484D84E040007F01005FEC",
+                                "viewValue": "/ad_process/CreateTaxReport.html",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Customer Statement",
+                                "type": "process",
+                                "optionType": "process",
+                                "manualUrl": "/ad_actionButton/ActionButton_Responser.html",
+                                "processId": "D234AE084F7040DCB66E281A4237FF99",
+                                "modal": "true",
+                                "id": "F24C800569CE414FB478097C96EA7E55",
+                                "viewValue": "/ad_actionButton/ActionButton_Responser.html",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "User Defined Accounting Report Setup",
+                                "type": "window",
+                                "tabId": "800212",
+                                "windowId": "800081",
+                                "optionType": "tab",
+                                "id": "52118BF1A32B4D84E040007F01005FEC",
+                                "viewValue": "800212",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Tax Report Setup",
+                                "type": "window",
+                                "tabId": "800264",
+                                "windowId": "800100",
+                                "optionType": "tab",
+                                "id": "52118BF1A3474D84E040007F01005FEC",
+                                "viewValue": "800264",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Setup",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false,
+                        "type": "folder",
+                        "submenu": [
+                            {
+                                "title": "Open/Close Period Control",
+                                "type": "window",
+                                "tabId": "E429CB8F5CDF4D8395B76D553E72A2D0",
+                                "windowId": "E66E701CCBA14B8BA480CBDE37C50D7A",
+                                "optionType": "tab",
+                                "id": "8C3A2D536CEA4FA0BCBE96FA120ADAB8",
+                                "viewValue": "E429CB8F5CDF4D8395B76D553E72A2D0",
+                                "singleRecord": true,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Period Control Log",
+                                "type": "window",
+                                "tabId": "4DE17FC05C3843C4959166BB67967486",
+                                "windowId": "E56E701CCBA14B8BA480CBDE37C50D7A",
+                                "optionType": "tab",
+                                "id": "58D373789BE2DD15E040007F01013726",
+                                "viewValue": "4DE17FC05C3843C4959166BB67967486",
+                                "singleRecord": false,
+                                "readOnly": true,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Account Tree",
+                                "type": "window",
+                                "tabId": "153",
+                                "windowId": "118",
+                                "optionType": "tab",
+                                "id": "52118BF1A1EB4D84E040007F01005FEC",
+                                "viewValue": "153",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "General Ledger Configuration",
+                                "type": "window",
+                                "tabId": "199",
+                                "windowId": "125",
+                                "optionType": "tab",
+                                "id": "52118BF1A1F14D84E040007F01005FEC",
+                                "viewValue": "199",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Fiscal Calendar",
+                                "type": "window",
+                                "tabId": "128",
+                                "windowId": "117",
+                                "optionType": "tab",
+                                "id": "52118BF1A1EA4D84E040007F01005FEC",
+                                "viewValue": "128",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Account Combination",
+                                "type": "window",
+                                "tabId": "207",
+                                "windowId": "153",
+                                "optionType": "tab",
+                                "id": "52118BF1A1EC4D84E040007F01005FEC",
+                                "viewValue": "207",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Accounting Process",
+                                "type": "window",
+                                "tabId": "AB9A0625167C4B169E0DAACBF82B1A8B",
+                                "windowId": "A9FD6A5AED3546EC83DB567882646D2E",
+                                "optionType": "tab",
+                                "id": "AA29B015283D4D248159CECA4E1372D0",
+                                "viewValue": "AB9A0625167C4B169E0DAACBF82B1A8B",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "G/L Item",
+                                "type": "window",
+                                "tabId": "800033",
+                                "windowId": "800007",
+                                "optionType": "tab",
+                                "id": "52118BF1A2C84D84E040007F01005FEC",
+                                "viewValue": "800033",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "G/L Category",
+                                "type": "window",
+                                "tabId": "158",
+                                "windowId": "131",
+                                "optionType": "tab",
+                                "id": "52118BF1A1F64D84E040007F01005FEC",
+                                "viewValue": "158",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Document Type",
+                                "type": "window",
+                                "tabId": "167",
+                                "windowId": "135",
+                                "optionType": "tab",
+                                "id": "52118BF1A1F94D84E040007F01005FEC",
+                                "viewValue": "167",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Document Sequence",
+                                "type": "window",
+                                "tabId": "146",
+                                "windowId": "112",
+                                "optionType": "tab",
+                                "id": "52118BF1A2134D84E040007F01005FEC",
+                                "viewValue": "146",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Tax Category",
+                                "type": "window",
+                                "tabId": "176",
+                                "windowId": "138",
+                                "optionType": "tab",
+                                "id": "52118BF1A1FB4D84E040007F01005FEC",
+                                "viewValue": "176",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Business Partner Tax Category",
+                                "type": "window",
+                                "tabId": "800231",
+                                "windowId": "800086",
+                                "optionType": "tab",
+                                "id": "52118BF1A3374D84E040007F01005FEC",
+                                "viewValue": "800231",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Tax Rate",
+                                "type": "window",
+                                "tabId": "174",
+                                "windowId": "137",
+                                "optionType": "tab",
+                                "id": "52118BF1A1FA4D84E040007F01005FEC",
+                                "viewValue": "174",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Cost Center",
+                                "type": "window",
+                                "tabId": "2DBFD0E6ACF444D0BDAA29269B80E455",
+                                "windowId": "79FC23AB84F04384B4B7CCCADCDD2942",
+                                "optionType": "tab",
+                                "id": "480566EC59D3490E8E5752A26A352CE2",
+                                "viewValue": "2DBFD0E6ACF444D0BDAA29269B80E455",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "ABC Activity",
+                                "type": "window",
+                                "tabId": "249",
+                                "windowId": "134",
+                                "optionType": "tab",
+                                "id": "52118BF1A1F84D84E040007F01005FEC",
+                                "viewValue": "249",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Accounting templates",
+                                "type": "window",
+                                "tabId": "81F3CB82FABC4208BA76DEBB3728A14B",
+                                "windowId": "B15DDE526F724EBCB11439BDDB483FA6",
+                                "optionType": "tab",
+                                "id": "29C956E61F0811DE98DB8F290236BC17",
+                                "viewValue": "81F3CB82FABC4208BA76DEBB3728A14B",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            },
+                            {
+                                "title": "Balance sheet and P&L structure Setup",
+                                "type": "window",
+                                "tabId": "800261",
+                                "windowId": "800099",
+                                "optionType": "tab",
+                                "id": "52118BF1A3454D84E040007F01005FEC",
+                                "viewValue": "800261",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "title": "Assets",
+                "singleRecord": false,
+                "readOnly": false,
+                "editOrDeleteOnly": false,
+                "type": "folder",
+                "submenu": [
+                    {
+                        "title": "Assets",
+                        "type": "window",
+                        "tabId": "800078",
+                        "windowId": "800027",
+                        "optionType": "tab",
+                        "id": "52118BF1A3034D84E040007F01005FEC",
+                        "viewValue": "800078",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Asset Group",
+                        "type": "window",
+                        "tabId": "452",
+                        "windowId": "252",
+                        "optionType": "tab",
+                        "id": "52118BF1A2854D84E040007F01005FEC",
+                        "viewValue": "452",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Amortization",
+                        "type": "window",
+                        "tabId": "800076",
+                        "windowId": "800026",
+                        "optionType": "tab",
+                        "id": "52118BF1A3044D84E040007F01005FEC",
+                        "viewValue": "800076",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false
+                    },
+                    {
+                        "title": "Analysis Tools",
+                        "singleRecord": false,
+                        "readOnly": false,
+                        "editOrDeleteOnly": false,
+                        "type": "folder",
+                        "submenu": [
+                            {
+                                "title": "Asset report for depreciation schedule",
+                                "type": "processManual",
+                                "optionType": "processManual",
+                                "manualUrl": "/ad_reports/ReportAssetDepreciationSchedule.html",
+                                "manualProcessId": "462033447A1548F09BBFB0683FA976CC",
+                                "id": "41B5FB3841D341F0BAFD761D6A3CC5BC",
+                                "viewValue": "/ad_reports/ReportAssetDepreciationSchedule.html",
+                                "singleRecord": false,
+                                "readOnly": false,
+                                "editOrDeleteOnly": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+]

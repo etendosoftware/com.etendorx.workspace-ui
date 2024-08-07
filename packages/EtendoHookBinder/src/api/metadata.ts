@@ -76,29 +76,31 @@ export class Metadata {
         'agingProcessDefinitionOrganization',
       ),
     }),
+    Application: Metadata.createProxy({}),
   });
 
-  private static setup = () => {
+  private static setup = async () => {
     if (Metadata.initialized) {
       return;
+    } else {
+      Metadata.initialized = true;
     }
 
-    //@ts-expect-error Need to mock original OB object
-    window.OB = window.OB || Metadata.OB;
-    //@ts-expect-error Need to mock original isc object
-    window.isc = window.isc || Metadata.isc;
+    Object.defineProperty(window, 'OB', { value: Metadata.OB });
+    Object.defineProperty(window, 'isc', { value: Metadata.isc });
     Object.defineProperty(Array.prototype, 'sortByProperty', {
       value: () => null,
     });
-    Metadata.getSession();
 
-    Metadata.initialized = true;
+    return Metadata.getSession();
   };
 
   // TODO: Remove empty object and update with the right value
   public static standardWindow = {};
 
-  private static async _getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
+  private static async _getWindow(
+    windowId: Etendo.WindowId,
+  ): Promise<Etendo.WindowMetadata> {
     try {
       const response = await Metadata.client.get(
         `OBUIAPP_MainLayout/View?viewId=_${windowId}`,
@@ -122,8 +124,10 @@ export class Metadata {
     }
   }
 
-  public static async getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
-    Metadata.setup();
+  public static async getWindow(
+    windowId: Etendo.WindowId,
+  ): Promise<Etendo.WindowMetadata> {
+    await Metadata.setup();
 
     const cached = Metadata.cache.get(windowId);
 
@@ -156,7 +160,6 @@ export class Metadata {
 
     script.type = 'text/javascript';
     script.textContent = response.data;
-    console.log(script.textContent);
     document.head.appendChild(script);
     document.head.removeChild(script);
   }

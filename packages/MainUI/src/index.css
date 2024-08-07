@@ -6,3 +6,19 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  min-height: 100%;
+  max-width: 100%;
+}
+
+#root {
+  flex: 1;
+  min-height: 100%;
+  display: flex;
+  flex-direction: row;
+  background: linear-gradient(180deg, #C6D3FF 30%, #F5F6FA 100%);
+}

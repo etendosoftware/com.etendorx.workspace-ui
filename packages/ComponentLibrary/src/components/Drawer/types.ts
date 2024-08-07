@@ -7,8 +7,7 @@ export interface Section {
   badge?: string;
 }
 
-export interface DrawerProps {
-  children: React.ReactNode;
+export interface DrawerProps extends React.PropsWithChildren {
   sectionGroups: SectionGroup[];
   headerImage: string;
   headerTitle: string;

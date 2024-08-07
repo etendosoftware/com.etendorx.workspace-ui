@@ -1,14 +1,13 @@
 import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
 import { useColumns } from '@workspaceui/etendohookbinder/src/hooks/useColumns';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import { DRAWER_WIDTH_CLOSED } from '@workspaceui/componentlibrary/src/components/Drawer/styles';
 import {
-  Box,
   DynamicTable,
+  Spinner,
 } from '@workspaceui/componentlibrary/src/components';
 import { useMemo } from 'react';
 import { parseColumns } from '../../helpers/metadata';
-import CircularProgress from '@mui/material/CircularProgress';
+import Box from '@mui/material/Box';
 
 export default function DynamicTableScreen(props: { windowId: string }) {
   const { data: windowData, loading: loadingWindow } = useWindow(
@@ -23,20 +22,11 @@ export default function DynamicTableScreen(props: { windowId: string }) {
 
   const columns = useMemo(() => parseColumns(columnsData), [columnsData]);
 
-  return (
-    <Box height="100%" paddingLeft={`${DRAWER_WIDTH_CLOSED}px`} overflow="auto">
-      <Box
-        padding="0.5rem"
-        justifyContent="center"
-        alignItems="center"
-        display="flex"
-        width="100%">
-        {loadingData || loadingWindow || loadingColumns ? (
-          <CircularProgress />
-        ) : (
-          <DynamicTable columns={columns} data={records} />
-        )}
+  if (loadingData || loadingWindow || loadingColumns) {
+    return <Spinner />;
+  } else {
+    return <Box padding={1}>
+      <DynamicTable columns={columns} data={records} />
       </Box>
-    </Box>
-  );
+  }
 }
