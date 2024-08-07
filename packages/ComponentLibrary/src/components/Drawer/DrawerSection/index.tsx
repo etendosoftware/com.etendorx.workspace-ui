@@ -66,7 +66,7 @@ const DrawerSection: React.FC<any> = ({
           </Box>
 
           {open && (
-            <Typography sx={styles.listItemText}>{section.label}</Typography>
+            <Typography sx={styles.listItemText}>{section.title}</Typography>
           )}
         </Box>
 
