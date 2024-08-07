@@ -25,8 +25,10 @@ export default function DynamicTableScreen(props: { windowId: string }) {
   if (loadingData || loadingWindow || loadingColumns) {
     return <Spinner />;
   } else {
-    return <Box padding={1}>
-      <DynamicTable columns={columns} data={records} />
+    return (
+      <Box padding={1}>
+        <DynamicTable columns={columns} data={records} />
       </Box>
+    );
   }
 }
