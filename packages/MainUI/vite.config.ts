@@ -26,6 +26,10 @@ export default defineConfig({
     rollupOptions: {
       external: ['@workspaceui/storybook'],
     },
+    cssMinify: true,
+    minify: true,
+    outDir:path.resolve(__dirname, '../../src/main/resources/static'),
+    emptyOutDir: true
   },
   optimizeDeps: {
     include: ['@mui/material'],
