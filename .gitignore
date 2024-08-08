@@ -17,3 +17,4 @@ packages/EtendoHookBinder/node_modules
 *.d.ts.map
 
 /storybook-static
+.env
