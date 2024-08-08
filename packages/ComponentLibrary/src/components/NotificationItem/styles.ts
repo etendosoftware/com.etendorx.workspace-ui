@@ -74,7 +74,7 @@ export const sx: { [key: string]: SxProps<Theme> } = {
   closeIconButton: {
     position: 'absolute',
     top: '0.5rem',
-    right: '0.5rem',
+    right: '1rem',
     visibility: 'hidden',
     '& .closeIcon': {
       fill: theme.palette.baselineColor.neutral[80],
