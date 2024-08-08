@@ -1,4 +1,4 @@
-import { FC, useState, useCallback, useRef } from 'react';
+import { FC, useState, useCallback, useRef, useMemo } from 'react';
 import {
   Breadcrumbs,
   Link,
@@ -36,6 +36,12 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
   const [toggleStates, setToggleStates] = useState<Record<string, boolean>>({});
   const actionButtonRef = useRef<HTMLButtonElement>(null);
 
+  const paperConstant = useCallback(() => ({ sx: sx.menu, elevation: 3 }), []);
+  const menuConstant = useCallback(() => ({ sx: menuStyle }), []);
+
+  const handleMouseEnter = useCallback(() => setIsHomeHovered(true), []);
+  const handleMouseLeave = useCallback(() => setIsHomeHovered(false), []);
+
   const handleActionMenuOpen = useCallback((actions: BreadcrumbAction[]) => {
     if (actionButtonRef.current) {
       setAnchorEl(actionButtonRef.current);
@@ -47,13 +53,24 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
     setAnchorEl(null);
   }, []);
 
-  const handleMiddleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setMiddleMenuAnchorEl(event.currentTarget);
-  };
+  const handleMiddleMenuOpen = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      setMiddleMenuAnchorEl(event.currentTarget);
+    },
+    [],
+  );
 
-  const handleMiddleMenuClose = () => {
+  const handleMiddleMenuClose = useCallback(() => {
     setMiddleMenuAnchorEl(null);
-  };
+  }, []);
+
+  const handleClick = useCallback(
+    (e: { preventDefault: () => void }) => {
+      e.preventDefault();
+      onHomeClick();
+    },
+    [onHomeClick],
+  );
 
   const handleToggle = useCallback((actionId: string) => {
     setToggleStates(prevStates => ({
@@ -79,7 +96,50 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
     return null;
   }, [homeIcon, isHomeHovered]);
 
-  const renderBreadcrumbItems = () => {
+  const renderBreadcrumbItem = useCallback(
+    (item: BreadcrumbItem, isLast: boolean) => (
+      <Box key={item.id} sx={sx.breadcrumbItem}>
+        {isLast ? (
+          <>
+            <Typography
+              noWrap
+              sx={sx.lastItemTypography}
+              onClick={() => {
+                if (item.actions && item.actions.length > 0) {
+                  handleActionMenuOpen(item.actions);
+                }
+              }}>
+              {item.label}
+            </Typography>
+            {item.actions && item.actions.length > 0 && (
+              <IconButton
+                size="small"
+                ref={actionButtonRef}
+                onClick={() => handleActionMenuOpen(item.actions!)}
+                sx={sx.actionButton}>
+                <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
+              </IconButton>
+            )}
+          </>
+        ) : (
+          <Link
+            href="#"
+            onClick={e => {
+              e.preventDefault();
+              item.onClick && item.onClick();
+            }}
+            sx={sx.link}>
+            <Typography noWrap sx={sx.breadcrumbTypography}>
+              {item.label}
+            </Typography>
+          </Link>
+        )}
+      </Box>
+    ),
+    [handleActionMenuOpen],
+  );
+
+  const renderBreadcrumbItems = useMemo(() => {
     if (items.length <= 2) {
       return items.map((item, index) =>
         renderBreadcrumbItem(item, index === items.length - 1),
@@ -123,46 +183,13 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
         </>
       );
     }
-  };
-  const renderBreadcrumbItem = (item: BreadcrumbItem, isLast: boolean) => (
-    <Box key={item.id} sx={sx.breadcrumbItem}>
-      {isLast ? (
-        <>
-          <Typography
-            noWrap
-            sx={sx.lastItemTypography}
-            onClick={() => {
-              if (item.actions && item.actions.length > 0) {
-                handleActionMenuOpen(item.actions);
-              }
-            }}>
-            {item.label}
-          </Typography>
-          {item.actions && item.actions.length > 0 && (
-            <IconButton
-              size="small"
-              ref={actionButtonRef}
-              onClick={() => handleActionMenuOpen(item.actions!)}
-              sx={sx.actionButton}>
-              <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
-            </IconButton>
-          )}
-        </>
-      ) : (
-        <Link
-          href="#"
-          onClick={e => {
-            e.preventDefault();
-            item.onClick && item.onClick();
-          }}
-          sx={sx.link}>
-          <Typography noWrap sx={sx.breadcrumbTypography}>
-            {item.label}
-          </Typography>
-        </Link>
-      )}
-    </Box>
-  );
+  }, [
+    handleMiddleMenuClose,
+    handleMiddleMenuOpen,
+    items,
+    middleMenuAnchorEl,
+    renderBreadcrumbItem,
+  ]);
 
   return (
     <Box sx={sx.container}>
@@ -173,12 +200,9 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
         <Box sx={sx.homeContainer}>
           <Link
             href="#"
-            onClick={e => {
-              e.preventDefault();
-              onHomeClick();
-            }}
-            onMouseEnter={() => setIsHomeHovered(true)}
-            onMouseLeave={() => setIsHomeHovered(false)}
+            onClick={handleClick}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
             sx={sx.homeLink}>
             {renderHomeIcon()}
           </Link>
@@ -186,16 +210,16 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
             {homeText}
           </Typography>
         </Box>
-        {renderBreadcrumbItems()}
+        {renderBreadcrumbItems}
       </Breadcrumbs>
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleActionMenuClose}
         slotProps={{
-          paper: { sx: sx.menu, elevation: 3 },
+          paper: paperConstant(),
         }}
-        MenuListProps={{ sx: menuStyle }}>
+        MenuListProps={menuConstant()}>
         {currentActions.map(action => (
           <MenuItem key={action.id} onClick={() => {}} sx={sx.menuItem}>
             <Box sx={sx.iconBox}>
