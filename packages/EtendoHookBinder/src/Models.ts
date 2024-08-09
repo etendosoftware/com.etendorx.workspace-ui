@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // To parse this data:
 //
 //   import { Convert, Models } from "./file";
@@ -807,7 +808,7 @@ function transform(val: any, typ: any, getProps: any, key: any = '', parent: any
             const typ = typs[i];
             try {
                 return transform(val, typ, getProps);
-            } catch (_) {}
+            } catch (_) { /* empty */ }
         }
         return invalidValue(typs, val, key, parent);
     }
@@ -865,9 +866,9 @@ function transform(val: any, typ: any, getProps: any, key: any = '', parent: any
     }
     if (Array.isArray(typ)) return transformEnum(typ, val);
     if (typeof typ === "object") {
-        return typ.hasOwnProperty("unionMembers") ? transformUnion(typ.unionMembers, val)
-            : typ.hasOwnProperty("arrayItems")    ? transformArray(typ.arrayItems, val)
-            : typ.hasOwnProperty("props")         ? transformObject(getProps(typ), typ.additional, val)
+        return Object.prototype.hasOwnProperty.call(typ, "unionMembers") ? transformUnion(typ.unionMembers, val)
+            : Object.prototype.hasOwnProperty.call(typ, "arrayItems")    ? transformArray(typ.arrayItems, val)
+            : Object.prototype.hasOwnProperty.call(typ, "props")         ? transformObject(getProps(typ), typ.additional, val)
             : invalidValue(typ, val, key, parent);
     }
     // Numbers can be parsed by Date but shouldn't be.
