@@ -1,6 +1,6 @@
 export interface Section {
   id: string;
-  label: string;
+  title: string;
   icon: React.ReactNode;
   isSelected?: boolean;
   subSections?: Section[];
@@ -8,7 +8,7 @@ export interface Section {
 }
 
 export interface DrawerProps {
-  sectionGroups: SectionGroup[];
+  sectionGroups: Section[];
   headerImage: string;
   headerTitle: string;
 }

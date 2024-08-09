@@ -2,11 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Metadata } from '../api/metadata';
 import { Field } from '../api/types';
 
-export function useColumns(
-  tabId: string | undefined,
-) {
+export function useColumns(tabId: string | undefined) {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<Field[]>();
+  const [data, setData] = useState<Field[]>([]);
   const [error, setError] = useState<Error>();
   const [loaded, setLoaded] = useState(false);
 
@@ -19,9 +17,10 @@ export function useColumns(
       try {
         setLoading(true);
         setError(undefined);
-        setData(await Metadata.getColumns(tabId));
+        setData(Metadata.getColumns(tabId));
         setLoaded(true);
       } catch (e) {
+        console.warn((e as Error).message)
         setError(e as Error);
       } finally {
         setLoading(false);

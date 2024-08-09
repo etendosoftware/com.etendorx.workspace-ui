@@ -16,6 +16,7 @@ export function useWindow(windowId: string) {
         setData(await Metadata.getWindow(windowId));
         setLoaded(true);
       } catch (e) {
+        console.warn((e as Error).message)
         setError(e as Error);
       } finally {
         setLoading(false);

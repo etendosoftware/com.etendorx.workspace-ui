@@ -76,7 +76,9 @@ export class Metadata {
         'agingProcessDefinitionOrganization',
       ),
     }),
-    Application: Metadata.createProxy({}),
+    Application: Metadata.createProxy({
+      menu: [],
+    }),
   });
 
   private static setup = async () => {
@@ -88,11 +90,14 @@ export class Metadata {
 
     Object.defineProperty(window, 'OB', { value: Metadata.OB });
     Object.defineProperty(window, 'isc', { value: Metadata.isc });
+    Object.defineProperty(window, 'Metadata', { value: Metadata });
     Object.defineProperty(Array.prototype, 'sortByProperty', {
       value: () => null,
     });
 
-    return Metadata.getSession();
+    const session = await Metadata.getSession();
+
+    return session;
   };
 
   // TODO: Remove empty object and update with the right value
@@ -138,12 +143,19 @@ export class Metadata {
     }
   }
 
-  public static async getColumns(tabId: string) {
-    const item = Object.values(Metadata.isc.classes).find(
-      windowObj =>
-        windowObj.properties.viewProperties.tabId.toString() ===
-        tabId.toString(),
-    );
+  public static getColumns(tabId: string) {
+    if (!tabId) {
+      return [];
+    }
+
+    const item = Object.values(Metadata.isc.classes).find(windowObj => {
+      const val =
+        windowObj.properties.viewProperties?.tabId?.toString() ===
+          tabId.toString() && !!windowObj.properties.windowId;
+
+      return val;
+    });
+    console.log('found columns');
 
     if (!item) {
       return [];
@@ -162,5 +174,7 @@ export class Metadata {
     script.textContent = response.data;
     document.head.appendChild(script);
     document.head.removeChild(script);
+
+    return Promise.resolve();
   }
 }

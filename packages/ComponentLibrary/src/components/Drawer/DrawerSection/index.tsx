@@ -1,35 +1,32 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Collapse, Box, Typography } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { styles } from '../styles';
 import { theme } from '../../../theme';
 import { Section } from '../types';
 
-const DrawerSection: React.FC<any> = ({
+const DrawerSection = ({
   section,
   open,
   level = 0,
   onSelect,
-}) => {
+}: any) => {
+
   // Constants
-  const isMainSection = level === 0;
+  const isMainSection = section.type === 'folder';
   const isSelected =
     section.isSelected ||
-    section.subSections?.some((subsection: Section) => subsection.isSelected);
+    section.menu?.some((subsection: Section) => subsection.isSelected);
 
   // States
   const [expanded, setExpanded] = useState(false);
 
   // Handlers
   const handleClick = () => {
-    if (section.subSections) {
+    if (section.type === 'folder') {
       setExpanded(prev => !prev);
-    }
-
-    if (section.isSelected || (section.subSections && expanded)) {
-      onSelect(null);
-    } else {
-      onSelect(section.id);
+    } else if (section.type === 'window') {
+      location.pathname = '/window/' + section.windowId;
     }
   };
 
@@ -66,25 +63,25 @@ const DrawerSection: React.FC<any> = ({
           </Box>
 
           {open && (
-            <Typography sx={styles.listItemText}>{section.label}</Typography>
+            <Typography sx={styles.listItemText}>{section.title}</Typography>
           )}
         </Box>
 
         {open &&
-          section.subSections &&
+          section.submenu &&
           (expanded ? <ExpandLess /> : <ExpandMore />)}
       </Box>
 
-      {section.subSections && (
+      {section.submenu && (
         <Collapse in={expanded} timeout="auto" unmountOnExit>
           <Box
             sx={{
               ...styles.contentBox,
               alignItems: open ? 'flex-start' : 'center',
             }}>
-            {section.subSections.map((subSection: Section) => (
+            {section.submenu.map((subSection: Section) => (
               <DrawerSection
-                key={subSection.id}
+                key={subSection.title}
                 section={subSection}
                 open={open}
                 level={level + 1}
