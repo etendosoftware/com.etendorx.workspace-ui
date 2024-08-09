@@ -38,13 +38,13 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
   },
   container: {
     display: 'flex',
-    flexGrow: 1,
+    flex: 1,
     transition: 'all 0.3s ease',
     position: 'relative',
-    width: '100%',
     padding: '1rem 0 1rem 0',
     flexDirection: 'column',
     gap: '1rem',
+    overflow: 'hidden',
   },
   tablePaper: {
     borderRadius: '1rem',

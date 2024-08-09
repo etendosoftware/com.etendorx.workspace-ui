@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   Drawer as MuiDrawer,
-  AppBar as MuiAppBar,
   Box,
   Typography,
   IconButton,
@@ -11,8 +10,11 @@ import { styles } from './styles';
 import DrawerSection from './DrawerSection';
 import { DrawerProps, SectionGroup, Section } from './types';
 
+const paperProps = {
+  className: 'animated-width',
+};
+
 const Drawer: React.FC<DrawerProps> = ({
-  children,
   sectionGroups,
   headerImage,
   headerTitle,
@@ -84,21 +86,17 @@ const Drawer: React.FC<DrawerProps> = ({
   }, [open]);
 
   return (
-    <>
+    <Box>
       <MuiDrawer
         variant="permanent"
         open={open}
+        PaperProps={paperProps}
         sx={{
           ...styles.drawer,
           '& .MuiDrawer-paper': {
             ...styles.drawerPaper,
             width: open ? styles.drawerWidth : styles.drawerWidthClosed,
             overflowX: 'hidden',
-            transition: theme =>
-              theme.transitions.create('width', {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.enteringScreen,
-              }),
           },
         }}>
         <Box
@@ -148,17 +146,12 @@ const Drawer: React.FC<DrawerProps> = ({
           ))}
         </Box>
       </MuiDrawer>
-      <MuiAppBar
-        position="fixed"
-        sx={{
-          ...styles.appBar,
-          backgroundColor: 'transparent',
-          width: `calc(100% - ${open ? styles.drawerWidth : styles.drawerWidthClosed}px)`,
-          marginLeft: open ? styles.drawerWidth : styles.drawerWidthClosed,
-        }}>
-        {children}
-      </MuiAppBar>
-    </>
+      <Box
+        width={open ? styles.drawerWidth : styles.drawerWidthClosed}
+        margin="0.25rem"
+        className="animated-width"
+      />
+    </Box>
   );
 };
 

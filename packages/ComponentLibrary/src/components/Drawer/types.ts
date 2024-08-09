@@ -8,7 +8,6 @@ export interface Section {
 }
 
 export interface DrawerProps {
-  children: React.ReactNode;
   sectionGroups: SectionGroup[];
   headerImage: string;
   headerTitle: string;

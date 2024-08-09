@@ -16,21 +16,6 @@ export const styles = {
     borderBottomRightRadius: '0.75rem',
     border: '0, 1px, 0, 0',
   },
-  drawerOpen: {
-    transition: () =>
-      theme.transitions.create('width', {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.enteringScreen,
-      }),
-  },
-  drawerClose: {
-    transition: () =>
-      theme.transitions.create('width', {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.leavingScreen,
-      }),
-    overflowX: 'hidden',
-  },
   drawerHeader: {
     height: '3.5rem',
     display: 'flex',
