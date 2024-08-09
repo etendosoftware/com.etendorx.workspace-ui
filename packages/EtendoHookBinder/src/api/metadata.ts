@@ -84,8 +84,6 @@ export class Metadata {
   private static setup = async () => {
     if (Metadata.initialized) {
       return;
-    } else {
-      Metadata.initialized = true;
     }
 
     Object.defineProperty(window, 'OB', { value: Metadata.OB });
@@ -95,9 +93,8 @@ export class Metadata {
       value: () => null,
     });
 
-    const session = await Metadata.getSession();
-
-    return session;
+    Metadata.getSession();
+    Metadata.initialized = true;
   };
 
   // TODO: Remove empty object and update with the right value
@@ -132,7 +129,7 @@ export class Metadata {
   public static async getWindow(
     windowId: Etendo.WindowId,
   ): Promise<Etendo.WindowMetadata> {
-    await Metadata.setup();
+    Metadata.setup();
 
     const cached = Metadata.cache.get(windowId);
 
@@ -144,18 +141,13 @@ export class Metadata {
   }
 
   public static getColumns(tabId: string) {
-    if (!tabId) {
-      return [];
-    }
-
     const item = Object.values(Metadata.isc.classes).find(windowObj => {
       const val =
         windowObj.properties.viewProperties?.tabId?.toString() ===
-          tabId.toString() && !!windowObj.properties.windowId;
+          tabId.toString();
 
       return val;
     });
-    console.log('found columns');
 
     if (!item) {
       return [];
