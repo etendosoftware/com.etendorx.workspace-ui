@@ -1,5 +1,5 @@
-import Divider from '@mui/material/Divider';
+import Divider, { DividerProps } from '@mui/material/Divider';
 
-const ModalDivider = () => <Divider />;
+const ModalDivider: React.FC<DividerProps> = props => <Divider {...props} />;
 
 export default ModalDivider;
