@@ -5,8 +5,11 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
+    cssMinify: true,
+    minify: true,
     rollupOptions: {
-      external: ['@mui/material']
+      strictDeprecations: true,
+      treeshake: true,
     }
   }
 })
