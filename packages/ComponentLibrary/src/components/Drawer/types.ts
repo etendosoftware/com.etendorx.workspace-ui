@@ -1,3 +1,5 @@
+import { Menu } from "./menu";
+
 export interface Section extends Record<string, unknown> {
   id: string;
   title: string;
@@ -9,10 +11,10 @@ export interface Section extends Record<string, unknown> {
 }
 
 export interface DrawerProps {
-  sectionGroups: Section[];
+  sectionGroups: Menu[];
   headerImage: string;
   headerTitle: string;
-  onClick: (s: Section) => void;
+  onClick: (s: Menu) => void;
 }
 
 export interface SectionGroup {

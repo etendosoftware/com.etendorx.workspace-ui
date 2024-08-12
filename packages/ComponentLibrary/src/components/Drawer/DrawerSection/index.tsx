@@ -3,7 +3,7 @@ import { Collapse, Box, Typography } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { styles } from '../styles';
 import { theme } from '../../../theme';
-import { Section } from '../types';
+import { Menu } from '../menu';
 
 const DrawerSection = ({
   section,
@@ -12,15 +12,15 @@ const DrawerSection = ({
   onSelect,
   onClick,
 }: {
-  section: Section;
+  section: Menu;
   open: boolean;
   level: number;
   onSelect: (sectionId: string, parentId: string | null) => void;
-  onClick: (s: Section) => void;
+  onClick: (s: Menu) => void;
 }) => {
   // Constants
   const isMainSection = section.type === 'folder';
-  const isSelected = section.isSelected;
+  const isSelected = false;
 
   // States
   const [expanded, setExpanded] = useState(false);
@@ -43,7 +43,7 @@ const DrawerSection = ({
             ? theme.palette.baselineColor.neutral[10]
             : 'transparent',
         padding:
-          isMainSection && !!section.subSections && isSelected
+          isMainSection && !!section.submenu && isSelected
             ? '0.5rem'
             : undefined,
       }}>
@@ -51,7 +51,7 @@ const DrawerSection = ({
         onClick={handleClick}
         sx={{
           ...styles.listItemButton,
-          ...(section.isSelected && styles.listItemButtonSelected),
+          ...(isSelected ? styles.listItemButtonSelected : undefined),
           ...styles.listItemContentText,
           borderRadius: open ? '0.5rem' : '12.5rem',
           fontSize: open ? '1.5rem' : '1rem',
@@ -62,11 +62,11 @@ const DrawerSection = ({
             ...styles.listItemInnerContentText,
             justifyContent: open ? 'flex-start' : 'center',
           }}>
-          <Box sx={styles.listItemIconContent}>
+          {/* <Box sx={styles.listItemIconContent}>
             <Typography sx={styles.listItemIconTypography}>
-              {section.icon}
+              {section.title}
             </Typography>
-          </Box>
+          </Box> */}
 
           {open && (
             <Typography sx={styles.listItemText}>{section.title}</Typography>
@@ -85,7 +85,7 @@ const DrawerSection = ({
               ...styles.contentBox,
               alignItems: open ? 'flex-start' : 'center',
             }}>
-            {section.submenu.map((subSection: Section) => (
+            {section.submenu.map((subSection) => (
               <DrawerSection
                 key={subSection.title}
                 section={subSection}
