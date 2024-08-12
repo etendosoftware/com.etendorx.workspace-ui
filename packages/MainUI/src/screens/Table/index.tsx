@@ -24,9 +24,6 @@ export default function DynamicTableScreen() {
   if (loadingData || loadingWindow || loadingColumns) {
     return <Spinner />;
   } else {
-
-  console.log(windowData?.properties.viewProperties.tabId);
-
     return <DynamicTable columns={columns} data={records} />;
   }
 }

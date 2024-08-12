@@ -6,6 +6,9 @@ import * as Etendo from './types';
 
 export type { Etendo };
 
+function sleep(delay: number) {
+  return new Promise<void>(resolve => setTimeout(resolve, delay));
+}
 export class Metadata {
   private static client = new Client(API_METADATA_URL);
   private static cache = new CacheStore<Etendo.WindowMetadata>(
@@ -144,7 +147,7 @@ export class Metadata {
     const item = Object.values(Metadata.isc.classes).find(windowObj => {
       const val =
         windowObj.properties.viewProperties?.tabId?.toString() ===
-          tabId.toString();
+        tabId.toString();
 
       return val;
     });
@@ -166,7 +169,5 @@ export class Metadata {
     script.textContent = response.data;
     document.head.appendChild(script);
     document.head.removeChild(script);
-
-    return Promise.resolve();
   }
 }

@@ -3,21 +3,24 @@ import { Collapse, Box, Typography } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { styles } from '../styles';
 import { theme } from '../../../theme';
-import { Menu } from '../menu';
-import DrawerSubsection from '../DrawerSubsection';
+import { MenuSubmenu } from '../menu';
 
 const open = true;
 
-const DrawerSection = ({ section }: { section: Menu }) => {
+const DrawerSubsection = ({ section }: { section: MenuSubmenu }) => {
+  // Constants
   const isMainSection = section.type === 'folder';
   const isSelected = false;
+
+  // States
   const [expanded, setExpanded] = useState(false);
 
+  // Handlers
   const handleClick = useCallback(() => {
     if (section.type === 'folder') {
       setExpanded(prev => !prev);
-    } else {
-      console.warn('DrawerSection: unexpected type');
+    } else if (section.type === 'window') {
+      location.pathname = `/window/${section.windowId}`;
     }
   }, [section]);
 
@@ -49,14 +52,14 @@ const DrawerSection = ({ section }: { section: Menu }) => {
             ...styles.listItemInnerContentText,
             justifyContent: open ? 'flex-start' : 'center',
           }}>
-          <Box sx={styles.listItemIconContent}>
-            <Typography sx={styles.listItemIconTypography}>
-              {section.icon}
-            </Typography>
-          </Box>
-          <Typography sx={styles.listItemText}>{section.title}</Typography>
+          {open && (
+            <Typography sx={styles.listItemText}>{section.title}</Typography>
+          )}
         </Box>
-        {expanded ? <ExpandLess /> : <ExpandMore />}
+
+        {open &&
+          section.submenu &&
+          (expanded ? <ExpandLess /> : <ExpandMore />)}
       </Box>
 
       {section.submenu && (
@@ -67,7 +70,10 @@ const DrawerSection = ({ section }: { section: Menu }) => {
               alignItems: open ? 'flex-start' : 'center',
             }}>
             {section.submenu.map(subSection => (
-              <DrawerSubsection key={subSection.title} section={subSection} />
+              <DrawerSubsection
+                key={subSection.title}
+                section={subSection}
+              />
             ))}
           </Box>
         </Collapse>
@@ -76,4 +82,4 @@ const DrawerSection = ({ section }: { section: Menu }) => {
   );
 };
 
-export default DrawerSection;
+export default DrawerSubsection;

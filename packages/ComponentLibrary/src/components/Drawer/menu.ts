@@ -5,6 +5,7 @@ export interface Menu {
   editOrDeleteOnly: boolean;
   type: Type;
   submenu: MenuSubmenu[];
+  icon: string;
 }
 
 export interface MenuSubmenu {

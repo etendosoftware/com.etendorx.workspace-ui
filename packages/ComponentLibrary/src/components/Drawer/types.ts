@@ -11,10 +11,9 @@ export interface Section extends Record<string, unknown> {
 }
 
 export interface DrawerProps {
-  sectionGroups: Menu[];
+  items: Menu[];
   headerImage: string;
   headerTitle: string;
-  onClick: (s: Menu) => void;
 }
 
 export interface SectionGroup {
