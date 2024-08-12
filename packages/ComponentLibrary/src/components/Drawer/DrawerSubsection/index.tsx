@@ -3,26 +3,22 @@ import { Collapse, Box, Typography } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { styles } from '../styles';
 import { theme } from '../../../theme';
-import { MenuSubmenu } from '../menu';
+import { DrawerSubsectionProps } from '../types';
 
 const open = true;
 
-const DrawerSubsection = ({ section }: { section: MenuSubmenu }) => {
-  // Constants
-  const isMainSection = section.type === 'folder';
+const DrawerSubsection = ({ item, onClick }: DrawerSubsectionProps) => {
+  const isMainSection = item.type === 'folder';
   const isSelected = false;
-
-  // States
   const [expanded, setExpanded] = useState(false);
 
-  // Handlers
   const handleClick = useCallback(() => {
-    if (section.type === 'folder') {
+    if (item.type === 'folder') {
       setExpanded(prev => !prev);
-    } else if (section.type === 'window') {
-      location.pathname = `/window/${section.windowId}`;
+    } else if (item.type === 'window') {
+      onClick(`/window/${item.windowId}`);
     }
-  }, [section]);
+  }, [item.type, item.windowId, onClick]);
 
   return (
     <Box
@@ -33,9 +29,7 @@ const DrawerSubsection = ({ section }: { section: MenuSubmenu }) => {
             ? theme.palette.baselineColor.neutral[10]
             : 'transparent',
         padding:
-          isMainSection && !!section.submenu && isSelected
-            ? '0.5rem'
-            : undefined,
+          isMainSection && !!item.submenu && isSelected ? '0.5rem' : undefined,
       }}>
       <Box
         onClick={handleClick}
@@ -53,26 +47,25 @@ const DrawerSubsection = ({ section }: { section: MenuSubmenu }) => {
             justifyContent: open ? 'flex-start' : 'center',
           }}>
           {open && (
-            <Typography sx={styles.listItemText}>{section.title}</Typography>
+            <Typography sx={styles.listItemText}>{item.title}</Typography>
           )}
         </Box>
 
-        {open &&
-          section.submenu &&
-          (expanded ? <ExpandLess /> : <ExpandMore />)}
+        {open && item.submenu && (expanded ? <ExpandLess /> : <ExpandMore />)}
       </Box>
 
-      {section.submenu && (
+      {item.submenu && (
         <Collapse in={expanded} timeout="auto" unmountOnExit>
           <Box
             sx={{
               ...styles.contentBox,
               alignItems: open ? 'flex-start' : 'center',
             }}>
-            {section.submenu.map(subSection => (
+            {item.submenu.map(subSection => (
               <DrawerSubsection
                 key={subSection.title}
-                section={subSection}
+                item={subSection}
+                onClick={onClick}
               />
             ))}
           </Box>
