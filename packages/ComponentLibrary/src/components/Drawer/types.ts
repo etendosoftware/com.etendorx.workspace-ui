@@ -1,30 +1,75 @@
-import { Menu } from "./menu";
-
-export interface Section extends Record<string, unknown> {
-  id: string;
-  title: string;
-  icon: React.ReactNode;
-  isSelected?: boolean;
-  subSections?: Section[];
-  badge?: string;
-  submenu: Section[],
-}
-
 export interface DrawerProps {
   items: Menu[];
-  headerImage: string;
-  headerTitle: string;
+  logo: string;
+  title: string;
 }
 
-export interface SectionGroup {
-  id: string | number;
-  sections: Section[];
+export interface Menu {
+  title: string;
+  singleRecord: boolean;
+  readOnly: boolean;
+  editOrDeleteOnly: boolean;
+  type: Type;
+  submenu: MenuSubmenu[];
 }
 
-export interface DrawerSectionProps {
-  section: Section;
-  open: boolean;
-  onSelect: (id: string | null) => void;
-  onExpand: (id: string) => void;
-  isExpanded: (id: string) => boolean;
+export interface MenuSubmenu {
+  title: string;
+  singleRecord: boolean;
+  readOnly: boolean;
+  editOrDeleteOnly: boolean;
+  type: Type;
+  submenu?: SubmenuSubmenu[];
+  tabId?: string;
+  windowId?: string;
+  optionType?: OptionType;
+  id?: string;
+  viewValue?: string;
+}
+
+export enum OptionType {
+  Process = 'process',
+  ProcessDefinition = 'processDefinition',
+  ProcessManual = 'processManual',
+  Tab = 'tab',
+  URL = 'url',
+}
+
+export interface SubmenuSubmenu {
+  title: string;
+  type: Type;
+  tabId?: string;
+  windowId?: string;
+  optionType?: OptionType;
+  id?: string;
+  viewValue?: string;
+  singleRecord: boolean;
+  readOnly: boolean;
+  editOrDeleteOnly: boolean;
+  viewId?: string;
+  uiPattern?: UIPattern;
+  processId?: string;
+  manualUrl?: string;
+  formId?: string;
+  tabTitle?: string;
+  modal?: string;
+  manualProcessId?: string;
+  submenu?: SubmenuSubmenu[];
+}
+
+export enum Type {
+  Folder = 'folder',
+  Form = 'form',
+  Process = 'process',
+  ProcessDefinition = 'processDefinition',
+  ProcessManual = 'processManual',
+  Report = 'report',
+  View = 'view',
+  Window = 'window',
+}
+
+export enum UIPattern {
+  A = 'A',
+  OBUIAPPPickAndExecute = 'OBUIAPP_PickAndExecute',
+  OBUIAPPReport = 'OBUIAPP_Report',
 }

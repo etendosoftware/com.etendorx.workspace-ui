@@ -9,11 +9,7 @@ const paperProps = {
   className: 'animated-width',
 };
 
-const Drawer = ({
-  items,
-  headerImage,
-  headerTitle,
-}: DrawerProps) => {
+const Drawer = ({ items, logo, title }: DrawerProps) => {
   const [open, setOpen] = useState<boolean>(true);
   const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
 
@@ -32,18 +28,14 @@ const Drawer = ({
           },
         }}>
         <DrawerHeader
-          logo={headerImage}
-          title={headerTitle}
+          logo={logo}
+          title={title}
           open={open}
           onClick={handleHeaderClick}
         />
-        <Box
-          sx={styles.subsectionsContainer}>
+        <Box sx={styles.subsectionsContainer}>
           {items.map(section => (
-            <DrawerSection
-              key={section.title}
-              section={section}
-            />
+            <DrawerSection key={section.title} section={section} />
           ))}
         </Box>
       </MuiDrawer>
