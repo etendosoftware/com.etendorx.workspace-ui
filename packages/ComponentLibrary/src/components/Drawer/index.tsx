@@ -18,6 +18,7 @@ const Drawer: React.FC<DrawerProps> = ({
   sectionGroups,
   headerImage,
   headerTitle,
+  onClick,
 }) => {
   // States
   const [open, setOpen] = useState<boolean>(true);
@@ -27,17 +28,19 @@ const Drawer: React.FC<DrawerProps> = ({
   >({});
 
   // Boolean functions
-  const isExpanded = (sectionId: string): boolean =>
-    expandedSections[sectionId] || false;
+  const isExpanded = useCallback(
+    (sectionId: string): boolean => expandedSections[sectionId] || false,
+    [expandedSections],
+  );
 
   // Event handlers
-  const handleDrawerToggle = (): void => {
+  const handleDrawerToggle = useCallback((): void => {
     setOpen(!open);
     if (open) {
       setSelectedSection(null);
       setExpandedSections({});
     }
-  };
+  }, [open]);
 
   const handleSectionSelect = useCallback(
     (sectionId: string, parentId: string | null = null): void => {
@@ -56,6 +59,7 @@ const Drawer: React.FC<DrawerProps> = ({
     },
     [selectedSection],
   );
+
   const handleExpand = useCallback(
     (section: string) => (sectionId: string) =>
       handleSectionSelect(sectionId, section),
@@ -111,6 +115,7 @@ const Drawer: React.FC<DrawerProps> = ({
               section={section}
               open={open}
               onSelect={handleSectionSelect}
+              onClick={onClick}
               onExpand={handleExpand(section.title)}
               isExpanded={isExpanded}
             />

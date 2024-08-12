@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Collapse, Box, Typography } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { styles } from '../styles';
@@ -10,25 +10,29 @@ const DrawerSection = ({
   open,
   level = 0,
   onSelect,
-}: any) => {
-
+  onClick,
+}: {
+  section: Section;
+  open: boolean;
+  level: number;
+  onSelect: (sectionId: string, parentId: string | null) => void;
+  onClick: (s: Section) => void;
+}) => {
   // Constants
   const isMainSection = section.type === 'folder';
-  const isSelected =
-    section.isSelected ||
-    section.menu?.some((subsection: Section) => subsection.isSelected);
+  const isSelected = section.isSelected;
 
   // States
   const [expanded, setExpanded] = useState(false);
 
   // Handlers
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     if (section.type === 'folder') {
       setExpanded(prev => !prev);
     } else if (section.type === 'window') {
-      location.pathname = '/window/' + section.windowId;
+      onClick(section);
     }
-  };
+  }, [onClick, section]);
 
   return (
     <Box
@@ -39,7 +43,9 @@ const DrawerSection = ({
             ? theme.palette.baselineColor.neutral[10]
             : 'transparent',
         padding:
-          isMainSection && !!section.subSections && isSelected && '0.5rem',
+          isMainSection && !!section.subSections && isSelected
+            ? '0.5rem'
+            : undefined,
       }}>
       <Box
         onClick={handleClick}
@@ -86,6 +92,7 @@ const DrawerSection = ({
                 open={open}
                 level={level + 1}
                 onSelect={onSelect}
+                onClick={onClick}
               />
             ))}
           </Box>

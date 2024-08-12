@@ -1,16 +1,18 @@
-export interface Section {
+export interface Section extends Record<string, unknown> {
   id: string;
   title: string;
   icon: React.ReactNode;
   isSelected?: boolean;
   subSections?: Section[];
   badge?: string;
+  submenu: Section[],
 }
 
 export interface DrawerProps {
   sectionGroups: Section[];
   headerImage: string;
   headerTitle: string;
+  onClick: (s: Section) => void;
 }
 
 export interface SectionGroup {
