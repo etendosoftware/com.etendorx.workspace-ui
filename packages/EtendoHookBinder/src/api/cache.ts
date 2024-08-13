@@ -1,4 +1,4 @@
-export class CacheStore<T> {
+export class CacheStore {
   private duration: number;
 
   constructor(duration: number) {
@@ -7,7 +7,6 @@ export class CacheStore<T> {
 
   public get(id: string) {
     const item = localStorage.getItem(id);
-    console.log({ item });
 
     if (item) {
       const data = JSON.parse(item);
@@ -19,7 +18,7 @@ export class CacheStore<T> {
     return null;
   }
 
-  public set(id: string, value: T) {
+  public set(id: string, value: unknown) {
     localStorage.setItem(
       id,
       JSON.stringify({

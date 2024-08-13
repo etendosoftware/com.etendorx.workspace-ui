@@ -6,15 +6,15 @@ export const parseColumns = (columns?: Etendo.Field[]) => {
   }
 
   return columns
-    .filter(c => {
-      if (!c.gridProps) {
+    .filter(column => {
+      if (!column.gridProps) {
         return false;
       } else {
-        return c.gridProps.showIf !== 'false';
+        return column.gridProps.showIf !== 'false';
       }
     })
-    .sort((a, b) => {
-      if (a.gridProps.sort < b.gridProps.sort) {
+    .sort((columnA, columnB) => {
+      if (columnA.gridProps.sort < columnB.gridProps.sort) {
         return -1;
       } else {
         return 1;

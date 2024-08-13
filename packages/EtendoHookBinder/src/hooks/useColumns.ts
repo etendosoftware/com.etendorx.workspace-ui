@@ -9,7 +9,7 @@ export function useColumns(tabId: string | undefined) {
   const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(() => {
-    const f = async () => {
+    const _load = async () => {
       if (!tabId) {
         return;
       }
@@ -27,7 +27,7 @@ export function useColumns(tabId: string | undefined) {
       }
     };
 
-    return f();
+    return _load();
   }, [tabId]);
 
   useEffect(() => {

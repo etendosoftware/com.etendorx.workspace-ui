@@ -8,7 +8,7 @@ import { parseColumns } from '../../helpers/metadata';
 import { useParams } from 'react-router-dom';
 
 export default function DynamicTableScreen() {
-  const { id = '' } = useParams();
+  const { id = '143' } = useParams();
 
   const {
     data: windowData,

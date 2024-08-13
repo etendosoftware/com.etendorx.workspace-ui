@@ -22,5 +22,9 @@ html, body {
 }
 
 .animated-width {
-  transition: width 300ms cubic-bezier(0.3, 0.1, 0.2, 1) !important;
+  transition: width 300ms ease-in-out !important;
+}
+
+.animated-transform {
+  transition: transform 300ms ease-in-out !important;
 }

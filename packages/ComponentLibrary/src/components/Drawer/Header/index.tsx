@@ -3,7 +3,14 @@ import Box from '@mui/material/Box';
 import { IconButton } from '../..';
 import { styles } from '../styles';
 import Typography from '@mui/material/Typography';
-import { useMemo } from 'react';
+
+const openSx = {
+  transform: 'rotate(0deg)',
+};
+
+const closedSx = {
+  transform: 'rotate(180deg)',
+};
 
 export default function DrawerHeader({
   title,
@@ -16,24 +23,23 @@ export default function DrawerHeader({
   open?: boolean;
   onClick: () => unknown;
 }) {
-  const sx = useMemo(
-    () => ({
-      transform: open ? 'rotate(0deg)' : 'rotate(180deg)',
-      transition: 'transform 300ms ease',
-    }),
-    [open],
-  );
-
   return (
     <Box sx={styles.drawerHeader}>
       {open ? (
         <Box sx={styles.drawerHeaderImgBox}>
-          <img src={logo} alt={`${title} Logo`} style={styles.drawerHeaderImg} />
+          <img
+            src={logo}
+            alt={`${title} Logo`}
+            style={styles.drawerHeaderImg}
+          />
           <Typography sx={styles.drawerHeaderTitle}>{title}</Typography>
         </Box>
       ) : null}
-      <IconButton onClick={onClick}>
-        <MenuOpen sx={sx} />
+      <IconButton
+        onClick={onClick}
+        sx={open ? openSx : closedSx}
+        className="animated-transform">
+        <MenuOpen />
       </IconButton>
     </Box>
   );

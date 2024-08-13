@@ -20,7 +20,8 @@ export const styles = {
     height: '3.5rem',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
+    padding: theme.spacing(1),
     borderBottom: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
   },
   appBar: {
@@ -53,6 +54,8 @@ export const styles = {
     alignItems: 'center',
     cursor: 'pointer',
     borderRadius: '0.5rem',
+    fontSize: '1.5rem',
+    justifyContent: 'space-between',
     padding: '0.5rem',
     color: theme.palette.baselineColor.neutral[90],
     transition: 'background-color 500ms, color 500ms',
@@ -66,6 +69,7 @@ export const styles = {
     alignItems: 'center',
     gap: '0.5rem',
     width: '100%',
+    justifyContent: 'flex-start',
   },
   listItemContentText: {
     cursor: 'pointer',
@@ -119,6 +123,7 @@ export const styles = {
     display: 'flex',
     gap: '0.25rem',
     alignItems: 'center',
+    flex: 1,
   },
   drawerHeaderImg: {
     width: '2.25rem',
@@ -151,7 +156,7 @@ export const styles = {
     gap: '0.5rem',
     width: '100%',
     marginTop: '0.5rem',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   iconBox: {
     width: '1rem',

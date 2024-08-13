@@ -15,12 +15,12 @@ export const useMenu = () => {
   const [menu, setMenu] = useState<Menu[]>(Metadata.getCachedMenu());
 
   useEffect(() => {
-    const f = async () => {
+    const initialize = async () => {
       const _menu = applyIcons(await Metadata.getMenu());
       setMenu(_menu);
     };
 
-    f();
+    initialize();
   }, []);
 
   return menu;

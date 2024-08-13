@@ -9,12 +9,12 @@ export default function MetadataProvider(props: React.PropsWithChildren) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const f = async () => {
+    const initialize = async () => {
       await Metadata.getWindow('143');
       setReady(true);
     };
 
-    f();
+    initialize();
   }, []);
 
   return (

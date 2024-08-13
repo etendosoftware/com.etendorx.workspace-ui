@@ -100,7 +100,7 @@ export interface Menu {
   singleRecord: boolean;
   readOnly: boolean;
   editOrDeleteOnly: boolean;
-  type: Type;
+  type: MenuType;
   submenu: MenuSubmenu[];
 }
 
@@ -109,7 +109,7 @@ export interface MenuSubmenu {
   singleRecord: boolean;
   readOnly: boolean;
   editOrDeleteOnly: boolean;
-  type: Type;
+  type: MenuType;
   submenu?: SubmenuSubmenu[];
   tabId?: string;
   windowId?: string;
@@ -128,7 +128,7 @@ export enum OptionType {
 
 export interface SubmenuSubmenu {
   title: string;
-  type: Type;
+  type: MenuType;
   tabId?: string;
   windowId?: string;
   optionType?: OptionType;
@@ -148,7 +148,7 @@ export interface SubmenuSubmenu {
   submenu?: SubmenuSubmenu[];
 }
 
-export enum Type {
+export enum MenuType {
   Folder = 'folder',
   Form = 'form',
   Process = 'process',

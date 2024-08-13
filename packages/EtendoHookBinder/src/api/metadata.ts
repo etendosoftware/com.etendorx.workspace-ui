@@ -11,9 +11,7 @@ export type { Etendo };
 // }
 export class Metadata {
   private static client = new Client(API_METADATA_URL);
-  private static cache = new CacheStore<Etendo.WindowMetadata>(
-    API_DEFAULT_CACHE_DURATION,
-  );
+  private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
   private static initialized = false;
 
   public static isc = {
@@ -138,6 +136,8 @@ export class Metadata {
     const cached = Metadata.cache.get(windowId);
 
     if (cached) {
+      Metadata.isc.classes[windowId] = cached;
+
       return cached;
     } else {
       return Metadata._getWindow(windowId);
@@ -147,7 +147,7 @@ export class Metadata {
   public static getColumns(tabId: string) {
     const item = Object.values(Metadata.isc.classes).find(windowObj => {
       const val =
-        windowObj.properties.viewProperties?.tabId?.toString() ===
+        windowObj.properties?.viewProperties?.tabId?.toString() ===
         tabId.toString();
 
       return val;
