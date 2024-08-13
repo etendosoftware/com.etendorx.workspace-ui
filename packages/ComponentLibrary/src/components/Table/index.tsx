@@ -1,4 +1,10 @@
-import { useMemo, useState, useRef, useCallback, useEffect } from 'react';
+import React, {
+  useMemo,
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+} from 'react';
 import {
   MaterialReactTable,
   MRT_Row,
@@ -21,16 +27,23 @@ import SideIcon from '../../assets/icons/codesandbox.svg';
 import Sidebar from './Sidebar';
 import { createToolbarConfig } from '../../../../storybook/src/stories/Components/Table/toolbarMock';
 import { CONTENT, LABELS } from './tableConstants';
+import ResizableRecordContainer from './TabNavigation';
 
 const widgets: Widget[] = [];
 
 const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Organization | null>(null);
+  const [recordContainerHeight, setRecordContainerHeight] = useState(40);
   const tableRef = useRef<HTMLDivElement>(null);
 
   const toggleDropdown = useCallback(() => {
     setIsDropdownOpen(prev => !prev);
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarOpen(prev => !prev);
   }, []);
 
   const handleRowClick = useCallback((row: MRT_Row<Organization>) => {
@@ -111,19 +124,30 @@ const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
   } as MRT_TableOptions<Organization>);
 
   const toolbarConfig = useMemo(
-    () => createToolbarConfig(toggleDropdown, isDropdownOpen),
-    [isDropdownOpen, toggleDropdown],
+    () =>
+      createToolbarConfig(
+        toggleDropdown,
+        toggleSidebar,
+        isDropdownOpen,
+        isSidebarOpen,
+      ),
+    [isDropdownOpen, toggleDropdown, isSidebarOpen, toggleSidebar],
   );
 
   return (
     <Box sx={tableStyles.container} ref={tableRef}>
       <TopToolbar {...toolbarConfig} isItemSelected={!!selectedItem} />
-      <Box sx={tableStyles.container}>
+      <Box
+        sx={{
+          ...tableStyles.contentContainer,
+          height: `calc(100% - ${isDropdownOpen ? recordContainerHeight : 0}vh)`,
+        }}>
         <Paper
           elevation={4}
           sx={{
             ...tableStyles.tablePaper,
-            width: isDropdownOpen ? 'calc(70% - 0.5rem)' : '100%',
+            width: isSidebarOpen ? 'calc(70% - 0.5rem)' : '100%',
+            transition: 'width 0.5s ease',
           }}>
           <MaterialReactTable table={table} />
         </Paper>
@@ -131,14 +155,14 @@ const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
           elevation={4}
           sx={{
             ...tableStyles.sidebarPaper,
-            right: isDropdownOpen ? 0 : -4,
-            width: '30%',
-            transform: isDropdownOpen ? 'translateX(0)' : 'translateX(100%)',
+            transform: isSidebarOpen ? 'translateX(0)' : 'translateX(100%)',
+            transition: 'transform 0.5s ease',
             backgroundImage: `url(${BackgroundGradientUrl})`,
+            visibility: isSidebarOpen ? 'visible' : 'hidden',
           }}>
           <Sidebar
-            isOpen={isDropdownOpen}
-            onClose={toggleDropdown}
+            isOpen={isSidebarOpen}
+            onClose={toggleSidebar}
             selectedItem={{
               icon: (
                 <SideIcon fill={theme.palette.baselineColor.neutral[100]} />
@@ -149,6 +173,15 @@ const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
             widgets={widgets}
           />
         </Paper>
+        <ResizableRecordContainer
+          isOpen={isDropdownOpen}
+          onClose={toggleDropdown}
+          selectedRecord={{
+            identifier: selectedItem?.identificator ?? LABELS.NO_IDENTIFIER,
+            type: selectedItem?.type ?? LABELS.NO_TYPE,
+          }}
+          onHeightChange={setRecordContainerHeight}
+        />
       </Box>
     </Box>
   );

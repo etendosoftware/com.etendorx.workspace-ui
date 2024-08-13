@@ -16,6 +16,7 @@ export const PLACEHOLDERS = {
 export const LABELS = {
   NO_IDENTIFIER: 'No item selected',
   NO_TITLE: 'No title',
+  NO_TYPE: 'No type',
 };
 
 export const CONTENT = {

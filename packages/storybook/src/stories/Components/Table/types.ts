@@ -14,6 +14,7 @@ export interface Organization {
   files: number;
   tags: string[];
   reactions: number;
+  type: string;
   id: string;
   parentId: string | null;
 }
@@ -25,6 +26,7 @@ export interface TableProps {
   data: Organization[];
   isTreeStructure?: boolean;
   customLabels?: Record<string, string>;
+  isDrawerOpen: boolean;
 }
 
 export interface SidebarContentProps {
@@ -81,4 +83,35 @@ export interface TopToolbarProps {
   centerSection: ToolbarSectionConfig;
   rightSection: ToolbarSectionConfig;
   isItemSelected: boolean;
+}
+
+export interface TabProps {
+  isOpen: boolean;
+  onClose: () => void;
+  selectedRecord: {
+    identifier?: string | null;
+    type?: string | null;
+  };
+  noIdentifierLabel?: string;
+  noTypeLabel?: string;
+  handleFullSize: () => void;
+  isFullSize: boolean;
+}
+
+export interface TabContentProps {
+  identifier: string | null;
+  type: string | null;
+  onClose: () => void;
+  handleFullSize: () => void;
+  isFullSize: boolean;
+}
+
+export interface ResizableTabContainerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  selectedRecord: {
+    identifier: string;
+    type: string;
+  };
+  onHeightChange: (height: number) => void;
 }

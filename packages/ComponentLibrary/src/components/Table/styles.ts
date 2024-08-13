@@ -36,34 +36,6 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
       marginBottom: 0,
     },
   },
-  container: {
-    display: 'flex',
-    flexGrow: 1,
-    transition: 'all 0.3s ease',
-    position: 'relative',
-    width: '100%',
-    padding: '1rem 0 1rem 0',
-    flexDirection: 'column',
-    gap: '1rem',
-  },
-  tablePaper: {
-    borderRadius: '1rem',
-    overflow: 'auto',
-    transition: 'width 0.3s ease',
-  },
-  sidebarPaper: {
-    position: 'absolute',
-    top: 0,
-    height: '50rem',
-    backgroundColor: theme.palette.baselineColor.neutral[10],
-    boxShadow: '-4px 0 10px rgba(0, 0, 0, 0.1)',
-    padding: '0.5rem',
-    transition: 'transform 0.3s ease',
-    borderRadius: '1rem',
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-  },
   tableBodyRow: {
     cursor: 'pointer',
   },
@@ -90,6 +62,39 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
   expandColumn: {
     borderRight: 'none',
     background: theme.palette.baselineColor.transparentNeutral[5],
+  },
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    width: '100%',
+    flexGrow: 1,
+    transition: 'all 0.3s ease',
+    padding: '1rem 0 1rem 0',
+    gap: '1rem',
+  },
+  tablePaper: {
+    borderRadius: '1rem',
+    overflow: 'auto',
+    height: '100%',
+  },
+  sidebarPaper: {
+    right: 4,
+    width: '30%',
+    position: 'absolute',
+    backgroundColor: theme.palette.baselineColor.neutral[10],
+    boxShadow: '-4px 0 10px rgba(0, 0, 0, 0.1)',
+    padding: '0.5rem',
+    borderRadius: '1rem',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+  },
+  contentContainer: {
+    display: 'flex',
+    flexGrow: 1,
+    transition: 'all 0.3s ease',
+    width: '100%',
+    padding: '1rem 0 1rem 0',
   },
 };
 
@@ -132,11 +137,23 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     display: 'flex',
     flexDirection: 'column',
   },
+  recordContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
   headerContainer: {
     display: 'flex',
-    alignItems: 'start',
-    gap: 2,
+    justifyContent: 'space-between',
     padding: '1rem',
+    gap: 2,
+  },
+  recordHeader: {
+    height: '2.75rem',
+    display: 'flex',
+    justifyContent: 'space-between',
+    padding: '1rem',
+    borderRadius: '1rem 1rem 0 0',
+    background: theme.palette.baselineColor.transparentNeutral[5],
   },
   iconContainer: {
     flexShrink: 0,
@@ -155,6 +172,7 @@ export const sx: { [key: string]: SxProps<Theme> } = {
   title: {
     color: theme.palette.baselineColor.neutral[100],
     fontWeight: 600,
+    fontSize: '1.25rem',
   },
   contentContainer: {
     flexGrow: 1,
@@ -171,5 +189,82 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+};
+
+export const recordContentStyles: Record<string, SxProps<Theme>> = {
+  recordContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  recordContainerItems: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  recordHeader: {
+    height: '2.75rem',
+    display: 'flex',
+    justifyContent: 'space-between',
+    padding: '1rem',
+    borderRadius: '1rem 1rem 0 0',
+    background: theme.palette.baselineColor.transparentNeutral[5],
+  },
+  typeBox: {
+    display: 'flex',
+    alignItems: 'center',
+    background: theme.palette.baselineColor.transparentNeutral[5],
+    border: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
+    padding: '0 0.5rem 0 0.5rem',
+    borderRadius: '1.5rem',
+    maxHeight: '2rem',
+  },
+  identifierBox: {
+    marginLeft: '0.5rem',
+    minWidth: '2rem',
+  },
+  title: {
+    color: theme.palette.baselineColor.neutral[100],
+    fontWeight: 600,
+    fontSize: '1.25rem',
+  },
+  iconButton: {
+    background: 'none',
+    '&:hover': {
+      background: theme.palette.baselineColor.transparentNeutral[5],
+    },
+  },
+  contentContainer: {
+    flexGrow: 1,
+    overflowY: 'auto',
+  },
+};
+
+export const resizableTabContainerStyles: Record<string, SxProps<Theme>> = {
+  paper: {
+    position: 'absolute',
+    bottom: '-94vh',
+    width: '99.5%',
+    borderRadius: '1rem 1rem 0 0',
+    transition: 'transform 0.3s ease, height 0.3s ease',
+    zIndex: 1000,
+  },
+  resizer: {
+    position: 'absolute',
+    top: 0,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: '4rem',
+    height: '0.5rem',
+    backgroundColor: theme.palette.grey[300],
+    marginTop: '0.25rem',
+    borderRadius: '0.5rem',
+    cursor: 'ns-resize',
+    '&:hover': {
+      backgroundColor: theme.palette.grey[400],
+    },
+  },
+  container: {
+    cursor: 'ns-resize',
+    overflow: 'auto',
   },
 };
