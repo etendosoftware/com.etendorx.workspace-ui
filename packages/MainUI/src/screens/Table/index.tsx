@@ -5,10 +5,10 @@ import DynamicTable from '@workspaceui/componentlibrary/src/components/DynamicTa
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useMemo } from 'react';
 import { parseColumns } from '../../helpers/metadata';
-import { useParams } from 'react-router-dom';
+import { Outlet, useParams } from 'react-router-dom';
 
 export default function DynamicTableScreen() {
-  const { id = '143' } = useParams();
+  const { id = '143', recordId = '' } = useParams();
 
   const {
     data: windowData,
@@ -29,6 +29,8 @@ export default function DynamicTableScreen() {
     return <div>{windowError?.message ?? columnsError?.message}</div>;
   } else if (loadingData || loadingWindow || loadingColumns) {
     return <Spinner />;
+  } else if (recordId) {
+    return <Outlet />;
   } else {
     return <DynamicTable columns={columns} data={records} />;
   }

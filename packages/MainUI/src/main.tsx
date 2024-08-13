@@ -4,6 +4,7 @@ import App from './App';
 import Home from './screens/Home';
 import Table from './screens/Table';
 import Login from './screens/Login';
+import Form from './screens/Form';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import './index.css';
 
@@ -21,13 +22,14 @@ const router = createBrowserRouter([
         element: <Login />,
       },
       {
-        path: 'window',
+        path: 'window/:id',
         element: <Table />,
         children: [
           {
-            path: ':id',
-          }
-        ]
+            path: ':recordId',
+            element: <Form />,
+          },
+        ],
       },
     ],
   },
