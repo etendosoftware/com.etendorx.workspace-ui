@@ -175,6 +175,8 @@ export class Metadata {
     const cached = Metadata.cache.get('OBMenu');
 
     if (cached) {
+      Metadata.OB.Application.menu = cached;
+
       return cached;
     } else {
       await Metadata.getSession();
