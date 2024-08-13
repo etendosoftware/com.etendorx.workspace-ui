@@ -23,6 +23,7 @@
     "@mui/x-data-grid-generator": "^6.19.4",
     "@mui/x-data-grid-pro": "^6.19.4",
     "@mui/x-date-pickers": "^7.1.1",
+    "@workspaceui/etendohookbinder": "workspace:^",
     "material-react-table": "^2.12.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

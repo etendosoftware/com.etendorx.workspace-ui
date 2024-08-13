@@ -38,13 +38,13 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
   },
   container: {
     display: 'flex',
-    flexGrow: 1,
+    flex: 1,
     transition: 'all 0.3s ease',
     position: 'relative',
-    width: '100%',
     padding: '1rem 0 1rem 0',
     flexDirection: 'column',
     gap: '1rem',
+    overflow: 'hidden',
   },
   tablePaper: {
     borderRadius: '1rem',
@@ -54,7 +54,7 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
   sidebarPaper: {
     position: 'absolute',
     top: 0,
-    height: '50rem',
+    bottom: 0,
     backgroundColor: theme.palette.baselineColor.neutral[10],
     boxShadow: '-4px 0 10px rgba(0, 0, 0, 0.1)',
     padding: '0.5rem',
@@ -131,6 +131,7 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
+    minWidth: '100%'
   },
   headerContainer: {
     display: 'flex',

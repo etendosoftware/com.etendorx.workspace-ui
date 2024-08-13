@@ -9,20 +9,21 @@ export function useWindow(windowId: string) {
   const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(() => {
-    const f = async () => {
+    const _load = async () => {
       try {
         setLoading(true);
         setError(undefined);
         setData(await Metadata.getWindow(windowId));
         setLoaded(true);
       } catch (e) {
+        console.error((e as Error).message)
         setError(e as Error);
       } finally {
         setLoading(false);
       }
     };
 
-    return f();
+    return _load();
   }, [windowId]);
 
   useEffect(() => {

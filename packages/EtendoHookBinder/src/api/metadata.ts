@@ -8,9 +8,7 @@ export type { Etendo };
 
 export class Metadata {
   private static client = new Client(API_METADATA_URL);
-  private static cache = new CacheStore<Etendo.WindowMetadata>(
-    API_DEFAULT_CACHE_DURATION,
-  );
+  private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
   private static initialized = false;
 
   public static isc = {
@@ -76,23 +74,26 @@ export class Metadata {
         'agingProcessDefinitionOrganization',
       ),
     }),
-    Application: Metadata.createProxy({}),
-  });
+    Application: Metadata.createProxy({
+      menu: [],
+    }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }) as any;
 
   private static setup = async () => {
     if (Metadata.initialized) {
       return;
-    } else {
-      Metadata.initialized = true;
     }
 
     Object.defineProperty(window, 'OB', { value: Metadata.OB });
     Object.defineProperty(window, 'isc', { value: Metadata.isc });
+    Object.defineProperty(window, 'Metadata', { value: Metadata });
     Object.defineProperty(Array.prototype, 'sortByProperty', {
       value: () => null,
     });
 
-    return Metadata.getSession();
+    Metadata.getSession();
+    Metadata.initialized = true;
   };
 
   // TODO: Remove empty object and update with the right value
@@ -127,23 +128,27 @@ export class Metadata {
   public static async getWindow(
     windowId: Etendo.WindowId,
   ): Promise<Etendo.WindowMetadata> {
-    await Metadata.setup();
+    Metadata.setup();
 
     const cached = Metadata.cache.get(windowId);
 
     if (cached) {
+      Metadata.isc.classes[windowId] = cached;
+
       return cached;
     } else {
       return Metadata._getWindow(windowId);
     }
   }
 
-  public static async getColumns(tabId: string) {
-    const item = Object.values(Metadata.isc.classes).find(
-      windowObj =>
-        windowObj.properties.viewProperties.tabId.toString() ===
-        tabId.toString(),
-    );
+  public static getColumns(tabId: string) {
+    const item = Object.values(Metadata.isc.classes).find(windowObj => {
+      const val =
+        windowObj.properties?.viewProperties?.tabId?.toString() ===
+        tabId.toString();
+
+      return val;
+    });
 
     if (!item) {
       return [];
@@ -162,5 +167,27 @@ export class Metadata {
     script.textContent = response.data;
     document.head.appendChild(script);
     document.head.removeChild(script);
+
+    return Metadata.OB.User;
+  }
+
+  public static async getMenu() {
+    const cached = Metadata.cache.get('OBMenu');
+
+    if (cached) {
+      Metadata.OB.Application.menu = cached;
+
+      return cached;
+    } else {
+      await Metadata.getSession();
+      const menu = Metadata.OB.Application.menu;
+      Metadata.cache.set('OBMenu', menu);
+
+      return menu;
+    }
+  }
+
+  public static getCachedMenu() {
+    return Metadata.cache.get('OBMenu') ?? [];
   }
 }
