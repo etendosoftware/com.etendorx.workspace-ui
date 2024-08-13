@@ -32,6 +32,22 @@ brew install pnpm
 pnpm install
 ```
 
+### 2.2- Setup environment
+You will need to define 4 environment variables. You can use the following template (./packages/MainUI/.env.template) and paste its content in a .env file placed at the ./packages/MainUI/. It should look something like this:
+
+```sh
+VITE_API_BASE_URL="http://localhost:8080/etendo" # Etendo Classic URL
+VITE_API_TOKEN="YWRtaW46YWRtaW4=" # Buffer.from('admin:admin').to('base64')
+VITE_CACHE_DURATION="3600000" # miliseconds: 1 hour
+VITE_AUTH_HEADER_NAME="Authorization"
+```
+
+The API_BASE_URL must point to a working Etendo Classic app.
+The API_TOKEN is used only for development and will be removed. In the meantime, you can use the template provided value.
+The CACHE_DURATION is a configuration for the Metadata module. This setting represents the expiration time of cache entries and is a number in milliseconds.
+The AUTH_HEADER_NAME is a configuration for the Metadata module. This settings represents the name of the header that will be used by the API client. Specifically, it will be used for sending the authentication token. 
+
+
 ### 3- Production Mode
 
 install in a EtendoRX environment:
