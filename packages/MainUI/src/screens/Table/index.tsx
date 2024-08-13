@@ -8,20 +8,26 @@ import { parseColumns } from '../../helpers/metadata';
 import { useParams } from 'react-router-dom';
 
 export default function DynamicTableScreen() {
-  const { id = '143' } = useParams();
+  const { id = '' } = useParams();
 
-  const { data: windowData, loading: loadingWindow } = useWindow(id);
-  const { data: columnsData, loading: loadingColumns } = useColumns(
-    windowData?.properties.viewProperties.tabId,
-  );
+  const {
+    data: windowData,
+    loading: loadingWindow,
+    error: windowError,
+  } = useWindow(id);
+  const {
+    data: columnsData,
+    loading: loadingColumns,
+    error: columnsError,
+  } = useColumns(windowData?.properties.viewProperties.tabId);
   const { data: records, loading: loadingData } = useDatasource(
     windowData?.properties.viewProperties.entity,
   );
-
-
   const columns = useMemo(() => parseColumns(columnsData), [columnsData]);
 
-  if (loadingData || loadingWindow || loadingColumns) {
+  if (windowError || columnsError) {
+    return <div>{windowError?.message ?? columnsError?.message}</div>;
+  } else if (loadingData || loadingWindow || loadingColumns) {
     return <Spinner />;
   } else {
     return <DynamicTable columns={columns} data={records} />;
