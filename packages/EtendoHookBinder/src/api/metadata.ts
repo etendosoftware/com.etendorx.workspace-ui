@@ -6,9 +6,6 @@ import * as Etendo from './types';
 
 export type { Etendo };
 
-// function sleep(delay: number) {
-//   return new Promise<void>(resolve => setTimeout(resolve, delay));
-// }
 export class Metadata {
   private static client = new Client(API_METADATA_URL);
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
