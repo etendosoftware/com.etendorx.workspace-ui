@@ -1,44 +1,41 @@
-import type { Etendo } from "./metadata";
-
 export class CacheStore<T> {
-  private store: Etendo.CacheStore<T>;
   private duration: number;
 
   constructor(duration: number) {
     this.duration = duration;
-    this.store = new Map<string, Etendo.CachedData<T>>();
-  }
-
-  public has(id: string) {
-    const item = this.store.get(id);
-
-    if (item) {
-      return Date.now() - item.updatedAt < this.duration;
-    }
-
-    return false;
   }
 
   public get(id: string) {
-    if (this.store.has(id)) {
-      return this.store.get(id)?.value;
+    const item = localStorage.getItem(id);
+    console.log({ item });
+
+    if (item) {
+      const data = JSON.parse(item);
+      const expired = Date.now() - data.updatedAt > this.duration;
+
+      return expired ? null : data.value;
     }
+
+    return null;
   }
 
   public set(id: string, value: T) {
-    this.store.set(id, {
-      updatedAt: Date.now(),
-      value,
-    });
+    localStorage.setItem(
+      id,
+      JSON.stringify({
+        updatedAt: Date.now(),
+        value,
+      }),
+    );
 
     return this;
   }
 
   public delete(id: string) {
-    return this.store.delete(id);
+    return localStorage.removeItem(id);
   }
 
   public clear() {
-    return this.store.clear();
+    return localStorage.clear();
   }
 }

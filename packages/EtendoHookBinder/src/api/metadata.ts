@@ -6,9 +6,9 @@ import * as Etendo from './types';
 
 export type { Etendo };
 
-function sleep(delay: number) {
-  return new Promise<void>(resolve => setTimeout(resolve, delay));
-}
+// function sleep(delay: number) {
+//   return new Promise<void>(resolve => setTimeout(resolve, delay));
+// }
 export class Metadata {
   private static client = new Client(API_METADATA_URL);
   private static cache = new CacheStore<Etendo.WindowMetadata>(
@@ -82,7 +82,8 @@ export class Metadata {
     Application: Metadata.createProxy({
       menu: [],
     }),
-  });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }) as any;
 
   private static setup = async () => {
     if (Metadata.initialized) {
@@ -169,5 +170,25 @@ export class Metadata {
     script.textContent = response.data;
     document.head.appendChild(script);
     document.head.removeChild(script);
+
+    return Metadata.OB.User;
+  }
+
+  public static async getMenu() {
+    const cached = Metadata.cache.get('OBMenu');
+
+    if (cached) {
+      return cached;
+    } else {
+      await Metadata.getSession();
+      const menu = Metadata.OB.Application.menu;
+      Metadata.cache.set('OBMenu', menu);
+
+      return menu;
+    }
+  }
+
+  public static getCachedMenu() {
+    return Metadata.cache.get('OBMenu') ?? [];
   }
 }

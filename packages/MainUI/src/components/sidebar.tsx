@@ -1,4 +1,4 @@
-import { useMenu } from '../helpers/menu';
+import { useMenu } from '@workspaceui/etendohookbinder/src/hooks/useMenu';
 import { Drawer } from '@workspaceui/componentlibrary/src/components';
 import EtendoLogotype from '../assets/etendo-logotype.png';
 import { useNavigate } from 'react-router-dom';

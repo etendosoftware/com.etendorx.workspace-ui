@@ -6,7 +6,7 @@ import { theme } from '../../../theme';
 import DrawerSubsection from '../DrawerSubsection';
 import { DrawerSectionProps } from '../types';
 
-const DrawerSection = ({ item, onClick }: DrawerSectionProps) => {
+const DrawerSection = ({ item, onClick }: DrawerSectionProps<Menu>) => {
   const isMainSection = item.type === 'folder';
   const isSelected = false;
   const [expanded, setExpanded] = useState(false);
