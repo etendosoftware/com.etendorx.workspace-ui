@@ -1,4 +1,4 @@
-import { TOKEN } from './constants';
+import { AUTH_HEADER_NAME, TOKEN } from './constants';
 interface ClientOptions extends RequestInit {
   headers?: Record<string, string>;
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -14,7 +14,7 @@ export class Client {
     this.baseUrl = url.endsWith('/') ? url : url + '/';
     this.baseHeaders = {
       ...baseHeaders,
-      Authorization: `Basic ${TOKEN}`,
+      [AUTH_HEADER_NAME]: `Basic ${TOKEN}`,
     };
   }
 
@@ -40,6 +40,13 @@ export class Client {
     }
 
     options.headers = headers;
+  }
+
+  public setAuthHeader(header: string) {
+    this.baseHeaders = {
+      ...this.baseHeaders,
+      [AUTH_HEADER_NAME]: header,
+    }
   }
 
   private async request(url: string, options: ClientOptions = {}) {
