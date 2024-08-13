@@ -207,6 +207,7 @@ export const recordContentStyles: Record<string, SxProps<Theme>> = {
     justifyContent: 'space-between',
     padding: '1rem',
     borderRadius: '1rem 1rem 0 0',
+    border: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
     background: theme.palette.baselineColor.transparentNeutral[5],
   },
   typeBox: {

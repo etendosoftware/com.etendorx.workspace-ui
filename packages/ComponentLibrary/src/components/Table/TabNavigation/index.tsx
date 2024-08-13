@@ -32,6 +32,8 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = ({
           MAX_HEIGHT,
         );
         setContainerHeight(newHeight);
+        setIsFullSize(newHeight === MAX_HEIGHT);
+
         onHeightChange(newHeight);
       };
 
