@@ -8,7 +8,7 @@ export function useDatasource(entity?: string) {
   const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(() => {
-    const f = async () => {
+    const _load = async () => {
       try {
         if (!entity) {
           return;
@@ -29,7 +29,7 @@ export function useDatasource(entity?: string) {
       }
     };
 
-    return f();
+    return _load();
   }, [entity]);
 
   useEffect(() => {

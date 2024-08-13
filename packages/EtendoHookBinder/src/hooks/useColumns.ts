@@ -2,16 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Metadata } from '../api/metadata';
 import { Field } from '../api/types';
 
-export function useColumns(
-  tabId: string | undefined,
-) {
+export function useColumns(tabId: string | undefined) {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<Field[]>();
+  const [data, setData] = useState<Field[]>([]);
   const [error, setError] = useState<Error>();
   const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(() => {
-    const f = async () => {
+    const _load = async () => {
       if (!tabId) {
         return;
       }
@@ -19,16 +17,17 @@ export function useColumns(
       try {
         setLoading(true);
         setError(undefined);
-        setData(await Metadata.getColumns(tabId));
+        setData(Metadata.getColumns(tabId));
         setLoaded(true);
       } catch (e) {
+        console.warn((e as Error).message)
         setError(e as Error);
       } finally {
         setLoading(false);
       }
     };
 
-    return f();
+    return _load();
   }, [tabId]);
 
   useEffect(() => {

@@ -42,7 +42,7 @@ export default function DatasourceTest() {
       e.preventDefault();
       e.stopPropagation();
 
-      const f = async () => {
+      const submit = async () => {
         const _startRow = (page - 1) * size;
         const _endRow = page * size - 1;
         const { response } = await Datasource.get(entity, {
@@ -53,7 +53,7 @@ export default function DatasourceTest() {
         setData(response);
       };
 
-      return f().catch(console.warn);
+      return submit().catch(console.error);
     },
     [entity, page, size],
   );

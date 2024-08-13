@@ -36,6 +36,34 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
       marginBottom: 0,
     },
   },
+  container: {
+    display: 'flex',
+    flex: 1,
+    transition: 'all 0.3s ease',
+    position: 'relative',
+    padding: '1rem 0 1rem 0',
+    flexDirection: 'column',
+    gap: '1rem',
+    overflow: 'hidden',
+  },
+  tablePaper: {
+    borderRadius: '1rem',
+    overflow: 'auto',
+    transition: 'width 0.3s ease',
+  },
+  sidebarPaper: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    backgroundColor: theme.palette.baselineColor.neutral[10],
+    boxShadow: '-4px 0 10px rgba(0, 0, 0, 0.1)',
+    padding: '0.5rem',
+    transition: 'transform 0.3s ease',
+    borderRadius: '1rem',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+  },
   tableBodyRow: {
     cursor: 'pointer',
   },
@@ -136,6 +164,7 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
+    minWidth: '100%'
   },
   recordContainer: {
     display: 'flex',

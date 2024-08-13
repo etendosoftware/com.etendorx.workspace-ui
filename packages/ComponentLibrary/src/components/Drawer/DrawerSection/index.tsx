@@ -1,99 +1,59 @@
-import React, { useState } from 'react';
-import { Collapse, Box, Typography } from '@mui/material';
-import { ExpandLess, ExpandMore } from '@mui/icons-material';
+import { useCallback, useMemo, useState } from 'react';
+import { Collapse, Box } from '@mui/material';
 import { styles } from '../styles';
+import MenuTitle from '../MenuTitle';
 import { theme } from '../../../theme';
-import { Section } from '../types';
+import { DrawerSectionProps } from '../types';
+import { MenuType } from '@workspaceui/etendohookbinder/src/api/types';
 
-const DrawerSection: React.FC<any> = ({
-  section,
-  open,
-  level = 0,
-  onSelect,
-}) => {
-  // Constants
-  const isMainSection = level === 0;
-  const isSelected =
-    section.isSelected ||
-    section.subSections?.some((subsection: Section) => subsection.isSelected);
-
-  // States
+const DrawerSection = ({ item, onClick }: DrawerSectionProps) => {
+  const isMainSection = item.type === MenuType.Folder;
+  const isSelected = false;
   const [expanded, setExpanded] = useState(false);
 
-  // Handlers
-  const handleClick = () => {
-    if (section.subSections) {
+  const handleClick = useCallback(() => {
+    if (item.type === MenuType.Folder) {
       setExpanded(prev => !prev);
-    }
-
-    if (section.isSelected || (section.subSections && expanded)) {
-      onSelect(null);
+    } else if (item.type === MenuType.Window) {
+      onClick(`/window/${item.windowId}`);
     } else {
-      onSelect(section.id);
+      console.error('DrawerSection: unexpected type');
     }
-  };
+  }, [item.type, item.windowId, onClick]);
+
+  const mainStyle = useMemo(
+    () => ({
+      ...styles.drawerSectionBox,
+      backgroundColor:
+        isMainSection && isSelected
+          ? theme.palette.baselineColor.neutral[10]
+          : 'transparent',
+    }),
+    [isMainSection, isSelected],
+  );
 
   return (
-    <Box
-      sx={{
-        ...styles.drawerSectionBox,
-        backgroundColor:
-          isMainSection && isSelected
-            ? theme.palette.baselineColor.neutral[10]
-            : 'transparent',
-        padding:
-          isMainSection && !!section.subSections && isSelected && '0.5rem',
-      }}>
-      <Box
+    <Box sx={mainStyle}>
+      <MenuTitle
+        item={item}
         onClick={handleClick}
-        sx={{
-          ...styles.listItemButton,
-          ...(section.isSelected && styles.listItemButtonSelected),
-          ...styles.listItemContentText,
-          borderRadius: open ? '0.5rem' : '12.5rem',
-          fontSize: open ? '1.5rem' : '1rem',
-          justifyContent: open ? 'space-between' : 'center',
-        }}>
-        <Box
-          sx={{
-            ...styles.listItemInnerContentText,
-            justifyContent: open ? 'flex-start' : 'center',
-          }}>
-          <Box sx={styles.listItemIconContent}>
-            <Typography sx={styles.listItemIconTypography}>
-              {section.icon}
-            </Typography>
-          </Box>
+        selected={isSelected}
+        expanded={expanded}
+      />
 
-          {open && (
-            <Typography sx={styles.listItemText}>{section.label}</Typography>
-          )}
-        </Box>
-
-        {open &&
-          section.subSections &&
-          (expanded ? <ExpandLess /> : <ExpandMore />)}
-      </Box>
-
-      {section.subSections && (
+      {item.type === MenuType.Folder && item.submenu ? (
         <Collapse in={expanded} timeout="auto" unmountOnExit>
-          <Box
-            sx={{
-              ...styles.contentBox,
-              alignItems: open ? 'flex-start' : 'center',
-            }}>
-            {section.subSections.map((subSection: Section) => (
+          <Box sx={styles.contentBox}>
+            {item.submenu.map(subitem => (
               <DrawerSection
-                key={subSection.id}
-                section={subSection}
-                open={open}
-                level={level + 1}
-                onSelect={onSelect}
+                key={subitem.title}
+                item={subitem}
+                onClick={onClick}
               />
             ))}
           </Box>
         </Collapse>
-      )}
+      ) : null}
     </Box>
   );
 };

@@ -1,28 +1,23 @@
-export interface Section {
-  id: string;
-  label: string;
-  icon: React.ReactNode;
-  isSelected?: boolean;
-  subSections?: Section[];
-  badge?: string;
-}
+import type {
+  Menu,
+  MenuSubmenu,
+  SubmenuSubmenu,
+} from '../../../../EtendoHookBinder/src/api/types';
 
+type NavigateFn = (pathname: string) => void;
 export interface DrawerProps {
-  children: React.ReactNode;
-  sectionGroups: SectionGroup[];
-  headerImage: string;
-  headerTitle: string;
-}
-
-export interface SectionGroup {
-  id: string | number;
-  sections: Section[];
+  items: Menu[];
+  logo: string;
+  title: string;
+  onClick: NavigateFn;
 }
 
 export interface DrawerSectionProps {
-  section: Section;
-  open: boolean;
-  onSelect: (id: string | null) => void;
-  onExpand: (id: string) => void;
-  isExpanded: (id: string) => boolean;
+  item: MenuSubmenu;
+  onClick: NavigateFn;
+}
+
+export interface DrawerSubsectionProps {
+  item: SubmenuSubmenu;
+  onClick: NavigateFn;
 }
