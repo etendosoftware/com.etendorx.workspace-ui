@@ -1,5 +1,5 @@
 import TabContent from './TabContent';
-import type { TabProps } from '../../../../../storybook/src/stories/Components/Table/types';
+import type { TabProps } from './types';
 
 const TabContainer: React.FC<TabProps> = ({
   isOpen,

@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material';
-import { TabContentProps } from '../../../../../storybook/src/stories/Components/Table/types';
+import { TabContentProps } from './types';
 import { recordContentStyles as styles } from '../styles';
 import ChevronUp from '../../../assets/icons/chevron-up.svg';
 import ChevronDown from '../../../assets/icons/chevron-down.svg';

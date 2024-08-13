@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Box, Paper } from '@mui/material';
 import TabContainer from './TabContainer';
 import { resizableTabContainerStyles as styles } from '../styles';
-import type { ResizableTabContainerProps } from '../../../../../storybook/src/stories/Components/Table/types';
+import type { ResizableTabContainerProps } from './types';
 
 const ResizableTabContainer: React.FC<ResizableTabContainerProps> = ({
   isOpen,
@@ -33,7 +33,6 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = ({
         );
         setContainerHeight(newHeight);
         setIsFullSize(newHeight === MAX_HEIGHT);
-
         onHeightChange(newHeight);
       };
 
