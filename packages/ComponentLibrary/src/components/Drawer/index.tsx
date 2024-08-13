@@ -21,7 +21,7 @@ const Drawer = ({ items, logo, title, onClick }: DrawerProps) => {
   );
 
   return (
-    <Box>
+    <>
       <MuiDrawer
         variant="permanent"
         open={open}
@@ -43,7 +43,7 @@ const Drawer = ({ items, logo, title, onClick }: DrawerProps) => {
         width={open ? styles.drawerWidth : styles.drawerWidthClosed}
         className="animated-width"
       />
-    </Box>
+    </>
   );
 };
 
