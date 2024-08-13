@@ -14,6 +14,7 @@ export interface Organization {
   files: number;
   tags: string[];
   reactions: number;
+  type: string;
   id: string;
   parentId: string | null;
 }
@@ -25,6 +26,7 @@ export interface TableProps {
   data: Organization[];
   isTreeStructure?: boolean;
   customLabels?: Record<string, string>;
+  isDrawerOpen: boolean;
 }
 
 export interface SidebarContentProps {

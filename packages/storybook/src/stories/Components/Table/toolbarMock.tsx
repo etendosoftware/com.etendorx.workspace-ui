@@ -20,7 +20,9 @@ import { theme } from '../../../../../ComponentLibrary/src/theme';
 
 export const createToolbarConfig = (
   toggleDropdown: () => void,
+  toggleSidebar: () => void,
   isDropdownOpen: boolean,
+  isSidebarOpen: boolean,
 ): {
   leftSection: ToolbarSectionConfig;
   centerSection: ToolbarSectionConfig;
@@ -135,9 +137,27 @@ export const createToolbarConfig = (
       {
         key: 'sidebar',
         icon: <SidebarIcon />,
-        tooltip: isDropdownOpen
-          ? TOOLTIPS.CLOSE_SIDEBAR
-          : TOOLTIPS.OPEN_SIDEBAR,
+        tooltip: isSidebarOpen ? TOOLTIPS.CLOSE_SIDEBAR : TOOLTIPS.OPEN_SIDEBAR,
+        onClick: toggleSidebar,
+        fill: isSidebarOpen
+          ? theme.palette.baselineColor.neutral[0]
+          : theme.palette.baselineColor.neutral[80],
+        hoverFill: isSidebarOpen
+          ? theme.palette.baselineColor.neutral[20]
+          : theme.palette.baselineColor.neutral[0],
+        sx: isSidebarOpen
+          ? {
+              backgroundColor: theme.palette.dynamicColor.main,
+              '&:hover': {
+                background: theme.palette.baselineColor.neutral[80],
+              },
+            }
+          : {},
+      },
+      {
+        key: 'details',
+        icon: <LowerFlapIcon />,
+        tooltip: TOOLTIPS.DETAILS,
         onClick: toggleDropdown,
         fill: isDropdownOpen
           ? theme.palette.baselineColor.neutral[0]
@@ -153,12 +173,6 @@ export const createToolbarConfig = (
               },
             }
           : {},
-      },
-      {
-        key: 'details',
-        icon: <LowerFlapIcon />,
-        tooltip: TOOLTIPS.DETAILS,
-        onClick: () => {},
       },
     ],
     style: {

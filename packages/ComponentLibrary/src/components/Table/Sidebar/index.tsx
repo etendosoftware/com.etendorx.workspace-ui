@@ -1,4 +1,3 @@
-import React from 'react';
 import SidebarContent from './SidebarContent';
 import type { SidebarProps } from '../../../../../storybook/src/stories/Components/Table/types';
 
