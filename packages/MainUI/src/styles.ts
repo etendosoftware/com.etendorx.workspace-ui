@@ -4,5 +4,6 @@ export const styles = {
     height: '100vh',
     width: '100vw',
     overflow: 'hidden',
+    display: 'flex',
   },
 };
