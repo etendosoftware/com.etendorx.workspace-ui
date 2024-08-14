@@ -8,7 +8,7 @@ export default function Layout() {
   return (
     <Box sx={styles.fullScreenBox}>
       <Sidebar />
-      <Box overflow="hidden" position="relative" flex={1} padding={1}>
+      <Box sx={styles.content}>
         <Navigation />
         <Outlet />
       </Box>

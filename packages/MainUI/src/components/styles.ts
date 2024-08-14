@@ -6,4 +6,12 @@ export const styles = {
     overflow: 'hidden',
     display: 'flex',
   },
+  content: {
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    maxHeight: '100%',
+    position: 'relative',
+    flex: 1,
+    padding: 1,
+  },
 };

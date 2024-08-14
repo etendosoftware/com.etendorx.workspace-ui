@@ -9,4 +9,4 @@ export default function DynamicTable(
   const table = useMaterialReactTable(params);
 
   return <MaterialReactTable table={table} />;
-};
+}
