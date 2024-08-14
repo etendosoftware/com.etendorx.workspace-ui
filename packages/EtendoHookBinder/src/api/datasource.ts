@@ -1,9 +1,9 @@
-import { API_DATASOURCE_URL } from './constants';
+import { API_DATASOURCE_URL, TOKEN } from './constants';
 import { Client } from './client';
 import { MetadataParams } from './types';
 
 export class Datasource {
-  private static client = new Client(API_DATASOURCE_URL);
+  private static client = new Client(API_DATASOURCE_URL).setAuthHeader(TOKEN);
 
   public static async get(entity: string, options: MetadataParams = {}) {
     try {

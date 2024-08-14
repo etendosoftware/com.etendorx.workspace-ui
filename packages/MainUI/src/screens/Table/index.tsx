@@ -1,37 +1,24 @@
-import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
-import { useColumns } from '@workspaceui/etendohookbinder/src/hooks/useColumns';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import DynamicTable from '@workspaceui/componentlibrary/src/components/DynamicTable';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { useMemo } from 'react';
-import { parseColumns } from '../../helpers/metadata';
 import { Outlet, useParams } from 'react-router-dom';
+import { useWindow } from '../../hooks/useWindow';
+import { useDatasource } from '../../hooks/useDatasource';
 
 export default function DynamicTableScreen() {
   const { id = '143', recordId = '' } = useParams();
 
-  const {
-    data: windowData,
-    loading: loadingWindow,
-    error: windowError,
-  } = useWindow(id);
-  const {
-    data: columnsData,
-    loading: loadingColumns,
-    error: columnsError,
-  } = useColumns(windowData?.properties.viewProperties.tabId);
+  const { windowData, columnsData, loading, error } = useWindow(id);
   const { data: records, loading: loadingData } = useDatasource(
     windowData?.properties.viewProperties.entity,
   );
-  const columns = useMemo(() => parseColumns(columnsData), [columnsData]);
 
-  if (windowError || columnsError) {
-    return <div>{windowError?.message ?? columnsError?.message}</div>;
-  } else if (loadingData || loadingWindow || loadingColumns) {
+  if (error) {
+    return <div>{error?.message}</div>;
+  } else if (loading || loadingData) {
     return <Spinner />;
   } else if (recordId) {
     return <Outlet />;
   } else {
-    return <DynamicTable columns={columns} data={records} />;
+    return <DynamicTable columns={columnsData} data={records} />;
   }
 }

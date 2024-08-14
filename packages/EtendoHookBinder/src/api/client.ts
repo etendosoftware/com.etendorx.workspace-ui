@@ -1,7 +1,16 @@
-import { AUTH_HEADER_NAME, TOKEN } from './constants';
+import { AUTH_HEADER_NAME } from './constants';
 interface ClientOptions extends RequestInit {
   headers?: Record<string, string>;
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+}
+
+export class UnauthorizedError extends Error {
+  public response: Response;
+
+  constructor(message: string, response: Response) {
+    super(message);
+    this.response = response;
+  }
 }
 
 export class Client {
@@ -10,12 +19,9 @@ export class Client {
   private readonly JSON_CONTENT_TYPE = 'application/json'!;
   private readonly FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded'!;
 
-  constructor(url: string, baseHeaders: ClientOptions['headers'] = {}) {
+  constructor(url: string) {
     this.baseUrl = url.endsWith('/') ? url : url + '/';
-    this.baseHeaders = {
-      ...baseHeaders,
-      [AUTH_HEADER_NAME]: `Basic ${TOKEN}`,
-    };
+    this.baseHeaders = {};
   }
 
   private cleanUrl(url: string) {
@@ -45,12 +51,32 @@ export class Client {
   public setAuthHeader(header: string) {
     this.baseHeaders = {
       ...this.baseHeaders,
-      [AUTH_HEADER_NAME]: header,
+      [AUTH_HEADER_NAME]: `Basic ${header}`,
+    };
+
+    return this;
+  }
+
+  private async isUnauthorized(response: Response) {
+    if (response.status === 401) {
+      return true;
     }
+
+    if (response.headers.get('Content-Type')?.match('application/javascript')) {
+      const _response = await response.clone().text();
+
+      return _response.startsWith('window.location.href');
+    }
+
+    return false;
   }
 
   private async request(url: string, options: ClientOptions = {}) {
     try {
+      if (options.method !== 'GET') {
+        this.setContentType(options);
+      }
+
       const response = await fetch(`${this.baseUrl}${this.cleanUrl(url)}`, {
         ...options,
         headers: {
@@ -59,8 +85,8 @@ export class Client {
         },
       });
 
-      if (options.method !== 'GET') {
-        this.setContentType(options);
+      if (await this.isUnauthorized(response)) {
+        throw new UnauthorizedError('Unauthorized', response);
       }
 
       const data = await (this.isJson(response)
@@ -92,5 +118,14 @@ export class Client {
     options: ClientOptions = {},
   ) {
     return this.request(url, { ...options, body: payload, method: 'POST' });
+  }
+
+  public run(js: string) {
+    const script = document.createElement('script');
+
+    script.type = 'text/javascript';
+    script.textContent = js;
+    document.head.appendChild(script);
+    document.head.removeChild(script);
   }
 }

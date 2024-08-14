@@ -1,4 +1,8 @@
-import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL } from './constants';
+import {
+  API_DEFAULT_CACHE_DURATION,
+  API_METADATA_URL,
+  TOKEN,
+} from './constants';
 import { Client } from './client';
 import { onChange } from './helpers';
 import { CacheStore } from './cache';
@@ -7,7 +11,7 @@ import * as Etendo from './types';
 export type { Etendo };
 
 export class Metadata {
-  private static client = new Client(API_METADATA_URL);
+  private static client = new Client(API_METADATA_URL).setAuthHeader(TOKEN);
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
   private static initialized = false;
 
@@ -102,27 +106,17 @@ export class Metadata {
   private static async _getWindow(
     windowId: Etendo.WindowId,
   ): Promise<Etendo.WindowMetadata> {
-    try {
-      const response = await Metadata.client.get(
-        `OBUIAPP_MainLayout/View?viewId=_${windowId}`,
-      );
-      const script = document.createElement('script');
+    const response = await Metadata.client.get(
+      `OBUIAPP_MainLayout/View?viewId=_${windowId}`,
+    );
 
-      script.type = 'text/javascript';
-      script.textContent = response.data;
-      document.head.appendChild(script);
-      document.head.removeChild(script);
+    this.client.run(response.data);
 
-      const value = Metadata.isc.classes[`_${windowId}`];
+    const value = Metadata.isc.classes[`_${windowId}`];
 
-      Metadata.cache.set(windowId, value);
+    Metadata.cache.set(windowId, value);
 
-      return value;
-    } catch (error) {
-      throw new Error(
-        `Error fetching metadata for window ${windowId}:\n${(error as Error).message}`,
-      );
-    }
+    return value;
   }
 
   public static async getWindow(
@@ -161,12 +155,8 @@ export class Metadata {
     const response = await Metadata.client.get(
       `/OBCLKER_Kernel/SessionDynamic`,
     );
-    const script = document.createElement('script');
 
-    script.type = 'text/javascript';
-    script.textContent = response.data;
-    document.head.appendChild(script);
-    document.head.removeChild(script);
+    this.client.run(response.data);
 
     return Metadata.OB.User;
   }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Metadata } from '../api/metadata';
-import { Menu } from '../api/types';
+import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 
 const applyIcons = (items: Menu[]) => {
   return items.map(menu => {
