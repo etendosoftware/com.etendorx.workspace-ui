@@ -91,7 +91,8 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
     backgroundRepeat: 'no-repeat',
     overflowY: 'auto',
     display: 'flex',
-    height: '48.5rem',
+    height: '100%',
+    transition: 'transform 0.5s ease',
   },
   contentContainer: {
     display: 'flex',
@@ -188,11 +189,10 @@ export const sx: { [key: string]: SxProps<Theme> } = {
   },
   widgetContainer: {
     color: theme.palette.baselineColor.neutral[0],
-    height: '100%',
     minHeight: '8rem',
-    background: 'red',
     borderRadius: '1.5rem',
     padding: '1rem',
+    marginBottom: '1rem',
     display: 'flex',
     gap: '0.75rem',
     flexDirection: 'column',

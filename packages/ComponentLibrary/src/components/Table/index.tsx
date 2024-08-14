@@ -153,7 +153,6 @@ const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
           sx={{
             ...tableStyles.sidebarPaper,
             transform: isSidebarOpen ? 'translateX(0)' : 'translateX(100%)',
-            transition: 'transform 0.5s ease',
             backgroundImage: `url(${BackgroundGradientUrl})`,
             visibility: isSidebarOpen ? 'visible' : 'hidden',
           }}>

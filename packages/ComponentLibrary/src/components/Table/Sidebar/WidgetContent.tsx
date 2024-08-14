@@ -58,7 +58,7 @@ const ContentGrid: React.FC<ContentGridProps> = ({ widgets }) => {
 
   return (
     <Box sx={sx.gridContainer}>
-      <Grid container spacing={'0.75rem'}>
+      <Grid container columnSpacing="0.75rem">
         {widgets.map(widget => (
           <Grid item key={widget.id} xs={getGridSize(widget.size)}>
             <WidgetComponent {...widget} />
