@@ -1,6 +1,6 @@
 import type { Etendo } from '@workspaceui/etendohookbinder/src/api/metadata';
 
-export const parseColumns = (columns?: Etendo.Field[]) => {
+export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
   if (!columns) {
     return [];
   }

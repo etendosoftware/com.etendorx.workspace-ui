@@ -61,6 +61,12 @@ export interface Field {
   type: string; // Consider specifying possible values if known
 }
 
+export interface Column {
+  header: string;
+  id: string;
+  accessorFn: (v: Record<string, unknown>) => unknown;
+}
+
 export interface ViewStandardProperties extends Record<string, unknown> {
   // Define known properties if possible
 }

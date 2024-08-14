@@ -1,22 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Metadata } from '../api/metadata';
-import { WindowMetadata } from '../api/types';
+import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { Field } from '@workspaceui/etendohookbinder/src/api/types';
 
-export function useWindow(windowId: string) {
+export function useColumns(tabId: string | undefined) {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<WindowMetadata>();
+  const [data, setData] = useState<Field[]>([]);
   const [error, setError] = useState<Error>();
   const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(() => {
     const _load = async () => {
+      if (!tabId) {
+        return;
+      }
+
       try {
         setLoading(true);
         setError(undefined);
-        setData(await Metadata.getWindow(windowId));
+        setData(Metadata.getColumns(tabId));
         setLoaded(true);
       } catch (e) {
-        console.error((e as Error).message)
+        console.warn((e as Error).message)
         setError(e as Error);
       } finally {
         setLoading(false);
@@ -24,7 +28,7 @@ export function useWindow(windowId: string) {
     };
 
     return _load();
-  }, [windowId]);
+  }, [tabId]);
 
   useEffect(() => {
     load();

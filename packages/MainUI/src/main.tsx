@@ -7,29 +7,36 @@ import Login from './screens/Login';
 import Form from './screens/Form';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import './index.css';
+import Layout from './components/layout';
 
 const router = createBrowserRouter([
   {
-    path: '/',
-    element: <App />,
+    path: '',
+    Component: App,
     children: [
       {
         path: '',
-        element: <Home />,
+        Component: Layout,
+        children: [
+          {
+            path: '',
+            Component: Home,
+          },
+          {
+            path: 'window/:id',
+            element: <Table />,
+            children: [
+              {
+                path: ':recordId',
+                element: <Form />,
+              },
+            ],
+          },
+        ],
       },
       {
         path: 'login',
         element: <Login />,
-      },
-      {
-        path: 'window/:id',
-        element: <Table />,
-        children: [
-          {
-            path: ':recordId',
-            element: <Form />,
-          },
-        ],
       },
     ],
   },

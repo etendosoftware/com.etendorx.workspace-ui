@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Datasource } from '../api/datasource';
+import { Datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 
 export function useDatasource(entity?: string) {
   const [loading, setLoading] = useState(true);
