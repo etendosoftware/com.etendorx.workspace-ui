@@ -10,6 +10,11 @@ export interface DrawerProps {
   logo: string;
   title: string;
   onClick: NavigateFn;
+  // Mock Props
+  headerImage?: string;
+  headerTitle?: string;
+  children?: React.ReactNode;
+  sectionGroups?: SectionGroup[];
 }
 
 export interface DrawerSectionProps {
@@ -20,4 +25,17 @@ export interface DrawerSectionProps {
 export interface DrawerSubsectionProps {
   item: SubmenuSubmenu;
   onClick: NavigateFn;
+}
+
+export interface Section {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  isSelected?: boolean;
+  subSections?: Section[];
+  badge?: string;
+}
+export interface SectionGroup {
+  id: string | number;
+  sections: Section[];
 }

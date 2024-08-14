@@ -30,7 +30,8 @@ interface ExtraProps {
   anchorEl: HTMLElement | null;
   open: boolean;
   onClose: () => void;
-  title: { icon: string | ReactElement; label: string };
+  title: string;
+  titleMock: { icon: string | ReactElement; label: string };
   linkTitle: { label: string; url: string };
   emptyStateImageAlt: string;
   emptyStateMessage: string;
@@ -83,7 +84,7 @@ export const DrawerWithNav: Story = {
     anchorEl: null,
     open: true,
     onClose: () => console.log('Modal closed'),
-    title: {
+    titleMock: {
       icon: <NotificationIcon fill="#2E365C" />,
       label: 'Notifications',
     },
@@ -144,7 +145,7 @@ export const DrawerWithNav: Story = {
               notifications={args.notifications}
               anchorEl={args.anchorEl}
               onClose={args.onClose}
-              title={args.title}
+              title={args.titleMock}
               linkTitle={args.linkTitle}
               emptyStateImageAlt={args.emptyStateImageAlt}
               emptyStateMessage={args.emptyStateMessage}

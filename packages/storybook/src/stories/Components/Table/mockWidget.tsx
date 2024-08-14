@@ -43,7 +43,6 @@ const colors = {
   ],
 };
 
-// Función para asegurar el contraste
 const getContrastColor = (bgColor: string) => {
   const index = colors.backgrounds.indexOf(bgColor);
   return index >= 5 ? colors.text[9] : colors.text[0];

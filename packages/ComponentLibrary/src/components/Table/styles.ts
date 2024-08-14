@@ -139,7 +139,7 @@ export const sx: { [key: string]: SxProps<Theme> } = {
   sidebarContainer: {
     display: 'flex',
     flexDirection: 'column',
-    minWidth: '100%'
+    minWidth: '100%',
     height: '100%',
   },
   recordContainer: {
