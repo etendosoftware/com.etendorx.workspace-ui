@@ -139,6 +139,7 @@ export const sx: { [key: string]: SxProps<Theme> } = {
   sidebarContainer: {
     display: 'flex',
     flexDirection: 'column',
+    minWidth: '100%'
     height: '100%',
   },
   recordContainer: {
@@ -278,7 +279,7 @@ export const recordContentStyles: Record<string, SxProps<Theme>> = {
 export const resizableTabContainerStyles: Record<string, SxProps<Theme>> = {
   paper: {
     position: 'absolute',
-    bottom: '-94vh',
+    bottom: 0,
     width: '99.5%',
     borderRadius: '1rem 1rem 0 0',
     transition: 'transform 0.3s ease, height 0.3s ease',

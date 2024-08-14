@@ -6,3 +6,25 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  min-height: 100%;
+  max-width: 100%;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(180deg, #C6D3FF 30%, #F5F6FA 100%);
+}
+
+.animated-width {
+  transition: width 300ms ease-in-out !important;
+}
+
+.animated-transform {
+  transition: transform 300ms ease-in-out !important;
+}
