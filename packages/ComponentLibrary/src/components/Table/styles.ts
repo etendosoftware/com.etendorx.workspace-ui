@@ -76,6 +76,7 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
     borderRadius: '1rem',
     overflow: 'auto',
     height: '100%',
+    transition: 'width 0.5s ease',
   },
   sidebarPaper: {
     right: 4,
@@ -88,6 +89,9 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
+    overflowY: 'auto',
+    display: 'flex',
+    height: '48.5rem',
   },
   contentContainer: {
     display: 'flex',
@@ -133,9 +137,9 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     },
   },
   sidebarContainer: {
-    height: '100%',
     display: 'flex',
     flexDirection: 'column',
+    height: '100%',
   },
   recordContainer: {
     display: 'flex',
@@ -181,14 +185,45 @@ export const sx: { [key: string]: SxProps<Theme> } = {
   container: {
     gridContainer: '1rem',
   },
+  widgetContainer: {
+    color: theme.palette.baselineColor.neutral[0],
+    height: '100%',
+    minHeight: '8rem',
+    background: 'red',
+    borderRadius: '1.5rem',
+    padding: '1rem',
+    display: 'flex',
+    gap: '0.75rem',
+    flexDirection: 'column',
+    boxShadow: `0px 4px 10px 0px ${theme.palette.baselineColor.transparentNeutral[10]}`,
+  },
+  widgetHeader: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   widgetBox: {
-    border: `1px solid ${theme.palette.baselineColor.neutral[20]}`,
     borderRadius: '0.25rem',
-    height: '18.75rem',
-    minHeight: '18.75rem',
+    display: 'flex',
+    maxWidth: '100%',
+    maxHeight: '100%',
+    alignItems: 'center',
+    padding: '0.5rem',
+  },
+  widgetHeaderIcon: {
+    width: '2rem',
+    height: '2rem',
+    padding: '0.25rem',
+    borderRadius: '1rem',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    flexWrap: 'nowrap',
+  },
+  widgetHeaderLeft: {
+    display: 'flex',
+    alignItems: 'center',
   },
 };
 

@@ -15,7 +15,6 @@ import { Box, Paper } from '@mui/material';
 import {
   Organization,
   TableProps,
-  Widget,
 } from '../../../../storybook/src/stories/Components/Table/types';
 import { tableStyles } from './styles';
 import { theme } from '../../theme';
@@ -28,8 +27,7 @@ import Sidebar from './Sidebar';
 import { createToolbarConfig } from '../../../../storybook/src/stories/Components/Table/toolbarMock';
 import { CONTENT, LABELS } from './tableConstants';
 import ResizableRecordContainer from './TabNavigation';
-
-const widgets: Widget[] = [];
+import { widgets } from '../../../../storybook/src/stories/Components/Table/mockWidget';
 
 const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -147,7 +145,6 @@ const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
           sx={{
             ...tableStyles.tablePaper,
             width: isSidebarOpen ? 'calc(70% - 0.5rem)' : '100%',
-            transition: 'width 0.5s ease',
           }}>
           <MaterialReactTable table={table} />
         </Paper>
