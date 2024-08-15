@@ -5,9 +5,9 @@ import { styles } from '../styles';
 import {
   Menu,
   MenuSubmenu,
-  MenuType,
   SubmenuSubmenu,
-} from '@workspaceui/etendohookbinder/src/api/types';
+  MenuType,
+} from '../../../../../EtendoHookBinder/src/api/types';
 
 export default function MenuTitle({
   item,

@@ -36,10 +36,20 @@ export interface SidebarContentProps {
   widgets: Widget[];
   onClose: () => void;
 }
-export interface Widget {
+export interface Widget extends React.PropsWithChildren {
   id: string;
-  content: React.ReactNode;
-  size: string;
+  title?: string;
+  icon?: React.ReactNode;
+  iconButtonAction?: () => void;
+  tooltip?: string;
+  color?: string;
+  bgcolor?: string;
+  size?: 'half' | 'full';
+  iconBgColor?: string;
+  iconButtonColor?: string;
+  iconButtonHoverColor?: string;
+  iconButtonBgColor?: string;
+  iconButtonHoverBgColor?: string;
 }
 
 export interface ContentGridProps {

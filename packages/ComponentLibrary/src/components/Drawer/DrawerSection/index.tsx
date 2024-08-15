@@ -4,7 +4,7 @@ import { styles } from '../styles';
 import MenuTitle from '../MenuTitle';
 import { theme } from '../../../theme';
 import { DrawerSectionProps } from '../types';
-import { MenuType } from '@workspaceui/etendohookbinder/src/api/types';
+import { MenuType } from '../../../../../EtendoHookBinder/src/api/types';
 
 const DrawerSection = ({ item, onClick }: DrawerSectionProps) => {
   const isMainSection = item.type === MenuType.Folder;
