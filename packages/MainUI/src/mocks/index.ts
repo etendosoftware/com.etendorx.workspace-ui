@@ -1,1 +1,0 @@
-export { sectionGroups } from './Drawer';

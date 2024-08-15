@@ -29,5 +29,15 @@ declare module '@mui/material/styles' {
       error?: PaletteColorOptions;
       draft?: PaletteColorOptions;
     };
+    tertiary?: PaletteColorOptions;
+  }
+}
+
+declare module '@mui/material/Button' {
+  interface ButtonPropsColorOverrides {
+    tertiary: true;
+  }
+  interface ButtonClasses {
+    containedTertiary: string;
   }
 }
