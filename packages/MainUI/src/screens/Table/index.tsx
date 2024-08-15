@@ -5,28 +5,8 @@ import { useWindow } from '../../hooks/useWindow';
 import { useDatasource } from '../../hooks/useDatasource';
 import {
   Column,
-  DatasourceParams,
   WindowMetadata,
 } from '@workspaceui/etendohookbinder/src/api/types';
-
-const params: Partial<DatasourceParams> = {
-  sortBy: 'documentNo',
-  startRow: 0,
-  endRow: 100,
-  operator: 'and',
-  criteria: [
-    {
-      fieldName: 'documentNo',
-      operator: 'iContains',
-      value: '24',
-    },
-    {
-      fieldName: 'active',
-      operator: 'equals',
-      value: 'true',
-    },
-  ],
-};
 
 function Content({
   windowData,
@@ -35,14 +15,39 @@ function Content({
   windowData: WindowMetadata;
   columnsData: Column[];
 }) {
-  const { data, loading, error } = useDatasource(windowData, params);
+  const { records, loading, error, fetchMore, loaded } = useDatasource(
+    windowData,
+    {
+      sortBy: 'documentNo',
+      operator: 'or',
+      criteria: [
+        {
+          fieldName: 'documentNo',
+          operator: 'iContains',
+          value: '100',
+        },
+        {
+          fieldName: 'active',
+          operator: 'equals',
+          value: 'true',
+        },
+      ],
+    },
+  );
 
-  if (loading) {
+  if (loading && !loaded) {
     return <Spinner />;
   } else if (error) {
     return <div>{error.message}</div>;
   } else {
-    return <DynamicTable columns={columnsData} data={data} />;
+    return (
+      <DynamicTable
+        columns={columnsData}
+        data={records}
+        fetchMore={fetchMore}
+        loading={loading}
+      />
+    );
   }
 }
 

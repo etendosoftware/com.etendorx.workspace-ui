@@ -28,6 +28,16 @@ export interface DatasourceParams {
   operator?: 'and' | 'or';
 }
 
+export interface DatasourceOptions {
+  columns?: string[];
+  sortBy?: string;
+  criteria?: Criteria[];
+  operationType?: 'fetch' | 'add' | 'update' | 'remove';
+  isSorting?: boolean;
+  isImplicitFilterApplied?: boolean;
+  operator?: 'and' | 'or';
+}
+
 export interface GridProps {
   sort: number;
   autoExpand: boolean;

@@ -1,4 +1,3 @@
-import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import Home from './screens/Home';
@@ -24,11 +23,11 @@ const router = createBrowserRouter([
           },
           {
             path: 'window/:id',
-            element: <Table />,
+            Component: Table,
             children: [
               {
                 path: ':recordId',
-                element: <Form />,
+                Component: Form,
               },
             ],
           },
@@ -36,14 +35,12 @@ const router = createBrowserRouter([
       },
       {
         path: 'login',
-        element: <Login />,
+        Component: Login,
       },
     ],
   },
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <RouterProvider router={router} />
-  </StrictMode>,
+  <RouterProvider router={router} />,
 );

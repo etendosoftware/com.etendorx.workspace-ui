@@ -2,8 +2,6 @@ import { API_DATASOURCE_URL, TOKEN } from './constants';
 import { Client } from './client';
 import { DatasourceParams } from './types';
 
-export type { DatasourceParams };
-
 export class Datasource {
   private static client = new Client(API_DATASOURCE_URL).setAuthHeader(TOKEN);
 
@@ -12,14 +10,17 @@ export class Datasource {
     windowId: string,
     tabId: string,
     options: DatasourceParams = {},
+    operationType = 'fetch',
+    isImplicitFilterApplied = true,
+    noCount = true,
   ) {
     try {
       const params = new URLSearchParams({
         windowId,
         tabId,
-        _isImplicitFilterApplied: 'true',
-        _noCount: 'true',
-        _operationType: 'fetch',
+        _isImplicitFilterApplied: isImplicitFilterApplied ? 'true' : 'false',
+        _noCount: noCount ? 'true' : 'false',
+        _operationType: operationType,
       });
 
       Object.entries(options).forEach(([key, value]) => {
@@ -41,9 +42,10 @@ export class Datasource {
 
       return result.data;
     } catch (error) {
-      throw new Error(
+      console.error(
         `Error fetching from datasource for entity ${entity}: ${error}`,
       );
+      throw error;
     }
   }
 }

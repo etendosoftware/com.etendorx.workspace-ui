@@ -7,11 +7,11 @@ export const styles = {
     display: 'flex',
   },
   content: {
-    overflowY: 'auto',
-    overflowX: 'hidden',
-    maxHeight: '100%',
-    position: 'relative',
+    overflow: 'hidden',
+    height: '100%',
     flex: 1,
-    padding: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'relative',
   },
 };
