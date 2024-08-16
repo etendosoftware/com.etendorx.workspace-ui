@@ -10,10 +10,12 @@ import * as Etendo from './types';
 
 export type { Etendo };
 
+const hasProperty = (object: object, property: string) =>
+  Object.prototype.hasOwnProperty.call(object, property);
+
 export class Metadata {
   private static client = new Client(API_METADATA_URL).setAuthHeader(TOKEN);
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
-  private static initialized = false;
 
   public static isc = {
     classes: {} as Etendo.WindowMetadataMap,
@@ -84,20 +86,36 @@ export class Metadata {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }) as any;
 
-  private static setup = async () => {
-    if (Metadata.initialized) {
-      return;
+  public static initialize = async () => {
+    if (!hasProperty(window, 'OB')) {
+      Object.defineProperty(window, 'OB', {
+        value: Metadata.OB,
+        writable: false,
+      });
     }
 
-    Object.defineProperty(window, 'OB', { value: Metadata.OB });
-    Object.defineProperty(window, 'isc', { value: Metadata.isc });
-    Object.defineProperty(window, 'Metadata', { value: Metadata });
-    Object.defineProperty(Array.prototype, 'sortByProperty', {
-      value: () => null,
-    });
+    if (!hasProperty(window, 'isc')) {
+      Object.defineProperty(window, 'isc', {
+        value: Metadata.isc,
+        writable: false,
+      });
+    }
 
-    Metadata.getSession();
-    Metadata.initialized = true;
+    if (!hasProperty(window, 'Metadata')) {
+      Object.defineProperty(window, 'Metadata', {
+        value: Metadata,
+        writable: false,
+      });
+    }
+
+    if (!hasProperty(Array.prototype, 'sortByProperty')) {
+      Object.defineProperty(Array.prototype, 'sortByProperty', {
+        value: () => null,
+        writable: false,
+      });
+    }
+
+    return Metadata.getSession();
   };
 
   // TODO: Remove empty object and update with the right value
@@ -122,7 +140,7 @@ export class Metadata {
   public static async getWindow(
     windowId: Etendo.WindowId,
   ): Promise<Etendo.WindowMetadata> {
-    Metadata.setup();
+    Metadata.initialize();
 
     const cached = Metadata.cache.get(windowId);
 

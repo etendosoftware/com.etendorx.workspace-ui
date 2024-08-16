@@ -1,25 +1,51 @@
 import { API_DATASOURCE_URL, TOKEN } from './constants';
 import { Client } from './client';
-import { MetadataParams } from './types';
+import { DatasourceParams } from './types';
 
 export class Datasource {
   private static client = new Client(API_DATASOURCE_URL).setAuthHeader(TOKEN);
 
-  public static async get(entity: string, options: MetadataParams = {}) {
+  public static async get(
+    entity: string,
+    windowId: string,
+    tabId: string,
+    options: DatasourceParams = {},
+    operationType = 'fetch',
+    isImplicitFilterApplied = true,
+    noCount = true,
+  ) {
     try {
-      options._operationType = 'fetch';
+      const params = new URLSearchParams({
+        windowId,
+        tabId,
+        _isImplicitFilterApplied: isImplicitFilterApplied ? 'true' : 'false',
+        _noCount: noCount ? 'true' : 'false',
+        _operationType: operationType,
+      });
 
-      const result = await this.client.post(
-        entity,
-        //@ts-expect-error Update Metadata params definition
-        new URLSearchParams(options),
-      );
+      Object.entries(options).forEach(([key, value]) => {
+        if (value !== undefined) {
+          if (key === 'criteria' && Array.isArray(value)) {
+            value.forEach(criteria => {
+              params.append(key, JSON.stringify(criteria));
+            });
+          } else {
+            params.append(
+              `_${key}`,
+              Array.isArray(value) ? value.join(',') : value.toString(),
+            );
+          }
+        }
+      });
+
+      const result = await this.client.post(entity, params);
 
       return result.data;
     } catch (error) {
-      throw new Error(
+      console.error(
         `Error fetching from datasource for entity ${entity}: ${error}`,
       );
+      throw error;
     }
   }
 }

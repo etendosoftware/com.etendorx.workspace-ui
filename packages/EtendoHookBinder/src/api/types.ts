@@ -15,17 +15,27 @@ export interface Criteria {
   value: string;
 }
 
-export interface MetadataParams extends Record<string, unknown> {
-  _windowId?: string;
-  _columns?: string[];
-  _startRow?: string;
-  _endRow?: string;
-  _targetRecordId?: string;
-  _sortBy?: string;
-  _writeToFile?: boolean;
-  _criteria?: Criteria[];
-  _mode?: 'SHOW_COLUMNS' | 'GET_DATA';
-  _operationType?: 'fetch' | 'add' | 'update' | 'remove';
+export interface DatasourceParams {
+  windowId?: string;
+  columns?: string[];
+  startRow?: number;
+  endRow?: number;
+  sortBy?: string;
+  criteria?: Criteria[];
+  operationType?: 'fetch' | 'add' | 'update' | 'remove';
+  isSorting?: boolean;
+  isImplicitFilterApplied?: boolean;
+  operator?: 'and' | 'or';
+}
+
+export interface DatasourceOptions {
+  columns?: string[];
+  sortBy?: string;
+  criteria?: Criteria[];
+  operationType?: 'fetch' | 'add' | 'update' | 'remove';
+  isSorting?: boolean;
+  isImplicitFilterApplied?: boolean;
+  operator?: 'and' | 'or';
 }
 
 export interface GridProps {

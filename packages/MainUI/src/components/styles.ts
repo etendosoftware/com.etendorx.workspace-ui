@@ -6,4 +6,12 @@ export const styles = {
     overflow: 'hidden',
     display: 'flex',
   },
+  content: {
+    overflow: 'hidden',
+    height: '100%',
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'relative',
+  },
 };
