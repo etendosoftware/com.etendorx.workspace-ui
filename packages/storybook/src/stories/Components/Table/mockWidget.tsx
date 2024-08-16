@@ -141,7 +141,7 @@ export const widgets: Widget[] = [
     iconButtonHoverBgColor: colors.backgrounds[2],
   },
   {
-    id: '6',
+    id: '7',
     children: <Box>🏆 Top 10%</Box>,
     size: 'half',
     title: 'Market Position',
@@ -156,7 +156,7 @@ export const widgets: Widget[] = [
     iconButtonHoverBgColor: colors.backgrounds[2],
   },
   {
-    id: '6',
+    id: '8',
     children: <Box>🏆 Top 10%</Box>,
     size: 'half',
     title: 'Market Position',
@@ -171,7 +171,7 @@ export const widgets: Widget[] = [
     iconButtonHoverBgColor: colors.backgrounds[2],
   },
   {
-    id: '6',
+    id: '9',
     children: <Box>🏆 Top 10%</Box>,
     size: 'half',
     title: 'Market Position',

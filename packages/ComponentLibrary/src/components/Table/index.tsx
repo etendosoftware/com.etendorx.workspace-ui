@@ -15,11 +15,11 @@ import { Box, Paper } from '@mui/material';
 import {
   Organization,
   TableProps,
+  SelectedRecord,
 } from '../../../../storybook/src/stories/Components/Table/types';
 import { tableStyles } from './styles';
 import { theme } from '../../theme';
 import { getColumns } from '../../../../storybook/src/stories/Components/Table/columns';
-import CustomExpandButton from './customExpandButton';
 import TopToolbar from './Toolbar';
 import BackgroundGradientUrl from '../../assets/images/sidebar-bg.svg?url';
 import SideIcon from '../../assets/icons/codesandbox.svg';
@@ -28,12 +28,16 @@ import { createToolbarConfig } from '../../../../storybook/src/stories/Component
 import { CONTENT, LABELS } from './tableConstants';
 import ResizableRecordContainer from './TabNavigation';
 import { widgets } from '../../../../storybook/src/stories/Components/Table/mockWidget';
+import FormView from '../FormView';
+import { createFormViewToolbarConfig } from '@workspaceui/storybook/stories/Components/Table/toolbarFormviewMock';
+import { ensureString } from '../../helpers/ensureString';
 
-const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
+const Table: React.FC<TableProps> = ({ data }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Organization | null>(null);
   const [recordContainerHeight, setRecordContainerHeight] = useState(40);
+  const [showFormView, setShowFormView] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
 
   const toggleDropdown = useCallback(() => {
@@ -44,14 +48,43 @@ const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
     setIsSidebarOpen(prev => !prev);
   }, []);
 
-  const handleRowClick = useCallback((row: MRT_Row<Organization>) => {
-    setSelectedItem(row.original);
+  const handleRowClick = useCallback(
+    (row: MRT_Row<{ [key: string]: any }>) => {
+      const originalItem = data.find(item => item.id.value === row.original.id);
+      setSelectedItem(originalItem || null);
+    },
+    [data],
+  );
+
+  const handleOutsideClick = useCallback(
+    (event: MouseEvent) => {
+      if (
+        !showFormView &&
+        tableRef.current &&
+        !tableRef.current.contains(event.target as Node)
+      ) {
+        setSelectedItem(null);
+      }
+    },
+    [showFormView],
+  );
+
+  const handleRowDoubleClick = useCallback(
+    (row: MRT_Row<{ [key: string]: any }>) => {
+      const originalItem = data.find(item => item.id.value === row.original.id);
+      setSelectedItem(originalItem || null);
+      setShowFormView(true);
+      // TODO: update the route for the breadcrum
+    },
+    [data],
+  );
+
+  const handleSave = useCallback(() => {
+    setShowFormView(false);
   }, []);
 
-  const handleOutsideClick = useCallback((event: MouseEvent) => {
-    if (tableRef.current && !tableRef.current.contains(event.target as Node)) {
-      setSelectedItem(null);
-    }
+  const handleCancel = useCallback(() => {
+    setShowFormView(false);
   }, []);
 
   useEffect(() => {
@@ -61,46 +94,28 @@ const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
     };
   }, [handleOutsideClick]);
 
-  const tableData = useMemo(
-    () => (isTreeStructure ? data.filter(org => !org.parentId) : data),
-    [data, isTreeStructure],
-  );
-
   const columns = useMemo(() => getColumns(), []);
 
-  const expandColumnDef = useMemo(() => {
-    if (!isTreeStructure) return undefined;
-    return {
-      header: '',
-      size: 40,
-      Cell: ({ row }: { row: MRT_Row<Organization> }) => (
-        <CustomExpandButton row={row} />
-      ),
-      muiTableHeadCellProps: {
-        sx: {
-          borderRight: 'none',
-          background: theme.palette.baselineColor.transparentNeutral[5],
-        },
-      },
-      muiTableBodyCellProps: {
-        sx: {},
-      },
-    };
-  }, [isTreeStructure]);
+  const tableData = useMemo(() => {
+    return data.map(item => {
+      const flatItem: { [key: string]: any } = {};
+      for (const [key, field] of Object.entries(item)) {
+        flatItem[key] = field.value;
+      }
+      return flatItem;
+    });
+  }, [data]);
 
   const table = useMaterialReactTable({
     columns,
     data: tableData,
     enableTopToolbar: false,
-    enableExpanding: isTreeStructure,
-    getSubRows: isTreeStructure
-      ? (row: Organization) => data.filter(org => org.parentId === row.id)
-      : undefined,
     initialState: {
       density: 'compact',
     },
     muiTableBodyRowProps: ({ row }) => ({
       onClick: () => handleRowClick(row),
+      onDoubleClick: () => handleRowDoubleClick(row),
       sx: tableStyles.tableBodyRow,
     }),
     muiTableBodyProps: {
@@ -113,24 +128,58 @@ const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
       sx: tableStyles.tableBodyCell,
     },
     columnResizeMode: 'onChange',
-    displayColumnDefOptions: {
-      'mrt-row-expand': {
-        ...expandColumnDef,
-        muiTableHeadCellProps: { sx: tableStyles.expandColumn },
-      },
-    },
-  } as MRT_TableOptions<Organization>);
+  } as MRT_TableOptions<{ [key: string]: any }>);
 
   const toolbarConfig = useMemo(
     () =>
-      createToolbarConfig(
-        toggleDropdown,
-        toggleSidebar,
-        isDropdownOpen,
-        isSidebarOpen,
-      ),
-    [isDropdownOpen, toggleDropdown, isSidebarOpen, toggleSidebar],
+      showFormView
+        ? createFormViewToolbarConfig(
+            handleSave,
+            handleCancel,
+            toggleDropdown,
+            toggleSidebar,
+            isDropdownOpen,
+            isSidebarOpen,
+          )
+        : createToolbarConfig(
+            toggleDropdown,
+            toggleSidebar,
+            isDropdownOpen,
+            isSidebarOpen,
+          ),
+    [
+      showFormView,
+      isDropdownOpen,
+      isSidebarOpen,
+      toggleDropdown,
+      toggleSidebar,
+      handleSave,
+      handleCancel,
+    ],
   );
+
+  const renderContent = () => {
+    if (showFormView && selectedItem) {
+      return (
+        <Box sx={{ maxHeight: '40rem' }}>
+          <FormView
+            data={selectedItem}
+            onSave={handleSave}
+            onCancel={handleCancel}
+          />
+        </Box>
+      );
+    } else {
+      return <MaterialReactTable table={table} />;
+    }
+  };
+
+  const selectedRecord: SelectedRecord = {
+    identifier:
+      ensureString(selectedItem?.documentNo.value) || LABELS.NO_IDENTIFIER,
+    type:
+      ensureString(selectedItem?.transactionDocument.value) || LABELS.NO_TYPE,
+  };
 
   return (
     <Box sx={tableStyles.container} ref={tableRef}>
@@ -146,7 +195,7 @@ const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
             ...tableStyles.tablePaper,
             width: isSidebarOpen ? 'calc(70% - 0.5rem)' : '100%',
           }}>
-          <MaterialReactTable table={table} />
+          {renderContent()}
         </Paper>
         <Paper
           elevation={4}
@@ -163,7 +212,7 @@ const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
               icon: (
                 <SideIcon fill={theme.palette.baselineColor.neutral[100]} />
               ),
-              identifier: selectedItem?.identificator ?? LABELS.NO_IDENTIFIER,
+              identifier: selectedRecord.identifier,
               title: CONTENT.CURRENT_TITLE ?? LABELS.NO_TITLE,
             }}
             widgets={widgets}
@@ -172,10 +221,7 @@ const Table: React.FC<TableProps> = ({ data, isTreeStructure = false }) => {
         <ResizableRecordContainer
           isOpen={isDropdownOpen}
           onClose={toggleDropdown}
-          selectedRecord={{
-            identifier: selectedItem?.identificator ?? LABELS.NO_IDENTIFIER,
-            type: selectedItem?.type ?? LABELS.NO_TYPE,
-          }}
+          selectedRecord={selectedRecord}
           onHeightChange={setRecordContainerHeight}
         />
       </Box>

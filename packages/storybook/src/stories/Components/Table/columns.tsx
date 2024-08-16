@@ -1,140 +1,174 @@
 import { MRT_ColumnDef } from 'material-react-table';
-import { Box, Link, SxProps, Theme } from '@mui/material';
 import {
   Organization,
   OrganizationLabels,
 } from '../../../../../storybook/src/stories/Components/Table/types';
-import FolderIcon from '../../../../../ComponentLibrary/src/assets/icons/folder-minus.svg';
-import FolderOpenIcon from '../../../../../ComponentLibrary/src/assets/icons/folder-plus.svg';
-import { theme } from '../../../../../ComponentLibrary/src/theme';
-import Tag from '../../../../../ComponentLibrary/src/components/Tag';
-import { sx } from '../../../../../ComponentLibrary/src/components/NotificationsModal/styles';
 
 export const getColumns = (
   labels: Partial<OrganizationLabels> = {},
 ): MRT_ColumnDef<Organization>[] => [
   {
-    accessorKey: 'identificator',
-    header: labels.identificator ?? 'Identificator',
-    Cell: ({ row, cell }) => (
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          paddingLeft: `${row.depth * 1.25}rem`,
-        }}>
-        {row.getCanExpand() ? (
-          row.getIsExpanded() ? (
-            <FolderOpenIcon
-              fill={theme.palette.dynamicColor.main}
-              width={16}
-              height={16}
-            />
-          ) : (
-            <FolderIcon
-              fill={theme.palette.dynamicColor.main}
-              width={16}
-              height={16}
-            />
-          )
-        ) : (
-          <Box sx={{ width: 16, height: 16 }} />
-        )}
-        <Link
-          href="#"
-          onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
-            e.preventDefault();
-          }}
-          sx={sx.linkStyles as SxProps<Theme>}>
-          {cell.getValue<string>()}
-        </Link>
-      </Box>
-    ),
-    muiTableHeadCellProps: {
-      sx: {
-        borderLeft: 'none',
-        background: theme.palette.baselineColor.transparentNeutral[5],
-      },
-    },
-    muiTableBodyCellProps: {
-      sx: {
-        borderLeft: 'none',
-        paddingLeft: 0,
-        borderRight: `1px solid ${theme.palette.divider}`,
-      },
-    },
+    accessorKey: 'organization',
+    header: labels.organization ?? 'Organization',
   },
   {
-    accessorKey: 'name',
-    header: labels.name ?? 'Name',
+    accessorKey: 'transactionDocument',
+    header: labels.transactionDocument ?? 'Transaction Document',
+  },
+  {
+    accessorKey: 'documentNo',
+    header: labels.documentNo ?? 'Document No.',
+  },
+  {
+    accessorKey: 'orderDate',
+    header: labels.orderDate ?? 'Order Date',
+  },
+  {
+    accessorKey: 'businessPartner',
+    header: labels.businessPartner ?? 'Business Partner',
+  },
+  {
+    accessorKey: 'partnerAddress',
+    header: labels.partnerAddress ?? 'Partner Address',
+  },
+  {
+    accessorKey: 'priceList',
+    header: labels.priceList ?? 'Price List',
+  },
+  {
+    accessorKey: 'scheduledDeliveryDate',
+    header: labels.scheduledDeliveryDate ?? 'Scheduled Delivery Date',
+  },
+  {
+    accessorKey: 'paymentMethod',
+    header: labels.paymentMethod ?? 'Payment Method',
+  },
+  {
+    accessorKey: 'paymentTerms',
+    header: labels.paymentTerms ?? 'Payment Terms',
+  },
+  {
+    accessorKey: 'warehouse',
+    header: labels.warehouse ?? 'Warehouse',
+  },
+  {
+    accessorKey: 'invoiceTerms',
+    header: labels.invoiceTerms ?? 'Invoice Terms',
+  },
+  {
+    accessorKey: 'orderReference',
+    header: labels.orderReference ?? 'Order Reference',
+  },
+  {
+    accessorKey: 'salesRepresentative',
+    header: labels.salesRepresentative ?? 'Sales Representative',
   },
   {
     accessorKey: 'description',
     header: labels.description ?? 'Description',
   },
   {
-    accessorKey: 'active',
-    header: labels.active ?? 'Active',
-    Cell: ({ cell }) => {
-      const isActive = cell.getValue<boolean>();
-      return (
-        <Tag
-          type={isActive ? 'success' : 'error'}
-          label={isActive ? 'Yes' : 'No'}
-        />
-      );
-    },
+    accessorKey: 'invoiceAddress',
+    header: labels.invoiceAddress ?? 'Invoice Address',
   },
   {
-    accessorKey: 'groupLevel',
-    header: labels.groupLevel ?? 'Group Level',
-    Cell: ({ cell }) => {
-      const isGroup = cell.getValue<boolean>();
-      return (
-        <Tag
-          type={isGroup ? 'success' : 'error'}
-          label={isGroup ? 'Yes' : 'No'}
-        />
-      );
-    },
+    accessorKey: 'deliveryLocation',
+    header: labels.deliveryLocation ?? 'Delivery Location',
   },
   {
-    accessorKey: 'socialName',
-    header: labels.socialName ?? 'Social Name',
+    accessorKey: 'quotation',
+    header: labels.quotation ?? 'Quotation',
   },
   {
-    accessorKey: 'organizationType',
-    header: labels.organizationType ?? 'Organization Type',
+    accessorKey: 'cancelledorder',
+    header: labels.cancelledorder ?? 'Cancelled Order',
+  },
+  {
+    accessorKey: 'replacedorder',
+    header: labels.replacedorder ?? 'Replaced Order',
+  },
+  {
+    accessorKey: 'iscancelled',
+    header: labels.iscancelled ?? 'Is Cancelled',
+    Cell: ({ cell }) => (cell.getValue<boolean>() ? 'Yes' : 'No'),
+  },
+  {
+    accessorKey: 'externalBusinessPartnerReference',
+    header:
+      labels.externalBusinessPartnerReference ??
+      'External Business Partner Reference',
+  },
+  {
+    accessorKey: 'project',
+    header: labels.project ?? 'Project',
+  },
+  {
+    accessorKey: 'costcenter',
+    header: labels.costcenter ?? 'Cost Center',
+  },
+  {
+    accessorKey: 'asset',
+    header: labels.asset ?? 'Asset',
+  },
+  {
+    accessorKey: 'stDimension',
+    header: labels.stDimension ?? '1st Dimension',
+  },
+  {
+    accessorKey: 'ndDimension',
+    header: labels.ndDimension ?? '2nd Dimension',
+  },
+  {
+    accessorKey: 'creationDate',
+    header: labels.creationDate ?? 'Creation Date',
+  },
+  {
+    accessorKey: 'createdBy',
+    header: labels.createdBy ?? 'Created By',
+  },
+  {
+    accessorKey: 'updated',
+    header: labels.updated ?? 'Updated',
+  },
+  {
+    accessorKey: 'updatedBy',
+    header: labels.updatedBy ?? 'Updated By',
+  },
+  {
+    accessorKey: 'documentStatus',
+    header: labels.documentStatus ?? 'Document Status',
+  },
+  {
+    accessorKey: 'grandTotalAmount',
+    header: labels.grandTotalAmount ?? 'Grand Total Amount',
+  },
+  {
+    accessorKey: 'summedLineAmount',
+    header: labels.summedLineAmount ?? 'Summed Line Amount',
   },
   {
     accessorKey: 'currency',
     header: labels.currency ?? 'Currency',
-    Cell: ({ cell }) => {
-      const currency = cell.getValue<string>();
-      return <Tag type="draft" label={'$ ' + currency} />;
-    },
   },
   {
-    accessorKey: 'allowPeriodControl',
-    header: labels.allowPeriodControl ?? 'Period Control',
+    accessorKey: 'reservationStatus',
+    header: labels.reservationStatus ?? 'Reservation Status',
+  },
+  {
+    accessorKey: 'deliveryStatus',
+    header: labels.deliveryStatus ?? 'Delivery Status',
+  },
+  {
+    accessorKey: 'invoiceStatus',
+    header: labels.invoiceStatus ?? 'Invoice Status',
+  },
+  {
+    accessorKey: 'delivered',
+    header: labels.delivered ?? 'Delivered',
     Cell: ({ cell }) => (cell.getValue<boolean>() ? 'Yes' : 'No'),
   },
   {
-    accessorKey: 'calendar',
-    header: labels.calendar ?? 'Calendar',
-  },
-  {
-    accessorKey: 'files',
-    header: labels.files ?? 'Files',
-  },
-  {
-    accessorKey: 'tags',
-    header: labels.tags ?? 'Tags',
-    Cell: ({ cell }) => cell.getValue<string[]>().join(', '),
-  },
-  {
-    accessorKey: 'reactions',
-    header: labels.reactions ?? 'Reactions',
+    accessorKey: 'id',
+    header: labels.id ?? 'ID',
   },
 ];
