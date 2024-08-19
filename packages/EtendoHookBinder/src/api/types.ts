@@ -180,3 +180,7 @@ export enum UIPattern {
   OBUIAPPPickAndExecute = 'OBUIAPP_PickAndExecute',
   OBUIAPPReport = 'OBUIAPP_Report',
 }
+
+export interface RecordPayload extends Record<string, string> {
+  _entity_name: string;
+}
