@@ -1,15 +1,20 @@
-import { Table } from '@workspaceui/componentlibrary/src/components';
+import { Box, Table } from '@workspaceui/componentlibrary/src/components';
 import { mockOrganizations } from '@workspaceui/storybook/mocks';
+import styles from './styles';
 
 const Home = () => {
   return (
-    <Table
-      data={mockOrganizations}
-      isTreeStructure={false}
-      customLabels={{
-        identificator: 'Home Identificator',
-      }}
-    />
+    <Box sx={styles.container}>
+      <Box height="100%" overflow="auto">
+        <Table
+          data={mockOrganizations}
+          isTreeStructure={false}
+          customLabels={{
+            identificator: 'Home Identificator',
+          }}
+        />
+      </Box>
+    </Box>
   );
 };
 

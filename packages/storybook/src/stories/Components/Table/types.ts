@@ -1,55 +1,36 @@
 import { Theme } from '@emotion/react';
 import { SxProps } from '@mui/material';
-export interface FieldDefinition<T> {
+
+export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select';
+
+export interface BaseFieldDefinition<T> {
   value: T;
   type: FieldType;
   label: string;
+  section?: string;
+  required?: boolean;
 }
+export type FieldDefinition =
+  | BaseFieldDefinition<string>
+  | BaseFieldDefinition<number>
+  | BaseFieldDefinition<boolean>
+  | BaseFieldDefinition<Date>
+  | BaseFieldDefinition<string[]>;
+
+export interface Section {
+  name: string;
+  label: string;
+  type: 'section';
+  personalizable: boolean;
+}
+export type OrganizationField = FieldDefinition | Section;
 
 export interface Organization {
-  organization: FieldDefinition<string>;
-  id: FieldDefinition<string>;
-  documentNo: FieldDefinition<string>;
-  transactionDocument: FieldDefinition<string>;
-  orderDate: FieldDefinition<string>;
-  businessPartner: FieldDefinition<string>;
-  partnerAddress: FieldDefinition<string>;
-  priceList: FieldDefinition<string>;
-  scheduledDeliveryDate: FieldDefinition<string>;
-  paymentMethod: FieldDefinition<string>;
-  paymentTerms: FieldDefinition<string>;
-  warehouse: FieldDefinition<string>;
-  invoiceTerms: FieldDefinition<string>;
-  orderReference: FieldDefinition<string>;
-  salesRepresentative: FieldDefinition<string>;
-  description: FieldDefinition<string>;
-  invoiceAddress: FieldDefinition<string>;
-  deliveryLocation: FieldDefinition<string>;
-  quotation: FieldDefinition<string>;
-  cancelledorder: FieldDefinition<string>;
-  replacedorder: FieldDefinition<string>;
-  iscancelled: FieldDefinition<boolean>;
-  externalBusinessPartnerReference: FieldDefinition<string>;
-  project: FieldDefinition<string>;
-  costcenter: FieldDefinition<string>;
-  asset: FieldDefinition<string>;
-  stDimension: FieldDefinition<string>;
-  ndDimension: FieldDefinition<string>;
-  creationDate: FieldDefinition<string>;
-  createdBy: FieldDefinition<string>;
-  updated: FieldDefinition<string>;
-  updatedBy: FieldDefinition<string>;
-  documentStatus: FieldDefinition<string>;
-  grandTotalAmount: FieldDefinition<number>;
-  summedLineAmount: FieldDefinition<number>;
-  currency: FieldDefinition<string>;
-  reservationStatus: FieldDefinition<string>;
-  deliveryStatus: FieldDefinition<string>;
-  invoiceStatus: FieldDefinition<string>;
-  delivered: FieldDefinition<boolean>;
+  [key: string]: OrganizationField;
+  id: BaseFieldDefinition<string>;
+  documentNo: BaseFieldDefinition<string>;
+  transactionDocument: BaseFieldDefinition<string>;
 }
-
-export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select';
 
 export type OrganizationLabels = {
   [K in keyof Organization]: string;
@@ -62,7 +43,7 @@ export interface SelectedRecord {
 export interface TableProps {
   data: Organization[];
   isTreeStructure?: boolean;
-  customLabels?: Record<string, string>;
+  labels: OrganizationLabels;
 }
 
 export interface SidebarContentProps {

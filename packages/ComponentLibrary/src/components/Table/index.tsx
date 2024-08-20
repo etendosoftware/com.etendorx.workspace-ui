@@ -100,7 +100,9 @@ const Table: React.FC<TableProps> = ({ data }) => {
     return data.map(item => {
       const flatItem: { [key: string]: any } = {};
       for (const [key, field] of Object.entries(item)) {
-        flatItem[key] = field.value;
+        if ('value' in field) {
+          flatItem[key] = field.value;
+        }
       }
       return flatItem;
     });
@@ -110,6 +112,7 @@ const Table: React.FC<TableProps> = ({ data }) => {
     columns,
     data: tableData,
     enableTopToolbar: false,
+    enableBottomToolbar: false,
     initialState: {
       density: 'compact',
     },
@@ -128,7 +131,7 @@ const Table: React.FC<TableProps> = ({ data }) => {
       sx: tableStyles.tableBodyCell,
     },
     columnResizeMode: 'onChange',
-  } as MRT_TableOptions<{ [key: string]: any }>);
+  } as MRT_TableOptions<{ [key: string]: string }>);
 
   const toolbarConfig = useMemo(
     () =>
@@ -161,7 +164,11 @@ const Table: React.FC<TableProps> = ({ data }) => {
   const renderContent = () => {
     if (showFormView && selectedItem) {
       return (
-        <Box sx={{ maxHeight: '40rem' }}>
+        <Box
+          sx={{
+            ...tableStyles.tablePaper,
+            width: isSidebarOpen ? 'calc(70% - 0.5rem)' : '100%',
+          }}>
           <FormView
             data={selectedItem}
             onSave={handleSave}
@@ -170,7 +177,16 @@ const Table: React.FC<TableProps> = ({ data }) => {
         </Box>
       );
     } else {
-      return <MaterialReactTable table={table} />;
+      return (
+        <Paper
+          elevation={4}
+          sx={{
+            ...tableStyles.tablePaper,
+            width: isSidebarOpen ? 'calc(70% - 0.5rem)' : '100%',
+          }}>
+          <MaterialReactTable table={table} />
+        </Paper>
+      );
     }
   };
 
@@ -189,14 +205,7 @@ const Table: React.FC<TableProps> = ({ data }) => {
           ...tableStyles.contentContainer,
           height: `calc(100% - ${isDropdownOpen ? recordContainerHeight : 0}vh)`,
         }}>
-        <Paper
-          elevation={4}
-          sx={{
-            ...tableStyles.tablePaper,
-            width: isSidebarOpen ? 'calc(70% - 0.5rem)' : '100%',
-          }}>
-          {renderContent()}
-        </Paper>
+        {renderContent()}
         <Paper
           elevation={4}
           sx={{
