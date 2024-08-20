@@ -25,6 +25,7 @@ export default function Login() {
     try {
       await login(username, password);
     } catch (e) {
+      logger.warn(e)
       setError((e as Error).message);
     }
   }, [login, password, username]);

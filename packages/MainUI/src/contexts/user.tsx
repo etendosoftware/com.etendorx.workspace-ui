@@ -1,5 +1,11 @@
-import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useRoutes } from 'react-router-dom';
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '@workspaceui/etendohookbinder/src/api/constants';
 import { logger } from '../utils/logger';
 
@@ -8,56 +14,57 @@ interface IUserContext {
   login: (username: string, password: string) => Promise<any>;
   classicToken: string | null;
   swsToken: string | null;
-  ready: boolean;
 }
 
 export const UserContext = createContext({} as IUserContext);
 
 export default function UserProvider(props: React.PropsWithChildren) {
-  const [classicToken, setClassicToken] = useState(localStorage.getItem('classicToken'));
+  const [classicToken, setClassicToken] = useState(
+    localStorage.getItem('classicToken'),
+  );
   const [swsToken, setSwsToken] = useState(localStorage.getItem('swsToken'));
-  const routes = useRoutes();
+  const { pathname } = useLocation();
   const navigate = useNavigate();
-  const [ready, setReady] = useState(false);
 
-  const login = useCallback(async (username: string, password: string) => {
-    try {
-      const result = await fetch(`${API_BASE_URL}/sws/login`, {
-        method: 'POST',
-        body: JSON.stringify({
-          username,
-          password,
-        }),
-      });
-      const data = await result.json();
+  const login = useCallback(
+    async (username: string, password: string) => {
+      try {
+        const result = await fetch(`${API_BASE_URL}/sws/login`, {
+          method: 'POST',
+          body: JSON.stringify({
+            username,
+            password,
+          }),
+        });
+        const data = await result.json();
 
-      if (data.status === 'error') {
-        throw new Error(data.message);
-      } else {
-        setSwsToken(data.token);
-        navigate({ pathname: '/' });
+        if (data.status === 'error') {
+          throw new Error(data.message);
+        } else {
+          setSwsToken(data.token);
+          navigate({ pathname: '/' });
+        }
+      } catch (e) {
+        logger.warn(e);
+
+        throw e;
       }
-    } catch (e) {
-      logger.warn(e);
-
-      throw e;
-    }
-  }, [navigate]);
+    },
+    [navigate],
+  );
 
   const value = useMemo(
-    () => ({ login, classicToken, swsToken, ready }),
-    [classicToken, login, ready, swsToken],
+    () => ({ login, classicToken, swsToken }),
+    [classicToken, login, swsToken],
   );
 
   useEffect(() => {
-    if (ready) {
-      return;
+    if (swsToken && classicToken && pathname === '/login') {
+      navigate('/');
+    } else if (!swsToken && !classicToken) {
+      navigate('/login');
     }
-
-    if (swsToken && classicToken) {
-      
-    }
-  }, []);
+  }, [classicToken, navigate, pathname, swsToken]);
 
   return (
     <UserContext.Provider value={value}>{props.children}</UserContext.Provider>
