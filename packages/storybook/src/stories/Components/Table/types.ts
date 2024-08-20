@@ -43,7 +43,6 @@ export interface SelectedRecord {
 export interface TableProps {
   data: Organization[];
   isTreeStructure?: boolean;
-  labels: OrganizationLabels;
 }
 
 export interface SidebarContentProps {

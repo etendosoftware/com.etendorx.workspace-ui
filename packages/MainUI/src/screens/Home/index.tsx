@@ -6,13 +6,7 @@ const Home = () => {
   return (
     <Box sx={styles.container}>
       <Box height="100%" overflow="auto">
-        <Table
-          data={mockOrganizations}
-          isTreeStructure={false}
-          customLabels={{
-            identificator: 'Home Identificator',
-          }}
-        />
+        <Table data={mockOrganizations} isTreeStructure={false} />
       </Box>
     </Box>
   );

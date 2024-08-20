@@ -1,15 +1,21 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   TextField,
-  Switch,
   Grid,
   Accordion,
   AccordionSummary,
   AccordionDetails,
   Typography,
   Box,
+  FormControl,
+  FormControlLabel,
+  Checkbox,
+  styled,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { SearchOutlined } from '@mui/icons-material';
+import { Select, TextInputBase } from '..';
+import { topFilms } from '../../../../storybook/src/stories/Components/Input/Select/mock';
 import {
   Organization,
   FieldDefinition,
@@ -17,30 +23,44 @@ import {
   BaseFieldDefinition,
 } from '../../../../storybook/src/stories/Components/Table/types';
 import { FormViewProps } from './types';
-import { Select, TextInputBase } from '..';
-import { SearchOutlined } from '@mui/icons-material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { topFilms } from '../../../../storybook/src/stories/Components/Input/Select/mock';
+import { styles, sx } from './styles';
+
+const FieldLabel: React.FC<{ label: string; required?: boolean }> = ({
+  label,
+  required,
+}) => (
+  <Box sx={styles.labelWrapper}>
+    <span style={styles.labelText}>{label}</span>
+    {required ?? <span style={styles.requiredAsterisk}>*</span>}
+    <span style={styles.dottedSpacing} />
+  </Box>
+);
 
 const FormField: React.FC<{
   name: string;
   field: FieldDefinition;
   onChange: (name: string, value: FieldDefinition['value']) => void;
 }> = ({ name, field, onChange }) => {
-  const [value, setValue] = useState('');
+  const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
+    '&.Mui-checked': {
+      color: theme.palette.dynamicColor.main,
+    },
+  }));
+
+  const [value, setValue] = useState(field.label);
 
   const renderField = () => {
     switch (field.type) {
       case 'boolean':
         return (
-          <>
-            <Switch
-              name={name}
-              checked={field.value as boolean}
-              onChange={e => onChange(name, e.target.checked)}
-            />
-            <label>{field.label}</label>
-          </>
+          <FormControl fullWidth margin="normal">
+            <Box sx={sx.checkboxContainer}>
+              <FormControlLabel
+                control={<CustomCheckbox size="small" />}
+                label={field.label}
+              />
+            </Box>
+          </FormControl>
         );
       case 'number':
         return (
@@ -48,7 +68,6 @@ const FormField: React.FC<{
             fullWidth
             margin="normal"
             name={name}
-            label={field.label}
             type="number"
             value={field.value as number}
             onChange={e => onChange(name, Number(e.target.value))}
@@ -60,8 +79,8 @@ const FormField: React.FC<{
             fullWidth
             margin="normal"
             name={name}
-            label={field.label}
             type="date"
+            variant="standard"
             value={field.value as string}
             onChange={e => onChange(name, e.target.value)}
           />
@@ -70,11 +89,7 @@ const FormField: React.FC<{
         return (
           <Select
             iconLeft={<SearchOutlined sx={{ width: 24, height: 24 }} />}
-            title="Películas"
-            helperText={{
-              label: 'Top 15',
-              icon: <CheckCircleIcon sx={{ width: 16, height: 16 }} />,
-            }}
+            title={field.label}
             options={topFilms}
             getOptionLabel={option => option.title}
           />
@@ -85,16 +100,19 @@ const FormField: React.FC<{
             onRightIconClick={() => alert('Icon clicked')}
             value={value}
             setValue={setValue}
-            placeholder="Search"
+            placeholder={field.label}
           />
         );
     }
   };
 
   return (
-    <Grid item xs={12} sm={6} md={4}>
-      {renderField()}
-    </Grid>
+    <Box style={styles.fieldContainer}>
+      <Box sx={sx.labelBox}>
+        <FieldLabel label={field.label} required={field.required} />
+      </Box>
+      <Box sx={sx.inputBox}>{renderField()}</Box>
+    </Box>
   );
 };
 
@@ -116,53 +134,45 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form data:', formData);
   };
 
   const renderSection = (
     sectionName: string,
     fields: [string, FieldDefinition][],
-  ) => (
-    <Accordion
-      key={sectionName}
-      sx={{
-        width: '100%',
-        marginTop: '0.5rem',
-        borderRadius: '0.75rem',
-        '&:before': {
-          display: 'none',
-        },
-        '&:first-of-type': {
-          borderRadius: '0.75rem',
-        },
-        '&:last-of-type': {
-          borderRadius: '0.75rem',
-        },
-      }}>
-      <AccordionSummary
-        expandIcon={<ExpandMoreIcon />}
-        sx={{
-          borderRadius: '0.75rem',
-          '&.Mui-expanded': {
-            borderBottomLeftRadius: 0,
-            borderBottomRightRadius: 0,
-          },
-        }}>
-        <Typography>{(formData[sectionName] as Section).label}</Typography>
-      </AccordionSummary>
-      <AccordionDetails>
-        <Grid container spacing={2}>
-          {fields.map(([key, field]) => (
-            <FormField
-              key={key}
-              name={key}
-              field={field}
-              onChange={handleInputChange}
-            />
-          ))}
-        </Grid>
-      </AccordionDetails>
-    </Accordion>
-  );
+  ) => {
+    const sectionData = formData[sectionName];
+    if (!sectionData || !('label' in sectionData)) {
+      console.warn(`Section ${sectionName} is not properly defined`);
+      return null;
+    }
+
+    return (
+      <Accordion key={sectionName} sx={sx.accordion}>
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          sx={sx.accordionSummary}>
+          <Typography>{(sectionData as Section).label}</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Grid container>
+            {fields.map(([key, field], index) => (
+              <Grid item xs={12} sm={6} md={4} key={key} sx={sx.gridItem}>
+                <FormField
+                  name={key}
+                  field={field}
+                  onChange={handleInputChange}
+                />
+                {index + 1 !== 0 && index !== fields.length && (
+                  <Box sx={styles.dottedLine} />
+                )}
+              </Grid>
+            ))}
+          </Grid>
+        </AccordionDetails>
+      </Accordion>
+    );
+  };
 
   const groupedFields = Object.entries(formData).reduce(
     (acc, [key, value]) => {
@@ -178,10 +188,8 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
 
   return (
     <Box>
-      <form
-        onSubmit={handleSubmit}
-        style={{ height: '100%', overflow: 'hidden' }}>
-        <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+      <form onSubmit={handleSubmit}>
+        <Box>
           <Grid container>
             {Object.entries(groupedFields).map(([sectionName, fields]) =>
               renderSection(sectionName, fields),
