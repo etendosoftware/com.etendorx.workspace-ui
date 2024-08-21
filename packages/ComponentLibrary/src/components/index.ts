@@ -23,6 +23,7 @@ import SecondaryTabsMUI from './SecondaryTabs';
 import NotificationItemStates from './NotificationItemAllStates';
 import DrawerMUI from './Drawer';
 import IButton from './IconButton';
+import Fview from './FormView';
 
 export * from '../theme';
 
@@ -51,6 +52,7 @@ const SecondaryTabs = SecondaryTabsMUI;
 const NotificationStates = NotificationItemStates;
 const Drawer = DrawerMUI;
 const IconButton = IButton;
+const FormView = Fview;
 
 export {
   Button,
@@ -76,4 +78,5 @@ export {
   NotificationStates,
   Drawer,
   IconButton,
+  FormView,
 };

@@ -20,6 +20,12 @@ const router = createBrowserRouter([
           {
             path: '',
             Component: Home,
+            children: [
+              {
+                path: ':id',
+                Component: Form,
+              },
+            ],
           },
           {
             path: 'window/:id',

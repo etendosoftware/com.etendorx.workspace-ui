@@ -68,8 +68,11 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
     flexDirection: 'column',
     width: '100%',
     transition: 'all 0.3s ease',
-    padding: '1rem 0 1rem 0',
+    padding: '1rem 0.25rem 1rem 0.25rem',
     gap: '1rem',
+    overflow: 'hidden',
+    flex: 1,
+    position: 'relative',
   },
   tablePaper: {
     borderRadius: '1rem 1rem 0 0',
