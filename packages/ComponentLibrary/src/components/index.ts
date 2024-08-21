@@ -26,7 +26,7 @@ import IButton from './IconButton';
 
 export * from '../theme';
 
-//  is a higher order component that applies the theme to the component
+// is a higher order component that applies the theme to the component
 
 const Button = ButtonMUI;
 const Grid = GridMUI;
