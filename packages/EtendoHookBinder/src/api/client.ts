@@ -1,7 +1,8 @@
 import { AUTH_HEADER_NAME } from './constants';
-interface ClientOptions extends RequestInit {
+interface ClientOptions extends Omit<RequestInit, 'body'> {
   headers?: Record<string, string>;
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  body?: RequestInit['body'] | Record<string, unknown>;
 }
 
 export class UnauthorizedError extends Error {
@@ -48,10 +49,10 @@ export class Client {
     options.headers = headers;
   }
 
-  public setAuthHeader(header: string) {
+  public setAuthHeader(header: string, type: 'Basic' | 'Bearer' = 'Basic') {
     this.baseHeaders = {
       ...this.baseHeaders,
-      [AUTH_HEADER_NAME]: `Basic ${header}`,
+      [AUTH_HEADER_NAME]: `${type} ${header}`,
     };
 
     return this;
@@ -79,6 +80,11 @@ export class Client {
 
       const response = await fetch(`${this.baseUrl}${this.cleanUrl(url)}`, {
         ...options,
+        body:
+          options.body instanceof URLSearchParams ||
+          typeof options.body === 'string'
+            ? options.body
+            : JSON.stringify(options.body),
         headers: {
           ...this.baseHeaders,
           ...options.headers,
