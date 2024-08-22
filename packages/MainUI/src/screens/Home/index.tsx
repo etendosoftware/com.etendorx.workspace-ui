@@ -24,17 +24,7 @@ import Sidebar from '@workspaceui/componentlibrary/src/components/Table/Sidebar'
 import { Paper } from '@mui/material';
 import FormView from '@workspaceui/componentlibrary/src/components/FormView';
 import { MRT_Row } from 'material-react-table';
-
-interface ContentProps {
-  isFormView: boolean;
-  selectedItem: Organization | null;
-  isSidebarOpen: boolean;
-  handleSave: () => void;
-  handleCancel: () => void;
-  mockOrganizations: Organization[];
-  handleRowClick: (row: MRT_Row<{ [key: string]: any }>) => void;
-  handleRowDoubleClick: (row: MRT_Row<{ [key: string]: any }>) => void;
-}
+import type { ContentProps } from './types';
 
 const Content: React.FC<ContentProps> = ({
   isFormView,

@@ -5,6 +5,7 @@ export interface TabItem {
   fill?: string;
   hoverFill?: string;
   showInTab: 'icon' | 'label' | 'both';
+  href: string;
 }
 
 export interface PrimaryTabsProps {

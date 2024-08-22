@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   TextField,
   Grid,
@@ -26,6 +26,12 @@ import { FormViewProps } from './types';
 import { defaultFill, styles, sx } from './styles';
 import IconButton from '../IconButton';
 import InfoIcon from '@mui/icons-material/Info';
+import PrimaryTabs from '../PrimaryTab';
+import { TabItem } from '../PrimaryTab/types';
+
+const defaultIcon = (
+  <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
+);
 
 const FieldLabel: React.FC<{ label: string; required?: boolean }> = ({
   label,
@@ -121,37 +127,79 @@ const FormField: React.FC<{
 const FormView: React.FC<FormViewProps> = ({ data }) => {
   const [formData, setFormData] = useState<Organization>(data);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
 
-  const handleInputChange = (
-    name: string,
-    value: BaseFieldDefinition<any>['value'],
-  ) => {
-    setFormData(prevData => ({
-      ...prevData,
-      [name]: {
-        ...prevData[name],
-        value: value,
-      },
-    }));
-  };
+  const tabs: TabItem[] = useMemo(() => {
+    return Object.values(formData)
+      .filter((field): field is Section => field.type === 'section')
+      .map(section => ({
+        id: section.id,
+        icon: section.icon,
+        label: section.label,
+        fill: section.fill,
+        hoverFill: section.hoverFill,
+        showInTab: section.showInTab,
+        href: `#section-${section.id}`,
+      }));
+  }, [formData]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleTabChange = useCallback((newTabId: string) => {
+    setExpandedSections(prev => {
+      if (prev.includes(newTabId)) {
+        return prev;
+      }
+      return [...prev, newTabId];
+    });
+  }, []);
+
+  const handleAccordionChange = useCallback(
+    (sectionId: string, isExpanded: boolean) => {
+      setExpandedSections(prev => {
+        if (isExpanded) {
+          return [...prev, sectionId];
+        }
+        return prev.filter(id => id !== sectionId);
+      });
+    },
+    [],
+  );
+
+  const handleInputChange = useCallback(
+    (name: string, value: BaseFieldDefinition<any>['value']) => {
+      setFormData(prevData => ({
+        ...prevData,
+        [name]: {
+          ...prevData[name],
+          value: value,
+        },
+      }));
+    },
+    [],
+  );
+
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form data:', formData);
-  };
+  }, []);
 
   const renderSection = (
     sectionName: string,
     fields: [string, FieldDefinition][],
   ) => {
     const sectionData = formData[sectionName] as Section;
-    if (!sectionData || !('label' in sectionData)) {
+    if (!sectionData || sectionData.type !== 'section') {
       console.warn(`Section ${sectionName} is not properly defined`);
       return null;
     }
 
     return (
-      <Accordion key={sectionName} sx={sx.accordion}>
+      <Accordion
+        key={sectionName}
+        sx={sx.accordion}
+        expanded={expandedSections.includes(sectionData.id)}
+        onChange={(_, isExpanded) =>
+          handleAccordionChange(sectionData.id, isExpanded)
+        }
+        id={`section-${sectionData.id}`}>
         <AccordionSummary
           sx={sx.accordionSummary}
           onMouseEnter={() => setHoveredSection(sectionName)}
@@ -165,23 +213,13 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
             </IconButton>
           }>
           <Box sx={sx.iconLabel}>
-            {sectionData.icon ? (
-              <IconButton
-                fill={defaultFill}
-                sx={sx.iconButton}
-                className="main-icon-button"
-                isHovered={hoveredSection === sectionName}>
-                {sectionData.icon}
-              </IconButton>
-            ) : (
-              <IconButton
-                fill={defaultFill}
-                sx={sx.iconButton}
-                className="main-icon-button"
-                isHovered={hoveredSection === sectionName}>
-                <InfoIcon />
-              </IconButton>
-            )}
+            <IconButton
+              fill={defaultFill}
+              sx={sx.iconButton}
+              className="main-icon-button"
+              isHovered={hoveredSection === sectionName}>
+              {sectionData.icon || <InfoIcon />}
+            </IconButton>
             <Typography>{sectionData.label}</Typography>
           </Box>
         </AccordionSummary>
@@ -219,12 +257,22 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
 
   return (
     <Box>
+      <Box
+        sx={{
+          position: 'sticky',
+        }}>
+        <PrimaryTabs
+          tabs={tabs}
+          onChange={handleTabChange}
+          icon={defaultIcon}
+        />
+      </Box>
       <form onSubmit={handleSubmit}>
         <Box>
           <Grid container>
-            {Object.entries(groupedFields).map(([sectionName, fields]) =>
-              renderSection(sectionName, fields),
-            )}
+            {Object.entries(groupedFields).map(([sectionName, fields]) => {
+              return renderSection(sectionName, fields);
+            })}
           </Grid>
         </Box>
       </form>

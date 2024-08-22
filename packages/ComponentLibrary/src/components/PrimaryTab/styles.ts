@@ -12,13 +12,13 @@ export const styles: { [key: string]: CSSProperties } = {
     borderRadius: '12.5rem',
     padding: '0.25rem',
     alignItems: 'center',
-    maxWidth: '35rem',
     overflowX: 'auto',
   },
   tabsContainer: {
     display: 'flex',
     flexGrow: 1,
     minWidth: 0,
+    zIndex: 1100,
   },
   iconButtonMore: {
     marginLeft: '0.25rem',

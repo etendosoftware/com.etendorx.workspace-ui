@@ -49,7 +49,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = ({ tabs, onChange, icon }) => {
 
   const refs = useRef<Record<string, () => void>>({});
 
-  const hadleMouseEnter = useCallback((id: string) => {
+  const handleMouseEnter = useCallback((id: string) => {
     if (!refs.current[id]) {
       refs.current[id] = () => setHoveredTab(id);
     }
@@ -89,13 +89,18 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = ({ tabs, onChange, icon }) => {
           }
           label={tab.showInTab !== 'icon' ? tab.label : undefined}
           iconPosition="start"
-          onMouseEnter={hadleMouseEnter(tab.id)}
+          onMouseEnter={handleMouseEnter(tab.id)}
           onMouseLeave={handleLeave}
           sx={sx.tab}
+          component="a"
+          href={tab.href}
+          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+            handleChange(event, tab.id);
+          }}
         />
       );
     },
-    [hadleMouseEnter, handleLeave, hoveredTab, selectedTab],
+    [handleMouseEnter, handleChange, handleLeave, hoveredTab, selectedTab],
   );
   return (
     <Box style={styles.containerBox}>
@@ -136,7 +141,9 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = ({ tabs, onChange, icon }) => {
               sx={() => ({
                 ...sx.menuItem,
                 ...(isSelected ? sx.selectedMenuItem : {}),
-              })}>
+              })}
+              component="a"
+              href={tab.href}>
               <Box sx={sx.iconBox}>
                 {tab.icon &&
                   cloneElement(tab.icon as React.ReactElement, {

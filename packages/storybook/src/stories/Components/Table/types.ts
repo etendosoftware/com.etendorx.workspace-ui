@@ -22,7 +22,11 @@ export interface Section {
   label: string;
   type: 'section';
   personalizable: boolean;
-  icon?: React.ReactElement;
+  icon?: React.ReactNode;
+  id: string;
+  fill?: string;
+  hoverFill?: string;
+  showInTab: 'icon' | 'label' | 'both';
 }
 export type OrganizationField = FieldDefinition | Section;
 

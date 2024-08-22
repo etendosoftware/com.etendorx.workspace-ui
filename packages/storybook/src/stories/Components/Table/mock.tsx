@@ -3,6 +3,7 @@ import InfoIcon from '../../../../../ComponentLibrary/src/assets/icons/note.svg'
 import LinkIcon from '../../../../../ComponentLibrary/src/assets/icons/link.svg';
 import AttachmentIcon from '../../../../../ComponentLibrary/src/assets/icons/file.svg';
 import InformationIcon from '../../../../../ComponentLibrary/src/assets/icons/info.svg';
+import { theme } from '../../../../../ComponentLibrary/src/theme';
 
 export const mockOrganizations: Organization[] = [
   {
@@ -12,6 +13,10 @@ export const mockOrganizations: Organization[] = [
       type: 'section',
       personalizable: false,
       icon: <InfoIcon />,
+      id: 'main',
+      fill: theme.palette.baselineColor.neutral[60],
+      hoverFill: theme.palette.baselineColor.neutral[0],
+      showInTab: 'both',
     },
     organization: {
       value: 'Global Enterprises',
@@ -91,6 +96,10 @@ export const mockOrganizations: Organization[] = [
       type: 'section',
       personalizable: false,
       icon: <LinkIcon />,
+      id: 'linked',
+      fill: theme.palette.baselineColor.neutral[60],
+      hoverFill: theme.palette.baselineColor.neutral[0],
+      showInTab: 'both',
     },
     warehouse: {
       value: 'Main Warehouse',
@@ -116,6 +125,10 @@ export const mockOrganizations: Organization[] = [
       type: 'section',
       personalizable: false,
       icon: <InformationIcon />,
+      id: 'information',
+      fill: theme.palette.baselineColor.neutral[60],
+      hoverFill: theme.palette.baselineColor.neutral[0],
+      showInTab: 'both',
     },
     salesRepresentative: {
       value: 'John Doe',
@@ -141,6 +154,10 @@ export const mockOrganizations: Organization[] = [
       type: 'section',
       personalizable: false,
       icon: <AttachmentIcon />,
+      id: 'attachments',
+      fill: theme.palette.baselineColor.neutral[60],
+      hoverFill: theme.palette.baselineColor.neutral[0],
+      showInTab: 'both',
     },
     deliveryLocation: {
       value: '789 Delivery Rd, Los Angeles, CA',
@@ -160,7 +177,12 @@ export const mockOrganizations: Organization[] = [
       label: 'Cancelled Order',
       section: '_attachments',
     },
-    project: { value: 'Q3 Expansion', type: 'text', label: 'Project' },
+    project: {
+      value: 'Q3 Expansion',
+      type: 'text',
+      label: 'Project',
+      section: '_attachments',
+    },
     id: { value: '1', type: 'text', label: 'ID' },
   },
   {
@@ -170,6 +192,10 @@ export const mockOrganizations: Organization[] = [
       type: 'section',
       personalizable: false,
       icon: <InfoIcon />,
+      id: 'main',
+      fill: theme.palette.baselineColor.neutral[60],
+      hoverFill: theme.palette.baselineColor.neutral[0],
+      showInTab: 'both',
     },
     organization: {
       value: 'Global X',
@@ -243,6 +269,10 @@ export const mockOrganizations: Organization[] = [
       type: 'section',
       personalizable: false,
       icon: <LinkIcon />,
+      id: 'linked',
+      fill: theme.palette.baselineColor.neutral[60],
+      hoverFill: theme.palette.baselineColor.neutral[0],
+      showInTab: 'both',
     },
     warehouse: {
       value: 'Main Warehouse',
@@ -268,6 +298,10 @@ export const mockOrganizations: Organization[] = [
       type: 'section',
       personalizable: false,
       icon: <InformationIcon />,
+      id: 'information',
+      fill: theme.palette.baselineColor.neutral[60],
+      hoverFill: theme.palette.baselineColor.neutral[0],
+      showInTab: 'both',
     },
     salesRepresentative: {
       value: 'John Doe',
@@ -293,6 +327,10 @@ export const mockOrganizations: Organization[] = [
       type: 'section',
       personalizable: false,
       icon: <AttachmentIcon />,
+      id: 'attachments',
+      fill: theme.palette.baselineColor.neutral[60],
+      hoverFill: theme.palette.baselineColor.neutral[0],
+      showInTab: 'both',
     },
     deliveryLocation: {
       value: '789 Delivery Rd, Los Angeles, CA',
