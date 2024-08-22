@@ -8,17 +8,19 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '@workspaceui/etendohookbinder/src/api/constants';
 import { logger } from '../utils/logger';
+import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { Datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 
 interface IUserContext {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   login: (username: string, password: string) => Promise<any>;
-  swsToken: string | null;
+  token: string | null;
 }
 
 export const UserContext = createContext({} as IUserContext);
 
 export default function UserProvider(props: React.PropsWithChildren) {
-  const [swsToken, setSwsToken] = useState(localStorage.getItem('swsToken'));
+  const [token, settoken] = useState(localStorage.getItem('token'));
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
@@ -37,8 +39,11 @@ export default function UserProvider(props: React.PropsWithChildren) {
         if (data.status === 'error') {
           throw new Error(data.message);
         } else {
-          localStorage.setItem('swsToken', data.token);
-          setSwsToken(data.token);
+          localStorage.setItem('token', data.token);
+          Datasource.authorize(data.token);
+          Metadata.authorize(data.token);
+          Metadata.initialize();
+          settoken(data.token);
           navigate({ pathname: '/' });
         }
       } catch (e) {
@@ -50,15 +55,22 @@ export default function UserProvider(props: React.PropsWithChildren) {
     [navigate],
   );
 
-  const value = useMemo(() => ({ login, swsToken }), [login, swsToken]);
+  const value = useMemo(() => ({ login, token }), [login, token]);
 
   useEffect(() => {
-    if (swsToken && pathname === '/login') {
+    if (token && pathname === '/login') {
       navigate('/');
-    } else if (!swsToken) {
+    } else if (!token) {
       navigate('/login');
     }
-  }, [navigate, pathname, swsToken]);
+  }, [navigate, pathname, token]);
+
+  useEffect(() => {
+    if (token) {
+      Metadata.authorize(token);
+      Datasource.authorize(token);
+    }
+  }, [token]);
 
   return (
     <UserContext.Provider value={value}>{props.children}</UserContext.Provider>

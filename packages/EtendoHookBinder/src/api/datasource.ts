@@ -1,9 +1,13 @@
-import { API_DATASOURCE_URL, TOKEN } from './constants';
+import { API_DATASOURCE_URL } from './constants';
 import { Client } from './client';
 import { DatasourceParams } from './types';
 
 export class Datasource {
-  private static client = new Client(API_DATASOURCE_URL).setAuthHeader(TOKEN);
+  private static client = new Client(API_DATASOURCE_URL);
+
+  public static authorize(token: string) {
+    this.client.setAuthHeader(token, 'Bearer');
+  }
 
   public static async get(
     entity: string,
