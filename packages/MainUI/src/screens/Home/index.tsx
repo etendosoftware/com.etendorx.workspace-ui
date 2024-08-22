@@ -1,10 +1,12 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import {
-  Box,
-  Table,
-  theme,
-} from '@workspaceui/componentlibrary/src/components';
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  useRef,
+} from 'react';
+import { useNavigate, useParams, useOutlet } from 'react-router-dom';
+import { Box, theme } from '@workspaceui/componentlibrary/src/components';
 import { mockOrganizations } from '@workspaceui/storybook/mocks';
 import { createToolbarConfig } from '@workspaceui/storybook/stories/Components/Table/toolbarMock';
 import { Organization } from '@workspaceui/storybook/stories/Components/Table/types';
@@ -22,59 +24,15 @@ import BackgroundGradientUrl from '@workspaceui/componentlibrary/src/assets/imag
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import Sidebar from '@workspaceui/componentlibrary/src/components/Table/Sidebar';
 import { Paper } from '@mui/material';
-import FormView from '@workspaceui/componentlibrary/src/components/FormView';
-import { MRT_Row } from 'material-react-table';
-import type { ContentProps } from './types';
+import Table from '@workspaceui/componentlibrary/src/components/Table';
 
-const Content: React.FC<ContentProps> = ({
-  isFormView,
-  selectedItem,
-  isSidebarOpen,
-  handleSave,
-  handleCancel,
-  mockOrganizations,
-  handleRowClick,
-  handleRowDoubleClick,
-}) => {
-  if (isFormView && selectedItem) {
-    return (
-      <Box
-        sx={{
-          ...tableStyles.tablePaper,
-          width: isSidebarOpen ? 'calc(68% - 0.5rem)' : '100%',
-        }}>
-        <FormView
-          data={selectedItem}
-          onSave={handleSave}
-          onCancel={handleCancel}
-        />
-      </Box>
-    );
-  } else {
-    return (
-      <Paper
-        sx={{
-          ...tableStyles.tablePaper,
-          width: isSidebarOpen ? 'calc(68% - 0.5rem)' : '100%',
-        }}>
-        <Table
-          data={mockOrganizations}
-          isTreeStructure={false}
-          onRowClick={handleRowClick}
-          onRowDoubleClick={handleRowDoubleClick}
-        />
-      </Paper>
-    );
-  }
-};
-
-const Home = () => {
+const Home: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const outlet = useOutlet();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Organization | null>(null);
-  const [recordContainerHeight, setRecordContainerHeight] = useState(40);
   const tableRef = useRef<HTMLDivElement>(null);
 
   const isFormView = !!id;
@@ -104,7 +62,7 @@ const Home = () => {
     navigate('/');
   }, [navigate]);
 
-  const handleRowClick = useCallback((row: MRT_Row<{ [key: string]: any }>) => {
+  const handleRowClick = useCallback(row => {
     const originalItem = mockOrganizations.find(
       item => item.id.value === row.original.id,
     );
@@ -112,7 +70,7 @@ const Home = () => {
   }, []);
 
   const handleRowDoubleClick = useCallback(
-    (row: MRT_Row<{ [key: string]: any }>) => {
+    row => {
       const originalItem = mockOrganizations.find(
         item => item.id.value === row.original.id,
       );
@@ -178,6 +136,12 @@ const Home = () => {
       ensureString(selectedItem?.transactionDocument?.value) || LABELS.NO_TYPE,
   };
 
+  const contextValue = {
+    selectedItem,
+    onSave: handleSave,
+    onCancel: handleCancel,
+  };
+
   return (
     <Box sx={tableStyles.container} ref={tableRef}>
       <Box height="100%" overflow="auto">
@@ -185,48 +149,47 @@ const Home = () => {
         <Box sx={tableStyles.contentContainer}>
           <Box
             sx={{
-              ...tableStyles.contentContainer,
-              height: `calc(100% - ${isDropdownOpen ? recordContainerHeight : 0}vh)`,
+              ...tableStyles.tablePaper,
+              width: isSidebarOpen ? 'calc(68% - 0.5rem)' : '100%',
             }}>
-            <Content
-              isFormView={isFormView}
-              selectedItem={selectedItem}
-              isSidebarOpen={isSidebarOpen}
-              handleSave={handleSave}
-              handleCancel={handleCancel}
-              mockOrganizations={mockOrganizations}
-              handleRowClick={handleRowClick}
-              handleRowDoubleClick={handleRowDoubleClick}
-            />
-            <Paper
-              elevation={4}
-              sx={{
-                ...tableStyles.sidebarPaper,
-                transform: isSidebarOpen ? 'translateX(0)' : 'translateX(100%)',
-                backgroundImage: `url(${BackgroundGradientUrl})`,
-                visibility: isSidebarOpen ? 'visible' : 'hidden',
-              }}>
-              <Sidebar
-                isOpen={isSidebarOpen}
-                onClose={toggleSidebar}
-                selectedItem={{
-                  icon: (
-                    <SideIcon fill={theme.palette.baselineColor.neutral[100]} />
-                  ),
-                  identifier: selectedRecord.identifier,
-                  title: CONTENT.CURRENT_TITLE ?? LABELS.NO_TITLE,
-                }}
-                widgets={widgets}
+            {isFormView ? (
+              React.cloneElement(outlet as React.ReactElement, contextValue)
+            ) : (
+              <Table
+                data={mockOrganizations}
+                isTreeStructure={false}
+                onRowClick={handleRowClick}
+                onRowDoubleClick={handleRowDoubleClick}
               />
-            </Paper>
-            <ResizableRecordContainer
-              isOpen={isDropdownOpen}
-              onClose={toggleDropdown}
-              selectedRecord={selectedRecord}
-              onHeightChange={setRecordContainerHeight}
-            />
+            )}
           </Box>
+          <Paper
+            elevation={4}
+            sx={{
+              ...tableStyles.sidebarPaper,
+              transform: isSidebarOpen ? 'translateX(0)' : 'translateX(100%)',
+              backgroundImage: `url(${BackgroundGradientUrl})`,
+              visibility: isSidebarOpen ? 'visible' : 'hidden',
+            }}>
+            <Sidebar
+              isOpen={isSidebarOpen}
+              onClose={toggleSidebar}
+              selectedItem={{
+                icon: (
+                  <SideIcon fill={theme.palette.baselineColor.neutral[100]} />
+                ),
+                identifier: selectedRecord.identifier,
+                title: CONTENT.CURRENT_TITLE ?? LABELS.NO_TITLE,
+              }}
+              widgets={widgets}
+            />
+          </Paper>
         </Box>
+        <ResizableRecordContainer
+          isOpen={isDropdownOpen}
+          onClose={toggleDropdown}
+          selectedRecord={selectedRecord}
+        />
       </Box>
     </Box>
   );

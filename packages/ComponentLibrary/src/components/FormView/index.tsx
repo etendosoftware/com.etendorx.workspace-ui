@@ -1,21 +1,14 @@
-import { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
-  TextField,
   Grid,
   Accordion,
   AccordionSummary,
   AccordionDetails,
   Typography,
   Box,
-  FormControl,
-  FormControlLabel,
-  Checkbox,
-  styled,
 } from '@mui/material';
 import ChevronDown from '../../assets/icons/chevron-down.svg';
-import { SearchOutlined } from '@mui/icons-material';
-import { Select, TextInputBase, theme } from '..';
-import { topFilms } from '../../../../storybook/src/stories/Components/Input/Select/mock';
+import { theme } from '..';
 import {
   Organization,
   FieldDefinition,
@@ -28,101 +21,11 @@ import IconButton from '../IconButton';
 import InfoIcon from '@mui/icons-material/Info';
 import PrimaryTabs from '../PrimaryTab';
 import { TabItem } from '../PrimaryTab/types';
+import FormFieldGroup from './FormField';
 
 const defaultIcon = (
   <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
 );
-
-const FieldLabel: React.FC<{ label: string; required?: boolean }> = ({
-  label,
-  required,
-}) => (
-  <Box sx={styles.labelWrapper}>
-    <span style={styles.labelText}>{label}</span>
-    {required ?? <span style={styles.requiredAsterisk}>*</span>}
-    <span style={styles.dottedSpacing} />
-  </Box>
-);
-
-const FormField: React.FC<{
-  name: string;
-  field: FieldDefinition;
-  onChange: (name: string, value: FieldDefinition['value']) => void;
-}> = ({ name, field, onChange }) => {
-  const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
-    '&.Mui-checked': {
-      color: theme.palette.dynamicColor.main,
-    },
-  }));
-
-  const [value, setValue] = useState(field.label);
-
-  const renderField = () => {
-    switch (field.type) {
-      case 'boolean':
-        return (
-          <FormControl fullWidth margin="normal">
-            <Box sx={sx.checkboxContainer}>
-              <FormControlLabel
-                control={<CustomCheckbox size="small" />}
-                label={field.label}
-              />
-            </Box>
-          </FormControl>
-        );
-      case 'number':
-        return (
-          <TextField
-            fullWidth
-            margin="normal"
-            name={name}
-            type="number"
-            value={field.value as number}
-            onChange={e => onChange(name, Number(e.target.value))}
-          />
-        );
-      case 'date':
-        return (
-          <TextField
-            fullWidth
-            margin="normal"
-            name={name}
-            type="date"
-            variant="standard"
-            value={field.value as string}
-            onChange={e => onChange(name, e.target.value)}
-          />
-        );
-      case 'select':
-        return (
-          <Select
-            iconLeft={<SearchOutlined sx={{ width: 24, height: 24 }} />}
-            title={field.label}
-            options={topFilms}
-            getOptionLabel={option => option.title}
-          />
-        );
-      default:
-        return (
-          <TextInputBase
-            onRightIconClick={() => alert('Icon clicked')}
-            value={value}
-            setValue={setValue}
-            placeholder={field.label}
-          />
-        );
-    }
-  };
-
-  return (
-    <Box style={styles.fieldContainer}>
-      <Box sx={sx.labelBox}>
-        <FieldLabel label={field.label} required={field.required} />
-      </Box>
-      <Box sx={sx.inputBox}>{renderField()}</Box>
-    </Box>
-  );
-};
 
 const FormView: React.FC<FormViewProps> = ({ data }) => {
   const [formData, setFormData] = useState<Organization>(data);
@@ -165,7 +68,7 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
   );
 
   const handleInputChange = useCallback(
-    (name: string, value: BaseFieldDefinition<any>['value']) => {
+    (name: string, value: BaseFieldDefinition<string>['value']) => {
       setFormData(prevData => ({
         ...prevData,
         [name]: {
@@ -227,7 +130,7 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
           <Grid container>
             {fields.map(([key, field], index) => (
               <Grid item xs={12} sm={6} md={4} key={key} sx={sx.gridItem}>
-                <FormField
+                <FormFieldGroup
                   name={key}
                   field={field}
                   onChange={handleInputChange}

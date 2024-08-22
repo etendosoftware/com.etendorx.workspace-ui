@@ -10,8 +10,8 @@ import { tableStyles } from './styles';
 import { getColumns } from '../../../../storybook/src/stories/Components/Table/columns';
 
 interface EnhancedTableProps extends TableProps {
-  onRowClick: (row: MRT_Row<{ [key: string]: any }>) => void;
-  onRowDoubleClick: (row: MRT_Row<{ [key: string]: any }>) => void;
+  onRowClick: (row: MRT_Row<{ [key: string] }>) => void;
+  onRowDoubleClick: (row: MRT_Row<{ [key: string] }>) => void;
 }
 
 const Table: React.FC<EnhancedTableProps> = ({
@@ -23,7 +23,7 @@ const Table: React.FC<EnhancedTableProps> = ({
 
   const tableData = useMemo(() => {
     return data.map(item => {
-      const flatItem: { [key: string]: any } = {};
+      const flatItem: { [key: string] } = {};
       for (const [key, field] of Object.entries(item)) {
         if ('value' in field) {
           flatItem[key] = field.value;

@@ -17,15 +17,12 @@ export default function Form() {
 
       if (foundItem) {
         setFormData(foundItem);
-      } else {
-        console.error(`No se encontró ningún elemento con el ID: ${id}`);
       }
     };
     loadData();
   }, [id]);
 
   const handleSave = () => {
-    console.log('Saving data...');
     navigate('/');
   };
 
@@ -38,8 +35,6 @@ export default function Form() {
   }
 
   return (
-    <div>
-      <FormView data={formData} onSave={handleSave} onCancel={handleCancel} />
-    </div>
+    <FormView data={formData} onSave={handleSave} onCancel={handleCancel} />
   );
 }

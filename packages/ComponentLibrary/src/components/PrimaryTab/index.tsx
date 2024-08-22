@@ -92,9 +92,8 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = ({ tabs, onChange, icon }) => {
           onMouseEnter={handleMouseEnter(tab.id)}
           onMouseLeave={handleLeave}
           sx={sx.tab}
-          component="a"
-          href={tab.href}
-          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+          onClick={(event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+            event.preventDefault();
             handleChange(event, tab.id);
           }}
         />

@@ -285,7 +285,7 @@ export const resizableTabContainerStyles: Record<string, SxProps<Theme>> = {
     width: '99.5%',
     borderRadius: '1rem 1rem 0 0',
     transition: 'transform 0.3s ease, height 0.3s ease',
-    zIndex: 10,
+    zIndex: 1000,
   },
   resizer: {
     position: 'absolute',
