@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FormView } from '@workspaceui/componentlibrary/src/components';
 import { Organization } from '../../../../storybook/src/stories/Components/Table/types';
 import { mockOrganizations } from '@workspaceui/storybook/stories/Components/Table/mock';
+import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 
 export default function Form() {
   const { id } = useParams<{ id: string }>();
@@ -22,16 +23,16 @@ export default function Form() {
     loadData();
   }, [id]);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     navigate('/');
-  };
+  }, [navigate]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     navigate('/');
-  };
+  }, [navigate]);
 
   if (!formData) {
-    return <div>Loading...</div>;
+    return <Spinner />;
   }
 
   return (

@@ -1,13 +1,6 @@
-import React, {
-  useState,
-  useCallback,
-  useMemo,
-  useEffect,
-  useRef,
-} from 'react';
-import { useNavigate, useParams, useOutlet } from 'react-router-dom';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
+import { useNavigate, useParams, Outlet } from 'react-router-dom';
 import { Box, theme } from '@workspaceui/componentlibrary/src/components';
-import { mockOrganizations } from '@workspaceui/storybook/mocks';
 import { createToolbarConfig } from '@workspaceui/storybook/stories/Components/Table/toolbarMock';
 import { Organization } from '@workspaceui/storybook/stories/Components/Table/types';
 import {
@@ -24,27 +17,16 @@ import BackgroundGradientUrl from '@workspaceui/componentlibrary/src/assets/imag
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import Sidebar from '@workspaceui/componentlibrary/src/components/Table/Sidebar';
 import { Paper } from '@mui/material';
-import Table from '@workspaceui/componentlibrary/src/components/Table';
+import useRecordContext from '../../hooks/useRecordContext'
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { id } = useParams();
-  const outlet = useOutlet();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<Organization | null>(null);
+  const [selectedItem] = useState<Organization | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
-
-  const isFormView = !!id;
-
-  useEffect(() => {
-    if (isFormView) {
-      const item = mockOrganizations.find(org => org.id.value === id);
-      setSelectedItem(item || null);
-    } else {
-      setSelectedItem(null);
-    }
-  }, [id, isFormView]);
+  const { selectedRecord } = useRecordContext();
+  const { id = '' } = useParams();
 
   const toggleDropdown = useCallback(() => {
     setIsDropdownOpen(prev => !prev);
@@ -62,48 +44,9 @@ const Home: React.FC = () => {
     navigate('/');
   }, [navigate]);
 
-  const handleRowClick = useCallback(row => {
-    const originalItem = mockOrganizations.find(
-      item => item.id.value === row.original.id,
-    );
-    setSelectedItem(originalItem || null);
-  }, []);
-
-  const handleRowDoubleClick = useCallback(
-    row => {
-      const originalItem = mockOrganizations.find(
-        item => item.id.value === row.original.id,
-      );
-      if (originalItem) {
-        navigate(`/${originalItem.id.value}`);
-      }
-    },
-    [navigate],
-  );
-
-  const handleOutsideClick = useCallback(
-    (event: MouseEvent) => {
-      if (
-        !isFormView &&
-        tableRef.current &&
-        !tableRef.current.contains(event.target as Node)
-      ) {
-        setSelectedItem(null);
-      }
-    },
-    [isFormView],
-  );
-
-  useEffect(() => {
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
-    };
-  }, [handleOutsideClick]);
-
   const toolbarConfig = useMemo(
     () =>
-      isFormView
+      id
         ? createFormViewToolbarConfig(
             handleSave,
             handleCancel,
@@ -119,28 +62,26 @@ const Home: React.FC = () => {
             isSidebarOpen,
           ),
     [
-      isFormView,
+      handleCancel,
+      handleSave,
+      id,
       isDropdownOpen,
       isSidebarOpen,
       toggleDropdown,
       toggleSidebar,
-      handleSave,
-      handleCancel,
     ],
   );
 
-  const selectedRecord = {
-    identifier:
-      ensureString(selectedItem?.documentNo?.value) || LABELS.NO_IDENTIFIER,
-    type:
-      ensureString(selectedItem?.transactionDocument?.value) || LABELS.NO_TYPE,
-  };
-
-  const contextValue = {
-    selectedItem,
-    onSave: handleSave,
-    onCancel: handleCancel,
-  };
+  const selectedRecord = useMemo(
+    () => ({
+      identifier:
+        ensureString(selectedItem?.documentNo?.value) || LABELS.NO_IDENTIFIER,
+      type:
+        ensureString(selectedItem?.transactionDocument?.value) ||
+        LABELS.NO_TYPE,
+    }),
+    [selectedItem?.documentNo?.value, selectedItem?.transactionDocument?.value],
+  );
 
   return (
     <Box sx={tableStyles.container} ref={tableRef}>
@@ -152,16 +93,7 @@ const Home: React.FC = () => {
               ...tableStyles.tablePaper,
               width: isSidebarOpen ? 'calc(68% - 0.5rem)' : '100%',
             }}>
-            {isFormView ? (
-              React.cloneElement(outlet as React.ReactElement, contextValue)
-            ) : (
-              <Table
-                data={mockOrganizations}
-                isTreeStructure={false}
-                onRowClick={handleRowClick}
-                onRowDoubleClick={handleRowDoubleClick}
-              />
-            )}
+            <Outlet />
           </Box>
           <Paper
             elevation={4}
@@ -188,7 +120,6 @@ const Home: React.FC = () => {
         <ResizableRecordContainer
           isOpen={isDropdownOpen}
           onClose={toggleDropdown}
-          selectedRecord={selectedRecord}
         />
       </Box>
     </Box>

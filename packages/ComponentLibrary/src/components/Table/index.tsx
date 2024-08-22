@@ -9,13 +9,13 @@ import { TableProps } from '../../../../storybook/src/stories/Components/Table/t
 import { tableStyles } from './styles';
 import { getColumns } from '../../../../storybook/src/stories/Components/Table/columns';
 
-interface EnhancedTableProps extends TableProps {
+export interface EnhancedTableProps extends TableProps {
   onRowClick: (row: MRT_Row<{ [key: string] }>) => void;
   onRowDoubleClick: (row: MRT_Row<{ [key: string] }>) => void;
 }
 
 const Table: React.FC<EnhancedTableProps> = ({
-  data,
+  data = [],
   onRowClick,
   onRowDoubleClick,
 }) => {

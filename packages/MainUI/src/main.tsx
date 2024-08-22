@@ -1,12 +1,12 @@
 import ReactDOM from 'react-dom/client';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import App from './App';
 import Home from './screens/Home';
-import Table from './screens/Table/TableView';
+import Table from './screens/Table';
 import Login from './screens/Login';
 import Form from './screens/Form';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import './index.css';
 import Layout from './components/layout';
+import './index.css';
 
 const router = createBrowserRouter([
   {
@@ -21,6 +21,10 @@ const router = createBrowserRouter([
             path: '',
             Component: Home,
             children: [
+              {
+                path: '',
+                Component: Table,
+              },
               {
                 path: ':id',
                 Component: Form,
