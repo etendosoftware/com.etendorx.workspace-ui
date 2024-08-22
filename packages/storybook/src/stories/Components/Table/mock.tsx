@@ -1,4 +1,8 @@
 import { Organization } from './types';
+import InfoIcon from '../../../../../ComponentLibrary/src/assets/icons/note.svg';
+import LinkIcon from '../../../../../ComponentLibrary/src/assets/icons/link.svg';
+import AttachmentIcon from '../../../../../ComponentLibrary/src/assets/icons/file.svg';
+import InformationIcon from '../../../../../ComponentLibrary/src/assets/icons/info.svg';
 
 export const mockOrganizations: Organization[] = [
   {
@@ -7,6 +11,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Main Information',
       type: 'section',
       personalizable: false,
+      icon: <InfoIcon />,
     },
     organization: {
       value: 'Global Enterprises',
@@ -85,6 +90,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Linked Items',
       type: 'section',
       personalizable: false,
+      icon: <LinkIcon />,
     },
     warehouse: {
       value: 'Main Warehouse',
@@ -109,6 +115,7 @@ export const mockOrganizations: Organization[] = [
       label: 'More Information',
       type: 'section',
       personalizable: false,
+      icon: <InformationIcon />,
     },
     salesRepresentative: {
       value: 'John Doe',
@@ -133,6 +140,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Attachments',
       type: 'section',
       personalizable: false,
+      icon: <AttachmentIcon />,
     },
     deliveryLocation: {
       value: '789 Delivery Rd, Los Angeles, CA',
@@ -161,6 +169,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Main Information',
       type: 'section',
       personalizable: false,
+      icon: <InfoIcon />,
     },
     organization: {
       value: 'Global X',
@@ -233,6 +242,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Linked Items',
       type: 'section',
       personalizable: false,
+      icon: <LinkIcon />,
     },
     warehouse: {
       value: 'Main Warehouse',
@@ -257,6 +267,7 @@ export const mockOrganizations: Organization[] = [
       label: 'More Information',
       type: 'section',
       personalizable: false,
+      icon: <InformationIcon />,
     },
     salesRepresentative: {
       value: 'John Doe',
@@ -281,6 +292,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Attachments',
       type: 'section',
       personalizable: false,
+      icon: <AttachmentIcon />,
     },
     deliveryLocation: {
       value: '789 Delivery Rd, Los Angeles, CA',

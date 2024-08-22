@@ -82,7 +82,7 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
   },
   sidebarPaper: {
     right: 4,
-    width: '30%',
+    width: '32%',
     position: 'absolute',
     backgroundColor: theme.palette.baselineColor.neutral[10],
     boxShadow: '-4px 0 10px rgba(0, 0, 0, 0.1)',

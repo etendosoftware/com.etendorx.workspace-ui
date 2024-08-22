@@ -22,6 +22,7 @@ export interface Section {
   label: string;
   type: 'section';
   personalizable: boolean;
+  icon?: React.ReactElement;
 }
 export type OrganizationField = FieldDefinition | Section;
 

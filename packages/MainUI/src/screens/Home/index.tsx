@@ -51,7 +51,7 @@ const Content: React.FC<ContentProps> = ({
       <Box
         sx={{
           ...tableStyles.tablePaper,
-          width: isSidebarOpen ? 'calc(70% - 0.5rem)' : '100%',
+          width: isSidebarOpen ? 'calc(68% - 0.5rem)' : '100%',
         }}>
         <FormView
           data={selectedItem}
@@ -65,7 +65,7 @@ const Content: React.FC<ContentProps> = ({
       <Paper
         sx={{
           ...tableStyles.tablePaper,
-          width: isSidebarOpen ? 'calc(70% - 0.5rem)' : '100%',
+          width: isSidebarOpen ? 'calc(68% - 0.5rem)' : '100%',
         }}>
         <Table
           data={mockOrganizations}

@@ -3,6 +3,8 @@ import { SxProps } from '@mui/material';
 import { CSSProperties } from 'react';
 import { theme } from '../../theme';
 
+export const defaultFill = theme.palette.dynamicColor.main;
+
 export const styles: { [key: string]: CSSProperties } = {
   dottedLine: {
     borderRight: `2px dotted ${theme.palette.divider}`,
@@ -44,6 +46,7 @@ export const sx: { [key: string]: SxProps<Theme> } = {
   accordion: {
     width: '100%',
     marginTop: '0.5rem',
+    border: `1px solid ${theme.palette.divider}`,
     borderRadius: '0.75rem',
     '&:before': {
       display: 'none',
@@ -54,12 +57,54 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     '&:last-of-type': {
       borderRadius: '0.75rem',
     },
+    '&.MuiAccordion-root': {
+      '&:before': {
+        display: 'none',
+      },
+      '&.Mui-expanded': {
+        margin: `${theme.spacing(1)} 0 0`,
+      },
+    },
+    '& .MuiAccordionSummary-root': {
+      minHeight: 'auto',
+      '&.Mui-expanded': {
+        minHeight: 'auto',
+      },
+    },
+    '& .MuiAccordionSummary-content': {
+      margin: `${theme.spacing(1)} 0`,
+      '&.Mui-expanded': {
+        margin: `${theme.spacing(1)} 0`,
+      },
+    },
+    '& .MuiAccordionDetails-root': {
+      padding: theme.spacing(2),
+    },
+  },
+  iconLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+  },
+  iconButton: {
+    width: '2rem',
+    height: '2rem',
+    background: theme.palette.dynamicColor.contrastText,
+  },
+  chevronButton: {
+    background: 'none',
+    '&:hover': {
+      background: theme.palette.baselineColor.transparentNeutral[5],
+    },
   },
   accordionSummary: {
     borderRadius: '0.75rem',
     '&.Mui-expanded': {
       borderBottomLeftRadius: 0,
       borderBottomRightRadius: 0,
+    },
+    '&:hover .main-icon-button': {
+      backgroundColor: theme.palette.dynamicColor.main,
     },
   },
   labelBox: {

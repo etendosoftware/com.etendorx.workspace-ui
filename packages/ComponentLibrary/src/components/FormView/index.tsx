@@ -12,9 +12,9 @@ import {
   Checkbox,
   styled,
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ChevronDown from '../../assets/icons/chevron-down.svg';
 import { SearchOutlined } from '@mui/icons-material';
-import { Select, TextInputBase } from '..';
+import { Select, TextInputBase, theme } from '..';
 import { topFilms } from '../../../../storybook/src/stories/Components/Input/Select/mock';
 import {
   Organization,
@@ -23,7 +23,9 @@ import {
   BaseFieldDefinition,
 } from '../../../../storybook/src/stories/Components/Table/types';
 import { FormViewProps } from './types';
-import { styles, sx } from './styles';
+import { defaultFill, styles, sx } from './styles';
+import IconButton from '../IconButton';
+import InfoIcon from '@mui/icons-material/Info';
 
 const FieldLabel: React.FC<{ label: string; required?: boolean }> = ({
   label,
@@ -118,6 +120,7 @@ const FormField: React.FC<{
 
 const FormView: React.FC<FormViewProps> = ({ data }) => {
   const [formData, setFormData] = useState<Organization>(data);
+  const [hoveredSection, setHoveredSection] = useState<string | null>(null);
 
   const handleInputChange = (
     name: string,
@@ -141,7 +144,7 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
     sectionName: string,
     fields: [string, FieldDefinition][],
   ) => {
-    const sectionData = formData[sectionName];
+    const sectionData = formData[sectionName] as Section;
     if (!sectionData || !('label' in sectionData)) {
       console.warn(`Section ${sectionName} is not properly defined`);
       return null;
@@ -150,9 +153,37 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
     return (
       <Accordion key={sectionName} sx={sx.accordion}>
         <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
-          sx={sx.accordionSummary}>
-          <Typography>{(sectionData as Section).label}</Typography>
+          sx={sx.accordionSummary}
+          onMouseEnter={() => setHoveredSection(sectionName)}
+          onMouseLeave={() => setHoveredSection(null)}
+          expandIcon={
+            <IconButton
+              size="small"
+              hoverFill={theme.palette.baselineColor.neutral[80]}
+              sx={sx.chevronButton}>
+              <ChevronDown />
+            </IconButton>
+          }>
+          <Box sx={sx.iconLabel}>
+            {sectionData.icon ? (
+              <IconButton
+                fill={defaultFill}
+                sx={sx.iconButton}
+                className="main-icon-button"
+                isHovered={hoveredSection === sectionName}>
+                {sectionData.icon}
+              </IconButton>
+            ) : (
+              <IconButton
+                fill={defaultFill}
+                sx={sx.iconButton}
+                className="main-icon-button"
+                isHovered={hoveredSection === sectionName}>
+                <InfoIcon />
+              </IconButton>
+            )}
+            <Typography>{sectionData.label}</Typography>
+          </Box>
         </AccordionSummary>
         <AccordionDetails>
           <Grid container>
