@@ -11,6 +11,7 @@ export default function MetadataProvider(props: React.PropsWithChildren) {
 
   useEffect(() => {
     if (token) {
+      Metadata.authorize(token);
       Metadata.initialize();
     }
   }, [token]);

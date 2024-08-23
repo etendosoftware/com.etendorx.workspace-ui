@@ -1,9 +1,9 @@
-import { API_DATASOURCE_SWS_URL } from './constants';
+import { API_OBREST_URL } from './constants';
 import { Client } from './client';
 import { RecordPayload } from './types';
 
 export class DataHandler {
-  private static client = new Client(API_DATASOURCE_SWS_URL);
+  private static client = new Client(API_OBREST_URL);
 
   public static setAuthorization(token: string) {
     this.client.setAuthHeader(token, 'Bearer');

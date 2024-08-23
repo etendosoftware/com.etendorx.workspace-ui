@@ -13,7 +13,7 @@ const hasProperty = (object: object, property: string) =>
   Object.prototype.hasOwnProperty.call(object, property);
 
 export class Metadata {
-  private static client = new Client(API_METADATA_URL);
+  public static client = new Client(API_METADATA_URL);
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
 
   public static authorize(token: string) {

@@ -3,7 +3,7 @@ import { Client } from './client';
 import { DatasourceParams } from './types';
 
 export class Datasource {
-  private static client = new Client(API_DATASOURCE_URL);
+  public static client = new Client(API_DATASOURCE_URL);
 
   public static authorize(token: string) {
     this.client.setAuthHeader(token, 'Bearer');

@@ -6,7 +6,7 @@ import {
   useState,
 } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '@workspaceui/etendohookbinder/src/api/constants';
+import { API_LOGIN_URL } from '@workspaceui/etendohookbinder/src/api/constants';
 import { logger } from '../utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { Datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
@@ -24,38 +24,52 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
-  const login = useCallback(
-    async (username: string, password: string) => {
-      try {
-        const result = await fetch(`${API_BASE_URL}/sws/login`, {
-          method: 'POST',
-          body: JSON.stringify({
-            username,
-            password,
-          }),
-        });
-        const data = await result.json();
+  const login = useCallback(async (username: string, password: string) => {
+    try {
+      const result = await fetch(API_LOGIN_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      });
+      const data = await result.json();
 
-        if (data.status === 'error') {
-          throw new Error(data.message);
-        } else {
-          localStorage.setItem('token', data.token);
-          Datasource.authorize(data.token);
-          Metadata.authorize(data.token);
-          Metadata.initialize();
-          settoken(data.token);
-          navigate({ pathname: '/' });
-        }
-      } catch (e) {
-        logger.warn(e);
-
-        throw e;
+      if (data.status === 'error') {
+        throw new Error(data.message);
+      } else {
+        localStorage.setItem('token', data.token);
+        Datasource.authorize(data.token);
+        Metadata.authorize(data.token);
+        settoken(data.token);
       }
-    },
-    [navigate],
-  );
+    } catch (e) {
+      logger.warn(e);
+
+      throw e;
+    }
+  }, []);
 
   const value = useMemo(() => ({ login, token }), [login, token]);
+
+  useEffect(() => {
+    const interceptor = (response: Response) => {
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        settoken(null);
+      }
+
+      return response;
+    };
+
+    const unregisterMetadataInterceptor = Metadata.client.registerInterceptor(interceptor);
+    const unregisterDatasourceInterceptor = Datasource.client.registerInterceptor(interceptor);
+
+    return () => {
+      unregisterMetadataInterceptor();
+      unregisterDatasourceInterceptor();
+    };
+  }, []);
 
   useEffect(() => {
     if (token && pathname === '/login') {
@@ -67,8 +81,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   useEffect(() => {
     if (token) {
-      Metadata.authorize(token);
       Datasource.authorize(token);
+      Metadata.authorize(token);
+      Metadata.initialize();
     }
   }, [token]);
 
