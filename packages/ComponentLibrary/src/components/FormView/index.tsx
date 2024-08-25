@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
 import {
   Grid,
   Accordion,
@@ -13,7 +13,6 @@ import {
   Organization,
   FieldDefinition,
   Section,
-  BaseFieldDefinition,
 } from '../../../../storybook/src/stories/Components/Table/types';
 import { FormViewProps } from './types';
 import { defaultFill, styles, sx } from './styles';
@@ -31,6 +30,7 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
   const [formData, setFormData] = useState<Organization>(data);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   const tabs: TabItem[] = useMemo(() => {
     return Object.values(formData)
@@ -48,11 +48,16 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
 
   const handleTabChange = useCallback((newTabId: string) => {
     setExpandedSections(prev => {
-      if (prev.includes(newTabId)) {
-        return prev;
+      if (!prev.includes(newTabId)) {
+        return [...prev, newTabId];
       }
-      return [...prev, newTabId];
+      return prev;
     });
+
+    const sectionElement = sectionRefs.current[newTabId];
+    if (sectionElement) {
+      sectionElement.scrollIntoView({ behavior: 'smooth' });
+    }
   }, []);
 
   const handleAccordionChange = useCallback(
@@ -68,13 +73,13 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
   );
 
   const handleInputChange = useCallback(
-    (name: string, value: BaseFieldDefinition<string>['value']) => {
+    (name: string, value: string | number | boolean | string[] | Date) => {
       setFormData(prevData => ({
         ...prevData,
         [name]: {
           ...prevData[name],
           value: value,
-        },
+        } as FieldDefinition,
       }));
     },
     [],
@@ -102,6 +107,7 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
         onChange={(_, isExpanded) =>
           handleAccordionChange(sectionData.id, isExpanded)
         }
+        ref={el => (sectionRefs.current[sectionData.id] = el)}
         id={`section-${sectionData.id}`}>
         <AccordionSummary
           sx={sx.accordionSummary}
@@ -159,26 +165,23 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
   );
 
   return (
-    <Box>
-      <Box
-        sx={{
-          position: 'sticky',
-        }}>
+    <Box display="flex" flexDirection="column" height="100%">
+      <Box flexShrink={0}>
         <PrimaryTabs
           tabs={tabs}
           onChange={handleTabChange}
           icon={defaultIcon}
         />
       </Box>
-      <form onSubmit={handleSubmit}>
-        <Box>
+      <Box flexGrow={1} overflow="auto">
+        <form onSubmit={handleSubmit}>
           <Grid container>
             {Object.entries(groupedFields).map(([sectionName, fields]) => {
               return renderSection(sectionName, fields);
             })}
           </Grid>
-        </Box>
-      </form>
+        </form>
+      </Box>
     </Box>
   );
 };

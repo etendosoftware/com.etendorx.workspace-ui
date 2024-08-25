@@ -7,7 +7,6 @@ import {
   MenuItem,
   ListItemIcon,
   Tooltip,
-  tabsClasses,
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import { PrimaryTabsProps, TabItem } from './types';
@@ -111,12 +110,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = ({ tabs, onChange, icon }) => {
           scrollButtons="auto"
           TabIndicatorProps={tabIndicatorProps}
           aria-label="primary tabs"
-          sx={{
-            ...sx.tabs,
-            [`& .${tabsClasses.scrollButtons}`]: {
-              '&.Mui-disabled': { opacity: 0.3 },
-            },
-          }}>
+          sx={sx.tabs}>
           {tabs.map(buildTabs)}
         </Tabs>
       </Box>

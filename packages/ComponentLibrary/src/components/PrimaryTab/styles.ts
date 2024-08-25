@@ -29,6 +29,11 @@ export const styles: { [key: string]: CSSProperties } = {
 export const sx: { [key: string]: SxProps<Theme> } = {
   tabs: {
     minHeight: 'unset',
+    '& .MuiTabs-scrollButtons': {
+      '&.Mui-disabled': {
+        opacity: 0.3,
+      },
+    },
   },
   tab: {
     minHeight: 48,

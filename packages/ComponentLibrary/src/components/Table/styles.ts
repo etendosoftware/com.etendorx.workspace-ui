@@ -65,14 +65,14 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
   },
   container: {
     display: 'flex',
+    position: 'relative',
     flexDirection: 'column',
     width: '100%',
-    transition: 'all 0.3s ease',
-    padding: '1rem 0.25rem 1rem 0.25rem',
     gap: '1rem',
     overflow: 'hidden',
     flex: 1,
-    position: 'relative',
+    transition: 'all 0.3s ease',
+    padding: '1rem 0.25rem 1rem 0.25rem',
   },
   tablePaper: {
     borderRadius: '1rem 1rem 0 0',
@@ -91,7 +91,7 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
-    overflowY: 'auto',
+    overflow: 'auto',
     display: 'flex',
     height: '100%',
     transition: 'transform 0.5s ease',
@@ -185,9 +185,6 @@ export const sx: { [key: string]: SxProps<Theme> } = {
   contentContainer: {
     flexGrow: 1,
     overflowY: 'auto',
-  },
-  container: {
-    gridContainer: '1rem',
   },
   widgetContainer: {
     color: theme.palette.baselineColor.neutral[0],
