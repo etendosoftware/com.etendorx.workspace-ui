@@ -7,7 +7,11 @@ interface RightButtonsProps {
 }
 
 const RightButtons: React.FC<RightButtonsProps> = ({ children }) => {
-  return <Box style={styles.boxStyles}>{children}</Box>;
+  return (
+    <Box style={styles.boxStyles}>
+      <Box sx={styles.childBox}>{children}</Box>
+    </Box>
+  );
 };
 
 export default RightButtons;

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Tooltip, IconButton as MUIIconButton } from '@mui/material';
 import { theme } from '../../theme';
 import { defaultStyles } from './styles';
@@ -13,9 +13,14 @@ const IconButton: React.FC<IIconComponentProps> = ({
   sx,
   children,
   disabled,
+  isHovered = false,
   ...props
 }) => {
   const [iconFill, setIconFill] = useState<string>(fill);
+
+  useEffect(() => {
+    setIconFill(isHovered ? hoverFill : fill);
+  }, [isHovered, hoverFill, fill]);
 
   const handleMouseEnter = useCallback(() => {
     if (!disabled) {

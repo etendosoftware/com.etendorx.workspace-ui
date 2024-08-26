@@ -1,31 +1,53 @@
 import { Theme } from '@emotion/react';
 import { SxProps } from '@mui/material';
-export interface Organization {
-  identificator: string;
+
+export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select';
+
+export interface BaseFieldDefinition<T> {
+  value: T;
+  type: FieldType;
+  label: string;
+  section?: string;
+  required?: boolean;
+}
+export type FieldDefinition =
+  | BaseFieldDefinition<string>
+  | BaseFieldDefinition<number>
+  | BaseFieldDefinition<boolean>
+  | BaseFieldDefinition<Date>
+  | BaseFieldDefinition<string[]>;
+
+export interface Section {
   name: string;
-  description: string;
-  active: boolean;
-  groupLevel: boolean;
-  socialName: string;
-  organizationType: string;
-  currency: string;
-  allowPeriodControl: boolean;
-  calendar: 'Spain' | 'USA' | 'LATAM';
-  files: number;
-  tags: string[];
-  reactions: number;
-  type: string;
+  label: string;
+  type: 'section';
+  personalizable: boolean;
+  icon?: React.ReactNode;
   id: string;
-  parentId: string | null;
+  fill?: string;
+  hoverFill?: string;
+  showInTab: 'icon' | 'label' | 'both';
+}
+export type OrganizationField = FieldDefinition | Section;
+
+export interface Organization {
+  [key: string]: OrganizationField;
+  id: BaseFieldDefinition<string>;
+  documentNo: BaseFieldDefinition<string>;
+  transactionDocument: BaseFieldDefinition<string>;
 }
 
 export type OrganizationLabels = {
   [K in keyof Organization]: string;
 };
+
+export interface SelectedRecord {
+  identifier: string;
+  type: string;
+}
 export interface TableProps {
   data: Organization[];
   isTreeStructure?: boolean;
-  customLabels?: Record<string, string>;
 }
 
 export interface SidebarContentProps {

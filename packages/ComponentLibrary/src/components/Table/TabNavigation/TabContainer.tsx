@@ -2,7 +2,6 @@ import TabContent from './TabContent';
 import type { TabProps } from './types';
 
 const TabContainer: React.FC<TabProps> = ({
-  isOpen,
   onClose,
   selectedRecord,
   noIdentifierLabel = '',
@@ -11,15 +10,13 @@ const TabContainer: React.FC<TabProps> = ({
   isFullSize,
 }) => {
   return (
-    <div className={`Record ${isOpen && 'open'}`}>
-      <TabContent
-        onClose={onClose}
-        identifier={selectedRecord.identifier ?? noIdentifierLabel}
-        type={selectedRecord.type ?? noTypeLabel}
-        handleFullSize={handleFullSize}
-        isFullSize={isFullSize}
-      />
-    </div>
+    <TabContent
+      onClose={onClose}
+      identifier={selectedRecord.identifier ?? noIdentifierLabel}
+      type={selectedRecord.type ?? noTypeLabel}
+      handleFullSize={handleFullSize}
+      isFullSize={isFullSize}
+    />
   );
 };
 

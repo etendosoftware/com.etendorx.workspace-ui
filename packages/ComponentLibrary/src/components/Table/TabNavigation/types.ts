@@ -26,5 +26,5 @@ export interface ResizableTabContainerProps {
     identifier: string;
     type: string;
   };
-  onHeightChange: (height: number) => void;
+  onHeightChange?: (height: number) => void;
 }

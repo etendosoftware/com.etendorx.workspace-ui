@@ -12,13 +12,13 @@ export const styles: { [key: string]: CSSProperties } = {
     borderRadius: '12.5rem',
     padding: '0.25rem',
     alignItems: 'center',
-    maxWidth: '35rem',
     overflowX: 'auto',
   },
   tabsContainer: {
     display: 'flex',
     flexGrow: 1,
     minWidth: 0,
+    zIndex: 1100,
   },
   iconButtonMore: {
     marginLeft: '0.25rem',
@@ -29,6 +29,11 @@ export const styles: { [key: string]: CSSProperties } = {
 export const sx: { [key: string]: SxProps<Theme> } = {
   tabs: {
     minHeight: 'unset',
+    '& .MuiTabs-scrollButtons': {
+      '&.Mui-disabled': {
+        opacity: 0.3,
+      },
+    },
   },
   tab: {
     minHeight: 48,

@@ -6,4 +6,3 @@ declare module '*.svg' {
   >;
   export default ReactComponent;
 }
-s;

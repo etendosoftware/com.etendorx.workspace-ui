@@ -21,6 +21,10 @@ const styles: { [key: string]: CSSProperties } = {
     borderRadius: '6.25rem',
     background: `var(--Neutral-0, ${theme.palette.baselineColor.transparentNeutral[5]})`,
   },
+  childBox: {
+    display: 'flex',
+    gap: '0.25rem',
+  },
 };
 
 export default styles;

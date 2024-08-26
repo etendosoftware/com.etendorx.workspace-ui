@@ -1,7 +1,7 @@
 import { SxProps, Theme } from '@mui/material';
 import { theme } from '../../theme';
 
-export const tableStyles: Record<string, SxProps<Theme>> = {
+export const tableStyles: { [key: string]: SxProps<Theme> } = {
   topToolbar: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -13,28 +13,6 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
     display: 'flex',
     justifyContent: 'flex-start',
     marginLeft: '1rem',
-  },
-  actionButton: {
-    minWidth: 120,
-  },
-  tableContainer: {
-    '& .MuiPaper-root': {
-      boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.05)',
-    },
-  },
-  headerCell: {
-    fontWeight: 'bold',
-    backgroundColor: theme.palette.grey[100],
-  },
-  rowHover: {
-    '&:hover': {
-      backgroundColor: theme.palette.action.hover,
-    },
-  },
-  pagination: {
-    '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-      marginBottom: 0,
-    },
   },
   tableBodyRow: {
     cursor: 'pointer',
@@ -58,48 +36,6 @@ export const tableStyles: Record<string, SxProps<Theme>> = {
   },
   tableBodyCell: {
     borderRight: `1px solid ${theme.palette.divider}`,
-  },
-  expandColumn: {
-    borderRight: 'none',
-    background: theme.palette.baselineColor.transparentNeutral[5],
-  },
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    width: '100%',
-    flexGrow: 1,
-    transition: 'all 0.3s ease',
-    padding: '1rem 0 1rem 0',
-    gap: '1rem',
-  },
-  tablePaper: {
-    borderRadius: '1rem',
-    overflow: 'auto',
-    height: '100%',
-    transition: 'width 0.5s ease',
-  },
-  sidebarPaper: {
-    right: 4,
-    width: '30%',
-    position: 'absolute',
-    backgroundColor: theme.palette.baselineColor.neutral[10],
-    boxShadow: '-4px 0 10px rgba(0, 0, 0, 0.1)',
-    padding: '0.5rem',
-    borderRadius: '1rem',
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-    overflowY: 'auto',
-    display: 'flex',
-    height: '100%',
-    transition: 'transform 0.5s ease',
-  },
-  contentContainer: {
-    display: 'flex',
-    flexGrow: 1,
-    transition: 'all 0.3s ease',
-    width: '100%',
-    padding: '1rem 0 1rem 0',
   },
 };
 
@@ -140,8 +76,6 @@ export const sx: { [key: string]: SxProps<Theme> } = {
   sidebarContainer: {
     display: 'flex',
     flexDirection: 'column',
-    minWidth: '100%',
-    height: '100%',
   },
   recordContainer: {
     display: 'flex',
@@ -180,16 +114,11 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     fontWeight: 600,
     fontSize: '1.25rem',
   },
-  contentContainer: {
-    flexGrow: 1,
-    overflowY: 'auto',
-  },
-  container: {
-    gridContainer: '1rem',
+  gridContainer: {
+    padding: '0.75rem 1rem',
   },
   widgetContainer: {
     color: theme.palette.baselineColor.neutral[0],
-    minHeight: '8rem',
     borderRadius: '1.5rem',
     padding: '1rem',
     marginBottom: '1rem',
@@ -225,83 +154,5 @@ export const sx: { [key: string]: SxProps<Theme> } = {
   widgetHeaderLeft: {
     display: 'flex',
     alignItems: 'center',
-  },
-};
-
-export const recordContentStyles: Record<string, SxProps<Theme>> = {
-  recordContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  recordContainerItems: {
-    display: 'flex',
-    alignItems: 'center',
-  },
-  recordHeader: {
-    height: '2.75rem',
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '1rem',
-    borderRadius: '1rem 1rem 0 0',
-    border: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
-    background: theme.palette.baselineColor.transparentNeutral[5],
-  },
-  typeBox: {
-    display: 'flex',
-    alignItems: 'center',
-    background: theme.palette.baselineColor.transparentNeutral[5],
-    border: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
-    padding: '0 0.5rem 0 0.5rem',
-    borderRadius: '1.5rem',
-    maxHeight: '2rem',
-  },
-  identifierBox: {
-    marginLeft: '0.5rem',
-    minWidth: '2rem',
-  },
-  title: {
-    color: theme.palette.baselineColor.neutral[100],
-    fontWeight: 600,
-    fontSize: '1.25rem',
-  },
-  iconButton: {
-    background: 'none',
-    '&:hover': {
-      background: theme.palette.baselineColor.transparentNeutral[5],
-    },
-  },
-  contentContainer: {
-    flexGrow: 1,
-    overflowY: 'auto',
-  },
-};
-
-export const resizableTabContainerStyles: Record<string, SxProps<Theme>> = {
-  paper: {
-    position: 'absolute',
-    bottom: 0,
-    width: '99.5%',
-    borderRadius: '1rem 1rem 0 0',
-    transition: 'transform 0.3s ease, height 0.3s ease',
-    zIndex: 1000,
-  },
-  resizer: {
-    position: 'absolute',
-    top: 0,
-    left: '50%',
-    transform: 'translateX(-50%)',
-    width: '4rem',
-    height: '0.5rem',
-    backgroundColor: theme.palette.grey[300],
-    marginTop: '0.25rem',
-    borderRadius: '0.5rem',
-    cursor: 'ns-resize',
-    '&:hover': {
-      backgroundColor: theme.palette.grey[400],
-    },
-  },
-  container: {
-    cursor: 'ns-resize',
-    overflow: 'auto',
   },
 };

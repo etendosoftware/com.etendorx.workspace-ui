@@ -7,4 +7,5 @@ export interface IIconComponentProps
   width?: number;
   height?: number;
   tooltip?: string;
+  isHovered?: boolean;
 }

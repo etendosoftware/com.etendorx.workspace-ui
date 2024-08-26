@@ -4,7 +4,6 @@ import {
   TextField as TextFieldMUI,
   Box as BoxMUI,
 } from './MUI';
-import TableCustom from './Table';
 import ModalCustom from './Modal';
 import TextInputMUI from './Input/TextInput/TextInputAutocomplete';
 import SearchInputWithVoiceMUI from './Input/TextInput/TextInputAutocomplete/SearchInputWithVoice';
@@ -33,7 +32,6 @@ const Grid = GridMUI;
 const Box = BoxMUI;
 const TextField = TextFieldMUI;
 const Modal = ModalCustom;
-const Table = TableCustom;
 const TextInput = TextInputMUI;
 const TextInputBase = TextInputBaseMUI;
 const InputPassword = InputPasswordMUI;
@@ -57,7 +55,6 @@ export {
   Grid,
   Box,
   TextField,
-  Table,
   Modal,
   TextInput,
   TextInputBase,

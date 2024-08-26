@@ -1,0 +1,43 @@
+import { theme } from '@workspaceui/componentlibrary/src/theme';
+
+const styles = {
+  container: {
+    overflow: 'hidden',
+    flex: 1,
+    padding: theme.spacing(1),
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+    width: '100%',
+  },
+  sidebarPaper: {
+    right: 4,
+    width: '32%',
+    position: 'absolute',
+    backgroundColor: theme.palette.baselineColor.neutral[10],
+    boxShadow: '-4px 0 10px rgba(0, 0, 0, 0.1)',
+    padding: '0.5rem',
+    borderRadius: '1rem',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    overflow: 'auto',
+    display: 'flex',
+    height: '50rem',
+    transition: 'transform 0.5s ease',
+    '&::-webkit-scrollbar': {
+      width: '0px',
+    },
+    scrollbarWidth: 'none',
+    '-ms-overflow-style': 'none',
+  },
+  tablePaper: {
+    borderRadius: '1rem 1rem 0 0',
+    overflow: 'hidden',
+    height: '100%',
+    transition: 'width 0.5s ease',
+  },
+};
+
+export default styles;

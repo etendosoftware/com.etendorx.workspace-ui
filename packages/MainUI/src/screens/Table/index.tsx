@@ -1,67 +1,43 @@
-import DynamicTable from '@workspaceui/componentlibrary/src/components/DynamicTable';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { Outlet, useParams } from 'react-router-dom';
-import { useWindow } from '../../hooks/useWindow';
-import { useDatasource } from '../../hooks/useDatasource';
-import {
-  Column,
-  WindowMetadata,
-} from '@workspaceui/etendohookbinder/src/api/types';
+import { useCallback } from 'react';
+import Table from '@workspaceui/componentlibrary/src/components/Table';
+import { mockOrganizations } from '@workspaceui/storybook/mocks';
+import { useNavigate } from 'react-router-dom';
+import { useRecordContext } from '../../hooks/useRecordContext.ts';
+import { EnhancedTableProps } from '@workspaceui/componentlibrary/components/Table';
 
-function Content({
-  windowData,
-  columnsData,
-}: {
-  windowData: WindowMetadata;
-  columnsData: Column[];
-}) {
-  const { records, loading, error, fetchMore, loaded } = useDatasource(
-    windowData,
-    {
-      sortBy: 'documentNo',
-      operator: 'or',
-      criteria: [
-        {
-          fieldName: 'documentNo',
-          operator: 'iContains',
-          value: '100',
-        },
-        {
-          fieldName: 'active',
-          operator: 'equals',
-          value: 'true',
-        },
-      ],
+const TableView = () => {
+  const { setSelectedRecord } = useRecordContext();
+  const navigate = useNavigate();
+
+  const handleRowClick = useCallback<EnhancedTableProps['onRowClick']>(
+    row => {
+      const _selectedItem = mockOrganizations.find(
+        item => item.id.value === row.original.id,
+      );
+      if (_selectedItem) {
+        setSelectedRecord(_selectedItem);
+      }
     },
+    [setSelectedRecord],
   );
 
-  if (loading && !loaded) {
-    return <Spinner />;
-  } else if (error) {
-    return <div>{error.message}</div>;
-  } else {
-    return (
-      <DynamicTable
-        columns={columnsData}
-        data={records}
-        fetchMore={fetchMore}
-        loading={loading}
-      />
-    );
-  }
-}
+  const handleRowDoubleClick = useCallback<
+    EnhancedTableProps['onRowDoubleClick']
+  >(
+    row => {
+      navigate({ pathname: `${row.original.id}` });
+    },
+    [navigate],
+  );
 
-export default function DynamicTableScreen() {
-  const { id = '143', recordId = '' } = useParams();
-  const { windowData, columnsData, loading, error } = useWindow(id);
+  return (
+    <Table
+      data={mockOrganizations}
+      isTreeStructure={false}
+      onRowClick={handleRowClick}
+      onRowDoubleClick={handleRowDoubleClick}
+    />
+  );
+};
 
-  if (loading) {
-    return <Spinner />;
-  } else if (error || !windowData || !columnsData) {
-    return <div>{error?.message}</div>;
-  } else if (recordId) {
-    return <Outlet />;
-  } else {
-    return <Content columnsData={columnsData} windowData={windowData} />;
-  }
-}
+export default TableView;

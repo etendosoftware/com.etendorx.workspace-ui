@@ -21,9 +21,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
         </Typography>
       </Box>
     </Box>
-    <Box sx={sx.contentContainer}>
-      <ContentGrid widgets={widgets} />
-    </Box>
+    <ContentGrid widgets={widgets} />
   </Box>
 );
 
