@@ -6,10 +6,10 @@ import {
   useState,
 } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { API_LOGIN_URL } from '@workspaceui/etendohookbinder/src/api/constants';
 import { logger } from '../utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { Datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
+import { login as doLogin } from '@workspaceui/etendohookbinder/src/api/authentication';
 
 interface IUserContext {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -26,23 +26,13 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   const login = useCallback(async (username: string, password: string) => {
     try {
-      const result = await fetch(API_LOGIN_URL, {
-        method: 'POST',
-        body: JSON.stringify({
-          username,
-          password,
-        }),
-      });
-      const data = await result.json();
+      const token = await doLogin(username, password);
 
-      if (data.status === 'error') {
-        throw new Error(data.message);
-      } else {
-        localStorage.setItem('token', data.token);
-        Datasource.authorize(data.token);
-        Metadata.authorize(data.token);
-        settoken(data.token);
-      }
+      localStorage.setItem('token', token);
+      Datasource.authorize(token);
+      Metadata.authorize(token);
+
+      settoken(token);
     } catch (e) {
       logger.warn(e);
 
@@ -62,8 +52,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
       return response;
     };
 
-    const unregisterMetadataInterceptor = Metadata.client.registerInterceptor(interceptor);
-    const unregisterDatasourceInterceptor = Datasource.client.registerInterceptor(interceptor);
+    const unregisterMetadataInterceptor =
+      Metadata.client.registerInterceptor(interceptor);
+    const unregisterDatasourceInterceptor =
+      Datasource.client.registerInterceptor(interceptor);
 
     return () => {
       unregisterMetadataInterceptor();
