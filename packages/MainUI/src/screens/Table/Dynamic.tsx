@@ -1,8 +1,8 @@
 import DynamicTable from '@workspaceui/componentlibrary/src/components/DynamicTable';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { Outlet, useParams } from 'react-router-dom';
-import { useWindow } from '../../hooks/useWindow';
-import { useDatasource } from '../../hooks/useDatasource';
+import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
+import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import {
   Column,
   WindowMetadata,

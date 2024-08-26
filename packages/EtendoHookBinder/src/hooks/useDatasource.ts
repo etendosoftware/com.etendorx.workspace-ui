@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  DatasourceOptions,
-  WindowMetadata,
-} from '@workspaceui/etendohookbinder/src/api/types';
-import { Datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
+import { DatasourceOptions, WindowMetadata } from '../api/types';
+import { Datasource } from '../api/datasource';
 
 const mapById = (
   acum: { [x: string]: unknown },

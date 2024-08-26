@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
-import { useUserContext } from './useUserContext';
+import { Metadata } from '../api/metadata';
+import type { Menu } from '../api/types';
 
-export const useMenu = () => {
-  const { token } = useUserContext();
+export const useMenu = (token?: string | null) => {
   const [menu, setMenu] = useState<Menu[]>(Metadata.getCachedMenu());
 
   useEffect(() => {

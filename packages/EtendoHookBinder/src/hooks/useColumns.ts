@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { Field } from '@workspaceui/etendohookbinder/src/api/types';
+import { Metadata } from '../api/metadata';
+import { Field } from '../api/types';
 
 export function useColumns(tabId: string | undefined) {
   const [loading, setLoading] = useState(true);

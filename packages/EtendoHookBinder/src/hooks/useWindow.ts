@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Etendo } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { UnauthorizedError } from '@workspaceui/etendohookbinder/src/api/client';
-import { useMetadataContext } from './useMetadataContext';
-import { parseColumns } from '../helpers/metadata';
-import { useNavigate } from 'react-router-dom';
+import type { Etendo } from '../api/metadata';
+import { useMetadataContext } from '../hooks/useMetadataContext';
+import { parseColumns } from '../../../MainUI/src/helpers/metadata';
 
 export function useWindow(windowId: string) {
-  const navigate = useNavigate();
   const { getWindow, getColumns } = useMetadataContext();
   const [windowData, setWindowData] = useState<Etendo.WindowMetadata>();
   const [columnsData, setColumnsData] = useState<Etendo.Column[]>([]);
@@ -28,10 +25,6 @@ export function useWindow(windowId: string) {
         );
         setLoaded(true);
       } catch (e) {
-        if (e instanceof UnauthorizedError) {
-          navigate({ pathname: '/login' });
-        }
-
         setError(e as Error);
       } finally {
         setLoading(false);
@@ -39,7 +32,7 @@ export function useWindow(windowId: string) {
     };
 
     return _load();
-  }, [getColumns, getWindow, navigate, windowId]);
+  }, [getColumns, getWindow, windowId]);
 
   useEffect(() => {
     load();
