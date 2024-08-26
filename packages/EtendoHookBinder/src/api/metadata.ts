@@ -117,6 +117,8 @@ export class Metadata {
         writable: false,
       });
     }
+
+    return true;
   };
 
   // TODO: Remove empty object and update with the right value
