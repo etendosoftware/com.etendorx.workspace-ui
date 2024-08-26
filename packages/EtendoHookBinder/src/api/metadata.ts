@@ -1,7 +1,4 @@
-import {
-  API_DEFAULT_CACHE_DURATION,
-  API_METADATA_URL,
-} from './constants';
+import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL } from './constants';
 import { Client } from './client';
 import { onChange } from './helpers';
 import { CacheStore } from './cache';
