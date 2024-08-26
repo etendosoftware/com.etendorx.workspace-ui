@@ -1,9 +1,12 @@
 import { AUTH_HEADER_NAME } from './constants';
+
 interface ClientOptions extends Omit<RequestInit, 'body'> {
   headers?: Record<string, string>;
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   body?: RequestInit['body'] | Record<string, unknown>;
 }
+
+type Interceptor = (response: Response) => Promise<Response> | Response;
 
 export class UnauthorizedError extends Error {
   public response: Response;
@@ -17,12 +20,14 @@ export class UnauthorizedError extends Error {
 export class Client {
   private baseHeaders: HeadersInit;
   private baseUrl: string;
+  private interceptor: Interceptor | null;
   private readonly JSON_CONTENT_TYPE = 'application/json'!;
   private readonly FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded'!;
 
   constructor(url: string) {
     this.baseUrl = url.endsWith('/') ? url : url + '/';
     this.baseHeaders = {};
+    this.interceptor = null;
   }
 
   private cleanUrl(url: string) {
@@ -58,27 +63,13 @@ export class Client {
     return this;
   }
 
-  private async isUnauthorized(response: Response) {
-    if (response.status === 401) {
-      return true;
-    }
-
-    if (response.headers.get('Content-Type')?.match('application/javascript')) {
-      const _response = await response.clone().text();
-
-      return _response.startsWith('window.location.href');
-    }
-
-    return false;
-  }
-
   private async request(url: string, options: ClientOptions = {}) {
     try {
       if (options.method !== 'GET') {
         this.setContentType(options);
       }
 
-      const response = await fetch(`${this.baseUrl}${this.cleanUrl(url)}`, {
+      let response = await fetch(`${this.baseUrl}${this.cleanUrl(url)}`, {
         ...options,
         body:
           options.body instanceof URLSearchParams ||
@@ -91,8 +82,8 @@ export class Client {
         },
       });
 
-      if (await this.isUnauthorized(response)) {
-        throw new UnauthorizedError('Unauthorized', response);
+      if (typeof this.interceptor === 'function') {
+        response = await this.interceptor(response);
       }
 
       const data = await (this.isJson(response)
@@ -104,7 +95,7 @@ export class Client {
         data,
       };
     } catch (error) {
-      console.error('API client request failed', {
+      console.log('API client request failed', {
         url,
         options,
         error: (error as Error).message,
@@ -112,6 +103,12 @@ export class Client {
 
       throw error;
     }
+  }
+
+  public registerInterceptor(interceptor: Interceptor) {
+    this.interceptor = interceptor;
+
+    return () => this.interceptor = null;
   }
 
   public async get(url: string, options: ClientOptions = {}) {

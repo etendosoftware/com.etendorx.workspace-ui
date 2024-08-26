@@ -63,7 +63,8 @@ const Table: React.FC<EnhancedTableProps> = ({
       sx: tableStyles.tableBodyCell,
     },
     columnResizeMode: 'onChange',
-  } as MRT_TableOptions<TableDataType>);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as MRT_TableOptions<any>);
 
   return <MaterialReactTable table={table} />;
 };

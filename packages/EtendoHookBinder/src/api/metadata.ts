@@ -1,7 +1,6 @@
 import {
   API_DEFAULT_CACHE_DURATION,
   API_METADATA_URL,
-  TOKEN,
 } from './constants';
 import { Client } from './client';
 import { onChange } from './helpers';
@@ -14,8 +13,12 @@ const hasProperty = (object: object, property: string) =>
   Object.prototype.hasOwnProperty.call(object, property);
 
 export class Metadata {
-  private static client = new Client(API_METADATA_URL).setAuthHeader(TOKEN);
+  public static client = new Client(API_METADATA_URL);
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
+
+  public static authorize(token: string) {
+    this.client.setAuthHeader(token, 'Bearer');
+  }
 
   public static isc = {
     classes: {} as Etendo.WindowMetadataMap,
@@ -114,8 +117,6 @@ export class Metadata {
         writable: false,
       });
     }
-
-    return Metadata.getSession();
   };
 
   // TODO: Remove empty object and update with the right value
@@ -182,7 +183,7 @@ export class Metadata {
   public static async getMenu() {
     const cached = Metadata.cache.get('OBMenu');
 
-    if (cached) {
+    if (cached && cached.length) {
       Metadata.OB.Application.menu = cached;
 
       return cached;

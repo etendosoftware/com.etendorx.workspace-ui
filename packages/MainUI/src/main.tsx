@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import App from './App';
 import Home from './screens/Home';
 import Table from './screens/Table';
+import DynamicTable from './screens/Table/Dynamic';
 import Login from './screens/Login';
 import Form from './screens/Form';
 import Layout from './components/layout';
@@ -33,7 +34,7 @@ const router = createBrowserRouter([
           },
           {
             path: 'window/:id',
-            Component: Table,
+            Component: DynamicTable,
             children: [
               {
                 path: ':recordId',
