@@ -89,7 +89,7 @@ export class Metadata {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }) as any;
 
-  public static initialize = async () => {
+  public static initialize = () => {
     if (!hasProperty(window, 'OB')) {
       Object.defineProperty(window, 'OB', {
         value: Metadata.OB,
