@@ -94,10 +94,21 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(
               onMouseEnter={() => handleMouseEnter(tab.id)}
               onMouseLeave={handleMouseLeave}
               sx={sx.tab}
+              onClick={event => {
+                event.preventDefault();
+                handleChange(event, tab.id);
+              }}
             />
           );
         }),
-      [tabs, selectedTab, hoveredTab, handleMouseEnter, handleMouseLeave],
+      [
+        tabs,
+        selectedTab,
+        hoveredTab,
+        handleMouseLeave,
+        handleMouseEnter,
+        handleChange,
+      ],
     );
 
     return (

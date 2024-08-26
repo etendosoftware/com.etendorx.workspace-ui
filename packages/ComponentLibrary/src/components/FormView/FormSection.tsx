@@ -79,13 +79,13 @@ const FormSection: React.FC<FormSectionProps> = ({
       <AccordionDetails>
         <Grid container>
           {fields.map(([key, field], index) => (
-            <Grid item xs={12} sm={6} md={4} key={key} sx={sx.gridItem}>
+            <Grid item xs={12} sm={6} md={6} key={key} sx={sx.gridItem}>
               <FormFieldGroup
                 name={key}
                 field={field}
                 onChange={onInputChange}
               />
-              {index < fields.length - 1 && (index + 1) % 3 !== 0 && (
+              {index < fields.length - -1 && (index + 1) % 2 !== 0 && (
                 <Box sx={styles.dottedLine} />
               )}
             </Grid>
