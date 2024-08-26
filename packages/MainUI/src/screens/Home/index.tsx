@@ -8,21 +8,19 @@ import {
 } from '@workspaceui/componentlibrary/src/components/Table/tableConstants';
 import { widgets } from '@workspaceui/storybook/stories/Components/Table/mockWidget';
 import SideIcon from '@workspaceui/componentlibrary/src/assets/icons/codesandbox.svg';
-import { tableStyles } from '@workspaceui/componentlibrary/src/components/Table/styles';
 import { createFormViewToolbarConfig } from '@workspaceui/storybook/stories/Components/Table/toolbarFormviewMock';
 import ResizableRecordContainer from '@workspaceui/componentlibrary/src/components/Table/TabNavigation';
 import BackgroundGradientUrl from '@workspaceui/componentlibrary/src/assets/images/sidebar-bg.svg?url';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import Sidebar from '@workspaceui/componentlibrary/src/components/Table/Sidebar';
 import { Paper } from '@mui/material';
-import { useRecordContext } from '../../contexts/record';
+import { useRecordContext } from '../../hooks/useRecordContext';
 import styles from './styles';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [setRecordContainerHeight] = useState(0);
   const { selectedRecord, getFormattedRecord } = useRecordContext();
   const formattedRecord = getFormattedRecord(selectedRecord);
   const { id = '' } = useParams();
@@ -30,7 +28,7 @@ const Home: React.FC = () => {
   const paperStyles = useMemo(
     () =>
       ({
-        ...tableStyles.sidebarPaper,
+        ...styles.sidebarPaper,
         backgroundImage: `url(${BackgroundGradientUrl})`,
         transform: isSidebarOpen ? 'translateX(0)' : 'translateX(100%)',
         visibility: isSidebarOpen ? 'visible' : 'hidden',
@@ -41,7 +39,7 @@ const Home: React.FC = () => {
   const tablePaper = useMemo(
     () =>
       ({
-        ...tableStyles.tablePaper,
+        ...styles.tablePaper,
         width: isSidebarOpen ? 'calc(68% - 0.5rem)' : '100%',
       }) as const,
     [isSidebarOpen],
@@ -118,16 +116,15 @@ const Home: React.FC = () => {
             widgets={widgets}
           />
         </Paper>
+        <ResizableRecordContainer
+          isOpen={isDropdownOpen}
+          onClose={toggleDropdown}
+          selectedRecord={{
+            identifier: formattedRecord?.identifier ?? '',
+            type: formattedRecord?.type ?? '',
+          }}
+        />
       </Box>
-      <ResizableRecordContainer
-        isOpen={isDropdownOpen}
-        onClose={toggleDropdown}
-        selectedRecord={{
-          identifier: formattedRecord?.identifier,
-          type: formattedRecord?.type,
-        }}
-        onHeightChange={setRecordContainerHeight}
-      />
     </Box>
   );
 };

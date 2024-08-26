@@ -4,7 +4,6 @@ import {
   TextField as TextFieldMUI,
   Box as BoxMUI,
 } from './MUI';
-import TableCustom from './Table';
 import ModalCustom from './Modal';
 import TextInputMUI from './Input/TextInput/TextInputAutocomplete';
 import SearchInputWithVoiceMUI from './Input/TextInput/TextInputAutocomplete/SearchInputWithVoice';
@@ -23,7 +22,6 @@ import SecondaryTabsMUI from './SecondaryTabs';
 import NotificationItemStates from './NotificationItemAllStates';
 import DrawerMUI from './Drawer';
 import IButton from './IconButton';
-import Fview from './FormView';
 
 export * from '../theme';
 
@@ -34,7 +32,6 @@ const Grid = GridMUI;
 const Box = BoxMUI;
 const TextField = TextFieldMUI;
 const Modal = ModalCustom;
-const Table = TableCustom;
 const TextInput = TextInputMUI;
 const TextInputBase = TextInputBaseMUI;
 const InputPassword = InputPasswordMUI;
@@ -52,14 +49,12 @@ const SecondaryTabs = SecondaryTabsMUI;
 const NotificationStates = NotificationItemStates;
 const Drawer = DrawerMUI;
 const IconButton = IButton;
-const FormView = Fview;
 
 export {
   Button,
   Grid,
   Box,
   TextField,
-  Table,
   Modal,
   TextInput,
   TextInputBase,
@@ -78,5 +73,4 @@ export {
   NotificationStates,
   Drawer,
   IconButton,
-  FormView,
 };

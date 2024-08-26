@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material';
 import { TabContentProps } from './types';
-import { recordContentStyles as styles } from '../styles';
+import { styles } from './styles';
 import ChevronUp from '../../../assets/icons/chevron-up.svg';
 import ChevronDown from '../../../assets/icons/chevron-down.svg';
 import ChevronUpRight from '../../../assets/icons/chevron-right.svg';

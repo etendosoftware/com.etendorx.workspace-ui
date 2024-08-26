@@ -7,9 +7,23 @@ export const defaultFill = theme.palette.dynamicColor.main;
 
 export const styles: { [key: string]: CSSProperties } = {
   dottedLine: {
-    borderRight: `2px dotted ${theme.palette.divider}`,
+    backgroundImage: `radial-gradient(circle, ${theme.palette.divider} 1px, transparent 1px)`,
+    backgroundSize: '8px 8px',
+    backgroundPosition: 'right',
+    backgroundRepeat: 'repeat-y',
+    width: '8px',
     height: '100%',
     margin: '0 1rem',
+  },
+  dottedSpacing: {
+    flex: 1,
+    backgroundImage: `radial-gradient(circle, ${theme.palette.text.secondary} 1px, transparent 1px)`,
+    backgroundSize: '8px 4px',
+    backgroundPosition: 'bottom',
+    backgroundRepeat: 'repeat-x',
+    height: '4px',
+    marginLeft: theme.spacing(1.5),
+    marginRight: theme.spacing(2),
   },
   labelWrapper: {
     display: 'flex',
@@ -21,12 +35,6 @@ export const styles: { [key: string]: CSSProperties } = {
     fontSize: '0.875rem',
     whiteSpace: 'nowrap',
     color: theme.palette.baselineColor.neutral[80],
-  },
-  dottedSpacing: {
-    flex: 1,
-    borderBottom: `1px dotted ${theme.palette.text.secondary}`,
-    marginLeft: theme.spacing(0.5),
-    marginRight: theme.spacing(1),
   },
   requiredAsterisk: {
     width: '0.75rem',

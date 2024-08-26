@@ -1,4 +1,10 @@
-import React, { useCallback, useMemo, useState, useRef } from 'react';
+import React, {
+  useCallback,
+  useMemo,
+  useState,
+  useRef,
+  useEffect,
+} from 'react';
 import {
   Grid,
   Accordion,
@@ -30,7 +36,9 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
   const [formData, setFormData] = useState<Organization>(data);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const [selectedTab, setSelectedTab] = useState<string>('');
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const tabs: TabItem[] = useMemo(() => {
     return Object.values(formData)
@@ -42,23 +50,45 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
         fill: section.fill,
         hoverFill: section.hoverFill,
         showInTab: section.showInTab,
-        href: `#section-${section.id}`,
       }));
   }, [formData]);
 
   const handleTabChange = useCallback((newTabId: string) => {
+    setSelectedTab(newTabId);
     setExpandedSections(prev => {
       if (!prev.includes(newTabId)) {
         return [...prev, newTabId];
       }
       return prev;
     });
-
-    const sectionElement = sectionRefs.current[newTabId];
-    if (sectionElement) {
-      sectionElement.scrollIntoView({ behavior: 'smooth' });
-    }
   }, []);
+
+  useEffect(() => {
+    setExpandedSections(tabs.map(tab => tab.id));
+    setSelectedTab(tabs[0]?.id || '');
+  }, [tabs]);
+
+  useEffect(() => {
+    if (selectedTab && containerRef.current) {
+      const sectionElement = sectionRefs.current[selectedTab];
+      if (sectionElement) {
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const sectionRect = sectionElement.getBoundingClientRect();
+
+        const sectionBottom =
+          sectionRect.bottom -
+          containerRect.top +
+          containerRef.current.scrollTop;
+
+        const scrollAmount = sectionBottom - containerRect.height + 50;
+
+        containerRef.current.scrollTo({
+          top: Math.max(0, scrollAmount),
+          behavior: 'smooth',
+        });
+      }
+    }
+  }, [selectedTab, expandedSections]);
 
   const handleAccordionChange = useCallback(
     (sectionId: string, isExpanded: boolean) => {
@@ -68,6 +98,10 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
         }
         return prev.filter(id => id !== sectionId);
       });
+
+      if (isExpanded) {
+        setSelectedTab(sectionId);
+      }
     },
     [],
   );
@@ -141,7 +175,7 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
                   field={field}
                   onChange={handleInputChange}
                 />
-                {index + 1 !== 0 && index !== fields.length && (
+                {index < fields.length - -1 && (index + 1) % 3 !== 0 && (
                   <Box sx={styles.dottedLine} />
                 )}
               </Grid>
@@ -173,7 +207,7 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
           icon={defaultIcon}
         />
       </Box>
-      <Box flexGrow={1} overflow="auto">
+      <Box flexGrow={1} overflow="auto" ref={containerRef}>
         <form onSubmit={handleSubmit}>
           <Grid container>
             {Object.entries(groupedFields).map(([sectionName, fields]) => {

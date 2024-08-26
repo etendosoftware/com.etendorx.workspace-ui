@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { Table } from '@workspaceui/componentlibrary/src/components';
+import Table from '@workspaceui/componentlibrary/src/components/Table';
 import { mockOrganizations } from '@workspaceui/storybook/mocks';
 import { useNavigate } from 'react-router-dom';
 import { useRecordContext } from '../../hooks/useRecordContext.ts';

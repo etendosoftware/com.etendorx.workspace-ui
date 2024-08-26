@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import FormView from '@workspaceui/componentlibrary/src/components/FormView';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FormView } from '@workspaceui/componentlibrary/src/components';
 import { Organization } from '../../../../storybook/src/stories/Components/Table/types';
 import { mockOrganizations } from '@workspaceui/storybook/stories/Components/Table/mock';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
