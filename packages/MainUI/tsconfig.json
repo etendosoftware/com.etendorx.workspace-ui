@@ -29,6 +29,6 @@
       "@workspaceui/componentlibrary": ["../ComponentLibrary/src"]
     }
   },
-  "include": ["src", "svg.d.ts", "../EtendoHookBinder/src/contexts/metadata.tsx", "../EtendoHookBinder/src/hooks/useMenu.ts", "../EtendoHookBinder/src/hooks/useMetadataContext.ts", "../EtendoHookBinder/src/hooks/useWindow.ts"],
+  "include": ["src", "svg.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

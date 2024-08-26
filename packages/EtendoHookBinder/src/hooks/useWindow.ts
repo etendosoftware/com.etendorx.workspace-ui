@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Etendo } from '../api/metadata';
 import { useMetadataContext } from '../hooks/useMetadataContext';
-import { parseColumns } from '../../../MainUI/src/helpers/metadata';
+import { parseColumns } from '../helpers/metadata';
 
 export function useWindow(windowId: string) {
   const { getWindow, getColumns } = useMetadataContext();
