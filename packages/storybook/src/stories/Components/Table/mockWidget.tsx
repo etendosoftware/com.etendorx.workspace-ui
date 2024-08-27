@@ -1,6 +1,7 @@
 import { Box } from '@mui/material';
 import { Widget } from './types';
 import SideIcon from '../../../../../ComponentLibrary/src/assets/icons/codesandbox.svg';
+import TabWidget from '../../../../../ComponentLibrary/src/components/Widgets/TabWidget';
 
 const colors = {
   backgrounds: [
@@ -51,7 +52,15 @@ const getContrastColor = (bgColor: string) => {
 export const widgets: Widget[] = [
   {
     id: '1',
-    children: <Box>💸 1,905,157.20</Box>,
+    children: (
+      <TabWidget
+        onSave={() => {}}
+        onCancel={() => {}}
+        editButtonLabel={'Edit Form'}
+        cancelButtonLabel={'Cancel'}
+        saveButtonLabel={'Save'}
+      />
+    ),
     icon: <SideIcon fill={colors.text[0]} />,
     iconButtonAction: () => {},
     tooltip: 'More information',

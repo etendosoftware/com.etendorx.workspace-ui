@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate, useParams, Outlet } from 'react-router-dom';
 import { Box, theme } from '@workspaceui/componentlibrary/src/components';
 import { createToolbarConfig } from '@workspaceui/storybook/stories/Components/Table/toolbarMock';
@@ -24,6 +24,7 @@ const Home: React.FC = () => {
   const { selectedRecord, getFormattedRecord } = useRecordContext();
   const formattedRecord = getFormattedRecord(selectedRecord);
   const { id = '' } = useParams();
+  const [updatedWidgets, setUpdatedWidgets] = useState(widgets);
 
   const paperStyles = useMemo(
     () =>
@@ -89,16 +90,34 @@ const Home: React.FC = () => {
     ],
   );
 
+  useEffect(() => {
+    if (selectedRecord) {
+      const newWidgets = widgets.map(widget => {
+        if (widget.id === '1') {
+          return {
+            ...widget,
+            children: React.cloneElement(
+              widget.children as React.ReactElement,
+              {
+                selectedRecord,
+                onSave: handleSave,
+                onCancel: handleCancel,
+              },
+            ),
+          };
+        }
+        return widget;
+      });
+      setUpdatedWidgets(newWidgets);
+    }
+  }, [handleCancel, handleSave, selectedRecord]);
+
   return (
-    <Box sx={styles.container}>
+    <Box sx={styles.mainContainer}>
       <Box flexShrink={0}>
         <TopToolbar {...toolbarConfig} isItemSelected={!!selectedRecord} />
       </Box>
-      <Box
-        flexGrow={1}
-        display="flex"
-        overflow="hidden"
-        sx={{ marginTop: '0.25rem' }}>
+      <Box sx={styles.container}>
         <Box sx={tablePaper}>
           <Outlet />
         </Box>
@@ -113,7 +132,7 @@ const Home: React.FC = () => {
               identifier: formattedRecord?.identifier ?? LABELS.NO_IDENTIFIER,
               title: CONTENT.CURRENT_TITLE ?? LABELS.NO_TITLE,
             }}
-            widgets={widgets}
+            widgets={updatedWidgets}
           />
         </Paper>
         <ResizableRecordContainer

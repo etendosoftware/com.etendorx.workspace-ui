@@ -9,29 +9,12 @@ import {
 } from '@mui/material';
 import ChevronDown from '../../assets/icons/chevron-down.svg';
 import { theme } from '..';
-import {
-  FieldDefinition,
-  Section,
-} from '../../../../storybook/src/stories/Components/Table/types';
+
 import { defaultFill, styles, sx } from './styles';
 import IconButton from '../IconButton';
 import InfoIcon from '@mui/icons-material/Info';
 import FormFieldGroup from './FormField';
-
-interface FormSectionProps {
-  sectionName: string;
-  sectionData: Section;
-  fields: [string, FieldDefinition][];
-  isExpanded: boolean;
-  onAccordionChange: (sectionId: string, isExpanded: boolean) => void;
-  onHover: (sectionName: string | null) => void;
-  hoveredSection: string | null;
-  onInputChange: (
-    name: string,
-    value: string | number | boolean | string[] | Date,
-  ) => void;
-  sectionRef: React.Ref<HTMLDivElement>;
-}
+import { FormSectionProps } from './types';
 
 const FormSection: React.FC<FormSectionProps> = ({
   sectionName,
@@ -43,6 +26,9 @@ const FormSection: React.FC<FormSectionProps> = ({
   hoveredSection,
   onInputChange,
   sectionRef,
+  gridItemProps = { xs: 12, sm: 6, md: 6 },
+  dottedLineInterval = 2,
+  readOnly = false,
 }) => {
   return (
     <Accordion
@@ -79,15 +65,17 @@ const FormSection: React.FC<FormSectionProps> = ({
       <AccordionDetails>
         <Grid container>
           {fields.map(([key, field], index) => (
-            <Grid item xs={12} sm={6} md={6} key={key} sx={sx.gridItem}>
+            <Grid item {...gridItemProps} key={key} sx={sx.gridItem}>
               <FormFieldGroup
                 name={key}
                 field={field}
                 onChange={onInputChange}
+                readOnly={readOnly}
               />
-              {index < fields.length - -1 && (index + 1) % 2 !== 0 && (
-                <Box sx={styles.dottedLine} />
-              )}
+              {index < fields.length - -1 &&
+                (index + 1) % dottedLineInterval !== 0 && (
+                  <Box sx={styles.dottedLine} />
+                )}
             </Grid>
           ))}
         </Grid>

@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import {
   TextField,
   Box,
@@ -10,13 +9,10 @@ import {
 import { SearchOutlined } from '@mui/icons-material';
 import { Select, TextInputBase } from '..';
 import { topFilms } from '../../../../storybook/src/stories/Components/Input/Select/mock';
-import { FieldDefinition } from '../../../../storybook/src/stories/Components/Table/types';
 import { styles, sx } from './styles';
+import { FieldLabelProps, FormFieldGroupProps, FormFieldProps } from './types';
 
-const FieldLabel: React.FC<{ label: string; required?: boolean }> = ({
-  label,
-  required,
-}) => (
+const FieldLabel: React.FC<FieldLabelProps> = ({ label, required }) => (
   <Box sx={styles.labelWrapper}>
     <span style={styles.labelText}>{label}</span>
     {required ?? <span style={styles.requiredAsterisk}>*</span>}
@@ -24,18 +20,12 @@ const FieldLabel: React.FC<{ label: string; required?: boolean }> = ({
   </Box>
 );
 
-const FormField: React.FC<{
-  name: string;
-  field: FieldDefinition;
-  onChange: (name: string, value: FieldDefinition['value']) => void;
-}> = ({ name, field, onChange }) => {
+const FormField: React.FC<FormFieldProps> = ({ name, field, onChange }) => {
   const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
     '&.Mui-checked': {
       color: theme.palette.dynamicColor.main,
     },
   }));
-
-  const [value, setValue] = useState(field.label);
 
   const renderField = () => {
     switch (field.type) {
@@ -77,7 +67,7 @@ const FormField: React.FC<{
         return (
           <Select
             iconLeft={<SearchOutlined sx={{ width: 24, height: 24 }} />}
-            title={field.label}
+            title={field.value as string}
             options={topFilms}
             getOptionLabel={option => option.title}
           />
@@ -86,9 +76,8 @@ const FormField: React.FC<{
         return (
           <TextInputBase
             onRightIconClick={() => alert('Icon clicked')}
-            value={value}
-            setValue={setValue}
-            placeholder={field.label}
+            value={field.value as string}
+            placeholder={field.value as string}
           />
         );
     }
@@ -104,11 +93,11 @@ const FormField: React.FC<{
   );
 };
 
-const FormFieldGroup: React.FC<{
-  name: string;
-  field: FieldDefinition;
-  onChange: (name: string, value: FieldDefinition['value']) => void;
-}> = ({ name, field, onChange }) => {
+const FormFieldGroup: React.FC<FormFieldGroupProps> = ({
+  name,
+  field,
+  onChange,
+}) => {
   return <FormField name={name} field={field} onChange={onChange} />;
 };
 

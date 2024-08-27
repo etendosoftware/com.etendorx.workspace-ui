@@ -1,5 +1,5 @@
 import React from 'react';
-import { Organization } from '@workspaceui/storybook/stories/Components/Table/types';
+import { Organization } from '../../../storybook/src/stories/Components/Table/types';
 
 interface RecordContextType {
   selectedRecord: Organization | null;

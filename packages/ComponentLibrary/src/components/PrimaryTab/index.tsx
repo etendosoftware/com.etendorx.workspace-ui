@@ -118,6 +118,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(
             value={selectedTab}
             onChange={handleChange}
             scrollButtons="auto"
+            variant="scrollable"
             TabIndicatorProps={tabIndicatorProps}
             aria-label="primary tabs"
             sx={sx.tabs}>
