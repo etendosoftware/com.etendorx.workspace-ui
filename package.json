@@ -6,7 +6,7 @@
   "scripts": {
     "build:all": "pnpm --filter @workspaceui/componentlibrary build && pnpm --filter @workspaceui/storybook build && pnpm --filter @workspaceui/mainui build",
     "clean": "pnpm -r exec -- rm -rf dist node_modules && rm -rf node_modules",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "pnpm --filter @workspaceui/etendohookbinder test",
     "build": "pnpm --filter @workspaceui/mainui build",
     "start": "./gradlew bootRun",
     "dev": "pnpm --filter @workspaceui/mainui dev",

@@ -1,7 +1,4 @@
-import {
-  API_DEFAULT_CACHE_DURATION,
-  API_METADATA_URL,
-} from './constants';
+import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL } from './constants';
 import { Client } from './client';
 import { onChange } from './helpers';
 import { CacheStore } from './cache';
@@ -89,7 +86,7 @@ export class Metadata {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }) as any;
 
-  public static initialize = async () => {
+  public static initialize = () => {
     if (!hasProperty(window, 'OB')) {
       Object.defineProperty(window, 'OB', {
         value: Metadata.OB,
@@ -117,6 +114,8 @@ export class Metadata {
         writable: false,
       });
     }
+
+    return true;
   };
 
   // TODO: Remove empty object and update with the right value

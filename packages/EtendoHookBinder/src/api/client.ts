@@ -95,7 +95,7 @@ export class Client {
         data,
       };
     } catch (error) {
-      console.log('API client request failed', {
+      console.warn('API client request failed', {
         url,
         options,
         error: (error as Error).message,
@@ -108,7 +108,7 @@ export class Client {
   public registerInterceptor(interceptor: Interceptor) {
     this.interceptor = interceptor;
 
-    return () => this.interceptor = null;
+    return () => (this.interceptor = null);
   }
 
   public async get(url: string, options: ClientOptions = {}) {
