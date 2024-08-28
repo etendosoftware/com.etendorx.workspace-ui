@@ -6,4 +6,5 @@ export interface TabWidgetProps {
   editButtonLabel: string;
   cancelButtonLabel: string;
   saveButtonLabel: string;
+  noRecordText: string;
 }

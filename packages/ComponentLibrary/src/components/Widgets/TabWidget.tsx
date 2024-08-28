@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Box, Button } from '@mui/material';
 import FormView from '../FormView';
-import Spinner from '../Spinner';
 import { theme } from '../../theme';
 import PencilIcon from '../../assets/icons/edit-2.svg';
 import SaveIcon from '../../assets/icons/save.svg';
@@ -15,6 +14,7 @@ const TabWidget: React.FC<TabWidgetProps> = ({
   editButtonLabel = '',
   cancelButtonLabel = '',
   saveButtonLabel = '',
+  noRecordText = '',
 }) => {
   const { selectedRecord, setSelectedRecord } = useRecordContext();
   const [isEditing, setIsEditing] = useState(false);
@@ -64,7 +64,7 @@ const TabWidget: React.FC<TabWidgetProps> = ({
   }, [selectedRecord, handleSave, handleCancel, isEditing, handleFormChange]);
 
   if (!selectedRecord) {
-    return <Spinner />;
+    return <h3>{noRecordText}</h3>;
   }
 
   return (

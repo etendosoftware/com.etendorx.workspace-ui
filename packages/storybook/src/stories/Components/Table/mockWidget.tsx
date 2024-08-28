@@ -59,6 +59,7 @@ export const widgets: Widget[] = [
         editButtonLabel={'Edit Form'}
         cancelButtonLabel={'Cancel'}
         saveButtonLabel={'Save'}
+        noRecordText={'No Row Selected'}
       />
     ),
     icon: <SideIcon fill={colors.text[0]} />,
