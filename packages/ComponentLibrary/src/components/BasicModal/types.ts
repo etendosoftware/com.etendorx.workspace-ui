@@ -8,7 +8,7 @@ export interface ModalIProps {
   children: ReactNode;
   customTrigger?: ReactNode;
   onClose?: () => void;
-  tittleHeader: string;
-  descriptionText: string;
-  HeaderIcon: React.ElementType;
+  tittleHeader?: string | undefined;
+  descriptionText?: string | undefined;
+  headerIcon: React.ReactElement;
 }

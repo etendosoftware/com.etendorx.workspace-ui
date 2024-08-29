@@ -3,12 +3,11 @@ import { Typography, Button, Box } from '@mui/material';
 import ModalMUI from '@mui/material/Modal';
 import IconButton from '../IconButton';
 import { Container, Position } from '../enums';
-import { calculateTransform } from '../../utils/transformUtil';
 import { ModalIProps } from './types';
-import { styles, sx } from './styles';
+import { IconSize, styles, sx } from './styles';
 import { theme } from '../../theme';
 import CloseIcon from '../../assets/icons/x.svg';
-import { calculateTop, calculateLeft } from '../../helpers/caltulatePositions';
+import { calculateModalStyles } from '../../helpers/updateModal';
 
 const Modal: React.FC<ModalIProps> = ({
   height = Container.Auto,
@@ -18,9 +17,9 @@ const Modal: React.FC<ModalIProps> = ({
   children,
   customTrigger,
   onClose,
-  tittleHeader = '',
-  descriptionText = '',
-  HeaderIcon,
+  tittleHeader,
+  descriptionText,
+  headerIcon,
 }) => {
   const [open, setOpen] = useState<boolean>(false);
   const handleOpen = () => setOpen(true);
@@ -31,6 +30,8 @@ const Modal: React.FC<ModalIProps> = ({
     }
     setOpen(false);
   };
+
+  const modalStyles = calculateModalStyles({ height, width, posX, posY });
 
   return (
     <>
@@ -47,17 +48,17 @@ const Modal: React.FC<ModalIProps> = ({
         <Box
           sx={{
             ...styles.boxStyles,
-            height: `${height}px`,
-            width: `${width}px`,
-            top: calculateTop(posY),
-            left: calculateLeft(posX),
-            transform: calculateTransform(posX, posY),
+            ...modalStyles,
           }}>
           <Box sx={sx.modalContainer}>
             <Box sx={sx.headerContainer}>
               <Box sx={sx.titleContainer}>
                 <Box sx={sx.closeRecordButton}>
-                  <HeaderIcon fill={theme.palette.baselineColor.etendoPrimary.main} width={20} height={20} />
+                  {React.cloneElement(headerIcon, {
+                    fill: theme.palette.baselineColor.etendoPrimary.main,
+                    width: IconSize,
+                    height: IconSize,
+                  })}
                 </Box>
                 <Typography sx={sx.registerText}>{tittleHeader}</Typography>
               </Box>
@@ -67,8 +68,8 @@ const Modal: React.FC<ModalIProps> = ({
               aria-label="close"
               size="small"
               hoverFill={theme.palette.baselineColor.neutral[80]}
-              width={20}
-              height={20}
+              width={IconSize}
+              height={IconSize}
               onClick={handleClose}
               sx={sx.closeButton}>
               <CloseIcon />

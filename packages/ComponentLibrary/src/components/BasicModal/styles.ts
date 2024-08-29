@@ -2,6 +2,8 @@ import { CSSProperties } from 'react';
 import { theme } from '../../theme';
 import { SxProps, Theme } from '@mui/material';
 
+export const IconSize = 20;
+
 export const styles: { [key: string]: CSSProperties } = {
   boxStyles: {
     position: 'absolute',

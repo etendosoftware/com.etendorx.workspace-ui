@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import { SidebarContentProps } from '../../../../../storybook/src/stories/Components/Table/types';
 import ContentGrid from './WidgetContent';
-import { sx } from '../styles';
+import { cancelLabel, confirmLabel, registerText, sx } from '../styles';
 import RegisterModal from '../../RegisterModal';
 
 export const SidebarContent: React.FC<SidebarContentProps> = ({
@@ -24,9 +24,9 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
     </Box>
     <Box ml={2.5}>
       <RegisterModal
-        cancelButtonLabel={'Cancel'}
-        saveButtonLabel={'Confirm'}
-        registerText={'Register'}
+        cancelButtonLabel={cancelLabel}
+        saveButtonLabel={confirmLabel}
+        registerText={registerText}
       />
     </Box>
     <ContentGrid widgets={widgets} />

@@ -10,9 +10,9 @@ import { processMock } from '../../../../storybook/src/stories/Components/Regist
 import RadioButtonItem from '../RadioButton';
 
 const RegisterModal: React.FC<RegisterModalProps> = ({
-  cancelButtonLabel = '',
-  saveButtonLabel = '',
-  registerText = '',
+  cancelButtonLabel,
+  saveButtonLabel,
+  registerText,
 }) => {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isHovering, setIsHovering] = useState(false);
@@ -20,8 +20,8 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
   const handleMouseEnter = () => setIsHovering(true);
   const handleMouseLeave = () => setIsHovering(false);
 
+  //TODO: Create a Cancel and Save Functions
   const handleCancel = () => {};
-
   const handleSave = () => {};
 
   const handleOptionSelect = (id: number) => {

@@ -1,5 +1,5 @@
 export interface RegisterModalProps {
-  cancelButtonLabel: string;
-  saveButtonLabel: string;
-  registerText: string;
+  cancelButtonLabel: string | undefined;
+  saveButtonLabel: string | undefined;
+  registerText: string | undefined;
 }
