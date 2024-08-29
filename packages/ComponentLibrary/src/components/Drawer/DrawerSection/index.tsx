@@ -6,8 +6,8 @@ import { theme } from '../../../theme';
 import { DrawerSectionProps } from '../types';
 import { MenuType } from '../../../../../EtendoHookBinder/src/api/types';
 
-const DrawerSection = ({ item, onClick }: DrawerSectionProps) => {
-  const isMainSection = item.type === MenuType.Folder;
+const ActualDrawerSection = ({ item, onClick }: DrawerSectionProps) => {
+  const isMainSection = item.type === MenuType.Summary;
   const isSelected = false;
   const [expanded, setExpanded] = useState(false);
 
@@ -55,6 +55,14 @@ const DrawerSection = ({ item, onClick }: DrawerSectionProps) => {
       ) : null}
     </Box>
   );
+};
+
+const DrawerSection = (props: DrawerSectionProps) => {
+  if (props.item) {
+    return <ActualDrawerSection {...props} />;
+  }
+
+  return null;
 };
 
 export default DrawerSection;

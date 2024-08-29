@@ -111,6 +111,25 @@ export interface WindowMetadata {
 
 export interface WindowMetadataMap extends Record<string, WindowMetadata> {}
 
+export interface MenuOption {
+  type: MenuType;
+  isVisible: boolean;
+  isProcess: boolean;
+  label: string;
+  sequenceNumber: number;
+  id: string;
+  name?: string;
+  form?: string;
+  view?: string;
+  identifier: string;
+  process?: string;
+  action?: string;
+  url?: string;
+  description?: string;
+  windowId: string;
+  children?: MenuOption[]
+}
+
 export interface Menu {
   id: string;
   label: string;
