@@ -8,6 +8,7 @@ import { ModalIProps } from './types';
 import { styles, sx } from './styles';
 import { theme } from '../../theme';
 import CloseIcon from '../../assets/icons/x.svg';
+import { calculateTop, calculateLeft } from '../../helpers/caltulatePositions';
 
 const Modal: React.FC<ModalIProps> = ({
   height = Container.Auto,
@@ -29,20 +30,6 @@ const Modal: React.FC<ModalIProps> = ({
       onClose();
     }
     setOpen(false);
-  };
-
-  const calculateTop = (posY: string | number): number | string => {
-    if (posY === Position.Center) return '50%';
-    if (posY === Position.Bottom) return '65%';
-    if (posY === Position.Top) return '5%';
-    return posY;
-  };
-
-  const calculateLeft = (posX: string | number): number | string => {
-    if (posX === Position.Center) return '50%';
-    if (posX === Position.Left) return '5%';
-    if (posX === Position.Right) return '75%';
-    return posX;
   };
 
   return (
