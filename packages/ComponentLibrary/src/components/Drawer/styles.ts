@@ -1,3 +1,4 @@
+import { css } from '@mui/material';
 import { theme } from '../../theme';
 
 const DRAWER_WIDTH = 260;
@@ -69,6 +70,7 @@ export const styles = {
     alignItems: 'center',
     gap: '0.5rem',
     width: '100%',
+    overflow: 'hidden',
     justifyContent: 'flex-start',
   },
   listItemContentText: {
@@ -92,10 +94,12 @@ export const styles = {
   listItemIconTypography: {
     fontSize: '1rem',
   },
-  listItemText: {
+  listItemText: css({
     fontWeight: 500,
     fontSize: '0.875rem',
-  },
+    textOverflow: 'clip',
+    overflow: 'hidden',
+  }),
   listItemTextSelected: {
     fontWeight: 600,
   },

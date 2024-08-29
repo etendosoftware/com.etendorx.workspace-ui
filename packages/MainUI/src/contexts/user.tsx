@@ -53,9 +53,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
     };
 
     const unregisterMetadataInterceptor =
-      Metadata.client.registerInterceptor(interceptor);
+      Metadata.registerInterceptor(interceptor);
     const unregisterDatasourceInterceptor =
-      Datasource.client.registerInterceptor(interceptor);
+      Datasource.registerInterceptor(interceptor);
 
     return () => {
       unregisterMetadataInterceptor();

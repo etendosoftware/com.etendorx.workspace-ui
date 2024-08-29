@@ -112,25 +112,24 @@ export interface WindowMetadata {
 export interface WindowMetadataMap extends Record<string, WindowMetadata> {}
 
 export interface Menu {
-  title: string;
+  id: string;
+  label: string;
   singleRecord: boolean;
   readOnly: boolean;
   editOrDeleteOnly: boolean;
   type: MenuType;
-  submenu: MenuSubmenu[];
+  children?: MenuSubmenu[];
 }
 
-export interface MenuSubmenu {
-  title: string;
+export interface MenuSubmenu extends Omit<Menu, 'submenu'> {
   singleRecord: boolean;
   readOnly: boolean;
   editOrDeleteOnly: boolean;
   type: MenuType;
-  submenu?: SubmenuSubmenu[];
+  children?: SubmenuSubmenu[];
   tabId?: string;
   windowId?: string;
   optionType?: OptionType;
-  id?: string;
   viewValue?: string;
 }
 
@@ -143,12 +142,12 @@ export enum OptionType {
 }
 
 export interface SubmenuSubmenu {
-  title: string;
+  label: string;
   type: MenuType;
   tabId?: string;
   windowId?: string;
   optionType?: OptionType;
-  id?: string;
+  id: string;
   viewValue?: string;
   singleRecord: boolean;
   readOnly: boolean;
@@ -172,7 +171,8 @@ export enum MenuType {
   ProcessManual = 'processManual',
   Report = 'report',
   View = 'view',
-  Window = 'window',
+  Window = 'Window',
+  Summary = 'Summary',
 }
 
 export enum UIPattern {

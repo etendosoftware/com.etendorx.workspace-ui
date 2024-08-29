@@ -6,7 +6,7 @@ interface ClientOptions extends Omit<RequestInit, 'body'> {
   body?: RequestInit['body'] | Record<string, unknown>;
 }
 
-type Interceptor = (response: Response) => Promise<Response> | Response;
+export type Interceptor = (response: Response) => Promise<Response> | Response;
 
 export class UnauthorizedError extends Error {
   public response: Response;
@@ -117,7 +117,7 @@ export class Client {
 
   public async post(
     url: string,
-    payload: ClientOptions['body'],
+    payload: ClientOptions['body'] = null,
     options: ClientOptions = {},
   ) {
     return this.request(url, { ...options, body: payload, method: 'POST' });

@@ -12,7 +12,7 @@ const DrawerSection = ({ item, onClick }: DrawerSectionProps) => {
   const [expanded, setExpanded] = useState(false);
 
   const handleClick = useCallback(() => {
-    if (item.type === MenuType.Folder) {
+    if (item.type === MenuType.Summary) {
       setExpanded(prev => !prev);
     } else if (item.type === MenuType.Window) {
       onClick(`/window/${item.windowId}`);
@@ -40,13 +40,12 @@ const DrawerSection = ({ item, onClick }: DrawerSectionProps) => {
         selected={isSelected}
         expanded={expanded}
       />
-
-      {item.type === MenuType.Folder && item.submenu ? (
-        <Collapse in={expanded} timeout="auto" unmountOnExit>
+      {item.children ? (
+        <Collapse in={expanded} timeout="auto">
           <Box sx={styles.contentBox}>
-            {item.submenu.map(subitem => (
+            {item.children.map(subitem => (
               <DrawerSection
-                key={subitem.title}
+                key={subitem.id}
                 item={subitem}
                 onClick={onClick}
               />

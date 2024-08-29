@@ -29,9 +29,9 @@ export default function MenuTitle({
         ...(selected ? styles.listItemButtonSelected : undefined),
       }}>
       <Box sx={styles.listItemInnerContentText}>
-        <Typography sx={styles.listItemText}>{item.title}</Typography>
+        <Typography sx={styles.listItemText}>{item.label}</Typography>
       </Box>
-      {item.type === MenuType.Folder ? (
+      {item.type === MenuType.Summary ? (
         expanded ? (
           <ExpandLess />
         ) : (
