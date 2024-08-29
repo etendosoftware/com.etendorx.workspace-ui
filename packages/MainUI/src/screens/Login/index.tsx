@@ -19,5 +19,5 @@ export default function LoginScreen() {
     [login],
   );
 
-  return <Login title="Etendo" onClick={handleLogin} error={error} />;
+  return <Login title="Etendo" onSubmit={handleLogin} error={error} />;
 }
