@@ -17,7 +17,7 @@ const DragModal: React.FC<DragModalProps> = ({
   const [people, setPeople] = useState<Person[]>(initialPeople);
 
   return (
-    <Modal width={MODAL_WIDTH} headerIcon={<CloseRecordIcon />}>
+    <Modal width={MODAL_WIDTH} HeaderIcon={CloseRecordIcon}>
       <ModalDivider />
       <DragModalContent
         people={people}
