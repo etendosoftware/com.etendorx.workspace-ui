@@ -1,7 +1,7 @@
 import React from 'react';
 import { Organization } from '../../../storybook/src/stories/Components/Table/types';
 
-interface RecordContextType {
+export interface RecordContextType {
   selectedRecord: Organization | null;
   setSelectedRecord: (record: Organization | null) => void;
   getFormattedRecord: (

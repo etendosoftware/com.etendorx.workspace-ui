@@ -6,11 +6,13 @@ import {
   Checkbox,
   styled,
 } from '@mui/material';
-import { SearchOutlined } from '@mui/icons-material';
+import SearchOutlined from '../../assets/icons/search.svg';
 import { Select, TextInputBase } from '..';
+import { theme } from '../../theme';
 import { topFilms } from '../../../../storybook/src/stories/Components/Input/Select/mock';
 import { styles, sx } from './styles';
 import { FieldLabelProps, FormFieldGroupProps, FormFieldProps } from './types';
+import { useState } from 'react';
 
 const FieldLabel: React.FC<FieldLabelProps> = ({ label, required }) => (
   <Box sx={styles.labelWrapper}>
@@ -21,6 +23,7 @@ const FieldLabel: React.FC<FieldLabelProps> = ({ label, required }) => (
 );
 
 const FormField: React.FC<FormFieldProps> = ({ name, field, onChange }) => {
+  const [value, setValue] = useState(field.value);
   const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
     '&.Mui-checked': {
       color: theme.palette.dynamicColor.main,
@@ -66,7 +69,9 @@ const FormField: React.FC<FormFieldProps> = ({ name, field, onChange }) => {
       case 'select':
         return (
           <Select
-            iconLeft={<SearchOutlined sx={{ width: 24, height: 24 }} />}
+            iconLeft={
+              <SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />
+            }
             title={field.value as string}
             options={topFilms}
             getOptionLabel={option => option.title}
@@ -76,7 +81,8 @@ const FormField: React.FC<FormFieldProps> = ({ name, field, onChange }) => {
         return (
           <TextInputBase
             onRightIconClick={() => alert('Icon clicked')}
-            value={field.value as string}
+            value={value as string}
+            setValue={setValue}
             placeholder={field.value as string}
           />
         );

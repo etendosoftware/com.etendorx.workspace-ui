@@ -4,11 +4,12 @@ import FormView from '../FormView';
 import { theme } from '../../theme';
 import PencilIcon from '../../assets/icons/edit-2.svg';
 import SaveIcon from '../../assets/icons/save.svg';
-import { styles, sx } from './styles';
-import { useRecordContext } from '../../../../MainUI/src/hooks/useRecordContext.ts';
+import { dotIntervals, gridSizes, styles, sx } from './styles';
 import { TabWidgetProps } from './types.ts';
 
 const TabWidget: React.FC<TabWidgetProps> = ({
+  selectedRecord,
+  setSelectedRecord,
   onSave,
   onCancel,
   editButtonLabel = '',
@@ -16,7 +17,6 @@ const TabWidget: React.FC<TabWidgetProps> = ({
   saveButtonLabel = '',
   noRecordText = '',
 }) => {
-  const { selectedRecord, setSelectedRecord } = useRecordContext();
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
@@ -56,8 +56,8 @@ const TabWidget: React.FC<TabWidgetProps> = ({
         onSave={handleSave}
         onCancel={handleCancel}
         readOnly={!isEditing}
-        gridItemProps={{ xs: 12, sm: 1, md: 12 }}
-        dottedLineInterval={12}
+        gridItemProps={gridSizes}
+        dottedLineInterval={dotIntervals}
         onChange={handleFormChange}
       />
     );
@@ -68,7 +68,7 @@ const TabWidget: React.FC<TabWidgetProps> = ({
   }
 
   return (
-    <Box display="flex" flexDirection="column" height="100%" width="100%">
+    <Box sx={sx.mainContainer}>
       <Box flexGrow={1} overflow="auto">
         {memoizedFormView}
       </Box>

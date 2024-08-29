@@ -2,12 +2,8 @@ import { Theme } from '@emotion/react';
 import { SxProps } from '@mui/material';
 import { CSSProperties } from 'react';
 import { theme } from '../../theme';
-import ChevronDown from '../../assets/icons/chevron-down.svg';
 
 export const defaultFill = theme.palette.dynamicColor.main;
-export const defaultIcon = (
-  <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
-);
 
 export const styles: { [key: string]: CSSProperties } = {
   dottedLine: {

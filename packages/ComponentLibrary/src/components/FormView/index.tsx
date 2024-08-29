@@ -15,13 +15,18 @@ import { FormViewProps } from './types';
 import PrimaryTabs from '../PrimaryTab';
 import { TabItem } from '../PrimaryTab/types';
 import FormSection from './FormSection';
-import { defaultIcon } from './styles';
+import ChevronDown from '../../assets/icons/chevron-down.svg';
+import { theme } from '../../theme';
+
+export const defaultIcon = (
+  <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
+);
 
 const FormView: React.FC<FormViewProps> = ({
   data,
   readOnly = false,
-  gridItemProps = { xs: 12, sm: 6, md: 6 },
-  dottedLineInterval = 2,
+  gridItemProps,
+  dottedLineInterval,
 }) => {
   const [formData, setFormData] = useState<Organization>(data);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);

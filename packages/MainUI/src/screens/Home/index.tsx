@@ -6,7 +6,7 @@ import {
   CONTENT,
   LABELS,
 } from '@workspaceui/componentlibrary/src/components/Table/tableConstants';
-import { widgets } from '@workspaceui/storybook/stories/Components/Table/mockWidget';
+import createWidgets from '@workspaceui/storybook/stories/Components/Table/mockWidget';
 import SideIcon from '@workspaceui/componentlibrary/src/assets/icons/codesandbox.svg';
 import { createFormViewToolbarConfig } from '@workspaceui/storybook/stories/Components/Table/toolbarFormviewMock';
 import ResizableRecordContainer from '@workspaceui/componentlibrary/src/components/Table/TabNavigation';
@@ -21,10 +21,13 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { selectedRecord, getFormattedRecord } = useRecordContext();
+  const { selectedRecord, setSelectedRecord, getFormattedRecord } =
+    useRecordContext();
   const formattedRecord = getFormattedRecord(selectedRecord);
   const { id = '' } = useParams();
-  const [updatedWidgets, setUpdatedWidgets] = useState(widgets);
+  const [updatedWidgets, setUpdatedWidgets] = useState(() =>
+    createWidgets(selectedRecord, setSelectedRecord),
+  );
 
   const paperStyles = useMemo(
     () =>
@@ -92,22 +95,24 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     if (selectedRecord) {
-      const newWidgets = widgets.map(widget => {
-        if (widget.id === '1') {
-          return {
-            ...widget,
-            children: React.cloneElement(
-              widget.children as React.ReactElement,
-              {
-                selectedRecord,
-                onSave: handleSave,
-                onCancel: handleCancel,
-              },
-            ),
-          };
-        }
-        return widget;
-      });
+      const newWidgets = createWidgets(selectedRecord, setSelectedRecord).map(
+        widget => {
+          if (widget.id === '1') {
+            return {
+              ...widget,
+              children: React.cloneElement(
+                widget.children as React.ReactElement,
+                {
+                  selectedRecord,
+                  onSave: handleSave,
+                  onCancel: handleCancel,
+                },
+              ),
+            };
+          }
+          return widget;
+        },
+      );
       setUpdatedWidgets(newWidgets);
     }
   }, [handleCancel, handleSave, selectedRecord]);

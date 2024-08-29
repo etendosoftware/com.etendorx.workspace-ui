@@ -3,6 +3,9 @@ import { SxProps } from '@mui/material';
 import { theme } from '../../theme';
 import { CSSProperties } from 'react';
 
+export const gridSizes = { xs: 12, sm: 1, md: 12 };
+export const dotIntervals = 0;
+
 export const styles: { [key: string]: CSSProperties } = {
   buttonContainerStyles: {
     display: 'flex',
@@ -15,6 +18,12 @@ export const styles: { [key: string]: CSSProperties } = {
 };
 
 export const sx: { [key: string]: SxProps<Theme> } = {
+  mainContainer: {
+    diplay: 'flex',
+    flexDirection: 'column',
+    heigh: '100%',
+    width: '100%',
+  },
   editButtonStyles: {
     fontWeight: '600',
     width: '100%',
