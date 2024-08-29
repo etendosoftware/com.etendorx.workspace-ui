@@ -32,7 +32,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
     <Modal
       tittleHeader="Register"
       descriptionText="Confirm your shipment and save it in the system. 📝📦"
-      headerIcon={<CloseRecordIcon />}
+      HeaderIcon={CloseRecordIcon}
       customTrigger={
         <Button
           sx={sx.registerButton}

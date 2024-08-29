@@ -19,7 +19,7 @@ const Modal: React.FC<ModalIProps> = ({
   onClose,
   tittleHeader = '',
   descriptionText = '',
-  headerIcon,
+  HeaderIcon,
 }) => {
   const [open, setOpen] = useState<boolean>(false);
   const handleOpen = () => setOpen(true);
@@ -70,11 +70,7 @@ const Modal: React.FC<ModalIProps> = ({
             <Box sx={sx.headerContainer}>
               <Box sx={sx.titleContainer}>
                 <Box sx={sx.closeRecordButton}>
-                  {React.cloneElement(headerIcon, {
-                    fill: theme.palette.baselineColor.etendoPrimary.main,
-                    width: 20,
-                    height: 20,
-                  })}
+                  <HeaderIcon fill={theme.palette.baselineColor.etendoPrimary.main} width={20} height={20} />
                 </Box>
                 <Typography sx={sx.registerText}>{tittleHeader}</Typography>
               </Box>

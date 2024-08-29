@@ -10,5 +10,5 @@ export interface ModalIProps {
   onClose?: () => void;
   tittleHeader: string;
   descriptionText: string;
-  headerIcon: React.ReactElement;
+  HeaderIcon: React.ElementType;
 }
