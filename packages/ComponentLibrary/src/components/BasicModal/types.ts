@@ -7,4 +7,8 @@ export interface ModalIProps {
   posY?: string | number;
   children: ReactNode;
   customTrigger?: ReactNode;
+  onClose?: () => void;
+  tittleHeader?: string | undefined;
+  descriptionText?: string | undefined;
+  HeaderIcon: React.ElementType;
 }

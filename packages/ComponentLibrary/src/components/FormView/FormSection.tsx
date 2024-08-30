@@ -9,29 +9,12 @@ import {
 } from '@mui/material';
 import ChevronDown from '../../assets/icons/chevron-down.svg';
 import { theme } from '..';
-import {
-  FieldDefinition,
-  Section,
-} from '../../../../storybook/src/stories/Components/Table/types';
+
 import { defaultFill, styles, sx } from './styles';
 import IconButton from '../IconButton';
 import InfoIcon from '@mui/icons-material/Info';
 import FormFieldGroup from './FormField';
-
-interface FormSectionProps {
-  sectionName: string;
-  sectionData: Section;
-  fields: [string, FieldDefinition][];
-  isExpanded: boolean;
-  onAccordionChange: (sectionId: string, isExpanded: boolean) => void;
-  onHover: (sectionName: string | null) => void;
-  hoveredSection: string | null;
-  onInputChange: (
-    name: string,
-    value: string | number | boolean | string[] | Date,
-  ) => void;
-  sectionRef: React.Ref<HTMLDivElement>;
-}
+import { FormSectionProps } from './types';
 
 const FormSection: React.FC<FormSectionProps> = ({
   sectionName,

@@ -4,7 +4,7 @@ import {
   TextField as TextFieldMUI,
   Box as BoxMUI,
 } from './MUI';
-import ModalCustom from './Modal';
+import ModalCustom from './BasicModal';
 import TextInputMUI from './Input/TextInput/TextInputAutocomplete';
 import SearchInputWithVoiceMUI from './Input/TextInput/TextInputAutocomplete/SearchInputWithVoice';
 import TextInputBaseMUI from './Input/TextInput/TextInputBase';

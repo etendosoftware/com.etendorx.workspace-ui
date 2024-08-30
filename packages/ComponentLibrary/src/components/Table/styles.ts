@@ -1,6 +1,10 @@
 import { SxProps, Theme } from '@mui/material';
 import { theme } from '../../theme';
 
+export const cancelLabel = 'Cancel';
+export const confirmLabel = 'Confirm';
+export const registerText = 'Register';
+
 export const tableStyles: { [key: string]: SxProps<Theme> } = {
   topToolbar: {
     display: 'flex',
