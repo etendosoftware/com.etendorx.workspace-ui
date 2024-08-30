@@ -1,7 +1,11 @@
 import { ReactNode } from 'react';
+import React from 'react';
 import Modal from '../../../../../ComponentLibrary/src/components/BasicModal';
 import { List, MenuItem, Button } from '@mui/material';
-import { Position } from '../../../../../ComponentLibrary/src/components/enums';
+import {
+  Position,
+  Container,
+} from '../../../../../ComponentLibrary/src/components/enums';
 import HeaderIcon from '../../../../../ComponentLibrary/src/assets/icons/activity.svg';
 import SaveIcon from '../../../../../ComponentLibrary/src/assets/icons/save.svg';
 import { styles, sx } from '../../../styles/Modal.stories.styles';
@@ -16,8 +20,8 @@ interface MenuItem {
 
 interface ModalStoryProps {
   menuItems: MenuItem[];
-  width?: number;
-  height?: number;
+  width?: Container | number;
+  height?: Container | number;
   posX?: Position;
   posY?: Position;
   showHeader?: boolean;
@@ -25,20 +29,37 @@ interface ModalStoryProps {
   saveButtonLabel?: string;
   secondaryButtonLabel?: string;
   buttons?: ReactNode;
+  isFullScreenEnabled?: boolean;
+  customTrigger?: React.ReactNode;
 }
 
 const meta: Meta<typeof Modal> = {
   title: 'Components/Modal',
   component: Modal,
   argTypes: {
-    height: { control: 'number' },
-    width: { control: 'number' },
+    height: {
+      control: 'select',
+      options: [...Object.values(Container), 'custom'],
+      mapping: {
+        custom: 400,
+        [Container.Auto]: Container.Auto,
+      },
+    },
+    width: {
+      control: 'select',
+      options: [...Object.values(Container), 'custom'],
+      mapping: {
+        custom: 500,
+        [Container.Auto]: Container.Auto,
+      },
+    },
     posX: { control: 'select', options: Object.values(Position) },
     posY: { control: 'select', options: Object.values(Position) },
     showHeader: { control: 'boolean' },
     backgroundGradient: { control: 'text' },
     saveButtonLabel: { control: 'text' },
     secondaryButtonLabel: { control: 'text' },
+    isFullScreenEnabled: { control: 'boolean' },
   },
 };
 
@@ -53,6 +74,8 @@ const ModalTemplate: Story = {
       descriptionText={'This is a generic description'}
       HeaderIcon={HeaderIcon}
       SaveIcon={SaveIcon}
+      isFullScreenEnabled={args.isFullScreenEnabled}
+      customTrigger={args.customTrigger}
       {...args}>
       <List>
         {args.menuItems.map((item: MenuItem) => (
@@ -134,5 +157,21 @@ export const CenterPosition: Story = {
     showHeader: true,
     saveButtonLabel: 'Save',
     secondaryButtonLabel: 'Cancel',
+  },
+};
+
+export const FullScreenEnabled: Story = {
+  ...ModalTemplate,
+  args: {
+    isFullScreenEnabled: true,
+    menuItems: menuItems,
+  },
+};
+
+export const WithCustomTrigger: Story = {
+  ...ModalTemplate,
+  args: {
+    customTrigger: <Button variant="contained">Open Custom Modal</Button>,
+    menuItems: menuItems,
   },
 };

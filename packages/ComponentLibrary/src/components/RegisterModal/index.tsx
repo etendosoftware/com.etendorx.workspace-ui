@@ -31,6 +31,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ registerText }) => {
       SaveIcon={CheckIcon}
       HeaderIcon={CloseRecordIcon}
       showHeader
+      isFullScreenEnabled
       customTrigger={
         <Button
           sx={sx.registerButton}

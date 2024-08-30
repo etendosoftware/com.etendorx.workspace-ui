@@ -7,6 +7,8 @@ import { ModalIProps } from './types';
 import { IconSize, styles, sx } from './styles';
 import { theme } from '../../theme';
 import CloseIcon from '../../assets/icons/x.svg';
+import MaximizeIcon from '../../assets/icons/maximize-2.svg';
+import MinimizeIcon from '../../assets/icons/minimize-2.svg';
 import { calculateModalStyles } from '../../helpers/updateModal';
 
 const Modal: React.FC<ModalIProps> = ({
@@ -26,8 +28,11 @@ const Modal: React.FC<ModalIProps> = ({
   buttons,
   SaveIcon,
   backgroundGradient,
+  isFullScreenEnabled = false,
 }) => {
   const [open, setOpen] = useState<boolean>(false);
+  const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
+
   const handleOpen = () => setOpen(true);
 
   const handleClose = () => {
@@ -35,6 +40,7 @@ const Modal: React.FC<ModalIProps> = ({
       onClose();
     }
     setOpen(false);
+    setIsFullScreen(false);
   };
 
   const gradientStyles = !backgroundGradient
@@ -54,7 +60,24 @@ const Modal: React.FC<ModalIProps> = ({
         },
       };
 
-  const modalStyles = calculateModalStyles({ height, width, posX, posY });
+  const toggleFullScreen = () => {
+    setIsFullScreen(!isFullScreen);
+  };
+
+  const modalStyles = isFullScreen
+    ? sx.fullScreenStyles
+    : calculateModalStyles({ height, width, posX, posY });
+
+  const contentStyles = isFullScreen
+    ? {
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflowY: 'auto',
+      }
+    : {};
 
   return (
     <>
@@ -94,17 +117,31 @@ const Modal: React.FC<ModalIProps> = ({
             {descriptionText && (
               <Typography sx={sx.descriptionText}>{descriptionText}</Typography>
             )}
-            <IconButton
-              aria-label="close"
-              size="small"
-              hoverFill={theme.palette.baselineColor.neutral[80]}
-              width={IconSize}
-              height={IconSize}
-              onClick={handleClose}
-              sx={sx.closeButton}>
-              <CloseIcon />
-            </IconButton>
-            {children}
+            <Box sx={sx.actionButtons}>
+              {isFullScreenEnabled && (
+                <IconButton
+                  aria-label="fullscreen"
+                  size="small"
+                  hoverFill={theme.palette.baselineColor.neutral[80]}
+                  width={IconSize}
+                  height={IconSize}
+                  onClick={toggleFullScreen}
+                  sx={sx.actionButton}>
+                  {isFullScreen ? <MinimizeIcon /> : <MaximizeIcon />}
+                </IconButton>
+              )}
+              <IconButton
+                aria-label="close"
+                size="small"
+                hoverFill={theme.palette.baselineColor.neutral[80]}
+                width={IconSize}
+                height={IconSize}
+                onClick={handleClose}
+                sx={sx.actionButton}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+            <Box sx={contentStyles}>{children}</Box>
             {buttons ? (
               <Box style={styles.buttonContainerStyles}>{buttons}</Box>
             ) : (

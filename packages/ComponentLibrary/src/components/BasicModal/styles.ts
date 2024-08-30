@@ -28,10 +28,19 @@ export const styles: { [key: string]: CSSProperties } = {
 };
 
 export const sx: { [key: string]: SxProps<Theme> } = {
-  closeButton: {
+  actionButtons: {
     position: 'absolute',
     right: 8,
     top: 8,
+    display: 'flex',
+    gap: '0.5rem',
+  },
+  fullScreenStyles: {
+    position: 'fixed',
+    width: '100vw',
+    height: '100vh',
+  },
+  actionButton: {
     background: 'none',
     '&:hover': {
       background: theme.palette.baselineColor.transparentNeutral[5],
