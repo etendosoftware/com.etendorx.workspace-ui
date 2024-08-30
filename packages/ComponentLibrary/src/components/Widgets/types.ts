@@ -6,8 +6,8 @@ export interface TabWidgetProps {
   setSelectedRecord: RecordContextType['setSelectedRecord'];
   onSave: (data: Organization) => void;
   onCancel: () => void;
-  editButtonLabel: string;
-  cancelButtonLabel: string;
-  saveButtonLabel: string;
-  noRecordText: string;
+  editButtonLabel: string | undefined;
+  cancelButtonLabel: string | undefined;
+  saveButtonLabel: string | undefined;
+  noRecordText: string | undefined;
 }

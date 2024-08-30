@@ -12,10 +12,10 @@ const TabWidget: React.FC<TabWidgetProps> = ({
   setSelectedRecord,
   onSave,
   onCancel,
-  editButtonLabel = '',
-  cancelButtonLabel = '',
-  saveButtonLabel = '',
-  noRecordText = '',
+  editButtonLabel,
+  cancelButtonLabel,
+  saveButtonLabel,
+  noRecordText,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
 
@@ -44,6 +44,7 @@ const TabWidget: React.FC<TabWidgetProps> = ({
     onCancel();
   }, [onCancel, selectedRecord, setSelectedRecord]);
 
+  //TODO: Create handleFormChange and adapt handle save and edit
   const handleFormChange = useCallback(() => {}, []);
 
   const memoizedFormView = useMemo(() => {

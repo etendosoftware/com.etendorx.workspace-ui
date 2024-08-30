@@ -37,6 +37,7 @@ export interface GridItemProps {
   md?: number;
 }
 
+export type FieldValue = FieldDefinition['value'];
 export interface FormFieldProps {
   name: string;
   field: FieldDefinition;

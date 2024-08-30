@@ -115,7 +115,7 @@ const Home: React.FC = () => {
       );
       setUpdatedWidgets(newWidgets);
     }
-  }, [handleCancel, handleSave, selectedRecord]);
+  }, [handleCancel, handleSave, selectedRecord, setSelectedRecord]);
 
   return (
     <Box sx={styles.mainContainer}>
