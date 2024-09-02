@@ -26,6 +26,9 @@ const FormSection: React.FC<FormSectionProps> = ({
   hoveredSection,
   onInputChange,
   sectionRef,
+  gridItemProps = { xs: 12, sm: 6, md: 6 },
+  dottedLineInterval = 2,
+  readOnly = false,
 }) => {
   return (
     <Accordion
@@ -62,15 +65,17 @@ const FormSection: React.FC<FormSectionProps> = ({
       <AccordionDetails>
         <Grid container>
           {fields.map(([key, field], index) => (
-            <Grid item xs={12} sm={6} md={6} key={key} sx={sx.gridItem}>
+            <Grid item {...gridItemProps} key={key} sx={sx.gridItem}>
               <FormFieldGroup
                 name={key}
                 field={field}
                 onChange={onInputChange}
+                readOnly={readOnly}
               />
-              {index < fields.length - -1 && (index + 1) % 2 !== 0 && (
-                <Box sx={styles.dottedLine} />
-              )}
+              {index <= fields.length &&
+                (index + 1) % dottedLineInterval !== 0 && (
+                  <Box sx={styles.dottedLine} />
+                )}
             </Grid>
           ))}
         </Grid>

@@ -1,7 +1,7 @@
 import { theme } from '@workspaceui/componentlibrary/src/theme';
 
 const styles = {
-  container: {
+  mainContainer: {
     overflow: 'hidden',
     flex: 1,
     padding: theme.spacing(1),
@@ -11,9 +11,15 @@ const styles = {
     height: '100%',
     width: '100%',
   },
+  container: {
+    marginTop: '0.25rem',
+    overflow: 'hidden',
+    display: 'flex',
+    flexGrow: '1',
+  },
   sidebarPaper: {
     right: 4,
-    width: '32%',
+    maxWidth: '32%',
     position: 'absolute',
     backgroundColor: theme.palette.baselineColor.neutral[10],
     boxShadow: '-4px 0 10px rgba(0, 0, 0, 0.1)',
@@ -22,8 +28,7 @@ const styles = {
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
-    overflow: 'auto',
-    display: 'flex',
+    overflowY: 'auto',
     height: '50rem',
     transition: 'transform 0.5s ease',
     '&::-webkit-scrollbar': {

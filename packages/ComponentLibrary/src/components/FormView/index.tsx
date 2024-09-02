@@ -6,8 +6,6 @@ import React, {
   useEffect,
 } from 'react';
 import { Box, Grid } from '@mui/material';
-import ChevronDown from '../../assets/icons/chevron-down.svg';
-import { theme } from '..';
 import {
   Organization,
   FieldDefinition,
@@ -17,12 +15,19 @@ import { FormViewProps } from './types';
 import PrimaryTabs from '../PrimaryTab';
 import { TabItem } from '../PrimaryTab/types';
 import FormSection from './FormSection';
+import ChevronDown from '../../assets/icons/chevron-down.svg';
+import { theme } from '../../theme';
 
-const defaultIcon = (
+export const defaultIcon = (
   <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
 );
 
-const FormView: React.FC<FormViewProps> = ({ data }) => {
+const FormView: React.FC<FormViewProps> = ({
+  data,
+  readOnly = false,
+  gridItemProps,
+  dottedLineInterval,
+}) => {
   const [formData, setFormData] = useState<Organization>(data);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
@@ -125,8 +130,8 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
   );
 
   return (
-    <Box display="flex" flexDirection="column" height="100%">
-      <Box flexShrink={0}>
+    <Box display="flex" flexDirection="column" height="100%" width="100%">
+      <Box flexShrink={1}>
         <PrimaryTabs
           tabs={tabs}
           onChange={handleTabChange}
@@ -154,6 +159,9 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
                   hoveredSection={hoveredSection}
                   onInputChange={handleInputChange}
                   sectionRef={el => (sectionRefs.current[sectionData.id] = el)}
+                  gridItemProps={gridItemProps}
+                  dottedLineInterval={dottedLineInterval}
+                  readOnly={readOnly}
                 />
               );
             })}

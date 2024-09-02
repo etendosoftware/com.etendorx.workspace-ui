@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate, useParams, Outlet } from 'react-router-dom';
 import { Box, theme } from '@workspaceui/componentlibrary/src/components';
 import { createToolbarConfig } from '@workspaceui/storybook/stories/Components/Table/toolbarMock';
@@ -6,7 +6,7 @@ import {
   CONTENT,
   LABELS,
 } from '@workspaceui/componentlibrary/src/components/Table/tableConstants';
-import { widgets } from '@workspaceui/storybook/stories/Components/Table/mockWidget';
+import createWidgets from '@workspaceui/storybook/stories/Components/Table/mockWidget';
 import SideIcon from '@workspaceui/componentlibrary/src/assets/icons/codesandbox.svg';
 import { createFormViewToolbarConfig } from '@workspaceui/storybook/stories/Components/Table/toolbarFormviewMock';
 import ResizableRecordContainer from '@workspaceui/componentlibrary/src/components/Table/TabNavigation';
@@ -21,9 +21,13 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { selectedRecord, getFormattedRecord } = useRecordContext();
+  const { selectedRecord, setSelectedRecord, getFormattedRecord } =
+    useRecordContext();
   const formattedRecord = getFormattedRecord(selectedRecord);
   const { id = '' } = useParams();
+  const [updatedWidgets, setUpdatedWidgets] = useState(() =>
+    createWidgets(selectedRecord, setSelectedRecord),
+  );
 
   const paperStyles = useMemo(
     () =>
@@ -89,16 +93,36 @@ const Home: React.FC = () => {
     ],
   );
 
+  useEffect(() => {
+    if (selectedRecord) {
+      const newWidgets = createWidgets(selectedRecord, setSelectedRecord).map(
+        widget => {
+          if (widget.id === '1') {
+            return {
+              ...widget,
+              children: React.cloneElement(
+                widget.children as React.ReactElement,
+                {
+                  selectedRecord,
+                  onSave: handleSave,
+                  onCancel: handleCancel,
+                },
+              ),
+            };
+          }
+          return widget;
+        },
+      );
+      setUpdatedWidgets(newWidgets);
+    }
+  }, [handleCancel, handleSave, selectedRecord, setSelectedRecord]);
+
   return (
-    <Box sx={styles.container}>
+    <Box sx={styles.mainContainer}>
       <Box flexShrink={0}>
         <TopToolbar {...toolbarConfig} isItemSelected={!!selectedRecord} />
       </Box>
-      <Box
-        flexGrow={1}
-        display="flex"
-        overflow="hidden"
-        sx={{ marginTop: '0.25rem' }}>
+      <Box sx={styles.container}>
         <Box sx={tablePaper}>
           <Outlet />
         </Box>
@@ -113,7 +137,7 @@ const Home: React.FC = () => {
               identifier: formattedRecord?.identifier ?? LABELS.NO_IDENTIFIER,
               title: CONTENT.CURRENT_TITLE ?? LABELS.NO_TITLE,
             }}
-            widgets={widgets}
+            widgets={updatedWidgets}
           />
         </Paper>
         <ResizableRecordContainer

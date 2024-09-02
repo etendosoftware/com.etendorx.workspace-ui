@@ -125,6 +125,8 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     color: theme.palette.baselineColor.neutral[0],
     borderRadius: '1.5rem',
     padding: '1rem',
+    maxHeight: '40rem',
+    overflow: 'auto',
     marginBottom: '1rem',
     display: 'flex',
     gap: '0.75rem',
