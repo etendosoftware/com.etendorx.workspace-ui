@@ -1,7 +1,8 @@
-import Modal from '../../../../../ComponentLibrary/src/components/Modal';
+import Modal from '../../../../../ComponentLibrary/src/components/BasicModal';
 import ModalDivider from '../../../../../ComponentLibrary/src/components/ModalDivider';
 import { List, MenuItem } from '@mui/material';
 import { Position } from '../../../../../ComponentLibrary/src/components/enums';
+import HeaderIcon from '../../../../../ComponentLibrary/src/assets/icons/activity.svg';
 import { styles, sx } from '../../../styles/Modal.stories.styles';
 import { menuItems } from '../mock';
 import type { Meta, StoryObj } from '@storybook/react';
@@ -37,7 +38,11 @@ type Story = StoryObj<ModalStoryProps>;
 
 const ModalTemplate: Story = {
   render: args => (
-    <Modal {...args}>
+    <Modal
+      tittleHeader={'Header Tittle'}
+      descriptionText={'This is a generic description'}
+      headerIcon={<HeaderIcon />}
+      {...args}>
       <List>
         {args.menuItems.map((item: MenuItem) => (
           <MenuItem key={item.key} sx={sx.menuStyles}>
@@ -54,8 +59,6 @@ const ModalTemplate: Story = {
 export const DefaultModalAndDivider: Story = {
   ...ModalTemplate,
   args: {
-    width: 400,
-    height: 300,
     menuItems: menuItems,
   },
 };
@@ -108,7 +111,7 @@ export const BottomRightPosition: Story = {
 export const CustomDimensions: Story = {
   ...ModalTemplate,
   args: {
-    height: 300,
+    height: 400,
     width: 500,
     menuItems: menuItems,
   },

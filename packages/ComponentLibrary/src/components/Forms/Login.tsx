@@ -1,15 +1,16 @@
 import { useCallback, useState } from 'react';
+import { Form } from 'react-router-dom';
 import { Box, Input, Paper } from '@mui/material';
 import { Button } from '../../components';
 import { styles } from './styles';
 
 export default function Login({
   title,
-  onClick,
+  onSubmit,
   error,
 }: {
   title: string;
-  onClick: (username: string, password: string) => Promise<void>;
+  onSubmit: (username: string, password: string) => Promise<void>;
   error?: string;
 }) {
   const [username, setUsername] = useState('');
@@ -27,34 +28,38 @@ export default function Login({
     [],
   );
 
-  const handleClick = useCallback(
-    () => onClick(username, password),
-    [onClick, password, username],
+  const handleSubmit = useCallback(
+    () => onSubmit(username, password),
+    [onSubmit, password, username],
   );
 
   return (
     <Box sx={styles.container}>
-      <Paper sx={styles.paper}>
-        <h1>{title}</h1>
-        <Input
-          type="text"
-          name="username"
-          id="username"
-          placeholder="Username"
-          value={username}
-          onChange={handleUsernameChange}
-        />
-        <Input
-          type="password"
-          name="password"
-          id="password"
-          placeholder="Password"
-          value={password}
-          onChange={handlePasswordChannge}
-        />
-        <Button onClick={handleClick}>Log In</Button>
-        {error ? <code>{error}</code> : null}
-      </Paper>
+      <Form onSubmit={handleSubmit}>
+        <Paper sx={styles.paper}>
+          <h1>{title}</h1>
+          <Input
+            type="text"
+            name="username"
+            id="username"
+            placeholder="Username"
+            value={username}
+            onChange={handleUsernameChange}
+          />
+          <Input
+            type="password"
+            name="password"
+            id="password"
+            placeholder="Password"
+            value={password}
+            onChange={handlePasswordChannge}
+          />
+          <Button type="submit" onSubmit={handleSubmit}>
+            Log In
+          </Button>
+          {error ? <code>{error}</code> : null}
+        </Paper>
+      </Form>
     </Box>
   );
 }
