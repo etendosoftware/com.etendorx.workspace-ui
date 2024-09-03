@@ -35,6 +35,7 @@ export interface Organization {
   id: BaseFieldDefinition<string>;
   documentNo: BaseFieldDefinition<string>;
   transactionDocument: BaseFieldDefinition<string>;
+  _noteSection: Section;
 }
 
 export type OrganizationLabels = {

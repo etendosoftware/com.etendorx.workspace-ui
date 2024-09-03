@@ -39,6 +39,7 @@ export const theme = createTheme({
         100: '#00030D',
       },
       transparentNeutral: {
+        0: 'transparent',
         5: 'rgba(0, 3, 13, 0.05)',
         10: 'rgba(0, 3, 13, 0.1)',
         20: 'rgba(0, 3, 13, 1)',

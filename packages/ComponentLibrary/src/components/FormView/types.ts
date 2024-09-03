@@ -1,8 +1,15 @@
+import { ReactNode } from 'react';
 import {
   FieldDefinition,
   Organization,
   Section,
 } from '../../../../storybook/src/stories/Components/Table/types';
+
+export interface GridItemProps {
+  xs?: number;
+  sm?: number;
+  md?: number;
+}
 
 export interface FormViewProps {
   data: Organization;
@@ -30,15 +37,11 @@ export interface FormSectionProps {
   gridItemProps?: GridItemProps;
   dottedLineInterval?: number;
   readOnly?: boolean;
-}
-
-export interface GridItemProps {
-  xs?: number;
-  sm?: number;
-  md?: number;
+  children?: ReactNode;
 }
 
 export type FieldValue = FieldDefinition['value'];
+
 export interface FormFieldProps {
   name: string;
   field: FieldDefinition;
@@ -56,17 +59,23 @@ export interface FieldLabelProps {
   readOnly?: boolean;
 }
 
-export interface FormSectionProps {
-  sectionName: string;
-  sectionData: Section;
-  fields: [string, FieldDefinition][];
-  isExpanded: boolean;
-  onAccordionChange: (sectionId: string, isExpanded: boolean) => void;
-  onHover: (sectionName: string | null) => void;
-  hoveredSection: string | null;
-  onInputChange: (
-    name: string,
-    value: string | number | boolean | string[] | Date,
-  ) => void;
-  sectionRef: React.Ref<HTMLDivElement>;
+export interface SectionRendererProps
+  extends Omit<FormSectionProps, 'children'> {
+  sectionRef: (el: HTMLElement | null) => void;
+}
+
+export interface Note {
+  id: string;
+  content: string;
+  createdAt: string;
+  color: string;
+}
+
+export interface NoteSectionProps {
+  sectionId: string;
+  addNoteButtonText: string | undefined;
+  modalTitleText: string | undefined;
+  modalDescriptionText: string | undefined;
+  noteInputPlaceholder: string | undefined;
+  addNoteSubmitText: string | undefined;
 }
