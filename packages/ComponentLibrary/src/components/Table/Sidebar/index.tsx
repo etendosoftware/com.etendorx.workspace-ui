@@ -6,8 +6,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onClose,
   selectedItem,
   widgets,
-  noIdentifierLabel = '',
-  noTitleLabel = '',
+  noIdentifierLabel,
+  noTitleLabel,
 }) => {
   return (
     <div className={`sidebar ${isOpen && 'open'}`}>

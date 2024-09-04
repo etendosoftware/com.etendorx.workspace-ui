@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 
 export interface ModalIProps {
   height?: string | number;
@@ -11,6 +11,7 @@ export interface ModalIProps {
   tittleHeader?: string | undefined;
   descriptionText?: string | undefined;
   HeaderIcon?: React.ElementType;
+  SaveIcon?: React.ElementType;
   secondaryButtonLabel?: string | undefined;
   saveButtonLabel?: string | undefined;
   showHeader?: boolean;

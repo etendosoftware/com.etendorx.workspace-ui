@@ -8,7 +8,6 @@ import { IconSize, styles, sx } from './styles';
 import { theme } from '../../theme';
 import CloseIcon from '../../assets/icons/x.svg';
 import { calculateModalStyles } from '../../helpers/updateModal';
-import CheckIcon from '../../assets/icons/check-circle.svg';
 
 const Modal: React.FC<ModalIProps> = ({
   height = Container.Auto,
@@ -25,6 +24,7 @@ const Modal: React.FC<ModalIProps> = ({
   saveButtonLabel,
   showHeader,
   buttons,
+  SaveIcon,
 }) => {
   const [open, setOpen] = useState<boolean>(false);
   const handleOpen = () => setOpen(true);
@@ -90,13 +90,16 @@ const Modal: React.FC<ModalIProps> = ({
               <Box style={styles.buttonContainerStyles}>{buttons}</Box>
             ) : (
               secondaryButtonLabel &&
-              saveButtonLabel && (
+              saveButtonLabel &&
+              SaveIcon && (
                 <Box style={styles.buttonContainerStyles}>
                   <Button sx={sx.cancelButton}>{secondaryButtonLabel}</Button>
                   <Button
                     startIcon={
-                      <CheckIcon
+                      <SaveIcon
                         fill={theme.palette.baselineColor.neutral[0]}
+                        width={20}
+                        height={20}
                       />
                     }
                     sx={sx.saveButton}>
