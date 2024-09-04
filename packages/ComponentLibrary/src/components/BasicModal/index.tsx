@@ -8,6 +8,7 @@ import { IconSize, styles, sx } from './styles';
 import { theme } from '../../theme';
 import CloseIcon from '../../assets/icons/x.svg';
 import { calculateModalStyles } from '../../helpers/updateModal';
+import CheckIcon from '../../assets/icons/check-circle.svg';
 
 const Modal: React.FC<ModalIProps> = ({
   height = Container.Auto,
@@ -20,6 +21,10 @@ const Modal: React.FC<ModalIProps> = ({
   tittleHeader,
   descriptionText,
   HeaderIcon,
+  secondaryButtonLabel,
+  saveButtonLabel,
+  showHeader,
+  buttons,
 }) => {
   const [open, setOpen] = useState<boolean>(false);
   const handleOpen = () => setOpen(true);
@@ -51,19 +56,25 @@ const Modal: React.FC<ModalIProps> = ({
             ...modalStyles,
           }}>
           <Box sx={sx.modalContainer}>
-            <Box sx={sx.headerContainer}>
-              <Box sx={sx.titleContainer}>
-                <Box sx={sx.closeRecordButton}>
-                  <HeaderIcon
-                    fill={theme.palette.baselineColor.etendoPrimary.main}
-                    width={20}
-                    height={20}
-                  />
+            {showHeader && (
+              <Box sx={sx.headerContainer}>
+                <Box sx={sx.titleContainer}>
+                  {HeaderIcon && (
+                    <Box sx={sx.closeRecordButton}>
+                      <HeaderIcon
+                        fill={theme.palette.baselineColor.etendoPrimary.main}
+                        width={20}
+                        height={20}
+                      />
+                    </Box>
+                  )}
+                  <Typography sx={sx.registerText}>{tittleHeader}</Typography>
                 </Box>
-                <Typography sx={sx.registerText}>{tittleHeader}</Typography>
               </Box>
-            </Box>
-            <Typography sx={sx.descriptionText}>{descriptionText}</Typography>
+            )}
+            {descriptionText && (
+              <Typography sx={sx.descriptionText}>{descriptionText}</Typography>
+            )}
             <IconButton
               aria-label="close"
               size="small"
@@ -75,6 +86,25 @@ const Modal: React.FC<ModalIProps> = ({
               <CloseIcon />
             </IconButton>
             {children}
+            {buttons ? (
+              <Box style={styles.buttonContainerStyles}>{buttons}</Box>
+            ) : (
+              secondaryButtonLabel &&
+              saveButtonLabel && (
+                <Box style={styles.buttonContainerStyles}>
+                  <Button sx={sx.cancelButton}>{secondaryButtonLabel}</Button>
+                  <Button
+                    startIcon={
+                      <CheckIcon
+                        fill={theme.palette.baselineColor.neutral[0]}
+                      />
+                    }
+                    sx={sx.saveButton}>
+                    {saveButtonLabel}
+                  </Button>
+                </Box>
+              )
+            )}
           </Box>
         </Box>
       </ModalMUI>
