@@ -2,9 +2,6 @@ import { Theme } from '@emotion/react';
 import { SxProps } from '@mui/material';
 import { theme } from '../../theme';
 
-export const cancelLabel = 'Cancel';
-export const confirmLabel = 'Confirm';
-
 export const sx: { [key: string]: SxProps<Theme> } = {
   itemList: {
     display: 'flex',

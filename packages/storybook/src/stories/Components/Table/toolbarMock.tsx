@@ -15,14 +15,26 @@ import Copy from '../../../../../ComponentLibrary/src/assets/icons/copy.svg';
 import Mail from '../../../../../ComponentLibrary/src/assets/icons/mail.svg';
 import LinkIcon from '../../../../../ComponentLibrary/src/assets/icons/link.svg';
 import { ToolbarSectionConfig } from '../../../../../storybook/src/stories/Components/Table/types';
-import { TOOLTIPS } from '../../../../../ComponentLibrary/src/components/Table/tableConstants';
 import { theme } from '../../../../../ComponentLibrary/src/theme';
+
+import { TranslationKeys } from '../../../../../ComponentLibrary/src/locales/types';
+
+type NestedKeyOf<ObjectType extends object> = {
+  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
+    ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}`
+    : `${Key}`;
+}[keyof ObjectType & (string | number)];
+
+type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(
+  key: K,
+) => string;
 
 export const createToolbarConfig = (
   toggleDropdown: () => void,
   toggleSidebar: () => void,
   isDropdownOpen: boolean,
   isSidebarOpen: boolean,
+  t: TranslateFunction,
 ): {
   leftSection: ToolbarSectionConfig;
   centerSection: ToolbarSectionConfig;
@@ -39,7 +51,7 @@ export const createToolbarConfig = (
       {
         key: 'refresh',
         icon: <RefreshIcon />,
-        tooltip: TOOLTIPS.REFRESH,
+        tooltip: t('table.tooltips.refresh'),
         onClick: () => {},
       },
     ],
@@ -113,31 +125,33 @@ export const createToolbarConfig = (
       {
         key: 'search',
         icon: <SearchIcon />,
-        tooltip: TOOLTIPS.SEARCH,
+        tooltip: t('table.tooltips.search'),
         onClick: () => {},
       },
       {
         key: 'views',
         icon: <ChevronDownIcon />,
-        tooltip: TOOLTIPS.VIEWS,
+        tooltip: t('table.tooltips.views'),
         onClick: () => {},
       },
       {
         key: 'filter',
         icon: <FilterIcon />,
-        tooltip: TOOLTIPS.FILTER,
+        tooltip: t('table.tooltips.filter'),
         onClick: () => {},
       },
       {
         key: 'columns',
         icon: <ColumnsIcon />,
-        tooltip: TOOLTIPS.COLUMNS,
+        tooltip: t('table.tooltips.columns'),
         onClick: () => {},
       },
       {
         key: 'sidebar',
         icon: <SidebarIcon />,
-        tooltip: isSidebarOpen ? TOOLTIPS.CLOSE_SIDEBAR : TOOLTIPS.OPEN_SIDEBAR,
+        tooltip: isSidebarOpen
+          ? t('table.tooltips.closeSidebar')
+          : t('table.tooltips.openSidebar'),
         onClick: toggleSidebar,
         fill: isSidebarOpen
           ? theme.palette.baselineColor.neutral[0]
@@ -157,7 +171,7 @@ export const createToolbarConfig = (
       {
         key: 'details',
         icon: <LowerFlapIcon />,
-        tooltip: TOOLTIPS.DETAILS,
+        tooltip: t('table.tooltips.details'),
         onClick: toggleDropdown,
         fill: isDropdownOpen
           ? theme.palette.baselineColor.neutral[0]

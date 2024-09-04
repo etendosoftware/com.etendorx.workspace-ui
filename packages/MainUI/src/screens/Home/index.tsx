@@ -2,10 +2,6 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate, useParams, Outlet } from 'react-router-dom';
 import { Box, theme } from '@workspaceui/componentlibrary/src/components';
 import { createToolbarConfig } from '@workspaceui/storybook/stories/Components/Table/toolbarMock';
-import {
-  CONTENT,
-  LABELS,
-} from '@workspaceui/componentlibrary/src/components/Table/tableConstants';
 import createWidgets from '@workspaceui/storybook/stories/Components/Table/mockWidget';
 import SideIcon from '@workspaceui/componentlibrary/src/assets/icons/codesandbox.svg';
 import { createFormViewToolbarConfig } from '@workspaceui/storybook/stories/Components/Table/toolbarFormviewMock';
@@ -16,6 +12,7 @@ import Sidebar from '@workspaceui/componentlibrary/src/components/Table/Sidebar'
 import { Paper } from '@mui/material';
 import { useRecordContext } from '../../hooks/useRecordContext';
 import styles from './styles';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -25,8 +22,9 @@ const Home: React.FC = () => {
     useRecordContext();
   const formattedRecord = getFormattedRecord(selectedRecord);
   const { id = '' } = useParams();
+  const { t } = useTranslation();
   const [updatedWidgets, setUpdatedWidgets] = useState(() =>
-    createWidgets(selectedRecord, setSelectedRecord),
+    createWidgets(selectedRecord, setSelectedRecord, t),
   );
 
   const paperStyles = useMemo(
@@ -75,12 +73,14 @@ const Home: React.FC = () => {
             toggleSidebar,
             isDropdownOpen,
             isSidebarOpen,
+            t,
           )
         : createToolbarConfig(
             toggleDropdown,
             toggleSidebar,
             isDropdownOpen,
             isSidebarOpen,
+            t,
           ),
     [
       handleCancel,
@@ -88,6 +88,7 @@ const Home: React.FC = () => {
       id,
       isDropdownOpen,
       isSidebarOpen,
+      t,
       toggleDropdown,
       toggleSidebar,
     ],
@@ -95,27 +96,29 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     if (selectedRecord) {
-      const newWidgets = createWidgets(selectedRecord, setSelectedRecord).map(
-        widget => {
-          if (widget.id === '1') {
-            return {
-              ...widget,
-              children: React.cloneElement(
-                widget.children as React.ReactElement,
-                {
-                  selectedRecord,
-                  onSave: handleSave,
-                  onCancel: handleCancel,
-                },
-              ),
-            };
-          }
-          return widget;
-        },
-      );
+      const newWidgets = createWidgets(
+        selectedRecord,
+        setSelectedRecord,
+        t,
+      ).map(widget => {
+        if (widget.id === '1') {
+          return {
+            ...widget,
+            children: React.cloneElement(
+              widget.children as React.ReactElement,
+              {
+                selectedRecord,
+                onSave: handleSave,
+                onCancel: handleCancel,
+              },
+            ),
+          };
+        }
+        return widget;
+      });
       setUpdatedWidgets(newWidgets);
     }
-  }, [handleCancel, handleSave, selectedRecord, setSelectedRecord]);
+  }, [handleCancel, handleSave, selectedRecord, setSelectedRecord, t]);
 
   return (
     <Box sx={styles.mainContainer}>
@@ -134,8 +137,10 @@ const Home: React.FC = () => {
               icon: (
                 <SideIcon fill={theme.palette.baselineColor.neutral[100]} />
               ),
-              identifier: formattedRecord?.identifier ?? LABELS.NO_IDENTIFIER,
-              title: CONTENT.CURRENT_TITLE ?? LABELS.NO_TITLE,
+              identifier:
+                formattedRecord?.identifier ?? t('table.labels.noIdentifier'),
+              title:
+                t('table.content.currentTitle') ?? t('table.labels.noTitle'),
             }}
             widgets={updatedWidgets}
           />

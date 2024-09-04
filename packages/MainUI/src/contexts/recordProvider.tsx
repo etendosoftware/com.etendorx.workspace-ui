@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { ensureString } from '@workspaceui/componentlibrary/src/helpers/ensureString';
-import { LABELS } from '@workspaceui/componentlibrary/src/components/Table/tableConstants';
+import translations from '@workspaceui/componentlibrary/src/locales';
 import { Organization } from '@workspaceui/storybook/stories/Components/Table/types';
 import { RecordContext } from './record';
 
@@ -13,8 +13,11 @@ export function RecordProvider({ children }: React.PropsWithChildren) {
     if (!record) return null;
     return {
       identifier:
-        ensureString(record.documentNo?.value) || LABELS.NO_IDENTIFIER,
-      type: ensureString(record.transactionDocument?.value) || LABELS.NO_TYPE,
+        ensureString(record.documentNo?.value) ||
+        translations.es.table.labels.noIdentifier,
+      type:
+        ensureString(record.transactionDocument?.value) ||
+        translations.es.table.labels.noType,
     };
   }, []);
 

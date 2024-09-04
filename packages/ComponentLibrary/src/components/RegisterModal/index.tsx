@@ -2,13 +2,16 @@ import { useState } from 'react';
 import { Button, List } from '@mui/material';
 import { RegisterModalProps } from './types';
 import { theme } from '../../theme';
-import { cancelLabel, confirmLabel, sx } from './styles';
+import { sx } from './styles';
 import CloseRecordIcon from '../../assets/icons/close-record.svg';
 import Modal from '../BasicModal';
 import { processMock } from '../../../../storybook/src/stories/Components/RegisterModal/registerMock';
 import RadioButtonItem from '../RadioButton';
+import CheckIcon from '../../assets/icons/check-circle.svg';
+import { useTranslation } from '../../../../MainUI/src/hooks/useTranslation';
 
 const RegisterModal: React.FC<RegisterModalProps> = ({ registerText }) => {
+  const { t } = useTranslation();
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isHovering, setIsHovering] = useState(false);
 
@@ -21,11 +24,13 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ registerText }) => {
 
   return (
     <Modal
-      tittleHeader="Register"
-      descriptionText="Confirm your shipment and save it in the system. 📝📦"
-      saveButtonLabel={confirmLabel}
-      secondaryButtonLabel={cancelLabel}
+      tittleHeader={t('common.register')}
+      descriptionText={t('registerModal.descriptionText')}
+      saveButtonLabel={t('common.save')}
+      secondaryButtonLabel={t('common.cancel')}
+      SaveIcon={CheckIcon}
       HeaderIcon={CloseRecordIcon}
+      showHeader
       customTrigger={
         <Button
           sx={sx.registerButton}
