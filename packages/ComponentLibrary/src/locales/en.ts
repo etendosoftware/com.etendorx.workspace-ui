@@ -30,6 +30,7 @@ const en = {
       noIdentifier: 'No item selected',
       noTitle: 'No title',
       noType: 'No type',
+      noRecord: 'No Row Selected',
     },
     content: {
       currentTitle:

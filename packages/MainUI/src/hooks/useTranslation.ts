@@ -1,4 +1,4 @@
-import { useLanguage } from '../contexts/languageContext';
+import { useLanguage } from './useLanguage.ts';
 import translations from '../../../ComponentLibrary/src/locales';
 import { TranslateFunction, Translations } from './types';
 

@@ -4,7 +4,7 @@ import { Outlet } from 'react-router-dom';
 import MetadataProvider from '@workspaceui/etendohookbinder/src/contexts/metadata';
 import { RecordProvider } from './contexts/recordProvider';
 import UserProvider from './contexts/user';
-import { LanguageProvider } from './contexts/languageContext';
+import { LanguageProvider } from './contexts/languageProvider';
 
 export default function App() {
   return (
