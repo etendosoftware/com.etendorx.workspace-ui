@@ -13,4 +13,5 @@ export interface StatusConfig {
 export interface StatusModalProps {
   statusText: string;
   statusType: StatusType;
+  errorMessage?: string;
 }

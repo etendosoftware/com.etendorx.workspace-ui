@@ -3,7 +3,6 @@ import { SidebarContentProps } from '../../../../../storybook/src/stories/Compon
 import ContentGrid from './WidgetContent';
 import { sx } from '../styles';
 import RegisterModal from '../../RegisterModal';
-import StatusModal from '../../StatusModal';
 import { useTranslation } from '../../../../../MainUI/src/hooks/useTranslation';
 
 export const SidebarContent: React.FC<SidebarContentProps> = ({
@@ -29,10 +28,6 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
       </Box>
       <Box ml={2.5}>
         <RegisterModal registerText={t('common.register')} />
-        <StatusModal
-          statusType="success"
-          statusText="Operación completada con éxito"
-        />
       </Box>
       <ContentGrid widgets={widgets} />
     </Box>

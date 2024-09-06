@@ -1,20 +1,21 @@
 import SidebarContent from './SidebarContent';
 import type { SidebarProps } from '../../../../../storybook/src/stories/Components/Table/types';
+import { useTranslation } from '../../../../../MainUI/src/hooks/useTranslation';
 
 const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onClose,
   selectedItem,
   widgets,
-  noIdentifierLabel,
-  noTitleLabel,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <div className={`sidebar ${isOpen && 'open'}`}>
       <SidebarContent
         icon={selectedItem.icon}
-        identifier={selectedItem.identifier ?? noIdentifierLabel}
-        title={selectedItem.title ?? noTitleLabel}
+        identifier={selectedItem.identifier ?? t('table.labels.noIdentifier')}
+        title={selectedItem.title ?? t('table.labels.noTitle')}
         widgets={widgets}
         onClose={onClose}
       />

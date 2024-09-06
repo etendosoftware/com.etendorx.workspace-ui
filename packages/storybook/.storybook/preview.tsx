@@ -1,11 +1,14 @@
 import React from 'react';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import { theme } from '../../ComponentLibrary/src/theme';
+import { LanguageProvider } from '../../MainUI/src/contexts/languageProvider';
 
 const withThemeProvider = Story => (
   <ThemeProvider theme={theme}>
     <CssBaseline />
-    <Story />
+    <LanguageProvider>
+      <Story />
+    </LanguageProvider>
   </ThemeProvider>
 );
 

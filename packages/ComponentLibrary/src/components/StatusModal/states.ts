@@ -1,6 +1,6 @@
 import { theme } from '../../theme';
 import CheckIcon from '../../assets/icons/check.svg';
-import ErrorIcon from '../../assets/icons/alert-octagon.svg';
+import ErrorIcon from '../../assets/icons/x-octagon.svg';
 import WarningIcon from '../../assets/icons/alert-triangle.svg';
 
 export type StatusType = 'success' | 'error' | 'warning';

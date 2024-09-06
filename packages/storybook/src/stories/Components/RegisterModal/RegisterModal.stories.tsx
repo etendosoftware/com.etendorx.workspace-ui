@@ -5,8 +5,6 @@ const meta: Meta<typeof RegisterModal> = {
   title: 'Components/RegisterModal',
   component: RegisterModal,
   argTypes: {
-    cancelButtonLabel: { control: 'text' },
-    saveButtonLabel: { control: 'text' },
     registerText: { control: 'text' },
   },
 };
@@ -16,8 +14,6 @@ type Story = StoryObj<typeof RegisterModal>;
 
 export const Default: Story = {
   args: {
-    cancelButtonLabel: 'Cancel',
-    saveButtonLabel: 'Save',
     registerText: 'Register',
   },
 };
@@ -25,8 +21,6 @@ export const Default: Story = {
 export const WithCustomLabels: Story = {
   args: {
     ...Default.args,
-    cancelButtonLabel: 'Go Back',
-    saveButtonLabel: 'Confirm',
     registerText: 'Registration',
   },
 };

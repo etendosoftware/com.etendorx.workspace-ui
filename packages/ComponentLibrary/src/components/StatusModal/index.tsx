@@ -10,6 +10,7 @@ import { StatusModalProps } from './types';
 const StatusModal: React.FC<StatusModalProps> = ({
   statusText,
   statusType,
+  errorMessage,
 }) => {
   const { t } = useTranslation();
   const {
@@ -35,6 +36,9 @@ const StatusModal: React.FC<StatusModalProps> = ({
           }}>
           <StatusIcon fill={theme.palette.baselineColor.neutral[0]} />
         </Box>
+        {statusType === 'error' && errorMessage && (
+          <Typography sx={sx.errorMessage}>{errorMessage}</Typography>
+        )}
         <Typography sx={sx.statusText}>{statusText}</Typography>
       </Box>
     </Modal>
