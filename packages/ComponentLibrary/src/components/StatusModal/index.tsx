@@ -1,43 +1,41 @@
-import { Box } from '@mui/material';
-import { Modal } from '..';
-import CheckIcon from '../../assets/icons/check.svg';
+import React from 'react';
+import { Box, Typography } from '@mui/material';
+import { Modal, theme } from '..';
 import SaveIcon from '../../assets/icons/save.svg';
 import { useTranslation } from '../../../../MainUI/src/hooks/useTranslation';
+import { statusConfig } from './states';
+import { sx } from './styles';
+import { StatusModalProps } from './types';
 
-interface StatusModalProps {
-  statusText: string;
-}
-
-const StatusModal: React.FC<StatusModalProps> = ({ statusText }) => {
+const StatusModal: React.FC<StatusModalProps> = ({
+  statusText,
+  statusType,
+}) => {
   const { t } = useTranslation();
+  const {
+    gradientColor,
+    iconBackgroundColor,
+    icon: StatusIcon,
+  } = statusConfig[statusType];
+
+  const backgroundGradient = `linear-gradient(to bottom, ${gradientColor}, rgba(255, 255, 255, 0))`;
 
   return (
     <Modal
       showHeader={false}
       saveButtonLabel={t('common.save')}
       secondaryButtonLabel={t('common.cancel')}
-      SaveIcon={SaveIcon}>
-      <Box
-        sx={{
-          padding: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '1rem',
-        }}>
+      SaveIcon={SaveIcon}
+      backgroundGradient={backgroundGradient}>
+      <Box sx={sx.statusModalContainer}>
         <Box
           sx={{
-            background: 'green',
-            width: '2rem',
-            height: '2rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: '1rem',
+            ...sx.statusIcon,
+            background: iconBackgroundColor,
           }}>
-          <CheckIcon fill="white" />
+          <StatusIcon fill={theme.palette.baselineColor.neutral[0]} />
         </Box>
-        <Box sx={{ marginBottom: '1rem' }}>{statusText}</Box>
+        <Typography sx={sx.statusText}>{statusText}</Typography>
       </Box>
     </Modal>
   );

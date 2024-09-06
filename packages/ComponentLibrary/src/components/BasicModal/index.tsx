@@ -25,6 +25,7 @@ const Modal: React.FC<ModalIProps> = ({
   showHeader,
   buttons,
   SaveIcon,
+  backgroundGradient,
 }) => {
   const [open, setOpen] = useState<boolean>(false);
   const handleOpen = () => setOpen(true);
@@ -34,6 +35,25 @@ const Modal: React.FC<ModalIProps> = ({
       onClose();
     }
     setOpen(false);
+  };
+
+  const getGradientStyles = () => {
+    if (!backgroundGradient) return {};
+
+    return {
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: '-2px',
+        left: '-2px',
+        right: '-2px',
+        height: '50%',
+        background: backgroundGradient,
+        borderTopLeftRadius: '1rem',
+        borderTopRightRadius: '1rem',
+        zIndex: 0,
+      },
+    };
   };
 
   const modalStyles = calculateModalStyles({ height, width, posX, posY });
@@ -49,11 +69,12 @@ const Modal: React.FC<ModalIProps> = ({
           Modal
         </Button>
       )}
-      <ModalMUI open={open} onClose={handleClose} style={styles.modalStyles}>
+      <ModalMUI open={open} onClose={handleClose}>
         <Box
           sx={{
             ...styles.boxStyles,
             ...modalStyles,
+            ...getGradientStyles(),
           }}>
           <Box sx={sx.modalContainer}>
             {showHeader && (
@@ -63,8 +84,8 @@ const Modal: React.FC<ModalIProps> = ({
                     <Box sx={sx.closeRecordButton}>
                       <HeaderIcon
                         fill={theme.palette.baselineColor.etendoPrimary.main}
-                        width={20}
-                        height={20}
+                        width={IconSize}
+                        height={IconSize}
                       />
                     </Box>
                   )}
@@ -98,8 +119,8 @@ const Modal: React.FC<ModalIProps> = ({
                     startIcon={
                       <SaveIcon
                         fill={theme.palette.baselineColor.neutral[0]}
-                        width={20}
-                        height={20}
+                        width={IconSize}
+                        height={IconSize}
                       />
                     }
                     sx={sx.saveButton}>

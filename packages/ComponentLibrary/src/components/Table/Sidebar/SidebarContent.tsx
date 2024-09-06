@@ -29,7 +29,10 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
       </Box>
       <Box ml={2.5}>
         <RegisterModal registerText={t('common.register')} />
-        <StatusModal statusText={'Cambios Guardados exitosamente'} />
+        <StatusModal
+          statusType="success"
+          statusText="Operación completada con éxito"
+        />
       </Box>
       <ContentGrid widgets={widgets} />
     </Box>

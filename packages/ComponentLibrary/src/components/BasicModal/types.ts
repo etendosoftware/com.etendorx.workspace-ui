@@ -1,6 +1,7 @@
-import React, { ReactNode } from 'react';
+import { ModalProps } from '@mui/material';
+import { ReactNode } from 'react';
 
-export interface ModalIProps {
+export interface ModalIProps extends Omit<ModalProps, 'children' | 'open'> {
   height?: string | number;
   width?: string | number;
   posX?: string | number;
@@ -16,4 +17,5 @@ export interface ModalIProps {
   saveButtonLabel?: string | undefined;
   showHeader?: boolean;
   buttons?: ReactNode;
+  backgroundGradient?: string;
 }
