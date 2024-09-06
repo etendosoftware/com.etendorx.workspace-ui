@@ -2,18 +2,7 @@ import { theme } from '../../theme';
 import CheckIcon from '../../assets/icons/check.svg';
 import ErrorIcon from '../../assets/icons/x-octagon.svg';
 import WarningIcon from '../../assets/icons/alert-triangle.svg';
-
-export type StatusType = 'success' | 'error' | 'warning';
-
-export type IconComponent = React.FunctionComponent<
-  React.SVGProps<SVGSVGElement> & { title?: string }
->;
-
-export interface StatusConfig {
-  gradientColor: string;
-  iconBackgroundColor: string;
-  icon: IconComponent;
-}
+import { StatusConfig, StatusType } from './types';
 
 export const statusConfig: Record<StatusType, StatusConfig> = {
   success: {

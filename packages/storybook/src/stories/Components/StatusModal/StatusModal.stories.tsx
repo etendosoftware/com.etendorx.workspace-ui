@@ -1,5 +1,5 @@
 import StatusModal from '../../../../../ComponentLibrary/src/components/StatusModal';
-import { StatusType } from '../../../../../ComponentLibrary/src/components/StatusModal/states';
+import { StatusType } from '../../../../../ComponentLibrary/src/components/StatusModal/types';
 import type { Meta, StoryObj } from '@storybook/react';
 
 interface StatusModalStoryProps {
