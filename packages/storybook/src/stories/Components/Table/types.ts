@@ -91,8 +91,9 @@ export interface SidebarProps {
 export interface ToolbarButton {
   key: string;
   icon: React.ReactNode;
-  tooltip: string;
   onClick: () => void;
+  tooltip?: string;
+  iconText?: string;
   disabled?: boolean;
   fill?: string;
   hoverFill?: string;
