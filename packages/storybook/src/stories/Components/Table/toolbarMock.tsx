@@ -3,7 +3,7 @@ import RefreshIcon from '../../../../../ComponentLibrary/src/assets/icons/refres
 import SearchIcon from '../../../../../ComponentLibrary/src/assets/icons/search.svg';
 import FilterIcon from '../../../../../ComponentLibrary/src/assets/icons/filter.svg';
 import ColumnsIcon from '../../../../../ComponentLibrary/src/assets/icons/columns.svg';
-import ChevronDownIcon from '../../../../../ComponentLibrary/src/assets/icons/chevrons-down.svg';
+import ChevronDownIcon from '../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
 import SidebarIcon from '../../../../../ComponentLibrary/src/assets/icons/sidebar.svg';
 import LowerFlapIcon from '../../../../../ComponentLibrary/src/assets/icons/lower-flap.svg';
 import Excel from '../../../../../ComponentLibrary/src/assets/icons/ilustration/excel.svg';
@@ -44,19 +44,35 @@ export const createToolbarConfig = (
     buttons: [
       {
         key: 'new-line',
-        icon: <PlusIcon fill={theme.palette.baselineColor.neutral[0]} />,
+        icon: <PlusIcon />,
+        iconText: 'New Line',
         tooltip: 'New Line',
         onClick: () => {},
+        height: 16,
+        width: 16,
+      },
+      {
+        key: 'expand',
+        icon: <ChevronDownIcon />,
+        tooltip: 'Expand',
+        onClick: () => {},
+        height: 16,
+        width: 16,
       },
       {
         key: 'refresh',
         icon: <RefreshIcon />,
         tooltip: t('table.tooltips.refresh'),
         onClick: () => {},
+        height: 16,
+        width: 16,
       },
     ],
     style: {
       display: 'flex',
+      background: `var(--Neutral-0, ${theme.palette.baselineColor.neutral[0]})`,
+      borderRadius: '10rem',
+      padding: '0.25rem',
       gap: '0.25rem',
     },
   },
@@ -67,48 +83,64 @@ export const createToolbarConfig = (
         icon: <Print />,
         tooltip: 'Print',
         onClick: () => {},
+        height: 16,
+        width: 16,
       },
       {
         key: 'copilot',
         icon: <Copilot />,
         tooltip: 'Copilot',
         onClick: () => {},
+        height: 16,
+        width: 16,
       },
       {
         key: 'delete',
         icon: <Trash />,
         tooltip: 'Delete',
         onClick: () => {},
+        height: 16,
+        width: 16,
       },
       {
         key: 'printer',
         icon: <Printer />,
         tooltip: 'Printer',
         onClick: () => {},
+        height: 16,
+        width: 16,
       },
       {
         key: 'copy',
         icon: <Copy />,
         tooltip: 'Copy',
         onClick: () => {},
+        height: 16,
+        width: 16,
       },
       {
         key: 'excel',
         icon: <Excel />,
         tooltip: 'Excel',
         onClick: () => {},
+        height: 16,
+        width: 16,
       },
       {
         key: 'mail',
         icon: <Mail />,
         tooltip: 'Mail',
         onClick: () => {},
+        height: 16,
+        width: 16,
       },
       {
         key: 'link',
         icon: <LinkIcon />,
         tooltip: 'Link',
         onClick: () => {},
+        height: 16,
+        width: 16,
       },
     ],
     style: {
@@ -127,24 +159,32 @@ export const createToolbarConfig = (
         icon: <SearchIcon />,
         tooltip: t('table.tooltips.search'),
         onClick: () => {},
+        height: 16,
+        width: 16,
       },
       {
         key: 'views',
         icon: <ChevronDownIcon />,
         tooltip: t('table.tooltips.views'),
         onClick: () => {},
+        height: 16,
+        width: 16,
       },
       {
         key: 'filter',
         icon: <FilterIcon />,
         tooltip: t('table.tooltips.filter'),
         onClick: () => {},
+        height: 16,
+        width: 16,
       },
       {
         key: 'columns',
         icon: <ColumnsIcon />,
         tooltip: t('table.tooltips.columns'),
         onClick: () => {},
+        height: 16,
+        width: 16,
       },
       {
         key: 'sidebar',
@@ -167,6 +207,8 @@ export const createToolbarConfig = (
               },
             }
           : {},
+        height: 16,
+        width: 16,
       },
       {
         key: 'details',
@@ -187,6 +229,8 @@ export const createToolbarConfig = (
               },
             }
           : {},
+        height: 16,
+        width: 16,
       },
     ],
     style: {
