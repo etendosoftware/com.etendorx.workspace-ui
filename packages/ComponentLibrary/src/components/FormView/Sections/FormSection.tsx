@@ -75,7 +75,7 @@ const FormSection: React.FC<FormSectionProps> = ({
                   onChange={onInputChange}
                   readOnly={readOnly}
                 />
-                {index < fields.length - 0 &&
+                {index < fields.length &&
                   (index + 1) % dottedLineInterval !== 0 && (
                     <Box sx={styles.dottedLine} />
                   )}

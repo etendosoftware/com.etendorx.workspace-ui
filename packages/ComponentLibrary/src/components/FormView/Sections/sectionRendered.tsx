@@ -10,6 +10,7 @@ const SectionRenderer: React.FC<SectionRendererProps> = props => {
         return (
           <NoteSection
             sectionId={props.sectionData.id}
+            //TODO: move this to translate file when feature/EPL-1746 get merged
             addNoteButtonText="Add note"
             modalTitleText="Add New Note"
             modalDescriptionText="Enter your note content below"
