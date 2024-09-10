@@ -107,6 +107,7 @@ export interface ToolbarSectionConfig {
   buttons: ToolbarButton[];
   style?: React.CSSProperties;
   isItemSelected?: boolean;
+  toggleExpand?: (event?: React.MouseEvent<HTMLElement>) => void;
 }
 
 export interface TopToolbarProps {

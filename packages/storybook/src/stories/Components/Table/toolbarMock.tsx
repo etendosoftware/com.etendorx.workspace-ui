@@ -32,6 +32,7 @@ type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(
 export const createToolbarConfig = (
   toggleDropdown: () => void,
   toggleSidebar: () => void,
+  handleExpandClick: (event?: React.MouseEvent<HTMLElement>) => void,
   isDropdownOpen: boolean,
   isSidebarOpen: boolean,
   t: TranslateFunction,
@@ -44,7 +45,7 @@ export const createToolbarConfig = (
     buttons: [
       {
         key: 'new-line',
-        icon: <PlusIcon fill="red" />,
+        icon: <PlusIcon />,
         iconText: 'New Line',
         tooltip: 'New Line',
         onClick: () => {},
@@ -55,12 +56,10 @@ export const createToolbarConfig = (
           padding: '0.5rem',
           maxHeight: '2rem',
           background: theme.palette.baselineColor.neutral[100],
-          borderRadius: '6.25rem',
+          borderRadius: '6.25rem 0 0 6.25rem',
           color: theme.palette.baselineColor.neutral[0],
           '&:hover': {
-            border: 'none',
             background: theme.palette.dynamicColor.main,
-            borderRadius: '6.25rem',
           },
         },
       },
@@ -68,11 +67,16 @@ export const createToolbarConfig = (
         key: 'expand',
         icon: <ChevronDownIcon />,
         tooltip: 'Expand',
-        onClick: () => {},
+        onClick: handleExpandClick,
         height: 16,
         width: 16,
+        fill: theme.palette.baselineColor.neutral[0],
         sx: {
-          border: `1px solid ${theme.palette.baselineColor.transparentNeutral[30]}`,
+          background: theme.palette.baselineColor.neutral[100],
+          borderRadius: '0 6.25rem 6.25rem 0',
+          '&:hover': {
+            background: theme.palette.dynamicColor.main,
+          },
         },
       },
       {
@@ -83,6 +87,7 @@ export const createToolbarConfig = (
         height: 16,
         width: 16,
         sx: {
+          marginLeft: '0.2rem',
           border: `1px solid ${theme.palette.baselineColor.transparentNeutral[30]}`,
         },
       },
@@ -94,8 +99,8 @@ export const createToolbarConfig = (
       background: `var(--Neutral-0, ${theme.palette.baselineColor.neutral[0]})`,
       borderRadius: '10rem',
       padding: '0.25rem',
-      gap: '0.25rem',
       maxHeight: '2.5rem',
+      gap: '0.05rem',
     },
   },
   centerSection: {
