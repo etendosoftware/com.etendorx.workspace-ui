@@ -1,5 +1,5 @@
-import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL } from './constants';
-import { Client } from './client';
+import { API_DEFAULT_CACHE_DURATION, API_METADATA_JSON_URL, API_METADATA_URL } from './constants';
+import { Client, Interceptor } from './client';
 import { onChange } from './helpers';
 import { CacheStore } from './cache';
 import * as Etendo from './types';
@@ -11,10 +11,22 @@ const hasProperty = (object: object, property: string) =>
 
 export class Metadata {
   public static client = new Client(API_METADATA_URL);
+  public static clientMeta = new Client(API_METADATA_JSON_URL);
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
 
   public static authorize(token: string) {
     this.client.setAuthHeader(token, 'Bearer');
+    this.clientMeta.setAuthHeader(token, 'Bearer');
+  }
+
+  public static registerInterceptor(interceptor: Interceptor) {
+    const unregister1 = this.client.registerInterceptor(interceptor);
+    const unregister2 = this.clientMeta.registerInterceptor(interceptor);
+
+    return () => {
+      unregister1();
+      unregister2();
+    }
   }
 
   public static isc = {
@@ -183,15 +195,13 @@ export class Metadata {
     const cached = Metadata.cache.get('OBMenu');
 
     if (cached && cached.length) {
-      Metadata.OB.Application.menu = cached;
 
       return cached;
     } else {
-      await Metadata.getSession();
-      const menu = Metadata.OB.Application.menu;
-      Metadata.cache.set('OBMenu', menu);
+      const { data } = await this.clientMeta.post('menu')
+      Metadata.cache.set('OBMenu', data);
 
-      return menu;
+      return data;
     }
   }
 

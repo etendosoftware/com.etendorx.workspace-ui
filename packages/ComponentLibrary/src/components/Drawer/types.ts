@@ -1,12 +1,11 @@
 import type {
-  Menu,
-  MenuSubmenu,
+  MenuOption,
   SubmenuSubmenu,
 } from '../../../../EtendoHookBinder/src/api/types';
 
 type NavigateFn = (pathname: string) => void;
 export interface DrawerProps {
-  items: Menu[];
+  items: MenuOption[];
   logo: string;
   title: string;
   onClick: NavigateFn;
@@ -18,7 +17,7 @@ export interface DrawerProps {
 }
 
 export interface DrawerSectionProps {
-  item: MenuSubmenu;
+  item: MenuOption;
   onClick: NavigateFn;
 }
 

@@ -6,13 +6,13 @@ import { theme } from '../../../theme';
 import { DrawerSectionProps } from '../types';
 import { MenuType } from '../../../../../EtendoHookBinder/src/api/types';
 
-const DrawerSection = ({ item, onClick }: DrawerSectionProps) => {
-  const isMainSection = item.type === MenuType.Folder;
+const ActualDrawerSection = ({ item, onClick }: DrawerSectionProps) => {
+  const isMainSection = item.type === MenuType.Summary;
   const isSelected = false;
   const [expanded, setExpanded] = useState(false);
 
   const handleClick = useCallback(() => {
-    if (item.type === MenuType.Folder) {
+    if (item.type === MenuType.Summary) {
       setExpanded(prev => !prev);
     } else if (item.type === MenuType.Window) {
       onClick(`/window/${item.windowId}`);
@@ -40,13 +40,12 @@ const DrawerSection = ({ item, onClick }: DrawerSectionProps) => {
         selected={isSelected}
         expanded={expanded}
       />
-
-      {item.type === MenuType.Folder && item.submenu ? (
-        <Collapse in={expanded} timeout="auto" unmountOnExit>
+      {item.children ? (
+        <Collapse in={expanded} timeout="auto">
           <Box sx={styles.contentBox}>
-            {item.submenu.map(subitem => (
+            {item.children.map(subitem => (
               <DrawerSection
-                key={subitem.title}
+                key={subitem.id}
                 item={subitem}
                 onClick={onClick}
               />
@@ -56,6 +55,14 @@ const DrawerSection = ({ item, onClick }: DrawerSectionProps) => {
       ) : null}
     </Box>
   );
+};
+
+const DrawerSection = (props: DrawerSectionProps) => {
+  if (props.item) {
+    return <ActualDrawerSection {...props} />;
+  }
+
+  return null;
 };
 
 export default DrawerSection;

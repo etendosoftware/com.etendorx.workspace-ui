@@ -8,6 +8,7 @@ import DrawerHeader from './Header';
 const Drawer = ({ items, logo, title, onClick }: DrawerProps) => {
   const [open, setOpen] = useState<boolean>(true);
   const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
+
   const paperProps = useMemo(
     () => ({
       className: 'animated-width',
@@ -35,7 +36,7 @@ const Drawer = ({ items, logo, title, onClick }: DrawerProps) => {
         />
         <Box sx={styles.subsectionsContainer}>
           {items.map(item => (
-            <DrawerSection key={item.title} item={item} onClick={onClick} />
+            <DrawerSection key={item.id} item={item} onClick={onClick} />
           ))}
         </Box>
       </MuiDrawer>

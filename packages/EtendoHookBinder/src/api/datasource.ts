@@ -1,5 +1,5 @@
 import { API_DATASOURCE_URL } from './constants';
-import { Client } from './client';
+import { Client, Interceptor } from './client';
 import { DatasourceParams } from './types';
 
 export class Datasource {
@@ -7,6 +7,10 @@ export class Datasource {
 
   public static authorize(token: string) {
     this.client.setAuthHeader(token, 'Bearer');
+  }
+
+  public static registerInterceptor(interceptor: Interceptor) {
+    return this.client.registerInterceptor(interceptor);
   }
 
   public static async get(
