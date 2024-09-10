@@ -61,12 +61,15 @@ const IconButton: React.FC<ExtendedIconButtonProps> = ({
 
   const buttonContent = (
     <Box
-      sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
       {clonedIcon}
       {iconText && (
         <Typography
-          variant="body2"
-          sx={{ marginLeft: 1, whiteSpace: 'nowrap' }}>
+          sx={{ marginLeft: 1, whiteSpace: 'nowrap', fontSize: '0.825rem' }}>
           {iconText}
         </Typography>
       )}
