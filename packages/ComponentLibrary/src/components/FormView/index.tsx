@@ -14,9 +14,9 @@ import {
 import { FormViewProps } from './types';
 import PrimaryTabs from '../PrimaryTab';
 import { TabItem } from '../PrimaryTab/types';
-import FormSection from './FormSection';
 import ChevronDown from '../../assets/icons/chevron-down.svg';
 import { theme } from '../../theme';
+import SectionRenderer from './Sections/sectionRendered';
 
 export const defaultIcon = (
   <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
@@ -34,6 +34,7 @@ const FormView: React.FC<FormViewProps> = ({
   const [selectedTab, setSelectedTab] = useState<string>('');
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
+
   const tabs: TabItem[] = useMemo(() => {
     return Object.values(formData)
       .filter((field): field is Section => field.type === 'section')
@@ -148,7 +149,7 @@ const FormView: React.FC<FormViewProps> = ({
                 return null;
               }
               return (
-                <FormSection
+                <SectionRenderer
                   key={sectionName}
                   sectionName={sectionName}
                   sectionData={sectionData}

@@ -7,14 +7,13 @@ import {
   Box,
   Grid,
 } from '@mui/material';
-import ChevronDown from '../../assets/icons/chevron-down.svg';
-import { theme } from '..';
-
-import { defaultFill, styles, sx } from './styles';
-import IconButton from '../IconButton';
+import ChevronDown from '../../../assets/icons/chevron-down.svg';
+import { theme } from '../../../theme';
+import { defaultFill, styles, sx } from '../styles';
+import IconButton from '../../IconButton';
 import InfoIcon from '@mui/icons-material/Info';
-import FormFieldGroup from './FormField';
-import { FormSectionProps } from './types';
+import FormFieldGroup from '../FormField';
+import { FormSectionProps } from '../types';
 
 const FormSection: React.FC<FormSectionProps> = ({
   sectionName,
@@ -29,6 +28,7 @@ const FormSection: React.FC<FormSectionProps> = ({
   gridItemProps = { xs: 12, sm: 6, md: 6 },
   dottedLineInterval = 2,
   readOnly = false,
+  children,
 }) => {
   return (
     <Accordion
@@ -63,22 +63,26 @@ const FormSection: React.FC<FormSectionProps> = ({
         </Box>
       </AccordionSummary>
       <AccordionDetails>
-        <Grid container>
-          {fields.map(([key, field], index) => (
-            <Grid item {...gridItemProps} key={key} sx={sx.gridItem}>
-              <FormFieldGroup
-                name={key}
-                field={field}
-                onChange={onInputChange}
-                readOnly={readOnly}
-              />
-              {index <= fields.length &&
-                (index + 1) % dottedLineInterval !== 0 && (
-                  <Box sx={styles.dottedLine} />
-                )}
-            </Grid>
-          ))}
-        </Grid>
+        {children ? (
+          children
+        ) : (
+          <Grid container>
+            {fields.map(([key, field], index) => (
+              <Grid item {...gridItemProps} key={key} sx={sx.gridItem}>
+                <FormFieldGroup
+                  name={key}
+                  field={field}
+                  onChange={onInputChange}
+                  readOnly={readOnly}
+                />
+                {index < fields.length &&
+                  (index + 1) % dottedLineInterval !== 0 && (
+                    <Box sx={styles.dottedLine} />
+                  )}
+              </Grid>
+            ))}
+          </Grid>
+        )}
       </AccordionDetails>
     </Accordion>
   );

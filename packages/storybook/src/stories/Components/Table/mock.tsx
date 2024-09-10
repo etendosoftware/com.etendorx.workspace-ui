@@ -3,6 +3,7 @@ import InfoIcon from '../../../../../ComponentLibrary/src/assets/icons/note.svg'
 import LinkIcon from '../../../../../ComponentLibrary/src/assets/icons/link.svg';
 import AttachmentIcon from '../../../../../ComponentLibrary/src/assets/icons/file.svg';
 import InformationIcon from '../../../../../ComponentLibrary/src/assets/icons/info.svg';
+import NoteIcon from '../../../../../ComponentLibrary/src/assets/icons/note.svg';
 import { theme } from '../../../../../ComponentLibrary/src/theme';
 
 export const mockOrganizations: Organization[] = [
@@ -184,6 +185,23 @@ export const mockOrganizations: Organization[] = [
       section: '_attachments',
     },
     id: { value: '1', type: 'text', label: 'ID' },
+    _noteSection: {
+      name: '_noteSection',
+      label: 'Notes',
+      type: 'section',
+      personalizable: false,
+      icon: <NoteIcon />,
+      id: 'notes',
+      fill: theme.palette.baselineColor.neutral[60],
+      hoverFill: theme.palette.baselineColor.neutral[0],
+      showInTab: 'both',
+    },
+    note: {
+      value: 'Q3 Expansion',
+      type: 'text',
+      label: 'Project',
+      section: '_noteSection',
+    },
   },
   {
     _mainSection: {
@@ -400,5 +418,16 @@ export const mockOrganizations: Organization[] = [
       section: '_linkedItems',
     },
     id: { value: '2', type: 'text', label: 'ID' },
+    _noteSection: {
+      name: '_noteSection',
+      label: 'Notes',
+      type: 'section',
+      personalizable: false,
+      icon: <NoteIcon />,
+      id: 'notes',
+      fill: theme.palette.baselineColor.neutral[60],
+      hoverFill: theme.palette.baselineColor.neutral[0],
+      showInTab: 'both',
+    },
   },
 ];
