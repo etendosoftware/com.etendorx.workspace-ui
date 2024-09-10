@@ -52,8 +52,9 @@ export const createToolbarConfig = (
         width: 16,
         fill: theme.palette.baselineColor.neutral[0],
         sx: {
+          padding: '0.5rem',
+          maxHeight: '2rem',
           background: theme.palette.baselineColor.neutral[100],
-          border: `1px transparent ${theme.palette.baselineColor.transparentNeutral[0]}`,
           borderRadius: '6.25rem',
           color: theme.palette.baselineColor.neutral[0],
           '&:hover': {
@@ -94,6 +95,7 @@ export const createToolbarConfig = (
       borderRadius: '10rem',
       padding: '0.25rem',
       gap: '0.25rem',
+      maxHeight: '2.5rem',
     },
   },
   centerSection: {
@@ -259,7 +261,6 @@ export const createToolbarConfig = (
       background: `var(--Neutral-0, ${theme.palette.baselineColor.transparentNeutral[5]})`,
       borderRadius: '10rem',
       padding: '0.25rem',
-      marginLeft: '0.25rem',
     },
   },
 });
