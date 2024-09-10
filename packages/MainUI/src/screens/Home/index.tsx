@@ -9,6 +9,7 @@ import ResizableRecordContainer from '@workspaceui/componentlibrary/src/componen
 import BackgroundGradientUrl from '@workspaceui/componentlibrary/src/assets/images/sidebar-bg.svg?url';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import Sidebar from '@workspaceui/componentlibrary/src/components/Table/Sidebar';
+import ExpandMenu from '@workspaceui/componentlibrary/src/components/Table/ExpandMenu';
 import { Paper } from '@mui/material';
 import { useRecordContext } from '../../hooks/useRecordContext';
 import styles from './styles';
@@ -18,6 +19,9 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [expandAnchorEl, setExpandAnchorEl] = useState<null | HTMLElement>(
+    null,
+  );
   const { selectedRecord, setSelectedRecord, getFormattedRecord } =
     useRecordContext();
   const formattedRecord = getFormattedRecord(selectedRecord);
@@ -55,6 +59,17 @@ const Home: React.FC = () => {
     setIsSidebarOpen(prev => !prev);
   }, []);
 
+  const handleExpandClick = useCallback(
+    (event?: React.MouseEvent<HTMLElement>) => {
+      setExpandAnchorEl(expandAnchorEl ? null : event?.currentTarget || null);
+    },
+    [expandAnchorEl],
+  );
+
+  const handleExpandClose = useCallback(() => {
+    setExpandAnchorEl(null);
+  }, []);
+
   const handleSave = useCallback(() => {
     navigate('/');
   }, [navigate]);
@@ -78,6 +93,7 @@ const Home: React.FC = () => {
         : createToolbarConfig(
             toggleDropdown,
             toggleSidebar,
+            handleExpandClick,
             isDropdownOpen,
             isSidebarOpen,
             t,
@@ -91,6 +107,7 @@ const Home: React.FC = () => {
       t,
       toggleDropdown,
       toggleSidebar,
+      handleExpandClick,
     ],
   );
 
@@ -124,6 +141,11 @@ const Home: React.FC = () => {
     <Box sx={styles.mainContainer}>
       <Box flexShrink={0} padding="0.5rem">
         <TopToolbar {...toolbarConfig} isItemSelected={!!selectedRecord} />
+        <ExpandMenu
+          anchorEl={expandAnchorEl}
+          onClose={handleExpandClose}
+          open={Boolean(expandAnchorEl)}
+        />
       </Box>
       <Box sx={styles.container}>
         <Box sx={tablePaper}>

@@ -1,5 +1,5 @@
 import SaveIcon from '../../../../../ComponentLibrary/src/assets/icons/save.svg';
-import CancelIcon from '../../../../../ComponentLibrary/src/assets/icons/corner-up-left.svg';
+import PlusIcon from '../../../../../ComponentLibrary/src/assets/icons/plus.svg';
 import RefreshIcon from '../../../../../ComponentLibrary/src/assets/icons/refresh-cw.svg';
 import SearchIcon from '../../../../../ComponentLibrary/src/assets/icons/search.svg';
 import FilterIcon from '../../../../../ComponentLibrary/src/assets/icons/filter.svg';
@@ -46,8 +46,8 @@ export const createFormViewToolbarConfig = (
     buttons: [
       {
         key: 'save',
-        icon: <SaveIcon fill={theme.palette.baselineColor.neutral[0]} />,
         tooltip: t('common.save'),
+        icon: <SaveIcon />,
         iconText: 'Save Changes',
         onClick: onSave,
         height: 14,
@@ -67,14 +67,15 @@ export const createFormViewToolbarConfig = (
         },
       },
       {
-        key: 'cancel',
-        icon: <CancelIcon fill={theme.palette.baselineColor.neutral[0]} />,
+        key: 'Add',
         tooltip: t('common.cancel'),
+        icon: <PlusIcon />,
         onClick: onCancel,
         height: 16,
         width: 16,
+        fill: theme.palette.baselineColor.neutral[0],
         sx: {
-          border: `1px solid ${theme.palette.baselineColor.transparentNeutral[30]}`,
+          background: theme.palette.baselineColor.neutral[100],
         },
       },
       {
