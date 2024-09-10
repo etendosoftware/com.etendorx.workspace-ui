@@ -44,12 +44,24 @@ export const createToolbarConfig = (
     buttons: [
       {
         key: 'new-line',
-        icon: <PlusIcon />,
+        icon: <PlusIcon fill="red" />,
         iconText: 'New Line',
         tooltip: 'New Line',
         onClick: () => {},
         height: 16,
         width: 16,
+        fill: theme.palette.baselineColor.neutral[0],
+        sx: {
+          background: theme.palette.baselineColor.neutral[100],
+          border: `1px transparent ${theme.palette.baselineColor.transparentNeutral[0]}`,
+          borderRadius: '6.25rem',
+          color: theme.palette.baselineColor.neutral[0],
+          '&:hover': {
+            border: 'none',
+            background: theme.palette.dynamicColor.main,
+            borderRadius: '6.25rem',
+          },
+        },
       },
       {
         key: 'expand',
@@ -58,6 +70,9 @@ export const createToolbarConfig = (
         onClick: () => {},
         height: 16,
         width: 16,
+        sx: {
+          border: `1px solid ${theme.palette.baselineColor.transparentNeutral[30]}`,
+        },
       },
       {
         key: 'refresh',
@@ -66,10 +81,15 @@ export const createToolbarConfig = (
         onClick: () => {},
         height: 16,
         width: 16,
+        sx: {
+          border: `1px solid ${theme.palette.baselineColor.transparentNeutral[30]}`,
+        },
       },
     ],
     style: {
       display: 'flex',
+      width: 'auto',
+      alignItems: 'center',
       background: `var(--Neutral-0, ${theme.palette.baselineColor.neutral[0]})`,
       borderRadius: '10rem',
       padding: '0.25rem',

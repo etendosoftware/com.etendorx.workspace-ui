@@ -14,6 +14,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({
         ({
           key,
           icon,
+          iconText,
           tooltip,
           onClick,
           disabled,
@@ -32,7 +33,8 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({
             hoverFill={hoverFill}
             width={width}
             height={height}
-            sx={sx}>
+            sx={sx}
+            iconText={iconText}>
             {icon}
           </IconButton>
         ),
@@ -40,4 +42,5 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({
     </Box>
   );
 };
+
 export default ToolbarSection;

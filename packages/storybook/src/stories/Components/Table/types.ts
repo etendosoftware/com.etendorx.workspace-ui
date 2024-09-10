@@ -91,14 +91,14 @@ export interface SidebarProps {
 export interface ToolbarButton {
   key: string;
   icon: React.ReactNode;
-  onClick: () => void;
-  tooltip?: string;
   iconText?: string;
+  tooltip?: string;
+  onClick: () => void;
   disabled?: boolean;
   fill?: string;
   hoverFill?: string;
-  width?: number;
   height?: number;
+  width?: number;
   sx?: SxProps<Theme>;
 }
 
