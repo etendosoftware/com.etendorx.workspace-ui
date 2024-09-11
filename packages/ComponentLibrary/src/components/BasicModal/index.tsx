@@ -61,7 +61,7 @@ const Modal: React.FC<ModalIProps> = ({
       };
 
   const toggleFullScreen = () => {
-    setIsFullScreen(!isFullScreen);
+    setIsFullScreen(prev => !prev);
   };
 
   const modalStyles = isFullScreen
