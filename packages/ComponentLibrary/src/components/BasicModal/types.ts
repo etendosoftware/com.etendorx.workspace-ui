@@ -18,4 +18,5 @@ export interface ModalIProps extends Omit<ModalProps, 'children' | 'open'> {
   showHeader?: boolean;
   buttons?: ReactNode;
   backgroundGradient?: string;
+  isFullScreenEnabled?: boolean;
 }
