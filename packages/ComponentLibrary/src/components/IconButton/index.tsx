@@ -45,7 +45,7 @@ const IconButton: React.FC<ExtendedIconButtonProps> = ({
   }, [disabled, fill]);
 
   const combinedStyles = {
-    ...defaultStyles,
+    ...defaultStyles.defaultContainer,
     ...sx,
   };
 
@@ -60,18 +60,10 @@ const IconButton: React.FC<ExtendedIconButtonProps> = ({
     : null;
 
   const buttonContent = (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
+    <Box sx={defaultStyles.buttonContainer}>
       {clonedIcon}
       {iconText && (
-        <Typography
-          sx={{ marginLeft: 1, whiteSpace: 'nowrap', fontSize: '0.825rem' }}>
-          {iconText}
-        </Typography>
+        <Typography sx={defaultStyles.iconText}>{iconText}</Typography>
       )}
     </Box>
   );

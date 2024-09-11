@@ -25,7 +25,7 @@ const ExpandMenu: React.FC<ExpandMenuProps> = ({ anchorEl, onClose, open }) => {
       }}
       transformOrigin={{
         vertical: 'top',
-        horizontal: 'right',
+        horizontal: 'left',
       }}>
       <MenuItem>
         <TextField

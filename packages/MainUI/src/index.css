@@ -7,7 +7,8 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   height: 100%;
   width: 100%;
@@ -18,7 +19,7 @@ html, body {
 #root {
   height: 100%;
   width: 100%;
-  background: linear-gradient(180deg, #C6D3FF 30%, #F5F6FA 100%);
+  background: linear-gradient(180deg, #c6d3ff 30%, #f5f6fa 100%);
 }
 
 .animated-width {
