@@ -99,6 +99,8 @@ export const styles = {
     fontSize: '0.875rem',
     textOverflow: 'clip',
     overflow: 'hidden',
+    display: 'flex',
+    gap: theme.spacing(1),
   }),
   listItemTextSelected: {
     fontWeight: 600,

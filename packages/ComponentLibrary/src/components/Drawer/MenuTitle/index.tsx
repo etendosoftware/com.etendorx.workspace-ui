@@ -2,10 +2,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { styles } from '../styles';
-import {
-  MenuType,
-  MenuOption,
-} from '../../../../../EtendoHookBinder/src/api/types';
+import { MenuOption } from '../../../../../EtendoHookBinder/src/api/types';
 
 export default function MenuTitle({
   item,
@@ -27,15 +24,12 @@ export default function MenuTitle({
         ...(selected ? styles.listItemButtonSelected : undefined),
       }}>
       <Box sx={styles.listItemInnerContentText}>
-        <Typography sx={styles.listItemText}>{item.label}</Typography>
+        <Typography sx={styles.listItemText}>
+          {item.eTMETAIcon ? <span>{item.eTMETAIcon}</span> : null}
+          <span>{item.name}</span>
+        </Typography>
       </Box>
-      {item.type === MenuType.Summary ? (
-        expanded ? (
-          <ExpandLess />
-        ) : (
-          <ExpandMore />
-        )
-      ) : null}
+      {item.children ? expanded ? <ExpandLess /> : <ExpandMore /> : null}
     </Box>
   );
 }

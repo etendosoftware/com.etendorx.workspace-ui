@@ -12,14 +12,14 @@ const ActualDrawerSection = ({ item, onClick }: DrawerSectionProps) => {
   const [expanded, setExpanded] = useState(false);
 
   const handleClick = useCallback(() => {
-    if (item.type === MenuType.Summary) {
+    if (item.children?.length) {
       setExpanded(prev => !prev);
-    } else if (item.type === MenuType.Window) {
-      onClick(`/window/${item.windowId}`);
+    } else if (item.window) {
+      onClick(`/window/${item.window.id}`);
     } else {
       console.error('DrawerSection: unexpected type');
     }
-  }, [item.type, item.windowId, onClick]);
+  }, [item, onClick]);
 
   const mainStyle = useMemo(
     () => ({

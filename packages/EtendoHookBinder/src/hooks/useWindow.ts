@@ -18,6 +18,7 @@ export function useWindow(windowId: string) {
         setError(undefined);
 
         const _windowData = await getWindow(windowId);
+        console.debug(_windowData)
 
         setWindowData(_windowData);
         setColumnsData(
