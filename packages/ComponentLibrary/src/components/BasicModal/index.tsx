@@ -37,24 +37,22 @@ const Modal: React.FC<ModalIProps> = ({
     setOpen(false);
   };
 
-  const getGradientStyles = () => {
-    if (!backgroundGradient) return {};
-
-    return {
-      '&::before': {
-        content: '""',
-        position: 'absolute',
-        top: '-2px',
-        left: '-2px',
-        right: '-2px',
-        height: '50%',
-        background: backgroundGradient,
-        borderTopLeftRadius: '1rem',
-        borderTopRightRadius: '1rem',
-        zIndex: 0,
-      },
-    };
-  };
+  const gradientStyles = !backgroundGradient
+    ? {}
+    : {
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: '-2px',
+          left: '-2px',
+          right: '-2px',
+          height: '50%',
+          background: backgroundGradient,
+          borderTopLeftRadius: '1rem',
+          borderTopRightRadius: '1rem',
+          zIndex: 0,
+        },
+      };
 
   const modalStyles = calculateModalStyles({ height, width, posX, posY });
 
@@ -74,7 +72,7 @@ const Modal: React.FC<ModalIProps> = ({
           sx={{
             ...styles.boxStyles,
             ...modalStyles,
-            ...getGradientStyles(),
+            ...gradientStyles,
           }}>
           <Box sx={sx.modalContainer}>
             {showHeader && (
