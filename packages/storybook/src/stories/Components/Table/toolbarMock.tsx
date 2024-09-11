@@ -32,7 +32,7 @@ type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(
 export const createToolbarConfig = (
   toggleDropdown: () => void,
   toggleSidebar: () => void,
-  handleExpandClick: (event?: React.MouseEvent<HTMLElement>) => void,
+  handleExpandClick: () => void,
   isDropdownOpen: boolean,
   isSidebarOpen: boolean,
   t: TranslateFunction,
@@ -53,7 +53,7 @@ export const createToolbarConfig = (
         width: 16,
         fill: theme.palette.baselineColor.neutral[0],
         sx: {
-          padding: '0.5rem',
+          padding: '0.75rem',
           maxHeight: '2rem',
           background: theme.palette.baselineColor.neutral[100],
           borderRadius: '6.25rem 0 0 6.25rem',

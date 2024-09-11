@@ -54,7 +54,7 @@ export const createFormViewToolbarConfig = (
         width: 14,
         fill: theme.palette.baselineColor.neutral[0],
         sx: {
-          padding: '0.5rem',
+          padding: '0.75rem',
           maxHeight: '2rem',
           background: theme.palette.baselineColor.neutral[100],
           borderRadius: '6.25rem',
