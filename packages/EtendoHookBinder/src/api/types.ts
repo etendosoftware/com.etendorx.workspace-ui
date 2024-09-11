@@ -111,87 +111,12 @@ export interface WindowMetadata {
 
 export interface WindowMetadataMap extends Record<string, WindowMetadata> {}
 
-export interface MenuOption {
-  type: MenuType;
-  isVisible: boolean;
-  isProcess: boolean;
-  label: string;
-  sequenceNumber: number;
-  id: string;
-  name?: string;
-  form?: string;
-  view?: string;
-  identifier: string;
-  process?: string;
-  action?: string;
-  url?: string;
-  description?: string;
-  windowId: string;
-  children?: MenuOption[]
-}
-
-export interface Menu {
-  id: string;
-  label: string;
-  singleRecord: boolean;
-  readOnly: boolean;
-  editOrDeleteOnly: boolean;
-  type: MenuType;
-  children?: MenuSubmenu[];
-}
-
-export interface MenuSubmenu extends Omit<Menu, 'submenu'> {
-  singleRecord: boolean;
-  readOnly: boolean;
-  editOrDeleteOnly: boolean;
-  type: MenuType;
-  children?: SubmenuSubmenu[];
-  tabId?: string;
-  windowId?: string;
-  optionType?: OptionType;
-  viewValue?: string;
-}
-
 export enum OptionType {
   Process = 'process',
   ProcessDefinition = 'processDefinition',
   ProcessManual = 'processManual',
   Tab = 'tab',
   URL = 'url',
-}
-
-export interface SubmenuSubmenu {
-  label: string;
-  type: MenuType;
-  tabId?: string;
-  windowId?: string;
-  optionType?: OptionType;
-  id: string;
-  viewValue?: string;
-  singleRecord: boolean;
-  readOnly: boolean;
-  editOrDeleteOnly: boolean;
-  viewId?: string;
-  uiPattern?: UIPattern;
-  processId?: string;
-  manualUrl?: string;
-  formId?: string;
-  tabTitle?: string;
-  modal?: string;
-  manualProcessId?: string;
-  submenu?: SubmenuSubmenu[];
-}
-
-export enum MenuType {
-  Folder = 'folder',
-  Form = 'form',
-  Process = 'process',
-  ProcessDefinition = 'processDefinition',
-  ProcessManual = 'processManual',
-  Report = 'report',
-  View = 'view',
-  Window = 'Window',
-  Summary = 'Summary',
 }
 
 export enum UIPattern {
@@ -202,4 +127,43 @@ export enum UIPattern {
 
 export interface RecordPayload extends Record<string, string> {
   _entity_name: string;
+}
+
+export interface Menu {
+  _identifier: string;
+  _entityName: string;
+  $ref: string;
+  recordTime: number;
+  children?: Menu[];
+  icon?: string | null;
+  id: string;
+  name: string;
+  window?: Window | null;
+  action?: Action[keyof Action] | null;
+}
+
+
+export enum Action {
+  OBUIAPPOpenView = 'OBUIAPP_OpenView',
+  OBUIAPPProcess = 'OBUIAPP_Process',
+  P = 'P',
+  R = 'R',
+  W = 'W',
+  X = 'X',
+}
+
+export interface Window {
+  _identifier: string;
+  _entityName: string;
+  $ref: string;
+  recordTime: number;
+  id: string;
+  name: string;
+  windowType: keyof typeof WindowType;
+}
+
+export enum WindowType {
+  M = 'M',
+  Q = 'Q',
+  T = 'T',
 }

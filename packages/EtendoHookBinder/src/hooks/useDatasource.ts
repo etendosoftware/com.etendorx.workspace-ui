@@ -36,9 +36,9 @@ export function useDatasource(
   params: DatasourceOptions,
 ) {
   const _params = JSON.stringify(params);
-  const entity = windowMetadata?.properties.viewProperties.entity;
-  const windowId = windowMetadata?.properties.windowId;
-  const tabId = windowMetadata?.properties.viewProperties.tabId;
+  const windowId = windowMetadata?.id;
+  const entity = windowMetadata?.tabs[0].entityName;
+  const tabId = windowMetadata?.tabs[0].id;
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);
   const [data, setData] = useState<Record<string, Record<string, unknown>>>({});

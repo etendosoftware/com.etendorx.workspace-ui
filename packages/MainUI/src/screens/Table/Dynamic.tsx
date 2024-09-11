@@ -7,14 +7,14 @@ import {
   Column,
   WindowMetadata,
 } from '@workspaceui/etendohookbinder/src/api/types';
+import { useMemo } from 'react';
+import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
 
-function Content({
-  windowData,
-  columnsData,
-}: {
-  windowData: WindowMetadata;
-  columnsData: Column[];
-}) {
+function Content({ windowData }: { windowData: WindowMetadata }) {
+  const { getColumns } = useMetadataContext();
+
+  const columnsData = getColumns(windowData.tabs[0].id)
+
   const { records, loading, error, fetchMore, loaded } = useDatasource(
     windowData,
     {
@@ -53,15 +53,15 @@ function Content({
 
 export default function DynamicTableScreen() {
   const { id = '143', recordId = '' } = useParams();
-  const { windowData, columnsData, loading, error } = useWindow(id);
+  const { windowData, loading, error } = useWindow(id);
 
   if (loading) {
     return <Spinner />;
-  } else if (error || !windowData || !columnsData) {
+  } else if (error || !windowData) {
     return <div>{error?.message}</div>;
   } else if (recordId) {
     return <Outlet />;
   } else {
-    return <Content columnsData={columnsData} windowData={windowData} />;
+    return <Content windowData={windowData} />;
   }
 }

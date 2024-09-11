@@ -4,17 +4,16 @@ import { styles } from '../styles';
 import MenuTitle from '../MenuTitle';
 import { theme } from '../../../theme';
 import { DrawerSectionProps } from '../types';
-import { MenuType } from '../../../../../EtendoHookBinder/src/api/types';
 
 const ActualDrawerSection = ({ item, onClick }: DrawerSectionProps) => {
-  const isMainSection = item.type === MenuType.Summary;
+  const isMainSection = !!item.children?.length;
   const isSelected = false;
   const [expanded, setExpanded] = useState(false);
 
   const handleClick = useCallback(() => {
     if (item.children?.length) {
       setExpanded(prev => !prev);
-    } else if (item.window) {
+    } else if (item.window?.id) {
       onClick(`/window/${item.window.id}`);
     } else {
       console.error('DrawerSection: unexpected type');
