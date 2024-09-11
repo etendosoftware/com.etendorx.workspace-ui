@@ -3,6 +3,17 @@ import { Organization, Widget } from './types';
 import SideIcon from '../../../../../ComponentLibrary/src/assets/icons/codesandbox.svg';
 import TabWidget from '../../../../../ComponentLibrary/src/components/Widgets/TabWidget';
 import { RecordContextType } from '../../../../../MainUI/src/contexts/record';
+import { TranslationKeys } from '../../../../../ComponentLibrary/src/locales/types';
+
+type NestedKeyOf<ObjectType extends object> = {
+  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
+    ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}`
+    : `${Key}`;
+}[keyof ObjectType & (string | number)];
+
+type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(
+  key: K,
+) => string;
 
 const colors = {
   backgrounds: [
@@ -53,6 +64,7 @@ const getContrastColor = (bgColor: string) => {
 export const createWidgets = (
   selectedRecord: Organization | null,
   setSelectedRecord: RecordContextType['setSelectedRecord'],
+  t: TranslateFunction,
 ) => {
   const widgets: Widget[] = [
     {
@@ -61,10 +73,10 @@ export const createWidgets = (
         <TabWidget
           onSave={() => {}}
           onCancel={() => {}}
-          editButtonLabel={'Edit Form'}
-          cancelButtonLabel={'Cancel'}
-          saveButtonLabel={'Save'}
-          noRecordText={'No Row Selected'}
+          editButtonLabel={t('common.edit')}
+          cancelButtonLabel={t('common.cancel')}
+          saveButtonLabel={t('common.save')}
+          noRecordText={t('table.labels.noRecord')}
           selectedRecord={selectedRecord}
           setSelectedRecord={setSelectedRecord}
         />

@@ -87,8 +87,6 @@ export interface SidebarProps {
     title: string | null;
   };
   widgets: Widget[];
-  noIdentifierLabel?: string;
-  noTitleLabel?: string;
 }
 
 export interface ToolbarButton {
