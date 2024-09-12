@@ -59,15 +59,6 @@ const IconButton: React.FC<ExtendedIconButtonProps> = ({
       })
     : null;
 
-  const buttonContent = (
-    <Box sx={defaultStyles.buttonContainer}>
-      {clonedIcon}
-      {iconText && (
-        <Typography sx={defaultStyles.iconText}>{iconText}</Typography>
-      )}
-    </Box>
-  );
-
   const button = (
     <MUIIconButton
       sx={combinedStyles}
@@ -75,7 +66,12 @@ const IconButton: React.FC<ExtendedIconButtonProps> = ({
       disabled={disabled}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}>
-      {buttonContent}
+      <Box sx={defaultStyles.buttonContainer}>
+        {clonedIcon}
+        {iconText && (
+          <Typography sx={defaultStyles.iconText}>{iconText}</Typography>
+        )}
+      </Box>
     </MUIIconButton>
   );
 
