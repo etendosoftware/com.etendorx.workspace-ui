@@ -1,10 +1,19 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Tooltip, IconButton as MUIIconButton } from '@mui/material';
+import {
+  Tooltip,
+  IconButton as MUIIconButton,
+  Box,
+  Typography,
+} from '@mui/material';
 import { theme } from '../../theme';
 import { defaultStyles } from './styles';
 import { IIconComponentProps } from './types';
 
-const IconButton: React.FC<IIconComponentProps> = ({
+interface ExtendedIconButtonProps extends IIconComponentProps {
+  iconText?: string;
+}
+
+const IconButton: React.FC<ExtendedIconButtonProps> = ({
   fill = theme.palette.baselineColor.neutral[80],
   hoverFill = theme.palette.baselineColor.neutral[0],
   width = 24,
@@ -14,6 +23,7 @@ const IconButton: React.FC<IIconComponentProps> = ({
   children,
   disabled,
   isHovered = false,
+  iconText,
   ...props
 }) => {
   const [iconFill, setIconFill] = useState<string>(fill);
@@ -35,17 +45,19 @@ const IconButton: React.FC<IIconComponentProps> = ({
   }, [disabled, fill]);
 
   const combinedStyles = {
-    ...defaultStyles,
+    ...defaultStyles.defaultContainer,
     ...sx,
   };
 
-  const clonedIcon = React.cloneElement(children as React.ReactElement, {
-    style: {
-      fill: disabled ? theme.palette.action.disabled : iconFill,
-      width,
-      height,
-    },
-  });
+  const clonedIcon = React.isValidElement(children)
+    ? React.cloneElement(children as React.ReactElement, {
+        style: {
+          fill: disabled ? theme.palette.action.disabled : iconFill,
+          width,
+          height,
+        },
+      })
+    : null;
 
   const button = (
     <MUIIconButton
@@ -54,7 +66,12 @@ const IconButton: React.FC<IIconComponentProps> = ({
       disabled={disabled}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}>
-      {clonedIcon}
+      <Box sx={defaultStyles.buttonContainer}>
+        {clonedIcon}
+        {iconText && (
+          <Typography sx={defaultStyles.iconText}>{iconText}</Typography>
+        )}
+      </Box>
     </MUIIconButton>
   );
 

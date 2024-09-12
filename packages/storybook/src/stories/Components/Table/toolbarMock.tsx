@@ -3,7 +3,7 @@ import RefreshIcon from '../../../../../ComponentLibrary/src/assets/icons/refres
 import SearchIcon from '../../../../../ComponentLibrary/src/assets/icons/search.svg';
 import FilterIcon from '../../../../../ComponentLibrary/src/assets/icons/filter.svg';
 import ColumnsIcon from '../../../../../ComponentLibrary/src/assets/icons/columns.svg';
-import ChevronDownIcon from '../../../../../ComponentLibrary/src/assets/icons/chevrons-down.svg';
+import ChevronDownIcon from '../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
 import SidebarIcon from '../../../../../ComponentLibrary/src/assets/icons/sidebar.svg';
 import LowerFlapIcon from '../../../../../ComponentLibrary/src/assets/icons/lower-flap.svg';
 import Excel from '../../../../../ComponentLibrary/src/assets/icons/ilustration/excel.svg';
@@ -29,9 +29,12 @@ type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(
   key: K,
 ) => string;
 
+const IconSize = 16;
+
 export const createToolbarConfig = (
   toggleDropdown: () => void,
   toggleSidebar: () => void,
+  handleExpandClick: () => void,
   isDropdownOpen: boolean,
   isSidebarOpen: boolean,
   t: TranslateFunction,
@@ -44,20 +47,62 @@ export const createToolbarConfig = (
     buttons: [
       {
         key: 'new-line',
-        icon: <PlusIcon fill={theme.palette.baselineColor.neutral[0]} />,
+        icon: <PlusIcon />,
+        iconText: 'New Line',
         tooltip: 'New Line',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
+        fill: theme.palette.baselineColor.neutral[0],
+        sx: {
+          padding: '0.75rem',
+          maxHeight: '2rem',
+          background: theme.palette.baselineColor.neutral[100],
+          borderRadius: '6.25rem 0 0 6.25rem',
+          color: theme.palette.baselineColor.neutral[0],
+          '&:hover': {
+            background: theme.palette.dynamicColor.main,
+          },
+        },
+      },
+      {
+        key: 'expand',
+        icon: <ChevronDownIcon />,
+        tooltip: 'Expand',
+        onClick: handleExpandClick,
+        height: IconSize,
+        width: IconSize,
+        fill: theme.palette.baselineColor.neutral[0],
+        sx: {
+          background: theme.palette.baselineColor.neutral[100],
+          borderRadius: '0 6.25rem 6.25rem 0',
+          '&:hover': {
+            background: theme.palette.dynamicColor.main,
+          },
+        },
       },
       {
         key: 'refresh',
         icon: <RefreshIcon />,
         tooltip: t('table.tooltips.refresh'),
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
+        sx: {
+          marginLeft: '0.2rem',
+          border: `1px solid ${theme.palette.baselineColor.transparentNeutral[30]}`,
+        },
       },
     ],
     style: {
       display: 'flex',
-      gap: '0.25rem',
+      width: 'auto',
+      alignItems: 'center',
+      background: `var(--Neutral-0, ${theme.palette.baselineColor.neutral[0]})`,
+      borderRadius: '10rem',
+      padding: '0.25rem',
+      maxHeight: '2.5rem',
+      gap: '0.05rem',
     },
   },
   centerSection: {
@@ -67,48 +112,64 @@ export const createToolbarConfig = (
         icon: <Print />,
         tooltip: 'Print',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'copilot',
         icon: <Copilot />,
         tooltip: 'Copilot',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'delete',
         icon: <Trash />,
         tooltip: 'Delete',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'printer',
         icon: <Printer />,
         tooltip: 'Printer',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'copy',
         icon: <Copy />,
         tooltip: 'Copy',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'excel',
         icon: <Excel />,
         tooltip: 'Excel',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'mail',
         icon: <Mail />,
         tooltip: 'Mail',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'link',
         icon: <LinkIcon />,
         tooltip: 'Link',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
     ],
     style: {
@@ -127,24 +188,32 @@ export const createToolbarConfig = (
         icon: <SearchIcon />,
         tooltip: t('table.tooltips.search'),
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'views',
         icon: <ChevronDownIcon />,
         tooltip: t('table.tooltips.views'),
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'filter',
         icon: <FilterIcon />,
         tooltip: t('table.tooltips.filter'),
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'columns',
         icon: <ColumnsIcon />,
         tooltip: t('table.tooltips.columns'),
         onClick: () => {},
+        height: IconSize,
+        width: 16,
       },
       {
         key: 'sidebar',
@@ -167,6 +236,8 @@ export const createToolbarConfig = (
               },
             }
           : {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'details',
@@ -187,6 +258,8 @@ export const createToolbarConfig = (
               },
             }
           : {},
+        height: IconSize,
+        width: IconSize,
       },
     ],
     style: {
@@ -195,7 +268,6 @@ export const createToolbarConfig = (
       background: `var(--Neutral-0, ${theme.palette.baselineColor.transparentNeutral[5]})`,
       borderRadius: '10rem',
       padding: '0.25rem',
-      marginLeft: '0.25rem',
     },
   },
 });

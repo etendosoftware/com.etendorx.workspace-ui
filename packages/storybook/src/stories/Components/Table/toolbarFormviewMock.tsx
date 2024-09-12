@@ -1,5 +1,5 @@
 import SaveIcon from '../../../../../ComponentLibrary/src/assets/icons/save.svg';
-import CancelIcon from '../../../../../ComponentLibrary/src/assets/icons/corner-up-left.svg';
+import PlusIcon from '../../../../../ComponentLibrary/src/assets/icons/plus.svg';
 import RefreshIcon from '../../../../../ComponentLibrary/src/assets/icons/refresh-cw.svg';
 import SearchIcon from '../../../../../ComponentLibrary/src/assets/icons/search.svg';
 import FilterIcon from '../../../../../ComponentLibrary/src/assets/icons/filter.svg';
@@ -29,6 +29,8 @@ type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(
   key: K,
 ) => string;
 
+const IconSize = 16;
+
 export const createFormViewToolbarConfig = (
   onSave: () => void,
   onCancel: () => void,
@@ -46,26 +48,59 @@ export const createFormViewToolbarConfig = (
     buttons: [
       {
         key: 'save',
-        icon: <SaveIcon fill={theme.palette.baselineColor.neutral[0]} />,
         tooltip: t('common.save'),
+        icon: <SaveIcon />,
+        iconText: 'Save Changes',
         onClick: onSave,
+        height: 14,
+        width: 14,
+        fill: theme.palette.baselineColor.neutral[0],
+        sx: {
+          padding: '0.75rem',
+          maxHeight: '2rem',
+          background: theme.palette.baselineColor.neutral[100],
+          borderRadius: '6.25rem',
+          color: theme.palette.baselineColor.neutral[0],
+          '&:hover': {
+            border: 'none',
+            background: theme.palette.dynamicColor.main,
+            borderRadius: '6.25rem',
+          },
+        },
       },
       {
-        key: 'cancel',
-        icon: <CancelIcon fill={theme.palette.baselineColor.neutral[0]} />,
+        key: 'Add',
         tooltip: t('common.cancel'),
+        icon: <PlusIcon />,
         onClick: onCancel,
+        height: IconSize,
+        width: IconSize,
+        fill: theme.palette.baselineColor.neutral[0],
+        sx: {
+          background: theme.palette.baselineColor.neutral[100],
+        },
       },
       {
         key: 'refresh',
         icon: <RefreshIcon />,
         tooltip: t('table.tooltips.refresh'),
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
+        sx: {
+          border: `1px solid ${theme.palette.baselineColor.transparentNeutral[30]}`,
+        },
       },
     ],
     style: {
       display: 'flex',
+      width: 'auto',
+      alignItems: 'center',
+      background: `var(--Neutral-0, ${theme.palette.baselineColor.neutral[0]})`,
+      borderRadius: '10rem',
+      padding: '0.25rem',
       gap: '0.25rem',
+      maxHeight: '2.5rem',
     },
   },
   centerSection: {
@@ -75,48 +110,64 @@ export const createFormViewToolbarConfig = (
         icon: <Print />,
         tooltip: 'Print',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'copilot',
         icon: <Copilot />,
         tooltip: 'Copilot',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'delete',
         icon: <Trash />,
         tooltip: 'Delete',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'printer',
         icon: <Printer />,
         tooltip: 'Printer',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'copy',
         icon: <Copy />,
         tooltip: 'Copy',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'excel',
         icon: <Excel />,
         tooltip: 'Excel',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'mail',
         icon: <Mail />,
         tooltip: 'Mail',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'link',
         icon: <LinkIcon />,
         tooltip: 'Link',
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
     ],
     style: {
@@ -124,7 +175,7 @@ export const createFormViewToolbarConfig = (
       width: '100%',
       background: `var(--Neutral-0, ${theme.palette.baselineColor.transparentNeutral[5]})`,
       borderRadius: '10rem',
-      padding: '.25rem',
+      padding: '0.25rem',
       gap: '0.25rem',
     },
   },
@@ -135,24 +186,32 @@ export const createFormViewToolbarConfig = (
         icon: <SearchIcon />,
         tooltip: t('table.tooltips.search'),
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'views',
         icon: <ChevronDownIcon />,
         tooltip: t('table.tooltips.views'),
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'filter',
         icon: <FilterIcon />,
         tooltip: t('table.tooltips.filter'),
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'columns',
         icon: <ColumnsIcon />,
         tooltip: t('table.tooltips.columns'),
         onClick: () => {},
+        height: IconSize,
+        width: IconSize,
       },
       {
         key: 'sidebar',
@@ -161,6 +220,8 @@ export const createFormViewToolbarConfig = (
           ? t('table.tooltips.closeSidebar')
           : t('table.tooltips.openSidebar'),
         onClick: toggleSidebar,
+        height: IconSize,
+        width: IconSize,
         fill: isSidebarOpen
           ? theme.palette.baselineColor.neutral[0]
           : theme.palette.baselineColor.neutral[80],
@@ -181,6 +242,8 @@ export const createFormViewToolbarConfig = (
         icon: <LowerFlapIcon />,
         tooltip: t('table.tooltips.details'),
         onClick: toggleDropdown,
+        height: IconSize,
+        width: IconSize,
         fill: isDropdownOpen
           ? theme.palette.baselineColor.neutral[0]
           : theme.palette.baselineColor.neutral[80],

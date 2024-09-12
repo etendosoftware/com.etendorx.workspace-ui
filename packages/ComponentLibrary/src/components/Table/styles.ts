@@ -6,13 +6,12 @@ export const tableStyles: { [key: string]: SxProps<Theme> } = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: '1rem',
+    gap: '0.25rem',
   },
   topToolbarCenter: {
     flex: 1,
     display: 'flex',
     justifyContent: 'flex-start',
-    marginLeft: '1rem',
   },
   tableBodyRow: {
     cursor: 'pointer',
