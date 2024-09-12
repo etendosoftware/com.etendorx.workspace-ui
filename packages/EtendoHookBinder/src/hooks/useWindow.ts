@@ -10,7 +10,7 @@ export function useWindow(windowId: string) {
   const [loaded, setLoaded] = useState(false);
 
   const columnsData = useMemo(
-    () => getColumns(windowData?.tabs[0].id),
+    () => getColumns(windowData?.tabs[0].id ?? ''),
     [getColumns, windowData],
   );
 

@@ -29,7 +29,7 @@ export class Metadata {
     const { data } = await Metadata.client.post(`window/${windowId}`);
 
     Metadata.cache.set(`window-${windowId}`, data);
-    data.tabs.forEach(tab => {
+    data.tabs.forEach((tab: Record<string, string>) => {
       Metadata.cache.set(`tab-${tab.id}`, tab);
     });
 
