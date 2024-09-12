@@ -3,11 +3,16 @@ import type { Etendo } from '../api/metadata';
 import { useMetadataContext } from '../hooks/useMetadataContext';
 
 export function useWindow(windowId: string) {
-  const { getWindow } = useMetadataContext();
+  const { getWindow, getColumns } = useMetadataContext();
   const [windowData, setWindowData] = useState<Etendo.WindowMetadata>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error>();
   const [loaded, setLoaded] = useState(false);
+
+  const columnsData = useMemo(
+    () => getColumns(windowData?.tabs[0].id),
+    [getColumns, windowData],
+  );
 
   const load = useCallback(async () => {
     try {
@@ -27,7 +32,7 @@ export function useWindow(windowId: string) {
   }, [load]);
 
   return useMemo(
-    () => ({ loading, windowData, error, loaded, load }),
-    [error, load, loaded, loading, windowData],
+    () => ({ loading, windowData, error, loaded, load, columnsData }),
+    [columnsData, error, load, loaded, loading, windowData],
   );
 }

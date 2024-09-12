@@ -1,6 +1,8 @@
 import type { Etendo } from '../api/metadata';
 
 export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
+  return (columns ?? []) as unknown as Etendo.Column[];
+
   console.debug({ columns });
   if (!columns) {
     return [];
