@@ -7,13 +7,14 @@ import {
   Column,
   WindowMetadata,
 } from '@workspaceui/etendohookbinder/src/api/types';
+import { useMemo } from 'react';
 
 function Content({
   windowData,
   columnsData,
 }: {
   windowData: WindowMetadata;
-  columnsData: Column[];
+  columnsData: Record<string, Column[]>;
 }) {
   const { records, loading, error, fetchMore, loaded } = useDatasource(
     windowData,
@@ -34,6 +35,10 @@ function Content({
       ],
     },
   );
+  const columns = useMemo(
+    () => columnsData[windowData.tabs[0].id],
+    [columnsData, windowData.tabs],
+  );
 
   if (loading && !loaded) {
     return <Spinner />;
@@ -42,7 +47,7 @@ function Content({
   } else {
     return (
       <DynamicTable
-        columns={columnsData}
+        columns={columns}
         data={records}
         fetchMore={fetchMore}
         loading={loading}

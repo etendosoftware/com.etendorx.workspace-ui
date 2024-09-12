@@ -21,8 +21,6 @@ export default function DynamicTable({
   fetchMore: () => void;
   loading: boolean;
 }) {
-  console.log(columns);
-
   const theme = useTheme();
   const table = useMaterialReactTable({
     columns,
