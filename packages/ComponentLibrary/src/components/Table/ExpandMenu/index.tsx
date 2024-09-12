@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Menu, MenuItem, TextField } from '@mui/material';
+import { useState } from 'react';
+import { Menu, MenuItem, TextField, PopoverOrigin } from '@mui/material';
+import { useTranslation } from '../../../../../MainUI/src/hooks/useTranslation';
 
 interface ExpandMenuProps {
   anchorEl: null | HTMLElement;
@@ -7,7 +8,18 @@ interface ExpandMenuProps {
   open: boolean;
 }
 
-const ExpandMenu: React.FC<ExpandMenuProps> = ({ anchorEl, onClose, open }) => {
+const bottomRightOrigin: PopoverOrigin = {
+  vertical: 'bottom',
+  horizontal: 'right',
+};
+
+const transformOrigin: PopoverOrigin = {
+  vertical: 'top',
+  horizontal: 'left',
+};
+
+const ExpandMenu = ({ anchorEl, onClose, open }: ExpandMenuProps) => {
+  const { t } = useTranslation();
   const [inputValue, setInputValue] = useState('');
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -19,19 +31,13 @@ const ExpandMenu: React.FC<ExpandMenuProps> = ({ anchorEl, onClose, open }) => {
       anchorEl={anchorEl}
       open={open}
       onClose={onClose}
-      anchorOrigin={{
-        vertical: 'bottom',
-        horizontal: 'right',
-      }}
-      transformOrigin={{
-        vertical: 'top',
-        horizontal: 'left',
-      }}>
+      anchorOrigin={bottomRightOrigin}
+      transformOrigin={transformOrigin}>
       <MenuItem>
         <TextField
           value={inputValue}
           onChange={handleInputChange}
-          placeholder="Enter value"
+          placeholder={t('table.placeholders.search')}
           variant="outlined"
           size="small"
         />
