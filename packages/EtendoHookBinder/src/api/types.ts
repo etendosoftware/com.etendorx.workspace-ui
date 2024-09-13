@@ -12,7 +12,7 @@ export interface CacheStore<T> extends Map<string, CachedData<T>> {}
 export interface Criteria {
   fieldName: string;
   operator: string;
-  value: string;
+  value?: string;
 }
 
 export interface DatasourceParams {
@@ -75,6 +75,11 @@ export interface Column {
   header: string;
   id: string;
   accessorFn: (v: Record<string, unknown>) => unknown;
+  columnName: string;
+  column: {
+    reference: string;
+    mandatory: boolean;
+  };
 }
 
 export interface ViewStandardProperties extends Record<string, unknown> {
@@ -107,6 +112,7 @@ export interface WindowMetadata {
   name: string;
   superClass?: string;
   properties: WindowMetadataProperties;
+  tabs: Array<{ id: string; fields: Record<string, any> }>;
 }
 
 export interface WindowMetadataMap extends Record<string, WindowMetadata> {}

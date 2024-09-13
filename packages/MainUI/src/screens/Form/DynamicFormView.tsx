@@ -8,6 +8,7 @@ import {
   FieldDefinition,
   Section,
 } from '@workspaceui/storybook/stories/Components/Table/types';
+import { WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 
 function mapColumnTypeToFieldType(
   reference: string,
@@ -47,7 +48,8 @@ export default function DynamicFormView() {
     records,
     loading: recordLoading,
     error: recordError,
-  } = useDatasource(windowData, {
+    loaded,
+  } = useDatasource(windowData as WindowMetadata, {
     criteria: [
       {
         fieldName: 'id',
@@ -56,7 +58,6 @@ export default function DynamicFormView() {
       },
     ],
   });
-
   useEffect(() => {
     if (windowData && columnsData && records && records.length > 0) {
       const adaptedData: Record<string, FieldDefinition | Section> = {};
@@ -111,7 +112,7 @@ export default function DynamicFormView() {
         adaptedData[fieldName] = {
           value: record[`${fieldName}$_identifier`] ?? record[fieldName],
           type: mapColumnTypeToFieldType(column.column.reference),
-          label: column.name,
+          label: column.columnName,
           section: sectionName,
           required: column.column.mandatory,
         };
@@ -129,7 +130,7 @@ export default function DynamicFormView() {
     navigate('/');
   }, [navigate]);
 
-  if (loading || recordLoading) {
+  if (loading && recordLoading && !loaded) {
     return <Spinner />;
   }
 
