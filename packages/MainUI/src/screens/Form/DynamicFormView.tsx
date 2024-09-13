@@ -9,6 +9,31 @@ import {
   Section,
 } from '@workspaceui/storybook/stories/Components/Table/types';
 
+function mapColumnTypeToFieldType(
+  reference: string,
+): 'text' | 'number' | 'date' | 'boolean' | 'select' {
+  switch (reference) {
+    case '11': // Integer
+    case '12': // Amount
+    case '29': // Quantity
+    case '22': // Number
+    case '800008': // Price
+      return 'number';
+    case '15': // Date
+    case '16': // DateTime
+      return 'date';
+    case '20': // YesNo
+      return 'boolean';
+    case '17': // List
+    case '30': // Search
+      return 'select';
+    case '18': // Table
+    case '19': // TableDir
+    default:
+      return 'text';
+  }
+}
+
 export default function DynamicFormView() {
   const { id, recordId } = useParams<{ id: string; recordId: string }>();
   const navigate = useNavigate();
@@ -34,39 +59,64 @@ export default function DynamicFormView() {
 
   useEffect(() => {
     if (windowData && columnsData && records && records.length > 0) {
-      console.log('Adapting data...');
-      const adaptedData: Record<string, FieldDefinition | Section> = {
-        _mainSection: {
-          name: '_mainSection',
+      const adaptedData: Record<string, FieldDefinition | Section> = {};
+
+      const sections = new Set<string>();
+      columnsData.forEach(column => {
+        const fieldInfo = windowData.tabs[0].fields[column.columnName];
+        if (fieldInfo && fieldInfo.fieldGroup$_identifier) {
+          sections.add(fieldInfo.fieldGroup$_identifier);
+        }
+      });
+
+      sections.forEach(sectionName => {
+        adaptedData[sectionName] = {
+          name: sectionName,
+          label: sectionName,
+          type: 'section',
+          personalizable: false,
+          id: sectionName,
+          showInTab: 'both',
+        };
+      });
+
+      if (sections.size === 0 || !sections.has('Main')) {
+        adaptedData['Main'] = {
+          name: 'Main',
           label: windowData.name,
           type: 'section',
           personalizable: false,
           id: 'main',
           showInTab: 'both',
-        },
-      };
+        };
+      }
 
       const record = records[0] ?? {};
 
       columnsData.forEach(column => {
         console.log('Processing column:', column);
         const fieldName = column.columnName;
+        const fieldInfo = windowData.tabs[0].fields[fieldName];
+        const sectionName = fieldInfo?.fieldGroup$_identifier || 'Main';
+
         console.debug({
           column,
+          windowData: windowData,
           name: fieldName,
-          data: records[0],
+          data: record,
           value: record[`${fieldName}$_identifier`] ?? record[fieldName],
+          section: sectionName,
         });
+
         adaptedData[fieldName] = {
           value: record[`${fieldName}$_identifier`] ?? record[fieldName],
           type: mapColumnTypeToFieldType(column.column.reference),
           label: column.name,
-          section: '_mainSection',
+          section: sectionName,
           required: column.column.mandatory,
         };
       });
 
-      console.log('Adapted Data:', adaptedData);
       setFormData(adaptedData);
     }
   }, [windowData, columnsData, records]);
@@ -96,29 +146,4 @@ export default function DynamicFormView() {
   return (
     <FormView data={formData} onSave={handleSave} onCancel={handleCancel} />
   );
-}
-
-function mapColumnTypeToFieldType(
-  reference: string,
-): 'text' | 'number' | 'date' | 'boolean' | 'select' {
-  switch (reference) {
-    case '11': // Integer
-    case '12': // Amount
-    case '29': // Quantity
-    case '22': // Number
-    case '800008': // Price
-      return 'number';
-    case '15': // Date
-    case '16': // DateTime
-      return 'date';
-    case '20': // YesNo
-      return 'boolean';
-    case '17': // List
-    case '18': // Table
-    case '19': // TableDir
-    case '30': // Search
-      return 'select';
-    default:
-      return 'text';
-  }
 }

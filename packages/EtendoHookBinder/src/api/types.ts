@@ -142,7 +142,6 @@ export interface Menu {
   action?: Action[keyof Action] | null;
 }
 
-
 export enum Action {
   OBUIAPPOpenView = 'OBUIAPP_OpenView',
   OBUIAPPProcess = 'OBUIAPP_Process',
