@@ -76,9 +76,9 @@ export interface Column {
   id: string;
   accessorFn: (v: Record<string, unknown>) => unknown;
   columnName: string;
+  isMandatory: boolean;
   column: {
     reference: string;
-    mandatory: boolean;
   };
 }
 
@@ -112,7 +112,7 @@ export interface WindowMetadata {
   name: string;
   superClass?: string;
   properties: WindowMetadataProperties;
-  tabs: Array<{ id: string; fields: Record<string, any> }>;
+  tabs: Array<{ id: string; fields: Record<string, unknown> }>;
 }
 
 export interface WindowMetadataMap extends Record<string, WindowMetadata> {}

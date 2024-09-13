@@ -31,13 +31,12 @@ export interface Section {
 export type OrganizationField = FieldDefinition | Section;
 
 export interface Organization {
-  [key: string]: OrganizationField;
   id: BaseFieldDefinition<string>;
   documentNo: BaseFieldDefinition<string>;
   transactionDocument: BaseFieldDefinition<string>;
   _noteSection: Section;
+  [key: string]: FieldDefinition | Section;
 }
-
 export type OrganizationLabels = {
   [K in keyof Organization]: string;
 };
