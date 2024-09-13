@@ -16,6 +16,7 @@ export interface DrawerProps {
 export interface DrawerSectionProps {
   item: Menu;
   onClick: NavigateFn;
+  open?: boolean;
 }
 
 export interface DrawerSubsectionProps {

@@ -21,7 +21,7 @@ import {
 } from '@workspaceui/storybook/mocks';
 
 const handleClose = () => {
-  console.log('Modal closed');
+  return true;
 };
 
 const Navigation = () => (

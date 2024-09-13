@@ -4,10 +4,12 @@ import { styles } from '../styles';
 import MenuTitle from '../MenuTitle';
 import { theme } from '../../../theme';
 import { DrawerSectionProps } from '../types';
+import { useParams } from 'react-router-dom';
 
-const ActualDrawerSection = ({ item, onClick }: DrawerSectionProps) => {
+const ActualDrawerSection = ({ item, onClick, open }: DrawerSectionProps) => {
   const isMainSection = !!item.children?.length;
-  const isSelected = false;
+  const { id } = useParams();
+  const isSelected = Boolean(item.window?.id === id);
   const [expanded, setExpanded] = useState(false);
 
   const handleClick = useCallback(() => {
@@ -38,6 +40,7 @@ const ActualDrawerSection = ({ item, onClick }: DrawerSectionProps) => {
         onClick={handleClick}
         selected={isSelected}
         expanded={expanded}
+        open={open}
       />
       {item.children ? (
         <Collapse in={expanded} timeout="auto">

@@ -9,11 +9,13 @@ export default function MenuTitle({
   onClick,
   selected,
   expanded,
+  open,
 }: {
   item: Menu;
   onClick: () => void;
   selected?: boolean;
   expanded?: boolean;
+  open?: boolean;
 }) {
   return (
     <Box

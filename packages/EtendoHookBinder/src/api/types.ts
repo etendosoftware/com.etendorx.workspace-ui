@@ -108,7 +108,7 @@ export interface WindowMetadata {
   name: string;
   superClass?: string;
   properties: WindowMetadataProperties;
-  tabs: Record<string, string>[];
+  tabs: Record<string, unknown>[];
 }
 
 export interface WindowMetadataMap extends Record<string, WindowMetadata> {}

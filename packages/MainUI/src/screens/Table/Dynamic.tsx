@@ -3,19 +3,10 @@ import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { Outlet, useParams } from 'react-router-dom';
 import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import {
-  Column,
-  WindowMetadata,
-} from '@workspaceui/etendohookbinder/src/api/types';
-import { useMemo } from 'react';
+import { WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import { parseColumns } from '@workspaceui/etendohookbinder/src/helpers/metadata';
 
-function Content({
-  windowData,
-  columnsData,
-}: {
-  windowData: WindowMetadata;
-  columnsData: Record<string, Column[]>;
-}) {
+function Content({ windowData }: { windowData: WindowMetadata }) {
   const { records, loading, error, fetchMore, loaded } = useDatasource(
     windowData,
     {
@@ -35,10 +26,6 @@ function Content({
       ],
     },
   );
-  const columns = useMemo(
-    () => columnsData[windowData.tabs[0].id],
-    [columnsData, windowData.tabs],
-  );
 
   if (loading && !loaded) {
     return <Spinner />;
@@ -46,19 +33,26 @@ function Content({
     return <div>{error.message}</div>;
   } else {
     return (
-      <DynamicTable
-        columns={columns}
-        data={records}
-        fetchMore={fetchMore}
-        loading={loading}
-      />
+      <>
+        {windowData.tabs.map(tab => {
+          return (
+            <DynamicTable
+              columns={parseColumns(Object.values(tab.fields))}
+              data={records}
+              fetchMore={fetchMore}
+              loading={loading}
+              tab={tab}
+            />
+          );
+        })}
+      </>
     );
   }
 }
 
 export default function DynamicTableScreen() {
   const { id = '143', recordId = '' } = useParams();
-  const { windowData, columnsData, loading, error } = useWindow(id);
+  const { windowData, loading, error } = useWindow(id);
 
   if (loading) {
     return <Spinner />;
@@ -67,6 +61,6 @@ export default function DynamicTableScreen() {
   } else if (recordId) {
     return <Outlet />;
   } else {
-    return <Content windowData={windowData} columnsData={columnsData} />;
+    return <Content windowData={windowData} />;
   }
 }

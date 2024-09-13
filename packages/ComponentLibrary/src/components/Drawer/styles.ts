@@ -6,7 +6,6 @@ const DRAWER_WIDTH_CLOSED = 56;
 
 export const styles = {
   drawer: {
-    flexShrink: 0,
     whiteSpace: 'nowrap',
     boxSizing: 'border-box',
   },
@@ -51,7 +50,6 @@ export const styles = {
   listItemButton: {
     display: 'flex',
     gap: '0.5rem',
-    width: '100%',
     alignItems: 'center',
     cursor: 'pointer',
     borderRadius: '0.5rem',
@@ -69,7 +67,6 @@ export const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
-    width: '100%',
     overflow: 'hidden',
     justifyContent: 'flex-start',
   },
@@ -116,7 +113,6 @@ export const styles = {
   drawerWidth: DRAWER_WIDTH,
   drawerWidthClosed: DRAWER_WIDTH_CLOSED,
   drawerSectionBox: {
-    width: '100%',
     borderRadius: '0.5rem',
     overflow: 'hidden',
   },
@@ -152,7 +148,6 @@ export const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.5rem',
-    width: '100%',
     margin: 0,
     padding: '0.5rem',
   },
@@ -160,7 +155,6 @@ export const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.5rem',
-    width: '100%',
     marginTop: '0.5rem',
     alignItems: 'flex-start',
   },
