@@ -25,12 +25,12 @@ export default function MenuTitle({
         ...styles.listItemContentText,
         ...(selected ? styles.listItemButtonSelected : undefined),
       }}>
-      <Box sx={styles.listItemInnerContentText}>
+      <div style={styles.listItemInnerContentText}>
         <Typography sx={styles.listItemText}>
           {item.icon ? <span>{item.icon}</span> : null}
           <span>{item.name}</span>
         </Typography>
-      </Box>
+      </div>
       {item.children ? expanded ? <ExpandLess /> : <ExpandMore /> : null}
     </Box>
   );

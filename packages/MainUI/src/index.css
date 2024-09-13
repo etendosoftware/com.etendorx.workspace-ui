@@ -18,9 +18,19 @@ body {
 }
 
 #root {
-  height: 100%;
+  min-height: 100%;
   width: 100%;
+  display: flex;
   background: var(--background-gradient);
+  align-items: flex-start;
+}
+
+#content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
 }
 
 .animated-width {

@@ -146,7 +146,7 @@ export const styles = {
   },
   subsectionsContainer: {
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'column' as React.CSSProperties['flexDirection'],
     gap: '0.5rem',
     margin: 0,
     padding: '0.5rem',
