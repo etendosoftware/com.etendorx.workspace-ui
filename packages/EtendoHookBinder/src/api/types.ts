@@ -12,7 +12,7 @@ export interface CacheStore<T> extends Map<string, CachedData<T>> {}
 export interface Criteria {
   fieldName: string;
   operator: string;
-  value: string;
+  value?: string;
 }
 
 export interface DatasourceParams {
@@ -75,6 +75,12 @@ export interface Column {
   header: string;
   id: string;
   accessorFn: (v: Record<string, unknown>) => unknown;
+  columnName: string;
+  isMandatory: boolean;
+  name: string;
+  column: {
+    reference: string;
+  };
 }
 
 export interface ViewStandardProperties extends Record<string, unknown> {
@@ -107,50 +113,10 @@ export interface WindowMetadata {
   name: string;
   superClass?: string;
   properties: WindowMetadataProperties;
+  tabs: Array<{ id: string; fields: Record<string, unknown> }>;
 }
 
 export interface WindowMetadataMap extends Record<string, WindowMetadata> {}
-
-export interface MenuOption {
-  type: MenuType;
-  isVisible: boolean;
-  isProcess: boolean;
-  label: string;
-  sequenceNumber: number;
-  id: string;
-  name?: string;
-  form?: string;
-  view?: string;
-  identifier: string;
-  process?: string;
-  action?: string;
-  url?: string;
-  description?: string;
-  windowId: string;
-  children?: MenuOption[]
-}
-
-export interface Menu {
-  id: string;
-  label: string;
-  singleRecord: boolean;
-  readOnly: boolean;
-  editOrDeleteOnly: boolean;
-  type: MenuType;
-  children?: MenuSubmenu[];
-}
-
-export interface MenuSubmenu extends Omit<Menu, 'submenu'> {
-  singleRecord: boolean;
-  readOnly: boolean;
-  editOrDeleteOnly: boolean;
-  type: MenuType;
-  children?: SubmenuSubmenu[];
-  tabId?: string;
-  windowId?: string;
-  optionType?: OptionType;
-  viewValue?: string;
-}
 
 export enum OptionType {
   Process = 'process',
@@ -158,40 +124,6 @@ export enum OptionType {
   ProcessManual = 'processManual',
   Tab = 'tab',
   URL = 'url',
-}
-
-export interface SubmenuSubmenu {
-  label: string;
-  type: MenuType;
-  tabId?: string;
-  windowId?: string;
-  optionType?: OptionType;
-  id: string;
-  viewValue?: string;
-  singleRecord: boolean;
-  readOnly: boolean;
-  editOrDeleteOnly: boolean;
-  viewId?: string;
-  uiPattern?: UIPattern;
-  processId?: string;
-  manualUrl?: string;
-  formId?: string;
-  tabTitle?: string;
-  modal?: string;
-  manualProcessId?: string;
-  submenu?: SubmenuSubmenu[];
-}
-
-export enum MenuType {
-  Folder = 'folder',
-  Form = 'form',
-  Process = 'process',
-  ProcessDefinition = 'processDefinition',
-  ProcessManual = 'processManual',
-  Report = 'report',
-  View = 'view',
-  Window = 'Window',
-  Summary = 'Summary',
 }
 
 export enum UIPattern {
@@ -202,4 +134,42 @@ export enum UIPattern {
 
 export interface RecordPayload extends Record<string, string> {
   _entity_name: string;
+}
+
+export interface Menu {
+  _identifier: string;
+  _entityName: string;
+  $ref: string;
+  recordTime: number;
+  children?: Menu[];
+  icon?: string | null;
+  id: string;
+  name: string;
+  window?: Window | null;
+  action?: Action[keyof Action] | null;
+}
+
+export enum Action {
+  OBUIAPPOpenView = 'OBUIAPP_OpenView',
+  OBUIAPPProcess = 'OBUIAPP_Process',
+  P = 'P',
+  R = 'R',
+  W = 'W',
+  X = 'X',
+}
+
+export interface Window {
+  _identifier: string;
+  _entityName: string;
+  $ref: string;
+  recordTime: number;
+  id: string;
+  name: string;
+  windowType: keyof typeof WindowType;
+}
+
+export enum WindowType {
+  M = 'M',
+  Q = 'Q',
+  T = 'T',
 }

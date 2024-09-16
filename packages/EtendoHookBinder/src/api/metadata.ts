@@ -2,6 +2,8 @@ import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL } from './constants';
 import { Client, Interceptor } from './client';
 import { CacheStore } from './cache';
 import * as Etendo from './types';
+import { parseColumns } from '../helpers/metadata';
+import { Menu } from './types';
 
 export type { Etendo };
 
@@ -21,24 +23,23 @@ export class Metadata {
     return true;
   };
 
-  // TODO: Remove empty object and update with the right value
-  public static standardWindow = {};
-
   private static async _getWindow(
     windowId: Etendo.WindowId,
   ): Promise<Etendo.WindowMetadata> {
-    const response = await Metadata.client.post(`window/${windowId}`);
-    const value = response.data;
+    const { data } = await Metadata.client.post(`window/${windowId}`);
 
-    Metadata.cache.set(windowId, value);
+    Metadata.cache.set(`window-${windowId}`, data);
+    data.tabs.forEach(tab => {
+      Metadata.cache.set(`tab-${tab.id}`, tab);
+    });
 
-    return value;
+    return data;
   }
 
   public static async getWindow(
     windowId: Etendo.WindowId,
   ): Promise<Etendo.WindowMetadata> {
-    const cached = Metadata.cache.get(windowId);
+    const cached = Metadata.cache.get(`window-${windowId}`);
 
     if (cached) {
       return cached;
@@ -48,22 +49,9 @@ export class Metadata {
   }
 
   public static getColumns(tabId: string) {
-    tabId;
-
-    return [];
-    // const item = Object.values(Metadata.isc.classes).find(windowObj => {
-    //   const val =
-    //     windowObj.properties?.viewProperties?.tabId?.toString() ===
-    //     tabId.toString();
-
-    //   return val;
-    // });
-
-    // if (!item) {
-    //   return [];
-    // }
-
-    // return item.properties.viewProperties.fields;
+    return parseColumns(
+      Object.values(Metadata.cache.get(`tab-${tabId}`)?.fields ?? {}),
+    );
   }
 
   public static async getSession() {
@@ -77,7 +65,7 @@ export class Metadata {
     return {};
   }
 
-  public static async getMenu() {
+  public static async getMenu(): Promise<Menu[]> {
     const cached = Metadata.cache.get('OBMenu');
 
     if (cached && cached.length) {
@@ -90,7 +78,7 @@ export class Metadata {
     }
   }
 
-  public static getCachedMenu() {
+  public static getCachedMenu(): Menu[] {
     return Metadata.cache.get('OBMenu') ?? [];
   }
 }

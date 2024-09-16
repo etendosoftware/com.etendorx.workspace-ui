@@ -2,7 +2,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { styles } from '../styles';
-import { MenuOption } from '../../../../../EtendoHookBinder/src/api/types';
+import { Menu } from '../../../../../EtendoHookBinder/src/api/types';
 
 export default function MenuTitle({
   item,
@@ -10,7 +10,7 @@ export default function MenuTitle({
   selected,
   expanded,
 }: {
-  item: MenuOption;
+  item: Menu;
   onClick: () => void;
   selected?: boolean;
   expanded?: boolean;
@@ -25,7 +25,7 @@ export default function MenuTitle({
       }}>
       <Box sx={styles.listItemInnerContentText}>
         <Typography sx={styles.listItemText}>
-          {item.eTMETAIcon ? <span>{item.eTMETAIcon}</span> : null}
+          {item.icon ? <span>{item.icon}</span> : null}
           <span>{item.name}</span>
         </Typography>
       </Box>

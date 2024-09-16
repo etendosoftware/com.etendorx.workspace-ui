@@ -131,7 +131,12 @@ const FormView: React.FC<FormViewProps> = ({
   );
 
   return (
-    <Box display="flex" flexDirection="column" height="100%" width="100%">
+    <Box
+      display="flex"
+      flexDirection="column"
+      height="100%"
+      width="100%"
+      padding="0 0.5rem 0.5rem 0.5rem">
       <Box flexShrink={1}>
         <PrimaryTabs
           tabs={tabs}

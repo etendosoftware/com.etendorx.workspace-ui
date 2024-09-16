@@ -11,7 +11,7 @@ import ChevronDown from '../../../assets/icons/chevron-down.svg';
 import { theme } from '../../../theme';
 import { defaultFill, styles, sx } from '../styles';
 import IconButton from '../../IconButton';
-import InfoIcon from '@mui/icons-material/Info';
+import InfoIcon from '../../../assets/icons/info.svg';
 import FormFieldGroup from '../FormField';
 import { FormSectionProps } from '../types';
 
@@ -56,6 +56,8 @@ const FormSection: React.FC<FormSectionProps> = ({
             fill={defaultFill}
             sx={sx.iconButton}
             className="main-icon-button"
+            height={16}
+            width={16}
             isHovered={hoveredSection === sectionName}>
             {sectionData.icon || <InfoIcon />}
           </IconButton>

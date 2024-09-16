@@ -22,7 +22,7 @@ import { memo, useState } from 'react';
 const FieldLabel: React.FC<FieldLabelProps> = ({ label, required }) => (
   <Box sx={styles.labelWrapper}>
     <span style={styles.labelText}>{label}</span>
-    {required ?? <span style={styles.requiredAsterisk}>*</span>}
+    {required && <span style={styles.requiredAsterisk}>*</span>}
     <span style={styles.dottedSpacing} />
   </Box>
 );
@@ -91,7 +91,7 @@ const FormField: React.FC<FormFieldProps> = memo(
               onRightIconClick={() => alert('Icon clicked')}
               value={value as string}
               setValue={setValue}
-              placeholder={field.value as string}
+              placeholder={field.value ? String(field.value) : undefined}
             />
           );
       }

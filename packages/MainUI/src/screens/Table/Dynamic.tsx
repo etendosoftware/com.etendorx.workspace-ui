@@ -57,11 +57,11 @@ export default function DynamicTableScreen() {
 
   if (loading) {
     return <Spinner />;
-  } else if (error || !windowData || !columnsData) {
+  } else if (error || !windowData) {
     return <div>{error?.message}</div>;
   } else if (recordId) {
     return <Outlet />;
   } else {
-    return <Content columnsData={columnsData} windowData={windowData} />;
+    return <Content windowData={windowData} columnsData={columnsData} />;
   }
 }

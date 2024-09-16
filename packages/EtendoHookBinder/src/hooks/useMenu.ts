@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Metadata } from '../api/metadata';
-import type { MenuOption } from '../api/types';
+import { Menu } from '../api/types';
 
 export const useMenu = (token?: string | null) => {
-  const [menu, setMenu] = useState<MenuOption[]>(Metadata.getCachedMenu());
+  const [menu, setMenu] = useState<Menu[]>(Metadata.getCachedMenu());
 
   useEffect(() => {
     const initialize = async () => {
