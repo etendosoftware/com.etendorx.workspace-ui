@@ -23,14 +23,16 @@ export default function DrawerHeader({
 }) {
   return (
     <div style={styles.drawerHeader}>
-      <div style={styles.drawerHeaderImgBox}>
-        <img
-          src={logo}
-          alt={`${title} Logo`}
-          style={styles.drawerHeaderImg}
-        />
-        <span style={styles.drawerHeaderTitle}>{title}</span>
-      </div>
+      {open ? (
+        <div style={styles.drawerHeaderImgBox}>
+          <img
+            src={logo}
+            alt={`${title} Logo`}
+            style={styles.drawerHeaderImg}
+          />
+          <span style={styles.drawerHeaderTitle}>{title}</span>
+        </div>
+      ) : null}
       <IconButton
         onClick={onClick}
         sx={open ? openSx : closedSx}

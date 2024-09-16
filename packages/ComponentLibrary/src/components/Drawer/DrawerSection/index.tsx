@@ -34,7 +34,7 @@ const ActualDrawerSection = ({ item, onClick, open }: DrawerSectionProps) => {
   );
 
   return (
-    <Box sx={mainStyle}>
+    <div style={mainStyle}>
       <MenuTitle
         item={item}
         onClick={handleClick}
@@ -55,7 +55,7 @@ const ActualDrawerSection = ({ item, onClick, open }: DrawerSectionProps) => {
           </Box>
         </Collapse>
       ) : null}
-    </Box>
+    </div>
   );
 };
 
