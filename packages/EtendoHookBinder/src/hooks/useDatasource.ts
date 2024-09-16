@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DatasourceOptions, WindowMetadata } from '../api/types';
+import { DatasourceOptions, Tab } from '../api/types';
 import { Datasource } from '../api/datasource';
 
 const mapById = (
@@ -13,7 +13,6 @@ const mapById = (
 
 const loadData = async (
   entity: string,
-  windowId: string,
   tabId: string,
   page: number,
   pageSize: number,
@@ -22,7 +21,7 @@ const loadData = async (
   const startRow = (page - 1) * pageSize;
   const endRow = page * pageSize - 1;
 
-  const { response } = await Datasource.get(entity, windowId, tabId, {
+  const { response } = await Datasource.get(entity, tabId, {
     ...JSON.parse(_params),
     startRow,
     endRow,
@@ -32,13 +31,12 @@ const loadData = async (
 };
 
 export function useDatasource(
-  windowMetadata: WindowMetadata,
+  tab: Tab,
   params: DatasourceOptions,
 ) {
   const _params = JSON.stringify(params);
-  const windowId = windowMetadata?.id;
-  const entity = windowMetadata?.tabs[0].entityName;
-  const tabId = windowMetadata?.tabs[0].id;
+  const entity = tab.entityName;
+  const tabId = tab.id;
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);
   const [data, setData] = useState<Record<string, Record<string, unknown>>>({});
@@ -49,7 +47,7 @@ export function useDatasource(
 
   const load = useCallback(async () => {
     try {
-      if (!entity || !windowId || !tabId) {
+      if (!entity || !tabId) {
         return;
       }
 
@@ -58,7 +56,6 @@ export function useDatasource(
 
       const response = await loadData(
         entity,
-        windowId,
         tabId,
         page,
         pageSize,
@@ -76,7 +73,7 @@ export function useDatasource(
     } catch (e) {
       setError(e as Error);
     }
-  }, [_params, entity, page, pageSize, tabId, windowId]);
+  }, [_params, entity, page, pageSize, tabId]);
 
   const fetchMore = useCallback(() => {
     setPage(prev => prev + 1);
@@ -94,6 +91,10 @@ export function useDatasource(
     setRecords(Object.values(data));
     setLoading(false);
   }, [data]);
+
+  useEffect(() => {
+    setData({})
+  }, [entity]);
 
   return useMemo(
     () => ({

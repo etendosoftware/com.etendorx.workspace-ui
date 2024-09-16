@@ -9,7 +9,7 @@ import { useParams } from 'react-router-dom';
 const ActualDrawerSection = ({ item, onClick, open }: DrawerSectionProps) => {
   const isMainSection = !!item.children?.length;
   const { id } = useParams();
-  const isSelected = Boolean(item.window?.id === id);
+  const isSelected = Boolean(id?.length && item.window?.id === id);
   const [expanded, setExpanded] = useState(false);
 
   const handleClick = useCallback(() => {

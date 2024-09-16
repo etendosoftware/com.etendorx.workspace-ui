@@ -22,7 +22,7 @@ export default function DynamicTable({
   data: Params['data'];
   fetchMore: () => void;
   loading: boolean;
-  tab: Record<string, unknown>;
+  tab: Record<string, never>;
 }) {
   const theme = useTheme();
   const table = useMaterialReactTable({

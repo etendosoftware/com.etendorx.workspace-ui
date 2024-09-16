@@ -109,12 +109,18 @@ export interface WindowMetadataProperties {
   };
 }
 
+export interface Tab {
+  id: string;
+  entityName: string,
+  fields: Record<string, unknown>;
+}
+
 export interface WindowMetadata {
   id: string;
   name: string;
   superClass?: string;
   properties: WindowMetadataProperties;
-  tabs: Array<{ id: string; fields: Record<string, unknown> }>;
+  tabs: Tab[];
 }
 
 export interface WindowMetadataMap extends Record<string, WindowMetadata> {}
