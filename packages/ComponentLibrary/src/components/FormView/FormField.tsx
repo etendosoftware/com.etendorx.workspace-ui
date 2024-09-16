@@ -91,7 +91,7 @@ const FormField: React.FC<FormFieldProps> = memo(
               onRightIconClick={() => alert('Icon clicked')}
               value={value as string}
               setValue={setValue}
-              placeholder={field.value as string}
+              placeholder={field.value ? String(field.value) : undefined}
             />
           );
       }
