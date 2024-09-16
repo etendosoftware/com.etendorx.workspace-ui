@@ -112,7 +112,9 @@ export interface WindowMetadataProperties {
 export interface Tab {
   id: string;
   entityName: string,
-  fields: Record<string, unknown>;
+  fields: Record<string, Field>;
+  level: number;
+  _identifier: string;
 }
 
 export interface WindowMetadata {

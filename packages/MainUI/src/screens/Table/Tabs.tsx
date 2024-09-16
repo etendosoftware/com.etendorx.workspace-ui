@@ -7,25 +7,22 @@ import { parseColumns } from '@workspaceui/etendohookbinder/src/helpers/metadata
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 
 function Content({ tab }: { tab: Tab }) {
-  const { records, loading, error, fetchMore, loaded } = useDatasource(
-    tab,
-    {
-      sortBy: 'documentNo',
-      operator: 'or',
-      criteria: [
-        {
-          fieldName: 'documentNo',
-          operator: 'iContains',
-          value: '100',
-        },
-        {
-          fieldName: 'active',
-          operator: 'equals',
-          value: 'true',
-        },
-      ],
-    },
-  );
+  const { records, loading, error, fetchMore, loaded } = useDatasource(tab, {
+    sortBy: 'documentNo',
+    operator: 'or',
+    criteria: [
+      {
+        fieldName: 'documentNo',
+        operator: 'iContains',
+        value: '100',
+      },
+      {
+        fieldName: 'active',
+        operator: 'equals',
+        value: 'true',
+      },
+    ],
+  });
 
   if (loading && !loaded) {
     return <Spinner />;
@@ -38,7 +35,6 @@ function Content({ tab }: { tab: Tab }) {
         data={records}
         fetchMore={fetchMore}
         loading={loading}
-        tab={tab}
       />
     );
   }
@@ -59,7 +55,7 @@ export default function Tabs({ tabs }: { tabs: Tab[] }) {
   );
 
   const active = useMemo(
-    () => tabs.find(tab => tab.id === activeKey),
+    () => tabs.find(tab => tab.id === activeKey) as Tab,
     [activeKey, tabs],
   );
 
@@ -67,10 +63,16 @@ export default function Tabs({ tabs }: { tabs: Tab[] }) {
     <div>
       <div>
         {tabs.map(tab => (
-          <Button onClick={refs.current[tab.id]}>{tab._identifier}</Button>
+          <Button
+            onClick={refs.current[tab.id]}
+            sx={{
+              backgroundColor: activeKey === tab.id ? 'white' : 'transparent',
+            }}>
+            {tab._identifier}
+          </Button>
         ))}
       </div>
-      {active ? <Content tab={active} /> : null}
+      <Content tab={active} />
     </div>
   );
 }
