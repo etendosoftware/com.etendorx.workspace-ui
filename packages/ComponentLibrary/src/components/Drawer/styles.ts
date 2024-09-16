@@ -16,7 +16,7 @@ export const styles = {
     borderBottomRightRadius: '0.75rem',
     border: '0, 1px, 0, 0',
     display: 'flex',
-    flexDirection: 'column'
+    flexDirection: 'column' as React.CSSProperties['flexDirection']
   },
   drawerHeader: {
     height: '3.5rem',

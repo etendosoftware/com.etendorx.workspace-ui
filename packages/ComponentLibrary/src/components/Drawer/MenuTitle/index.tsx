@@ -28,7 +28,7 @@ export default function MenuTitle({
       <div style={styles.listItemInnerContentText}>
         <Typography sx={styles.listItemText}>
           {item.icon ? <span>{item.icon}</span> : null}
-          <span>{item.name}</span>
+          {open ? <span>{item.name}</span> : null}
         </Typography>
       </div>
       {item.children ? expanded ? <ExpandLess /> : <ExpandMore /> : null}

@@ -3,13 +3,16 @@ import { styles } from './styles';
 import DrawerSection from './DrawerSection';
 import { DrawerProps } from './types';
 import DrawerHeader from './Header';
+import className from '../../helpers/className';
 
 const Drawer = ({ items, logo, title, onClick }: DrawerProps) => {
   const [open, setOpen] = useState<boolean>(true);
   const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
 
   return (
-    <div style={styles.drawerPaper} className="animated-width">
+    <div
+      style={styles.drawerPaper}
+      className={className('animated-transform', open ? 'drawer-open' : 'drawer-closed')}>
       <DrawerHeader
         logo={logo}
         title={title}

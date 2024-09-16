@@ -42,7 +42,7 @@ const ActualDrawerSection = ({ item, onClick, open }: DrawerSectionProps) => {
         expanded={expanded}
         open={open}
       />
-      {item.children ? (
+      {item.children && open ? (
         <Collapse in={expanded} timeout="auto">
           <Box sx={styles.contentBox}>
             {item.children.map(subitem => (
