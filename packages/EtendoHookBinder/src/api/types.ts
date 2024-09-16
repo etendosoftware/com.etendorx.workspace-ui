@@ -77,6 +77,7 @@ export interface Column {
   accessorFn: (v: Record<string, unknown>) => unknown;
   columnName: string;
   isMandatory: boolean;
+  name: string;
   column: {
     reference: string;
   };

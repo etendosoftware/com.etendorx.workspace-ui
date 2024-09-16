@@ -104,8 +104,6 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     gap: '0.5rem',
   },
   iconButton: {
-    width: '2rem',
-    height: '2rem',
     background: theme.palette.dynamicColor.contrastText,
   },
   chevronButton: {
