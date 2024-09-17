@@ -1,5 +1,5 @@
 import { css } from '@mui/material';
-import { theme } from '../../theme';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
 
 const styles = {
   loader: css({

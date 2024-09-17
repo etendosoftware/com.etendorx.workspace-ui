@@ -1,43 +1,20 @@
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Button } from '../../../../ComponentLibrary/src/components';
-import DynamicTable from '@workspaceui/componentlibrary/src/components/DynamicTable';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import { parseColumns } from '@workspaceui/etendohookbinder/src/helpers/metadata';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
+import { useRecordContext } from '../../hooks/useRecordContext';
+import DynamicTable from '../../components/DynamicTable';
 
 function Content({ tab }: { tab: Tab }) {
-  const { records, loading, error, fetchMore, loaded } = useDatasource(tab, {
-    sortBy: 'documentNo',
-    operator: 'or',
-    criteria: [
-      {
-        fieldName: 'documentNo',
-        operator: 'iContains',
-        value: '100',
-      },
-      {
-        fieldName: 'active',
-        operator: 'equals',
-        value: 'true',
-      },
-    ],
-  });
+  const { selectRecord } = useRecordContext();
 
-  if (loading && !loaded) {
-    return <Spinner />;
-  } else if (error) {
-    return <div>{error.message}</div>;
-  } else {
-    return (
-      <DynamicTable
-        columns={parseColumns(Object.values(tab.fields))}
-        data={records}
-        fetchMore={fetchMore}
-        loading={loading}
-      />
-    );
-  }
+  const handleSelect = useCallback(
+    (record: unknown) => {
+      selectRecord(record, tab.level);
+    },
+    [selectRecord, tab.level],
+  );
+
+  return <DynamicTable tab={tab} onSelect={handleSelect} />;
 }
 
 export default function Tabs({ tabs }: { tabs: Tab[] }) {
@@ -58,6 +35,10 @@ export default function Tabs({ tabs }: { tabs: Tab[] }) {
     () => tabs.find(tab => tab.id === activeKey) as Tab,
     [activeKey, tabs],
   );
+
+  if (!active) {
+    return null;
+  }
 
   return (
     <div>

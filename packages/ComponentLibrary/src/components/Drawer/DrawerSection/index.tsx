@@ -6,7 +6,11 @@ import { theme } from '../../../theme';
 import { DrawerSectionProps } from '../types';
 import { useParams } from 'react-router-dom';
 
-const ActualDrawerSection = ({ item, onClick, open }: DrawerSectionProps) => {
+export default function DrawerSection({
+  item,
+  onClick,
+  open,
+}: DrawerSectionProps) {
   const isMainSection = !!item.children?.length;
   const { id } = useParams();
   const isSelected = Boolean(id?.length && item.window?.id === id);
@@ -44,27 +48,16 @@ const ActualDrawerSection = ({ item, onClick, open }: DrawerSectionProps) => {
       />
       {item.children && open ? (
         <Collapse in={expanded} timeout="auto">
-          <Box sx={styles.contentBox}>
-            {item.children.map(subitem => (
-              <DrawerSection
-                key={subitem.id}
-                item={subitem}
-                onClick={onClick}
-              />
-            ))}
-          </Box>
+          {item.children.map(subitem => (
+            <DrawerSection
+              key={subitem.id}
+              item={subitem}
+              onClick={onClick}
+              open={open}
+            />
+          ))}
         </Collapse>
       ) : null}
     </div>
   );
-};
-
-const DrawerSection = (props: DrawerSectionProps) => {
-  if (props.item) {
-    return <ActualDrawerSection {...props} />;
-  }
-
-  return null;
-};
-
-export default DrawerSection;
+}
