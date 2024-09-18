@@ -1,9 +1,7 @@
 import { ReactNode } from 'react';
-import {
-  FieldDefinition,
-  Organization,
-  Section,
-} from '../../../../storybook/src/stories/Components/Table/types';
+import { FieldDefinition, Section } from '../../screens/Form/types';
+import { Organization } from '@workspaceui/storybook/stories/Components/Table/types';
+import { WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface GridItemProps {
   xs?: number;
@@ -47,6 +45,9 @@ export interface FormFieldProps {
   field: FieldDefinition;
   onChange: (name: string, value: FieldDefinition['value']) => void;
   readOnly?: boolean;
+  entityName?: string;
+  accessor?: string;
+  windowMetadata?: WindowMetadata;
 }
 
 export interface FormFieldGroupProps extends FormFieldProps {

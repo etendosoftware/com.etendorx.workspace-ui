@@ -12,6 +12,8 @@ import {
 
 export function mapColumnTypeToFieldType(reference: string): FieldType {
   switch (reference) {
+    case '19':
+      return 'tabledir';
     case '15':
     case '16':
       return 'date';
@@ -20,7 +22,6 @@ export function mapColumnTypeToFieldType(reference: string): FieldType {
     case '17':
     case '30':
     case '18':
-    case '19':
     case '11':
     case '12':
     case '29':

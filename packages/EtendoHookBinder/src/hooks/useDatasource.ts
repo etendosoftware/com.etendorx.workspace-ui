@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DatasourceOptions, WindowMetadata } from '../api/types';
+import { DatasourceOptions } from '../api/types';
 import { Datasource } from '../api/datasource';
 
 const mapById = (
@@ -7,76 +7,108 @@ const mapById = (
   current: { id: string | number },
 ) => {
   acum[current.id] = current;
-
   return acum;
 };
 
 const loadData = async (
-  entity: string,
-  windowId: string,
-  tabId: string,
+  entity: string | undefined,
+  tabId: string | undefined,
   page: number,
   pageSize: number,
   _params: string,
 ) => {
+  if (!entity || !tabId) {
+    console.warn('Missing required parameters for loadData:', {
+      entity,
+      tabId,
+    });
+    return { data: [], error: null };
+  }
+
   const startRow = (page - 1) * pageSize;
   const endRow = page * pageSize - 1;
 
-  const { response } = await Datasource.get(entity, windowId, tabId, {
-    ...JSON.parse(_params),
-    startRow,
-    endRow,
-  });
+  try {
+    console.log('Sending request to Datasource.get with params:', {
+      entity,
+      tabId,
+      startRow,
+      endRow,
+      _params,
+    });
 
-  return response;
+    const { response } = await Datasource.get(entity, undefined, tabId, {
+      ...JSON.parse(_params),
+      startRow,
+      endRow,
+    });
+
+    console.log('Received response from Datasource.get:', response);
+
+    return response;
+  } catch (error) {
+    console.error('Error in loadData:', error);
+    return { data: [], error };
+  }
 };
 
 export function useDatasource(
-  windowMetadata: WindowMetadata,
+  windowMetadata:
+    | { tabs: { entityName: string; id: string }[] }
+    | null
+    | undefined,
   params: DatasourceOptions,
 ) {
   const _params = JSON.stringify(params);
-  const windowId = windowMetadata?.id;
-  const entity = windowMetadata?.tabs[0].entityName;
-  const tabId = windowMetadata?.tabs[0].id;
+  const entity = windowMetadata?.tabs?.[0]?.entityName;
+  const tabId = windowMetadata?.tabs?.[0]?.id;
+
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);
   const [data, setData] = useState<Record<string, Record<string, unknown>>>({});
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
-  const [error, setError] = useState<Error | undefined>(undefined);
+  const [error, setError] = useState<Error | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
   const load = useCallback(async () => {
+    console.log('useDatasource load called with:', {
+      entity,
+      tabId,
+      _params,
+    });
+
+    if (!entity || !tabId) {
+      console.warn('Missing required parameters for useDatasource');
+      setLoading(false);
+      setLoaded(true);
+      setError(null);
+      setData({});
+      setRecords([]);
+      return;
+    }
+
+    setError(null);
+    setLoading(true);
+
     try {
-      if (!entity || !windowId || !tabId) {
-        return;
-      }
-
-      setError(undefined);
-      setLoading(true);
-
-      const response = await loadData(
-        entity,
-        windowId,
-        tabId,
-        page,
-        pageSize,
-        _params,
-      );
+      const response = await loadData(entity, tabId, page, pageSize, _params);
 
       if (response.error) {
         throw new Error(response.error.message);
       } else {
-        const _data = response.data.reduce(mapById, {});
-
+        console.log('Processing response data:', response.data);
+        const _data = (response.data || []).reduce(mapById, {});
         setData(prev => ({ ...prev, ..._data }));
         setLoaded(true);
       }
-    } catch (e) {
-      setError(e as Error);
+    } catch (error) {
+      console.error('Error in useDatasource load:', error);
+      setError(error instanceof Error ? error : new Error(String(error)));
+    } finally {
+      setLoading(false);
     }
-  }, [_params, entity, page, pageSize, tabId, windowId]);
+  }, [_params, entity, page, pageSize, tabId]);
 
   const fetchMore = useCallback(() => {
     setPage(prev => prev + 1);
@@ -91,8 +123,9 @@ export function useDatasource(
   }, [load]);
 
   useEffect(() => {
-    setRecords(Object.values(data));
-    setLoading(false);
+    const newRecords = Object.values(data);
+    console.log('Updating records:', newRecords);
+    setRecords(newRecords);
   }, [data]);
 
   return useMemo(

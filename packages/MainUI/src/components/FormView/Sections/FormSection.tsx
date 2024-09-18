@@ -7,11 +7,11 @@ import {
   Box,
   Grid,
 } from '@mui/material';
-import ChevronDown from '../../../assets/icons/chevron-down.svg';
-import { theme } from '../../../theme';
+import ChevronDown from '../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { defaultFill, styles, sx } from '../styles';
-import IconButton from '../../IconButton';
-import InfoIcon from '../../../assets/icons/info.svg';
+import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
+import InfoIcon from '../../../../../ComponentLibrary/src/assets/icons/info.svg';
 import FormFieldGroup from '../FormField';
 import { FormSectionProps } from '../types';
 

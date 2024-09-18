@@ -6,17 +6,14 @@ import React, {
   useEffect,
 } from 'react';
 import { Box, Grid } from '@mui/material';
-import {
-  Organization,
-  FieldDefinition,
-  Section,
-} from '../../../../storybook/src/stories/Components/Table/types';
+import { Organization } from '../../../../storybook/src/stories/Components/Table/types';
 import { FormViewProps } from './types';
-import PrimaryTabs from '../PrimaryTab';
-import { TabItem } from '../PrimaryTab/types';
-import ChevronDown from '../../assets/icons/chevron-down.svg';
-import { theme } from '../../theme';
+import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
+import { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
+import ChevronDown from '../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
 import SectionRenderer from './Sections/sectionRendered';
+import { Section, FieldDefinition } from 'src/screens/Form/types';
 
 export const defaultIcon = (
   <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />

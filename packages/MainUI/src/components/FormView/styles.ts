@@ -1,7 +1,7 @@
 import { Theme } from '@emotion/react';
 import { SxProps } from '@mui/material';
 import { CSSProperties } from 'react';
-import { theme } from '../../theme';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
 
 export const defaultFill = theme.palette.dynamicColor.main;
 export const noteColors = [

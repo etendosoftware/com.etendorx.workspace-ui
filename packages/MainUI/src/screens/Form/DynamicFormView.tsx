@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import FormView from '@workspaceui/componentlibrary/src/components/FormView';
+import FormView from '../../components/FormView';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
@@ -11,12 +11,14 @@ import { adaptFormData } from '../../utils/formUtils';
 export default function DynamicFormView() {
   const { id, recordId } = useParams<{ id: string; recordId: string }>();
   const navigate = useNavigate();
+
   const {
     windowData,
     columnsData,
     loading: windowLoading,
     error: windowError,
   } = useWindow(id ?? '');
+
   const [formData, setFormData] = useState<FormData | null>(null);
 
   const {
