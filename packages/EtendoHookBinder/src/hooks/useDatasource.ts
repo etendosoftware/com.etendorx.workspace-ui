@@ -21,6 +21,7 @@ const loadData = async (
   const startRow = (page - 1) * pageSize;
   const endRow = page * pageSize - 1;
 
+  console.debug({ entity, tabId, _params });
   const { response } = await Datasource.get(entity, tabId, {
     ...JSON.parse(_params),
     startRow,
@@ -30,11 +31,9 @@ const loadData = async (
   return response;
 };
 
-export function useDatasource(
-  tab: Tab,
-  params?: DatasourceOptions,
-) {
+export function useDatasource(tab: Tab, params?: DatasourceOptions) {
   const _params = JSON.stringify(params ?? {});
+  console.log(tab.id);
   const entity = tab?.entityName;
   const tabId = tab?.id;
   const [loading, setLoading] = useState(true);
@@ -54,13 +53,7 @@ export function useDatasource(
       setError(undefined);
       setLoading(true);
 
-      const response = await loadData(
-        entity,
-        tabId,
-        page,
-        pageSize,
-        _params,
-      );
+      const response = await loadData(entity, tabId, page, pageSize, _params);
 
       if (response.error) {
         throw new Error(response.error.message);
@@ -93,7 +86,7 @@ export function useDatasource(
   }, [data]);
 
   useEffect(() => {
-    setData({})
+    setData({});
   }, [entity]);
 
   return useMemo(
