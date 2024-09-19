@@ -17,7 +17,7 @@ export default function DynamicTable({
 }: {
   tab: Tab;
   onSelect: (row: unknown) => void;
-  onDoubleClick: (row: Record<string, string>) => void;
+  onDoubleClick: (row: Record<string, string | unknown>) => void;
 }) {
   const { records, loading, error, fetchMore, loaded } = useDatasource(tab);
 

@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import FormView from '@workspaceui/componentlibrary/src/components/FormView';
+import FormView from '../../components/FormView';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useEntityRecord } from '@workspaceui/etendohookbinder/src/hooks/useEntityRecord';
 import { adaptFormData } from '../../utils/formUtils';
 import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
+import { FormData } from './types';
 
 export default function DynamicFormView() {
   const { recordId = '' } = useParams<{ recordId: string }>();
   const navigate = useNavigate();
+
   const {
     windowData,
     columnsData,
@@ -29,9 +31,13 @@ export default function DynamicFormView() {
   }, [data]);
 
   const updateFormData = useCallback(() => {
-    // const newFormData = adaptFormData(windowData, columnsData, records);
-    // if (newFormData) setFormData(newFormData);
-  }, [windowData, columnsData]);
+    const newFormData = adaptFormData(
+      windowData,
+      columnsData[windowData.tabs[0].id],
+      data ?? {},
+    );
+    if (newFormData) setFormData(newFormData);
+  }, [windowData, columnsData, data]);
 
   useEffect(() => {
     updateFormData();
