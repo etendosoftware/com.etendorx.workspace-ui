@@ -9,11 +9,11 @@ import {
   IconButton,
   TextField,
 } from '@mui/material';
-import { theme } from '../../../theme';
-import Modal from '../../BasicModal';
-import CloseIcon from '../../../assets/icons/x.svg';
-import NoteIcon from '../../../assets/icons/note.svg';
-import PlusIcon from '../../../assets/icons/plus-circle.svg';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
+import Modal from '@workspaceui/componentlibrary/src/components/BasicModal';
+import CloseIcon from '../../../../../ComponentLibrary/src/assets/icons/x.svg';
+import NoteIcon from '../../../../../ComponentLibrary/src/assets/icons/note.svg';
+import PlusIcon from '../../../../../ComponentLibrary/src/assets/icons/plus-circle.svg';
 import { Note, NoteSectionProps } from '../types';
 import { noteColors, sx } from '../styles';
 

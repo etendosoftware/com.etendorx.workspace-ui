@@ -9,11 +9,13 @@ export default function MenuTitle({
   onClick,
   selected,
   expanded,
+  open,
 }: {
   item: Menu;
   onClick: () => void;
   selected?: boolean;
   expanded?: boolean;
+  open?: boolean;
 }) {
   return (
     <Box
@@ -23,12 +25,12 @@ export default function MenuTitle({
         ...styles.listItemContentText,
         ...(selected ? styles.listItemButtonSelected : undefined),
       }}>
-      <Box sx={styles.listItemInnerContentText}>
+      <div style={styles.listItemInnerContentText}>
         <Typography sx={styles.listItemText}>
           {item.icon ? <span>{item.icon}</span> : null}
-          <span>{item.name}</span>
+          {open ? <span>{item.name}</span> : null}
         </Typography>
-      </Box>
+      </div>
       {item.children ? expanded ? <ExpandLess /> : <ExpandMore /> : null}
     </Box>
   );

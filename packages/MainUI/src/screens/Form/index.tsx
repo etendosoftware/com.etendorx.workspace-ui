@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import FormView from '@workspaceui/componentlibrary/src/components/FormView';
+import FormView from '../../components/FormView';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Organization } from '../../../../storybook/src/stories/Components/Table/types';
 import { mockOrganizations } from '@workspaceui/storybook/stories/Components/Table/mock';

@@ -10,8 +10,10 @@ import {
   WindowMetadata,
 } from '@workspaceui/etendohookbinder/src/api/types';
 
-export function mapColumnTypeToFieldType(reference: string): FieldType {
-  switch (reference) {
+export function mapColumnTypeToFieldType(column: Column): FieldType {
+  switch (column?.column?.reference) {
+    case '19':
+      return 'tabledir';
     case '15':
     case '16':
       return 'date';
@@ -20,7 +22,6 @@ export function mapColumnTypeToFieldType(reference: string): FieldType {
     case '17':
     case '30':
     case '18':
-    case '19':
     case '11':
     case '12':
     case '29':
@@ -49,10 +50,9 @@ export function ensureFieldValue(
 export function adaptFormData(
   windowData: WindowMetadata,
   columnsData: Column[],
-  records: Record<string, unknown>[],
+  record: Record<string, unknown>,
 ): FormData | null {
-  if (!windowData || !columnsData || !records || records.length === 0)
-    return null;
+  if (!windowData || !columnsData || !record) return null;
 
   const adaptedData: FormData = {};
   const sections = new Set<string>(['Main']);
@@ -77,7 +77,6 @@ export function adaptFormData(
     } as Section;
   });
 
-  const record = records[0] ?? {};
   columnsData.forEach((column: Column) => {
     const fieldName = column.columnName;
     const fieldInfo = windowData.tabs?.[0]?.fields?.[fieldName] as
@@ -89,7 +88,7 @@ export function adaptFormData(
 
     adaptedData[fieldName] = {
       value: safeValue,
-      type: mapColumnTypeToFieldType(column.column.reference),
+      type: mapColumnTypeToFieldType(column),
       label: column.name,
       section: sectionName,
       required: column.isMandatory ?? true,

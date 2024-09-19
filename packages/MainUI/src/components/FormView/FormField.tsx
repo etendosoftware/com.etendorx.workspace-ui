@@ -6,9 +6,11 @@ import {
   Checkbox,
   styled,
 } from '@mui/material';
-import SearchOutlined from '../../assets/icons/search.svg';
-import { Select, TextInputBase } from '..';
-import { theme } from '../../theme';
+import SearchOutlined from '../../../../ComponentLibrary/src/assets/icons/search.svg';
+import {
+  TextInputBase,
+  theme,
+} from '@workspaceui/componentlibrary/src/components';
 import { topFilms } from '../../../../storybook/src/stories/Components/Input/Select/mock';
 import { styles, sx } from './styles';
 import {
@@ -18,6 +20,8 @@ import {
   FormFieldProps,
 } from './types';
 import { memo, useState } from 'react';
+import TableDirSelector from './TableDirSelector';
+import Select from '../../../../ComponentLibrary/src/components/Input/Select';
 
 const FieldLabel: React.FC<FieldLabelProps> = ({ label, required }) => (
   <Box sx={styles.labelWrapper}>
@@ -26,6 +30,7 @@ const FieldLabel: React.FC<FieldLabelProps> = ({ label, required }) => (
     <span style={styles.dottedSpacing} />
   </Box>
 );
+
 const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
   '&.Mui-checked': {
     color: theme.palette.dynamicColor.main,
@@ -37,6 +42,7 @@ const FormField: React.FC<FormFieldProps> = memo(
     const [value, setValue] = useState<FieldValue>(field.value);
 
     const renderField = () => {
+      console.log(field)
       switch (field.type) {
         case 'boolean':
           return (
@@ -85,6 +91,10 @@ const FormField: React.FC<FormFieldProps> = memo(
               getOptionLabel={option => option.title}
             />
           );
+        case 'tabledir':
+          return (
+            <TableDirSelector name={name} field={field} onChange={onChange} />
+          );
         default:
           return (
             <TextInputBase
@@ -99,7 +109,7 @@ const FormField: React.FC<FormFieldProps> = memo(
 
     return (
       <Box style={styles.fieldContainer}>
-        <Box sx={sx.labelBox}>
+        <Box sx={sx.labelBox}>  
           <FieldLabel label={field.label} required={field.required} />
         </Box>
         <Box sx={sx.inputBox}>{renderField()}</Box>
@@ -112,8 +122,16 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = ({
   name,
   field,
   onChange,
+  windowMetadata,
 }) => {
-  return <FormField name={name} field={field} onChange={onChange} />;
+  return (
+    <FormField
+      name={name}
+      field={field}
+      onChange={onChange}
+      windowMetadata={windowMetadata}
+    />
+  );
 };
 
 export default FormFieldGroup;

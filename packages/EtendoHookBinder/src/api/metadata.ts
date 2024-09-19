@@ -2,7 +2,6 @@ import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL } from './constants';
 import { Client, Interceptor } from './client';
 import { CacheStore } from './cache';
 import * as Etendo from './types';
-import { parseColumns } from '../helpers/metadata';
 import { Menu } from './types';
 
 export type { Etendo };
@@ -29,7 +28,7 @@ export class Metadata {
     const { data } = await Metadata.client.post(`window/${windowId}`);
 
     Metadata.cache.set(`window-${windowId}`, data);
-    data.tabs.forEach(tab => {
+    data.tabs.forEach((tab: Record<string, string>) => {
       Metadata.cache.set(`tab-${tab.id}`, tab);
     });
 
@@ -48,10 +47,8 @@ export class Metadata {
     }
   }
 
-  public static getColumns(tabId: string) {
-    return parseColumns(
-      Object.values(Metadata.cache.get(`tab-${tabId}`)?.fields ?? {}),
-    );
+  public static getColumns(tabId: string): Etendo.Column[] {
+    return Metadata.cache.get(`tab-${tabId}`)?.fields ?? [];
   }
 
   public static async getSession() {

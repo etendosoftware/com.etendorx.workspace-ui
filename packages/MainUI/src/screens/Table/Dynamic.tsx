@@ -1,59 +1,11 @@
-import DynamicTable from '@workspaceui/componentlibrary/src/components/DynamicTable';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { Outlet, useParams } from 'react-router-dom';
-import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import {
-  Column,
-  WindowMetadata,
-} from '@workspaceui/etendohookbinder/src/api/types';
-
-function Content({
-  windowData,
-  columnsData,
-}: {
-  windowData: WindowMetadata;
-  columnsData: Column[];
-}) {
-  const { records, loading, error, fetchMore, loaded } = useDatasource(
-    windowData,
-    {
-      sortBy: 'documentNo',
-      operator: 'or',
-      criteria: [
-        {
-          fieldName: 'documentNo',
-          operator: 'iContains',
-          value: '100',
-        },
-        {
-          fieldName: 'active',
-          operator: 'equals',
-          value: 'true',
-        },
-      ],
-    },
-  );
-
-  if (loading && !loaded) {
-    return <Spinner />;
-  } else if (error) {
-    return <div>{error.message}</div>;
-  } else {
-    return (
-      <DynamicTable
-        columns={columnsData}
-        data={records}
-        fetchMore={fetchMore}
-        loading={loading}
-      />
-    );
-  }
-}
+import { Outlet } from 'react-router-dom';
+import Tabs from './Tabs';
+import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
 
 export default function DynamicTableScreen() {
-  const { id = '143', recordId = '' } = useParams();
-  const { windowData, columnsData, loading, error } = useWindow(id);
+  const { loading, error, recordId, windowData, groupedTabs } =
+    useMetadataContext();
 
   if (loading) {
     return <Spinner />;
@@ -62,6 +14,12 @@ export default function DynamicTableScreen() {
   } else if (recordId) {
     return <Outlet />;
   } else {
-    return <Content windowData={windowData} columnsData={columnsData} />;
+    return (
+      <>
+        {groupedTabs.map((tabs, index) => (
+          <Tabs key={index} tabs={tabs} />
+        ))}
+      </>
+    );
   }
 }

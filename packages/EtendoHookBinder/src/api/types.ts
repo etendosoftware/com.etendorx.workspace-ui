@@ -78,8 +78,9 @@ export interface Column {
   columnName: string;
   isMandatory: boolean;
   name: string;
-  column: {
+  column?: {
     reference: string;
+    _identifier: string;
   };
 }
 
@@ -109,11 +110,20 @@ export interface WindowMetadataProperties {
   };
 }
 
+export interface Tab {
+  id: string;
+  entityName: string,
+  fields: Record<string, Field>;
+  level: number;
+  _identifier: string;
+}
+
 export interface WindowMetadata {
+  id: string;
   name: string;
   superClass?: string;
   properties: WindowMetadataProperties;
-  tabs: Array<{ id: string; fields: Record<string, unknown> }>;
+  tabs: Tab[];
 }
 
 export interface WindowMetadataMap extends Record<string, WindowMetadata> {}

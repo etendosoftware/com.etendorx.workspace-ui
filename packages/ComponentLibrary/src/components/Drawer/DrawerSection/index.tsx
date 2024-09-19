@@ -1,13 +1,19 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Collapse, Box } from '@mui/material';
+import { Collapse } from '@mui/material';
 import { styles } from '../styles';
 import MenuTitle from '../MenuTitle';
 import { theme } from '../../../theme';
 import { DrawerSectionProps } from '../types';
+import { useParams } from 'react-router-dom';
 
-const ActualDrawerSection = ({ item, onClick }: DrawerSectionProps) => {
+export default function DrawerSection({
+  item,
+  onClick,
+  open,
+}: DrawerSectionProps) {
   const isMainSection = !!item.children?.length;
-  const isSelected = false;
+  const { id } = useParams();
+  const isSelected = Boolean(id?.length && item.window?.id === id);
   const [expanded, setExpanded] = useState(false);
 
   const handleClick = useCallback(() => {
@@ -32,36 +38,26 @@ const ActualDrawerSection = ({ item, onClick }: DrawerSectionProps) => {
   );
 
   return (
-    <Box sx={mainStyle}>
+    <div style={mainStyle}>
       <MenuTitle
         item={item}
         onClick={handleClick}
         selected={isSelected}
         expanded={expanded}
+        open={open}
       />
-      {item.children ? (
+      {item.children && open ? (
         <Collapse in={expanded} timeout="auto">
-          <Box sx={styles.contentBox}>
-            {item.children.map(subitem => (
-              <DrawerSection
-                key={subitem.id}
-                item={subitem}
-                onClick={onClick}
-              />
-            ))}
-          </Box>
+          {item.children.map(subitem => (
+            <DrawerSection
+              key={subitem.id}
+              item={subitem}
+              onClick={onClick}
+              open={open}
+            />
+          ))}
         </Collapse>
       ) : null}
-    </Box>
+    </div>
   );
-};
-
-const DrawerSection = (props: DrawerSectionProps) => {
-  if (props.item) {
-    return <ActualDrawerSection {...props} />;
-  }
-
-  return null;
-};
-
-export default DrawerSection;
+}

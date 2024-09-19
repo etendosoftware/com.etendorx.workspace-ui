@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Etendo } from '../api/metadata';
 import { useMetadataContext } from '../hooks/useMetadataContext';
+import { Column } from '../api/types';
 
 export function useWindow(windowId: string) {
   const { getWindow, getColumns } = useMetadataContext();
@@ -9,10 +10,17 @@ export function useWindow(windowId: string) {
   const [error, setError] = useState<Error>();
   const [loaded, setLoaded] = useState(false);
 
-  const columnsData = useMemo(
-    () => getColumns(windowData?.tabs[0].id),
-    [getColumns, windowData],
-  );
+  const columnsData = useMemo(() => {
+    const cols: Record<string, Column[]> = {};
+
+    if (windowData?.tabs?.length) {
+      windowData.tabs.forEach(tab => {
+        cols[tab.id] = getColumns(tab.id);
+      });
+    }
+
+    return cols;
+  }, [getColumns, windowData]);
 
   const load = useCallback(async () => {
     try {
