@@ -10,7 +10,6 @@ import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { parseColumns } from '@workspaceui/etendohookbinder/src/helpers/metadata';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-
 export default function DynamicTable({
   tab,
   onSelect,
@@ -18,7 +17,7 @@ export default function DynamicTable({
 }: {
   tab: Tab;
   onSelect: (row: unknown) => void;
-  onDoubleClick: (row: unknown) => void;
+  onDoubleClick: (row: Record<string, string>) => void;
 }) {
   const { records, loading, error, fetchMore, loaded } = useDatasource(tab);
 

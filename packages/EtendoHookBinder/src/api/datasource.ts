@@ -23,6 +23,7 @@ export class Datasource {
 
   public static async get(
     entity: string,
+    windowId: string,
     tabId: string,
     options: DatasourceParams = {},
     operationType = 'fetch',
@@ -31,6 +32,7 @@ export class Datasource {
   ) {
     try {
       const params = new URLSearchParams({
+        windowId,
         tabId,
         _isImplicitFilterApplied: isImplicitFilterApplied ? 'true' : 'false',
         _noCount: noCount ? 'true' : 'false',
@@ -65,7 +67,7 @@ export class Datasource {
 
   public static async getSingleRecord(entity: string, id: string) {
     try {
-      const result = await this.restClient.post(`${entity}/${id}`);
+      const result = await this.restClient.get(`${entity}/${id}`);
       const data = result.data;
 
       return Array.isArray(data) ? data[0] : data;

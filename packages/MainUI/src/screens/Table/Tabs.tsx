@@ -18,7 +18,7 @@ function Content({ tab }: { tab: Tab }) {
   );
 
   const handleDoubleClick = useCallback(
-    (record: any) => {
+    (record: Record<string, string>) => {
       selectRecord(record, tab.level);
       navigate(record.id);
     },

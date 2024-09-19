@@ -2,36 +2,36 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import FormView from '@workspaceui/componentlibrary/src/components/FormView';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import { WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
-import { FormData } from './types';
+import { useEntityRecord } from '@workspaceui/etendohookbinder/src/hooks/useEntityRecord';
 import { adaptFormData } from '../../utils/formUtils';
+import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
 
 export default function DynamicFormView() {
-  const { id, recordId } = useParams<{ id: string; recordId: string }>();
+  const { recordId = '' } = useParams<{ recordId: string }>();
   const navigate = useNavigate();
   const {
     windowData,
     columnsData,
     loading: windowLoading,
     error: windowError,
-  } = useWindow(id ?? '');
+  } = useMetadataContext();
   const [formData, setFormData] = useState<FormData | null>(null);
 
   const {
-    records,
+    data,
     loading: recordLoading,
     error: recordError,
     loaded,
-  } = useDatasource(windowData as WindowMetadata, {
-    criteria: [{ fieldName: 'id', operator: 'equals', value: recordId }],
-  });
+  } = useEntityRecord(windowData?.tabs[0].entityName ?? '', recordId);
+
+  useEffect(() => {
+    console.log('loaded record', data);
+  }, [data]);
 
   const updateFormData = useCallback(() => {
-    const newFormData = adaptFormData(windowData, columnsData, records);
-    if (newFormData) setFormData(newFormData);
-  }, [windowData, columnsData, records]);
+    // const newFormData = adaptFormData(windowData, columnsData, records);
+    // if (newFormData) setFormData(newFormData);
+  }, [windowData, columnsData]);
 
   useEffect(() => {
     updateFormData();

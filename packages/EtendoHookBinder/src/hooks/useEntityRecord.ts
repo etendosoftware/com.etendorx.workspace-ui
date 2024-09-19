@@ -17,9 +17,9 @@ export function useEntityRecord(entity: string, id: string) {
       if (response.error) {
         throw new Error(response.error.message);
       } else {
-        console.debug(response);
-
-        setData(prev => prev);
+        setData(
+          Array.isArray(response.data) ? response.data[0] : response.data,
+        );
         setLoaded(true);
       }
     } catch (e) {

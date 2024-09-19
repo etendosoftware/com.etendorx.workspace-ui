@@ -14,7 +14,8 @@ const initialState = {
   loading: false,
   error: undefined,
   groupedTabs: [],
-  windowData: undefined,
+  windowData: {} as Etendo.WindowMetadata,
+  columnsData: {},
 } as {
   getWindow: (windowId: string) => Promise<Etendo.WindowMetadata>;
   getColumns: (tabId: string) => Etendo.Column[];
@@ -23,7 +24,8 @@ const initialState = {
   loading: boolean;
   error: Error | undefined;
   groupedTabs: Etendo.Tab[][];
-  windowData: Etendo.WindowMetadata | undefined;
+  windowData: Etendo.WindowMetadata;
+  columnsData: Record<string, Etendo.Column[]>;
 };
 
 export const MetadataContext = createContext(initialState);
@@ -51,6 +53,18 @@ export default function MetadataProvider({
       .map(k => tabs[k]);
   }, [windowData]);
 
+  const columnsData = useMemo(() => {
+    const cols: Record<string, Etendo.Column[]> = {};
+
+    if (windowData?.tabs?.length) {
+      windowData.tabs.forEach(tab => {
+        cols[tab.id] = Metadata.getColumns(tab.id);
+      });
+    }
+
+    return cols;
+  }, [windowData]);
+
   const value = useMemo(
     () => ({
       getWindow: Metadata.getWindow,
@@ -60,9 +74,10 @@ export default function MetadataProvider({
       loading,
       error,
       groupedTabs,
-      windowData,
+      windowData: windowData ?? initialState.windowData,
+      columnsData,
     }),
-    [error, groupedTabs, id, loading, recordId, windowData],
+    [error, groupedTabs, id, loading, recordId, windowData, columnsData],
   );
 
   useEffect(() => {
