@@ -20,6 +20,7 @@ export const defaultIcon = (
 );
 
 const FormView: React.FC<FormViewProps> = ({
+  windowMetadata,
   data,
   readOnly = false,
   gridItemProps,

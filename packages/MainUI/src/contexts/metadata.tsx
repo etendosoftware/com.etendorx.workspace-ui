@@ -34,11 +34,15 @@ export default function MetadataProvider({
   children,
   token,
 }: React.PropsWithChildren<{ token?: string }>) {
-  const { id = '143', recordId = '' } = useParams();
+  const { id = '', recordId = '' } = useParams();
   const { windowData, loading, error } = useWindow(id);
 
   const groupedTabs = useMemo(() => {
-    const tabs: Record<string, Etendo.Tab[]> = {};
+    if (!windowData) {
+      return [];
+    }
+
+    const tabs: Etendo.Tab[][] = Array(windowData.tabs.length);
 
     windowData?.tabs.forEach(tab => {
       if (tabs[tab.level]) {
@@ -47,10 +51,8 @@ export default function MetadataProvider({
         tabs[tab.level] = [tab];
       }
     });
-
-    return Object.keys(tabs)
-      .sort()
-      .map(k => tabs[k]);
+    
+    return tabs;
   }, [windowData]);
 
   const columnsData = useMemo(() => {

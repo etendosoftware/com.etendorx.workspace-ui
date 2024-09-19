@@ -48,7 +48,7 @@ export class Metadata {
   }
 
   public static getColumns(tabId: string): Etendo.Column[] {
-    return Object.values(Metadata.cache.get(`tab-${tabId}`)?.fields ?? {});
+    return Metadata.cache.get(`tab-${tabId}`)?.fields ?? [];
   }
 
   public static async getSession() {

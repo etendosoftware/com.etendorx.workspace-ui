@@ -24,6 +24,8 @@ export function useEntityRecord(entity: string, id: string) {
       }
     } catch (e) {
       setError(e as Error);
+    } finally {
+      setLoading(false);
     }
   }, [entity, id]);
 

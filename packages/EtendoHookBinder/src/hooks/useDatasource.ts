@@ -33,7 +33,6 @@ const loadData = async (
 
 export function useDatasource(tab: Tab, params?: DatasourceOptions) {
   const _params = JSON.stringify(params ?? {});
-  console.log(tab.id);
   const entity = tab?.entityName;
   const tabId = tab?.id;
   const [loading, setLoading] = useState(true);

@@ -42,13 +42,7 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
   } = useMetadataContext();
 
   const fieldMetadata = useMemo(() => {
-    const res = columnsData[windowData.tabs[0].id]?.find(
-      column => column.columnName === name,
-    );
-
-    console.debug(res);
-
-    return res;
+    return columnsData[windowData.tabs[0].id][name];
   }, [columnsData, name, windowData.tabs]);
 
   const columnIdentifier = fieldMetadata?.column?._identifier;

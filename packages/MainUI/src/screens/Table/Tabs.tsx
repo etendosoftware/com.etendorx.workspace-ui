@@ -7,6 +7,7 @@ import { useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
 function Content({ tab }: { tab: Tab }) {
+  console.debug(tab);
   const { selectRecord } = useRecordContext();
   const navigate = useNavigate();
 
@@ -18,7 +19,7 @@ function Content({ tab }: { tab: Tab }) {
   );
 
   const handleDoubleClick = useCallback(
-    (record: Record<string, string>) => {
+    (record: any) => {
       selectRecord(record, tab.level);
       navigate(record.id);
     },
