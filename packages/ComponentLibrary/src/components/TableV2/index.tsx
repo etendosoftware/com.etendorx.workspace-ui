@@ -1,11 +1,9 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   MaterialReactTable,
   useMaterialReactTable,
   type MRT_ColumnDef,
 } from 'material-react-table';
-
-import {metadata} from './data';
 
 
 

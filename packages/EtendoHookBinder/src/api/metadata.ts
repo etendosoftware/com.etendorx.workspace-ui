@@ -2,7 +2,6 @@ import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL } from './constants';
 import { Client, Interceptor } from './client';
 import { CacheStore } from './cache';
 import * as Etendo from './types';
-import { parseColumns } from '../helpers/metadata';
 import { Menu } from './types';
 
 export type { Etendo };
@@ -48,10 +47,8 @@ export class Metadata {
     }
   }
 
-  public static getColumns(tabId: string) {
-    return parseColumns(
-      Object.values(Metadata.cache.get(`tab-${tabId}`)?.fields ?? {}),
-    );
+  public static getColumns(tabId: string): Etendo.Column[] {
+    return Object.values(Metadata.cache.get(`tab-${tabId}`)?.fields ?? {});
   }
 
   public static async getSession() {

@@ -1,21 +1,20 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
 import Select from '../../../../ComponentLibrary/src/components/Input/Select';
 import SearchOutlined from '../../../../ComponentLibrary/src/assets/icons/search.svg';
 import { theme } from '../../../../ComponentLibrary/src/theme';
-import { useParams } from 'react-router-dom';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
+import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
 
 interface TableDirSelectorProps {
   name: string;
-  field?: {
-    value: string;
+  field?: Partial<{
+    value: string | number | boolean;
     type: string;
     label: string;
     section: string;
     required: boolean;
-  };
+  }>;
   onChange: (name: string, value: string) => void;
 }
 
@@ -32,48 +31,29 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
 }) => {
   const [options, setOptions] = useState<Option[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { id: currentWindowId } = useParams<{ id: string }>();
 
   console.log('TableDirSelector props:', { name, field });
 
   const {
+    windowData,
     columnsData,
     loading: windowLoading,
     error: windowError,
-  } = useWindow(currentWindowId ?? '');
+  } = useMetadataContext();
 
   const fieldMetadata = useMemo(() => {
-    return columnsData?.find(column => column.columnName === name);
-  }, [columnsData, name]);
+    const res = columnsData[windowData.tabs[0].id]?.find(
+      column => column.columnName === name,
+    );
+
+    console.debug(res);
+
+    return res;
+  }, [columnsData, name, windowData.tabs]);
 
   const columnIdentifier = fieldMetadata?.column?._identifier;
 
-  const datasourceParams = useMemo(() => {
-    if (!columnIdentifier) return null;
-    const [entity] = columnIdentifier.split('.');
-    if (!entity) return null;
-    return {
-      entity,
-      tabId: 'reference',
-    };
-  }, [columnIdentifier]);
-
-  console.log('Datasource params:', datasourceParams);
-
-  const {
-    records,
-    loading: entityLoading,
-    error: entityError,
-  } = useDatasource(
-    datasourceParams
-      ? {
-          tabs: [
-            { entityName: datasourceParams.entity, id: datasourceParams.tabId },
-          ],
-        }
-      : null,
-    datasourceParams ? { reference: true } : null,
-  );
+  const { records, loading: entityLoading } = useDatasource(windowData.tabs[0]);
 
   useEffect(() => {
     if (records && records.length > 0) {
@@ -95,11 +75,6 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
     return (
       <div>Error: Could not determine entity for {field?.label || name}</div>
     );
-  if (!datasourceParams)
-    return (
-      <div>Error: Missing required parameters for {field?.label || name}</div>
-    );
-
   if (!field) {
     console.error(
       `TableDirSelector: 'field' prop is undefined for name: ${name}`,

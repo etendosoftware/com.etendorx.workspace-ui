@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Collapse, Box } from '@mui/material';
+import { Collapse } from '@mui/material';
 import { styles } from '../styles';
 import MenuTitle from '../MenuTitle';
 import { theme } from '../../../theme';

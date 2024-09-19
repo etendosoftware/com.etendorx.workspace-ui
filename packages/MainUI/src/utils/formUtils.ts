@@ -10,8 +10,8 @@ import {
   WindowMetadata,
 } from '@workspaceui/etendohookbinder/src/api/types';
 
-export function mapColumnTypeToFieldType(reference: string): FieldType {
-  switch (reference) {
+export function mapColumnTypeToFieldType(column: Column): FieldType {
+  switch (column?.column?.reference) {
     case '19':
       return 'tabledir';
     case '15':
@@ -52,8 +52,7 @@ export function adaptFormData(
   columnsData: Column[],
   record: Record<string, unknown>,
 ): FormData | null {
-  if (!windowData || !columnsData || !record)
-    return null;
+  if (!windowData || !columnsData || !record) return null;
 
   const adaptedData: FormData = {};
   const sections = new Set<string>(['Main']);
@@ -89,7 +88,7 @@ export function adaptFormData(
 
     adaptedData[fieldName] = {
       value: safeValue,
-      type: mapColumnTypeToFieldType(column.column.reference),
+      type: mapColumnTypeToFieldType(column),
       label: column.name,
       section: sectionName,
       required: column.isMandatory ?? true,

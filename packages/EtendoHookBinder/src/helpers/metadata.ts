@@ -8,6 +8,13 @@ export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
   return columns.map(column => ({
     header: column.title ?? column.name ?? column.columnName,
     id: column.name,
+    columnName: column.columnName,
+    isMandatory: column.required,
+    column: {
+      _identifier: column.title,
+      reference: column.type,
+    },
+    name: column.name,
     accessorFn: (v: Record<string, unknown>) => {
       return v[column.columnName + '$_identifier'] ?? v[column.columnName];
     },

@@ -78,8 +78,9 @@ export interface Column {
   columnName: string;
   isMandatory: boolean;
   name: string;
-  column: {
+  column?: {
     reference: string;
+    _identifier: string;
   };
 }
 

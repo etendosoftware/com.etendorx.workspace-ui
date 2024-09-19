@@ -42,6 +42,7 @@ const FormField: React.FC<FormFieldProps> = memo(
     const [value, setValue] = useState<FieldValue>(field.value);
 
     const renderField = () => {
+      console.log(field)
       switch (field.type) {
         case 'boolean':
           return (
@@ -108,7 +109,7 @@ const FormField: React.FC<FormFieldProps> = memo(
 
     return (
       <Box style={styles.fieldContainer}>
-        <Box sx={sx.labelBox}>
+        <Box sx={sx.labelBox}>  
           <FieldLabel label={field.label} required={field.required} />
         </Box>
         <Box sx={sx.inputBox}>{renderField()}</Box>
