@@ -29,25 +29,14 @@ const loadData = async (
   const endRow = page * pageSize - 1;
 
   try {
-    console.log('Sending request to Datasource.get with params:', {
-      entity,
-      tabId,
-      startRow,
-      endRow,
-      _params,
-    });
-
     const { response } = await Datasource.get(entity, undefined, tabId, {
       ...JSON.parse(_params),
       startRow,
       endRow,
     });
 
-    console.log('Received response from Datasource.get:', response);
-
     return response;
   } catch (error) {
-    console.error('Error in loadData:', error);
     return { data: [], error };
   }
 };

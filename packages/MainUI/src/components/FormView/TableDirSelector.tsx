@@ -9,7 +9,7 @@ import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 
 interface TableDirSelectorProps {
   name: string;
-  field: {
+  field?: {
     value: string;
     type: string;
     label: string;
@@ -25,28 +25,16 @@ interface Option {
   value: string;
 }
 
-const columnToEntityMap: { [key: string]: string } = {
-  C_BPartner_Location_ID: 'BusinessPartnerLocation',
-  AD_Org_ID: 'Organization',
-  C_BPartner_ID: 'BusinessPartner',
-  M_PriceList_ID: 'PriceList',
-  C_PaymentTerm_ID: 'PaymentTerm',
-  C_Currency_ID: 'Currency',
-  C_DocType_ID: 'DocumentType',
-  M_Shipper_ID: 'Shipper',
-  AD_Client_ID: 'Client',
-  FIN_Paymentmethod_ID: 'FIN_PaymentMethod',
-  // Añade más mapeos según sea necesario
-};
-
 const TableDirSelector: React.FC<TableDirSelectorProps> = ({
   name,
   field,
   onChange,
 }) => {
   const [options, setOptions] = useState<Option[]>([]);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const { id: currentWindowId } = useParams<{ id: string }>();
+
+  console.log('TableDirSelector props:', { name, field });
 
   const {
     columnsData,
@@ -60,28 +48,30 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
 
   const columnIdentifier = fieldMetadata?.column?._identifier;
 
-  const entityName = useMemo(() => {
-    if (!columnIdentifier) return null;
-    return (
-      columnToEntityMap[columnIdentifier] ||
-      columnIdentifier.replace(/^[A-Z]_/, '').replace(/_ID$/, '')
-    );
-  }, [columnIdentifier]);
-
   const datasourceParams = useMemo(() => {
-    if (!entityName) return null;
+    if (!columnIdentifier) return null;
+    const [entity] = columnIdentifier.split('.');
+    if (!entity) return null;
     return {
-      entity: entityName,
+      entity,
       tabId: 'reference',
     };
-  }, [entityName]);
+  }, [columnIdentifier]);
+
+  console.log('Datasource params:', datasourceParams);
 
   const {
     records,
     loading: entityLoading,
     error: entityError,
   } = useDatasource(
-    { tabs: [{ entityName: entityName, id: 'reference' }] },
+    datasourceParams
+      ? {
+          tabs: [
+            { entityName: datasourceParams.entity, id: datasourceParams.tabId },
+          ],
+        }
+      : null,
     datasourceParams ? { reference: true } : null,
   );
 
@@ -94,34 +84,32 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
       }));
       setOptions(formattedOptions);
     }
-    setIsInitializing(false);
+    setIsLoading(false);
   }, [records]);
 
-  console.log('EntityName:', entityName);
-  console.log('Datasource Params:', datasourceParams);
-  console.log('Records:', records);
-  console.log('Entity Loading:', entityLoading);
-  console.log('Entity Error:', entityError);
-
-  if (windowLoading || entityLoading || isInitializing) return <Spinner />;
+  if (windowLoading || entityLoading || isLoading) return <Spinner />;
   if (windowError)
     return <div>Error loading window data: {windowError.message}</div>;
-  if (!datasourceParams)
-    return <div>Error: Missing required parameters for {field.label}</div>;
-
-  if (entityError) {
-    console.error(`Error fetching data for ${entityName}:`, entityError);
+  if (entityError)
     return (
       <div>
-        Error: {entityError.message || 'Unknown error'}. Please contact support
-        if this persists.
+        Error loading entity data for {name}: {entityError.message}
       </div>
     );
-  }
+  if (!columnIdentifier)
+    return (
+      <div>Error: Could not determine entity for {field?.label || name}</div>
+    );
+  if (!datasourceParams)
+    return (
+      <div>Error: Missing required parameters for {field?.label || name}</div>
+    );
 
-  if (!entityName) {
-    console.warn(`Could not determine entity name for ${field.label}`);
-    return <div>Unable to load options for {field.label}</div>;
+  if (!field) {
+    console.error(
+      `TableDirSelector: 'field' prop is undefined for name: ${name}`,
+    );
+    return <div>Error: Missing field data for {name}</div>;
   }
 
   return (
@@ -137,7 +125,6 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
           onChange(name, value.value);
         }
       }}
-      disabled={entityLoading}
     />
   );
 };
