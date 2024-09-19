@@ -34,10 +34,9 @@ export function useDatasource(
   tab: Tab,
   params?: DatasourceOptions,
 ) {
-  tab = tab ?? {};
   const _params = JSON.stringify(params ?? {});
-  const entity = tab.entityName;
-  const tabId = tab.id;
+  const entity = tab?.entityName;
+  const tabId = tab?.id;
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);
   const [data, setData] = useState<Record<string, Record<string, unknown>>>({});

@@ -24,9 +24,16 @@ export function RecordProvider({ children }: React.PropsWithChildren) {
   );
   const [selected, setSelected] = useState<any[]>([]);
 
-  const selectRecord = useCallback((record: any, level: number) => {
-    setSelected(prev => [...prev.slice(0, level), record]);
-  }, []);
+  const selectRecord = useCallback(
+    (record: any, level: number) => {
+      if (selected.length >= level) {
+        setSelected(prev => [...prev.slice(0, level), record]);
+      } else {
+        throw new Error('Selected a level higher than the previous selected');
+      }
+    },
+    [selected.length],
+  );
 
   const getFormattedRecord = useCallback((record: Organization | null) => {
     if (!record) return null;

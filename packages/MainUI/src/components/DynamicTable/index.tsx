@@ -14,9 +14,11 @@ import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDataso
 export default function DynamicTable({
   tab,
   onSelect,
+  onDoubleClick,
 }: {
   tab: Tab;
   onSelect: (row: unknown) => void;
+  onDoubleClick: (row: unknown) => void;
 }) {
   const { records, loading, error, fetchMore, loaded } = useDatasource(tab);
 
@@ -28,6 +30,7 @@ export default function DynamicTable({
     enablePagination: false,
     muiTableBodyRowProps: ({ row }) => ({
       onClick: () => onSelect(row.original),
+      onDoubleClick: () => onDoubleClick(row.original),
     }),
   });
 
