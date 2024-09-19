@@ -4,7 +4,6 @@ import FormView from '../../components/FormView';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import { WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { FormData } from './types';
 import { adaptFormData } from '../../utils/formUtils';
 
@@ -26,7 +25,7 @@ export default function DynamicFormView() {
     loading: recordLoading,
     error: recordError,
     loaded,
-  } = useDatasource(windowData as WindowMetadata, {
+  } = useDatasource(windowData, {
     criteria: [{ fieldName: 'id', operator: 'equals', value: recordId }],
   });
 

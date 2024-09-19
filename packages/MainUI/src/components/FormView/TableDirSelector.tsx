@@ -90,12 +90,7 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
   if (windowLoading || entityLoading || isLoading) return <Spinner />;
   if (windowError)
     return <div>Error loading window data: {windowError.message}</div>;
-  if (entityError)
-    return (
-      <div>
-        Error loading entity data for {name}: {entityError.message}
-      </div>
-    );
+
   if (!columnIdentifier)
     return (
       <div>Error: Could not determine entity for {field?.label || name}</div>
