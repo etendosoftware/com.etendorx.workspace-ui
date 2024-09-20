@@ -1,6 +1,8 @@
 import type { Menu } from '../../../../EtendoHookBinder/src/api/types';
+import React from 'react';
 
 type NavigateFn = (pathname: string) => void;
+
 export interface DrawerProps {
   items: Menu[];
   logo: string;
@@ -17,6 +19,8 @@ export interface DrawerSectionProps {
   item: Menu;
   onClick: NavigateFn;
   open?: boolean;
+  onHover?: (item: Menu) => void;
+  onLeave?: () => void;
 }
 
 export interface DrawerSubsectionProps {
@@ -32,7 +36,13 @@ export interface Section {
   subSections?: Section[];
   badge?: string;
 }
+
 export interface SectionGroup {
   id: string | number;
   sections: Section[];
+}
+
+export interface HoverMenuProps {
+  item: Menu;
+  onClick: NavigateFn;
 }

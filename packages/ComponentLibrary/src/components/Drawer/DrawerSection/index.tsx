@@ -29,12 +29,11 @@ export default function DrawerSection({
   const mainStyle = useMemo(
     () => ({
       ...styles.drawerSectionBox,
-      backgroundColor:
-        isMainSection && isSelected
-          ? theme.palette.baselineColor.neutral[10]
-          : 'transparent',
+      background: expanded
+        ? theme.palette.dynamicColor.contrastText
+        : 'transparent',
     }),
-    [isMainSection, isSelected],
+    [expanded],
   );
 
   return (
