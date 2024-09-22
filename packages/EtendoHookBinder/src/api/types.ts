@@ -58,6 +58,7 @@ export interface GridProps {
 }
 
 export interface Field {
+  column: any;
   name: string;
   id: string;
   title: string;
