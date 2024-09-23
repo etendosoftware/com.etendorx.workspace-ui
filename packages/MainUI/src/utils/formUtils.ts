@@ -1,10 +1,4 @@
-import {
-  FieldType,
-  FieldInfo,
-  FormData,
-  FieldDefinition,
-  Section,
-} from '../screens/Form/types';
+import { FieldType, FieldInfo, FormData } from '../screens/Form/types';
 import {
   Column,
   WindowMetadata,
@@ -49,36 +43,20 @@ export function ensureFieldValue(
 
 export function adaptFormData(
   windowData: WindowMetadata,
-  columnsData: Column[],
+  columnsData: Record<string, Record<string, Column>>,
   record: Record<string, unknown>,
 ): FormData | null {
   if (!windowData || !columnsData || !record) return null;
 
   const adaptedData: FormData = {};
-  const sections = new Set<string>(['Main']);
+  const tabId = windowData.tabs[0]?.id;
 
-  // Create sections
-  columnsData.forEach((column: Column) => {
-    const fieldInfo = windowData.tabs?.[0]?.fields?.[column.columnName] as
-      | FieldInfo
-      | undefined;
-    const sectionName = fieldInfo?.fieldGroup$_identifier;
-    if (sectionName) sections.add(sectionName);
-  });
+  if (!tabId || !columnsData[tabId]) {
+    console.error('No tab data found for the first tab');
+    return null;
+  }
 
-  sections.forEach(sectionName => {
-    adaptedData[sectionName] = {
-      name: sectionName,
-      label: sectionName === 'Main' ? windowData.name : sectionName,
-      type: 'section',
-      personalizable: false,
-      id: sectionName,
-      showInTab: 'both',
-    } as Section;
-  });
-
-  columnsData.forEach((column: Column) => {
-    const fieldName = column.columnName;
+  Object.entries(columnsData[tabId]).forEach(([fieldName, column]) => {
     const fieldInfo = windowData.tabs?.[0]?.fields?.[fieldName] as
       | FieldInfo
       | undefined;
@@ -92,7 +70,8 @@ export function adaptFormData(
       label: column.name,
       section: sectionName,
       required: column.isMandatory ?? true,
-    } as FieldDefinition;
+      referencedTable: column.column?.reference, // Add this line
+    };
   });
 
   return adaptedData;

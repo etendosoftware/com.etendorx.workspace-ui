@@ -10,7 +10,7 @@ export interface GridItemProps {
 }
 
 export interface FormViewProps {
-  windowMetadata: any;
+  windowMetadata: WindowMetadata;
   data: any;
   onSave: () => void;
   onCancel: () => void;

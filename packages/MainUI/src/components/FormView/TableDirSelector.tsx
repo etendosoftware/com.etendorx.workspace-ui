@@ -41,13 +41,28 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
     error: windowError,
   } = useMetadataContext();
 
+  console.log('WindowData:', windowData);
+  console.log('ColumnsData:', columnsData);
+
   const fieldMetadata = useMemo(() => {
-    return columnsData[windowData.tabs[0].id][name];
-  }, [columnsData, name, windowData.tabs]);
+    if (windowData && windowData.tabs && windowData.tabs.length > 0) {
+      const tabId = windowData.tabs[0].id;
+      console.log('TabId:', tabId);
+      console.log('ColumnsData for tab:', columnsData[tabId]);
+      return columnsData[tabId]?.[name];
+    }
+    return undefined;
+  }, [columnsData, name, windowData]);
 
-  const columnIdentifier = fieldMetadata?.column?._identifier;
+  console.log('Field metadata:', fieldMetadata);
 
-  const { records, loading: entityLoading } = useDatasource(windowData.tabs[0]);
+  const referencedTable = fieldMetadata?.column?.reference;
+
+  console.log('Referenced table:', referencedTable);
+
+  const { records, loading: entityLoading } = useDatasource(
+    referencedTable ? { entityName: referencedTable } : null,
+  );
 
   useEffect(() => {
     if (records && records.length > 0) {
@@ -65,7 +80,7 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
   if (windowError)
     return <div>Error loading window data: {windowError.message}</div>;
 
-  if (!columnIdentifier)
+  if (!referencedTable)
     return (
       <div>Error: Could not determine entity for {field?.label || name}</div>
     );

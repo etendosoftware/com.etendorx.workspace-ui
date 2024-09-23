@@ -8,7 +8,7 @@ import Login from './screens/Login';
 import Form from './screens/Form';
 import Layout from './components/layout';
 import './index.css';
-import DynamicFormView from './screens/Form/DynamicFormView';
+import DynamicFormView from './screens/Form/DynamicFormView copy';
 
 const router = createBrowserRouter([
   {
