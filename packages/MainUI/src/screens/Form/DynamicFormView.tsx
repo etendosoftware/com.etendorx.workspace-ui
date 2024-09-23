@@ -12,7 +12,6 @@ export default function DynamicFormView() {
   const navigate = useNavigate();
   const {
     windowData,
-    columnsData,
     loading: windowLoading,
     error: windowError,
   } = useWindow(id ?? '');

@@ -42,7 +42,6 @@ const FormField: React.FC<FormFieldProps> = memo(
     const [value, setValue] = useState<FieldValue>(field.value);
 
     const renderField = () => {
-      console.log(field);
       switch (field.type) {
         case 'boolean':
           return (

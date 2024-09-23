@@ -16,7 +16,6 @@ const styles = {
   container: css({
     overflow: 'auto',
     flex: 1,
-    padding: theme.spacing(1),
     position: 'relative',
     display: 'flex',
     flexDirection: 'column',
