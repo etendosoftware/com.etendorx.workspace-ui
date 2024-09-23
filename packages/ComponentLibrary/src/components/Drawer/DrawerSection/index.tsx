@@ -1,5 +1,11 @@
-import { useCallback, useMemo, useState } from 'react';
-import { Collapse } from '@mui/material';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  Collapse,
+  Popper,
+  Paper,
+  ClickAwayListener,
+  Grow,
+} from '@mui/material';
 import { styles } from '../styles';
 import MenuTitle from '../MenuTitle';
 import { theme } from '../../../theme';
@@ -11,30 +17,40 @@ export default function DrawerSection({
   onClick,
   open,
 }: DrawerSectionProps) {
-  const isMainSection = !!item.children?.length;
   const { id } = useParams();
   const isSelected = Boolean(id?.length && item.window?.id === id);
   const [expanded, setExpanded] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const popperOpen = Boolean(anchorEl);
 
-  const handleClick = useCallback(() => {
-    if (item.children?.length) {
-      setExpanded(prev => !prev);
-    } else if (item.window?.id) {
-      onClick(`/window/${item.window.id}`);
-    } else {
-      console.error('DrawerSection: unexpected type');
-    }
-  }, [item, onClick]);
+  const handleClick = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      if (!open) {
+        setAnchorEl(anchorEl ? null : event.currentTarget);
+      } else if (item.children?.length) {
+        setExpanded(prev => !prev);
+      } else if (item.window?.id) {
+        onClick(`/window/${item.window.id}`);
+      } else {
+        console.error('DrawerSection: unexpected type');
+      }
+    },
+    [item, onClick, open, anchorEl],
+  );
+
+  const handleClose = useCallback(() => {
+    setAnchorEl(null);
+  }, []);
 
   const mainStyle = useMemo(
     () => ({
       ...styles.drawerSectionBox,
-      backgroundColor:
-        isMainSection && isSelected
-          ? theme.palette.baselineColor.neutral[10]
-          : 'transparent',
+      ...(!open && styles.closeSection),
+      background: expanded
+        ? theme.palette.dynamicColor.contrastText
+        : 'transparent',
     }),
-    [isMainSection, isSelected],
+    [expanded, open],
   );
 
   return (
@@ -46,7 +62,7 @@ export default function DrawerSection({
         expanded={expanded}
         open={open}
       />
-      {item.children && open ? (
+      {item.children && open && (
         <Collapse in={expanded} timeout="auto">
           {item.children.map(subitem => (
             <DrawerSection
@@ -57,7 +73,41 @@ export default function DrawerSection({
             />
           ))}
         </Collapse>
-      ) : null}
+      )}
+      <Popper
+        open={popperOpen}
+        anchorEl={anchorEl}
+        placement="right-start"
+        transition>
+        {({ TransitionProps }) => (
+          <Grow {...TransitionProps} timeout={300}>
+            <Paper style={styles.popper}>
+              <ClickAwayListener onClickAway={handleClose}>
+                <div style={styles.popperContent}>
+                  <MenuTitle
+                    item={item}
+                    onClick={handleClick}
+                    selected={isSelected}
+                    expanded={expanded}
+                    open={true}
+                  />
+                  {item.children?.map(subitem => (
+                    <DrawerSection
+                      key={subitem.id}
+                      item={subitem}
+                      onClick={path => {
+                        onClick(path);
+                        handleClose();
+                      }}
+                      open={true}
+                    />
+                  ))}
+                </div>
+              </ClickAwayListener>
+            </Paper>
+          </Grow>
+        )}
+      </Popper>
     </div>
   );
 }
