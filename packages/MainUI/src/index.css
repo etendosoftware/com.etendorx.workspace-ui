@@ -68,3 +68,13 @@ body {
 .field pre {
   font-size: 10px;
 }
+
+.flex {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+}
