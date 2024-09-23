@@ -54,3 +54,16 @@ body {
   height: 100%;
   overflow: hidden;
 }
+
+.field {
+  padding: 0.5rem;
+  border: 1px solid #dddddda0;
+  background-color: #fafafa;
+  margin: 0.5rem;
+  border-radius: 1rem;
+
+}
+
+.field pre {
+  font-size: 10px;
+}

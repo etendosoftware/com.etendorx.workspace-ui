@@ -19,8 +19,8 @@ export default function DrawerSection({
   const handleClick = useCallback(() => {
     if (item.children?.length) {
       setExpanded(prev => !prev);
-    } else if (item.window?.id) {
-      onClick(`/window/${item.window.id}`);
+    } else if (item.windowId) {
+      onClick(`/window/${item.windowId}`);
     } else {
       console.error('DrawerSection: unexpected type');
     }
