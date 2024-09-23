@@ -36,7 +36,9 @@ export default function DrawerHeader({
       <IconButton
         onClick={onClick}
         sx={open ? openSx : closedSx}
-        className="animated-transform">
+        className="animated-transform"
+        height={20}
+        width={20}>
         <MenuOpen />
       </IconButton>
     </div>

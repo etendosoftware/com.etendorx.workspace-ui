@@ -90,13 +90,20 @@ export const styles = {
       backgroundColor: theme.palette.baselineColor.neutral[90],
     },
   },
-  asd: {
+  popper: {
+    marginLeft: '0.75rem',
+    borderRadius: '0.75rem',
+  },
+  popperContent: {
+    padding: '0.5rem',
+  },
+  iconsClosed: {
     borderRadius: '5rem',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     maxWidth: '2.25rem',
-    maxHeigt: '2.25rem',
+    maxHeight: '2.25rem',
   },
   listItemIconContent: {
     width: '1rem',
@@ -130,6 +137,10 @@ export const styles = {
   drawerSectionBox: {
     margin: '0.5rem 0.5rem 0rem 0.5rem',
     borderRadius: '0.5rem',
+  },
+  closeSection: {
+    display: 'flex',
+    justifyContent: 'center',
   },
   drawerHeaderTitle: {
     fontWeight: 600,

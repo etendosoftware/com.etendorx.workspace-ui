@@ -15,6 +15,14 @@ export interface DrawerProps {
   sectionGroups?: SectionGroup[];
 }
 
+export interface MenuTitleProps {
+  item: Menu;
+  onClick: (event: React.MouseEvent<HTMLElement>) => void;
+  selected?: boolean;
+  expanded?: boolean;
+  open?: boolean;
+}
+
 export interface DrawerSectionProps {
   item: Menu;
   onClick: NavigateFn;
