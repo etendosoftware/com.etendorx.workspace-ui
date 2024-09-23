@@ -21,6 +21,7 @@ export default function DrawerSection({
   const isSelected = Boolean(id?.length && item.window?.id === id);
   const [expanded, setExpanded] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const popperOpen = Boolean(anchorEl);
 
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
@@ -44,15 +45,13 @@ export default function DrawerSection({
   const mainStyle = useMemo(
     () => ({
       ...styles.drawerSectionBox,
-      ...(open ? {} : styles.closeSection),
+      ...(!open && styles.closeSection),
       background: expanded
         ? theme.palette.dynamicColor.contrastText
         : 'transparent',
     }),
     [expanded, open],
   );
-
-  const popperOpen = Boolean(anchorEl);
 
   return (
     <div style={mainStyle}>
@@ -63,9 +62,9 @@ export default function DrawerSection({
         expanded={expanded}
         open={open}
       />
-      {item.children && open ? (
+      {item.children && open && (
         <Collapse in={expanded} timeout="auto">
-          {item.children?.map(subitem => (
+          {item.children.map(subitem => (
             <DrawerSection
               key={subitem.id}
               item={subitem}
@@ -74,7 +73,7 @@ export default function DrawerSection({
             />
           ))}
         </Collapse>
-      ) : null}
+      )}
       <Popper
         open={popperOpen}
         anchorEl={anchorEl}
