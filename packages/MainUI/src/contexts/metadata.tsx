@@ -25,7 +25,7 @@ const initialState = {
   error: Error | undefined;
   groupedTabs: Etendo.Tab[][];
   windowData: Etendo.WindowMetadata;
-  columnsData: Record<string, Etendo.Column[]>;
+  columnsData: Record<number, Record<string, Etendo.Column[]>>;
 };
 
 export const MetadataContext = createContext(initialState);
@@ -51,16 +51,20 @@ export default function MetadataProvider({
         tabs[tab.level] = [tab];
       }
     });
-    
+
     return tabs;
   }, [windowData]);
 
   const columnsData = useMemo(() => {
-    const cols: Record<string, Etendo.Column[]> = {};
+    const cols: Record<number, Record<string, Etendo.Column[]>> = {};
 
     if (windowData?.tabs?.length) {
       windowData.tabs.forEach(tab => {
-        cols[tab.id] = Metadata.getColumns(tab.id);
+        if (!cols[tab.level]) {
+          cols[tab.level] = {};
+        }
+
+        cols[tab.level][tab.id] = Metadata.getColumns(tab.id);
       });
     }
 
