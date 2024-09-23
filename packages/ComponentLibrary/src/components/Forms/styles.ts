@@ -8,6 +8,7 @@ export const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     height: '100%',
+    width: '100%',
     gap: theme.spacing(1),
   }),
   paper: css({

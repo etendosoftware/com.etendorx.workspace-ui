@@ -5,6 +5,7 @@ import {
 } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useParams } from 'react-router-dom';
 import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
+import { buildColumnsData, groupTabsByLevel } from '../utils/metadata';
 
 const initialState = {
   getWindow: Metadata.getWindow,
@@ -37,39 +38,8 @@ export default function MetadataProvider({
   const { id = '', recordId = '' } = useParams();
   const { windowData, loading, error } = useWindow(id);
 
-  const groupedTabs = useMemo(() => {
-    if (!windowData) {
-      return [];
-    }
-
-    const tabs: Etendo.Tab[][] = Array(windowData.tabs.length);
-
-    windowData?.tabs.forEach(tab => {
-      if (tabs[tab.level]) {
-        tabs[tab.level].push(tab);
-      } else {
-        tabs[tab.level] = [tab];
-      }
-    });
-
-    return tabs;
-  }, [windowData]);
-
-  const columnsData = useMemo(() => {
-    const cols: Record<number, Record<string, Etendo.Column[]>> = {};
-
-    if (windowData?.tabs?.length) {
-      windowData.tabs.forEach(tab => {
-        if (!cols[tab.level]) {
-          cols[tab.level] = {};
-        }
-
-        cols[tab.level][tab.id] = Metadata.getColumns(tab.id);
-      });
-    }
-
-    return cols;
-  }, [windowData]);
+  const groupedTabs = useMemo(() => groupTabsByLevel(windowData), [windowData]);
+  const columnsData = useMemo(() => buildColumnsData(windowData), [windowData]);
 
   const value = useMemo(
     () => ({
@@ -85,13 +55,6 @@ export default function MetadataProvider({
     }),
     [error, groupedTabs, id, loading, recordId, windowData, columnsData],
   );
-
-  useEffect(() => {
-    if (token) {
-      Metadata.authorize(token);
-      Metadata.initialize();
-    }
-  }, [token]);
 
   return (
     <MetadataContext.Provider value={value}>

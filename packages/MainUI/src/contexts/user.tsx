@@ -75,7 +75,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
     if (token) {
       Datasource.authorize(token);
       Metadata.authorize(token);
-      Metadata.initialize();
     }
   }, [token]);
 

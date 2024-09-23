@@ -4,13 +4,12 @@ import {
   useMaterialReactTable,
 } from 'material-react-table';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
-import { CircularProgress } from '@mui/material';
 import styles from './styles';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { parseColumns } from '@workspaceui/etendohookbinder/src/helpers/metadata';
 import { useRecordContext } from '../../hooks/useRecordContext';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
+import { useTabDatasource } from '../../hooks/useTabDatasource';
 
 export default function DynamicTable({
   tab,
@@ -21,7 +20,7 @@ export default function DynamicTable({
   onSelect: (row: unknown) => void;
   onDoubleClick: (row: Record<string, string>) => void;
 }) {
-  const { records, loading, error, fetchMore, loaded } = useDatasource(tab);
+  const { records, loading, error, fetchMore, loaded } = useTabDatasource(tab);
   const { selected } = useRecordContext();
   const enabled = tab.level <= selected.length;
 
@@ -36,29 +35,20 @@ export default function DynamicTable({
     }),
   });
 
-  if (!enabled) {
-    return null;
-  }
-
   if (loading && !loaded) {
     return <Spinner />;
   } else if (error) {
     return <div>{error.message}</div>;
-  } else {
+  } else if (enabled) {
     return (
-      <>
-        <Box sx={styles.container}>
-          <Box sx={styles.table}>
-            <MaterialReactTable table={table} />
-          </Box>
-          <IconButton onClick={fetchMore} iconText="+" sx={styles.fetchMore} />
+      <Box sx={styles.container}>
+        <Box sx={styles.table}>
+          <MaterialReactTable table={table} />
         </Box>
-        {loading ? (
-          <Box sx={styles.loader}>
-            <CircularProgress />
-          </Box>
-        ) : null}
-      </>
+        <IconButton onClick={fetchMore} iconText="+" sx={styles.fetchMore} />
+      </Box>
     );
+  } else {
+    return null;
   }
 }
