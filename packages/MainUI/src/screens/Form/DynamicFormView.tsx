@@ -1,108 +1,71 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
-import { useEntityRecord } from '@workspaceui/etendohookbinder/src/hooks/useEntityRecord';
-import FormView from './FormView';
-import { Organization, Section, FieldDefinition } from './types';
+import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
+import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
+import { FormData } from './types';
+import FormView from '../../components/FormView';
+import { adaptFormData } from '../../utils/formUtils';
 
 export default function DynamicFormView() {
-  const { recordId = '' } = useParams<{ recordId: string }>();
-
+  const { id, recordId } = useParams<{ id: string; recordId: string }>();
+  const navigate = useNavigate();
   const {
     windowData,
+    columnsData,
     loading: windowLoading,
     error: windowError,
-  } = useMetadataContext();
+  } = useWindow(id ?? '');
+  const [formData, setFormData] = useState<FormData | null>(null);
 
   const {
-    data,
+    records,
     loading: recordLoading,
     error: recordError,
-  } = useEntityRecord(windowData?.tabs[0].entityName ?? '', recordId);
+    loaded,
+  } = useDatasource(windowData?.tabs[0] ?? null, {
+    criteria: [{ fieldName: 'id', operator: 'equals', value: recordId }],
+  });
 
-  const [formData, setFormData] = useState<Organization>({});
+  useEffect(() => {
+    if (windowData && columnsData && records && records.length > 0) {
+      try {
+        const newFormData = adaptFormData(windowData, columnsData, records[0]);
+        if (newFormData) {
+          setFormData(newFormData);
+        } else {
+          console.error('adaptFormData returned null');
+        }
+      } catch (error) {
+        console.error('Error in adaptFormData:', error);
+      }
+    }
+  }, [windowData, columnsData, records]);
 
-  const adaptedData: Organization = useMemo(() => {
-    if (!windowData || !data) return {};
+  const handleSave = useCallback(() => navigate('/'), [navigate]);
+  const handleCancel = useCallback(() => navigate('/'), [navigate]);
 
-    const result: Organization = {};
+  const handleChange = useCallback((updatedData: FormData) => {
+    console.log('Form data changed:', updatedData);
+    setFormData(updatedData);
+  }, []);
 
-    // Create main section
-    result['_mainSection'] = {
-      id: '_mainSection',
-      type: 'section',
-      label: windowData.name,
-      icon: null,
-      fill: null,
-      hoverFill: null,
-      showInTab: true,
-    } as Section;
+  if (windowLoading || (recordLoading && !loaded)) return <Spinner />;
+  if (windowError)
+    return <div>Error loading window data: {windowError.message}</div>;
+  if (recordError)
+    return <div>Error loading record data: {recordError.message}</div>;
+  if (!windowData) return <div>No window data available</div>;
+  if (!records || records.length === 0) return <div>No record found</div>;
+  if (!formData) return <div>No form data available</div>;
 
-    // Adapt fields
-    Object.entries(windowData.tabs[0].fields).forEach(([key, value]) => {
-      const fieldValue = data[`${key}$_identifier`] ?? data[key] ?? '';
-      result[key] = {
-        value: fieldValue,
-        type: mapColumnTypeToFieldType(value.column),
-        label: value.column.name,
-        section: '_mainSection',
-        required: value.column.isMandatory ?? true,
-      } as FieldDefinition;
-    });
-
-    return result;
-  }, [windowData, data]);
-
-  const handleInputChange = useCallback(
-    (name: string, value: string | number | boolean | string[] | Date) => {
-      setFormData(prevData => ({
-        ...prevData,
-        [name]: {
-          ...prevData[name],
-          value: value,
-        } as FieldDefinition,
-      }));
-    },
-    [],
+  return (
+    <FormView
+      windowMetadata={windowData}
+      data={formData}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      onChange={handleChange}
+    />
   );
-
-  if (windowLoading || recordLoading) {
-    return <Spinner />;
-  } else if (windowError || recordError) {
-    return <div>Error: {windowError?.message ?? recordError?.message}</div>;
-  } else if (adaptedData) {
-    return (
-      <FormView
-        data={adaptedData}
-        readOnly={false}
-        gridItemProps={{}}
-        dottedLineInterval={1}
-      />
-    );
-  } else {
-    return null;
-  }
-}
-
-function mapColumnTypeToFieldType(column: any): string {
-  switch (column?.reference) {
-    case '19':
-      return 'tabledir';
-    case '15':
-    case '16':
-      return 'date';
-    case '20':
-      return 'boolean';
-    case '17':
-    case '30':
-    case '18':
-    case '11':
-    case '12':
-    case '29':
-    case '22':
-    case '800008':
-    default:
-      return 'text';
-  }
 }
