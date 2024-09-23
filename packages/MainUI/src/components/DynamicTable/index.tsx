@@ -11,6 +11,7 @@ import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { parseColumns } from '@workspaceui/etendohookbinder/src/helpers/metadata';
 import { useRecordContext } from '../../hooks/useRecordContext';
 import { useTableRecords } from '../../hooks/useTableRecords';
+import { useEffect } from 'react';
 
 export default function DynamicTable({
   tab,
@@ -22,8 +23,12 @@ export default function DynamicTable({
   onDoubleClick: (row: Record<string, string>) => void;
 }) {
   const { records, loading, error, fetchMore, loaded } = useTableRecords(tab);
-  const { selected } = useRecordContext();
+  const { selected, activeTab } = useRecordContext();
   const enabled = tab.level <= selected.length;
+
+  useEffect(() => {
+    console.debug(activeTab)
+  }, [activeTab]);
 
   const table = useMaterialReactTable({
     columns: parseColumns(Object.values(tab.fields)),

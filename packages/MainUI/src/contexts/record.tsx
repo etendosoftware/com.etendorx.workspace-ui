@@ -12,7 +12,7 @@ export interface RecordContextType {
     record: Organization | null,
   ) => { identifier: string; type: string } | null;
   selectRecord: (record: any, tab: Tab) => void;
-  activeTab?: Tab;
+  selectedTab?: Tab;
   selected: any[];
 }
 
@@ -23,7 +23,7 @@ export function RecordProvider({ children }: React.PropsWithChildren) {
     null,
   );
   const [selected, setSelected] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<Tab | undefined>();
+  const [selectedTab, setSelectedTab] = useState<Tab | undefined>();
 
   const selectRecord: RecordContextType['selectRecord'] = useCallback(
     (record, tab) => {
@@ -31,7 +31,7 @@ export function RecordProvider({ children }: React.PropsWithChildren) {
 
       if (selected.length >= level) {
         setSelected(prev => [...prev.slice(0, level), record]);
-        setActiveTab(tab);
+        setSelectedTab(tab);
       } else {
         throw new Error('Selected a level higher than the previous selected');
       }
@@ -39,28 +39,29 @@ export function RecordProvider({ children }: React.PropsWithChildren) {
     [selected.length],
   );
 
-  const getFormattedRecord = useCallback((record: Organization | null) => {
-    if (!record) return null;
-    return {
-      identifier:
-        ensureString(record.documentNo?.value) ||
-        translations.es.table.labels.noIdentifier,
-      type:
-        ensureString(record.transactionDocument?.value) ||
-        translations.es.table.labels.noType,
-    };
-  }, []);
+  const getFormattedRecord: RecordContextType['getFormattedRecord'] =
+    useCallback((record: Organization | null) => {
+      if (!record) return null;
+      return {
+        identifier:
+          ensureString(record.documentNo?.value) ||
+          translations.es.table.labels.noIdentifier,
+        type:
+          ensureString(record.transactionDocument?.value) ||
+          translations.es.table.labels.noType,
+      };
+    }, []);
 
-  const value = useMemo(
+  const value: RecordContextType = useMemo(
     () => ({
       selectedRecord,
       setSelectedRecord,
       getFormattedRecord,
       selectRecord,
       selected,
-      activeTab,
+      selectedTab,
     }),
-    [selectedRecord, getFormattedRecord, selectRecord, selected, activeTab],
+    [selectedRecord, getFormattedRecord, selectRecord, selected, selectedTab],
   );
 
   return (
