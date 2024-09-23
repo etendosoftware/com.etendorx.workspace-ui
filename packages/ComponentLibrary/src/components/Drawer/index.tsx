@@ -8,8 +8,14 @@ const Drawer = ({ items, logo, title, onClick }: DrawerProps) => {
   const [open, setOpen] = useState<boolean>(true);
   const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
 
+  const drawerStyle = {
+    ...styles.drawerPaper,
+    width: open ? '16.25rem' : '3.5rem',
+    transition: 'width 0.5s ease-in-out',
+  };
+
   return (
-    <div style={styles.drawerPaper}>
+    <div style={drawerStyle}>
       <DrawerHeader
         logo={logo}
         title={title}
