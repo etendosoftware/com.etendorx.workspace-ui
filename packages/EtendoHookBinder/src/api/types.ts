@@ -58,7 +58,7 @@ export interface GridProps {
 }
 
 export interface Field {
-  column: any;
+  column: Record<string, string>;
   name: string;
   id: string;
   title: string;
@@ -73,6 +73,7 @@ export interface Field {
 }
 
 export interface Column {
+  fieldGroup: string;
   header: string;
   id: string;
   accessorFn: (v: Record<string, unknown>) => unknown;
@@ -156,6 +157,7 @@ export interface Menu {
   icon?: string | null;
   id: string;
   name: string;
+  windowId?: string;
   window?: Window | null;
   action?: Action[keyof Action] | null;
 }
