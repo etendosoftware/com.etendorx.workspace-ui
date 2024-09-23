@@ -4,12 +4,14 @@ import {
   useMaterialReactTable,
 } from 'material-react-table';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
-import { CircularProgress, useTheme } from '@mui/material';
+import { CircularProgress } from '@mui/material';
 import styles from './styles';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { parseColumns } from '@workspaceui/etendohookbinder/src/helpers/metadata';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
+import { useRecordContext } from '../../hooks/useRecordContext';
+import { useTableRecords } from '../../hooks/useTableRecords';
+
 export default function DynamicTable({
   tab,
   onSelect,
@@ -17,11 +19,11 @@ export default function DynamicTable({
 }: {
   tab: Tab;
   onSelect: (row: unknown) => void;
-  onDoubleClick: (row: Record<string, string | unknown>) => void;
+  onDoubleClick: (row: Record<string, string>) => void;
 }) {
-  const { records, loading, error, fetchMore, loaded } = useDatasource(tab);
-
-  const theme = useTheme();
+  const { records, loading, error, fetchMore, loaded } = useTableRecords(tab);
+  const { selected } = useRecordContext();
+  const enabled = tab.level <= selected.length;
 
   const table = useMaterialReactTable({
     columns: parseColumns(Object.values(tab.fields)),
@@ -32,6 +34,10 @@ export default function DynamicTable({
       onDoubleClick: () => onDoubleClick(row.original),
     }),
   });
+
+  if (!enabled) {
+    return null;
+  }
 
   if (loading && !loaded) {
     return <Spinner />;
@@ -46,11 +52,8 @@ export default function DynamicTable({
           </Box>
           <IconButton
             onClick={fetchMore}
-            sx={styles.fetchMore}
-            fill={theme.palette.baselineColor.neutral[80]}
-            hoverFill={theme.palette.baselineColor.neutral[100]}>
-            +
-          </IconButton>
+            iconText='+'
+            sx={styles.fetchMore} />
         </Box>
         {loading ? (
           <Box sx={styles.loader}>

@@ -38,7 +38,6 @@ export default function DynamicFormView() {
 }
 
 const TextField = (props: Etendo.Field & { data: any; field: string }) => {
-  console.log({ field: props.field, data: props.data });
   const _value =
     props.data[`${props.field}$_identifier`] ?? props.data[props.field] ?? '';
   const [value, setValue] = useState(_value);

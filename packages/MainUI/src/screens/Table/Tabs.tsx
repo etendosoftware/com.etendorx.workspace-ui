@@ -1,39 +1,9 @@
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Button } from '../../../../ComponentLibrary/src/components';
-import { useRecordContext } from '../../hooks/useRecordContext';
-import DynamicTable from '../../components/DynamicTable';
-import { useTheme } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-
-function Content({ tab }: { tab: Tab }) {
-  console.debug(tab);
-  const { selectRecord } = useRecordContext();
-  const navigate = useNavigate();
-
-  const handleSelect = useCallback(
-    (record: unknown) => {
-      selectRecord(record, tab.level);
-    },
-    [selectRecord, tab.level],
-  );
-
-  const handleDoubleClick = useCallback(
-    (record: any) => {
-      selectRecord(record, tab.level);
-      navigate(record.id);
-    },
-    [navigate, selectRecord, tab.level],
-  );
-
-  return (
-    <DynamicTable
-      tab={tab}
-      onSelect={handleSelect}
-      onDoubleClick={handleDoubleClick}
-    />
-  );
-}
+import { Box, useTheme } from '@mui/material';
+import { styles } from './styles';
+import Content from './Content';
 
 export default function Tabs({ tabs }: { tabs: Tab[] }) {
   const theme = useTheme();
@@ -55,23 +25,21 @@ export default function Tabs({ tabs }: { tabs: Tab[] }) {
     [activeKey, tabs],
   );
 
-  const buttonSx = (tab: Tab, activeKey: string) => ({
+  const buttonSx = (tab: Tab, activeKey?: string) => ({
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     color:
       tab.id === activeKey
         ? theme.palette.text.primary
         : theme.palette.text.secondary,
     backgroundColor:
       tab.id === activeKey
-        ? theme.palette.primary.contrastText
-        : theme.palette.background.paper,
+        ? theme.palette.background.default
+        : theme.palette.action.disabled,
   });
 
-  if (!active) {
-    return null;
-  }
-
   return (
-    <div>
+    <Box sx={styles.container}>
       <div>
         {tabs.map(tab => (
           <Button
@@ -83,6 +51,6 @@ export default function Tabs({ tabs }: { tabs: Tab[] }) {
         ))}
       </div>
       <Content tab={active} />
-    </div>
+    </Box>
   );
 }
