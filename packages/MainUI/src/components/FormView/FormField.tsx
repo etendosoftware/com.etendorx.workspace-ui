@@ -31,14 +31,14 @@ const FieldLabel: React.FC<FieldLabelProps> = ({ label, required }) => (
   </Box>
 );
 
-const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
+const CustomCheckbox = styled(Checkbox)(() => ({
   '&.Mui-checked': {
     color: theme.palette.dynamicColor.main,
   },
 }));
 
 const FormField: React.FC<FormFieldProps> = memo(
-  ({ name, field, onChange }) => {
+  ({ name, field, onChange, windowMetadata, columnsData }) => {
     const [value, setValue] = useState<FieldValue>(field.value);
 
     const renderField = () => {
@@ -93,9 +93,11 @@ const FormField: React.FC<FormFieldProps> = memo(
         case 'tabledir':
           return (
             <TableDirSelector
-              name={fieldName}
-              field={fieldData}
+              name={name}
+              field={field}
               onChange={onChange}
+              windowMetadata={windowMetadata}
+              columnsData={columnsData}
             />
           );
         default:
@@ -126,6 +128,7 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = ({
   field,
   onChange,
   windowMetadata,
+  columnsData,
 }) => {
   return (
     <FormField
@@ -133,6 +136,7 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = ({
       field={field}
       onChange={onChange}
       windowMetadata={windowMetadata}
+      columnsData={columnsData}
     />
   );
 };

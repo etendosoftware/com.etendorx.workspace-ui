@@ -12,6 +12,7 @@ export default function DynamicFormView() {
   const navigate = useNavigate();
   const {
     windowData,
+    columnsData,
     loading: windowLoading,
     error: windowError,
   } = useWindow(id ?? '');
@@ -28,16 +29,8 @@ export default function DynamicFormView() {
 
   useEffect(() => {
     if (windowData && columnsData && records && records.length > 0) {
-      try {
-        const newFormData = adaptFormData(windowData, columnsData, records[0]);
-        if (newFormData) {
-          setFormData(newFormData);
-        } else {
-          console.error('adaptFormData returned null');
-        }
-      } catch (error) {
-        console.error('Error in adaptFormData:', error);
-      }
+      const newFormData = adaptFormData(windowData, columnsData, records[0]);
+      if (newFormData) setFormData(newFormData);
     }
   }, [windowData, columnsData, records]);
 
@@ -58,13 +51,17 @@ export default function DynamicFormView() {
   if (!records || records.length === 0) return <div>No record found</div>;
   if (!formData) return <div>No form data available</div>;
 
+  console.log('Passing to FormView:', { windowData, columnsData, formData });
+
   return (
     <FormView
-      windowMetadata={windowData}
       data={formData}
       onSave={handleSave}
       onCancel={handleCancel}
       onChange={handleChange}
+      readOnly={false}
+      windowMetadata={windowData}
+      columnsData={columnsData}
     />
   );
 }

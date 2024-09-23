@@ -28,6 +28,7 @@ const FormSection: React.FC<FormSectionProps> = ({
   gridItemProps = { xs: 12, sm: 6, md: 6 },
   dottedLineInterval = 2,
   readOnly = false,
+  columnsData,
   children,
 }) => {
   return (
@@ -76,6 +77,7 @@ const FormSection: React.FC<FormSectionProps> = ({
                   field={field}
                   onChange={onInputChange}
                   readOnly={readOnly}
+                  columnsData={columnsData}
                 />
                 {index < fields.length &&
                   (index + 1) % dottedLineInterval !== 0 && (

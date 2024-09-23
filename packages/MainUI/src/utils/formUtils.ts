@@ -1,4 +1,4 @@
-import { FieldType, FieldInfo, FormData } from '../screens/Form/types';
+import { FieldType, FieldInfo, FormData, Section } from '../screens/Form/types';
 import {
   Column,
   WindowMetadata,
@@ -6,8 +6,8 @@ import {
 
 export function mapColumnTypeToFieldType(column: Column): FieldType {
   switch (column?.column?.reference) {
-    case '19':
-      return 'tabledir';
+    // case '19':
+    //   return 'tabledir';
     case '15':
     case '16':
       return 'date';
@@ -56,6 +56,28 @@ export function adaptFormData(
     return null;
   }
 
+  // Create sections
+  const sections = new Set<string>(['Main']);
+  Object.values(columnsData[tabId]).forEach(column => {
+    const fieldInfo = windowData.tabs?.[0]?.fields?.[column.columnName] as
+      | FieldInfo
+      | undefined;
+    const sectionName = fieldInfo?.fieldGroup$_identifier;
+    if (sectionName) sections.add(sectionName);
+  });
+
+  sections.forEach(sectionName => {
+    adaptedData[sectionName] = {
+      name: sectionName,
+      label: sectionName === 'Main' ? windowData.name : sectionName,
+      type: 'section',
+      personalizable: false,
+      id: sectionName,
+      showInTab: 'both',
+    } as Section;
+  });
+
+  // Add fields to sections
   Object.entries(columnsData[tabId]).forEach(([fieldName, column]) => {
     const fieldInfo = windowData.tabs?.[0]?.fields?.[fieldName] as
       | FieldInfo
@@ -70,7 +92,7 @@ export function adaptFormData(
       label: column.name,
       section: sectionName,
       required: column.isMandatory ?? true,
-      referencedTable: column.column?.reference, // Add this line
+      referencedTable: column.column?.reference,
     };
   });
 
