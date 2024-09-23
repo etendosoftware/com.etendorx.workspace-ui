@@ -5,7 +5,7 @@ import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { FormData } from './types';
 import FormView from '../../components/FormView';
-import { adaptFormData } from '../../utils/formUtils';
+import { adaptFormData, mapWindowMetadata } from '../../utils/formUtils';
 
 export default function DynamicFormView() {
   const { id, recordId } = useParams<{ id: string; recordId: string }>();
@@ -16,6 +16,7 @@ export default function DynamicFormView() {
     error: windowError,
   } = useWindow(id ?? '');
   const [formData, setFormData] = useState<FormData | null>(null);
+  const [mappedMetadata, setMappedMetadata] = useState<any>(null);
 
   const {
     records,
@@ -27,19 +28,23 @@ export default function DynamicFormView() {
   });
 
   useEffect(() => {
-    if (windowData && columnsData && records && records.length > 0) {
-      try {
-        const newFormData = adaptFormData(windowData, columnsData, records[0]);
-        if (newFormData) {
-          setFormData(newFormData);
-        } else {
-          console.error('adaptFormData returned null');
-        }
-      } catch (error) {
-        console.error('Error in adaptFormData:', error);
-      }
+    console.log('useEffect triggered');
+    console.log('windowData:', windowData);
+    console.log('records:', records);
+
+    if (windowData && records && records.length > 0) {
+      console.log('Conditions met for adapting data');
+      const newFormData = adaptFormData(windowData, records[0]);
+      console.log('New form data:', newFormData);
+      if (newFormData) setFormData(newFormData);
+
+      const newMappedMetadata = mapWindowMetadata(windowData);
+      console.log('New mapped metadata:', newMappedMetadata);
+      setMappedMetadata(newMappedMetadata);
+    } else {
+      console.log('Conditions not met for adapting data');
     }
-  }, [windowData, columnsData, records]);
+  }, [windowData, records]);
 
   const handleSave = useCallback(() => navigate('/'), [navigate]);
   const handleCancel = useCallback(() => navigate('/'), [navigate]);
@@ -56,15 +61,17 @@ export default function DynamicFormView() {
     return <div>Error loading record data: {recordError.message}</div>;
   if (!windowData) return <div>No window data available</div>;
   if (!records || records.length === 0) return <div>No record found</div>;
-  if (!formData) return <div>No form data available</div>;
+  if (!formData || !mappedMetadata) return <div>No form data available</div>;
+
+  console.log('Passing to FormView:', { windowData: mappedMetadata, formData });
 
   return (
     <FormView
-      windowMetadata={windowData}
       data={formData}
       onSave={handleSave}
       onCancel={handleCancel}
       onChange={handleChange}
+      windowMetadata={mappedMetadata}
     />
   );
 }

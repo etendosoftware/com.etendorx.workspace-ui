@@ -82,10 +82,8 @@ export interface Column {
   columnName: string;
   isMandatory: boolean;
   name: string;
-  column?: {
-    reference: string;
-    _identifier: string;
-  };
+  reference: string;
+  _identifier: string;
 }
 
 export interface ViewStandardProperties extends Record<string, unknown> {
@@ -116,7 +114,7 @@ export interface WindowMetadataProperties {
 
 export interface Tab {
   id: string;
-  entityName: string,
+  entityName: string;
   fields: Record<string, Field>;
   level: number;
   _identifier: string;

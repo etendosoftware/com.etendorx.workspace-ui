@@ -37,6 +37,7 @@ export interface FormSectionProps {
   dottedLineInterval?: number;
   readOnly?: boolean;
   children?: ReactNode;
+  windowMetadata: WindowMetadata;
 }
 
 export type FieldValue = FieldDefinition['value'];
@@ -64,6 +65,7 @@ export interface FieldLabelProps {
 export interface SectionRendererProps
   extends Omit<FormSectionProps, 'children'> {
   sectionRef: (el: HTMLElement | null) => void;
+  windowMetadata: WindowMetadata;
 }
 
 export interface Note {

@@ -1,11 +1,23 @@
-import { FieldType, FieldInfo, FormData } from '../screens/Form/types';
+import {
+  FieldType,
+  FieldInfo,
+  FormData,
+  Section,
+  FieldDefinition,
+} from '../screens/Form/types';
 import {
   Column,
   WindowMetadata,
 } from '@workspaceui/etendohookbinder/src/api/types';
 
 export function mapColumnTypeToFieldType(column: Column): FieldType {
-  switch (column?.column?.reference) {
+  console.log('Mapping column type:', column);
+
+  if (!column || !column?.reference) {
+    console.warn('Invalid column data:', column);
+    return 'text';
+  }
+  switch (column?.reference) {
     case '19':
       return 'tabledir';
     case '15':
@@ -13,14 +25,14 @@ export function mapColumnTypeToFieldType(column: Column): FieldType {
       return 'date';
     case '20':
       return 'boolean';
+    case '12':
+      return 'number';
     case '17':
     case '30':
     case '18':
     case '11':
-    case '12':
     case '29':
     case '22':
-    case '800008':
     default:
       return 'text';
   }
@@ -41,38 +53,84 @@ export function ensureFieldValue(
   return String(value);
 }
 
+export function mapWindowMetadata(windowData: WindowMetadata) {
+  const mappedData: any = {
+    name: windowData.name,
+    id: windowData.id,
+    tabs: [],
+  };
+
+  windowData.tabs.forEach(tab => {
+    const mappedTab: any = {
+      id: tab.id,
+      name: tab._identifier,
+      fields: {},
+    };
+
+    Object.entries(tab.fields).forEach(([fieldName, fieldInfo]) => {
+      mappedTab.fields[fieldName] = {
+        name: fieldName,
+        label: fieldInfo.column.name,
+        type: mapColumnTypeToFieldType(fieldInfo.column),
+        referencedTable: fieldInfo.column.reference,
+        required: fieldInfo.column.isMandatory,
+      };
+    });
+
+    mappedData.tabs.push(mappedTab);
+  });
+
+  return mappedData;
+}
+
 export function adaptFormData(
   windowData: WindowMetadata,
-  columnsData: Record<string, Record<string, Column>>,
   record: Record<string, unknown>,
 ): FormData | null {
-  if (!windowData || !columnsData || !record) return null;
+  console.log('adaptFormData called with:', { windowData, record });
 
-  const adaptedData: FormData = {};
-  const tabId = windowData.tabs[0]?.id;
-
-  if (!tabId || !columnsData[tabId]) {
-    console.error('No tab data found for the first tab');
+  if (!windowData || !record) {
+    console.log('windowData or record is null/undefined');
     return null;
   }
 
-  Object.entries(columnsData[tabId]).forEach(([fieldName, column]) => {
-    const fieldInfo = windowData.tabs?.[0]?.fields?.[fieldName] as
-      | FieldInfo
-      | undefined;
-    const sectionName = fieldInfo?.fieldGroup$_identifier ?? 'Main';
-    const rawValue = record[`${fieldName}$_identifier`] ?? record[fieldName];
-    const safeValue = ensureFieldValue(rawValue);
+  const adaptedData: FormData = {};
+  const sections = new Set<string>(['Main']);
 
-    adaptedData[fieldName] = {
-      value: safeValue,
-      type: mapColumnTypeToFieldType(column),
-      label: column.name,
-      section: sectionName,
-      required: column.isMandatory ?? true,
-      referencedTable: column.column?.reference, // Add this line
-    };
+  // Create sections
+  Object.values(windowData.tabs[0].fields).forEach((field: FieldInfo) => {
+    const sectionName = field.fieldGroup$_identifier;
+    if (sectionName) sections.add(sectionName);
   });
 
+  sections.forEach(sectionName => {
+    adaptedData[sectionName] = {
+      name: sectionName,
+      label: sectionName === 'Main' ? windowData.name : sectionName,
+      type: 'section',
+      personalizable: false,
+      id: sectionName,
+      showInTab: 'both',
+    } as Section;
+  });
+
+  Object.entries(windowData.tabs[0].fields).forEach(
+    ([fieldName, fieldInfo]) => {
+      const sectionName = fieldInfo.fieldGroup$_identifier ?? 'Main';
+      const rawValue = record[`${fieldName}$_identifier`] ?? record[fieldName];
+      const safeValue = ensureFieldValue(rawValue);
+
+      adaptedData[fieldName] = {
+        value: safeValue,
+        type: mapColumnTypeToFieldType(fieldInfo.column),
+        label: fieldInfo.column.name,
+        section: sectionName,
+        required: fieldInfo.column.isMandatory ?? true,
+        referencedTable: fieldInfo.column.reference,
+      } as unknown as FieldDefinition;
+    },
+  );
+
+  console.log('adaptedData:', adaptedData);
   return adaptedData;
 }

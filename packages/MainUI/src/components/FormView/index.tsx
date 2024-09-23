@@ -24,6 +24,7 @@ const FormView: React.FC<FormViewProps> = ({
   readOnly = false,
   gridItemProps,
   dottedLineInterval,
+  windowMetadata,
 }) => {
   const [formData, setFormData] = useState<Organization>(data);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
@@ -165,6 +166,7 @@ const FormView: React.FC<FormViewProps> = ({
                   gridItemProps={gridItemProps}
                   dottedLineInterval={dottedLineInterval}
                   readOnly={readOnly}
+                  windowMetadata={windowMetadata}
                 />
               );
             })}
