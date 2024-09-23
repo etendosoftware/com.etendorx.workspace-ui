@@ -1,82 +1,64 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { useCallback, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
 import { Etendo } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useEntityRecord } from '@workspaceui/etendohookbinder/src/hooks/useEntityRecord';
+import { useCallback, useState } from 'react';
 
 export default function DynamicFormView() {
   const { recordId = '' } = useParams<{ recordId: string }>();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    console.debug({ recordId });
-  }, [recordId]);
 
   const {
     windowData,
-    columnsData,
     loading: windowLoading,
     error: windowError,
   } = useMetadataContext();
 
-  const { data } = useEntityRecord(
-    windowData?.tabs[0].entityName ?? '',
-    recordId,
-  );
+  const {
+    data,
+    loading: recordLoading,
+    error: recordError,
+  } = useEntityRecord(windowData?.tabs[0].entityName ?? '', recordId);
 
-  // const handleSave = useCallback(() => navigate('/'), [navigate]);
-  // const handleCancel = useCallback(() => navigate('/'), [navigate]);
-
-  // const fields = useMemo(() => {
-  //   const sections = {} as Record<string, unknown[]>;
-  //   columnsData[windowData.tabs[0].id].forEach(field => {
-  //     const group = field.fieldGroup ?? 'default';
-  //     sections[group] = sections[group] ?? [];
-  //     sections[group].push(field);
-  //   });
-
-  //   return sections;
-  // }, [columnsData, windowData.tabs]);
-
-  console.debug(data);
-
-  if (windowLoading) {
+  if (windowLoading || recordLoading) {
     return <Spinner />;
-  } else if (windowError) {
-    return <div>Error: {windowError?.message}</div>;
-  } else {
+  } else if (windowError || recordError) {
+    return <div>Error: {windowError?.message ?? recordError?.message}</div>;
+  } else if (data) {
     return (
       <>
         {Object.entries(windowData.tabs[0].fields).map(([key, value]) => {
-          return <MagicField key={key} {...value} data={data} />;
+          return (
+            <MagicField key={key} {...value} data={data} identifier={key} />
+          );
         })}
       </>
     );
+  } else {
+    return null;
   }
 }
 
-const TextField = (props: Etendo.Field & { data?: any }) => {
-  console.log(props.column);
+const TextField = (props: Etendo.Field & { data: any; identifier: string }) => {
+  const [value, setValue] = useState(props.data[props.identifier] ?? '');
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setValue(e.currentTarget.value);
+  }, []);
 
   return (
-    <input
-      type="text"
-      title={props.column.description}
-      placeholder={props.column.name}
-      className="field"
-    />
-    // <div className="field">
-    //   {props.column.name}
-    //   <br />
-    //   {props.column.dBColumnName}
-    //   <br />
-    //   <small>
-    //     {JSON.stringify(props.column, null, 2)}
-    //     <br />
-    //   </small>
-    // </div>
+    <label htmlFor={props.identifier}>
+      <span>{props.column.name}</span>
+      <input
+        name={props.identifier}
+        type="text"
+        title={props.column.description}
+        placeholder={props.column.name}
+        value={value}
+        onChange={handleChange}
+        className="field"
+      />
+    </label>
   );
 };
 
@@ -97,7 +79,9 @@ const Components = {
   '20': BooleanField,
 };
 
-const MagicField = (props: Etendo.Field & { data?: any }) => {
+const MagicField = (
+  props: Etendo.Field & { data: any; identifier: string },
+) => {
   const Cmp =
     Components[props.column.reference as keyof typeof Components] ?? TextField;
 
