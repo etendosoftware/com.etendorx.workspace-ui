@@ -11,9 +11,9 @@ export interface RecordContextType {
   getFormattedRecord: (
     record: Organization | null,
   ) => { identifier: string; type: string } | null;
-  selectRecord: (record: any, tab: Tab) => void;
+  selectRecord: (record: unknown, tab: Tab) => void;
   selectedTab?: Tab;
-  selected: any[];
+  selected: unknown[];
 }
 
 export const RecordContext = createContext({} as RecordContextType);
@@ -22,7 +22,7 @@ export function RecordProvider({ children }: React.PropsWithChildren) {
   const [selectedRecord, setSelectedRecord] = useState<Organization | null>(
     null,
   );
-  const [selected, setSelected] = useState<any[]>([]);
+  const [selected, setSelected] = useState<unknown[]>([]);
   const [selectedTab, setSelectedTab] = useState<Tab | undefined>();
 
   const selectRecord: RecordContextType['selectRecord'] = useCallback(

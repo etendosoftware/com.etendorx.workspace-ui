@@ -10,8 +10,7 @@ import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { parseColumns } from '@workspaceui/etendohookbinder/src/helpers/metadata';
 import { useRecordContext } from '../../hooks/useRecordContext';
-import { useTableRecords } from '../../hooks/useTableRecords';
-import { useEffect } from 'react';
+import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 
 export default function DynamicTable({
   tab,
@@ -22,13 +21,9 @@ export default function DynamicTable({
   onSelect: (row: unknown) => void;
   onDoubleClick: (row: Record<string, string>) => void;
 }) {
-  const { records, loading, error, fetchMore, loaded } = useTableRecords(tab);
-  const { selected, activeTab } = useRecordContext();
+  const { records, loading, error, fetchMore, loaded } = useDatasource(tab);
+  const { selected } = useRecordContext();
   const enabled = tab.level <= selected.length;
-
-  useEffect(() => {
-    console.debug(activeTab)
-  }, [activeTab]);
 
   const table = useMaterialReactTable({
     columns: parseColumns(Object.values(tab.fields)),
@@ -36,7 +31,8 @@ export default function DynamicTable({
     enablePagination: false,
     muiTableBodyRowProps: ({ row }) => ({
       onClick: () => onSelect(row.original),
-      onDoubleClick: () => onDoubleClick(row.original),
+      onDoubleClick: () =>
+        onDoubleClick(row.original as Record<string, string>),
     }),
   });
 
@@ -55,10 +51,7 @@ export default function DynamicTable({
           <Box sx={styles.table}>
             <MaterialReactTable table={table} />
           </Box>
-          <IconButton
-            onClick={fetchMore}
-            iconText='+'
-            sx={styles.fetchMore} />
+          <IconButton onClick={fetchMore} iconText="+" sx={styles.fetchMore} />
         </Box>
         {loading ? (
           <Box sx={styles.loader}>
