@@ -21,7 +21,9 @@ export default function DynamicTable({
   onSelect: (row: unknown) => void;
   onDoubleClick: (row: Record<string, string>) => void;
 }) {
-  const { records, loading, error, fetchMore, loaded } = useDatasource(tab);
+  const { records, loading, error, fetchMore, loaded } = useDatasource(
+    tab.entityName,
+  );
   const { selected } = useRecordContext();
   const enabled = tab.level <= selected.length;
 

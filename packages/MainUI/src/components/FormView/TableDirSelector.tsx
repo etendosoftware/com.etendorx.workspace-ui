@@ -1,88 +1,145 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import Select from '../../../../ComponentLibrary/src/components/Input/Select';
-import SearchOutlined from '../../../../ComponentLibrary/src/assets/icons/search.svg';
-import { theme } from '../../../../ComponentLibrary/src/theme';
+import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
+import { useParams } from 'react-router-dom';
 
 interface TableDirSelectorProps {
   name: string;
   field: any;
   onChange: (name: string, value: string) => void;
-  windowMetadata: any;
 }
 
 interface Option {
   id: string;
-  title: string;
-  value: string;
+  name: string;
 }
 
 const TableDirSelector: React.FC<TableDirSelectorProps> = ({
   name,
   field,
   onChange,
-  windowMetadata,
 }) => {
+  const { id } = useParams<{ id: string }>();
   const [options, setOptions] = useState<Option[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  console.log('TableDirSelector props:', { name, field, windowMetadata });
+  const {
+    windowData,
+    loading: windowLoading,
+    error: windowError,
+  } = useWindow(id ?? '');
 
   const fieldMetadata = useMemo(() => {
-    if (
-      windowMetadata &&
-      windowMetadata.tabs &&
-      windowMetadata.tabs.length > 0
-    ) {
-      return windowMetadata.tabs[0].fields[name];
+    return windowData?.tabs?.[0]?.fields?.[name];
+  }, [windowData, name]);
+
+  const entityName = useMemo(() => {
+    if (!fieldMetadata) return null;
+    const reference = fieldMetadata.column?.reference;
+    console.log('Reference:', reference);
+    if (reference === '19') {
+      return 'ADClient';
     }
-    return undefined;
-  }, [name, windowMetadata]);
+    return null;
+  }, [fieldMetadata]);
 
-  console.log('Field metadata:', fieldMetadata);
+  console.log('Field Metadata:', fieldMetadata);
+  console.log('Entity Name:', entityName);
 
-  const referencedTable = fieldMetadata?.referencedTable;
+  const datasourceParams = useMemo(() => {
+    if (!entityName) return null;
+    return {
+      entityName,
+      criteria: [{ fieldName: 'active', operator: 'equals', value: true }],
+    };
+  }, [entityName]);
 
-  console.log('Referenced table:', referencedTable);
+  const {
+    records,
+    loading: dataLoading,
+    error: datasourceError,
+  } = useDatasource(entityName);
 
-  const { records, loading: entityLoading } = useDatasource(
-    referencedTable ? { entityName: referencedTable } : null,
-  );
+  const formatOptions = useCallback((records: any[]) => {
+    return records.map(record => ({
+      id: record.id,
+      name: record._identifier || record.name || record.id,
+    }));
+  }, []);
 
   useEffect(() => {
-    if (records && records.length > 0) {
-      const formattedOptions = records.map(record => ({
-        id: record.id,
-        title: record._identifier || record.id,
-        value: record.id,
-      }));
-      setOptions(formattedOptions);
+    if (windowLoading) {
+      setLoading(true);
+      return;
     }
-    setIsLoading(false);
-  }, [records]);
 
-  if (entityLoading || isLoading) return <Spinner />;
+    if (windowError) {
+      setErrorMessage(`Error loading window data: ${windowError.message}`);
+      setLoading(false);
+      return;
+    }
 
-  if (!referencedTable)
-    return (
-      <div>Error: Could not determine entity for {field?.label || name}</div>
-    );
+    if (!entityName) {
+      setErrorMessage('No entity name found for this field');
+      setLoading(false);
+      return;
+    }
+
+    if (datasourceError) {
+      setErrorMessage(`Error loading data: ${datasourceError.message}`);
+      setLoading(false);
+      return;
+    }
+
+    if (!dataLoading && records) {
+      try {
+        const formattedOptions = formatOptions(records);
+        console.log('Formatted Options:', formattedOptions);
+        setOptions(formattedOptions);
+        setLoading(false);
+      } catch (e) {
+        console.error('Error formatting options:', e);
+        setErrorMessage('Error formatting data');
+        setLoading(false);
+      }
+    }
+  }, [
+    windowLoading,
+    windowError,
+    entityName,
+    dataLoading,
+    datasourceError,
+    records,
+    formatOptions,
+  ]);
+
+  if (loading || windowLoading || dataLoading) {
+    return <Spinner />;
+  }
+
+  if (errorMessage) {
+    return <div>Error: {errorMessage}</div>;
+  }
 
   return (
-    <Select
-      iconLeft={
-        <SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />
-      }
-      title={field.value as string}
-      options={options}
-      getOptionLabel={(option: Option) => option.title}
-      onChange={(event, value) => {
-        if (value) {
-          onChange(name, value.value);
-        }
-      }}
-    />
+    <FormControl fullWidth>
+      <InputLabel id={`${name}-label`}>{field.label}</InputLabel>
+      <Select
+        labelId={`${name}-label`}
+        id={name}
+        value={field.value}
+        label={field.label}
+        onChange={e => onChange(name, e.target.value as string)}>
+        {options.map(option => (
+          <MenuItem key={option.id} value={option.id}>
+            {option.name}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
   );
 };
 

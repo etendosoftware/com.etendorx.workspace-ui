@@ -127,6 +127,10 @@ export function adaptFormData(
         section: sectionName,
         required: fieldInfo.column.isMandatory ?? true,
         referencedTable: fieldInfo.column.reference,
+        original: {
+          fieldName,
+          ...fieldInfo,
+        },
       } as unknown as FieldDefinition;
     },
   );

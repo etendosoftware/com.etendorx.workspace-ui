@@ -23,15 +23,11 @@ export default function DynamicFormView() {
     loading: recordLoading,
     error: recordError,
     loaded,
-  } = useDatasource(windowData?.tabs[0] ?? null, {
+  } = useDatasource(windowData?.tabs[0].entityName ?? null, {
     criteria: [{ fieldName: 'id', operator: 'equals', value: recordId }],
   });
 
   useEffect(() => {
-    console.log('useEffect triggered');
-    console.log('windowData:', windowData);
-    console.log('records:', records);
-
     if (windowData && records && records.length > 0) {
       console.log('Conditions met for adapting data');
       const newFormData = adaptFormData(windowData, records[0]);

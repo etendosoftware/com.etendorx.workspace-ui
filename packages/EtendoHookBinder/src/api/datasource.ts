@@ -23,7 +23,6 @@ export class Datasource {
 
   public static async get(
     entity: string,
-    tabId: string,
     options: DatasourceParams = {},
     operationType = 'fetch',
     isImplicitFilterApplied = true,
@@ -31,7 +30,6 @@ export class Datasource {
   ) {
     try {
       const params = new URLSearchParams({
-        tabId,
         _isImplicitFilterApplied: isImplicitFilterApplied ? 'true' : 'false',
         _noCount: noCount ? 'true' : 'false',
         _operationType: operationType,
