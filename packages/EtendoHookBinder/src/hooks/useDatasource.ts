@@ -76,6 +76,12 @@ export function useDatasource(tab: Tab, params?: DatasourceOptions) {
   }, []);
 
   useEffect(() => {
+    if (params?.criteria) {
+      setData({});
+    }
+  }, [params?.criteria]);
+
+  useEffect(() => {
     load();
   }, [load]);
 

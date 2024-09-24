@@ -18,10 +18,6 @@ export class Metadata {
     return this.client.registerInterceptor(interceptor);
   }
 
-  public static initialize = () => {
-    return true;
-  };
-
   private static async _getWindow(
     windowId: Etendo.WindowId,
   ): Promise<Etendo.WindowMetadata> {
