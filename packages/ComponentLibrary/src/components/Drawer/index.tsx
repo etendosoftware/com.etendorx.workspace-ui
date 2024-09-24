@@ -11,27 +11,32 @@ const Drawer = ({ items, logo, title, onClick }: DrawerProps) => {
   const drawerStyle = {
     ...styles.drawerPaper,
     width: open ? '16.25rem' : '3.5rem',
-    transition: 'width 0.5s ease-in-out',
+    transition: 'width 0.3s ease-in-out',
   };
 
-  return (
-    <div style={drawerStyle}>
-      <DrawerHeader
-        logo={logo}
-        title={title}
-        open={open}
-        onClick={handleHeaderClick}
-      />
-      {items.map(item => (
-        <DrawerSection
-          key={item.id}
-          item={item}
-          onClick={onClick}
+  try {
+    return (
+      <div style={drawerStyle}>
+        <DrawerHeader
+          logo={logo}
+          title={title}
           open={open}
+          onClick={handleHeaderClick}
         />
-      ))}
-    </div>
-  );
+        {items?.map(item => (
+          <DrawerSection
+            key={item.id}
+            item={item}
+            onClick={onClick}
+            open={open}
+          />
+        ))}
+      </div>
+    );
+  } catch (e) {
+    console.log(items)
+    return null;
+  }
 };
 
 export default Drawer;

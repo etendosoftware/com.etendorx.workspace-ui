@@ -3,7 +3,7 @@ import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
 import { Etendo } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useEntityRecord } from '@workspaceui/etendohookbinder/src/hooks/useEntityRecord';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export default function DynamicFormView() {
   const { recordId = '' } = useParams<{ recordId: string }>();
@@ -18,7 +18,7 @@ export default function DynamicFormView() {
     data,
     loading: recordLoading,
     error: recordError,
-  } = useEntityRecord(windowData?.tabs[0].entityName ?? '', recordId);
+  } = useEntityRecord(windowData?.tabs?.[0].entityName ?? '', recordId);
 
   if (windowLoading || recordLoading) {
     return <Spinner />;

@@ -34,14 +34,12 @@ const router = createBrowserRouter([
             ],
           },
           {
-            path: 'window/:id',
+            path: 'window/:windowId/:recordId',
+            Component: DynamicFormView,
+          },
+          {
+            path: 'window/:windowId',
             Component: DynamicTable,
-            children: [
-              {
-                path: ':recordId',
-                Component: DynamicFormView,
-              },
-            ],
           },
         ],
       },
