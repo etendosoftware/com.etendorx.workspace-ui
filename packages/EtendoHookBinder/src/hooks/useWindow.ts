@@ -24,6 +24,10 @@ export function useWindow(windowId: string) {
 
   const load = useCallback(async () => {
     try {
+      if (!windowId) {
+        return;
+      }
+
       setLoading(true);
       setError(undefined);
       setWindowData(await getWindow(windowId));

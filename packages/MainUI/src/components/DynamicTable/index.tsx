@@ -4,12 +4,14 @@ import {
   useMaterialReactTable,
 } from 'material-react-table';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
-import { CircularProgress, useTheme } from '@mui/material';
+import { CircularProgress } from '@mui/material';
 import styles from './styles';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { parseColumns } from '@workspaceui/etendohookbinder/src/helpers/metadata';
+import { useRecordContext } from '../../hooks/useRecordContext';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
+
 export default function DynamicTable({
   tab,
   onSelect,
@@ -17,11 +19,11 @@ export default function DynamicTable({
 }: {
   tab: Tab;
   onSelect: (row: unknown) => void;
-  onDoubleClick: (row: Record<string, string | unknown>) => void;
+  onDoubleClick: (row: Record<string, string>) => void;
 }) {
   const { records, loading, error, fetchMore, loaded } = useDatasource(tab);
-
-  const theme = useTheme();
+  const { selected } = useRecordContext();
+  const enabled = tab.level <= selected.length;
 
   const table = useMaterialReactTable({
     columns: parseColumns(Object.values(tab.fields)),
@@ -29,9 +31,14 @@ export default function DynamicTable({
     enablePagination: false,
     muiTableBodyRowProps: ({ row }) => ({
       onClick: () => onSelect(row.original),
-      onDoubleClick: () => onDoubleClick(row.original),
+      onDoubleClick: () =>
+        onDoubleClick(row.original as Record<string, string>),
     }),
   });
+
+  if (!enabled) {
+    return null;
+  }
 
   if (loading && !loaded) {
     return <Spinner />;
@@ -44,13 +51,7 @@ export default function DynamicTable({
           <Box sx={styles.table}>
             <MaterialReactTable table={table} />
           </Box>
-          <IconButton
-            onClick={fetchMore}
-            sx={styles.fetchMore}
-            fill={theme.palette.baselineColor.neutral[80]}
-            hoverFill={theme.palette.baselineColor.neutral[100]}>
-            +
-          </IconButton>
+          <IconButton onClick={fetchMore} iconText="+" sx={styles.fetchMore} />
         </Box>
         {loading ? (
           <Box sx={styles.loader}>
