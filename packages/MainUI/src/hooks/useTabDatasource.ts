@@ -66,6 +66,17 @@ export function useTabDatasource(tab: Tab, params?: DatasourceOptions) {
   }, []);
 
   useEffect(() => {
+    console.log(entity);
+    console.log(params?.criteria);
+  }, [entity, params]);
+
+  useEffect(() => {
+    if (params?.criteria) {
+      setRecords([]);
+    }
+  }, [params?.criteria]);
+
+  useEffect(() => {
     load();
   }, [load]);
 

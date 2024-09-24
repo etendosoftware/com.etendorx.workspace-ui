@@ -1,10 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  createContext,
-  useCallback,
-  useMemo,
-  useState,
-} from 'react';
+import { createContext, useCallback, useMemo, useState } from 'react';
 import {
   type Etendo,
   Metadata,
@@ -25,10 +20,8 @@ interface IMetadataContext {
   windowData?: Etendo.WindowMetadata;
   columnsData?: Record<number, Record<string, Etendo.Column[]>>;
   selectRecord: (record: Record<string, any>, tab: Tab) => void;
-  selectedTab: Tab[];
-  selected: Record<string, any>[];
-  parentRecord?: Record<string, any>;
-  parentTab?: Tab;
+  selectedTab: Record<string, Tab>;
+  selected: Record<string, Record<string, any>>;
 }
 
 export const MetadataContext = createContext({} as IMetadataContext);
@@ -38,30 +31,21 @@ export default function MetadataProvider({
 }: React.PropsWithChildren) {
   const { windowId = '', recordId = '' } = useParams();
   const { windowData, loading, error } = useWindow(windowId);
-  const [selected, setSelected] = useState<IMetadataContext['selected']>([]);
+  const [selected, setSelected] = useState<IMetadataContext['selected']>({});
   const [selectedTab, setSelectedTab] = useState<
     IMetadataContext['selectedTab']
-  >([]);
+  >({});
 
   const selectRecord: IMetadataContext['selectRecord'] = useCallback(
     (record, tab) => {
       const level = tab.level;
 
-      if (selected.length >= level) {
-        setSelected(prev => [...prev.slice(0, level), record]);
-        setSelectedTab(prev => [...prev.slice(0, level), tab]);
-      } else {
-        throw new Error('Selected a level higher than the previous selected');
-      }
+      setSelected(prev => ({ ...prev, [level]: record }));
+      setSelectedTab(prev => ({ ...prev, [level]: tab }));
     },
-    [selected.length],
+    [],
   );
 
-  const parentTab = useMemo(
-    () => selectedTab[selectedTab.length - 1],
-    [selectedTab],
-  );
-  const parentRecord = useMemo(() => selected[selected.length - 1], [selected]);
   const groupedTabs = useMemo(() => groupTabsByLevel(windowData), [windowData]);
   const columnsData = useMemo(() => buildColumnsData(windowData), [windowData]);
 
@@ -79,8 +63,6 @@ export default function MetadataProvider({
       selectRecord,
       selected,
       selectedTab,
-      parentRecord,
-      parentTab,
     }),
     [
       windowId,
@@ -93,8 +75,6 @@ export default function MetadataProvider({
       selectRecord,
       selected,
       selectedTab,
-      parentRecord,
-      parentTab,
     ],
   );
 
