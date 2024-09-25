@@ -1,5 +1,4 @@
 export type WindowId = string;
-export type ColumnId = string;
 
 export interface CachedData<T> {
   updatedAt: number;
