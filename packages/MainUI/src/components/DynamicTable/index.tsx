@@ -53,9 +53,9 @@ const DynamicTableContent = ({ tab }: DynamicTableProps) => {
     data: records,
     enablePagination: false,
     muiTableBodyRowProps: ({ row }) => ({
-      onClick: () => selectRecord(row.original, tab),
+      onClick: () => selectRecord(row.original as never, tab),
       onDoubleClick: () => {
-        selectRecord(row.original, tab);
+        selectRecord(row.original as never, tab);
         navigate(`${row.original.id}`);
       },
     }),

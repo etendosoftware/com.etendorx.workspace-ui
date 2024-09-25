@@ -58,8 +58,8 @@ export interface GridProps {
 }
 
 export interface Field {
-  fieldGroup$_identifier: any;
-  fieldGroup: any;
+  fieldGroup$_identifier: string;
+  fieldGroup: string;
   column: Record<string, string>;
   name: string;
   id: string;
@@ -75,7 +75,7 @@ export interface Field {
 }
 
 export interface Column {
-  fieldGroup: string;
+  fieldGroup?: string;
   header: string;
   id: string;
   accessorFn: (v: Record<string, unknown>) => unknown;

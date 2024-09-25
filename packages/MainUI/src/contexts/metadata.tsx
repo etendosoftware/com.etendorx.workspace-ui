@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createContext, useCallback, useMemo, useState } from 'react';
 import {
   type Etendo,
@@ -19,8 +18,8 @@ interface IMetadataContext {
   groupedTabs: Etendo.Tab[][];
   windowData?: Etendo.WindowMetadata;
   columnsData?: Record<number, Record<string, Etendo.Column[]>>;
-  selectRecord: (record: Record<string, any>, tab: Tab) => void;
-  selected: Record<string, Record<string, any>>;
+  selectRecord: (record: Record<string, never>, tab: Tab) => void;
+  selected: Record<string, Record<string, never>>;
 }
 
 export const MetadataContext = createContext({} as IMetadataContext);
