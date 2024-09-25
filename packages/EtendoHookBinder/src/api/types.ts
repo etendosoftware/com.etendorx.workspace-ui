@@ -58,8 +58,9 @@ export interface GridProps {
 }
 
 export interface Field {
-  fieldGroup$_identifier: any;
-  fieldGroup: any;
+  entity: string;
+  fieldGroup$_identifier: string;
+  fieldGroup: string;
   column: Record<string, string>;
   name: string;
   id: string;

@@ -83,3 +83,21 @@ export interface NoteSectionProps {
   noteInputPlaceholder: string | undefined;
   addNoteSubmitText: string | undefined;
 }
+
+// TableDir Selector
+
+export interface TableDirSelectorProps {
+  name: string;
+  field: {
+    label: string;
+    value: string;
+  };
+  onChange: (name: string, value: string) => void;
+  tabId?: string;
+}
+
+export interface Option {
+  id: string;
+  title: string;
+  value: string;
+}

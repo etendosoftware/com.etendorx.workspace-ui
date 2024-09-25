@@ -11,8 +11,6 @@ import {
 } from '@workspaceui/etendohookbinder/src/api/types';
 
 export function mapColumnTypeToFieldType(column: Column): FieldType {
-  console.log('Mapping column type:', column);
-
   if (!column || !column?.reference) {
     console.warn('Invalid column data:', column);
     return 'text';
@@ -87,10 +85,7 @@ export function adaptFormData(
   windowData: WindowMetadata,
   record: Record<string, unknown>,
 ): FormData | null {
-  console.log('adaptFormData called with:', { windowData, record });
-
   if (!windowData || !record) {
-    console.log('windowData or record is null/undefined');
     return null;
   }
 
@@ -135,6 +130,5 @@ export function adaptFormData(
     },
   );
 
-  console.log('adaptedData:', adaptedData);
   return adaptedData;
 }

@@ -40,7 +40,6 @@ const CustomCheckbox = styled(Checkbox)(() => ({
 const FormField: React.FC<FormFieldProps> = memo(
   ({ name, field, onChange }) => {
     const [value, setValue] = useState<FieldValue>(field.value);
-    console.debug(field);
 
     const renderField = () => {
       switch (field.type) {
@@ -93,7 +92,7 @@ const FormField: React.FC<FormFieldProps> = memo(
           );
         case 'tabledir':
           return (
-            <TableDirSelector name={name} field={field} onChange={onChange} />
+            <TableDirSelector name={name} onChange={onChange} field={field} />
           );
         default:
           return (

@@ -23,22 +23,19 @@ export default function DynamicFormView() {
     loading: recordLoading,
     error: recordError,
     loaded,
-  } = useDatasource(windowData?.tabs[0].entityName ?? null, {
+  } = useDatasource(windowData?.tabs[0].entityName ?? '', {
     criteria: [{ fieldName: 'id', operator: 'equals', value: recordId }],
   });
 
   useEffect(() => {
     if (windowData && records && records.length > 0) {
-      console.log('Conditions met for adapting data');
       const newFormData = adaptFormData(windowData, records[0]);
-      console.log('New form data:', newFormData);
       if (newFormData) setFormData(newFormData);
 
       const newMappedMetadata = mapWindowMetadata(windowData);
-      console.log('New mapped metadata:', newMappedMetadata);
       setMappedMetadata(newMappedMetadata);
     } else {
-      console.log('Conditions not met for adapting data');
+      null;
     }
   }, [windowData, records]);
 
@@ -46,7 +43,6 @@ export default function DynamicFormView() {
   const handleCancel = useCallback(() => navigate('/'), [navigate]);
 
   const handleChange = useCallback((updatedData: FormData) => {
-    console.log('Form data changed:', updatedData);
     setFormData(updatedData);
   }, []);
 
@@ -58,8 +54,6 @@ export default function DynamicFormView() {
   if (!windowData) return <div>No window data available</div>;
   if (!records || records.length === 0) return <div>No record found</div>;
   if (!formData || !mappedMetadata) return <div>No form data available</div>;
-
-  console.log('Passing to FormView:', { windowData: mappedMetadata, formData });
 
   return (
     <FormView

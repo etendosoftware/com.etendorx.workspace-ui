@@ -1,25 +1,18 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useParams } from 'react-router-dom';
-
-interface TableDirSelectorProps {
-  name: string;
-  field: any;
-  onChange: (name: string, value: string) => void;
-}
-
-interface Option {
-  id: string;
-  name: string;
-}
+import Select from '../../../../ComponentLibrary/src/components/Input/Select';
+import SearchOutlined from '../../../../ComponentLibrary/src/assets/icons/search.svg';
+import { theme } from '../../../../ComponentLibrary/src/theme';
+import { TableDirSelectorProps, Option } from './types';
 
 const TableDirSelector: React.FC<TableDirSelectorProps> = ({
   name,
   field,
   onChange,
+  tabId = '0',
 }) => {
   const { id } = useParams<{ id: string }>();
   const [options, setOptions] = useState<Option[]>([]);
@@ -32,41 +25,32 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
     error: windowError,
   } = useWindow(id ?? '');
 
+  const tabData = useMemo(() => {
+    return (
+      windowData?.tabs?.find(tab => tab.id === tabId) || windowData?.tabs?.[0]
+    );
+  }, [windowData, tabId]);
+
   const fieldMetadata = useMemo(() => {
-    return windowData?.tabs?.[0]?.fields?.[name];
-  }, [windowData, name]);
+    return tabData?.fields?.[name];
+  }, [tabData, name]);
 
   const entityName = useMemo(() => {
     if (!fieldMetadata) return null;
-    const reference = fieldMetadata.column?.reference;
-    console.log('Reference:', reference);
-    if (reference === '19') {
-      return 'ADClient';
-    }
-    return null;
+    return fieldMetadata.entity || null;
   }, [fieldMetadata]);
-
-  console.log('Field Metadata:', fieldMetadata);
-  console.log('Entity Name:', entityName);
-
-  const datasourceParams = useMemo(() => {
-    if (!entityName) return null;
-    return {
-      entityName,
-      criteria: [{ fieldName: 'active', operator: 'equals', value: true }],
-    };
-  }, [entityName]);
 
   const {
     records,
     loading: dataLoading,
     error: datasourceError,
-  } = useDatasource(entityName);
+  } = useDatasource(entityName ?? '');
 
-  const formatOptions = useCallback((records: any[]) => {
+  const formatOptions = useCallback((records: any[]): Option[] => {
     return records.map(record => ({
       id: record.id,
-      name: record._identifier || record.name || record.id,
+      title: record._identifier || record.name || record.id,
+      value: record.id,
     }));
   }, []);
 
@@ -97,7 +81,6 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
     if (!dataLoading && records) {
       try {
         const formattedOptions = formatOptions(records);
-        console.log('Formatted Options:', formattedOptions);
         setOptions(formattedOptions);
         setLoading(false);
       } catch (e) {
@@ -116,6 +99,15 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
     formatOptions,
   ]);
 
+  const handleChange = useCallback(
+    (_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
+      if (value) {
+        onChange(name, value.value);
+      }
+    },
+    [name, onChange],
+  );
+
   if (loading || windowLoading || dataLoading) {
     return <Spinner />;
   }
@@ -125,21 +117,16 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
   }
 
   return (
-    <FormControl fullWidth>
-      <InputLabel id={`${name}-label`}>{field.label}</InputLabel>
-      <Select
-        labelId={`${name}-label`}
-        id={name}
-        value={field.value}
-        label={field.label}
-        onChange={e => onChange(name, e.target.value as string)}>
-        {options.map(option => (
-          <MenuItem key={option.id} value={option.id}>
-            {option.name}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+    <Select
+      iconLeft={
+        <SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />
+      }
+      title={field.label}
+      options={options}
+      onChange={handleChange}
+      value={options.find(option => option.value === field.value) || null}
+      getOptionLabel={(option: Option) => option.title}
+    />
   );
 };
 
