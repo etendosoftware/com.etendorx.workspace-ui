@@ -88,10 +88,7 @@ export interface NoteSectionProps {
 
 export interface TableDirSelectorProps {
   name: string;
-  field: {
-    label: string;
-    value: string;
-  };
+  field: FieldDefinition;
   onChange: (name: string, value: string) => void;
   tabId?: string;
 }

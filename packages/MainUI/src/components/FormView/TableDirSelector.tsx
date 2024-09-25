@@ -12,7 +12,6 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
   name,
   field,
   onChange,
-  tabId = '0',
 }) => {
   const { id } = useParams<{ id: string }>();
   const [options, setOptions] = useState<Option[]>([]);
@@ -26,10 +25,8 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
   } = useWindow(id ?? '');
 
   const tabData = useMemo(() => {
-    return (
-      windowData?.tabs?.find(tab => tab.id === tabId) || windowData?.tabs?.[0]
-    );
-  }, [windowData, tabId]);
+    return windowData?.tabs?.[0];
+  }, [windowData]);
 
   const fieldMetadata = useMemo(() => {
     return tabData?.fields?.[name];
@@ -84,7 +81,6 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
         setOptions(formattedOptions);
         setLoading(false);
       } catch (e) {
-        console.error('Error formatting options:', e);
         setErrorMessage('Error formatting data');
         setLoading(false);
       }
@@ -102,11 +98,18 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
   const handleChange = useCallback(
     (_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
       if (value) {
-        onChange(name, value.value);
+        onChange(name, value.id);
       }
     },
     [name, onChange],
   );
+
+  const selectedValue = useMemo(() => {
+    const selectedOption = options.find(
+      option => option.id === String(field.value),
+    );
+    return selectedOption?.id;
+  }, [options, field.value]);
 
   if (loading || windowLoading || dataLoading) {
     return <Spinner />;
@@ -121,10 +124,10 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
       iconLeft={
         <SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />
       }
-      title={field.label}
+      title={field.label || ''}
       options={options}
       onChange={handleChange}
-      value={options.find(option => option.value === field.value) || null}
+      value={selectedValue}
       getOptionLabel={(option: Option) => option.title}
     />
   );
