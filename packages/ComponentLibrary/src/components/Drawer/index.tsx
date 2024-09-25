@@ -22,14 +22,16 @@ const Drawer = ({ items, logo, title, onClick }: DrawerProps) => {
         open={open}
         onClick={handleHeaderClick}
       />
-      {items.map(item => (
-        <DrawerSection
-          key={item.id}
-          item={item}
-          onClick={onClick}
-          open={open}
-        />
-      ))}
+      {Array.isArray(items)
+        ? items.map(item => (
+            <DrawerSection
+              key={item.id}
+              item={item}
+              onClick={onClick}
+              open={open}
+            />
+          ))
+        : null}
     </div>
   );
 };
