@@ -1,6 +1,5 @@
 export type WindowId = string;
 export type ColumnId = string;
-export type Metadata = string;
 
 export interface CachedData<T> {
   updatedAt: number;
