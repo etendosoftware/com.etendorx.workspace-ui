@@ -9,6 +9,7 @@ import Form from './screens/Form';
 import Layout from './components/layout';
 import './index.css';
 import DynamicFormView from './screens/Form/DynamicFormView';
+import React from 'react';
 
 const router = createBrowserRouter([
   {
@@ -52,5 +53,7 @@ const router = createBrowserRouter([
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <RouterProvider router={router} />,
+  <React.StrictMode>
+    <RouterProvider router={router} />,
+  </React.StrictMode>,
 );
