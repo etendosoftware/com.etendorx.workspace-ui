@@ -1,101 +1,66 @@
 import Box from '@mui/material/Box';
-import { MaterialReactTable, MRT_Row } from 'material-react-table';
+import {
+  MaterialReactTable,
+  useMaterialReactTable,
+} from 'material-react-table';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
+import { CircularProgress } from '@mui/material';
 import styles from './styles';
-import type {
-  DatasourceOptions,
-  Tab,
-} from '@workspaceui/etendohookbinder/src/api/types';
+import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { parseColumns } from '@workspaceui/etendohookbinder/src/helpers/metadata';
-import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
-import { useNavigate } from 'react-router-dom';
-import { memo, useCallback, useMemo } from 'react';
-import useIsEnabled from '../../hooks/useIsEnabled';
+import { useRecordContext } from '../../hooks/useRecordContext';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 
-type DynamicTableProps = {
-  tab: Tab;
-};
-
-const DynamicTableContent = memo(function DynamicTableContent({
+export default function DynamicTable({
   tab,
-}: DynamicTableProps) {
-  const { selected, selectRecord } = useMetadataContext();
-  const navigate = useNavigate();
-  const parent = selected[tab.level - 1];
-
-  const query: DatasourceOptions = useMemo(() => {
-    const fieldName = tab.parentColumns[0];
-    const value = parent?.id || '';
-
-    return value
-      ? {
-          criteria: [
-            {
-              fieldName,
-              value,
-              operator: 'equals',
-            },
-          ],
-        }
-      : {};
-  }, [tab.parentColumns, parent?.id]);
-
+  onSelect,
+  onDoubleClick,
+}: {
+  tab: Tab;
+  onSelect: (row: unknown) => void;
+  onDoubleClick: (row: Record<string, string>) => void;
+}) {
   const { records, loading, error, fetchMore, loaded } = useDatasource(
     tab.entityName,
-    query,
   );
+  const { selected } = useRecordContext();
+  const enabled = tab.level <= selected.length;
 
-  const columns = useMemo(
-    () => parseColumns(Object.values(tab.fields)),
-    [tab.fields],
-  );
-
-  const rowProps = useCallback(
-    ({ row }: { row: MRT_Row<Record<string, unknown>> }) => ({
-      onClick: () => {
-        selectRecord(row.original as never, tab);
-
-        row.toggleSelected();
-      },
-      onDoubleClick: () => {
-        selectRecord(row.original as never, tab);
-        navigate(`${row.original.id}`);
-      },
+  const table = useMaterialReactTable({
+    columns: parseColumns(Object.values(tab.fields)),
+    data: records,
+    enablePagination: false,
+    muiTableBodyRowProps: ({ row }) => ({
+      onClick: () => onSelect(row.original),
+      onDoubleClick: () =>
+        onDoubleClick(row.original as Record<string, string>),
     }),
-    [navigate, selectRecord, tab],
-  );
+  });
 
-  if (loading && !loaded) return <Spinner />;
-  if (error) return <div>Error: {error.message}</div>;
+  if (!enabled) {
+    return null;
+  }
 
-  return (
-    <Box sx={styles.container}>
-      <Box sx={styles.table}>
-        <MaterialReactTable
-          columns={columns}
-          data={records}
-          enableRowSelection
-          enableMultiRowSelection={false}
-          enableColumnVirtualization
-          enableRowVirtualization
-          enableTopToolbar={false}
-          muiTableBodyRowProps={rowProps}
-        />
-      </Box>
-      <IconButton onClick={fetchMore} iconText="+" sx={styles.fetchMore} />
-    </Box>
-  );
-});
-
-const DynamicTable = ({ tab }: DynamicTableProps) => {
-  const { selected } = useMetadataContext();
-
-  if (selected[tab.level - 1] || tab.level === 0)
-    return <DynamicTableContent tab={tab} />;
-
-  return null;
-};
-
-export default DynamicTable;
+  if (loading && !loaded) {
+    return <Spinner />;
+  } else if (error) {
+    return <div>{error.message}</div>;
+  } else {
+    return (
+      <>
+        <Box sx={styles.container}>
+          <Box sx={styles.table}>
+            <MaterialReactTable table={table} />
+          </Box>
+          <IconButton onClick={fetchMore} iconText="+" sx={styles.fetchMore} />
+        </Box>
+        {loading ? (
+          <Box sx={styles.loader}>
+            <CircularProgress />
+          </Box>
+        ) : null}
+      </>
+    );
+  }
+}

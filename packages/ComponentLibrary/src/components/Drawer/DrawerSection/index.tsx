@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Collapse,
   Popper,
@@ -41,14 +41,6 @@ export default function DrawerSection({
   const handleClose = useCallback(() => {
     setAnchorEl(null);
   }, []);
-
-  const handleClickAndClose = useCallback(
-    (path: string) => {
-      onClick(path);
-      handleClose();
-    },
-    [handleClose, onClick],
-  );
 
   const mainStyle = useMemo(
     () => ({
@@ -103,7 +95,10 @@ export default function DrawerSection({
                     <DrawerSection
                       key={subitem.id}
                       item={subitem}
-                      onClick={handleClickAndClose}
+                      onClick={path => {
+                        onClick(path);
+                        handleClose();
+                      }}
                       open={true}
                     />
                   ))}

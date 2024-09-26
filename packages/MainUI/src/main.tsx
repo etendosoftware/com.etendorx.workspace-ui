@@ -9,7 +9,6 @@ import Form from './screens/Form';
 import Layout from './components/layout';
 import './index.css';
 import DynamicFormView from './screens/Form/DynamicFormView';
-import React from 'react';
 
 const router = createBrowserRouter([
   {
@@ -35,12 +34,14 @@ const router = createBrowserRouter([
             ],
           },
           {
-            path: 'window/:windowId/:recordId',
-            Component: DynamicFormView,
-          },
-          {
-            path: 'window/:windowId',
+            path: 'window/:id',
             Component: DynamicTable,
+            children: [
+              {
+                path: ':recordId',
+                Component: DynamicFormView,
+              },
+            ],
           },
         ],
       },
@@ -53,7 +54,5 @@ const router = createBrowserRouter([
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <RouterProvider router={router} />,
-  </React.StrictMode>,
+  <RouterProvider router={router} />,
 );

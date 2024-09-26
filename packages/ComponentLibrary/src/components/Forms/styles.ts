@@ -4,7 +4,6 @@ import { theme } from '../../theme';
 export const styles = {
   container: css({
     display: 'flex',
-    flex: 1,
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',

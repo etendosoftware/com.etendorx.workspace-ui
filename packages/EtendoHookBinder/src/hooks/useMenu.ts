@@ -8,6 +8,7 @@ export const useMenu = (token?: string | null) => {
   useEffect(() => {
     const initialize = async () => {
       if (token) {
+        Metadata.authorize(token);
         setMenu(await Metadata.getMenu());
       }
     };
