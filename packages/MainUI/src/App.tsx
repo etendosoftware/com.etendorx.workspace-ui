@@ -1,5 +1,5 @@
 import { CssBaseline, ThemeProvider } from '@mui/material';
-import { theme } from '@workspaceui/componentlibrary/src/theme';
+import { theme } from '../../ComponentLibrary/src/theme';
 import { Outlet } from 'react-router-dom';
 import MetadataProvider from './contexts/metadata';
 import { RecordProvider } from './contexts/record';

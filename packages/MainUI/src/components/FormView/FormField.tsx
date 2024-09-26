@@ -5,6 +5,7 @@ import {
   FormControlLabel,
   Checkbox,
   styled,
+  Link,
 } from '@mui/material';
 import SearchOutlined from '../../../../ComponentLibrary/src/assets/icons/search.svg';
 import {
@@ -23,9 +24,20 @@ import { memo, useState } from 'react';
 import TableDirSelector from './TableDirSelector';
 import Select from '../../../../ComponentLibrary/src/components/Input/Select';
 
-const FieldLabel: React.FC<FieldLabelProps> = ({ label, required }) => (
+const FieldLabel: React.FC<FieldLabelProps> = ({
+  label,
+  required,
+  fieldType,
+  onLinkClick,
+}) => (
   <Box sx={styles.labelWrapper}>
-    <span style={styles.labelText}>{label}</span>
+    {fieldType === 'tabledir' ? (
+      <Link onClick={onLinkClick} sx={sx.linkStyles}>
+        {label}
+      </Link>
+    ) : (
+      <span style={styles.labelText}>{label}</span>
+    )}
     {required && <span style={styles.requiredAsterisk}>*</span>}
     <span style={styles.dottedSpacing} />
   </Box>
@@ -40,6 +52,10 @@ const CustomCheckbox = styled(Checkbox)(() => ({
 const FormField: React.FC<FormFieldProps> = memo(
   ({ name, field, onChange }) => {
     const [value, setValue] = useState<FieldValue>(field.value);
+
+    const handleLinkClick = () => {
+      console.log(`Clicked on link for ${field.label}`);
+    };
 
     const renderField = () => {
       switch (field.type) {
@@ -114,7 +130,14 @@ const FormField: React.FC<FormFieldProps> = memo(
     return (
       <Box style={styles.fieldContainer}>
         <Box sx={sx.labelBox}>
-          <FieldLabel label={field.label} required={field.required} />
+          <FieldLabel
+            label={field.label}
+            required={field.required}
+            fieldType={field.type}
+            onLinkClick={
+              field.type === 'tabledir' ? handleLinkClick : undefined
+            }
+          />
         </Box>
         <Box sx={sx.inputBox}>{renderField()}</Box>
       </Box>

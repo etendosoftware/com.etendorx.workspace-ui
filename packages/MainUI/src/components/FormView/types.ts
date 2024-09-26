@@ -62,6 +62,8 @@ export interface FieldLabelProps {
   label: string;
   required?: boolean;
   readOnly?: boolean;
+  fieldType: string;
+  onLinkClick?: () => void;
 }
 
 export interface SectionRendererProps
