@@ -1,3 +1,5 @@
+import { Field } from '@workspaceui/etendohookbinder/src/api/types';
+
 export interface FieldInfo {
   fieldGroup$_identifier?: string;
 }
@@ -16,6 +18,9 @@ export interface BaseFieldDefinition<T> {
   label: string;
   section?: string;
   required?: boolean;
+  original: {
+    fieldName: string;
+  } & Field;
 }
 export type FieldDefinition =
   | BaseFieldDefinition<string>

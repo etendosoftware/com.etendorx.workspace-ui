@@ -6,27 +6,22 @@ import React, {
   useEffect,
 } from 'react';
 import { Box, Grid } from '@mui/material';
-import { Organization } from '../../../../storybook/src/stories/Components/Table/types';
 import { FormViewProps } from './types';
 import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
 import { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
-import ChevronDown from '../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
-import { theme } from '@workspaceui/componentlibrary/src/theme';
 import SectionRenderer from './Sections/sectionRendered';
 import { Section, FieldDefinition } from 'src/screens/Form/types';
-
-export const defaultIcon = (
-  <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
-);
+import type { FormData } from './types';
+import { defaultIcon } from '../../constants/iconConstants';
 
 const FormView: React.FC<FormViewProps> = ({
   data,
+  onChange,
   readOnly = false,
   gridItemProps,
   dottedLineInterval,
-  windowMetadata,
 }) => {
-  const [formData, setFormData] = useState<Organization>(data);
+  const [formData, setFormData] = useState<FormData>(data);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('');
@@ -108,8 +103,9 @@ const FormView: React.FC<FormViewProps> = ({
           value: value,
         } as FieldDefinition,
       }));
+      onChange?.(formData);
     },
-    [],
+    [formData, onChange],
   );
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
@@ -166,7 +162,6 @@ const FormView: React.FC<FormViewProps> = ({
                   gridItemProps={gridItemProps}
                   dottedLineInterval={dottedLineInterval}
                   readOnly={readOnly}
-                  windowMetadata={windowMetadata}
                 />
               );
             })}

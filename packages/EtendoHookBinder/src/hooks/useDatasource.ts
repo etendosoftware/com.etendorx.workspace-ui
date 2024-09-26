@@ -2,15 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DatasourceOptions } from '../api/types';
 import { Datasource } from '../api/datasource';
 
-const mapById = (
-  acum: { [x: string]: unknown },
-  current: { id: string | number },
-) => {
-  acum[current.id] = current;
-
-  return acum;
-};
-
 const loadData = async (
   entity: string,
   page: number,
@@ -31,9 +22,8 @@ const loadData = async (
 
 export function useDatasource(entity: string, params?: DatasourceOptions) {
   const _params = JSON.stringify(params ?? {});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [data, setData] = useState<Record<string, Record<string, unknown>>>({});
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [page, setPage] = useState(1);
@@ -53,13 +43,13 @@ export function useDatasource(entity: string, params?: DatasourceOptions) {
       if (response.error) {
         throw new Error(response.error.message);
       } else {
-        const _data = response.data.reduce(mapById, {});
-
-        setData(prev => ({ ...prev, ..._data }));
+        setRecords(prev => [...prev, ...response.data]);
         setLoaded(true);
       }
     } catch (e) {
       setError(e as Error);
+    } finally {
+      setLoading(false);
     }
   }, [_params, entity, page, pageSize]);
 
@@ -75,19 +65,9 @@ export function useDatasource(entity: string, params?: DatasourceOptions) {
     load();
   }, [load]);
 
-  useEffect(() => {
-    setRecords(Object.values(data));
-    setLoading(false);
-  }, [data]);
-
-  useEffect(() => {
-    setData({});
-  }, [entity]);
-
   return useMemo(
     () => ({
       loading,
-      data,
       error,
       fetchMore,
       changePageSize,
@@ -95,6 +75,6 @@ export function useDatasource(entity: string, params?: DatasourceOptions) {
       records,
       loaded,
     }),
-    [data, error, loading, fetchMore, changePageSize, load, records, loaded],
+    [error, loading, fetchMore, changePageSize, load, records, loaded],
   );
 }

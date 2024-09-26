@@ -7,6 +7,8 @@ import {
 } from '../screens/Form/types';
 import {
   Column,
+  MappedData,
+  MappedTab,
   WindowMetadata,
 } from '@workspaceui/etendohookbinder/src/api/types';
 
@@ -51,27 +53,28 @@ export function ensureFieldValue(
   return String(value);
 }
 
-export function mapWindowMetadata(windowData: WindowMetadata) {
-  const mappedData: any = {
+export function mapWindowMetadata(windowData: WindowMetadata): MappedData {
+  const mappedData: MappedData = {
     name: windowData.name,
     id: windowData.id,
     tabs: [],
   };
 
   windowData.tabs.forEach(tab => {
-    const mappedTab: any = {
+    const mappedTab: MappedTab = {
       id: tab.id,
       name: tab._identifier,
       fields: {},
     };
 
     Object.entries(tab.fields).forEach(([fieldName, fieldInfo]) => {
+      const column = fieldInfo.column as Column;
       mappedTab.fields[fieldName] = {
         name: fieldName,
-        label: fieldInfo.column.name,
-        type: mapColumnTypeToFieldType(fieldInfo.column),
-        referencedTable: fieldInfo.column.reference,
-        required: fieldInfo.column.isMandatory,
+        label: column.name,
+        type: mapColumnTypeToFieldType(column),
+        referencedTable: column.reference,
+        required: column.isMandatory,
       };
     });
 
@@ -111,13 +114,24 @@ export function adaptFormData(
 
   Object.entries(windowData.tabs[0].fields).forEach(
     ([fieldName, fieldInfo]) => {
+      const column = fieldInfo.column as Column;
       const sectionName = fieldInfo.fieldGroup$_identifier ?? 'Main';
-      const rawValue = record[`${fieldName}$_identifier`] ?? record[fieldName];
-      const safeValue = ensureFieldValue(rawValue);
+      const rawValue = record[fieldName];
+      let safeValue;
+
+      if (mapColumnTypeToFieldType(column) === 'tabledir') {
+        safeValue = {
+          id: rawValue,
+          title: record[`${fieldName}$_identifier`] || rawValue,
+          value: rawValue,
+        };
+      } else {
+        safeValue = ensureFieldValue(rawValue);
+      }
 
       adaptedData[fieldName] = {
         value: safeValue,
-        type: mapColumnTypeToFieldType(fieldInfo.column),
+        type: mapColumnTypeToFieldType(column),
         label: fieldInfo.column.name,
         section: sectionName,
         required: fieldInfo.column.isMandatory ?? true,

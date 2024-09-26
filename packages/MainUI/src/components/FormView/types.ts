@@ -1,7 +1,9 @@
 import { ReactNode } from 'react';
 import { FieldDefinition, Section } from '../../screens/Form/types';
-import { Organization } from '@workspaceui/storybook/stories/Components/Table/types';
-import { WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import {
+  MappedData,
+  WindowMetadata,
+} from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface GridItemProps {
   xs?: number;
@@ -9,15 +11,16 @@ export interface GridItemProps {
   md?: number;
 }
 
+export type FormData = Record<string, FieldDefinition | Section>;
 export interface FormViewProps {
-  windowMetadata: WindowMetadata;
-  data: any;
+  data: FormData;
+  windowMetadata: MappedData;
   onSave: () => void;
   onCancel: () => void;
   readOnly?: boolean;
   gridItemProps?: GridItemProps;
   dottedLineInterval?: number;
-  onChange?: (updatedData: Organization) => void;
+  onChange?: (updatedData: FormData) => void;
 }
 
 export interface FormSectionProps {
@@ -37,7 +40,6 @@ export interface FormSectionProps {
   dottedLineInterval?: number;
   readOnly?: boolean;
   children?: ReactNode;
-  windowMetadata: WindowMetadata;
 }
 
 export type FieldValue = FieldDefinition['value'];
@@ -65,7 +67,6 @@ export interface FieldLabelProps {
 export interface SectionRendererProps
   extends Omit<FormSectionProps, 'children'> {
   sectionRef: (el: HTMLElement | null) => void;
-  windowMetadata: WindowMetadata;
 }
 
 export interface Note {
@@ -87,10 +88,10 @@ export interface NoteSectionProps {
 // TableDir Selector
 
 export interface TableDirSelectorProps {
-  name: string;
-  field: FieldDefinition;
+  label: string;
+  value: string | number | boolean | Date | string[] | { id: string } | null;
+  entity: string;
   onChange: (name: string, value: string) => void;
-  tabId?: string;
 }
 
 export interface Option {

@@ -92,7 +92,12 @@ const FormField: React.FC<FormFieldProps> = memo(
           );
         case 'tabledir':
           return (
-            <TableDirSelector name={name} onChange={onChange} field={field} />
+            <TableDirSelector
+              value={field.value}
+              label={field.label}
+              entity={field.original.entity}
+              onChange={onChange}
+            />
           );
         default:
           return (
@@ -117,20 +122,8 @@ const FormField: React.FC<FormFieldProps> = memo(
   },
 );
 
-const FormFieldGroup: React.FC<FormFieldGroupProps> = ({
-  name,
-  field,
-  onChange,
-  windowMetadata,
-}) => {
-  return (
-    <FormField
-      name={name}
-      field={field}
-      onChange={onChange}
-      windowMetadata={windowMetadata}
-    />
-  );
+const FormFieldGroup: React.FC<FormFieldGroupProps> = ({ field, onChange }) => {
+  return <FormField field={field} onChange={onChange} name="" />;
 };
 
 export default FormFieldGroup;

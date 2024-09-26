@@ -6,6 +6,7 @@ import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDataso
 import { FormData } from './types';
 import FormView from '../../components/FormView';
 import { adaptFormData, mapWindowMetadata } from '../../utils/formUtils';
+import { MappedData } from '@workspaceui/etendohookbinder/src/api/types';
 
 export default function DynamicFormView() {
   const { id, recordId } = useParams<{ id: string; recordId: string }>();
@@ -16,7 +17,7 @@ export default function DynamicFormView() {
     error: windowError,
   } = useWindow(id ?? '');
   const [formData, setFormData] = useState<FormData | null>(null);
-  const [mappedMetadata, setMappedMetadata] = useState<any>(null);
+  const [mappedMetadata, setMappedMetadata] = useState<MappedData | null>(null);
 
   const {
     records,
@@ -34,8 +35,6 @@ export default function DynamicFormView() {
 
       const newMappedMetadata = mapWindowMetadata(windowData);
       setMappedMetadata(newMappedMetadata);
-    } else {
-      null;
     }
   }, [windowData, records]);
 
