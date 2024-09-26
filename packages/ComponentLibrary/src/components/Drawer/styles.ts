@@ -19,6 +19,12 @@ export const styles = {
     flexDirection: 'column' as React.CSSProperties['flexDirection'],
     overflow: 'hidden',
   },
+  drawerContent: css({
+    flexGrow: 1,
+    overflowY: 'scroll',
+    overflowX: 'hidden',
+    scrollbarWidth: 'none',
+  }),
   drawerHeader: {
     height: '3.5rem',
     display: 'flex',

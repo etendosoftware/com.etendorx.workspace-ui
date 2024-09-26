@@ -78,17 +78,43 @@ export interface Column {
   id: string;
   accessorFn: (v: Record<string, unknown>) => unknown;
   columnName: string;
-  isMandatory: boolean;
+  isMandatory?: boolean;
   name: string;
-  column?: {
-    reference: string;
-    _identifier: string;
-  };
+  reference?: string;
+  _identifier: string;
+  [key: string]: unknown;
 }
 
-export interface ViewStandardProperties extends Record<string, unknown> {
-  // Define known properties if possible
+export interface MappedField {
+  name: string;
+  label: string;
+  type: FieldType;
+  referencedTable?: string;
+  required?: boolean;
 }
+
+export type FieldType =
+  | 'text'
+  | 'number'
+  | 'date'
+  | 'boolean'
+  | 'select'
+  | 'tabledir';
+
+export interface MappedTab {
+  id: string;
+  name: string;
+  fields: Record<string, MappedField>;
+}
+
+export interface MappedData {
+  id: string;
+  name: string;
+  tabs: MappedTab[];
+  fields?: MappedField[];
+}
+
+export interface ViewStandardProperties extends Record<string, unknown> {}
 
 export interface WindowMetadataProperties {
   windowId: string;
@@ -115,7 +141,7 @@ export interface WindowMetadataProperties {
 export interface Tab {
   parentColumns: string[];
   id: string;
-  entityName: string,
+  entityName: string;
   fields: Record<string, Field>;
   level: number;
   _identifier: string;
