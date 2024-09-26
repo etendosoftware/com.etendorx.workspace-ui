@@ -48,7 +48,6 @@ body {
 #content {
   flex: 1;
   overflow: auto;
-  display: flex;
   flex-direction: column;
   position: relative;
 }
@@ -109,4 +108,8 @@ body {
   button {
     background-color: #f9f9f9;
   }
+}
+
+.relative {
+  position: relative;
 }

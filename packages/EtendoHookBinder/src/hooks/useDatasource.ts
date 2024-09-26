@@ -62,6 +62,12 @@ export function useDatasource(entity: string, params?: DatasourceOptions) {
   }, []);
 
   useEffect(() => {
+    if (params?.criteria) {
+      setRecords([]);
+    }
+  }, [params?.criteria]);
+
+  useEffect(() => {
     load();
   }, [load]);
 

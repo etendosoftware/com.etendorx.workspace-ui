@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { styles } from './styles';
 import DrawerSection from './DrawerSection';
 import { DrawerProps } from './types';

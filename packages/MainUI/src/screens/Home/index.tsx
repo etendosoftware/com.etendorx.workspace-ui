@@ -12,11 +12,12 @@ import Sidebar from '@workspaceui/componentlibrary/src/components/Table/Sidebar'
 import ExpandMenu from '@workspaceui/componentlibrary/src/components/Table/ExpandMenu';
 import { Paper } from '@mui/material';
 import { useRecordContext } from '../../hooks/useRecordContext';
-import styles from './styles';
+import useStyles from './styles';
 import { useTranslation } from '../../hooks/useTranslation';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const styles = useStyles();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [expandAnchorEl, setExpandAnchorEl] = useState<null | HTMLElement>(
