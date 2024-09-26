@@ -11,7 +11,6 @@ import { parseColumns } from '@workspaceui/etendohookbinder/src/helpers/metadata
 import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
 import { useNavigate } from 'react-router-dom';
 import { memo, useCallback, useMemo } from 'react';
-import useIsEnabled from '../../hooks/useIsEnabled';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 
 type DynamicTableProps = {
@@ -43,7 +42,7 @@ const DynamicTableContent = memo(function DynamicTableContent({
   }, [tab.parentColumns, parent?.id]);
 
   const { records, loading, error, fetchMore, loaded } = useDatasource(
-    tab,
+    tab.entityName,
     query,
   );
 

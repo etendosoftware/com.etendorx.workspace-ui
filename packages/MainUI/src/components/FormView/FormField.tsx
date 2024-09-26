@@ -5,6 +5,7 @@ import {
   FormControlLabel,
   Checkbox,
   styled,
+  Link,
 } from '@mui/material';
 import SearchOutlined from '../../../../ComponentLibrary/src/assets/icons/search.svg';
 import {
@@ -23,15 +24,26 @@ import { memo, useState } from 'react';
 import TableDirSelector from './TableDirSelector';
 import Select from '../../../../ComponentLibrary/src/components/Input/Select';
 
-const FieldLabel: React.FC<FieldLabelProps> = ({ label, required }) => (
+const FieldLabel: React.FC<FieldLabelProps> = ({
+  label,
+  required,
+  fieldType,
+  onLinkClick,
+}) => (
   <Box sx={styles.labelWrapper}>
-    <span style={styles.labelText}>{label}</span>
+    {fieldType === 'tabledir' ? (
+      <Link onClick={onLinkClick} sx={sx.linkStyles}>
+        {label}
+      </Link>
+    ) : (
+      <span style={styles.labelText}>{label}</span>
+    )}
     {required && <span style={styles.requiredAsterisk}>*</span>}
     <span style={styles.dottedSpacing} />
   </Box>
 );
 
-const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
+const CustomCheckbox = styled(Checkbox)(() => ({
   '&.Mui-checked': {
     color: theme.palette.dynamicColor.main,
   },
@@ -40,6 +52,10 @@ const CustomCheckbox = styled(Checkbox)(({ theme }) => ({
 const FormField: React.FC<FormFieldProps> = memo(
   ({ name, field, onChange }) => {
     const [value, setValue] = useState<FieldValue>(field.value);
+
+    const handleLinkClick = () => {
+      console.log(`Clicked on link for ${field.label}`);
+    };
 
     const renderField = () => {
       switch (field.type) {
@@ -92,7 +108,12 @@ const FormField: React.FC<FormFieldProps> = memo(
           );
         case 'tabledir':
           return (
-            <TableDirSelector name={name} field={field} onChange={onChange} />
+            <TableDirSelector
+              value={field.value}
+              label={field.label}
+              entity={field.original.entity}
+              onChange={onChange}
+            />
           );
         default:
           return (
@@ -108,8 +129,15 @@ const FormField: React.FC<FormFieldProps> = memo(
 
     return (
       <Box style={styles.fieldContainer}>
-        <Box sx={sx.labelBox}>  
-          <FieldLabel label={field.label} required={field.required} />
+        <Box sx={sx.labelBox}>
+          <FieldLabel
+            label={field.label}
+            required={field.required}
+            fieldType={field.type}
+            onLinkClick={
+              field.type === 'tabledir' ? handleLinkClick : undefined
+            }
+          />
         </Box>
         <Box sx={sx.inputBox}>{renderField()}</Box>
       </Box>
@@ -117,20 +145,8 @@ const FormField: React.FC<FormFieldProps> = memo(
   },
 );
 
-const FormFieldGroup: React.FC<FormFieldGroupProps> = ({
-  name,
-  field,
-  onChange,
-  windowMetadata,
-}) => {
-  return (
-    <FormField
-      name={name}
-      field={field}
-      onChange={onChange}
-      windowMetadata={windowMetadata}
-    />
-  );
+const FormFieldGroup: React.FC<FormFieldGroupProps> = ({ field, onChange }) => {
+  return <FormField field={field} onChange={onChange} name="" />;
 };
 
 export default FormFieldGroup;

@@ -1,94 +1,67 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useCallback, useMemo, useEffect, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
+import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import Select from '../../../../ComponentLibrary/src/components/Input/Select';
 import SearchOutlined from '../../../../ComponentLibrary/src/assets/icons/search.svg';
 import { theme } from '../../../../ComponentLibrary/src/theme';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
-
-interface TableDirSelectorProps {
-  name: string;
-  field?: Partial<{
-    value: string | number | boolean;
-    type: string;
-    label: string;
-    section: string;
-    required: boolean;
-  }>;
-  onChange: (name: string, value: string) => void;
-}
-
-interface Option {
-  id: string;
-  title: string;
-  value: string;
-}
+import { TableDirSelectorProps } from './types';
+import { Option } from '@workspaceui/componentlibrary/components/Input/Select/types';
 
 const TableDirSelector: React.FC<TableDirSelectorProps> = ({
-  name,
-  field,
   onChange,
+  label,
+  entity,
+  value,
 }) => {
-  const [options, setOptions] = useState<Option[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { records, loading, error, loaded } = useDatasource(entity);
+  const [selectedValue, setSelectedValue] = useState<Option | null>(null);
 
-  console.log('TableDirSelector props:', { name, field });
-
-  const {
-    windowData,
-    columnsData,
-    loading: windowLoading,
-    error: windowError,
-  } = useMetadataContext();
-
-  const fieldMetadata = useMemo(() => {
-    return columnsData[windowData.tabs[0].id][name];
-  }, [columnsData, name, windowData.tabs]);
-
-  const columnIdentifier = fieldMetadata?.column?._identifier;
-
-  const { records, loading: entityLoading } = useDatasource(windowData.tabs[0]);
+  const options = useMemo(
+    () =>
+      records.map(record => ({
+        id: record.id as string,
+        title: (record._identifier || record.name || record.id) as string,
+        value: record.id as string,
+      })),
+    [records],
+  );
 
   useEffect(() => {
-    if (records && records.length > 0) {
-      const formattedOptions = records.map(record => ({
-        id: record.id,
-        title: record._identifier || record.id,
-        value: record.id,
-      }));
-      setOptions(formattedOptions);
+    if (value && options.length > 0) {
+      const option = options.find(opt => {
+        if (typeof value === 'object' && 'id' in value) {
+          return opt.id === value.id;
+        }
+        return opt.id === String(value);
+      });
+      if (option) {
+        setSelectedValue(option);
+      }
     }
-    setIsLoading(false);
-  }, [records]);
+  }, [value, options]);
 
-  if (windowLoading || entityLoading || isLoading) return <Spinner />;
-  if (windowError)
-    return <div>Error loading window data: {windowError.message}</div>;
+  const handleChange = useCallback(
+    (_event: React.SyntheticEvent<Element, Event>, newValue: Option | null) => {
+      setSelectedValue(newValue);
+      if (newValue) {
+        onChange(label, newValue.id);
+      }
+    },
+    [label, onChange],
+  );
 
-  if (!columnIdentifier)
-    return (
-      <div>Error: Could not determine entity for {field?.label || name}</div>
-    );
-  if (!field) {
-    console.error(
-      `TableDirSelector: 'field' prop is undefined for name: ${name}`,
-    );
-    return <div>Error: Missing field data for {name}</div>;
-  }
+  if (loading || !loaded) return <Spinner />;
+  if (error) return <div>Error: {error.message}</div>;
 
   return (
     <Select
       iconLeft={
         <SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />
       }
-      title={field.value || field.label}
       options={options}
+      onChange={handleChange}
+      value={selectedValue}
       getOptionLabel={(option: Option) => option.title}
-      onChange={(event, value) => {
-        if (value) {
-          onChange(name, value.value);
-        }
-      }}
     />
   );
 };

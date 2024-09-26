@@ -1,7 +1,9 @@
 import { ReactNode } from 'react';
 import { FieldDefinition, Section } from '../../screens/Form/types';
-import { Organization } from '@workspaceui/storybook/stories/Components/Table/types';
-import { WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import {
+  MappedData,
+  WindowMetadata,
+} from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface GridItemProps {
   xs?: number;
@@ -9,15 +11,16 @@ export interface GridItemProps {
   md?: number;
 }
 
+export type FormData = Record<string, FieldDefinition | Section>;
 export interface FormViewProps {
-  windowMetadata: any;
-  data: any;
+  data: FormData;
+  windowMetadata: MappedData;
   onSave: () => void;
   onCancel: () => void;
   readOnly?: boolean;
   gridItemProps?: GridItemProps;
   dottedLineInterval?: number;
-  onChange?: (updatedData: Organization) => void;
+  onChange?: (updatedData: FormData) => void;
 }
 
 export interface FormSectionProps {
@@ -59,6 +62,8 @@ export interface FieldLabelProps {
   label: string;
   required?: boolean;
   readOnly?: boolean;
+  fieldType: string;
+  onLinkClick?: () => void;
 }
 
 export interface SectionRendererProps
@@ -80,4 +85,19 @@ export interface NoteSectionProps {
   modalDescriptionText: string | undefined;
   noteInputPlaceholder: string | undefined;
   addNoteSubmitText: string | undefined;
+}
+
+// TableDir Selector
+
+export interface TableDirSelectorProps {
+  label: string;
+  value: string | number | boolean | Date | string[] | { id: string } | null;
+  entity: string;
+  onChange: (name: string, value: string) => void;
+}
+
+export interface Option {
+  id: string;
+  title: string;
+  value: string;
 }

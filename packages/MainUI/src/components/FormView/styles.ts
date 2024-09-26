@@ -60,6 +60,18 @@ export const styles: { [key: string]: CSSProperties } = {
 };
 
 export const sx: { [key: string]: SxProps<Theme> } = {
+  linkStyles: {
+    fontSize: '0.875rem',
+    fontWeight: '600',
+    lineHeight: '1rem',
+    color: theme.palette.dynamicColor.main,
+    textDecoration: 'none',
+    paddingRight: '0.5rem',
+    cursor: 'pointer',
+    '&:hover': {
+      textDecoration: 'underline',
+    },
+  },
   accordion: {
     width: '100%',
     marginTop: '0.5rem',

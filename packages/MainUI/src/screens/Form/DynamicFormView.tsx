@@ -1,87 +1,69 @@
-import { useParams } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
-import { Etendo } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { useEntityRecord } from '@workspaceui/etendohookbinder/src/hooks/useEntityRecord';
-import { useCallback, useMemo, useState } from 'react';
+import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
+import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
+import { FormData } from './types';
+import FormView from '../../components/FormView';
+import { adaptFormData, mapWindowMetadata } from '../../utils/formUtils';
+import { MappedData } from '@workspaceui/etendohookbinder/src/api/types';
 
 export default function DynamicFormView() {
-  const { recordId = '' } = useParams<{ recordId: string }>();
-
+  const { windowId = '', recordId } = useParams<{
+    windowId: string;
+    recordId: string;
+  }>();
+  const navigate = useNavigate();
   const {
     windowData,
     loading: windowLoading,
     error: windowError,
-  } = useMetadataContext();
+  } = useWindow(windowId);
+  const [formData, setFormData] = useState<FormData | null>(null);
+  const [mappedMetadata, setMappedMetadata] = useState<MappedData | null>(null);
 
   const {
-    data,
+    records,
     loading: recordLoading,
     error: recordError,
-  } = useEntityRecord(windowData?.tabs[0].entityName ?? '', recordId);
+    loaded,
+  } = useDatasource(windowData?.tabs[0].entityName ?? '', {
+    criteria: [{ fieldName: 'id', operator: 'equals', value: recordId }],
+  });
 
-  if (windowLoading || recordLoading) {
-    return <Spinner />;
-  } else if (windowError || recordError) {
-    return <div>Error: {windowError?.message ?? recordError?.message}</div>;
-  } else if (data) {
-    return (
-      <div className="flex">
-        {Object.entries(windowData.tabs[0].fields).map(([key, value]) => {
-          return <MagicField key={key} {...value} data={data} field={key} />;
-        })}
-      </div>
-    );
-  } else {
-    return null;
-  }
-}
+  useEffect(() => {
+    if (windowData && records && records.length > 0) {
+      const newFormData = adaptFormData(windowData, records[0]);
+      if (newFormData) setFormData(newFormData);
 
-const TextField = (props: Etendo.Field & { data: any; field: string }) => {
-  const _value =
-    props.data[`${props.field}$_identifier`] ?? props.data[props.field] ?? '';
-  const [value, setValue] = useState(_value);
+      const newMappedMetadata = mapWindowMetadata(windowData);
+      setMappedMetadata(newMappedMetadata);
+    }
+  }, [windowData, records]);
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(e.currentTarget.value);
+  const handleSave = useCallback(() => navigate('/'), [navigate]);
+  const handleCancel = useCallback(() => navigate('/'), [navigate]);
+
+  const handleChange = useCallback((updatedData: FormData) => {
+    setFormData(updatedData);
   }, []);
 
+  if (windowLoading || (recordLoading && !loaded)) return <Spinner />;
+  if (windowError)
+    return <div>Error loading window data: {windowError.message}</div>;
+  if (recordError)
+    return <div>Error loading record data: {recordError.message}</div>;
+  if (!windowData) return <div>No window data available</div>;
+  if (!records || records.length === 0) return <div>No record found</div>;
+  if (!formData || !mappedMetadata) return <div>No form data available</div>;
+
   return (
-    <label htmlFor={props.field} className="field-group">
-      <span>{props.column.name}</span>
-      <input
-        name={props.field}
-        type="text"
-        title={props.column.description}
-        placeholder={props.column.name}
-        value={value}
-        onChange={handleChange}
-        className="field"
-      />
-    </label>
+    <FormView
+      data={formData}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      onChange={handleChange}
+      windowMetadata={mappedMetadata}
+    />
   );
-};
-
-const DateField = TextField;
-const DateTimeField = TextField;
-const ListField = TextField;
-const TableField = TextField;
-const TableDirField = TextField;
-const BooleanField = TextField;
-
-const Components = {
-  '14': TextField,
-  '15': DateField,
-  '16': DateTimeField,
-  '17': ListField,
-  '18': TableField,
-  '19': TableDirField,
-  '20': BooleanField,
-};
-
-const MagicField = (props: Etendo.Field & { data: any; field: string }) => {
-  const Cmp =
-    Components[props.column.reference as keyof typeof Components] ?? TextField;
-
-  return <Cmp {...props} />;
-};
+}
