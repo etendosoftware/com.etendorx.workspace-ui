@@ -21,7 +21,6 @@ const loadData = async (
   const startRow = (page - 1) * pageSize;
   const endRow = page * pageSize - 1;
 
-  console.debug({ entity, tabId, _params });
   const { response } = await Datasource.get(entity, tabId, {
     ...JSON.parse(_params),
     startRow,
@@ -74,6 +73,12 @@ export function useDatasource(tab: Tab, params?: DatasourceOptions) {
   const changePageSize = useCallback((size: number) => {
     setPageSize(size);
   }, []);
+
+  useEffect(() => {
+    if (params?.criteria) {
+      setData({});
+    }
+  }, [params?.criteria]);
 
   useEffect(() => {
     load();

@@ -1,6 +1,4 @@
 export type WindowId = string;
-export type ColumnId = string;
-export type Metadata = string;
 
 export interface CachedData<T> {
   updatedAt: number;
@@ -58,8 +56,8 @@ export interface GridProps {
 }
 
 export interface Field {
-  fieldGroup$_identifier: any;
-  fieldGroup: any;
+  fieldGroup$_identifier: string;
+  fieldGroup: string;
   column: Record<string, string>;
   name: string;
   id: string;
@@ -75,7 +73,7 @@ export interface Field {
 }
 
 export interface Column {
-  fieldGroup: string;
+  fieldGroup?: string;
   header: string;
   id: string;
   accessorFn: (v: Record<string, unknown>) => unknown;
@@ -115,6 +113,7 @@ export interface WindowMetadataProperties {
 }
 
 export interface Tab {
+  parentColumns: string[];
   id: string;
   entityName: string,
   fields: Record<string, Field>;

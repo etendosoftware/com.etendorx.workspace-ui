@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Etendo } from '../api/metadata';
-import { useMetadataContext } from '../hooks/useMetadataContext';
+import { Metadata, type Etendo } from '../api/metadata';
 import { Column } from '../api/types';
 
 export function useWindow(windowId: string) {
-  const { getWindow, getColumns } = useMetadataContext();
   const [windowData, setWindowData] = useState<Etendo.WindowMetadata>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error>();
@@ -15,12 +13,12 @@ export function useWindow(windowId: string) {
 
     if (windowData?.tabs?.length) {
       windowData.tabs.forEach(tab => {
-        cols[tab.id] = getColumns(tab.id);
+        cols[tab.id] = Metadata.getColumns(tab.id);
       });
     }
 
     return cols;
-  }, [getColumns, windowData]);
+  }, [windowData?.tabs]);
 
   const load = useCallback(async () => {
     try {
@@ -30,14 +28,14 @@ export function useWindow(windowId: string) {
 
       setLoading(true);
       setError(undefined);
-      setWindowData(await getWindow(windowId));
+      setWindowData(await Metadata.getWindow(windowId));
       setLoaded(true);
     } catch (e) {
       setError(e as Error);
     } finally {
       setLoading(false);
     }
-  }, [getWindow, windowId]);
+  }, [windowId]);
 
   useEffect(() => {
     load();

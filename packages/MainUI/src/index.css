@@ -28,7 +28,6 @@ body {
 #content {
   flex: 1;
   overflow: auto;
-  display: flex;
   flex-direction: column;
   position: relative;
 }
@@ -77,4 +76,8 @@ body {
 .field-group {
   display: flex;
   flex-direction: column;
+}
+
+.relative {
+  position: relative;
 }
