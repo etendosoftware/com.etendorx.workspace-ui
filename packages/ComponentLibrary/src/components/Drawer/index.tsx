@@ -3,6 +3,7 @@ import { styles } from './styles';
 import DrawerSection from './DrawerSection';
 import { DrawerProps } from './types';
 import DrawerHeader from './Header';
+import { Box } from '..';
 
 const Drawer = ({ items, logo, title, onClick }: DrawerProps) => {
   const [open, setOpen] = useState<boolean>(true);
@@ -11,7 +12,9 @@ const Drawer = ({ items, logo, title, onClick }: DrawerProps) => {
   const drawerStyle = {
     ...styles.drawerPaper,
     width: open ? '16.25rem' : '3.5rem',
+    height: '100vh',
     transition: 'width 0.5s ease-in-out',
+    display: 'flex',
   };
 
   return (
@@ -22,14 +25,16 @@ const Drawer = ({ items, logo, title, onClick }: DrawerProps) => {
         open={open}
         onClick={handleHeaderClick}
       />
-      {items.map(item => (
-        <DrawerSection
-          key={item.id}
-          item={item}
-          onClick={onClick}
-          open={open}
-        />
-      ))}
+      <Box sx={styles.drawerContent}>
+        {items.map(item => (
+          <DrawerSection
+            key={item.id}
+            item={item}
+            onClick={onClick}
+            open={open}
+          />
+        ))}
+      </Box>
     </div>
   );
 };
