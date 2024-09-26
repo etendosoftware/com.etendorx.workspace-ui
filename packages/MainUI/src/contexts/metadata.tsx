@@ -1,22 +1,14 @@
-import { createContext, useEffect, useMemo } from 'react';
+import { createContext, useCallback, useMemo, useState } from 'react';
 import {
-  Etendo,
+  type Etendo,
   Metadata,
 } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useParams } from 'react-router-dom';
 import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
+import { buildColumnsData, groupTabsByLevel } from '../utils/metadata';
+import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 
-const initialState = {
-  getWindow: Metadata.getWindow,
-  getColumns: Metadata.getColumns,
-  windowId: '',
-  recordId: '',
-  loading: false,
-  error: undefined,
-  groupedTabs: [],
-  windowData: {} as Etendo.WindowMetadata,
-  columnsData: {},
-} as {
+interface IMetadataContext {
   getWindow: (windowId: string) => Promise<Etendo.WindowMetadata>;
   getColumns: (tabId: string) => Etendo.Column[];
   windowId: string;
@@ -24,74 +16,68 @@ const initialState = {
   loading: boolean;
   error: Error | undefined;
   groupedTabs: Etendo.Tab[][];
-  windowData: Etendo.WindowMetadata;
-  columnsData: Record<number, Record<string, Etendo.Column[]>>;
-};
+  windowData?: Etendo.WindowMetadata;
+  columnsData?: Record<number, Record<string, Etendo.Column[]>>;
+  selectRecord: (record: Record<string, never>, tab: Tab) => void;
+  selected: Record<string, Record<string, never>>;
+}
 
-export const MetadataContext = createContext(initialState);
+export const MetadataContext = createContext({} as IMetadataContext);
 
 export default function MetadataProvider({
   children,
-  token,
-}: React.PropsWithChildren<{ token?: string }>) {
-  const { id = '', recordId = '' } = useParams();
-  const { windowData, loading, error } = useWindow(id);
+}: React.PropsWithChildren) {
+  const { windowId = '', recordId = '' } = useParams();
+  const { windowData, loading, error } = useWindow(windowId);
+  const [selected, setSelected] = useState<IMetadataContext['selected']>({});
 
-  const groupedTabs = useMemo(() => {
-    if (!windowData) {
-      return [];
-    }
+  const selectRecord: IMetadataContext['selectRecord'] = useCallback(
+    (record, tab) => {
+      const level = tab.level;
+      const max = Object.keys(selected).reduce((max, strLevel) => {
+        return Math.max(max, parseInt(strLevel));
+      }, 0);
 
-    const tabs: Etendo.Tab[][] = Array(windowData.tabs.length);
-
-    windowData?.tabs.forEach(tab => {
-      if (tabs[tab.level]) {
-        tabs[tab.level].push(tab);
-      } else {
-        tabs[tab.level] = [tab];
-      }
-    });
-
-    return tabs;
-  }, [windowData]);
-
-  const columnsData = useMemo(() => {
-    const cols: Record<number, Record<string, Etendo.Column[]>> = {};
-
-    if (windowData?.tabs?.length) {
-      windowData.tabs.forEach(tab => {
-        if (!cols[tab.level]) {
-          cols[tab.level] = {};
+      setSelected(prev => {
+        for (let index = max; index > level; index--) {
+          delete prev[index];
         }
 
-        cols[tab.level][tab.id] = Metadata.getColumns(tab.id);
+        return { ...prev, [level]: record };
       });
-    }
+    },
+    [selected],
+  );
 
-    return cols;
-  }, [windowData]);
+  const groupedTabs = useMemo(() => groupTabsByLevel(windowData), [windowData]);
+  const columnsData = useMemo(() => buildColumnsData(windowData), [windowData]);
 
   const value = useMemo(
     () => ({
       getWindow: Metadata.getWindow,
       getColumns: Metadata.getColumns,
-      windowId: id,
+      windowId,
       recordId,
       loading,
       error,
       groupedTabs,
-      windowData: windowData ?? initialState.windowData,
+      windowData,
       columnsData,
+      selectRecord,
+      selected,
     }),
-    [error, groupedTabs, id, loading, recordId, windowData, columnsData],
+    [
+      windowId,
+      recordId,
+      loading,
+      error,
+      groupedTabs,
+      windowData,
+      columnsData,
+      selectRecord,
+      selected,
+    ],
   );
-
-  useEffect(() => {
-    if (token) {
-      Metadata.authorize(token);
-      Metadata.initialize();
-    }
-  }, [token]);
 
   return (
     <MetadataContext.Provider value={value}>

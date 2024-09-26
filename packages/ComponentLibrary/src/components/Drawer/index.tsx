@@ -1,21 +1,24 @@
-import { useCallback, useState } from 'react';
-import { styles } from './styles';
-import DrawerSection from './DrawerSection';
-import { DrawerProps } from './types';
-import DrawerHeader from './Header';
-import { Box } from '..';
+import { useCallback, useMemo, useState } from "react";
+import { styles } from "./styles";
+import DrawerSection from "./DrawerSection";
+import { DrawerProps } from "./types";
+import DrawerHeader from "./Header";
+import { Box } from "..";
 
 const Drawer = ({ items, logo, title, onClick }: DrawerProps) => {
   const [open, setOpen] = useState<boolean>(true);
-  const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
+  const handleHeaderClick = useCallback(() => setOpen((prev) => !prev), []);
 
-  const drawerStyle = {
-    ...styles.drawerPaper,
-    width: open ? '16.25rem' : '3.5rem',
-    height: '100vh',
-    transition: 'width 0.5s ease-in-out',
-    display: 'flex',
-  };
+  const drawerStyle = useMemo(
+    () => ({
+      ...styles.drawerPaper,
+      width: open ? "16.25rem" : "3.5rem",
+      height: "100vh",
+      transition: "width 0.5s ease-in-out",
+      display: "flex",
+    }),
+    [open]
+  );
 
   return (
     <div style={drawerStyle}>
@@ -26,14 +29,16 @@ const Drawer = ({ items, logo, title, onClick }: DrawerProps) => {
         onClick={handleHeaderClick}
       />
       <Box sx={styles.drawerContent}>
-        {items.map(item => (
-          <DrawerSection
-            key={item.id}
-            item={item}
-            onClick={onClick}
-            open={open}
-          />
-        ))}
+        {Array.isArray(items)
+          ? items.map((item) => (
+              <DrawerSection
+                key={item.id}
+                item={item}
+                onClick={onClick}
+                open={open}
+              />
+            ))
+          : null}
       </Box>
     </div>
   );
