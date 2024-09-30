@@ -37,6 +37,7 @@ const DateSelector: React.FC<DateSelectorProps> = memo(
         fullWidth
         name={name}
         type="date"
+        variant="standard"
         value={value || ''}
         onChange={handleChange}
         disabled={readOnly}
