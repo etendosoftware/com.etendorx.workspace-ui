@@ -20,7 +20,7 @@ export interface BaseFieldDefinition<T> {
   section?: string;
   required?: boolean;
   original: {
-    entity: string;
+    referencedEntity: string;
     fieldName: string;
   } & Field;
 }

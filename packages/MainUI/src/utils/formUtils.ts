@@ -26,7 +26,6 @@ export function mapColumnTypeToFieldType(column: Column): FieldType {
     case '20':
       return 'boolean';
     case '12':
-      return 'number';
     case '17':
     case '30':
     case '18':

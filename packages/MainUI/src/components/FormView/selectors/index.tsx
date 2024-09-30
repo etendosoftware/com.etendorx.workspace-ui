@@ -70,7 +70,7 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(
             <TableDirSelector
               value={field.value}
               label={field.label}
-              entity={field.original.entity}
+              entity={field.original.referencedEntity}
               onChange={onChange}
             />
           );
