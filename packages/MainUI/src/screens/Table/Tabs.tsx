@@ -44,7 +44,7 @@ export default function Tabs({ tabs }: { tabs: Tab[] }) {
           key={tab.id}
           onClick={refs.current[tab.id]}
           sx={buttonSx(tab, activeKey)}>
-          {tab._identifier}
+          {tab.name}
         </Button>
       ))}
       <DynamicTable tab={active} />
