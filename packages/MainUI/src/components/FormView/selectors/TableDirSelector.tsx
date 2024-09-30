@@ -26,8 +26,6 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
     [records],
   );
 
-  console.log(records);
-
   useEffect(() => {
     if (value && options.length > 0) {
       const option = options.find(opt => {
