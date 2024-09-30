@@ -12,8 +12,8 @@ import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { defaultFill, styles, sx } from '../styles';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import InfoIcon from '../../../../../ComponentLibrary/src/assets/icons/info.svg';
-import FormFieldGroup from '../FormField';
 import { FormSectionProps } from '../types';
+import FormFieldGroup from '../selectors';
 
 const FormSection: React.FC<FormSectionProps> = ({
   sectionName,

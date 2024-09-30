@@ -1,10 +1,10 @@
-import { useCallback, useMemo, useEffect, useState } from 'react';
+import React, { useCallback, useMemo, useEffect, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import Select from '../../../../ComponentLibrary/src/components/Input/Select';
-import SearchOutlined from '../../../../ComponentLibrary/src/assets/icons/search.svg';
-import { theme } from '../../../../ComponentLibrary/src/theme';
-import { TableDirSelectorProps } from './types';
+import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
+import SearchOutlined from '../../../../../ComponentLibrary/src/assets/icons/search.svg';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
+import { TableDirSelectorProps } from '../types';
 import { Option } from '@workspaceui/componentlibrary/components/Input/Select/types';
 
 const TableDirSelector: React.FC<TableDirSelectorProps> = ({
@@ -30,13 +30,17 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
     if (value && options.length > 0) {
       const option = options.find(opt => {
         if (typeof value === 'object' && 'id' in value) {
-          return opt.id === value.id;
+          return opt.id === value.id || opt.value === value.id;
         }
-        return opt.id === String(value);
+        return opt.id === String(value) || opt.value === String(value);
       });
       if (option) {
         setSelectedValue(option);
+      } else {
+        setSelectedValue(null);
       }
+    } else {
+      setSelectedValue(null);
     }
   }, [value, options]);
 
@@ -62,6 +66,9 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
       onChange={handleChange}
       value={selectedValue}
       getOptionLabel={(option: Option) => option.title}
+      isOptionEqualToValue={(option, value) =>
+        option.id === value.id || option.value === value.id
+      }
     />
   );
 };

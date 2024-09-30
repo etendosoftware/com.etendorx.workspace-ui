@@ -12,6 +12,7 @@ export interface GridItemProps {
 }
 
 export type FormData = Record<string, FieldDefinition | Section>;
+
 export interface FormViewProps {
   data: FormData;
   windowMetadata: MappedData;
@@ -31,10 +32,7 @@ export interface FormSectionProps {
   onAccordionChange: (sectionId: string, isExpanded: boolean) => void;
   onHover: (sectionName: string | null) => void;
   hoveredSection: string | null;
-  onInputChange: (
-    name: string,
-    value: string | number | boolean | string[] | Date,
-  ) => void;
+  onInputChange: (name: string, value: FieldValue) => void;
   sectionRef: React.Ref<HTMLDivElement>;
   gridItemProps?: GridItemProps;
   dottedLineInterval?: number;
@@ -42,20 +40,16 @@ export interface FormSectionProps {
   children?: ReactNode;
 }
 
-export type FieldValue = FieldDefinition['value'];
+export type FieldValue = string | number | boolean | string[] | Date | null;
 
-export interface FormFieldProps {
+export interface FormFieldGroupProps {
   name: string;
   field: FieldDefinition;
-  onChange: (name: string, value: FieldDefinition['value']) => void;
-  readOnly?: boolean;
+  onChange: (name: string, value: FieldValue) => void;
   entityName?: string;
   accessor?: string;
   windowMetadata?: WindowMetadata;
-}
-
-export interface FormFieldGroupProps extends FormFieldProps {
-  readOnly: boolean;
+  readOnly?: boolean;
 }
 
 export interface FieldLabelProps {
@@ -88,10 +82,9 @@ export interface NoteSectionProps {
 }
 
 // TableDir Selector
-
 export interface TableDirSelectorProps {
   label: string;
-  value: string | number | boolean | Date | string[] | { id: string } | null;
+  value: FieldValue;
   entity: string;
   onChange: (name: string, value: string) => void;
 }
@@ -100,4 +93,32 @@ export interface Option {
   id: string;
   title: string;
   value: string;
+}
+
+export interface BooleanSelectorProps {
+  label?: string;
+  value?: boolean;
+  readOnly?: boolean;
+  onChange?: (value: boolean) => void;
+}
+
+export interface NumberSelectorProps {
+  name: string;
+  value: number;
+  onChange: (name: string, value: number) => void;
+  readOnly?: boolean;
+}
+
+export interface DateSelectorProps {
+  name: string;
+  value: string;
+  onChange: (name: string, value: string) => void;
+  readOnly?: boolean;
+}
+
+export interface SelectSelectorProps {
+  name: string;
+  title: string;
+  onChange: (name: string, value: string) => void;
+  readOnly?: boolean;
 }

@@ -16,9 +16,11 @@ export interface BaseFieldDefinition<T> {
   value: T;
   type: FieldType;
   label: string;
+  name: string;
   section?: string;
   required?: boolean;
   original: {
+    entity: string;
     fieldName: string;
   } & Field;
 }

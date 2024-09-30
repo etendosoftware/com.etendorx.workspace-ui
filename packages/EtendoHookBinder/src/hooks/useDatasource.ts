@@ -43,7 +43,14 @@ export function useDatasource(entity: string, params?: DatasourceOptions) {
       if (response.error) {
         throw new Error(response.error.message);
       } else {
-        setRecords(prev => [...prev, ...response.data]);
+        const newRecords = response.data;
+        setRecords(prevRecords => {
+          const recordSet = new Set(prevRecords.map(r => r.id));
+          const uniqueNewRecords = newRecords.filter(
+            (r: { id: unknown }) => !recordSet.has(r.id),
+          );
+          return [...prevRecords, ...uniqueNewRecords];
+        });
         setLoaded(true);
       }
     } catch (e) {
@@ -52,6 +59,10 @@ export function useDatasource(entity: string, params?: DatasourceOptions) {
       setLoading(false);
     }
   }, [_params, entity, page, pageSize]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const fetchMore = useCallback(() => {
     setPage(prev => prev + 1);

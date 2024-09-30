@@ -22,6 +22,8 @@ const CustomPaper: React.FC<PaperProps> = props => {
   return <Paper {...props} sx={styles.optionsContainer} />;
 };
 
+type OptionProps = React.HTMLAttributes<HTMLLIElement> & { key?: string };
+
 const Select: React.FC<ISelectInput> = ({
   title,
   iconLeft,
@@ -112,31 +114,30 @@ const Select: React.FC<ISelectInput> = ({
           sx: styles.listBox,
         }}
         onChange={handleSelectionChange}
-        renderOption={(props, option, { selected }) => (
-          <li
-            style={{
-              ...styles.optionContainer,
-              backgroundColor: selected ? PRIMARY_CONTRAST : undefined,
-            }}
-            {...props}>
-            <Typography
-              className="textOption"
-              color={
-                selected
-                  ? theme.palette.dynamicColor.dark
-                  : theme.palette.baselineColor.neutral[90]
-              }
+        renderOption={(props: OptionProps, option, { selected }) => {
+          const { key, ...otherProps } = props;
+          return (
+            <li
+              key={key}
               style={{
-                ...styles.optionText,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}>
-              {option.title}
-            </Typography>
-            {selected && <CheckCircleIcon style={styles.checkIcon} />}
-          </li>
-        )}
+                ...styles.optionContainer,
+                backgroundColor: selected ? PRIMARY_CONTRAST : undefined,
+              }}
+              {...otherProps}>
+              <Typography
+                className="textOption"
+                color={
+                  selected
+                    ? theme.palette.dynamicColor.dark
+                    : theme.palette.baselineColor.neutral[90]
+                }
+                style={styles.optionText}>
+                {option.title}
+              </Typography>
+              {selected && <CheckCircleIcon style={styles.checkIcon} />}
+            </li>
+          );
+        }}
       />
       {helperText && (
         <FormHelperText component="div" style={styles.helperTextContainer}>
