@@ -96,10 +96,10 @@ export interface Option {
 }
 
 export interface BooleanSelectorProps {
-  label?: string;
-  value?: boolean;
+  label: string;
   readOnly?: boolean;
-  onChange?: (value: boolean) => void;
+  checked?: boolean;
+  onChange?: (checked: boolean) => void;
 }
 
 export interface NumberSelectorProps {
