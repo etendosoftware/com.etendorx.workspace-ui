@@ -43,6 +43,8 @@ export default function Tabs({ tabs }: { tabs: Tab[] }) {
         <Button
           key={tab.id}
           onClick={refs.current[tab.id]}
+          title={tab.title}
+          aria-label={tab.title}
           sx={buttonSx(tab, activeKey)}>
           {tab.name}
         </Button>
