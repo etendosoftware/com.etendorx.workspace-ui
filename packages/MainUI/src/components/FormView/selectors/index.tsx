@@ -1,6 +1,7 @@
 import React, { memo, useCallback } from 'react';
 import { Box, Link } from '@mui/material';
 import { TextInputBase } from '@workspaceui/componentlibrary/src/components';
+import { useNavigate } from 'react-router-dom';
 import { styles, sx } from '../styles';
 import { FieldLabelProps, FieldValue, FormFieldGroupProps } from '../types';
 import TableDirSelector from './TableDirSelector';
@@ -30,9 +31,20 @@ const FieldLabel: React.FC<FieldLabelProps> = ({
 
 const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(
   ({ field, onChange, readOnly }) => {
+    const navigate = useNavigate();
+
     const handleLinkClick = useCallback(() => {
-      console.log(`Clicked on link for ${field.label}`);
-    }, [field.label]);
+      if (
+        field.type === 'tabledir' &&
+        field.value &&
+        typeof field.value === 'object' &&
+        'id' in field.value
+      ) {
+        const recordId = field.value.id;
+        const windowId = field.original.referencedWindowId;
+        navigate(`/window/${windowId}/${recordId}`);
+      }
+    }, [field, navigate]);
 
     const renderField = () => {
       switch (field.type) {

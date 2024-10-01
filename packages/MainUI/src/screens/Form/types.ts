@@ -21,6 +21,7 @@ export interface BaseFieldDefinition<T> {
   required?: boolean;
   original: {
     referencedEntity: string;
+    referencedWindowId: string;
     fieldName: string;
   } & Field;
 }
