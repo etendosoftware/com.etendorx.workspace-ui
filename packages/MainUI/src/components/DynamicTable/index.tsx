@@ -25,8 +25,9 @@ const DynamicTableContent = memo(function DynamicTableContent({
   const parent = selected[tab.level - 1];
 
   const query: DatasourceOptions = useMemo(() => {
-    const fieldName = tab.parentColumns[0];
+    const fieldName = tab.parentColumns[0] || 'id';
     const value = parent?.id || '';
+    const operator = 'equals';
 
     return value
       ? {
@@ -34,7 +35,7 @@ const DynamicTableContent = memo(function DynamicTableContent({
             {
               fieldName,
               value,
-              operator: 'equals',
+              operator,
             },
           ],
         }
