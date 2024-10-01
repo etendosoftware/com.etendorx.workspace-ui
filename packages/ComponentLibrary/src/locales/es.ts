@@ -1,5 +1,6 @@
 const es = {
   common: {
+    etendo: 'Etendo',
     cancel: 'Cancelar',
     confirm: 'Confirmar',
     register: 'Registrar',
@@ -35,6 +36,37 @@ const es = {
     content: {
       currentTitle:
         'Se espera que sus ingresos aumenten a finales de este año. Felicitaciones',
+    },
+  },
+  navigation: {
+    waterfall: {
+      activateAll: 'Activar todo',
+      deactivateAll: 'Desactivar todo',
+      tooltipButton: 'Tooltip de Cascada',
+      buttons: 'Botones',
+      customize: 'Personalizar',
+    },
+    configurationModal: {
+      tooltipButtonProfile: 'Configuración',
+    },
+    activityButton: {
+      tooltip: 'Actividad',
+    },
+    notificationModal: {
+      title: 'Notificaciones',
+      markAllAsRead: 'Marcar todo como leído',
+      emptyStateImageAlt: 'Sin Notificaciones',
+      emptyStateMessage: 'No tienes notificaciones',
+      emptyStateDescription:
+        '¡Genial! Estás al día con todo. Te notificaremos aquí si hay algo nuevo.',
+      actionButtonLabel: 'Configurar notificaciones',
+    },
+    profile: {
+      tooltipButtonProfile: 'Configuración de la cuenta',
+      passwordLabel: 'Contraseña',
+      newPasswordLabel: 'Nueva Contraseña',
+      confirmPasswordLabel: 'Confirmar Nueva Contraseña',
+      signOffTooltip: 'Cerrar sesión',
     },
   },
 };
