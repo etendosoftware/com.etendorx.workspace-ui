@@ -11,6 +11,7 @@ import { logger } from '../utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { Datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { login as doLogin } from '@workspaceui/etendohookbinder/src/api/authentication';
+import { HTTP_CODES } from '@workspaceui/etendohookbinder/src/api/constants';
 
 interface IUserContext {
   login: (username: string, password: string) => Promise<void>;
@@ -53,7 +54,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   useEffect(() => {
     const interceptor = (response: Response) => {
-      if (response.status === 401) {
+      if (response.status === HTTP_CODES.UNAUTHORIZED) {
         localStorage.removeItem('token');
         settoken(null);
         navigate('/login');
