@@ -4,7 +4,7 @@ import { Column } from '../api/types';
 
 export function useWindow(windowId: string) {
   const [windowData, setWindowData] = useState<Etendo.WindowMetadata>();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!windowId);
   const [error, setError] = useState<Error>();
   const [loaded, setLoaded] = useState(false);
 

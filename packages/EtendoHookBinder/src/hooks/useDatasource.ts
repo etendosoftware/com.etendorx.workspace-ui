@@ -6,13 +6,13 @@ const loadData = async (
   entity: string,
   page: number,
   pageSize: number,
-  _params: string,
+  params: DatasourceOptions,
 ) => {
   const startRow = (page - 1) * pageSize;
   const endRow = page * pageSize - 1;
 
   const { response } = await Datasource.get(entity, {
-    ...JSON.parse(_params),
+    ...params,
     startRow,
     endRow,
   });
@@ -20,8 +20,9 @@ const loadData = async (
   return response;
 };
 
-export function useDatasource(entity: string, params?: DatasourceOptions) {
-  const _params = JSON.stringify(params ?? {});
+const defaultParams = {};
+
+export function useDatasource(entity: string, params: DatasourceOptions = defaultParams) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
@@ -38,7 +39,7 @@ export function useDatasource(entity: string, params?: DatasourceOptions) {
       setError(undefined);
       setLoading(true);
 
-      const response = await loadData(entity, page, pageSize, _params);
+      const response = await loadData(entity, page, pageSize, params);
 
       if (response.error) {
         throw new Error(response.error.message);
@@ -58,11 +59,7 @@ export function useDatasource(entity: string, params?: DatasourceOptions) {
     } finally {
       setLoading(false);
     }
-  }, [_params, entity, page, pageSize]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  }, [params, entity, page, pageSize]);
 
   const fetchMore = useCallback(() => {
     setPage(prev => prev + 1);
