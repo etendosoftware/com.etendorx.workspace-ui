@@ -1,67 +1,93 @@
-import { useCallback, useMemo, useState } from 'react';
-import { Collapse, Box } from '@mui/material';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Collapse, Popper, Paper, ClickAwayListener, Grow } from '@mui/material';
 import { styles } from '../styles';
 import MenuTitle from '../MenuTitle';
 import { theme } from '../../../theme';
 import { DrawerSectionProps } from '../types';
+import { useParams } from 'react-router-dom';
+import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 
-const ActualDrawerSection = ({ item, onClick }: DrawerSectionProps) => {
-  const isMainSection = !!item.children?.length;
-  const isSelected = false;
-  const [expanded, setExpanded] = useState(false);
+const findActive = (windowId: string | undefined, items: Menu[] | undefined = []): boolean => {
+  if (!items || !windowId) return false;
+  else
+    return !!items.find(item => {
+      return item.windowId === windowId || findActive(windowId, item.children);
+    });
+};
 
-  const handleClick = useCallback(() => {
-    if (item.children?.length) {
-      setExpanded(prev => !prev);
-    } else if (item.window?.id) {
-      onClick(`/window/${item.window.id}`);
-    } else {
-      console.error('DrawerSection: unexpected type');
-    }
-  }, [item, onClick]);
+export default function DrawerSection({ item, onClick, open }: DrawerSectionProps) {
+  const { windowId } = useParams();
+  const isSelected = Boolean(windowId?.length && item.windowId === windowId);
+  const [expanded, setExpanded] = useState(isSelected || findActive(windowId, item.children));
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const popperOpen = Boolean(anchorEl);
+
+  const handleClick = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      if (!open) {
+        setAnchorEl(anchorEl ? null : event.currentTarget);
+      } else if (item.children?.length) {
+        setExpanded(prev => !prev);
+      } else if (item.windowId) {
+        onClick(`/window/${item.windowId}`);
+      } else {
+        console.error('DrawerSection: unexpected type');
+      }
+    },
+    [item, onClick, open, anchorEl],
+  );
+
+  const handleClose = useCallback(() => {
+    setAnchorEl(null);
+  }, []);
+
+  const handleClickAndClose = useCallback(
+    (path: string) => {
+      onClick(path);
+      handleClose();
+    },
+    [handleClose, onClick],
+  );
 
   const mainStyle = useMemo(
     () => ({
       ...styles.drawerSectionBox,
-      backgroundColor:
-        isMainSection && isSelected
-          ? theme.palette.baselineColor.neutral[10]
-          : 'transparent',
+      ...(!open && styles.closeSection),
+      background: expanded ? theme.palette.dynamicColor.contrastText : 'transparent',
     }),
-    [isMainSection, isSelected],
+    [expanded, open],
   );
+
+  useEffect(() => {
+    setExpanded(isSelected || findActive(windowId, item.children));
+  }, [isSelected, item.children, windowId]);
 
   return (
-    <Box sx={mainStyle}>
-      <MenuTitle
-        item={item}
-        onClick={handleClick}
-        selected={isSelected}
-        expanded={expanded}
-      />
-      {item.children ? (
+    <div style={mainStyle}>
+      <MenuTitle item={item} onClick={handleClick} selected={isSelected} expanded={expanded} open={open} />
+      {item.children && open && (
         <Collapse in={expanded} timeout="auto">
-          <Box sx={styles.contentBox}>
-            {item.children.map(subitem => (
-              <DrawerSection
-                key={subitem.id}
-                item={subitem}
-                onClick={onClick}
-              />
-            ))}
-          </Box>
+          {item.children.map(subitem => (
+            <DrawerSection key={subitem.id} item={subitem} onClick={onClick} open={open} />
+          ))}
         </Collapse>
-      ) : null}
-    </Box>
+      )}
+      <Popper open={popperOpen} anchorEl={anchorEl} placement="right-start" transition>
+        {({ TransitionProps }) => (
+          <Grow {...TransitionProps} timeout={300}>
+            <Paper style={styles.popper}>
+              <ClickAwayListener onClickAway={handleClose}>
+                <div style={styles.popperContent}>
+                  <MenuTitle item={item} onClick={handleClick} selected={isSelected} expanded={expanded} open={true} />
+                  {item.children?.map(subitem => (
+                    <DrawerSection key={subitem.id} item={subitem} onClick={handleClickAndClose} open={true} />
+                  ))}
+                </div>
+              </ClickAwayListener>
+            </Paper>
+          </Grow>
+        )}
+      </Popper>
+    </div>
   );
-};
-
-const DrawerSection = (props: DrawerSectionProps) => {
-  if (props.item) {
-    return <ActualDrawerSection {...props} />;
-  }
-
-  return null;
-};
-
-export default DrawerSection;
+}

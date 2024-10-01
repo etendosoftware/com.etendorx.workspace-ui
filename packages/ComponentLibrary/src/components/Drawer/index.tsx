@@ -1,50 +1,46 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Drawer as MuiDrawer, Box } from '@mui/material';
 import { styles } from './styles';
 import DrawerSection from './DrawerSection';
 import { DrawerProps } from './types';
 import DrawerHeader from './Header';
+import { Box } from '..';
 
 const Drawer = ({ items, logo, title, onClick }: DrawerProps) => {
   const [open, setOpen] = useState<boolean>(true);
   const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
 
-  const paperProps = useMemo(
+  const drawerStyle = useMemo(
     () => ({
-      className: 'animated-width',
-      sx: {
-        ...styles.drawerPaper,
-        width: open ? styles.drawerWidth : styles.drawerWidthClosed,
-        overflowX: 'hidden',
-      },
+      ...styles.drawerPaper,
+      width: open ? '16.25rem' : '3.5rem',
+      height: '100vh',
+      transition: 'width 0.5s ease-in-out',
+      display: 'flex',
     }),
     [open],
   );
 
   return (
-    <>
-      <MuiDrawer
-        variant="permanent"
+    <div style={drawerStyle}>
+      <DrawerHeader
+        logo={logo}
+        title={title}
         open={open}
-        PaperProps={paperProps}
-        sx={styles.drawer}>
-        <DrawerHeader
-          logo={logo}
-          title={title}
-          open={open}
-          onClick={handleHeaderClick}
-        />
-        <Box sx={styles.subsectionsContainer}>
-          {items.map(item => (
-            <DrawerSection key={item.id} item={item} onClick={onClick} />
-          ))}
-        </Box>
-      </MuiDrawer>
-      <Box
-        width={open ? styles.drawerWidth : styles.drawerWidthClosed}
-        className="animated-width"
+        onClick={handleHeaderClick}
       />
-    </>
+      <Box sx={styles.drawerContent}>
+        {Array.isArray(items)
+          ? items.map(item => (
+              <DrawerSection
+                key={item.id}
+                item={item}
+                onClick={onClick}
+                open={open}
+              />
+            ))
+          : null}
+      </Box>
+    </div>
   );
 };
 

@@ -8,6 +8,8 @@ import Login from './screens/Login';
 import Form from './screens/Form';
 import Layout from './components/layout';
 import './index.css';
+import DynamicFormView from './screens/Form/DynamicFormView';
+import React from 'react';
 
 const router = createBrowserRouter([
   {
@@ -33,14 +35,12 @@ const router = createBrowserRouter([
             ],
           },
           {
-            path: 'window/:id',
+            path: 'window/:windowId/:recordId',
+            Component: DynamicFormView,
+          },
+          {
+            path: 'window/:windowId',
             Component: DynamicTable,
-            children: [
-              {
-                path: ':recordId',
-                Component: Form,
-              },
-            ],
           },
         ],
       },

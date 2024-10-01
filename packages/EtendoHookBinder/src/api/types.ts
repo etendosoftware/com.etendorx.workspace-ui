@@ -1,6 +1,4 @@
 export type WindowId = string;
-export type ColumnId = string;
-export type Metadata = string;
 
 export interface CachedData<T> {
   updatedAt: number;
@@ -12,7 +10,7 @@ export interface CacheStore<T> extends Map<string, CachedData<T>> {}
 export interface Criteria {
   fieldName: string;
   operator: string;
-  value: string;
+  value?: string;
 }
 
 export interface DatasourceParams {
@@ -58,6 +56,10 @@ export interface GridProps {
 }
 
 export interface Field {
+  showInGridView: boolean;
+  fieldGroup$_identifier: string;
+  fieldGroup: string;
+  column: Record<string, string>;
   name: string;
   id: string;
   title: string;
@@ -72,14 +74,48 @@ export interface Field {
 }
 
 export interface Column {
+  fieldGroup?: string;
   header: string;
   id: string;
   accessorFn: (v: Record<string, unknown>) => unknown;
+  columnName: string;
+  isMandatory?: boolean;
+  name: string;
+  reference?: string;
+  _identifier: string;
+  [key: string]: unknown;
 }
 
-export interface ViewStandardProperties extends Record<string, unknown> {
-  // Define known properties if possible
+export interface MappedField {
+  name: string;
+  label: string;
+  type: FieldType;
+  referencedTable?: string;
+  required?: boolean;
 }
+
+export type FieldType =
+  | 'text'
+  | 'number'
+  | 'date'
+  | 'boolean'
+  | 'select'
+  | 'tabledir';
+
+export interface MappedTab {
+  id: string;
+  name: string;
+  fields: Record<string, MappedField>;
+}
+
+export interface MappedData {
+  id: string;
+  name: string;
+  tabs: MappedTab[];
+  fields?: MappedField[];
+}
+
+export interface ViewStandardProperties extends Record<string, unknown> {}
 
 export interface WindowMetadataProperties {
   windowId: string;
@@ -103,12 +139,23 @@ export interface WindowMetadataProperties {
   };
 }
 
+export interface Tab {
+  name: string;
+  title: string;
+  parentColumns: string[];
+  id: string;
+  entityName: string;
+  fields: Record<string, Field>;
+  level: number;
+  _identifier: string;
+}
+
 export interface WindowMetadata {
   id: string;
   name: string;
   superClass?: string;
   properties: WindowMetadataProperties;
-  tabs: Record<string, string>[];
+  tabs: Tab[];
 }
 
 export interface WindowMetadataMap extends Record<string, WindowMetadata> {}
@@ -140,10 +187,10 @@ export interface Menu {
   icon?: string | null;
   id: string;
   name: string;
+  windowId?: string;
   window?: Window | null;
   action?: Action[keyof Action] | null;
 }
-
 
 export enum Action {
   OBUIAPPOpenView = 'OBUIAPP_OpenView',

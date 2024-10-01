@@ -14,7 +14,6 @@ import Nav from './Nav/Nav';
 import ProfileModal from './ProfileModal/ProfileModal';
 import WaterfallModal from './Waterfall/WaterfallModal';
 import ConfigurationModalCustom from './ConfigurationModal';
-import SelectCustom from './Input/Select';
 import NotificationBase from './NotificationsButton';
 import NotificationModalCustom from './NotificationsModal';
 import TagMUI from './Tag';
@@ -41,7 +40,6 @@ const Navbar = Nav;
 const Profile = ProfileModal;
 const Waterfall = WaterfallModal;
 const ConfigurationModal = ConfigurationModalCustom;
-const Select = SelectCustom;
 const NotificationButton = NotificationBase;
 const NotificationModal = NotificationModalCustom;
 const Tag = TagMUI;
@@ -65,7 +63,6 @@ export {
   Profile,
   Waterfall,
   ConfigurationModal,
-  Select,
   NotificationButton,
   NotificationModal,
   Tag,

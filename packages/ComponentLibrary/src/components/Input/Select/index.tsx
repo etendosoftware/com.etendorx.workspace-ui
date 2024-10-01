@@ -22,6 +22,8 @@ const CustomPaper: React.FC<PaperProps> = props => {
   return <Paper {...props} sx={styles.optionsContainer} />;
 };
 
+type OptionProps = React.HTMLAttributes<HTMLLIElement> & { key?: string };
+
 const Select: React.FC<ISelectInput> = ({
   title,
   iconLeft,
@@ -89,14 +91,6 @@ const Select: React.FC<ISelectInput> = ({
         }}
         label={title}
         variant="standard"
-        helperText={
-          <FormHelperText style={styles.helperTextContainer}>
-            {helperText?.icon && helperText?.icon}
-            {helperText?.label && (
-              <span style={styles.helperText}>{helperText?.label}</span>
-            )}
-          </FormHelperText>
-        }
         onChange={handleInputChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
@@ -105,46 +99,55 @@ const Select: React.FC<ISelectInput> = ({
   );
 
   return (
-    <Autocomplete
-      {...props}
-      disabled={disabled}
-      options={options}
-      getOptionLabel={option => option.title}
-      clearIcon={<CancelIcon style={styles.dropdownIcons} />}
-      popupIcon={<ExpandMoreIcon style={styles.dropdownIcons} />}
-      renderInput={renderInput}
-      sx={styles.autocomplete}
-      PaperComponent={CustomPaper}
-      ListboxProps={{
-        sx: styles.listBox,
-      }}
-      onChange={handleSelectionChange}
-      renderOption={(props, option, { selected }) => (
-        <li
-          style={{
-            ...styles.optionContainer,
-            backgroundColor: selected ? PRIMARY_CONTRAST : undefined,
-          }}
-          {...props}>
-          <Typography
-            className="textOption"
-            color={
-              selected
-                ? theme.palette.dynamicColor.dark
-                : theme.palette.baselineColor.neutral[90]
-            }
-            style={{
-              ...styles.optionText,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}>
-            {option.title}
-          </Typography>
-          {selected && <CheckCircleIcon style={styles.checkIcon} />}
-        </li>
+    <>
+      <Autocomplete
+        {...props}
+        disabled={disabled}
+        options={options}
+        getOptionLabel={option => option.title}
+        clearIcon={<CancelIcon style={styles.dropdownIcons} />}
+        popupIcon={<ExpandMoreIcon style={styles.dropdownIcons} />}
+        renderInput={renderInput}
+        sx={styles.autocomplete}
+        PaperComponent={CustomPaper}
+        ListboxProps={{
+          sx: styles.listBox,
+        }}
+        onChange={handleSelectionChange}
+        renderOption={(props: OptionProps, option, { selected }) => {
+          const { key, ...otherProps } = props;
+          return (
+            <li
+              key={key}
+              style={{
+                ...styles.optionContainer,
+                backgroundColor: selected ? PRIMARY_CONTRAST : undefined,
+              }}
+              {...otherProps}>
+              <Typography
+                className="textOption"
+                color={
+                  selected
+                    ? theme.palette.dynamicColor.dark
+                    : theme.palette.baselineColor.neutral[90]
+                }
+                style={styles.optionText}>
+                {option.title}
+              </Typography>
+              {selected && <CheckCircleIcon style={styles.checkIcon} />}
+            </li>
+          );
+        }}
+      />
+      {helperText && (
+        <FormHelperText component="div" style={styles.helperTextContainer}>
+          {helperText.icon}
+          {helperText.label && (
+            <span style={styles.helperText}>{helperText.label}</span>
+          )}
+        </FormHelperText>
       )}
-    />
+    </>
   );
 };
 

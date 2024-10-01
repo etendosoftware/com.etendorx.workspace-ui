@@ -1,5 +1,5 @@
 import { css } from '@mui/material';
-import { theme } from '../../theme';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
 
 const styles = {
   loader: css({
@@ -16,7 +16,6 @@ const styles = {
   container: css({
     overflow: 'auto',
     flex: 1,
-    padding: theme.spacing(1),
     position: 'relative',
     display: 'flex',
     flexDirection: 'column',

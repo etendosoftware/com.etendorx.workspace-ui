@@ -1,7 +1,7 @@
 import { Theme } from '@emotion/react';
 import { SxProps } from '@mui/material';
 import { CSSProperties } from 'react';
-import { theme } from '../../theme';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
 
 export const defaultFill = theme.palette.dynamicColor.main;
 export const noteColors = [
@@ -60,6 +60,18 @@ export const styles: { [key: string]: CSSProperties } = {
 };
 
 export const sx: { [key: string]: SxProps<Theme> } = {
+  linkStyles: {
+    fontSize: '0.875rem',
+    fontWeight: '600',
+    lineHeight: '1rem',
+    color: theme.palette.dynamicColor.main,
+    textDecoration: 'none',
+    paddingRight: '0.5rem',
+    cursor: 'pointer',
+    '&:hover': {
+      textDecoration: 'underline',
+    },
+  },
   accordion: {
     width: '100%',
     marginTop: '0.5rem',
@@ -104,8 +116,6 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     gap: '0.5rem',
   },
   iconButton: {
-    width: '2rem',
-    height: '2rem',
     background: theme.palette.dynamicColor.contrastText,
   },
   chevronButton: {

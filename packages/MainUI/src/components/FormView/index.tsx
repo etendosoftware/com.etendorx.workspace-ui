@@ -6,29 +6,22 @@ import React, {
   useEffect,
 } from 'react';
 import { Box, Grid } from '@mui/material';
-import {
-  Organization,
-  FieldDefinition,
-  Section,
-} from '../../../../storybook/src/stories/Components/Table/types';
 import { FormViewProps } from './types';
-import PrimaryTabs from '../PrimaryTab';
-import { TabItem } from '../PrimaryTab/types';
-import ChevronDown from '../../assets/icons/chevron-down.svg';
-import { theme } from '../../theme';
+import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
+import { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
 import SectionRenderer from './Sections/sectionRendered';
-
-export const defaultIcon = (
-  <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
-);
+import { Section, FieldDefinition } from 'src/screens/Form/types';
+import type { FormData } from './types';
+import { defaultIcon } from '../../constants/iconConstants';
 
 const FormView: React.FC<FormViewProps> = ({
   data,
+  onChange,
   readOnly = false,
   gridItemProps,
   dottedLineInterval,
 }) => {
-  const [formData, setFormData] = useState<Organization>(data);
+  const [formData, setFormData] = useState<FormData>(data);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('');
@@ -110,8 +103,9 @@ const FormView: React.FC<FormViewProps> = ({
           value: value,
         } as FieldDefinition,
       }));
+      onChange?.(formData);
     },
-    [],
+    [formData, onChange],
   );
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
@@ -131,7 +125,12 @@ const FormView: React.FC<FormViewProps> = ({
   );
 
   return (
-    <Box display="flex" flexDirection="column" height="100%" width="100%">
+    <Box
+      display="flex"
+      flexDirection="column"
+      height="100%"
+      width="100%"
+      padding="0 0.5rem 0.5rem 0.5rem">
       <Box flexShrink={1}>
         <PrimaryTabs
           tabs={tabs}

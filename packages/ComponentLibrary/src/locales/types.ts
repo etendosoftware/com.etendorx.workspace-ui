@@ -1,5 +1,6 @@
 export type TranslationKeys = {
   common: {
+    etendo: string;
     cancel: string;
     confirm: string;
     register: string;
@@ -34,6 +35,36 @@ export type TranslationKeys = {
     };
     content: {
       currentTitle: string;
+    };
+  };
+  navigation: {
+    waterfall: {
+      activateAll: string;
+      deactivateAll: string;
+      tooltipButton: string;
+      buttons: string;
+      customize: string;
+    };
+    configurationModal: {
+      tooltipButtonProfile: string;
+    };
+    activityButton: {
+      tooltip: string;
+    };
+    notificationModal: {
+      title: string;
+      markAllAsRead: string;
+      emptyStateImageAlt: string;
+      emptyStateMessage: string;
+      emptyStateDescription: string;
+      actionButtonLabel: string;
+    };
+    profile: {
+      tooltipButtonProfile: string;
+      passwordLabel: string;
+      newPasswordLabel: string;
+      confirmPasswordLabel: string;
+      signOffTooltip: string;
     };
   };
 };

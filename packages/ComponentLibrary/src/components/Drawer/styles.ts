@@ -6,7 +6,6 @@ const DRAWER_WIDTH_CLOSED = 56;
 
 export const styles = {
   drawer: {
-    flexShrink: 0,
     whiteSpace: 'nowrap',
     boxSizing: 'border-box',
   },
@@ -16,7 +15,16 @@ export const styles = {
     borderTopRightRadius: '0.75rem',
     borderBottomRightRadius: '0.75rem',
     border: '0, 1px, 0, 0',
+    display: 'flex',
+    flexDirection: 'column' as React.CSSProperties['flexDirection'],
+    overflow: 'hidden',
   },
+  drawerContent: css({
+    flexGrow: 1,
+    overflowY: 'scroll',
+    overflowX: 'hidden',
+    scrollbarWidth: 'none',
+  }),
   drawerHeader: {
     height: '3.5rem',
     display: 'flex',
@@ -50,8 +58,6 @@ export const styles = {
   },
   listItemButton: {
     display: 'flex',
-    gap: '0.5rem',
-    width: '100%',
     alignItems: 'center',
     cursor: 'pointer',
     borderRadius: '0.5rem',
@@ -60,16 +66,20 @@ export const styles = {
     padding: '0.5rem',
     color: theme.palette.baselineColor.neutral[90],
     transition: 'background-color 500ms, color 500ms',
+    gap: '0.25rem',
     '&:hover': {
-      backgroundColor: theme.palette.dynamicColor.contrastText,
-      color: theme.palette.dynamicColor.main,
+      backgroundColor: theme.palette.dynamicColor.main,
+      color: theme.palette.baselineColor.neutral[0],
+    },
+    '& span': {
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
     },
   },
   listItemInnerContentText: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.5rem',
-    width: '100%',
     overflow: 'hidden',
     justifyContent: 'flex-start',
   },
@@ -85,6 +95,21 @@ export const styles = {
     '&:hover': {
       backgroundColor: theme.palette.baselineColor.neutral[90],
     },
+  },
+  popper: {
+    marginLeft: '0.75rem',
+    borderRadius: '0.75rem',
+  },
+  popperContent: {
+    padding: '0.5rem',
+  },
+  iconsClosed: {
+    borderRadius: '5rem',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    maxWidth: '2.25rem',
+    maxHeight: '2.25rem',
   },
   listItemIconContent: {
     width: '1rem',
@@ -116,9 +141,12 @@ export const styles = {
   drawerWidth: DRAWER_WIDTH,
   drawerWidthClosed: DRAWER_WIDTH_CLOSED,
   drawerSectionBox: {
-    width: '100%',
+    margin: '0.5rem 0.5rem 0rem 0.5rem',
     borderRadius: '0.5rem',
-    overflow: 'hidden',
+  },
+  closeSection: {
+    display: 'flex',
+    justifyContent: 'center',
   },
   drawerHeaderTitle: {
     fontWeight: 600,
@@ -150,9 +178,8 @@ export const styles = {
   },
   subsectionsContainer: {
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'column' as React.CSSProperties['flexDirection'],
     gap: '0.5rem',
-    width: '100%',
     margin: 0,
     padding: '0.5rem',
   },
@@ -160,7 +187,6 @@ export const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.5rem',
-    width: '100%',
     marginTop: '0.5rem',
     alignItems: 'flex-start',
   },

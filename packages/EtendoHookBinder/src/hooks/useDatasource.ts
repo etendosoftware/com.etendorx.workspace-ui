@@ -1,29 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DatasourceOptions, WindowMetadata } from '../api/types';
+import { DatasourceOptions } from '../api/types';
 import { Datasource } from '../api/datasource';
-
-const mapById = (
-  acum: { [x: string]: unknown },
-  current: { id: string | number },
-) => {
-  acum[current.id] = current;
-
-  return acum;
-};
 
 const loadData = async (
   entity: string,
-  windowId: string,
-  tabId: string,
   page: number,
   pageSize: number,
-  _params: string,
+  params: DatasourceOptions,
 ) => {
   const startRow = (page - 1) * pageSize;
   const endRow = page * pageSize - 1;
 
-  const { response } = await Datasource.get(entity, windowId, tabId, {
-    ...JSON.parse(_params),
+  const { response } = await Datasource.get(entity, {
+    ...params,
     startRow,
     endRow,
   });
@@ -31,17 +20,11 @@ const loadData = async (
   return response;
 };
 
-export function useDatasource(
-  windowMetadata: WindowMetadata,
-  params: DatasourceOptions,
-) {
-  const _params = JSON.stringify(params);
-  const windowId = windowMetadata?.id;
-  const entity = windowMetadata?.tabs[0].entityName;
-  const tabId = windowMetadata?.tabs[0].id;
-  const [loading, setLoading] = useState(true);
+const defaultParams = {};
+
+export function useDatasource(entity: string, params: DatasourceOptions = defaultParams) {
+  const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [data, setData] = useState<Record<string, Record<string, unknown>>>({});
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [page, setPage] = useState(1);
@@ -49,34 +32,34 @@ export function useDatasource(
 
   const load = useCallback(async () => {
     try {
-      if (!entity || !windowId || !tabId) {
+      if (!entity) {
         return;
       }
 
       setError(undefined);
       setLoading(true);
 
-      const response = await loadData(
-        entity,
-        windowId,
-        tabId,
-        page,
-        pageSize,
-        _params,
-      );
+      const response = await loadData(entity, page, pageSize, params);
 
       if (response.error) {
         throw new Error(response.error.message);
       } else {
-        const _data = response.data.reduce(mapById, {});
-
-        setData(prev => ({ ...prev, ..._data }));
+        const newRecords = response.data;
+        setRecords(prevRecords => {
+          const recordSet = new Set(prevRecords.map(r => r.id));
+          const uniqueNewRecords = newRecords.filter(
+            (r: { id: unknown }) => !recordSet.has(r.id),
+          );
+          return [...prevRecords, ...uniqueNewRecords];
+        });
         setLoaded(true);
       }
     } catch (e) {
       setError(e as Error);
+    } finally {
+      setLoading(false);
     }
-  }, [_params, entity, page, pageSize, tabId, windowId]);
+  }, [params, entity, page, pageSize]);
 
   const fetchMore = useCallback(() => {
     setPage(prev => prev + 1);
@@ -90,15 +73,9 @@ export function useDatasource(
     load();
   }, [load]);
 
-  useEffect(() => {
-    setRecords(Object.values(data));
-    setLoading(false);
-  }, [data]);
-
   return useMemo(
     () => ({
       loading,
-      data,
       error,
       fetchMore,
       changePageSize,
@@ -106,6 +83,6 @@ export function useDatasource(
       records,
       loaded,
     }),
-    [data, error, loading, fetchMore, changePageSize, load, records, loaded],
+    [error, loading, fetchMore, changePageSize, load, records, loaded],
   );
 }

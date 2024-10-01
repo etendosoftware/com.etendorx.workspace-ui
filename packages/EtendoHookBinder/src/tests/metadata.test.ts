@@ -2,6 +2,6 @@ import { Metadata } from '../api/metadata';
 
 describe('Metadata module', () => {
   it('initializes correctly', () => {
-    expect(Metadata.initialize()).toBeTruthy();
+    expect(Metadata.client).toBeTruthy();
   });
 });

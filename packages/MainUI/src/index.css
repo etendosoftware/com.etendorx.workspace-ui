@@ -1,4 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+body {
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
 :root {
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
   --background-gradient: linear-gradient(180deg, #c6d3ff 30%, #f5f6fa 100%);
   line-height: 1.5;
   font-weight: 400;
@@ -6,6 +21,11 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
 }
 
 html,
@@ -20,13 +40,46 @@ body {
 #root {
   height: 100%;
   width: 100%;
+  overflow: hidden;
+  display: flex;
   background: var(--background-gradient);
 }
 
-.animated-width {
-  transition: width 300ms ease-in-out !important;
+#content {
+  flex: 1;
+  overflow: auto;
+  flex-direction: column;
+  position: relative;
 }
 
 .animated-transform {
   transition: transform 300ms ease-in-out !important;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  border: none;
+  -webkit-text-fill-color: black;
+  -webkit-box-shadow: 0px 0px 100vw #fff inset;
+  transition: background-color 200ms ease-in-out;
 }

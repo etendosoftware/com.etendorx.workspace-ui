@@ -7,13 +7,13 @@ import {
   Box,
   Grid,
 } from '@mui/material';
-import ChevronDown from '../../../assets/icons/chevron-down.svg';
-import { theme } from '../../../theme';
+import ChevronDown from '../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { defaultFill, styles, sx } from '../styles';
-import IconButton from '../../IconButton';
-import InfoIcon from '@mui/icons-material/Info';
-import FormFieldGroup from '../FormField';
+import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
+import InfoIcon from '../../../../../ComponentLibrary/src/assets/icons/info.svg';
 import { FormSectionProps } from '../types';
+import FormFieldGroup from '../selectors';
 
 const FormSection: React.FC<FormSectionProps> = ({
   sectionName,
@@ -56,6 +56,8 @@ const FormSection: React.FC<FormSectionProps> = ({
             fill={defaultFill}
             sx={sx.iconButton}
             className="main-icon-button"
+            height={16}
+            width={16}
             isHovered={hoveredSection === sectionName}>
             {sectionData.icon || <InfoIcon />}
           </IconButton>
