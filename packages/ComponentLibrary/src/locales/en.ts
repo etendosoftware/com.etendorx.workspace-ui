@@ -1,5 +1,6 @@
 const en = {
   common: {
+    etendo: 'Etendo',
     cancel: 'Cancel',
     confirm: 'Confirm',
     register: 'Register',
@@ -35,6 +36,37 @@ const en = {
     content: {
       currentTitle:
         'Its revenue is expected to increase later this year. Congratulations',
+    },
+  },
+  navigation: {
+    waterfall: {
+      activateAll: 'Activate all',
+      deactivateAll: 'Deactivate all',
+      tooltipButton: 'Waterfall Tooltip',
+      buttons: 'Buttons',
+      customize: 'Customize',
+    },
+    configurationModal: {
+      tooltipButtonProfile: 'Settings',
+    },
+    activityButton: {
+      tooltip: 'Activity',
+    },
+    notificationModal: {
+      title: 'Notifications',
+      markAllAsRead: 'Mark all as read',
+      emptyStateImageAlt: 'No Notifications',
+      emptyStateMessage: 'You have no notifications',
+      emptyStateDescription:
+        'Great! You are up to date with everything. We will notify you here if there is anything new.',
+      actionButtonLabel: 'Configure notifications',
+    },
+    profile: {
+      tooltipButtonProfile: 'Account Settings',
+      passwordLabel: 'Password',
+      newPasswordLabel: 'New Password',
+      confirmPasswordLabel: 'Confirm New Password',
+      signOffTooltip: 'Sign off',
     },
   },
 };

@@ -4,9 +4,11 @@ import { Drawer } from '@workspaceui/componentlibrary/src/components';
 import { useMenu } from '@workspaceui/etendohookbinder/src/hooks/useMenu';
 import EtendoLogotype from '../assets/etendo-logotype.png';
 import { useUserContext } from '../hooks/useUserContext';
+import { useTranslation } from '../hooks/useTranslation';
 
 export default function Sidebar() {
-  const { token } = useUserContext()
+  const { t } = useTranslation();
+  const { token } = useUserContext();
   const menu = useMenu(token);
   const navigate = useNavigate();
 
@@ -18,7 +20,7 @@ export default function Sidebar() {
   return (
     <Drawer
       logo={EtendoLogotype}
-      title="Etendo"
+      title={t('common.etendo')}
       items={menu}
       onClick={handleClick}
     />
