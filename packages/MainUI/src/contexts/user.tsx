@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
 } from 'react';
@@ -10,10 +11,10 @@ import { logger } from '../utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { Datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { login as doLogin } from '@workspaceui/etendohookbinder/src/api/authentication';
+import { HTTP_CODES } from '@workspaceui/etendohookbinder/src/api/constants';
 
 interface IUserContext {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  login: (username: string, password: string) => Promise<any>;
+  login: (username: string, password: string) => Promise<void>;
   token: string | null;
 }
 
@@ -27,11 +28,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const login = useCallback(async (username: string, password: string) => {
     try {
       const token = await doLogin(username, password);
-
       localStorage.setItem('token', token);
-      Datasource.authorize(token);
-      Metadata.authorize(token);
-
       settoken(token);
     } catch (e) {
       logger.warn(e);
@@ -42,41 +39,42 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   const value = useMemo(() => ({ login, token }), [login, token]);
 
+  useLayoutEffect(() => {
+    if (token) {
+      Metadata.authorize(token);
+      Datasource.authorize(token);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (token && pathname === '/login') {
+      navigate('/');
+    }
+  }, [navigate, pathname, token]);
+
   useEffect(() => {
     const interceptor = (response: Response) => {
-      if (response.status === 401) {
+      if (response.status === HTTP_CODES.UNAUTHORIZED) {
         localStorage.removeItem('token');
         settoken(null);
+        navigate('/login');
       }
 
       return response;
     };
 
-    const unregisterMetadataInterceptor =
-      Metadata.registerInterceptor(interceptor);
-    const unregisterDatasourceInterceptor =
-      Datasource.registerInterceptor(interceptor);
-
-    return () => {
-      unregisterMetadataInterceptor();
-      unregisterDatasourceInterceptor();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (token && pathname === '/login') {
-      navigate('/');
-    } else if (!token) {
-      navigate('/login');
-    }
-  }, [navigate, pathname, token]);
-
-  useEffect(() => {
     if (token) {
-      Datasource.authorize(token);
-      Metadata.authorize(token);
+      const unregisterMetadataInterceptor =
+        Metadata.registerInterceptor(interceptor);
+      const unregisterDatasourceInterceptor =
+        Datasource.registerInterceptor(interceptor);
+
+      return () => {
+        unregisterMetadataInterceptor();
+        unregisterDatasourceInterceptor();
+      };
     }
-  }, [token]);
+  }, [navigate, token]);
 
   return (
     <UserContext.Provider value={value}>{props.children}</UserContext.Provider>

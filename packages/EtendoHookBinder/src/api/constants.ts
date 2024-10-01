@@ -11,3 +11,7 @@ export const API_DEFAULT_CACHE_DURATION = parseInt(
 export const AUTH_HEADER_NAME = import.meta.env[
   'VITE_AUTH_HEADER_NAME'
 ] as string;
+export enum HTTP_CODES {
+  UNAUTHORIZED = 401,
+  NOT_FOUND = 404,
+}
