@@ -7,8 +7,7 @@ const BooleanSelector: React.FC<BooleanSelectorProps> = memo(
     const [internalChecked, setInternalChecked] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
 
-    const isChecked =
-      externalChecked !== undefined ? externalChecked : internalChecked;
+    const isChecked = Boolean(externalChecked || internalChecked);
 
     const handleChange = useCallback(
       (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,27 +20,35 @@ const BooleanSelector: React.FC<BooleanSelectorProps> = memo(
       [externalChecked, onChange],
     );
 
+    const handleMouseEnter = useCallback(() => {
+      setIsHovered(true);
+    }, []);
+
+    const handleMouseLeave = useCallback(() => {
+      setIsHovered(false);
+    }, []);
+
     const checkboxStyle = {
       ...styles.styledCheckbox,
-      ...(isChecked ? styles.styledCheckboxChecked : {}),
-      ...(readOnly ? styles.disabled : {}),
+      ...((isChecked && styles.styledCheckboxChecked) || {}),
+      ...((readOnly && styles.disabled) || {}),
     };
 
     const afterStyle = {
       ...styles.styledCheckboxAfter,
-      ...(isChecked ? styles.styledCheckboxCheckedAfter : {}),
+      ...((isChecked && styles.styledCheckboxCheckedAfter) || {}),
     };
 
     const borderStyle = {
       ...styles.checkboxBorder,
-      ...(isHovered ? styles.checkboxBorderHover : {}),
+      ...((isHovered && styles.checkboxBorderHover) || {}),
     };
 
     return (
       <div
         style={styles.checkboxContainer}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}>
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}>
         <label style={styles.checkboxLabel}>
           <input
             type="checkbox"
