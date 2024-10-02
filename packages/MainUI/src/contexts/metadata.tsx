@@ -1,4 +1,4 @@
-import { createContext, useCallback, useMemo, useState } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   type Etendo,
   Metadata,
@@ -78,6 +78,10 @@ export default function MetadataProvider({
       selected,
     ],
   );
+
+  useEffect(() => {
+    setSelected({})
+  }, [windowId]);
 
   return (
     <MetadataContext.Provider value={value}>

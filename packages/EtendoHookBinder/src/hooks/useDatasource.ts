@@ -2,17 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DatasourceOptions } from '../api/types';
 import { Datasource } from '../api/datasource';
 
-const loadData = async (
-  entity: string,
-  page: number,
-  pageSize: number,
-  _params: string,
-) => {
+const loadData = async (entity: string, page: number, pageSize: number, params: DatasourceOptions) => {
   const startRow = (page - 1) * pageSize;
   const endRow = page * pageSize - 1;
 
   const { response } = await Datasource.get(entity, {
-    ...JSON.parse(_params),
+    ...params,
     startRow,
     endRow,
   });
@@ -20,8 +15,9 @@ const loadData = async (
   return response;
 };
 
-export function useDatasource(entity: string, params?: DatasourceOptions) {
-  const _params = JSON.stringify(params ?? {});
+const defaultParams = {};
+
+export function useDatasource(entity: string, params: DatasourceOptions = defaultParams) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
@@ -38,18 +34,20 @@ export function useDatasource(entity: string, params?: DatasourceOptions) {
       setError(undefined);
       setLoading(true);
 
-      const response = await loadData(entity, page, pageSize, _params);
+      const response = await loadData(entity, page, pageSize, params);
 
       if (response.error) {
         throw new Error(response.error.message);
       } else {
         const newRecords = response.data;
         setRecords(prevRecords => {
-          const recordSet = new Set(prevRecords.map(r => r.id));
-          const uniqueNewRecords = newRecords.filter(
-            (r: { id: unknown }) => !recordSet.has(r.id),
-          );
-          return [...prevRecords, ...uniqueNewRecords];
+          const result = prevRecords.concat(newRecords).reduce((result, current) => {
+            result[current.id as string] = current;
+
+            return result;
+          }, {});
+
+          return Object.values(result) as typeof prevRecords;
         });
         setLoaded(true);
       }
@@ -58,7 +56,7 @@ export function useDatasource(entity: string, params?: DatasourceOptions) {
     } finally {
       setLoading(false);
     }
-  }, [_params, entity, page, pageSize]);
+  }, [params, entity, page, pageSize]);
 
   const fetchMore = useCallback(() => {
     setPage(prev => prev + 1);
@@ -67,6 +65,11 @@ export function useDatasource(entity: string, params?: DatasourceOptions) {
   const changePageSize = useCallback((size: number) => {
     setPageSize(size);
   }, []);
+
+  useEffect(() => {
+    setRecords([]);
+    setLoaded(false);
+  }, [entity, params]);
 
   useEffect(() => {
     load();

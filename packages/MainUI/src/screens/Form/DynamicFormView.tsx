@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
@@ -22,14 +22,19 @@ export default function DynamicFormView() {
   const [formData, setFormData] = useState<FormData | null>(null);
   const [mappedMetadata, setMappedMetadata] = useState<MappedData | null>(null);
 
+  const query = useMemo(
+    () => ({
+      criteria: [{ fieldName: 'id', operator: 'equals', value: recordId }],
+    }),
+    [recordId],
+  );
+
   const {
     records,
     loading: recordLoading,
     error: recordError,
     loaded,
-  } = useDatasource(windowData?.tabs[0].entityName ?? '', {
-    criteria: [{ fieldName: 'id', operator: 'equals', value: recordId }],
-  });
+  } = useDatasource(windowData?.tabs[0].entityName ?? '', query);
 
   useEffect(() => {
     if (windowData && records && records.length > 0) {

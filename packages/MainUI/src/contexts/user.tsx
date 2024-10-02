@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { createContext, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { logger } from '../utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
@@ -49,6 +42,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
   useEffect(() => {
     if (token && pathname === '/login') {
       navigate('/');
+    } else if (!token && pathname !== '/login') {
+      navigate('/login');
     }
   }, [navigate, pathname, token]);
 
@@ -64,10 +59,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
     };
 
     if (token) {
-      const unregisterMetadataInterceptor =
-        Metadata.registerInterceptor(interceptor);
-      const unregisterDatasourceInterceptor =
-        Datasource.registerInterceptor(interceptor);
+      const unregisterMetadataInterceptor = Metadata.registerInterceptor(interceptor);
+      const unregisterDatasourceInterceptor = Datasource.registerInterceptor(interceptor);
 
       return () => {
         unregisterMetadataInterceptor();
@@ -76,7 +69,5 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }
   }, [navigate, token]);
 
-  return (
-    <UserContext.Provider value={value}>{props.children}</UserContext.Provider>
-  );
+  return <UserContext.Provider value={value}>{props.children}</UserContext.Provider>;
 }
