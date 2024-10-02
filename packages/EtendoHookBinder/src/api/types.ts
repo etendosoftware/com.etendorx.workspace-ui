@@ -140,6 +140,7 @@ export interface WindowMetadataProperties {
 
 export interface Tab {
   parentColumns: string[];
+  name: string;
   id: string;
   entityName: string;
   fields: Record<string, Field>;

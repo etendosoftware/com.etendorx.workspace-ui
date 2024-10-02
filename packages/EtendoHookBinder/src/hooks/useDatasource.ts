@@ -60,10 +60,6 @@ export function useDatasource(entity: string, params?: DatasourceOptions) {
     }
   }, [_params, entity, page, pageSize]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
   const fetchMore = useCallback(() => {
     setPage(prev => prev + 1);
   }, []);
