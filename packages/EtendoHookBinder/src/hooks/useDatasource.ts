@@ -41,9 +41,13 @@ export function useDatasource(entity: string, params: DatasourceOptions = defaul
       } else {
         const newRecords = response.data;
         setRecords(prevRecords => {
-          const recordSet = new Set(prevRecords.map(r => r.id));
-          const uniqueNewRecords = newRecords.filter((r: { id: unknown }) => !recordSet.has(r.id));
-          return [...prevRecords, ...uniqueNewRecords];
+          const result = prevRecords.concat(newRecords).reduce((result, current) => {
+            result[current.id as string] = current;
+
+            return result;
+          }, {});
+
+          return Object.values(result) as typeof prevRecords;
         });
         setLoaded(true);
       }
