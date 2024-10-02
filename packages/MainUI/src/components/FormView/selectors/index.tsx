@@ -38,7 +38,7 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(
         'id' in field.value
       ) {
         const recordId = field.value.id;
-        const windowId = field.original.referencedWindowId;
+        const windowId = field.original?.referencedWindowId;
         location.href = `/window/${windowId}/${recordId}`;
       }
     }, [field]);
@@ -79,7 +79,7 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(
             <TableDirSelector
               value={field.value}
               label={field.label}
-              entity={field.original.referencedEntity}
+              entity={field.original?.referencedEntity || ''}
               onChange={onChange}
             />
           );
