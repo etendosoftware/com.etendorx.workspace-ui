@@ -8,14 +8,8 @@ import DynamicTable from '../../components/DynamicTable';
 const buttonSx = (tab: Tab, activeKey?: string) => ({
   borderBottomLeftRadius: 0,
   borderBottomRightRadius: 0,
-  color:
-    tab.id === activeKey
-      ? theme.palette.text.primary
-      : theme.palette.text.secondary,
-  backgroundColor:
-    tab.id === activeKey
-      ? theme.palette.background.default
-      : theme.palette.action.disabled,
+  color: tab.id === activeKey ? theme.palette.text.primary : theme.palette.text.secondary,
+  backgroundColor: tab.id === activeKey ? theme.palette.background.default : theme.palette.action.disabled,
 });
 
 export default function Tabs({ tabs }: { tabs: Tab[] }) {
@@ -32,10 +26,7 @@ export default function Tabs({ tabs }: { tabs: Tab[] }) {
     ),
   );
 
-  const active = useMemo(
-    () => tabs.find(tab => tab.id === activeKey) as Tab,
-    [activeKey, tabs],
-  );
+  const active = useMemo(() => tabs.find(tab => tab.id === activeKey) as Tab, [activeKey, tabs]);
 
   return (
     <Box sx={styles.container}>

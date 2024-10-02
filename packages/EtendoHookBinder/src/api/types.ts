@@ -140,10 +140,10 @@ export interface WindowMetadataProperties {
 }
 
 export interface Tab {
+  uIPattern: "STD" | "SR";
   name: string;
   title: string;
   parentColumns: string[];
-  name: string;
   id: string;
   entityName: string;
   fields: Record<string, Field>;

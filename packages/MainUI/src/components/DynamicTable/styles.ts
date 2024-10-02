@@ -25,7 +25,10 @@ const styles = {
   }),
   fetchMore: css({
     alignSelf: 'center',
+    borderRadius: theme.shape.borderRadius,
     margin: theme.spacing(1),
+    padding: theme.spacing(1),
+    boxShadow: theme.shadows[2]
   }),
 };
 
