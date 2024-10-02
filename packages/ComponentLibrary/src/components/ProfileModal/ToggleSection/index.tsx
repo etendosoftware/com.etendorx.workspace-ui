@@ -51,7 +51,11 @@ const SelectorList: React.FC<SelectorListProps> = ({
               <Select
                 id={`${item}-select`}
                 title={item}
-                options={values.map(value => ({ title: value, value }))}
+                options={values.map(value => ({
+                  title: value,
+                  value,
+                  id: value,
+                }))}
                 iconLeft={icons[item]}
               />
             </FormControl>

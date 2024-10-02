@@ -15,7 +15,7 @@ export type FormData = Record<string, FieldDefinition | Section>;
 
 export interface FormViewProps {
   data: FormData;
-  windowMetadata: MappedData;
+  windowMetadata?: MappedData;
   onSave: () => void;
   onCancel: () => void;
   readOnly?: boolean;

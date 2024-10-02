@@ -10,8 +10,8 @@ export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
     id: column.name,
     columnName: column.columnName,
     isMandatory: column.required,
+    _identifier: column.title,
     column: {
-      _identifier: column.title,
       reference: column.type,
     },
     name: column.name,

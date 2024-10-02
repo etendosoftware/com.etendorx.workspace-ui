@@ -19,7 +19,7 @@ export interface BaseFieldDefinition<T> {
   name: string;
   section?: string;
   required?: boolean;
-  original: {
+  original?: {
     referencedEntity: string;
     referencedWindowId: string;
     fieldName: string;

@@ -10,8 +10,8 @@ import { FormViewProps } from './types';
 import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
 import { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
 import SectionRenderer from './Sections/sectionRendered';
-import { Section, FieldDefinition } from 'src/screens/Form/types';
-import type { FormData } from './types';
+import { Section, FieldDefinition } from '../../screens/Form/types';
+import type { FieldValue, FormData } from './types';
 import { defaultIcon } from '../../constants/iconConstants';
 
 const FormView: React.FC<FormViewProps> = ({
@@ -95,7 +95,7 @@ const FormView: React.FC<FormViewProps> = ({
   );
 
   const handleInputChange = useCallback(
-    (name: string, value: string | number | boolean | string[] | Date) => {
+    (name: string, value: FieldValue) => {
       setFormData(prevData => ({
         ...prevData,
         [name]: {
