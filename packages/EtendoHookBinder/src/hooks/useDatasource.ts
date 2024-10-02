@@ -2,12 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DatasourceOptions } from '../api/types';
 import { Datasource } from '../api/datasource';
 
-const loadData = async (
-  entity: string,
-  page: number,
-  pageSize: number,
-  params: DatasourceOptions,
-) => {
+const loadData = async (entity: string, page: number, pageSize: number, params: DatasourceOptions) => {
   const startRow = (page - 1) * pageSize;
   const endRow = page * pageSize - 1;
 
@@ -47,9 +42,7 @@ export function useDatasource(entity: string, params: DatasourceOptions = defaul
         const newRecords = response.data;
         setRecords(prevRecords => {
           const recordSet = new Set(prevRecords.map(r => r.id));
-          const uniqueNewRecords = newRecords.filter(
-            (r: { id: unknown }) => !recordSet.has(r.id),
-          );
+          const uniqueNewRecords = newRecords.filter((r: { id: unknown }) => !recordSet.has(r.id));
           return [...prevRecords, ...uniqueNewRecords];
         });
         setLoaded(true);
@@ -68,6 +61,11 @@ export function useDatasource(entity: string, params: DatasourceOptions = defaul
   const changePageSize = useCallback((size: number) => {
     setPageSize(size);
   }, []);
+
+  useEffect(() => {
+    setRecords([]);
+    setLoaded(false);
+  }, [entity, params]);
 
   useEffect(() => {
     load();
