@@ -31,8 +31,17 @@ const FieldLabel: React.FC<FieldLabelProps> = ({
 const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(
   ({ field, onChange, readOnly }) => {
     const handleLinkClick = useCallback(() => {
-      console.log(`Clicked on link for ${field.label}`);
-    }, [field.label]);
+      if (
+        field.type === 'tabledir' &&
+        field.value &&
+        typeof field.value === 'object' &&
+        'id' in field.value
+      ) {
+        const recordId = field.value.id;
+        const windowId = field.original.referencedWindowId;
+        location.href = `/window/${windowId}/${recordId}`;
+      }
+    }, [field]);
 
     const renderField = () => {
       switch (field.type) {
