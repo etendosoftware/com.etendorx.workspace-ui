@@ -1,9 +1,7 @@
-import { useTheme } from '@mui/material';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { useMemo } from 'react';
 
 const useStyles = () => {
-  const theme = useTheme();
-
   return useMemo(
     () => ({
       mainContainer: {
@@ -49,7 +47,7 @@ const useStyles = () => {
         transition: 'width 0.5s ease',
       },
     }),
-    [theme],
+    [],
   );
 };
 

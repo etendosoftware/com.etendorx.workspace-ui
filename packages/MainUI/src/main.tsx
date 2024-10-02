@@ -7,9 +7,9 @@ import DynamicTable from './screens/Table/Dynamic';
 import Login from './screens/Login';
 import Form from './screens/Form';
 import Layout from './components/layout';
-import './index.css';
 import DynamicFormView from './screens/Form/DynamicFormView';
-import React from 'react';
+import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
+import './index.css';
 
 const router = createBrowserRouter([
   {
@@ -53,5 +53,5 @@ const router = createBrowserRouter([
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <RouterProvider router={router} />,
+  <RouterProvider router={router} fallbackElement={<Spinner />} />,
 );
