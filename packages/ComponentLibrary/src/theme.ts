@@ -1,4 +1,4 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme } from '@mui/material';
 import InterTTF from '../src/styles/fonts/Inter-Regular.ttf';
 export type * from './custom.d.ts';
 
