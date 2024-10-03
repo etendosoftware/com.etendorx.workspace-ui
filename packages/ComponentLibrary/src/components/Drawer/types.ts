@@ -27,8 +27,6 @@ export interface DrawerSectionProps {
   item: Menu;
   onClick: NavigateFn;
   open?: boolean;
-  onHover?: (item: Menu) => void;
-  onLeave?: () => void;
 }
 
 export interface DrawerSubsectionProps {

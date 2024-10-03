@@ -192,7 +192,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     </InputAdornment>
   );
 
-  const endAdornment = !props.disabled && (
+  const endAdornment = rightIcon && !props.disabled && (
     <InputAdornment position="end">
       {value && (
         <IconButton onClick={handleClear} sx={SX_STYLES.clearButtonHover}>
@@ -204,6 +204,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
           onClick={() => {
             handleIconClick('smart');
             handleSmartIconClick();
+            onRightIconClick;
           }}
           sx={getIconStyle('smart')}>
           <SmartButton />

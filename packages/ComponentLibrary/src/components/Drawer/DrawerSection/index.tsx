@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Collapse,
   Popper,
@@ -12,11 +12,11 @@ import { theme } from '../../../theme';
 import { DrawerSectionProps } from '../types';
 import { useParams } from 'react-router-dom';
 
-export default function DrawerSection({
+const DrawerSection: React.FC<DrawerSectionProps> = ({
   item,
   onClick,
   open,
-}: DrawerSectionProps) {
+}) => {
   const { id } = useParams();
   const isSelected = Boolean(id?.length && item.window?.id === id);
   const [expanded, setExpanded] = useState(false);
@@ -115,4 +115,6 @@ export default function DrawerSection({
       </Popper>
     </div>
   );
-}
+};
+
+export default DrawerSection;
