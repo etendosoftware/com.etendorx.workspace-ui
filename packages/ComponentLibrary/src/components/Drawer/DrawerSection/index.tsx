@@ -9,10 +9,19 @@ import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 
 const findActive = (windowId: string | undefined, items: Menu[] | undefined = []): boolean => {
   if (!items || !windowId) return false;
-  else
-    return !!items.find(item => {
-      return item.windowId === windowId || findActive(windowId, item.children);
-    });
+
+  const stack: Menu[] = [...items];
+
+  while (stack.length > 0) {
+    const item = stack.pop();
+
+    if (item) {
+      if (item.windowId === windowId) return true;
+      if (item.children) stack.push(...item.children);
+    }
+  }
+
+  return false;
 };
 
 export default function DrawerSection({ item, onClick, open }: DrawerSectionProps) {
