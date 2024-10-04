@@ -53,7 +53,7 @@ export interface FieldLabelProps {
   label: string;
   required?: boolean;
   readOnly?: boolean;
-  fieldType: string;
+  fieldType: FieldDefinition['type'];
   onLinkClick?: () => void;
 }
 
@@ -79,6 +79,13 @@ export interface NoteSectionProps {
 
 // TableDir Selector
 export interface TableDirSelectorProps {
+  label: string;
+  value: FieldValue;
+  entity: string;
+  onChange: (name: string, value: string) => void;
+}
+
+export interface SearchSelectorProps {
   label: string;
   value: FieldValue;
   entity: string;

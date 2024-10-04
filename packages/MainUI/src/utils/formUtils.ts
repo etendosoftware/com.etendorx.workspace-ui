@@ -19,6 +19,7 @@ export function mapColumnTypeToFieldType(column: Column): FieldType {
     case '12':
     case '17':
     case '30':
+      return 'search';
     case '18':
     case '11':
     case '22':
@@ -49,7 +50,7 @@ export function mapWindowMetadata(windowData: WindowMetadata): MappedData {
     };
 
     Object.entries(tab.fields).forEach(([fieldName, fieldInfo]) => {
-      const column = fieldInfo.column as Column;
+      const column = fieldInfo.column as unknown as Column;
       mappedTab.fields[fieldName] = {
         name: fieldName,
         label: column.name,
@@ -91,7 +92,7 @@ export function adaptFormData(windowData: WindowMetadata, record: Record<string,
   });
 
   Object.entries(windowData.tabs[0].fields).forEach(([fieldName, fieldInfo]) => {
-    const column = fieldInfo.column as Column;
+    const column = fieldInfo.column as unknown as Column;
     const sectionName = fieldInfo.fieldGroup$_identifier ?? 'Main';
     const rawValue = record[fieldName];
     let safeValue;
@@ -111,10 +112,9 @@ export function adaptFormData(windowData: WindowMetadata, record: Record<string,
       type: mapColumnTypeToFieldType(column),
       label: fieldInfo.column.name,
       section: sectionName,
-      required: fieldInfo.column.isMandatory ?? true,
+      required: fieldInfo.isMandatory ?? true,
       referencedTable: fieldInfo.column.reference,
       original: {
-        fieldName,
         ...fieldInfo,
       },
     } as unknown as FieldDefinition;
