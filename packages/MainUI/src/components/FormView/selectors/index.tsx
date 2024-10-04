@@ -1,41 +1,17 @@
 import React, { memo, useCallback } from 'react';
-import { Box, Link } from '@mui/material';
-import { TextInputBase } from '@workspaceui/componentlibrary/components';
+import { Box } from '@mui/material';
+import { TextInputBase } from '@workspaceui/componentlibrary/src/components';
 import { styles, sx } from '../styles';
-import { FieldLabelProps, FieldValue, FormFieldGroupProps } from '../types';
+import { FieldValue, FormFieldGroupProps } from '../types';
 import TableDirSelector from './TableDirSelector';
 import BooleanSelector from './BooleanSelector';
 import NumberSelector from './NumberSelector';
 import DateSelector from './DateSelector';
 import SelectSelector from './SelectSelector';
 import SearchSelector from './SearchSelector';
-import { FieldDefinition } from 'src/screens/Form/types';
-
-const isReferenceField = (fieldType: FieldDefinition['type']) => ['tabledir', 'search'].includes(fieldType);
-
-const FieldLabel: React.FC<FieldLabelProps> = ({ label, required, fieldType, onLinkClick }) => (
-  <Box sx={styles.labelWrapper}>
-    {isReferenceField(fieldType) ? (
-      <Link onClick={onLinkClick} sx={sx.linkStyles}>
-        {label}
-      </Link>
-    ) : (
-      <span style={styles.labelText}>{label}</span>
-    )}
-    {required && <span style={styles.requiredAsterisk}>*</span>}
-    <span style={styles.dottedSpacing} />
-  </Box>
-);
+import FieldLabel from './FieldLabel';
 
 const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, readOnly }) => {
-  const handleLinkClick = useCallback(() => {
-    if (field.type === 'tabledir' && field.value && typeof field.value === 'object' && 'id' in field.value) {
-      const recordId = field.value.id;
-      const windowId = field.original?.referencedWindowId;
-      location.href = `/window/${windowId}/${recordId}`;
-    }
-  }, [field]);
-
   const Field = useCallback(() => {
     switch (field.type) {
       case 'boolean':
@@ -81,15 +57,7 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
 
   return (
     <Box style={styles.fieldContainer}>
-      <Box sx={sx.labelBox}>
-        <FieldLabel
-          label={field.label}
-          required={field.required}
-          fieldType={field.type}
-          onLinkClick={field.type === 'tabledir' || field.type === 'search' ? handleLinkClick : undefined}
-          readOnly={readOnly}
-        />
-      </Box>
+      <FieldLabel field={field} readOnly={readOnly} />
       <Box sx={sx.inputBox}>
         <Field />
       </Box>
