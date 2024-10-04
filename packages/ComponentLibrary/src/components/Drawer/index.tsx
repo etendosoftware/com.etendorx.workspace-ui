@@ -7,64 +7,55 @@ import DrawerHeader from './Header';
 import { Box } from '..';
 import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
 
-interface SearchResult {
-  items: Menu[];
-  expandedIds: Set<string>;
+interface IndexedMenu extends Menu {
+  path: string[];
+  fullPath: string;
 }
 
-const searchRecursively = (
-  items: Menu[],
-  searchValue: string,
-  parentIds: string[] = [],
-): SearchResult => {
-  const result: SearchResult = {
-    items: [],
-    expandedIds: new Set<string>(),
+interface SearchIndex {
+  byId: Map<string, IndexedMenu>;
+  byPhrase: Map<string, Set<string>>;
+}
+
+const createSearchIndex = (items: Menu[]): SearchIndex => {
+  const index: SearchIndex = {
+    byId: new Map(),
+    byPhrase: new Map(),
   };
 
-  items.forEach(item => {
-    const matchesSearch = item.name
-      .toLowerCase()
-      .includes(searchValue.toLowerCase());
-    let childResult: SearchResult = {
-      items: [],
-      expandedIds: new Set<string>(),
-    };
-
-    if (Array.isArray(item.children) && item.children.length > 0) {
-      childResult = searchRecursively(item.children, searchValue, [
-        ...parentIds,
-        item.id,
-      ]);
+  const addToPhraseIndex = (phrase: string, id: string) => {
+    if (!index.byPhrase.has(phrase)) {
+      index.byPhrase.set(phrase, new Set());
     }
+    index.byPhrase.get(phrase)!.add(id);
+  };
 
-    if (matchesSearch || childResult.items.length > 0) {
-      result.items.push({
-        ...item,
-        children:
-          childResult.items.length > 0 ? childResult.items : item.children,
-      });
+  const traverse = (
+    items: Menu[],
+    path: string[] = [],
+    fullPath: string = '',
+  ) => {
+    items.forEach(item => {
+      const newFullPath = fullPath ? `${fullPath} > ${item.name}` : item.name;
+      const indexedItem: IndexedMenu = { ...item, path, fullPath: newFullPath };
+      index.byId.set(item.id, indexedItem);
 
-      // Add all parent IDs and the current item ID to expandedIds
-      parentIds.forEach(id => result.expandedIds.add(id));
-      result.expandedIds.add(item.id);
+      const lowerName = item.name.toLowerCase();
+      addToPhraseIndex(lowerName, item.id);
 
-      // Merge child expanded IDs
-      childResult.expandedIds.forEach(id => result.expandedIds.add(id));
-    }
-  });
+      const words = lowerName.split(/\s+/);
+      words.forEach(word => addToPhraseIndex(word, item.id));
 
-  return result;
-};
+      addToPhraseIndex(newFullPath.toLowerCase(), item.id);
 
-const getAllTitles = (items: Menu[]): string[] => {
-  return items.reduce((acc, item) => {
-    acc.push(item.name);
-    if (Array.isArray(item.children)) {
-      acc.push(...getAllTitles(item.children));
-    }
-    return acc;
-  }, [] as string[]);
+      if (Array.isArray(item.children)) {
+        traverse(item.children, [...path, item.id], newFullPath);
+      }
+    });
+  };
+
+  traverse(items);
+  return index;
 };
 
 const Drawer: React.FC<DrawerProps> = ({
@@ -90,19 +81,76 @@ const Drawer: React.FC<DrawerProps> = ({
     [open],
   );
 
+  const searchIndex = useMemo(() => createSearchIndex(items), [items]);
+
   const { filteredItems, searchExpandedItems } = useMemo(() => {
     if (!searchValue || !Array.isArray(items))
       return { filteredItems: items, searchExpandedItems: new Set<string>() };
-    const result = searchRecursively(items, searchValue);
-    return {
-      filteredItems: result.items,
-      searchExpandedItems: result.expandedIds,
+
+    console.log(filteredItems);
+
+    const lowerSearchValue = searchValue.toLowerCase();
+    const searchWords = lowerSearchValue.split(/\s+/);
+    const matchingIds = new Set<string>();
+    const expandedIds = new Set<string>();
+
+    searchIndex.byPhrase.forEach((ids, phrase) => {
+      if (phrase.includes(lowerSearchValue)) {
+        ids.forEach(id => {
+          const item = searchIndex.byId.get(id)!;
+          if (item.name.toLowerCase().includes(lowerSearchValue)) {
+            matchingIds.add(id);
+            item.path.forEach(pathId => expandedIds.add(pathId));
+          }
+        });
+      }
+    });
+
+    if (matchingIds.size === 0) {
+      const allMatchingIds = new Set<string>();
+      searchWords.forEach(word => {
+        searchIndex.byPhrase.forEach((ids, phrase) => {
+          if (phrase.includes(word)) {
+            ids.forEach(id => allMatchingIds.add(id));
+          }
+        });
+      });
+
+      allMatchingIds.forEach(id => {
+        const item = searchIndex.byId.get(id)!;
+        if (searchWords.every(word => item.name.toLowerCase().includes(word))) {
+          matchingIds.add(id);
+          item.path.forEach(pathId => expandedIds.add(pathId));
+        }
+      });
+    }
+
+    const rebuildTree = (originalItems: Menu[]): Menu[] => {
+      return originalItems.reduce((acc, item) => {
+        if (matchingIds.has(item.id)) {
+          acc.push({ ...item, children: undefined });
+        } else if (item.children) {
+          const filteredChildren = rebuildTree(item.children);
+          if (filteredChildren.length > 0) {
+            acc.push({ ...item, children: filteredChildren });
+          }
+        }
+        return acc;
+      }, [] as Menu[]);
     };
-  }, [items, searchValue]);
+
+    return {
+      filteredItems: rebuildTree(items),
+      searchExpandedItems: expandedIds,
+    };
+  }, [items, searchValue, searchIndex]);
 
   const allItemTitles = useMemo(
-    () => (Array.isArray(items) ? getAllTitles(items) : []),
-    [items],
+    () =>
+      Array.from(searchIndex.byPhrase.keys()).sort(
+        (a, b) => a.length - b.length,
+      ),
+    [searchIndex],
   );
 
   const handleSearch = useCallback(
