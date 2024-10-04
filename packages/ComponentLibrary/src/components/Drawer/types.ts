@@ -24,7 +24,7 @@ export interface MenuTitleProps {
   isExpandable?: boolean;
 }
 
-export interface DrawerSectionProps {
+export interface DrawerSectionProps extends React.PropsWithChildren {
   item: Menu;
   onClick: NavigateFn;
   open?: boolean;

@@ -1,52 +1,16 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { styles } from './styles';
 import DrawerSection from './DrawerSection';
-import { DrawerProps, IndexedMenu, SearchIndex } from './types';
+import { DrawerProps } from './types';
 import { Menu } from '../../../../EtendoHookBinder/src/api/types';
 import DrawerHeader from './Header';
 import { Box } from '..';
 import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
-
-const createSearchIndex = (items: Menu[]): SearchIndex => {
-  const index: SearchIndex = {
-    byId: new Map(),
-    byPhrase: new Map(),
-  };
-
-  const addToPhraseIndex = (phrase: string, id: string) => {
-    if (!index.byPhrase.has(phrase)) {
-      index.byPhrase.set(phrase, new Set());
-    }
-    index.byPhrase.get(phrase)!.add(id);
-  };
-
-  const traverse = (
-    items: Menu[],
-    path: string[] = [],
-    fullPath: string = '',
-  ) => {
-    items.forEach(item => {
-      const newFullPath = fullPath ? `${fullPath} > ${item.name}` : item.name;
-      const indexedItem: IndexedMenu = { ...item, path, fullPath: newFullPath };
-      index.byId.set(item.id, indexedItem);
-
-      const lowerName = item.name.toLowerCase();
-      addToPhraseIndex(lowerName, item.id);
-
-      const words = lowerName.split(/\s+/);
-      words.forEach(word => addToPhraseIndex(word, item.id));
-
-      addToPhraseIndex(newFullPath.toLowerCase(), item.id);
-
-      if (Array.isArray(item.children)) {
-        traverse(item.children, [...path, item.id], newFullPath);
-      }
-    });
-  };
-
-  traverse(items);
-  return index;
-};
+import {
+  createSearchIndex,
+  filterItems,
+  getAllItemTitles,
+} from '../../utils/searchUtils';
 
 const Drawer: React.FC<DrawerProps> = ({
   items = [],
@@ -73,75 +37,13 @@ const Drawer: React.FC<DrawerProps> = ({
 
   const searchIndex = useMemo(() => createSearchIndex(items), [items]);
 
-  const { filteredItems, searchExpandedItems } = useMemo(() => {
-    if (!searchValue || !Array.isArray(items))
-      return { filteredItems: items, searchExpandedItems: new Set<string>() };
-
-    const lowerSearchValue = searchValue.toLowerCase();
-    const searchWords = lowerSearchValue.split(/\s+/);
-    const matchingIds = new Set<string>();
-    const expandedIds = new Set<string>();
-
-    searchIndex.byPhrase.forEach((ids, phrase) => {
-      if (phrase.includes(lowerSearchValue)) {
-        ids.forEach(id => {
-          const item = searchIndex.byId.get(id)!;
-          if (item.name.toLowerCase().includes(lowerSearchValue)) {
-            matchingIds.add(id);
-            item.path.forEach(pathId => expandedIds.add(pathId));
-          }
-        });
-      }
-    });
-
-    if (matchingIds.size === 0) {
-      const allMatchingIds = new Set<string>();
-      searchWords.forEach(word => {
-        searchIndex.byPhrase.forEach((ids, phrase) => {
-          if (phrase.includes(word)) {
-            ids.forEach(id => allMatchingIds.add(id));
-          }
-        });
-      });
-
-      allMatchingIds.forEach(id => {
-        const item = searchIndex.byId.get(id)!;
-        if (searchWords.every(word => item.name.toLowerCase().includes(word))) {
-          matchingIds.add(id);
-          item.path.forEach(pathId => expandedIds.add(pathId));
-        }
-      });
-    }
-
-    const rebuildTree = (originalItems: Menu[]): Menu[] => {
-      return originalItems.reduce((acc, item) => {
-        if (matchingIds.has(item.id)) {
-          acc.push({ ...item, isSearchResult: true });
-        } else if (item.children) {
-          const filteredChildren = rebuildTree(item.children);
-          if (filteredChildren.length > 0) {
-            acc.push({
-              ...item,
-              children: filteredChildren,
-              isSearchResult: true,
-            });
-          }
-        }
-        return acc;
-      }, [] as Menu[]);
-    };
-
-    return {
-      filteredItems: rebuildTree(items),
-      searchExpandedItems: expandedIds,
-    };
-  }, [items, searchValue, searchIndex]);
+  const { filteredItems, searchExpandedItems } = useMemo(
+    () => filterItems(items, searchValue, searchIndex),
+    [items, searchValue, searchIndex],
+  );
 
   const allItemTitles = useMemo(
-    () =>
-      Array.from(searchIndex.byPhrase.keys()).sort(
-        (a, b) => a.length - b.length,
-      ),
+    () => getAllItemTitles(searchIndex),
     [searchIndex],
   );
 
@@ -171,38 +73,39 @@ const Drawer: React.FC<DrawerProps> = ({
 
   const renderItems = useCallback(
     (items: Menu[]) => {
-      return items.map(item => (
-        <React.Fragment key={item.id}>
-          <DrawerSection
-            item={item}
-            onClick={onClick}
-            open={open}
-            isExpanded={expandedItems.has(item.id) || Boolean(searchValue)}
-            onToggleExpand={() => !searchValue && toggleItemExpansion(item.id)}
-            hasChildren={
-              Array.isArray(item.children) && item.children.length > 0
-            }
-            isExpandable={
-              !searchValue &&
-              Array.isArray(item.children) &&
-              item.children.length > 0
-            }
-            isSearchActive={false}
-          />
-          {(expandedItems.has(item.id) || Boolean(searchValue)) &&
-            Array.isArray(item.children) &&
-            item.children.length > 0 && (
-              <Box sx={{ marginLeft: '1rem' }}>
-                {renderItems(item.children)}
-              </Box>
-            )}
-        </React.Fragment>
-      ));
+      return items.map(item => {
+        const isExpanded = expandedItems.has(item.id) || Boolean(searchValue);
+        return (
+          <React.Fragment key={item.id}>
+            <DrawerSection
+              item={item}
+              onClick={onClick}
+              open={open}
+              isExpanded={isExpanded}
+              onToggleExpand={() => toggleItemExpansion(item.id)}
+              hasChildren={
+                Array.isArray(item.children) && item.children.length > 0
+              }
+              isExpandable={
+                !searchValue &&
+                Array.isArray(item.children) &&
+                item.children.length > 0
+              }
+              isSearchActive={Boolean(searchValue)}>
+              {isExpanded &&
+                Array.isArray(item.children) &&
+                item.children.length > 0 && (
+                  <Box sx={{ marginLeft: '1rem' }}>
+                    {renderItems(item.children)}
+                  </Box>
+                )}
+            </DrawerSection>
+          </React.Fragment>
+        );
+      });
     },
     [onClick, open, expandedItems, toggleItemExpansion, searchValue],
   );
-
-  console.log(filteredItems);
 
   return (
     <div style={drawerStyle}>
