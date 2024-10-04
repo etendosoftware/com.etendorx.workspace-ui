@@ -28,6 +28,8 @@ export function useDatasource(entity: string, params: DatasourceOptions = defaul
   const load = useCallback(async () => {
     try {
       if (!entity) {
+        setLoaded(true);
+
         return;
       }
 
