@@ -28,6 +28,7 @@ export function mapColumnTypeToFieldType(column: Column): FieldType {
     case '12':
     case '17':
     case '30':
+      return 'search';
     case '18':
     case '11':
     case '29':
@@ -118,7 +119,7 @@ export function adaptFormData(
       const rawValue = record[fieldName];
       let safeValue;
 
-      if (mapColumnTypeToFieldType(column) === 'tabledir') {
+      if (['tabledir', 'search'].includes(mapColumnTypeToFieldType(column))) {
         safeValue = {
           id: rawValue,
           title: record[`${fieldName}$_identifier`] || rawValue,
