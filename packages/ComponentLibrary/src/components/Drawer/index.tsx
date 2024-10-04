@@ -87,8 +87,6 @@ const Drawer: React.FC<DrawerProps> = ({
     if (!searchValue || !Array.isArray(items))
       return { filteredItems: items, searchExpandedItems: new Set<string>() };
 
-    console.log(filteredItems);
-
     const lowerSearchValue = searchValue.toLowerCase();
     const searchWords = lowerSearchValue.split(/\s+/);
     const matchingIds = new Set<string>();
@@ -176,6 +174,7 @@ const Drawer: React.FC<DrawerProps> = ({
       return newSet;
     });
   }, []);
+  console.log(filteredItems);
 
   const renderItems = useCallback(
     (items: Menu[]) => {
