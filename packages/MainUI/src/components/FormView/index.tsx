@@ -1,26 +1,15 @@
-import React, {
-  useCallback,
-  useMemo,
-  useState,
-  useRef,
-  useEffect,
-} from 'react';
+import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import { Box, Grid } from '@mui/material';
 import { FormViewProps } from './types';
-import PrimaryTabs from '@workspaceui/componentlibrary/components/PrimaryTab';
-import { TabItem } from '@workspaceui/componentlibrary/components/PrimaryTab/types';
-import SectionRenderer from './Sections/sectionRendered';
+import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
+import { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
 import { Section, FieldDefinition } from '../../screens/Form/types';
 import type { FieldValue, FormData } from './types';
 import { defaultIcon } from '../../constants/iconConstants';
+import FormSection from './Sections/FormSection';
+import { NotesSectionContent } from './Sections/NotesSectionContent';
 
-const FormView: React.FC<FormViewProps> = ({
-  data,
-  onChange,
-  readOnly = false,
-  gridItemProps,
-  dottedLineInterval,
-}) => {
+const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, gridItemProps, dottedLineInterval }) => {
   const [formData, setFormData] = useState<FormData>(data);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
@@ -63,10 +52,7 @@ const FormView: React.FC<FormViewProps> = ({
         const containerRect = containerRef.current.getBoundingClientRect();
         const sectionRect = sectionElement.getBoundingClientRect();
 
-        const sectionBottom =
-          sectionRect.bottom -
-          containerRect.top +
-          containerRef.current.scrollTop;
+        const sectionBottom = sectionRect.bottom - containerRect.top + containerRef.current.scrollTop;
 
         const scrollAmount = sectionBottom - containerRect.height + 50;
 
@@ -78,21 +64,18 @@ const FormView: React.FC<FormViewProps> = ({
     }
   }, [selectedTab, expandedSections]);
 
-  const handleAccordionChange = useCallback(
-    (sectionId: string, isExpanded: boolean) => {
-      setExpandedSections(prev => {
-        if (isExpanded) {
-          return [...prev, sectionId];
-        }
-        return prev.filter(id => id !== sectionId);
-      });
-
+  const handleAccordionChange = useCallback((sectionId: string, isExpanded: boolean) => {
+    setExpandedSections(prev => {
       if (isExpanded) {
-        setSelectedTab(sectionId);
+        return [...prev, sectionId];
       }
-    },
-    [],
-  );
+      return prev.filter(id => id !== sectionId);
+    });
+
+    if (isExpanded) {
+      setSelectedTab(sectionId);
+    }
+  }, []);
 
   const handleInputChange = useCallback(
     (name: string, value: FieldValue) => {
@@ -112,31 +95,26 @@ const FormView: React.FC<FormViewProps> = ({
     e.preventDefault();
   }, []);
 
-  const groupedFields = Object.entries(formData).reduce(
-    (acc, [key, value]) => {
-      if ('section' in value) {
-        const section = value.section ?? '_mainSection';
-        if (!acc[section]) acc[section] = [];
-        acc[section].push([key, value]);
-      }
-      return acc;
-    },
-    {} as { [key: string]: [string, FieldDefinition][] },
+  const groupedFields = useMemo(
+    () =>
+      Object.entries(formData).reduce(
+        (acc, [key, value]) => {
+          if ('section' in value) {
+            const section = value.section ?? '_mainSection';
+            if (!acc[section]) acc[section] = [];
+            acc[section].push([key, value]);
+          }
+          return acc;
+        },
+        {} as { [key: string]: [string, FieldDefinition][] },
+      ),
+    [formData],
   );
 
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      height="100%"
-      width="100%"
-      padding="0 0.5rem 0.5rem 0.5rem">
+    <Box display="flex" flexDirection="column" height="100%" width="100%" padding="0 0.5rem 0.5rem 0.5rem">
       <Box flexShrink={1}>
-        <PrimaryTabs
-          tabs={tabs}
-          onChange={handleTabChange}
-          icon={defaultIcon}
-        />
+        <PrimaryTabs tabs={tabs} onChange={handleTabChange} icon={defaultIcon} />
       </Box>
       <Box flexGrow={1} overflow="auto" ref={containerRef}>
         <form onSubmit={handleSubmit}>
@@ -148,7 +126,7 @@ const FormView: React.FC<FormViewProps> = ({
                 return null;
               }
               return (
-                <SectionRenderer
+                <FormSection
                   key={sectionName}
                   sectionName={sectionName}
                   sectionData={sectionData}
@@ -161,8 +139,9 @@ const FormView: React.FC<FormViewProps> = ({
                   sectionRef={el => (sectionRefs.current[sectionData.id] = el)}
                   gridItemProps={gridItemProps}
                   dottedLineInterval={dottedLineInterval}
-                  readOnly={readOnly}
-                />
+                  readOnly={readOnly}>
+                  {sectionData.id === 'notes' ? <NotesSectionContent id={sectionData.id} /> : null}
+                </FormSection>
               );
             })}
           </Grid>

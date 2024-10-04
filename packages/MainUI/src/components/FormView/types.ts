@@ -50,11 +50,9 @@ export interface FormFieldGroupProps {
 }
 
 export interface FieldLabelProps {
-  label: string;
-  required?: boolean;
   readOnly?: boolean;
-  fieldType: FieldDefinition['type'];
   onLinkClick?: () => void;
+  field: FieldDefinition;
 }
 
 export interface SectionRendererProps extends Omit<FormSectionProps, 'children'> {
