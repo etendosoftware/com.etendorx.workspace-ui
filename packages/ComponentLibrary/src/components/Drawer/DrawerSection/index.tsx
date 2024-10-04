@@ -16,26 +16,31 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
   item,
   onClick,
   open,
+  isSearchActive,
+  onToggleExpand,
+  hasChildren,
+  isExpandable,
 }) => {
   const { id } = useParams();
   const isSelected = Boolean(id?.length && item.window?.id === id);
-  const [expanded, setExpanded] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
   const popperOpen = Boolean(anchorEl);
 
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
       if (!open) {
         setAnchorEl(anchorEl ? null : event.currentTarget);
-      } else if (item.children?.length) {
-        setExpanded(prev => !prev);
+      } else if (hasChildren && isExpandable) {
+        setIsExpanded(prev => !prev);
+        onToggleExpand();
       } else if (item.windowId) {
         onClick(`/window/${item.windowId}`);
       } else {
         console.error('DrawerSection: unexpected type');
       }
     },
-    [item, onClick, open, anchorEl],
+    [item, onClick, open, anchorEl, hasChildren, isExpandable, onToggleExpand],
   );
 
   const handleClose = useCallback(() => {
@@ -54,12 +59,14 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
     () => ({
       ...styles.drawerSectionBox,
       ...(!open && styles.closeSection),
-      background: expanded
+      background: isExpanded
         ? theme.palette.dynamicColor.contrastText
         : 'transparent',
     }),
-    [expanded, open],
+    [isExpanded, open],
   );
+
+  const shouldShowChildren = isSearchActive || isExpanded;
 
   return (
     <div style={mainStyle}>
@@ -67,17 +74,23 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
         item={item}
         onClick={handleClick}
         selected={isSelected}
-        expanded={expanded}
+        expanded={shouldShowChildren}
         open={open}
+        isExpandable={isExpandable && !isSearchActive}
       />
-      {item.children && open && (
-        <Collapse in={expanded} timeout="auto">
-          {item.children.map(subitem => (
+      {hasChildren && open && (
+        <Collapse in={shouldShowChildren} timeout="auto">
+          {item.children?.map(subitem => (
             <DrawerSection
               key={subitem.id}
               item={subitem}
               onClick={onClick}
               open={open}
+              isSearchActive={isSearchActive}
+              onToggleExpand={onToggleExpand}
+              hasChildren={Boolean(subitem.children?.length)}
+              isExpandable={isExpandable && !isSearchActive}
+              isExpanded={false}
             />
           ))}
         </Collapse>
@@ -96,8 +109,9 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
                     item={item}
                     onClick={handleClick}
                     selected={isSelected}
-                    expanded={expanded}
+                    expanded={shouldShowChildren}
                     open={true}
+                    isExpandable={isExpandable && !isSearchActive}
                   />
                   {item.children?.map(subitem => (
                     <DrawerSection
@@ -105,6 +119,11 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
                       item={subitem}
                       onClick={handleClickAndClose}
                       open={true}
+                      isSearchActive={isSearchActive}
+                      onToggleExpand={onToggleExpand}
+                      hasChildren={Boolean(subitem.children?.length)}
+                      isExpandable={isExpandable && !isSearchActive}
+                      isExpanded={false}
                     />
                   ))}
                 </div>

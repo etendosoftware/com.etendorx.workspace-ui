@@ -21,12 +21,18 @@ export interface MenuTitleProps {
   selected?: boolean;
   expanded?: boolean;
   open?: boolean;
+  isExpandable?: boolean;
 }
 
 export interface DrawerSectionProps {
   item: Menu;
   onClick: NavigateFn;
   open?: boolean;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  hasChildren: boolean;
+  isExpandable: boolean;
+  isSearchActive: boolean;
 }
 
 export interface DrawerSubsectionProps {
@@ -51,4 +57,14 @@ export interface SectionGroup {
 export interface HoverMenuProps {
   item: Menu;
   onClick: NavigateFn;
+}
+
+export interface IndexedMenu extends Menu {
+  path: string[];
+  fullPath: string;
+}
+
+export interface SearchIndex {
+  byId: Map<string, IndexedMenu>;
+  byPhrase: Map<string, Set<string>>;
 }

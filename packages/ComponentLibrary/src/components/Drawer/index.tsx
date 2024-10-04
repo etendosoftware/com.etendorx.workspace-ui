@@ -1,21 +1,11 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { styles } from './styles';
 import DrawerSection from './DrawerSection';
-import { DrawerProps } from './types';
+import { DrawerProps, IndexedMenu, SearchIndex } from './types';
 import { Menu } from '../../../../EtendoHookBinder/src/api/types';
 import DrawerHeader from './Header';
 import { Box } from '..';
 import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
-
-interface IndexedMenu extends Menu {
-  path: string[];
-  fullPath: string;
-}
-
-interface SearchIndex {
-  byId: Map<string, IndexedMenu>;
-  byPhrase: Map<string, Set<string>>;
-}
 
 const createSearchIndex = (items: Menu[]): SearchIndex => {
   const index: SearchIndex = {
@@ -126,11 +116,15 @@ const Drawer: React.FC<DrawerProps> = ({
     const rebuildTree = (originalItems: Menu[]): Menu[] => {
       return originalItems.reduce((acc, item) => {
         if (matchingIds.has(item.id)) {
-          acc.push({ ...item, children: undefined });
+          acc.push({ ...item, isSearchResult: true });
         } else if (item.children) {
           const filteredChildren = rebuildTree(item.children);
           if (filteredChildren.length > 0) {
-            acc.push({ ...item, children: filteredChildren });
+            acc.push({
+              ...item,
+              children: filteredChildren,
+              isSearchResult: true,
+            });
           }
         }
         return acc;
@@ -174,7 +168,6 @@ const Drawer: React.FC<DrawerProps> = ({
       return newSet;
     });
   }, []);
-  console.log(filteredItems);
 
   const renderItems = useCallback(
     (items: Menu[]) => {
@@ -184,15 +177,21 @@ const Drawer: React.FC<DrawerProps> = ({
             item={item}
             onClick={onClick}
             open={open}
-            isExpanded={expandedItems.has(item.id)}
-            onToggleExpand={() => toggleItemExpansion(item.id)}
+            isExpanded={expandedItems.has(item.id) || Boolean(searchValue)}
+            onToggleExpand={() => !searchValue && toggleItemExpansion(item.id)}
             hasChildren={
               Array.isArray(item.children) && item.children.length > 0
             }
+            isExpandable={
+              !searchValue &&
+              Array.isArray(item.children) &&
+              item.children.length > 0
+            }
+            isSearchActive={false}
           />
-          {Array.isArray(item.children) &&
-            item.children.length > 0 &&
-            expandedItems.has(item.id) && (
+          {(expandedItems.has(item.id) || Boolean(searchValue)) &&
+            Array.isArray(item.children) &&
+            item.children.length > 0 && (
               <Box sx={{ marginLeft: '1rem' }}>
                 {renderItems(item.children)}
               </Box>
@@ -200,8 +199,10 @@ const Drawer: React.FC<DrawerProps> = ({
         </React.Fragment>
       ));
     },
-    [onClick, open, expandedItems, toggleItemExpansion],
+    [onClick, open, expandedItems, toggleItemExpansion, searchValue],
   );
+
+  console.log(filteredItems);
 
   return (
     <div style={drawerStyle}>
