@@ -1,8 +1,8 @@
 import React, { memo, useCallback } from 'react';
-import { Box, Link } from '@mui/material';
-import { TextInputBase } from '@workspaceui/componentlibrary/components';
+import { Box } from '@mui/material';
+import { TextInputBase } from '@workspaceui/componentlibrary/src/components';
 import { styles, sx } from '../styles';
-import { FieldLabelProps, FieldValue, FormFieldGroupProps } from '../types';
+import { FieldValue, FormFieldGroupProps } from '../types';
 import TableDirSelector from './TableDirSelector';
 import BooleanSelector from './BooleanSelector';
 import NumberSelector from './NumberSelector';

@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useEffect, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
 import SearchOutlined from '../../../../../ComponentLibrary/src/assets/icons/search.svg';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
@@ -8,7 +7,7 @@ import { SearchSelectorProps } from '../types';
 import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
 
 function SearchSelector({ onChange, label, entity, value }: SearchSelectorProps) {
-  const { records, loading, error, loaded } = useDatasource(entity);
+  const { records } = useDatasource(entity);
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
 
   const options = useMemo(
@@ -48,9 +47,6 @@ function SearchSelector({ onChange, label, entity, value }: SearchSelectorProps)
     },
     [label, onChange],
   );
-
-  if (loading || !loaded) return <Spinner />;
-  if (error) return <div>Error: {error.message}</div>;
 
   return (
     <Select
