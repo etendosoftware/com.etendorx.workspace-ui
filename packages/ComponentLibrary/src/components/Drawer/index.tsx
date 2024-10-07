@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
+import { Box } from '..';
 import { styles } from './styles';
 import { DrawerProps } from './types';
 import DrawerHeader from './Header';
-import { Box } from '..';
 import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
 import { createSearchIndex, filterItems, getAllItemTitles } from '../../utils/searchUtils';
 import DrawerItems from './Search';

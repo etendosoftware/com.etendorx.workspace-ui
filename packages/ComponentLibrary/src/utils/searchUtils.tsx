@@ -38,17 +38,9 @@ export const createSearchIndex = (items: Menu[]): SearchIndex => {
   return index;
 };
 
-export const filterItems = (
-  items: Menu[],
-  searchValue: string,
-  searchIndex: SearchIndex,
-): { filteredItems: Menu[]; searchExpandedItems: Set<string> } => {
-  if (!searchValue || !Array.isArray(items)) return { filteredItems: items, searchExpandedItems: new Set<string>() };
-
+const findMatchingIds = (searchValue: string, searchIndex: SearchIndex): Set<string> => {
   const lowerSearchValue = searchValue.toLowerCase();
-  const searchWords = lowerSearchValue.split(/\s+/);
   const matchingIds = new Set<string>();
-  const expandedIds = new Set<string>();
 
   searchIndex.byPhrase.forEach((ids, phrase) => {
     if (phrase.includes(lowerSearchValue)) {
@@ -56,51 +48,81 @@ export const filterItems = (
         const item = searchIndex.byId.get(id)!;
         if (item.name.toLowerCase().includes(lowerSearchValue)) {
           matchingIds.add(id);
-          item.path.forEach(pathId => expandedIds.add(pathId));
         }
       });
     }
   });
 
-  if (matchingIds.size === 0) {
-    const allMatchingIds = new Set<string>();
-    searchWords.forEach(word => {
-      searchIndex.byPhrase.forEach((ids, phrase) => {
-        if (phrase.includes(word)) {
-          ids.forEach(id => allMatchingIds.add(id));
-        }
-      });
-    });
+  return matchingIds;
+};
 
-    allMatchingIds.forEach(id => {
-      const item = searchIndex.byId.get(id)!;
-      if (searchWords.every(word => item.name.toLowerCase().includes(word))) {
-        matchingIds.add(id);
-        item.path.forEach(pathId => expandedIds.add(pathId));
+const findMatchingIdsForWords = (searchWords: string[], searchIndex: SearchIndex): Set<string> => {
+  const allMatchingIds = new Set<string>();
+
+  searchWords.forEach(word => {
+    searchIndex.byPhrase.forEach((ids, phrase) => {
+      if (phrase.includes(word)) {
+        ids.forEach(id => allMatchingIds.add(id));
       }
     });
+  });
+
+  return new Set(
+    Array.from(allMatchingIds).filter(id => {
+      const item = searchIndex.byId.get(id)!;
+      return searchWords.every(word => item.name.toLowerCase().includes(word));
+    }),
+  );
+};
+
+const getExpandedIds = (matchingIds: Set<string>, searchIndex: SearchIndex): Set<string> => {
+  const expandedIds = new Set<string>();
+  matchingIds.forEach(id => {
+    const item = searchIndex.byId.get(id)!;
+    item.path.forEach(pathId => expandedIds.add(pathId));
+  });
+  return expandedIds;
+};
+
+const rebuildTree = (originalItems: Menu[], matchingIds: Set<string>): Menu[] => {
+  return originalItems.reduce((acc, item) => {
+    if (matchingIds.has(item.id)) {
+      acc.push({ ...item, isSearchResult: true });
+    } else if (item.children) {
+      const filteredChildren = rebuildTree(item.children, matchingIds);
+      if (filteredChildren.length > 0) {
+        acc.push({
+          ...item,
+          children: filteredChildren,
+          isSearchResult: true,
+        });
+      }
+    }
+    return acc;
+  }, [] as Menu[]);
+};
+
+export const filterItems = (
+  items: Menu[],
+  searchValue: string,
+  searchIndex: SearchIndex,
+): { filteredItems: Menu[]; searchExpandedItems: Set<string> } => {
+  if (!searchValue || !Array.isArray(items)) {
+    return { filteredItems: items, searchExpandedItems: new Set<string>() };
   }
 
-  const rebuildTree = (originalItems: Menu[]): Menu[] => {
-    return originalItems.reduce((acc, item) => {
-      if (matchingIds.has(item.id)) {
-        acc.push({ ...item, isSearchResult: true });
-      } else if (item.children) {
-        const filteredChildren = rebuildTree(item.children);
-        if (filteredChildren.length > 0) {
-          acc.push({
-            ...item,
-            children: filteredChildren,
-            isSearchResult: true,
-          });
-        }
-      }
-      return acc;
-    }, [] as Menu[]);
-  };
+  let matchingIds = findMatchingIds(searchValue, searchIndex);
+
+  if (matchingIds.size === 0) {
+    const searchWords = searchValue.toLowerCase().split(/\s+/);
+    matchingIds = findMatchingIdsForWords(searchWords, searchIndex);
+  }
+
+  const expandedIds = getExpandedIds(matchingIds, searchIndex);
+  const filteredItems = rebuildTree(items, matchingIds);
 
   return {
-    filteredItems: rebuildTree(items),
+    filteredItems,
     searchExpandedItems: expandedIds,
   };
 };
