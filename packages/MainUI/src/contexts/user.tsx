@@ -9,6 +9,7 @@ import { getSession, SessionResponse } from '@workspaceui/etendohookbinder/api/g
 import { changeWarehouse as doChangeWarehouse } from '@workspaceui/etendohookbinder/api/warehouse';
 import { HTTP_CODES } from '@workspaceui/etendohookbinder/api/constants';
 import { IUserContext, Role, Warehouse } from './types';
+import { useQuery } from '@tanstack/react-query';
 
 export const UserContext = createContext({} as IUserContext);
 
@@ -16,6 +17,18 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { data } = useQuery({
+    queryKey: [token ?? ''],
+    queryFn: args => {
+      console.log(args);
+
+      return { user: 'lucho' };
+    },
+  });
+
+  useEffect(() => {
+    console.debug({ data });
+  }, [data]);
 
   const [roles, setRoles] = useState<Role[]>(() => {
     const savedRoles = localStorage.getItem('roles');
