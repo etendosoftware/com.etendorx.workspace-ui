@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Collapse, Popper, Paper, ClickAwayListener, Grow } from '@mui/material';
 import { styles } from '../styles';
 import MenuTitle from '../MenuTitle';
@@ -23,8 +23,17 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
 
   const popperOpen = Boolean(anchorEl);
 
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      event.stopPropagation();
+      handleClick(event as unknown as React.MouseEvent<HTMLElement>);
+    }
+  };
+
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
+      event.stopPropagation();
       if (!open) {
         setAnchorEl(anchorEl ? null : event.currentTarget);
       } else if (hasChildren && isExpandable) {
@@ -67,7 +76,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
   }, [isSelected, item.children, windowId]);
 
   return (
-    <div style={mainStyle}>
+    <div style={mainStyle} tabIndex={0} onKeyDown={handleKeyDown}>
       <MenuTitle
         item={item}
         onClick={handleClick}

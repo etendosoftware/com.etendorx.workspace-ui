@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { styles } from './styles';
 import { DrawerProps } from './types';
 import DrawerHeader from './Header';
@@ -13,6 +13,32 @@ const Drawer: React.FC<DrawerProps> = ({ items = [], logo, title, onClick }) => 
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (open && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [open]);
+
+  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (event.key === 'Tab') {
+      const focusableElements = drawerRef.current?.querySelectorAll('input, [tabindex="0"]') as NodeListOf<HTMLElement>;
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      } else if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      }
+    }
+  }, []);
 
   const drawerStyle = useMemo(
     () => ({
@@ -59,8 +85,8 @@ const Drawer: React.FC<DrawerProps> = ({ items = [], logo, title, onClick }) => 
   }, []);
 
   return (
-    <div style={drawerStyle}>
-      <DrawerHeader logo={logo} title={title} open={open} onClick={handleHeaderClick} />
+    <div style={drawerStyle} onKeyDown={handleKeyDown} ref={drawerRef} tabIndex={0}>
+      <DrawerHeader ref={headerRef} logo={logo} title={title} open={open} onClick={handleHeaderClick} />
       {open && (
         <Box sx={{ padding: '0.5rem' }}>
           <TextInputAutocomplete
@@ -68,6 +94,7 @@ const Drawer: React.FC<DrawerProps> = ({ items = [], logo, title, onClick }) => 
             setValue={handleSearch}
             placeholder="Search"
             autoCompleteTexts={allItemTitles}
+            inputRef={searchInputRef}
           />
         </Box>
       )}

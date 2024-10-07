@@ -24,7 +24,8 @@ const DrawerItems: React.FC<DrawerItemsProps> = ({
             onToggleExpand={() => toggleItemExpansion(item.id)}
             hasChildren={Array.isArray(item.children) && item.children.length > 0}
             isExpandable={!searchValue && Array.isArray(item.children) && item.children.length > 0}
-            isSearchActive={Boolean(searchValue)}></DrawerSection>
+            isSearchActive={Boolean(searchValue)}
+          />
         </React.Fragment>
       );
     });
