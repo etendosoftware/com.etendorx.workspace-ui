@@ -1,5 +1,5 @@
 import { FieldLabelProps } from '../types';
-import { FieldDefinition } from 'src/screens/Form/types';
+import { FieldDefinition } from '../../../screens/Form/types';
 import { styles, sx } from '../styles';
 import { Box, Link } from '@mui/material';
 import { useCallback } from 'react';

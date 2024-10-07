@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useEffect, useState } from 'react';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
+import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource';
+import Select from '@workspaceui/componentlibrary/components/Input/Select';
 import SearchOutlined from '../../../../../ComponentLibrary/src/assets/icons/search.svg';
 import { theme } from '@workspaceui/componentlibrary/theme';
 import { TableDirSelectorProps } from '../types';
