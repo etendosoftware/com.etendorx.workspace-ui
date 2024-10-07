@@ -1,8 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { styles } from './styles';
-import DrawerSection from './DrawerSection';
 import { DrawerProps } from './types';
-import { Menu } from '../../../../EtendoHookBinder/src/api/types';
 import DrawerHeader from './Header';
 import { Box } from '..';
 import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
@@ -11,6 +9,7 @@ import {
   filterItems,
   getAllItemTitles,
 } from '../../utils/searchUtils';
+import DrawerItems from './Search';
 
 const Drawer: React.FC<DrawerProps> = ({
   items = [],
@@ -71,42 +70,6 @@ const Drawer: React.FC<DrawerProps> = ({
     });
   }, []);
 
-  const renderItems = useCallback(
-    (items: Menu[]) => {
-      return items.map(item => {
-        const isExpanded = expandedItems.has(item.id) || Boolean(searchValue);
-        return (
-          <React.Fragment key={item.id}>
-            <DrawerSection
-              item={item}
-              onClick={onClick}
-              open={open}
-              isExpanded={isExpanded}
-              onToggleExpand={() => toggleItemExpansion(item.id)}
-              hasChildren={
-                Array.isArray(item.children) && item.children.length > 0
-              }
-              isExpandable={
-                !searchValue &&
-                Array.isArray(item.children) &&
-                item.children.length > 0
-              }
-              isSearchActive={Boolean(searchValue)}>
-              {isExpanded &&
-                Array.isArray(item.children) &&
-                item.children.length > 0 && (
-                  <Box sx={{ marginLeft: '1rem' }}>
-                    {renderItems(item.children)}
-                  </Box>
-                )}
-            </DrawerSection>
-          </React.Fragment>
-        );
-      });
-    },
-    [onClick, open, expandedItems, toggleItemExpansion, searchValue],
-  );
-
   return (
     <div style={drawerStyle}>
       <DrawerHeader
@@ -126,7 +89,16 @@ const Drawer: React.FC<DrawerProps> = ({
         </Box>
       )}
       <Box sx={styles.drawerContent}>
-        {Array.isArray(filteredItems) ? renderItems(filteredItems) : null}
+        {Array.isArray(filteredItems) ? (
+          <DrawerItems
+            items={filteredItems}
+            onClick={onClick}
+            open={open}
+            expandedItems={expandedItems}
+            toggleItemExpansion={toggleItemExpansion}
+            searchValue={searchValue}
+          />
+        ) : null}
       </Box>
     </div>
   );

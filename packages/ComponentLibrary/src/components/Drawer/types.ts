@@ -35,11 +35,6 @@ export interface DrawerSectionProps extends React.PropsWithChildren {
   isSearchActive: boolean;
 }
 
-export interface DrawerSubsectionProps {
-  item: Menu;
-  onClick: NavigateFn;
-}
-
 export interface Section {
   id: string;
   label: string;
@@ -54,11 +49,6 @@ export interface SectionGroup {
   sections: Section[];
 }
 
-export interface HoverMenuProps {
-  item: Menu;
-  onClick: NavigateFn;
-}
-
 export interface IndexedMenu extends Menu {
   path: string[];
   fullPath: string;
@@ -67,4 +57,13 @@ export interface IndexedMenu extends Menu {
 export interface SearchIndex {
   byId: Map<string, IndexedMenu>;
   byPhrase: Map<string, Set<string>>;
+}
+
+export interface DrawerItemsProps {
+  items: Menu[];
+  onClick: (path: string) => void;
+  open: boolean;
+  expandedItems: Set<string>;
+  toggleItemExpansion: (itemId: string) => void;
+  searchValue: string;
 }

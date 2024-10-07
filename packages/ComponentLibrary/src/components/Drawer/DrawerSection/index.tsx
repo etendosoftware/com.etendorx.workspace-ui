@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Collapse,
   Popper,
@@ -11,6 +11,23 @@ import MenuTitle from '../MenuTitle';
 import { theme } from '../../../theme';
 import { DrawerSectionProps } from '../types';
 import { useParams } from 'react-router-dom';
+import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+
+const findActive = (
+  windowId: string | undefined,
+  items: Menu[] | undefined = [],
+): boolean => {
+  if (!items || !windowId) return false;
+  const stack: Menu[] = [...items];
+  while (stack.length > 0) {
+    const item = stack.pop();
+    if (item) {
+      if (item.windowId === windowId) return true;
+      if (item.children) stack.push(...item.children);
+    }
+  }
+  return false;
+};
 
 const DrawerSection: React.FC<DrawerSectionProps> = ({
   item,
@@ -21,10 +38,13 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
   hasChildren,
   isExpandable,
 }) => {
-  const { id } = useParams();
-  const isSelected = Boolean(id?.length && item.window?.id === id);
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const { windowId } = useParams();
+  const isSelected = Boolean(windowId?.length && item.windowId === windowId);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [expanded, setExpanded] = useState(
+    isSelected || findActive(windowId, item.children),
+  );
+
   const popperOpen = Boolean(anchorEl);
 
   const handleClick = useCallback(
@@ -32,7 +52,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
       if (!open) {
         setAnchorEl(anchorEl ? null : event.currentTarget);
       } else if (hasChildren && isExpandable) {
-        setIsExpanded(prev => !prev);
+        setExpanded(prev => !prev);
         onToggleExpand();
       } else if (item.windowId) {
         onClick(`/window/${item.windowId}`);
@@ -59,14 +79,18 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
     () => ({
       ...styles.drawerSectionBox,
       ...(!open && styles.closeSection),
-      background: isExpanded
+      background: expanded
         ? theme.palette.dynamicColor.contrastText
         : 'transparent',
     }),
-    [isExpanded, open],
+    [expanded, open],
   );
 
-  const shouldShowChildren = isSearchActive || isExpanded;
+  const shouldShowChildren = isSearchActive || expanded;
+
+  useEffect(() => {
+    setExpanded(isSelected || findActive(windowId, item.children));
+  }, [isSelected, item.children, windowId]);
 
   return (
     <div style={mainStyle}>

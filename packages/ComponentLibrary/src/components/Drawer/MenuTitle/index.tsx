@@ -1,3 +1,4 @@
+import { useRef, useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
@@ -12,6 +13,23 @@ export default function MenuTitle({
   expanded,
   open,
 }: MenuTitleProps) {
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [isTextTruncated, setIsTextTruncated] = useState(false);
+
+  useEffect(() => {
+    const checkTextTruncation = () => {
+      if (textRef.current) {
+        setIsTextTruncated(
+          textRef.current.scrollWidth > textRef.current.clientWidth,
+        );
+      }
+    };
+
+    checkTextTruncation();
+    window.addEventListener('resize', checkTextTruncation);
+    return () => window.removeEventListener('resize', checkTextTruncation);
+  }, [item.name]);
+
   return (
     <Box
       onClick={onClick}
@@ -25,8 +43,19 @@ export default function MenuTitle({
         <Typography sx={styles.listItemText}>
           {item.icon ? <span>{item.icon}</span> : null}
           {open && (
-            <Tooltip title={item.name} arrow>
-              <span>{item.name}</span>
+            <Tooltip
+              title={item.name}
+              arrow
+              disableHoverListener={!isTextTruncated}>
+              <span
+                ref={textRef}
+                style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                {item.name}
+              </span>
             </Tooltip>
           )}
         </Typography>
