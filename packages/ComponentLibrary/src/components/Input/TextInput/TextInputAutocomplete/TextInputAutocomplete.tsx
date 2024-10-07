@@ -20,7 +20,6 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     leftIcon,
     rightIcon,
     onLeftIconClick,
-    onRightIconClick,
     ...textFieldProps
   } = props;
 
@@ -32,7 +31,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   const [activeIcon, setActiveIcon] = useState('');
 
   const handleIconClick = (iconName: string) => {
-    setActiveIcon(iconName === activeIcon ? '' : iconName);
+    setActiveIcon(prevIcon => (prevIcon === iconName ? '' : iconName));
   };
 
   const getIconStyle = (iconName: string) => ({
@@ -54,13 +53,8 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   });
 
   const handleSmartIconClick = () => {
-    if (!smartIconActive) {
-      setSmartIconActive(true);
-      setActiveIcon('smart');
-    } else {
-      setSmartIconActive(false);
-      setActiveIcon('');
-    }
+    setSmartIconActive(prev => !prev);
+    setActiveIcon(prev => (prev === 'smart' ? '' : 'smart'));
   };
 
   const handleBlur = () => {
@@ -74,17 +68,12 @@ const TextInputAutoComplete = (props: TextInputProps) => {
         setLoading(true);
         await fetchSuggestions(value);
         setLoading(false);
+      } else if (value) {
+        setLoading(true);
+        const timer = setTimeout(() => setLoading(false), DEFAULT_CONSTANTS.TIMEOUT_DURATION);
+        return () => clearTimeout(timer);
       } else {
-        if (value) {
-          setLoading(true);
-          const timer = setTimeout(() => {
-            setLoading(false);
-          }, DEFAULT_CONSTANTS.TIMEOUT_DURATION);
-
-          return () => clearTimeout(timer);
-        } else {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
@@ -100,20 +89,15 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [inputRef]);
 
   useEffect(() => {
-    if (autoCompleteTexts && isFocused) {
+    if (autoCompleteTexts && isFocused && value) {
       const match = autoCompleteTexts.find(text => text.toLowerCase().startsWith(value.toLowerCase()));
-      if (match && value && match.toLowerCase() !== value.toLowerCase()) {
-        setSuggestion(match);
-      } else {
-        setSuggestion('');
-      }
+      setSuggestion(match && match.toLowerCase() !== value.toLowerCase() ? match : '');
+    } else {
+      setSuggestion('');
     }
   }, [value, isFocused, autoCompleteTexts]);
 
@@ -132,24 +116,10 @@ const TextInputAutoComplete = (props: TextInputProps) => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValue?.(e.target.value);
-    if (textFieldProps.onChange) {
-      textFieldProps.onChange(e);
-    }
+    textFieldProps.onChange?.(e);
   };
 
-  const inputStyles = {
-    ...CSS_STYLES.input,
-    '& .MuiOutlinedInput-input': {
-      '&::placeholder': {
-        color: theme.palette.baselineColor.transparentNeutral[70],
-        opacity: isFocused ? 0 : 1,
-        transition: `opacity ${DEFAULT_CONSTANTS.PLACEHOLDER_OPACITY_TRANSITION_DURATION}s`,
-      },
-    },
-    ...props.InputProps?.sx,
-  };
-
-  const startAdornment = (
+  const renderStartAdornment = () => (
     <InputAdornment position="start">
       <Box sx={SX_STYLES.startAdornment}>
         {loading ? (
@@ -176,33 +146,34 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     </InputAdornment>
   );
 
-  const endAdornment = rightIcon && !props.disabled && (
-    <InputAdornment position="end">
-      {value && (
-        <IconButton onClick={handleClear} sx={SX_STYLES.clearButtonHover}>
-          <CloseIcon sx={{ color: theme.palette.baselineColor.neutral[70] }} />
-        </IconButton>
-      )}
-      <Box sx={containerIconStyle}>
-        <IconButton
-          onClick={() => {
-            handleIconClick('smart');
-            handleSmartIconClick();
-            onRightIconClick;
-          }}
-          sx={getIconStyle('smart')}>
-          <SmartButton />
-        </IconButton>
-        <IconButton onClick={() => handleIconClick('filter')} sx={getIconStyle('filter')}>
-          <FilterIcon />
-        </IconButton>
-      </Box>
-    </InputAdornment>
-  );
+  const renderEndAdornment = () =>
+    rightIcon &&
+    !props.disabled && (
+      <InputAdornment position="end">
+        {value && (
+          <IconButton onClick={handleClear} sx={SX_STYLES.clearButtonHover}>
+            <CloseIcon sx={{ color: theme.palette.baselineColor.neutral[70] }} />
+          </IconButton>
+        )}
+        <Box sx={containerIconStyle}>
+          <IconButton
+            onClick={() => {
+              handleIconClick('smart');
+              handleSmartIconClick();
+            }}
+            sx={getIconStyle('smart')}>
+            <SmartButton />
+          </IconButton>
+          <IconButton onClick={() => handleIconClick('filter')} sx={getIconStyle('filter')}>
+            <FilterIcon />
+          </IconButton>
+        </Box>
+      </InputAdornment>
+    );
 
   const textFieldSx = {
     ...CSS_STYLES.inputCommon,
-    opacity: props.disabled && 0.4,
+    opacity: props.disabled ? 0.4 : 1,
     backgroundColor: theme.palette.baselineColor.neutral[0],
     '& .MuiOutlinedInput-root': {
       '& fieldset': {
@@ -217,8 +188,8 @@ const TextInputAutoComplete = (props: TextInputProps) => {
         borderRadius: '6.25rem',
       },
       '&:hover fieldset': {
-        borderWidth: !props.disabled && 2,
-        borderColor: !props.disabled && theme.palette.baselineColor.neutral[100],
+        borderWidth: props.disabled ? undefined : 2,
+        borderColor: props.disabled ? undefined : theme.palette.baselineColor.neutral[100],
       },
       '&.Mui-focused fieldset': {
         borderColor: theme.palette.dynamicColor.main,
@@ -229,14 +200,6 @@ const TextInputAutoComplete = (props: TextInputProps) => {
       },
     },
     ...props.sx,
-  };
-
-  const inputProps = {
-    ...props.inputProps,
-    style: {
-      ...CSS_STYLES.inputProps,
-      ...props.inputProps?.style,
-    },
   };
 
   return (
@@ -255,13 +218,29 @@ const TextInputAutoComplete = (props: TextInputProps) => {
           disabled={props.disabled}
           InputProps={{
             ...textFieldProps.InputProps,
-            sx: inputStyles,
-            startAdornment: startAdornment,
-            endAdornment: endAdornment,
+            sx: {
+              ...CSS_STYLES.input,
+              '& .MuiOutlinedInput-input': {
+                '&::placeholder': {
+                  color: theme.palette.baselineColor.transparentNeutral[70],
+                  opacity: isFocused ? 0 : 1,
+                  transition: `opacity ${DEFAULT_CONSTANTS.PLACEHOLDER_OPACITY_TRANSITION_DURATION}s`,
+                },
+              },
+              ...props.InputProps?.sx,
+            },
+            startAdornment: renderStartAdornment(),
+            endAdornment: renderEndAdornment(),
           }}
           {...textFieldProps}
           sx={textFieldSx}
-          inputProps={inputProps}
+          inputProps={{
+            ...props.inputProps,
+            style: {
+              ...CSS_STYLES.inputProps,
+              ...props.inputProps?.style,
+            },
+          }}
         />
         {suggestion && <SuggestionBox suggestion={suggestion} value={value} />}
       </Box>
