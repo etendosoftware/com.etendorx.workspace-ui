@@ -1,6 +1,6 @@
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
+import Spinner from '@workspaceui/componentlibrary/components/Spinner';
 import Tabs from './Tabs';
-import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
+import { useMetadataContext } from '@workspaceui/etendohookbinder/hooks/useMetadataContext';
 import { Box } from '@mui/material';
 
 export default function DynamicTableScreen() {

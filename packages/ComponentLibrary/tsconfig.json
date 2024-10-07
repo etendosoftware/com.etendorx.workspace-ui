@@ -27,8 +27,8 @@
       "@workspaceui/storybook/*": ["../storybook/src/*"],
       "@workspaceui/componentlibrary/*": ["../ComponentLibrary/src/*"],
       "@workspaceui/componentlibrary": ["../ComponentLibrary/src"],
-      "@workspaceui/etendohooklibrary/*": ["../EtendoHookLibrary/src/*"],
-      "@workspaceui/etendohooklibrary": ["../EtendoHookLibrary/src"]
+      "@workspaceui/etendohookbinder/*": ["../EtendoHookBinder/src/*"],
+      "@workspaceui/etendohookbinder": ["../EtendoHookBinder/src"]
     }
   },
   "include": ["src", "svg.d.ts"],

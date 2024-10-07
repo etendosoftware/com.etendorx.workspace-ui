@@ -10,7 +10,7 @@ import {
   MappedData,
   MappedTab,
   WindowMetadata,
-} from '@workspaceui/etendohookbinder/src/api/types';
+} from '@workspaceui/etendohookbinder/api/types';
 
 export function mapColumnTypeToFieldType(column: Column): FieldType {
   if (!column || !column?.reference) {

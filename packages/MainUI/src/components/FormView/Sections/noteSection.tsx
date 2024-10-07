@@ -9,8 +9,8 @@ import {
   IconButton,
   TextField,
 } from '@mui/material';
-import { theme } from '@workspaceui/componentlibrary/src/theme';
-import Modal from '@workspaceui/componentlibrary/src/components/BasicModal';
+import { theme } from '@workspaceui/componentlibrary/theme';
+import Modal from '@workspaceui/componentlibrary/components/BasicModal';
 import CloseIcon from '../../../../../ComponentLibrary/src/assets/icons/x.svg';
 import NoteIcon from '../../../../../ComponentLibrary/src/assets/icons/note.svg';
 import PlusIcon from '../../../../../ComponentLibrary/src/assets/icons/plus-circle.svg';

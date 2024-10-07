@@ -1,9 +1,9 @@
 import React, { useCallback, useMemo, useEffect, useState } from 'react';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
+import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource';
+import Spinner from '@workspaceui/componentlibrary/components/Spinner';
+import Select from '@workspaceui/componentlibrary/components/Input/Select';
 import SearchOutlined from '../../../../../ComponentLibrary/src/assets/icons/search.svg';
-import { theme } from '@workspaceui/componentlibrary/src/theme';
+import { theme } from '@workspaceui/componentlibrary/theme';
 import { TableDirSelectorProps } from '../types';
 import { Option } from '../../../../../ComponentLibrary/src/components/Input/Select/types';
 

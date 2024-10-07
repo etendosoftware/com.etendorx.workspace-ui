@@ -1,14 +1,14 @@
 import Box from '@mui/material/Box';
 import { MaterialReactTable, MRT_Row } from 'material-react-table';
 import styles from './styles';
-import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { parseColumns } from '@workspaceui/etendohookbinder/src/helpers/metadata';
-import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
+import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/api/types';
+import Spinner from '@workspaceui/componentlibrary/components/Spinner';
+import { parseColumns } from '@workspaceui/etendohookbinder/helpers/metadata';
+import { useMetadataContext } from '@workspaceui/etendohookbinder/hooks/useMetadataContext';
 import { useNavigate } from 'react-router-dom';
 import { memo, useCallback, useMemo } from 'react';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import { Button } from '@workspaceui/componentlibrary/src/components';
+import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource';
+import { Button } from '@workspaceui/componentlibrary/components';
 
 type DynamicTableProps = {
   tab: Tab;

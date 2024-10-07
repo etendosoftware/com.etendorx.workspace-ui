@@ -1,5 +1,5 @@
-import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
+import { Tab } from '@workspaceui/etendohookbinder/api/types';
+import { useMetadataContext } from '@workspaceui/etendohookbinder/hooks/useMetadataContext';
 import { useMemo } from 'react';
 
 export default function useIsEnabled(tab: Tab) {

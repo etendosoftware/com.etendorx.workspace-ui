@@ -1,4 +1,4 @@
-import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { Tab } from '@workspaceui/etendohookbinder/api/types';
 import { useMemo, useRef, useState } from 'react';
 import { Button, theme } from '../../../../ComponentLibrary/src/components';
 import { Box } from '@mui/material';
