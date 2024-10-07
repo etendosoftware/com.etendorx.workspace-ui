@@ -18,8 +18,9 @@ const DrawerHeader = forwardRef<
     logo: string;
     open?: boolean;
     onClick: () => unknown;
+    tabIndex?: number;
   }
->(({ title, logo, open, onClick }, ref) => {
+>(({ title, logo, open, onClick, tabIndex }, ref) => {
   return (
     <div style={styles.drawerHeader} ref={ref}>
       {open ? (
@@ -28,7 +29,13 @@ const DrawerHeader = forwardRef<
           <span style={styles.drawerHeaderTitle}>{title}</span>
         </div>
       ) : null}
-      <IconButton onClick={onClick} sx={open ? openSx : closedSx} className="animated-transform" height={20} width={20}>
+      <IconButton
+        onClick={onClick}
+        sx={open ? openSx : closedSx}
+        className="animated-transform"
+        height={20}
+        width={20}
+        tabIndex={tabIndex}>
         <MenuOpen />
       </IconButton>
     </div>

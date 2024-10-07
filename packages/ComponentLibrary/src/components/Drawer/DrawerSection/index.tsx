@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Collapse, Popper, Paper, ClickAwayListener, Grow } from '@mui/material';
+import { Collapse, Popper, Paper, ClickAwayListener, Grow, Box } from '@mui/material';
 import { styles } from '../styles';
 import MenuTitle from '../MenuTitle';
 import { theme } from '../../../theme';
@@ -76,7 +76,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
   }, [isSelected, item.children, windowId]);
 
   return (
-    <div style={mainStyle} tabIndex={0} onKeyDown={handleKeyDown}>
+    <Box sx={mainStyle} role="button" aria-expanded={expanded} onKeyDown={handleKeyDown} tabIndex={0}>
       <MenuTitle
         item={item}
         onClick={handleClick}
@@ -135,7 +135,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
           </Grow>
         )}
       </Popper>
-    </div>
+    </Box>
   );
 };
 
