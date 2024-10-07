@@ -58,9 +58,20 @@ export function mapWindowMetadata(windowData: WindowMetadata): MappedData {
         referencedTable: column.reference,
         required: column.isMandatory,
       };
-    });
 
-    mappedData.tabs.push(mappedTab);
+      Object.entries(tab.fields).forEach(([fieldName, fieldInfo]) => {
+        const column = fieldInfo.column as unknown as Column;
+        mappedTab.fields[fieldName] = {
+          name: fieldName,
+          label: column.name,
+          type: mapColumnTypeToFieldType(column),
+          referencedTable: column.reference,
+          required: column.isMandatory,
+        };
+      });
+
+      return mappedTab;
+    });
   });
 
   return mappedData;

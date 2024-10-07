@@ -1,8 +1,5 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  type Etendo,
-  Metadata,
-} from '@workspaceui/etendohookbinder/api/metadata';
+import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/api/metadata';
 import { useParams } from 'react-router-dom';
 import { useWindow } from '@workspaceui/etendohookbinder/hooks/useWindow';
 import { buildColumnsData, groupTabsByLevel } from '../utils/metadata';
@@ -20,15 +17,16 @@ interface IMetadataContext {
   columnsData?: Record<number, Record<string, Etendo.Column[]>>;
   selectRecord: (record: Record<string, never>, tab: Tab) => void;
   selected: Record<string, Record<string, never>>;
+  tabs: Tab[];
+  currentTab?: Tab;
 }
 
 export const MetadataContext = createContext({} as IMetadataContext);
 
-export default function MetadataProvider({
-  children,
-}: React.PropsWithChildren) {
+export default function MetadataProvider({ children }: React.PropsWithChildren) {
   const { windowId = '', recordId = '' } = useParams();
   const { windowData, loading, error } = useWindow(windowId);
+  const [currentTab, setCurrentTab] = useState<Etendo.Tab>();
   const [selected, setSelected] = useState<IMetadataContext['selected']>({});
 
   const selectRecord: IMetadataContext['selectRecord'] = useCallback(
@@ -38,6 +36,7 @@ export default function MetadataProvider({
         return Math.max(max, parseInt(strLevel));
       }, 0);
 
+      setCurrentTab(tab);
       setSelected(prev => {
         for (let index = max; index > level; index--) {
           delete prev[index];
@@ -49,6 +48,7 @@ export default function MetadataProvider({
     [selected],
   );
 
+  const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
   const groupedTabs = useMemo(() => groupTabsByLevel(windowData), [windowData]);
   const columnsData = useMemo(() => buildColumnsData(windowData), [windowData]);
 
@@ -65,6 +65,8 @@ export default function MetadataProvider({
       columnsData,
       selectRecord,
       selected,
+      tabs,
+      currentTab,
     }),
     [
       windowId,
@@ -76,16 +78,20 @@ export default function MetadataProvider({
       columnsData,
       selectRecord,
       selected,
+      tabs,
+      currentTab,
     ],
   );
 
   useEffect(() => {
-    setSelected({})
+    setSelected({});
   }, [windowId]);
 
-  return (
-    <MetadataContext.Provider value={value}>
-      {children}
-    </MetadataContext.Provider>
-  );
+  useEffect(() => {
+    if (windowData?.tabs?.[0]) {
+      setCurrentTab(windowData.tabs[0]);
+    }
+  }, [windowData]);
+
+  return <MetadataContext.Provider value={value}>{children}</MetadataContext.Provider>;
 }

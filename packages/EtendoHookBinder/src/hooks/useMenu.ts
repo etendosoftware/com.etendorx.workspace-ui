@@ -5,7 +5,7 @@ import { UserContext } from '../../../MainUI/src/contexts/user';
 
 export const useMenu = (token: string | null) => {
   const { currentRole } = useContext(UserContext);
-  const [menu, setMenu] = useState<Menu[]>([]);
+  const [menu, setMenu] = useState<Menu[]>(Metadata.getCachedMenu());
 
   const fetchMenu = useCallback(
     async (forceRefresh: boolean = false) => {

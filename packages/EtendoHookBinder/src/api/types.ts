@@ -55,23 +55,23 @@ export interface GridProps {
   showIf: string;
 }
 
-// export interface Field {
-//   showInGridView: boolean;
-//   fieldGroup$_identifier: string;
-//   fieldGroup: string;
-//   column: Record<string, string>;
-//   name: string;
-//   id: string;
-//   title: string;
-//   required: boolean;
-//   hasDefaultValue: boolean;
-//   columnName: string;
-//   inpColumnName: string;
-//   refColumnName: string;
-//   targetEntity: string;
-//   gridProps: GridProps;
-//   type: string; // Consider specifying possible values if known
-// }
+export interface FieldD {
+  showInGridView: boolean;
+  fieldGroup$_identifier: string;
+  fieldGroup: string;
+  column: Record<string, string>;
+  name: string;
+  id: string;
+  title: string;
+  required: boolean;
+  hasDefaultValue: boolean;
+  columnName: string;
+  inpColumnName: string;
+  refColumnName: string;
+  targetEntity: string;
+  gridProps: GridProps;
+  type: string; // Consider specifying possible values if known
+}
 
 const etendoField = {
   "fieldName": "documentAction",
@@ -371,7 +371,7 @@ const etendoField = {
   }
 }
 
-export type Field = typeof etendoField;
+export type Field = typeof etendoField & FieldD;
 
 export interface Column {
   fieldGroup?: string;

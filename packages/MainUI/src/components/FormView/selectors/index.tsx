@@ -1,8 +1,8 @@
 import React, { memo, useCallback } from 'react';
-import { Box } from '@mui/material';
+import { Box, Link } from '@mui/material';
 import { TextInputBase } from '@workspaceui/componentlibrary/components';
 import { styles, sx } from '../styles';
-import { FieldValue, FormFieldGroupProps } from '../types';
+import { FieldLabelProps, FieldValue, FormFieldGroupProps } from '../types';
 import TableDirSelector from './TableDirSelector';
 import BooleanSelector from './BooleanSelector';
 import NumberSelector from './NumberSelector';
@@ -10,16 +10,16 @@ import DateSelector from './DateSelector';
 import SelectSelector from './SelectSelector';
 import QuantitySelector from './QuantitySelector';
 
-const FieldLabel: React.FC<FieldLabelProps> = ({ label, required, fieldType, onLinkClick }) => (
+const FieldLabel = ({ field, onLinkClick }: FieldLabelProps) => (
   <Box sx={styles.labelWrapper}>
-    {fieldType === 'tabledir' ? (
+    {field.type === 'tabledir' ? (
       <Link onClick={onLinkClick} sx={sx.linkStyles}>
-        {label}
+        {field.label}
       </Link>
     ) : (
-      <span style={styles.labelText}>{label}</span>
+      <span style={styles.labelText}>{field.label}</span>
     )}
-    {required && <span style={styles.requiredAsterisk}>*</span>}
+    {field.required && <span style={styles.requiredAsterisk}>*</span>}
     <span style={styles.dottedSpacing} />
   </Box>
 );
@@ -82,9 +82,7 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
     <Box style={styles.fieldContainer}>
       <Box sx={sx.labelBox}>
         <FieldLabel
-          label={field.label}
-          required={field.required}
-          fieldType={field.type}
+          field={field}
           onLinkClick={field.type === 'tabledir' ? handleLinkClick : undefined}
           readOnly={readOnly}
         />
