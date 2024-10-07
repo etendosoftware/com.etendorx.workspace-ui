@@ -1,11 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Collapse,
-  Popper,
-  Paper,
-  ClickAwayListener,
-  Grow,
-} from '@mui/material';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Collapse, Popper, Paper, ClickAwayListener, Grow } from '@mui/material';
 import { styles } from '../styles';
 import MenuTitle from '../MenuTitle';
 import { theme } from '../../../theme';
@@ -25,9 +19,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
   const { windowId } = useParams();
   const isSelected = Boolean(windowId?.length && item.windowId === windowId);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [expanded, setExpanded] = useState(
-    isSelected || findActive(windowId, item.children),
-  );
+  const [expanded, setExpanded] = useState(isSelected || findActive(windowId, item.children));
 
   const popperOpen = Boolean(anchorEl);
 
@@ -63,9 +55,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
     () => ({
       ...styles.drawerSectionBox,
       ...(!open && styles.closeSection),
-      background: expanded
-        ? theme.palette.dynamicColor.contrastText
-        : 'transparent',
+      background: expanded ? theme.palette.dynamicColor.contrastText : 'transparent',
     }),
     [expanded, open],
   );
@@ -103,11 +93,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
           ))}
         </Collapse>
       )}
-      <Popper
-        open={popperOpen}
-        anchorEl={anchorEl}
-        placement="right-start"
-        transition>
+      <Popper open={popperOpen} anchorEl={anchorEl} placement="right-start" transition>
         {({ TransitionProps }) => (
           <Grow {...TransitionProps} timeout={300}>
             <Paper style={styles.popper}>

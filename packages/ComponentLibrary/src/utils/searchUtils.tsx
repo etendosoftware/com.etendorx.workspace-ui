@@ -14,11 +14,7 @@ export const createSearchIndex = (items: Menu[]): SearchIndex => {
     index.byPhrase.get(phrase)!.add(id);
   };
 
-  const traverse = (
-    items: Menu[],
-    path: string[] = [],
-    fullPath: string = '',
-  ) => {
+  const traverse = (items: Menu[], path: string[] = [], fullPath: string = '') => {
     items.forEach(item => {
       const newFullPath = fullPath ? `${fullPath} > ${item.name}` : item.name;
       const indexedItem: IndexedMenu = { ...item, path, fullPath: newFullPath };
@@ -47,8 +43,7 @@ export const filterItems = (
   searchValue: string,
   searchIndex: SearchIndex,
 ): { filteredItems: Menu[]; searchExpandedItems: Set<string> } => {
-  if (!searchValue || !Array.isArray(items))
-    return { filteredItems: items, searchExpandedItems: new Set<string>() };
+  if (!searchValue || !Array.isArray(items)) return { filteredItems: items, searchExpandedItems: new Set<string>() };
 
   const lowerSearchValue = searchValue.toLowerCase();
   const searchWords = lowerSearchValue.split(/\s+/);
@@ -111,7 +106,5 @@ export const filterItems = (
 };
 
 export const getAllItemTitles = (searchIndex: SearchIndex): string[] => {
-  return Array.from(searchIndex.byPhrase.keys()).sort(
-    (a, b) => a.length - b.length,
-  );
+  return Array.from(searchIndex.byPhrase.keys()).sort((a, b) => a.length - b.length);
 };

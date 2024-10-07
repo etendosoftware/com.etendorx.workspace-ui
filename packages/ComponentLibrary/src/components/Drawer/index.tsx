@@ -1,22 +1,13 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { styles } from './styles';
 import { DrawerProps } from './types';
 import DrawerHeader from './Header';
 import { Box } from '..';
 import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
-import {
-  createSearchIndex,
-  filterItems,
-  getAllItemTitles,
-} from '../../utils/searchUtils';
+import { createSearchIndex, filterItems, getAllItemTitles } from '../../utils/searchUtils';
 import DrawerItems from './Search';
 
-const Drawer: React.FC<DrawerProps> = ({
-  items = [],
-  logo,
-  title,
-  onClick,
-}) => {
+const Drawer: React.FC<DrawerProps> = ({ items = [], logo, title, onClick }) => {
   const [open, setOpen] = useState<boolean>(true);
   const [searchValue, setSearchValue] = useState<string>('');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -41,10 +32,7 @@ const Drawer: React.FC<DrawerProps> = ({
     [items, searchValue, searchIndex],
   );
 
-  const allItemTitles = useMemo(
-    () => getAllItemTitles(searchIndex),
-    [searchIndex],
-  );
+  const allItemTitles = useMemo(() => getAllItemTitles(searchIndex), [searchIndex]);
 
   const handleSearch = useCallback(
     (value: string) => {
@@ -72,12 +60,7 @@ const Drawer: React.FC<DrawerProps> = ({
 
   return (
     <div style={drawerStyle}>
-      <DrawerHeader
-        logo={logo}
-        title={title}
-        open={open}
-        onClick={handleHeaderClick}
-      />
+      <DrawerHeader logo={logo} title={title} open={open} onClick={handleHeaderClick} />
       {open && (
         <Box sx={{ padding: '0.5rem' }}>
           <TextInputAutocomplete

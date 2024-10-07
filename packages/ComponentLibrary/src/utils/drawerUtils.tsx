@@ -1,9 +1,6 @@
 import { Menu } from '../../../EtendoHookBinder/src/api/types';
 
-export const findActive = (
-  windowId: string | undefined,
-  items: Menu[] | undefined = [],
-): boolean => {
+export const findActive = (windowId: string | undefined, items: Menu[] | undefined = []): boolean => {
   if (!items || !windowId) return false;
   const stack: Menu[] = [...items];
   while (stack.length > 0) {
