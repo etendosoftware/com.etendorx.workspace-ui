@@ -119,32 +119,40 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     textFieldProps.onChange?.(e);
   };
 
-  const renderStartAdornment = () => (
-    <InputAdornment position="start">
-      <Box sx={SX_STYLES.startAdornment}>
-        {loading ? (
-          <CircularProgress
-            sx={{ color: theme.palette.baselineColor.neutral[80] }}
-            size={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_SIZE}
-            thickness={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_THICKNESS}
-          />
-        ) : leftIcon ? (
-          <IconButton onClick={onLeftIconClick} sx={{ color: theme.palette.baselineColor.neutral[70] }}>
-            {leftIcon}
-          </IconButton>
-        ) : (
-          <SearchIcon
-            sx={{
-              color:
-                isFocused && value.length > 0
-                  ? theme.palette.dynamicColor.main
-                  : theme.palette.baselineColor.neutral[70],
-            }}
-          />
-        )}
-      </Box>
-    </InputAdornment>
-  );
+  const renderStartAdornment = () => {
+    let iconElement;
+
+    if (loading) {
+      iconElement = (
+        <CircularProgress
+          sx={{ color: theme.palette.baselineColor.neutral[80] }}
+          size={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_SIZE}
+          thickness={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_THICKNESS}
+        />
+      );
+    } else if (leftIcon) {
+      iconElement = (
+        <IconButton onClick={onLeftIconClick} sx={{ color: theme.palette.baselineColor.neutral[70] }}>
+          {leftIcon}
+        </IconButton>
+      );
+    } else {
+      iconElement = (
+        <SearchIcon
+          sx={{
+            color:
+              isFocused && value.length > 0 ? theme.palette.dynamicColor.main : theme.palette.baselineColor.neutral[70],
+          }}
+        />
+      );
+    }
+
+    return (
+      <InputAdornment position="start">
+        <Box sx={SX_STYLES.startAdornment}>{iconElement}</Box>
+      </InputAdornment>
+    );
+  };
 
   const renderEndAdornment = () =>
     rightIcon &&
