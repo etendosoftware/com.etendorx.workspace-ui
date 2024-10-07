@@ -96,6 +96,11 @@ export const styles = {
       backgroundColor: theme.palette.baselineColor.neutral[90],
     },
   },
+  tooltipTruncation: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
   popper: {
     marginLeft: '0.75rem',
     borderRadius: '0.75rem',

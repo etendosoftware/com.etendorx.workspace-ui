@@ -47,13 +47,7 @@ export default function MenuTitle({
               title={item.name}
               arrow
               disableHoverListener={!isTextTruncated}>
-              <span
-                ref={textRef}
-                style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}>
+              <span ref={textRef} style={styles.tooltipTruncation}>
                 {item.name}
               </span>
             </Tooltip>
