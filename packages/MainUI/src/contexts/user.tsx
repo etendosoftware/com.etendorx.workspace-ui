@@ -5,6 +5,7 @@ import { Metadata } from '@workspaceui/etendohookbinder/api/metadata';
 import { Datasource } from '@workspaceui/etendohookbinder/api/datasource';
 import { login as doLogin } from '@workspaceui/etendohookbinder/api/authentication';
 import { HTTP_CODES } from '@workspaceui/etendohookbinder/api/constants';
+import { useQuery } from '@tanstack/react-query';
 
 interface IUserContext {
   login: (username: string, password: string) => Promise<void>;
@@ -14,14 +15,26 @@ interface IUserContext {
 export const UserContext = createContext({} as IUserContext);
 
 export default function UserProvider(props: React.PropsWithChildren) {
-  const [token, settoken] = useState(localStorage.getItem('token'));
+  const [token, settoken] = useState(sessionStorage.getItem('token'));
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { data } = useQuery({
+    queryKey: [token ?? ''],
+    queryFn: args => {
+      console.log(args);
+
+      return { user: 'lucho' };
+    },
+  });
+
+  useEffect(() => {
+    console.debug({ data });
+  }, [data]);
 
   const login = useCallback(async (username: string, password: string) => {
     try {
       const token = await doLogin(username, password);
-      localStorage.setItem('token', token);
+      sessionStorage.setItem('token', token);
       settoken(token);
     } catch (e) {
       logger.warn(e);
@@ -50,7 +63,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   useEffect(() => {
     const interceptor = (response: Response) => {
       if (response.status === HTTP_CODES.UNAUTHORIZED) {
-        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
         settoken(null);
         navigate('/login');
       }
