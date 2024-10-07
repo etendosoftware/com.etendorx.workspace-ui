@@ -1,25 +1,20 @@
 import Box from '@mui/material/Box';
 import { MaterialReactTable, MRT_Row } from 'material-react-table';
-import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import styles from './styles';
-import type {
-  DatasourceOptions,
-  Tab,
-} from '@workspaceui/etendohookbinder/src/api/types';
+import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { parseColumns } from '@workspaceui/etendohookbinder/src/helpers/metadata';
 import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
 import { useNavigate } from 'react-router-dom';
 import { memo, useCallback, useMemo } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
+import { Button } from '@workspaceui/componentlibrary/src/components';
 
 type DynamicTableProps = {
   tab: Tab;
 };
 
-const DynamicTableContent = memo(function DynamicTableContent({
-  tab,
-}: DynamicTableProps) {
+const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTableProps) {
   const { selected, selectRecord } = useMetadataContext();
   const navigate = useNavigate();
   const parent = selected[tab.level - 1];
@@ -42,15 +37,9 @@ const DynamicTableContent = memo(function DynamicTableContent({
       : {};
   }, [tab.parentColumns, parent?.id]);
 
-  const { records, loading, error, fetchMore, loaded } = useDatasource(
-    tab.entityName,
-    query,
-  );
+  const { records, loading, error, fetchMore, loaded } = useDatasource(tab.entityName, query);
 
-  const columns = useMemo(
-    () => parseColumns(Object.values(tab.fields)),
-    [tab.fields],
-  );
+  const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
   const rowProps = useCallback(
     ({ row }: { row: MRT_Row<Record<string, unknown>> }) => ({
@@ -78,13 +67,12 @@ const DynamicTableContent = memo(function DynamicTableContent({
           data={records}
           enableRowSelection
           enableMultiRowSelection={false}
-          enableColumnVirtualization
-          enableRowVirtualization
-          enableTopToolbar={false}
+          positionToolbarAlertBanner="none"
           muiTableBodyRowProps={rowProps}
+          enablePagination={false}
+          renderBottomToolbar={tab.uIPattern == 'STD' ? <Button onClick={fetchMore}>Load more</Button> : null}
         />
       </Box>
-      <IconButton onClick={fetchMore} iconText="+" sx={styles.fetchMore} />
     </Box>
   );
 });
@@ -92,8 +80,9 @@ const DynamicTableContent = memo(function DynamicTableContent({
 const DynamicTable = ({ tab }: DynamicTableProps) => {
   const { selected } = useMetadataContext();
 
-  if (selected[tab.level - 1] || tab.level === 0)
-    return <DynamicTableContent tab={tab} />;
+  if (selected[tab.level - 1] || tab.level === 0) {
+    return tab.uIPattern == 'STD' ? <DynamicTableContent tab={tab} /> : <DynamicTableContent tab={tab} />;
+  }
 
   return null;
 };

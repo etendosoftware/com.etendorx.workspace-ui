@@ -56,6 +56,7 @@ export interface GridProps {
 }
 
 export interface Field {
+  showInGridView: boolean;
   fieldGroup$_identifier: string;
   fieldGroup: string;
   column: Record<string, string>;
@@ -139,8 +140,10 @@ export interface WindowMetadataProperties {
 }
 
 export interface Tab {
-  parentColumns: string[];
+  uIPattern: "STD" | "SR";
   name: string;
+  title: string;
+  parentColumns: string[];
   id: string;
   entityName: string;
   fields: Record<string, Field>;
