@@ -18,6 +18,18 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { data } = useQuery({
+    queryKey: [token ?? ''],
+    queryFn: args => {
+      console.log(args);
+
+      return { user: 'lucho' };
+    },
+  });
+
+  useEffect(() => {
+    console.debug({ data });
+  }, [data]);
 
   const [roles, setRoles] = useState<Role[]>(() => {
     const savedRoles = localStorage.getItem('roles');
