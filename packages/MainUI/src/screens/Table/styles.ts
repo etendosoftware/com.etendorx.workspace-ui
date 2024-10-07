@@ -1,5 +1,5 @@
 import { css } from '@mui/material';
-import { theme } from '@workspaceui/componentlibrary/src/theme';
+import { theme } from '@workspaceui/componentlibrary/theme';
 
 export const styles = {
   container: css({

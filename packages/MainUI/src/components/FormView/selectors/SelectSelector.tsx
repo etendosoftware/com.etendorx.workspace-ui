@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
-import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
+import Select from '@workspaceui/componentlibrary/components/Input/Select';
 import SearchOutlined from '../../../../../ComponentLibrary/src/assets/icons/search.svg';
-import { theme } from '@workspaceui/componentlibrary/src/components';
+import { theme } from '@workspaceui/componentlibrary/components';
 import { topFilms } from '../../../../../storybook/src/stories/Components/Input/Select/mock';
 import { SelectSelectorProps } from '../types';
 

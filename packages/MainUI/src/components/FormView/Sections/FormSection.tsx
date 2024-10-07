@@ -8,9 +8,9 @@ import {
   Grid,
 } from '@mui/material';
 import ChevronDown from '../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
-import { theme } from '@workspaceui/componentlibrary/src/theme';
+import { theme } from '@workspaceui/componentlibrary/theme';
 import { defaultFill, styles, sx } from '../styles';
-import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
+import IconButton from '@workspaceui/componentlibrary/components/IconButton';
 import InfoIcon from '../../../../../ComponentLibrary/src/assets/icons/info.svg';
 import { FormSectionProps } from '../types';
 import FormFieldGroup from '../selectors';

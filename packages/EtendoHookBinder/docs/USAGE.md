@@ -7,7 +7,7 @@ You can use the metadata module by using the helpers provided by the Metadata Co
 In case you want to go with the context approach, you must wrap your main App like follows:
 
 ```tsx
-import MetadataProvider from '@workspaceui/etendohookbinder/src/contexts/metadata';
+import MetadataProvider from '@workspaceui/etendohookbinder/contexts/metadata';
 .
 .
 .
@@ -22,7 +22,7 @@ export default function App() {
 
 Then, you can access the metadata using the getWindow and getColumns functions:
 ```tsx
-import { useMetadataContext } from '@workspaceui/etendohookbinder/src/hooks/useMetadataContext';
+import { useMetadataContext } from '@workspaceui/etendohookbinder/hooks/useMetadataContext';
 
 export default function Home() {
   const { getWindow, getColumns } = useMetadataContext();
@@ -44,7 +44,7 @@ export default function Home() {
 In case you want to use the 2nd approach and avoid using react contexts, you can use the hooks like follows:
 
 ```tsx
-import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
+import { useWindow } from '@workspaceui/etendohookbinder/hooks/useWindow';
 
 export default function Home() {
   const { data } = useWindow('100'); // windowId = 100
@@ -61,7 +61,7 @@ The usage of useWindow and useColumns is pretty much lookalike:
 
 
 ```tsx
-import { useColumns } from '@workspaceui/etendohookbinder/src/hooks/useColumns';
+import { useColumns } from '@workspaceui/etendohookbinder/hooks/useColumns';
 
 export default function Home() {
   const { data } = useColumns('100'); // windowId = 100

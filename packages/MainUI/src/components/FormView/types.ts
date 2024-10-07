@@ -3,7 +3,7 @@ import { FieldDefinition, Section } from '../../screens/Form/types';
 import {
   MappedData,
   WindowMetadata,
-} from '@workspaceui/etendohookbinder/src/api/types';
+} from '@workspaceui/etendohookbinder/api/types';
 
 export interface GridItemProps {
   xs?: number;

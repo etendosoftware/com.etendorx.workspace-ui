@@ -7,8 +7,8 @@ import React, {
 } from 'react';
 import { Box, Grid } from '@mui/material';
 import { FormViewProps } from './types';
-import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
-import { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
+import PrimaryTabs from '@workspaceui/componentlibrary/components/PrimaryTab';
+import { TabItem } from '@workspaceui/componentlibrary/components/PrimaryTab/types';
 import SectionRenderer from './Sections/sectionRendered';
 import { Section, FieldDefinition } from '../../screens/Form/types';
 import type { FieldValue, FormData } from './types';
