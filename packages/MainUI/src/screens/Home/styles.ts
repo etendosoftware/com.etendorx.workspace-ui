@@ -1,4 +1,4 @@
-import { theme } from '@workspaceui/componentlibrary/src/theme';
+import { theme } from '@workspaceui/componentlibrary/theme';
 import { useMemo } from 'react';
 
 const useStyles = () => {

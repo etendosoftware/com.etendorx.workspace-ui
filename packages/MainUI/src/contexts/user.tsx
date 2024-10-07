@@ -1,10 +1,10 @@
 import { createContext, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { logger } from '../utils/logger';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { Datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
-import { login as doLogin } from '@workspaceui/etendohookbinder/src/api/authentication';
-import { HTTP_CODES } from '@workspaceui/etendohookbinder/src/api/constants';
+import { Metadata } from '@workspaceui/etendohookbinder/api/metadata';
+import { Datasource } from '@workspaceui/etendohookbinder/api/datasource';
+import { login as doLogin } from '@workspaceui/etendohookbinder/api/authentication';
+import { HTTP_CODES } from '@workspaceui/etendohookbinder/api/constants';
 
 interface IUserContext {
   login: (username: string, password: string) => Promise<void>;

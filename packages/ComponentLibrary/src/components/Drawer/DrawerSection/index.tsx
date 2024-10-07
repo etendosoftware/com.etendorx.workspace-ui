@@ -5,7 +5,7 @@ import MenuTitle from '../MenuTitle';
 import { theme } from '../../../theme';
 import { DrawerSectionProps } from '../types';
 import { useParams } from 'react-router-dom';
-import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import { Menu } from '@workspaceui/etendohookbinder/api/types';
 
 const findActive = (windowId: string | undefined, items: Menu[] | undefined = []): boolean => {
   if (!items || !windowId) return false;

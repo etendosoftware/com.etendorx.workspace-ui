@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
+import Spinner from '@workspaceui/componentlibrary/components/Spinner';
+import { useWindow } from '@workspaceui/etendohookbinder/hooks/useWindow';
+import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource';
 import { FormData } from './types';
 import FormView from '../../components/FormView';
 import { adaptFormData, mapWindowMetadata } from '../../utils/formUtils';
-import { MappedData } from '@workspaceui/etendohookbinder/src/api/types';
+import { MappedData } from '@workspaceui/etendohookbinder/api/types';
 
 export default function DynamicFormView() {
   const { windowId = '', recordId } = useParams<{

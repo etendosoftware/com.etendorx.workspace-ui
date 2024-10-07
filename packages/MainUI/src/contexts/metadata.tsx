@@ -2,11 +2,11 @@ import { createContext, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   type Etendo,
   Metadata,
-} from '@workspaceui/etendohookbinder/src/api/metadata';
+} from '@workspaceui/etendohookbinder/api/metadata';
 import { useParams } from 'react-router-dom';
-import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
+import { useWindow } from '@workspaceui/etendohookbinder/hooks/useWindow';
 import { buildColumnsData, groupTabsByLevel } from '../utils/metadata';
-import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { Tab } from '@workspaceui/etendohookbinder/api/types';
 
 interface IMetadataContext {
   getWindow: (windowId: string) => Promise<Etendo.WindowMetadata>;

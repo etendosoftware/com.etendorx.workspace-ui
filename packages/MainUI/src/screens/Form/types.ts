@@ -1,4 +1,4 @@
-import { Field } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field } from '@workspaceui/etendohookbinder/api/types';
 
 export interface FieldInfo {
   fieldGroup$_identifier?: string;

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Drawer } from '@workspaceui/componentlibrary/src/components';
-import { useMenu } from '@workspaceui/etendohookbinder/src/hooks/useMenu';
+import { Drawer } from '@workspaceui/componentlibrary/components';
+import { useMenu } from '@workspaceui/etendohookbinder/hooks/useMenu';
 import EtendoLogotype from '../assets/etendo-logotype.png';
 import { useUserContext } from '../hooks/useUserContext';
 import { useTranslation } from '../hooks/useTranslation';

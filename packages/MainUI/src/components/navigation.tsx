@@ -7,12 +7,12 @@ import {
   Navbar,
   Profile,
   Waterfall,
-} from '@workspaceui/componentlibrary/src/components';
-import profilePicture from '@workspaceui/componentlibrary/src/assets/images/profile_picture_mock.png';
-import ActivityIcon from '@workspaceui/componentlibrary/src/assets/icons/activity.svg';
-import NotificationIcon from '@workspaceui/componentlibrary/src/assets/icons/bell.svg';
-import PersonIcon from '@workspaceui/componentlibrary/src/assets/icons/user.svg';
-import AddIcon from '@workspaceui/componentlibrary/src/assets/icons/plus.svg';
+} from '@workspaceui/componentlibrary/components';
+import profilePicture from '@workspaceui/componentlibrary/assets/images/profile_picture_mock.png';
+import ActivityIcon from '@workspaceui/componentlibrary/assets/icons/activity.svg';
+import NotificationIcon from '@workspaceui/componentlibrary/assets/icons/bell.svg';
+import PersonIcon from '@workspaceui/componentlibrary/assets/icons/user.svg';
+import AddIcon from '@workspaceui/componentlibrary/assets/icons/plus.svg';
 import {
   modalConfig,
   menuItems,

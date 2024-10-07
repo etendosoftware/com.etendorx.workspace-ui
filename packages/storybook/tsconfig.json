@@ -19,7 +19,14 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@workspaceui/componentlibrary/*": ["../ComponentLibrary/src/*"],
+      "@workspaceui/componentlibrary": ["../ComponentLibrary/src"],
+      "@workspaceui/etendohookbinder/*": ["../EtendoHookBinder/src/*"],
+      "@workspaceui/etendohookbinder": ["../EtendoHookBinder/src"]
+    }
   },
   "include": ["src", "svg.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]

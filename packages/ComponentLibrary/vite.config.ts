@@ -15,10 +15,9 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@workspaceui/etendohookbinder': path.resolve(
-        __dirname,
-        '../ComponentLibrary/src',
-      ),
+      '@workspaceui/storybook': path.resolve(__dirname, '../storybook/src'),
+      '@workspaceui/etendohookbinder': path.resolve(__dirname, '../EtendoHookBinder/src'),
+      '@workspaceui/componentlibrary': path.resolve(__dirname, '../ComponentLibrary/src'),
     },
   },
   optimizeDeps: {
