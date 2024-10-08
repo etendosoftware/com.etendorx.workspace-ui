@@ -1,6 +1,6 @@
 import { Tab } from '@workspaceui/etendohookbinder/api/types';
-import { useMetadataContext } from '@workspaceui/etendohookbinder/hooks/useMetadataContext';
 import { useMemo } from 'react';
+import { useMetadataContext } from './useMetadataContext';
 
 export default function useIsEnabled(tab: Tab) {
   const { selected } = useMetadataContext();

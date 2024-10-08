@@ -18,9 +18,7 @@ export class Metadata {
     return this.client.registerInterceptor(interceptor);
   }
 
-  private static async _getWindow(
-    windowId: Etendo.WindowId,
-  ): Promise<Etendo.WindowMetadata> {
+  private static async _getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
     const { data } = await Metadata.client.post(`window/${windowId}`);
 
     Metadata.cache.set(`window-${windowId}`, data);
@@ -31,10 +29,8 @@ export class Metadata {
     return data;
   }
 
-  public static async getWindow(
-    windowId: Etendo.WindowId,
-  ): Promise<Etendo.WindowMetadata> {
-    const cached = Metadata.cache.get(`window-${windowId}`);
+  public static async getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
+    const cached = Metadata.cache.get<Etendo.WindowMetadata>(`window-${windowId}`);
 
     if (cached) {
       return cached;
@@ -44,22 +40,11 @@ export class Metadata {
   }
 
   public static getColumns(tabId: string): Etendo.Column[] {
-    return Metadata.cache.get(`tab-${tabId}`)?.fields ?? [];
-  }
-
-  public static async getSession() {
-    const response = await Metadata.client.get(
-      `/OBCLKER_Kernel/SessionDynamic`,
-    );
-
-    this.client.run(response.data);
-
-    // return Metadata.OB.User;
-    return {};
+    return Metadata.cache.get<{ fields: Etendo.Column[] }>(`tab-${tabId}`)?.fields ?? [];
   }
 
   public static async getMenu(): Promise<Menu[]> {
-    const cached = Metadata.cache.get('OBMenu');
+    const cached = Metadata.cache.get<Menu[]>('OBMenu');
 
     if (cached && cached.length) {
       return cached;

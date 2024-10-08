@@ -1,7 +1,7 @@
 import Spinner from '@workspaceui/componentlibrary/components/Spinner';
 import Tabs from './Tabs';
-import { useMetadataContext } from '@workspaceui/etendohookbinder/hooks/useMetadataContext';
 import { Box } from '@mui/material';
+import { useMetadataContext } from '../../hooks/useMetadataContext';
 
 export default function DynamicTableScreen() {
   const { loading, error, windowData, groupedTabs } = useMetadataContext();
