@@ -1,19 +1,30 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { Metadata } from '../api/metadata';
 import { Menu } from '../api/types';
+import { UserContext } from '../../../MainUI/src/contexts/user';
 
-export const useMenu = (token?: string | null) => {
-  const [menu, setMenu] = useState<Menu[]>(Metadata.getCachedMenu());
+export const useMenu = () => {
+  const { token, currentRole } = useContext(UserContext);
+  const [menu, setMenu] = useState<Menu[]>([]);
 
   useEffect(() => {
-    const initialize = async () => {
+    const fetchMenu = async () => {
       if (token) {
-        setMenu(await Metadata.getMenu());
+        try {
+          const newMenu = await Metadata.getMenu();
+          setMenu(newMenu);
+        } catch (error) {
+          console.error('Error fetching menu:', error);
+        }
       }
     };
 
-    initialize();
-  }, [token]);
+    fetchMenu();
+
+    return () => {
+      Metadata.clearMenuCache();
+    };
+  }, [token, currentRole]);
 
   return menu;
 };

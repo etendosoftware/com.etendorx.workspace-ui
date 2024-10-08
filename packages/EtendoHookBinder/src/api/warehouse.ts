@@ -1,7 +1,7 @@
 import { API_LOGIN_URL } from './constants';
 import { LoginResponse } from './types';
 
-export const changeRole = async (roleId: string, token: string): Promise<LoginResponse> => {
+export const changeWarehouse = async (warehouseId: string, token: string): Promise<LoginResponse> => {
   try {
     const response = await fetch(API_LOGIN_URL, {
       method: 'POST',
@@ -10,7 +10,7 @@ export const changeRole = async (roleId: string, token: string): Promise<LoginRe
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        role: roleId,
+        warehouse: warehouseId,
       }),
     });
 
@@ -26,7 +26,7 @@ export const changeRole = async (roleId: string, token: string): Promise<LoginRe
 
     return data;
   } catch (error) {
-    console.error('Change role error:', error);
+    console.error('Change warehouse error:', error);
     throw error;
   }
 };

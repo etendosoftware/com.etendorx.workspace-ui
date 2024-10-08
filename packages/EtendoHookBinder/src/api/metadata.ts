@@ -9,6 +9,7 @@ export type { Etendo };
 export class Metadata {
   public static client = new Client(API_METADATA_URL);
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
+  private static currentRoleId: string | null = null;
 
   public static authorize(token: string) {
     this.client.setAuthHeader(token, 'Bearer');
@@ -18,9 +19,7 @@ export class Metadata {
     return this.client.registerInterceptor(interceptor);
   }
 
-  private static async _getWindow(
-    windowId: Etendo.WindowId,
-  ): Promise<Etendo.WindowMetadata> {
+  private static async _getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
     const { data } = await Metadata.client.post(`window/${windowId}`);
 
     Metadata.cache.set(`window-${windowId}`, data);
@@ -31,9 +30,7 @@ export class Metadata {
     return data;
   }
 
-  public static async getWindow(
-    windowId: Etendo.WindowId,
-  ): Promise<Etendo.WindowMetadata> {
+  public static async getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
     const cached = Metadata.cache.get(`window-${windowId}`);
 
     if (cached) {
@@ -48,9 +45,7 @@ export class Metadata {
   }
 
   public static async getSession() {
-    const response = await Metadata.client.get(
-      `/OBCLKER_Kernel/SessionDynamic`,
-    );
+    const response = await Metadata.client.get(`/OBCLKER_Kernel/SessionDynamic`);
 
     this.client.run(response.data);
 
@@ -58,20 +53,31 @@ export class Metadata {
     return {};
   }
 
-  public static async getMenu(): Promise<Menu[]> {
+  public static async getMenu(forceRefresh: boolean = false): Promise<Menu[]> {
     const cached = Metadata.cache.get('OBMenu');
+    const roleId = localStorage.getItem('currentRoleId');
 
-    if (cached && cached.length) {
+    if (!forceRefresh && cached && cached.length && roleId === this.currentRoleId) {
       return cached;
     } else {
-      const { data } = await this.client.post('menu');
-      Metadata.cache.set('OBMenu', data);
-
-      return data;
+      try {
+        const { data } = await this.client.post('menu');
+        Metadata.cache.set('OBMenu', data);
+        this.currentRoleId = roleId;
+        return data;
+      } catch (error) {
+        console.error('Error fetching menu:', error);
+        throw error;
+      }
     }
   }
 
   public static getCachedMenu(): Menu[] {
     return Metadata.cache.get('OBMenu') ?? [];
+  }
+
+  public static clearMenuCache() {
+    Metadata.cache.delete('OBMenu');
+    this.currentRoleId = null;
   }
 }

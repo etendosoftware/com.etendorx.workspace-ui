@@ -5,6 +5,10 @@ export interface LanguageContextType {
   setLanguage: (lang: Language) => void;
 }
 
+export interface Warehouse {
+  id: string;
+  name: string;
+}
 export interface Role {
   id: string;
   name: string;
@@ -21,7 +25,9 @@ export interface Role {
 export interface IUserContext {
   login: (username: string, password: string) => Promise<void>;
   changeRole: (roleId: string) => Promise<void>;
+  changeWarehouse: (warehouseId: string) => Promise<void>;
   token: string | null;
   roles: Role[];
   currentRole: Role | null;
+  currentWarehouse: Warehouse | null;
 }

@@ -8,14 +8,14 @@ import { SelectorListProps, Item } from './types';
 import { InputPassword, theme } from '../..';
 import LockOutlined from '../../../assets/icons/lock.svg';
 import Select from '../../Input/Select';
-import { Option } from '../../Input/Select/types';
+import { useMemo } from 'react';
 
 const icons: { [key in Item]: React.ReactElement } = {
-  [Item.Rol]: <></>,
-  [Item.Cliente]: <ClientIcon fill={defaultFill} />,
-  [Item.Organización]: <OrganizationIcon fill={defaultFill} />,
-  [Item.Almacén]: <WarehouseIcon fill={defaultFill} />,
-  [Item.Lenguaje]: <LanguageIcon />,
+  [Item.Role]: <></>,
+  [Item.Client]: <ClientIcon fill={defaultFill} />,
+  [Item.Organization]: <OrganizationIcon fill={defaultFill} />,
+  [Item.Warehouse]: <WarehouseIcon fill={defaultFill} />,
+  [Item.Language]: <LanguageIcon />,
 };
 
 const SelectorList: React.FC<SelectorListProps> = ({
@@ -24,14 +24,18 @@ const SelectorList: React.FC<SelectorListProps> = ({
   newPasswordLabel,
   confirmPasswordLabel,
   onRoleChange,
+  onWarehouseChange,
   roles,
-  currentRole,
+  selectedRole,
+  selectedWarehouse,
 }) => {
-  const handleRoleChange = (_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
-    if (value) {
-      onRoleChange(value.value);
+  const warehouses = useMemo(() => {
+    if (selectedRole) {
+      const role = roles.find(r => r.id === selectedRole.value);
+      return role ? role.orgList.flatMap(org => org.warehouseList) : [];
     }
-  };
+    return [];
+  }, [roles, selectedRole]);
 
   const CustomCheckbox = styled(Checkbox)(() => ({
     '&.Mui-checked': {
@@ -42,20 +46,35 @@ const SelectorList: React.FC<SelectorListProps> = ({
   return (
     <div style={selectorListStyles}>
       {section === 'profile' && (
-        <FormControl fullWidth style={formStyle}>
-          <Select
-            id="role-select"
-            title={Item.Rol}
-            options={roles.map(role => ({
-              title: role.name,
-              value: role.id,
-              id: role.id,
-            }))}
-            value={currentRole ? { title: currentRole.name, value: currentRole.id, id: currentRole.id } : null}
-            onChange={handleRoleChange}
-            iconLeft={icons[Item.Rol]}
-          />
-        </FormControl>
+        <>
+          <FormControl fullWidth style={formStyle}>
+            <Select
+              id="role-select"
+              title={Item.Role}
+              options={roles.map(role => ({
+                title: role.name,
+                value: role.id,
+                id: role.id,
+              }))}
+              value={selectedRole}
+              onChange={onRoleChange}
+              iconLeft={icons[Item.Role]}
+            />
+            <Select
+              id="warehouse-select"
+              title={Item.Warehouse}
+              options={warehouses.map(warehouse => ({
+                title: warehouse.name,
+                value: warehouse.id,
+                id: warehouse.id,
+              }))}
+              value={selectedWarehouse}
+              onChange={onWarehouseChange}
+              iconLeft={icons[Item.Warehouse]}
+              disabled={!selectedRole}
+            />
+          </FormControl>
+        </>
       )}
       {section === 'profile' && <FormControlLabel control={<CustomCheckbox size="small" />} label="Save Profile" />}
       {section === 'password' && (

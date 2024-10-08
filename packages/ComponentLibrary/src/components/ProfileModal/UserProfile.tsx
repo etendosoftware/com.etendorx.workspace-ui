@@ -5,12 +5,7 @@ import Logout from '../../assets/icons/log-out.svg';
 import { User } from './UserProfile.types';
 import IconButton from '../IconButton';
 
-const UserProfile: React.FC<User> = ({
-  photoUrl,
-  name,
-  email,
-  sestionTooltip,
-}) => {
+const UserProfile: React.FC<User> = ({ photoUrl, name, email, sestionTooltip }) => {
   return (
     <div style={styles.userProfileStyles}>
       <div style={styles.svgContainerStyles}>

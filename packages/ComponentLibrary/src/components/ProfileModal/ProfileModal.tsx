@@ -1,4 +1,4 @@
-import React, { useState, useContext, useCallback } from 'react';
+import React, { useState, useContext, useCallback, useEffect } from 'react';
 import { Button, Menu } from '@mui/material';
 import CheckCircle from '../../assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';
@@ -10,6 +10,7 @@ import { toggleSectionStyles } from './ToggleButton/styles';
 import IconButton from '../IconButton';
 import { theme } from '../../theme';
 import { UserContext } from '../../../../MainUI/src/contexts/user';
+import { Option } from '../Input/Select/types';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,
@@ -27,21 +28,44 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedRole, setSelectedRole] = useState<string>('');
-  const { changeRole, currentRole, roles } = useContext(UserContext);
+  const [selectedRole, setSelectedRole] = useState<Option | null>(null);
+  const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(null);
+  const { changeRole, changeWarehouse, currentRole, currentWarehouse, roles } = useContext(UserContext);
 
-  const handleRoleChange = useCallback((newRoleId: string) => {
-    setSelectedRole(newRoleId);
+  useEffect(() => {
+    if (currentRole) {
+      setSelectedRole({ title: currentRole.name, value: currentRole.id, id: currentRole.id });
+    }
+  }, [currentRole]);
+
+  useEffect(() => {
+    if (currentWarehouse) {
+      setSelectedWarehouse({ title: currentWarehouse.name, value: currentWarehouse.id, id: currentWarehouse.id });
+    }
+  }, [currentWarehouse]);
+
+  const handleRoleChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
+    setSelectedRole(value);
+    setSelectedWarehouse(null);
+  }, []);
+
+  const handleWarehouseChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
+    setSelectedWarehouse(value);
   }, []);
 
   const handleSave = async () => {
-    if (currentSection === 'profile' && selectedRole && selectedRole !== currentRole?.id) {
+    if (currentSection === 'profile') {
       try {
-        await changeRole(selectedRole);
+        if (selectedRole && selectedRole.value !== currentRole?.id) {
+          await changeRole(selectedRole.value);
+        }
+        if (selectedWarehouse && selectedWarehouse.value !== currentWarehouse?.id) {
+          await changeWarehouse(selectedWarehouse.value);
+        }
         handleClose();
         window.location.reload();
       } catch (error) {
-        console.error('Error changing role:', error);
+        console.error('Error changing role or warehouse:', error);
       }
     }
   };
@@ -57,6 +81,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const handleClose = () => {
     setAnchorEl(null);
   };
+
+  const isSaveDisabled =
+    currentSection === 'profile' &&
+    (!selectedRole || selectedRole.value === currentRole?.id) &&
+    (!selectedWarehouse || selectedWarehouse.value === currentWarehouse?.id);
 
   return (
     <>
@@ -86,8 +115,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           newPasswordLabel={newPasswordLabel}
           confirmPasswordLabel={confirmPasswordLabel}
           onRoleChange={handleRoleChange}
+          onWarehouseChange={handleWarehouseChange}
           roles={roles}
-          currentRole={currentRole}
+          selectedRole={selectedRole}
+          selectedWarehouse={selectedWarehouse}
         />
         <div style={styles.buttonContainerStyles}>
           <Button sx={sx.buttonStyles} onClick={handleClose}>
@@ -97,7 +128,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             startIcon={<CheckCircle fill={theme.palette.baselineColor.neutral[0]} />}
             sx={sx.saveButtonStyles}
             onClick={handleSave}
-            disabled={currentSection === 'profile' && selectedRole === currentRole?.id}>
+            disabled={isSaveDisabled}>
             {saveButtonText}
           </Button>
         </div>
