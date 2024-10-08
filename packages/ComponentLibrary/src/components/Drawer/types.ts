@@ -21,19 +21,18 @@ export interface MenuTitleProps {
   selected?: boolean;
   expanded?: boolean;
   open?: boolean;
+  isExpandable?: boolean;
 }
 
-export interface DrawerSectionProps {
+export interface DrawerSectionProps extends React.PropsWithChildren {
   item: Menu;
   onClick: NavigateFn;
   open?: boolean;
-  onHover?: (item: Menu) => void;
-  onLeave?: () => void;
-}
-
-export interface DrawerSubsectionProps {
-  item: Menu;
-  onClick: NavigateFn;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  hasChildren: boolean;
+  isExpandable: boolean;
+  isSearchActive: boolean;
 }
 
 export interface Section {
@@ -50,7 +49,21 @@ export interface SectionGroup {
   sections: Section[];
 }
 
-export interface HoverMenuProps {
-  item: Menu;
-  onClick: NavigateFn;
+export interface IndexedMenu extends Menu {
+  path: string[];
+  fullPath: string;
+}
+
+export interface SearchIndex {
+  byId: Map<string, IndexedMenu>;
+  byPhrase: Map<string, Set<string>>;
+}
+
+export interface DrawerItemsProps {
+  items: Menu[];
+  onClick: (path: string) => void;
+  open: boolean;
+  expandedItems: Set<string>;
+  toggleItemExpansion: (itemId: string) => void;
+  searchValue: string;
 }

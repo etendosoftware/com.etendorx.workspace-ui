@@ -191,6 +191,9 @@ export interface Menu {
   windowId?: string;
   window?: Window | null;
   action?: Action[keyof Action] | null;
+  isSearchResult?: boolean;
+  path?: string[];
+  fullPath?: string;
 }
 
 export enum Action {
