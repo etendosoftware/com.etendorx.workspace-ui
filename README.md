@@ -2,7 +2,7 @@
 
 ## Workflow for a monorepo with pnpm and submodules (dev environment)
 
-Note: This project is part of EtendoRX
+Note: This project is part of Etendo
 
 ### 1- Clone the repository
 
@@ -37,20 +37,17 @@ You will need to define 4 environment variables. You can use the following templ
 
 ```sh
 VITE_API_BASE_URL="http://localhost:8080/etendo" # Etendo Classic URL
-VITE_API_TOKEN="YWRtaW46YWRtaW4=" # Buffer.from('admin:admin').to('base64')
 VITE_CACHE_DURATION="3600000" # miliseconds: 1 hour
 VITE_AUTH_HEADER_NAME="Authorization"
 ```
 
 The API_BASE_URL must point to a working Etendo Classic app.
-The API_TOKEN is used only for development and will be removed. In the meantime, you can use the template provided value.
 The CACHE_DURATION is a configuration for the Metadata module. This setting represents the expiration time of cache entries and is a number in milliseconds.
 The AUTH_HEADER_NAME is a configuration for the Metadata module. This settings represents the name of the header that will be used by the API client. Specifically, it will be used for sending the authentication token. 
 
-
 ### 3- Production Mode
 
-install in a EtendoRX environment:
+install in a Etendo environment:
 
 ```bash
  pnpm build:all
@@ -72,12 +69,6 @@ If have is an old clone of the repository is recommended to do
 ```
 
 ### 3b- Run the main repository
-
-```bash
- pnpm --filter @workspaceui/mainui dev
-```
-
-or navigate to the package folder and run:
 
 ```bash
 pnpm dev

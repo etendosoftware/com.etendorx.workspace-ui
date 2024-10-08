@@ -8,7 +8,8 @@
     "clean": "pnpm -r exec -- rm -rf dist node_modules && rm -rf node_modules",
     "test": "pnpm --filter @workspaceui/etendohookbinder test",
     "build": "pnpm --filter @workspaceui/mainui build",
-    "start": "./gradlew bootRun",
+    "prestart": "pnpm build",
+    "start": "./gradlew build bootRun",
     "dev": "pnpm --filter @workspaceui/mainui dev",
     "preview": "pnpm --filter @workspaceui/mainui preview"
   },
