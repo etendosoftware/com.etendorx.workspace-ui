@@ -47,25 +47,32 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   const changeRole = useCallback(
     async (roleId: string) => {
+      if (!token) {
+        throw new Error('No token available. Please login first.');
+      }
       try {
-        const response = await doChangeRole(roleId);
+        const response = await doChangeRole(roleId, token);
         localStorage.setItem('token', response.token);
+        localStorage.setItem('roles', JSON.stringify(response.roleList));
         setToken(response.token);
-        const newRole = roles.find(role => role.id === roleId);
+        setRoles(response.roleList);
+
+        const newRole = response.roleList.find(role => role.id === roleId);
         if (newRole) {
           localStorage.setItem('currentRole', JSON.stringify(newRole));
           setCurrentRole(newRole);
         } else {
-          logger.warn('Selected role not found in the current roles list');
+          throw new Error('Selected role not found in the updated roles list');
         }
+
+        window.location.reload();
       } catch (e) {
         logger.warn('Change role error:', e);
         throw e;
       }
     },
-    [roles],
+    [token],
   );
-
   const value = useMemo(
     () => ({ login, changeRole, roles, currentRole, token }),
     [login, changeRole, roles, currentRole, token],

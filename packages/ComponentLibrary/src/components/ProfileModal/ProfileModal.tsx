@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useCallback } from 'react';
 import { Button, Menu } from '@mui/material';
 import CheckCircle from '../../assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';
@@ -30,15 +30,16 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [selectedRole, setSelectedRole] = useState<string>('');
   const { changeRole, currentRole, roles } = useContext(UserContext);
 
-  const handleRoleChange = (newRoleId: string) => {
+  const handleRoleChange = useCallback((newRoleId: string) => {
     setSelectedRole(newRoleId);
-  };
+  }, []);
 
   const handleSave = async () => {
-    if (selectedRole && selectedRole !== currentRole?.id) {
+    if (currentSection === 'profile' && selectedRole && selectedRole !== currentRole?.id) {
       try {
         await changeRole(selectedRole);
         handleClose();
+        window.location.reload();
       } catch (error) {
         console.error('Error changing role:', error);
       }
@@ -95,7 +96,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           <Button
             startIcon={<CheckCircle fill={theme.palette.baselineColor.neutral[0]} />}
             sx={sx.saveButtonStyles}
-            onClick={handleSave}>
+            onClick={handleSave}
+            disabled={currentSection === 'profile' && selectedRole === currentRole?.id}>
             {saveButtonText}
           </Button>
         </div>
