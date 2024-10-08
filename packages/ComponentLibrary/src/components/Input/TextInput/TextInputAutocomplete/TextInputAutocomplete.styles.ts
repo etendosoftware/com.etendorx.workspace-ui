@@ -32,7 +32,7 @@ export const CSS_STYLES: { [key: string]: any } = {
   tabText: {
     fontSize: FONT_SIZE_14,
     fontWeight: 500,
-    color: theme.palette.baselineColor.transparentNeutral[5],
+    color: theme.palette.baselineColor.transparentNeutral[15],
     marginLeft: '0.25rem',
   },
   suggestionText: {
@@ -61,7 +61,7 @@ export const SX_STYLES: { [key: string]: SxProps<Theme> } = {
     display: 'flex',
     alignItems: 'center',
     marginLeft: '0.25rem',
-    backgroundColor: theme.palette.baselineColor.neutral[5],
+    backgroundColor: theme.palette.baselineColor.neutral[10],
     height: '1.5rem',
     padding: '0.5rem',
     borderRadius: 100,
@@ -79,7 +79,7 @@ export const SX_STYLES: { [key: string]: SxProps<Theme> } = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     display: 'flex',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   iconWidth: {
     width: '1.375rem',
@@ -97,7 +97,7 @@ export const SX_STYLES: { [key: string]: SxProps<Theme> } = {
   },
   tabIcon: {
     fontSize: FONT_SIZE_14,
-    color: theme.palette.baselineColor.transparentNeutral[5],
+    color: theme.palette.baselineColor.neutral[80],
   },
   clearButtonHover: {
     width: '2rem',

@@ -4,6 +4,12 @@ import { theme } from '../../theme';
 const DRAWER_WIDTH = 260;
 const DRAWER_WIDTH_CLOSED = 56;
 
+const focusStyles = {
+  outline: `1px solid ${theme.palette.dynamicColor.main}`,
+  borderRadius: '0.5rem',
+  transition: 'outline-offset 0.1s ease',
+};
+
 export const styles = {
   drawer: {
     whiteSpace: 'nowrap',
@@ -96,6 +102,11 @@ export const styles = {
       backgroundColor: theme.palette.baselineColor.neutral[90],
     },
   },
+  tooltipTruncation: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
   popper: {
     marginLeft: '0.75rem',
     borderRadius: '0.75rem',
@@ -143,6 +154,7 @@ export const styles = {
   drawerSectionBox: {
     margin: '0.5rem 0.5rem 0rem 0.5rem',
     borderRadius: '0.5rem',
+    '&: focus': focusStyles,
   },
   closeSection: {
     display: 'flex',
