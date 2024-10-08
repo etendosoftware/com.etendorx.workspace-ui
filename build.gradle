@@ -27,8 +27,6 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
-def buildWeb = tasks.register('buildWeb', Exec) {
+tasks.register('buildWeb', Exec) {
     commandLine System.getenv('SHELL'), "-c", "pnpm install && pnpm build"
 }
-
-build.dependsOn buildWeb
