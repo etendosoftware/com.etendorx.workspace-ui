@@ -4,33 +4,72 @@ import { logger } from '../utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/api/metadata';
 import { Datasource } from '@workspaceui/etendohookbinder/api/datasource';
 import { login as doLogin } from '@workspaceui/etendohookbinder/api/authentication';
+import { changeRole as doChangeRole } from '@workspaceui/etendohookbinder/api/role';
 import { HTTP_CODES } from '@workspaceui/etendohookbinder/api/constants';
-
-interface IUserContext {
-  login: (username: string, password: string) => Promise<void>;
-  token: string | null;
-}
+import { IUserContext, Role } from './types';
 
 export const UserContext = createContext({} as IUserContext);
 
 export default function UserProvider(props: React.PropsWithChildren) {
-  const [token, settoken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [roles, setRoles] = useState<Role[]>(() => {
+    const savedRoles = localStorage.getItem('roles');
+    return savedRoles ? JSON.parse(savedRoles) : [];
+  });
+  const [currentRole, setCurrentRole] = useState<Role | null>(() => {
+    const savedCurrentRole = localStorage.getItem('currentRole');
+    return savedCurrentRole ? JSON.parse(savedCurrentRole) : null;
+  });
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
   const login = useCallback(async (username: string, password: string) => {
     try {
-      const token = await doLogin(username, password);
-      localStorage.setItem('token', token);
-      settoken(token);
-    } catch (e) {
-      logger.warn(e);
+      const response = await doLogin(username, password);
 
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('roles', JSON.stringify(response.roleList));
+      setToken(response.token);
+      setRoles(response.roleList);
+
+      if (response.roleList.length > 0) {
+        localStorage.setItem('currentRole', JSON.stringify(response.roleList[0]));
+        setCurrentRole(response.roleList[0]);
+      } else {
+        localStorage.removeItem('currentRole');
+        setCurrentRole(null);
+      }
+    } catch (e) {
+      logger.warn('Login error:', e);
       throw e;
     }
   }, []);
 
-  const value = useMemo(() => ({ login, token }), [login, token]);
+  const changeRole = useCallback(
+    async (roleId: string) => {
+      try {
+        const response = await doChangeRole(roleId);
+        localStorage.setItem('token', response.token);
+        setToken(response.token);
+        const newRole = roles.find(role => role.id === roleId);
+        if (newRole) {
+          localStorage.setItem('currentRole', JSON.stringify(newRole));
+          setCurrentRole(newRole);
+        } else {
+          logger.warn('Selected role not found in the current roles list');
+        }
+      } catch (e) {
+        logger.warn('Change role error:', e);
+        throw e;
+      }
+    },
+    [roles],
+  );
+
+  const value = useMemo(
+    () => ({ login, changeRole, roles, currentRole, token }),
+    [login, changeRole, roles, currentRole, token],
+  );
 
   useLayoutEffect(() => {
     if (token) {
@@ -51,10 +90,13 @@ export default function UserProvider(props: React.PropsWithChildren) {
     const interceptor = (response: Response) => {
       if (response.status === HTTP_CODES.UNAUTHORIZED) {
         localStorage.removeItem('token');
-        settoken(null);
+        localStorage.removeItem('roles');
+        localStorage.removeItem('currentRole');
+        setToken(null);
+        setRoles([]);
+        setCurrentRole(null);
         navigate('/login');
       }
-
       return response;
     };
 

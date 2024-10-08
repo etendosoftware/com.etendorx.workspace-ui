@@ -94,13 +94,7 @@ export interface MappedField {
   required?: boolean;
 }
 
-export type FieldType =
-  | 'text'
-  | 'number'
-  | 'date'
-  | 'boolean'
-  | 'select'
-  | 'tabledir';
+export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'tabledir';
 
 export interface MappedTab {
   id: string;
@@ -140,7 +134,7 @@ export interface WindowMetadataProperties {
 }
 
 export interface Tab {
-  uIPattern: "STD" | "SR";
+  uIPattern: 'STD' | 'SR';
   name: string;
   title: string;
   parentColumns: string[];
@@ -219,4 +213,21 @@ export enum WindowType {
   M = 'M',
   Q = 'Q',
   T = 'T',
+}
+
+export interface LoginResponse {
+  status: string;
+  token: string;
+  roleList: Array<{
+    id: string;
+    name: string;
+    orgList: Array<{
+      id: string;
+      name: string;
+      warehouseList: Array<{
+        id: string;
+        name: string;
+      }>;
+    }>;
+  }>;
 }
