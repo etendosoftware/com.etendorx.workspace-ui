@@ -1,0 +1,344 @@
+import { Meta } from '@storybook/blocks';
+import CopyIcon from '../assets/copy.svg?url';
+
+import {
+  INITIAL_90,
+  NEUTRAL_70,
+  NEUTRAL_80,
+  NEUTRAL_90,
+  PRIMARY_20,
+  PRIMARY_100,
+  SUCCESS_10,
+  SUCCESS_100,
+  QUATERNARY_10,
+  QUATERNARY_70,
+  QUATERNARY_100,
+} from '../styles/colors';
+
+<Meta title="How To Install/Steps" />
+
+<style>
+  {`
+    .inter {
+      font-family: 'Inter', 'sans-serif';
+    }
+
+    .description {
+      font-size: 1rem;
+    }
+
+    .keyword {
+      font-weight: bold;
+    }
+
+    .subheading {
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 5px;
+      line-height: 24px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      margin-top: 40px;
+      color: ${NEUTRAL_70};
+    }
+
+    .link-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      row-gap: 10px;
+    }
+
+    @media (min-width: 620px) {
+      .link-list {
+        row-gap: 20px;
+        column-gap: 20px;
+      }
+    }
+
+    @media all and (-ms-high-contrast:none) {
+      .link-list {
+          display: -ms-grid;
+          -ms-grid-columns: 1fr 1fr;
+          -ms-grid-rows: 1fr 1fr;
+      }
+    }
+
+    .link-item {
+      display: block;
+      padding: 20px;
+      border-radius: 5px;
+      transition: background 150ms ease-out, border 150ms ease-out, transform 150ms ease-out;
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .link-item:hover {
+      transform: translate3d(0, -3px, 0);
+      box-shadow: ${NEUTRAL_80} 0 3px 10px 0;
+    }
+
+    .link-item:active {
+      transform: translate3d(0, 0, 0);
+    }
+
+    .link-item strong {
+      font-weight: 700;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .link-item img {
+      height: 40px;
+      width: 40px;
+      margin-right: 15px;
+      flex: none;
+    }
+
+    .link-item span,
+    .link-item p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 20px;
+    }
+
+    .tip {
+      display: inline-block;
+      border-radius: 1em;
+      font-size: 11px;
+      line-height: 12px;
+      font-weight: 700;
+      background: ${SUCCESS_10};
+      padding: 4px 12px;
+      margin-right: 10px;
+      vertical-align: top;
+    }
+
+    .tip-wrapper {
+      font-size: 13px;
+      line-height: 20px;
+      margin-top: 40px;
+      margin-bottom: 40px;
+    }
+
+    .tip-wrapper code {
+      font-size: 12px;
+      display: inline-block;
+    }
+
+    .step-one {
+      padding: 5px 10px;
+      border-radius: 5px;
+    }
+
+    .step-two {
+      padding: 5px 10px;
+      border-radius: 5px;
+    }
+
+      .link-item {
+      display: block;
+      padding: 20px;
+      border: 1px solid ${NEUTRAL_80};
+      border-radius: 5px;
+      transition: background 150ms ease-out, border 150ms ease-out, transform 150ms ease-out;
+      color: ${PRIMARY_20};
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .link-item:hover {
+      border-color: ${QUATERNARY_100};
+      transform: translate3d(0, -3px, 0);
+      box-shadow: var(--transparent-black) 0 3px 10px 0;
+    }
+
+    .link-item:active {
+      border-color: ${INITIAL_90};
+      transform: translate3d(0, 0, 0);
+    }
+
+    .code-container {
+      background-color: ${NEUTRAL_90};
+      padding: 0.25rem 1.25rem;
+      border-radius: 4px;
+      color: white;
+      display: flex;
+      max-width: 60rem;
+      align-items: center;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .bash-container {
+      background-color: ${NEUTRAL_70};
+      padding: 0.25rem 1.25rem;
+      border-radius: 4px;
+      color: white;
+      display: flex;
+      max-width: 60rem;
+      align-items: center;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .code-container img {
+      width: 1rem;
+      cursor: pointer;
+    }
+
+    .button-code {
+      background-color: ${QUATERNARY_10};
+      border: 1px solid ${PRIMARY_100};
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .button-code:hover {
+      background-color: ${QUATERNARY_10};
+    }
+  `}
+</style>
+
+<h1 className="inter">How to Use The New Etendo UI</h1>
+
+<p className="description inter">
+  Follow the steps below to set up and use the New Etendo UI in your development
+  environment:
+</p>
+
+<div className="subheading inter">Setup and Usage Guide</div>
+
+<div className="link-list">
+  <div className="link-item">
+    <div>
+      <strong className="step-title inter">🚀 Step 1: Install pnpm</strong>
+      <br />
+      <span className="inter">Install pnpm globally if you haven't already:</span>
+      <br />
+      <br />
+      <div className="code-container">
+        <img src={CopyIcon} onClick={() => navigator.clipboard.writeText("npm install -g pnpm")} />
+        <pre><code>npm install -g pnpm</code></pre>
+      </div>
+      <br />
+      <span className="inter">or using brew (MacOS):</span>
+      <br />
+      <br />
+      <div className="code-container">
+        <img src={CopyIcon} onClick={() => navigator.clipboard.writeText("brew install pnpm")} />
+        <pre><code>brew install pnpm</code></pre>
+      </div>
+    </div>
+  </div>
+
+{' '}
+
+<div className="link-item">
+  <div>
+    <strong className="step-title inter">📦 Step 2: Install Packages</strong>
+    <br />
+    <span className="inter">Install packages using pnpm:</span>
+    <br />
+    <br />
+    <div className="code-container">
+      <img
+        src={CopyIcon}
+        onClick={() => navigator.clipboard.writeText('pnpm install')}
+      />
+      <pre>
+        <code>pnpm install</code>
+      </pre>
+    </div>
+  </div>
+</div>
+
+{' '}
+
+<div className="link-item">
+  <div>
+    <strong className="step-title inter">👨‍💻 Step 3: Development Mode</strong>
+    <br />
+    <span className="inter">Run the main repository:</span>
+    <br />
+    <br />
+    <div className="code-container">
+      <img
+        src={CopyIcon}
+        onClick={() =>
+          navigator.clipboard.writeText('pnpm --filter @workspaceui/mainui dev')
+        }
+      />
+      <pre>
+        <code>pnpm --filter @workspaceui/mainui dev</code>
+      </pre>
+    </div>
+    <br />
+    <span className="inter">Or navigate to the package folder and run:</span>
+    <br />
+    <br />
+    <div className="code-container">
+      <img
+        src={CopyIcon}
+        onClick={() => navigator.clipboard.writeText('pnpm dev')}
+      />
+      <pre>
+        <code>pnpm dev</code>
+      </pre>
+    </div>
+  </div>
+</div>
+
+{' '}
+
+<div className="link-item">
+  <div>
+    <strong className="step-title inter">🌐 Step 4: Production Mode</strong>
+    <br />
+    <span className="inter">Install in an EtendoRX environment:</span>
+    <br />
+    <br />
+    <div className="code-container">
+      <img
+        src={CopyIcon}
+        onClick={() =>
+          navigator.clipboard.writeText(
+            'pnpm --filter @workspaceui/mainui build',
+          )
+        }
+      />
+      <pre>
+        <code>pnpm --filter @workspaceui/mainui build</code>
+      </pre>
+    </div>
+    <br />
+    <span className="inter">Run UI service:</span>
+    <br />
+    <br />
+    <div className="code-container">
+      <img
+        src={CopyIcon}
+        onClick={() =>
+          navigator.clipboard.writeText(
+            './gradlew :com.etendorx.workspace-ui:bootRun',
+          )
+        }
+      />
+      <pre>
+        <code>./gradlew :com.etendorx.workspace-ui:bootRun</code>
+      </pre>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<p className="inter">
+  After following these steps, you should be able to utilize the full
+  capabilities of New Etendo UI in your project!
+</p>
+
+<p className="inter">
+  > <span className="keyword">Note:</span> Ensure you adjust the versions of the
+  dependencies as necessary to meet your project's requirements.
+</p>

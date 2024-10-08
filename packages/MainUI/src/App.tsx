@@ -1,20 +1,24 @@
-import { useEffect } from 'react';
-import Home from './screens/Home';
-import { columsPageMetadata } from '@workspaceui/etendohookbinder/src/services/sales-order.service.ts';
-import { pageMetadata } from '@workspaceui/etendohookbinder/src/api/sales-order.api';
+import { CssBaseline, ThemeProvider } from '@mui/material';
+import { theme } from '../../ComponentLibrary/src/theme';
+import { Outlet } from 'react-router-dom';
+import MetadataProvider from './contexts/metadata';
+import { RecordProvider } from './contexts/record';
+import UserProvider from './contexts/user';
+import { LanguageProvider } from './contexts/languageProvider';
 
-function App() {
-  //Example for DEMO: The importance to use the DTOs insted of the raw data
-  useEffect(() => {
-    pageMetadata().then(res => {
-      console.log('pageMetadata:', res);
-    });
-    columsPageMetadata().then(res => {
-      console.log('columsPageMetadata:', res);
-    });
-  }, []);
-
-  return <Home />;
+export default function App() {
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <LanguageProvider>
+        <UserProvider>
+          <MetadataProvider>
+            <RecordProvider>
+              <Outlet />
+            </RecordProvider>
+          </MetadataProvider>
+        </UserProvider>
+      </LanguageProvider>
+    </ThemeProvider>
+  );
 }
-
-export default App;

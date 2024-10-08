@@ -1,0 +1,264 @@
+import { Meta } from '@storybook/blocks';
+import InputIcon from '../assets/input.svg?url';
+import PaginationIcon from '../assets/pagination.svg?url';
+import TabIcon from '../assets/tab.svg?url';
+import TableIcon from '../assets/table.svg?url';
+import CardIcon from '../assets/card.svg?url';
+import ButtonComponentUrl from '../assets/button.svg?url';
+import DrawerComponent from '../assets/drawer.svg?url';
+import SkeletonComponent from '../assets/skeleton.svg?url';
+import Icons from '../assets/icons.svg?url';
+
+import {
+  INITIAL_90,
+  NEUTRAL_70,
+  NEUTRAL_80,
+  PRIMARY_20,
+  SUCCESS_10,
+  SUCCESS_100,
+  QUATERNARY_70,
+  PRIMARY_100,
+  QUATERNARY_100,
+  NEUTRAL_20,
+  NEUTRAL_30,
+} from '../styles/colors';
+
+<Meta title="Introduction/Documentation" />
+
+<style>
+  {`
+    .inter {
+      font-family: 'Inter', 'sans-serif';
+    }
+
+    .subheading {
+      font-weight: 700;
+      font-size: 13px;
+      color: ${NEUTRAL_70};
+      letter-spacing: 6px;
+      line-height: 24px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      margin-top: 40px;
+    }
+
+    .link-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      row-gap: 10px;
+      column-gap: 1.5rem;
+    }
+
+    @media (max-width: 620px) {
+      .link-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .link-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      padding-bottom: 0px;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      transition: background 150ms ease-out, border 150ms ease-out, transform 150ms ease-out;
+    }
+
+    .link-item:hover {
+      border: 1px solid ${QUATERNARY_100};
+      transform: translate3d(0, -3px, 0);
+      box-shadow: rgba(0, 0, 0, 0.08) 0 3px 10px 0;
+    }
+
+    .link-item img {
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+
+
+    .link-item strong {
+      font-weight: 400;
+      margin-top: 0.75rem;
+      display: block;
+      font-size: 1.4rem;
+      color: ${NEUTRAL_30};
+    }
+
+    .link-item p {
+      font-weight: 500;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: ${NEUTRAL_20};
+    }
+
+    .link-item span {
+      margin: 0;
+      line-height: 20px;
+    }
+
+    .tip {
+      display: inline-block;
+      border-radius: 1em;
+      font-size: 11px;
+      line-height: 12px;
+      font-weight: 700;
+      background: ${SUCCESS_10};
+      color: ${SUCCESS_100};
+      padding: 4px 12px;
+      margin-right: 10px;
+      vertical-align: top;
+    }
+
+    .tip-wrapper {
+      font-size: 13px;
+      line-height: 20px;
+      margin-top: 40px;
+      margin-bottom: 40px;
+    }
+
+    .tip-wrapper code {
+      font-size: 12px;
+      display: inline-block;
+    }
+  `}
+</style>
+
+<h1 className="inter">Welcome to New Etendo UI</h1>
+
+<p className="inter">
+  Welcome to the fascinating world of New Etendo UI, a robust, comprehensive
+  library of UI components built with the flexibility and power of
+  react-native-web. 🧩 Our toolkit is the Swiss Army knife for modern interface
+  design, and we are thrilled to be part of your journey to create stunning and
+  intuitive user interfaces.
+</p>
+
+<p className="inter">
+  At New Etendo UI, we believe in the power of elegant and versatile UI
+  components. Our library comprises an array of meticulously crafted elements
+  ranging from buttons and inputs to pagination and tables, to name just a few.
+  Each of these components is a nugget of functionality, designed to be not only
+  adaptable to a wide variety of interfaces and applications, but also
+  user-friendly to ensure a seamless interaction for your users. 🌐
+</p>
+
+<p className="inter">
+  🚀 Dive in, explore, and let's create something amazing together with Etendo
+  UI!
+</p>
+
+<div className="subheading inter">Available Components</div>
+
+<div className="link-list">
+  <a className="link-item">
+    <img src={ButtonComponentUrl} alt="button" />
+    <span>
+      <strong className="inter">Button Component</strong>
+      <p className="inter">Dive into the versatile world of buttons! Understand how to implement and customize our buttons to match your UI design.</p>
+    </span>
+  </a>
+
+{' '}
+
+<a className="link-item">
+  <img src={CardIcon} alt="card" />
+  <span>
+    <strong className="inter">Card Component</strong>
+    <p className="inter">
+      From presenting brief overviews to housing detailed content - learn the
+      art of using cards in your UI with Etendo.
+    </p>
+  </span>
+</a>
+
+{' '}
+
+<a className="link-item">
+  <img src={InputIcon} alt="input" />
+  <span>
+    <strong className="inter">Input Component</strong>
+    <p className="inter">
+      Inputs are the gateways to user data. Discover how to utilize our
+      adaptable Input components for an optimal user experience.
+    </p>
+  </span>
+</a>
+
+{' '}
+
+<a className="link-item">
+  <img src={PaginationIcon} alt="pagination" />
+  <span>
+    <strong className="inter">Pagination Component</strong>
+    <p className="inter">
+      Handling large data sets? Get to grips with our Pagination component and
+      make data navigation a breeze for your users.
+    </p>
+  </span>
+</a>
+
+{' '}
+
+<a className="link-item">
+  <img src={TabIcon} alt="TabIcon" />
+  <span>
+    <strong className="inter">Tab Component</strong>
+    <p className="inter">
+      Take a step further in content organization with our Tab component. Learn
+      how to effectively segregate content sections using tabs.
+    </p>
+  </span>
+</a>
+
+{' '}
+
+<a className="link-item">
+  <img src={TableIcon} alt="TableIcon" />
+  <span>
+    <strong className="inter">Table Component</strong>
+    <p className="inter">
+      Showcasing structured data has never been easier! Learn how to integrate
+      and manipulate our Table component for your data presentation needs.
+    </p>
+  </span>
+</a>
+
+{' '}
+
+<a className="link-item">
+  <img src={DrawerComponent} alt="DrawerIcon" />
+  <span>
+    <strong className="inter">Drawer Component</strong>
+    <p className="inter">
+      Elevate your application's navigation with our Drawer component. Discover
+      how to intuitively guide users through your app's sections, making access
+      to features a breeze.
+    </p>
+  </span>
+</a>
+
+{' '}
+
+<a className="link-item">
+  <img src={SkeletonComponent} alt="SkeletonIcon" />
+  <span>
+    <strong className="inter">Skeleton Component</strong>
+    <p className="inter">
+      Experience seamless content loading with our Skeleton component. Set user
+      expectations and enhance the interface's feel while your content is on the
+      way. Dive into how our Skeleton component can make loading times feel
+      snappier and more refined.
+    </p>
+  </span>
+</a>
+
+  <a className="link-item">
+    <img src={Icons} alt="Icons" />
+    <span>
+      <strong className="inter">Icons</strong>
+      <p className="inter">Revolutionize your user interface with our Icons. Delve into the visual language of your app and communicate core actions and directions with clarity and elegance. Explore how our Icons can add intuitive understanding and a refined aesthetic to your project.</p>
+    </span>
+  </a>
+</div>

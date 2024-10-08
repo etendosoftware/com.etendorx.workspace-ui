@@ -1,19 +1,83 @@
-import { createTheme } from '@mui/material/styles';
-import {
-  NEUTRAL_300,
-  NEUTRAL_50,
-  PRIMARY_100,
-  PRIMARY_500,
-  SECONDARY_100,
-  SECONDARY_300,
-  SECONDARY_500,
-  TERTIARY_100,
-  TERTIARY_50,
-  TERTIARY_900,
-} from './colors';
+import { createTheme } from '@mui/material';
+import InterTTF from '../src/styles/fonts/Inter-Regular.ttf';
+export type * from './custom.d.ts';
 
+// Colors for MUI attributes
+export const PRIMARY_100 = '#D8DBF6';
+export const PRIMARY_500 = '#202452';
+export const SECONDARY_100 = '#FEFACF';
+export const SECONDARY_300 = '#FDEC71';
+export const SECONDARY_500 = '#FAD614';
+export const TERTIARY_50 = '#EDF1FF';
+export const TERTIARY_100 = '#E2E7FF';
+export const TERTIARY_900 = '#151C7A';
+export const NEUTRAL_50 = '#FAFAFA';
+export const NEUTRAL_300 = '#E0E0E0';
+export const NEUTRAL_1000 = '#121212';
+
+// Theme for MUI components
 export const theme = createTheme({
   palette: {
+    dynamicColor: {
+      main: '#004ACA',
+      dark: '#00296F',
+      light: '#D5E3FC',
+      contrastText: '#E5EFFF',
+    },
+    baselineColor: {
+      neutral: {
+        0: '#FCFCFD',
+        10: '#F5F6FA',
+        20: '#D3D7E9',
+        30: '#B1B8D8',
+        40: '#8F99C7',
+        50: '#6D7AB6',
+        60: '#505EA0',
+        70: '#3F4A7E',
+        80: '#2E365C',
+        90: '#1D223A',
+        100: '#00030D',
+      },
+      transparentNeutral: {
+        0: 'transparent',
+        5: 'rgba(0, 3, 13, 0.05)',
+        10: 'rgba(0, 3, 13, 0.1)',
+        20: 'rgba(0, 3, 13, 1)',
+        30: 'rgba(0, 3, 13, 0.3)',
+        40: 'rgba(0, 3, 13, 0.4)',
+        50: 'rgba(0, 3, 13, 0.5)',
+        60: 'rgba(0, 3, 13, 0.6)',
+        70: 'rgba(0, 3, 13, 0.7)',
+        80: 'rgba(0, 3, 13, 0.8)',
+      },
+      etendoPrimary: {
+        main: '#004ACA',
+        dark: '#00296F',
+        contrastText: '#E5EFFF',
+        light: ' rgba(0, 74, 202, 0.05)',
+      },
+    },
+    specificColor: {
+      success: {
+        main: '#008000',
+        light: '#BFFF8F',
+        contrastText: 'rgba(0, 128, 0, 0.05)',
+      },
+      warning: {
+        main: '#FFCC00',
+        light: '#FFEB99',
+        contrastText: 'rgba(255, 204, 0, 0.05)',
+      },
+      error: {
+        main: '#DC143C',
+        light: '#FFCCD6',
+        contrastText: 'rgba(220, 20, 60, 0.05)',
+      },
+      draft: {
+        main: '#3F4A7E',
+        contrastText: '#E5E5E6',
+      },
+    },
     primary: {
       light: PRIMARY_100,
       main: PRIMARY_500,
@@ -33,7 +97,55 @@ export const theme = createTheme({
       contrastText: PRIMARY_500,
     },
   },
+  typography: {
+    fontFamily: ['Inter', 'sans-serif'].join(','),
+  },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: `
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-display: swap;
+          font-weight: 400;
+          src: local('Inter'), url(${InterTTF}) format('truetype');
+          unicodeRange: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF;
+        }
+        * {
+          scrollbar-width: thin; /* Firefox */
+          scrollbar-color: #b0bec5 transparent; /* Firefox */
+        }
+        *::-webkit-scrollbar {
+          width: 12px;
+        }
+        *::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        *::-webkit-scrollbar-thumb {
+          background-color: #b0bec5;
+          border-radius: 10px;
+          border: 3px solid transparent;
+        }
+        *::-webkit-scrollbar-thumb:hover {
+          background-color: #90a4ae;
+        }
+      `,
+    },
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          fontSize: '0.875rem',
+          backgroundColor: NEUTRAL_1000,
+          color: NEUTRAL_50,
+          borderRadius: '0.25rem',
+          padding: '0.25rem, 0.35rem, 0.25rem, 0.35rem',
+          maxWidth: 500,
+        },
+        arrow: {
+          color: NEUTRAL_1000,
+        },
+      },
+    },
     MuiButton: {
       defaultProps: {
         disableElevation: true,

@@ -1,11 +1,9 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   MaterialReactTable,
   useMaterialReactTable,
   type MRT_ColumnDef,
 } from 'material-react-table';
-
-import {metadata} from './data';
 
 
 
@@ -71,11 +69,6 @@ const data: Person[] = [
 ];
 
 const TableV2 = () => {
-
-  useEffect(() => { 
-    console.log('metadata', metadata)
-  }, []);
-
   //should be memoized or stable
   const columns = useMemo<MRT_ColumnDef<Person>[]>(
     () => [
