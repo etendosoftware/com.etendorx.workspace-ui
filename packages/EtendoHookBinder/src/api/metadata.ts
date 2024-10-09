@@ -49,7 +49,6 @@ export class Metadata {
 
     this.client.run(response.data);
 
-    // return Metadata.OB.User;
     return {};
   }
 

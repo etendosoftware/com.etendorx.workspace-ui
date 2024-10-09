@@ -56,8 +56,12 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   const changeRole = useCallback(
     async (roleId: string) => {
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+
       try {
-        const response = await doChangeRole(roleId, token!);
+        const response = await doChangeRole(roleId, token);
         localStorage.setItem('token', response.token);
         localStorage.setItem('currentRoleId', roleId);
         setToken(response.token);
@@ -87,8 +91,13 @@ export default function UserProvider(props: React.PropsWithChildren) {
       if (!currentRole) {
         throw new Error('No current role selected');
       }
+
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+
       try {
-        const response = await doChangeWarehouse(warehouseId, token!);
+        const response = await doChangeWarehouse(warehouseId, token);
         localStorage.setItem('token', response.token);
         setToken(response.token);
 
