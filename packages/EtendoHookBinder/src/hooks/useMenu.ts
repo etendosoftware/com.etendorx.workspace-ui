@@ -11,9 +11,7 @@ export const useMenu = () => {
     async (forceRefresh: boolean = false) => {
       if (token && currentRole) {
         try {
-          console.log('Fetching menu for role:', currentRole.id);
           const newMenu = await Metadata.getMenu(forceRefresh);
-          console.log('Menu updated:', newMenu);
           setMenu(newMenu);
         } catch (error) {
           console.error('Error fetching menu:', error);

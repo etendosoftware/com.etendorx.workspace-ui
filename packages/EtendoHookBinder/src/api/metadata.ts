@@ -57,16 +57,12 @@ export class Metadata {
     const currentRoleId = localStorage.getItem('currentRoleId');
 
     if (!forceRefresh && cached && cached.length && currentRoleId === this.currentRoleId) {
-      console.log('Returning cached menu for role:', currentRoleId);
       return cached;
     } else {
       try {
-        console.log('Fetching new menu for role:', currentRoleId);
         const { data } = await this.client.post('menu', { role: currentRoleId });
-        console.log('Raw menu data received:', data);
         this.cache.set('OBMenu', data);
         this.currentRoleId = currentRoleId;
-        console.log('New menu fetched and cached for role:', currentRoleId);
         return data;
       } catch (error) {
         console.error('Error fetching menu:', error);
@@ -76,10 +72,7 @@ export class Metadata {
   }
 
   public static async refreshMenuOnLogin(): Promise<void> {
-    console.log('Refreshing menu on login');
     this.clearMenuCache();
-    const currentRoleId = localStorage.getItem('currentRoleId');
-    console.log('Current role ID for menu refresh:', currentRoleId);
     await this.getMenu(true);
   }
 

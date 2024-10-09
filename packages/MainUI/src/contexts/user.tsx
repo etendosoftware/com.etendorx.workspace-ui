@@ -5,6 +5,7 @@ import { Metadata } from '@workspaceui/etendohookbinder/api/metadata';
 import { Datasource } from '@workspaceui/etendohookbinder/api/datasource';
 import { login as doLogin } from '@workspaceui/etendohookbinder/api/authentication';
 import { changeRole as doChangeRole } from '@workspaceui/etendohookbinder/api/role';
+import { getSession, SessionResponse } from '@workspaceui/etendohookbinder/api/getSession';
 import { changeWarehouse as doChangeWarehouse } from '@workspaceui/etendohookbinder/api/warehouse';
 import { HTTP_CODES } from '@workspaceui/etendohookbinder/api/constants';
 import { IUserContext, Role, Warehouse } from './types';
@@ -31,40 +32,44 @@ export default function UserProvider(props: React.PropsWithChildren) {
     return savedCurrentWarehouse ? JSON.parse(savedCurrentWarehouse) : null;
   });
 
-  const login = useCallback(async (username: string, password: string) => {
-    try {
-      const response = await doLogin(username, password);
-
-      localStorage.setItem('token', response.token);
-      setToken(response.token);
-
-      Metadata.authorize(response.token);
-      Datasource.authorize(response.token);
-
-      localStorage.setItem('roles', JSON.stringify(response.roleList));
-      setRoles(response.roleList);
-
-      if (response.roleList.length > 0) {
-        const defaultRole = response.roleList[0];
-        localStorage.setItem('currentRole', JSON.stringify(defaultRole));
-        localStorage.setItem('currentRoleId', defaultRole.id);
-        setCurrentRole(defaultRole);
-
-        if (defaultRole.orgList.length > 0 && defaultRole.orgList[0].warehouseList.length > 0) {
-          const defaultWarehouse = defaultRole.orgList[0].warehouseList[0];
-          localStorage.setItem('currentWarehouse', JSON.stringify(defaultWarehouse));
-          setCurrentWarehouse(defaultWarehouse);
-        }
-      }
-
-      await Metadata.refreshMenuOnLogin();
-
-      console.log('Login process completed successfully');
-    } catch (e) {
-      console.error('Login error:', e);
-      throw e;
-    }
+  const updateSessionInfo = useCallback((sessionResponse: SessionResponse) => {
+    const currentRole: Role = {
+      id: sessionResponse.role.id,
+      name: sessionResponse.role.name,
+      orgList: [],
+    };
+    localStorage.setItem('currentRole', JSON.stringify(currentRole));
+    localStorage.setItem('currentRoleId', currentRole.id);
+    setCurrentRole(currentRole);
   }, []);
+
+  const login = useCallback(
+    async (username: string, password: string) => {
+      try {
+        const loginResponse = await doLogin(username, password);
+
+        localStorage.setItem('token', loginResponse.token);
+        setToken(loginResponse.token);
+
+        Metadata.authorize(loginResponse.token);
+        Datasource.authorize(loginResponse.token);
+
+        const sessionResponse = await getSession(loginResponse.token);
+        updateSessionInfo(sessionResponse);
+
+        if (loginResponse.roleList) {
+          localStorage.setItem('roles', JSON.stringify(loginResponse.roleList));
+          setRoles(loginResponse.roleList);
+        }
+
+        await Metadata.refreshMenuOnLogin();
+      } catch (e) {
+        console.error('Login or session retrieval error:', e);
+        throw e;
+      }
+    },
+    [updateSessionInfo],
+  );
 
   const clearUserData = useCallback(() => {
     setToken(null);
@@ -88,6 +93,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         localStorage.setItem('token', response.token);
         localStorage.setItem('currentRoleId', roleId);
         setToken(response.token);
+        navigate('/');
 
         const newRole = response.roleList.find((role: Role) => role.id === roleId);
         if (newRole) {
@@ -106,7 +112,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         throw e;
       }
     },
-    [token],
+    [token, navigate],
   );
 
   const changeWarehouse = useCallback(
