@@ -5,7 +5,6 @@ import PrimaryTabs from '@workspaceui/componentlibrary/components/PrimaryTab';
 import { TabItem } from '@workspaceui/componentlibrary/components/PrimaryTab/types';
 import { Section, FieldDefinition } from '../../screens/Form/types';
 import type { FieldValue, FormData } from './types';
-import { defaultIcon } from '../../constants/iconConstants';
 import FormSection from './Sections/FormSection';
 import { NotesSectionContent } from './Sections/NotesSectionContent';
 
