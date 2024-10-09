@@ -3,12 +3,12 @@ import { MaterialReactTable, MRT_Row } from 'material-react-table';
 import styles from './styles';
 import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/api/types';
 import Spinner from '@workspaceui/componentlibrary/components/Spinner';
-import { parseColumns } from '@workspaceui/etendohookbinder/helpers/metadata';
-import { useMetadataContext } from '@workspaceui/etendohookbinder/hooks/useMetadataContext';
 import { useNavigate } from 'react-router-dom';
 import { memo, useCallback, useMemo } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource';
 import { Button } from '@workspaceui/componentlibrary/components';
+import { useMetadataContext } from '../../hooks/useMetadataContext';
+import { parseColumns } from '../../utils/metadata';
 
 type DynamicTableProps = {
   tab: Tab;

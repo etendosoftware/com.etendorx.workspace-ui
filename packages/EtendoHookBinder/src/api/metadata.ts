@@ -31,7 +31,7 @@ export class Metadata {
   }
 
   public static async getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
-    const cached = Metadata.cache.get(`window-${windowId}`);
+    const cached = Metadata.cache.get<Etendo.WindowMetadata>(`window-${windowId}`);
 
     if (cached) {
       return cached;
@@ -41,7 +41,7 @@ export class Metadata {
   }
 
   public static getColumns(tabId: string): Etendo.Column[] {
-    return Metadata.cache.get(`tab-${tabId}`)?.fields ?? [];
+    return Metadata.cache.get<{ fields: Etendo.Column[] }>(`tab-${tabId}`)?.fields ?? [];
   }
 
   public static async getSession() {
@@ -54,7 +54,7 @@ export class Metadata {
   }
 
   public static async getMenu(forceRefresh: boolean = false): Promise<Menu[]> {
-    const cached = Metadata.cache.get('OBMenu');
+    const cached = Metadata.cache.get<Menu[]>('OBMenu');
     const roleId = localStorage.getItem('currentRoleId');
 
     if (!forceRefresh && cached && cached.length && roleId === this.currentRoleId) {
@@ -73,7 +73,7 @@ export class Metadata {
   }
 
   public static getCachedMenu(): Menu[] {
-    return Metadata.cache.get('OBMenu') ?? [];
+    return Metadata.cache.get<Menu[]>('OBMenu') ?? [];
   }
 
   public static clearMenuCache() {
