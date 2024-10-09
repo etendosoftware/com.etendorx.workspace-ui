@@ -1,3 +1,5 @@
+import React from 'react';
+
 export type Language = 'es' | 'en';
 
 export interface LanguageContextType {
@@ -30,4 +32,6 @@ export interface IUserContext {
   roles: Role[];
   currentRole: Role | null;
   currentWarehouse: Warehouse | null;
+  setToken: React.Dispatch<React.SetStateAction<string | null>>;
+  clearUserData: () => void;
 }

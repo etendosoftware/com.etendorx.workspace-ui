@@ -13,33 +13,41 @@ export const UserContext = createContext({} as IUserContext);
 
 export default function UserProvider(props: React.PropsWithChildren) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+
   const [roles, setRoles] = useState<Role[]>(() => {
     const savedRoles = localStorage.getItem('roles');
     return savedRoles ? JSON.parse(savedRoles) : [];
   });
+
   const [currentRole, setCurrentRole] = useState<Role | null>(() => {
     const savedCurrentRole = localStorage.getItem('currentRole');
     return savedCurrentRole ? JSON.parse(savedCurrentRole) : null;
   });
+
   const [currentWarehouse, setCurrentWarehouse] = useState<Warehouse | null>(() => {
     const savedCurrentWarehouse = localStorage.getItem('currentWarehouse');
     return savedCurrentWarehouse ? JSON.parse(savedCurrentWarehouse) : null;
   });
-  const { pathname } = useLocation();
-  const navigate = useNavigate();
 
   const login = useCallback(async (username: string, password: string) => {
     try {
       const response = await doLogin(username, password);
 
       localStorage.setItem('token', response.token);
-      localStorage.setItem('roles', JSON.stringify(response.roleList));
       setToken(response.token);
+
+      Metadata.authorize(response.token);
+      Datasource.authorize(response.token);
+
+      localStorage.setItem('roles', JSON.stringify(response.roleList));
       setRoles(response.roleList);
 
       if (response.roleList.length > 0) {
         const defaultRole = response.roleList[0];
         localStorage.setItem('currentRole', JSON.stringify(defaultRole));
+        localStorage.setItem('currentRoleId', defaultRole.id);
         setCurrentRole(defaultRole);
 
         if (defaultRole.orgList.length > 0 && defaultRole.orgList[0].warehouseList.length > 0) {
@@ -48,10 +56,25 @@ export default function UserProvider(props: React.PropsWithChildren) {
           setCurrentWarehouse(defaultWarehouse);
         }
       }
+
+      await Metadata.refreshMenuOnLogin();
+
+      console.log('Login process completed successfully');
     } catch (e) {
-      logger.warn('Login error:', e);
+      console.error('Login error:', e);
       throw e;
     }
+  }, []);
+
+  const clearUserData = useCallback(() => {
+    setToken(null);
+    setRoles([]);
+    setCurrentRole(null);
+    setCurrentWarehouse(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('roles');
+    localStorage.removeItem('currentRole');
+    localStorage.removeItem('currentWarehouse');
   }, []);
 
   const changeRole = useCallback(
@@ -120,8 +143,18 @@ export default function UserProvider(props: React.PropsWithChildren) {
   );
 
   const value = useMemo(
-    () => ({ login, changeRole, changeWarehouse, roles, currentRole, currentWarehouse, token }),
-    [login, changeRole, changeWarehouse, roles, currentRole, currentWarehouse, token],
+    () => ({
+      login,
+      changeRole,
+      changeWarehouse,
+      roles,
+      currentRole,
+      currentWarehouse,
+      token,
+      clearUserData,
+      setToken,
+    }),
+    [login, changeRole, changeWarehouse, roles, currentRole, currentWarehouse, token, clearUserData, setToken],
   );
 
   useLayoutEffect(() => {

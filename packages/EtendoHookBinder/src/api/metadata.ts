@@ -53,22 +53,34 @@ export class Metadata {
   }
 
   public static async getMenu(forceRefresh: boolean = false): Promise<Menu[]> {
-    const cached = Metadata.cache.get<Menu[]>('OBMenu');
-    const roleId = localStorage.getItem('currentRoleId');
+    const cached = this.cache.get<Menu[]>('OBMenu');
+    const currentRoleId = localStorage.getItem('currentRoleId');
 
-    if (!forceRefresh && cached && cached.length && roleId === this.currentRoleId) {
+    if (!forceRefresh && cached && cached.length && currentRoleId === this.currentRoleId) {
+      console.log('Returning cached menu for role:', currentRoleId);
       return cached;
     } else {
       try {
-        const { data } = await this.client.post('menu');
-        Metadata.cache.set('OBMenu', data);
-        this.currentRoleId = roleId;
+        console.log('Fetching new menu for role:', currentRoleId);
+        const { data } = await this.client.post('menu', { role: currentRoleId });
+        console.log('Raw menu data received:', data);
+        this.cache.set('OBMenu', data);
+        this.currentRoleId = currentRoleId;
+        console.log('New menu fetched and cached for role:', currentRoleId);
         return data;
       } catch (error) {
         console.error('Error fetching menu:', error);
         throw error;
       }
     }
+  }
+
+  public static async refreshMenuOnLogin(): Promise<void> {
+    console.log('Refreshing menu on login');
+    this.clearMenuCache();
+    const currentRoleId = localStorage.getItem('currentRoleId');
+    console.log('Current role ID for menu refresh:', currentRoleId);
+    await this.getMenu(true);
   }
 
   public static getCachedMenu(): Menu[] {
