@@ -7,6 +7,7 @@ import { Section, FieldDefinition } from '../../screens/Form/types';
 import type { FieldValue, FormData } from './types';
 import FormSection from './Sections/FormSection';
 import { NotesSectionContent } from './Sections/NotesSectionContent';
+import { defaultIcon } from '../../constants/iconConstants';
 
 const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, gridItemProps, dottedLineInterval }) => {
   const [formData, setFormData] = useState<FormData>(data);
