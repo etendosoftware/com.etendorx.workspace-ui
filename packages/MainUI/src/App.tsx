@@ -6,24 +6,27 @@ import { RecordProvider } from './contexts/record';
 import UserProvider from './contexts/user';
 import { LanguageProvider } from './contexts/languageProvider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import SanityChecker from './components/SanityChecker';
 
 const queryClient = new QueryClient();
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <LanguageProvider>
-          <UserProvider>
-            <MetadataProvider>
-              <RecordProvider>
-                <Outlet />
-              </RecordProvider>
-            </MetadataProvider>
-          </UserProvider>
-        </LanguageProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <SanityChecker>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <LanguageProvider>
+            <UserProvider>
+              <MetadataProvider>
+                <RecordProvider>
+                  <Outlet />
+                </RecordProvider>
+              </MetadataProvider>
+            </UserProvider>
+          </LanguageProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </SanityChecker>
   );
 }
