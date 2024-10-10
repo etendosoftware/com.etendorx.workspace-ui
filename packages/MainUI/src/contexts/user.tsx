@@ -5,10 +5,11 @@ import { Metadata } from '@workspaceui/etendohookbinder/api/metadata';
 import { Datasource } from '@workspaceui/etendohookbinder/api/datasource';
 import { login as doLogin } from '@workspaceui/etendohookbinder/api/authentication';
 import { changeRole as doChangeRole } from '@workspaceui/etendohookbinder/api/role';
-import { getSession, SessionResponse } from '@workspaceui/etendohookbinder/api/getSession';
+import { getSession } from '@workspaceui/etendohookbinder/api/getSession';
 import { changeWarehouse as doChangeWarehouse } from '@workspaceui/etendohookbinder/api/warehouse';
 import { HTTP_CODES } from '@workspaceui/etendohookbinder/api/constants';
 import { IUserContext, Role, Warehouse } from './types';
+import { SessionResponse } from '@workspaceui/etendohookbinder/api/types';
 
 export const UserContext = createContext({} as IUserContext);
 
@@ -96,6 +97,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         navigate('/');
 
         const newRole = response.roleList.find((role: Role) => role.id === roleId);
+
         if (newRole) {
           localStorage.setItem('currentRole', JSON.stringify(newRole));
           setCurrentRole(newRole);

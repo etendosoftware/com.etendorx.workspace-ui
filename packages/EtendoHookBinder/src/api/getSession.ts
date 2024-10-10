@@ -1,24 +1,12 @@
 import { API_BASE_URL } from './constants';
-
-export interface SessionResponse {
-  user: {
-    id: string;
-    name: string;
-    username: string;
-    defaultRole: string;
-  };
-  role: {
-    id: string;
-    name: string;
-  };
-}
+import { SessionResponse } from './types';
 
 export const getSession = async (token: string): Promise<SessionResponse> => {
   const response = await fetch(`${API_BASE_URL}/meta/session`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json; charset=utf-8',
     },
   });
 

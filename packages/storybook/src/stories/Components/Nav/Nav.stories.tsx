@@ -46,9 +46,7 @@ export const DefaultNav: Story = {
         <IconButton tooltip="Activity">
           <ActivityIcon />
         </IconButton>
-        <NotificationButton
-          notifications={args.notifications}
-          icon={<NotificationIcon />}>
+        <NotificationButton notifications={args.notifications} icon={<NotificationIcon />}>
           <NotificationModal
             notifications={args.notifications}
             anchorEl={args.anchorEl}
@@ -75,6 +73,11 @@ export const DefaultNav: Story = {
           sestionTooltip={args.sestionTooltip}
           icon={<PersonIcon fill="#2E365C" />}
           sections={args.sections}
+          onRoleChange={() => {}}
+          onWarehouseChange={() => {}}
+          roles={[]}
+          selectedRole={null}
+          selectedWarehouse={null}
         />
       </div>
     </Nav>

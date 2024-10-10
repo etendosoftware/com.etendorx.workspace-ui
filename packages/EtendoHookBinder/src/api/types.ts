@@ -231,3 +231,16 @@ export interface LoginResponse {
     }>;
   }>;
 }
+
+export interface SessionResponse {
+  user: {
+    id: string;
+    name: string;
+    username: string;
+    defaultRole: string;
+  };
+  role: {
+    id: string;
+    name: string;
+  };
+}
