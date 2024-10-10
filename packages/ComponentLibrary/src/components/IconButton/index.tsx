@@ -1,10 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import {
-  Tooltip,
-  IconButton as MUIIconButton,
-  Box,
-  Typography,
-} from '@mui/material';
+import { Tooltip, IconButton as MUIIconButton, Box, Typography } from '@mui/material';
 import { theme } from '../../theme';
 import { defaultStyles } from './styles';
 import { IIconComponentProps } from './types';
@@ -68,9 +63,7 @@ const IconButton: React.FC<ExtendedIconButtonProps> = ({
       onMouseLeave={handleMouseLeave}>
       <Box sx={defaultStyles.buttonContainer}>
         {clonedIcon}
-        {iconText && (
-          <Typography sx={defaultStyles.iconText}>{iconText}</Typography>
-        )}
+        {iconText && <Typography sx={defaultStyles.iconText}>{iconText}</Typography>}
       </Box>
     </MUIIconButton>
   );

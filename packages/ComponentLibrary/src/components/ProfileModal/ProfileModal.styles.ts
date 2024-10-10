@@ -39,8 +39,6 @@ export const styles: { [key: string]: CSSProperties } = {
     position: 'absolute',
     top: '1rem',
     right: '1rem',
-    height: '2rem',
-    width: '2rem',
     zIndex: '1',
   },
   profileImageStyles: {

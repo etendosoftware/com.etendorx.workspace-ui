@@ -9,6 +9,7 @@ export type { Etendo };
 export class Metadata {
   public static client = new Client(API_METADATA_URL);
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
+  private static currentRoleId: string | null = null;
 
   public static authorize(token: string) {
     this.client.setAuthHeader(token, 'Bearer');
@@ -43,20 +44,44 @@ export class Metadata {
     return Metadata.cache.get<{ fields: Etendo.Column[] }>(`tab-${tabId}`)?.fields ?? [];
   }
 
-  public static async getMenu(): Promise<Menu[]> {
-    const cached = Metadata.cache.get<Menu[]>('OBMenu');
+  public static async getSession() {
+    const response = await Metadata.client.get(`/OBCLKER_Kernel/SessionDynamic`);
 
-    if (cached && cached.length) {
+    this.client.run(response.data);
+
+    return {};
+  }
+
+  public static async getMenu(forceRefresh: boolean = false): Promise<Menu[]> {
+    const cached = this.cache.get<Menu[]>('OBMenu');
+    const currentRoleId = localStorage.getItem('currentRoleId');
+
+    if (!forceRefresh && cached && cached.length && currentRoleId === this.currentRoleId) {
       return cached;
     } else {
-      const { data } = await this.client.post('menu');
-      Metadata.cache.set('OBMenu', data);
-
-      return data;
+      try {
+        const { data } = await this.client.post('menu', { role: currentRoleId });
+        this.cache.set('OBMenu', data);
+        this.currentRoleId = currentRoleId;
+        return data;
+      } catch (error) {
+        console.error('Error fetching menu:', error);
+        throw error;
+      }
     }
   }
 
+  public static async refreshMenuOnLogin(): Promise<void> {
+    this.clearMenuCache();
+    await this.getMenu(true);
+  }
+
   public static getCachedMenu(): Menu[] {
-    return Metadata.cache.get('OBMenu') ?? [];
+    return Metadata.cache.get<Menu[]>('OBMenu') ?? [];
+  }
+
+  public static clearMenuCache() {
+    Metadata.cache.delete('OBMenu');
+    this.currentRoleId = null;
   }
 }
