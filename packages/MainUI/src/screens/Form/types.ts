@@ -10,7 +10,8 @@ export type FieldType =
   | 'date'
   | 'boolean'
   | 'select'
-  | 'tabledir';
+  | 'tabledir'
+  | 'search';
 
 export interface BaseFieldDefinition<T> {
   value: T;
