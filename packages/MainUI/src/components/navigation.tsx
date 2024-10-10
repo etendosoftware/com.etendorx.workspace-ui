@@ -13,13 +13,7 @@ import ActivityIcon from '@workspaceui/componentlibrary/assets/icons/activity.sv
 import NotificationIcon from '@workspaceui/componentlibrary/assets/icons/bell.svg';
 import PersonIcon from '@workspaceui/componentlibrary/assets/icons/user.svg';
 import AddIcon from '@workspaceui/componentlibrary/assets/icons/plus.svg';
-import {
-  modalConfig,
-  menuItems,
-  initialPeople,
-  sections,
-  NOTIFICATIONS,
-} from '@workspaceui/storybook/mocks';
+import { modalConfig, menuItems, initialPeople, sections, NOTIFICATIONS } from '@workspaceui/storybook/mocks';
 import { useTranslation } from '../hooks/useTranslation';
 
 const handleClose = () => {
@@ -45,16 +39,12 @@ const Navigation: React.FC = () => {
       />
       <ConfigurationModal
         {...modalConfig}
-        tooltipButtonProfile={t(
-          'navigation.configurationModal.tooltipButtonProfile',
-        )}
+        tooltipButtonProfile={t('navigation.configurationModal.tooltipButtonProfile')}
       />
       <IconButton tooltip={t('navigation.activityButton.tooltip')}>
         <ActivityIcon />
       </IconButton>
-      <NotificationButton
-        notifications={NOTIFICATIONS}
-        icon={<NotificationIcon />}>
+      <NotificationButton notifications={NOTIFICATIONS} icon={<NotificationIcon />}>
         <NotificationModal
           notifications={NOTIFICATIONS}
           anchorEl={null}
@@ -67,18 +57,10 @@ const Navigation: React.FC = () => {
             label: t('navigation.notificationModal.markAllAsRead'),
             url: '/home',
           }}
-          emptyStateImageAlt={t(
-            'navigation.notificationModal.emptyStateImageAlt',
-          )}
-          emptyStateMessage={t(
-            'navigation.notificationModal.emptyStateMessage',
-          )}
-          emptyStateDescription={t(
-            'navigation.notificationModal.emptyStateDescription',
-          )}
-          actionButtonLabel={t(
-            'navigation.notificationModal.actionButtonLabel',
-          )}
+          emptyStateImageAlt={t('navigation.notificationModal.emptyStateImageAlt')}
+          emptyStateMessage={t('navigation.notificationModal.emptyStateMessage')}
+          emptyStateDescription={t('navigation.notificationModal.emptyStateDescription')}
+          actionButtonLabel={t('navigation.notificationModal.actionButtonLabel')}
         />
       </NotificationButton>
       <Profile
@@ -95,6 +77,11 @@ const Navigation: React.FC = () => {
         sestionTooltip={t('navigation.profile.signOffTooltip')}
         icon={<PersonIcon />}
         sections={sections}
+        onRoleChange={() => {}}
+        onWarehouseChange={() => {}}
+        roles={[]}
+        selectedRole={null}
+        selectedWarehouse={null}
       />
     </Navbar>
   );

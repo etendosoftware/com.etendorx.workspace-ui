@@ -45,7 +45,16 @@ export default meta;
 type Story = StoryObj<ProfileModalProps>;
 
 export const ProfileDefault: Story = {
-  render: args => <ProfileModal {...args} />,
+  render: args => (
+    <ProfileModal
+      onRoleChange={() => {}}
+      onWarehouseChange={() => {}}
+      roles={[]}
+      selectedRole={null}
+      selectedWarehouse={null}
+      {...args}
+    />
+  ),
   args: {
     section: 'profile',
     cancelButtonText: 'Cancel',

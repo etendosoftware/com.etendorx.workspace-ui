@@ -30,10 +30,18 @@ export default defineConfig({
     // },
     cssMinify: true,
     minify: true,
-    outDir:path.resolve(__dirname, '../../src/main/resources/static'),
-    emptyOutDir: true
+    outDir: path.resolve(__dirname, '../../src/main/resources/static'),
+    emptyOutDir: true,
+  },
+  server: {
+    fs: {
+      strict: true,
+    },
   },
   optimizeDeps: {
+    esbuildOptions: {
+      charset: 'utf8',
+    },
     include: ['@mui/material'],
   },
 });

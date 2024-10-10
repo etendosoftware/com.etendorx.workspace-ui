@@ -12,17 +12,7 @@ export default function Sidebar() {
   const menu = useMenu(token);
   const navigate = useNavigate();
 
-  const handleClick = useCallback(
-    (pathname: string) => navigate({ pathname }),
-    [navigate],
-  );
+  const handleClick = useCallback((pathname: string) => navigate({ pathname }), [navigate]);
 
-  return (
-    <Drawer
-      logo={EtendoLogotype}
-      title={t('common.etendo')}
-      items={menu}
-      onClick={handleClick}
-    />
-  );
+  return <Drawer logo={EtendoLogotype} title={t('common.etendo')} items={menu} onClick={handleClick} />;
 }
