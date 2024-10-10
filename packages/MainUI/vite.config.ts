@@ -18,6 +18,7 @@ export default defineConfig({
       '@workspaceui/storybook': path.resolve(__dirname, '../storybook/src'),
       '@workspaceui/etendohookbinder': path.resolve(__dirname, '../EtendoHookBinder/src'),
       '@workspaceui/componentlibrary': path.resolve(__dirname, '../ComponentLibrary/src'),
+      '@mui/material': path.resolve(__dirname, './node_modules/@mui/material'),
     },
   },
   build: {
@@ -26,21 +27,10 @@ export default defineConfig({
     },
     rollupOptions: {
       external: ['@workspaceui/storybook'],
-      treeshake: 'safest',
     },
     cssMinify: true,
     minify: true,
     outDir: path.resolve(__dirname, '../../src/main/resources/static'),
     emptyOutDir: true,
   },
-  server: {
-    fs: {
-      strict: true,
-    },
-  },
-  // optimizeDeps: {
-  //   esbuildOptions: {
-  //     charset: 'utf8',
-  //   },
-  // },
 });

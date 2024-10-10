@@ -9,7 +9,6 @@ import {
   ListItemText,
   IconButton,
   Box,
-  CssBaseline,
   Typography,
 } from '@mui/material';
 import MuiAppBar, { AppBarProps as MuiAppBarProps } from '@mui/material/AppBar';
@@ -113,7 +112,6 @@ const DrawerComponent: React.FC<DrawerProps> = ({
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <CssBaseline />
       <AppBar
         position="fixed"
         open={open}

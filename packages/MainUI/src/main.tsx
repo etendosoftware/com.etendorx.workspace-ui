@@ -1,11 +1,8 @@
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import App from './App';
-import Home from './screens/Home';
-import Table from './screens/Table';
 import DynamicTable from './screens/Table/Dynamic';
 import Login from './screens/Login';
-import Form from './screens/Form';
 import Layout from './components/layout';
 import DynamicForm from './screens/Form/DynamicForm';
 import './index.css';
@@ -19,20 +16,6 @@ const router = createBrowserRouter([
         path: '',
         Component: Layout,
         children: [
-          {
-            path: '',
-            Component: Home,
-            children: [
-              {
-                path: '',
-                Component: Table,
-              },
-              {
-                path: ':id',
-                Component: Form,
-              },
-            ],
-          },
           {
             path: 'window/:windowId/:recordId',
             Component: DynamicForm,
