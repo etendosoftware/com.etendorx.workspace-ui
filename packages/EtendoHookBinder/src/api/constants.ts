@@ -1,5 +1,6 @@
 export const TOKEN = import.meta.env['VITE_API_TOKEN'];
 export const API_BASE_URL = import.meta.env['VITE_API_BASE_URL'];
+export const API_SANITY_CHECK_URL = `${API_BASE_URL}/security/Login`;
 export const API_LOGIN_URL = `${API_BASE_URL}/sws/login`;
 export const API_DATASOURCE_URL = `${API_BASE_URL}/sws/com.smf.securewebservices.datasource/org.openbravo.service.datasource`;
 export const API_OBREST_URL = `${API_BASE_URL}/sws/com.smf.securewebservices.obRest`;
@@ -11,3 +12,4 @@ export enum HTTP_CODES {
   UNAUTHORIZED = 401,
   NOT_FOUND = 404,
 }
+export const MAX_ATTEMPTS = 5;
