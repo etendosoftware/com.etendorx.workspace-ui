@@ -42,10 +42,7 @@ export class Datasource {
               params.append(key, JSON.stringify(criteria));
             });
           } else {
-            params.append(
-              `_${key}`,
-              Array.isArray(value) ? value.join(',') : value.toString(),
-            );
+            params.append(`_${key}`, Array.isArray(value) ? value.join(',') : value.toString());
           }
         }
       });
@@ -54,9 +51,7 @@ export class Datasource {
 
       return result.data;
     } catch (error) {
-      console.error(
-        `Error fetching from datasource for entity ${entity}: ${error}`,
-      );
+      console.error(`Error fetching from datasource for entity ${entity}: ${error}`);
       throw error;
     }
   }
@@ -65,13 +60,9 @@ export class Datasource {
     try {
       const { data } = await this.client.post(`${entity}/${id}`);
 
-      console.debug({ data });
-
       return Array.isArray(data) ? data[0] : data;
     } catch (error) {
-      console.error(
-        `Error fetching from datasource for entity ${entity} with ID ${id} - ${error}`,
-      );
+      console.error(`Error fetching from datasource for entity ${entity} with ID ${id} - ${error}`);
 
       throw error;
     }
