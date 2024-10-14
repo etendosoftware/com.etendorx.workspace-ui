@@ -25,9 +25,11 @@ export interface Role {
 }
 
 export interface DefaultConfiguration {
-  roleId: string | undefined;
-  warehouseId: string | undefined;
-  defaultRole: string;
+  defaultRole?: string;
+  defaultWarehouse?: string;
+  organization?: string;
+  language?: string;
+  client?: string;
 }
 
 export interface IUserContext {

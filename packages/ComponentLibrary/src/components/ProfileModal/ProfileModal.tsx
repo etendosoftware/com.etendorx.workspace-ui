@@ -4,7 +4,7 @@ import CheckCircle from '../../assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';
 import ToggleSection from './ToggleButton';
 import SelectorList from './ToggleSection';
-import { ProfileModalProps } from './UserProfile.types';
+import { ProfileModalProps } from './types';
 import { MODAL_WIDTH, menuSyle, styles, sx } from './ProfileModal.styles';
 import { toggleSectionStyles } from './ToggleButton/styles';
 import IconButton from '../IconButton';
@@ -76,7 +76,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             language: '192',
             client: 'System',
           });
-          console.log('Default configuration saved successfully');
         }
         handleClose();
         window.location.reload();

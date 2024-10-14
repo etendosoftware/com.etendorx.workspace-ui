@@ -1,7 +1,7 @@
 import { styles } from './ProfileModal.styles';
 import BackgroundGradientUrl from '../../assets/images/backgroundGradient.svg?url';
 import Logout from '../../assets/icons/log-out.svg';
-import { User } from './UserProfile.types';
+import { User } from './types';
 import IconButton from '../IconButton';
 import { UserContext } from '../../../../MainUI/src/contexts/user';
 import { useNavigate } from 'react-router-dom';

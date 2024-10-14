@@ -1,8 +1,8 @@
 import React from 'react';
-import ProfileModal from '../../../../../ComponentLibrary/src/components/ProfileModal/ProfileModal';
+import { Profile as ProfileModal } from '../../../../../ComponentLibrary/src/components';
 import profilePicture from '../.././../../../ComponentLibrary/src/assets/images/profile_picture_mock.png';
 import PersonIcon from '../../../../../ComponentLibrary/src/assets/icons/user.svg';
-import { sections } from './mock';
+import { mockRoles, sections } from './mock';
 import type { Meta, StoryObj } from '@storybook/react';
 import { Section } from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleButton/types';
 
@@ -47,9 +47,11 @@ type Story = StoryObj<ProfileModalProps>;
 export const ProfileDefault: Story = {
   render: args => (
     <ProfileModal
+      saveAsDefault={false}
+      onSaveAsDefaultChange={() => {}}
       onRoleChange={() => {}}
       onWarehouseChange={() => {}}
-      roles={[]}
+      roles={mockRoles}
       selectedRole={null}
       selectedWarehouse={null}
       {...args}

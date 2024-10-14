@@ -82,6 +82,8 @@ const Navigation: React.FC = () => {
         roles={[]}
         selectedRole={null}
         selectedWarehouse={null}
+        saveAsDefault={false}
+        onSaveAsDefaultChange={() => {}}
       />
     </Navbar>
   );

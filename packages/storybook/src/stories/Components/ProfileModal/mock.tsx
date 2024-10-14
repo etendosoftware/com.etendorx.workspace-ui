@@ -15,3 +15,8 @@ export const sections: Section[] = [
     icon: <LockIcon fill={defaultFill} />,
   },
 ];
+
+export const mockRoles = [
+  { id: '1', name: 'Admin', orgList: [{ id: '1', name: '1', warehouseList: [{ id: 'w1', name: 'Warehouse 1' }] }] },
+  { id: '2', name: 'User', orgList: [{ id: '2', name: '2', warehouseList: [{ id: 'w2', name: 'Warehouse 2' }] }] },
+];

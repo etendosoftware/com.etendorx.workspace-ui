@@ -5,7 +5,7 @@ import OrganizationIcon from '../../../assets/icons/user.svg';
 import ClientIcon from '../../../assets/icons/github.svg';
 import WarehouseIcon from '../../../assets/icons/warehouse.svg';
 import LanguageIcon from '../../../assets/icons/flags/spain.svg';
-import { SelectorListProps, Item } from './types';
+import { SelectorListProps, Item } from '../types';
 import { InputPassword, theme } from '../..';
 import LockOutlined from '../../../assets/icons/lock.svg';
 import Select from '../../Input/Select';
@@ -23,8 +23,6 @@ const CustomCheckbox = styled(Checkbox)(() => ({
     color: theme.palette.dynamicColor.main,
   },
 }));
-
-const noop = () => {};
 
 const SelectorList: React.FC<SelectorListProps> = ({
   section,
@@ -49,7 +47,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
 
   const roleOptions = useMemo(
     () =>
-      roles.map(role => ({
+      roles?.map(role => ({
         title: role.name,
         value: role.id,
         id: role.id,
@@ -101,19 +99,19 @@ const SelectorList: React.FC<SelectorListProps> = ({
           <InputPassword
             label={passwordLabel}
             value=""
-            setValue={noop}
+            setValue={undefined}
             leftIcon={<LockOutlined fill={defaultFill} />}
           />
           <InputPassword
             label={newPasswordLabel}
             value=""
-            setValue={noop}
+            setValue={undefined}
             leftIcon={<LockOutlined fill={defaultFill} />}
           />
           <InputPassword
             label={confirmPasswordLabel}
             value=""
-            setValue={noop}
+            setValue={undefined}
             leftIcon={<LockOutlined fill={defaultFill} />}
           />
         </Grid>
