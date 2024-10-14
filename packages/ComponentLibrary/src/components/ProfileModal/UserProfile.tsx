@@ -1,4 +1,4 @@
-import { styles } from './ProfileModal.styles';
+import { styles } from './styles';
 import BackgroundGradientUrl from '../../assets/images/backgroundGradient.svg?url';
 import Logout from '../../assets/icons/log-out.svg';
 import { User } from './types';

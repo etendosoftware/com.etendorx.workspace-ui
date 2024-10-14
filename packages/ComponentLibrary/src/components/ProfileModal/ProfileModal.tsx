@@ -5,12 +5,13 @@ import UserProfile from './UserProfile';
 import ToggleSection from './ToggleButton';
 import SelectorList from './ToggleSection';
 import { ProfileModalProps } from './types';
-import { MODAL_WIDTH, menuSyle, styles, sx } from './ProfileModal.styles';
+import { MODAL_WIDTH, menuSyle, styles, sx } from './styles';
 import { toggleSectionStyles } from './ToggleButton/styles';
 import IconButton from '../IconButton';
 import { theme } from '../../theme';
 import { UserContext } from '../../../../MainUI/src/contexts/user';
 import { Option } from '../Input/Select/types';
+import { useNavigate } from 'react-router-dom';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,
@@ -31,6 +32,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [selectedRole, setSelectedRole] = useState<Option | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(null);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
+  const navigate = useNavigate();
   const { changeRole, changeWarehouse, currentRole, currentWarehouse, roles, setDefaultConfiguration, token } =
     useContext(UserContext);
 
@@ -78,7 +80,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           });
         }
         handleClose();
-        window.location.reload();
+        navigate('/');
       } catch (error) {
         console.error('Error changing role, warehouse, or saving default configuration:', error);
       }
