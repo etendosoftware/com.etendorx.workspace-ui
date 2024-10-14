@@ -61,7 +61,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     setSaveAsDefault(event.target.checked);
   }, []);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (currentSection === 'profile') {
       try {
         if (selectedRole && selectedRole.value !== currentRole?.id) {
@@ -85,7 +85,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         console.error('Error changing role, warehouse, or saving default configuration:', error);
       }
     }
-  };
+  }, [
+    changeRole,
+    changeWarehouse,
+    currentRole?.id,
+    currentRole?.orgList,
+    currentSection,
+    currentWarehouse?.id,
+    navigate,
+    saveAsDefault,
+    selectedRole,
+    selectedWarehouse,
+    setDefaultConfiguration,
+    token,
+  ]);
 
   const handleToggle = (selectedSection: string) => {
     setCurrentSection(selectedSection);

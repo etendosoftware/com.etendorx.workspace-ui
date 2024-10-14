@@ -15,6 +15,7 @@ import PersonIcon from '@workspaceui/componentlibrary/assets/icons/user.svg';
 import AddIcon from '@workspaceui/componentlibrary/assets/icons/plus.svg';
 import { modalConfig, menuItems, initialPeople, sections, NOTIFICATIONS } from '@workspaceui/storybook/mocks';
 import { useTranslation } from '../hooks/useTranslation';
+import { Role } from 'src/contexts/types';
 
 const handleClose = () => {
   return true;
@@ -22,6 +23,8 @@ const handleClose = () => {
 
 const Navigation: React.FC = () => {
   const { t } = useTranslation();
+  const noop = () => {};
+  const roles: Role[] = [];
 
   return (
     <Navbar>
@@ -77,13 +80,13 @@ const Navigation: React.FC = () => {
         sestionTooltip={t('navigation.profile.signOffTooltip')}
         icon={<PersonIcon />}
         sections={sections}
-        onRoleChange={() => {}}
-        onWarehouseChange={() => {}}
-        roles={[]}
+        onRoleChange={noop}
+        onWarehouseChange={noop}
+        roles={roles}
         selectedRole={null}
         selectedWarehouse={null}
         saveAsDefault={false}
-        onSaveAsDefaultChange={() => {}}
+        onSaveAsDefaultChange={noop}
       />
     </Navbar>
   );
