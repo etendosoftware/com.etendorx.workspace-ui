@@ -9,6 +9,7 @@ import { SelectorListProps, Item } from '../types';
 import { InputPassword, theme } from '../..';
 import LockOutlined from '../../../assets/icons/lock.svg';
 import Select from '../../Input/Select';
+import { useTranslation } from '../../../../../MainUI/src/hooks/useTranslation';
 
 const icons: { [key in Item]: React.ReactElement } = {
   [Item.Role]: <></>,
@@ -37,6 +38,8 @@ const SelectorList: React.FC<SelectorListProps> = ({
   saveAsDefault,
   onSaveAsDefaultChange,
 }) => {
+  const { t } = useTranslation();
+
   const warehouses = useMemo(() => {
     if (selectedRole) {
       const role = roles.find(r => r.id === selectedRole.value);
@@ -90,7 +93,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
           </FormControl>
           <FormControlLabel
             control={<CustomCheckbox size="small" checked={saveAsDefault} onChange={onSaveAsDefaultChange} />}
-            label="Save as Default Profile"
+            label={t('navigation.profile.saveAsDefault')}
           />
         </>
       )}
