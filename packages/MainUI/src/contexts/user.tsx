@@ -8,8 +8,9 @@ import { changeRole as doChangeRole } from '@workspaceui/etendohookbinder/api/ro
 import { getSession } from '@workspaceui/etendohookbinder/api/getSession';
 import { changeWarehouse as doChangeWarehouse } from '@workspaceui/etendohookbinder/api/warehouse';
 import { HTTP_CODES } from '@workspaceui/etendohookbinder/api/constants';
-import { IUserContext, Role, Warehouse } from './types';
+import { DefaultConfiguration, IUserContext, Role, Warehouse } from './types';
 import { SessionResponse } from '@workspaceui/etendohookbinder/api/types';
+import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/api/defaultConfig';
 
 export const UserContext = createContext({} as IUserContext);
 
@@ -33,6 +34,15 @@ export default function UserProvider(props: React.PropsWithChildren) {
     return savedCurrentWarehouse ? JSON.parse(savedCurrentWarehouse) : null;
   });
 
+  const setDefaultConfiguration = useCallback(async (token: string, config: DefaultConfiguration) => {
+    try {
+      await apiSetDefaultConfiguration(token, config);
+    } catch (error) {
+      console.error('Error setting default configuration:', error);
+      throw error;
+    }
+  }, []);
+
   const updateSessionInfo = useCallback((sessionResponse: SessionResponse) => {
     const currentRole: Role = {
       id: sessionResponse.role.id,
@@ -42,7 +52,74 @@ export default function UserProvider(props: React.PropsWithChildren) {
     localStorage.setItem('currentRole', JSON.stringify(currentRole));
     localStorage.setItem('currentRoleId', currentRole.id);
     setCurrentRole(currentRole);
+
+    if (sessionResponse.user.defaultWarehouse) {
+      const defaultWarehouse: Warehouse = {
+        id: sessionResponse.user.defaultWarehouse,
+        name: sessionResponse.user.defaultWarehouse$_identifier,
+      };
+      localStorage.setItem('currentWarehouse', JSON.stringify(defaultWarehouse));
+      setCurrentWarehouse(defaultWarehouse);
+    }
   }, []);
+
+  const clearUserData = useCallback(() => {
+    setToken(null);
+    setRoles([]);
+    setCurrentRole(null);
+    setCurrentWarehouse(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('roles');
+    localStorage.removeItem('currentRole');
+    localStorage.removeItem('currentWarehouse');
+  }, []);
+
+  const changeRole = useCallback(
+    async (roleId: string) => {
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+
+      try {
+        const response = await doChangeRole(roleId, token);
+        localStorage.setItem('token', response.token);
+        setToken(response.token);
+
+        const sessionResponse = await getSession(response.token);
+        updateSessionInfo(sessionResponse);
+
+        Metadata.clearMenuCache();
+        await Metadata.refreshMenuOnLogin();
+
+        navigate('/');
+      } catch (e) {
+        logger.warn('Change role error:', e);
+        throw e;
+      }
+    },
+    [token, updateSessionInfo, navigate],
+  );
+
+  const changeWarehouse = useCallback(
+    async (warehouseId: string) => {
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+
+      try {
+        const response = await doChangeWarehouse(warehouseId, token);
+        localStorage.setItem('token', response.token);
+        setToken(response.token);
+
+        const sessionResponse = await getSession(response.token);
+        updateSessionInfo(sessionResponse);
+      } catch (e) {
+        logger.warn('Change warehouse error:', e);
+        throw e;
+      }
+    },
+    [token, updateSessionInfo],
+  );
 
   const login = useCallback(
     async (username: string, password: string) => {
@@ -72,84 +149,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
     [updateSessionInfo],
   );
 
-  const clearUserData = useCallback(() => {
-    setToken(null);
-    setRoles([]);
-    setCurrentRole(null);
-    setCurrentWarehouse(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('roles');
-    localStorage.removeItem('currentRole');
-    localStorage.removeItem('currentWarehouse');
-  }, []);
-
-  const changeRole = useCallback(
-    async (roleId: string) => {
-      if (!token) {
-        throw new Error('No authentication token available');
-      }
-
-      try {
-        const response = await doChangeRole(roleId, token);
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('currentRoleId', roleId);
-        setToken(response.token);
-        navigate('/');
-
-        const newRole = response.roleList.find((role: Role) => role.id === roleId);
-
-        if (newRole) {
-          localStorage.setItem('currentRole', JSON.stringify(newRole));
-          setCurrentRole(newRole);
-
-          setCurrentWarehouse(null);
-          localStorage.removeItem('currentWarehouse');
-
-          Metadata.clearMenuCache();
-        } else {
-          throw new Error('Selected role not found in the updated roles list');
-        }
-      } catch (e) {
-        logger.warn('Change role error:', e);
-        throw e;
-      }
-    },
-    [token, navigate],
-  );
-
-  const changeWarehouse = useCallback(
-    async (warehouseId: string) => {
-      if (!currentRole) {
-        throw new Error('No current role selected');
-      }
-
-      if (!token) {
-        throw new Error('No authentication token available');
-      }
-
-      try {
-        const response = await doChangeWarehouse(warehouseId, token);
-        localStorage.setItem('token', response.token);
-        setToken(response.token);
-
-        const newWarehouse = currentRole.orgList
-          .flatMap(org => org.warehouseList)
-          .find(warehouse => warehouse.id === warehouseId);
-
-        if (newWarehouse) {
-          localStorage.setItem('currentWarehouse', JSON.stringify(newWarehouse));
-          setCurrentWarehouse(newWarehouse);
-        } else {
-          throw new Error('Selected warehouse not found in the current role');
-        }
-      } catch (e) {
-        logger.warn('Change warehouse error:', e);
-        throw e;
-      }
-    },
-    [currentRole, token],
-  );
-
   const value = useMemo(
     () => ({
       login,
@@ -161,8 +160,19 @@ export default function UserProvider(props: React.PropsWithChildren) {
       token,
       clearUserData,
       setToken,
+      setDefaultConfiguration,
     }),
-    [login, changeRole, changeWarehouse, roles, currentRole, currentWarehouse, token, clearUserData, setToken],
+    [
+      login,
+      changeRole,
+      changeWarehouse,
+      roles,
+      currentRole,
+      currentWarehouse,
+      token,
+      clearUserData,
+      setDefaultConfiguration,
+    ],
   );
 
   useLayoutEffect(() => {

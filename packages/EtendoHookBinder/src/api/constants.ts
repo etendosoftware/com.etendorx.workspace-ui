@@ -7,6 +7,8 @@ export const API_METADATA_URL = `${API_BASE_URL}/meta`;
 export const API_METADATA_JSON_URL = `${API_BASE_URL}/com.etendo.metadata`;
 export const API_DEFAULT_CACHE_DURATION = parseInt(import.meta.env['VITE_CACHE_DURATION']);
 export const AUTH_HEADER_NAME = import.meta.env['VITE_AUTH_HEADER_NAME'] as string;
+export const API_SET_DEFAULT_CONFIGURATION_URL = `${API_BASE_URL}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?command=save&_action=org.openbravo.client.application.navigationbarcomponents.UserInfoWidgetActionHandler`;
+
 export enum HTTP_CODES {
   UNAUTHORIZED = 401,
   NOT_FOUND = 404,

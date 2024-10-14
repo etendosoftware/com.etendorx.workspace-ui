@@ -30,7 +30,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedRole, setSelectedRole] = useState<Option | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(null);
-  const { changeRole, changeWarehouse, currentRole, currentWarehouse, roles } = useContext(UserContext);
+  const [saveAsDefault, setSaveAsDefault] = useState(false);
+  const { changeRole, changeWarehouse, currentRole, currentWarehouse, roles, setDefaultConfiguration, token } =
+    useContext(UserContext);
 
   useEffect(() => {
     if (currentRole) {
@@ -53,6 +55,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     setSelectedWarehouse(value);
   }, []);
 
+  const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setSaveAsDefault(event.target.checked);
+  }, []);
+
   const handleSave = async () => {
     if (currentSection === 'profile') {
       try {
@@ -62,10 +68,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         if (selectedWarehouse && selectedWarehouse.value !== currentWarehouse?.id) {
           await changeWarehouse(selectedWarehouse.value);
         }
+        if (saveAsDefault && token) {
+          await setDefaultConfiguration(token, {
+            defaultRole: selectedRole?.value,
+            defaultWarehouse: selectedWarehouse?.value,
+            organization: currentRole?.orgList[0]?.id,
+            language: '192',
+            client: 'System',
+          });
+          console.log('Default configuration saved successfully');
+        }
         handleClose();
         window.location.reload();
       } catch (error) {
-        console.error('Error changing role or warehouse:', error);
+        console.error('Error changing role, warehouse, or saving default configuration:', error);
       }
     }
   };
@@ -85,7 +101,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const isSaveDisabled =
     currentSection === 'profile' &&
     (!selectedRole || selectedRole.value === currentRole?.id) &&
-    (!selectedWarehouse || selectedWarehouse.value === currentWarehouse?.id);
+    (!selectedWarehouse || selectedWarehouse.value === currentWarehouse?.id) &&
+    !saveAsDefault;
 
   return (
     <>
@@ -119,6 +136,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           roles={roles}
           selectedRole={selectedRole}
           selectedWarehouse={selectedWarehouse}
+          saveAsDefault={saveAsDefault}
+          onSaveAsDefaultChange={handleSaveAsDefaultChange}
         />
         <div style={styles.buttonContainerStyles}>
           <Button sx={sx.buttonStyles} onClick={handleClose}>

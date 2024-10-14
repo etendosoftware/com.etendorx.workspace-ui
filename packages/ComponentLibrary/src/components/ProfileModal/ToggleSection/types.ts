@@ -12,6 +12,8 @@ export interface SelectorListProps {
   roles: Role[];
   selectedRole: Option | null;
   selectedWarehouse: Option | null;
+  saveAsDefault: boolean;
+  onSaveAsDefaultChange: () => void;
 }
 
 export { Item };

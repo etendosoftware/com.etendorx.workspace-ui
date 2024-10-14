@@ -238,9 +238,19 @@ export interface SessionResponse {
     name: string;
     username: string;
     defaultRole: string;
+    defaultWarehouse: string;
+    defaultWarehouse$_identifier: string;
   };
   role: {
     id: string;
     name: string;
   };
+}
+
+export interface DefaultConfiguration {
+  language?: string;
+  client?: string;
+  organization?: string;
+  defaultRole?: string;
+  defaultWarehouse?: string;
 }

@@ -24,6 +24,12 @@ export interface Role {
   }>;
 }
 
+export interface DefaultConfiguration {
+  roleId: string | undefined;
+  warehouseId: string | undefined;
+  defaultRole: string;
+}
+
 export interface IUserContext {
   login: (username: string, password: string) => Promise<void>;
   changeRole: (roleId: string) => Promise<void>;
@@ -34,4 +40,5 @@ export interface IUserContext {
   currentWarehouse: Warehouse | null;
   setToken: React.Dispatch<React.SetStateAction<string | null>>;
   clearUserData: () => void;
+  setDefaultConfiguration: (token: string, config: DefaultConfiguration) => Promise<void>;
 }
