@@ -35,10 +35,7 @@ export class Client {
   }
 
   private isJson(response: Response) {
-    return (
-      response.headers.get('Content-Type')?.includes('application/json') ??
-      false
-    );
+    return response.headers.get('Content-Type')?.includes('application/json') ?? false;
   }
 
   private setContentType(options: ClientOptions) {
@@ -46,9 +43,7 @@ export class Client {
 
     if (!headers['Content-Type']) {
       headers['Content-Type'] =
-        body instanceof URLSearchParams || typeof body === 'string'
-          ? this.FORM_CONTENT_TYPE
-          : this.JSON_CONTENT_TYPE;
+        body instanceof URLSearchParams || typeof body === 'string' ? this.FORM_CONTENT_TYPE : this.JSON_CONTENT_TYPE;
     }
 
     options.headers = headers;
@@ -69,11 +64,11 @@ export class Client {
         this.setContentType(options);
       }
 
-      let response = await fetch(`${this.baseUrl}${this.cleanUrl(url)}`, {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let response: Response & { data?: any } = await fetch(`${this.baseUrl}${this.cleanUrl(url)}`, {
         ...options,
         body:
-          options.body instanceof URLSearchParams ||
-          typeof options.body === 'string'
+          options.body instanceof URLSearchParams || typeof options.body === 'string'
             ? options.body
             : JSON.stringify(options.body),
         headers: {
@@ -86,14 +81,9 @@ export class Client {
         response = await this.interceptor(response);
       }
 
-      const data = await (this.isJson(response)
-        ? response.json()
-        : response.text());
+      response.data = await (this.isJson(response) ? response.json() : response.text());
 
-      return {
-        ...response,
-        data,
-      };
+      return response;
     } catch (error) {
       console.warn('API client request failed', {
         url,
@@ -115,11 +105,7 @@ export class Client {
     return this.request(url, { ...options, method: 'GET' });
   }
 
-  public async post(
-    url: string,
-    payload: ClientOptions['body'] = null,
-    options: ClientOptions = {},
-  ) {
+  public async post(url: string, payload: ClientOptions['body'] = null, options: ClientOptions = {}) {
     return this.request(url, { ...options, body: payload, method: 'POST' });
   }
 

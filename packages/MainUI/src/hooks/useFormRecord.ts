@@ -1,22 +1,7 @@
-import { useMemo } from 'react';
-import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource';
+import { useSingleDatasource } from '@workspaceui/etendohookbinder/hooks/useSingleDatasource';
 
 export default function useFormRecord(entity: string, id: string) {
-  const { records } = useDatasource(
-    entity,
-    useMemo(
-      () => ({
-        criteria: [
-          {
-            fieldName: 'id',
-            operator: 'equals',
-            value: id,
-          },
-        ],
-      }),
-      [id],
-    ),
-  );
+  const { record } = useSingleDatasource(entity, id);
 
-  return records[0];
+  return record;
 }
