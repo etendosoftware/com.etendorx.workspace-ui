@@ -21,10 +21,11 @@ const handleClose = () => {
   return true;
 };
 
+const noop = () => {};
+const roles: Role[] = [];
+
 const Navigation: React.FC = () => {
   const { t } = useTranslation();
-  const noop = () => {};
-  const roles: Role[] = [];
 
   return (
     <Navbar>

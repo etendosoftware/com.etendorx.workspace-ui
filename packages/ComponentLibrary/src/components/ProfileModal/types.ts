@@ -8,7 +8,7 @@ export interface User {
   photoUrl: string;
   name: string;
   email: string;
-  sestionTooltip: string;
+  sectionTooltip: string;
 }
 
 export interface ProfileModalProps extends SelectorListProps {

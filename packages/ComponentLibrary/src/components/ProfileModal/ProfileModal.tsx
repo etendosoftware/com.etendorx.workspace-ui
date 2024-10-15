@@ -12,6 +12,7 @@ import { theme } from '../../theme';
 import { UserContext } from '../../../../MainUI/src/contexts/user';
 import { Option } from '../Input/Select/types';
 import { useNavigate } from 'react-router-dom';
+import { logger } from '../../../../MainUI/src/utils/logger';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,
@@ -82,7 +83,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         handleClose();
         navigate('/');
       } catch (error) {
-        console.error('Error changing role, warehouse, or saving default configuration:', error);
+        logger.error('Error changing role, warehouse, or saving default configuration:', error);
       }
     }
   }, [
@@ -100,8 +101,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     token,
   ]);
 
-  const handleToggle = (selectedSection: string) => {
-    setCurrentSection(selectedSection);
+  const handleToggle = (section: string) => {
+    setCurrentSection(section);
   };
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {

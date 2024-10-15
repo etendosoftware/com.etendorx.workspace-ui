@@ -7,7 +7,7 @@ import { UserContext } from '../../../../MainUI/src/contexts/user';
 import { useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 
-const UserProfile: React.FC<User> = ({ photoUrl, name, email, sestionTooltip }) => {
+const UserProfile: React.FC<User> = ({ photoUrl, name, email, sectionTooltip }) => {
   const navigate = useNavigate();
   const { setToken, clearUserData } = useContext(UserContext);
 
@@ -25,7 +25,7 @@ const UserProfile: React.FC<User> = ({ photoUrl, name, email, sestionTooltip }) 
       </div>
       <IconButton
         style={styles.logoutButtonStyles}
-        tooltip={sestionTooltip}
+        tooltip={sectionTooltip}
         width={16}
         height={16}
         onClick={handleSignOff}>

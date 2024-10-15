@@ -38,7 +38,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     try {
       await apiSetDefaultConfiguration(token, config);
     } catch (error) {
-      console.error('Error setting default configuration:', error);
+      logger.error('Error setting default configuration:', error);
       throw error;
     }
   }, []);
@@ -142,7 +142,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
         await Metadata.refreshMenuOnLogin();
       } catch (e) {
-        console.error('Login or session retrieval error:', e);
+        logger.error('Login or session retrieval error:', e);
         throw e;
       }
     },
