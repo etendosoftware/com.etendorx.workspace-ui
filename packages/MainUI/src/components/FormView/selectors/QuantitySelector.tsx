@@ -1,4 +1,5 @@
-import React, { memo, useState, useCallback, useEffect } from 'react';
+import { memo, useState, useCallback, useEffect } from 'react';
+import { roundNumber, validateNumber } from '../../../utils/quantitySelectorUtil';
 import { TextField } from '@mui/material';
 import { QuantityProps } from '../types';
 
@@ -10,30 +11,6 @@ const QuantitySelector: React.FC<QuantityProps> = memo(({ value: initialValue, m
   const minValue = min !== null && min !== undefined && min !== '' ? Number(min) : undefined;
   const maxValue = max !== null && max !== undefined && max !== '' ? Number(max) : undefined;
 
-  const roundNumber = useCallback((num: number) => {
-    return parseInt(num.toString().replace('.', ''));
-  }, []);
-
-  const validateNumber = useCallback(
-    (num: number) => {
-      const roundedNum = roundNumber(num);
-      if (roundedNum < 0) {
-        setErrorMessage('Value must be non-negative');
-        return false;
-      }
-      if (minValue !== undefined && roundedNum < minValue) {
-        setErrorMessage(`Value must be at least ${minValue}`);
-        return false;
-      }
-      if (maxValue !== undefined && roundedNum > maxValue) {
-        setErrorMessage(`Value must be at most ${maxValue}`);
-        return false;
-      }
-      return true;
-    },
-    [minValue, maxValue, roundNumber],
-  );
-
   const handleChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const inputValue = event.target.value;
@@ -42,7 +19,7 @@ const QuantitySelector: React.FC<QuantityProps> = memo(({ value: initialValue, m
       if (inputValue === '') {
         setError(false);
         setErrorMessage('');
-        onChange && onChange(0);
+        onChange?.(0);
         return;
       }
 
@@ -53,16 +30,17 @@ const QuantitySelector: React.FC<QuantityProps> = memo(({ value: initialValue, m
         return;
       }
 
-      const isValid = validateNumber(numericValue);
+      const { isValid, errorMessage } = validateNumber(numericValue, minValue, maxValue);
       setError(!isValid);
+      setErrorMessage(errorMessage);
 
       if (isValid) {
         const roundedValue = roundNumber(numericValue);
-        onChange && onChange(roundedValue);
+        onChange?.(roundedValue);
         setValue(roundedValue.toString());
       }
     },
-    [validateNumber, roundNumber, onChange],
+    [minValue, maxValue, onChange],
   );
 
   useEffect(() => {
