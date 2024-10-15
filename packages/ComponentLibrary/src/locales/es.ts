@@ -34,8 +34,7 @@ const es = {
       noRecord: 'Ninguna fila seleccionada',
     },
     content: {
-      currentTitle:
-        'Se espera que sus ingresos aumenten a finales de este año. Felicitaciones',
+      currentTitle: 'Se espera que sus ingresos aumenten a finales de este año. Felicitaciones',
     },
   },
   navigation: {
@@ -57,8 +56,7 @@ const es = {
       markAllAsRead: 'Marcar todo como leído',
       emptyStateImageAlt: 'Sin Notificaciones',
       emptyStateMessage: 'No tienes notificaciones',
-      emptyStateDescription:
-        '¡Genial! Estás al día con todo. Te notificaremos aquí si hay algo nuevo.',
+      emptyStateDescription: '¡Genial! Estás al día con todo. Te notificaremos aquí si hay algo nuevo.',
       actionButtonLabel: 'Configurar notificaciones',
     },
     profile: {
@@ -67,6 +65,7 @@ const es = {
       newPasswordLabel: 'Nueva Contraseña',
       confirmPasswordLabel: 'Confirmar Nueva Contraseña',
       signOffTooltip: 'Cerrar sesión',
+      saveAsDefault: 'Guardar perfil por defecto',
     },
   },
 };

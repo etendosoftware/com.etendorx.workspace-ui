@@ -1,9 +1,4 @@
-import {
-  Button as ButtonMUI,
-  Grid as GridMUI,
-  TextField as TextFieldMUI,
-  Box as BoxMUI,
-} from './MUI';
+import { Button as ButtonMUI, Grid as GridMUI, TextField as TextFieldMUI, Box as BoxMUI } from './MUI';
 import ModalCustom from './BasicModal';
 import TextInputMUI from './Input/TextInput/TextInputAutocomplete';
 import SearchInputWithVoiceMUI from './Input/TextInput/TextInputAutocomplete/SearchInputWithVoice';
@@ -23,8 +18,6 @@ import DrawerMUI from './Drawer';
 import IButton from './IconButton';
 
 export * from '../theme';
-
-// is a higher order component that applies the theme to the component
 
 const Button = ButtonMUI;
 const Grid = GridMUI;

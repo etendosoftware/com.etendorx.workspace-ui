@@ -4,13 +4,15 @@ import CheckCircle from '../../assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';
 import ToggleSection from './ToggleButton';
 import SelectorList from './ToggleSection';
-import { ProfileModalProps } from './UserProfile.types';
-import { MODAL_WIDTH, menuSyle, styles, sx } from './ProfileModal.styles';
+import { ProfileModalProps } from './types';
+import { MODAL_WIDTH, menuSyle, styles, sx } from './styles';
 import { toggleSectionStyles } from './ToggleButton/styles';
 import IconButton from '../IconButton';
 import { theme } from '../../theme';
 import { UserContext } from '../../../../MainUI/src/contexts/user';
 import { Option } from '../Input/Select/types';
+import { useNavigate } from 'react-router-dom';
+import { logger } from '../../../../MainUI/src/utils/logger';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,
@@ -30,7 +32,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedRole, setSelectedRole] = useState<Option | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(null);
-  const { changeRole, changeWarehouse, currentRole, currentWarehouse, roles } = useContext(UserContext);
+  const [saveAsDefault, setSaveAsDefault] = useState(false);
+  const navigate = useNavigate();
+  const { changeRole, changeWarehouse, currentRole, currentWarehouse, roles, setDefaultConfiguration, token } =
+    useContext(UserContext);
 
   useEffect(() => {
     if (currentRole) {
@@ -53,7 +58,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     setSelectedWarehouse(value);
   }, []);
 
-  const handleSave = async () => {
+  const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setSaveAsDefault(event.target.checked);
+  }, []);
+
+  const handleSave = useCallback(async () => {
     if (currentSection === 'profile') {
       try {
         if (selectedRole && selectedRole.value !== currentRole?.id) {
@@ -62,16 +71,38 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         if (selectedWarehouse && selectedWarehouse.value !== currentWarehouse?.id) {
           await changeWarehouse(selectedWarehouse.value);
         }
+        if (saveAsDefault && token) {
+          await setDefaultConfiguration(token, {
+            defaultRole: selectedRole?.value,
+            defaultWarehouse: selectedWarehouse?.value,
+            organization: currentRole?.orgList[0]?.id,
+            language: '192',
+            client: 'System',
+          });
+        }
         handleClose();
-        window.location.reload();
+        navigate('/');
       } catch (error) {
-        console.error('Error changing role or warehouse:', error);
+        logger.error('Error changing role, warehouse, or saving default configuration:', error);
       }
     }
-  };
+  }, [
+    changeRole,
+    changeWarehouse,
+    currentRole?.id,
+    currentRole?.orgList,
+    currentSection,
+    currentWarehouse?.id,
+    navigate,
+    saveAsDefault,
+    selectedRole,
+    selectedWarehouse,
+    setDefaultConfiguration,
+    token,
+  ]);
 
-  const handleToggle = (selectedSection: string) => {
-    setCurrentSection(selectedSection);
+  const handleToggle = (section: string) => {
+    setCurrentSection(section);
   };
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -85,7 +116,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const isSaveDisabled =
     currentSection === 'profile' &&
     (!selectedRole || selectedRole.value === currentRole?.id) &&
-    (!selectedWarehouse || selectedWarehouse.value === currentWarehouse?.id);
+    (!selectedWarehouse || selectedWarehouse.value === currentWarehouse?.id) &&
+    !saveAsDefault;
 
   return (
     <>
@@ -119,6 +151,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           roles={roles}
           selectedRole={selectedRole}
           selectedWarehouse={selectedWarehouse}
+          saveAsDefault={saveAsDefault}
+          onSaveAsDefaultChange={handleSaveAsDefaultChange}
         />
         <div style={styles.buttonContainerStyles}>
           <Button sx={sx.buttonStyles} onClick={handleClose}>
