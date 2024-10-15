@@ -78,6 +78,8 @@ export const DefaultNav: Story = {
           roles={[]}
           selectedRole={null}
           selectedWarehouse={null}
+          saveAsDefault={false}
+          onSaveAsDefaultChange={() => {}}
         />
       </div>
     </Nav>

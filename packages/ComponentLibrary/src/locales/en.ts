@@ -34,8 +34,7 @@ const en = {
       noRecord: 'No Row Selected',
     },
     content: {
-      currentTitle:
-        'Its revenue is expected to increase later this year. Congratulations',
+      currentTitle: 'Its revenue is expected to increase later this year. Congratulations',
     },
   },
   navigation: {
@@ -67,6 +66,7 @@ const en = {
       newPasswordLabel: 'New Password',
       confirmPasswordLabel: 'Confirm New Password',
       signOffTooltip: 'Sign off',
+      saveAsDefault: 'Save as default profile',
     },
   },
 };

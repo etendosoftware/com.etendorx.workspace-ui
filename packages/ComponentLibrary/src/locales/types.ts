@@ -65,6 +65,7 @@ export type TranslationKeys = {
       newPasswordLabel: string;
       confirmPasswordLabel: string;
       signOffTooltip: string;
+      saveAsDefault: string;
     };
   };
 };
