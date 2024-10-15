@@ -55,7 +55,15 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
           />
         );
       case 'quantity':
-        return <QuantitySelector />;
+        return (
+          <QuantitySelector
+            value={field.value}
+            min={field.original?.column?.minValue ?? null}
+            max={field.original?.column?.maxValue ?? null}
+            onChange={value => onChange(field.label, value)}
+            readOnly={readOnly}
+          />
+        );
       default:
         return (
           <TextInputBase

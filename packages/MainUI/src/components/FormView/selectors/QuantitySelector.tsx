@@ -1,11 +1,14 @@
-import React, { memo, useEffect, useState, useCallback } from 'react';
+import React, { memo, useState, useCallback, useEffect } from 'react';
 import { TextField } from '@mui/material';
 import { QuantityProps } from '../types';
 
-const QuantitySelector: React.FC<QuantityProps> = memo(({ min, max }) => {
-  const [value, setValue] = useState('');
+const QuantitySelector: React.FC<QuantityProps> = memo(({ value: initialValue, min, max, onChange, readOnly }) => {
+  const [value, setValue] = useState(initialValue);
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  const minValue = min !== null && min !== undefined && min !== '' ? Number(min) : undefined;
+  const maxValue = max !== null && max !== undefined && max !== '' ? Number(max) : undefined;
 
   const roundNumber = useCallback((num: number) => {
     return parseInt(num.toString().replace('.', ''));
@@ -18,17 +21,17 @@ const QuantitySelector: React.FC<QuantityProps> = memo(({ min, max }) => {
         setErrorMessage('Value must be non-negative');
         return false;
       }
-      if (min !== undefined && roundedNum < min) {
-        setErrorMessage(`Value must be at least ${min} when rounded`);
+      if (minValue !== undefined && roundedNum < minValue) {
+        setErrorMessage(`Value must be at least ${minValue}`);
         return false;
       }
-      if (max !== undefined && roundedNum > max) {
-        setErrorMessage(`Value must be at most ${max} when rounded`);
+      if (maxValue !== undefined && roundedNum > maxValue) {
+        setErrorMessage(`Value must be at most ${maxValue}`);
         return false;
       }
       return true;
     },
-    [min, max, roundNumber],
+    [minValue, maxValue, roundNumber],
   );
 
   const handleChange = useCallback(
@@ -39,6 +42,7 @@ const QuantitySelector: React.FC<QuantityProps> = memo(({ min, max }) => {
       if (inputValue === '') {
         setError(false);
         setErrorMessage('');
+        onChange && onChange(0);
         return;
       }
 
@@ -51,21 +55,23 @@ const QuantitySelector: React.FC<QuantityProps> = memo(({ min, max }) => {
 
       const isValid = validateNumber(numericValue);
       setError(!isValid);
+
+      if (isValid) {
+        const roundedValue = roundNumber(numericValue);
+        onChange && onChange(roundedValue);
+        setValue(roundedValue.toString());
+      }
     },
-    [validateNumber],
+    [validateNumber, roundNumber, onChange],
   );
 
   useEffect(() => {
-    if (value !== '' && !error) {
-      const roundedValue = roundNumber(parseFloat(value));
-      setValue(roundedValue.toString());
-    }
-  }, [value, error, roundNumber]);
+    setValue(initialValue);
+  }, [initialValue]);
 
   return (
     <TextField
       id="outlined-number"
-      label="Number"
       type="number"
       variant="standard"
       fullWidth
@@ -73,6 +79,13 @@ const QuantitySelector: React.FC<QuantityProps> = memo(({ min, max }) => {
       onChange={handleChange}
       error={error}
       helperText={error ? errorMessage : ''}
+      disabled={readOnly}
+      InputProps={{
+        inputProps: {
+          min: minValue,
+          max: maxValue,
+        },
+      }}
     />
   );
 });

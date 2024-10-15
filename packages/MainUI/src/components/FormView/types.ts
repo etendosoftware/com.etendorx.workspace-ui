@@ -120,6 +120,9 @@ export interface SelectSelectorProps {
 }
 
 export interface QuantityProps {
-  min?: number;
-  max?: number;
+  value: FieldValue;
+  min?: number | string | null;
+  max?: number | string | null;
+  onChange?: (value: number) => void;
+  readOnly?: boolean;
 }
