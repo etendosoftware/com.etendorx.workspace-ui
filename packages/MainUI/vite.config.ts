@@ -25,23 +25,12 @@ export default defineConfig({
     commonjsOptions: {
       transformMixedEsModules: true,
     },
-    // rollupOptions: {
-    //   external: ['@workspaceui/storybook'],
-    // },
+    rollupOptions: {
+      external: ['@workspaceui/storybook'],
+    },
     cssMinify: true,
     minify: true,
     outDir: path.resolve(__dirname, '../../src/main/resources/static'),
     emptyOutDir: true,
-  },
-  server: {
-    fs: {
-      strict: true,
-    },
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      charset: 'utf8',
-    },
-    include: ['@mui/material'],
   },
 });

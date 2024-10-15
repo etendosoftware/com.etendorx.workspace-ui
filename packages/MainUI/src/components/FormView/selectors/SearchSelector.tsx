@@ -3,15 +3,10 @@ import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource
 import Select from '@workspaceui/componentlibrary/components/Input/Select';
 import SearchOutlined from '../../../../../ComponentLibrary/src/assets/icons/search.svg';
 import { theme } from '@workspaceui/componentlibrary/theme';
-import { TableDirSelectorProps } from '../types';
-import { Option } from '../../../../../ComponentLibrary/src/components/Input/Select/types';
+import { SearchSelectorProps } from '../types';
+import { Option } from '@workspaceui/componentlibrary/components/Input/Select/types';
 
-const TableDirSelector: React.FC<TableDirSelectorProps> = ({
-  onChange,
-  label,
-  entity,
-  value,
-}) => {
+function SearchSelector({ onChange, label, entity, value }: SearchSelectorProps) {
   const { records } = useDatasource(entity);
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
 
@@ -55,18 +50,14 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
 
   return (
     <Select
-      iconLeft={
-        <SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />
-      }
+      iconLeft={<SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />}
       options={options}
       onChange={handleChange}
       value={selectedValue}
       getOptionLabel={(option: Option) => option.title}
-      isOptionEqualToValue={(option, value) =>
-        option.id === value.id || option.value === value.id
-      }
+      isOptionEqualToValue={(option, value) => option.id === value.id || option.value === value.id}
     />
   );
-};
+}
 
-export default TableDirSelector;
+export default SearchSelector;

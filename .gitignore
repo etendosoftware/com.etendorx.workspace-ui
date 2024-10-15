@@ -18,3 +18,4 @@ packages/EtendoHookBinder/node_modules
 
 /storybook-static
 .env
+.idea/
