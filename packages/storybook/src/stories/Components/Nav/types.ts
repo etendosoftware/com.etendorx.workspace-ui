@@ -30,6 +30,6 @@ export interface NavArgs extends WaterfallModalProps {
   userPhotoUrl: string;
   userName: string;
   userEmail: string;
-  sestionTooltip: string;
+  sectionTooltip: string;
   sections: Section[];
 }

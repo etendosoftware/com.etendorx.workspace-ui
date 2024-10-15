@@ -78,7 +78,7 @@ const Navigation: React.FC = () => {
         userPhotoUrl={profilePicture}
         userName={'Ayelén García'}
         userEmail={'ayelen.garcia@etendo.software'}
-        sestionTooltip={t('navigation.profile.signOffTooltip')}
+        sectionTooltip={t('navigation.profile.signOffTooltip')}
         icon={<PersonIcon />}
         sections={sections}
         onRoleChange={noop}
