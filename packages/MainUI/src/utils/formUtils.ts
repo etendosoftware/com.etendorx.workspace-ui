@@ -1,16 +1,5 @@
-import {
-  FieldType,
-  FieldInfo,
-  FormData,
-  Section,
-  FieldDefinition,
-} from '../screens/Form/types';
-import {
-  Column,
-  MappedData,
-  MappedTab,
-  WindowMetadata,
-} from '@workspaceui/etendohookbinder/api/types';
+import { FieldType, FieldInfo, FormData, Section, FieldDefinition } from '../screens/Form/types';
+import { Column, MappedData, MappedTab, WindowMetadata } from '@workspaceui/etendohookbinder/api/types';
 
 export function mapColumnTypeToFieldType(column: Column): FieldType {
   if (!column || !column?.reference) {
@@ -25,30 +14,23 @@ export function mapColumnTypeToFieldType(column: Column): FieldType {
       return 'date';
     case '20':
       return 'boolean';
+    case '29':
+      return 'quantity';
     case '12':
     case '17':
     case '30':
     case '18':
     case '11':
-    case '29':
     case '22':
     default:
       return 'text';
   }
 }
 
-export function ensureFieldValue(
-  value: unknown,
-): string | number | boolean | Date | string[] {
-  if (
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
-  )
-    return value;
+export function ensureFieldValue(value: unknown): string | number | boolean | Date | string[] {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
   if (value instanceof Date) return value;
-  if (Array.isArray(value) && value.every(item => typeof item === 'string'))
-    return value;
+  if (Array.isArray(value) && value.every(item => typeof item === 'string')) return value;
   return String(value);
 }
 
@@ -83,10 +65,7 @@ export function mapWindowMetadata(windowData: WindowMetadata): MappedData {
   return mappedData;
 }
 
-export function adaptFormData(
-  windowData: WindowMetadata,
-  record: Record<string, unknown>,
-): FormData | null {
+export function adaptFormData(windowData: WindowMetadata, record: Record<string, unknown>): FormData | null {
   if (!windowData || !record) {
     return null;
   }
@@ -111,37 +90,35 @@ export function adaptFormData(
     } as Section;
   });
 
-  Object.entries(windowData.tabs[0].fields).forEach(
-    ([fieldName, fieldInfo]) => {
-      const column = fieldInfo.column as Column;
-      const sectionName = fieldInfo.fieldGroup$_identifier ?? 'Main';
-      const rawValue = record[fieldName];
-      let safeValue;
+  Object.entries(windowData.tabs[0].fields).forEach(([fieldName, fieldInfo]) => {
+    const column = fieldInfo.column as Column;
+    const sectionName = fieldInfo.fieldGroup$_identifier ?? 'Main';
+    const rawValue = record[fieldName];
+    let safeValue;
 
-      if (mapColumnTypeToFieldType(column) === 'tabledir') {
-        safeValue = {
-          id: rawValue,
-          title: record[`${fieldName}$_identifier`] || rawValue,
-          value: rawValue,
-        };
-      } else {
-        safeValue = ensureFieldValue(rawValue);
-      }
+    if (mapColumnTypeToFieldType(column) === 'tabledir') {
+      safeValue = {
+        id: rawValue,
+        title: record[`${fieldName}$_identifier`] || rawValue,
+        value: rawValue,
+      };
+    } else {
+      safeValue = ensureFieldValue(rawValue);
+    }
 
-      adaptedData[fieldName] = {
-        value: safeValue,
-        type: mapColumnTypeToFieldType(column),
-        label: fieldInfo.column.name,
-        section: sectionName,
-        required: fieldInfo.column.isMandatory ?? true,
-        referencedTable: fieldInfo.column.reference,
-        original: {
-          fieldName,
-          ...fieldInfo,
-        },
-      } as unknown as FieldDefinition;
-    },
-  );
+    adaptedData[fieldName] = {
+      value: safeValue,
+      type: mapColumnTypeToFieldType(column),
+      label: fieldInfo.column.name,
+      section: sectionName,
+      required: fieldInfo.column.isMandatory ?? true,
+      referencedTable: fieldInfo.column.reference,
+      original: {
+        fieldName,
+        ...fieldInfo,
+      },
+    } as unknown as FieldDefinition;
+  });
 
   return adaptedData;
 }

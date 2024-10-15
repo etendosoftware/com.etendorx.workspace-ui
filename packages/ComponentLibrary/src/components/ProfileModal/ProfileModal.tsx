@@ -24,7 +24,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   userPhotoUrl,
   userName,
   userEmail,
-  sestionTooltip,
+  sectionTooltip,
   icon,
   sections,
 }) => {
@@ -137,7 +137,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           },
         }}
         MenuListProps={{ sx: menuSyle }}>
-        <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} sestionTooltip={sestionTooltip} />
+        <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} sectionTooltip={sectionTooltip} />
         <div style={toggleSectionStyles}>
           <ToggleSection sections={sections} currentSection={currentSection} onToggle={handleToggle} />
         </div>

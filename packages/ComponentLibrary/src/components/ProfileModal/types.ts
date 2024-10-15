@@ -19,7 +19,7 @@ export interface ProfileModalProps extends SelectorListProps {
   userPhotoUrl: string;
   userName: string;
   userEmail: string;
-  sestionTooltip: string;
+  sectionTooltip: string;
   sections: Section[];
 }
 

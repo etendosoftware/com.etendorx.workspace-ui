@@ -1,9 +1,6 @@
 import { ReactNode } from 'react';
 import { FieldDefinition, Section } from '../../screens/Form/types';
-import {
-  MappedData,
-  WindowMetadata,
-} from '@workspaceui/etendohookbinder/api/types';
+import { MappedData, WindowMetadata } from '@workspaceui/etendohookbinder/api/types';
 
 export interface GridItemProps {
   xs?: number;
@@ -60,8 +57,7 @@ export interface FieldLabelProps {
   onLinkClick?: () => void;
 }
 
-export interface SectionRendererProps
-  extends Omit<FormSectionProps, 'children'> {
+export interface SectionRendererProps extends Omit<FormSectionProps, 'children'> {
   sectionRef: (el: HTMLElement | null) => void;
 }
 
@@ -120,5 +116,14 @@ export interface SelectSelectorProps {
   name: string;
   title: string;
   onChange: (name: string, value: string) => void;
+  readOnly?: boolean;
+}
+
+export interface QuantityProps {
+  value: FieldValue;
+  maxLength?: string;
+  min?: number | string | null;
+  max?: number | string | null;
+  onChange?: (value: number) => void;
   readOnly?: boolean;
 }
