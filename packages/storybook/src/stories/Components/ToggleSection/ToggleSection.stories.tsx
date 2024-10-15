@@ -1,5 +1,5 @@
 import SelectorList from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleSection';
-import { SelectorListProps } from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleSection/types';
+import { SelectorListProps } from '../../../../../ComponentLibrary/src/components/ProfileModal/types';
 import type { Meta, StoryObj } from '@storybook/react';
 
 const meta: Meta<typeof SelectorList> = {
