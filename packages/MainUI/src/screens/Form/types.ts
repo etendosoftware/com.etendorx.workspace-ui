@@ -4,13 +4,7 @@ export interface FieldInfo {
   fieldGroup$_identifier?: string;
 }
 
-export type FieldType =
-  | 'text'
-  | 'number'
-  | 'date'
-  | 'boolean'
-  | 'select'
-  | 'tabledir';
+export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'tabledir' | 'quantity';
 
 export interface BaseFieldDefinition<T> {
   value: T;
