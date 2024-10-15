@@ -1,10 +1,10 @@
 export const isValidNumber = (value: string): boolean => {
-  const regex = /^-?\d*\.?\d+$/;
+  const regex = /^-?\d+(\.\d+)?$/;
   return regex.test(value);
 };
 
 export const roundNumber = (num: number): number => {
-  return parseInt(num.toString().replace('.', ''));
+  return Math.round(num);
 };
 
 export const validateNumber = (
@@ -29,6 +29,10 @@ export const validateNumber = (
 
   if (maxValue !== undefined && roundedNum > maxValue) {
     return { isValid: false, errorMessage: `Value must be at most ${maxValue}` };
+  }
+
+  if (isNaN(num)) {
+    return { isValid: false, errorMessage: 'Please enter a valid number' };
   }
 
   return { isValid: true, errorMessage: '', roundedValue: roundedNum };
