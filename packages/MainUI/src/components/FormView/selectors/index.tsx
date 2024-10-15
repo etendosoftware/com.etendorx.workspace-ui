@@ -58,6 +58,7 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
         return (
           <QuantitySelector
             value={field.value}
+            maxLength={field.original?.column?.length}
             min={field.original?.column?.minValue ?? null}
             max={field.original?.column?.maxValue ?? null}
             onChange={value => onChange(field.label, value)}
