@@ -1,28 +1,21 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { TabItem } from '@workspaceui/componentlibrary/components/PrimaryTab/types';
 import { Box } from '@workspaceui/componentlibrary/components';
 import PrimaryTabs from '@workspaceui/componentlibrary/components/PrimaryTab';
 import { defaultIcon } from '../../constants/iconConstants';
-import { WindowMetadata } from '@workspaceui/etendohookbinder/api/types';
+import type { WindowMetadata } from '@workspaceui/etendohookbinder/api/types';
 import { useSingleDatasource } from '@workspaceui/etendohookbinder/hooks/useSingleDatasource';
+import Spinner from '@workspaceui/componentlibrary/components/Spinner';
+import { Typography } from '@mui/material';
+import { FormBuilder } from './FormBuilder';
+import { useMetadataContext } from '../../hooks/useMetadataContext';
 
 export function DynamicFormView({ windowData }: { windowData: WindowMetadata }) {
   const { recordId = '' } = useParams<{ recordId: string }>();
   const { record } = useSingleDatasource(windowData.tabs[0].entityName, recordId);
-  const [selectedTab, setSelectedTab] = useState(windowData.tabs[0].id);
+  const { currentTab } = useMetadataContext();
   const containerRef = useRef<HTMLDivElement>(null);
-  const currentTab = useMemo(() => windowData.tabs.find(tab => selectedTab === tab.id), [selectedTab, windowData.tabs]);
-
-  useEffect(() => {
-    const f = currentTab?.fields;
-
-    if (f) {
-      Object.entries(f).forEach(([fieldName, field]) => {
-        console.debug({ [fieldName]: field });
-      });
-    }
-  }, [currentTab?.fields]);
 
   const [tabs] = useState<TabItem[]>(() => {
     if (!currentTab) {
@@ -58,7 +51,10 @@ export function DynamicFormView({ windowData }: { windowData: WindowMetadata }) 
             fields: [],
           };
         }
-        groups[field.fieldGroup].fields.push(field);
+
+        if (field.displayed && !field.shownInStatusBar) {
+          groups[field.fieldGroup].fields.push(field);
+        }
       }
     }
 
@@ -67,21 +63,32 @@ export function DynamicFormView({ windowData }: { windowData: WindowMetadata }) 
     return res;
   });
 
-  const handleTabChange = useCallback((newTabId: string) => {
-    setSelectedTab(newTabId);
-  }, []);
-
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
   }, []);
 
+  const fields = useMemo(() => Object.values(currentTab?.fields || {}), [currentTab?.fields]);
+
+  if (!record || !currentTab?.fields) {
+    return <Spinner />;
+  }
+
   return (
     <Box display="flex" flexDirection="column" height="100%" width="100%" padding="0 0.5rem 0.5rem 0.5rem">
       <Box flexShrink={1}>
-        <PrimaryTabs tabs={tabs} onChange={handleTabChange} icon={defaultIcon} />
+        <PrimaryTabs tabs={tabs} icon={defaultIcon} />
       </Box>
       <Box flexGrow={1} overflow="auto" ref={containerRef}>
-        <form onSubmit={handleSubmit}></form>
+        <form onSubmit={handleSubmit}>
+          <Box bgcolor="white" borderRadius={1} padding={2} marginY={1} display="flex" flexDirection="column">
+            <Typography fontSize="1rem" borderBottom="1px solid #ddd" paddingBottom={1} marginBottom={2}>
+              Form Fields
+            </Typography>
+            <Box fontSize="0.8rem">
+              <FormBuilder fields={fields} record={record} />
+            </Box>
+          </Box>
+        </form>
       </Box>
     </Box>
   );

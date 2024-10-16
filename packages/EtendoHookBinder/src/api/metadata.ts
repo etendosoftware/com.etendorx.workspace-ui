@@ -80,8 +80,23 @@ export class Metadata {
     return Metadata.cache.get<Menu[]>('OBMenu') ?? [];
   }
 
+  public static getCachedWindow(windowId: string): Etendo.WindowMetadata {
+    return Metadata.cache.get<Etendo.WindowMetadata>(`window-${windowId}`) || ({} as Etendo.WindowMetadata);
+  }
+
   public static clearMenuCache() {
     Metadata.cache.delete('OBMenu');
     this.currentRoleId = null;
+  }
+
+  public static getTabsColumns(tabs?: Etendo.Tab[]) {
+    return (tabs || []).reduce(
+      (cols, tab) => {
+        cols[tab.id] = Metadata.getColumns(tab.id);
+
+        return cols;
+      },
+      {} as Record<string, Etendo.Column[]>,
+    );
   }
 }
