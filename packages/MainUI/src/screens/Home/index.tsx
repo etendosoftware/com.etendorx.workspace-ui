@@ -11,26 +11,21 @@ import TopToolbar from '@workspaceui/componentlibrary/components/Table/Toolbar';
 import Sidebar from '@workspaceui/componentlibrary/components/Table/Sidebar';
 import ExpandMenu from '@workspaceui/componentlibrary/components/Table/ExpandMenu';
 import { Paper } from '@mui/material';
-import { useRecordContext } from '../../hooks/useRecordContext';
 import useStyles from './styles';
 import { useTranslation } from '../../hooks/useTranslation';
+import { Organization } from '@workspaceui/storybook/stories/Components/Table/types';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const styles = useStyles();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [expandAnchorEl, setExpandAnchorEl] = useState<null | HTMLElement>(
-    null,
-  );
-  const { selectedRecord, setSelectedRecord, getFormattedRecord } =
-    useRecordContext();
+  const [expandAnchorEl, setExpandAnchorEl] = useState<null | HTMLElement>(null);
+  const { selectedRecord, setSelectedRecord, getFormattedRecord } = useRecordContext();
   const formattedRecord = getFormattedRecord(selectedRecord);
   const { id = '' } = useParams();
   const { t } = useTranslation();
-  const [updatedWidgets, setUpdatedWidgets] = useState(() =>
-    createWidgets(selectedRecord, setSelectedRecord, t),
-  );
+  const [updatedWidgets, setUpdatedWidgets] = useState(() => createWidgets(selectedRecord, setSelectedRecord, t));
 
   const paperStyles = useMemo(
     () =>
@@ -91,45 +86,21 @@ const Home: React.FC = () => {
             isSidebarOpen,
             t,
           )
-        : createToolbarConfig(
-            toggleDropdown,
-            toggleSidebar,
-            handleExpandClick,
-            isDropdownOpen,
-            isSidebarOpen,
-            t,
-          ),
-    [
-      handleCancel,
-      handleSave,
-      id,
-      isDropdownOpen,
-      isSidebarOpen,
-      t,
-      toggleDropdown,
-      toggleSidebar,
-      handleExpandClick,
-    ],
+        : createToolbarConfig(toggleDropdown, toggleSidebar, handleExpandClick, isDropdownOpen, isSidebarOpen, t),
+    [handleCancel, handleSave, id, isDropdownOpen, isSidebarOpen, t, toggleDropdown, toggleSidebar, handleExpandClick],
   );
 
   useEffect(() => {
     if (selectedRecord) {
-      const newWidgets = createWidgets(
-        selectedRecord,
-        setSelectedRecord,
-        t,
-      ).map(widget => {
+      const newWidgets = createWidgets(selectedRecord, setSelectedRecord, t).map(widget => {
         if (widget.id === '1') {
           return {
             ...widget,
-            children: React.cloneElement(
-              widget.children as React.ReactElement,
-              {
-                selectedRecord,
-                onSave: handleSave,
-                onCancel: handleCancel,
-              },
-            ),
+            children: React.cloneElement(widget.children as React.ReactElement, {
+              selectedRecord,
+              onSave: handleSave,
+              onCancel: handleCancel,
+            }),
           };
         }
         return widget;
@@ -142,11 +113,7 @@ const Home: React.FC = () => {
     <Box sx={styles.mainContainer}>
       <Box flexShrink={0} padding="0.5rem">
         <TopToolbar {...toolbarConfig} isItemSelected={!!selectedRecord} />
-        <ExpandMenu
-          anchorEl={expandAnchorEl}
-          onClose={handleExpandClose}
-          open={Boolean(expandAnchorEl)}
-        />
+        <ExpandMenu anchorEl={expandAnchorEl} onClose={handleExpandClose} open={Boolean(expandAnchorEl)} />
       </Box>
       <Box sx={styles.container}>
         <Box sx={tablePaper}>
@@ -157,13 +124,9 @@ const Home: React.FC = () => {
             isOpen={isSidebarOpen}
             onClose={toggleSidebar}
             selectedItem={{
-              icon: (
-                <SideIcon fill={theme.palette.baselineColor.neutral[100]} />
-              ),
-              identifier:
-                formattedRecord?.identifier ?? t('table.labels.noIdentifier'),
-              title:
-                t('table.content.currentTitle') ?? t('table.labels.noTitle'),
+              icon: <SideIcon fill={theme.palette.baselineColor.neutral[100]} />,
+              identifier: formattedRecord?.identifier ?? t('table.labels.noIdentifier'),
+              title: t('table.content.currentTitle') ?? t('table.labels.noTitle'),
             }}
             widgets={updatedWidgets}
           />
@@ -182,3 +145,14 @@ const Home: React.FC = () => {
 };
 
 export default Home;
+
+function useRecordContext() {
+  return {
+    selectedRecord: {} as Organization,
+    setSelectedRecord: () => {},
+    getFormattedRecord: (a: unknown) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return a as any;
+    },
+  };
+}
