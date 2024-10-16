@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { TabItem } from '@workspaceui/componentlibrary/components/PrimaryTab/types';
 import { Box } from '@workspaceui/componentlibrary/components';
@@ -15,7 +15,6 @@ export function DynamicFormView({ windowData }: { windowData: WindowMetadata }) 
   const { recordId = '' } = useParams<{ recordId: string }>();
   const { record } = useSingleDatasource(windowData.tabs[0].entityName, recordId);
   const { currentTab } = useMetadataContext();
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const [tabs] = useState<TabItem[]>(() => {
     if (!currentTab) {
@@ -78,7 +77,7 @@ export function DynamicFormView({ windowData }: { windowData: WindowMetadata }) 
       <Box flexShrink={1}>
         <PrimaryTabs tabs={tabs} icon={defaultIcon} />
       </Box>
-      <Box flexGrow={1} overflow="auto" ref={containerRef}>
+      <Box flexGrow={1} overflow="auto">
         <form onSubmit={handleSubmit}>
           <Box bgcolor="white" borderRadius={1} padding={2} marginY={1} display="flex" flexDirection="column">
             <Typography fontSize="1rem" borderBottom="1px solid #ddd" paddingBottom={1} marginBottom={2}>
