@@ -70,7 +70,7 @@ export const DefaultNav: Story = {
           userPhotoUrl={args.userPhotoUrl}
           userName={args.userName}
           userEmail={args.userEmail}
-          sestionTooltip={args.sestionTooltip}
+          sectionTooltip={args.sectionTooltip}
           icon={<PersonIcon fill="#2E365C" />}
           sections={args.sections}
           onRoleChange={() => {}}
@@ -115,7 +115,7 @@ export const DefaultNav: Story = {
     userPhotoUrl: profilePicture,
     userName: 'Ayelén García',
     userEmail: 'ayelen.garcia@etendo.software',
-    sestionTooltip: 'Sign off',
+    sectionTooltip: 'Sign off',
     sections: sections,
   },
 };
