@@ -1,26 +1,9 @@
-import React from 'react';
 import { Profile as ProfileModal } from '../../../../../ComponentLibrary/src/components';
 import profilePicture from '../.././../../../ComponentLibrary/src/assets/images/profile_picture_mock.png';
 import PersonIcon from '../../../../../ComponentLibrary/src/assets/icons/user.svg';
-import { mockRoles, sections } from './mock';
+import { sections } from './mock';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Section } from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleButton/types';
-
-interface ProfileModalProps {
-  cancelButtonText: string;
-  saveButtonText: string;
-  passwordLabel: string;
-  newPasswordLabel: string;
-  confirmPasswordLabel: string;
-  section: string;
-  tooltipButtonProfile: string;
-  userPhotoUrl: string;
-  userName: string;
-  userEmail: string;
-  sestionTooltip: string;
-  icon: React.ReactElement;
-  sections: Section[];
-}
+import { ProfileModalProps } from '@workspaceui/componentlibrary/components/ProfileModal/types';
 
 const meta: Meta<typeof ProfileModal> = {
   title: 'Components/ProfileModal',
@@ -45,18 +28,7 @@ export default meta;
 type Story = StoryObj<ProfileModalProps>;
 
 export const ProfileDefault: Story = {
-  render: args => (
-    <ProfileModal
-      saveAsDefault={false}
-      onSaveAsDefaultChange={() => {}}
-      onRoleChange={() => {}}
-      onWarehouseChange={() => {}}
-      roles={mockRoles}
-      selectedRole={null}
-      selectedWarehouse={null}
-      {...args}
-    />
-  ),
+  render: args => <ProfileModal {...args} />,
   args: {
     section: 'profile',
     cancelButtonText: 'Cancel',
@@ -68,7 +40,7 @@ export const ProfileDefault: Story = {
     userPhotoUrl: profilePicture,
     userName: 'Ayelén García',
     userEmail: 'ayelen.garcia@etendo.software',
-    sestionTooltip: 'Close Session',
+    sectionTooltip: 'Close Session',
     icon: <PersonIcon fill="#2E365C" />,
     sections: sections,
   },
