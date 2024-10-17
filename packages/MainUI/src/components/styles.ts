@@ -7,5 +7,12 @@ export const styles = {
     display: 'flex',
     flexDirection: 'column',
     position: 'relative',
+<<<<<<< Updated upstream
   }),
+=======
+  },
+  breadCrum: {
+    padding: '0 0.5rem',
+  },
+>>>>>>> Stashed changes
 };
