@@ -1,4 +1,4 @@
-import { css } from "@mui/material";
+import { css } from '@mui/material';
 
 export const styles = {
   content: css({
@@ -8,4 +8,7 @@ export const styles = {
     flexDirection: 'column',
     position: 'relative',
   }),
+  breadCrum: {
+    padding: '0 0.5rem',
+  },
 };
