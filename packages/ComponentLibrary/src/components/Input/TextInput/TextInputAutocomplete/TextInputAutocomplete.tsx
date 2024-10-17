@@ -1,4 +1,4 @@
-import { useState, useEffect, KeyboardEvent, useRef } from 'react';
+import { useState, useEffect, KeyboardEvent, useCallback } from 'react';
 import { TextField, InputAdornment, IconButton, Box } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterIcon from '@mui/icons-material/FilterList';
@@ -23,16 +23,11 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     ...textFieldProps
   } = props;
 
-  const inputRef = useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const [suggestion, setSuggestion] = useState<string>('');
   const [smartIconActive, setSmartIconActive] = useState(false);
   const [activeIcon, setActiveIcon] = useState('');
-
-  const handleIconClick = (iconName: string) => {
-    setActiveIcon(prevIcon => (prevIcon === iconName ? '' : iconName));
-  };
 
   const getIconStyle = (iconName: string) => ({
     backgroundColor:
@@ -52,15 +47,19 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     },
   });
 
-  const handleSmartIconClick = () => {
+  const handleIconClick = useCallback((iconName: string) => {
+    setActiveIcon(prevIcon => (prevIcon === iconName ? '' : iconName));
+  }, []);
+
+  const handleSmartIconClick = useCallback(() => {
     setSmartIconActive(prev => !prev);
     setActiveIcon(prev => (prev === 'smart' ? '' : 'smart'));
-  };
+  }, []);
 
-  const handleBlur = () => {
+  const handleBlur = useCallback(() => {
     setIsFocused(false);
     setSmartIconActive(false);
-  };
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -81,18 +80,6 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   }, [value, fetchSuggestions]);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
-        setActiveIcon('');
-        setSmartIconActive(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [inputRef]);
-
-  useEffect(() => {
     if (autoCompleteTexts && isFocused && value) {
       const match = autoCompleteTexts.find(text => text.toLowerCase().startsWith(value.toLowerCase()));
       setSuggestion(match && match.toLowerCase() !== value.toLowerCase() ? match : '');
@@ -101,23 +88,29 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     }
   }, [value, isFocused, autoCompleteTexts]);
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setValue?.('');
     setSuggestion('');
-  };
+  }, [setValue]);
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Tab' && suggestion) {
-      e.preventDefault();
-      setValue?.(suggestion);
-      setSuggestion('');
-    }
-  };
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Tab' && suggestion) {
+        e.preventDefault();
+        setValue?.(suggestion);
+        setSuggestion('');
+      }
+    },
+    [suggestion, setValue],
+  );
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue?.(e.target.value);
-    textFieldProps.onChange?.(e);
-  };
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setValue?.(e.target.value);
+      textFieldProps.onChange?.(e);
+    },
+    [setValue, textFieldProps],
+  );
 
   const renderStartAdornment = () => {
     let iconElement;
@@ -216,7 +209,6 @@ const TextInputAutoComplete = (props: TextInputProps) => {
         <TextField
           placeholder={props.placeholder}
           onBlur={handleBlur}
-          inputRef={inputRef}
           variant="outlined"
           fullWidth
           value={value}

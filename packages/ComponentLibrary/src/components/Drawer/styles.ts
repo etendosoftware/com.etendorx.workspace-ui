@@ -170,6 +170,8 @@ export const styles = {
     gap: '0.25rem',
     alignItems: 'center',
     flex: 1,
+    textDecoration: 'none',
+    color: 'inherit',
   },
   drawerHeaderImg: {
     width: '2.25rem',

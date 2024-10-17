@@ -11,6 +11,8 @@ const closedSx = {
   transform: 'rotate(180deg)',
 };
 
+const EtendoLink = 'https://docs.etendo.software/latest/';
+
 const DrawerHeader = forwardRef<
   HTMLDivElement,
   {
@@ -24,10 +26,10 @@ const DrawerHeader = forwardRef<
   return (
     <div style={styles.drawerHeader} ref={ref}>
       {open ? (
-        <div style={styles.drawerHeaderImgBox}>
+        <a href={EtendoLink} style={styles.drawerHeaderImgBox} target="_blank" rel="noopener noreferrer">
           <img src={logo} alt={`${title} Logo`} style={styles.drawerHeaderImg} />
           <span style={styles.drawerHeaderTitle}>{title}</span>
-        </div>
+        </a>
       ) : null}
       <IconButton
         onClick={onClick}

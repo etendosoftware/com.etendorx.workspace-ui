@@ -57,7 +57,7 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
     return (
       <TextField
         id="outlined-number"
-        type="tel"
+        type="number"
         variant="standard"
         fullWidth
         value={value}
