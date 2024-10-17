@@ -26,11 +26,11 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '1.5rem',
+    fontSize: '1.375rem',
     textDecoration: 'none',
   },
   breadcrumbTypography: {
-    fontSize: '1.5rem',
+    fontSize: '1.375rem',
     fontWeight: '600',
     color: theme.palette.baselineColor.neutral[100],
     '&:hover': {
@@ -47,7 +47,7 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     alignItems: 'center',
   },
   lastItemTypography: {
-    fontSize: '1.5rem',
+    fontSize: '1.375rem',
     fontWeight: '600',
     cursor: 'pointer',
     color: theme.palette.baselineColor.neutral[100],
@@ -75,7 +75,7 @@ export const sx: { [key: string]: SxProps<Theme> } = {
     padding: '1rem',
   },
   homeText: {
-    fontSize: '1.5rem',
+    fontSize: '1.375rem',
     fontWeight: '600',
     margin: '0 0.5rem',
     cursor: 'pointer',

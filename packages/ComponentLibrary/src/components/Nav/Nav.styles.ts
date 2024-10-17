@@ -7,6 +7,7 @@ const styles: { [key: string]: CSSProperties } = {
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
+    padding: '0 0.25rem',
   },
   LeftItems: {
     width: '22.75rem',

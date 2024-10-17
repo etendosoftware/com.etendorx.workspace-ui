@@ -6,4 +6,7 @@ export const styles = {
     flexDirection: 'column',
     position: 'relative',
   },
+  breadCrum: {
+    padding: '0 0.5rem',
+  },
 };
