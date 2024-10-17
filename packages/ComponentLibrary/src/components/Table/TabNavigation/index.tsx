@@ -1,53 +1,45 @@
-import React, {
-  useState,
-  useRef,
-  useCallback,
-  useEffect,
-  useMemo,
-} from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
 import { Box, Paper } from '@mui/material';
 import TabContainer from './TabContainer';
 import { styles } from './styles';
 import type { ResizableTabContainerProps } from './types';
 
-const ResizableTabContainer: React.FC<ResizableTabContainerProps> = React.memo(
+const MAX_HEIGHT = 94;
+const MIN_HEIGHT = 20;
+const DEFAULT_HEIGHT = 40;
+
+const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
   ({ isOpen, onClose, selectedRecord, onHeightChange }) => {
-    const [containerHeight, setContainerHeight] = useState(40);
+    const [containerHeight, setContainerHeight] = useState(DEFAULT_HEIGHT);
     const containerRef = useRef<HTMLDivElement>(null);
-    const resizerRef = useRef<HTMLDivElement>(null);
-    const [isFullSize, setIsFullSize] = useState(false);
-    const MAX_HEIGHT = 94;
+    const isResizing = useRef(false);
 
     const handleHeightChange = useCallback(
       (newHeight: number) => {
-        setContainerHeight(newHeight);
-        setIsFullSize(newHeight === MAX_HEIGHT);
-        if (onHeightChange) {
-          onHeightChange(newHeight);
-        }
+        const clampedHeight = Math.min(Math.max(newHeight, MIN_HEIGHT), MAX_HEIGHT);
+        setContainerHeight(clampedHeight);
+        setIsFullSize(clampedHeight === MAX_HEIGHT);
+        onHeightChange?.(clampedHeight);
       },
       [onHeightChange],
     );
 
     const handleMouseDown = useCallback(
-      (e: React.MouseEvent<HTMLDivElement> | MouseEvent) => {
+      (e: React.MouseEvent | MouseEvent) => {
         e.preventDefault();
-        const startY =
-          'clientY' in e
-            ? e.clientY
-            : (e as React.MouseEvent<HTMLDivElement>).clientY;
+        isResizing.current = true;
+        const startY = e.clientY;
         const startHeight = containerHeight;
 
         const handleMouseMove = (e: MouseEvent) => {
+          if (!isResizing.current) return;
           const dy = startY - e.clientY;
-          const newHeight = Math.min(
-            Math.max(startHeight + (dy / window.innerHeight) * 100, 20),
-            MAX_HEIGHT,
-          );
+          const newHeight = startHeight + (dy / window.innerHeight) * 100;
           handleHeightChange(newHeight);
         };
 
         const handleMouseUp = () => {
+          isResizing.current = false;
           document.removeEventListener('mousemove', handleMouseMove);
           document.removeEventListener('mouseup', handleMouseUp);
           document.body.style.cursor = 'default';
@@ -60,29 +52,19 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = React.memo(
       [containerHeight, handleHeightChange],
     );
 
-    const handleNativeMouseDown = useCallback(
-      (e: MouseEvent) => {
-        handleMouseDown(e);
-      },
-      [handleMouseDown],
-    );
-
     useEffect(() => {
-      const resizer = resizerRef.current;
+      const resizer = containerRef.current?.querySelector('[data-resizer]');
       if (resizer) {
-        resizer.addEventListener('mousedown', handleNativeMouseDown);
+        resizer.addEventListener('mousedown', handleMouseDown as EventListener);
+        return () => resizer.removeEventListener('mousedown', handleMouseDown as EventListener);
       }
-      return () => {
-        if (resizer) {
-          resizer.removeEventListener('mousedown', handleNativeMouseDown);
-        }
-      };
-    }, [handleNativeMouseDown]);
+    }, [handleMouseDown]);
 
     const handleDoubleClick = useCallback(() => {
-      const newHeight = containerHeight === MAX_HEIGHT ? 40 : MAX_HEIGHT;
-      handleHeightChange(newHeight);
+      handleHeightChange(containerHeight === MAX_HEIGHT ? DEFAULT_HEIGHT : MAX_HEIGHT);
     }, [containerHeight, handleHeightChange]);
+
+    const [isFullSize, setIsFullSize] = useState(false);
 
     const paperStyle = useMemo(
       () => ({
@@ -95,15 +77,8 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = React.memo(
 
     return (
       <Paper elevation={4} ref={containerRef} sx={paperStyle}>
-        <Box
-          ref={resizerRef}
-          onMouseDown={handleMouseDown}
-          sx={styles.resizer}
-        />
-        <Box
-          onMouseDown={handleMouseDown}
-          onDoubleClick={handleDoubleClick}
-          sx={styles.container}>
+        <Box data-resizer sx={styles.resizer} />
+        <Box onMouseDown={handleMouseDown} onDoubleClick={handleDoubleClick} sx={styles.container}>
           <TabContainer
             isOpen={isOpen}
             onClose={onClose}

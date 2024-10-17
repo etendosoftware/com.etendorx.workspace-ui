@@ -11,9 +11,7 @@ const TableView = () => {
 
   const handleRowClick = useCallback<EnhancedTableProps['onRowClick']>(
     row => {
-      const _selectedItem = mockOrganizations.find(
-        item => item.id.value === row.original.id,
-      );
+      const _selectedItem = mockOrganizations.find(item => item.id.value === row.original.id);
       if (_selectedItem) {
         setSelectedRecord(_selectedItem);
       }
@@ -21,9 +19,7 @@ const TableView = () => {
     [setSelectedRecord],
   );
 
-  const handleRowDoubleClick = useCallback<
-    EnhancedTableProps['onRowDoubleClick']
-  >(
+  const handleRowDoubleClick = useCallback<EnhancedTableProps['onRowDoubleClick']>(
     row => {
       navigate({ pathname: `${row.original.id}` });
     },

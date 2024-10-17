@@ -1,4 +1,4 @@
-import { Item } from '../../types';
+import { Item } from '../../../SecondaryTabs/types';
 
 export interface ItemContentProps {
   item: Item;

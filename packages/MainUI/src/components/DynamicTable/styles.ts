@@ -11,7 +11,7 @@ const styles = {
     alignItems: 'center',
     display: 'flex',
     justifyContent: 'center',
-    pointerEvents: 'none'
+    pointerEvents: 'none',
   }),
   container: css({
     overflow: 'auto',
@@ -28,7 +28,7 @@ const styles = {
     borderRadius: theme.shape.borderRadius,
     margin: theme.spacing(1),
     padding: theme.spacing(1),
-    boxShadow: theme.shadows[2]
+    boxShadow: theme.shadows[2],
   }),
 };
 

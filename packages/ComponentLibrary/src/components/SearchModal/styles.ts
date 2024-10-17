@@ -1,6 +1,6 @@
 import { theme } from '../../theme';
 
-export const DEFAULT_MODAL_WIDTH = "25.625rem";
+export const DEFAULT_MODAL_WIDTH = '25.625rem';
 
 export const styles = {
   container: () => ({
@@ -12,11 +12,12 @@ export const styles = {
     borderRadius: '0.75rem',
     backgroundColor: theme.palette.baselineColor.neutral[0],
   }),
-  content: (variant: any) => ({
+  content: (variant: unknown) => ({
     overflow: 'auto',
     maxHeight: 'calc(100vh - 3.125rem)',
     borderRadius: '0.75rem',
-    backgroundColor: variant === 'default' ? theme.palette.baselineColor.neutral[10] : theme.palette.baselineColor.neutral[0],
+    backgroundColor:
+      variant === 'default' ? theme.palette.baselineColor.neutral[10] : theme.palette.baselineColor.neutral[0],
   }),
   sectionContent: {
     display: 'flex',
@@ -25,7 +26,7 @@ export const styles = {
   },
   sectionBox: (isLast: boolean) => ({
     borderBottom: isLast ? 'none' : `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
-    backgroundColor: theme.palette.baselineColor.neutral[0]
+    backgroundColor: theme.palette.baselineColor.neutral[0],
   }),
   sectionInnerBox: (isLast: boolean) => ({
     padding: '0.75rem',

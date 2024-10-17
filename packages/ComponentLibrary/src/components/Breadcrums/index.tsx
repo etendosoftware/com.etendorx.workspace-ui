@@ -1,13 +1,5 @@
-import { FC, useState, useCallback, useRef, useMemo } from 'react';
-import {
-  Breadcrumbs,
-  Link,
-  Typography,
-  Box,
-  IconButton,
-  Menu,
-  MenuItem,
-} from '@mui/material';
+import { FC, useState, useCallback, useMemo } from 'react';
+import { Breadcrumbs, Link, Typography, Box, IconButton, Menu, MenuItem } from '@mui/material';
 import NavigateNextIcon from '../../assets/icons/chevron-right.svg';
 import ArrowLeftIcon from '../../assets/icons/arrow-left.svg';
 import ChevronDown from '../../assets/icons/chevron-down.svg';
@@ -22,19 +14,13 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
   onHomeClick,
   homeIcon = null,
   homeText = 'Home',
-  separator = (
-    <NavigateNextIcon
-      fill={theme.palette.baselineColor.transparentNeutral[30]}
-    />
-  ),
+  separator = <NavigateNextIcon fill={theme.palette.baselineColor.transparentNeutral[30]} />,
 }) => {
   const [isHomeHovered, setIsHomeHovered] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [middleMenuAnchorEl, setMiddleMenuAnchorEl] =
-    useState<null | HTMLElement>(null);
+  const [middleMenuAnchorEl, setMiddleMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [currentActions, setCurrentActions] = useState<BreadcrumbAction[]>([]);
   const [toggleStates, setToggleStates] = useState<Record<string, boolean>>({});
-  const actionButtonRef = useRef<HTMLButtonElement>(null);
 
   const paperConstant = useCallback(() => ({ sx: sx.menu, elevation: 3 }), []);
   const menuConstant = useCallback(() => ({ sx: menuStyle }), []);
@@ -42,23 +28,18 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
   const handleMouseEnter = useCallback(() => setIsHomeHovered(true), []);
   const handleMouseLeave = useCallback(() => setIsHomeHovered(false), []);
 
-  const handleActionMenuOpen = useCallback((actions: BreadcrumbAction[]) => {
-    if (actionButtonRef.current) {
-      setAnchorEl(actionButtonRef.current);
-      setCurrentActions(actions);
-    }
+  const handleActionMenuOpen = useCallback((actions: BreadcrumbAction[], event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+    setCurrentActions(actions);
   }, []);
 
   const handleActionMenuClose = useCallback(() => {
     setAnchorEl(null);
   }, []);
 
-  const handleMiddleMenuOpen = useCallback(
-    (event: React.MouseEvent<HTMLButtonElement>) => {
-      setMiddleMenuAnchorEl(event.currentTarget);
-    },
-    [],
-  );
+  const handleMiddleMenuOpen = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    setMiddleMenuAnchorEl(event.currentTarget);
+  }, []);
 
   const handleMiddleMenuClose = useCallback(() => {
     setMiddleMenuAnchorEl(null);
@@ -104,9 +85,9 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
             <Typography
               noWrap
               sx={sx.lastItemTypography}
-              onClick={() => {
+              onClick={event => {
                 if (item.actions && item.actions.length > 0) {
-                  handleActionMenuOpen(item.actions);
+                  handleActionMenuOpen(item.actions, event);
                 }
               }}>
               {item.label}
@@ -114,8 +95,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
             {item.actions && item.actions.length > 0 && (
               <IconButton
                 size="small"
-                ref={actionButtonRef}
-                onClick={() => handleActionMenuOpen(item.actions!)}
+                onClick={event => handleActionMenuOpen(item.actions!, event)}
                 sx={sx.actionButton}>
                 <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
               </IconButton>
@@ -141,9 +121,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
 
   const renderBreadcrumbItems = useMemo(() => {
     if (items.length <= 2) {
-      return items.map((item, index) =>
-        renderBreadcrumbItem(item, index === items.length - 1),
-      );
+      return items.map((item, index) => renderBreadcrumbItem(item, index === items.length - 1));
     } else {
       const firstItem = items[0];
       const lastItem = items[items.length - 1];
@@ -183,20 +161,11 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
         </>
       );
     }
-  }, [
-    handleMiddleMenuClose,
-    handleMiddleMenuOpen,
-    items,
-    middleMenuAnchorEl,
-    renderBreadcrumbItem,
-  ]);
+  }, [handleMiddleMenuClose, handleMiddleMenuOpen, items, middleMenuAnchorEl, renderBreadcrumbItem]);
 
   return (
     <Box sx={sx.container}>
-      <Breadcrumbs
-        separator={separator}
-        aria-label="breadcrumb"
-        sx={sx.breadcrumbs}>
+      <Breadcrumbs separator={separator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
         <Box sx={sx.homeContainer}>
           <Link
             href="#"
@@ -228,10 +197,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
             </Box>
             {action.toggle && (
               <Box sx={sx.toggleContainer}>
-                <ToggleChip
-                  isActive={toggleStates[action.id] ?? false}
-                  onToggle={() => handleToggle(action.id)}
-                />
+                <ToggleChip isActive={toggleStates[action.id] ?? false} onToggle={() => handleToggle(action.id)} />
               </Box>
             )}
           </MenuItem>
