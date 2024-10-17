@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Breadcrumb from '@workspaceui/componentlibrary/components/Breadcrums';
 import type { BreadcrumbItem } from '@workspaceui/componentlibrary/components/Breadcrums/types';
@@ -45,7 +45,7 @@ const AppBreadcrumb: React.FC = () => {
     return items;
   }, [windowId, recordId, windowData, records, navigate]);
 
-  const handleHomeClick = () => navigate('/');
+  const handleHomeClick = useCallback(() => navigate('/'), [navigate]);
 
   return (
     <div style={styles.breadCrum}>

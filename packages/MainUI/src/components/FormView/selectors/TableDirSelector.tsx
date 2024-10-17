@@ -49,6 +49,11 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({ onChange, label, en
     [label, onChange],
   );
 
+  const optionEqualValue = useCallback(
+    (option: Option, value: { id: string }) => option.id === value.id || option.value === value.id,
+    [],
+  );
+
   if (loading || !loaded) return <Spinner />;
   if (error) return <div>Error: {error.message}</div>;
 
@@ -59,7 +64,7 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({ onChange, label, en
       onChange={handleChange}
       value={selectedValue}
       getOptionLabel={(option: Option) => option.title}
-      isOptionEqualToValue={(option, value) => option.id === value.id || option.value === value.id}
+      isOptionEqualToValue={optionEqualValue}
     />
   );
 };
