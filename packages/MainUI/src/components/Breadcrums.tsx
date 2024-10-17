@@ -6,6 +6,8 @@ import { useWindow } from '@workspaceui/etendohookbinder/hooks/useWindow';
 import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource';
 import { styles } from './styles';
 
+const homeIcon = '🏠';
+
 const AppBreadcrumb: React.FC = () => {
   const navigate = useNavigate();
   const { windowId, recordId } = useParams<{ windowId?: string; recordId?: string }>();
@@ -47,7 +49,7 @@ const AppBreadcrumb: React.FC = () => {
 
   return (
     <div style={styles.breadCrum}>
-      <Breadcrumb items={breadcrumbItems} onHomeClick={handleHomeClick} homeText="Home" homeIcon="🏠" />
+      <Breadcrumb items={breadcrumbItems} onHomeClick={handleHomeClick} homeText="Home" homeIcon={homeIcon} />
     </div>
   );
 };
