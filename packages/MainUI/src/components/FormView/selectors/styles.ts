@@ -4,7 +4,7 @@ import { CSSProperties } from 'react';
 export const styles: { [key: string]: CSSProperties } = {
   checkboxContainer: {
     position: 'relative',
-    height: '3rem',
+    height: '4rem',
     display: 'flex',
     alignItems: 'center',
   },
@@ -14,10 +14,11 @@ export const styles: { [key: string]: CSSProperties } = {
     left: 0,
     right: 0,
     height: '1px',
-    backgroundColor: theme.palette.baselineColor.neutral[90],
+    backgroundColor: theme.palette.baselineColor.transparentNeutral[10],
     transition: 'height 0.2s ease-in-out',
   },
   checkboxBorderHover: {
+    backgroundColor: theme.palette.baselineColor.neutral[90],
     height: '2px',
   },
   checkboxLabel: {

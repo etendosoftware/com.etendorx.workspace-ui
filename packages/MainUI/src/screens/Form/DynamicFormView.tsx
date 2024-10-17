@@ -14,13 +14,11 @@ export default function DynamicFormView() {
     recordId: string;
   }>();
   const navigate = useNavigate();
-  const {
-    windowData,
-    loading: windowLoading,
-    error: windowError,
-  } = useWindow(windowId);
+  const { windowData, loading: windowLoading, error: windowError } = useWindow(windowId);
   const [formData, setFormData] = useState<FormData | null>(null);
   const [mappedMetadata, setMappedMetadata] = useState<MappedData | null>(null);
+
+  console.log(windowData, formData);
 
   const query = useMemo(
     () => ({
@@ -54,10 +52,8 @@ export default function DynamicFormView() {
   }, []);
 
   if (windowLoading || (recordLoading && !loaded)) return <Spinner />;
-  if (windowError)
-    return <div>Error loading window data: {windowError.message}</div>;
-  if (recordError)
-    return <div>Error loading record data: {recordError.message}</div>;
+  if (windowError) return <div>Error loading window data: {windowError.message}</div>;
+  if (recordError) return <div>Error loading record data: {recordError.message}</div>;
   if (!windowData) return <div>No window data available</div>;
   if (!records || records.length === 0) return <div>No record found</div>;
   if (!formData || !mappedMetadata) return <div>No form data available</div>;
