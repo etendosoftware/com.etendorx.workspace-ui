@@ -4,7 +4,7 @@ import { CSSProperties } from 'react';
 export const styles: { [key: string]: CSSProperties } = {
   checkboxContainer: {
     position: 'relative',
-    height: '4rem',
+    height: '3rem',
     display: 'flex',
     alignItems: 'center',
   },

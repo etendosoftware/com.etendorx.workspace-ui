@@ -4,7 +4,7 @@ export interface FieldInfo {
   fieldGroup$_identifier?: string;
 }
 
-export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'tabledir' | 'quantity';
+export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'tabledir' | 'quantity' | 'list';
 
 export interface BaseFieldDefinition<T> {
   value: T;
@@ -14,6 +14,7 @@ export interface BaseFieldDefinition<T> {
   section?: string;
   required?: boolean;
   original?: {
+    refList: Array<{ id: string; label: string; value: string }>;
     referencedEntity: string;
     referencedWindowId: string;
     fieldName: string;

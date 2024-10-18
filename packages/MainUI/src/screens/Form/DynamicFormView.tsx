@@ -18,8 +18,6 @@ export default function DynamicFormView() {
   const [formData, setFormData] = useState<FormData | null>(null);
   const [mappedMetadata, setMappedMetadata] = useState<MappedData | null>(null);
 
-  console.log(windowData, formData);
-
   const query = useMemo(
     () => ({
       criteria: [{ fieldName: 'id', operator: 'equals', value: recordId }],

@@ -21,7 +21,7 @@ const AppBreadcrumb: React.FC = () => {
     [recordId],
   );
 
-  const { records } = useDatasource(windowData?.tabs[0]?.entityName || '', query);
+  const { records } = useDatasource(windowData?.tabs?.[0]?.entityName || '', query);
 
   const breadcrumbItems = useMemo(() => {
     const items: BreadcrumbItem[] = [];

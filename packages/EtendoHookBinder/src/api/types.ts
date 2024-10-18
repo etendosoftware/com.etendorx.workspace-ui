@@ -94,7 +94,7 @@ export interface MappedField {
   required?: boolean;
 }
 
-export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'tabledir' | 'quantity';
+export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'tabledir' | 'quantity' | 'list';
 
 export interface MappedTab {
   id: string;

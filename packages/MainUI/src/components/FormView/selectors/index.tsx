@@ -9,6 +9,7 @@ import NumberSelector from './NumberSelector';
 import DateSelector from './DateSelector';
 import SelectSelector from './SelectSelector';
 import QuantitySelector from './QuantitySelector';
+import ListSelector from './ListSelector';
 
 const FieldLabel: React.FC<FieldLabelProps> = ({ label, required, fieldType, onLinkClick }) => (
   <Box sx={styles.labelWrapper}>
@@ -65,9 +66,12 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
             readOnly={readOnly}
           />
         );
+      case 'list':
+        return <ListSelector field={field} onChange={onChange} readOnly={readOnly} />;
       default:
         return (
           <TextInputBase
+            margin="normal"
             onRightIconClick={() => alert('Icon clicked')}
             value={field.value as string}
             setValue={(value: FieldValue) => onChange(field.label, value)}
