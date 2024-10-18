@@ -76,9 +76,6 @@ export const styles: { [key: string]: CSSProperties } = {
     flex: 1,
     minWidth: 0,
   },
-  sortableItemChipContainer: {
-    flexShrink: 0,
-  },
 };
 
 export const sx: { [key: string]: SxProps<Theme> } = {

@@ -5,14 +5,10 @@ import SearchOutlined from '../../../../../ComponentLibrary/src/assets/icons/sea
 import { theme } from '@workspaceui/componentlibrary/theme';
 import { TableDirSelectorProps } from '../types';
 import { Option } from '../../../../../ComponentLibrary/src/components/Input/Select/types';
+import Spinner from '@workspaceui/componentlibrary/components/Spinner';
 
-const TableDirSelector: React.FC<TableDirSelectorProps> = ({
-  onChange,
-  label,
-  entity,
-  value,
-}) => {
-  const { records } = useDatasource(entity);
+const TableDirSelector: React.FC<TableDirSelectorProps> = ({ onChange, label, entity, value }) => {
+  const { records, loading, error, loaded } = useDatasource(entity);
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
 
   const options = useMemo(
@@ -53,18 +49,22 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({
     [label, onChange],
   );
 
+  const optionEqualValue = useCallback(
+    (option: Option, value: { id: string }) => option.id === value.id || option.value === value.id,
+    [],
+  );
+
+  if (loading || !loaded) return <Spinner />;
+  if (error) return <div>Error: {error.message}</div>;
+
   return (
     <Select
-      iconLeft={
-        <SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />
-      }
+      iconLeft={<SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />}
       options={options}
       onChange={handleChange}
       value={selectedValue}
       getOptionLabel={(option: Option) => option.title}
-      isOptionEqualToValue={(option, value) =>
-        option.id === value.id || option.value === value.id
-      }
+      isOptionEqualToValue={optionEqualValue}
     />
   );
 };

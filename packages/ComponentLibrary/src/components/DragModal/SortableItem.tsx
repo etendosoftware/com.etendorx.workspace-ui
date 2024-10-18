@@ -7,20 +7,8 @@ import { styles, sx } from './DragModal.styles';
 import { SortableItemProps } from './DragModal.types';
 import { SxProps, Theme } from '@mui/material/styles';
 
-const SortableItem: React.FC<SortableItemProps> = ({
-  id,
-  person,
-  onToggle,
-  icon,
-}) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+const SortableItem: React.FC<SortableItemProps> = ({ id, person, onToggle, icon }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -33,28 +21,17 @@ const SortableItem: React.FC<SortableItemProps> = ({
   } as SxProps<Theme>;
 
   return (
-    <MenuItem
-      ref={setNodeRef}
-      style={style}
-      sx={menuItemSx}
-      {...attributes}
-      {...listeners}
-      disableRipple>
+    <MenuItem ref={setNodeRef} style={style} sx={menuItemSx} {...attributes} {...listeners} disableRipple>
       <div style={styles.sortableItemContainer}>
         <div style={styles.sortableItemLeftContainer}>
           {React.cloneElement(icon as React.ReactElement, {
             style: styles.dragStyles,
           })}
-          <span
-            className="person-label"
-            style={styles.sortableItemLabel}
-            title={person.label}>
+          <span className="person-label" style={styles.sortableItemLabel} title={person.label}>
             {person.label}
           </span>
         </div>
-        <div className="toggle-chip" style={styles.sortableItemChipContainer}>
-          <ToggleChip isActive={person.isActive} onToggle={onToggle} />
-        </div>
+        <ToggleChip isActive={person.isActive} onToggle={onToggle} />
       </div>
     </MenuItem>
   );

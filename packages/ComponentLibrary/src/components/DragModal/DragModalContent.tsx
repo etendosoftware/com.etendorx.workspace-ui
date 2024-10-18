@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import List from '@mui/material/List';
 import {
   DndContext,
@@ -10,11 +10,7 @@ import {
   UniqueIdentifier,
   closestCenter,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  arrayMove,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
+import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import SortableItem from './SortableItem';
 import type { DragModalContentProps } from './DragModal.types';
 import ModalDivider from '../ModalDivider';
@@ -23,10 +19,7 @@ import NavigateBefore from '../../assets/icons/chevron-left.svg';
 import { styles, sx } from './DragModal.styles';
 import { Box, Button, Link } from '@mui/material';
 import { theme } from '../../theme';
-import {
-  restrictToParentElement,
-  restrictToVerticalAxis,
-} from '@dnd-kit/modifiers';
+import { restrictToParentElement, restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
 const DragModalContent: React.FC<DragModalContentProps> = ({
   people,
@@ -41,8 +34,6 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { distance: 5 } }),
   );
-
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -60,18 +51,12 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
 
   const handleToggleAll = useCallback(() => {
     const allActivated = people.every(person => person.isActive);
-    setPeople(prev =>
-      prev.map(person => ({ ...person, isActive: !allActivated })),
-    );
+    setPeople(prev => prev.map(person => ({ ...person, isActive: !allActivated })));
   }, [people, setPeople]);
 
   const handleToggle = useCallback(
     (id: UniqueIdentifier) => {
-      setPeople(prev =>
-        prev.map(person =>
-          person.id === id ? { ...person, isActive: !person.isActive } : person,
-        ),
-      );
+      setPeople(prev => prev.map(person => (person.id === id ? { ...person, isActive: !person.isActive } : person)));
     },
     [setPeople],
   );
@@ -81,12 +66,7 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
         <Box sx={sx.headerBox}>
           <Button
             onClick={onBack}
-            startIcon={
-              <NavigateBefore
-                fill={theme.palette.baselineColor.neutral[60]}
-                style={styles.StartIconStyles}
-              />
-            }
+            startIcon={<NavigateBefore fill={theme.palette.baselineColor.neutral[60]} style={styles.StartIconStyles} />}
             style={styles.CustomizeButton}
             sx={sx.customizeButton}>
             {backButtonText}
@@ -97,31 +77,23 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
       <div style={styles.containerStyles}>
         <p>{buttonText}</p>
         <Link sx={sx.linkStyles} onClick={handleToggleAll}>
-          {people.every(person => person.isActive)
-            ? deactivateAllText
-            : activateAllText}
+          {people.every(person => person.isActive) ? deactivateAllText : activateAllText}
         </Link>
       </div>
-      <div ref={containerRef}>
+      <div>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           modifiers={[restrictToParentElement, restrictToVerticalAxis]}
           onDragEnd={handleDragEnd}>
-          <SortableContext
-            items={people.map(person => person.id)}
-            strategy={verticalListSortingStrategy}>
+          <SortableContext items={people.map(person => person.id)} strategy={verticalListSortingStrategy}>
             <List>
               {people.map(person => (
                 <SortableItem
                   key={person.id}
                   id={person.id}
                   person={person}
-                  icon={
-                    <DragIndicator
-                      fill={theme.palette.baselineColor.neutral[60]}
-                    />
-                  }
+                  icon={<DragIndicator fill={theme.palette.baselineColor.neutral[60]} />}
                   onToggle={() => handleToggle(person.id)}
                   isActive={person.isActive}
                 />

@@ -112,7 +112,7 @@ const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, g
   );
 
   return (
-    <Box display="flex" flexDirection="column" height="100%" width="100%" padding="0 0.5rem 0.5rem 0.5rem">
+    <Box display="flex" flexDirection="column" height="100%" width="100%" padding="0 0 0.5rem 0.5rem">
       <Box flexShrink={1}>
         <PrimaryTabs tabs={tabs} onChange={handleTabChange} icon={defaultIcon} />
       </Box>

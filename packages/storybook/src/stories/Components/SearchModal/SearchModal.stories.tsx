@@ -8,13 +8,9 @@ export default {
   component: SearchModal,
 };
 
-export const DefaultVariant = () => (
-  <SearchModal defaultContent={DEFAULT_CONTENT} variant="default" />
-);
+export const DefaultVariant = () => <SearchModal defaultContent={DEFAULT_CONTENT} variant="default" />;
 
-export const TabsVariant = () => (
-  <SearchModal tabsContent={TABS_CONTENT} variant="tabs" />
-);
+export const TabsVariant = () => <SearchModal tabsContent={TABS_CONTENT} variant="tabs" />;
 
 export const BothVariants = () => (
   <Box sx={{ display: 'flex', gap: '20px' }}>
