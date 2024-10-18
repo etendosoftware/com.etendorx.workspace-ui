@@ -1,14 +1,14 @@
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import App from './App';
-import Home from './screens/Home';
 import Table from './screens/Table';
 import DynamicTable from './screens/Table/Dynamic';
 import Login from './screens/Login';
-import Form from './screens/Form';
+import Home from './screens/Home';
 import Layout from './components/layout';
-import DynamicFormView from './screens/Form/DynamicFormView';
+import DynamicForm from './screens/Form/DynamicForm';
 import './index.css';
+import Form from './screens/Form';
 
 const router = createBrowserRouter([
   {
@@ -34,8 +34,8 @@ const router = createBrowserRouter([
             ],
           },
           {
-            path: 'window/:windowId/:recordId',
-            Component: DynamicFormView,
+            path: 'window/:windowId/:tabId/:recordId',
+            Component: DynamicForm,
           },
           {
             path: 'window/:windowId',

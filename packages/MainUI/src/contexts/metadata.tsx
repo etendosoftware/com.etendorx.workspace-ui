@@ -1,8 +1,5 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  type Etendo,
-  Metadata,
-} from '@workspaceui/etendohookbinder/api/metadata';
+import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/api/metadata';
 import { useParams } from 'react-router-dom';
 import { useWindow } from '@workspaceui/etendohookbinder/hooks/useWindow';
 import { buildColumnsData, groupTabsByLevel } from '../utils/metadata';
@@ -20,14 +17,14 @@ interface IMetadataContext {
   columnsData?: Record<number, Record<string, Etendo.Column[]>>;
   selectRecord: (record: Record<string, never>, tab: Tab) => void;
   selected: Record<string, Record<string, never>>;
+  tabs: Tab[];
+  tab?: Tab;
 }
 
 export const MetadataContext = createContext({} as IMetadataContext);
 
-export default function MetadataProvider({
-  children,
-}: React.PropsWithChildren) {
-  const { windowId = '', recordId = '' } = useParams();
+export default function MetadataProvider({ children }: React.PropsWithChildren) {
+  const { windowId = '', tabId = '', recordId = '' } = useParams();
   const { windowData, loading, error } = useWindow(windowId);
   const [selected, setSelected] = useState<IMetadataContext['selected']>({});
 
@@ -49,6 +46,8 @@ export default function MetadataProvider({
     [selected],
   );
 
+  const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [windowData.tabs, tabId]);
+  const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
   const groupedTabs = useMemo(() => groupTabsByLevel(windowData), [windowData]);
   const columnsData = useMemo(() => buildColumnsData(windowData), [windowData]);
 
@@ -65,27 +64,15 @@ export default function MetadataProvider({
       columnsData,
       selectRecord,
       selected,
+      tabs,
+      tab,
     }),
-    [
-      windowId,
-      recordId,
-      loading,
-      error,
-      groupedTabs,
-      windowData,
-      columnsData,
-      selectRecord,
-      selected,
-    ],
+    [windowId, recordId, loading, error, groupedTabs, windowData, columnsData, selectRecord, selected, tabs, tab],
   );
 
   useEffect(() => {
-    setSelected({})
+    setSelected({});
   }, [windowId]);
 
-  return (
-    <MetadataContext.Provider value={value}>
-      {children}
-    </MetadataContext.Provider>
-  );
+  return <MetadataContext.Provider value={value}>{children}</MetadataContext.Provider>;
 }

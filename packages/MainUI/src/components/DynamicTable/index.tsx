@@ -50,7 +50,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
       },
       onDoubleClick: () => {
         selectRecord(row.original as never, tab);
-        navigate(`${row.original.id}`);
+        navigate(`${tab.id}/${row.original.id}`);
       },
     }),
     [navigate, selectRecord, tab],
@@ -80,8 +80,8 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
 const DynamicTable = ({ tab }: DynamicTableProps) => {
   const { selected } = useMetadataContext();
 
-  if (selected[tab.level - 1] || tab.level === 0) {
-    return tab.uIPattern == 'STD' ? <DynamicTableContent tab={tab} /> : <DynamicTableContent tab={tab} />;
+  if (selected[tab?.level - 1] || tab?.level === 0) {
+    return <DynamicTableContent tab={tab} />;
   }
 
   return null;

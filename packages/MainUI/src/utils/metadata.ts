@@ -1,11 +1,11 @@
 import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/api/metadata';
 
 export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
-  if (!windowData) {
+  if (!windowData?.tabs) {
     return [];
   }
 
-  const tabs: Etendo.Tab[][] = Array(windowData.tabs.length);
+  const tabs: Etendo.Tab[][] = [];
 
   windowData?.tabs.forEach(tab => {
     if (tabs[tab.level]) {

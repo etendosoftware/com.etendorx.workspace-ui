@@ -2,8 +2,8 @@ import { Box } from '@mui/material';
 import { Organization, Widget } from './types';
 import SideIcon from '../../../../../ComponentLibrary/src/assets/icons/codesandbox.svg';
 import TabWidget from '../../../../../ComponentLibrary/src/components/Widgets/TabWidget';
-import { RecordContextType } from '../../../../../MainUI/src/contexts/record';
 import { TranslationKeys } from '../../../../../ComponentLibrary/src/locales/types';
+import React from 'react';
 
 type NestedKeyOf<ObjectType extends object> = {
   [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
@@ -63,7 +63,7 @@ const getContrastColor = (bgColor: string) => {
 
 export const createWidgets = (
   selectedRecord: Organization | null,
-  setSelectedRecord: RecordContextType['setSelectedRecord'],
+  setSelectedRecord: React.Dispatch<Organization | null>,
   t: TranslateFunction,
 ) => {
   const widgets: Widget[] = [

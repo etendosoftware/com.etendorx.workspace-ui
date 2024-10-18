@@ -56,6 +56,10 @@ export interface GridProps {
 }
 
 export interface Field {
+  process: string;
+  shownInStatusBar: boolean;
+  displayed: boolean;
+  startnewline: boolean;
   showInGridView: boolean;
   fieldGroup$_identifier: string;
   fieldGroup: string;
@@ -94,7 +98,7 @@ export interface MappedField {
   required?: boolean;
 }
 
-export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'tabledir' | 'quantity' | 'list';
+export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'search' |  'tabledir' | 'quantity' | 'list';
 
 export interface MappedTab {
   id: string;
@@ -152,22 +156,6 @@ export interface WindowMetadata {
   properties: WindowMetadataProperties;
   tabs: Tab[];
   window$_identifier: string;
-}
-
-export interface WindowMetadataMap extends Record<string, WindowMetadata> {}
-
-export enum OptionType {
-  Process = 'process',
-  ProcessDefinition = 'processDefinition',
-  ProcessManual = 'processManual',
-  Tab = 'tab',
-  URL = 'url',
-}
-
-export enum UIPattern {
-  A = 'A',
-  OBUIAPPPickAndExecute = 'OBUIAPP_PickAndExecute',
-  OBUIAPPReport = 'OBUIAPP_Report',
 }
 
 export interface RecordPayload extends Record<string, string> {

@@ -16,14 +16,11 @@ export default function Tabs({ tabs }: { tabs: Tab[] }) {
   const [activeKey, setActiveKey] = useState(tabs[0].id);
 
   const refs = useRef(
-    tabs.reduce(
-      (acum, current) => {
-        acum[current.id] = () => setActiveKey(current.id);
+    tabs.reduce((acum, current) => {
+      acum[current.id] = () => setActiveKey(current.id);
 
-        return acum;
-      },
-      {} as Record<string, () => void>,
-    ),
+      return acum;
+    }, {} as Record<string, () => void>),
   );
 
   const active = useMemo(() => tabs.find(tab => tab.id === activeKey) as Tab, [activeKey, tabs]);

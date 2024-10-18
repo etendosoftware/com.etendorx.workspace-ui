@@ -20,17 +20,4 @@ export default defineConfig({
       '@workspaceui/componentlibrary': path.resolve(__dirname, '../ComponentLibrary/src'),
     },
   },
-  optimizeDeps: {
-    include: [
-      '@mui/material',
-      '@mui/material/styles',
-      '@emotion/react',
-      '@emotion/styled',
-    ],
-  },
-  build: {
-    rollupOptions: {
-      external: ['@mui/material'],
-    },
-  },
 });

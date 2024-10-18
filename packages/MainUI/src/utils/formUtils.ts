@@ -1,5 +1,5 @@
 import { FieldType, FieldInfo, FormData, Section, FieldDefinition } from '../screens/Form/types';
-import { Column, MappedData, MappedTab, WindowMetadata } from '@workspaceui/etendohookbinder/api/types';
+import { Column, MappedData, MappedTab, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/api/types';
 
 export function mapColumnTypeToFieldType(column: Column): FieldType {
   if (!column || !column?.reference) {
@@ -50,7 +50,7 @@ export function mapWindowMetadata(windowData: WindowMetadata): MappedData {
     };
 
     Object.entries(tab.fields).forEach(([fieldName, fieldInfo]) => {
-      const column = fieldInfo.column as Column;
+      const column = fieldInfo.column as unknown as Column;
       mappedTab.fields[fieldName] = {
         name: fieldName,
         label: column.name,
@@ -66,8 +66,8 @@ export function mapWindowMetadata(windowData: WindowMetadata): MappedData {
   return mappedData;
 }
 
-export function adaptFormData(windowData: WindowMetadata, record: Record<string, unknown>): FormData | null {
-  if (!windowData || !record) {
+export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormData | null {
+  if (!tab || !record) {
     return null;
   }
 
@@ -75,7 +75,7 @@ export function adaptFormData(windowData: WindowMetadata, record: Record<string,
   const sections = new Set<string>(['Main']);
 
   // Create sections
-  Object.values(windowData.tabs[0].fields).forEach((field: FieldInfo) => {
+  Object.values(tab.fields).forEach((field: FieldInfo) => {
     const sectionName = field.fieldGroup$_identifier;
     if (sectionName) sections.add(sectionName);
   });
@@ -83,7 +83,7 @@ export function adaptFormData(windowData: WindowMetadata, record: Record<string,
   sections.forEach(sectionName => {
     adaptedData[sectionName] = {
       name: sectionName,
-      label: sectionName === 'Main' ? windowData.name : sectionName,
+      label: sectionName === 'Main' ? tab.title : sectionName,
       type: 'section',
       personalizable: false,
       id: sectionName,
@@ -91,8 +91,8 @@ export function adaptFormData(windowData: WindowMetadata, record: Record<string,
     } as Section;
   });
 
-  Object.entries(windowData.tabs[0].fields).forEach(([fieldName, fieldInfo]) => {
-    const column = fieldInfo.column as Column;
+  Object.entries(tab.fields).forEach(([fieldName, fieldInfo]) => {
+    const column = fieldInfo.column as unknown as Column;
     const sectionName = fieldInfo.fieldGroup$_identifier ?? 'Main';
     const rawValue = record[fieldName];
     let safeValue;
@@ -115,8 +115,8 @@ export function adaptFormData(windowData: WindowMetadata, record: Record<string,
       required: fieldInfo.column.isMandatory ?? true,
       referencedTable: fieldInfo.column.reference,
       original: {
-        fieldName,
         ...fieldInfo,
+        fieldName,
       },
     } as unknown as FieldDefinition;
   });
