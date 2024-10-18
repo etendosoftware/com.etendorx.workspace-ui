@@ -56,6 +56,10 @@ export interface GridProps {
 }
 
 export interface Field {
+  process: string;
+  shownInStatusBar: boolean;
+  displayed: boolean;
+  startnewline: boolean;
   showInGridView: boolean;
   fieldGroup$_identifier: string;
   fieldGroup: string;
