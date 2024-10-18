@@ -1,5 +1,5 @@
 import { Meta, StoryObj } from '@storybook/react';
-import PrimaryTabs from '../../../../../ComponentLibrary/src/components/PrimaryTab/old';
+import PrimaryTabs from '../../../../../ComponentLibrary/src/components/PrimaryTab';
 import {
   defaultTabs,
   onlyIconsTabs,
