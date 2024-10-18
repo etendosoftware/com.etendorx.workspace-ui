@@ -81,7 +81,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
   const { selected } = useMetadataContext();
 
   if (selected[tab?.level - 1] || tab?.level === 0) {
-    return tab?.uIPattern == 'STD' ? <DynamicTableContent tab={tab} /> : <DynamicTableContent tab={tab} />;
+    return <DynamicTableContent tab={tab} />;
   }
 
   return null;
