@@ -127,3 +127,9 @@ export interface QuantityProps {
   onChange?: (value: number) => void;
   readOnly?: boolean;
 }
+
+export interface ListSelectorProps {
+  field: FieldDefinition;
+  onChange: (name: string, value: string) => void;
+  readOnly?: boolean;
+}
