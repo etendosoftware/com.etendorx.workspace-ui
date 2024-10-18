@@ -1,8 +1,8 @@
 const getDefaultCacheDuration = () => {
   try {
     const value = parseInt(import.meta.env['VITE_CACHE_DURATION']);
-    console.debug({ value, type: typeof value });
-    return value;
+
+    return Math.abs(value);
   } catch (e) {
     console.warn(e);
 
