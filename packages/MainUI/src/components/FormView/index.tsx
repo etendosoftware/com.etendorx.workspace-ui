@@ -3,10 +3,9 @@ import { Box, Grid } from '@mui/material';
 import { FormViewProps } from './types';
 import PrimaryTabs from '@workspaceui/componentlibrary/components/PrimaryTab';
 import { TabItem } from '@workspaceui/componentlibrary/components/PrimaryTab/types';
+import SectionRenderer from './Sections/sectionRendered';
 import { Section, FieldDefinition } from '../../screens/Form/types';
 import type { FieldValue, FormData } from './types';
-import FormSection from './Sections/FormSection';
-import { NotesSectionContent } from './Sections/NotesSectionContent';
 import { defaultIcon } from '../../constants/iconConstants';
 
 const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, gridItemProps, dottedLineInterval }) => {
@@ -53,7 +52,6 @@ const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, g
         const sectionRect = sectionElement.getBoundingClientRect();
 
         const sectionBottom = sectionRect.bottom - containerRect.top + containerRef.current.scrollTop;
-
         const scrollAmount = sectionBottom - containerRect.height + 50;
 
         containerRef.current.scrollTo({
@@ -95,20 +93,16 @@ const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, g
     e.preventDefault();
   }, []);
 
-  const groupedFields = useMemo(
-    () =>
-      Object.entries(formData).reduce(
-        (acc, [key, value]) => {
-          if ('section' in value) {
-            const section = value.section ?? '_mainSection';
-            if (!acc[section]) acc[section] = [];
-            acc[section].push([key, value]);
-          }
-          return acc;
-        },
-        {} as { [key: string]: [string, FieldDefinition][] },
-      ),
-    [formData],
+  const groupedFields = Object.entries(formData).reduce(
+    (acc, [key, value]) => {
+      if ('section' in value) {
+        const section = value.section ?? '_mainSection';
+        if (!acc[section]) acc[section] = [];
+        acc[section].push([key, value]);
+      }
+      return acc;
+    },
+    {} as { [key: string]: [string, FieldDefinition][] },
   );
 
   return (
@@ -126,7 +120,7 @@ const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, g
                 return null;
               }
               return (
-                <FormSection
+                <SectionRenderer
                   key={sectionName}
                   sectionName={sectionName}
                   sectionData={sectionData}
@@ -139,9 +133,8 @@ const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, g
                   sectionRef={el => (sectionRefs.current[sectionData.id] = el)}
                   gridItemProps={gridItemProps}
                   dottedLineInterval={dottedLineInterval}
-                  readOnly={readOnly}>
-                  {sectionData.id === 'notes' ? <NotesSectionContent id={sectionData.id} /> : null}
-                </FormSection>
+                  readOnly={readOnly}
+                />
               );
             })}
           </Grid>

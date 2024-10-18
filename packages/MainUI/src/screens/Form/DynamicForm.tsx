@@ -1,19 +1,18 @@
 import { useParams } from 'react-router-dom';
-import { useWindow } from '@workspaceui/etendohookbinder/hooks/useWindow';
-import Spinner from '@workspaceui/componentlibrary/components/Spinner';
-import { DynamicFormView } from './DynamicFormView';
+import { useSingleDatasource } from '@workspaceui/etendohookbinder/hooks/useSingleDatasource';
+import { useMetadataContext } from '../../hooks/useMetadataContext';
+import DynamicFormView from './DynamicFormView';
 
 export default function DynamicForm() {
-  const { windowId = '' } = useParams<{ windowId: string }>();
-  const { windowData, loading, error } = useWindow(windowId);
+  const { windowData, tab } = useMetadataContext();
+  const { recordId = '' } = useParams<{ recordId: string }>();
+  const { record } = useSingleDatasource(tab?.entityName, recordId);
 
-  if (loading) {
-    return <Spinner />;
+  if (!record) {
+    return <span>Missing record</span>;
+  } else if (!windowData || !tab) {
+    return <span>Missing window metadata</span>;
+  } else {
+    return <DynamicFormView windowData={windowData} tab={tab} record={record} />;
   }
-
-  if (error || !windowData) {
-    return <div>{error?.message}</div>;
-  }
-
-  return <DynamicFormView windowData={windowData} />;
 }

@@ -18,15 +18,14 @@ interface IMetadataContext {
   selectRecord: (record: Record<string, never>, tab: Tab) => void;
   selected: Record<string, Record<string, never>>;
   tabs: Tab[];
-  currentTab?: Tab;
+  tab?: Tab;
 }
 
 export const MetadataContext = createContext({} as IMetadataContext);
 
 export default function MetadataProvider({ children }: React.PropsWithChildren) {
-  const { windowId = '', recordId = '' } = useParams();
+  const { windowId = '', tabId = '', recordId = '' } = useParams();
   const { windowData, loading, error } = useWindow(windowId);
-  const [currentTab, setCurrentTab] = useState<Etendo.Tab>();
   const [selected, setSelected] = useState<IMetadataContext['selected']>({});
 
   const selectRecord: IMetadataContext['selectRecord'] = useCallback(
@@ -36,7 +35,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
         return Math.max(max, parseInt(strLevel));
       }, 0);
 
-      setCurrentTab(tab);
       setSelected(prev => {
         for (let index = max; index > level; index--) {
           delete prev[index];
@@ -48,6 +46,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [selected],
   );
 
+  const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [windowData.tabs, tabId]);
   const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
   const groupedTabs = useMemo(() => groupTabsByLevel(windowData), [windowData]);
   const columnsData = useMemo(() => buildColumnsData(windowData), [windowData]);
@@ -66,32 +65,14 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       selectRecord,
       selected,
       tabs,
-      currentTab,
+      tab,
     }),
-    [
-      windowId,
-      recordId,
-      loading,
-      error,
-      groupedTabs,
-      windowData,
-      columnsData,
-      selectRecord,
-      selected,
-      tabs,
-      currentTab,
-    ],
+    [windowId, recordId, loading, error, groupedTabs, windowData, columnsData, selectRecord, selected, tabs, tab],
   );
 
   useEffect(() => {
     setSelected({});
   }, [windowId]);
-
-  useEffect(() => {
-    if (windowData?.tabs?.[0]) {
-      setCurrentTab(windowData.tabs[0]);
-    }
-  }, [windowData]);
 
   return <MetadataContext.Provider value={value}>{children}</MetadataContext.Provider>;
 }

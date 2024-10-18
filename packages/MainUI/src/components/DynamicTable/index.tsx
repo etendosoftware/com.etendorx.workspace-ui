@@ -50,7 +50,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
       },
       onDoubleClick: () => {
         selectRecord(row.original as never, tab);
-        navigate(`${row.original.id}`);
+        navigate(`${tab.id}/${row.original.id}`);
       },
     }),
     [navigate, selectRecord, tab],

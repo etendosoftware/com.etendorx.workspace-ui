@@ -9,17 +9,18 @@ import NumberSelector from './NumberSelector';
 import DateSelector from './DateSelector';
 import SelectSelector from './SelectSelector';
 import QuantitySelector from './QuantitySelector';
+import ListSelector from './ListSelector';
 
-const FieldLabel = ({ field, onLinkClick }: FieldLabelProps) => (
+const FieldLabel: React.FC<FieldLabelProps> = ({ label, required, fieldType, onLinkClick }) => (
   <Box sx={styles.labelWrapper}>
-    {field.type === 'tabledir' ? (
+    {fieldType === 'tabledir' ? (
       <Link onClick={onLinkClick} sx={sx.linkStyles}>
-        {field.label}
+        {label}
       </Link>
     ) : (
-      <span style={styles.labelText}>{field.label}</span>
+      <span style={styles.labelText}>{label}</span>
     )}
-    {field.required && <span style={styles.requiredAsterisk}>*</span>}
+    {required && <span style={styles.requiredAsterisk}>*</span>}
     <span style={styles.dottedSpacing} />
   </Box>
 );
@@ -58,16 +59,19 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
         return (
           <QuantitySelector
             value={field.value}
-            maxLength={String(field.original?.column?.length)}
+            maxLength={field.original?.column?.length}
             min={field.original?.column?.minValue ?? null}
             max={field.original?.column?.maxValue ?? null}
             onChange={value => onChange(field.label, value)}
             readOnly={readOnly}
           />
         );
+      case 'list':
+        return <ListSelector field={field} onChange={onChange} readOnly={readOnly} />;
       default:
         return (
           <TextInputBase
+            margin="normal"
             onRightIconClick={() => alert('Icon clicked')}
             value={field.value as string}
             setValue={(value: FieldValue) => onChange(field.label, value)}
@@ -82,7 +86,9 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
     <Box style={styles.fieldContainer}>
       <Box sx={sx.labelBox}>
         <FieldLabel
-          field={field}
+          label={field.label}
+          required={field.required}
+          fieldType={field.type}
           onLinkClick={field.type === 'tabledir' ? handleLinkClick : undefined}
           readOnly={readOnly}
         />

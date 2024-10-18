@@ -59,6 +59,7 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
         id="outlined-number"
         type="number"
         variant="standard"
+        margin="normal"
         fullWidth
         value={value}
         onChange={handleChange}

@@ -34,7 +34,7 @@ const router = createBrowserRouter([
             ],
           },
           {
-            path: 'window/:windowId/:recordId',
+            path: 'window/:windowId/:tabId/:recordId',
             Component: DynamicForm,
           },
           {

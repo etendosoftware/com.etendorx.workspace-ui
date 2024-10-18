@@ -18,46 +18,41 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
   },
 }));
 
-const DateSelector: React.FC<DateSelectorProps> = memo(
-  ({ name, value, onChange, readOnly }) => {
-    const inputRef = useRef<HTMLInputElement>(null);
+const DateSelector: React.FC<DateSelectorProps> = memo(({ name, value, onChange, readOnly }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
 
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      onChange(name, event.target.value);
-    };
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(name, event.target.value);
+  };
 
-    const handleIconClick = () => {
-      if (inputRef.current) {
-        inputRef.current.showPicker();
-      }
-    };
+  const handleIconClick = () => {
+    if (inputRef.current) {
+      inputRef.current.showPicker();
+    }
+  };
 
-    return (
-      <StyledTextField
-        fullWidth
-        name={name}
-        type="date"
-        variant="standard"
-        value={value || ''}
-        onChange={handleChange}
-        disabled={readOnly}
-        inputRef={inputRef}
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton
-                onClick={handleIconClick}
-                disabled={readOnly}
-                height={16}
-                width={16}>
-                <CalendarIcon />
-              </IconButton>
-            </InputAdornment>
-          ),
-        }}
-      />
-    );
-  },
-);
+  return (
+    <StyledTextField
+      fullWidth
+      name={name}
+      type="date"
+      variant="standard"
+      margin="normal"
+      value={value || ''}
+      onChange={handleChange}
+      disabled={readOnly}
+      inputRef={inputRef}
+      InputProps={{
+        endAdornment: (
+          <InputAdornment position="end">
+            <IconButton onClick={handleIconClick} disabled={readOnly} height={16} width={16}>
+              <CalendarIcon />
+            </IconButton>
+          </InputAdornment>
+        ),
+      }}
+    />
+  );
+});
 
 export default DateSelector;

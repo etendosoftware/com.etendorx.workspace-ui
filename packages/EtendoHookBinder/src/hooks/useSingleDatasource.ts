@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Datasource } from '../api/datasource';
 
-export function useSingleDatasource(entity: string, id: string) {
+export function useSingleDatasource(entity?: string, id?: string) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [record, setRecord] = useState<Record<string, unknown>>();
@@ -9,7 +9,7 @@ export function useSingleDatasource(entity: string, id: string) {
 
   const load = useCallback(async () => {
     try {
-      if (!entity) {
+      if (!entity || !id) {
         setLoaded(true);
 
         return;

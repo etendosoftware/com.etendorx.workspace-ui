@@ -50,9 +50,11 @@ export interface FormFieldGroupProps {
 }
 
 export interface FieldLabelProps {
+  label: string;
+  required?: boolean;
   readOnly?: boolean;
+  fieldType: string;
   onLinkClick?: () => void;
-  field: FieldDefinition;
 }
 
 export interface SectionRendererProps extends Omit<FormSectionProps, 'children'> {
@@ -77,13 +79,6 @@ export interface NoteSectionProps {
 
 // TableDir Selector
 export interface TableDirSelectorProps {
-  label: string;
-  value: FieldValue;
-  entity: string;
-  onChange: (name: string, value: string) => void;
-}
-
-export interface SearchSelectorProps {
   label: string;
   value: FieldValue;
   entity: string;
@@ -130,5 +125,11 @@ export interface QuantityProps {
   min?: number | string | null;
   max?: number | string | null;
   onChange?: (value: number) => void;
+  readOnly?: boolean;
+}
+
+export interface ListSelectorProps {
+  field: FieldDefinition;
+  onChange: (name: string, value: string) => void;
   readOnly?: boolean;
 }

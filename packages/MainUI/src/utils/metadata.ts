@@ -5,8 +5,6 @@ export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
     return [];
   }
 
-  return [];
-
   const tabs: Etendo.Tab[][] = [];
 
   windowData?.tabs.forEach(tab => {
