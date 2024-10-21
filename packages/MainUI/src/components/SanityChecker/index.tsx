@@ -5,7 +5,8 @@ import Spinner from '@workspaceui/componentlibrary/components/Spinner';
 
 export default function SanityChecker(props: React.PropsWithChildren) {
   const [connected, setConnected] = useState(false);
-  const checker = useRef<NodeJS.Timeout>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const checker = useRef<any>();
   const attempts = useRef(0);
 
   useEffect(() => {
