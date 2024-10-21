@@ -4,8 +4,20 @@ import { FormData } from './types';
 import FormView from '../../components/FormView';
 import { adaptFormData, mapWindowMetadata } from '../../utils/formUtils';
 import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/api/types';
+import { FormBuilder } from './FormBuilder';
 
 export default function DynamicFormView({
+  tab,
+  record,
+}: {
+  windowData: WindowMetadata;
+  tab: Tab;
+  record: Record<string, unknown>;
+}) {
+  return <FormBuilder fields={tab.fields} record={record} />;
+}
+
+export function DynamicFormViewOld({
   windowData,
   tab,
   record,
