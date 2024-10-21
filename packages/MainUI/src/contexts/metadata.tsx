@@ -23,7 +23,7 @@ interface IMetadataContext {
 
 export const MetadataContext = createContext({} as IMetadataContext);
 
-export default function MetadataProvider({ children }: React.PropsWithChildren) {
+export function MetadataProvider({ children }: React.PropsWithChildren) {
   const { windowId = '', tabId = '', recordId = '' } = useParams();
   const { windowData, loading, error } = useWindow(windowId);
   const [selected, setSelected] = useState<IMetadataContext['selected']>({});

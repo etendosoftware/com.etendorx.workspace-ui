@@ -66,11 +66,7 @@ export function mapWindowMetadata(windowData: WindowMetadata): MappedData {
   return mappedData;
 }
 
-export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormData | null {
-  if (!tab || !record) {
-    return null;
-  }
-
+export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormData {
   const adaptedData: FormData = {};
   const sections = new Set<string>(['Main']);
 

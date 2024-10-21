@@ -14,7 +14,7 @@ import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspac
 
 export const UserContext = createContext({} as IUserContext);
 
-export default function UserProvider(props: React.PropsWithChildren) {
+export function UserProvider(props: React.PropsWithChildren) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const { pathname } = useLocation();
   const navigate = useNavigate();

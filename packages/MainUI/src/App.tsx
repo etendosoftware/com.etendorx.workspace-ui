@@ -1,20 +1,18 @@
-import { theme, CssBaseline, ThemeProvider } from '../../ComponentLibrary/src/theme';
 import { Outlet } from 'react-router-dom';
-import MetadataProvider from './contexts/metadata';
-import UserProvider from './contexts/user';
+import { theme, CssBaseline, ThemeProvider } from '../../ComponentLibrary/src/theme';
+import { MetadataProvider } from './contexts/metadata';
+import { UserProvider } from './contexts/user';
 import { LanguageProvider } from './contexts/languageProvider';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SanityChecker from './components/SanityChecker';
 import { RecordProvider } from './contexts/record';
-
-const queryClient = new QueryClient();
+import { QueryProvider } from './contexts/query';
 
 export default function App() {
   return (
     <SanityChecker>
-      <QueryClientProvider client={queryClient}>
+      <QueryProvider>
         <ThemeProvider theme={theme}>
-          <CssBaseline enableColorScheme>
+          <CssBaseline>
             <LanguageProvider>
               <UserProvider>
                 <MetadataProvider>
@@ -26,7 +24,7 @@ export default function App() {
             </LanguageProvider>
           </CssBaseline>
         </ThemeProvider>
-      </QueryClientProvider>
+      </QueryProvider>
     </SanityChecker>
   );
 }

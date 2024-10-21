@@ -26,9 +26,9 @@ export function FormBuilder({ fields, record }: { fields: Field[]; record: Recor
   }, [fields]);
 
   return (
-    <>
-      {form.formFields.map((field: Field, index: number) => {
-        return field.startnewline || index % 4 == 0 ? (
+    <Box>
+      {form.formFields.map((field: Field, index: number) =>
+        field.startnewline || index % 4 == 0 ? (
           <>
             {index > 0 ? <br /> : null}
             <Box bgcolor="gray" display="inline-block">
@@ -41,8 +41,8 @@ export function FormBuilder({ fields, record }: { fields: Field[]; record: Recor
             <b>{` | ${field.name}:`}</b>
             {record[field.columnName] as string}
           </Box>
-        );
-      })}
-    </>
+        ),
+      )}
+    </Box>
   );
 }

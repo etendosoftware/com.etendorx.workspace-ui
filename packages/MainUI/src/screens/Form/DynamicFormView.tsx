@@ -15,7 +15,7 @@ export default function DynamicFormView({
   record: Record<string, unknown>;
 }) {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<FormData | null>(adaptFormData(tab, record));
+  const [formData, setFormData] = useState<FormData>(adaptFormData(tab, record));
   const mappedMetadata = useMemo(() => mapWindowMetadata(windowData), [windowData]);
   const handleSave = useCallback(() => navigate('/'), [navigate]);
   const handleCancel = useCallback(() => navigate('/'), [navigate]);
@@ -23,8 +23,6 @@ export default function DynamicFormView({
   const handleChange = useCallback((updatedData: FormData) => {
     setFormData(updatedData);
   }, []);
-
-  if (!formData || !mappedMetadata) return <div>No form data available</div>;
 
   return (
     <FormView
