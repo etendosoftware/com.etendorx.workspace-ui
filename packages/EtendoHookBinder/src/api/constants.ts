@@ -1,13 +1,13 @@
 const getDefaultCacheDuration = () => {
-  try {
-    const value = parseInt(import.meta.env['VITE_CACHE_DURATION']);
+  let duration = 5 * 60 * 1000;
 
-    return Math.abs(value);
+  try {
+    duration = Math.abs(parseInt(import.meta.env['VITE_CACHE_DURATION']));
   } catch (e) {
     console.warn(e);
-
-    return 5 * 60 * 1000;
   }
+
+  return duration;
 };
 
 export const TOKEN = import.meta.env['VITE_API_TOKEN'];
