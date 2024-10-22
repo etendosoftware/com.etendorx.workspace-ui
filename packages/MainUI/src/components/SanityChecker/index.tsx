@@ -5,8 +5,7 @@ import Spinner from '@workspaceui/componentlibrary/components/Spinner';
 
 export default function SanityChecker(props: React.PropsWithChildren) {
   const [connected, setConnected] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const checker = useRef<any>();
+  const checker = useRef(NaN);
   const attempts = useRef(0);
 
   useEffect(() => {
@@ -21,7 +20,12 @@ export default function SanityChecker(props: React.PropsWithChildren) {
           if (response.ok) {
             attempts.current = 0;
             setConnected(true);
-            clearInterval(checker.current);
+
+            if (checker.current) {
+              clearInterval(checker.current);
+            }
+          } else {
+            logger.warn('Error while trying to connect to API ', response);
           }
         }
       } catch (e) {
@@ -33,7 +37,9 @@ export default function SanityChecker(props: React.PropsWithChildren) {
     checker.current = setInterval(healthCheck, 2000);
 
     return () => {
-      clearInterval(checker.current);
+      if (checker.current) {
+        clearInterval(checker.current);
+      }
     };
   }, []);
 
