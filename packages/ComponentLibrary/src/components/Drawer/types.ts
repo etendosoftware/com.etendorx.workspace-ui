@@ -28,12 +28,13 @@ export interface DrawerSectionProps extends React.PropsWithChildren {
   item: Menu;
   onClick: NavigateFn;
   open?: boolean;
-  isExpanded: boolean;
   onToggleExpand: () => void;
   hasChildren: boolean;
+  isExpanded: boolean;
   isExpandable: boolean;
   isSearchActive: boolean;
   windowId?: string;
+  parentId: string;
 }
 
 export interface Section {
@@ -67,4 +68,17 @@ export interface DrawerItemsProps {
   expandedItems: Set<string>;
   toggleItemExpansion: (itemId: string) => void;
   searchValue: string;
+}
+
+export interface RecentItem {
+  id: string;
+  name: string;
+  windowId: string;
+}
+
+export interface RecentlyViewedProps {
+  onClick: (path: string) => void;
+  open: boolean;
+  onWindowAccess: (item: RecentItem) => void;
+  recentItems: RecentItem[];
 }
