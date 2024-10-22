@@ -15,7 +15,8 @@ import PersonIcon from '@workspaceui/componentlibrary/assets/icons/user.svg';
 import AddIcon from '@workspaceui/componentlibrary/assets/icons/plus.svg';
 import { modalConfig, menuItems, initialPeople, sections, NOTIFICATIONS } from '@workspaceui/storybook/mocks';
 import { useTranslation } from '../hooks/useTranslation';
-import { Role } from 'src/contexts/types';
+import { Role } from '../contexts/types';
+import { Person } from '@workspaceui/componentlibrary/components/DragModal/DragModal.types';
 
 const handleClose = () => {
   return true;
@@ -23,6 +24,7 @@ const handleClose = () => {
 
 const noop = () => {};
 const roles: Role[] = [];
+const people: Person[] = [];
 
 const Navigation: React.FC = () => {
   const { t } = useTranslation();
@@ -38,7 +40,7 @@ const Navigation: React.FC = () => {
         tooltipWaterfallButton={t('navigation.waterfall.tooltipButton')}
         buttonText={t('navigation.waterfall.buttons')}
         customizeText={t('navigation.waterfall.customize')}
-        people={[]}
+        people={people}
         icon={<AddIcon />}
       />
       <ConfigurationModal

@@ -1,4 +1,4 @@
-import React, { useState, useContext, useCallback, useEffect } from 'react';
+import React, { useState, useContext, useCallback, useEffect, useMemo } from 'react';
 import { Button, Menu } from '@mui/material';
 import CheckCircle from '../../assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';
@@ -11,7 +11,6 @@ import IconButton from '../IconButton';
 import { theme } from '../../theme';
 import { UserContext } from '../../../../MainUI/src/contexts/user';
 import { Option } from '../Input/Select/types';
-import { useNavigate } from 'react-router-dom';
 import { logger } from '../../../../MainUI/src/utils/logger';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
@@ -33,7 +32,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [selectedRole, setSelectedRole] = useState<Option | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(null);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
-  const navigate = useNavigate();
   const { changeRole, changeWarehouse, currentRole, currentWarehouse, roles, setDefaultConfiguration, token } =
     useContext(UserContext);
 
@@ -62,6 +60,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     setSaveAsDefault(event.target.checked);
   }, []);
 
+  const handleToggle = useCallback((section: string) => {
+    setCurrentSection(section);
+  }, []);
+
+  const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setAnchorEl(null);
+  }, []);
+
   const handleSave = useCallback(async () => {
     if (currentSection === 'profile') {
       try {
@@ -81,7 +91,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           });
         }
         handleClose();
-        navigate('/');
       } catch (error) {
         logger.error('Error changing role, warehouse, or saving default configuration:', error);
       }
@@ -93,7 +102,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     currentRole?.orgList,
     currentSection,
     currentWarehouse?.id,
-    navigate,
+    handleClose,
     saveAsDefault,
     selectedRole,
     selectedWarehouse,
@@ -101,23 +110,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     token,
   ]);
 
-  const handleToggle = (section: string) => {
-    setCurrentSection(section);
-  };
-
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const isSaveDisabled =
-    currentSection === 'profile' &&
-    (!selectedRole || selectedRole.value === currentRole?.id) &&
-    (!selectedWarehouse || selectedWarehouse.value === currentWarehouse?.id) &&
-    !saveAsDefault;
+  const isSaveDisabled = useMemo(
+    () =>
+      currentSection === 'profile' &&
+      (!selectedRole || selectedRole.value === currentRole?.id) &&
+      (!selectedWarehouse || selectedWarehouse.value === currentWarehouse?.id) &&
+      !saveAsDefault,
+    [currentRole?.id, currentSection, currentWarehouse?.id, saveAsDefault, selectedRole, selectedWarehouse],
+  );
 
   return (
     <>
