@@ -1,23 +1,26 @@
 {
   "compilerOptions": {
+    "types": ["node"],
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "Preserve",
+    "module": "ESNext",
+    "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["vite-plugin-svgr/client"],
-
+    "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
-
-    /* Linting */
+    "jsx": "preserve",
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    "allowJs": true,
+    "forceConsistentCasingInFileNames": true,
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
 
     "baseUrl": ".",
     "paths": {
@@ -29,6 +32,6 @@
       "@workspaceui/etendohookbinder": ["../EtendoHookBinder/src"]
     }
   },
-  "include": ["src", "svg.d.ts"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": ["./src", "./dist/types/**/*.ts", "./next-env.d.ts"],
+  "exclude": ["./node_modules"]
 }

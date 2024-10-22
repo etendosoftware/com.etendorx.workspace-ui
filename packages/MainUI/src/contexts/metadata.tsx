@@ -1,3 +1,5 @@
+'use client';
+
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/api/metadata';
 import { useParams } from 'react-router-dom';

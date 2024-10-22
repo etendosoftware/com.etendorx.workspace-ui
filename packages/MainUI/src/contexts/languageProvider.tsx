@@ -1,3 +1,5 @@
+'use client';
+
 import { useMemo, useState } from 'react';
 import LanguageContext from './languageContext';
 import { Language } from './types';

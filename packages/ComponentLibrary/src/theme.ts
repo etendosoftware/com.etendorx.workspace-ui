@@ -1,3 +1,5 @@
+'use client';
+
 import { createTheme, ThemeProvider, CssBaseline } from '@mui/material';
 import InterTTF from '../src/styles/fonts/Inter-Regular.ttf';
 export type * from './custom.d.ts';

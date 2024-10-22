@@ -1,3 +1,5 @@
+'use client';
+
 import { API_METADATA_URL, MAX_ATTEMPTS } from '@workspaceui/etendohookbinder/api/constants';
 import { useEffect, useRef, useState } from 'react';
 import { logger } from '../../utils/logger';

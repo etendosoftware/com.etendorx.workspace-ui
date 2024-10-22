@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useMemo, useCallback } from 'react';
 import { ensureString } from '@workspaceui/componentlibrary/helpers/ensureString';
 import translations from '@workspaceui/componentlibrary/locales';
@@ -7,30 +9,21 @@ import { Organization } from '../../../storybook/src/stories/Components/Table/ty
 export interface RecordContextType {
   selectedRecord: Organization | null;
   setSelectedRecord: (record: Organization | null) => void;
-  getFormattedRecord: (
-    record: Organization | null,
-  ) => { identifier: string; type: string } | null;
+  getFormattedRecord: (record: Organization | null) => { identifier: string; type: string } | null;
 }
 
 export const RecordContext = createContext({} as RecordContextType);
 
 export function RecordProvider({ children }: React.PropsWithChildren) {
-  const [selectedRecord, setSelectedRecord] = useState<Organization | null>(
-    null,
-  );
+  const [selectedRecord, setSelectedRecord] = useState<Organization | null>(null);
 
-  const getFormattedRecord: RecordContextType['getFormattedRecord'] =
-    useCallback((record: Organization | null) => {
-      if (!record) return null;
-      return {
-        identifier:
-          ensureString(record.documentNo?.value) ||
-          translations.es.table.labels.noIdentifier,
-        type:
-          ensureString(record.transactionDocument?.value) ||
-          translations.es.table.labels.noType,
-      };
-    }, []);
+  const getFormattedRecord: RecordContextType['getFormattedRecord'] = useCallback((record: Organization | null) => {
+    if (!record) return null;
+    return {
+      identifier: ensureString(record.documentNo?.value) || translations.es.table.labels.noIdentifier,
+      type: ensureString(record.transactionDocument?.value) || translations.es.table.labels.noType,
+    };
+  }, []);
 
   const value: RecordContextType = useMemo(
     () => ({
@@ -41,7 +34,5 @@ export function RecordProvider({ children }: React.PropsWithChildren) {
     [getFormattedRecord, selectedRecord],
   );
 
-  return (
-    <RecordContext.Provider value={value}>{children}</RecordContext.Provider>
-  );
+  return <RecordContext.Provider value={value}>{children}</RecordContext.Provider>;
 }

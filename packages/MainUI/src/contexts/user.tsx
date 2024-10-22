@@ -1,3 +1,5 @@
+'use client';
+
 import { createContext, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { logger } from '../utils/logger';

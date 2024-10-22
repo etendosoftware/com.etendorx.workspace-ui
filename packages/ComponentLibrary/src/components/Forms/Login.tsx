@@ -1,6 +1,7 @@
+'use client';
 import { useCallback, useState } from 'react';
 import { Box, Input, Paper } from '@mui/material';
-import { Button } from '../../components';
+import { Button } from '@workspaceui/componentlibrary/components';
 import { styles } from './styles';
 
 export default function Login({
@@ -20,24 +21,24 @@ export default function Login({
     [],
   );
 
-  const handlePasswordChannge = useCallback(
+  const handlePasswordChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.currentTarget.value),
     [],
   );
 
   const handleSubmit = useCallback<React.FormEventHandler>(
-    e => {
+    async e => {
       e.preventDefault();
       e.stopPropagation();
-      onSubmit(username, password);
+      await onSubmit(username, password);
     },
     [onSubmit, password, username],
   );
 
   return (
-    <Box sx={styles.container}>
-      <form onSubmit={handleSubmit} action="#">
-        <Paper sx={styles.paper}>
+    <Box component="main" sx={styles.container}>
+      <form onSubmit={handleSubmit} noValidate>
+        <Paper sx={styles.paper} elevation={3}>
           <h1>{title}</h1>
           <Input
             type="text"
@@ -46,6 +47,9 @@ export default function Login({
             placeholder="Username"
             value={username}
             onChange={handleUsernameChange}
+            fullWidth
+            margin="dense"
+            autoComplete="username"
           />
           <Input
             type="password"
@@ -53,12 +57,25 @@ export default function Login({
             id="password"
             placeholder="Password"
             value={password}
-            onChange={handlePasswordChannge}
+            onChange={handlePasswordChange}
+            fullWidth
+            margin="dense"
+            autoComplete="current-password"
           />
-          <Button type="submit" onSubmit={handleSubmit}>
+          <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>
             Log In
           </Button>
-          {error ? <code>{error}</code> : null}
+          {error && (
+            <Box
+              component="code"
+              sx={{
+                display: 'block',
+                mt: 2,
+                color: 'error.main',
+              }}>
+              {error}
+            </Box>
+          )}
         </Paper>
       </form>
     </Box>
