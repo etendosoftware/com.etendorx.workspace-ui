@@ -1,16 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { RecentItem } from '../components/Drawer/types';
-
-interface UseRecentItemsReturn {
-  localRecentItems: RecentItem[];
-  isExpanded: boolean;
-  setIsExpanded: (value: boolean) => void;
-  handleItemClick: (path: string) => void;
-  handleToggleExpand: () => void;
-  hasItems: boolean;
-  resetManualToggle: () => void;
-}
+import { UseRecentItemsReturn } from './types';
 
 export function useRecentItems(
   recentItems: RecentItem[],
