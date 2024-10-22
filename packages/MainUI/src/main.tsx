@@ -1,5 +1,5 @@
 import ReactDOM from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { BrowserRouter, Route, Routes,  } from 'react-router-dom';
 import App from './App';
 import Table from './screens/Table';
 import DynamicTable from './screens/Table/Dynamic';
@@ -10,45 +10,20 @@ import DynamicForm from './screens/Form/DynamicForm';
 import './index.css';
 import Form from './screens/Form';
 
-const router = createBrowserRouter([
-  {
-    path: '',
-    Component: App,
-    children: [
-      {
-        path: '',
-        Component: Layout,
-        children: [
-          {
-            path: '',
-            Component: Home,
-            children: [
-              {
-                path: '',
-                Component: Table,
-              },
-              {
-                path: ':id',
-                Component: Form,
-              },
-            ],
-          },
-          {
-            path: 'window/:windowId/:tabId/:recordId',
-            Component: DynamicForm,
-          },
-          {
-            path: 'window/:windowId',
-            Component: DynamicTable,
-          },
-        ],
-      },
-      {
-        path: 'login',
-        Component: Login,
-      },
-    ],
-  },
-]);
-
-ReactDOM.createRoot(document.getElementById('root')!).render(<RouterProvider router={router} />);
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <BrowserRouter>
+    <Routes>
+      <Route path="/" element={<App />}>
+        <Route path="login" element={<Login />} />
+        <Route element={<Layout />}>
+          <Route path="/" element={<Home />}>
+            <Route index element={<Table />} />
+            <Route path=":id" element={<Form />} />
+          </Route>
+          <Route path="window/:windowId/:tabId/:recordId" element={<DynamicForm />} />
+          <Route path="window/:windowId" element={<DynamicTable />} />
+        </Route>
+      </Route>
+    </Routes>
+  </BrowserRouter>,
+);
