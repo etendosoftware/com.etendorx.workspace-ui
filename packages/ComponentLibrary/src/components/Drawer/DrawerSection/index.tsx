@@ -4,7 +4,6 @@ import { styles } from '../styles';
 import MenuTitle from '../MenuTitle';
 import { theme } from '../../../theme';
 import { DrawerSectionProps } from '../types';
-import { useParams } from 'react-router-dom';
 import { findActive } from '../../../utils/drawerUtils';
 
 const DrawerSection: React.FC<DrawerSectionProps> = ({
@@ -15,8 +14,8 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
   onToggleExpand,
   hasChildren,
   isExpandable,
+  windowId,
 }) => {
-  const { windowId } = useParams();
   const isSelected = Boolean(windowId?.length && item.windowId === windowId);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [expanded, setExpanded] = useState(isSelected || findActive(windowId, item.children));

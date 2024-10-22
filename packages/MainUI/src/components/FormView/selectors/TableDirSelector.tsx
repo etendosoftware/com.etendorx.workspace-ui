@@ -7,6 +7,10 @@ import { theme } from '@workspaceui/componentlibrary/theme';
 import { TableDirSelectorProps } from '../types';
 import { Option } from '../../../../../ComponentLibrary/src/components/Input/Select/types';
 
+const getOptionLabel = (option: Option) => option.title;
+
+const optionEqualValue = (option: Option, value: { id: string }) => option.id === value.id || option.value === value.id;
+
 const TableDirSelector: React.FC<TableDirSelectorProps> = ({ onChange, label, entity, value }) => {
   const { records, loading, error, loaded } = useDatasource(entity);
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
@@ -49,11 +53,6 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({ onChange, label, en
     [label, onChange],
   );
 
-  const optionEqualValue = useCallback(
-    (option: Option, value: { id: string }) => option.id === value.id || option.value === value.id,
-    [],
-  );
-
   if (loading || !loaded) return <Spinner />;
   if (error) return <div>Error: {error.message}</div>;
 
@@ -63,7 +62,7 @@ const TableDirSelector: React.FC<TableDirSelectorProps> = ({ onChange, label, en
       options={options}
       onChange={handleChange}
       value={selectedValue}
-      getOptionLabel={(option: Option) => option.title}
+      getOptionLabel={getOptionLabel}
       isOptionEqualToValue={optionEqualValue}
     />
   );

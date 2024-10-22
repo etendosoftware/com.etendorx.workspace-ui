@@ -4,19 +4,14 @@ import Logout from '../../assets/icons/log-out.svg';
 import { User } from './types';
 import IconButton from '../IconButton';
 import { UserContext } from '../../../../MainUI/src/contexts/user';
-import { useNavigate } from 'react-router-dom';
-import { useContext } from 'react';
+import { useCallback, useContext } from 'react';
 
 const UserProfile: React.FC<User> = ({ photoUrl, name, email, sectionTooltip }) => {
-  const navigate = useNavigate();
-  const { setToken, clearUserData } = useContext(UserContext);
+  const { clearUserData } = useContext(UserContext);
 
-  const handleSignOff = () => {
-    setToken(null);
-    localStorage.removeItem('token');
+  const handleSignOff = useCallback(() => {
     clearUserData();
-    navigate('/login');
-  };
+  }, [clearUserData]);
 
   return (
     <div style={styles.userProfileStyles}>

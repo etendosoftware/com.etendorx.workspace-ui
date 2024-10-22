@@ -33,6 +33,7 @@ export interface DrawerSectionProps extends React.PropsWithChildren {
   hasChildren: boolean;
   isExpandable: boolean;
   isSearchActive: boolean;
+  windowId?: string;
 }
 
 export interface Section {

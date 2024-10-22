@@ -6,7 +6,7 @@ import { adaptFormData, mapWindowMetadata } from '../../utils/formUtils';
 import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/api/types';
 import { FormBuilder } from './FormBuilder';
 
-export default function DynamicFormView({
+export function DynamicFormViewV2({
   tab,
   record,
 }: {
@@ -17,7 +17,7 @@ export default function DynamicFormView({
   return <FormBuilder fields={tab.fields} record={record} />;
 }
 
-export function DynamicFormViewOld({
+export default function DynamicFormView({
   windowData,
   tab,
   record,

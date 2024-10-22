@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { ensureString } from '@workspaceui/componentlibrary/helpers/ensureString';
 import translations from '@workspaceui/componentlibrary/locales';
 import { createContext } from 'react';
