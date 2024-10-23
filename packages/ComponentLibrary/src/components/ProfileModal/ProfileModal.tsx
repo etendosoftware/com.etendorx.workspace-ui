@@ -1,4 +1,6 @@
-import React, { useState, useContext, useCallback, useEffect, useMemo } from 'react';
+'use client';
+
+import { useState, useContext, useCallback, useEffect, useMemo } from 'react';
 import { Button, Menu } from '@mui/material';
 import CheckCircle from '../../assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';

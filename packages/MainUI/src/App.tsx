@@ -4,7 +4,7 @@ import MetadataProvider from './contexts/metadata';
 import UserProvider from './contexts/user';
 import { LanguageProvider } from './contexts/languageProvider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import SanityChecker from './components/SanityChecker';
+import SanityChecker from './app/components/SanityChecker';
 import { RecordProvider } from './contexts/record';
 
 const queryClient = new QueryClient();

@@ -2,7 +2,7 @@
 
 import { API_METADATA_URL, MAX_ATTEMPTS } from '@workspaceui/etendohookbinder/api/constants';
 import { useEffect, useRef, useState } from 'react';
-import { logger } from '../../utils/logger';
+import { logger } from '../../../utils/logger';
 import Spinner from '@workspaceui/componentlibrary/components/Spinner';
 
 export default function SanityChecker(props: React.PropsWithChildren) {

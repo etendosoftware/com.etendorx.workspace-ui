@@ -1,9 +1,8 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Badge } from '@mui/material';
-import {
-  ExtendedNotificationButtonProps,
-  NotificationModalProps,
-} from './types';
+import { ExtendedNotificationButtonProps, NotificationModalProps } from './types';
 import { notificationMax } from './constants';
 import { sx } from './styles';
 import IconButton from '../IconButton';
@@ -29,11 +28,7 @@ const NotificationButton: React.FC<ExtendedNotificationButtonProps> = ({
   return (
     <>
       <Badge
-        badgeContent={
-          notificationCount > notificationMax
-            ? notificationMax + '+'
-            : notificationCount
-        }
+        badgeContent={notificationCount > notificationMax ? notificationMax + '+' : notificationCount}
         color="error"
         sx={sx.badgeStyles}
         component="div">

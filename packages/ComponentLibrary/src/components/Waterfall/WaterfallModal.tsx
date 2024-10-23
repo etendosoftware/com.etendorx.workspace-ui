@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Box, Button, List, Menu, MenuItem, styled } from '@mui/material';
 import DragModalContent from '../DragModal/DragModalContent';
@@ -81,8 +83,7 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
                     key={item.key}
                     sx={{
                       ...sx.menuItemStyles,
-                      marginBottom:
-                        index !== menuItems.length - 1 ? '0.5rem' : '0',
+                      marginBottom: index !== menuItems.length - 1 ? '0.5rem' : '0',
                     }}>
                     <span style={styles.SpanStyles}>{item.emoji}</span>
                     <span>{item.label}</span>
@@ -95,17 +96,9 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
                   <Button
                     onClick={handleOpenDragModal}
                     sx={sx.customizeButton}
-                    startIcon={
-                      <Edit
-                        fill={theme.palette.baselineColor.neutral[60]}
-                        style={styles.StartIconStyles}
-                      />
-                    }>
+                    startIcon={<Edit fill={theme.palette.baselineColor.neutral[60]} style={styles.StartIconStyles} />}>
                     {customizeText}
-                    <NavigateNext
-                      fill={theme.palette.baselineColor.neutral[60]}
-                      style={styles.EndIconStyles}
-                    />
+                    <NavigateNext fill={theme.palette.baselineColor.neutral[60]} style={styles.EndIconStyles} />
                   </Button>
                 </Box>
               </div>

@@ -5,7 +5,7 @@ import Select from '@workspaceui/componentlibrary/components/Input/Select';
 import SearchOutlined from '../../../../../ComponentLibrary/src/assets/icons/search.svg';
 import { theme } from '@workspaceui/componentlibrary/theme';
 import { TableDirSelectorProps } from '../types';
-import { Option } from '../../../../../ComponentLibrary/src/components/Input/Select/types';
+import { Option } from '../../../../../../ComponentLibrary/src/components/Input/Select/types';
 
 const getOptionLabel = (option: Option) => option.title;
 

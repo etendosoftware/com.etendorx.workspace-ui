@@ -1,3 +1,5 @@
+'use client';
+
 import React, { ReactNode, useState } from 'react';
 import styles from './Nav.styles';
 import RightButtons from './RigthComponents/RightButtons';

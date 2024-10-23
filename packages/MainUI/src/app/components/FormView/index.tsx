@@ -4,9 +4,9 @@ import { FormViewProps } from './types';
 import PrimaryTabs from '@workspaceui/componentlibrary/components/PrimaryTab';
 import { TabItem } from '@workspaceui/componentlibrary/components/PrimaryTab/types';
 import SectionRenderer from './Sections/sectionRendered';
-import { Section, FieldDefinition } from '../../screens/Form/types';
+import { Section, FieldDefinition } from '../../../screens/Form/types';
 import type { FieldValue, FormData } from './types';
-import { defaultIcon } from '../../constants/iconConstants';
+import { defaultIcon } from '../../../constants/iconConstants';
 
 const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, gridItemProps, dottedLineInterval }) => {
   const [formData, setFormData] = useState<FormData>(data);

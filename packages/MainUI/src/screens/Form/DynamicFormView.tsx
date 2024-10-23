@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FormData } from './types';
-import FormView from '../../components/FormView';
+import FormView from '../../app/components/FormView';
 import { adaptFormData, mapWindowMetadata } from '../../utils/formUtils';
 import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/api/types';
 

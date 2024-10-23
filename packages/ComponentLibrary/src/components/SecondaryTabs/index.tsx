@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useRef, useEffect, useCallback, useMemo, ReactElement } from 'react';
 import { Tabs, Tab, Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';

@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { FieldDefinition, Section } from '../../screens/Form/types';
+import { FieldDefinition, Section } from '../../../screens/Form/types';
 import { MappedData, WindowMetadata } from '@workspaceui/etendohookbinder/api/types';
 
 export interface GridItemProps {

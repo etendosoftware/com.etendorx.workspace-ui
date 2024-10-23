@@ -1,3 +1,5 @@
+'use client';
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DatasourceOptions } from '../api/types';
 import { Datasource } from '../api/datasource';

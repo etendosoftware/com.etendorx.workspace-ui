@@ -7,8 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import { memo, useCallback, useMemo } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource';
 import { Button } from '@workspaceui/componentlibrary/components';
-import { useMetadataContext } from '../../hooks/useMetadataContext';
-import { parseColumns } from '../../utils/metadata';
+import { useMetadataContext } from '../../../hooks/useMetadataContext';
+import { parseColumns } from '../../../utils/metadata';
 
 type DynamicTableProps = {
   tab: Tab;

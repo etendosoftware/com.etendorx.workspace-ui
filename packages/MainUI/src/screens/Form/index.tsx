@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import FormView from '../../components/FormView';
+import FormView from '../../app/components/FormView';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Organization } from '../../../../storybook/src/stories/Components/Table/types';
 import { mockOrganizations } from '@workspaceui/storybook/stories/Components/Table/mock';
@@ -35,7 +35,5 @@ export default function Form() {
     return <Spinner />;
   }
 
-  return (
-    <FormView data={formData} onSave={handleSave} onCancel={handleCancel} />
-  );
+  return <FormView data={formData} onSave={handleSave} onCancel={handleCancel} />;
 }

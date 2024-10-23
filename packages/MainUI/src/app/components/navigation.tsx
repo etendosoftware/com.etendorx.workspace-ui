@@ -14,9 +14,9 @@ import NotificationIcon from '@workspaceui/componentlibrary/assets/icons/bell.sv
 import PersonIcon from '@workspaceui/componentlibrary/assets/icons/user.svg';
 import AddIcon from '@workspaceui/componentlibrary/assets/icons/plus.svg';
 import { modalConfig, menuItems, initialPeople, sections, NOTIFICATIONS } from '@workspaceui/storybook/mocks';
-import { useTranslation } from '../hooks/useTranslation';
-import { Role } from '../contexts/types';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Person } from '@workspaceui/componentlibrary/components/DragModal/DragModal.types';
+import { Role } from 'src/contexts/types';
 
 const handleClose = () => {
   return true;
