@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
+import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { Box } from '..';
 import { styles } from './styles';
 import { DrawerProps } from './types';
@@ -6,11 +6,14 @@ import DrawerHeader from './Header';
 import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
 import { createSearchIndex, filterItems, getAllItemTitles } from '../../utils/searchUtils';
 import DrawerItems from './Search';
+import RecentlyViewed from './RecentlyViewed';
+import { Menu } from '@workspaceui/etendohookbinder/api/types';
 
 const Drawer: React.FC<DrawerProps> = ({ items = [], logo, title, onClick }) => {
   const [open, setOpen] = useState<boolean>(true);
   const [searchValue, setSearchValue] = useState<string>('');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [recentItems, setRecentItems] = useState<Array<{ id: string; name: string; windowId: string }>>([]);
 
   const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
 
@@ -21,6 +24,13 @@ const Drawer: React.FC<DrawerProps> = ({ items = [], logo, title, onClick }) => 
       searchInputRef.current.focus();
     }
   }, [open]);
+
+  useEffect(() => {
+    const storedItems = localStorage.getItem('recentlyViewedItems');
+    if (storedItems) {
+      setRecentItems(JSON.parse(storedItems));
+    }
+  }, []);
 
   const drawerStyle = useMemo(
     () => ({
@@ -66,9 +76,55 @@ const Drawer: React.FC<DrawerProps> = ({ items = [], logo, title, onClick }) => 
     });
   }, []);
 
+  const findItemByWindowId = useCallback((items: Menu[], windowId: string): Menu | null => {
+    for (const item of items) {
+      if (item.windowId === windowId) {
+        return item;
+      }
+      if (item.children) {
+        const found = findItemByWindowId(item.children, windowId);
+        if (found) return found;
+      }
+    }
+    return null;
+  }, []);
+
+  const handleItemClick = useCallback(
+    (path: string) => {
+      const windowId = path.split('/').pop();
+      if (windowId) {
+        const item = findItemByWindowId(items, windowId);
+        if (item) {
+          const recentItem = { id: item.id, name: item.name, windowId: item.windowId! };
+          setRecentItems(prev => {
+            const newItems = [recentItem, ...prev.filter(i => i.id !== recentItem.id)].slice(0, 5);
+            localStorage.setItem('recentlyViewedItems', JSON.stringify(newItems));
+            return newItems;
+          });
+        }
+      }
+      onClick(path);
+    },
+    [items, onClick, findItemByWindowId],
+  );
+
+  const handleWindowAccess = useCallback((item: { id: string; name: string; windowId: string }) => {
+    setRecentItems(prev => {
+      const newItems = [item, ...prev.filter(i => i.id !== item.id)].slice(0, 5);
+      localStorage.setItem('recentlyViewedItems', JSON.stringify(newItems));
+      return newItems;
+    });
+  }, []);
+
   return (
     <div style={drawerStyle}>
       <DrawerHeader logo={logo} title={title} open={open} onClick={handleHeaderClick} tabIndex={-1} />
+      <RecentlyViewed
+        onClick={handleItemClick}
+        open={open}
+        onWindowAccess={handleWindowAccess}
+        recentItems={recentItems}
+      />
       {open && (
         <Box sx={{ padding: '0.5rem' }}>
           <TextInputAutocomplete
@@ -84,7 +140,7 @@ const Drawer: React.FC<DrawerProps> = ({ items = [], logo, title, onClick }) => 
         {Array.isArray(filteredItems) ? (
           <DrawerItems
             items={filteredItems}
-            onClick={onClick}
+            onClick={handleItemClick}
             open={open}
             expandedItems={expandedItems}
             toggleItemExpansion={toggleItemExpansion}

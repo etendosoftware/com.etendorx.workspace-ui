@@ -15,10 +15,16 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
   hasChildren,
   isExpandable,
   windowId,
+  isExpanded: externalExpanded,
+  parentId,
 }) => {
   const isSelected = Boolean(windowId?.length && item.windowId === windowId);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [expanded, setExpanded] = useState(isSelected || findActive(windowId, item.children));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+
+  const [localExpanded, setLocalExpanded] = useState(isSelected || findActive(windowId, item.children));
+
+  const expanded = externalExpanded !== undefined ? externalExpanded : localExpanded;
 
   const popperOpen = Boolean(anchorEl);
 
@@ -30,13 +36,29 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
     }
   };
 
+  const handleNestedToggle = useCallback((sectionId: string) => {
+    setExpandedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionId)) {
+        newSet.delete(sectionId);
+      } else {
+        newSet.add(sectionId);
+      }
+      return newSet;
+    });
+  }, []);
+
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
       event.stopPropagation();
       if (!open) {
         setAnchorEl(anchorEl ? null : event.currentTarget);
       } else if (hasChildren && isExpandable) {
-        setExpanded(prev => !prev);
+        const newExpandedState = !expanded;
+        setLocalExpanded(newExpandedState);
+        if (parentId) {
+          handleNestedToggle(item.id);
+        }
         onToggleExpand();
       } else if (item.windowId) {
         onClick(`/window/${item.windowId}`);
@@ -44,7 +66,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
         console.error('DrawerSection: unexpected type');
       }
     },
-    [item, onClick, open, anchorEl, hasChildren, isExpandable, onToggleExpand],
+    [item, onClick, open, anchorEl, hasChildren, isExpandable, onToggleExpand, expanded, parentId, handleNestedToggle],
   );
 
   const handleClose = useCallback(() => {
@@ -71,8 +93,19 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
   const shouldShowChildren = isSearchActive || expanded;
 
   useEffect(() => {
-    setExpanded(isSelected || findActive(windowId, item.children));
-  }, [isSelected, item.children, windowId]);
+    if (isSelected || findActive(windowId, item.children)) {
+      setLocalExpanded(true);
+      if (parentId) {
+        handleNestedToggle(item.id);
+      }
+    }
+  }, [isSelected, item.children, windowId, parentId, item.id, handleNestedToggle]);
+
+  useEffect(() => {
+    if (item.id === 'recently-viewed' && !isSelected && !findActive(windowId, item.children)) {
+      setLocalExpanded(false);
+    }
+  }, [item.id, isSelected, windowId, item.children]);
 
   return (
     <Box sx={mainStyle} role="button" aria-expanded={expanded} onKeyDown={handleKeyDown} tabIndex={0}>
@@ -93,10 +126,11 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
               onClick={onClick}
               open={open}
               isSearchActive={isSearchActive}
-              onToggleExpand={onToggleExpand}
+              onToggleExpand={() => handleNestedToggle(subitem.id)}
               hasChildren={Boolean(subitem.children?.length)}
               isExpandable={isExpandable && !isSearchActive}
-              isExpanded={false}
+              isExpanded={expandedSections.has(subitem.id)}
+              parentId={item.id}
             />
           ))}
         </Collapse>
@@ -122,10 +156,11 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
                       onClick={handleClickAndClose}
                       open={true}
                       isSearchActive={isSearchActive}
-                      onToggleExpand={onToggleExpand}
+                      onToggleExpand={() => handleNestedToggle(subitem.id)}
                       hasChildren={Boolean(subitem.children?.length)}
                       isExpandable={isExpandable && !isSearchActive}
-                      isExpanded={false}
+                      isExpanded={expandedSections.has(subitem.id)}
+                      parentId={item.id}
                     />
                   ))}
                 </div>
