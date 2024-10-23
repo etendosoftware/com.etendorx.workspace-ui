@@ -2,7 +2,7 @@ body {
   font-family: 'Inter', sans-serif;
   margin: 0;
   display: flex;
-  place-items: center;
+  flex-direction: row;
   min-width: 320px;
   min-height: 100vh;
   background: var(--background-gradient);

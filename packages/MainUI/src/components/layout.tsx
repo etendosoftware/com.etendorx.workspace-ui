@@ -1,8 +1,8 @@
 'use client';
 
-import { Navigation } from '@mui/icons-material';
 import AppBreadcrumb from '@/components/Breadcrums';
-import Sidebar from './Sidebar';
+import Sidebar from '@/components/Sidebar';
+import Navigation from '@/components/navigation';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (

@@ -1,10 +1,10 @@
-import React from 'react';
+'use client';
+
 import {
   ConfigurationModal,
   NotificationButton,
   NotificationModal,
   IconButton,
-  Navbar,
   Profile,
   Waterfall,
 } from '@workspaceui/componentlibrary/components';
@@ -14,9 +14,10 @@ import NotificationIcon from '@workspaceui/componentlibrary/assets/icons/bell.sv
 import PersonIcon from '@workspaceui/componentlibrary/assets/icons/user.svg';
 import AddIcon from '@workspaceui/componentlibrary/assets/icons/plus.svg';
 import { modalConfig, menuItems, initialPeople, sections, NOTIFICATIONS } from '@workspaceui/storybook/mocks';
-import { useTranslation } from '../../src/hooks/useTranslation';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Person } from '@workspaceui/componentlibrary/components/DragModal/DragModal.types';
-import { Role } from 'src/contexts/types';
+import { Role } from '@/contexts/types';
+import Nav from '@workspaceui/componentlibrary/components/Nav/Nav';
 
 const handleClose = () => {
   return true;
@@ -30,7 +31,7 @@ const Navigation: React.FC = () => {
   const { t } = useTranslation();
 
   return (
-    <Navbar>
+    <Nav>
       <Waterfall
         menuItems={menuItems}
         initialPeople={initialPeople}
@@ -91,7 +92,7 @@ const Navigation: React.FC = () => {
         saveAsDefault={false}
         onSaveAsDefaultChange={noop}
       />
-    </Navbar>
+    </Nav>
   );
 };
 
