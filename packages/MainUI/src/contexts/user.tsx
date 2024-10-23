@@ -1,7 +1,6 @@
 'use client';
 
 import { createContext, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { logger } from '../utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/api/metadata';
 import { Datasource } from '@workspaceui/etendohookbinder/api/datasource';
@@ -13,13 +12,14 @@ import { HTTP_CODES } from '@workspaceui/etendohookbinder/api/constants';
 import { DefaultConfiguration, IUserContext, Role, Warehouse } from './types';
 import { SessionResponse } from '@workspaceui/etendohookbinder/api/types';
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/api/defaultConfig';
+import { usePathname, useRouter } from 'next/navigation';
 
 export const UserContext = createContext({} as IUserContext);
 
 export default function UserProvider(props: React.PropsWithChildren) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const { pathname } = useLocation();
-  const navigate = useNavigate();
+  const pathname = usePathname();
+  const navigate = useRouter().push;
 
   const [roles, setRoles] = useState<Role[]>(() => {
     const savedRoles = localStorage.getItem('roles');

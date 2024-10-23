@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import FormView from '../../app/components/FormView';
-import { useParams, useNavigate } from 'react-router-dom';
+import FormView from '@/components/FormView';
 import { Organization } from '../../../../storybook/src/stories/Components/Table/types';
 import { mockOrganizations } from '@workspaceui/storybook/stories/Components/Table/mock';
 import Spinner from '@workspaceui/componentlibrary/components/Spinner';
+import { useRouter } from 'next/navigation';
+
+const { id } = { id: ''};
 
 export default function Form() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const navigate = useRouter().push;
   const [formData, setFormData] = useState<Organization | null>(null);
 
   useEffect(() => {
@@ -21,7 +22,7 @@ export default function Form() {
       }
     };
     loadData();
-  }, [id]);
+  }, []);
 
   const handleSave = useCallback(() => {
     navigate('/');

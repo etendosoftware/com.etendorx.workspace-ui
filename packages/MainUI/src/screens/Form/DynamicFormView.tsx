@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { FormData } from './types';
-import FormView from '../../app/components/FormView';
+import FormView from '@/components/FormView';
 import { adaptFormData, mapWindowMetadata } from '../../utils/formUtils';
 import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/api/types';
+import { useRouter } from 'next/navigation';
 
 export default function DynamicFormView({
   windowData,
@@ -14,7 +14,7 @@ export default function DynamicFormView({
   tab: Tab;
   record: Record<string, unknown>;
 }) {
-  const navigate = useNavigate();
+  const navigate = useRouter().push;
   const [formData, setFormData] = useState<FormData | null>(adaptFormData(tab, record));
   const mappedMetadata = useMemo(() => mapWindowMetadata(windowData), [windowData]);
   const handleSave = useCallback(() => navigate('/'), [navigate]);

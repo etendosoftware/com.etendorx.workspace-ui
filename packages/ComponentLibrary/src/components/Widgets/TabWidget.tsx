@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Box, Button } from '@mui/material';
-import FormView from '../../../../MainUI/src/app/components/FormView/index.tsx';
+import FormView from '../../../../MainUI/src/components/FormView';
 import { theme } from '../../theme';
 import PencilIcon from '../../assets/icons/edit-2.svg';
 import SaveIcon from '../../assets/icons/save.svg';
 import { dotIntervals, gridSizes, styles, sx } from './styles';
-import { TabWidgetProps } from './types.ts';
+import { TabWidgetProps } from './types';
 
 const TabWidget: React.FC<TabWidgetProps> = ({
   selectedRecord,

@@ -2,7 +2,6 @@
 
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/api/metadata';
-import { useParams } from 'react-router-dom';
 import { useWindow } from '@workspaceui/etendohookbinder/hooks/useWindow';
 import { buildColumnsData, groupTabsByLevel } from '../utils/metadata';
 import { Tab } from '@workspaceui/etendohookbinder/api/types';
@@ -25,8 +24,9 @@ interface IMetadataContext {
 
 export const MetadataContext = createContext({} as IMetadataContext);
 
+const { windowId = '', tabId = '', recordId = '' } = { recordId: '', tabId: '', windowId: '' };
+
 export default function MetadataProvider({ children }: React.PropsWithChildren) {
-  const { windowId = '', tabId = '', recordId = '' } = useParams();
   const { windowData, loading, error } = useWindow(windowId);
   const [selected, setSelected] = useState<IMetadataContext['selected']>({});
 
@@ -48,7 +48,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [selected],
   );
 
-  const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [windowData.tabs, tabId]);
+  const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [windowData?.tabs]);
   const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
   const groupedTabs = useMemo(() => groupTabsByLevel(windowData), [windowData]);
   const columnsData = useMemo(() => buildColumnsData(windowData), [windowData]);
@@ -69,11 +69,12 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       tabs,
       tab,
     }),
-    [windowId, recordId, loading, error, groupedTabs, windowData, columnsData, selectRecord, selected, tabs, tab],
+    [loading, error, groupedTabs, windowData, columnsData, selectRecord, selected, tabs, tab],
   );
 
   useEffect(() => {
     setSelected({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [windowId]);
 
   return <MetadataContext.Provider value={value}>{children}</MetadataContext.Provider>;

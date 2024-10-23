@@ -1,13 +1,13 @@
 import { useCallback } from 'react';
 import Table from '@workspaceui/componentlibrary/components/Table';
 import { mockOrganizations } from '@workspaceui/storybook/mocks';
-import { useNavigate } from 'react-router-dom';
 import { useRecordContext } from '../../hooks/useRecordContext';
 import { EnhancedTableProps } from '@workspaceui/componentlibrary/components/Table';
+import { useRouter } from 'next/navigation';
 
 const TableView = () => {
   const { setSelectedRecord } = useRecordContext();
-  const navigate = useNavigate();
+  const navigate = useRouter().push;
 
   const handleRowClick = useCallback<EnhancedTableProps['onRowClick']>(
     row => {
@@ -21,9 +21,9 @@ const TableView = () => {
 
   const handleRowDoubleClick = useCallback<EnhancedTableProps['onRowDoubleClick']>(
     row => {
-      navigate({ pathname: `${row.original.id}` });
+      // navigate({ pathname: `${row.original.id}` });
     },
-    [navigate],
+    [],
   );
 
   return (
