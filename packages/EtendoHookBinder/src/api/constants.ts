@@ -17,7 +17,7 @@ export const API_OBREST_URL = `${API_BASE_URL}/sws/com.smf.securewebservices.obR
 export const API_METADATA_URL = `${API_BASE_URL}/meta`;
 export const API_METADATA_JSON_URL = `${API_BASE_URL}/com.etendo.metadata`;
 export const API_DEFAULT_CACHE_DURATION = getDefaultCacheDuration();
-export const AUTH_HEADER_NAME = process.env.NEXT_PUBLIC_HEADER_NAME as string;
+export const AUTH_HEADER_NAME = process.env.NEXT_PUBLIC_AUTH_HEADER_NAME as string;
 export const API_SET_DEFAULT_CONFIGURATION_URL = `${API_BASE_URL}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel`;
 
 export enum HTTP_CODES {

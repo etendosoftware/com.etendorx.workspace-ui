@@ -3,7 +3,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Button, theme } from '../../../../ComponentLibrary/src/components';
 import { Box } from '@mui/material';
 import { styles } from './styles';
-import DynamicTable from '../../components/DynamicTable';
+import DynamicTable from '@/components/Table';
 
 const buttonSx = (tab: Tab, activeKey?: string) => ({
   borderBottomLeftRadius: 0,
@@ -16,11 +16,14 @@ export default function Tabs({ tabs }: { tabs: Tab[] }) {
   const [activeKey, setActiveKey] = useState(tabs[0].id);
 
   const refs = useRef(
-    tabs.reduce((acum, current) => {
-      acum[current.id] = () => setActiveKey(current.id);
+    tabs.reduce(
+      (acum, current) => {
+        acum[current.id] = () => setActiveKey(current.id);
 
-      return acum;
-    }, {} as Record<string, () => void>),
+        return acum;
+      },
+      {} as Record<string, () => void>,
+    ),
   );
 
   const active = useMemo(() => tabs.find(tab => tab.id === activeKey) as Tab, [activeKey, tabs]);

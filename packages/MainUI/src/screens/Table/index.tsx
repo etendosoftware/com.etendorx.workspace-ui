@@ -21,9 +21,9 @@ const TableView = () => {
 
   const handleRowDoubleClick = useCallback<EnhancedTableProps['onRowDoubleClick']>(
     row => {
-      // navigate({ pathname: `${row.original.id}` });
+      navigate(`${row.original.id}`);
     },
-    [],
+    [navigate],
   );
 
   return (

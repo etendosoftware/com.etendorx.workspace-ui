@@ -12,7 +12,6 @@ const useStyles = () => {
         flexDirection: 'column',
         height: '100%',
         width: '100%',
-        paddingLeft: theme.spacing(1),
       },
       container: {
         marginTop: '0.25rem',

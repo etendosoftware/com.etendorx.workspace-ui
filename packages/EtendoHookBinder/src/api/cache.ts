@@ -2,19 +2,19 @@
 
 export class CacheStore {
   private duration: number;
-  private storage: Storage;
+  private storage: Storage | undefined;
 
-  constructor(duration: number, storage: Storage = localStorage) {
+  constructor(duration: number) {
     if (duration <= 0) {
       throw new Error('Duration must be a positive number.');
     }
 
-    if (![localStorage, sessionStorage].includes(storage)) {
-      throw new Error('Invalid storage type. Expected localStorage or sessionStorage.');
-    }
+    // if (![localStorage, sessionStorage].includes(storage)) {
+    //   throw new Error('Invalid storage type. Expected localStorage or sessionStorage.');
+    // }
 
     this.duration = duration;
-    this.storage = storage;
+    this.storage = typeof window !== 'undefined' ? window.localStorage : undefined;
   }
 
   /**
@@ -24,7 +24,7 @@ export class CacheStore {
    */
   public get<T = unknown>(id: string): T | null {
     try {
-      const item = this.storage.getItem(id);
+      const item = this.storage?.getItem(id);
 
       if (!item) return null;
 
@@ -51,7 +51,7 @@ export class CacheStore {
    */
   public set(id: string, value: unknown): this {
     try {
-      this.storage.setItem(id, JSON.stringify(this.createStoredItem(value)));
+      this.storage?.setItem(id, JSON.stringify(this.createStoredItem(value)));
     } catch (e) {
       if (e instanceof DOMException && e.name === 'QuotaExceededError') {
         this.handleStorageQuotaError();
@@ -68,7 +68,7 @@ export class CacheStore {
    * @param id - The identifier of the value to delete.
    */
   public delete(id: string): void {
-    this.storage.removeItem(id);
+    this.storage?.removeItem(id);
   }
 
   /**

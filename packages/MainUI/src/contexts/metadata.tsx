@@ -5,6 +5,7 @@ import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/api/metadat
 import { useWindow } from '@workspaceui/etendohookbinder/hooks/useWindow';
 import { buildColumnsData, groupTabsByLevel } from '../utils/metadata';
 import { Tab } from '@workspaceui/etendohookbinder/api/types';
+import { useParams } from 'next/navigation';
 
 interface IMetadataContext {
   getWindow: (windowId: string) => Promise<Etendo.WindowMetadata>;
@@ -24,9 +25,12 @@ interface IMetadataContext {
 
 export const MetadataContext = createContext({} as IMetadataContext);
 
-const { windowId = '', tabId = '', recordId = '' } = { recordId: '', tabId: '', windowId: '' };
-
 export default function MetadataProvider({ children }: React.PropsWithChildren) {
+  const {
+    windowId = '',
+    tabId = '',
+    recordId = '',
+  } = useParams<{ windowId: string; tabId: string; recordId: string }>();
   const { windowData, loading, error } = useWindow(windowId);
   const [selected, setSelected] = useState<IMetadataContext['selected']>({});
 
@@ -48,7 +52,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [selected],
   );
 
-  const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [windowData?.tabs]);
+  const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [tabId, windowData?.tabs]);
   const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
   const groupedTabs = useMemo(() => groupTabsByLevel(windowData), [windowData]);
   const columnsData = useMemo(() => buildColumnsData(windowData), [windowData]);

@@ -7,6 +7,7 @@ import UserProvider from '@/contexts/user';
 import { LanguageProvider } from '@/contexts/languageProvider';
 import { RecordProvider } from '@/contexts/record';
 import SanityChecker from '@/components/SanityChecker';
+import Layout from '@/components/layout';
 
 const queryClient = new QueryClient();
 
@@ -18,7 +19,9 @@ export default function App({ children }: React.PropsWithChildren) {
           <LanguageProvider>
             <UserProvider>
               <MetadataProvider>
-                <RecordProvider>{children}</RecordProvider>
+                <RecordProvider>
+                  <Layout>{children}</Layout>
+                </RecordProvider>
               </MetadataProvider>
             </UserProvider>
           </LanguageProvider>

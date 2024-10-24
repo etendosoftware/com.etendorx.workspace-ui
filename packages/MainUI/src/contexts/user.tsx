@@ -217,9 +217,5 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }
   }, [navigate, token]);
 
-  useEffect(() => {
-    console.debug(value);
-  }, [value]);
-
   return <UserContext.Provider value={value}>{props.children}</UserContext.Provider>;
 }
