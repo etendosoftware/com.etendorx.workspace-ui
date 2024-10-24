@@ -1,7 +1,7 @@
 import { useEffect, useState, useContext, useCallback } from 'react';
 import { Metadata } from '../api/metadata';
 import { Menu } from '../api/types';
-import { UserContext } from '../../../MainUI/src/contexts/user';
+import { UserContext } from '../../../MainUI/contexts/user';
 
 export const useMenu = (token: string | null) => {
   const { currentRole } = useContext(UserContext);

@@ -1,6 +1,6 @@
 import { Montserrat as Font } from 'next/font/google';
-import App from '@/App';
-import '../src/index.css';
+import './global.css';
+import App from './App';
 
 const font = Font({
   weight: ['100', '300', '400', '500', '700', '900'],

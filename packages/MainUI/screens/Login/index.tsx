@@ -1,25 +1,22 @@
-'use client';
 import { useCallback, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Login from '@workspaceui/componentlibrary/components/Forms/Login';
 import { useUserContext } from '../../hooks/useUserContext';
+import Login from '@workspaceui/componentlibrary/components/Forms/Login';
+import { logger } from '../../utils/logger';
 
-export default function LoginPage() {
+export default function LoginScreen() {
   const [error, setError] = useState('');
-  const router = useRouter();
   const { login } = useUserContext();
 
   const handleLogin = useCallback(
     async (username: string, password: string) => {
       try {
         await login(username, password);
-        router.push('/');
-        router.refresh();
       } catch (e) {
+        logger.warn(e);
         setError((e as Error).message);
       }
     },
-    [login, router],
+    [login],
   );
 
   return <Login title="Etendo" onSubmit={handleLogin} error={error} />;

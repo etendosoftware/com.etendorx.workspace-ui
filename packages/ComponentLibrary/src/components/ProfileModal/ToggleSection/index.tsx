@@ -9,7 +9,7 @@ import { SelectorListProps, Item } from '../types';
 import { InputPassword, theme } from '../..';
 import LockOutlined from '../../../assets/icons/lock.svg';
 import Select from '../../Input/Select';
-import { useTranslation } from '../../../../../MainUI/src/hooks/useTranslation';
+import { useTranslation } from '../../../../../MainUI/hooks/useTranslation';
 
 const icons: { [key in Item]: React.ReactElement } = {
   [Item.Role]: <></>,

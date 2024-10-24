@@ -1,9 +1,9 @@
 'use client';
 
 import { useSingleDatasource } from '@workspaceui/etendohookbinder/hooks/useSingleDatasource';
-import { useMetadataContext } from '@/hooks/useMetadataContext';
-import DynamicFormView from '@/screens/Form/DynamicFormView';
+import DynamicFormView from '../../../../../screens/Form/DynamicFormView';
 import { useParams } from 'next/navigation';
+import { useMetadataContext } from '../../../../../hooks/useMetadataContext';
 
 export default function Page() {
   const { recordId } = useParams<{ recordId: string }>();

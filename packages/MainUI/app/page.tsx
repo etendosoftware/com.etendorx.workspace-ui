@@ -1,8 +1,8 @@
 'use client';
 
-import Layout from '@/components/layout';
-import Home from '@/screens/Home';
+import Home from '../screens/Home';
 import { Box } from '@mui/material';
+import Layout from '../components/layout';
 
 export default function HomePage() {
   return (

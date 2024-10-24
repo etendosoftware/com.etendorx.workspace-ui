@@ -1,10 +1,8 @@
-'use client';
-
 import { Box } from '@mui/material';
 import { Tab } from '@workspaceui/etendohookbinder/api/types';
 import Spinner from '@workspaceui/componentlibrary/components/Spinner';
-import Tabs from '../../../screens/Table/Tabs';
-import { useMetadataContext } from '../../../hooks/useMetadataContext';
+import Tabs from './Tabs';
+import { useMetadataContext } from '../../hooks/useMetadataContext';
 
 function Level(value: Tab[]) {
   return <Tabs key={value[0].id} tabs={value} />;

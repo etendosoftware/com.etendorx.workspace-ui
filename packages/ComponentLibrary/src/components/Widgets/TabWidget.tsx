@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Box, Button } from '@mui/material';
-import FormView from '../../../../MainUI/src/components/FormView';
+import FormView from '../../../../MainUI/components/FormView';
 import { theme } from '../../theme';
 import PencilIcon from '../../assets/icons/edit-2.svg';
 import SaveIcon from '../../assets/icons/save.svg';

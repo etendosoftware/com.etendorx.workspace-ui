@@ -1,10 +1,6 @@
 import { Theme } from '@emotion/react';
 import { SxProps } from '@mui/material';
-import {
-  FieldDefinition,
-  BaseFieldDefinition,
-  Section,
-} from '../../../../../MainUI/src/screens/Form/types';
+import { FieldDefinition, BaseFieldDefinition, Section } from '../../../../../MainUI/screens/Form/types';
 
 export type OrganizationField = FieldDefinition | Section;
 

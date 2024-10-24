@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Menu, MenuItem, TextField, PopoverOrigin } from '@mui/material';
-import { useTranslation } from '../../../../../MainUI/src/hooks/useTranslation';
+import { useTranslation } from '../../../../../MainUI/hooks/useTranslation';
 
 interface ExpandMenuProps {
   anchorEl: null | HTMLElement;
