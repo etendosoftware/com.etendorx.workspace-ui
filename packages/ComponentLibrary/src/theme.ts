@@ -99,7 +99,7 @@ export const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: ['Inter', 'sans-serif'].join(','),
+    fontFamily: 'var(--font-inter)',
   },
   components: {
     MuiCssBaseline: {
@@ -162,12 +162,6 @@ export const theme = createTheme({
         containedSecondary: {
           ':disabled': {
             backgroundColor: SECONDARY_100,
-          },
-        },
-        containedTertiary: {
-          color: PRIMARY_500,
-          ':disabled': {
-            backgroundColor: TERTIARY_50,
           },
         },
         // Styles applied to the root element if `variant="outlined"`.

@@ -1,10 +1,13 @@
-import { Montserrat as Font } from 'next/font/google';
-import './global.css';
+import { Inter } from 'next/font/google';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
+import './styles/fonts.css';
+import './styles/global.css';
 import App from './App';
 
-const font = Font({
-  weight: ['100', '300', '400', '500', '700', '900'],
+const inter = Inter({
   subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
 });
 
 export default function RootLayout({
@@ -13,11 +16,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <body>
-        <div id="root" className={font.className}>
-          <App>{children}</App>
-        </div>
+        <AppRouterCacheProvider>
+          <div id="root">
+            <App>{children}</App>
+          </div>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );

@@ -9,8 +9,8 @@ import { changeRole as doChangeRole } from '@workspaceui/etendohookbinder/api/ro
 import { getSession } from '@workspaceui/etendohookbinder/api/getSession';
 import { changeWarehouse as doChangeWarehouse } from '@workspaceui/etendohookbinder/api/warehouse';
 import { HTTP_CODES } from '@workspaceui/etendohookbinder/api/constants';
-import { DefaultConfiguration, IUserContext, Role, Warehouse } from './types';
-import { SessionResponse } from '@workspaceui/etendohookbinder/api/types';
+import { DefaultConfiguration, IUserContext } from './types';
+import { Role, SessionResponse, Warehouse } from '@workspaceui/etendohookbinder/api/types';
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/api/defaultConfig';
 import { usePathname, useRouter } from 'next/navigation';
 

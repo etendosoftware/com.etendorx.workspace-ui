@@ -1,7 +1,4 @@
-import {
-  TranslationKeys,
-  Translations,
-} from '../../../ComponentLibrary/src/locales/types';
+import { TranslationKeys, Translations } from '../../ComponentLibrary/src/locales/types';
 
 export type NestedKeyOf<ObjectType extends object> = {
   [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
@@ -9,8 +6,6 @@ export type NestedKeyOf<ObjectType extends object> = {
     : `${Key}`;
 }[keyof ObjectType & (string | number)];
 
-export type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(
-  key: K,
-) => string;
+export type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(key: K) => string;
 
 export type { TranslationKeys, Translations };

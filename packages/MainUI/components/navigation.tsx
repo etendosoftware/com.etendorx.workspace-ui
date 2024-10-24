@@ -16,8 +16,8 @@ import AddIcon from '@workspaceui/componentlibrary/assets/icons/plus.svg';
 import { modalConfig, menuItems, initialPeople, sections, NOTIFICATIONS } from '@workspaceui/storybook/mocks';
 import { Person } from '@workspaceui/componentlibrary/components/DragModal/DragModal.types';
 import Nav from '@workspaceui/componentlibrary/components/Nav/Nav';
-import { Role } from '../contexts/types';
 import { useTranslation } from '../hooks/useTranslation';
+import { Role } from '@workspaceui/etendohookbinder/api/types';
 
 const handleClose = () => {
   return true;
