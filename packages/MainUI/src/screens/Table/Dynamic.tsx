@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
 import { Tab } from '@workspaceui/etendohookbinder/api/types';
 import Spinner from '@workspaceui/componentlibrary/components/Spinner';
-import Tabs from './Tabs';
+import Tabs from '@/screens/Table/Tabs';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
 
 function Level(value: Tab[]) {

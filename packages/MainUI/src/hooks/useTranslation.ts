@@ -1,4 +1,4 @@
-import { useLanguage } from './useLanguage.ts';
+import { useLanguage } from './useLanguage';
 import translations from '../../../ComponentLibrary/src/locales';
 import { TranslateFunction, Translations } from './types';
 import { useCallback, useMemo } from 'react';

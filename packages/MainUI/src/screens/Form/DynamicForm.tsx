@@ -1,7 +1,7 @@
-import { useParams } from 'react-router-dom';
 import { useSingleDatasource } from '@workspaceui/etendohookbinder/hooks/useSingleDatasource';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import DynamicFormView from './DynamicFormView';
+import { useParams } from 'next/navigation';
 
 export default function DynamicForm() {
   const { windowData, tab } = useMetadataContext();
