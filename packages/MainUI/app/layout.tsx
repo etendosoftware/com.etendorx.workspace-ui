@@ -1,8 +1,8 @@
-import { Inconsolata, Roboto } from 'next/font/google';
+import { Montserrat as Font } from 'next/font/google';
 import App from '@/App';
 import '../src/index.css';
 
-const font = Roboto({
+const font = Font({
   weight: ['100', '300', '400', '500', '700', '900'],
   subsets: ['latin'],
 });

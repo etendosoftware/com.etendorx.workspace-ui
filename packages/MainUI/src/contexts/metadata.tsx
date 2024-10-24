@@ -73,12 +73,11 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       tabs,
       tab,
     }),
-    [loading, error, groupedTabs, windowData, columnsData, selectRecord, selected, tabs, tab],
+    [windowId, recordId, loading, error, groupedTabs, windowData, columnsData, selectRecord, selected, tabs, tab],
   );
 
   useEffect(() => {
     setSelected({});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [windowId]);
 
   return <MetadataContext.Provider value={value}>{children}</MetadataContext.Provider>;
