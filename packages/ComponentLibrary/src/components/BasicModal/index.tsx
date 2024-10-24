@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Typography, Button, Box } from '@mui/material';
 import ModalMUI from '@mui/material/Modal';
@@ -64,9 +66,7 @@ const Modal: React.FC<ModalIProps> = ({
     setIsFullScreen(prev => !prev);
   };
 
-  const modalStyles = isFullScreen
-    ? sx.fullScreenStyles
-    : calculateModalStyles({ height, width, posX, posY });
+  const modalStyles = isFullScreen ? sx.fullScreenStyles : calculateModalStyles({ height, width, posX, posY });
 
   const contentStyles = isFullScreen
     ? {
@@ -114,9 +114,7 @@ const Modal: React.FC<ModalIProps> = ({
                 </Box>
               </Box>
             )}
-            {descriptionText && (
-              <Typography sx={sx.descriptionText}>{descriptionText}</Typography>
-            )}
+            {descriptionText && <Typography sx={sx.descriptionText}>{descriptionText}</Typography>}
             <Box sx={sx.actionButtons}>
               {isFullScreenEnabled && (
                 <IconButton
@@ -152,11 +150,7 @@ const Modal: React.FC<ModalIProps> = ({
                   <Button sx={sx.cancelButton}>{secondaryButtonLabel}</Button>
                   <Button
                     startIcon={
-                      <SaveIcon
-                        fill={theme.palette.baselineColor.neutral[0]}
-                        width={IconSize}
-                        height={IconSize}
-                      />
+                      <SaveIcon fill={theme.palette.baselineColor.neutral[0]} width={IconSize} height={IconSize} />
                     }
                     sx={sx.saveButton}>
                     {saveButtonLabel}

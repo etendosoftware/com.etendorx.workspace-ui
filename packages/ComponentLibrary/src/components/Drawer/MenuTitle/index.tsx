@@ -1,9 +1,9 @@
 import { useRef, useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
+import { Tooltip } from '@mui/material';
 import Typography from '@mui/material/Typography';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { styles } from '../styles';
-import { Tooltip } from '@mui/material';
 import { MenuTitleProps } from '../types';
 
 export default function MenuTitle({ item, onClick, selected, expanded, open }: MenuTitleProps) {

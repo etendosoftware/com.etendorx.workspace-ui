@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { InputAdornment, Box } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';

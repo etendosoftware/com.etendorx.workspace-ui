@@ -1,25 +1,15 @@
+'use client';
+
 import { Grid, Link, Menu } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import {
-  BORDER_SELECT_1,
-  BORDER_SELECT_2,
-  COLUMN_SPACING,
-  FIRST_MARGIN_TOP,
-  menuSyle,
-  styles,
-  sx,
-} from './style';
+import { BORDER_SELECT_1, BORDER_SELECT_2, COLUMN_SPACING, FIRST_MARGIN_TOP, menuSyle, styles, sx } from './style';
 import { IConfigurationModalProps, ISection } from './types';
-import checkIconUrl from '../../assets/icons/check-circle-filled.svg?url';
+import checkIconUrl from '../../assets/icons/check-circle-filled.svg';
 import './style.css';
 import { theme } from '../../theme';
 import IconButton from '../IconButton';
 
-const IconRenderer = ({
-  icon,
-}: {
-  icon: string | React.ReactNode;
-}): JSX.Element => {
+const IconRenderer = ({ icon }: { icon: string | React.ReactNode }): JSX.Element => {
   if (typeof icon === 'string') {
     return <img src={icon} alt="icon" />;
   }
@@ -89,11 +79,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
     setHoveredItem(null);
   };
 
-  const addBorder = (
-    selectedImageIndex: number,
-    imageIndex: number,
-    sectionIndex: number,
-  ) => {
+  const addBorder = (selectedImageIndex: number, imageIndex: number, sectionIndex: number) => {
     if (isSelected(selectedImageIndex, imageIndex)) {
       return BORDER_SELECT_2 + theme.palette.dynamicColor.main;
     }
@@ -103,19 +89,12 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
     return BORDER_SELECT_1 + theme.palette.baselineColor.neutral[30];
   };
 
-  const isSelected = (
-    selectedImageIndex: number,
-    imageIndex: number,
-  ): boolean => {
+  const isSelected = (selectedImageIndex: number, imageIndex: number): boolean => {
     return selectedImageIndex === imageIndex;
   };
 
   const isHovered = (sectionIndex: number, imageIndex: number): boolean => {
-    return (
-      hoveredItem !== null &&
-      hoveredItem.sectionIndex === sectionIndex &&
-      hoveredItem.imageIndex === imageIndex
-    );
+    return hoveredItem !== null && hoveredItem.sectionIndex === sectionIndex && hoveredItem.imageIndex === imageIndex;
   };
 
   const removeFirstMargin = (index: number): number | string => {
@@ -167,16 +146,10 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
                   <Grid item key={id}>
                     <div
                       onClick={() => handleImageClick(sectionIndex, imageIndex)}
-                      onMouseEnter={() =>
-                        handleMouseEnter(sectionIndex, imageIndex)
-                      }
+                      onMouseEnter={() => handleMouseEnter(sectionIndex, imageIndex)}
                       onMouseLeave={handleMouseLeave}
                       style={{
-                        border: addBorder(
-                          section.selectedItem,
-                          imageIndex,
-                          sectionIndex,
-                        ),
+                        border: addBorder(section.selectedItem, imageIndex, sectionIndex),
                         ...styles.imgContainer,
                       }}>
                       <IconRenderer icon={img} />

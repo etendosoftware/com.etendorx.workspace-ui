@@ -3,14 +3,9 @@ import { SidebarContentProps } from '../../../../../storybook/src/stories/Compon
 import ContentGrid from './WidgetContent';
 import { sx } from '../styles';
 import RegisterModal from '../../RegisterModal';
-import { useTranslation } from '../../../../../MainUI/src/hooks/useTranslation';
+import { useTranslation } from '../../../../../MainUI/hooks/useTranslation';
 
-export const SidebarContent: React.FC<SidebarContentProps> = ({
-  icon,
-  identifier,
-  title,
-  widgets,
-}) => {
+export const SidebarContent: React.FC<SidebarContentProps> = ({ icon, identifier, title, widgets }) => {
   const { t } = useTranslation();
 
   return (

@@ -1,9 +1,9 @@
 import { styles } from './styles';
-import BackgroundGradientUrl from '../../assets/images/backgroundGradient.svg?url';
+import BackgroundGradientUrl from '../../assets/images/backgroundGradient.svg';
 import Logout from '../../assets/icons/log-out.svg';
 import { User } from './types';
 import IconButton from '../IconButton';
-import { UserContext } from '../../../../MainUI/src/contexts/user';
+import { UserContext } from '../../../../MainUI/contexts/user';
 import { useCallback, useContext } from 'react';
 
 const UserProfile: React.FC<User> = ({ photoUrl, name, email, sectionTooltip }) => {

@@ -1,4 +1,6 @@
-import React, { useState, useContext, useCallback, useEffect, useMemo } from 'react';
+'use client';
+
+import { useState, useContext, useCallback, useEffect, useMemo } from 'react';
 import { Button, Menu } from '@mui/material';
 import CheckCircle from '../../assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';
@@ -9,9 +11,9 @@ import { MODAL_WIDTH, menuSyle, styles, sx } from './styles';
 import { toggleSectionStyles } from './ToggleButton/styles';
 import IconButton from '../IconButton';
 import { theme } from '../../theme';
-import { UserContext } from '../../../../MainUI/src/contexts/user';
+import { UserContext } from '../../../../MainUI/contexts/user';
 import { Option } from '../Input/Select/types';
-import { logger } from '../../../../MainUI/src/utils/logger';
+import { logger } from '../../../../MainUI/utils/logger';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,

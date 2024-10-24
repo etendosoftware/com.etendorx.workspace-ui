@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { Box } from '..';
 import { styles } from './styles';

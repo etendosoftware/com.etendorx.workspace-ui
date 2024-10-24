@@ -1,10 +1,10 @@
 import { FC, useState, useCallback, useMemo } from 'react';
 import { Breadcrumbs, Link, Typography, Box, IconButton, Menu, MenuItem } from '@mui/material';
-import NavigateNextIcon from '../../assets/icons/chevron-right.svg';
-import ArrowLeftIcon from '../../assets/icons/arrow-left.svg';
-import ChevronDown from '../../assets/icons/chevron-down.svg';
-import MoreHorizIcon from '../../assets/icons/more-horizontal.svg';
-import { theme } from '../../theme';
+import NavigateNextIcon from '@workspaceui/componentlibrary/assets/icons/chevron-right.svg';
+import ArrowLeftIcon from '@workspaceui/componentlibrary/assets/icons/arrow-left.svg';
+import ChevronDown from '@workspaceui/componentlibrary/assets/icons/chevron-down.svg';
+import MoreHorizIcon from '@workspaceui/componentlibrary/assets/icons/more-horizontal.svg';
+import { theme } from '@workspaceui/componentlibrary/theme';
 import { menuStyle, sx } from './styles';
 import { BreadcrumbProps, BreadcrumbAction, BreadcrumbItem } from './types';
 import ToggleChip from '../Toggle/ToggleChip';

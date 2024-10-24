@@ -8,7 +8,7 @@ import Modal from '../BasicModal';
 import { processMock } from '../../../../storybook/src/stories/Components/RegisterModal/registerMock';
 import RadioButtonItem from '../RadioButton';
 import CheckIcon from '../../assets/icons/check-circle.svg';
-import { useTranslation } from '../../../../MainUI/src/hooks/useTranslation';
+import { useTranslation } from '../../../../MainUI/hooks/useTranslation';
 
 const RegisterModal: React.FC<RegisterModalProps> = ({ registerText }) => {
   const { t } = useTranslation();
@@ -39,11 +39,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ registerText }) => {
           onMouseLeave={handleMouseLeave}
           startIcon={
             <CloseRecordIcon
-              fill={
-                isHovering
-                  ? theme.palette.baselineColor.neutral[0]
-                  : theme.palette.baselineColor.neutral[80]
-              }
+              fill={isHovering ? theme.palette.baselineColor.neutral[0] : theme.palette.baselineColor.neutral[80]}
             />
           }>
           {registerText}

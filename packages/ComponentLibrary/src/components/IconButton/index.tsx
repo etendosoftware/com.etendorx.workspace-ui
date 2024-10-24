@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Tooltip, IconButton as MUIIconButton, Box, Typography } from '@mui/material';
 import { theme } from '../../theme';

@@ -243,3 +243,21 @@ export interface DefaultConfiguration {
   defaultRole?: string;
   defaultWarehouse?: string;
 }
+
+export interface Role {
+  id: string;
+  name: string;
+  orgList: Array<{
+    id: string;
+    name: string;
+    warehouseList: Array<{
+      id: string;
+      name: string;
+    }>;
+  }>;
+}
+
+export interface Warehouse {
+  id: string;
+  name: string;
+}

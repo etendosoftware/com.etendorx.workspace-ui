@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, KeyboardEvent, useCallback } from 'react';
 import { TextField, InputAdornment, IconButton, Box } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';

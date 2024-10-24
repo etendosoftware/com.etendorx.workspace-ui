@@ -5,5 +5,4 @@
     "skipLibCheck": true,
     "strict": true
   },
-  "include": ["vite.config.ts"]
 }

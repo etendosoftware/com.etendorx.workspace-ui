@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Box, Button } from '@mui/material';
-import FormView from '../../../../MainUI/src/components/FormView/index.tsx';
+import FormView from '../../../../MainUI/components/FormView';
 import { theme } from '../../theme';
 import PencilIcon from '../../assets/icons/edit-2.svg';
 import SaveIcon from '../../assets/icons/save.svg';
 import { dotIntervals, gridSizes, styles, sx } from './styles';
-import { TabWidgetProps } from './types.ts';
+import { TabWidgetProps } from './types';
 
 const TabWidget: React.FC<TabWidgetProps> = ({
   selectedRecord,
@@ -76,9 +76,7 @@ const TabWidget: React.FC<TabWidgetProps> = ({
       <Box mt={2}>
         {!isEditing ? (
           <Button
-            startIcon={
-              <PencilIcon fill={theme.palette.baselineColor.neutral[0]} />
-            }
+            startIcon={<PencilIcon fill={theme.palette.baselineColor.neutral[0]} />}
             sx={sx.editButtonStyles}
             onClick={handleEdit}>
             {editButtonLabel}
@@ -89,9 +87,7 @@ const TabWidget: React.FC<TabWidgetProps> = ({
               {cancelButtonLabel}
             </Button>
             <Button
-              startIcon={
-                <SaveIcon fill={theme.palette.baselineColor.neutral[0]} />
-              }
+              startIcon={<SaveIcon fill={theme.palette.baselineColor.neutral[0]} />}
               sx={sx.saveButtonStyles}
               onClick={handleSave}>
               {saveButtonLabel}

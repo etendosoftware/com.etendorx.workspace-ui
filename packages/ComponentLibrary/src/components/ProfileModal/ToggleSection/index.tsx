@@ -9,7 +9,8 @@ import { SelectorListProps, Item } from '../types';
 import { InputPassword, theme } from '../..';
 import LockOutlined from '../../../assets/icons/lock.svg';
 import Select from '../../Input/Select';
-import { useTranslation } from '../../../../../MainUI/src/hooks/useTranslation';
+import { useTranslation } from '../../../../../MainUI/hooks/useTranslation';
+import { Warehouse } from '@workspaceui/etendohookbinder/api/types';
 
 const icons: { [key in Item]: React.ReactElement } = {
   [Item.Role]: <></>,
@@ -43,7 +44,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
   const warehouses = useMemo(() => {
     if (selectedRole) {
       const role = roles.find(r => r.id === selectedRole.value);
-      return role ? role.orgList.flatMap(org => org.warehouseList) : [];
+      return role ? role.orgList.flatMap((org: { warehouseList: Warehouse[] }) => org.warehouseList) : [];
     }
     return [];
   }, [roles, selectedRole]);
