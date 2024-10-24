@@ -43,7 +43,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
   const warehouses = useMemo(() => {
     if (selectedRole) {
       const role = roles.find(r => r.id === selectedRole.value);
-      return role ? role.orgList.flatMap(org => org.warehouseList) : [];
+      return role ? role.orgList.flatMap((org: { warehouseList: unknown; }) => org.warehouseList) : [];
     }
     return [];
   }, [roles, selectedRole]);
@@ -60,7 +60,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
 
   const warehouseOptions = useMemo(
     () =>
-      warehouses.map(warehouse => ({
+      warehouses.map((warehouse: { name: string; id: string; }) => ({
         title: warehouse.name,
         value: warehouse.id,
         id: warehouse.id,
