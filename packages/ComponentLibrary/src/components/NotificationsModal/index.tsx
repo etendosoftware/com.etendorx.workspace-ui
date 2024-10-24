@@ -6,7 +6,7 @@ import { menuSyle, styles, sx } from './styles';
 import { Settings } from '@mui/icons-material';
 import MoreVert from '../../assets/icons/more-vertical.svg';
 import NotificationItem from '../NotificationItem';
-import Image from '../../assets/images/NotificationModal/empty-state-notifications.svg?url';
+import Image from '../../assets/images/NotificationModal/empty-state-notifications.svg';
 import { theme } from '../../theme';
 
 const NotificationModalCustom: React.FC<INotificationModalProps> = ({
