@@ -21,6 +21,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
+      "@/screens/*": ["./screens/*"],
       "@workspaceui/storybook": ["../storybook/src"],
       "@workspaceui/storybook/*": ["../storybook/src/*"],
       "@workspaceui/componentlibrary/*": ["../ComponentLibrary/src/*"],
