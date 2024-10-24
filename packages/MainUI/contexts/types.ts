@@ -1,27 +1,10 @@
-import React from 'react';
+import { Role, Warehouse } from '@workspaceui/etendohookbinder/api/types';
 
 export type Language = 'es' | 'en';
 
 export interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-}
-
-export interface Warehouse {
-  id: string;
-  name: string;
-}
-export interface Role {
-  id: string;
-  name: string;
-  orgList: Array<{
-    id: string;
-    name: string;
-    warehouseList: Array<{
-      id: string;
-      name: string;
-    }>;
-  }>;
 }
 
 export interface DefaultConfiguration {
