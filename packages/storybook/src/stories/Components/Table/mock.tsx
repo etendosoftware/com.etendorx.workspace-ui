@@ -1,9 +1,9 @@
 import { Organization } from './types';
-import InfoIcon from '../../../../../ComponentLibrary/src/assets/icons/note.svg';
-import LinkIcon from '../../../../../ComponentLibrary/src/assets/icons/link.svg';
-import AttachmentIcon from '../../../../../ComponentLibrary/src/assets/icons/file.svg';
-import InformationIcon from '../../../../../ComponentLibrary/src/assets/icons/info.svg';
-import NoteIcon from '../../../../../ComponentLibrary/src/assets/icons/note.svg';
+import InfoIcon from '../../../../../ComponentLibrary/public/icons/note.svg';
+import LinkIcon from '../../../../../ComponentLibrary/public/icons/link.svg';
+import AttachmentIcon from '../../../../../ComponentLibrary/public/icons/file.svg';
+import InformationIcon from '../../../../../ComponentLibrary/public/icons/info.svg';
+import NoteIcon from '../../../../../ComponentLibrary/public/icons/note.svg';
 import { theme } from '../../../../../ComponentLibrary/src/theme';
 
 export const mockOrganizations: Organization[] = [

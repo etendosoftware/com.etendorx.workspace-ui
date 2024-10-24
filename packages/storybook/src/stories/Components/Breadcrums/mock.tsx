@@ -1,12 +1,9 @@
-import {
-  BreadcrumbProps,
-  BreadcrumbAction,
-} from '../../../../../ComponentLibrary/src/components/Breadcrums/types';
-import HomeIcon from '../../../../../ComponentLibrary/src/assets/icons/home.svg';
-import FavoriteIcon from '../../../../../ComponentLibrary/src/assets/icons/star.svg';
-import ContentCopyIcon from '../../../../../ComponentLibrary/src/assets/icons/copy.svg';
-import HelpIcon from '../../../../../ComponentLibrary/src/assets/icons/help-circle.svg';
-import SettingsIcon from '../../../../../ComponentLibrary/src/assets/icons/settings.svg';
+import { BreadcrumbProps, BreadcrumbAction } from '../../../../../ComponentLibrary/src/components/Breadcrums/types';
+import HomeIcon from '../../../../../ComponentLibrary/public/icons/home.svg';
+import FavoriteIcon from '../../../../../ComponentLibrary/public/icons/star.svg';
+import ContentCopyIcon from '../../../../../ComponentLibrary/public/icons/copy.svg';
+import HelpIcon from '../../../../../ComponentLibrary/public/icons/help-circle.svg';
+import SettingsIcon from '../../../../../ComponentLibrary/public/icons/settings.svg';
 import { theme } from '../../../../../ComponentLibrary/src/theme';
 
 export const mockDefaultActions: BreadcrumbAction[] = [

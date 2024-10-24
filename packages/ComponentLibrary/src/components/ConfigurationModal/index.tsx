@@ -4,7 +4,7 @@ import { Grid, Link, Menu } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { BORDER_SELECT_1, BORDER_SELECT_2, COLUMN_SPACING, FIRST_MARGIN_TOP, menuSyle, styles, sx } from './style';
 import { IConfigurationModalProps, ISection } from './types';
-import checkIconUrl from '../../assets/icons/check-circle-filled.svg';
+import CheckIconUrl from '../../../public/icons/check-circle-filled.svg';
 import './style.css';
 import { theme } from '../../theme';
 import IconButton from '../IconButton';
@@ -156,11 +156,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
                     </div>
                     <div style={styles.labelIconContainer}>
                       {isSelected(section.selectedItem, imageIndex) && (
-                        <img
-                          alt="Selected Item Icon"
-                          className="fade-in-left"
-                          style={styles.labelIcon}
-                          src={checkIconUrl}></img>
+                        <IconRenderer icon={<CheckIconUrl />} className="fade-in-left" style={styles.labelIcon} />
                       )}
                       <div style={styles.label}>{label}</div>
                     </div>

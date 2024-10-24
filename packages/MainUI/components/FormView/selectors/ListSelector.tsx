@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Select from '@workspaceui/componentlibrary/components/Input/Select';
-import SearchOutlined from '@workspaceui/componentlibrary/assets/icons/search.svg';
+import SearchOutlined from '@workspaceui/componentlibrary/public/icons/search.svg';
 import { theme } from '@workspaceui/componentlibrary/theme';
 import { Option } from '@workspaceui/componentlibrary/components/Input/Select/types';
 import { ListSelectorProps } from '../types';

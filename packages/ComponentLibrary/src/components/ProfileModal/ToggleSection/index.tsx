@@ -1,13 +1,13 @@
 import { useMemo } from 'react';
 import { Checkbox, FormControl, FormControlLabel, Grid, styled } from '@mui/material';
 import { selectorListStyles, formStyle, defaultFill } from './styles';
-import OrganizationIcon from '../../../assets/icons/user.svg';
-import ClientIcon from '../../../assets/icons/github.svg';
-import WarehouseIcon from '../../../assets/icons/warehouse.svg';
-import LanguageIcon from '../../../assets/icons/flags/spain.svg';
+import OrganizationIcon from '../../../../public/icons/user.svg';
+import ClientIcon from '../../../../public/icons/github.svg';
+import WarehouseIcon from '../../../../public/icons/warehouse.svg';
+import LanguageIcon from '../../../../public/icons/flags/spain.svg';
 import { SelectorListProps, Item } from '../types';
 import { InputPassword, theme } from '../..';
-import LockOutlined from '../../../assets/icons/lock.svg';
+import LockOutlined from '../../../../public/icons/lock.svg';
 import Select from '../../Input/Select';
 import { useTranslation } from '../../../../../MainUI/hooks/useTranslation';
 

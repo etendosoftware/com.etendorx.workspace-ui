@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -22,14 +26,34 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@workspaceui/storybook": ["../storybook/src"],
-      "@workspaceui/storybook/*": ["../storybook/src/*"],
-      "@workspaceui/componentlibrary/*": ["../ComponentLibrary/src/*"],
-      "@workspaceui/componentlibrary": ["../ComponentLibrary/src"],
-      "@workspaceui/etendohookbinder/*": ["../EtendoHookBinder/src/*"],
-      "@workspaceui/etendohookbinder": ["../EtendoHookBinder/src"]
+      "@workspaceui/storybook": [
+        "../storybook/src"
+      ],
+      "@workspaceui/storybook/*": [
+        "../storybook/src/*"
+      ],
+      "@workspaceui/componentlibrary/*": [
+        "../ComponentLibrary/src/*"
+      ],
+      "@workspaceui/componentlibrary": [
+        "../ComponentLibrary/src"
+      ],
+      "@workspaceui/etendohookbinder/*": [
+        "../EtendoHookBinder/src/*"
+      ],
+      "@workspaceui/etendohookbinder": [
+        "../EtendoHookBinder/src"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
-  "exclude": ["./node_modules"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "next-env.d.ts",
+    "./dist/types/**/*.ts"
+  ],
+  "exclude": [
+    "./node_modules"
+  ]
 }

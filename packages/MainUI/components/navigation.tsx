@@ -8,11 +8,11 @@ import {
   Profile,
   Waterfall,
 } from '@workspaceui/componentlibrary/components';
-import profilePicture from '@workspaceui/componentlibrary/assets/images/profile_picture_mock.png';
-import ActivityIcon from '@workspaceui/componentlibrary/assets/icons/activity.svg';
-import NotificationIcon from '@workspaceui/componentlibrary/assets/icons/bell.svg';
-import PersonIcon from '@workspaceui/componentlibrary/assets/icons/user.svg';
-import AddIcon from '@workspaceui/componentlibrary/assets/icons/plus.svg';
+import profilePicture from '@workspaceui/componentlibrary/public/images/profile_picture_mock.png';
+import ActivityIcon from '@workspaceui/componentlibrary/public/icons/activity.svg';
+import NotificationIcon from '@workspaceui/componentlibrary/public/icons/bell.svg';
+import PersonIcon from '@workspaceui/componentlibrary/public/icons/user.svg';
+import AddIcon from '@workspaceui/componentlibrary/public/icons/plus.svg';
 import { modalConfig, menuItems, initialPeople, sections, NOTIFICATIONS } from '@workspaceui/storybook/mocks';
 import { Person } from '@workspaceui/componentlibrary/components/DragModal/DragModal.types';
 import Nav from '@workspaceui/componentlibrary/components/Nav/Nav';

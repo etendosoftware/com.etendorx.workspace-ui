@@ -8,9 +8,9 @@ import { Container, Position } from '../enums';
 import { ModalIProps } from './types';
 import { IconSize, styles, sx } from './styles';
 import { theme } from '../../theme';
-import CloseIcon from '../../assets/icons/x.svg';
-import MaximizeIcon from '../../assets/icons/maximize-2.svg';
-import MinimizeIcon from '../../assets/icons/minimize-2.svg';
+import CloseIcon from '../../../public/icons/x.svg';
+import MaximizeIcon from '../../../public/icons/maximize-2.svg';
+import MinimizeIcon from '../../../public/icons/minimize-2.svg';
 import { calculateModalStyles } from '../../helpers/updateModal';
 
 const Modal: React.FC<ModalIProps> = ({

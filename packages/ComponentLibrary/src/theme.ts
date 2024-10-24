@@ -99,7 +99,7 @@ export const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: ['Inter', 'sans-serif'].join(','),
+    fontFamily: 'var(--font-inter)',
   },
   components: {
     MuiCssBaseline: {

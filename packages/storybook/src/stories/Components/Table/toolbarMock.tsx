@@ -1,19 +1,19 @@
-import PlusIcon from '../../../../../ComponentLibrary/src/assets/icons/plus.svg';
-import RefreshIcon from '../../../../../ComponentLibrary/src/assets/icons/refresh-cw.svg';
-import SearchIcon from '../../../../../ComponentLibrary/src/assets/icons/search.svg';
-import FilterIcon from '../../../../../ComponentLibrary/src/assets/icons/filter.svg';
-import ColumnsIcon from '../../../../../ComponentLibrary/src/assets/icons/columns.svg';
-import ChevronDownIcon from '../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
-import SidebarIcon from '../../../../../ComponentLibrary/src/assets/icons/sidebar.svg';
-import LowerFlapIcon from '../../../../../ComponentLibrary/src/assets/icons/lower-flap.svg';
-import Excel from '../../../../../ComponentLibrary/src/assets/icons/ilustration/excel.svg';
-import Copilot from '../../../../../ComponentLibrary/src/assets/icons/sparks.svg';
-import Print from '../../../../../ComponentLibrary/src/assets/icons/color-picker.svg';
-import Trash from '../../../../../ComponentLibrary/src/assets/icons/trash-2.svg';
-import Printer from '../../../../../ComponentLibrary/src/assets/icons/printer.svg';
-import Copy from '../../../../../ComponentLibrary/src/assets/icons/copy.svg';
-import Mail from '../../../../../ComponentLibrary/src/assets/icons/mail.svg';
-import LinkIcon from '../../../../../ComponentLibrary/src/assets/icons/link.svg';
+import PlusIcon from '../../../../../ComponentLibrary/public/icons/plus.svg';
+import RefreshIcon from '../../../../../ComponentLibrary/public/icons/refresh-cw.svg';
+import SearchIcon from '../../../../../ComponentLibrary/public/icons/search.svg';
+import FilterIcon from '../../../../../ComponentLibrary/public/icons/filter.svg';
+import ColumnsIcon from '../../../../../ComponentLibrary/public/icons/columns.svg';
+import ChevronDownIcon from '../../../../../ComponentLibrary/public/icons/chevron-down.svg';
+import SidebarIcon from '../../../../../ComponentLibrary/public/icons/sidebar.svg';
+import LowerFlapIcon from '../../../../../ComponentLibrary/public/icons/lower-flap.svg';
+import Excel from '../../../../../ComponentLibrary/public/icons/ilustration/excel.svg';
+import Copilot from '../../../../../ComponentLibrary/public/icons/sparks.svg';
+import Print from '../../../../../ComponentLibrary/public/icons/color-picker.svg';
+import Trash from '../../../../../ComponentLibrary/public/icons/trash-2.svg';
+import Printer from '../../../../../ComponentLibrary/public/icons/printer.svg';
+import Copy from '../../../../../ComponentLibrary/public/icons/copy.svg';
+import Mail from '../../../../../ComponentLibrary/public/icons/mail.svg';
+import LinkIcon from '../../../../../ComponentLibrary/public/icons/link.svg';
 import { ToolbarSectionConfig } from '../../../../../storybook/src/stories/Components/Table/types';
 import { theme } from '../../../../../ComponentLibrary/src/theme';
 
@@ -25,9 +25,7 @@ type NestedKeyOf<ObjectType extends object> = {
     : `${Key}`;
 }[keyof ObjectType & (string | number)];
 
-type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(
-  key: K,
-) => string;
+type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(key: K) => string;
 
 const IconSize = 16;
 
@@ -218,16 +216,10 @@ export const createToolbarConfig = (
       {
         key: 'sidebar',
         icon: <SidebarIcon />,
-        tooltip: isSidebarOpen
-          ? t('table.tooltips.closeSidebar')
-          : t('table.tooltips.openSidebar'),
+        tooltip: isSidebarOpen ? t('table.tooltips.closeSidebar') : t('table.tooltips.openSidebar'),
         onClick: toggleSidebar,
-        fill: isSidebarOpen
-          ? theme.palette.baselineColor.neutral[0]
-          : theme.palette.baselineColor.neutral[80],
-        hoverFill: isSidebarOpen
-          ? theme.palette.baselineColor.neutral[20]
-          : theme.palette.baselineColor.neutral[0],
+        fill: isSidebarOpen ? theme.palette.baselineColor.neutral[0] : theme.palette.baselineColor.neutral[80],
+        hoverFill: isSidebarOpen ? theme.palette.baselineColor.neutral[20] : theme.palette.baselineColor.neutral[0],
         sx: isSidebarOpen
           ? {
               backgroundColor: theme.palette.dynamicColor.main,
@@ -244,12 +236,8 @@ export const createToolbarConfig = (
         icon: <LowerFlapIcon />,
         tooltip: t('table.tooltips.details'),
         onClick: toggleDropdown,
-        fill: isDropdownOpen
-          ? theme.palette.baselineColor.neutral[0]
-          : theme.palette.baselineColor.neutral[80],
-        hoverFill: isDropdownOpen
-          ? theme.palette.baselineColor.neutral[20]
-          : theme.palette.baselineColor.neutral[0],
+        fill: isDropdownOpen ? theme.palette.baselineColor.neutral[0] : theme.palette.baselineColor.neutral[80],
+        hoverFill: isDropdownOpen ? theme.palette.baselineColor.neutral[20] : theme.palette.baselineColor.neutral[0],
         sx: isDropdownOpen
           ? {
               backgroundColor: theme.palette.dynamicColor.main,

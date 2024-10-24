@@ -1,14 +1,14 @@
 import { TabItem } from '../../../../../ComponentLibrary/src/components/PrimaryTab/types';
 import { theme } from '../../../../../ComponentLibrary/src/theme';
-import Home from '../../../../../ComponentLibrary/src/assets/icons/home.svg';
-import Person from '../../../../../ComponentLibrary/src/assets/icons/user.svg';
-import Settings from '../../../../../ComponentLibrary/src/assets/icons/settings.svg';
-import Info from '../../../../../ComponentLibrary/src/assets/icons/info.svg';
-import Related from '../../../../../ComponentLibrary/src/assets/icons/grid.svg';
-import Clip from '../../../../../ComponentLibrary/src/assets/icons/paperclip.svg';
-import Tag from '../../../../../ComponentLibrary/src/assets/icons/tag.svg';
-import Smile from '../../../../../ComponentLibrary/src/assets/icons/smile.svg';
-import Chevrons from '../../../../../ComponentLibrary/src/assets/icons/chevrons-right.svg';
+import Home from '../../../../../ComponentLibrary/public/icons/home.svg';
+import Person from '../../../../../ComponentLibrary/public/icons/user.svg';
+import Settings from '../../../../../ComponentLibrary/public/icons/settings.svg';
+import Info from '../../../../../ComponentLibrary/public/icons/info.svg';
+import Related from '../../../../../ComponentLibrary/public/icons/grid.svg';
+import Clip from '../../../../../ComponentLibrary/public/icons/paperclip.svg';
+import Tag from '../../../../../ComponentLibrary/public/icons/tag.svg';
+import Smile from '../../../../../ComponentLibrary/public/icons/smile.svg';
+import Chevrons from '../../../../../ComponentLibrary/public/icons/chevrons-right.svg';
 
 export const defaultTabs: TabItem[] = [
   {
@@ -147,6 +147,4 @@ export const onlyLabelsTabs: TabItem[] = [
   },
 ];
 
-export const defaultIcon = (
-  <Chevrons fill={theme.palette.baselineColor.neutral[80]} />
-);
+export const defaultIcon = <Chevrons fill={theme.palette.baselineColor.neutral[80]} />;

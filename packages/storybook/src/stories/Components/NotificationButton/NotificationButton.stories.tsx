@@ -1,6 +1,6 @@
 import { ReactElement } from 'react';
 import NotificationButton from '../../../../../ComponentLibrary/src/components/NotificationsButton';
-import NotificationIcon from '../../../../../ComponentLibrary/src/assets/icons/bell.svg';
+import NotificationIcon from '../../../../../ComponentLibrary/public/icons/bell.svg';
 import type { Meta, StoryObj } from '@storybook/react';
 import { Inotifications } from '../../../../../ComponentLibrary/src/commons';
 

@@ -8,12 +8,12 @@ import { NOTIFICATIONS } from '../notifications.mock';
 import { modalConfig } from '../ConfigurationModal/mock';
 import { menuItems, initialPeople } from '../mock';
 import { NavArgs } from './types';
-import ActivityIcon from '../../../../../ComponentLibrary/src/assets/icons/activity.svg';
-import profilePicture from '../.././../../../ComponentLibrary/src/assets/images/profile_picture_mock.png';
-import PersonIcon from '../../../../../ComponentLibrary/src/assets/icons/user.svg';
+import ActivityIcon from '../../../../../ComponentLibrary/public/icons/activity.svg';
+import profilePicture from '../.././../../../ComponentLibrary/public/images/profile_picture_mock.png';
+import PersonIcon from '../../../../../ComponentLibrary/public/icons/user.svg';
 import IconButton from '../../../../../ComponentLibrary/src/components/IconButton';
-import NotificationIcon from '../../../../../ComponentLibrary/src/assets/icons/bell.svg';
-import AddIcon from '../../../../../ComponentLibrary/src/assets/icons/plus.svg';
+import NotificationIcon from '../../../../../ComponentLibrary/public/icons/bell.svg';
+import AddIcon from '../../../../../ComponentLibrary/public/icons/plus.svg';
 import { sections } from '../ProfileModal/mock';
 import type { Meta, StoryObj } from '@storybook/react';
 

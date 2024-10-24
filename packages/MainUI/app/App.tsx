@@ -1,7 +1,8 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { CssBaseline } from '@workspaceui/componentlibrary/theme';
+import { CssBaseline, ThemeProvider } from '@mui/material';
+import { theme } from '../../ComponentLibrary/src/theme';
 import SanityChecker from '../components/SanityChecker';
 import { LanguageProvider } from '../contexts/languageProvider';
 import MetadataProvider from '../contexts/metadata';
@@ -14,7 +15,8 @@ export default function App({ children }: React.PropsWithChildren) {
   return (
     <SanityChecker>
       <QueryClientProvider client={queryClient}>
-        <CssBaseline>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
           <LanguageProvider>
             <UserProvider>
               <MetadataProvider>
@@ -22,7 +24,7 @@ export default function App({ children }: React.PropsWithChildren) {
               </MetadataProvider>
             </UserProvider>
           </LanguageProvider>
-        </CssBaseline>
+        </ThemeProvider>
       </QueryClientProvider>
     </SanityChecker>
   );

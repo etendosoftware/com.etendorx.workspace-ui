@@ -1,11 +1,8 @@
 import { Box, Grid, Typography } from '@mui/material';
 import { sx } from '../styles';
 import IconButton from '../../IconButton';
-import InformationIcon from '../../../assets/icons/info.svg';
-import {
-  ContentGridProps,
-  Widget,
-} from '../../../../../storybook/src/stories/Components/Table/types';
+import InformationIcon from '../../../../public/icons/info.svg';
+import { ContentGridProps, Widget } from '../../../../../storybook/src/stories/Components/Table/types';
 
 const WidgetComponent: React.FC<Widget> = ({
   title,

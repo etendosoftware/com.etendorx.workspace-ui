@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
 import { Organization, Widget } from './types';
-import SideIcon from '../../../../../ComponentLibrary/src/assets/icons/codesandbox.svg';
+import SideIcon from '../../../../../ComponentLibrary/public/icons/codesandbox.svg';
 import TabWidget from '../../../../../ComponentLibrary/src/components/Widgets/TabWidget';
 import { TranslationKeys } from '../../../../../ComponentLibrary/src/locales/types';
 import React from 'react';
@@ -11,9 +11,7 @@ type NestedKeyOf<ObjectType extends object> = {
     : `${Key}`;
 }[keyof ObjectType & (string | number)];
 
-type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(
-  key: K,
-) => string;
+type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(key: K) => string;
 
 const colors = {
   backgrounds: [

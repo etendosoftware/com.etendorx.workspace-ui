@@ -1,6 +1,6 @@
 import { Section } from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleButton/types';
-import PersonOutlineIcon from '../../../../../ComponentLibrary/src/assets/icons/check-circle.svg';
-import LockIcon from '../../../../../ComponentLibrary/src/assets/icons/lock.svg';
+import PersonOutlineIcon from '../../../../../ComponentLibrary/public/icons/check-circle.svg';
+import LockIcon from '../../../../../ComponentLibrary/public/icons/lock.svg';
 import { defaultFill } from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleSection/styles';
 
 export const sections: Section[] = [

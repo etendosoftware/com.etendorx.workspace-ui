@@ -1,10 +1,10 @@
 import React from 'react';
 import { Accordion, AccordionSummary, AccordionDetails, Typography, Box, Grid } from '@mui/material';
-import ChevronDown from '../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
+import ChevronDown from '../../../../ComponentLibrary/public/icons/chevron-down.svg';
 import { theme } from '@workspaceui/componentlibrary/theme';
 import { defaultFill, styles, sx } from '../styles';
 import IconButton from '@workspaceui/componentlibrary/components/IconButton';
-import InfoIcon from '../../../../ComponentLibrary/src/assets/icons/info.svg';
+import InfoIcon from '../../../../ComponentLibrary/public/icons/info.svg';
 import { FormSectionProps } from '../types';
 import FormFieldGroup from '../selectors';
 

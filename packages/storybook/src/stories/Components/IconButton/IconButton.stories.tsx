@@ -1,5 +1,5 @@
 import IconButton from '../../../../../ComponentLibrary/src/components/IconButton';
-import NotificationIcon from '../../../../../ComponentLibrary/src/assets/icons/heart.svg';
+import NotificationIcon from '../../../../../ComponentLibrary/public/icons/heart.svg';
 import type { Meta, StoryObj } from '@storybook/react';
 import { theme } from '../../../../../ComponentLibrary/src/theme';
 import { sx } from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal.styles';

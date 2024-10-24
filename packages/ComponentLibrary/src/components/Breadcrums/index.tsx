@@ -1,9 +1,9 @@
 import { FC, useState, useCallback, useMemo } from 'react';
 import { Breadcrumbs, Link, Typography, Box, IconButton, Menu, MenuItem } from '@mui/material';
-import NavigateNextIcon from '@workspaceui/componentlibrary/assets/icons/chevron-right.svg';
-import ArrowLeftIcon from '@workspaceui/componentlibrary/assets/icons/arrow-left.svg';
-import ChevronDown from '@workspaceui/componentlibrary/assets/icons/chevron-down.svg';
-import MoreHorizIcon from '@workspaceui/componentlibrary/assets/icons/more-horizontal.svg';
+import NavigateNextIcon from '@workspaceui/componentlibrary/public/icons/chevron-right.svg';
+import ArrowLeftIcon from '@workspaceui/componentlibrary/public/icons/arrow-left.svg';
+import ChevronDown from '@workspaceui/componentlibrary/public/icons/chevron-down.svg';
+import MoreHorizIcon from '@workspaceui/componentlibrary/public/icons/more-horizontal.svg';
 import { theme } from '@workspaceui/componentlibrary/theme';
 import { menuStyle, sx } from './styles';
 import { BreadcrumbProps, BreadcrumbAction, BreadcrumbItem } from './types';

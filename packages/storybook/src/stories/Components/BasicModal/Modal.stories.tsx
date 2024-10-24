@@ -2,12 +2,9 @@ import { ReactNode } from 'react';
 import React from 'react';
 import Modal from '../../../../../ComponentLibrary/src/components/BasicModal';
 import { List, MenuItem, Button } from '@mui/material';
-import {
-  Position,
-  Container,
-} from '../../../../../ComponentLibrary/src/components/enums';
-import HeaderIcon from '../../../../../ComponentLibrary/src/assets/icons/activity.svg';
-import SaveIcon from '../../../../../ComponentLibrary/src/assets/icons/save.svg';
+import { Position, Container } from '../../../../../ComponentLibrary/src/components/enums';
+import HeaderIcon from '../../../../../ComponentLibrary/public/icons/activity.svg';
+import SaveIcon from '../../../../../ComponentLibrary/public/icons/save.svg';
 import { styles, sx } from '../../../styles/Modal.stories.styles';
 import { menuItems } from '../mock';
 import type { Meta, StoryObj } from '@storybook/react';

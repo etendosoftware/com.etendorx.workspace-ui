@@ -1,19 +1,10 @@
 import React from 'react';
 import { Grid, Typography, Card, Box } from '@mui/material';
-import {
-  typographyTitleStyles,
-  cardStyles,
-  boxStyles,
-  typographyStyles,
-} from './styles';
+import { typographyTitleStyles, cardStyles, boxStyles, typographyStyles } from './styles';
 import { iconPaths } from './iconPaths';
 import { theme } from '../../../../ComponentLibrary/src/theme';
 
-const icons = iconPaths.map(path =>
-  React.lazy(
-    () => import(`../../../../ComponentLibrary/src/assets/icons/${path}.svg`),
-  ),
-);
+const icons = iconPaths.map(path => React.lazy(() => import(`../../../../ComponentLibrary/public/icons/${path}.svg`)));
 
 export default {
   title: 'Design System/Icon Gallery',
@@ -39,11 +30,7 @@ export const IconGallery = () => (
         <Grid item xs={6} sm={4} md={2} xl={2} key={iconPaths[index]}>
           <Card variant="outlined" style={cardStyles}>
             <Box style={boxStyles}>
-              <IconComponent
-                fill={theme.palette.baselineColor.neutral[80]}
-                width="48"
-                height="48"
-              />
+              <IconComponent fill={theme.palette.baselineColor.neutral[80]} width="48" height="48" />
             </Box>
             <Typography variant="caption" sx={typographyStyles.caption}>
               {iconPaths[index]}

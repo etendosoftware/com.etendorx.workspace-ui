@@ -14,8 +14,8 @@ import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-ki
 import SortableItem from './SortableItem';
 import type { DragModalContentProps } from './DragModal.types';
 import ModalDivider from '../ModalDivider';
-import DragIndicator from '../../assets/icons/drag.svg';
-import NavigateBefore from '../../assets/icons/chevron-left.svg';
+import DragIndicator from '../../../public/icons/drag.svg';
+import NavigateBefore from '../../../public/icons/chevron-left.svg';
 import { styles, sx } from './DragModal.styles';
 import { Box, Button, Link } from '@mui/material';
 import { theme } from '../../theme';

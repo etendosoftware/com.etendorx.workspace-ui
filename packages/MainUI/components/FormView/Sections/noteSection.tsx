@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { Box, Grid, Card, CardContent, Typography, Button, IconButton, TextField } from '@mui/material';
 import { theme } from '@workspaceui/componentlibrary/theme';
 import Modal from '@workspaceui/componentlibrary/components/BasicModal';
-import CloseIcon from '../../../../ComponentLibrary/src/assets/icons/x.svg';
-import NoteIcon from '../../../../ComponentLibrary/src/assets/icons/note.svg';
-import PlusIcon from '../../../../ComponentLibrary/src/assets/icons/plus-circle.svg';
+import CloseIcon from '../../../../ComponentLibrary/public/icons/x.svg';
+import NoteIcon from '../../../../ComponentLibrary/public/icons/note.svg';
+import PlusIcon from '../../../../ComponentLibrary/public/icons/plus-circle.svg';
 import { Note, NoteSectionProps } from '../types';
 import { noteColors, sx } from '../styles';
 
