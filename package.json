@@ -7,7 +7,8 @@
     "build:all": "pnpm --filter @workspaceui/componentlibrary build && pnpm --filter @workspaceui/mainui build",
     "dev": "pnpm --filter @workspaceui/mainui dev",
     "build": "pnpm --filter @workspaceui/mainui build",
-    "clean": "pnpm -r exec -- rm -rf dist node_modules .next && rm -rf node_modules"
+    "clean": "pnpm -r exec -- rm -rf dist node_modules .next && rm -rf node_modules",
+    "start": "pnpm --filter @workspaceui/mainui start"
   },
   "keywords": [],
   "author": "",
