@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react';
 import DrawerComponent from '../../../../../ComponentLibrary/src/components/Drawer';
-import { menuMock } from '../../../../../MainUI/src/mocks/Drawer/index';
+import { menuMock } from '../../../../../MainUI/mocks/Drawer/index';
 import logo from '../../../../../ComponentLibrary/src/assets/images/logo.svg';
 
 const meta: Meta<typeof DrawerComponent> = {

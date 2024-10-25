@@ -39,9 +39,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "svg-inline-loader": "^0.8.2",
-    "typescript": "^5.2.2",
-    "vite": "^5.1.4",
-    "vite-plugin-svgr": "^4.2.0"
+    "typescript": "^5.2.2"
   },
   "overrides": {
     "@types/react": "npm:types-react@rc",

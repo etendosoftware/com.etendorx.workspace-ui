@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 import { MenuOpen } from '@mui/icons-material';
 import { IconButton } from '../..';
-import { styles } from '../styles';
+import styles from '../styles';
 
 const openSx = {
   transform: 'rotate(0deg)',

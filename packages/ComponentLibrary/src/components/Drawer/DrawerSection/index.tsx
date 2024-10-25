@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Collapse, Popper, Paper, ClickAwayListener, Grow, Box } from '@mui/material';
-import { styles } from '../styles';
+import styles from '../styles';
 import MenuTitle from '../MenuTitle';
 import { theme } from '../../../theme';
 import { DrawerSectionProps } from '../types';

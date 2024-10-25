@@ -1,6 +1,6 @@
 import { styles } from './styles';
-import BackgroundGradientUrl from '../../assets/images/backgroundGradient.svg';
-import Logout from '../../assets/icons/log-out.svg';
+import BackgroundGradient from '../../assets/images/backgroundGradient.svg?url';
+import LogoutIcon from '../../assets/icons/log-out.svg';
 import { User } from './types';
 import IconButton from '../IconButton';
 import { UserContext } from '../../../../MainUI/contexts/user';
@@ -16,7 +16,7 @@ const UserProfile: React.FC<User> = ({ photoUrl, name, email, sectionTooltip }) 
   return (
     <div style={styles.userProfileStyles}>
       <div style={styles.svgContainerStyles}>
-        <img src={BackgroundGradientUrl} alt="Background Gradient" />
+        <img src={BackgroundGradient} alt="Background Gradient" />
       </div>
       <IconButton
         style={styles.logoutButtonStyles}
@@ -24,7 +24,7 @@ const UserProfile: React.FC<User> = ({ photoUrl, name, email, sectionTooltip }) 
         width={16}
         height={16}
         onClick={handleSignOff}>
-        <Logout />
+        <LogoutIcon />
       </IconButton>
       <div style={styles.profileImageContainerStyles}>
         <img src={photoUrl} alt="Profile" style={styles.profileImageStyles} />

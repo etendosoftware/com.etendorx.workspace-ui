@@ -25,9 +25,7 @@ type NestedKeyOf<ObjectType extends object> = {
     : `${Key}`;
 }[keyof ObjectType & (string | number)];
 
-type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(
-  key: K,
-) => string;
+type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(key: K) => string;
 
 const IconSize = 16;
 
@@ -213,21 +211,15 @@ export const createToolbarConfig = (
         tooltip: t('table.tooltips.columns'),
         onClick: () => {},
         height: IconSize,
-        width: 16,
+        width: IconSize,
       },
       {
         key: 'sidebar',
         icon: <SidebarIcon />,
-        tooltip: isSidebarOpen
-          ? t('table.tooltips.closeSidebar')
-          : t('table.tooltips.openSidebar'),
+        tooltip: isSidebarOpen ? t('table.tooltips.closeSidebar') : t('table.tooltips.openSidebar'),
         onClick: toggleSidebar,
-        fill: isSidebarOpen
-          ? theme.palette.baselineColor.neutral[0]
-          : theme.palette.baselineColor.neutral[80],
-        hoverFill: isSidebarOpen
-          ? theme.palette.baselineColor.neutral[20]
-          : theme.palette.baselineColor.neutral[0],
+        fill: isSidebarOpen ? theme.palette.baselineColor.neutral[0] : theme.palette.baselineColor.neutral[80],
+        hoverFill: isSidebarOpen ? theme.palette.baselineColor.neutral[20] : theme.palette.baselineColor.neutral[0],
         sx: isSidebarOpen
           ? {
               backgroundColor: theme.palette.dynamicColor.main,
@@ -244,12 +236,8 @@ export const createToolbarConfig = (
         icon: <LowerFlapIcon />,
         tooltip: t('table.tooltips.details'),
         onClick: toggleDropdown,
-        fill: isDropdownOpen
-          ? theme.palette.baselineColor.neutral[0]
-          : theme.palette.baselineColor.neutral[80],
-        hoverFill: isDropdownOpen
-          ? theme.palette.baselineColor.neutral[20]
-          : theme.palette.baselineColor.neutral[0],
+        fill: isDropdownOpen ? theme.palette.baselineColor.neutral[0] : theme.palette.baselineColor.neutral[80],
+        hoverFill: isDropdownOpen ? theme.palette.baselineColor.neutral[20] : theme.palette.baselineColor.neutral[0],
         sx: isDropdownOpen
           ? {
               backgroundColor: theme.palette.dynamicColor.main,

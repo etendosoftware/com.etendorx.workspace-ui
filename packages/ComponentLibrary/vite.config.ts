@@ -10,6 +10,9 @@ export default defineConfig({
       include: '**/*.svg',
       svgrOptions: {
         icon: true,
+        ref: true,
+        svgo: false,
+        titleProp: true,
       },
     }),
   ],
