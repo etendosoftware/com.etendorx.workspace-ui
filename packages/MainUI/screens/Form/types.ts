@@ -17,6 +17,7 @@ export interface BaseFieldDefinition<T> {
     refList: Array<{ id: string; label: string; value: string }>;
     referencedEntity: string;
     referencedWindowId: string;
+    referencedTabId: string;
     fieldName: string;
   } & Field;
 }

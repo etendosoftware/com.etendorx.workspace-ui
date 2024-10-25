@@ -53,10 +53,14 @@ export default function SanityChecker(props: React.PropsWithChildren) {
   if (connected) {
     return <>{props.children}</>;
   } else if (error) {
-    return <Button>Retry</Button>;
+    return (
+      <Box display="flex" width="100%" alignItems="center" justifyContent="center">
+        <Button variant="contained">Retry</Button>
+      </Box>
+    );
   } else {
     return (
-      <Box>
+      <Box display="flex" width="100%" alignItems="center" justifyContent="center">
         <Spinner />
       </Box>
     );

@@ -30,11 +30,12 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
     if (field.type === 'tabledir' && field.value && typeof field.value === 'object' && 'id' in field.value) {
       const recordId = field.value.id;
       const windowId = field.original?.referencedWindowId;
-      location.href = `/window/${windowId}/${recordId}`;
+      const tabId = field.original?.referencedTabId;
+      location.href = `/window/${windowId}/${tabId}/${recordId}`;
     }
   }, [field]);
 
-  const renderField = () => {
+  const renderField = useCallback(() => {
     switch (field.type) {
       case 'boolean':
         return <BooleanSelector label={field.label} readOnly={readOnly} />;
@@ -80,7 +81,7 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
           />
         );
     }
-  };
+  }, [field, onChange, readOnly]);
 
   return (
     <Box style={styles.fieldContainer}>
