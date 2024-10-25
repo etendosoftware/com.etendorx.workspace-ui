@@ -26,6 +26,6 @@
       "@workspaceui/etendohookbinder": ["../EtendoHookBinder/src"]
     }
   },
-  "include": ["src", "svg.d.ts"],
+  "include": ["src", "svg.d.ts", "src/stories/Components/ConfigurationModal/mock.tsx"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
