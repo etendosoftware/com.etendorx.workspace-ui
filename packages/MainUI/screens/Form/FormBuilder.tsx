@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { Box } from '@workspaceui/componentlibrary/components';
 import { Field } from '@workspaceui/etendohookbinder/api/types';
+import { Box } from '@mui/material';
 
 export function FormBuilder({ fields, record }: { fields: Field[]; record: Record<string, unknown> }) {
   const form = useMemo(() => {

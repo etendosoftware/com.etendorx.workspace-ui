@@ -3,8 +3,8 @@
 import { API_METADATA_URL, MAX_ATTEMPTS } from '@workspaceui/etendohookbinder/api/constants';
 import { useEffect, useRef, useState } from 'react';
 import Spinner from '@workspaceui/componentlibrary/components/Spinner';
-import { Box, Button } from '@workspaceui/componentlibrary/components';
 import { logger } from '../../utils/logger';
+import { Button, Box } from '@mui/material';
 
 export default function SanityChecker(props: React.PropsWithChildren) {
   const [connected, setConnected] = useState(false);

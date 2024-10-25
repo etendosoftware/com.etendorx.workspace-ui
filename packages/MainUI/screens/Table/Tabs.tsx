@@ -1,7 +1,7 @@
 import { Tab } from '@workspaceui/etendohookbinder/api/types';
 import { useMemo, useRef, useState } from 'react';
-import { Button, theme } from '../../../ComponentLibrary/src/components';
-import { Box } from '@mui/material';
+import { theme } from '../../../ComponentLibrary/src/components';
+import { Box, Button } from '@mui/material';
 import { styles } from './styles';
 import DynamicTable from '../../components/Table';
 

@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
-import { Box } from '..';
-import { styles } from './styles';
+import styles from './styles';
 import { DrawerProps } from './types';
 import DrawerHeader from './Header';
 import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
@@ -10,6 +9,7 @@ import { createSearchIndex, filterItems, getAllItemTitles } from '../../utils/se
 import DrawerItems from './Search';
 import RecentlyViewed from './RecentlyViewed';
 import { Menu } from '@workspaceui/etendohookbinder/api/types';
+import { Box } from '@mui/material';
 
 const Drawer: React.FC<DrawerProps> = ({ items = [], logo, title, onClick }) => {
   const [open, setOpen] = useState<boolean>(true);

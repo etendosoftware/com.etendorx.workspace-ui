@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import { Tooltip } from '@mui/material';
 import Typography from '@mui/material/Typography';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
-import { styles } from '../styles';
+import styles from '../styles';
 import { MenuTitleProps } from '../types';
 
 export default function MenuTitle({ item, onClick, selected, expanded, open }: MenuTitleProps) {

@@ -6,11 +6,7 @@ import { theme } from '../../theme';
 import { defaultStyles } from './styles';
 import { IIconComponentProps } from './types';
 
-interface ExtendedIconButtonProps extends IIconComponentProps {
-  iconText?: string;
-}
-
-const IconButton: React.FC<ExtendedIconButtonProps> = ({
+const IconButton: React.FC<IIconComponentProps> = ({
   fill = theme.palette.baselineColor.neutral[80],
   hoverFill = theme.palette.baselineColor.neutral[0],
   width = 24,

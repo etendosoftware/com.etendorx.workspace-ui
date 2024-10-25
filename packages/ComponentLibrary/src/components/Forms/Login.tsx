@@ -1,7 +1,6 @@
 'use client';
 import { useCallback, useState } from 'react';
-import { Box, Input, Paper } from '@mui/material';
-import { Button } from '@workspaceui/componentlibrary/components';
+import { Box, Button, Input, Paper } from '@mui/material';
 import { styles } from './styles';
 
 export default function Login({
