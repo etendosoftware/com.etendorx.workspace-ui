@@ -1,5 +1,3 @@
-'use client';
-
 import { Grid, Link, Menu } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { BORDER_SELECT_1, BORDER_SELECT_2, COLUMN_SPACING, FIRST_MARGIN_TOP, menuSyle, styles, sx } from './style';
