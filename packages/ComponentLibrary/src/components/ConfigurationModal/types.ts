@@ -7,7 +7,7 @@ export interface ISection {
 }
 
 export interface IConfigurationModalProps extends Omit<MenuProps, 'open' | 'title'> {
-  icon: string | React.ReactNode;
+  icon?: React.ReactNode;
   title?: { icon?: string | React.ReactNode; label?: string };
   tooltipButtonProfile?: string;
   linkTitle?: { url?: string; label?: string };

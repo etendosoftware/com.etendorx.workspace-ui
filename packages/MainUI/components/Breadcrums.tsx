@@ -4,23 +4,25 @@ import type { BreadcrumbItem } from '@workspaceui/componentlibrary/components/Br
 import { useWindow } from '@workspaceui/etendohookbinder/hooks/useWindow';
 import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource';
 import { styles } from './styles';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 const homeIcon = '🏠';
 
-const { windowId, recordId } = { recordId: '', windowId: '' };
-
 const AppBreadcrumb: React.FC = () => {
   const router = useRouter();
+  const params = useParams();
   const navigate = router.push;
 
-  const { windowData } = useWindow(windowId || '');
+  const windowId = Array.isArray(params.windowId) ? params.windowId[0] : params.windowId || '';
+  const recordId = Array.isArray(params.recordId) ? params.recordId[0] : params.recordId || '';
+
+  const { windowData } = useWindow(windowId);
 
   const query = useMemo(
     () => ({
       criteria: [{ fieldName: 'id', operator: 'equals', value: recordId }],
     }),
-    [],
+    [recordId],
   );
 
   const { records } = useDatasource(windowData?.tabs?.[0]?.entityName || '', query);
@@ -45,7 +47,7 @@ const AppBreadcrumb: React.FC = () => {
     }
 
     return items;
-  }, [windowData, records, navigate]);
+  }, [windowData, records, navigate, windowId, recordId]);
 
   const handleHomeClick = useCallback(() => navigate('/'), [navigate]);
 
@@ -55,4 +57,5 @@ const AppBreadcrumb: React.FC = () => {
     </div>
   );
 };
+
 export default AppBreadcrumb;

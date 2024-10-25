@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { MenuOpen } from '@mui/icons-material';
 import { IconButton } from '../..';
 import styles from '../styles';
+import { DrawerHeaderProps } from '../types';
 
 const openSx = {
   transform: 'rotate(0deg)',
@@ -13,21 +14,19 @@ const closedSx = {
 
 const EtendoLink = 'https://docs.etendo.software/latest/';
 
-const DrawerHeader = forwardRef<
-  HTMLDivElement,
-  {
-    title: string;
-    logo: string;
-    open?: boolean;
-    onClick: () => unknown;
-    tabIndex?: number;
-  }
->(({ title, logo, open, onClick, tabIndex }, ref) => {
+const DrawerHeader = forwardRef<HTMLDivElement, DrawerHeaderProps>(({ title, logo, open, onClick, tabIndex }, ref) => {
+  const renderLogo = () => {
+    if (typeof logo === 'string') {
+      return <img src={logo} alt={`${title} Logo`} style={styles.drawerHeaderImg} />;
+    }
+    return <div style={styles.drawerHeaderImg}>{logo}</div>;
+  };
+
   return (
     <div style={styles.drawerHeader} ref={ref}>
       {open ? (
         <a href={EtendoLink} style={styles.drawerHeaderImgBox} target="_blank" rel="noopener noreferrer">
-          <img src={logo} alt={`${title} Logo`} style={styles.drawerHeaderImg} />
+          {renderLogo()}
           <span style={styles.drawerHeaderTitle}>{title}</span>
         </a>
       ) : null}
@@ -43,5 +42,7 @@ const DrawerHeader = forwardRef<
     </div>
   );
 });
+
+DrawerHeader.displayName = 'DrawerHeader';
 
 export default DrawerHeader;
