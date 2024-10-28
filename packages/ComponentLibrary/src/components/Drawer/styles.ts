@@ -10,7 +10,7 @@ const focusStyles = {
   transition: 'outline-offset 0.1s ease',
 };
 
-export const styles = {
+const styles = {
   drawer: {
     whiteSpace: 'nowrap',
     boxSizing: 'border-box',
@@ -213,3 +213,5 @@ export const styles = {
     fontSize: '1rem',
   },
 };
+
+export default styles;

@@ -1,4 +1,3 @@
-import { Button as ButtonMUI, Grid as GridMUI, TextField as TextFieldMUI, Box as BoxMUI } from './MUI';
 import ModalCustom from './BasicModal';
 import TextInputMUI from './Input/TextInput/TextInputAutocomplete';
 import SearchInputWithVoiceMUI from './Input/TextInput/TextInputAutocomplete/SearchInputWithVoice';
@@ -19,10 +18,6 @@ import IButton from './IconButton';
 
 export * from '../theme';
 
-const Button = ButtonMUI;
-const Grid = GridMUI;
-const Box = BoxMUI;
-const TextField = TextFieldMUI;
 const Modal = ModalCustom;
 const TextInput = TextInputMUI;
 const TextInputBase = TextInputBaseMUI;
@@ -42,10 +37,6 @@ const Drawer = DrawerMUI;
 const IconButton = IButton;
 
 export {
-  Button,
-  Grid,
-  Box,
-  TextField,
   Modal,
   TextInput,
   TextInputBase,

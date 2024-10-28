@@ -1,19 +1,19 @@
 import SettingIcon from '../../../../../ComponentLibrary/src/assets/icons/settings.svg';
-import ThemeLightUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/theme-light.svg';
-import ThemeDarkUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/theme-dark.svg';
-import ThemeAutomaticUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/theme-automatic.svg';
-import DensityCompactUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/density-compact.svg';
-import DensityStandardUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/density-standard.svg';
-import DensityComfortableUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/density-comfortable.svg';
-import CommonToolbarIconUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/common-toolbar-buttons-icon.svg';
-import CommonToolbarTextUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/common-toolbar-buttons-text.svg';
-import CommonToolbarIconTextUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/common-toolbar-buttons-icon-and-text.svg';
-import SpecificToolbarIconUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/specific-toolbar buttons-icon.svg';
-import SpecificToolbarIconTextUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/specific-toolbar buttons-icon-and-text.svg';
-import SpecificToolbarTextUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/specific-toolbar buttons-text.svg';
+import ThemeLightUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/theme-light.svg?url';
+import ThemeDarkUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/theme-dark.svg?url';
+import ThemeAutomaticUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/theme-automatic.svg?url';
+import DensityCompactUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/density-compact.svg?url';
+import DensityStandardUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/density-standard.svg?url';
+import DensityComfortableUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/density-comfortable.svg?url';
+import CommonToolbarIconUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/common-toolbar-buttons-icon.svg?url';
+import CommonToolbarTextUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/common-toolbar-buttons-text.svg?url';
+import CommonToolbarIconTextUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/common-toolbar-buttons-icon-and-text.svg?url';
+import SpecificToolbarIconUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/specific-toolbar buttons-icon.svg?url';
+import SpecificToolbarIconTextUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/specific-toolbar buttons-icon-and-text.svg?url';
+import SpecificToolbarTextUrl from '../../../../../ComponentLibrary/src/assets/images/ConfigurationModal/specific-toolbar buttons-text.svg?url';
 
 export const modalConfig = {
-  icon: SettingIcon,
+  icon: <SettingIcon />,
   title: {
     icon: <SettingIcon fill="#2E365C" />,
     label: 'Appearance',

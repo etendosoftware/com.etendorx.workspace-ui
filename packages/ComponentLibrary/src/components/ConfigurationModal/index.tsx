@@ -1,10 +1,8 @@
-'use client';
-
 import { Grid, Link, Menu } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { BORDER_SELECT_1, BORDER_SELECT_2, COLUMN_SPACING, FIRST_MARGIN_TOP, menuSyle, styles, sx } from './style';
 import { IConfigurationModalProps, ISection } from './types';
-import checkIconUrl from '../../assets/icons/check-circle-filled.svg';
+import checkIconUrl from '../../assets/icons/check-circle-filled.svg?url';
 import './style.css';
 import { theme } from '../../theme';
 import IconButton from '../IconButton';

@@ -1,11 +1,10 @@
 import type { Menu } from '../../../../EtendoHookBinder/src/api/types';
-import React from 'react';
 
 type NavigateFn = (pathname: string) => void;
 
 export interface DrawerProps {
   items: Menu[];
-  logo: string;
+  logo?: string | React.ReactNode;
   title: string;
   onClick: NavigateFn;
   // Mock Props
@@ -74,6 +73,14 @@ export interface RecentItem {
   id: string;
   name: string;
   windowId: string;
+}
+
+export interface DrawerHeaderProps {
+  title: string;
+  logo: string | React.ReactNode;
+  open?: boolean;
+  onClick: () => unknown;
+  tabIndex?: number;
 }
 
 export interface RecentlyViewedProps {

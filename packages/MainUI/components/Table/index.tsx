@@ -5,10 +5,10 @@ import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/api/t
 import Spinner from '@workspaceui/componentlibrary/components/Spinner';
 import { memo, useCallback, useMemo } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource';
-import { Button } from '@workspaceui/componentlibrary/components';
 import { useParams, useRouter } from 'next/navigation';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { parseColumns } from '../../utils/metadata';
+import { Button } from '@mui/material';
 
 type DynamicTableProps = {
   tab: Tab;

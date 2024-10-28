@@ -1,7 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react';
 import DrawerComponent from '../../../../../ComponentLibrary/src/components/Drawer';
-import { menuMock } from '../../../../../MainUI/src/mocks/Drawer/index';
-import logo from '../../../../../ComponentLibrary/src/assets/images/logo.svg';
+import { menuMock } from '../../../../../MainUI/mocks/Drawer/index';
+import logoUrl from '../../../../../ComponentLibrary/src/assets/images/logo.svg?url';
 
 const meta: Meta<typeof DrawerComponent> = {
   title: 'Components/Drawer',
@@ -18,7 +18,7 @@ type Story = StoryObj<typeof DrawerComponent>;
 export const Default: Story = {
   args: {
     items: menuMock,
-    logo: logo,
+    logo: logoUrl,
     title: 'Etendo',
     onClick: (pathname: string) => console.log(`Navigating to: ${pathname}`),
   },
