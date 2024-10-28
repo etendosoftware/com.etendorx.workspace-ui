@@ -1,6 +1,6 @@
 'use client';
 
-import { createTheme, ThemeProvider, CssBaseline } from '@mui/material';
+import { createTheme } from '@mui/material';
 export type * from './custom.d.ts';
 
 // Colors for MUI attributes
@@ -99,7 +99,7 @@ export const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: 'var(--font-inter)',
+    fontFamily: ['var(--font-inter)', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"'].join(','),
   },
   components: {
     MuiCssBaseline: {
@@ -219,5 +219,3 @@ export const theme = createTheme({
     },
   },
 });
-
-export { ThemeProvider, CssBaseline };
