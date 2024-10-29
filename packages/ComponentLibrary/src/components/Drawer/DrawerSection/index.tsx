@@ -131,6 +131,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
               isExpandable={isExpandable && !isSearchActive}
               isExpanded={expandedSections.has(subitem.id)}
               parentId={item.id}
+              windowId={windowId}
             />
           ))}
         </Collapse>
@@ -161,6 +162,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
                       isExpandable={isExpandable && !isSearchActive}
                       isExpanded={expandedSections.has(subitem.id)}
                       parentId={item.id}
+                      windowId={windowId}
                     />
                   ))}
                 </div>
