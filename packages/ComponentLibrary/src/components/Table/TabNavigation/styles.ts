@@ -6,7 +6,7 @@ export const styles: { [key: string]: SxProps<Theme> } = {
   paper: {
     position: 'absolute',
     bottom: 0,
-    width: '99%',
+    width: '100%',
     borderRadius: '1rem 1rem 0 0',
     transition: 'transform 0.3s ease, height 0.3s ease',
     zIndex: 9999,
