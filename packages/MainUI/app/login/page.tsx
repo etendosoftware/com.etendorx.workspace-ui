@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Login from '@workspaceui/componentlibrary/components/Forms/Login';
 import { useUserContext } from '../../hooks/useUserContext';
@@ -7,7 +7,7 @@ import { useUserContext } from '../../hooks/useUserContext';
 export default function LoginPage() {
   const [error, setError] = useState('');
   const router = useRouter();
-  const { login } = useUserContext();
+  const { token, login } = useUserContext();
 
   const handleLogin = useCallback(
     async (username: string, password: string) => {
@@ -21,6 +21,12 @@ export default function LoginPage() {
     },
     [login, router],
   );
+
+  useEffect(() => {
+    if (token) {
+      router.replace('/');
+    }
+  }, [router, token]);
 
   return <Login title="Etendo" onSubmit={handleLogin} error={error} />;
 }
