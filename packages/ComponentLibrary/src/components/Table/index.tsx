@@ -1,14 +1,6 @@
 import React, { useMemo } from 'react';
-import {
-  MaterialReactTable,
-  MRT_Row,
-  MRT_TableOptions,
-  useMaterialReactTable,
-} from 'material-react-table';
-import {
-  TableProps,
-  OrganizationField,
-} from '../../../../storybook/src/stories/Components/Table/types';
+import { MaterialReactTable, MRT_Row, MRT_TableOptions, useMaterialReactTable } from 'material-react-table';
+import { TableProps, OrganizationField } from '../../../../storybook/src/stories/Components/Table/types';
 import { tableStyles } from './styles';
 import { getColumns } from '../../../../storybook/src/stories/Components/Table/columns';
 
@@ -19,11 +11,7 @@ export interface EnhancedTableProps extends TableProps {
   onRowDoubleClick: (row: MRT_Row<TableDataType>) => void;
 }
 
-const Table: React.FC<EnhancedTableProps> = ({
-  data = [],
-  onRowClick,
-  onRowDoubleClick,
-}) => {
+const Table: React.FC<EnhancedTableProps> = ({ data = [], onRowClick, onRowDoubleClick }) => {
   const columns = useMemo(() => getColumns(), []);
 
   const tableData = useMemo(() => {
@@ -31,9 +19,7 @@ const Table: React.FC<EnhancedTableProps> = ({
       const flatItem: TableDataType = {};
       for (const [key, field] of Object.entries(item)) {
         if ('value' in field && typeof field !== 'function') {
-          flatItem[key] = (
-            field as OrganizationField & { value: unknown }
-          ).value;
+          flatItem[key] = (field as OrganizationField & { value: unknown }).value;
         }
       }
       return flatItem;
@@ -63,7 +49,7 @@ const Table: React.FC<EnhancedTableProps> = ({
       sx: tableStyles.tableBodyCell,
     },
     columnResizeMode: 'onChange',
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as MRT_TableOptions<any>);
 
   return <MaterialReactTable table={table} />;

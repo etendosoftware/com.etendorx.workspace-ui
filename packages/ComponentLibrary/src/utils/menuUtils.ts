@@ -1,6 +1,8 @@
 import { Menu } from '@workspaceui/etendohookbinder/api/types';
 import { RecentItem } from '../components/Drawer/types';
 
+const RECENTLY_VIEWED_ICON = '⌛';
+
 export const createMenuItem = (id: string, name: string, entityName: string): Menu => ({
   _identifier: id,
   _entityName: entityName,
@@ -17,6 +19,7 @@ export const createRecentMenuItem = (item: RecentItem): Menu => ({
 });
 
 export const createParentMenuItem = (items: RecentItem[]): Menu => ({
-  ...createMenuItem('recently-viewed', '⌛ Recently Viewed', 'RecentlyViewed'),
+  ...createMenuItem('recently-viewed', `Recently Viewed`, 'RecentlyViewed'),
+  icon: RECENTLY_VIEWED_ICON,
   children: items.map(createRecentMenuItem),
 });

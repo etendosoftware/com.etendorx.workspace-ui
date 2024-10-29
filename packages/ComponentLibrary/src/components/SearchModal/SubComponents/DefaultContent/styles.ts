@@ -1,4 +1,4 @@
-import { theme } from "../../../../theme";
+import { theme } from '../../../../theme';
 
 export const styles = {
   container: {
@@ -27,7 +27,7 @@ export const styles = {
     fontSize: '0.875rem',
     fontWeight: 500,
     marginBottom: '0.5rem',
-    color: theme.palette.baselineColor.neutral[90]
+    color: theme.palette.baselineColor.neutral[90],
   },
   itemsContainer: {
     display: 'flex',
