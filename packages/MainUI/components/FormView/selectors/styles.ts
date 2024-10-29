@@ -1,4 +1,4 @@
-import { theme } from '../../../../ComponentLibrary/src/theme';
+import { theme } from '@workspaceui/componentlibrary';
 import { CSSProperties } from 'react';
 
 export const styles: { [key: string]: CSSProperties } = {

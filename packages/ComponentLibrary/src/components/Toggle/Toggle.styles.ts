@@ -29,10 +29,7 @@ const switchStyles = (themeParam: Theme) => ({
       border: `0.375rem solid ${theme.palette.baselineColor.neutral[0]}`,
     },
     '&.Mui-disabled .MuiSwitch-thumb': {
-      color:
-        themeParam.palette.mode === 'light'
-          ? themeParam.palette.grey[100]
-          : themeParam.palette.grey[600],
+      color: themeParam.palette.mode === 'light' ? themeParam.palette.grey[100] : themeParam.palette.grey[600],
     },
     '&.Mui-disabled + .MuiSwitch-track': {
       opacity: themeParam.palette.mode === 'light' ? 0.7 : 0.3,

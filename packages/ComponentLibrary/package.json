@@ -1,14 +1,24 @@
 {
   "name": "@workspaceui/componentlibrary",
   "version": "1.0.0",
-  "main": "dist/index.js",
-  "module": "dist/index.esm.js",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "main": "./dist/index.umd.js",
+  "module": "./dist/index.es.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.umd.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./style.css": "./dist/style.css"
+  },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "vite build",
     "clean": "rimraf dist",
     "prepare": "npm run clean && npm run build"
   },
@@ -17,6 +27,9 @@
     "@dnd-kit/modifiers": "^7.0.0",
     "@dnd-kit/sortable": "^8.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@emotion/cache": "^11.13.1",
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
     "@mui/icons-material": "^5.15.14",
     "@mui/lab": "^5.0.0-alpha.165",
     "@mui/material": "^5.15.19",
@@ -32,16 +45,19 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@types/node": "^22.7.8",
     "@types/react": "^18.2.56",
     "@types/react-dom": "^18.2.19",
     "@typescript-eslint/eslint-plugin": "^7.0.2",
     "@typescript-eslint/parser": "^7.0.2",
+    "@vitejs/plugin-react": "^4.2.1",
     "eslint": "^8.56.0",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "path": "^0.12.7",
     "rimraf": "^5.0.0",
     "typescript": "^5.2.2",
     "vite": "^5.1.4",
-    "vite-plugin-svgr": "^4.2.0",
-    "@vitejs/plugin-react": "^4.2.1"
+    "vite-plugin-dts": "^3.9.1",
+    "vite-plugin-svgr": "^4.2.0"
   }
 }
