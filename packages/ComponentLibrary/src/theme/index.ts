@@ -1,7 +1,7 @@
 'use client';
 
 import { createTheme } from '@mui/material';
-export type * from './custom.d.ts';
+export type * from '../custom';
 
 // Colors for MUI attributes
 export const PRIMARY_100 = '#D8DBF6';

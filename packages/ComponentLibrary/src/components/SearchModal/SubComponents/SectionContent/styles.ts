@@ -1,6 +1,6 @@
 // SectionContent/styles.ts
 
-import { theme } from "../../../../theme";
+import { theme } from '../../../../theme';
 
 export const styles = {
   sectionContent: {
