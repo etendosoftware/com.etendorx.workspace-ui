@@ -91,12 +91,11 @@ export interface Option {
   value: string;
 }
 
-export interface BooleanSelectorProps {
-  label: string;
-  readOnly?: boolean;
-  checked?: boolean;
-  onChange?: (checked: boolean) => void;
+export interface GenericSelectorProps {
+  field: FieldDefinition;
 }
+
+export interface BooleanSelectorProps extends GenericSelectorProps {}
 
 export interface NumberSelectorProps {
   name: string;

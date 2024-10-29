@@ -76,7 +76,6 @@ const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, g
   }, []);
 
   const handleInputChange = useCallback((name: string, value: FieldValue) => {
-    console.debug('handleInputChange', { name, value });
     setFormData(prevData => ({
       ...prevData,
       [name]: {

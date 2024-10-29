@@ -1,71 +1,68 @@
-import React, { memo, useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { styles } from './styles';
 import { BooleanSelectorProps } from '../types';
+import { useMetadataContext } from '../../../hooks/useMetadataContext';
 
-const BooleanSelector: React.FC<BooleanSelectorProps> = memo(
-  ({ label, readOnly, checked: externalChecked, onChange }) => {
-    const [internalChecked, setInternalChecked] = useState(false);
-    const [isHovered, setIsHovered] = useState(false);
+const BooleanSelector = ({ field }: BooleanSelectorProps) => {
+  const { record } = useMetadataContext();
+  const [checked, setChecked] = useState<boolean>(Boolean(record?.[field.original.fieldName]));
+  const [hovered, setHovered] = useState(false);
 
-    const isChecked = Boolean(externalChecked || internalChecked);
+  const handleChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setChecked(event.currentTarget.checked);
+  }, []);
 
-    const handleChange = useCallback(
-      (event: React.ChangeEvent<HTMLInputElement>) => {
-        const newChecked = event.target.checked;
-        if (externalChecked === undefined) {
-          setInternalChecked(newChecked);
-        }
-        onChange?.(newChecked);
-      },
-      [externalChecked, onChange],
-    );
+  const handleMouseEnter = useCallback(() => {
+    setHovered(true);
+  }, []);
 
-    const handleMouseEnter = useCallback(() => {
-      setIsHovered(true);
-    }, []);
+  const handleMouseLeave = useCallback(() => {
+    setHovered(false);
+  }, []);
 
-    const handleMouseLeave = useCallback(() => {
-      setIsHovered(false);
-    }, []);
-
-    const checkboxStyle = {
+  const checkboxStyle = useMemo(
+    () => ({
       ...styles.styledCheckbox,
-      ...((isChecked && styles.styledCheckboxChecked) || {}),
-      ...((readOnly && styles.disabled) || {}),
-    };
+      ...((checked && styles.styledCheckboxChecked) || {}),
+      ...((field.original.readOnly && styles.disabled) || {}),
+    }),
+    [checked, field.original.readOnly],
+  );
 
-    const afterStyle = {
+  const afterStyle = useMemo(
+    () => ({
       ...styles.styledCheckboxAfter,
-      ...((isChecked && styles.styledCheckboxCheckedAfter) || {}),
-    };
+      ...((checked && styles.styledCheckboxCheckedAfter) || {}),
+    }),
+    [checked],
+  );
 
-    const borderStyle = {
+  const borderStyle = useMemo(
+    () => ({
       ...styles.checkboxBorder,
-      ...((isHovered && styles.checkboxBorderHover) || {}),
-    };
+      ...((hovered && styles.checkboxBorderHover) || {}),
+    }),
+    [hovered],
+  );
 
-    return (
-      <div
-        style={styles.checkboxContainer}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}>
-        <label style={styles.checkboxLabel}>
-          <input
-            type="checkbox"
-            style={styles.hiddenCheckbox}
-            checked={isChecked}
-            disabled={readOnly}
-            onChange={handleChange}
-          />
-          <span style={checkboxStyle}>
-            <span style={afterStyle} />
-          </span>
-          <span style={styles.labelText}>{label}</span>
-        </label>
-        <div style={borderStyle} />
-      </div>
-    );
-  },
-);
+  return (
+    <div style={styles.checkboxContainer} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+      <label style={styles.checkboxLabel}>
+        <input
+          type="checkbox"
+          style={styles.hiddenCheckbox}
+          checked={checked}
+          disabled={field.original.readOnly}
+          onChange={handleChange}
+        />
+        <span style={checkboxStyle}>
+          <span style={afterStyle} />
+        </span>
+        <span style={styles.labelText}>{field.original.name}</span>
+      </label>
+      <div style={borderStyle} />
+    </div>
+  );
+};
 
 export default BooleanSelector;

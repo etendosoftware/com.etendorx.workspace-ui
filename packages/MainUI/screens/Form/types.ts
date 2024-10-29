@@ -11,7 +11,7 @@ export interface BaseFieldDefinition<T> {
   name: string;
   section?: string;
   required?: boolean;
-  original?: {
+  original: {
     refList: Array<{ id: string; label: string; value: string }>;
     referencedEntity: string;
     referencedWindowId: string;

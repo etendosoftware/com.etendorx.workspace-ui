@@ -6,6 +6,7 @@ import { useWindow } from '@workspaceui/etendohookbinder/hooks/useWindow';
 import { buildColumnsData, groupTabsByLevel } from '../utils/metadata';
 import { Tab } from '@workspaceui/etendohookbinder/api/types';
 import { useParams } from 'next/navigation';
+import useFormRecord from '../hooks/useFormRecord';
 
 interface IMetadataContext {
   getWindow: (windowId: string) => Promise<Etendo.WindowMetadata>;
@@ -21,6 +22,7 @@ interface IMetadataContext {
   selected: Record<string, Record<string, never>>;
   tabs: Tab[];
   tab?: Tab;
+  record?: Record<string, unknown>;
 }
 
 export const MetadataContext = createContext({} as IMetadataContext);
@@ -56,6 +58,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
   const groupedTabs = useMemo(() => groupTabsByLevel(windowData), [windowData]);
   const columnsData = useMemo(() => buildColumnsData(windowData), [windowData]);
+  const record = useFormRecord(tab?.entityName, recordId);
 
   const value = useMemo(
     () => ({
@@ -72,8 +75,22 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       selected,
       tabs,
       tab,
+      record,
     }),
-    [windowId, recordId, loading, error, groupedTabs, windowData, columnsData, selectRecord, selected, tabs, tab],
+    [
+      windowId,
+      recordId,
+      loading,
+      error,
+      groupedTabs,
+      windowData,
+      columnsData,
+      selectRecord,
+      selected,
+      tabs,
+      tab,
+      record,
+    ],
   );
 
   useEffect(() => {
