@@ -1,8 +1,8 @@
 import { Inter } from 'next/font/google';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
-import './styles/fonts.css';
 import './styles/global.css';
 import App from './App';
+import { ThemeRegistry } from './themeProvider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -19,9 +19,9 @@ export default function RootLayout({
     <html lang="en" className={inter.variable}>
       <body>
         <AppRouterCacheProvider>
-          <div id="root">
+          <ThemeRegistry>
             <App>{children}</App>
-          </div>
+          </ThemeRegistry>
         </AppRouterCacheProvider>
       </body>
     </html>
