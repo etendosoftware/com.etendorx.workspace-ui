@@ -11,6 +11,9 @@ import LockOutlined from '../../../assets/icons/lock.svg';
 import Select from '../../Input/Select';
 import { useTranslation } from '../../../../../MainUI/hooks/useTranslation';
 import { Warehouse } from '@workspaceui/etendohookbinder/api/types';
+import { Option } from 'src/components/Input/Select/types';
+
+const isOptionEqualToValue = (option: Option<string>, value: Option<string>) => option.id === value.id;
 
 const icons: { [key in Item]: React.ReactElement } = {
   [Item.Role]: <></>,
@@ -81,6 +84,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               value={selectedRole}
               onChange={onRoleChange}
               iconLeft={icons[Item.Role]}
+              isOptionEqualToValue={isOptionEqualToValue}
             />
             <Select
               id="warehouse-select"
