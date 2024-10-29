@@ -113,7 +113,7 @@ const Home: React.FC = () => {
 
   return (
     <Box sx={styles.mainContainer}>
-      <Box flexShrink={0} padding="0.5rem">
+      <Box flexShrink={0}>
         <TopToolbar {...toolbarConfig} isItemSelected={!!selectedRecord} />
         <ExpandMenu anchorEl={expandAnchorEl} onClose={handleExpandClose} open={Boolean(expandAnchorEl)} />
       </Box>

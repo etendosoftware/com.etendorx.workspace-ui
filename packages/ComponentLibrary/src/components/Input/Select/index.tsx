@@ -24,14 +24,7 @@ const CustomPaper: React.FC<PaperProps> = props => {
 
 type OptionProps = React.HTMLAttributes<HTMLLIElement> & { key?: string };
 
-const Select: React.FC<ISelectInput> = ({
-  title,
-  iconLeft,
-  options = [],
-  disabled = false,
-  helperText,
-  ...props
-}) => {
+const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disabled = false, helperText, ...props }) => {
   const [inputValue, setInputValue] = useState<string>('');
   const [focused, setFocused] = useState<boolean>(false);
 
@@ -48,10 +41,7 @@ const Select: React.FC<ISelectInput> = ({
     setInputValue('');
   };
 
-  const handleSelectionChange = (
-    event: React.SyntheticEvent<Element, Event>,
-    value: Option | null,
-  ) => {
+  const handleSelectionChange = (event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
     props.onChange?.(event, value);
   };
 
@@ -80,14 +70,8 @@ const Select: React.FC<ISelectInput> = ({
         InputProps={{
           ...params.InputProps,
           sx: styles.props,
-          startAdornment: iconLeft && (
-            <InputAdornment position="start">{iconLeft}</InputAdornment>
-          ),
-          endAdornment: (
-            <div style={styles.buttonsContainer}>
-              {params.InputProps.endAdornment}
-            </div>
-          ),
+          startAdornment: iconLeft && <InputAdornment position="start">{iconLeft}</InputAdornment>,
+          endAdornment: <div style={styles.buttonsContainer}>{params.InputProps.endAdornment}</div>,
         }}
         label={title}
         variant="standard"
@@ -126,11 +110,7 @@ const Select: React.FC<ISelectInput> = ({
               {...otherProps}>
               <Typography
                 className="textOption"
-                color={
-                  selected
-                    ? theme.palette.dynamicColor.dark
-                    : theme.palette.baselineColor.neutral[90]
-                }
+                color={selected ? theme.palette.dynamicColor.dark : theme.palette.baselineColor.neutral[90]}
                 style={styles.optionText}>
                 {option.title}
               </Typography>
@@ -142,9 +122,7 @@ const Select: React.FC<ISelectInput> = ({
       {helperText && (
         <FormHelperText component="div" style={styles.helperTextContainer}>
           {helperText.icon}
-          {helperText.label && (
-            <span style={styles.helperText}>{helperText.label}</span>
-          )}
+          {helperText.label && <span style={styles.helperText}>{helperText.label}</span>}
         </FormHelperText>
       )}
     </>

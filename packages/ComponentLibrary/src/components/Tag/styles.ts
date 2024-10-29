@@ -35,7 +35,7 @@ export const getTextColor = (type: TagType): string => {
 
 export const getColoredIcon = (icon: React.ReactElement, type: TagType): React.ReactElement => {
   return React.cloneElement(icon, {
-    style: { ...icon.props.style, ...getColoredIconStyle(type) }
+    style: { ...icon.props.style, ...getColoredIconStyle(type) },
   });
 };
 
@@ -44,7 +44,7 @@ export const getColoredIconStyle = (type: TagType) => ({
   width: '1rem',
   height: '1rem',
   margin: '0',
-  padding: '0'
+  padding: '0',
 });
 
 export const chipStyles = (type: TagType) => ({

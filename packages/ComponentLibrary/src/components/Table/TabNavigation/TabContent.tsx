@@ -7,12 +7,7 @@ import ChevronUpRight from '../../../assets/icons/chevron-right.svg';
 import IconButton from '../../IconButton';
 import { theme } from '../../../theme';
 
-export const TabContent: React.FC<TabContentProps> = ({
-  identifier,
-  type,
-  handleFullSize,
-  isFullSize,
-}) => (
+export const TabContent: React.FC<TabContentProps> = ({ identifier, type, handleFullSize, isFullSize }) => (
   <Box sx={styles.recordContainer}>
     <Box sx={styles.recordHeader}>
       <Box sx={styles.recordContainerItems}>
@@ -31,10 +26,7 @@ export const TabContent: React.FC<TabContentProps> = ({
           sx={styles.iconButton}>
           {isFullSize ? <ChevronDown /> : <ChevronUp />}
         </IconButton>
-        <IconButton
-          size="small"
-          hoverFill={theme.palette.baselineColor.neutral[80]}
-          sx={styles.iconButton}>
+        <IconButton size="small" hoverFill={theme.palette.baselineColor.neutral[80]} sx={styles.iconButton}>
           <ChevronUpRight />
         </IconButton>
       </Box>
