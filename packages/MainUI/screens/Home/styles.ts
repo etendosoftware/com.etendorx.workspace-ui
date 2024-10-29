@@ -12,12 +12,14 @@ const useStyles = () => {
         flexDirection: 'column',
         height: '100%',
         width: '100%',
+        padding: '0 0.5rem',
       },
       container: {
         marginTop: '0.25rem',
         overflow: 'hidden',
         display: 'flex',
         flexGrow: '1',
+        position: 'relative',
       },
       sidebarPaper: {
         right: 4,
@@ -44,6 +46,7 @@ const useStyles = () => {
         overflow: 'hidden',
         height: '100%',
         transition: 'width 0.5s ease',
+        marginTop: '0.5rem',
       },
     }),
     [],

@@ -97,10 +97,9 @@ export const styles = {
     '& .MuiAutocomplete-listbox .MuiAutocomplete-option.Mui-focused': {
       bgcolor: PRIMARY_CONTRAST,
     },
-    '& .MuiAutocomplete-listbox .MuiAutocomplete-option.Mui-focused .textOption':
-      {
-        color: theme.palette.dynamicColor.dark,
-      },
+    '& .MuiAutocomplete-listbox .MuiAutocomplete-option.Mui-focused .textOption': {
+      color: theme.palette.dynamicColor.dark,
+    },
   },
   optionContainer: {
     padding: '0.5rem',
