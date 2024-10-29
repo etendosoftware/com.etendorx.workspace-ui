@@ -83,3 +83,12 @@ select:-webkit-autofill:focus {
   -webkit-box-shadow: 0px 0px 100vw #fff inset;
   transition: background-color 200ms ease-in-out;
 }
+
+.center-all {
+  display: flex;
+  width: 100%;
+  min-height: 100%;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+}

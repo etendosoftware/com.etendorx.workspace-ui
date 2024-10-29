@@ -13,13 +13,16 @@ import { DefaultConfiguration, IUserContext } from './types';
 import { Role, SessionResponse, Warehouse } from '@workspaceui/etendohookbinder/api/types';
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/api/defaultConfig';
 import { usePathname, useRouter } from 'next/navigation';
+import Spinner from '@workspaceui/componentlibrary/components/Spinner';
 
 export const UserContext = createContext({} as IUserContext);
 
 export default function UserProvider(props: React.PropsWithChildren) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [ready, setReady] = useState(false);
   const pathname = usePathname();
-  const navigate = useRouter().push;
+  const router = useRouter();
+  const navigate = router.push;
 
   const [roles, setRoles] = useState<Role[]>(() => {
     const savedRoles = localStorage.getItem('roles');
@@ -177,17 +180,19 @@ export default function UserProvider(props: React.PropsWithChildren) {
     ],
   );
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (token) {
       Metadata.authorize(token);
       Datasource.authorize(token);
     }
   }, [token]);
 
-  useEffect(() => {
-    if (token && pathname === '/login') {
-      navigate('/');
-    } else if (!token && pathname !== '/login') {
+  useLayoutEffect(() => {
+    if (token || pathname === '/login') {
+      setReady(true);
+    }
+
+    if (!token) {
       navigate('/login');
     }
   }, [navigate, pathname, token]);
@@ -217,5 +222,5 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }
   }, [navigate, token]);
 
-  return <UserContext.Provider value={value}>{props.children}</UserContext.Provider>;
+  return <UserContext.Provider value={value}>{ready ? props.children : <Spinner />}</UserContext.Provider>;
 }

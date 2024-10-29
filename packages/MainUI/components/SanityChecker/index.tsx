@@ -1,10 +1,8 @@
-'use client';
-
 import { API_METADATA_URL, MAX_ATTEMPTS } from '@workspaceui/etendohookbinder/api/constants';
 import { useEffect, useRef, useState } from 'react';
 import Spinner from '@workspaceui/componentlibrary/components/Spinner';
 import { logger } from '../../utils/logger';
-import { Button, Box } from '@mui/material';
+import { Button } from '@mui/material';
 
 export default function SanityChecker(props: React.PropsWithChildren) {
   const [connected, setConnected] = useState(false);
@@ -52,17 +50,7 @@ export default function SanityChecker(props: React.PropsWithChildren) {
 
   if (connected) {
     return <>{props.children}</>;
-  } else if (error) {
-    return (
-      <Box display="flex" width="100%" alignItems="center" justifyContent="center">
-        <Button variant="contained">Retry</Button>
-      </Box>
-    );
-  } else {
-    return (
-      <Box display="flex" width="100%" alignItems="center" justifyContent="center">
-        <Spinner />
-      </Box>
-    );
   }
+
+  return <div className="center-all">{error ? <Button variant="contained">Retry</Button> : <Spinner />}</div>;
 }
