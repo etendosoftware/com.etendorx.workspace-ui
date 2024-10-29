@@ -11,7 +11,7 @@ import RecentlyViewed from './RecentlyViewed';
 import { Menu } from '@workspaceui/etendohookbinder/api/types';
 import { Box } from '@mui/material';
 
-const Drawer: React.FC<DrawerProps> = ({ items = [], logo, title, onClick }) => {
+const Drawer: React.FC<DrawerProps> = ({ windowId, items = [], logo, title, onClick }) => {
   const [open, setOpen] = useState<boolean>(true);
   const [searchValue, setSearchValue] = useState<string>('');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -147,6 +147,7 @@ const Drawer: React.FC<DrawerProps> = ({ items = [], logo, title, onClick }) => 
             expandedItems={expandedItems}
             toggleItemExpansion={toggleItemExpansion}
             searchValue={searchValue}
+            windowId={windowId}
           />
         ) : null}
       </Box>

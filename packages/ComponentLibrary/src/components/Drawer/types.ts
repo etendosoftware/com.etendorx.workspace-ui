@@ -12,6 +12,7 @@ export interface DrawerProps {
   headerTitle?: string;
   children?: React.ReactNode;
   sectionGroups?: SectionGroup[];
+  windowId?: string;
 }
 
 export interface MenuTitleProps {
@@ -67,6 +68,7 @@ export interface DrawerItemsProps {
   expandedItems: Set<string>;
   toggleItemExpansion: (itemId: string) => void;
   searchValue: string;
+  windowId?: string;
 }
 
 export interface RecentItem {
