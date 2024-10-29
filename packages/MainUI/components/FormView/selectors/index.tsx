@@ -1,4 +1,4 @@
-import React, { memo, useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Box, Link } from '@mui/material';
 import { TextInputBase } from '@workspaceui/componentlibrary/components';
 import { styles, sx } from '../styles';
@@ -25,7 +25,9 @@ const FieldLabel: React.FC<FieldLabelProps> = ({ label, required, fieldType, onL
   </Box>
 );
 
-const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, readOnly }) => {
+const FormFieldGroup: React.FC<FormFieldGroupProps> = ({ field, onChange, readOnly }) => {
+  const [value, setValue] = useState<string>(field.value != null ? field.value.toString() : '');
+
   const handleLinkClick = useCallback(() => {
     if (field.type === 'tabledir' && field.value && typeof field.value === 'object' && 'id' in field.value) {
       const recordId = field.value.id;
@@ -60,7 +62,7 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
         return (
           <QuantitySelector
             value={field.value}
-            maxLength={field.original?.column?.length}
+            maxLength={field.original?.column?.length?.toString()}
             min={field.original?.column?.minValue ?? null}
             max={field.original?.column?.maxValue ?? null}
             onChange={value => onChange(field.label, value)}
@@ -69,6 +71,20 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
         );
       case 'list':
         return <ListSelector field={field} onChange={onChange} readOnly={readOnly} />;
+      case 'string':
+        return (
+          <TextInputBase
+            margin="normal"
+            value={value}
+            setValue={setValue}
+            // onChange={e => onChange(field.label, e.currentTarget.value)}
+            placeholder={field.original?.fieldName}
+            disabled={field.original?.readOnly}
+            name={field.original?.inpName}
+            autoFocus={field.original?.isFirstFocusedField}
+            required={field.original?.isMandatory}
+          />
+        );
       default:
         return (
           <TextInputBase
@@ -81,7 +97,7 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
           />
         );
     }
-  }, [field, onChange, readOnly]);
+  }, [field, onChange, readOnly, value]);
 
   return (
     <Box style={styles.fieldContainer}>
@@ -97,6 +113,6 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
       <Box sx={sx.inputBox}>{renderField()}</Box>
     </Box>
   );
-});
+};
 
 export default FormFieldGroup;

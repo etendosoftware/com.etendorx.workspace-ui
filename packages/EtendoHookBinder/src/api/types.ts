@@ -55,6 +55,144 @@ export interface GridProps {
   showIf: string;
 }
 
+export interface FieldMetadata {
+  _identifier: string;
+  _entityName: string;
+  $ref: string;
+  id: string;
+  client: string;
+  client$_identifier: string;
+  organization: string;
+  organization$_identifier: string;
+  active: boolean;
+  creationDate: string;
+  createdBy: string;
+  createdBy$_identifier: string;
+  updated: string;
+  updatedBy: string;
+  updatedBy$_identifier: string;
+  name: string;
+  description: string;
+  helpComment: string;
+  centralMaintenance: boolean;
+  tab: string;
+  tab$_identifier: string;
+  column: ColumnMetadata;
+  column$_identifier: string;
+  property?: null;
+  ignoreInWad: boolean;
+  fieldGroup: string;
+  fieldGroup$_identifier: string;
+  displayed: boolean;
+  displayLogic: string;
+  displayedLength: number;
+  readOnly: boolean;
+  sequenceNumber: number;
+  recordSortNo?: null;
+  displayOnSameLine: boolean;
+  displayFieldOnly: boolean;
+  displayEncription: boolean;
+  showInGridView: boolean;
+  isFirstFocusedField: boolean;
+  module: string;
+  module$_identifier: string;
+  gridPosition: number;
+  startinoddcolumn: boolean;
+  startnewline: boolean;
+  shownInStatusBar: boolean;
+  onChangeFunction?: null;
+  clientclass?: null;
+  displaylogicgrid?: null;
+  obuiappColspan?: null;
+  obuiappRowspan?: null;
+  obuiappValidator?: null;
+  oBUIAPPShowSummary: boolean;
+  obuiappSummaryfn?: null;
+  obuiselOutfield?: null;
+  obuiappDefaultExpression?: null;
+  displayLogicEvaluatedInTheServer?: null;
+  recordTime: number;
+  checkonsave: boolean;
+  editableField: boolean;
+  columnName: string;
+  isMandatory: boolean;
+  inpName: string;
+  isParentRecordProperty: boolean;
+  fieldName: string;
+}
+
+export interface ColumnMetadata {
+  _identifier: string;
+  _entityName: string;
+  $ref: string;
+  id: string;
+  client: string;
+  client$_identifier: string;
+  organization: string;
+  organization$_identifier: string;
+  active: boolean;
+  creationDate: string;
+  updated: string;
+  createdBy: string;
+  createdBy$_identifier: string;
+  updatedBy: string;
+  updatedBy$_identifier: string;
+  name: string;
+  description: string;
+  helpComment: string;
+  dBColumnName: string;
+  table: string;
+  table$_identifier: string;
+  reference: string;
+  reference$_identifier: string;
+  referenceSearchKey?: null;
+  validation?: null;
+  length: number;
+  defaultValue?: null;
+  keyColumn: boolean;
+  linkToParentColumn: boolean;
+  mandatory: boolean;
+  updatable: boolean;
+  readOnlyLogic?: null;
+  identifier: boolean;
+  sequenceNumber: number;
+  translation: boolean;
+  displayEncription: boolean;
+  calloutFunction?: null;
+  valueFormat?: null;
+  minValue?: null;
+  maxValue?: null;
+  filterColumn: boolean;
+  applicationElement: string;
+  applicationElement$_identifier: string;
+  process?: null;
+  storedInSession: boolean;
+  secondaryKey: boolean;
+  deencryptable: boolean;
+  callout?: null;
+  developmentStatus: string;
+  module: string;
+  module$_identifier: string;
+  position: number;
+  transient: boolean;
+  transientCondition?: null;
+  isautosave: boolean;
+  validateOnNew: boolean;
+  excludeAudit: boolean;
+  imageSizeValuesAction: string;
+  imageWidth?: null;
+  imageHeight?: null;
+  useAutomaticSequence: boolean;
+  sqllogic?: null;
+  entityAlias?: null;
+  allowSorting: boolean;
+  oBUIAPPProcess?: null;
+  allowFiltering: boolean;
+  allowedCrossOrganizationReference: boolean;
+  childPropertyInParentEntity: boolean;
+  recordTime: number;
+}
+
 export interface Field {
   process: string;
   shownInStatusBar: boolean;
@@ -98,7 +236,7 @@ export interface MappedField {
   required?: boolean;
 }
 
-export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'search' |  'tabledir' | 'quantity' | 'list';
+export type FieldType = 'string' | 'text' | 'number' | 'date' | 'boolean' | 'select' | 'tabledir' | 'quantity' | 'list';
 
 export interface MappedTab {
   id: string;

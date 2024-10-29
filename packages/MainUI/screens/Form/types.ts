@@ -1,10 +1,8 @@
-import { Field } from '@workspaceui/etendohookbinder/api/types';
+import { FieldType, FieldMetadata } from '@workspaceui/etendohookbinder/api/types';
 
 export interface FieldInfo {
   fieldGroup$_identifier?: string;
 }
-
-export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'tabledir' | 'quantity' | 'list';
 
 export interface BaseFieldDefinition<T> {
   value: T;
@@ -19,7 +17,7 @@ export interface BaseFieldDefinition<T> {
     referencedWindowId: string;
     referencedTabId: string;
     fieldName: string;
-  } & Field;
+  } & FieldMetadata;
 }
 export type FieldDefinition =
   | BaseFieldDefinition<string>
@@ -41,3 +39,5 @@ export interface Section {
 }
 
 export type FormData = Record<string, FieldDefinition | Section>;
+
+export type { FieldType };

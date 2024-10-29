@@ -7,6 +7,8 @@ export function mapColumnTypeToFieldType(column: Column): FieldType {
     return 'text';
   }
   switch (column?.reference) {
+    case '10':
+      return 'string';
     case '19':
       return 'tabledir';
     case '15':
@@ -28,11 +30,11 @@ export function mapColumnTypeToFieldType(column: Column): FieldType {
   }
 }
 
-export function ensureFieldValue(value: unknown): string | number | boolean | Date | string[] {
+export function ensureFieldValue(value: unknown): string | number | boolean | Date | string[] | null {
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
   if (value instanceof Date) return value;
   if (Array.isArray(value) && value.every(item => typeof item === 'string')) return value;
-  return String(value);
+  return value != null ? String(value) : null;
 }
 
 export function mapWindowMetadata(windowData: WindowMetadata): MappedData {

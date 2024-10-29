@@ -75,35 +75,33 @@ const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, g
     }
   }, []);
 
-  const handleInputChange = useCallback(
-    (name: string, value: FieldValue) => {
-      setFormData(prevData => ({
-        ...prevData,
-        [name]: {
-          ...prevData[name],
-          value: value,
-        } as FieldDefinition,
-      }));
-      onChange?.(formData);
-    },
-    [formData, onChange],
-  );
+  const handleInputChange = useCallback((name: string, value: FieldValue) => {
+    console.debug('handleInputChange', { name, value });
+    setFormData(prevData => ({
+      ...prevData,
+      [name]: {
+        ...prevData[name],
+        value: value,
+      } as FieldDefinition,
+    }));
+  }, []);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
   }, []);
 
-  const groupedFields = Object.entries(formData).reduce(
-    (acc, [key, value]) => {
-      if ('section' in value) {
-        const section = value.section ?? '_mainSection';
-        if (!acc[section]) acc[section] = [];
-        acc[section].push([key, value]);
-      }
-      return acc;
-    },
-    {} as { [key: string]: [string, FieldDefinition][] },
-  );
+  const groupedFields = Object.entries(formData).reduce((acc, [key, value]) => {
+    if ('section' in value) {
+      const section = value.section ?? '_mainSection';
+      if (!acc[section]) acc[section] = [];
+      acc[section].push([key, value]);
+    }
+    return acc;
+  }, {} as { [key: string]: [string, FieldDefinition][] });
+
+  useEffect(() => {
+    onChange?.(formData);
+  }, [formData, onChange]);
 
   return (
     <Box display="flex" flexDirection="column" height="100%" width="100%" padding="0 0 0.5rem 0.5rem">
