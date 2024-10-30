@@ -3,13 +3,14 @@ import Box from '@mui/material/Box';
 import { Tooltip } from '@mui/material';
 import Typography from '@mui/material/Typography';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
-import useStyles from '../styles';
+import useStyle from '../styles';
 import { MenuTitleProps } from '../types';
+import { SxProps, Theme } from '@mui/material';
 
 export default function MenuTitle({ item, onClick, selected, expanded, open }: MenuTitleProps) {
-  const styles = useStyles();
   const textRef = useRef<HTMLSpanElement>(null);
   const [isTextTruncated, setIsTextTruncated] = useState(false);
+  const { sx } = useStyle();
 
   useEffect(() => {
     const checkTextTruncation = () => {
@@ -23,21 +24,34 @@ export default function MenuTitle({ item, onClick, selected, expanded, open }: M
     return () => window.removeEventListener('resize', checkTextTruncation);
   }, [item.name]);
 
+  const boxStyles: SxProps<Theme> = {
+    ...(sx.listItemButton as object),
+    ...(sx.listItemContentText as object),
+    ...(selected ? (sx.listItemButtonSelected as object) : {}),
+    ...(open ? {} : (sx.iconsClosed as object)),
+  };
+
+  const tooltipStyles = {
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  };
+
+  const innerContentStyles: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    overflow: 'hidden',
+    justifyContent: 'flex-start',
+  };
+
   return (
-    <Box
-      onClick={onClick}
-      sx={{
-        ...styles.listItemButton,
-        ...styles.listItemContentText,
-        ...(selected ? styles.listItemButtonSelected : undefined),
-        ...(open ? undefined : styles.iconsClosed),
-      }}>
-      <div style={styles.listItemInnerContentText}>
-        <Typography sx={styles.listItemText}>
+    <Box onClick={onClick} sx={boxStyles}>
+      <div style={innerContentStyles}>
+        <Typography sx={sx.listItemText}>
           {item.icon ? <span>{item.icon}</span> : null}
           {open && (
             <Tooltip title={item.name} arrow disableHoverListener={!isTextTruncated}>
-              <span ref={textRef} style={styles.tooltipTruncation}>
+              <span ref={textRef} style={tooltipStyles}>
                 {item.name}
               </span>
             </Tooltip>

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
 import { Box, Paper } from '@mui/material';
 import TabContainer from './TabContainer';
-import { styles } from './styles';
+import { useStyle } from './styles';
 import type { ResizableTabContainerProps } from './types';
 
 const MAX_HEIGHT = 94;
@@ -64,21 +64,23 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
       handleHeightChange(containerHeight === MAX_HEIGHT ? DEFAULT_HEIGHT : MAX_HEIGHT);
     }, [containerHeight, handleHeightChange]);
 
+    const { sx } = useStyle();
+
     const [isFullSize, setIsFullSize] = useState(false);
 
     const paperStyle = useMemo(
       () => ({
-        ...styles.paper,
+        ...sx.paper,
         height: `${containerHeight}vh`,
         transform: `translateY(${isOpen ? '0' : '100%'})`,
       }),
-      [containerHeight, isOpen],
+      [containerHeight, isOpen, sx.paper],
     );
 
     return (
       <Paper elevation={4} ref={containerRef} sx={paperStyle}>
-        <Box data-resizer sx={styles.resizer} />
-        <Box onMouseDown={handleMouseDown} onDoubleClick={handleDoubleClick} sx={styles.container}>
+        <Box data-resizer sx={sx.resizer} />
+        <Box onMouseDown={handleMouseDown} onDoubleClick={handleDoubleClick} sx={sx.container}>
           <TabContainer
             isOpen={isOpen}
             onClose={onClose}

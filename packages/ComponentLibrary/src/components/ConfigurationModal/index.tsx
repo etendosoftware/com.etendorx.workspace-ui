@@ -1,10 +1,9 @@
-import { Grid, Link, Menu } from '@mui/material';
+import { Grid, Link, Menu, useTheme } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import { BORDER_SELECT_1, BORDER_SELECT_2, COLUMN_SPACING, FIRST_MARGIN_TOP, menuSyle, styles, sx } from './style';
+import { BORDER_SELECT_1, BORDER_SELECT_2, COLUMN_SPACING, FIRST_MARGIN_TOP, menuSyle, useStyle } from './style';
 import { IConfigurationModalProps, ISection } from './types';
 import checkIconUrl from '../../assets/icons/check-circle-filled.svg?url';
 import './style.css';
-import { theme } from '../../theme';
 import IconButton from '../IconButton';
 
 const IconRenderer = ({ icon }: { icon: string | React.ReactNode }): JSX.Element => {
@@ -33,6 +32,8 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
     sectionIndex: number;
     imageIndex: number;
   } | null>(null);
+  const theme = useTheme();
+  const { styles, sx } = useStyle();
 
   useEffect(() => {
     setSectionsState(sections);

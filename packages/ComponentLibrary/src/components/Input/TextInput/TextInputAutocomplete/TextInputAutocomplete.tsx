@@ -1,17 +1,16 @@
 'use client';
 
 import { useState, useEffect, KeyboardEvent, useCallback } from 'react';
-import { TextField, InputAdornment, IconButton, Box } from '@mui/material';
+import { TextField, InputAdornment, IconButton, Box, useTheme } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterIcon from '@mui/icons-material/FilterList';
 import CircularProgress from '@mui/material/CircularProgress';
 import CloseIcon from '@mui/icons-material/Close';
 import { TextInputProps } from './TextInputComplete.types';
-import { containerIconStyle, CSS_STYLES, gradients, SX_STYLES } from './TextInputAutocomplete.styles';
 import { DEFAULT_CONSTANTS } from './TextInputAutocomplete.constants';
 import SuggestionBox from './SuggestionBox';
-import { theme } from '../../../../theme';
 import { SmartButton } from '@mui/icons-material';
+import { useStyle } from './TextInputAutocomplete.styles';
 
 const TextInputAutoComplete = (props: TextInputProps) => {
   const {
@@ -30,6 +29,8 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   const [suggestion, setSuggestion] = useState<string>('');
   const [smartIconActive, setSmartIconActive] = useState(false);
   const [activeIcon, setActiveIcon] = useState('');
+  const theme = useTheme();
+  const { sx, styles, gradients } = useStyle();
 
   const getIconStyle = (iconName: string) => ({
     backgroundColor:
@@ -144,7 +145,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
 
     return (
       <InputAdornment position="start">
-        <Box sx={SX_STYLES.startAdornment}>{iconElement}</Box>
+        <Box sx={sx.startAdornment}>{iconElement}</Box>
       </InputAdornment>
     );
   };
@@ -154,11 +155,11 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     !props.disabled && (
       <InputAdornment position="end">
         {value && (
-          <IconButton onClick={handleClear} sx={SX_STYLES.clearButtonHover}>
+          <IconButton onClick={handleClear} sx={sx.clearButtonHover}>
             <CloseIcon sx={{ color: theme.palette.baselineColor.neutral[70] }} />
           </IconButton>
         )}
-        <Box sx={containerIconStyle}>
+        <Box sx={sx.containerIcon}>
           <IconButton
             onClick={() => {
               handleIconClick('smart');
@@ -175,7 +176,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     );
 
   const textFieldSx = {
-    ...CSS_STYLES.inputCommon,
+    ...styles.inputCommon,
     opacity: props.disabled ? 0.4 : 1,
     backgroundColor: theme.palette.baselineColor.neutral[0],
     '& .MuiOutlinedInput-root': {
@@ -206,8 +207,8 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   };
 
   return (
-    <Box sx={SX_STYLES.containerBox}>
-      <Box sx={SX_STYLES.innerBox}>
+    <Box sx={sx.containerBox}>
+      <Box sx={sx.innerBox}>
         <TextField
           placeholder={props.placeholder}
           onBlur={handleBlur}
@@ -221,7 +222,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
           InputProps={{
             ...textFieldProps.InputProps,
             sx: {
-              ...CSS_STYLES.input,
+              ...sx.input,
               '& .MuiOutlinedInput-input': {
                 '&::placeholder': {
                   color: theme.palette.baselineColor.transparentNeutral[70],
@@ -239,7 +240,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
           inputProps={{
             ...props.inputProps,
             style: {
-              ...CSS_STYLES.inputProps,
+              ...styles.inputProps,
               ...props.inputProps?.style,
             },
           }}

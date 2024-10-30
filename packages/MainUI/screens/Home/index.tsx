@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { theme } from '@workspaceui/componentlibrary/components';
 import { createToolbarConfig } from '@workspaceui/storybook/stories/Components/Table/toolbarMock';
 import createWidgets from '@workspaceui/storybook/stories/Components/Table/mockWidget';
 import SideIcon from '@workspaceui/componentlibrary/assets/icons/codesandbox.svg';
@@ -9,7 +8,7 @@ import BackgroundGradientUrl from '@workspaceui/componentlibrary/assets/images/s
 import TopToolbar from '@workspaceui/componentlibrary/components/Table/Toolbar';
 import Sidebar from '@workspaceui/componentlibrary/components/Table/Sidebar';
 import ExpandMenu from '@workspaceui/componentlibrary/components/Table/ExpandMenu';
-import { Box, Paper } from '@mui/material';
+import { Box, Paper, useTheme } from '@mui/material';
 import { useRecordContext } from '../../hooks/useRecordContext';
 import useStyles from './styles';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -26,6 +25,7 @@ const Home: React.FC = () => {
   const formattedRecord = useMemo(() => getFormattedRecord(selectedRecord), [selectedRecord, getFormattedRecord]);
   const { id = '' } = useParams();
   const { t } = useTranslation();
+  const theme = useTheme();
 
   const paperStyles = useMemo(
     () =>

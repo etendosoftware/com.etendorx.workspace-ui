@@ -1,16 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Select from '@workspaceui/componentlibrary/components/Input/Select';
 import SearchOutlined from '@workspaceui/componentlibrary/assets/icons/search.svg';
-import { theme } from '@workspaceui/componentlibrary/theme';
 import { Option } from '@workspaceui/componentlibrary/components/Input/Select/types';
 import { ListSelectorProps } from '../types';
+import { useTheme } from '@mui/material';
 
 const ListSelector: React.FC<ListSelectorProps> = ({ field, onChange, readOnly }) => {
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
+  const theme = useTheme();
 
   const options: Option[] = useMemo(() => {
     if (field.original?.refList) {
-      return field.original.refList.map((item: { id: string; label: string; value: string; }) => ({
+      return field.original.refList.map((item: { id: string; label: string; value: string }) => ({
         id: item.id,
         title: item.label,
         value: item.value,

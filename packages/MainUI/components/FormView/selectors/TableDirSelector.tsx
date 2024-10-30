@@ -3,15 +3,16 @@ import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource
 import Spinner from '@workspaceui/componentlibrary/components/Spinner';
 import Select from '@workspaceui/componentlibrary/components/Input/Select';
 import SearchOutlined from '../../../../ComponentLibrary/src/assets/icons/search.svg';
-import { theme } from '@workspaceui/componentlibrary/theme';
 import { TableDirSelectorProps } from '../types';
 import { Option } from '../../../../ComponentLibrary/src/components/Input/Select/types';
+import { useTheme } from '@mui/material';
 
 const getOptionLabel = (option: Option) => option.title;
 
 const optionEqualValue = (option: Option, value: { id: string }) => option.id === value.id || option.value === value.id;
 
 const TableDirSelector: React.FC<TableDirSelectorProps> = ({ onChange, label, entity, value }) => {
+  const theme = useTheme();
   const { records, loading, error, loaded } = useDatasource(entity);
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
 

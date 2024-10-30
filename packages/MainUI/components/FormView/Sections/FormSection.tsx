@@ -1,8 +1,7 @@
 import React from 'react';
-import { Accordion, AccordionSummary, AccordionDetails, Typography, Box, Grid } from '@mui/material';
+import { Accordion, AccordionSummary, AccordionDetails, Typography, Box, Grid, useTheme } from '@mui/material';
 import ChevronDown from '../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
-import { theme } from '@workspaceui/componentlibrary/theme';
-import { defaultFill, styles, sx } from '../styles';
+import { defaultFill, useStyle } from '../styles';
 import IconButton from '@workspaceui/componentlibrary/components/IconButton';
 import InfoIcon from '../../../../ComponentLibrary/src/assets/icons/info.svg';
 import { FormSectionProps } from '../types';
@@ -23,6 +22,8 @@ const FormSection: React.FC<FormSectionProps> = ({
   readOnly = false,
   children,
 }) => {
+  const { sx, styles } = useStyle();
+  const theme = useTheme();
   return (
     <Accordion
       sx={sx.accordion}

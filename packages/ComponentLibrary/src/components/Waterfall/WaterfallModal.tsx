@@ -1,16 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, Button, List, Menu, MenuItem, styled } from '@mui/material';
+import { Box, Button, List, Menu, MenuItem, styled, useTheme } from '@mui/material';
 import DragModalContent from '../DragModal/DragModalContent';
 import { Person } from '../DragModal/DragModal.types';
 import ModalDivider from '../ModalDivider';
-import { menuSyle, styles, sx } from './WaterfallModal.styles';
+import { menuSyle, useStyle } from './styles';
 import NavigateNext from '../../assets/icons/chevron-right.svg';
 import Edit from '../../assets/icons/edit.svg';
-import { WaterfallModalProps } from './WaterfallModal.types';
+import { WaterfallModalProps } from './types';
 import IconButton from '../IconButton';
-import { theme } from '../../theme';
 
 const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
   menuItems,
@@ -31,6 +30,8 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
     },
   });
 
+  const theme = useTheme();
+  const { sx, styles } = useStyle();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [showDragModal, setShowDragModal] = useState(false);
   const [fade, setFade] = useState(false);

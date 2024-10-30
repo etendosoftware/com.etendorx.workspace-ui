@@ -1,11 +1,12 @@
 import React from 'react';
-import { TextField, InputAdornment, IconButton } from '@mui/material';
+import { TextField, InputAdornment, IconButton, useTheme } from '@mui/material';
 import { TextInputProps } from '../TextInputAutocomplete/TextInputComplete.types';
-import { inputBaseStyles } from './TextInputBase.styles';
-import { theme } from '../../../../theme';
+import { useStyle } from './TextInputBase.styles';
 
 const TextInputBase = (props: TextInputProps) => {
   const { value, setValue, label, leftIcon, rightIcon, onLeftIconClick, onRightIconClick, type, ...otherProps } = props;
+  const theme = useTheme();
+  const { styles, sx, cssString } = useStyle();
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue?.(event.target.value);
@@ -13,7 +14,7 @@ const TextInputBase = (props: TextInputProps) => {
 
   return (
     <>
-      <style>{inputBaseStyles.cssStyles}</style>
+      <style>{cssString}</style>
       <TextField
         id="input-base"
         variant="standard"
@@ -29,7 +30,7 @@ const TextInputBase = (props: TextInputProps) => {
         type={type}
         InputProps={{
           startAdornment: leftIcon && (
-            <InputAdornment position="start" sx={inputBaseStyles.inputAdornment}>
+            <InputAdornment position="start" sx={styles.inputAdornment}>
               <IconButton
                 aria-label="left icon"
                 onClick={onLeftIconClick}
@@ -40,7 +41,7 @@ const TextInputBase = (props: TextInputProps) => {
             </InputAdornment>
           ),
           endAdornment: rightIcon && (
-            <InputAdornment position="end" sx={inputBaseStyles.inputAdornment}>
+            <InputAdornment position="end" sx={styles.inputAdornment}>
               <IconButton
                 aria-label="right-icon"
                 onClick={onRightIconClick}
@@ -50,9 +51,9 @@ const TextInputBase = (props: TextInputProps) => {
               </IconButton>
             </InputAdornment>
           ),
-          style: inputBaseStyles.inputStyle,
+          style: styles.inputStyle,
         }}
-        sx={inputBaseStyles.inputBase}
+        sx={sx.inputBase}
         placeholder={props.placeholder}
         {...otherProps}
       />

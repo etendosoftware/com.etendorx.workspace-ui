@@ -16,9 +16,8 @@ import type { DragModalContentProps } from './DragModal.types';
 import ModalDivider from '../ModalDivider';
 import DragIndicator from '../../assets/icons/drag.svg';
 import NavigateBefore from '../../assets/icons/chevron-left.svg';
-import { styles, sx } from './DragModal.styles';
-import { Box, Button, Link } from '@mui/material';
-import { theme } from '../../theme';
+import { useStyle } from './styles';
+import { Box, Button, Link, useTheme } from '@mui/material';
 import { restrictToParentElement, restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
 const DragModalContent: React.FC<DragModalContentProps> = ({
@@ -34,6 +33,8 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { distance: 5 } }),
   );
+  const theme = useTheme();
+  const { styles, sx } = useStyle();
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {

@@ -9,9 +9,36 @@ import {
   NoteAltOutlined,
   FileDownloadOutlined,
 } from '@mui/icons-material';
-import { sx } from '../../../../ComponentLibrary/src/components/NotificationItem/styles';
+import { theme } from '../../../../ComponentLibrary/src/theme';
 
-export const NOTIFICATIONS: Inotifications[] = [
+const buttonStyles = {
+  leftButton: {
+    background: theme.palette.baselineColor.transparentNeutral[10],
+    color: theme.palette.baselineColor.transparentNeutral[70],
+    height: '2rem',
+    borderRadius: '6.25rem',
+    padding: '0.5rem 1rem',
+    border: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
+    '&:hover': {
+      border: '1px solid transparent',
+      background: theme.palette.dynamicColor.main,
+      color: theme.palette.baselineColor.neutral[10],
+    },
+  },
+  rightButton: {
+    background: theme.palette.baselineColor.neutral[100],
+    color: theme.palette.baselineColor.neutral[0],
+    height: '2rem',
+    borderRadius: '6.25rem',
+    padding: '0.5rem 1rem',
+    '&:hover': {
+      background: theme.palette.dynamicColor.main,
+      color: theme.palette.baselineColor.neutral[10],
+    },
+  },
+};
+
+export const createNotifications = (): Inotifications[] => [
   {
     id: '1',
     description: 'The costs have been calculated for July 30, 2024.',
@@ -31,21 +58,20 @@ export const NOTIFICATIONS: Inotifications[] = [
         key: 'retry',
         label: 'do it myself',
         action: () => console.log('Retry clicked'),
-        sx: sx.leftButton,
+        sx: buttonStyles.leftButton,
       },
       {
         key: 'contact-support',
         label: 'Copilot is in charge',
         action: () => console.log('Contact Support clicked'),
         icon: AutoAwesome,
-        sx: sx.rightButton,
+        sx: buttonStyles.rightButton,
       },
     ],
   },
   {
     id: '3',
-    description:
-      'A new version of Etendo has come out; it **is necessary to update** the system.',
+    description: 'A new version of Etendo has come out; it **is necessary to update** the system.',
     priority: 'medium priority',
     date: '2023-01-03',
     tagType: 'warning',
@@ -56,14 +82,14 @@ export const NOTIFICATIONS: Inotifications[] = [
         label: 'Release note',
         action: () => console.log('View Details clicked'),
         icon: NoteAltOutlined,
-        sx: sx.leftButton,
+        sx: buttonStyles.leftButton,
       },
       {
         key: 'update',
         label: 'Update',
         action: () => console.log('Dismiss clicked'),
         icon: FileDownloadOutlined,
-        sx: sx.rightButton,
+        sx: buttonStyles.rightButton,
       },
     ],
   },
@@ -77,11 +103,12 @@ export const NOTIFICATIONS: Inotifications[] = [
   },
   {
     id: '5',
-    description:
-      '[Alexandra Asto](https://example.com) te menciono [💳 946240](https://example.com)',
+    description: '[Alexandra Asto](https://example.com) te menciono [💳 946240](https://example.com)',
     priority: 'Draft',
     date: '2023-01-05',
     tagType: 'draft',
     icon: Person,
   },
 ];
+
+export const NOTIFICATIONS = createNotifications();

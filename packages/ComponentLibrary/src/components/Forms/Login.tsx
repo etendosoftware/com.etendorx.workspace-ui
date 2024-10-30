@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useState } from 'react';
 import { Box, Button, Input, Paper } from '@mui/material';
-import { styles } from './styles';
+import { useStyle } from './styles';
 
 export default function Login({
   title,
@@ -14,6 +14,7 @@ export default function Login({
 }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const { styles } = useStyle();
 
   const handleUsernameChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.currentTarget.value),

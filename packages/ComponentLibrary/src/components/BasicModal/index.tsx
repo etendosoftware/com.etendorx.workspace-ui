@@ -1,13 +1,11 @@
 'use client';
-
 import React, { useState } from 'react';
-import { Typography, Button, Box } from '@mui/material';
+import { Typography, Button, Box, useTheme } from '@mui/material';
 import ModalMUI from '@mui/material/Modal';
 import IconButton from '../IconButton';
 import { Container, Position } from '../enums';
 import { ModalIProps } from './types';
-import { IconSize, styles, sx } from './styles';
-import { theme } from '../../theme';
+import { IconSize, useStyles } from './styles';
 import CloseIcon from '../../assets/icons/x.svg';
 import MaximizeIcon from '../../assets/icons/maximize-2.svg';
 import MinimizeIcon from '../../assets/icons/minimize-2.svg';
@@ -34,6 +32,8 @@ const Modal: React.FC<ModalIProps> = ({
 }) => {
   const [open, setOpen] = useState<boolean>(false);
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
+  const theme = useTheme();
+  const { styles, sx } = useStyles();
 
   const handleOpen = () => setOpen(true);
 

@@ -1,19 +1,20 @@
-import React from 'react';
-import { Button } from '@mui/material';
-import { toggleContainerStyles, toggleButtonStyles } from './styles';
+import { Button, useTheme } from '@mui/material';
+import { useStyle } from './styles';
 import { ToggleSectionsProps } from './types';
-import { theme } from '../../../theme';
 
 const ToggleSections: React.FC<ToggleSectionsProps> = ({ sections, currentSection, onToggle }) => {
+  const theme = useTheme();
+  const { styles } = useStyle();
+
   return (
-    <div style={toggleContainerStyles}>
+    <div style={styles.toggleContainerStyles}>
       {sections.map(({ id, label, icon }) => {
         const isActive = currentSection === id;
         return (
           <Button
             key={id}
             style={{
-              ...toggleButtonStyles,
+              ...styles.toggleButtonStyles,
               backgroundColor: isActive ? theme.palette.baselineColor.neutral[0] : '',
             }}
             onClick={() => onToggle(id)}

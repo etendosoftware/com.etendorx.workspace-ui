@@ -1,11 +1,12 @@
 import React, { memo, useState, useCallback } from 'react';
-import { styles } from './styles';
+import { useStyle } from './styles';
 import { BooleanSelectorProps } from '../types';
 
 const BooleanSelector: React.FC<BooleanSelectorProps> = memo(
   ({ label, readOnly, checked: externalChecked, onChange }) => {
     const [internalChecked, setInternalChecked] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
+    const { styles } = useStyle();
 
     const isChecked = Boolean(externalChecked || internalChecked);
 
@@ -45,10 +46,7 @@ const BooleanSelector: React.FC<BooleanSelectorProps> = memo(
     };
 
     return (
-      <div
-        style={styles.checkboxContainer}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}>
+      <div style={styles.checkboxContainer} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
         <label style={styles.checkboxLabel}>
           <input
             type="checkbox"

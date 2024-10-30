@@ -2,7 +2,7 @@ import { ListItem, Typography, IconButton, Button, Box } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import { NotificationItemProps } from './types';
 import Tag from '../Tag';
-import { styles, sx } from './styles';
+import { useStyle } from './styles';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 import CloseIcon from '../../assets/icons/x.svg';
 
@@ -14,6 +14,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   icon: IconComponent,
   ctaButtons,
 }) => {
+  const { styles, sx } = useStyle();
   const markdownComponents = {
     a: ({ ...props }) => <a style={styles.anchorStyles} {...props} />,
     p: ({ ...props }) => <div {...props} />,
@@ -29,9 +30,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
           <IconComponent />
         </div>
         <div style={styles.textContainerStyles} className="textContainer">
-          <ReactMarkdown components={markdownComponents}>
-            {description}
-          </ReactMarkdown>
+          <ReactMarkdown components={markdownComponents}>{description}</ReactMarkdown>
           {priority && tagType && <Tag type={tagType} label={priority} />}
           {ctaButtons && (
             <div style={styles.ctaButtonContainer}>
@@ -49,10 +48,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
           )}
           <div style={styles.dateContainer}>
             <CalendarTodayOutlinedIcon style={styles.dateStyles} />
-            <Typography
-              variant="body2"
-              color="textSecondary"
-              style={styles.dateStyles}>
+            <Typography variant="body2" color="textSecondary" style={styles.dateStyles}>
               {date}
             </Typography>
           </div>

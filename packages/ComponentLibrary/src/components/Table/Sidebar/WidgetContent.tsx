@@ -1,11 +1,8 @@
 import { Box, Grid, Typography } from '@mui/material';
-import { sx } from '../styles';
+import { useStyle } from '../styles';
 import IconButton from '../../IconButton';
 import InformationIcon from '../../../assets/icons/info.svg';
-import {
-  ContentGridProps,
-  Widget,
-} from '../../../../../storybook/src/stories/Components/Table/types';
+import { ContentGridProps, Widget } from '../../../../../storybook/src/stories/Components/Table/types';
 
 const WidgetComponent: React.FC<Widget> = ({
   title,
@@ -20,41 +17,46 @@ const WidgetComponent: React.FC<Widget> = ({
   iconButtonHoverColor,
   iconButtonBgColor,
   iconButtonHoverBgColor,
-}) => (
-  <Box sx={{ ...sx.widgetContainer, background: bgcolor, color: color }}>
-    <Box sx={sx.widgetHeader}>
-      <Box sx={sx.widgetHeaderLeft}>
-        <Box
-          sx={{
-            ...sx.widgetHeaderIcon,
-            background: iconBgColor ?? 'transparent',
-          }}>
-          {icon}
+}) => {
+  const { sx } = useStyle();
+
+  return (
+    <Box sx={{ ...sx.widgetContainer, background: bgcolor, color: color }}>
+      <Box sx={sx.widgetHeader}>
+        <Box sx={sx.widgetHeaderLeft}>
+          <Box
+            sx={{
+              ...sx.widgetHeaderIcon,
+              background: iconBgColor ?? 'transparent',
+            }}>
+            {icon}
+          </Box>
+          <Typography sx={{ ml: 1 }}>{title}</Typography>
         </Box>
-        <Typography sx={{ ml: 1 }}>{title}</Typography>
+        {iconButtonAction && (
+          <IconButton
+            width={16}
+            height={16}
+            tooltip={tooltip}
+            onClick={iconButtonAction}
+            fill={iconButtonColor}
+            hoverFill={iconButtonHoverColor}
+            sx={{
+              background: iconButtonBgColor,
+              '&:hover': { background: iconButtonHoverBgColor },
+            }}>
+            <InformationIcon />
+          </IconButton>
+        )}
       </Box>
-      {iconButtonAction && (
-        <IconButton
-          width={16}
-          height={16}
-          tooltip={tooltip}
-          onClick={iconButtonAction}
-          fill={iconButtonColor}
-          hoverFill={iconButtonHoverColor}
-          sx={{
-            background: iconButtonBgColor,
-            '&:hover': { background: iconButtonHoverBgColor },
-          }}>
-          <InformationIcon />
-        </IconButton>
-      )}
+      <Box sx={sx.widgetBox}>{children}</Box>
     </Box>
-    <Box sx={sx.widgetBox}>{children}</Box>
-  </Box>
-);
+  );
+};
 
 const ContentGrid: React.FC<ContentGridProps> = ({ widgets }) => {
   const getGridSize = (size?: Widget['size']) => (size === 'full' ? 12 : 6);
+  const { sx } = useStyle();
 
   return (
     <Box sx={sx.gridContainer}>

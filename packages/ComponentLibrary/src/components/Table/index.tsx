@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { MaterialReactTable, MRT_Row, MRT_TableOptions, useMaterialReactTable } from 'material-react-table';
 import { TableProps, OrganizationField } from '../../../../storybook/src/stories/Components/Table/types';
-import { tableStyles } from './styles';
+import { useStyle } from './styles';
 import { getColumns } from '../../../../storybook/src/stories/Components/Table/columns';
 
 type TableDataType = Record<string, unknown>;
@@ -12,6 +12,7 @@ export interface EnhancedTableProps extends TableProps {
 }
 
 const Table: React.FC<EnhancedTableProps> = ({ data = [], onRowClick, onRowDoubleClick }) => {
+  const { sx } = useStyle();
   const columns = useMemo(() => getColumns(), []);
 
   const tableData = useMemo(() => {
@@ -37,16 +38,16 @@ const Table: React.FC<EnhancedTableProps> = ({ data = [], onRowClick, onRowDoubl
     muiTableBodyRowProps: ({ row }) => ({
       onClick: () => onRowClick(row),
       onDoubleClick: () => onRowDoubleClick(row),
-      sx: tableStyles.tableBodyRow,
+      sx: sx.tableBodyRow,
     }),
     muiTableBodyProps: {
-      sx: tableStyles.tableBody,
+      sx: sx.tableBody,
     },
     muiTableHeadCellProps: {
-      sx: tableStyles.tableHeadCell,
+      sx: sx.tableHeadCell,
     },
     muiTableBodyCellProps: {
-      sx: tableStyles.tableBodyCell,
+      sx: sx.tableBodyCell,
     },
     columnResizeMode: 'onChange',
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

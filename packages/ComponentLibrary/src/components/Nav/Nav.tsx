@@ -1,14 +1,15 @@
 'use client';
 
 import React, { ReactNode, useState } from 'react';
-import styles from './Nav.styles';
 import RightButtons from './RigthComponents/RightButtons';
 import SearchInputWithVoice from '../Input/TextInput/TextInputAutocomplete/SearchInputWithVoice';
+import { useStyle } from './Nav.styles';
 export interface NavProps {
   children?: ReactNode;
 }
 
 const Nav: React.FC<NavProps> = ({ children }) => {
+  const { styles } = useStyle();
   const [value, setValue] = useState('');
   return (
     <nav style={styles.NavStyles}>
