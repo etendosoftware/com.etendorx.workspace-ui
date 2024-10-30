@@ -1,10 +1,8 @@
-import { useEffect, useState, useContext, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Metadata } from '../api/metadata';
-import { Menu } from '../api/types';
-import { UserContext } from '../../../MainUI/contexts/user';
+import { Menu, Role } from '../api/types';
 
-export const useMenu = (token: string | null) => {
-  const { currentRole } = useContext(UserContext);
+export const useMenu = (token: string | null, currentRole?: Role) => {
   const [menu, setMenu] = useState<Menu[]>(Metadata.getCachedMenu());
 
   const fetchMenu = useCallback(
@@ -25,8 +23,6 @@ export const useMenu = (token: string | null) => {
     if (token && currentRole) {
       fetchMenu(true);
     }
-
-    return () => {};
   }, [token, currentRole, fetchMenu]);
 
   return menu;

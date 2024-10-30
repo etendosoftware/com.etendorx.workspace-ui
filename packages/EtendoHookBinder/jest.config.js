@@ -1,11 +1,7 @@
-// jest.config.js
-
+/** @type {import('ts-jest').JestConfigWithTsJest} **/
 export default {
-  moduleNameMapper: {
-    "^@/(.*)$": "<rootDir>/src/$1",
-  },
-  testEnvironment: "jest-environment-jsdom",
+  testEnvironment: "node",
   transform: {
-    "^.+\\.[t|j]sx?$": "babel-jest",
+    "^.+.tsx?$": ["ts-jest",{}],
   },
 };

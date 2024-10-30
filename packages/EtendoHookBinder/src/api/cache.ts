@@ -1,5 +1,3 @@
-'use client';
-
 export class CacheStore {
   private duration: number;
   private storage: Storage | undefined;

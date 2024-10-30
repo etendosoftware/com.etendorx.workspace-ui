@@ -36,9 +36,9 @@ export function useSingleDatasource(entity?: string, id?: string) {
 
   return useMemo(
     () => ({
+      load,
       loading,
       error,
-      load,
       record,
       loaded,
     }),
