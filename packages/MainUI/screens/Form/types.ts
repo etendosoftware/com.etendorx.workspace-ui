@@ -1,3 +1,4 @@
+import { Section } from '@workspaceui/componentlibrary/components/FormView/types';
 import { Field } from '@workspaceui/etendohookbinder/api/types';
 
 export interface FieldInfo {
@@ -27,17 +28,5 @@ export type FieldDefinition =
   | BaseFieldDefinition<boolean>
   | BaseFieldDefinition<Date>
   | BaseFieldDefinition<string[]>;
-
-export interface Section {
-  name: string;
-  label: string;
-  type: 'section';
-  personalizable: boolean;
-  icon?: React.ReactNode;
-  id: string;
-  fill?: string;
-  hoverFill?: string;
-  showInTab: 'icon' | 'label' | 'both';
-}
 
 export type FormData = Record<string, FieldDefinition | Section>;

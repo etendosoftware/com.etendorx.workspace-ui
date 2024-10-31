@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Box, Button, useTheme } from '@mui/material';
-import FormView from '../../../../MainUI/components/FormView';
 import PencilIcon from '../../assets/icons/edit-2.svg';
 import SaveIcon from '../../assets/icons/save.svg';
 import { dotIntervals, gridSizes, useStyle } from './styles';
 import { TabWidgetProps } from './types';
+import FormView from '../FormView';
 
 const TabWidget: React.FC<TabWidgetProps> = ({
   selectedRecord,

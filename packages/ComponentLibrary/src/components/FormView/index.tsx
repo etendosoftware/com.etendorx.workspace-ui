@@ -1,12 +1,12 @@
 import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
-import { Box, Grid } from '@mui/material';
+import { Box, Grid, useTheme } from '@mui/material';
 import { FormViewProps } from './types';
 import PrimaryTabs from '@workspaceui/componentlibrary/components/PrimaryTab';
 import { TabItem } from '@workspaceui/componentlibrary/components/PrimaryTab/types';
 import SectionRenderer from './Sections/sectionRendered';
-import { Section, FieldDefinition } from '../../screens/Form/types';
-import type { FieldValue, FormData } from './types';
-import { defaultIcon } from '../../constants/iconConstants';
+import type { FieldValue, FormData, Section } from './types';
+import Chevrons from '@workspaceui/componentlibrary/assets/icons/chevrons-right.svg';
+import { FieldDefinition } from '../../../../MainUI/screens/Form/types';
 
 const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, gridItemProps, dottedLineInterval }) => {
   const [formData, setFormData] = useState<FormData>(data);
@@ -15,6 +15,12 @@ const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, g
   const [selectedTab, setSelectedTab] = useState<string>('');
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
+  const theme = useTheme();
+
+  const defaultIcon = useMemo(
+    () => <Chevrons fill={theme.palette.baselineColor.neutral[80]} />,
+    [theme.palette.baselineColor.neutral],
+  );
 
   const tabs: TabItem[] = useMemo(() => {
     return Object.values(formData)
@@ -82,8 +88,8 @@ const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, g
         [name]: {
           ...prevData[name],
           value: value,
-        } as FieldDefinition,
-      }));
+        },
+      }) as FormData);
       onChange?.(formData);
     },
     [formData, onChange],
@@ -93,17 +99,14 @@ const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, g
     e.preventDefault();
   }, []);
 
-  const groupedFields = Object.entries(formData).reduce(
-    (acc, [key, value]) => {
-      if ('section' in value) {
-        const section = value.section ?? '_mainSection';
-        if (!acc[section]) acc[section] = [];
-        acc[section].push([key, value]);
-      }
-      return acc;
-    },
-    {} as { [key: string]: [string, FieldDefinition][] },
-  );
+  const groupedFields = Object.entries(formData).reduce((acc, [key, value]) => {
+    if ('section' in value) {
+      const section = value.section ?? '_mainSection';
+      if (!acc[section]) acc[section] = [];
+      acc[section].push([key, value]);
+    }
+    return acc;
+  }, {} as { [key: string]: [string, FieldDefinition][] });
 
   return (
     <Box display="flex" flexDirection="column" height="100%" width="100%" padding="0 0 0.5rem 0.5rem">

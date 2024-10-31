@@ -1,11 +1,23 @@
 import { ReactNode } from 'react';
 import { MappedData, WindowMetadata } from '@workspaceui/etendohookbinder/api/types';
-import { FieldDefinition, Section } from '../../screens/Form/types';
+import { FieldDefinition } from '../../../../MainUI/screens/Form/types';
 
 export interface GridItemProps {
   xs?: number;
   sm?: number;
   md?: number;
+}
+
+export interface Section {
+  name: string;
+  label: string;
+  type: 'section';
+  personalizable: boolean;
+  icon?: React.ReactNode;
+  id: string;
+  fill?: string;
+  hoverFill?: string;
+  showInTab: 'icon' | 'label' | 'both';
 }
 
 export type FormData = Record<string, FieldDefinition | Section>;

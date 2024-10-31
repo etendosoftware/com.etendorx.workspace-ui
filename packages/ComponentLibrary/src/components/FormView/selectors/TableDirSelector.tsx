@@ -2,9 +2,9 @@ import React, { useCallback, useMemo, useEffect, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource';
 import Spinner from '@workspaceui/componentlibrary/components/Spinner';
 import Select from '@workspaceui/componentlibrary/components/Input/Select';
-import SearchOutlined from '../../../../ComponentLibrary/src/assets/icons/search.svg';
-import { TableDirSelectorProps } from '../types';
-import { Option } from '../../../../ComponentLibrary/src/components/Input/Select/types';
+import SearchOutlined from '@workspaceui/componentlibrary/assets/icons/search.svg';
+import { TableDirSelectorProps } from '@workspaceui/componentlibrary/components/FormView/types';
+import { Option } from '@workspaceui/componentlibrary/components/Input/Select/types';
 import { useTheme } from '@mui/material';
 
 const getOptionLabel = (option: Option) => option.title;
