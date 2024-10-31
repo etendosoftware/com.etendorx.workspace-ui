@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect, useState } from 'react';
+import { useCallback, useMemo, useEffect, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource';
 import Spinner from '@workspaceui/componentlibrary/components/Spinner';
 import Select from '@workspaceui/componentlibrary/components/Input/Select';
@@ -11,7 +11,7 @@ const getOptionLabel = (option: Option) => option.title;
 
 const optionEqualValue = (option: Option, value: { id: string }) => option.id === value.id || option.value === value.id;
 
-const TableDirSelector: React.FC<TableDirSelectorProps> = ({ onChange, label, entity, value }) => {
+const TableDirSelector = ({ onChange, label, entity, value }: TableDirSelectorProps) => {
   const theme = useTheme();
   const { records, loading, error, loaded } = useDatasource(entity);
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
