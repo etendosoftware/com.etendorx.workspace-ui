@@ -1,7 +1,6 @@
-import { css } from '@mui/material';
+import { useMemo } from 'react';
 import { Theme, useTheme, SxProps } from '@mui/material';
 import { Tab } from '@workspaceui/etendohookbinder/api/types';
-import { useMemo } from 'react';
 
 type StylesType = {
   sx: {
@@ -16,14 +15,17 @@ export const useStyle = (): StylesType => {
   return useMemo(
     () => ({
       sx: {
-        container: css({
+        container: {
           padding: '0.5rem',
-        }),
+        },
         button: (tab: Tab, activeKey?: string) => ({
           borderBottomLeftRadius: 0,
           borderBottomRightRadius: 0,
           color: tab.id === activeKey ? theme.palette.text.primary : theme.palette.text.secondary,
           backgroundColor: tab.id === activeKey ? theme.palette.background.default : theme.palette.action.disabled,
+          transition: theme.transitions.create(['color', 'background-color'], {
+            duration: theme.transitions.duration.short,
+          }),
         }),
       },
     }),

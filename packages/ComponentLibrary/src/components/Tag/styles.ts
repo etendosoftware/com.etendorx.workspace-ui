@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { CSSProperties, ReactElement, useMemo } from 'react';
 import { Theme, useTheme, SxProps } from '@mui/material';
-import { CSSProperties, ReactElement, useMemo } from 'react';
 import { TagType } from './types';
 
 type StylesType = {

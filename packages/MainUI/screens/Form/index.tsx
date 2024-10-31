@@ -3,7 +3,7 @@ import { Organization } from '../../../storybook/src/stories/Components/Table/ty
 import { mockOrganizations } from '@workspaceui/storybook/stories/Components/Table/mock';
 import Spinner from '@workspaceui/componentlibrary/components/Spinner';
 import { useRouter } from 'next/navigation';
-import FormView from '../../components/FormView';
+import FormView from '@workspaceui/componentlibrary/components/FormView';
 
 const { id } = { id: '' };
 
