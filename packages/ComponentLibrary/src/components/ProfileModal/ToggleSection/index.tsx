@@ -11,7 +11,7 @@ import LockOutlined from '../../../assets/icons/lock.svg';
 import Select from '../../Input/Select';
 import { useTranslation } from '../../../../../MainUI/hooks/useTranslation';
 import { Warehouse } from '@workspaceui/etendohookbinder/api/types';
-import { Option } from 'src/components/Input/Select/types';
+import { Option } from '@workspaceui/componentlibrary/components/Input/Select/types';
 
 const isOptionEqualToValue = (option: Option<string>, value: Option<string>) => option.id === value.id;
 
