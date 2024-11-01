@@ -1,8 +1,8 @@
 import { useRef, useState, useEffect } from 'react';
 import { SxProps, Theme, Tooltip, Box, Typography } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
-import useStyle from '../styles';
 import { MenuTitleProps } from '../types';
+import { useStyle } from '../styles';
 
 export default function MenuTitle({ item, onClick, selected, expanded, open }: MenuTitleProps) {
   const textRef = useRef<HTMLSpanElement>(null);
