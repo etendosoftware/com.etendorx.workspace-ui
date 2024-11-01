@@ -23,7 +23,9 @@
     "@workspaceui/etendohookbinder": "workspace:^",
     "@workspaceui/storybook": "workspace:^",
     "material-react-table": "^2.12.1",
-    "next": "^15.0.1",
+    "next": "^15.0.1"
+  },
+  "peerDependencies": {
     "react": "19.0.0-rc-9d2da591-20240808",
     "react-dom": "19.0.0-rc-9d2da591-20240808"
   },

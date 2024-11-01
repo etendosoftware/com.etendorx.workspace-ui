@@ -27,5 +27,13 @@
   },
   "resolutions": {
     "@types/react": "18.2.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "pnpm": {
+    "hoistPattern": [
+      "*"
+    ]
   }
 }
