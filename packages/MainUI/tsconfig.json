@@ -32,10 +32,10 @@
   },
   "include": [
     "next-env.d.ts",
+    "types/custom.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "svgr.d.ts",
     "../storybook/src/stories/Components/ConfigurationModal/mock.tsx"
   ],
   "exclude": ["node_modules"]

@@ -1,6 +1,6 @@
 'use client';
 
-import { createTheme } from '@mui/material';
+import { createTheme, ThemeOptions } from '@mui/material';
 export type * from '../custom';
 
 // Colors for MUI attributes
@@ -16,8 +16,7 @@ export const NEUTRAL_50 = '#FAFAFA';
 export const NEUTRAL_300 = '#E0E0E0';
 export const NEUTRAL_1000 = '#121212';
 
-// Theme for MUI components
-export const theme = createTheme({
+export const themeOptions: unknown = {
   palette: {
     dynamicColor: {
       main: '#004ACA',
@@ -218,4 +217,7 @@ export const theme = createTheme({
       },
     },
   },
-});
+};
+
+// Theme for MUI components
+export const theme = createTheme(themeOptions as ThemeOptions);

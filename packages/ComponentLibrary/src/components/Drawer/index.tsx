@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
-import styles from './styles';
+import useStyles from './styles';
 import { DrawerProps } from './types';
 import DrawerHeader from './Header';
 import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
@@ -9,9 +9,16 @@ import { createSearchIndex, filterItems, getAllItemTitles } from '../../utils/se
 import DrawerItems from './Search';
 import RecentlyViewed from './RecentlyViewed';
 import { Menu } from '@workspaceui/etendohookbinder/api/types';
-import { Box } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 
 const Drawer: React.FC<DrawerProps> = ({ windowId, items = [], logo, title, onClick }) => {
+  const theme = useTheme();
+
+  useEffect(() => {
+    console.debug('packages/ComponentLibrary/src/components/Drawer:', theme.palette);
+  }, [theme]);
+
+  const styles = useStyles();
   const [open, setOpen] = useState<boolean>(true);
   const [searchValue, setSearchValue] = useState<string>('');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());

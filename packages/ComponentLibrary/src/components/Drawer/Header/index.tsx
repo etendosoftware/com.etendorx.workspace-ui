@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 import { MenuOpen } from '@mui/icons-material';
 import { IconButton } from '../..';
-import styles from '../styles';
+import useStyles from '../styles';
 import { DrawerHeaderProps } from '../types';
 
 const openSx = {
@@ -15,6 +15,8 @@ const closedSx = {
 const EtendoLink = 'https://docs.etendo.software/latest/';
 
 const DrawerHeader = forwardRef<HTMLDivElement, DrawerHeaderProps>(({ title, logo, open, onClick, tabIndex }, ref) => {
+  const styles = useStyles();
+
   const renderLogo = () => {
     if (typeof logo === 'string') {
       return <img src={logo} alt={`${title} Logo`} style={styles.drawerHeaderImg} />;
