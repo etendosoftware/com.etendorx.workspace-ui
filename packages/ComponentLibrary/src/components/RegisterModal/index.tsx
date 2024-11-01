@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Button, List } from '@mui/material';
+import { Button, List, useTheme } from '@mui/material';
 import { RegisterModalProps } from './types';
-import { theme } from '../../theme';
-import { sx } from './styles';
+import { useStyle } from './styles';
 import CloseRecordIcon from '../../assets/icons/close-record.svg';
 import Modal from '../BasicModal';
 import { processMock } from '../../../../storybook/src/stories/Components/RegisterModal/registerMock';
@@ -14,7 +13,8 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ registerText }) => {
   const { t } = useTranslation();
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isHovering, setIsHovering] = useState(false);
-
+  const theme = useTheme();
+  const { sx } = useStyle();
   const handleMouseEnter = () => setIsHovering(true);
   const handleMouseLeave = () => setIsHovering(false);
 

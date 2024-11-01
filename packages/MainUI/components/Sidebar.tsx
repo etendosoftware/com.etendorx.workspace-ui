@@ -13,7 +13,8 @@ const logoUrl = typeof EtendoLogotype === 'string' ? EtendoLogotype : '/assets/e
 export default function Sidebar() {
   const { t } = useTranslation();
   const { token, currentRole } = useUserContext();
-  const menu = useMenu(token, currentRole?.id);
+
+  const menu = useMenu(token, currentRole || undefined);
   const router = useRouter();
   const { windowId } = useParams<{ windowId?: string }>();
 

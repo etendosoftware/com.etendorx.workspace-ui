@@ -1,19 +1,23 @@
-import '@mui/material/styles';
+import '@mui/material';
 
 declare module '@mui/material/styles' {
+  interface BaselineColor {
+    neutral: { [key: number]: string };
+    transparentNeutral: { [key: number]: string };
+    etendoPrimary: PaletteColor;
+  }
+
+  interface SpecificColor {
+    success: PaletteColor;
+    warning: PaletteColor;
+    error: PaletteColor;
+    draft: PaletteColor;
+  }
+
   interface Palette {
     dynamicColor: PaletteColor;
-    baselineColor: {
-      neutral: { [key: number]: string };
-      transparentNeutral: { [key: number]: string };
-      etendoPrimary: PaletteColor;
-    };
-    specificColor: {
-      success: PaletteColor;
-      warning: PaletteColor;
-      error: PaletteColor;
-      draft: PaletteColor;
-    };
+    baselineColor: BaselineColor;
+    specificColor: SpecificColor;
   }
 
   interface PaletteOptions {
@@ -31,13 +35,16 @@ declare module '@mui/material/styles' {
     };
     tertiary?: PaletteColorOptions;
   }
-}
 
-declare module '@mui/material/Button' {
-  interface ButtonPropsColorOverrides {
-    tertiary: true;
+  interface ThemeOptions {
+    palette?: PaletteOptions;
   }
-  interface ButtonClasses {
-    containedTertiary: string;
+
+  interface Theme {
+    palette: Palette;
+  }
+
+  interface BaseTheme {
+    palette: Palette;
   }
 }

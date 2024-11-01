@@ -1,22 +1,9 @@
 'use client';
-
 import React, { useState, useRef, useEffect, useCallback, useMemo, ReactElement } from 'react';
-import { Tabs, Tab, Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import { Tabs, Tab, Box, IconButton, Menu, MenuItem, Typography, useTheme } from '@mui/material';
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
 import TabLabel from './components/TabLabel';
-import {
-  containerStyles,
-  menuItemStyles,
-  menuPaperProps,
-  tabsContainerStyles,
-  tabStyles,
-  iconContainerStyles,
-  iconStyles,
-  menuItemRootStyles,
-  menuItemTypographyStyles,
-  rightButtonStyles,
-  rightButtonContainerStyles,
-} from './styles';
+import { getRightButtonStyles, useStyle } from './styles';
 import { SecondaryTabsProps, TabContent } from './types';
 
 const tabSize = 150;
@@ -39,6 +26,8 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
   const [visibleCount, setVisibleCount] = useState(5);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
+  const { styles, sx } = useStyle();
+  const theme = useTheme();
 
   const updateVisibleCount = useCallback(() => {
     if (tabsRef.current) {
@@ -80,10 +69,8 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
         label={
           <TabLabel
             icon={
-              <Box component="span" sx={iconContainerStyles}>
-                <Box component="span" sx={iconStyles}>
-                  {renderIcon(tab.icon, menuItemTypographyStyles)}
-                </Box>
+              <Box component="span" sx={sx.iconContainer}>
+                {renderIcon(tab.icon, styles.menuItemIcon)}
               </Box>
             }
             text={tab.label}
@@ -92,21 +79,21 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
           />
         }
         iconPosition="start"
-        sx={tabStyles(tab.numberOfItems, tab.isLoading)}
+        sx={sx.tab}
       />
     ),
-    [],
+    [sx.iconContainer, styles.menuItemIcon, sx.tab],
   );
 
   return (
-    <Box sx={containerStyles}>
-      <Box ref={tabsRef} sx={tabsContainerStyles}>
+    <Box sx={sx.container}>
+      <Box ref={tabsRef} sx={sx.tabsContainer}>
         <Tabs value={selectedTab} onChange={handleChange} variant="scrollable" scrollButtons="auto">
           {visibleTabs.map(renderTab)}
         </Tabs>
         {hiddenTabs.length > 0 && (
-          <Box sx={rightButtonContainerStyles}>
-            <IconButton onClick={handleMenu} sx={rightButtonStyles(Boolean(anchorEl))}>
+          <Box sx={sx.rightButtonContainer}>
+            <IconButton onClick={handleMenu} sx={getRightButtonStyles(Boolean(anchorEl), theme)}>
               <KeyboardDoubleArrowRightIcon />
             </IconButton>
           </Box>
@@ -116,8 +103,8 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleClose}
-        PaperProps={{ sx: menuPaperProps }}
-        slotProps={{ root: { sx: menuItemRootStyles } }}>
+        PaperProps={{ sx: sx.menuPaper }}
+        slotProps={{ root: { sx: sx.menuItemRoot } }}>
         {hiddenTabs.map((tab: TabContent, index: number) => (
           <MenuItem
             key={index}
@@ -126,8 +113,8 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
               tab.onClick();
               handleClose();
             }}
-            sx={menuItemStyles}>
-            {renderIcon(tab.icon, menuItemTypographyStyles)}
+            sx={sx.menuItem}>
+            {renderIcon(tab.icon, styles.menuItemTypography)}
             {tab.label}
           </MenuItem>
         ))}

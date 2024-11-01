@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
-import styles from './styles';
+import { useStyle } from './styles';
 import { DrawerProps } from './types';
 import DrawerHeader from './Header';
 import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
@@ -16,6 +16,7 @@ const Drawer: React.FC<DrawerProps> = ({ windowId, items = [], logo, title, onCl
   const [searchValue, setSearchValue] = useState<string>('');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [recentItems, setRecentItems] = useState<Array<{ id: string; name: string; windowId: string }>>([]);
+  const { sx } = useStyle();
 
   const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
 
@@ -36,13 +37,13 @@ const Drawer: React.FC<DrawerProps> = ({ windowId, items = [], logo, title, onCl
 
   const drawerStyle = useMemo(
     () => ({
-      ...styles.drawerPaper,
+      ...sx.drawerPaper,
       width: open ? '16.25rem' : '3.5rem',
       height: '100vh',
       transition: 'width 0.5s ease-in-out',
       display: 'flex',
     }),
-    [open],
+    [open, sx.drawerPaper],
   );
 
   const searchIndex = useMemo(() => createSearchIndex(items), [items]);
@@ -119,7 +120,7 @@ const Drawer: React.FC<DrawerProps> = ({ windowId, items = [], logo, title, onCl
   }, []);
 
   return (
-    <div style={drawerStyle}>
+    <Box sx={drawerStyle}>
       <DrawerHeader logo={logo} title={title} open={open} onClick={handleHeaderClick} tabIndex={-1} />
       <RecentlyViewed
         onClick={handleItemClick}
@@ -138,7 +139,7 @@ const Drawer: React.FC<DrawerProps> = ({ windowId, items = [], logo, title, onCl
           />
         </Box>
       )}
-      <Box sx={styles.drawerContent} tabIndex={2}>
+      <Box sx={sx.drawerContent} tabIndex={2}>
         {Array.isArray(filteredItems) ? (
           <DrawerItems
             items={filteredItems}
@@ -151,7 +152,7 @@ const Drawer: React.FC<DrawerProps> = ({ windowId, items = [], logo, title, onCl
           />
         ) : null}
       </Box>
-    </div>
+    </Box>
   );
 };
 

@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { IconButton } from '@mui/material';
+import { IconButton, useTheme } from '@mui/material';
 import { VisibilityOutlined, VisibilityOffOutlined } from '@mui/icons-material';
 import TextInputBase from '../TextInputBase';
 import { TextInputProps } from '../../TextInputAutocomplete/TextInputComplete.types';
-import { theme } from '../../../../../theme';
 
 const InputPassword = (props: TextInputProps) => {
+  const theme = useTheme();
   const { value, setValue, label, leftIcon, onLeftIconClick, ...otherProps } = props;
 
   const [showPassword, setShowPassword] = useState<boolean>(false);

@@ -30,13 +30,6 @@
       "@workspaceui/etendohookbinder": ["../EtendoHookBinder/src"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    "svgr.d.ts",
-    "../storybook/src/stories/Components/ConfigurationModal/mock.tsx"
-  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "types/svgr.d.ts", "types/theme.d.ts"],
   "exclude": ["node_modules"]
 }

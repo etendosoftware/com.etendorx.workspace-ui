@@ -1,28 +1,28 @@
 import { FC, useState, useCallback, useMemo } from 'react';
-import { Breadcrumbs, Link, Typography, Box, IconButton, Menu, MenuItem } from '@mui/material';
+import { Breadcrumbs, Link, Typography, Box, IconButton, Menu, MenuItem, useTheme } from '@mui/material';
 import NavigateNextIcon from '@workspaceui/componentlibrary/assets/icons/chevron-right.svg';
 import ArrowLeftIcon from '@workspaceui/componentlibrary/assets/icons/arrow-left.svg';
 import ChevronDown from '@workspaceui/componentlibrary/assets/icons/chevron-down.svg';
 import MoreHorizIcon from '@workspaceui/componentlibrary/assets/icons/more-horizontal.svg';
-import { theme } from '@workspaceui/componentlibrary/theme';
-import { menuStyle, sx } from './styles';
+import { menuStyle, useStyle } from './styles';
 import { BreadcrumbProps, BreadcrumbAction, BreadcrumbItem } from './types';
 import ToggleChip from '../Toggle/ToggleChip';
 
-const Breadcrumb: FC<BreadcrumbProps> = ({
-  items,
-  onHomeClick,
-  homeIcon = null,
-  homeText = 'Home',
-  separator = <NavigateNextIcon fill={theme.palette.baselineColor.transparentNeutral[30]} />,
-}) => {
+const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, homeText = 'Home', separator }) => {
   const [isHomeHovered, setIsHomeHovered] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [middleMenuAnchorEl, setMiddleMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [currentActions, setCurrentActions] = useState<BreadcrumbAction[]>([]);
   const [toggleStates, setToggleStates] = useState<Record<string, boolean>>({});
+  const theme = useTheme();
+  const { sx } = useStyle();
 
-  const paperConstant = useCallback(() => ({ sx: sx.menu, elevation: 3 }), []);
+  const defaultSeparator = useMemo(
+    () => <NavigateNextIcon fill={theme.palette.baselineColor.transparentNeutral[30]} />,
+    [theme],
+  );
+
+  const paperConstant = useCallback(() => ({ sx: sx.menu, elevation: 3 }), [sx.menu]);
   const menuConstant = useCallback(() => ({ sx: menuStyle }), []);
 
   const handleMouseEnter = useCallback(() => setIsHomeHovered(true), []);
@@ -75,7 +75,14 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
       }
     }
     return null;
-  }, [homeIcon, isHomeHovered]);
+  }, [
+    homeIcon,
+    isHomeHovered,
+    sx.homeIconComponent,
+    sx.homeIconHovered,
+    sx.homeIconString,
+    theme.palette.baselineColor.neutral,
+  ]);
 
   const renderBreadcrumbItem = useCallback(
     (item: BreadcrumbItem, isLast: boolean) => (
@@ -116,7 +123,15 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
         )}
       </Box>
     ),
-    [handleActionMenuOpen],
+    [
+      handleActionMenuOpen,
+      sx.actionButton,
+      sx.breadcrumbItem,
+      sx.breadcrumbTypography,
+      sx.lastItemTypography,
+      sx.link,
+      theme.palette.baselineColor.neutral,
+    ],
   );
 
   const renderBreadcrumbItems = useMemo(() => {
@@ -161,11 +176,23 @@ const Breadcrumb: FC<BreadcrumbProps> = ({
         </>
       );
     }
-  }, [handleMiddleMenuClose, handleMiddleMenuOpen, items, middleMenuAnchorEl, renderBreadcrumbItem]);
+  }, [
+    handleMiddleMenuClose,
+    handleMiddleMenuOpen,
+    items,
+    middleMenuAnchorEl,
+    renderBreadcrumbItem,
+    sx.breadcrumbItem,
+    sx.menu,
+    sx.menuItem,
+    theme.palette.baselineColor.neutral,
+  ]);
+
+  const activeSeparator = separator ?? defaultSeparator;
 
   return (
     <Box sx={sx.container}>
-      <Breadcrumbs separator={separator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
+      <Breadcrumbs separator={activeSeparator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
         <Box sx={sx.homeContainer}>
           <Link
             href="#"

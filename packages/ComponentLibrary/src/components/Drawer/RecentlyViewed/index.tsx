@@ -1,4 +1,3 @@
-import React from 'react';
 import DrawerSection from '../DrawerSection';
 import { RecentlyViewedProps } from '../types';
 import { useRecentItems } from '@workspaceui/componentlibrary/hooks/useRecentItems';

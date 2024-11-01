@@ -1,5 +1,5 @@
 import WaterfallModal from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal';
-import { WaterfallModalProps } from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal.types';
+import { WaterfallModalProps } from '../../../../../ComponentLibrary/src/components/Waterfall/types';
 import { initialPeople, menuItems } from '../mock';
 import AddIcon from '../../../../../ComponentLibrary/src/assets/icons/plus.svg';
 import type { Meta, StoryObj } from '@storybook/react';

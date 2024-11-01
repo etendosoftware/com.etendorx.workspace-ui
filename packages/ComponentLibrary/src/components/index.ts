@@ -16,8 +16,6 @@ import NotificationItemStates from './NotificationItemAllStates';
 import DrawerMUI from './Drawer';
 import IButton from './IconButton';
 
-export * from '../theme';
-
 const Modal = ModalCustom;
 const TextInput = TextInputMUI;
 const TextInputBase = TextInputBaseMUI;

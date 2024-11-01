@@ -9,24 +9,25 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useTheme,
 } from '@mui/material';
-import { PRIMARY_CONTRAST, styles } from './style';
+import { useStyle } from './style';
 import CancelIcon from '@mui/icons-material/Cancel';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { ISelectInput, Option } from './types';
-import './style.css';
-import { theme } from '../../../theme';
-
-const CustomPaper: React.FC<PaperProps> = props => {
-  return <Paper {...props} sx={styles.optionsContainer} />;
-};
 
 type OptionProps = React.HTMLAttributes<HTMLLIElement> & { key?: string };
 
 const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disabled = false, helperText, ...props }) => {
+  const { sx } = useStyle();
+  const theme = useTheme();
   const [inputValue, setInputValue] = useState<string>('');
   const [focused, setFocused] = useState<boolean>(false);
+
+  const CustomPaper: React.FC<PaperProps> = props => {
+    return <Paper {...props} sx={sx.optionsContainer} />;
+  };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(event.target.value);
@@ -49,7 +50,7 @@ const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disable
     if (!focused || inputValue) {
       return 'transparent';
     }
-    return PRIMARY_CONTRAST;
+    return theme.palette.baselineColor.neutral[0];
   };
 
   const renderInput = (params: AutocompleteRenderInputParams) => (
@@ -57,21 +58,21 @@ const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disable
       <TextField
         {...params}
         sx={{
-          ...styles.root,
+          ...sx.root,
           '& .MuiInput-root': {
-            ...styles.root['& .MuiInput-root'],
+            ...sx.root['& .MuiInput-root'],
             backgroundColor: getBackgroundFocus(),
           },
         }}
         InputLabelProps={{
-          style: styles.labelProps,
+          style: sx.labelProps,
           shrink: true,
         }}
         InputProps={{
           ...params.InputProps,
-          sx: styles.props,
+          sx: sx.props,
           startAdornment: iconLeft && <InputAdornment position="start">{iconLeft}</InputAdornment>,
-          endAdornment: <div style={styles.buttonsContainer}>{params.InputProps.endAdornment}</div>,
+          endAdornment: <div style={sx.buttonsContainer}>{params.InputProps.endAdornment}</div>,
         }}
         label={title}
         variant="standard"
@@ -89,13 +90,13 @@ const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disable
         disabled={disabled}
         options={options}
         getOptionLabel={option => option.title}
-        clearIcon={<CancelIcon style={styles.dropdownIcons} />}
-        popupIcon={<ExpandMoreIcon style={styles.dropdownIcons} />}
+        clearIcon={<CancelIcon style={sx.dropdownIcons} />}
+        popupIcon={<ExpandMoreIcon style={sx.dropdownIcons} />}
         renderInput={renderInput}
-        sx={styles.autocomplete}
+        sx={sx.autocomplete}
         PaperComponent={CustomPaper}
         ListboxProps={{
-          sx: styles.listBox,
+          sx: sx.listBox,
         }}
         onChange={handleSelectionChange}
         renderOption={(props: OptionProps, option, { selected }) => {
@@ -104,25 +105,25 @@ const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disable
             <li
               key={key}
               style={{
-                ...styles.optionContainer,
-                backgroundColor: selected ? PRIMARY_CONTRAST : undefined,
+                ...sx.optionContainer,
+                backgroundColor: selected ? theme.palette.baselineColor.neutral[0] : undefined,
               }}
               {...otherProps}>
               <Typography
                 className="textOption"
                 color={selected ? theme.palette.dynamicColor.dark : theme.palette.baselineColor.neutral[90]}
-                style={styles.optionText}>
+                style={sx.optionText}>
                 {option.title}
               </Typography>
-              {selected && <CheckCircleIcon style={styles.checkIcon} />}
+              {selected && <CheckCircleIcon style={sx.checkIcon} />}
             </li>
           );
         }}
       />
       {helperText && (
-        <FormHelperText component="div" style={styles.helperTextContainer}>
+        <FormHelperText component="div" style={sx.helperTextContainer}>
           {helperText.icon}
-          {helperText.label && <span style={styles.helperText}>{helperText.label}</span>}
+          {helperText.label && <span style={sx.helperText}>{helperText.label}</span>}
         </FormHelperText>
       )}
     </>

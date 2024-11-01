@@ -1,9 +1,10 @@
-import { MenuItem, Radio, Box, Typography } from '@mui/material';
-import { theme } from '../../theme';
-import { sx } from './styles';
+import { MenuItem, Radio, Box, Typography, useTheme } from '@mui/material';
+import { useStyle } from './styles';
 import { RadioButtonItemProps } from './types';
 
 const RadioButtonItem: React.FC<RadioButtonItemProps> = ({ id, title, description, isSelected, onSelect }) => {
+  const theme = useTheme();
+  const { sx } = useStyle();
   return (
     <MenuItem
       sx={{

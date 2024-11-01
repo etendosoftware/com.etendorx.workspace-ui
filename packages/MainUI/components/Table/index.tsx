@@ -1,6 +1,6 @@
 import Box from '@mui/material/Box';
 import { MaterialReactTable, MRT_Row } from 'material-react-table';
-import styles from './styles';
+import { useStyle } from './styles';
 import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/api/types';
 import Spinner from '@workspaceui/componentlibrary/components/Spinner';
 import { memo, useCallback, useMemo } from 'react';
@@ -19,6 +19,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const { windowId } = useParams<{ windowId: string }>();
   const parent = selected[tab.level - 1];
   const navigate = useRouter().push;
+  const { sx } = useStyle();
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || 'id';
@@ -61,8 +62,8 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   if (error) return <div>Error: {error.message}</div>;
 
   return (
-    <Box sx={styles.container}>
-      <Box sx={styles.table}>
+    <Box sx={sx.container}>
+      <Box sx={sx.table}>
         <MaterialReactTable
           columns={columns}
           data={records}

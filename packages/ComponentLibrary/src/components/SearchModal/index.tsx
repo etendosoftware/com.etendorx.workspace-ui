@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box } from '@mui/material';
 import SecondaryTabs from '../SecondaryTabs';
 import { SearchModalProps } from '../SecondaryTabs/types';
-import { DEFAULT_MODAL_WIDTH, styles } from './styles';
+import { DEFAULT_MODAL_WIDTH, useStyle } from './styles';
 import { HeaderSection } from './SubComponents/HeaderSection';
 import { DefaultContent } from './SubComponents/DefaultContent';
 import { TabContent as TabContentComponent } from './SubComponents/TabContent';
@@ -14,6 +14,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
   modalWidth = DEFAULT_MODAL_WIDTH,
 }) => {
   const [activeTab, setActiveTab] = useState(0);
+  const { sx } = useStyle();
 
   const renderContent = () => {
     if (variant === 'default' && defaultContent) {
@@ -35,8 +36,8 @@ const SearchModal: React.FC<SearchModalProps> = ({
   };
 
   return (
-    <Box sx={[styles.container, { width: modalWidth }]}>
-      <Box sx={styles.content(variant)}>{renderContent()}</Box>
+    <Box sx={[sx.container, { width: modalWidth }]}>
+      <Box sx={sx.content(variant)}>{renderContent()}</Box>
     </Box>
   );
 };

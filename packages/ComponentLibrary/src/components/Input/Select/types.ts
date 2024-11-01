@@ -7,10 +7,7 @@ export interface Option<T extends string = string> {
 }
 
 export interface ISelectInput<T extends string = string>
-  extends Omit<
-    AutocompleteProps<Option<T>, false, false, false>,
-    'renderInput'
-  > {
+  extends Omit<AutocompleteProps<Option<T>, false, false, false>, 'renderInput'> {
   title?: string;
   iconLeft?: React.ReactElement;
   options: Option<T>[];
@@ -20,8 +17,5 @@ export interface ISelectInput<T extends string = string>
     icon?: React.ReactElement;
   };
   value?: Option<T> | null;
-  onChange?: (
-    event: React.SyntheticEvent<Element, Event>,
-    value: Option<T> | null,
-  ) => void;
+  onChange?: (event: React.SyntheticEvent<Element, Event>, value: Option<T> | null) => void;
 }

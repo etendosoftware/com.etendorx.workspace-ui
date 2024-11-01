@@ -2,13 +2,14 @@ import React, { useCallback, useState, useMemo } from 'react';
 import { Tabs, Tab, Box, Menu, MenuItem, ListItemIcon, Tooltip } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import { PrimaryTabsProps } from './types';
-import { menuStyle, styles, sx, tabIndicatorProps } from './styles';
+import { menuStyle, tabIndicatorProps, useStyle } from './styles';
 import IconButton from '../IconButton';
 
 const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, icon }) => {
   const [selectedTab, setSelectedTab] = useState(tabs[0]?.id || '');
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const { sx, styles } = useStyle();
 
   const handleChange = useCallback(
     (event: React.SyntheticEvent, newValue: string) => {
@@ -78,7 +79,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
           />
         );
       }),
-    [tabs, selectedTab, hoveredTab, handleMouseLeave, handleMouseEnter, handleChange],
+    [tabs, selectedTab, hoveredTab, handleMouseLeave, sx.tab, handleMouseEnter, handleChange],
   );
 
   return (

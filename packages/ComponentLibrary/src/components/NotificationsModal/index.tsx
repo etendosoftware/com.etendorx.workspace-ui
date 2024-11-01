@@ -1,13 +1,12 @@
 import React from 'react';
-import { List, Link, Menu, Button } from '@mui/material';
+import { List, Link, Menu, Button, useTheme } from '@mui/material';
 import IconButton from '../IconButton/index';
 import { INotificationModalProps } from './types';
-import { menuSyle, styles, sx } from './styles';
+import { menuSyle, useStyle } from './styles';
 import { Settings } from '@mui/icons-material';
 import MoreVert from '../../assets/icons/more-vertical.svg';
 import NotificationItem from '../NotificationItem';
 import Image from '../../assets/images/NotificationModal/empty-state-notifications.svg?url';
-import { theme } from '../../theme';
 
 const NotificationModalCustom: React.FC<INotificationModalProps> = ({
   title,
@@ -20,6 +19,8 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
   onClose,
   ...props
 }) => {
+  const theme = useTheme();
+  const { styles, sx } = useStyle();
   return (
     <Menu
       open

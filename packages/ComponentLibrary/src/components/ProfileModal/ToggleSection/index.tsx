@@ -1,33 +1,19 @@
 import { useMemo } from 'react';
-import { Checkbox, FormControl, FormControlLabel, Grid, styled } from '@mui/material';
-import { selectorListStyles, formStyle, defaultFill } from './styles';
+import { Checkbox, FormControl, FormControlLabel, Grid, styled, useTheme } from '@mui/material';
+import { useStyle } from './styles';
 import OrganizationIcon from '../../../assets/icons/user.svg';
 import ClientIcon from '../../../assets/icons/github.svg';
 import WarehouseIcon from '../../../assets/icons/warehouse.svg';
 import LanguageIcon from '../../../assets/icons/flags/spain.svg';
 import { SelectorListProps, Item } from '../types';
-import { InputPassword, theme } from '../..';
+import { InputPassword } from '../..';
 import LockOutlined from '../../../assets/icons/lock.svg';
 import Select from '../../Input/Select';
 import { useTranslation } from '../../../../../MainUI/hooks/useTranslation';
 import { Warehouse } from '@workspaceui/etendohookbinder/api/types';
-import { Option } from 'src/components/Input/Select/types';
+import { Option } from '@workspaceui/componentlibrary/components/Input/Select/types';
 
 const isOptionEqualToValue = (option: Option<string>, value: Option<string>) => option.id === value.id;
-
-const icons: { [key in Item]: React.ReactElement } = {
-  [Item.Role]: <></>,
-  [Item.Client]: <ClientIcon fill={defaultFill} />,
-  [Item.Organization]: <OrganizationIcon fill={defaultFill} />,
-  [Item.Warehouse]: <WarehouseIcon fill={defaultFill} />,
-  [Item.Language]: <LanguageIcon />,
-};
-
-const CustomCheckbox = styled(Checkbox)(() => ({
-  '&.Mui-checked': {
-    color: theme.palette.dynamicColor.main,
-  },
-}));
 
 const SelectorList: React.FC<SelectorListProps> = ({
   section,
@@ -43,6 +29,22 @@ const SelectorList: React.FC<SelectorListProps> = ({
   onSaveAsDefaultChange,
 }) => {
   const { t } = useTranslation();
+  const { styles, defaultFill } = useStyle();
+  const theme = useTheme();
+
+  const icons: { [key in Item]: React.ReactElement } = {
+    [Item.Role]: <></>,
+    [Item.Client]: <ClientIcon fill={defaultFill} />,
+    [Item.Organization]: <OrganizationIcon fill={defaultFill} />,
+    [Item.Warehouse]: <WarehouseIcon fill={defaultFill} />,
+    [Item.Language]: <LanguageIcon />,
+  };
+
+  const CustomCheckbox = styled(Checkbox)(() => ({
+    '&.Mui-checked': {
+      color: theme.palette.dynamicColor.main,
+    },
+  }));
 
   const warehouses = useMemo(() => {
     if (selectedRole) {
@@ -73,10 +75,10 @@ const SelectorList: React.FC<SelectorListProps> = ({
   );
 
   return (
-    <div style={selectorListStyles}>
+    <div style={styles.selectorListStyles}>
       {section === 'profile' && (
         <>
-          <FormControl fullWidth style={formStyle}>
+          <FormControl fullWidth style={styles.formStyle}>
             <Select
               id="role-select"
               title={Item.Role}

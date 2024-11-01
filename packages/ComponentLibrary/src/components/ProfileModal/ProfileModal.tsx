@@ -1,16 +1,14 @@
 'use client';
 
 import { useState, useContext, useCallback, useEffect, useMemo } from 'react';
-import { Button, Menu } from '@mui/material';
+import { Button, Menu, useTheme } from '@mui/material';
 import CheckCircle from '../../assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';
 import ToggleSection from './ToggleButton';
 import SelectorList from './ToggleSection';
 import { ProfileModalProps } from './types';
-import { MODAL_WIDTH, menuSyle, styles, sx } from './styles';
-import { toggleSectionStyles } from './ToggleButton/styles';
+import { MODAL_WIDTH, menuSyle, useStyle } from './styles';
 import IconButton from '../IconButton';
-import { theme } from '../../theme';
 import { UserContext } from '../../../../MainUI/contexts/user';
 import { Option } from '../Input/Select/types';
 import { logger } from '../../../../MainUI/utils/logger';
@@ -36,6 +34,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const { changeRole, changeWarehouse, currentRole, currentWarehouse, roles, setDefaultConfiguration, token } =
     useContext(UserContext);
+  const theme = useTheme();
+  const { styles, sx } = useStyle();
 
   useEffect(() => {
     if (currentRole) {
@@ -140,7 +140,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         }}
         MenuListProps={{ sx: menuSyle }}>
         <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} sectionTooltip={sectionTooltip} />
-        <div style={toggleSectionStyles}>
+        <div style={styles.toggleSectionStyles}>
           <ToggleSection sections={sections} currentSection={currentSection} onToggle={handleToggle} />
         </div>
         <SelectorList

@@ -1,45 +1,45 @@
 import { forwardRef } from 'react';
 import { MenuOpen } from '@mui/icons-material';
+import { Box } from '@mui/material';
 import { IconButton } from '../..';
-import styles from '../styles';
+import { useStyle } from '../styles';
 import { DrawerHeaderProps } from '../types';
-
-const openSx = {
-  transform: 'rotate(0deg)',
-};
-
-const closedSx = {
-  transform: 'rotate(180deg)',
-};
 
 const EtendoLink = 'https://docs.etendo.software/latest/';
 
 const DrawerHeader = forwardRef<HTMLDivElement, DrawerHeaderProps>(({ title, logo, open, onClick, tabIndex }, ref) => {
+  const { sx } = useStyle();
+
   const renderLogo = () => {
     if (typeof logo === 'string') {
-      return <img src={logo} alt={`${title} Logo`} style={styles.drawerHeaderImg} />;
+      return <Box component="img" src={logo} alt={`${title} Logo`} sx={sx.drawerHeaderImg} />;
     }
-    return <div style={styles.drawerHeaderImg}>{logo}</div>;
+    return <Box sx={sx.drawerHeaderImg}>{logo}</Box>;
   };
 
   return (
-    <div style={styles.drawerHeader} ref={ref}>
+    <Box sx={sx.drawerHeader} ref={ref}>
       {open ? (
-        <a href={EtendoLink} style={styles.drawerHeaderImgBox} target="_blank" rel="noopener noreferrer">
+        <Box component="a" href={EtendoLink} sx={sx.drawerHeaderImgBox} target="_blank" rel="noopener noreferrer">
           {renderLogo()}
-          <span style={styles.drawerHeaderTitle}>{title}</span>
-        </a>
+          <Box component="span" sx={sx.drawerHeaderTitle}>
+            {title}
+          </Box>
+        </Box>
       ) : null}
       <IconButton
         onClick={onClick}
-        sx={open ? openSx : closedSx}
+        sx={{
+          transform: open ? 'rotate(0deg)' : 'rotate(180deg)',
+          transition: 'transform 0.3s ease',
+        }}
         className="animated-transform"
         height={20}
         width={20}
         tabIndex={tabIndex}>
         <MenuOpen />
       </IconButton>
-    </div>
+    </Box>
   );
 });
 

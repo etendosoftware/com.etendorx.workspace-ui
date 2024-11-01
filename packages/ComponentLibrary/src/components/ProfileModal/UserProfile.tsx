@@ -1,4 +1,4 @@
-import { styles } from './styles';
+import { useStyle } from './styles';
 import BackgroundGradient from '../../assets/images/backgroundGradient.svg?url';
 import LogoutIcon from '../../assets/icons/log-out.svg';
 import { User } from './types';
@@ -8,6 +8,7 @@ import { useCallback, useContext } from 'react';
 
 const UserProfile: React.FC<User> = ({ photoUrl, name, email, sectionTooltip }) => {
   const { clearUserData } = useContext(UserContext);
+  const { styles } = useStyle();
 
   const handleSignOff = useCallback(() => {
     clearUserData();

@@ -1,7 +1,7 @@
 import React, { memo, useCallback } from 'react';
 import { Box, Link } from '@mui/material';
 import { TextInputBase } from '@workspaceui/componentlibrary/components';
-import { styles, sx } from '../styles';
+import { useStyle } from '../styles';
 import { FieldLabelProps, FieldValue, FormFieldGroupProps } from '../types';
 import TableDirSelector from './TableDirSelector';
 import BooleanSelector from './BooleanSelector';
@@ -11,21 +11,26 @@ import SelectSelector from './SelectSelector';
 import QuantitySelector from './QuantitySelector';
 import ListSelector from './ListSelector';
 
-const FieldLabel: React.FC<FieldLabelProps> = ({ label, required, fieldType, onLinkClick }) => (
-  <Box sx={styles.labelWrapper}>
-    {fieldType === 'tabledir' ? (
-      <Link onClick={onLinkClick} sx={sx.linkStyles}>
-        {label}
-      </Link>
-    ) : (
-      <span style={styles.labelText}>{label}</span>
-    )}
-    {required && <span style={styles.requiredAsterisk}>*</span>}
-    <span style={styles.dottedSpacing} />
-  </Box>
-);
+const FieldLabel: React.FC<FieldLabelProps> = ({ label, required, fieldType, onLinkClick }) => {
+  const { styles, sx } = useStyle();
+
+  return (
+    <Box sx={styles.labelWrapper}>
+      {fieldType === 'tabledir' ? (
+        <Link onClick={onLinkClick} sx={sx.linkStyles}>
+          {label}
+        </Link>
+      ) : (
+        <span style={styles.labelText}>{label}</span>
+      )}
+      {required && <span style={styles.requiredAsterisk}>*</span>}
+      <span style={styles.dottedSpacing} />
+    </Box>
+  );
+};
 
 const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, readOnly }) => {
+  const { styles, sx } = useStyle();
   const handleLinkClick = useCallback(() => {
     if (field.type === 'tabledir' && field.value && typeof field.value === 'object' && 'id' in field.value) {
       const recordId = field.value.id;

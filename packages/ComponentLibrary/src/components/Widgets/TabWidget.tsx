@@ -1,11 +1,10 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Box, Button } from '@mui/material';
-import FormView from '../../../../MainUI/components/FormView';
-import { theme } from '../../theme';
+import { Box, Button, useTheme } from '@mui/material';
 import PencilIcon from '../../assets/icons/edit-2.svg';
 import SaveIcon from '../../assets/icons/save.svg';
-import { dotIntervals, gridSizes, styles, sx } from './styles';
+import { dotIntervals, gridSizes, useStyle } from './styles';
 import { TabWidgetProps } from './types';
+import FormView from '../FormView';
 
 const TabWidget: React.FC<TabWidgetProps> = ({
   selectedRecord,
@@ -18,6 +17,8 @@ const TabWidget: React.FC<TabWidgetProps> = ({
   noRecordText,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const theme = useTheme();
+  const { sx, styles } = useStyle();
 
   useEffect(() => {
     if (selectedRecord) {

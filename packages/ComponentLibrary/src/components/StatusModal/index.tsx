@@ -1,15 +1,17 @@
 import React from 'react';
-import { Box, Typography } from '@mui/material';
-import { Modal, theme } from '..';
+import { Box, Typography, useTheme } from '@mui/material';
+import { Modal } from '..';
 import SaveIcon from '../../assets/icons/save.svg';
 import { useTranslation } from '../../../../MainUI/hooks/useTranslation';
 import { statusConfig } from './states';
-import { sx } from './styles';
+import { useStyle } from './styles';
 import { StatusModalProps } from './types';
 
 const StatusModal: React.FC<StatusModalProps> = ({ statusText, statusType, errorMessage }) => {
   const { t } = useTranslation();
   const { gradientColor, iconBackgroundColor, icon: StatusIcon } = statusConfig[statusType];
+  const theme = useTheme();
+  const { sx } = useStyle();
 
   const backgroundGradient = `linear-gradient(to bottom, ${gradientColor}, rgba(255, 255, 255, 0))`;
 

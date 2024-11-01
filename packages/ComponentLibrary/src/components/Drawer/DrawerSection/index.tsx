@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Collapse, Popper, Paper, ClickAwayListener, Grow, Box } from '@mui/material';
-import styles from '../styles';
+import { Collapse, Popper, Paper, ClickAwayListener, Grow, Box, useTheme } from '@mui/material';
+import { useStyle } from '../styles';
 import MenuTitle from '../MenuTitle';
-import { theme } from '../../../theme';
 import { DrawerSectionProps } from '../types';
 import { findActive } from '../../../utils/drawerUtils';
 
@@ -18,6 +17,8 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
   isExpanded: externalExpanded,
   parentId,
 }) => {
+  const theme = useTheme();
+  const { sx } = useStyle();
   const isSelected = Boolean(windowId?.length && item.windowId === windowId);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
@@ -81,15 +82,13 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
     [handleClose, onClick],
   );
 
-  const mainStyle = useMemo(
+  const sectionStyles = useMemo(
     () => ({
-      ...styles.drawerSectionBox,
-      ...(!open && styles.closeSection),
-      background: expanded ? theme.palette.dynamicColor.contrastText : 'transparent',
+      ...(open ? sx.drawerSectionBox : sx.closeSection),
+      bgcolor: expanded ? theme.palette.dynamicColor.contrastText : 'transparent',
     }),
-    [expanded, open],
+    [expanded, open, sx.drawerSectionBox, sx.closeSection, theme],
   );
-
   const shouldShowChildren = isSearchActive || expanded;
 
   useEffect(() => {
@@ -108,7 +107,8 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
   }, [item.id, isSelected, windowId, item.children]);
 
   return (
-    <Box sx={mainStyle} role="button" aria-expanded={expanded} onKeyDown={handleKeyDown} tabIndex={0}>
+    <Box sx={sectionStyles} role="button" aria-expanded={expanded} onKeyDown={handleKeyDown} tabIndex={0}>
+      {' '}
       <MenuTitle
         item={item}
         onClick={handleClick}
@@ -139,9 +139,9 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
       <Popper open={popperOpen} anchorEl={anchorEl} placement="right-start" transition>
         {({ TransitionProps }) => (
           <Grow {...TransitionProps} timeout={300}>
-            <Paper style={styles.popper}>
+            <Paper sx={sx.popper}>
               <ClickAwayListener onClickAway={handleClose}>
-                <div style={styles.popperContent}>
+                <Box sx={sx.popperContent}>
                   <MenuTitle
                     item={item}
                     onClick={handleClick}
@@ -165,7 +165,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
                       windowId={windowId}
                     />
                   ))}
-                </div>
+                </Box>
               </ClickAwayListener>
             </Paper>
           </Grow>

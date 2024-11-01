@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Tooltip, IconButton as MUIIconButton, Box, Typography } from '@mui/material';
-import { theme } from '../../theme';
-import { defaultStyles } from './styles';
+import { Tooltip, IconButton as MUIIconButton, Box, Typography, useTheme } from '@mui/material';
+import { useStyle } from './styles';
 import { IIconComponentProps } from './types';
 
 const IconButton: React.FC<IIconComponentProps> = ({
-  fill = theme.palette.baselineColor.neutral[80],
-  hoverFill = theme.palette.baselineColor.neutral[0],
+  fill,
+  hoverFill,
   width = 24,
   height = 24,
   tooltip,
@@ -19,26 +18,35 @@ const IconButton: React.FC<IIconComponentProps> = ({
   iconText,
   ...props
 }) => {
-  const [iconFill, setIconFill] = useState<string>(fill);
+  const { styles } = useStyle();
+  const theme = useTheme();
+
+  const defaultFill = theme.palette.baselineColor.neutral[80];
+  const defaultHoverFill = theme.palette.baselineColor.neutral[0];
+
+  const actualFill = fill ?? defaultFill;
+  const actualHoverFill = hoverFill ?? defaultHoverFill;
+
+  const [iconFill, setIconFill] = useState<string>(actualFill);
 
   useEffect(() => {
-    setIconFill(isHovered ? hoverFill : fill);
-  }, [isHovered, hoverFill, fill]);
+    setIconFill(isHovered ? actualHoverFill : actualFill);
+  }, [isHovered, actualHoverFill, actualFill]);
 
   const handleMouseEnter = useCallback(() => {
     if (!disabled) {
-      setIconFill(hoverFill);
+      setIconFill(actualHoverFill);
     }
-  }, [disabled, hoverFill]);
+  }, [disabled, actualHoverFill]);
 
   const handleMouseLeave = useCallback(() => {
     if (!disabled) {
-      setIconFill(fill);
+      setIconFill(actualFill);
     }
-  }, [disabled, fill]);
+  }, [disabled, actualFill]);
 
   const combinedStyles = {
-    ...defaultStyles.defaultContainer,
+    ...styles.defaultContainer,
     ...sx,
   };
 
@@ -59,9 +67,9 @@ const IconButton: React.FC<IIconComponentProps> = ({
       disabled={disabled}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}>
-      <Box sx={defaultStyles.buttonContainer}>
+      <Box sx={styles.buttonContainer}>
         {clonedIcon}
-        {iconText && <Typography sx={defaultStyles.iconText}>{iconText}</Typography>}
+        {iconText && <Typography sx={styles.iconText}>{iconText}</Typography>}
       </Box>
     </MUIIconButton>
   );

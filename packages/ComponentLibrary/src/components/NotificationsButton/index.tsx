@@ -1,11 +1,10 @@
 'use client';
-
 import React, { useState } from 'react';
 import { Badge } from '@mui/material';
 import { ExtendedNotificationButtonProps, NotificationModalProps } from './types';
 import { notificationMax } from './constants';
-import { sx } from './styles';
 import IconButton from '../IconButton';
+import { useStyle } from './styles';
 
 const NotificationButton: React.FC<ExtendedNotificationButtonProps> = ({
   notifications = [],
@@ -13,6 +12,7 @@ const NotificationButton: React.FC<ExtendedNotificationButtonProps> = ({
   icon,
   tooltipTitle = 'Notifications',
 }) => {
+  const { sx } = useStyle();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {

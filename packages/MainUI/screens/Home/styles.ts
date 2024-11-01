@@ -1,7 +1,8 @@
-import { theme } from '@workspaceui/componentlibrary/theme';
+import { useTheme } from '@mui/material';
 import { useMemo } from 'react';
 
 const useStyles = () => {
+  const theme = useTheme();
   return useMemo(
     () => ({
       mainContainer: {
@@ -49,7 +50,7 @@ const useStyles = () => {
         marginTop: '0.5rem',
       },
     }),
-    [],
+    [theme.palette.baselineColor.neutral],
   );
 };
 
