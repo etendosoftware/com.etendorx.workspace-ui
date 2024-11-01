@@ -37,6 +37,6 @@
     ".next/types/**/*.ts",
     "svgr.d.ts",
     "../storybook/src/stories/Components/ConfigurationModal/mock.tsx"
-  ],
+, "../ComponentLibrary/src/components/ThemeProvider/index.tsx"  ],
   "exclude": ["node_modules"]
 }

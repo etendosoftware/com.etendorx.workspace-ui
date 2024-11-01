@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Collapse, Popper, Paper, ClickAwayListener, Grow, Box } from '@mui/material';
-import styles from '../styles';
+import useStyles from '../styles';
 import MenuTitle from '../MenuTitle';
 import { theme } from '../../../theme';
 import { DrawerSectionProps } from '../types';
@@ -18,6 +18,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
   isExpanded: externalExpanded,
   parentId,
 }) => {
+  const styles = useStyles();
   const isSelected = Boolean(windowId?.length && item.windowId === windowId);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
@@ -87,7 +88,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
       ...(!open && styles.closeSection),
       background: expanded ? theme.palette.dynamicColor.contrastText : 'transparent',
     }),
-    [expanded, open],
+    [expanded, open, styles.closeSection, styles.drawerSectionBox],
   );
 
   const shouldShowChildren = isSearchActive || expanded;
