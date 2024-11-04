@@ -1,6 +1,5 @@
 import React, { memo, useCallback } from 'react';
 import { Box, Link } from '@mui/material';
-import { TextInputBase } from '@workspaceui/componentlibrary/components';
 import { useStyle } from '../styles';
 import { FieldLabelProps, FieldValue, FormFieldGroupProps } from '../types';
 import TableDirSelector from './TableDirSelector';
@@ -10,6 +9,7 @@ import DateSelector from './DateSelector';
 import SelectSelector from './SelectSelector';
 import QuantitySelector from './QuantitySelector';
 import ListSelector from './ListSelector';
+import TextInputBase from '../../Input/TextInput/TextInputBase';
 
 const FieldLabel: React.FC<FieldLabelProps> = ({ label, required, fieldType, onLinkClick }) => {
   const { styles, sx } = useStyle();

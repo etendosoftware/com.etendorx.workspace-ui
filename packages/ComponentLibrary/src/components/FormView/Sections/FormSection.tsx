@@ -1,11 +1,11 @@
 import React from 'react';
 import { Accordion, AccordionSummary, AccordionDetails, Typography, Box, Grid, useTheme } from '@mui/material';
-import ChevronDown from '@workspaceui/componentlibrary/assets/icons/chevron-down.svg';
-import IconButton from '@workspaceui/componentlibrary/components/IconButton';
-import InfoIcon from '@workspaceui/componentlibrary/assets/icons/info.svg';
+import ChevronDown from '../../../assets/icons/chevron-down.svg';
+import InfoIcon from '../../../assets/icons/info.svg';
 import { defaultFill, useStyle } from '../styles';
 import { FormSectionProps } from '../types';
 import FormFieldGroup from '../selectors';
+import IconButton from '../../IconButton';
 
 const FormSection: React.FC<FormSectionProps> = ({
   sectionName,

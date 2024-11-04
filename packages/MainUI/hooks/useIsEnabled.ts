@@ -1,4 +1,4 @@
-import { Tab } from '@workspaceui/etendohookbinder/api/types';
+import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useMemo } from 'react';
 import { useMetadataContext } from './useMetadataContext';
 

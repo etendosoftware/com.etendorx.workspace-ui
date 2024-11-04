@@ -1,4 +1,4 @@
-import { Tab } from '@workspaceui/etendohookbinder/api/types';
+import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Tabs from './Tabs';
 import { useMemo } from 'react';
 

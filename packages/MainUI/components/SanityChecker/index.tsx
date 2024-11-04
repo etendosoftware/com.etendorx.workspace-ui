@@ -1,6 +1,6 @@
-import { API_METADATA_URL, MAX_ATTEMPTS } from '@workspaceui/etendohookbinder/api/constants';
+import { API_METADATA_URL, MAX_ATTEMPTS } from '@workspaceui/etendohookbinder/src/api/constants';
 import { useEffect, useRef, useState } from 'react';
-import Spinner from '@workspaceui/componentlibrary/components/Spinner';
+import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { logger } from '../../utils/logger';
 import { Button } from '@mui/material';
 

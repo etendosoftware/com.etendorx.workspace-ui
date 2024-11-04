@@ -1,6 +1,6 @@
 'use client';
 
-import { useSingleDatasource } from '@workspaceui/etendohookbinder/hooks/useSingleDatasource';
+import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
 import DynamicFormView from '../../../../../screens/Form/DynamicFormView';
 import { useParams } from 'next/navigation';
 import { useMetadataContext } from '../../../../../hooks/useMetadataContext';

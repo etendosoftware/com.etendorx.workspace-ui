@@ -1,4 +1,4 @@
-import { useSingleDatasource } from '@workspaceui/etendohookbinder/hooks/useSingleDatasource';
+import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
 
 export default function useFormRecord(entity: string, id: string) {
   const { record } = useSingleDatasource(entity, id);

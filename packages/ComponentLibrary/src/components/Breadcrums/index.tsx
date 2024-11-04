@@ -1,12 +1,13 @@
 import { FC, useState, useCallback, useMemo } from 'react';
-import { Breadcrumbs, Link, Typography, Box, IconButton, Menu, MenuItem, useTheme } from '@mui/material';
-import NavigateNextIcon from '@workspaceui/componentlibrary/assets/icons/chevron-right.svg';
-import ArrowLeftIcon from '@workspaceui/componentlibrary/assets/icons/arrow-left.svg';
-import ChevronDown from '@workspaceui/componentlibrary/assets/icons/chevron-down.svg';
-import MoreHorizIcon from '@workspaceui/componentlibrary/assets/icons/more-horizontal.svg';
+import { Breadcrumbs, Link, Typography, Box, IconButton, MenuItem, useTheme } from '@mui/material';
+import NavigateNextIcon from '../../assets/icons/chevron-right.svg';
+import ArrowLeftIcon from '../../assets/icons/arrow-left.svg';
+import ChevronDown from '../../assets/icons/chevron-down.svg';
+import MoreHorizIcon from '../../assets/icons/more-horizontal.svg';
 import { menuStyle, useStyle } from './styles';
 import { BreadcrumbProps, BreadcrumbAction, BreadcrumbItem } from './types';
 import ToggleChip from '../Toggle/ToggleChip';
+import { Menu } from '@mui/material';
 
 const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, homeText = 'Home', separator }) => {
   const [isHomeHovered, setIsHomeHovered] = useState(false);
@@ -154,9 +155,6 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
                 anchorEl={middleMenuAnchorEl}
                 open={Boolean(middleMenuAnchorEl)}
                 onClose={handleMiddleMenuClose}
-                slotProps={{
-                  paper: { sx: sx.menu, elevation: 3 },
-                }}
                 MenuListProps={{ sx: menuStyle }}>
                 {middleItems.map(item => (
                   <MenuItem
@@ -183,7 +181,6 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
     middleMenuAnchorEl,
     renderBreadcrumbItem,
     sx.breadcrumbItem,
-    sx.menu,
     sx.menuItem,
     theme.palette.baselineColor.neutral,
   ]);
@@ -208,14 +205,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
         </Box>
         {renderBreadcrumbItems}
       </Breadcrumbs>
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleActionMenuClose}
-        slotProps={{
-          paper: paperConstant(),
-        }}
-        MenuListProps={menuConstant()}>
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleActionMenuClose} MenuListProps={menuConstant()}>
         {currentActions.map(action => (
           <MenuItem key={action.id} onClick={() => {}} sx={sx.menuItem}>
             <Box sx={sx.iconBox}>

@@ -1,4 +1,4 @@
-import { useSingleDatasource } from '@workspaceui/etendohookbinder/hooks/useSingleDatasource';
+import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import DynamicFormView from './DynamicFormView';
 import { useParams } from 'next/navigation';

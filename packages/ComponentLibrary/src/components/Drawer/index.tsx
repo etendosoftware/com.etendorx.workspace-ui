@@ -8,7 +8,7 @@ import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
 import { createSearchIndex, filterItems, getAllItemTitles } from '../../utils/searchUtils';
 import DrawerItems from './Search';
 import RecentlyViewed from './RecentlyViewed';
-import { Menu } from '@workspaceui/etendohookbinder/api/types';
+import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { Box } from '@mui/material';
 
 const Drawer: React.FC<DrawerProps> = ({ windowId, items = [], logo, title, onClick }) => {

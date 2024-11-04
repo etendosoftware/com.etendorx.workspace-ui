@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 import { Modal } from '..';
 import SaveIcon from '../../assets/icons/save.svg';
-import { useTranslation } from '../../../../MainUI/hooks/useTranslation';
+import { useTranslation } from '@workspaceui/mainui/hooks/useTranslation';
 import { statusConfig } from './states';
 import { useStyle } from './styles';
 import { StatusModalProps } from './types';

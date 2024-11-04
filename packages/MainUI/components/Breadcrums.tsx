@@ -1,8 +1,8 @@
 import React, { useCallback, useMemo } from 'react';
-import Breadcrumb from '@workspaceui/componentlibrary/components/Breadcrums';
-import type { BreadcrumbItem } from '@workspaceui/componentlibrary/components/Breadcrums/types';
-import { useWindow } from '@workspaceui/etendohookbinder/hooks/useWindow';
-import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource';
+import Breadcrumb from '@workspaceui/componentlibrary/src/components/Breadcrums';
+import type { BreadcrumbItem } from '@workspaceui/componentlibrary/src/components/Breadcrums/types';
+import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
+import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { styles } from './styles';
 import { useRouter, useParams } from 'next/navigation';
 

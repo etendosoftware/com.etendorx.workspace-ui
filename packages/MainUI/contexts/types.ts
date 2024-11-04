@@ -1,4 +1,4 @@
-import { Role, Warehouse } from '@workspaceui/etendohookbinder/api/types';
+import { Role, Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
 
 export type Language = 'es' | 'en';
 

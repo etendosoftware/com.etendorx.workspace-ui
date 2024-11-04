@@ -9,9 +9,9 @@ import SelectorList from './ToggleSection';
 import { ProfileModalProps } from './types';
 import { MODAL_WIDTH, menuSyle, useStyle } from './styles';
 import IconButton from '../IconButton';
-import { UserContext } from '../../../../MainUI/contexts/user';
+import { UserContext } from '@workspaceui/mainui/contexts/user';
 import { Option } from '../Input/Select/types';
-import { logger } from '../../../../MainUI/utils/logger';
+import { logger } from '@workspaceui/mainui/utils/logger';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,

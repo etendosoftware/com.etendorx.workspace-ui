@@ -1,10 +1,10 @@
 import Box from '@mui/material/Box';
 import { MaterialReactTable, MRT_Row } from 'material-react-table';
 import { useStyle } from './styles';
-import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/api/types';
-import Spinner from '@workspaceui/componentlibrary/components/Spinner';
+import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { memo, useCallback, useMemo } from 'react';
-import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource';
+import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { useParams, useRouter } from 'next/navigation';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { parseColumns } from '../../utils/metadata';

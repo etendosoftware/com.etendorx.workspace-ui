@@ -2,7 +2,7 @@ import { Inter } from 'next/font/google';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import './styles/global.css';
 import App from './App';
-import { ThemeRegistry } from '@workspaceui/componentlibrary/components/ThemeProvider';
+import { ThemeRegistry } from '@workspaceui/componentlibrary/src/components/ThemeProvider';
 
 const inter = Inter({
   subsets: ['latin'],

@@ -1,11 +1,9 @@
 import { useCallback, useMemo, useEffect, useState } from 'react';
-import { useDatasource } from '@workspaceui/etendohookbinder/hooks/useDatasource';
-import Spinner from '@workspaceui/componentlibrary/components/Spinner';
-import Select from '@workspaceui/componentlibrary/components/Input/Select';
-import SearchOutlined from '@workspaceui/componentlibrary/assets/icons/search.svg';
-import { TableDirSelectorProps } from '@workspaceui/componentlibrary/components/FormView/types';
-import { Option } from '@workspaceui/componentlibrary/components/Input/Select/types';
+import SearchOutlined from '../../../assets/icons/search.svg';
+import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource'
 import { useTheme } from '@mui/material';
+import { Option, TableDirSelectorProps } from '../types';
+import Spinner from '../../Spinner';
 
 const getOptionLabel = (option: Option) => option.title;
 
