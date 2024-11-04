@@ -1,7 +1,7 @@
 import DrawerSection from '../DrawerSection';
 import { RecentlyViewedProps } from '../types';
-import { useRecentItems } from '@workspaceui/componentlibrary/hooks/useRecentItems';
-import { createParentMenuItem } from '@workspaceui/componentlibrary/utils/menuUtils';
+import { useRecentItems } from '@workspaceui/componentlibrary/src/hooks/useRecentItems';
+import { createParentMenuItem } from '@workspaceui/componentlibrary/src/utils/menuUtils';
 
 const RecentlyViewed: React.FC<RecentlyViewedProps> = ({ onClick, open, onWindowAccess, recentItems }) => {
   const { localRecentItems, isExpanded, handleItemClick, handleToggleExpand, hasItems } = useRecentItems(

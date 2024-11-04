@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { MaterialReactTable, MRT_Row, MRT_TableOptions, useMaterialReactTable } from 'material-react-table';
-import { TableProps, OrganizationField } from '../../../../storybook/src/stories/Components/Table/types';
+import { TableProps, OrganizationField } from '@workspaceui/storybook/src/stories/Components/Table/types';
 import { useStyle } from './styles';
-import { getColumns } from '../../../../storybook/src/stories/Components/Table/columns';
+import { getColumns } from '@workspaceui/storybook/src/stories/Components/Table/columns';
 
 type TableDataType = Record<string, unknown>;
 

@@ -1,6 +1,6 @@
 import { SxProps, Theme, useTheme } from '@mui/material';
 import { CSSProperties, useMemo } from 'react';
-import { theme } from '@workspaceui/componentlibrary/theme';
+import { theme } from '../../theme';
 
 export const defaultFill = theme.palette.dynamicColor.main;
 export const noteColors = ['#FFA07A', '#98FB98', '#87CEFA', '#DDA0DD', '#F0E68C', '#47a3f3', '#2186eb'];

@@ -19,16 +19,6 @@
         "name": "next"
       }
     ],
-    "paths": {
-      "@/*": ["./src/*"],
-      "@/screens/*": ["./screens/*"],
-      "@workspaceui/storybook": ["../storybook/src"],
-      "@workspaceui/storybook/*": ["../storybook/src/*"],
-      "@workspaceui/componentlibrary/*": ["../ComponentLibrary/src/*"],
-      "@workspaceui/componentlibrary": ["../ComponentLibrary/src"],
-      "@workspaceui/etendohookbinder/*": ["../EtendoHookBinder/src/*"],
-      "@workspaceui/etendohookbinder": ["../EtendoHookBinder/src"]
-    }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "types/svgr.d.ts", "types/theme.d.ts"],
   "exclude": ["node_modules"]

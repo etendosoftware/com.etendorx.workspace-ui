@@ -17,6 +17,9 @@ export const NEUTRAL_1000 = '#121212';
 
 export const themeOptions: ThemeOptions = {
   palette: {
+    background: {
+      default: 'var(--background-gradient)'
+    },
     dynamicColor: {
       main: '#004ACA',
       dark: '#00296F',

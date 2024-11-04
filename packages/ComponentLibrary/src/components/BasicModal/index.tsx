@@ -1,5 +1,4 @@
-'use client';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Typography, Button, Box, useTheme } from '@mui/material';
 import ModalMUI from '@mui/material/Modal';
 import IconButton from '../IconButton';
@@ -37,13 +36,13 @@ const Modal: React.FC<ModalIProps> = ({
 
   const handleOpen = () => setOpen(true);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (typeof onClose === 'function') {
       onClose();
     }
     setOpen(false);
     setIsFullScreen(false);
-  };
+  }, [onClose]);
 
   const gradientStyles = !backgroundGradient
     ? {}

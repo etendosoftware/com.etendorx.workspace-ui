@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TABS_CONFIG } from './mock';
 import SecondaryTabs from '../../../../../ComponentLibrary/src/components/SecondaryTabs';
 import type { Meta, StoryObj } from '@storybook/react';
-import { TabContent } from '@workspaceui/componentlibrary/components/SecondaryTabs/types';
+import { TabContent } from '@workspaceui/componentlibrary/src/components/SecondaryTabs/types';
 
 const meta: Meta<typeof SecondaryTabs> = {
   title: 'Components/SecondaryTabs',

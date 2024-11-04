@@ -5,8 +5,7 @@
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "Preserve",
     "skipLibCheck": true,
-    "types": ["vite-plugin-svgr/client"],
-
+    "preserveSymlinks": true,
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -20,15 +19,9 @@
     "noFallthroughCasesInSwitch": true,
 
     "baseUrl": ".",
-    "paths": {
-      "@workspaceui/storybook": ["../storybook/src"],
-      "@workspaceui/storybook/*": ["../storybook/src/*"],
-      "@workspaceui/componentlibrary/*": ["../ComponentLibrary/src/*"],
-      "@workspaceui/componentlibrary": ["../ComponentLibrary/src"],
-      "@workspaceui/etendohookbinder/*": ["../EtendoHookBinder/src/*"],
-      "@workspaceui/etendohookbinder": ["../EtendoHookBinder/src"]
-    }
+    "composite": true,
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true
   },
-  "include": ["src", "src/types/theme.d.ts", "src/types/svgr.d.ts"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": ["src"]
 }

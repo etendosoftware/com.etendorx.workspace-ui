@@ -3,7 +3,7 @@ import profilePicture from '../.././../../../ComponentLibrary/src/assets/images/
 import PersonIcon from '../../../../../ComponentLibrary/src/assets/icons/user.svg';
 import { sections } from './mock';
 import type { Meta, StoryObj } from '@storybook/react';
-import { ProfileModalProps } from '@workspaceui/componentlibrary/components/ProfileModal/types';
+import { ProfileModalProps } from '@workspaceui/componentlibrary/src/components/ProfileModal/types';
 
 const meta: Meta<typeof ProfileModal> = {
   title: 'Components/ProfileModal',

@@ -1,4 +1,4 @@
-import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/api/metadata';
+import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 
 export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
   if (!windowData?.tabs) {

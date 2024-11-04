@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
-import Table from '@workspaceui/componentlibrary/components/Table';
-import { mockOrganizations } from '@workspaceui/storybook/mocks';
+import Table from '@workspaceui/componentlibrary/src/components/Table';
+import { mockOrganizations } from '@workspaceui/storybook/src/mocks';
 import { useRecordContext } from '../../hooks/useRecordContext';
-import { EnhancedTableProps } from '@workspaceui/componentlibrary/components/Table';
+import { EnhancedTableProps } from '@workspaceui/componentlibrary/src/components/Table';
 import { useRouter } from 'next/navigation';
 
 const TableView = () => {

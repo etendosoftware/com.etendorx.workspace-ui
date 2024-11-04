@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Theme, useTheme, SxProps } from '@mui/material';
-import { Tab } from '@workspaceui/etendohookbinder/api/types';
+import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 
 type StylesType = {
   sx: {

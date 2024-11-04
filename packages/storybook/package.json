@@ -4,14 +4,15 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "serve": "vite preview",
+    "dev": "storybook dev",
+    "build": "storybook build",
+    "start": "npx http-server storybook-static",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "rm -rf storybook-static && storybook build",
     "build-storybook-local": "rm -rf storybook-static && yarn build-storybook && cd storybook-static && npx http-server"
@@ -25,7 +26,10 @@
     "material-react-table": "^2.12.1",
     "react-markdown": "^9.0.1",
     "react-router-dom": "^6.26.0",
-    "vite-plugin-svgr": "^4.2.0"
+    "vite-plugin-svgr": "^4.2.0",
+    "@workspaceui/componentlibrary": "workspace:componentlibrary",
+    "@workspaceui/etendohookbinder": "workspace:etendohookbinder",
+    "@workspaceui/mainui": "workspace:mainui"
   },
   "peerDependencies": {
     "react": "19.0.0-rc-9d2da591-20240808",

@@ -2,13 +2,11 @@
 
 import { useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Drawer } from '@workspaceui/componentlibrary/components';
-import { useMenu } from '@workspaceui/etendohookbinder/hooks/useMenu';
-import EtendoLogotype from '../public/etendo-logotype.png';
+import { Drawer } from '@workspaceui/componentlibrary/src/components';
+import { useMenu } from '@workspaceui/etendohookbinder/src/hooks/useMenu';
+import EtendoLogotype from '../public/etendo.png';
 import { useTranslation } from '../hooks/useTranslation';
 import { useUserContext } from '../hooks/useUserContext';
-
-const logoUrl = typeof EtendoLogotype === 'string' ? EtendoLogotype : '/assets/etendo-logotype.png';
 
 export default function Sidebar() {
   const { t } = useTranslation();
@@ -25,5 +23,5 @@ export default function Sidebar() {
     [router],
   );
 
-  return <Drawer windowId={windowId} logo={logoUrl} title={t('common.etendo')} items={menu} onClick={handleClick} />;
+  return <Drawer windowId={windowId} logo={EtendoLogotype.src} title={t('common.etendo')} items={menu} onClick={handleClick} />;
 }

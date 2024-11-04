@@ -1,10 +1,10 @@
 'use client';
 
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
-import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/api/metadata';
-import { useWindow } from '@workspaceui/etendohookbinder/hooks/useWindow';
+import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
 import { buildColumnsData, groupTabsByLevel } from '../utils/metadata';
-import { Tab } from '@workspaceui/etendohookbinder/api/types';
+import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useParams } from 'next/navigation';
 
 interface IMetadataContext {

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useUserContext } from '../../hooks/useUserContext';
-import Login from '@workspaceui/componentlibrary/components/Forms/Login';
+import Login from '@workspaceui/componentlibrary/src/components/Forms/Login';
 import { logger } from '../../utils/logger';
 
 export default function LoginScreen() {

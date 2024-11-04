@@ -7,17 +7,17 @@ import {
   IconButton,
   Profile,
   Waterfall,
-} from '@workspaceui/componentlibrary/components';
-import profilePicture from '@workspaceui/componentlibrary/assets/images/profile_picture_mock.png';
-import ActivityIcon from '@workspaceui/componentlibrary/assets/icons/activity.svg';
-import NotificationIcon from '@workspaceui/componentlibrary/assets/icons/bell.svg';
-import PersonIcon from '@workspaceui/componentlibrary/assets/icons/user.svg';
-import AddIcon from '@workspaceui/componentlibrary/assets/icons/plus.svg';
-import { modalConfig, menuItems, initialPeople, sections, NOTIFICATIONS } from '@workspaceui/storybook/mocks';
-import { Person } from '@workspaceui/componentlibrary/components/DragModal/DragModal.types';
-import Nav from '@workspaceui/componentlibrary/components/Nav/Nav';
+} from '@workspaceui/componentlibrary/src/components';
+import profilePicture from '@workspaceui/componentlibrary/src/assets/images/profile_picture_mock.png';
+import ActivityIcon from '@workspaceui/componentlibrary/src/assets/icons/activity.svg';
+import NotificationIcon from '@workspaceui/componentlibrary/src/assets/icons/bell.svg';
+import PersonIcon from '@workspaceui/componentlibrary/src/assets/icons/user.svg';
+import AddIcon from '@workspaceui/componentlibrary/src/assets/icons/plus.svg';
+import { modalConfig, menuItems, initialPeople, sections, NOTIFICATIONS } from '../../storybook/src/mocks';
+import { Person } from '@workspaceui/componentlibrary/src/components/DragModal/DragModal.types';
+import Nav from '@workspaceui/componentlibrary/src/components/Nav/Nav';
 import { useTranslation } from '../hooks/useTranslation';
-import { Role } from '@workspaceui/etendohookbinder/api/types';
+import { Role } from '@workspaceui/etendohookbinder/src/api/types';
 
 const handleClose = () => {
   return true;

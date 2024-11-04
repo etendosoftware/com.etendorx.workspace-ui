@@ -4,10 +4,10 @@ import { RegisterModalProps } from './types';
 import { useStyle } from './styles';
 import CloseRecordIcon from '../../assets/icons/close-record.svg';
 import Modal from '../BasicModal';
-import { processMock } from '../../../../storybook/src/stories/Components/RegisterModal/registerMock';
+import { processMock } from '@workspaceui/storybook/src/stories/Components/RegisterModal/registerMock';
 import RadioButtonItem from '../RadioButton';
 import CheckIcon from '../../assets/icons/check-circle.svg';
-import { useTranslation } from '../../../../MainUI/hooks/useTranslation';
+import { useTranslation } from '@workspaceui/mainui/hooks/useTranslation';
 
 const RegisterModal: React.FC<RegisterModalProps> = ({ registerText }) => {
   const { t } = useTranslation();

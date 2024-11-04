@@ -1,6 +1,34 @@
 import { ReactNode } from 'react';
-import { MappedData, WindowMetadata } from '@workspaceui/etendohookbinder/api/types';
-import { FieldDefinition } from '../../../../MainUI/screens/Form/types';
+import { MappedData, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field } from '@workspaceui/etendohookbinder/src/api/types';
+
+export interface FieldInfo {
+  fieldGroup$_identifier?: string;
+}
+
+export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'tabledir' | 'quantity' | 'list';
+
+export interface BaseFieldDefinition<T> {
+  value: T;
+  type: FieldType;
+  label: string;
+  name: string;
+  section?: string;
+  required?: boolean;
+  original?: {
+    refList: Array<{ id: string; label: string; value: string }>;
+    referencedEntity: string;
+    referencedWindowId: string;
+    referencedTabId: string;
+    fieldName: string;
+  } & Field;
+}
+export type FieldDefinition =
+  | BaseFieldDefinition<string>
+  | BaseFieldDefinition<number>
+  | BaseFieldDefinition<boolean>
+  | BaseFieldDefinition<Date>
+  | BaseFieldDefinition<string[]>;
 
 export interface GridItemProps {
   xs?: number;
