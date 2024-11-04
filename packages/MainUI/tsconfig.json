@@ -28,8 +28,16 @@
       "@workspaceui/componentlibrary": ["../ComponentLibrary/src"],
       "@workspaceui/etendohookbinder/*": ["../EtendoHookBinder/src/*"],
       "@workspaceui/etendohookbinder": ["../EtendoHookBinder/src"]
-    }
+    },
+    "typeRoots": ["../ComponentLibrary/node_modules/@types", "./node_modules/@types"]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "types/svgr.d.ts", "types/theme.d.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "../ComponentLibrary/src/types/svgr.d.ts",
+    "../ComponentLibrary/src/types/theme.d.ts"
+  ],
   "exclude": ["node_modules"]
 }

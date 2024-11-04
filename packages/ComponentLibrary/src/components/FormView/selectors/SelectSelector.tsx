@@ -1,9 +1,9 @@
 import { memo, useCallback, useMemo } from 'react';
 import Select from '@workspaceui/componentlibrary/components/Input/Select';
+import { Option } from '@workspaceui/componentlibrary/components/Input/Select/types';
 import SearchOutlined from '@workspaceui/componentlibrary/assets/icons/search.svg';
 import { SelectSelectorProps } from '../types';
 import { useTheme } from '@mui/material';
-import { Option } from 'src/components/Input/Select/types';
 
 const SelectSelector = memo(({ name, title, onChange, readOnly }: SelectSelectorProps) => {
   const theme = useTheme();

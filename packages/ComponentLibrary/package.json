@@ -12,7 +12,12 @@
       "require": "./dist/index.umd.js",
       "types": "./dist/index.d.ts"
     },
-    "./style.css": "./dist/style.css"
+    "./style.css": "./dist/style.css",
+    "./theme": {
+      "import": "./dist/theme/index.js",
+      "require": "./dist/theme/index.js",
+      "types": "./dist/theme/index.d.ts"
+    }
   },
   "files": [
     "dist"

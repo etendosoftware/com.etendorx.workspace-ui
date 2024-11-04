@@ -1,0 +1,58 @@
+name: PR Build Validation
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build all packages
+        run: pnpm build:all
+
+      - name: Report status
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const { owner, repo, number } = context.issue;
+            const status = ${{ job.status == 'success' }} ? '✅ Build passed' : '❌ Build failed';
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: number,
+              body: `Build Status: ${status}\n\nBuild completed in ${process.env.GITHUB_RUN_TIME} minutes\n\nBuilt packages:\n- @workspaceui/componentlibrary\n- @workspaceui/storybook\n- @workspaceui/mainui`
+            });

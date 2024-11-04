@@ -8,10 +8,10 @@ import LanguageIcon from '../../../assets/icons/flags/spain.svg';
 import { SelectorListProps, Item } from '../types';
 import { InputPassword } from '../..';
 import LockOutlined from '../../../assets/icons/lock.svg';
+import { Option } from '../../Input/Select/types';
 import Select from '../../Input/Select';
 import { useTranslation } from '../../../../../MainUI/hooks/useTranslation';
 import { Warehouse } from '@workspaceui/etendohookbinder/api/types';
-import { Option } from '@workspaceui/componentlibrary/components/Input/Select/types';
 
 const isOptionEqualToValue = (option: Option<string>, value: Option<string>) => option.id === value.id;
 
