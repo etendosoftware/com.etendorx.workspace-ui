@@ -1,7 +1,7 @@
 import IconButton from '../../../../../ComponentLibrary/src/components/IconButton';
 import NotificationIcon from '../../../../../ComponentLibrary/src/assets/icons/heart.svg';
 import type { Meta, StoryObj } from '@storybook/react';
-import { theme } from '@workspaceui/componentlibrary/theme';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { useStyle } from '../../../../../ComponentLibrary/src/components/Waterfall/styles';
 
 const meta: Meta<typeof IconButton> = {

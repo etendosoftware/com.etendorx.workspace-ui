@@ -4,7 +4,7 @@ import FavoriteIcon from '@workspaceui/componentlibrary/src/assets/icons/star.sv
 import ContentCopyIcon from '@workspaceui/componentlibrary/src/assets/icons/copy.svg';
 import HelpIcon from '@workspaceui/componentlibrary/src/assets/icons/help-circle.svg';
 import SettingsIcon from '@workspaceui/componentlibrary/src/assets/icons/settings.svg';
-import { theme } from '@workspaceui/componentlibrary/theme';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
 
 export const mockDefaultActions: BreadcrumbAction[] = [
   {
