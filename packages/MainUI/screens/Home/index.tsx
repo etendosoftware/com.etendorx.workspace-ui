@@ -27,8 +27,6 @@ const Home: React.FC = () => {
   const { t } = useTranslation();
   const theme = useTheme();
 
-  console.log(theme);
-
   const paperStyles = useMemo(
     () =>
       ({
