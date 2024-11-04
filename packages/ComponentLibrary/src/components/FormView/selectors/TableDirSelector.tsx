@@ -4,6 +4,7 @@ import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDataso
 import { useTheme } from '@mui/material';
 import { Option, TableDirSelectorProps } from '../types';
 import Spinner from '../../Spinner';
+import Select from '../../Input/Select';
 
 const getOptionLabel = (option: Option) => option.title;
 
