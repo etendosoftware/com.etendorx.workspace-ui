@@ -1,11 +1,7 @@
 import { useMemo } from 'react';
-import { SxProps, Theme, useTheme } from '@mui/material';
+import { Theme, useTheme } from '@mui/material';
 
-type StylesType = {
-  sx: Record<string, SxProps<Theme>>;
-};
-
-export const useStyle = (): StylesType => {
+export const useStyle = () => {
   const theme = useTheme();
 
   return useMemo(
@@ -131,7 +127,7 @@ export const useStyle = (): StylesType => {
   );
 };
 
-export const getRightButtonStyles = (open: boolean, theme: Theme): SxProps<Theme> => ({
+export const getRightButtonStyles = (open: boolean, theme: Theme) => ({
   color: open ? theme.palette.dynamicColor.contrastText : theme.palette.baselineColor.neutral[80],
   backgroundColor: open ? theme.palette.baselineColor.neutral[80] : theme.palette.baselineColor.neutral[0],
   borderRadius: '50%',
