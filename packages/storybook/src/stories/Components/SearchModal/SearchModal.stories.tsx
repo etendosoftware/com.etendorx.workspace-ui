@@ -1,5 +1,5 @@
 import { Typography, Box } from '@mui/material';
-import SearchModal from '../../../../../ComponentLibrary/src/components/SearchModal';
+import SearchModal from '@workspaceui/componentlibrary/src/components/SearchModal';
 import { typographyTitleStyles } from '../../Styles/Typography/styles';
 import { TABS_CONTENT, DEFAULT_CONTENT } from './mock';
 

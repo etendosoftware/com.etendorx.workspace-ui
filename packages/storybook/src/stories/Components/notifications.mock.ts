@@ -1,4 +1,4 @@
-import { Inotifications } from '../../../../ComponentLibrary/src/commons';
+import { Inotifications } from '@workspaceui/componentlibrary/src/commons';
 import {
   Description,
   LightbulbCircle,
@@ -9,7 +9,7 @@ import {
   NoteAltOutlined,
   FileDownloadOutlined,
 } from '@mui/icons-material';
-import { theme } from '../../../../ComponentLibrary/src/theme';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
 
 const buttonStyles = {
   leftButton: {

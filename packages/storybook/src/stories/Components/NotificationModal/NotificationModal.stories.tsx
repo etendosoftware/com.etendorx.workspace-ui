@@ -1,10 +1,10 @@
 import React from 'react';
-import NotificationModal from '../../../../../ComponentLibrary/src/components/NotificationsModal';
-import NotificationButton from '../../../../../ComponentLibrary/src/components/NotificationsButton';
+import NotificationModal from '@workspaceui/componentlibrary/src/components/NotificationsModal';
+import NotificationButton from '@workspaceui/componentlibrary/src/components/NotificationsButton';
 import { NOTIFICATIONS } from '../notifications.mock';
-import NotificationIcon from '../../../../../ComponentLibrary/src/assets/icons/bell.svg';
+import NotificationIcon from '@workspaceui/componentlibrary/src/assets/icons/bell.svg';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Inotifications } from '../../../../../ComponentLibrary/src/commons';
+import { Inotifications } from '@workspaceui/componentlibrary/src/commons';
 
 interface NotificationModalProps {
   notifications: Inotifications[];
