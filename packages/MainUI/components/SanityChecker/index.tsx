@@ -1,14 +1,21 @@
 import { API_METADATA_URL, MAX_ATTEMPTS } from '@workspaceui/etendohookbinder/src/api/constants';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { logger } from '../../utils/logger';
 import { Button } from '@mui/material';
 
 export default function SanityChecker(props: React.PropsWithChildren) {
   const [connected, setConnected] = useState(false);
-  const checker = useRef<NodeJS.Timeout | number>(NaN);
+  const checker = useRef<number>(NaN);
   const [error, setError] = useState(false);
   const attempts = useRef(0);
+
+  const handleRetry = useCallback(() => {
+    clearTimeout(checker.current);
+    attempts.current = 0;
+    setConnected(false);
+    setError(false);
+  }, []);
 
   useEffect(() => {
     const healthCheck = async () => {
@@ -34,23 +41,36 @@ export default function SanityChecker(props: React.PropsWithChildren) {
         }
       } catch (e) {
         logger.warn('Could not connect to the API after ' + attempts.current + ' attempts');
-        setError(true);
+
+        if (attempts.current >= MAX_ATTEMPTS) {
+          setError(true);
+        }
       }
     };
 
     healthCheck();
-    checker.current = setInterval(healthCheck, 1000);
+    checker.current = window.setInterval(healthCheck, 1000);
 
     return () => {
       if (checker.current) {
         clearInterval(checker.current);
       }
     };
-  }, []);
+  }, [error]);
 
   if (connected) {
     return <>{props.children}</>;
   }
 
-  return <div className="center-all">{error ? <Button variant="contained">Retry</Button> : <Spinner />}</div>;
+  return (
+    <div className="center-all">
+      {error ? (
+        <Button variant="contained" color='warning' onClick={handleRetry}>
+          Retry
+        </Button>
+      ) : (
+        <Spinner />
+      )}
+    </div>
+  );
 }

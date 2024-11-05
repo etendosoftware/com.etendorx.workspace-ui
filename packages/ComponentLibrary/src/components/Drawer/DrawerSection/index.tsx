@@ -25,7 +25,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
 
   const [localExpanded, setLocalExpanded] = useState(isSelected || findActive(windowId, item.children));
 
-  const expanded = externalExpanded !== undefined ? externalExpanded : localExpanded;
+  const expanded = Boolean(externalExpanded || localExpanded);
 
   const popperOpen = Boolean(anchorEl);
 

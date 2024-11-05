@@ -1,4 +1,6 @@
-export declare module '@mui/material/styles' {
+import '@mui/material/styles';
+
+declare module '@mui/material/styles' {
   interface BaselineColor {
     neutral: { [key: number]: string };
     transparentNeutral: { [key: number]: string };

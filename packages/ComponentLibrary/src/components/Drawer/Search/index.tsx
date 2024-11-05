@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import DrawerSection from '../DrawerSection';
-import { Menu } from '../../../../../EtendoHookBinder/src/api/types';
 import { DrawerItemsProps } from '../types';
 
 const DrawerItems: React.FC<DrawerItemsProps> = ({
@@ -10,28 +9,33 @@ const DrawerItems: React.FC<DrawerItemsProps> = ({
   expandedItems,
   toggleItemExpansion,
   searchValue,
+  windowId,
 }) => {
-  const renderItems = (items: Menu[]) => {
-    return items.map(item => {
-      const isExpanded = expandedItems.has(item.id) || Boolean(searchValue);
-      return (
-        <React.Fragment key={item.id}>
-          <DrawerSection
-            item={item}
-            onClick={onClick}
-            open={open}
-            isExpanded={isExpanded}
-            onToggleExpand={() => toggleItemExpansion(item.id)}
-            hasChildren={Array.isArray(item.children) && item.children.length > 0}
-            isExpandable={!searchValue && Array.isArray(item.children) && item.children.length > 0}
-            isSearchActive={Boolean(searchValue)}
-          />
-        </React.Fragment>
-      );
-    });
-  };
+  const refs = useRef<Record<string, () => unknown>>({});
 
-  return <>{renderItems(items)}</>;
+  return (
+    <>
+      {items.map(item => {
+        refs.current[item.id] = refs.current[item.id] ? refs.current[item.id] : () => toggleItemExpansion(item.id);
+
+        return (
+          <React.Fragment key={item.id}>
+            <DrawerSection
+              item={item}
+              onClick={onClick}
+              open={open}
+              isExpanded={expandedItems.has(item.id) || Boolean(searchValue)}
+              onToggleExpand={refs.current[item.id]}
+              hasChildren={Array.isArray(item.children) && item.children.length > 0}
+              isExpandable={!searchValue && Array.isArray(item.children) && item.children.length > 0}
+              isSearchActive={Boolean(searchValue)}
+              windowId={windowId}
+            />
+          </React.Fragment>
+        );
+      })}
+    </>
+  );
 };
 
 export default DrawerItems;

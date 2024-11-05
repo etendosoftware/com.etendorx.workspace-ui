@@ -11,10 +11,28 @@ import RecentlyViewed from './RecentlyViewed';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { Box } from '@mui/material';
 
+const findItemByWindowId = (items?: Menu[], windowId?: string): Menu | null => {
+  if (!items || !windowId) {
+    return null;
+  }
+
+  for (const item of items) {
+    if (item.windowId === windowId) {
+      return item;
+    }
+    if (item.children) {
+      const found = findItemByWindowId(item.children, windowId);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
 const Drawer: React.FC<DrawerProps> = ({ windowId, items = [], logo, title, onClick }) => {
   const [open, setOpen] = useState<boolean>(true);
   const [searchValue, setSearchValue] = useState<string>('');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
   const [recentItems, setRecentItems] = useState<Array<{ id: string; name: string; windowId: string }>>([]);
   const { sx } = useStyle();
 
@@ -79,19 +97,6 @@ const Drawer: React.FC<DrawerProps> = ({ windowId, items = [], logo, title, onCl
     });
   }, []);
 
-  const findItemByWindowId = useCallback((items: Menu[], windowId: string): Menu | null => {
-    for (const item of items) {
-      if (item.windowId === windowId) {
-        return item;
-      }
-      if (item.children) {
-        const found = findItemByWindowId(item.children, windowId);
-        if (found) return found;
-      }
-    }
-    return null;
-  }, []);
-
   const handleItemClick = useCallback(
     (path: string) => {
       const windowId = path.split('/').pop();
@@ -108,7 +113,7 @@ const Drawer: React.FC<DrawerProps> = ({ windowId, items = [], logo, title, onCl
       }
       onClick(path);
     },
-    [items, onClick, findItemByWindowId],
+    [items, onClick],
   );
 
   const handleWindowAccess = useCallback((item: { id: string; name: string; windowId: string }) => {
@@ -140,7 +145,7 @@ const Drawer: React.FC<DrawerProps> = ({ windowId, items = [], logo, title, onCl
         </Box>
       )}
       <Box sx={sx.drawerContent} tabIndex={2}>
-        {Array.isArray(filteredItems) ? (
+        {Array.isArray(searchValue ? filteredItems : items) ? (
           <DrawerItems
             items={filteredItems}
             onClick={handleItemClick}
