@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+      - feature/ETP-629
 
 jobs:
   chromatic-deployment:
@@ -22,10 +23,8 @@ jobs:
         run: |
           rm -rf node_modules
           rm -rf storybook-static
-          yarn cache clean
-          yarn install
           pnpm install
-          yarn build-storybook
+          pnpm build
         working-directory: ./packages/storybook
 
       - name: Publish to Chromatic
