@@ -40,7 +40,7 @@ const useStyles = () => {
           width: '0px',
         },
         scrollbarWidth: 'none',
-        '-ms-overflow-style': 'none',
+        'MsOverflowStyle': 'none',
       },
       tablePaper: {
         borderRadius: '1rem 1rem 0 0',
