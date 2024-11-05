@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import { createTheme } from '@mui/material/styles';
+import { ThemeProvider, CssBaseline, createTheme } from '@mui/material';
 import { themeOptions } from '../../theme';
 
 export function ThemeRegistry({ children }: { children: React.ReactNode }) {

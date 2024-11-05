@@ -1,11 +1,10 @@
 import React from 'react';
-import { CssBaseline, ThemeProvider } from '@mui/material';
-import { theme } from '../../ComponentLibrary/src/theme';
+import { createTheme, ThemeProvider } from '@mui/material';
+import { themeOptions } from '@workspaceui/componentlibrary/src/theme';
 import { LanguageProvider } from '../../MainUI/contexts/languageProvider';
 
 const withThemeProvider = Story => (
-  <ThemeProvider theme={theme}>
-    <CssBaseline />
+  <ThemeProvider theme={createTheme(themeOptions)}>
     <LanguageProvider>
       <Story />
     </LanguageProvider>
