@@ -103,8 +103,9 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleClose}
-        PaperProps={{ sx: sx.menuPaper }}
-        slotProps={{ root: { sx: sx.menuItemRoot } }}>
+        // @ts-expect-error @mui/material types sucks
+        slotProps={{ root: { sx: sx.menuItemRoot } }}
+        PaperProps={{ sx: sx.menuPaper }}>
         {hiddenTabs.map((tab: TabContent, index: number) => (
           <MenuItem
             key={index}

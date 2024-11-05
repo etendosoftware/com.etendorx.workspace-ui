@@ -1,9 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "Preserve",
     "skipLibCheck": true,
     "preserveSymlinks": true,
     "allowImportingTsExtensions": true,
@@ -22,7 +20,13 @@
     "composite": true,
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
-    "typeRoots": ["node_modules/@types"]
+
+    "target": "ES5",                    // Target ES5 for wide compatibility
+    "module": "ESNext",                 // Leave module setting flexible for overrides
+    "declaration": true,                // Generate .d.ts declaration files
+    "declarationDir": "./dist/types",   // Output directory for .d.ts files
+    "rootDir": "./src",                 // Root directory of the source files
+    "outDir": "./dist",                 // Output directory for transpiled files
   },
   "include": ["src"],
   "exclude": ["node_modules"],
