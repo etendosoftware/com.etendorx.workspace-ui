@@ -103,7 +103,6 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
-        // @ts-expect-error @mui/material types sucks
         slotProps={{
           paper: { sx: sx.menu },
         }}

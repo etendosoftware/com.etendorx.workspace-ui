@@ -114,7 +114,6 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
         anchorEl={anchorEl}
         open={handleOpen()}
         onClose={handleClose}
-        // @ts-expect-error @mui/material types sucks
         slotProps={{
           paper: { sx: styles.paperStyleMenu },
         }}

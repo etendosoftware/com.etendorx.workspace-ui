@@ -103,9 +103,6 @@ importers:
         specifier: ^9.0.1
         version: 9.0.1(@types/react@18.2.0)(react@19.0.0-rc-9d2da591-20240808)
     devDependencies:
-      '@mui/system':
-        specifier: ^5.0.0
-        version: 5.16.5(@emotion/react@11.13.0(@types/react@18.2.0)(react@19.0.0-rc-9d2da591-20240808))(@emotion/styled@11.13.0(@emotion/react@11.13.0(@types/react@18.2.0)(react@19.0.0-rc-9d2da591-20240808))(@types/react@18.2.0)(react@19.0.0-rc-9d2da591-20240808))(@types/react@18.2.0)(react@19.0.0-rc-9d2da591-20240808)
       '@types/node':
         specifier: ^22.7.8
         version: 22.7.8

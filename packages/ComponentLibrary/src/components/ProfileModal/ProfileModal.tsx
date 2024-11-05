@@ -130,7 +130,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleClose}
-        // @ts-expect-error @mui/material types sucks
         slotProps={{
           paper: {
             sx: {

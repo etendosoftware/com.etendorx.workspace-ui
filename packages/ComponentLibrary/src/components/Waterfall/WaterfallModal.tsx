@@ -72,7 +72,6 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
         open={Boolean(anchorEl)}
         onClose={handleClose}
         MenuListProps={{ sx: menuSyle }}
-        // @ts-expect-error @mui/material types sucks
         slotProps={{
           paper: { sx: styles.paperStyleMenu, elevation: 3 },
         }}>

@@ -26,7 +26,6 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
       open
       {...props}
       onClose={onClose}
-      // @ts-expect-error @mui/material types sucks
       slotProps={{
         paper: { sx: styles.paperStyleMenu },
       }}
