@@ -1,5 +1,3 @@
-import '@mui/material/styles';
-
 declare module '@mui/material/styles' {
   interface BaselineColor {
     neutral: { [key: number]: string };
@@ -40,3 +38,5 @@ declare module '@mui/material/styles' {
     palette?: PaletteOptions;
   }
 }
+
+export {};
