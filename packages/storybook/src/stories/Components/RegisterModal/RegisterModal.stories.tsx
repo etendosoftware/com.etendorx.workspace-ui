@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import RegisterModal from '../../../../../ComponentLibrary/src/components/RegisterModal';
+import RegisterModal from '@workspaceui/componentlibrary/src/components/RegisterModal';
 
 const meta: Meta<typeof RegisterModal> = {
   title: 'Components/RegisterModal',

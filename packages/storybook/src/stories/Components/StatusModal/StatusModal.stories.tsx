@@ -1,5 +1,5 @@
-import StatusModal from '../../../../../ComponentLibrary/src/components/StatusModal';
-import { StatusType } from '../../../../../ComponentLibrary/src/components/StatusModal/types';
+import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
+import { StatusType } from '@workspaceui/componentlibrary/src/components/StatusModal/types';
 import type { Meta, StoryObj } from '@storybook/react';
 
 interface StatusModalStoryProps {
@@ -59,8 +59,7 @@ export const CustomErrorMessage: Story = {
   args: {
     statusText: 'Custom Error',
     statusType: 'error',
-    errorMessage:
-      'This is a custom error message that can be quite long and detailed if needed.',
+    errorMessage: 'This is a custom error message that can be quite long and detailed if needed.',
   },
 };
 

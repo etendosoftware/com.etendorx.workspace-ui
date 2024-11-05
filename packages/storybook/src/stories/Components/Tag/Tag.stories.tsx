@@ -1,6 +1,6 @@
 import { Grid } from '@mui/material';
 import { InfoOutlined, CheckOutlined, Error } from '@mui/icons-material';
-import Tag from '../../../../../ComponentLibrary/src/components/Tag';
+import Tag from '@workspaceui/componentlibrary/src/components/Tag';
 
 export default {
   title: 'Components/Tag',

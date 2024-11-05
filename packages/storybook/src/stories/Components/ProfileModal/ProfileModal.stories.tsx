@@ -1,6 +1,6 @@
-import { Profile as ProfileModal } from '../../../../../ComponentLibrary/src/components';
-import profilePicture from '../.././../../../ComponentLibrary/src/assets/images/profile_picture_mock.png';
-import PersonIcon from '../../../../../ComponentLibrary/src/assets/icons/user.svg';
+import { Profile as ProfileModal } from '@workspaceui/componentlibrary/src/components';
+import profilePicture from '@workspaceui/componentlibrary/src/assets/images/profile_picture_mock.png';
+import PersonIcon from '@workspaceui/componentlibrary/src/assets/icons/user.svg';
 import { sections } from './mock';
 import type { Meta, StoryObj } from '@storybook/react';
 import { ProfileModalProps } from '@workspaceui/componentlibrary/src/components/ProfileModal/types';

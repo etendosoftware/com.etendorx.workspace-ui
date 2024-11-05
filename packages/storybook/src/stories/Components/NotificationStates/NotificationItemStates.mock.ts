@@ -9,7 +9,7 @@ import {
   FileDownloadOutlined,
 } from '@mui/icons-material';
 import { Theme } from '@mui/material';
-import { IallNotifications } from '../../../../../ComponentLibrary/src/components/NotificationItemAllStates/types';
+import { IallNotifications } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/types';
 
 const getButtonStyles = (theme: Theme) => ({
   leftButton: {

@@ -1,6 +1,6 @@
-import { Section } from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleButton/types';
-import PersonOutlineIcon from '../../../../../ComponentLibrary/src/assets/icons/check-circle.svg';
-import LockIcon from '../../../../../ComponentLibrary/src/assets/icons/lock.svg';
+import { Section } from '@workspaceui/componentlibrary/src/components/ProfileModal/ToggleButton/types';
+import PersonOutlineIcon from '@workspaceui/componentlibrary/src/assets/icons/check-circle.svg';
+import LockIcon from '@workspaceui/componentlibrary/src/assets/icons/lock.svg';
 
 const defaultFill = '#6B7280';
 

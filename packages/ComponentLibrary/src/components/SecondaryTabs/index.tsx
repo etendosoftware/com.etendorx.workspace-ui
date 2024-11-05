@@ -26,7 +26,7 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
   const [visibleCount, setVisibleCount] = useState(5);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
-  const { styles, sx } = useStyle();
+  const { sx } = useStyle();
   const theme = useTheme();
 
   const updateVisibleCount = useCallback(() => {
@@ -70,7 +70,7 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
           <TabLabel
             icon={
               <Box component="span" sx={sx.iconContainer}>
-                {renderIcon(tab.icon, styles.menuItemIcon)}
+                {renderIcon(tab.icon, sx.menuItemIcon)}
               </Box>
             }
             text={tab.label}
@@ -82,7 +82,7 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
         sx={sx.tab}
       />
     ),
-    [sx.iconContainer, styles.menuItemIcon, sx.tab],
+    [sx.iconContainer, sx.menuItemIcon, sx.tab],
   );
 
   return (
@@ -114,7 +114,7 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
               handleClose();
             }}
             sx={sx.menuItem}>
-            {renderIcon(tab.icon, styles.menuItemTypography)}
+            {renderIcon(tab.icon, sx.menuItemTypography)}
             {tab.label}
           </MenuItem>
         ))}

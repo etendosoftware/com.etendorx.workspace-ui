@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import ToggleButton from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleButton';
+import ToggleButton from '@workspaceui/componentlibrary/src/components/ProfileModal/ToggleButton';
 import { sectionsMock, sectionsMock3, sectionsMock4 } from './mock';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Section } from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleButton/types';
+import { Section } from '@workspaceui/componentlibrary/src/components/ProfileModal/ToggleButton/types';
 
 interface ToggleButtonProps {
   sections: Section[];
@@ -32,13 +32,7 @@ const ToggleButtonTemplate: React.FC<ToggleButtonProps> = args => {
     args.onToggle(section);
   };
 
-  return (
-    <ToggleButton
-      {...args}
-      currentSection={currentSection}
-      onToggle={handleToggle}
-    />
-  );
+  return <ToggleButton {...args} currentSection={currentSection} onToggle={handleToggle} />;
 };
 
 export const Default: Story = {

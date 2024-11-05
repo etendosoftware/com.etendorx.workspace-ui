@@ -1,7 +1,7 @@
 import { ReactElement } from 'react';
-import { Inotifications } from '../../../../../ComponentLibrary/src/commons';
-import { Section } from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleButton/types';
-import { WaterfallModalProps } from '../../../../../ComponentLibrary/src/components/Waterfall/types';
+import { Inotifications } from '@workspaceui/componentlibrary/src/commons';
+import { Section } from '@workspaceui/componentlibrary/src/components/ProfileModal/ToggleButton/types';
+import { WaterfallModalProps } from '@workspaceui/componentlibrary/src/components/Waterfall/types';
 
 export interface NavArgs extends WaterfallModalProps {
   cancelButtonText: string;

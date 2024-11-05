@@ -1,9 +1,9 @@
 import React from 'react';
-import NotificationItemStates from '../../../../../ComponentLibrary/src/components/NotificationItemAllStates';
+import NotificationItemStates from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates';
 import { createNotificationStates } from './NotificationItemStates.mock';
 import { Grid, useTheme } from '@mui/material';
 import type { Meta, StoryObj } from '@storybook/react';
-import { IallNotifications } from '../../../../../ComponentLibrary/src/components/NotificationItemAllStates/types';
+import { IallNotifications } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/types';
 
 interface NotificationItemStatesProps {
   notifications: IallNotifications[];
