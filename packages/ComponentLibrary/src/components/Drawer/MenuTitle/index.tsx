@@ -1,25 +1,26 @@
-import { useRef, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { SxProps, Theme, Tooltip, Box, Typography } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { MenuTitleProps } from '../types';
 import { useStyle } from '../styles';
 
 export default function MenuTitle({ item, onClick, selected, expanded, open }: MenuTitleProps) {
-  const textRef = useRef<HTMLSpanElement>(null);
   const [isTextTruncated, setIsTextTruncated] = useState(false);
   const { sx } = useStyle();
 
   useEffect(() => {
     const checkTextTruncation = () => {
-      if (textRef.current) {
-        setIsTextTruncated(textRef.current.scrollWidth > textRef.current.clientWidth);
+      const text = document.getElementById(item.id);
+
+      if (text) {
+        setIsTextTruncated(text.scrollWidth > text.clientWidth);
       }
     };
 
     checkTextTruncation();
     window.addEventListener('resize', checkTextTruncation);
     return () => window.removeEventListener('resize', checkTextTruncation);
-  }, [item.name]);
+  }, [item.id]);
 
   const boxStyles: SxProps<Theme> = {
     ...(sx.listItemButton as object),
@@ -48,7 +49,7 @@ export default function MenuTitle({ item, onClick, selected, expanded, open }: M
           {item.icon ? <span>{item.icon}</span> : null}
           {open && (
             <Tooltip title={item.name} arrow disableHoverListener={!isTextTruncated}>
-              <span ref={textRef} style={tooltipStyles}>
+              <span style={tooltipStyles} id={item.id}>
                 {item.name}
               </span>
             </Tooltip>
