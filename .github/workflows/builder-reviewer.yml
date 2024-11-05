@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Set start time
+        run: echo "START_TIME=$(date +%s)" >> $GITHUB_ENV
+
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -42,6 +45,19 @@ jobs:
       - name: Build all packages
         run: pnpm build:all
 
+      - name: Calculate run time
+        if: always()
+        run: |
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - $START_TIME))
+          MINUTES=$((DURATION / 60))
+          SECONDS=$((DURATION % 60))
+          if [ $MINUTES -eq 0 ]; then
+            echo "DURATION_TEXT=${SECONDS} seconds" >> $GITHUB_ENV
+          else
+            echo "DURATION_TEXT=${MINUTES} minutes ${SECONDS} seconds" >> $GITHUB_ENV
+          fi
+
       - name: Report status
         if: always()
         uses: actions/github-script@v6
@@ -54,5 +70,5 @@ jobs:
               owner,
               repo,
               issue_number: number,
-              body: `Build Status: ${status}\n\nBuild completed in ${process.env.GITHUB_RUN_TIME} minutes\n\nBuilt packages:\n- @workspaceui/componentlibrary\n- @workspaceui/storybook\n- @workspaceui/mainui`
+              body: `Build Status: ${status}\n\nBuild completed in ${process.env.DURATION_TEXT}\n\nBuilt packages:\n- @workspaceui/componentlibrary\n- @workspaceui/storybook\n- @workspaceui/mainui`
             });
