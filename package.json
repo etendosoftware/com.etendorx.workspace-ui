@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build:all": "pnpm --filter @workspaceui/componentlibrary build && pnpm --filter @workspaceui/storybook build && pnpm --filter @workspaceui/mainui build",
+    "build:all": "pnpm --filter @workspaceui/storybook build && pnpm --filter @workspaceui/mainui build",
     "dev": "pnpm --filter @workspaceui/mainui dev",
     "build": "pnpm --filter @workspaceui/mainui build",
     "clean": "pnpm -r exec -- rm -rf dist node_modules .next && rm -rf node_modules",
