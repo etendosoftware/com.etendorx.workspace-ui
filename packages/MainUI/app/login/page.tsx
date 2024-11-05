@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Login from '@workspaceui/componentlibrary/components/Forms/Login';
+import Login from '@workspaceui/componentlibrary/src/components/Forms/Login';
 import { useUserContext } from '../../hooks/useUserContext';
 
 export default function LoginPage() {

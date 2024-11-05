@@ -1,4 +1,4 @@
-import ConfigurationModal from '../../../../../ComponentLibrary/src/components/ConfigurationModal';
+import ConfigurationModal from '@workspaceui/componentlibrary/src/components//ConfigurationModal';
 import { modalConfig } from './mock';
 
 export default {

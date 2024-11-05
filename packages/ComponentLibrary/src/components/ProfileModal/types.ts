@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Section } from './ToggleButton/types';
 import { Item } from '../enums/index';
 import { Option } from '../Input/Select/types';
-import { Role } from '@workspaceui/etendohookbinder/api/types';
+import { Role } from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface User {
   photoUrl: string;

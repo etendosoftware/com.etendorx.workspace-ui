@@ -2,8 +2,11 @@ import { SxProps, Theme, useTheme } from '@mui/material';
 import { CSSProperties, useMemo } from 'react';
 
 type StylesType = {
-  styles: Record<string, CSSProperties>;
-  sx: Record<string, SxProps<Theme>>;
+  styles: {
+    tabLabelContainerStyles: SxProps<Theme>;
+    badgeTextStyles: CSSProperties;
+    badgeStyles: SxProps<Theme>;
+  };
 };
 
 export const useStyle = (): StylesType => {
@@ -12,18 +15,28 @@ export const useStyle = (): StylesType => {
   return useMemo(
     () => ({
       styles: {
-        tabLabelContainer: {
+        tabLabelContainerStyles: {
           display: 'flex',
           alignItems: 'center',
+          height: '100%',
+          '& .MuiBadge-badge': {
+            backgroundColor: theme.palette.baselineColor.transparentNeutral[5],
+            color: theme.palette.baselineColor.neutral[100],
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            height: '1.5rem',
+            borderRadius: '12.5rem',
+            paddingX: '0.5rem',
+          },
         },
-        badgeText: {
+        badgeTextStyles: {
           marginLeft: '0.5rem',
           marginRight: '0.5rem',
           fontSize: '0.875rem',
-        },
-      },
-      sx: {
-        badge: {
+          fontWeight: 500,
+          color: 'inherit',
+        } as CSSProperties,
+        badgeStyles: {
           marginLeft: '0.875rem',
           '& .MuiBadge-badge': {
             backgroundColor: theme.palette.baselineColor.transparentNeutral[5],
@@ -32,6 +45,7 @@ export const useStyle = (): StylesType => {
             fontWeight: 500,
             height: '1.5rem',
             borderRadius: '12.5rem',
+            maxWidth: '1.5rem',
             paddingX: '0.5rem',
           },
         },

@@ -1,12 +1,7 @@
 import { MRT_ColumnDef } from 'material-react-table';
-import {
-  Organization,
-  OrganizationLabels,
-} from '../../../../../storybook/src/stories/Components/Table/types';
+import { Organization, OrganizationLabels } from './types';
 
-export const getColumns = (
-  labels: Partial<OrganizationLabels> = {},
-): MRT_ColumnDef<Organization>[] => [
+export const getColumns = (labels: Partial<OrganizationLabels> = {}): MRT_ColumnDef<Organization>[] => [
   {
     accessorKey: 'organization',
     header: labels.organization ?? 'Organization',
@@ -94,9 +89,7 @@ export const getColumns = (
   },
   {
     accessorKey: 'externalBusinessPartnerReference',
-    header:
-      labels.externalBusinessPartnerReference ??
-      'External Business Partner Reference',
+    header: labels.externalBusinessPartnerReference ?? 'External Business Partner Reference',
   },
   {
     accessorKey: 'project',

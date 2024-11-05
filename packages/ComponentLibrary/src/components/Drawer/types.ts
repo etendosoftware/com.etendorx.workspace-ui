@@ -90,4 +90,5 @@ export interface RecentlyViewedProps {
   open: boolean;
   onWindowAccess: (item: RecentItem) => void;
   recentItems: RecentItem[];
+  windowId?: string;
 }

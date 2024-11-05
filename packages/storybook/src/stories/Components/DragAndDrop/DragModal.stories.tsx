@@ -1,4 +1,4 @@
-import DragModal from '../../../../../ComponentLibrary/src/components/DragModal/DragModal';
+import DragModal from '@workspaceui/componentlibrary/src/components/DragModal/DragModal';
 import { initialPeople } from '../mock';
 import type { Meta, StoryObj } from '@storybook/react';
 

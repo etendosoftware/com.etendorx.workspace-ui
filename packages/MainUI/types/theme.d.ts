@@ -1,4 +1,4 @@
-import '@mui/material';
+import '@mui/material/styles';
 
 declare module '@mui/material/styles' {
   interface BaselineColor {

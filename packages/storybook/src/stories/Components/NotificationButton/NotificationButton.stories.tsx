@@ -1,8 +1,8 @@
 import { ReactElement } from 'react';
-import NotificationButton from '../../../../../ComponentLibrary/src/components/NotificationsButton';
-import NotificationIcon from '../../../../../ComponentLibrary/src/assets/icons/bell.svg';
+import NotificationButton from '@workspaceui/componentlibrary/src/components/NotificationsButton';
+import NotificationIcon from '@workspaceui/componentlibrary/src/assets/icons/bell.svg';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Inotifications } from '../../../../../ComponentLibrary/src/commons';
+import { Inotifications } from '@workspaceui/componentlibrary/src/commons';
 
 interface NotificationButtonProps {
   notifications: Inotifications[];

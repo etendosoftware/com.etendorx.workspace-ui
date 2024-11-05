@@ -1,4 +1,4 @@
-import { Organization } from '../../../../storybook/src/stories/Components/Table/types';
+import { Organization } from '@workspaceui/storybook/src/stories/Components/Table/types';
 
 export interface TabWidgetProps {
   selectedRecord: Organization | null;

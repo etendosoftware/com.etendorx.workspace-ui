@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 import { FormData } from './types';
-import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/api/types';
+import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { useRouter } from 'next/navigation';
 import { adaptFormData, mapWindowMetadata } from '../../utils/FormUtils';
-import FormView from '@workspaceui/componentlibrary/components/FormView';
+import FormView from '@workspaceui/componentlibrary/src/components/FormView';
 
 export default function DynamicFormView({
   windowData,

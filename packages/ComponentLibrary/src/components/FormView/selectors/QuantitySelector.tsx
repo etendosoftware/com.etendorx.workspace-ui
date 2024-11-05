@@ -1,7 +1,7 @@
 import React, { memo, useState, useCallback, useEffect } from 'react';
 import { TextField } from '@mui/material';
 import { QuantityProps } from '../types';
-import { validateNumber } from '@workspaceui/componentlibrary/utils/quantitySelectorUtil';
+import { validateNumber } from '../../../utils/quantitySelectorUtil';
 
 const INPUT_PROPS = {
   inputProps: {

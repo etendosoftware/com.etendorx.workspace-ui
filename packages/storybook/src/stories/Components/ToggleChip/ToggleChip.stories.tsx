@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Grid } from '@mui/material';
-import ToggleChip from '../../../../../ComponentLibrary/src/components/Toggle/ToggleChip';
+import ToggleChip from '@workspaceui/componentlibrary/src/components/Toggle/ToggleChip';
 import type { Meta, StoryObj } from '@storybook/react';
 
 interface ToggleChipProps {

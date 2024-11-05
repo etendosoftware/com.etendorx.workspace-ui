@@ -14,6 +14,7 @@ export const TERTIARY_900 = '#151C7A';
 export const NEUTRAL_50 = '#FAFAFA';
 export const NEUTRAL_300 = '#E0E0E0';
 export const NEUTRAL_1000 = '#121212';
+export const BACKGROUND = '#C6D3FF';
 
 export const themeOptions: ThemeOptions = {
   palette: {

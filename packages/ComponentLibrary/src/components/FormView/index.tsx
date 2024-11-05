@@ -1,12 +1,12 @@
 import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import { Box, Grid, useTheme } from '@mui/material';
 import { FormViewProps } from './types';
-import PrimaryTabs from '@workspaceui/componentlibrary/components/PrimaryTab';
-import { TabItem } from '@workspaceui/componentlibrary/components/PrimaryTab/types';
+import PrimaryTabs from '../PrimaryTab';
+import { TabItem } from '../PrimaryTab/types';
 import SectionRenderer from './Sections/sectionRendered';
 import type { FieldValue, FormData, Section } from './types';
-import Chevrons from '@workspaceui/componentlibrary/assets/icons/chevrons-right.svg';
-import { FieldDefinition } from '../../../../MainUI/screens/Form/types';
+import Chevrons from '../../assets/icons/chevrons-right.svg';
+import { FieldDefinition } from '@workspaceui/mainui/screens/Form/types';
 
 const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, gridItemProps, dottedLineInterval }) => {
   const [formData, setFormData] = useState<FormData>(data);

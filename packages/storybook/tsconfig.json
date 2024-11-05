@@ -18,14 +18,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
-    "paths": {
-      "@workspaceui/componentlibrary/*": ["../ComponentLibrary/src/*"],
-      "@workspaceui/componentlibrary": ["../ComponentLibrary/src"],
-      "@workspaceui/etendohookbinder/*": ["../EtendoHookBinder/src/*"],
-      "@workspaceui/etendohookbinder": ["../EtendoHookBinder/src"]
-    }
+    "baseUrl": "."
   },
-  "include": ["src", "svg.d.ts", "src/stories/Components/ConfigurationModal/mock.tsx"],
+  "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

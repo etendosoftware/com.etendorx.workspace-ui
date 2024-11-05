@@ -1,17 +1,12 @@
-import { CSSProperties, useMemo } from 'react';
-import { SxProps, Theme, useTheme } from '@mui/material';
+import { useMemo } from 'react';
+import { Theme, useTheme } from '@mui/material';
 
-type StylesType = {
-  styles: Record<string, CSSProperties>;
-  sx: Record<string, SxProps<Theme>>;
-};
-
-export const useStyle = (): StylesType => {
+export const useStyle = () => {
   const theme = useTheme();
 
   return useMemo(
     () => ({
-      styles: {
+      sx: {
         container: {
           display: 'flex',
           flexDirection: 'column',
@@ -25,6 +20,12 @@ export const useStyle = (): StylesType => {
           padding: '0 0.5rem',
           width: '100%',
           position: 'relative',
+          '& .MuiTabs-root': {
+            minHeight: '2.25rem',
+          },
+          '& .MuiTabs-scroller': {
+            overflow: 'hidden !important',
+          },
         },
         rightButtonContainer: {
           position: 'absolute',
@@ -34,6 +35,7 @@ export const useStyle = (): StylesType => {
           display: 'flex',
           alignItems: 'center',
           height: '100%',
+          zIndex: 1,
         },
         iconContainer: {
           display: 'flex',
@@ -52,11 +54,9 @@ export const useStyle = (): StylesType => {
           height: '1rem',
           color: theme.palette.baselineColor.neutral[70],
         },
-      },
-      sx: {
         tab: {
           minWidth: 'auto',
-          padding: '0 0.625rem',
+          padding: '0 0.725rem',
           backgroundColor: 'transparent',
           position: 'relative',
           transition: 'color 0.3s ease',
@@ -127,7 +127,7 @@ export const useStyle = (): StylesType => {
   );
 };
 
-export const getRightButtonStyles = (open: boolean, theme: Theme): SxProps<Theme> => ({
+export const getRightButtonStyles = (open: boolean, theme: Theme) => ({
   color: open ? theme.palette.dynamicColor.contrastText : theme.palette.baselineColor.neutral[80],
   backgroundColor: open ? theme.palette.baselineColor.neutral[80] : theme.palette.baselineColor.neutral[0],
   borderRadius: '50%',

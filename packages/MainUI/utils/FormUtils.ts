@@ -1,6 +1,6 @@
 import { FieldType, FieldInfo, FormData, FieldDefinition } from '../screens/Form/types';
-import { Section } from '@workspaceui/componentlibrary/components/FormView/types';
-import { Column, MappedData, MappedTab, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/api/types';
+import { Section } from '@workspaceui/componentlibrary/src/components/FormView/types';
+import { Column, MappedData, MappedTab, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 
 export function mapColumnTypeToFieldType(column: Column): FieldType {
   if (!column || !column?.reference) {

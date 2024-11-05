@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box } from '@mui/material';
 import IconButton from '../../IconButton';
-import { ToolbarSectionConfig } from '../../../../../storybook/src/stories/Components/Table/types';
+import { ToolbarSectionConfig } from '@workspaceui/storybook/src/stories/Components/Table/types';
 
 const ToolbarSection: React.FC<ToolbarSectionConfig> = ({
   buttons,

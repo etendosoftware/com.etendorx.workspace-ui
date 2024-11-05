@@ -2,18 +2,18 @@
 
 import { createContext, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { logger } from '../utils/logger';
-import { Metadata } from '@workspaceui/etendohookbinder/api/metadata';
-import { Datasource } from '@workspaceui/etendohookbinder/api/datasource';
-import { login as doLogin } from '@workspaceui/etendohookbinder/api/authentication';
-import { changeRole as doChangeRole } from '@workspaceui/etendohookbinder/api/role';
-import { getSession } from '@workspaceui/etendohookbinder/api/getSession';
-import { changeWarehouse as doChangeWarehouse } from '@workspaceui/etendohookbinder/api/warehouse';
-import { HTTP_CODES } from '@workspaceui/etendohookbinder/api/constants';
+import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { Datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
+import { login as doLogin } from '@workspaceui/etendohookbinder/src/api/authentication';
+import { changeRole as doChangeRole } from '@workspaceui/etendohookbinder/src/api/role';
+import { getSession } from '@workspaceui/etendohookbinder/src/api/getSession';
+import { changeWarehouse as doChangeWarehouse } from '@workspaceui/etendohookbinder/src/api/warehouse';
+import { HTTP_CODES } from '@workspaceui/etendohookbinder/src/api/constants';
 import { DefaultConfiguration, IUserContext } from './types';
-import { Role, SessionResponse, Warehouse } from '@workspaceui/etendohookbinder/api/types';
-import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/api/defaultConfig';
+import { Role, SessionResponse, Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
+import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/src/api/defaultConfig';
 import { usePathname, useRouter } from 'next/navigation';
-import Spinner from '@workspaceui/componentlibrary/components/Spinner';
+import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 
 export const UserContext = createContext({} as IUserContext);
 

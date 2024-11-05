@@ -1,10 +1,10 @@
-import { BreadcrumbProps, BreadcrumbAction } from '@workspaceui/componentlibrary/components/Breadcrums/types';
-import HomeIcon from '@workspaceui/componentlibrary/assets/icons/home.svg';
-import FavoriteIcon from '@workspaceui/componentlibrary/assets/icons/star.svg';
-import ContentCopyIcon from '@workspaceui/componentlibrary/assets/icons/copy.svg';
-import HelpIcon from '@workspaceui/componentlibrary/assets/icons/help-circle.svg';
-import SettingsIcon from '@workspaceui/componentlibrary/assets/icons/settings.svg';
-import { theme } from '@workspaceui/componentlibrary/theme';
+import { BreadcrumbProps, BreadcrumbAction } from '@workspaceui/componentlibrary/src/components/Breadcrums/types';
+import HomeIcon from '@workspaceui/componentlibrary/src/assets/icons/home.svg';
+import FavoriteIcon from '@workspaceui/componentlibrary/src/assets/icons/star.svg';
+import ContentCopyIcon from '@workspaceui/componentlibrary/src/assets/icons/copy.svg';
+import HelpIcon from '@workspaceui/componentlibrary/src/assets/icons/help-circle.svg';
+import SettingsIcon from '@workspaceui/componentlibrary/src/assets/icons/settings.svg';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
 
 export const mockDefaultActions: BreadcrumbAction[] = [
   {

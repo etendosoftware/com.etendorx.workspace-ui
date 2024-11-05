@@ -1,11 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react';
-import PrimaryTabs from '../../../../../ComponentLibrary/src/components/PrimaryTab';
-import {
-  defaultTabs,
-  onlyIconsTabs,
-  onlyLabelsTabs,
-  defaultIcon,
-} from './mock';
+import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
+import { defaultTabs, onlyIconsTabs, onlyLabelsTabs, defaultIcon } from './mock';
 
 const meta: Meta<typeof PrimaryTabs> = {
   title: 'Components/PrimaryTabs',

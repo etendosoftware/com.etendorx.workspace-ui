@@ -1,9 +1,9 @@
 import { Box, Typography } from '@mui/material';
-import { SidebarContentProps } from '../../../../../storybook/src/stories/Components/Table/types';
+import { SidebarContentProps } from '@workspaceui/storybook/src/stories/Components/Table/types';
 import ContentGrid from './WidgetContent';
 import { useStyle } from '../styles';
 import RegisterModal from '../../RegisterModal';
-import { useTranslation } from '../../../../../MainUI/hooks/useTranslation';
+import { useTranslation } from '@workspaceui/mainui/hooks/useTranslation';
 
 export const SidebarContent: React.FC<SidebarContentProps> = ({ icon, identifier, title, widgets }) => {
   const { t } = useTranslation();

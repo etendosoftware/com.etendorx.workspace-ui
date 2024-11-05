@@ -1,9 +1,9 @@
 import { memo, useRef } from 'react';
 import { InputAdornment, TextField } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import CalendarIcon from '@workspaceui/componentlibrary/assets/icons/calendar.svg';
+import CalendarIcon from '../../../assets/icons/calendar.svg';
 import { DateSelectorProps } from '../types';
-import IconButton from '@workspaceui/componentlibrary/components/IconButton';
+import IconButton from '../../IconButton';
 
 const StyledTextField = styled(TextField)(({ theme }) => ({
   '& .MuiInputBase-root': {

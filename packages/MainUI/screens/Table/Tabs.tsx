@@ -1,4 +1,4 @@
-import { Tab } from '@workspaceui/etendohookbinder/api/types';
+import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useMemo, useRef, useState } from 'react';
 import { Box, Button } from '@mui/material';
 import DynamicTable from '../../components/Table';

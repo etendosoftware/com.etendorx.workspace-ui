@@ -1,5 +1,5 @@
-import { css, SxProps, Theme, useTheme } from '@mui/material';
 import { useMemo } from 'react';
+import { useTheme } from '@mui/material';
 
 export const useStyle = () => {
   const theme = useTheme();
@@ -7,7 +7,7 @@ export const useStyle = () => {
   return useMemo(
     () => ({
       styles: {
-        container: css({
+        container: {
           display: 'flex',
           flex: 1,
           flexDirection: 'column',
@@ -15,15 +15,15 @@ export const useStyle = () => {
           justifyContent: 'center',
           height: '100%',
           gap: theme.spacing(1),
-        }),
-        paper: css({
+        },
+        paper: {
           textAlign: 'center',
           display: 'flex',
           flexDirection: 'column',
           gap: theme.spacing(1),
           padding: theme.spacing(1),
-        }),
-      } as { [key: string]: SxProps<Theme> },
+        },
+      },
     }),
     [theme],
   );

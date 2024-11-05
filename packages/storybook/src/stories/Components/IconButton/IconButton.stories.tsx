@@ -1,8 +1,36 @@
-import IconButton from '../../../../../ComponentLibrary/src/components/IconButton';
-import NotificationIcon from '../../../../../ComponentLibrary/src/assets/icons/heart.svg';
+import React from 'react';
+import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
+import NotificationIcon from '@workspaceui/componentlibrary/src/assets/icons/heart.svg';
 import type { Meta, StoryObj } from '@storybook/react';
-import { theme } from '@workspaceui/componentlibrary/theme';
-import { useStyle } from '../../../../../ComponentLibrary/src/components/Waterfall/styles';
+import { useTheme } from '@mui/material';
+import { IIconComponentProps } from '@workspaceui/componentlibrary/src/components/IconButton/types';
+
+interface IconButtonWrapperProps {
+  args: IIconComponentProps;
+}
+
+const IconButtonWrapper: React.FC<IconButtonWrapperProps> = ({ args }) => {
+  const theme = useTheme();
+
+  const baseStyles = {
+    borderRadius: '6.25rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.3s ease',
+    background: theme.palette.baselineColor.neutral[0],
+    '&:hover': {
+      backgroundColor: theme.palette.dynamicColor.main,
+    },
+  };
+
+  const combinedStyles = {
+    ...baseStyles,
+    ...args.sx,
+  };
+
+  return <IconButton {...args} sx={combinedStyles} />;
+};
 
 const meta: Meta<typeof IconButton> = {
   title: 'Components/IconButton',
@@ -11,6 +39,7 @@ const meta: Meta<typeof IconButton> = {
     tooltip: { control: 'text' },
     fill: { control: 'color' },
     hoverFill: { control: 'color' },
+    iconText: { control: 'text' },
   },
 };
 
@@ -18,52 +47,34 @@ export default meta;
 
 type Story = StoryObj<typeof IconButton>;
 
-const getStyles = () => {
-  const { sx } = useStyle();
-  return {
-    defaultStyles: {
-      ...sx.customizeButton,
-      '&:hover': {
-        backgroundColor: theme.palette.dynamicColor.contrastText,
-        color: theme.palette.baselineColor.neutral[80],
-      },
-    },
-  };
-};
-
 export const Default: Story = {
+  render: args => <IconButtonWrapper args={args} />,
   args: {
     tooltip: 'Default IconButton',
     children: <NotificationIcon />,
-    sx: getStyles().defaultStyles,
   },
 };
 
 export const CustomFill: Story = {
+  render: args => <IconButtonWrapper args={args} />,
   args: {
     tooltip: 'Custom Fill IconButton',
-    fill: theme.palette.primary.main,
     children: <NotificationIcon />,
+    fill: '#1976d2',
+    hoverFill: '#fff',
     sx: {
-      ...getStyles().defaultStyles,
-      color: theme.palette.primary.main,
+      '&:hover': {
+        backgroundColor: '#1976d2',
+      },
     },
   },
 };
 
-export const HoverFill: Story = {
+export const Disabled: Story = {
+  render: args => <IconButtonWrapper args={args} />,
   args: {
-    tooltip: 'Hover Fill IconButton',
-    fill: theme.palette.baselineColor.neutral[80],
-    hoverFill: theme.palette.baselineColor.neutral[0],
+    tooltip: 'Disabled IconButton',
     children: <NotificationIcon />,
-    sx: {
-      ...getStyles().defaultStyles,
-      color: theme.palette.baselineColor.neutral[80],
-      '&:hover': {
-        backgroundColor: theme.palette.baselineColor.neutral[80],
-        color: theme.palette.baselineColor.neutral[0],
-      },
-    },
+    disabled: true,
   },
 };

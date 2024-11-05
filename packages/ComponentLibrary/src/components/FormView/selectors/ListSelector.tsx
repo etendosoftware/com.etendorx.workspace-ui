@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import Select from '@workspaceui/componentlibrary/components/Input/Select';
-import SearchOutlined from '@workspaceui/componentlibrary/assets/icons/search.svg';
-import { Option } from '@workspaceui/componentlibrary/components/Input/Select/types';
+import Select from '../../Input/Select';
+import SearchOutlined from '../../../assets/icons/search.svg';
+import { Option } from '../../Input/Select/types';
 import { ListSelectorProps } from '../types';
 import { useTheme } from '@mui/material';
 

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { ensureString } from '@workspaceui/componentlibrary/helpers/ensureString';
-import translations from '@workspaceui/componentlibrary/locales';
+import { ensureString } from '@workspaceui/componentlibrary/src/helpers/ensureString';
+import translations from '@workspaceui/componentlibrary/src/locales';
 import { createContext } from 'react';
 import { Organization } from '../../storybook/src/stories/Components/Table/types';
 
