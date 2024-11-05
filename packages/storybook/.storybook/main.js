@@ -22,17 +22,6 @@ const config = {
         ...config.resolve,
         alias: {
           ...config.resolve?.alias,
-          '@workspaceui/componentlibrary': '/home/santi/fresh/com.etendorx.workspace-ui/packages/ComponentLibrary',
-          '@workspaceui/etendohookbinder': '/home/santi/fresh/com.etendorx.workspace-ui/packages/EtendoHookBinder',
-          '@workspaceui/mainui': '/home/santi/fresh/com.etendorx.workspace-ui/packages/MainUI',
-        },
-      },
-      define: {
-        'process.env': {
-          NODE_ENV: JSON.stringify('development'),
-          VITE_API_BASE_URL: JSON.stringify('http://localhost:8080/etendo'),
-          VITE_CACHE_DURATION: JSON.stringify('3600000'),
-          VITE_AUTH_HEADER_NAME: JSON.stringify('Authorization'),
         },
       },
     };
