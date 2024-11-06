@@ -1,4 +1,4 @@
-import { API_LOGIN_URL, DEFAULT_LOGIN_CHARSET } from './constants';
+import { API_LOGIN_URL } from './constants';
 import { LoginResponse } from './types';
 import { getJson } from './utils';
 
