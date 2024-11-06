@@ -122,6 +122,8 @@ export const useStyle = () => {
         popper: {
           marginLeft: '0.75rem',
           borderRadius: '0.75rem',
+          maxHeight: '90vh',
+          overflowY: 'auto',
         },
         popperContent: {
           padding: '0.5rem',
@@ -169,6 +171,7 @@ export const useStyle = () => {
         closeSection: {
           display: 'flex',
           justifyContent: 'center',
+          padding: '0.25rem',
         },
         drawerHeaderTitle: {
           fontWeight: 600,

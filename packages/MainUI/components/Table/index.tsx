@@ -74,6 +74,16 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
           enablePagination={false}
           renderBottomToolbar={tab.uIPattern == 'STD' ? <Button onClick={fetchMore}>Load more</Button> : null}
           initialState={{ density: 'compact' }}
+          enableTopToolbar={false}
+          enableSorting={false}
+          enableColumnFilters={false}
+          enableColumnActions={false}
+          muiTablePaperProps={{
+            sx: sx.tablePaper,
+          }}
+          muiTableHeadCellProps={{ sx: sx.tableHeadCell }}
+          muiTableBodyCellProps={{ sx: sx.tableBodyCell }}
+          muiTableBodyProps={{ sx: sx.tableBody }}
         />
       </Box>
     </Box>

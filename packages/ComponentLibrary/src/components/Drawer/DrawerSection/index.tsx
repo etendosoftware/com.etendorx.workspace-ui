@@ -85,10 +85,11 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
   const sectionStyles = useMemo(
     () => ({
       ...(open ? sx.drawerSectionBox : sx.closeSection),
-      bgcolor: expanded ? theme.palette.dynamicColor.contrastText : 'transparent',
+      bgcolor: expanded && open ? theme.palette.dynamicColor.contrastText : 'transparent',
     }),
     [expanded, open, sx.drawerSectionBox, sx.closeSection, theme],
   );
+
   const shouldShowChildren = isSearchActive || expanded;
 
   useEffect(() => {
@@ -108,7 +109,6 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
 
   return (
     <Box sx={sectionStyles} role="button" aria-expanded={expanded} onKeyDown={handleKeyDown} tabIndex={0}>
-      {' '}
       <MenuTitle
         item={item}
         onClick={handleClick}
