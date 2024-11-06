@@ -19,13 +19,19 @@ export const useStyle = (): StylesType => {
           padding: '0.5rem',
         },
         button: (tab: Tab, activeKey?: string) => ({
-          borderBottomLeftRadius: 0,
-          borderBottomRightRadius: 0,
+          margin: '0.25rem',
           color: tab.id === activeKey ? theme.palette.text.primary : theme.palette.text.secondary,
           backgroundColor: tab.id === activeKey ? theme.palette.background.default : theme.palette.action.disabled,
+          border: '1px solid transparent',
           transition: theme.transitions.create(['color', 'background-color'], {
             duration: theme.transitions.duration.short,
           }),
+          '&:hover': {
+            background: theme.palette.baselineColor.neutral[80],
+            color: theme.palette.baselineColor.neutral[0],
+            borderRadius: '0.5rem',
+            border: '1px solid transparent',
+          },
         }),
       },
     }),
