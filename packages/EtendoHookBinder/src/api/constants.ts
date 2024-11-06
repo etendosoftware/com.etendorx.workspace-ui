@@ -12,6 +12,7 @@ export const TOKEN = process.env.NEXT_PUBLIC_TOKEN;
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 export const API_SANITY_CHECK_URL = `${API_BASE_URL}/security/Login`;
 export const API_LOGIN_URL = `${API_BASE_URL}/sws/login`;
+export const DEFAULT_LOGIN_CHARSET = 'ISO-8859-1';
 export const API_DATASOURCE_URL = `${API_BASE_URL}/sws/com.smf.securewebservices.datasource/org.openbravo.service.datasource`;
 export const API_OBREST_URL = `${API_BASE_URL}/sws/com.smf.securewebservices.obRest`;
 export const API_METADATA_URL = `${API_BASE_URL}/meta`;
