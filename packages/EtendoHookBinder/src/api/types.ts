@@ -34,6 +34,7 @@ export interface DatasourceOptions {
   isSorting?: boolean;
   isImplicitFilterApplied?: boolean;
   operator?: 'and' | 'or';
+  pageSize?: number;
 }
 
 export interface GridProps {

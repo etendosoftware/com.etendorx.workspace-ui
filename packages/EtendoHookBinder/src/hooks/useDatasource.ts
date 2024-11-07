@@ -15,7 +15,9 @@ const loadData = async (entity: string, page: number, pageSize: number, params: 
   return response;
 };
 
-const defaultParams = {};
+const defaultParams = {
+  pageSize: 1000,
+};
 
 export function useDatasource(entity: string, params: DatasourceOptions = defaultParams) {
   const [loading, setLoading] = useState(false);
@@ -23,7 +25,7 @@ export function useDatasource(entity: string, params: DatasourceOptions = defaul
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(1000);
+  const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
 
   const load = useCallback(async () => {
     try {

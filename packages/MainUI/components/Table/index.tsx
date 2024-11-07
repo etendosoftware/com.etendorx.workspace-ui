@@ -25,18 +25,21 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     const fieldName = tab.parentColumns[0] || 'id';
     const value = parent?.id || '';
     const operator = 'equals';
+    const options: DatasourceOptions = {
+      pageSize: 10,
+    };
 
-    return value
-      ? {
-          criteria: [
-            {
-              fieldName,
-              value,
-              operator,
-            },
-          ],
-        }
-      : {};
+    if (value) {
+      options.criteria = [
+        {
+          fieldName,
+          value,
+          operator,
+        },
+      ];
+    }
+
+    return options;
   }, [tab.parentColumns, parent?.id]);
 
   const { records, loading, error, fetchMore, loaded } = useDatasource(tab.entityName, query);
