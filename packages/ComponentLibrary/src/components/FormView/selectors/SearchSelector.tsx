@@ -11,20 +11,19 @@ const getOptionLabel = (option: Option) => option.title;
 const optionEqualValue = (option: Option, value: { id: string }) => option.id === value.id || option.value === value.id;
 
 const SearchSelector = ({ onChange, label, value, field }: SearchSelectorProps) => {
-
   const theme = useTheme();
   const { records, loading, error, loaded } = useComboSelect(field);
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
 
-  const options = useMemo(
-    () =>
-      records.map(record => ({
-        id: record.id as string,
-        title: (record._identifier || record.name || record.id) as string,
-        value: record.id as string,
-      })),
-    [records],
-  );
+  const options = useMemo(() => {
+    const valueField = (field.original?.selector?.valueField ?? '') as string;
+
+    return records.map(record => ({
+      id: record[valueField] as string,
+      title: (record._identifier || record.name || record.id) as string,
+      value: record[valueField] as string,
+    }));
+  }, [field.original?.selector?.valueField, records]);
 
   useEffect(() => {
     if (value && options.length > 0) {

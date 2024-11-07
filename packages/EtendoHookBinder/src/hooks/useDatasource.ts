@@ -23,7 +23,7 @@ export function useDatasource(entity: string, params: DatasourceOptions = defaul
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(100);
+  const [pageSize, setPageSize] = useState(1000);
 
   const load = useCallback(async () => {
     try {

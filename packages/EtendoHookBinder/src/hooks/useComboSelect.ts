@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DatasourceOptions, FieldDefinition } from '../api/types';
-import { Datasource } from '../api/datasource';
+import { FieldDefinition } from '../api/types';
 import { Metadata } from '../api/metadata';
 
 export function useComboSelect(field: FieldDefinition) {
@@ -14,12 +13,10 @@ export function useComboSelect(field: FieldDefinition) {
   const load = useCallback(async () => {
     try {
       if (!field.original?.selector || !field.original.selector._selectorDefinitionId) {
-        console.debug('missing selector definition id', field, field.original?.referencedEntity);
         setLoaded(true);
 
         return;
       }
-
 
       const payload = new URLSearchParams();
       const p = {
@@ -49,26 +46,17 @@ export function useComboSelect(field: FieldDefinition) {
       const response = await Metadata.getDatasource(field.original.selector.datasourceName, payload);
 
       if (response.ok) {
-        const newRecords = response.data;
-        setRecords(prevRecords => {
-          const result = prevRecords.concat(newRecords).reduce((result, current) => {
-            result[current.id as string] = current;
-
-            return result;
-          }, {});
-
-          return Object.values(result) as typeof prevRecords;
-        });
+        setRecords(response.data.response.data);
         setLoaded(true);
       } else {
-        throw new Error(response.error.message);
+        throw new Error(await response.text());
       }
     } catch (e) {
       setError(e as Error);
     } finally {
       setLoading(false);
     }
-  }, [params, entity, page, pageSize]);
+  }, [page, pageSize]);
 
   const fetchMore = useCallback(() => {
     setPage(prev => prev + 1);
@@ -77,11 +65,6 @@ export function useComboSelect(field: FieldDefinition) {
   const changePageSize = useCallback((size: number) => {
     setPageSize(size);
   }, []);
-
-  useEffect(() => {
-    setRecords([]);
-    setLoaded(false);
-  }, [entity, params]);
 
   useEffect(() => {
     load();

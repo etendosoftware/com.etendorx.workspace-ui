@@ -1,9 +1,11 @@
-import { useCallback, useMemo, useState } from 'react';
+import { createContext, useCallback, useMemo, useState } from 'react';
 import { FormData } from './types';
 import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { useRouter } from 'next/navigation';
 import { adaptFormData, mapWindowMetadata } from '../../utils/FormUtils';
 import FormView from '@workspaceui/componentlibrary/src/components/FormView';
+
+const FormContext = createContext({});
 
 export default function DynamicFormView({
   windowData,
@@ -24,15 +26,19 @@ export default function DynamicFormView({
     setFormData(updatedData);
   }, []);
 
+  const value = useMemo(() => ({ formData, setFormData }), [formData]);
+
   if (!formData || !mappedMetadata) return <div>No form data available</div>;
 
   return (
-    <FormView
-      data={formData}
-      onSave={handleSave}
-      onCancel={handleCancel}
-      onChange={handleChange}
-      windowMetadata={mappedMetadata}
-    />
+    <FormContext.Provider value={value}>
+      <FormView
+        data={formData}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        onChange={handleChange}
+        windowMetadata={mappedMetadata}
+      />
+    </FormContext.Provider>
   );
 }

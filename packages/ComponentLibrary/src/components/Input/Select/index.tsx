@@ -99,10 +99,10 @@ const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disable
           sx: sx.listBox,
         }}
         onChange={handleSelectionChange}
-        renderOption={(props: OptionProps, option, { selected }) => {
+        renderOption={({ key, ...props }: OptionProps, option, { selected }) => {
           return (
             <li
-              key={option.id}
+              key={key || option.id}
               style={{
                 ...sx.optionContainer,
                 backgroundColor: selected ? theme.palette.baselineColor.neutral[0] : undefined,

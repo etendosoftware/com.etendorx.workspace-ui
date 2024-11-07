@@ -15,6 +15,8 @@ const TableDirSelector = ({ onChange, label, entity, value }: TableDirSelectorPr
   const { records, loading, error, loaded } = useDatasource(entity);
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
 
+  console.debug(records);
+
   const options = useMemo(
     () =>
       records.map(record => ({
