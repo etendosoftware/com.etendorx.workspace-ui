@@ -289,4 +289,5 @@ export type FieldDefinition =
   | BaseFieldDefinition<number>
   | BaseFieldDefinition<boolean>
   | BaseFieldDefinition<Date>
-  | BaseFieldDefinition<string[]>;
+  | BaseFieldDefinition<string[]>
+  | BaseFieldDefinition<{ id: string; title: string; value: string}>;

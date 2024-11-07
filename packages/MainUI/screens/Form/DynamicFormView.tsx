@@ -4,18 +4,18 @@ import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types
 import { useRouter } from 'next/navigation';
 import { adaptFormData, mapWindowMetadata } from '../../utils/FormUtils';
 import FormView from '@workspaceui/componentlibrary/src/components/FormView';
+import { useMetadataContext } from '../../hooks/useMetadataContext';
 
 const FormContext = createContext({});
 
 export default function DynamicFormView({
-  windowData,
   tab,
   record,
 }: {
-  windowData: WindowMetadata;
   tab: Tab;
   record: Record<string, unknown>;
 }) {
+  const { windowData = {} as WindowMetadata } = useMetadataContext();
   const navigate = useRouter().push;
   const [formData, setFormData] = useState<FormData | null>(adaptFormData(tab, record));
   const mappedMetadata = useMemo(() => mapWindowMetadata(windowData), [windowData]);

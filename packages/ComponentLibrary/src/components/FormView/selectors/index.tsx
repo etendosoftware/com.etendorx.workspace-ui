@@ -32,21 +32,17 @@ const FieldLabel: React.FC<FieldLabelProps> = ({ isEntityReference, label, requi
 
 const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, readOnly }) => {
   const { styles, sx } = useStyle();
+
+  const isEntityReference = useMemo(() => ['tabledir', 'search'].includes(field.type), [field.type]);
+
   const handleLinkClick = useCallback(() => {
-    if (
-      (field.type === 'search' || field.type === 'tabledir') &&
-      field.value &&
-      typeof field.value === 'object' &&
-      'id' in field.value
-    ) {
+    if (isEntityReference && typeof field.value === 'object' && 'id' in field.value) {
       const recordId = field.value.id;
       const windowId = field.original?.referencedWindowId;
       const tabId = field.original?.referencedTabId;
       location.href = `/window/${windowId}/${tabId}/${recordId}`;
     }
-  }, [field]);
-
-  const isEntityReference = useMemo(() => ['tabledir', 'search'].includes(field.type), [field.type]);
+  }, [field.original?.referencedTabId, field.original?.referencedWindowId, field.value, isEntityReference]);
 
   const renderField = useCallback(() => {
     switch (field.type) {
