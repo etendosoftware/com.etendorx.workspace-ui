@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useEffect, useState } from 'react';
 import SearchOutlined from '../../../assets/icons/search.svg';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
+import { useComboSelect } from '@workspaceui/etendohookbinder/src/hooks/useComboSelect';
 import { useTheme } from '@mui/material';
-import { Option, TableDirSelectorProps } from '../types';
+import { Option, SearchSelectorProps } from '../types';
 import Spinner from '../../Spinner';
 import Select from '../../Input/Select';
 
@@ -10,9 +10,10 @@ const getOptionLabel = (option: Option) => option.title;
 
 const optionEqualValue = (option: Option, value: { id: string }) => option.id === value.id || option.value === value.id;
 
-const TableDirSelector = ({ onChange, label, entity, value }: TableDirSelectorProps) => {
+const SearchSelector = ({ onChange, label, value, field }: SearchSelectorProps) => {
+
   const theme = useTheme();
-  const { records, loading, error, loaded } = useDatasource(entity);
+  const { records, loading, error, loaded } = useComboSelect(field);
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
 
   const options = useMemo(
@@ -68,4 +69,4 @@ const TableDirSelector = ({ onChange, label, entity, value }: TableDirSelectorPr
   );
 };
 
-export default TableDirSelector;
+export default SearchSelector;

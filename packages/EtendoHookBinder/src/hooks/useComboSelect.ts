@@ -1,23 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DatasourceOptions } from '../api/types';
+import { DatasourceOptions, FieldDefinition } from '../api/types';
 import { Datasource } from '../api/datasource';
+import { Metadata } from '../api/metadata';
 
-const loadData = async (entity: string, page: number, pageSize: number, params: DatasourceOptions) => {
-  const startRow = (page - 1) * pageSize;
-  const endRow = page * pageSize - 1;
-
-  const { response } = await Datasource.get(entity, {
-    ...params,
-    startRow,
-    endRow,
-  });
-
-  return response;
-};
-
-const defaultParams = {};
-
-export function useDatasource(entity: string, params: DatasourceOptions = defaultParams) {
+export function useComboSelect(field: FieldDefinition) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
@@ -27,20 +13,42 @@ export function useDatasource(entity: string, params: DatasourceOptions = defaul
 
   const load = useCallback(async () => {
     try {
-      if (!entity) {
+      if (!field.original?.selector || !field.original.selector._selectorDefinitionId) {
+        console.debug('missing selector definition id', field, field.original?.referencedEntity);
         setLoaded(true);
 
         return;
       }
 
+
+      const payload = new URLSearchParams();
+      const p = {
+        // windowId: '143',
+        // tabId: '186',
+        // adTabId: '186',
+        // moduleId: 0,
+        // targetProperty: 'businessPartner',
+        // columnName: 'C_BPartner_ID',
+        // IsSelectorItem: true,
+        // _operationType: 'fetch',
+        _startRow: 0,
+        _endRow: 75,
+        // operator: 'and',
+        // _org: 'E443A31992CB4635AFCAEABE7183CE85',
+        _selectorDefinitionId: field.original.selector._selectorDefinitionId,
+        // filterClass: 'org.openbravo.userinterface.selector.SelectorDataSourceFilter',
+      };
+
+      Object.entries(p).forEach(([pName, pValue]) => {
+        payload.append(pName, pValue?.toString());
+      });
+
       setError(undefined);
       setLoading(true);
 
-      const response = await loadData(entity, page, pageSize, params);
+      const response = await Metadata.getDatasource(field.original.selector.datasourceName, payload);
 
-      if (response.error) {
-        throw new Error(response.error.message);
-      } else {
+      if (response.ok) {
         const newRecords = response.data;
         setRecords(prevRecords => {
           const result = prevRecords.concat(newRecords).reduce((result, current) => {
@@ -52,6 +60,8 @@ export function useDatasource(entity: string, params: DatasourceOptions = defaul
           return Object.values(result) as typeof prevRecords;
         });
         setLoaded(true);
+      } else {
+        throw new Error(response.error.message);
       }
     } catch (e) {
       setError(e as Error);

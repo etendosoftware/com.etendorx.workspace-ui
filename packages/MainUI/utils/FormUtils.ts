@@ -7,6 +7,7 @@ export function mapColumnTypeToFieldType(column: Column): FieldType {
     console.warn('Invalid column data:', column);
     return 'text';
   }
+
   switch (column?.reference) {
     case '19':
       return 'tabledir';
@@ -19,8 +20,9 @@ export function mapColumnTypeToFieldType(column: Column): FieldType {
       return 'quantity';
     case '17':
       return 'list';
-    case '12':
     case '30':
+      return 'search';
+    case '12':
     case '18':
     case '11':
     case '22':
@@ -96,9 +98,10 @@ export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormDa
     const column = fieldInfo.column as unknown as Column;
     const sectionName = fieldInfo.fieldGroup$_identifier ?? 'Main';
     const rawValue = record[fieldName];
+    const fieldType = mapColumnTypeToFieldType(column);
     let safeValue;
 
-    if (mapColumnTypeToFieldType(column) === 'tabledir') {
+    if (fieldType === 'tabledir' || fieldType === 'search') {
       safeValue = {
         id: rawValue,
         title: record[`${fieldName}$_identifier`] || rawValue,
@@ -110,7 +113,7 @@ export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormDa
 
     adaptedData[fieldName] = {
       value: safeValue,
-      type: mapColumnTypeToFieldType(column),
+      type: fieldType,
       label: fieldInfo.column.name,
       section: sectionName,
       required: fieldInfo.column.isMandatory ?? true,

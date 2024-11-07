@@ -1,4 +1,4 @@
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { Box, Link } from '@mui/material';
 import { useStyle } from '../styles';
 import { FieldLabelProps, FieldValue, FormFieldGroupProps } from '../types';
@@ -10,13 +10,14 @@ import SelectSelector from './SelectSelector';
 import QuantitySelector from './QuantitySelector';
 import ListSelector from './ListSelector';
 import TextInputBase from '../../Input/TextInput/TextInputBase';
+import SearchSelector from './SearchSelector';
 
-const FieldLabel: React.FC<FieldLabelProps> = ({ label, required, fieldType, onLinkClick }) => {
+const FieldLabel: React.FC<FieldLabelProps> = ({ isEntityReference, label, required, onLinkClick }) => {
   const { styles, sx } = useStyle();
 
   return (
     <Box sx={styles.labelWrapper}>
-      {fieldType === 'tabledir' ? (
+      {isEntityReference ? (
         <Link onClick={onLinkClick} sx={sx.linkStyles}>
           {label}
         </Link>
@@ -32,13 +33,20 @@ const FieldLabel: React.FC<FieldLabelProps> = ({ label, required, fieldType, onL
 const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, readOnly }) => {
   const { styles, sx } = useStyle();
   const handleLinkClick = useCallback(() => {
-    if (field.type === 'tabledir' && field.value && typeof field.value === 'object' && 'id' in field.value) {
+    if (
+      (field.type === 'search' || field.type === 'tabledir') &&
+      field.value &&
+      typeof field.value === 'object' &&
+      'id' in field.value
+    ) {
       const recordId = field.value.id;
       const windowId = field.original?.referencedWindowId;
       const tabId = field.original?.referencedTabId;
       location.href = `/window/${windowId}/${tabId}/${recordId}`;
     }
   }, [field]);
+
+  const isEntityReference = useMemo(() => ['tabledir', 'search'].includes(field.type), [field.type]);
 
   const renderField = useCallback(() => {
     switch (field.type) {
@@ -52,6 +60,16 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
         return <DateSelector name={field.name} value={field.value as string} onChange={onChange} readOnly={readOnly} />;
       case 'select':
         return <SelectSelector name={field.name} title={field.label} onChange={onChange} readOnly={readOnly} />;
+      case 'search':
+        return (
+          <SearchSelector
+            field={field}
+            value={field.value}
+            label={field.label}
+            entity={field.original?.referencedEntity || ''}
+            onChange={onChange}
+          />
+        );
       case 'tabledir':
         return (
           <TableDirSelector
@@ -95,7 +113,8 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
           label={field.label}
           required={field.required}
           fieldType={field.type}
-          onLinkClick={field.type === 'tabledir' ? handleLinkClick : undefined}
+          isEntityReference={isEntityReference}
+          onLinkClick={handleLinkClick}
           readOnly={readOnly}
         />
       </Box>

@@ -6,7 +6,7 @@ import { TabItem } from '../PrimaryTab/types';
 import SectionRenderer from './Sections/sectionRendered';
 import type { FieldValue, FormData, Section } from './types';
 import Chevrons from '../../assets/icons/chevrons-right.svg';
-import { FieldDefinition } from '@workspaceui/mainui/screens/Form/types';
+import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 
 const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, gridItemProps, dottedLineInterval }) => {
   const [formData, setFormData] = useState<FormData>(data);

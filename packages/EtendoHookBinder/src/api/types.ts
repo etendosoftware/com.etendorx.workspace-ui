@@ -75,6 +75,7 @@ export interface Field {
   targetEntity: string;
   gridProps: GridProps;
   type: string; // Consider specifying possible values if known
+  selector?: Record<string, string>;
 }
 
 export interface Column {
@@ -261,3 +262,30 @@ export interface Warehouse {
   id: string;
   name: string;
 }
+
+export interface FieldInfo {
+  fieldGroup$_identifier?: string;
+}
+
+
+export interface BaseFieldDefinition<T> {
+  value: T;
+  type: FieldType;
+  label: string;
+  name: string;
+  section?: string;
+  required?: boolean;
+  original?: {
+    refList: Array<{ id: string; label: string; value: string }>;
+    referencedEntity: string;
+    referencedWindowId: string;
+    referencedTabId: string;
+    fieldName: string;
+  } & Field;
+}
+export type FieldDefinition =
+  | BaseFieldDefinition<string>
+  | BaseFieldDefinition<number>
+  | BaseFieldDefinition<boolean>
+  | BaseFieldDefinition<Date>
+  | BaseFieldDefinition<string[]>;
