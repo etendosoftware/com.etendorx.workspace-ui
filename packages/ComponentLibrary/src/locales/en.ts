@@ -7,6 +7,15 @@ const en = {
     save: 'Save',
     edit: 'Edit',
   },
+  errors: {
+    notFound: {
+      title: 'Not found',
+      description: "We couldn't find the page you're looking for",
+    },
+    internalServerError: {
+      title: 'Something went wrong',
+    },
+  },
   modal: {
     secondaryButtonLabel: 'Back',
   },
@@ -38,6 +47,9 @@ const en = {
     },
   },
   navigation: {
+    common: {
+      home: 'Home',
+    },
     waterfall: {
       activateAll: 'Activate all',
       deactivateAll: 'Deactivate all',

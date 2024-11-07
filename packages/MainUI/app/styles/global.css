@@ -7,7 +7,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background: var(--background-gradient);
-  font-family: var(--font-inter);
+  font-family: 'Inter', sans-serif;
 }
 
 :root {
@@ -92,4 +92,8 @@ select:-webkit-autofill:focus {
   flex: 1;
   justify-content: center;
   align-items: center;
+}
+
+.flex-column {
+  flex-direction: column;
 }
