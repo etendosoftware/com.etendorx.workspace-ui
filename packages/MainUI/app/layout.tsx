@@ -16,6 +16,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={inter.variable}>
+      <head>
+        <meta charSet="utf-8" />
+      </head>
       <body>
         <ThemeRegistry>
           <App>{children}</App>
