@@ -1,5 +1,6 @@
 import { API_LOGIN_URL } from './constants';
 import { LoginResponse } from './types';
+import { getJson } from './utils';
 
 export const login = async (username: string, password: string): Promise<LoginResponse> => {
   try {
@@ -18,7 +19,8 @@ export const login = async (username: string, password: string): Promise<LoginRe
       throw new Error(`HTTP error! status: ${result.status}`);
     }
 
-    const data: LoginResponse = await result.json();
+    const data = await getJson(result);
+
     if (data.status === 'error') {
       throw new Error(data.status);
     } else if (data.status !== 'success' || !data.token || !Array.isArray(data.roleList)) {

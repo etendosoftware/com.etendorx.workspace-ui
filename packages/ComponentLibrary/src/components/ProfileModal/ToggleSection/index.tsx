@@ -48,9 +48,18 @@ const SelectorList: React.FC<SelectorListProps> = ({
 
   const warehouses = useMemo(() => {
     if (selectedRole) {
+      const _warehouses = {} as Record<string, Warehouse>;
       const role = roles.find(r => r.id === selectedRole.value);
-      return role ? role.orgList.flatMap((org: { warehouseList: Warehouse[] }) => org.warehouseList) : [];
+
+      role?.orgList.forEach((org: { warehouseList: Warehouse[] }) => {
+        org.warehouseList.forEach(w => {
+          _warehouses[w.id] = w;
+        });
+      });
+
+      return role ? Object.values(_warehouses) : [];
     }
+
     return [];
   }, [roles, selectedRole]);
 

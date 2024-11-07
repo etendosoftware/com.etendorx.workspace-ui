@@ -100,15 +100,14 @@ const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disable
         }}
         onChange={handleSelectionChange}
         renderOption={(props: OptionProps, option, { selected }) => {
-          const { key, ...otherProps } = props;
           return (
             <li
-              key={key}
+              key={option.id}
               style={{
                 ...sx.optionContainer,
                 backgroundColor: selected ? theme.palette.baselineColor.neutral[0] : undefined,
               }}
-              {...otherProps}>
+              {...props}>
               <Typography
                 className="textOption"
                 color={selected ? theme.palette.dynamicColor.dark : theme.palette.baselineColor.neutral[90]}

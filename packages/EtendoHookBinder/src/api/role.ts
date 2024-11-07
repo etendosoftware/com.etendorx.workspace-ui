@@ -1,12 +1,13 @@
 import { API_LOGIN_URL } from './constants';
 import { LoginResponse } from './types';
+import { getJson } from './utils';
 
 export const changeRole = async (roleId: string, token: string): Promise<LoginResponse> => {
   try {
     const response = await fetch(API_LOGIN_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
@@ -18,9 +19,7 @@ export const changeRole = async (roleId: string, token: string): Promise<LoginRe
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const text = await response.text();
-    const decodedText = new TextDecoder('utf-8').decode(new TextEncoder().encode(text));
-    const data: LoginResponse = JSON.parse(decodedText);
+    const data = await getJson(response);
 
     if (data.status !== 'success' || !data.token || !Array.isArray(data.roleList)) {
       throw new Error('Invalid server response');
