@@ -15,6 +15,6 @@ export default function Page() {
   } else if (!windowData || !tab) {
     return <span>Missing window metadata</span>;
   } else {
-    return <DynamicFormView windowData={windowData} tab={tab} record={record} />;
+    return <DynamicFormView tab={tab} record={record} />;
   }
 }

@@ -18,6 +18,8 @@ export function useComboSelect(field: FieldDefinition) {
         return;
       }
 
+      console.debug(field.original.selector);
+
       const payload = new URLSearchParams();
       const p = {
         // windowId: '143',
@@ -29,10 +31,11 @@ export function useComboSelect(field: FieldDefinition) {
         // IsSelectorItem: true,
         // _operationType: 'fetch',
         _startRow: 0,
-        _endRow: 75,
+        _endRow: 5000,
         // operator: 'and',
         // _org: 'E443A31992CB4635AFCAEABE7183CE85',
         _selectorDefinitionId: field.original.selector._selectorDefinitionId,
+        // filterClass: field.original.selector.filterClass,
         // filterClass: 'org.openbravo.userinterface.selector.SelectorDataSourceFilter',
       };
 

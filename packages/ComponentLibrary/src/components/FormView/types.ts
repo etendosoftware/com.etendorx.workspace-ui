@@ -52,7 +52,7 @@ export interface FormSectionProps {
 export type FieldValue = string | number | boolean | string[] | Date | null | FieldDefinition['value'];
 
 export interface FormFieldGroupProps {
-  name: string;
+  name?: string;
   field: FieldDefinition;
   onChange: (name: string, value: FieldValue) => void;
   entityName?: string;
