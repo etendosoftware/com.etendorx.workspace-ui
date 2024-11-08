@@ -11,7 +11,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
 
   return (
     <div className="center-all flex-column">
-      <Image src={Logo} width={clientWidth / 4} height={clientHeight / 4} unoptimized alt="Etendo" />
+      <Image src={Logo} width={clientWidth} height={clientHeight} alt="Etendo" className="etendo-logo" />
       <h2>{t('errors.internalServerError.title')}</h2>
       <p>{error.message}</p>
       <Button variant="contained" onClick={reset}>
