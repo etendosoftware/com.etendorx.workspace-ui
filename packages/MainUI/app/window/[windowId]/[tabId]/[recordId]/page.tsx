@@ -4,9 +4,15 @@ import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/use
 import DynamicFormView from '../../../../../screens/Form/DynamicFormView';
 import { useParams } from 'next/navigation';
 import { useMetadataContext } from '../../../../../hooks/useMetadataContext';
+import { Toolbar } from '../../../../../components/Toolbar';
 
 export default function Page() {
-  const { recordId } = useParams<{ recordId: string }>();
+  const { windowId, tabId, recordId } = useParams<{
+    windowId: string;
+    tabId: string;
+    recordId: string;
+  }>();
+
   const { windowData, tab } = useMetadataContext();
   const { record } = useSingleDatasource(tab?.entityName, recordId);
 
@@ -15,6 +21,11 @@ export default function Page() {
   } else if (!windowData || !tab) {
     return <span>Missing window metadata</span>;
   } else {
-    return <DynamicFormView windowData={windowData} tab={tab} record={record} />;
+    return (
+      <>
+        <Toolbar windowId={windowId} tabId={tabId} />
+        <DynamicFormView windowData={windowData} tab={tab} record={record} />
+      </>
+    );
   }
 }

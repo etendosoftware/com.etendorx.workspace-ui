@@ -98,7 +98,7 @@ export interface MappedField {
   required?: boolean;
 }
 
-export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'search' |  'tabledir' | 'quantity' | 'list';
+export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'search' | 'tabledir' | 'quantity' | 'list';
 
 export interface MappedTab {
   id: string;
@@ -260,4 +260,21 @@ export interface Role {
 export interface Warehouse {
   id: string;
   name: string;
+}
+
+interface ToolbarButton {
+  id: string;
+  name: string;
+  action: string;
+  enabled: boolean;
+}
+
+interface Toolbar {
+  buttons: ToolbarButton[];
+}
+
+interface UseToolbarReturn {
+  toolbar: Toolbar | undefined;
+  loading: boolean;
+  handleAction: (action: string) => void;
 }
