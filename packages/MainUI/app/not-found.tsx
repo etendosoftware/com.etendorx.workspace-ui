@@ -12,7 +12,7 @@ export default function NotFound() {
 
   return (
     <div className="center-all flex-column">
-      <Image src={Logo} width={clientWidth / 4} height={clientHeight / 4} unoptimized alt="Etendo" />
+      <Image src={Logo} width={clientWidth} height={clientHeight} alt="Etendo" className="etendo-logo" />
       <h2>{t('errors.notFound.title')}</h2>
       <p>{t('errors.notFound.description')}</p>
       <Link href="/">

@@ -97,3 +97,14 @@ select:-webkit-autofill:focus {
 .flex-column {
   flex-direction: column;
 }
+
+.etendo-logo {
+  width: 25%;
+  height: auto;
+}
+
+@media (orientation: portrait) {
+  .etendo-logo {
+    width: 50%;
+  }
+}
