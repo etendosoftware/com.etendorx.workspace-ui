@@ -7,6 +7,15 @@ const es = {
     save: 'Guardar',
     edit: 'Editar',
   },
+  errors: {
+    notFound: {
+      title: 'No pudimos encontrar la página que buscas',
+      description: 'No pudimos encontrar la página que buscas',
+    },
+    internalServerError: {
+      title: 'Algo salió mal',
+    },
+  },
   modal: {
     secondaryButtonLabel: 'Atrás',
   },
@@ -38,6 +47,9 @@ const es = {
     },
   },
   navigation: {
+    common: {
+      home: 'Ir al inicio',
+    },
     waterfall: {
       activateAll: 'Activar todo',
       deactivateAll: 'Desactivar todo',

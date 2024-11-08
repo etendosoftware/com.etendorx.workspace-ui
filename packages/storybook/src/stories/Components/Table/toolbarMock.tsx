@@ -16,16 +16,7 @@ import Mail from '@workspaceui/componentlibrary/src/assets/icons/mail.svg';
 import LinkIcon from '@workspaceui/componentlibrary/src/assets/icons/link.svg';
 import { ToolbarSectionConfig } from './types';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
-
-import { TranslationKeys } from '../../../../../ComponentLibrary/src/locales/types';
-
-type NestedKeyOf<ObjectType extends object> = {
-  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
-    ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}`
-    : `${Key}`;
-}[keyof ObjectType & (string | number)];
-
-type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(key: K) => string;
+import { TranslateFunction } from '@workspaceui/mainui/hooks/types';
 
 const IconSize = 16;
 
