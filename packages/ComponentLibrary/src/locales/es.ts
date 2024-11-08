@@ -9,11 +9,12 @@ const es = {
   },
   errors: {
     notFound: {
-      title: 'No pudimos encontrar la página que buscas',
+      title: 'Algo salió mal',
       description: 'No pudimos encontrar la página que buscas',
     },
     internalServerError: {
       title: 'Algo salió mal',
+      retry: 'Reintentar',
     },
   },
   modal: {
