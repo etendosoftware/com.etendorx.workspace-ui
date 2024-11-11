@@ -5,6 +5,7 @@ import DynamicFormView from '../../../../../screens/Form/DynamicFormView';
 import { useParams } from 'next/navigation';
 import { useMetadataContext } from '../../../../../hooks/useMetadataContext';
 import { Toolbar } from '../../../../../components/Toolbar';
+import { styles } from './styles';
 
 export default function Page() {
   const { windowId, tabId, recordId } = useParams<{
@@ -23,7 +24,9 @@ export default function Page() {
   } else {
     return (
       <>
-        <Toolbar windowId={windowId} tabId={tabId} />
+        <div style={styles.box}>
+          <Toolbar windowId={windowId} tabId={tabId} />
+        </div>
         <DynamicFormView windowData={windowData} tab={tab} record={record} />
       </>
     );
