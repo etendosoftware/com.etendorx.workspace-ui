@@ -11,13 +11,13 @@ import DownloadIcon from '@workspaceui/componentlibrary/src/assets/icons/downloa
 import PaperclipIcon from '@workspaceui/componentlibrary/src/assets/icons/paperclip.svg';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
-import { IconName, IconSize, ToolbarResponse, ToolbarProps } from './types';
+import { IconName, IconSize, ToolbarResponse, ToolbarProps, ButtonConfig } from './types';
 
 const iconMap: Record<IconName, React.FC<unknown>> = {
   plus: PlusIcon,
   save: SaveIcon,
   trash: TrashIcon,
-  refresh: RefreshIcon,
+  'refresh-cw': RefreshIcon,
   search: SearchIcon,
   grid: GridIcon,
   download: DownloadIcon,
@@ -42,17 +42,23 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
       leftSection: {
         buttons: buttons
           .filter(btn => ['NEW', 'REFRESH', 'SAVE'].includes(btn.id))
-          .map(btn => ({
-            key: btn.id,
-            icon: React.createElement(iconMap[btn.icon]),
-            iconText: btn.name,
-            tooltip: btn.name,
-            onClick: () => {},
-            disabled: !btn.enabled,
-            height: IconSize,
-            width: IconSize,
-            fill: theme.palette.baselineColor.neutral[0],
-            sx: (() => {
+          .map(btn => {
+            const buttonConfig: ButtonConfig = {
+              key: btn.id,
+              icon: React.createElement(iconMap[btn.icon]),
+              tooltip: btn.name,
+              onClick: () => {},
+              disabled: !btn.enabled,
+              height: IconSize,
+              width: IconSize,
+              fill: theme.palette.baselineColor.neutral[0],
+            };
+
+            if (btn.id === 'NEW') {
+              buttonConfig.iconText = btn.name;
+            }
+
+            buttonConfig['sx'] = (() => {
               if (btn.id === 'NEW') {
                 return {
                   padding: '0.75rem',
@@ -67,6 +73,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
               }
               if (btn.id === 'SAVE') {
                 return {
+                  background: theme.palette.baselineColor.neutral[100],
                   marginLeft: '0.2rem',
                   border: `1px solid ${theme.palette.baselineColor.transparentNeutral[30]}`,
                 };
@@ -84,8 +91,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
                 };
               }
               return undefined;
-            })(),
-          })),
+            })();
+
+            return buttonConfig;
+          }),
         style: {
           display: 'flex',
           width: 'auto',

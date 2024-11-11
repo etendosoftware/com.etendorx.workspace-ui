@@ -1,3 +1,4 @@
+import { SxProps } from '@mui/material';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const IconSize = 16;
@@ -7,7 +8,7 @@ export interface ToolbarProps {
   tabId?: string;
 }
 
-export type IconName = 'plus' | 'save' | 'trash' | 'refresh' | 'search' | 'grid' | 'download' | 'paperclip';
+export type IconName = 'plus' | 'save' | 'trash' | 'refresh-cw' | 'search' | 'grid' | 'download' | 'paperclip';
 
 export interface ButtonResponse {
   id: string;
@@ -29,4 +30,17 @@ export interface ToolbarResponse {
 export interface TabLevelProps {
   tab: Tab;
   level: number;
+}
+
+export interface ButtonConfig {
+  key: string;
+  icon: React.ReactElement;
+  tooltip: string;
+  onClick: () => void;
+  disabled: boolean;
+  height: number;
+  width: number;
+  fill: string;
+  iconText?: string;
+  sx?: SxProps;
 }
