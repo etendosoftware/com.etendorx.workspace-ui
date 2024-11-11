@@ -139,6 +139,7 @@ export interface WindowMetadataProperties {
 
 export interface Tab {
   uIPattern: 'STD' | 'SR';
+  windowId: string;
   name: string;
   title: string;
   parentColumns: string[];
@@ -262,19 +263,17 @@ export interface Warehouse {
   name: string;
 }
 
-interface ToolbarButton {
+export interface ToolbarButton {
   id: string;
   name: string;
   action: string;
   enabled: boolean;
+  visible: boolean;
 }
 
-interface Toolbar {
+export interface ToolbarMetadata {
   buttons: ToolbarButton[];
-}
-
-interface UseToolbarReturn {
-  toolbar: Toolbar | undefined;
-  loading: boolean;
-  handleAction: (action: string) => void;
+  isNew: boolean;
+  gridId: string | null;
+  action: string;
 }

@@ -3,18 +3,16 @@ import { Metadata } from '../api/metadata';
 
 interface ToolbarResponse {
   response: {
-    response: {
-      buttons: Array<{
-        id: string;
-        name: string;
-        action: string;
-        enabled: boolean;
-        visible: boolean;
-        icon: string;
-      }>;
-      windowId: string;
-      isNew: boolean;
-    };
+    buttons: Array<{
+      id: string;
+      name: string;
+      action: string;
+      enabled: boolean;
+      visible: boolean;
+      icon: string;
+    }>;
+    windowId: string;
+    isNew: boolean;
   };
 }
 

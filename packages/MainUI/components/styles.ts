@@ -9,4 +9,5 @@ export const styles = {
   breadCrum: {
     padding: '0 0.5rem',
   },
+  box: { margin: '0 0 0.5rem 0' },
 };

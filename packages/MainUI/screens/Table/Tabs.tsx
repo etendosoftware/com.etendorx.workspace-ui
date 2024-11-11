@@ -1,10 +1,12 @@
+'use client';
+
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useMemo, useRef, useState } from 'react';
 import { Box, Button } from '@mui/material';
-import DynamicTable from '../../components/Table';
+import { TabLevel } from '../../components/TabLevel';
 import { useStyle } from './styles';
 
-export default function Tabs({ tabs }: { tabs: Tab[] }) {
+export default function Tabs({ tabs, level = 0 }: { tabs: Tab[]; level?: number }) {
   const [activeKey, setActiveKey] = useState(tabs[0].id);
   const { sx } = useStyle();
 
@@ -29,7 +31,7 @@ export default function Tabs({ tabs }: { tabs: Tab[] }) {
           {tab.name}
         </Button>
       ))}
-      <DynamicTable tab={active} />
+      <TabLevel tab={active} level={level} />
     </Box>
   );
 }

@@ -1,31 +1,22 @@
 'use client';
 
-import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
-import DynamicFormView from '../../../../../screens/Form/DynamicFormView';
-import { useParams } from 'next/navigation';
+import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useMetadataContext } from '../../../../../hooks/useMetadataContext';
-import { Toolbar } from '../../../../../components/Toolbar';
+import Tabs from '../../../../../screens/Table/Tabs';
 
-export default function Page() {
-  const { windowId, tabId, recordId } = useParams<{
-    windowId: string;
-    tabId: string;
-    recordId: string;
-  }>();
+function Level(value: Tab[]) {
+  return <Tabs key={value[0].id} tabs={value} />;
+}
 
-  const { windowData, tab } = useMetadataContext();
-  const { record } = useSingleDatasource(tab?.entityName, recordId);
+export default function DynamicTableScreen() {
+  const { loading, error, windowData, groupedTabs } = useMetadataContext();
 
-  if (!record) {
-    return <span>Missing record</span>;
-  } else if (!windowData || !tab) {
-    return <span>Missing window metadata</span>;
+  if (loading) {
+    return <Spinner />;
+  } else if (error || !windowData) {
+    return <div>{error?.message ?? 'Something went wrong'}</div>;
   } else {
-    return (
-      <>
-        <Toolbar windowId={windowId} tabId={tabId} />
-        <DynamicFormView windowData={windowData} tab={tab} record={record} />
-      </>
-    );
+    return <div>{groupedTabs.map(tabs => Level(tabs))}</div>;
   }
 }

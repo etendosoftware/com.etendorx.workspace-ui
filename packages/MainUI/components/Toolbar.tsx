@@ -11,19 +11,13 @@ import DownloadIcon from '@workspaceui/componentlibrary/src/assets/icons/downloa
 import PaperclipIcon from '@workspaceui/componentlibrary/src/assets/icons/paperclip.svg';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
+import { IconName, IconSize, ToolbarResponse, ToolbarProps } from './types';
 
-const IconSize = 16;
-
-interface ToolbarProps {
-  windowId: string;
-  tabId?: string;
-}
-
-const iconMap = {
+const iconMap: Record<IconName, React.FC<unknown>> = {
   plus: PlusIcon,
   save: SaveIcon,
   trash: TrashIcon,
-  'refresh-cw': RefreshIcon,
+  refresh: RefreshIcon,
   search: SearchIcon,
   grid: GridIcon,
   download: DownloadIcon,
@@ -42,7 +36,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   }
 
   const createToolbarConfig = () => {
-    const buttons = toolbar?.response?.response?.buttons || [];
+    const buttons = (toolbar as ToolbarResponse)?.response?.buttons || [];
 
     return {
       leftSection: {
