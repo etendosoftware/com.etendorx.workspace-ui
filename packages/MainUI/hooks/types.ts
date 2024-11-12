@@ -1,10 +1,10 @@
 import { TranslationKeys, Translations } from '../../ComponentLibrary/src/locales/types';
 
-export type NestedKeyOf<ObjectType extends object> = {
-  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
-    ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}`
-    : `${Key}`;
-}[keyof ObjectType & (string | number)];
+type Primitive = string;
+
+export type NestedKeyOf<T> = T extends Primitive ? T : {
+  [K in keyof T & (string | number)]: T[K] extends Primitive ? K : K | `${K}.${NestedKeyOf<T[K]>}`
+}[keyof T & (string | number)];
 
 export type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(key: K) => string;
 
