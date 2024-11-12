@@ -14,6 +14,7 @@ const en = {
     },
     internalServerError: {
       title: 'Something went wrong',
+      retry: 'Retry',
     },
   },
   modal: {
