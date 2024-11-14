@@ -8,7 +8,14 @@ import type { FieldValue, FormData, Section } from './types';
 import Chevrons from '../../assets/icons/chevrons-right.svg';
 import { FieldDefinition } from '@workspaceui/mainui/screens/Form/types';
 
-const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, gridItemProps, dottedLineInterval }) => {
+const FormView: React.FC<FormViewProps> = ({
+  data,
+  onChange,
+  readOnly = false,
+  gridItemProps,
+  dottedLineInterval,
+  initialValues = true,
+}) => {
   const [formData, setFormData] = useState<FormData>(data);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
@@ -81,15 +88,31 @@ const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, g
     }
   }, []);
 
+  const renderFieldValue = useCallback(
+    (field: FieldDefinition) => {
+      if (initialValues && 'initialValue' in field && field.initialValue !== undefined) {
+        return field.initialValue;
+      }
+      if (field.value === undefined) {
+        return '';
+      }
+      return field.value;
+    },
+    [initialValues],
+  );
+
   const handleInputChange = useCallback(
     (name: string, value: FieldValue) => {
-      setFormData(prevData => ({
-        ...prevData,
-        [name]: {
-          ...prevData[name],
-          value: value,
-        },
-      }) as FormData);
+      setFormData(
+        prevData =>
+          ({
+            ...prevData,
+            [name]: {
+              ...prevData[name],
+              value: value,
+            },
+          } as FormData),
+      );
       onChange?.(formData);
     },
     [formData, onChange],
@@ -128,6 +151,7 @@ const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, g
                   sectionName={sectionName}
                   sectionData={sectionData}
                   fields={fields}
+                  renderFieldValue={renderFieldValue}
                   isExpanded={expandedSections.includes(sectionData.id)}
                   onAccordionChange={handleAccordionChange}
                   onHover={setHoveredSection}

@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { useMetadataContext } from '../../../../../hooks/useMetadataContext';
 import { Toolbar } from '../../../../../components/Toolbar';
 import DynamicFormView from '../../../../../screens/Form/DynamicFormView';
-import { adaptInitialData } from '../../../../../utils/AdaptInitialData';
+import { adaptFormData } from '../../../../../utils/FormUtils';
 import { styles } from '../[recordId]/styles';
 import { useFormInitialization } from '../../../../../hooks/useFormInitialValues';
 
@@ -37,13 +37,11 @@ export default function NewRecordPage() {
     return acc;
   }, {} as Record<string, any>);
 
-  const adaptedData = adaptInitialData(tab, record);
+  const adaptedData = adaptFormData(tab, record);
 
   if (!adaptedData) {
     return <span>Error adapting form data</span>;
   }
-
-  console.log('initial data:', initialData, 'record:', record);
 
   return (
     <>

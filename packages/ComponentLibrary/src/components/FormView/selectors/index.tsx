@@ -29,7 +29,9 @@ const FieldLabel: React.FC<FieldLabelProps> = ({ label, required, fieldType, onL
   );
 };
 
-const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, readOnly }) => {
+const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, readOnly, renderFieldValue }) => {
+  const value = renderFieldValue ? renderFieldValue(field) : field.value ?? '';
+
   const { styles, sx } = useStyle();
   const handleLinkClick = useCallback(() => {
     if (field.type === 'tabledir' && field.value && typeof field.value === 'object' && 'id' in field.value) {
@@ -45,17 +47,15 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
       case 'boolean':
         return <BooleanSelector label={field.label} readOnly={readOnly} />;
       case 'number':
-        return (
-          <NumberSelector name={field.label} value={field.value as number} onChange={onChange} readOnly={readOnly} />
-        );
+        return <NumberSelector name={field.label} value={value} onChange={onChange} readOnly={readOnly} />;
       case 'date':
-        return <DateSelector name={field.name} value={field.value as string} onChange={onChange} readOnly={readOnly} />;
+        return <DateSelector name={field.name} value={value} onChange={onChange} readOnly={readOnly} />;
       case 'select':
         return <SelectSelector name={field.name} title={field.label} onChange={onChange} readOnly={readOnly} />;
       case 'tabledir':
         return (
           <TableDirSelector
-            value={field.value}
+            value={value}
             label={field.label}
             entity={field.original?.referencedEntity || ''}
             onChange={onChange}
@@ -64,7 +64,7 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
       case 'quantity':
         return (
           <QuantitySelector
-            value={field.value}
+            value={value}
             maxLength={field.original?.column?.length}
             min={field.original?.column?.minValue ?? null}
             max={field.original?.column?.maxValue ?? null}
@@ -77,16 +77,15 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
       default:
         return (
           <TextInputBase
-            margin="normal"
             onRightIconClick={() => alert('Icon clicked')}
-            value={field.value as string}
+            value={value}
             setValue={(value: FieldValue) => onChange(field.label, value)}
             placeholder={field.value ? String(field.value) : undefined}
             disabled={readOnly}
           />
         );
     }
-  }, [field, onChange, readOnly]);
+  }, [field, onChange, readOnly, value]);
 
   return (
     <Box style={styles.fieldContainer}>
