@@ -35,7 +35,7 @@ export default function NewRecordPage() {
       acc[`${key}$_identifier`] = value.identifier;
     }
     return acc;
-  }, {} as Record<string, any>);
+  }, {} as Record<string, string>);
 
   const adaptedData = adaptFormData(tab, record);
 

@@ -5,7 +5,7 @@ interface FormInitializationResponse {
   columnValues: Record<
     string,
     {
-      value: any;
+      value: string;
       classicValue?: string;
       identifier?: string;
       entries?: Array<{ id: string; _identifier: string }>;
