@@ -12,6 +12,14 @@ import PaperclipIcon from '@workspaceui/componentlibrary/src/assets/icons/paperc
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { IconName, IconSize, ToolbarResponse, ToolbarProps, ButtonConfig } from './types';
+import {
+  LEFT_SECTION_BUTTONS,
+  BUTTON_IDS,
+  CENTER_SECTION_BUTTONS,
+  RIGHT_SECTION_BUTTONS,
+  ButtonId,
+} from '../constants/Toolbar';
+import { useTranslation } from '../hooks/useTranslation';
 
 const iconMap: Record<IconName, React.FC<unknown>> = {
   plus: PlusIcon,
@@ -26,11 +34,12 @@ const iconMap: Record<IconName, React.FC<unknown>> = {
 
 export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   const { toolbar, loading } = useToolbar(windowId, tabId);
+  const { t } = useTranslation();
 
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height={64}>
-        Loading...
+        {t('common.loading')}
       </Box>
     );
   }
@@ -41,7 +50,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
     return {
       leftSection: {
         buttons: buttons
-          .filter(btn => ['NEW', 'REFRESH', 'SAVE'].includes(btn.id))
+          .filter(btn => LEFT_SECTION_BUTTONS.includes(btn.id as ButtonId))
           .map(btn => {
             const buttonConfig: ButtonConfig = {
               key: btn.id,
@@ -54,12 +63,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
               fill: theme.palette.baselineColor.neutral[0],
             };
 
-            if (btn.id === 'NEW') {
+            if (btn.id === BUTTON_IDS.NEW) {
               buttonConfig.iconText = btn.name;
             }
 
             buttonConfig['sx'] = (() => {
-              if (btn.id === 'NEW') {
+              if (btn.id === BUTTON_IDS.NEW) {
                 return {
                   padding: '0.75rem',
                   maxHeight: '2rem',
@@ -71,14 +80,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
                   },
                 };
               }
-              if (btn.id === 'SAVE') {
+              if (btn.id === BUTTON_IDS.SAVE) {
                 return {
                   background: theme.palette.baselineColor.neutral[100],
                   marginLeft: '0.2rem',
                   border: `1px solid ${theme.palette.baselineColor.transparentNeutral[30]}`,
                 };
               }
-              if (btn.id === 'REFRESH') {
+              if (btn.id === BUTTON_IDS.REFRESH) {
                 return {
                   padding: '0.75rem',
                   maxHeight: '2rem',
@@ -108,7 +117,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
       },
       centerSection: {
         buttons: buttons
-          .filter(btn => ['DELETE', 'EXPORT', 'ATTACHMENTS'].includes(btn.id))
+          .filter(btn => CENTER_SECTION_BUTTONS.includes(btn.id as ButtonId))
           .map(btn => ({
             key: btn.id,
             icon: React.createElement(iconMap[btn.icon]),
@@ -129,7 +138,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
       },
       rightSection: {
         buttons: buttons
-          .filter(btn => ['FIND', 'GRID_VIEW'].includes(btn.id))
+          .filter(btn => RIGHT_SECTION_BUTTONS.includes(btn.id as ButtonId))
           .map(btn => ({
             key: btn.id,
             icon: React.createElement(iconMap[btn.icon]),

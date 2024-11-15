@@ -9,6 +9,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { parseColumns } from '../../utils/metadata';
 import { Button } from '@mui/material';
+import { WindowParams } from '../../app/types';
 
 type DynamicTableProps = {
   tab: Tab;
@@ -16,7 +17,7 @@ type DynamicTableProps = {
 
 const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTableProps) {
   const { selected, selectRecord } = useMetadataContext();
-  const { windowId } = useParams<{ windowId: string }>();
+  const { windowId } = useParams<WindowParams>();
   const parent = selected[tab.level - 1];
   const navigate = useRouter().push;
   const { sx } = useStyle();

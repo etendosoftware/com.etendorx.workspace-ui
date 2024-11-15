@@ -6,6 +6,7 @@ export type TranslationKeys = {
     register: string;
     save: string;
     edit: string;
+    loading: string;
   };
   modal: {
     secondaryButtonLabel: string;

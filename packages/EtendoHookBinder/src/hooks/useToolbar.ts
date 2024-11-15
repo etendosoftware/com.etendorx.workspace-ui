@@ -1,24 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Metadata } from '../api/metadata';
-
-interface ToolbarResponse {
-  response: {
-    buttons: Array<{
-      id: string;
-      name: string;
-      action: string;
-      enabled: boolean;
-      visible: boolean;
-      icon: string;
-    }>;
-    windowId: string;
-    isNew: boolean;
-  };
-}
+import { ToolbarResponse } from './types';
 
 export function useToolbar(windowId: string, tabId?: string) {
   const [toolbar, setToolbar] = useState<ToolbarResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!windowId);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchToolbar = useCallback(async () => {

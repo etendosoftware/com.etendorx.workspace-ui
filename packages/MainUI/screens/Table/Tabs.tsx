@@ -6,7 +6,7 @@ import { Box, Button } from '@mui/material';
 import { TabLevel } from '../../components/TabLevel';
 import { useStyle } from './styles';
 
-export default function Tabs({ tabs, level = 0 }: { tabs: Tab[]; level?: number }) {
+export default function Tabs({ tabs }: { tabs: Tab[]; level?: number }) {
   const [activeKey, setActiveKey] = useState(tabs[0].id);
   const { sx } = useStyle();
 
@@ -31,7 +31,7 @@ export default function Tabs({ tabs, level = 0 }: { tabs: Tab[]; level?: number 
           {tab.name}
         </Button>
       ))}
-      <TabLevel tab={active} level={level} />
+      <TabLevel tab={active} />
     </Box>
   );
 }
