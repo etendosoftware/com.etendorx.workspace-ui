@@ -19,7 +19,7 @@ interface FormInitializationResponse {
 
 export function useFormInitialization(tabId: string) {
   const [initialData, setInitialData] = useState<FormInitializationResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!tabId);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchInitialData = useCallback(async () => {

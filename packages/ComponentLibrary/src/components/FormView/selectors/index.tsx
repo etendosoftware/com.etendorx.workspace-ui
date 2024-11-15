@@ -1,4 +1,4 @@
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { Box, Link } from '@mui/material';
 import { useStyle } from '../styles';
 import { FieldLabelProps, FieldValue, FormFieldGroupProps } from '../types';
@@ -30,8 +30,10 @@ const FieldLabel: React.FC<FieldLabelProps> = ({ label, required, fieldType, onL
 };
 
 const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, readOnly, renderFieldValue }) => {
-  const value = renderFieldValue ? renderFieldValue(field) : field.value ?? '';
-
+  const value = useMemo(
+    () => (renderFieldValue ? renderFieldValue(field) : field.value ?? ''),
+    [renderFieldValue, field],
+  );
   const { styles, sx } = useStyle();
   const handleLinkClick = useCallback(() => {
     if (field.type === 'tabledir' && field.value && typeof field.value === 'object' && 'id' in field.value) {

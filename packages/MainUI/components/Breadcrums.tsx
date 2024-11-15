@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import Breadcrumb from '@workspaceui/componentlibrary/src/components/Breadcrums';
 import type { BreadcrumbItem } from '@workspaceui/componentlibrary/src/components/Breadcrums/types';
 import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
@@ -58,14 +58,6 @@ const AppBreadcrumb: React.FC = () => {
 
     return items;
   }, [windowId, windowData, isNewRecord, recordId, records, navigate]);
-
-  useEffect(() => {
-    return () => {
-      if (!pathname.includes('/NewRecord')) {
-        return;
-      }
-    };
-  }, [pathname]);
 
   const handleHomeClick = useCallback(() => navigate('/'), [navigate]);
 

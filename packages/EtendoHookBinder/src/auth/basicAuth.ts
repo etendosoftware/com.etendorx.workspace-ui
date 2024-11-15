@@ -2,7 +2,7 @@ interface BasicAuthConfig {
   username: string;
   password: string;
 }
-
+//TODO: Improve this to not expose the enviroments variables
 export class BasicAuthHelper {
   private static instance: BasicAuthHelper;
   private credentials: string;

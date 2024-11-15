@@ -73,7 +73,6 @@ export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormDa
   const adaptedData: FormData = {};
   const sections = new Set<string>(['Main']);
 
-  // Secciones (sin cambios)
   Object.values(tab.fields).forEach((field: FieldInfo) => {
     const sectionName = field.fieldGroup$_identifier;
     if (sectionName) sections.add(sectionName);
