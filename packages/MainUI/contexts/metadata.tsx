@@ -6,6 +6,7 @@ import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
 import { buildColumnsData, groupTabsByLevel } from '../utils/metadata';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useParams } from 'next/navigation';
+import { WindowParams } from '../app/types';
 
 interface IMetadataContext {
   getWindow: (windowId: string) => Promise<Etendo.WindowMetadata>;
@@ -26,11 +27,7 @@ interface IMetadataContext {
 export const MetadataContext = createContext({} as IMetadataContext);
 
 export default function MetadataProvider({ children }: React.PropsWithChildren) {
-  const {
-    windowId = '',
-    tabId = '',
-    recordId = '',
-  } = useParams<{ windowId: string; tabId: string; recordId: string }>();
+  const { windowId = '', tabId = '', recordId = '' } = useParams<WindowParams>();
   const { windowData, loading, error } = useWindow(windowId);
   const [selected, setSelected] = useState<IMetadataContext['selected']>({});
 

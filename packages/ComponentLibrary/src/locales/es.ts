@@ -6,6 +6,7 @@ const es = {
     register: 'Registrar',
     save: 'Guardar',
     edit: 'Editar',
+    loading: 'Cargando',
   },
   errors: {
     notFound: {
