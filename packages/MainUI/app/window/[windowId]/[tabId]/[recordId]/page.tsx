@@ -6,13 +6,10 @@ import { useParams } from 'next/navigation';
 import { useMetadataContext } from '../../../../../hooks/useMetadataContext';
 import { Toolbar } from '../../../../../components/Toolbar';
 import { styles } from './styles';
+import { WindowParams } from '../../../../types';
 
 export default function Page() {
-  const { windowId, tabId, recordId } = useParams<{
-    windowId: string;
-    tabId: string;
-    recordId: string;
-  }>();
+  const { windowId, tabId, recordId } = useParams<WindowParams>();
 
   const { windowData, tab } = useMetadataContext();
   const { record } = useSingleDatasource(tab?.entityName, recordId);

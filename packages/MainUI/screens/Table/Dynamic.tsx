@@ -1,5 +1,3 @@
-'use client';
-
 import { Box } from '@mui/material';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
