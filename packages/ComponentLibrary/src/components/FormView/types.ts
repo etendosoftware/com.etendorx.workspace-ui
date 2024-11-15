@@ -63,6 +63,8 @@ export interface FormViewProps {
   initialValues?: boolean;
 }
 
+export type FieldValue = string | number | boolean | string[] | Date | null;
+
 export interface FormSectionProps {
   sectionName: string;
   sectionData: Section;
@@ -76,11 +78,9 @@ export interface FormSectionProps {
   gridItemProps?: GridItemProps;
   dottedLineInterval?: number;
   readOnly?: boolean;
-  renderFieldValue?: (field: FieldDefinition) => any;
+  renderFieldValue?: (field: FieldDefinition) => FieldValue;
   children?: ReactNode;
 }
-
-export type FieldValue = string | number | boolean | string[] | Date | null;
 
 export interface FormFieldGroupProps {
   name: string;
@@ -90,7 +90,7 @@ export interface FormFieldGroupProps {
   accessor?: string;
   windowMetadata?: WindowMetadata;
   readOnly?: boolean;
-  renderFieldValue?: (field: FieldDefinition) => any;
+  renderFieldValue?: (field: FieldDefinition) => FieldValue;
 }
 
 export interface FieldLabelProps {

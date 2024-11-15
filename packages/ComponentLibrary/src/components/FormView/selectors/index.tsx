@@ -47,9 +47,9 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
       case 'boolean':
         return <BooleanSelector label={field.label} readOnly={readOnly} />;
       case 'number':
-        return <NumberSelector name={field.label} value={value} onChange={onChange} readOnly={readOnly} />;
+        return <NumberSelector name={field.label} value={Number(value)} onChange={onChange} readOnly={readOnly} />;
       case 'date':
-        return <DateSelector name={field.name} value={value} onChange={onChange} readOnly={readOnly} />;
+        return <DateSelector name={field.name} value={value as string} onChange={onChange} readOnly={readOnly} />;
       case 'select':
         return <SelectSelector name={field.name} title={field.label} onChange={onChange} readOnly={readOnly} />;
       case 'tabledir':
@@ -78,7 +78,7 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
         return (
           <TextInputBase
             onRightIconClick={() => alert('Icon clicked')}
-            value={value}
+            value={value as string}
             setValue={(value: FieldValue) => onChange(field.label, value)}
             placeholder={field.value ? String(field.value) : undefined}
             disabled={readOnly}
