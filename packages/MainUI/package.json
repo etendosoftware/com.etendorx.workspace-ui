@@ -22,7 +22,8 @@
     "@workspaceui/etendohookbinder": "workspace:etendohookbinder",
     "@workspaceui/storybook": "workspace:storybook",
     "material-react-table": "^2.12.1",
-    "next": "^15.0.1"
+    "next": "^15.0.1",
+    "react-hook-form": "^7.53.2"
   },
   "peerDependencies": {
     "react": "18.3.1",

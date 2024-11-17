@@ -5,16 +5,14 @@ import { useRouter } from 'next/navigation';
 import { adaptFormData, mapWindowMetadata } from '../../utils/FormUtils';
 import FormView from '@workspaceui/componentlibrary/src/components/FormView';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
+import { useForm, FormProvider } from 'react-hook-form';
 
-const FormContext = createContext({});
-
-export default function DynamicFormView({
-  tab,
-  record,
-}: {
-  tab: Tab;
-  record: Record<string, unknown>;
-}) {
+export default function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unknown> }) {
+  const methods = useForm({
+    defaultValues: {
+      id: 'pepito',
+    },
+  });
   const { windowData = {} as WindowMetadata } = useMetadataContext();
   const navigate = useRouter().push;
   const [formData, setFormData] = useState<FormData | null>(adaptFormData(tab, record));
@@ -26,12 +24,10 @@ export default function DynamicFormView({
     setFormData(updatedData);
   }, []);
 
-  const value = useMemo(() => ({ formData, setFormData }), [formData]);
-
   if (!formData || !mappedMetadata) return <div>No form data available</div>;
 
   return (
-    <FormContext.Provider value={value}>
+    <FormProvider {...methods}>
       <FormView
         data={formData}
         onSave={handleSave}
@@ -39,6 +35,6 @@ export default function DynamicFormView({
         onChange={handleChange}
         windowMetadata={mappedMetadata}
       />
-    </FormContext.Provider>
+    </FormProvider>
   );
 }
