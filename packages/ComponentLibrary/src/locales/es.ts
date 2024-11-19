@@ -8,6 +8,16 @@ const es = {
     edit: 'Editar',
     loading: 'Cargando...',
   },
+  errors: {
+    notFound: {
+      title: 'Algo salió mal',
+      description: 'No pudimos encontrar la página que buscas',
+    },
+    internalServerError: {
+      title: 'Algo salió mal',
+      retry: 'Reintentar',
+    },
+  },
   modal: {
     secondaryButtonLabel: 'Atrás',
   },
@@ -39,6 +49,9 @@ const es = {
     },
   },
   navigation: {
+    common: {
+      home: 'Ir al inicio',
+    },
     waterfall: {
       activateAll: 'Activar todo',
       deactivateAll: 'Desactivar todo',

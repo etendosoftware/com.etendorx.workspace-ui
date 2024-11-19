@@ -2,16 +2,8 @@ import { Box } from '@mui/material';
 import { Organization, Widget } from './types';
 import SideIcon from '@workspaceui/componentlibrary/src/assets/icons/codesandbox.svg';
 import TabWidget from '@workspaceui/componentlibrary/src/components/Widgets/TabWidget';
-import { TranslationKeys } from '@workspaceui/componentlibrary/src/locales/types';
 import React from 'react';
-
-type NestedKeyOf<ObjectType extends object> = {
-  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
-    ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}`
-    : `${Key}`;
-}[keyof ObjectType & (string | number)];
-
-type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(key: K) => string;
+import { TranslateFunction } from '@workspaceui/mainui/hooks/types';
 
 const colors = {
   backgrounds: [
