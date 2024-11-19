@@ -5,9 +5,11 @@ import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { styles } from './styles';
 import { useRouter, useParams, usePathname } from 'next/navigation';
-import { BREADCRUMB } from '../constants/breadcrumb';
+import { BREADCRUMB, ROUTE_IDS } from '../constants/breadcrumb';
+import { useTranslation } from '../hooks/useTranslation';
 
 const AppBreadcrumb: React.FC = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const pathname = usePathname();
@@ -18,10 +20,7 @@ const AppBreadcrumb: React.FC = () => {
 
   const { windowData } = useWindow(windowId);
 
-  const isNewRecord = useCallback(() => {
-    const pathIncludesNew = pathname.includes('/NewRecord');
-    return pathIncludesNew;
-  }, [pathname]);
+  const isNewRecord = useCallback(() => pathname.includes('/NewRecord'), [pathname]);
 
   const query = useMemo(
     () => ({
@@ -38,15 +37,15 @@ const AppBreadcrumb: React.FC = () => {
     if (windowId && windowData) {
       items.push({
         id: windowId,
-        label: String(windowData.window$_identifier || windowData.name || BREADCRUMB.LOADING.LABEL),
+        label: String(windowData.window$_identifier || windowData.name || t('common.loading')),
         onClick: () => navigate(`/window/${windowId}`),
       });
     }
 
     if (isNewRecord()) {
       items.push({
-        id: BREADCRUMB.NEW_RECORD.ID,
-        label: BREADCRUMB.NEW_RECORD.LABEL,
+        id: ROUTE_IDS.NEW_RECORD,
+        label: t('breadcrumb.newRecord'),
       });
     } else if (recordId && records && records.length > 0) {
       const record = records[0];
@@ -57,7 +56,7 @@ const AppBreadcrumb: React.FC = () => {
     }
 
     return items;
-  }, [windowId, windowData, isNewRecord, recordId, records, navigate]);
+  }, [windowId, windowData, isNewRecord, recordId, records, navigate, t]);
 
   const handleHomeClick = useCallback(() => navigate('/'), [navigate]);
 
@@ -66,7 +65,7 @@ const AppBreadcrumb: React.FC = () => {
       <Breadcrumb
         items={breadcrumbItems}
         onHomeClick={handleHomeClick}
-        homeText={BREADCRUMB.HOME.TEXT}
+        homeText={t('breadcrumb.home')}
         homeIcon={BREADCRUMB.HOME.ICON}
       />
     </div>

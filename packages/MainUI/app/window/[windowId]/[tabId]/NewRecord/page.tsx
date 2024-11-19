@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
+import { useMemo } from 'react';
 import { useMetadataContext } from '../../../../../hooks/useMetadataContext';
 import { Toolbar } from '../../../../../components/Toolbar';
 import DynamicFormView from '../../../../../screens/Form/DynamicFormView';
@@ -17,6 +18,23 @@ export default function NewRecordPage() {
   const { windowData, tab } = useMetadataContext();
   const { initialData, loading, error } = useFormInitialization(tabId);
 
+  const record = useMemo(() => {
+    if (!initialData?.columnValues) return {} as Record<string, unknown>;
+
+    return Object.entries(initialData.columnValues).reduce((acc, [key, value]) => {
+      acc[key] = value.value;
+      if (value.identifier) {
+        acc[`${key}$_identifier`] = value.identifier;
+      }
+      return acc;
+    }, {} as Record<string, unknown>);
+  }, [initialData]);
+
+  const adaptedData = useMemo(() => {
+    if (!tab || !record) return null;
+    return adaptFormData(tab, record);
+  }, [tab, record]);
+
   if (loading) {
     return <span>Loading form data...</span>;
   }
@@ -28,16 +46,6 @@ export default function NewRecordPage() {
   if (!windowData || !tab || !initialData) {
     return <span>Missing required data</span>;
   }
-
-  const record = Object.entries(initialData.columnValues).reduce((acc, [key, value]) => {
-    acc[key] = value.value;
-    if (value.identifier) {
-      acc[`${key}$_identifier`] = value.identifier;
-    }
-    return acc;
-  }, {} as Record<string, string>);
-
-  const adaptedData = adaptFormData(tab, record);
 
   if (!adaptedData) {
     return <span>Error adapting form data</span>;

@@ -38,10 +38,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   const router = useRouter();
 
   const handleAction = (action: string) => {
-    if (action === 'NEW') {
+    if (action === BUTTON_IDS.NEW) {
       router.push(`/window/${windowId}/${tabId}/NewRecord`);
     }
   };
+
   const { t } = useTranslation();
 
   if (loading) {

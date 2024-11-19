@@ -69,6 +69,10 @@ export type TranslationKeys = {
       saveAsDefault: string;
     };
   };
+  breadcrumb: {
+    home: string;
+    newRecord: string;
+  };
 };
 
 export type Language = 'es' | 'en';

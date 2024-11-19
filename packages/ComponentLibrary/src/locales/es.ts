@@ -69,6 +69,10 @@ const es = {
       saveAsDefault: 'Guardar perfil por defecto',
     },
   },
+  breadcrumb: {
+    home: 'Inicio',
+    newRecord: 'Crando un nuevo registro',
+  },
 };
 
 export default es;
