@@ -1,6 +1,22 @@
 import { addons } from '@storybook/manager-api';
-import EtendoTheme from './EtendoTheme';
 
 addons.setConfig({
-  theme: EtendoTheme,
+  showNav: true,
+  showPanel: true,
+  panelPosition: 'bottom',
+  enableShortcuts: true,
+  showToolbar: true,
+  selectedPanel: 'controls',
+  initialActive: 'canvas',
+  sidebar: {
+    showRoots: false,
+    collapsedRoots: ['other'],
+  },
+  toolbar: {
+    title: { hidden: false },
+    zoom: { hidden: false },
+    eject: { hidden: true },
+    copy: { hidden: false },
+    fullscreen: { hidden: false },
+  },
 });

@@ -68,14 +68,11 @@ export function mapWindowMetadata(windowData: WindowMetadata): MappedData {
 }
 
 export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormData | null {
-  if (!tab || !record) {
-    return null;
-  }
+  if (!tab || !record) return null;
 
   const adaptedData: FormData = {};
   const sections = new Set<string>(['Main']);
 
-  // Create sections
   Object.values(tab.fields).forEach((field: FieldInfo) => {
     const sectionName = field.fieldGroup$_identifier;
     if (sectionName) sections.add(sectionName);
@@ -95,22 +92,31 @@ export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormDa
   Object.entries(tab.fields).forEach(([fieldName, fieldInfo]) => {
     const column = fieldInfo.column as unknown as Column;
     const sectionName = fieldInfo.fieldGroup$_identifier ?? 'Main';
-    const rawValue = record[fieldName];
-    let safeValue;
+    const fieldType = mapColumnTypeToFieldType(column);
 
-    if (mapColumnTypeToFieldType(column) === 'tabledir') {
-      safeValue = {
+    const dbColumnName = fieldInfo.column.dBColumnName;
+    const rawValue = record[dbColumnName] ?? record[fieldName];
+    const identifierValue = record[`${dbColumnName}$_identifier`] ?? record[`${fieldName}$_identifier`];
+
+    let value;
+    if (fieldType === 'tabledir' && rawValue) {
+      value = {
         id: rawValue,
-        title: record[`${fieldName}$_identifier`] || rawValue,
+        title: identifierValue || rawValue,
         value: rawValue,
       };
+    } else if (fieldType === 'boolean') {
+      value = rawValue === 'true' || rawValue === true;
+    } else if (fieldType === 'date' && rawValue) {
+      value = rawValue;
     } else {
-      safeValue = ensureFieldValue(rawValue);
+      value = rawValue !== undefined && rawValue !== '' ? ensureFieldValue(rawValue) : '';
     }
 
     adaptedData[fieldName] = {
-      value: safeValue,
-      type: mapColumnTypeToFieldType(column),
+      value: value,
+      initialValue: value,
+      type: fieldType,
       label: fieldInfo.column.name,
       section: sectionName,
       required: fieldInfo.column.isMandatory ?? true,

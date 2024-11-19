@@ -6,7 +6,7 @@ const es = {
     register: 'Registrar',
     save: 'Guardar',
     edit: 'Editar',
-    loading: 'Cargando',
+    loading: 'Cargando...',
   },
   errors: {
     notFound: {
@@ -81,6 +81,10 @@ const es = {
       signOffTooltip: 'Cerrar sesión',
       saveAsDefault: 'Guardar perfil por defecto',
     },
+  },
+  breadcrumb: {
+    home: 'Inicio',
+    newRecord: 'Crando un nuevo registro',
   },
 };
 

@@ -83,6 +83,10 @@ const en = {
       saveAsDefault: 'Save as default profile',
     },
   },
+  breadcrumb: {
+    home: 'Home',
+    newRecord: 'Creating a new Record',
+  },
 };
 
 export default en;

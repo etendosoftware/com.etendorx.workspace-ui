@@ -11,6 +11,7 @@ export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'tab
 export interface BaseFieldDefinition<T> {
   value: T;
   type: FieldType;
+  initialValue?: T;
   label: string;
   name: string;
   section?: string;
@@ -59,7 +60,10 @@ export interface FormViewProps {
   gridItemProps?: GridItemProps;
   dottedLineInterval?: number;
   onChange?: (updatedData: FormData) => void;
+  initialValues?: boolean;
 }
+
+export type FieldValue = string | number | boolean | string[] | Date | null;
 
 export interface FormSectionProps {
   sectionName: string;
@@ -74,10 +78,9 @@ export interface FormSectionProps {
   gridItemProps?: GridItemProps;
   dottedLineInterval?: number;
   readOnly?: boolean;
+  renderFieldValue?: (field: FieldDefinition) => FieldValue;
   children?: ReactNode;
 }
-
-export type FieldValue = string | number | boolean | string[] | Date | null;
 
 export interface FormFieldGroupProps {
   name: string;
@@ -87,6 +90,7 @@ export interface FormFieldGroupProps {
   accessor?: string;
   windowMetadata?: WindowMetadata;
   readOnly?: boolean;
+  renderFieldValue?: (field: FieldDefinition) => FieldValue;
 }
 
 export interface FieldLabelProps {

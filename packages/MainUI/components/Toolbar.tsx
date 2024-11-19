@@ -12,6 +12,7 @@ import PaperclipIcon from '@workspaceui/componentlibrary/src/assets/icons/paperc
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { IconName, IconSize, ToolbarResponse, ToolbarProps, ButtonConfig } from './types';
+import { useRouter } from 'next/navigation';
 import {
   LEFT_SECTION_BUTTONS,
   BUTTON_IDS,
@@ -34,6 +35,14 @@ const iconMap: Record<IconName, React.FC<unknown>> = {
 
 export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   const { toolbar, loading } = useToolbar(windowId, tabId);
+  const router = useRouter();
+
+  const handleAction = (action: string) => {
+    if (action === BUTTON_IDS.NEW) {
+      router.push(`/window/${windowId}/${tabId}/NewRecord`);
+    }
+  };
+
   const { t } = useTranslation();
 
   if (loading) {
@@ -56,7 +65,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
               key: btn.id,
               icon: React.createElement(iconMap[btn.icon]),
               tooltip: btn.name,
-              onClick: () => {},
+              onClick: () => handleAction(btn.action),
               disabled: !btn.enabled,
               height: IconSize,
               width: IconSize,

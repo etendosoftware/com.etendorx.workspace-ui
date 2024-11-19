@@ -33,6 +33,7 @@ export default function DynamicFormView({
       onCancel={handleCancel}
       onChange={handleChange}
       windowMetadata={mappedMetadata}
+      initialValues
     />
   );
 }
