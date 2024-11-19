@@ -7,6 +7,7 @@ import { useMenu } from '@workspaceui/etendohookbinder/src/hooks/useMenu';
 import EtendoLogotype from '../public/etendo.png';
 import { useTranslation } from '../hooks/useTranslation';
 import { useUserContext } from '../hooks/useUserContext';
+import { WindowParams } from '../app/types';
 
 export default function Sidebar() {
   const { t } = useTranslation();
@@ -14,7 +15,7 @@ export default function Sidebar() {
 
   const menu = useMenu(token, currentRole || undefined);
   const router = useRouter();
-  const { windowId } = useParams<{ windowId?: string }>();
+  const { windowId } = useParams<WindowParams>();
 
   const handleClick = useCallback(
     (pathname: string) => {
@@ -23,5 +24,13 @@ export default function Sidebar() {
     [router],
   );
 
-  return <Drawer windowId={windowId} logo={EtendoLogotype.src} title={t('common.etendo')} items={menu} onClick={handleClick} />;
+  return (
+    <Drawer
+      windowId={windowId}
+      logo={EtendoLogotype.src}
+      title={t('common.etendo')}
+      items={menu}
+      onClick={handleClick}
+    />
+  );
 }

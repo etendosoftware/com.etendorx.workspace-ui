@@ -100,7 +100,7 @@ export interface MappedField {
   required?: boolean;
 }
 
-export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'search' |  'tabledir' | 'quantity' | 'list';
+export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'search' | 'tabledir' | 'quantity' | 'list';
 
 export interface MappedTab {
   id: string;
@@ -141,6 +141,7 @@ export interface WindowMetadataProperties {
 
 export interface Tab {
   uIPattern: 'STD' | 'SR';
+  windowId: string;
   name: string;
   title: string;
   parentColumns: string[];
@@ -262,6 +263,21 @@ export interface Role {
 export interface Warehouse {
   id: string;
   name: string;
+}
+
+export interface ToolbarButton {
+  id: string;
+  name: string;
+  action: string;
+  enabled: boolean;
+  visible: boolean;
+}
+
+export interface ToolbarMetadata {
+  buttons: ToolbarButton[];
+  isNew: boolean;
+  gridId: string | null;
+  action: string;
 }
 
 export interface FieldInfo {
