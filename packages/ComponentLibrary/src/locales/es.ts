@@ -7,6 +7,7 @@ const es = {
     save: 'Guardar',
     edit: 'Editar',
     loading: 'Cargando...',
+    loadingFormData: 'Cargando información del formulario...',
   },
   errors: {
     notFound: {
@@ -16,6 +17,26 @@ const es = {
     internalServerError: {
       title: 'Algo salió mal',
       retry: 'Reintentar',
+    },
+    missingRecord: {
+      title: 'Registro no encontrado',
+      description: 'El registro solicitado no fue encontrado',
+    },
+    missingData: {
+      title: 'Datos no encontrados',
+      description: 'Los datos solicitados no fueron encontrados',
+    },
+    missingMetadata: {
+      title: 'Falta Metadata',
+      description: 'La Metadata requerida por la ventana no esta disponible',
+    },
+    formData: {
+      title: 'Error cargando el formulario',
+      description: 'Hubo un error cargando la información del formulario',
+    },
+    adaptingData: {
+      title: 'Error procesando la información',
+      description: 'Hubo un error procesando la información del formulario',
     },
   },
   modal: {

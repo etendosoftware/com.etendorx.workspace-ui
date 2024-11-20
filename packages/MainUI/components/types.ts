@@ -44,3 +44,11 @@ export interface ButtonConfig {
   iconText?: string;
   sx?: SxProps;
 }
+
+export interface ErrorDisplayProps {
+  title: string;
+  description?: string;
+  showRetry?: boolean;
+  onRetry?: () => void;
+  showHomeButton?: boolean;
+}

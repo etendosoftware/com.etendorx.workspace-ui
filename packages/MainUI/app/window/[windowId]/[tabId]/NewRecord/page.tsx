@@ -8,6 +8,8 @@ import DynamicFormView from '../../../../../screens/Form/DynamicFormView';
 import { adaptFormData } from '../../../../../utils/FormUtils';
 import { styles } from '../[recordId]/styles';
 import { useFormInitialization } from '../../../../../hooks/useFormInitialValues';
+import { ErrorDisplay } from '../../../../../components/ErrorDisplay';
+import { useTranslation } from '../../../../../hooks/useTranslation';
 
 export default function NewRecordPage() {
   const { windowId, tabId } = useParams<{
@@ -15,6 +17,7 @@ export default function NewRecordPage() {
     tabId: string;
   }>();
 
+  const { t } = useTranslation();
   const { windowData, tab } = useMetadataContext();
   const { initialData, loading, error } = useFormInitialization(tabId);
 
@@ -36,19 +39,32 @@ export default function NewRecordPage() {
   }, [tab, record]);
 
   if (loading) {
-    return <span>Loading form data...</span>;
+    return <ErrorDisplay title={t('common.loading')} description={t('common.loadingFormData')} />;
   }
 
   if (error) {
-    return <span>Error loading form data: {error.message}</span>;
+    return <ErrorDisplay title={t('errors.formData.title')} description={error.message} showHomeButton />;
   }
 
   if (!windowData || !tab || !initialData) {
-    return <span>Missing required data</span>;
+    return (
+      <ErrorDisplay
+        title={t('errors.missingData.title')}
+        description={t('errors.missingData.description')}
+        showHomeButton
+      />
+    );
   }
 
   if (!adaptedData) {
-    return <span>Error adapting form data</span>;
+    return (
+      <ErrorDisplay
+        title={t('errors.adaptingData.title')}
+        description={t('errors.adaptingData.description')}
+        showRetry
+        onRetry={() => window.location.reload()}
+      />
+    );
   }
 
   return (
