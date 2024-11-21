@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useMemo } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { Box, Link } from '@mui/material';
 import { useStyle } from '../styles';
 import { FieldLabelProps, FieldValue, FormFieldGroupProps } from '../types';
@@ -11,7 +11,6 @@ import QuantitySelector from './QuantitySelector';
 import ListSelector from './ListSelector';
 import TextInputBase from '../../Input/TextInput/TextInputBase';
 import SearchSelector from './SearchSelector';
-import { useFormContext } from 'react-hook-form';
 
 const FieldLabel: React.FC<FieldLabelProps> = ({ isEntityReference, label, required, onLinkClick }) => {
   const { styles, sx } = useStyle();
@@ -32,18 +31,6 @@ const FieldLabel: React.FC<FieldLabelProps> = ({ isEntityReference, label, requi
 };
 
 const RenderField = ({ field, onChange, readOnly, renderFieldValue }: FormFieldGroupProps) => {
-  const methods = useFormContext(); // retrieve all hook methods
-  const { formState } = methods;
-
-  useEffect(() => {
-    console.debug(field.original?.fieldName);
-  }, [field.original?.fieldName]);
-
-  useEffect(() => {
-    console.debug(formState);
-  }, [formState]);
-
-
   const value = useMemo(
     () => (renderFieldValue ? renderFieldValue(field) : field.value ?? ''),
     [renderFieldValue, field],
