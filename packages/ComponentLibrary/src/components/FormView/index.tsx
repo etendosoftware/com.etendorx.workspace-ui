@@ -8,7 +8,14 @@ import type { FieldValue, FormData, Section } from './types';
 import Chevrons from '../../assets/icons/chevrons-right.svg';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 
-const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, gridItemProps, dottedLineInterval }) => {
+const FormView: React.FC<FormViewProps> = ({
+  data,
+  onChange,
+  readOnly = false,
+  gridItemProps,
+  dottedLineInterval,
+  initialValues = true,
+}) => {
   const [formData, setFormData] = useState<FormData>(data);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
@@ -81,32 +88,55 @@ const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, g
     }
   }, []);
 
+  const renderFieldValue = useCallback(
+    (field: FieldDefinition) => {
+      if (initialValues && 'initialValue' in field && field.initialValue !== undefined) {
+        return field.initialValue;
+      }
+      if (field.value === undefined) {
+        return '';
+      }
+      return field.value;
+    },
+    [initialValues],
+  );
+
   const handleInputChange = useCallback(
     (name: string, value: FieldValue) => {
-      setFormData(prevData => ({
-        ...prevData,
-        [name]: {
-          ...prevData[name],
-          value: value,
-        },
-      }) as FormData);
+      if (readOnly) return;
+
+      setFormData(
+        prev =>
+          ({
+            ...prev,
+            [name]: {
+              ...prev[name],
+              value: value,
+            },
+          } as FormData),
+      );
+
       onChange?.(formData);
     },
-    [formData, onChange],
+    [formData, onChange, readOnly],
   );
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
   }, []);
 
-  const groupedFields = Object.entries(formData).reduce((acc, [key, value]) => {
-    if ('section' in value) {
-      const section = value.section ?? '_mainSection';
-      if (!acc[section]) acc[section] = [];
-      acc[section].push([key, value]);
-    }
-    return acc;
-  }, {} as { [key: string]: [string, FieldDefinition][] });
+  const groupedFields = useMemo(
+    () =>
+      Object.entries(formData).reduce((acc, [key, value]) => {
+        if ('section' in value) {
+          const section = value.section ?? '_mainSection';
+          if (!acc[section]) acc[section] = [];
+          acc[section].push([key, value]);
+        }
+        return acc;
+      }, {} as { [key: string]: [string, FieldDefinition][] }),
+    [formData],
+  );
 
   return (
     <Box display="flex" flexDirection="column" height="100%" width="100%" padding="0 0 0.5rem 0.5rem">
@@ -128,6 +158,7 @@ const FormView: React.FC<FormViewProps> = ({ data, onChange, readOnly = false, g
                   sectionName={sectionName}
                   sectionData={sectionData}
                   fields={fields}
+                  renderFieldValue={renderFieldValue}
                   isExpanded={expandedSections.includes(sectionData.id)}
                   onAccordionChange={handleAccordionChange}
                   onHover={setHoveredSection}

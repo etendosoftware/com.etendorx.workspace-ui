@@ -1,21 +1,26 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
-import { LanguageProvider } from '../../MainUI/contexts/languageProvider';
 
-const withThemeProvider = Story => {
-  return (
+const LanguageProvider = React.lazy(() =>
+  import('../../MainUI/contexts/languageProvider').then(mod => ({
+    default: mod.LanguageProvider,
+  })),
+);
+
+const withThemeProvider = Story => (
+  <Suspense fallback={<div>Loading...</div>}>
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <LanguageProvider>
         <Story />
       </LanguageProvider>
     </ThemeProvider>
-  );
-};
+  </Suspense>
+);
 
-const preview = {
+export default {
   parameters: {
     actions: { argTypesRegex: '^on[A-Z].*' },
     controls: {
@@ -27,5 +32,3 @@ const preview = {
   },
   decorators: [withThemeProvider],
 };
-
-export default preview;

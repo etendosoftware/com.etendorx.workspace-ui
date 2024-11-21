@@ -7,6 +7,7 @@ const en = {
     save: 'Save',
     edit: 'Edit',
     loading: 'Loading...',
+    loadingFormData: 'Loading form data...',
   },
   errors: {
     notFound: {
@@ -16,6 +17,26 @@ const en = {
     internalServerError: {
       title: 'Something went wrong',
       retry: 'Retry',
+    },
+    missingRecord: {
+      title: 'Record Not Found',
+      description: 'The requested record could not be found',
+    },
+    missingData: {
+      title: 'Data Not Found',
+      description: 'The requested data could not be found',
+    },
+    missingMetadata: {
+      title: 'Missing Metadata',
+      description: 'Required window metadata is not available',
+    },
+    formData: {
+      title: 'Error Loading Form',
+      description: 'There was an error loading the form data',
+    },
+    adaptingData: {
+      title: 'Error Processing Data',
+      description: 'There was an error processing the form data',
     },
   },
   modal: {
@@ -82,6 +103,10 @@ const en = {
       signOffTooltip: 'Sign off',
       saveAsDefault: 'Save as default profile',
     },
+  },
+  breadcrumb: {
+    home: 'Home',
+    newRecord: 'Creating a new Record',
   },
 };
 

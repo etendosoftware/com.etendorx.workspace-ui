@@ -20,6 +20,7 @@ const FormSection: React.FC<FormSectionProps> = ({
   gridItemProps = { xs: 12, sm: 6, md: 6 },
   dottedLineInterval = 2,
   readOnly = false,
+  renderFieldValue,
   children,
 }) => {
   const { sx, styles } = useStyle();
@@ -67,7 +68,13 @@ const FormSection: React.FC<FormSectionProps> = ({
           <Grid container>
             {fields.map(([key, field], index) => (
               <Grid item {...gridItemProps} key={key} sx={sx.gridItem}>
-                <FormFieldGroup name={key} field={field} onChange={onInputChange} readOnly={readOnly} />
+                <FormFieldGroup
+                  name={key}
+                  field={field}
+                  onChange={onInputChange}
+                  readOnly={readOnly}
+                  renderFieldValue={renderFieldValue}
+                />
                 {index < fields.length && (index + 1) % dottedLineInterval !== 0 && <Box sx={styles.dottedLine} />}
               </Grid>
             ))}

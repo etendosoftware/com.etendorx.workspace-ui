@@ -31,6 +31,7 @@ export interface FormViewProps {
   gridItemProps?: GridItemProps;
   dottedLineInterval?: number;
   onChange?: (updatedData: FormData) => void;
+  initialValues?: boolean;
 }
 
 export interface FormSectionProps {
@@ -46,6 +47,7 @@ export interface FormSectionProps {
   gridItemProps?: GridItemProps;
   dottedLineInterval?: number;
   readOnly?: boolean;
+  renderFieldValue?: (field: FieldDefinition) => FieldValue;
   children?: ReactNode;
 }
 
@@ -59,6 +61,7 @@ export interface FormFieldGroupProps {
   accessor?: string;
   windowMetadata?: WindowMetadata;
   readOnly?: boolean;
+  renderFieldValue?: (field: FieldDefinition) => FieldValue;
 }
 
 export interface FieldLabelProps {

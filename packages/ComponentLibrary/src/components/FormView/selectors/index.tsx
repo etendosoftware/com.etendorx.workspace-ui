@@ -100,7 +100,11 @@ const RenderField = ({ field, onChange, readOnly }: FormFieldGroupProps) => {
   }
 };
 
-const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, readOnly }) => {
+const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, readOnly, renderFieldValue }) => {
+  const value = useMemo(
+    () => (renderFieldValue ? renderFieldValue(field) : field.value ?? ''),
+    [renderFieldValue, field],
+  );
   const { styles, sx } = useStyle();
 
   const isEntityReference = useMemo(() => ['tabledir', 'search'].includes(field.type), [field.type]);
@@ -112,7 +116,52 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
       const tabId = field.original?.referencedTabId;
       location.href = `/window/${windowId}/${tabId}/${recordId}`;
     }
-  }, [field.original?.referencedTabId, field.original?.referencedWindowId, field.value, isEntityReference]);
+  }, [field]);
+
+  const renderField = useCallback(() => {
+    switch (field.type) {
+      case 'boolean':
+        return <BooleanSelector label={field.label} readOnly={readOnly} />;
+      case 'number':
+        return <NumberSelector name={field.label} value={Number(value)} onChange={onChange} readOnly={readOnly} />;
+      case 'date':
+        return <DateSelector name={field.name} value={value as string} onChange={onChange} readOnly={readOnly} />;
+      case 'select':
+        return <SelectSelector name={field.name} title={field.label} onChange={onChange} readOnly={readOnly} />;
+      case 'tabledir':
+        return (
+          <TableDirSelector
+            value={value}
+            label={field.label}
+            entity={field.original?.referencedEntity || ''}
+            onChange={onChange}
+          />
+        );
+      case 'quantity':
+        return (
+          <QuantitySelector
+            value={value}
+            maxLength={field.original?.column?.length}
+            min={field.original?.column?.minValue ?? null}
+            max={field.original?.column?.maxValue ?? null}
+            onChange={value => onChange(field.label, value)}
+            readOnly={readOnly}
+          />
+        );
+      case 'list':
+        return <ListSelector field={field} onChange={onChange} readOnly={readOnly} />;
+      default:
+        return (
+          <TextInputBase
+            onRightIconClick={() => alert('Icon clicked')}
+            value={value as string}
+            setValue={(value: FieldValue) => onChange(field.label, value)}
+            placeholder={field.value ? String(field.value) : undefined}
+            disabled={readOnly}
+          />
+        );
+    }
+  }, [field, onChange, readOnly, value]);
 
   return (
     <Box style={styles.fieldContainer}>
