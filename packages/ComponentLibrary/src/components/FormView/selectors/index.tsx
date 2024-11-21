@@ -88,7 +88,7 @@ const RenderField = ({ field, onChange, readOnly, renderFieldValue }: FormFieldG
         />
       );
   }
-}
+};
 
 const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, readOnly, renderFieldValue }) => {
   const { styles, sx } = useStyle();
@@ -102,7 +102,7 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
       const tabId = field.original?.referencedTabId;
       location.href = `/window/${windowId}/${tabId}/${recordId}`;
     }
-  }, [field]);
+  }, [field.original?.referencedTabId, field.original?.referencedWindowId, field.value, isEntityReference]);
 
   return (
     <Box style={styles.fieldContainer}>
