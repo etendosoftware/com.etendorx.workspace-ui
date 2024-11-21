@@ -13,7 +13,6 @@ import { useTranslation } from '../../../../../hooks/useTranslation';
 export default function Page() {
   const { windowId, tabId, recordId } = useParams<WindowParams>();
   const { t } = useTranslation();
-
   const { windowData, tab } = useMetadataContext();
   const { record } = useSingleDatasource(tab?.entityName, recordId);
 

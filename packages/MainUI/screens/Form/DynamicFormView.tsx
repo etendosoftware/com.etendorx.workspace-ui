@@ -1,4 +1,4 @@
-import { createContext, useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { FormData } from './types';
 import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { useRouter } from 'next/navigation';
@@ -8,11 +8,7 @@ import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { useForm, FormProvider } from 'react-hook-form';
 
 export default function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unknown> }) {
-  const methods = useForm({
-    defaultValues: {
-      id: 'pepito',
-    },
-  });
+  const methods = useForm();
   const { windowData = {} as WindowMetadata } = useMetadataContext();
   const navigate = useRouter().push;
   const [formData, setFormData] = useState<FormData | null>(adaptFormData(tab, record));
