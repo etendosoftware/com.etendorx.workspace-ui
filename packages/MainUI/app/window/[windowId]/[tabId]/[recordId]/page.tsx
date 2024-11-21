@@ -42,7 +42,7 @@ export default function Page() {
       <div style={styles.box}>
         <Toolbar windowId={windowId} tabId={tabId} />
       </div>
-      <DynamicFormView windowData={windowData} tab={tab} record={record} />
+      <DynamicFormView tab={tab} record={record} />
     </>
   );
 }
