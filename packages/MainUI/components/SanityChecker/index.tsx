@@ -65,7 +65,7 @@ export default function SanityChecker(props: React.PropsWithChildren) {
   return (
     <div className="center-all">
       {error ? (
-        <Button variant="contained" color='warning' onClick={handleRetry}>
+        <Button variant="contained" color="warning" onClick={handleRetry}>
           Retry
         </Button>
       ) : (

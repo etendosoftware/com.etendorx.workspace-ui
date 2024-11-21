@@ -10,20 +10,31 @@ interface FormInitializationParams {
 }
 
 export const getFormInitialization = async (params: FormInitializationParams) => {
-  const queryString = new URLSearchParams({
-    ...params,
-    _action: 'org.openbravo.client.application.window.FormInitializationComponent',
-  }).toString();
+  try {
+    const queryString = new URLSearchParams({
+      ...params,
+      _action: 'org.openbravo.client.application.window.FormInitializationComponent',
+    }).toString();
 
-  const response = await fetch(`${API_FORM_INITIALIZATION_URL}?${queryString}`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: BasicAuthHelper.createHeaders(),
-  });
+    const response = await fetch(`${API_FORM_INITIALIZATION_URL}?${queryString}`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: BasicAuthHelper.createHeaders(),
+    });
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+
+    if (data.response?.status === -1) {
+      throw new Error(data.response.error?.message || 'Unknown server error');
+    }
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Form initialization error:', error);
+    throw error;
   }
-
-  return response.json();
 };
