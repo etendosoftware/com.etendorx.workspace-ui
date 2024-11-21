@@ -10,6 +10,7 @@ import { styles } from '../[recordId]/styles';
 import { useFormInitialization } from '../../../../../hooks/useFormInitialValues';
 import { ErrorDisplay } from '../../../../../components/ErrorDisplay';
 import { useTranslation } from '../../../../../hooks/useTranslation';
+import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 
 export default function NewRecordPage() {
   const { windowId, tabId } = useParams<{
@@ -18,8 +19,8 @@ export default function NewRecordPage() {
   }>();
 
   const { t } = useTranslation();
-  const { windowData, tab } = useMetadataContext();
-  const { initialData, loading, error } = useFormInitialization(tabId);
+  const { windowData, tab, loading: metadataLoading } = useMetadataContext();
+  const { initialData, loading: formLoading, error } = useFormInitialization(tabId);
 
   const record = useMemo(() => {
     if (!initialData?.columnValues) return {} as Record<string, unknown>;
@@ -38,8 +39,8 @@ export default function NewRecordPage() {
     return adaptFormData(tab, record);
   }, [tab, record]);
 
-  if (loading) {
-    return <ErrorDisplay title={t('common.loading')} description={t('common.loadingFormData')} />;
+  if (metadataLoading || formLoading) {
+    return <Spinner />;
   }
 
   if (error) {
