@@ -3,12 +3,13 @@ import { MaterialReactTable, MRT_Row } from 'material-react-table';
 import { useStyle } from './styles';
 import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { useParams, useRouter } from 'next/navigation';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { parseColumns } from '../../utils/metadata';
 import { Button } from '@mui/material';
+import DynamicFormView from '../../screens/Form/DynamicFormView';
 import { WindowParams } from '../../app/types';
 
 type DynamicTableProps = {
@@ -21,23 +22,27 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const parent = selected[tab.level - 1];
   const navigate = useRouter().push;
   const { sx } = useStyle();
+  const [editing, setEditing] = useState(false);
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || 'id';
     const value = parent?.id || '';
     const operator = 'equals';
+    const options: DatasourceOptions = {
+      pageSize: 10,
+    };
 
-    return value
-      ? {
-          criteria: [
-            {
-              fieldName,
-              value,
-              operator,
-            },
-          ],
-        }
-      : {};
+    if (value) {
+      options.criteria = [
+        {
+          fieldName,
+          value,
+          operator,
+        },
+      ];
+    }
+
+    return options;
   }, [tab.parentColumns, parent?.id]);
 
   const { records, loading, error, fetchMore, loaded } = useDatasource(tab.entityName, query);
@@ -55,12 +60,28 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
         selectRecord(row.original as never, tab);
         navigate(`${windowId}/${tab.id}/${row.original.id}`);
       },
+      onAuxClick: () => {
+        selectRecord(row.original as never, tab);
+        setEditing(true);
+      },
     }),
     [navigate, selectRecord, tab, windowId],
   );
 
+  const handleBack = useCallback(() => setEditing(false), []);
+
   if (loading && !loaded) return <Spinner />;
   if (error) return <div>Error: {error.message}</div>;
+  if (editing) {
+    return (
+      <Box maxHeight="50vh" overflow="auto">
+        <Button variant="contained" onClick={handleBack}>
+          Back
+        </Button>
+        <DynamicFormView record={selected[tab.level]} tab={tab} />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={sx.container}>

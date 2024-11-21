@@ -34,6 +34,7 @@ export interface DatasourceOptions {
   isSorting?: boolean;
   isImplicitFilterApplied?: boolean;
   operator?: 'and' | 'or';
+  pageSize?: number;
 }
 
 export interface GridProps {
@@ -75,6 +76,7 @@ export interface Field {
   targetEntity: string;
   gridProps: GridProps;
   type: string; // Consider specifying possible values if known
+  selector?: Record<string, string>;
 }
 
 export interface Column {
@@ -277,3 +279,32 @@ export interface ToolbarMetadata {
   gridId: string | null;
   action: string;
 }
+
+export interface FieldInfo {
+  fieldGroup$_identifier?: string;
+}
+
+
+export interface BaseFieldDefinition<T> {
+  value: T;
+  type: FieldType;
+  label: string;
+  name: string;
+  section?: string;
+  required?: boolean;
+  initialValue?: T;
+  original?: {
+    refList: Array<{ id: string; label: string; value: string }>;
+    referencedEntity: string;
+    referencedWindowId: string;
+    referencedTabId: string;
+    fieldName: string;
+  } & Field;
+}
+export type FieldDefinition =
+  | BaseFieldDefinition<string>
+  | BaseFieldDefinition<number>
+  | BaseFieldDefinition<boolean>
+  | BaseFieldDefinition<Date>
+  | BaseFieldDefinition<string[]>
+  | BaseFieldDefinition<{ id: string; title: string; value: string}>;

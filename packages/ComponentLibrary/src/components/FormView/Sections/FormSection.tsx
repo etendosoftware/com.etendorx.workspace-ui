@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Accordion, AccordionSummary, AccordionDetails, Typography, Box, Grid, useTheme } from '@mui/material';
 import ChevronDown from '../../../assets/icons/chevron-down.svg';
 import InfoIcon from '../../../assets/icons/info.svg';
@@ -25,17 +25,24 @@ const FormSection: React.FC<FormSectionProps> = ({
 }) => {
   const { sx, styles } = useStyle();
   const theme = useTheme();
+  const handleChange = useCallback(
+    (_: unknown, isExpanded: boolean) => onAccordionChange(sectionData.id, isExpanded),
+    [onAccordionChange, sectionData.id],
+  );
+  const handleMouseEnter = useCallback(() => onHover(sectionName), [onHover, sectionName]);
+  const handleMouseLeave = useCallback(() => onHover(null), [onHover]);
+
   return (
     <Accordion
       sx={sx.accordion}
       expanded={isExpanded}
-      onChange={(_, isExpanded) => onAccordionChange(sectionData.id, isExpanded)}
+      onChange={handleChange}
       ref={sectionRef}
       id={`section-${sectionData.id}`}>
       <AccordionSummary
         sx={sx.accordionSummary}
-        onMouseEnter={() => onHover(sectionName)}
-        onMouseLeave={() => onHover(null)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         expandIcon={
           <IconButton size="small" hoverFill={theme.palette.baselineColor.neutral[80]} sx={sx.chevronButton}>
             <ChevronDown />

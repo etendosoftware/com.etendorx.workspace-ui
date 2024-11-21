@@ -4,16 +4,12 @@ import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types
 import { useRouter } from 'next/navigation';
 import { adaptFormData, mapWindowMetadata } from '../../utils/FormUtils';
 import FormView from '@workspaceui/componentlibrary/src/components/FormView';
+import { useMetadataContext } from '../../hooks/useMetadataContext';
+import { useForm, FormProvider } from 'react-hook-form';
 
-export default function DynamicFormView({
-  windowData,
-  tab,
-  record,
-}: {
-  windowData: WindowMetadata;
-  tab: Tab;
-  record: Record<string, unknown>;
-}) {
+export default function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unknown> }) {
+  const methods = useForm();
+  const { windowData = {} as WindowMetadata } = useMetadataContext();
   const navigate = useRouter().push;
   const [formData, setFormData] = useState<FormData | null>(adaptFormData(tab, record));
   const mappedMetadata = useMemo(() => mapWindowMetadata(windowData), [windowData]);
@@ -27,13 +23,15 @@ export default function DynamicFormView({
   if (!formData || !mappedMetadata) return <div>No form data available</div>;
 
   return (
-    <FormView
-      data={formData}
-      onSave={handleSave}
-      onCancel={handleCancel}
-      onChange={handleChange}
-      windowMetadata={mappedMetadata}
-      initialValues
-    />
+    <FormProvider {...methods}>
+      <FormView
+        data={formData}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        onChange={handleChange}
+        windowMetadata={mappedMetadata}
+        initialValues
+      />
+    </FormProvider>
   );
 }

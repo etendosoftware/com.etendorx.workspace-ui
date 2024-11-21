@@ -1,12 +1,21 @@
-import { FieldType, FieldInfo, FormData, FieldDefinition } from '../screens/Form/types';
-import { Section } from '@workspaceui/componentlibrary/src/components/FormView/types';
-import { Column, MappedData, MappedTab, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import { FormData, Section } from '@workspaceui/componentlibrary/src/components/FormView/types';
+import {
+  Column,
+  FieldDefinition,
+  FieldInfo,
+  FieldType,
+  MappedData,
+  MappedTab,
+  Tab,
+  WindowMetadata,
+} from '@workspaceui/etendohookbinder/src/api/types';
 
 export function mapColumnTypeToFieldType(column: Column): FieldType {
   if (!column || !column?.reference) {
     console.warn('Invalid column data:', column);
     return 'text';
   }
+
   switch (column?.reference) {
     case '19':
       return 'tabledir';
@@ -19,8 +28,9 @@ export function mapColumnTypeToFieldType(column: Column): FieldType {
       return 'quantity';
     case '17':
       return 'list';
-    case '12':
     case '30':
+      return 'search';
+    case '12':
     case '18':
     case '11':
     case '22':

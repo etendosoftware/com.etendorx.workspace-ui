@@ -1,4 +1,4 @@
-import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL } from './constants';
+import { API_DATASOURCE_URL, API_DEFAULT_CACHE_DURATION, API_METADATA_URL } from './constants';
 import { Client, Interceptor } from './client';
 import { CacheStore } from './cache';
 import * as Etendo from './types';
@@ -8,15 +8,27 @@ export type { Etendo };
 
 export class Metadata {
   public static client = new Client(API_METADATA_URL);
+  public static datasourceClient = new Client(API_DATASOURCE_URL);
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
   private static currentRoleId: string | null = null;
 
   public static authorize(token: string) {
     this.client.setAuthHeader(token, 'Bearer');
+    this.datasourceClient.setAuthHeader(token, 'Bearer');
   }
 
   public static registerInterceptor(interceptor: Interceptor) {
-    return this.client.registerInterceptor(interceptor);
+    const listener1 = this.client.registerInterceptor(interceptor);
+    const listener2 = this.datasourceClient.registerInterceptor(interceptor)
+
+    return () => {
+      listener1();
+      listener2();
+    };
+  }
+
+  public static getDatasource(id: string, body: BodyInit | Record<string, unknown> | null | undefined) {
+    return this.datasourceClient.post(id, body);
   }
 
   private static async _getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
