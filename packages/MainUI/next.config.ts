@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
       transform: '@mui/icons-material/{{member}}',
     },
   },
+  cleanDistDir: true,
+  bundlePagesRouterDependencies: true,
+  output: 'standalone',
+  compiler: {
+    emotion: true,
+  },
   reactStrictMode: false,
   webpack(config) {
     config.module.rules.push({
