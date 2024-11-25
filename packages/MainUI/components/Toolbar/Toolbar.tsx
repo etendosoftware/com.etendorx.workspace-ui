@@ -68,8 +68,18 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   const createToolbarConfig = () => {
     const buttons = (toolbar as ToolbarResponse)?.response?.buttons || [];
 
-    const createStandardButtonConfig = (btn: StandardButton) =>
-      ({
+    const createStandardButtonConfig = (btn: StandardButton): StandardButtonConfig => {
+      const getIconFill = (buttonId: string): string => {
+        switch (buttonId) {
+          case BUTTON_IDS.GRID_VIEW:
+          case BUTTON_IDS.FIND:
+            return theme.palette.baselineColor.neutral[100];
+          default:
+            return theme.palette.baselineColor.neutral[0];
+        }
+      };
+
+      const config: StandardButtonConfig = {
         key: btn.id,
         icon: React.createElement(iconMap[btn.icon]),
         tooltip: btn.name,
@@ -77,27 +87,25 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
         disabled: !btn.enabled,
         height: IconSize,
         width: IconSize,
-        fill: theme.palette.baselineColor.neutral[0],
-      } as StandardButtonConfig);
+        fill: getIconFill(btn.id),
+      };
+
+      if (btn.id === BUTTON_IDS.NEW) {
+        config.iconText = btn.name;
+      }
+
+      return config;
+    };
 
     const createProcessButtonConfig = (btn: ProcessButton) => ({
       key: btn.id,
       icon: React.createElement(SettingsIcon),
       tooltip: btn.name,
-      onClick: () => {
-        console.log('Executing process:', btn.processId);
-      },
+      onClick: () => {},
       height: IconSize,
       width: IconSize,
       sx: { background: theme.palette.specificColor.warning.main },
-      customComponent: (
-        <GenericProcessButton
-          button={btn}
-          onExecute={() => {
-            console.log('Executing process:', btn.processId);
-          }}
-        />
-      ),
+      customComponent: <GenericProcessButton button={btn} onExecute={() => {}} />,
     });
 
     const standardButtonStyle = (btnId: string) => {
