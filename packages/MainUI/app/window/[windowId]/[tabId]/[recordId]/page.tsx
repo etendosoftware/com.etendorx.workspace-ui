@@ -4,7 +4,7 @@ import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/use
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useParams } from 'next/navigation';
 import { useMetadataContext } from '../../../../../hooks/useMetadataContext';
-import { Toolbar } from '../../../../../components/Toolbar';
+import { Toolbar } from '../../../../../components/Toolbar/Toolbar';
 import { styles } from './styles';
 import { WindowParams } from '../../../../types';
 import { ErrorDisplay } from '../../../../../components/ErrorDisplay';

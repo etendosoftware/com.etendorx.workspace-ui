@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useMemo } from 'react';
 import { useMetadataContext } from '../../../../../hooks/useMetadataContext';
-import { Toolbar } from '../../../../../components/Toolbar';
+import { Toolbar } from '../../../../../components/Toolbar/Toolbar';
 import DynamicFormView from '../../../../../screens/Form/DynamicFormView';
 import { adaptFormData } from '../../../../../utils/FormUtils';
 import { styles } from '../[recordId]/styles';
