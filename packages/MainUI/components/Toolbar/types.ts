@@ -61,6 +61,7 @@ export interface ProcessButton extends BaseButton {
     name: string;
     javaClassName: string;
     parameters: Array<{
+      defaultValue: string;
       id: string;
       name: string;
     }>;

@@ -253,7 +253,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
           padding: '0.25rem',
         },
       },
-      // Actualizar isItemSelected basado en el recordContext
       isItemSelected: !!recordContext?.selectedRecord,
     };
   };

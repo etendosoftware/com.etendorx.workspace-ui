@@ -2,10 +2,11 @@ import { API_BASE_URL } from '@workspaceui/etendohookbinder/src/api/constants';
 import { BasicAuthHelper } from '@workspaceui/etendohookbinder/src/auth/basicAuth';
 import { useState } from 'react';
 import { ProcessButton, ProcessResponse } from '../components/Toolbar/types';
+import { BaseFieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 
 interface ExecuteProcessParams {
   button: ProcessButton;
-  recordId?: string;
+  recordId?: BaseFieldDefinition<string>;
   params?: Record<string, unknown>;
 }
 
@@ -14,8 +15,6 @@ export function useProcessExecution() {
   const [error, setError] = useState<Error | null>(null);
 
   const executeProcess = async ({ button, recordId, params = {} }: ExecuteProcessParams): Promise<ProcessResponse> => {
-    console.log('useProcessExecution - Starting execution with:', { button, recordId, params });
-
     try {
       setLoading(true);
       setError(null);
@@ -41,16 +40,6 @@ export function useProcessExecution() {
         _entityName: button.processInfo._entityName,
       };
 
-      console.log('useProcessExecution - Request details:', {
-        url: `${actionUrl}?${queryParams}`,
-        method: 'POST',
-        headers: {
-          ...BasicAuthHelper.createHeaders(),
-          'Content-Type': 'application/json',
-        },
-        payload,
-      });
-
       const response = await fetch(`${actionUrl}?${queryParams}`, {
         method: 'POST',
         headers: {
@@ -61,10 +50,7 @@ export function useProcessExecution() {
         body: JSON.stringify(payload),
       });
 
-      console.log('useProcessExecution - Response received:', response);
-
       const data = await response.json();
-      console.log('useProcessExecution - Response data:', data);
 
       if (data.response?.status === -1) {
         throw new Error(data.response.error?.message || 'Unknown server error');
