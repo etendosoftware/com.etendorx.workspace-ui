@@ -1,5 +1,4 @@
-import { Theme } from '@emotion/react';
-import { SxProps } from '@mui/material';
+import { ToolbarButton } from '@workspaceui/storybook/src/stories/Components/Table/types';
 
 export const IconSize = 16;
 
@@ -31,7 +30,7 @@ export interface ProcessResponse {
 
 export interface ProcessButtonProps {
   button: ProcessButton;
-  onClick: (event: React.MouseEvent) => void;
+  onClick: () => void;
   disabled?: boolean;
 }
 
@@ -82,15 +81,7 @@ export const isProcessButton = (button: Button): button is ProcessButton => {
   return button.action === 'PROCESS';
 };
 
-interface ButtonConfigBase {
-  key: string;
-  tooltip?: string;
-  onClick: () => void;
-  disabled?: boolean;
-  sx?: SxProps<Theme>;
-}
-
-export interface StandardButtonConfig extends ButtonConfigBase {
+export interface StandardButtonConfig extends ToolbarButton {
   icon: React.ReactNode;
   iconText?: string;
   fill?: string;
@@ -98,7 +89,7 @@ export interface StandardButtonConfig extends ButtonConfigBase {
   width?: number;
 }
 
-export interface ProcessButtonConfig extends ButtonConfigBase {
+export interface ProcessButtonConfig extends ToolbarButton {
   customComponent: () => React.ReactElement;
 }
 

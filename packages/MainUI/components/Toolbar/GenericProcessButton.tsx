@@ -3,16 +3,9 @@ import { ProcessButtonProps } from './types';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 
 const GenericProcessButton: React.FC<ProcessButtonProps> = ({ button, onClick, disabled }) => {
-  const handleClick = (e: React.MouseEvent) => {
-    if (disabled) {
-      return;
-    }
-    onClick(e);
-  };
-
   return (
     <IconButton
-      onClick={handleClick}
+      onClick={onClick}
       disabled={disabled}
       title={button.name}
       data-testid={`process-button-${button.id}`}

@@ -101,40 +101,40 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
     };
 
     const createProcessButtonConfig = (btn: ProcessButton) => {
-      const handleProcessClick = async (event: React.MouseEvent) => {
-        event.preventDefault();
-        event.stopPropagation();
-
+      const handleProcessClick = () => {
         if (!recordContext?.selectedRecord?.id) {
           console.warn('No record selected');
           return;
         }
 
-        try {
-          const result = await executeProcess({
-            button: btn,
-            recordId: recordContext.selectedRecord.id,
-            params:
-              btn.processInfo?.parameters?.reduce(
-                (acc, param) => ({
-                  ...acc,
-                  [param.id]: param.defaultValue,
-                }),
-                {},
-              ) || {},
-          });
-
-          if (result.response.status === 0) {
-            await refetch();
-          } else {
+        executeProcess({
+          button: btn,
+          recordId: recordContext.selectedRecord.id,
+          params:
+            btn.processInfo?.parameters?.reduce(
+              (acc, param) => ({
+                ...acc,
+                [param.id]: param.defaultValue,
+              }),
+              {},
+            ) || {},
+        })
+          .then(result => {
+            if (result.response.status === 0) {
+              return refetch();
+            }
             console.error('Process error:', result.response.error?.message);
-          }
-        } catch (error) {
-          console.error('Process execution failed:', error);
-        }
+          })
+          .catch(error => {
+            console.error('Process execution failed:', error);
+          });
       };
 
-      return {
+      const handleProcessButtonClick = () => {
+        handleProcessClick();
+      };
+
+      const config = {
         key: btn.id,
         icon: React.createElement(SettingsIcon),
         tooltip: btn.name,
@@ -146,6 +146,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
           cursor: recordContext?.selectedRecord ? 'pointer' : 'not-allowed',
         },
         onClick: handleProcessClick,
+      };
+
+      return {
+        ...config,
+        customComponent: () => (
+          <GenericProcessButton
+            button={btn}
+            onClick={handleProcessButtonClick}
+            disabled={!recordContext?.selectedRecord?.id}
+          />
+        ),
       };
     };
 
@@ -203,7 +214,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
           display: 'flex',
           width: 'auto',
           alignItems: 'center',
-          background: `var(--Neutral-0, ${theme.palette.baselineColor.neutral[0]})`,
+          background: theme.palette.baselineColor.neutral[0],
           borderRadius: '10rem',
           padding: '0.25rem',
           maxHeight: '2.5rem',
@@ -217,7 +228,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
         style: {
           display: 'flex',
           width: '100%',
-          background: `var(--Neutral-0, ${theme.palette.baselineColor.transparentNeutral[5]})`,
+          background: theme.palette.baselineColor.transparentNeutral[5],
           borderRadius: '10rem',
           padding: '.25rem',
           gap: '0.25rem',
@@ -248,7 +259,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
         style: {
           display: 'flex',
           gap: '0.25rem',
-          background: `var(--Neutral-0, ${theme.palette.baselineColor.transparentNeutral[5]})`,
+          background: theme.palette.baselineColor.transparentNeutral[5],
           borderRadius: '10rem',
           padding: '0.25rem',
         },
