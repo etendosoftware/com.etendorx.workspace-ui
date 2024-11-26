@@ -11,8 +11,6 @@ function Level(value: Tab[]) {
 export default function DynamicTableScreen() {
   const { loading, error, windowData, groupedTabs } = useMetadataContext();
 
-  console.log(windowData);
-
   if (loading) {
     return <Spinner />;
   } else if (error || !windowData) {

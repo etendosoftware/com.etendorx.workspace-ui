@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Box } from '@mui/material';
 import { useToolbar } from '@workspaceui/etendohookbinder/src/hooks/useToolbar';
 import PlusIcon from '@workspaceui/componentlibrary/src/assets/icons/plus.svg';
@@ -31,7 +31,9 @@ import {
   StandardButtonId,
 } from '../../constants/Toolbar';
 import { useTranslation } from '../../hooks/useTranslation';
-import GenericProcessButton from './ProcessButton';
+import GenericProcessButton from './GenericProcessButton';
+import { RecordContext } from '../../contexts/record';
+import { useProcessExecution } from '../../hooks/useProcessExecution';
 
 const iconMap = {
   plus: PlusIcon,
@@ -46,16 +48,17 @@ const iconMap = {
 } as const satisfies Record<IconName, React.FC<unknown>>;
 
 export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
-  const { toolbar, loading } = useToolbar(windowId, tabId);
+  const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
+  const recordContext = useContext(RecordContext);
+  const { executeProcess } = useProcessExecution();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const handleAction = (action: string) => {
     if (action === BUTTON_IDS.NEW) {
       router.push(`/window/${windowId}/${tabId}/NewRecord`);
     }
   };
-
-  const { t } = useTranslation();
 
   if (loading) {
     return (
@@ -97,16 +100,54 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
       return config;
     };
 
-    const createProcessButtonConfig = (btn: ProcessButton) => ({
-      key: btn.id,
-      icon: React.createElement(SettingsIcon),
-      tooltip: btn.name,
-      onClick: () => {},
-      height: IconSize,
-      width: IconSize,
-      sx: { background: theme.palette.specificColor.warning.main },
-      customComponent: <GenericProcessButton button={btn} onExecute={() => {}} />,
-    });
+    const createProcessButtonConfig = (btn: ProcessButton) => {
+      const handleProcessClick = async (event: React.MouseEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!recordContext?.selectedRecord?.id) {
+          console.warn('No record selected');
+          return;
+        }
+
+        try {
+          const result = await executeProcess({
+            button: btn,
+            recordId: recordContext.selectedRecord.id,
+            params:
+              btn.processInfo?.parameters?.reduce(
+                (acc, param) => ({
+                  ...acc,
+                  [param.id]: param.defaultValue,
+                }),
+                {},
+              ) || {},
+          });
+
+          if (result.response.status === 0) {
+            await refetch();
+          } else {
+            console.error('Process error:', result.response.error?.message);
+          }
+        } catch (error) {
+          console.error('Process execution failed:', error);
+        }
+      };
+
+      return {
+        key: btn.id,
+        icon: React.createElement(SettingsIcon),
+        tooltip: btn.name,
+        height: IconSize,
+        width: IconSize,
+        sx: {
+          background: theme.palette.specificColor.warning.main,
+          opacity: recordContext?.selectedRecord ? 1 : 0.5,
+          cursor: recordContext?.selectedRecord ? 'pointer' : 'not-allowed',
+        },
+        onClick: handleProcessClick,
+      };
+    };
 
     const standardButtonStyle = (btnId: string) => {
       if (btnId === BUTTON_IDS.NEW) {
@@ -190,7 +231,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
           })
           .map(btn => {
             if (isProcessButton(btn)) {
-              return createProcessButtonConfig(btn);
+              const config = createProcessButtonConfig(btn);
+              return {
+                ...config,
+                customComponent: () => (
+                  <GenericProcessButton
+                    button={btn}
+                    onClick={config.onClick}
+                    disabled={!recordContext?.selectedRecord?.id}
+                  />
+                ),
+              };
             }
             return createStandardButtonConfig(btn as StandardButton);
           }),
@@ -202,7 +253,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
           padding: '0.25rem',
         },
       },
-      isItemSelected: false,
+      // Actualizar isItemSelected basado en el recordContext
+      isItemSelected: !!recordContext?.selectedRecord,
     };
   };
 

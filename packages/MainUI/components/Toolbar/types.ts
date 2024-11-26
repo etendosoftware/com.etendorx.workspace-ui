@@ -19,9 +19,20 @@ export interface ToolbarProps {
   tabId?: string;
 }
 
+export interface ProcessResponse {
+  response: {
+    status: number;
+    error?: {
+      message: string;
+    };
+    data?: unknown;
+  };
+}
+
 export interface ProcessButtonProps {
   button: ProcessButton;
-  onExecute?: () => void;
+  onClick: (event: React.MouseEvent) => void;
+  disabled?: boolean;
 }
 
 interface BaseButton {
@@ -45,6 +56,7 @@ export interface ProcessButton extends BaseButton {
   buttonText: string;
   displayLogic?: string;
   processInfo: {
+    _entityName: string;
     id: string;
     name: string;
     javaClassName: string;
@@ -86,7 +98,7 @@ export interface StandardButtonConfig extends ButtonConfigBase {
 }
 
 export interface ProcessButtonConfig extends ButtonConfigBase {
-  customComponent: React.ReactElement;
+  customComponent: () => React.ReactElement;
 }
 
 export type ButtonConfig = StandardButtonConfig | ProcessButtonConfig;
