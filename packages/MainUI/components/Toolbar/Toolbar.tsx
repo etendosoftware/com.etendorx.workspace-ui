@@ -107,17 +107,19 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
           return;
         }
 
+        const processParams =
+          btn.processInfo?.parameters?.reduce(
+            (acc, param) => ({
+              ...acc,
+              [param.id]: param.defaultValue ?? null,
+            }),
+            {},
+          ) || {};
+
         executeProcess({
           button: btn,
           recordId: recordContext.selectedRecord.id,
-          params:
-            btn.processInfo?.parameters?.reduce(
-              (acc, param) => ({
-                ...acc,
-                [param.id]: param.defaultValue,
-              }),
-              {},
-            ) || {},
+          params: processParams,
         })
           .then(result => {
             if (result.response.status === 0) {
