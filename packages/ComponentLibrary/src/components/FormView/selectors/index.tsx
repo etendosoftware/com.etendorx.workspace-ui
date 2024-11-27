@@ -1,4 +1,5 @@
-import React, { memo, useCallback, useMemo } from 'react';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Box, Link } from '@mui/material';
 import { useStyle } from '../styles';
 import { FieldLabelProps, FieldValue, FormFieldGroupProps } from '../types';
@@ -11,6 +12,7 @@ import QuantitySelector from './QuantitySelector';
 import ListSelector from './ListSelector';
 import TextInputBase from '../../Input/TextInput/TextInputBase';
 import SearchSelector from './SearchSelector';
+import { useFormContext } from 'react-hook-form';
 
 const FieldLabel: React.FC<FieldLabelProps> = ({ isEntityReference, label, required, onLinkClick }) => {
   const { styles, sx } = useStyle();
@@ -31,6 +33,19 @@ const FieldLabel: React.FC<FieldLabelProps> = ({ isEntityReference, label, requi
 };
 
 const RenderField = ({ field, onChange, readOnly, renderFieldValue }: FormFieldGroupProps) => {
+  const formMethods = useFormContext();
+
+  const handleChange = useCallback(
+    (name: string, value: string) => {
+      if (field.original?.column?.callout$_identifier) {
+        // TODO: Execute callout
+      }
+
+      onChange(name, value);
+    },
+    [field.original?.column?.callout$_identifier, onChange],
+  );
+
   const value = useMemo(
     () => (renderFieldValue ? renderFieldValue(field) : field.value ?? ''),
     [renderFieldValue, field],
@@ -40,11 +55,11 @@ const RenderField = ({ field, onChange, readOnly, renderFieldValue }: FormFieldG
     case 'boolean':
       return <BooleanSelector label={field.label} readOnly={readOnly} />;
     case 'number':
-      return <NumberSelector name={field.label} value={Number(value)} onChange={onChange} readOnly={readOnly} />;
+      return <NumberSelector name={field.label} value={Number(value)} onChange={handleChange} readOnly={readOnly} />;
     case 'date':
-      return <DateSelector name={field.name} value={value as string} onChange={onChange} readOnly={readOnly} />;
+      return <DateSelector name={field.name} value={value as string} onChange={handleChange} readOnly={readOnly} />;
     case 'select':
-      return <SelectSelector name={field.name} title={field.label} onChange={onChange} readOnly={readOnly} />;
+      return <SelectSelector name={field.name} title={field.label} onChange={handleChange} readOnly={readOnly} />;
     case 'search':
       return (
         <SearchSelector
@@ -52,7 +67,7 @@ const RenderField = ({ field, onChange, readOnly, renderFieldValue }: FormFieldG
           value={field.value}
           label={field.label}
           entity={field.original?.referencedEntity || ''}
-          onChange={onChange}
+          onChange={handleChange}
         />
       );
     case 'tabledir':
@@ -61,7 +76,7 @@ const RenderField = ({ field, onChange, readOnly, renderFieldValue }: FormFieldG
           value={value}
           label={field.label}
           entity={field.original?.referencedEntity || ''}
-          onChange={onChange}
+          onChange={handleChange}
         />
       );
     case 'quantity':
@@ -76,7 +91,7 @@ const RenderField = ({ field, onChange, readOnly, renderFieldValue }: FormFieldG
         />
       );
     case 'list':
-      return <ListSelector field={field} onChange={onChange} readOnly={readOnly} />;
+      return <ListSelector field={field} onChange={handleChange} readOnly={readOnly} />;
     default:
       return (
         <TextInputBase

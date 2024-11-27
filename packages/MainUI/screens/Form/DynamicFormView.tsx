@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FormData } from './types';
 import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { useRouter } from 'next/navigation';
@@ -8,13 +8,26 @@ import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { useForm, FormProvider } from 'react-hook-form';
 
 export default function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unknown> }) {
-  const methods = useForm();
   const { windowData = {} as WindowMetadata } = useMetadataContext();
+  const methods = useForm();
   const navigate = useRouter().push;
   const [formData, setFormData] = useState<FormData | null>(adaptFormData(tab, record));
   const mappedMetadata = useMemo(() => mapWindowMetadata(windowData), [windowData]);
   const handleSave = useCallback(() => navigate('/'), [navigate]);
   const handleCancel = useCallback(() => navigate('/'), [navigate]);
+
+  useEffect(() => {
+    const the = Object.entries(tab.fields).reduce((acc, [fieldName, field]) => {
+      if (field.inpName) {
+        acc['inp' + field.inpName] = record[fieldName];
+      }
+
+      return acc;
+    }, {} as Record<string, any>);
+
+    console.debug('eaea');
+    console.debug(the);
+  }, [record, tab.fields]);
 
   const handleChange = useCallback((updatedData: FormData) => {
     setFormData(updatedData);

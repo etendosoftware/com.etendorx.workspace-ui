@@ -1,40 +1,45 @@
 import { IndexedMenu, SearchIndex } from '../components/Drawer/types';
 import type { Menu } from '../../../EtendoHookBinder/src/api/types';
 
-export const createSearchIndex = (items: Menu[]): SearchIndex => {
-  const index: SearchIndex = {
-    byId: new Map(),
-    byPhrase: new Map(),
-  };
+const index: SearchIndex = {
+  byId: new Map(),
+  byPhrase: new Map(),
+};
 
-  const addToPhraseIndex = (phrase: string, id: string) => {
-    if (!index.byPhrase.has(phrase)) {
-      index.byPhrase.set(phrase, new Set());
+const addToPhraseIndex = (phrase: string, id: string) => {
+  if (!index.byPhrase.has(phrase)) {
+    index.byPhrase.set(phrase, new Set());
+  }
+  index.byPhrase.get(phrase)!.add(id);
+};
+
+const traverse = (items: Menu[], path: string[] = [], fullPath: string = '') => {
+  items.forEach(item => {
+    const newFullPath = fullPath ? `${fullPath} > ${item.name}` : item.name;
+    const indexedItem: IndexedMenu = { ...item, path, fullPath: newFullPath };
+    index.byId.set(item.id, indexedItem);
+
+    const lowerName = item.name.toLowerCase();
+    addToPhraseIndex(lowerName, item.id);
+
+    const words = lowerName.split(/\s+/);
+    words.forEach(word => addToPhraseIndex(word, item.id));
+
+    addToPhraseIndex(newFullPath.toLowerCase(), item.id);
+
+    if (Array.isArray(item.children)) {
+      traverse(item.children, [...path, item.id], newFullPath);
     }
-    index.byPhrase.get(phrase)!.add(id);
-  };
+  });
+};
 
-  const traverse = (items: Menu[], path: string[] = [], fullPath: string = '') => {
-    items.forEach(item => {
-      const newFullPath = fullPath ? `${fullPath} > ${item.name}` : item.name;
-      const indexedItem: IndexedMenu = { ...item, path, fullPath: newFullPath };
-      index.byId.set(item.id, indexedItem);
+export const createSearchIndex = (items: Menu[]): SearchIndex => {
+  try {
+    traverse(items);
+  } catch (e) {
+    console.warn('Error in createSearchIndex', e)
+  }
 
-      const lowerName = item.name.toLowerCase();
-      addToPhraseIndex(lowerName, item.id);
-
-      const words = lowerName.split(/\s+/);
-      words.forEach(word => addToPhraseIndex(word, item.id));
-
-      addToPhraseIndex(newFullPath.toLowerCase(), item.id);
-
-      if (Array.isArray(item.children)) {
-        traverse(item.children, [...path, item.id], newFullPath);
-      }
-    });
-  };
-
-  traverse(items);
   return index;
 };
 

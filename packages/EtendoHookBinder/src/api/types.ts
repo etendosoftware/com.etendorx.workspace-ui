@@ -71,7 +71,7 @@ export interface Field {
   required: boolean;
   hasDefaultValue: boolean;
   columnName: string;
-  inpColumnName: string;
+  inpName: string;
   refColumnName: string;
   targetEntity: string;
   gridProps: GridProps;
