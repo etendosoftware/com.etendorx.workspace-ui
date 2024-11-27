@@ -18,16 +18,15 @@ export default function DynamicFormView({ tab, record }: { tab: Tab; record: Rec
 
   useEffect(() => {
     const the = Object.entries(tab.fields).reduce((acc, [fieldName, field]) => {
-      if (field.inpName) {
-        acc['inp' + field.inpName] = record[fieldName];
-      }
+      acc['inp' + field.inpName] = record[fieldName]; // fieldName in record ? record[fieldName] : 'TUVIEJA';
 
       return acc;
     }, {} as Record<string, any>);
 
     console.debug('eaea');
     console.debug(the);
-  }, [record, tab.fields]);
+    console.debug(record);
+  }, [record, tab]);
 
   const handleChange = useCallback((updatedData: FormData) => {
     setFormData(updatedData);

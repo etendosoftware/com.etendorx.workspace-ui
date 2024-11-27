@@ -284,7 +284,6 @@ export interface FieldInfo {
   fieldGroup$_identifier?: string;
 }
 
-
 export interface BaseFieldDefinition<T> {
   value: T;
   type: FieldType;
@@ -301,10 +300,19 @@ export interface BaseFieldDefinition<T> {
     fieldName: string;
   } & Field;
 }
+
+export type SelectOption = { id: string; title: string; value: string };
 export type FieldDefinition =
   | BaseFieldDefinition<string>
   | BaseFieldDefinition<number>
   | BaseFieldDefinition<boolean>
   | BaseFieldDefinition<Date>
   | BaseFieldDefinition<string[]>
-  | BaseFieldDefinition<{ id: string; title: string; value: string}>;
+  | BaseFieldDefinition<SelectOption>;
+
+type EntityKey = string;
+type EntityValue = string | number | boolean | symbol;
+
+export interface Entity {
+  [key: EntityKey]: EntityValue;
+}
