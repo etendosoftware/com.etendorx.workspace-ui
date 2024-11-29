@@ -32,8 +32,8 @@ const FieldLabel: React.FC<FieldLabelProps> = ({ isEntityReference, label, requi
 };
 
 const RenderField = ({ field, onChange, readOnly }: FormFieldGroupProps) => {
-  const { getValues, setValue } = useFormContext();
-  const value = getValues(field.name);
+  const { watch, setValue } = useFormContext();
+  const value = watch(field.name);
 
   const handleChange = useCallback(
     (name: string, value: string | number) => {
