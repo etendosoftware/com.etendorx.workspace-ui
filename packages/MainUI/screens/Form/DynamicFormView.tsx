@@ -6,6 +6,7 @@ import { adaptFormData, mapWindowMetadata } from '../../utils/FormUtils';
 import FormView from '@workspaceui/componentlibrary/src/components/FormView';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { useForm, FormProvider } from 'react-hook-form';
+import { buildFormState } from '../../utils/metadata';
 
 export default function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unknown> }) {
   const { windowData = {} as WindowMetadata } = useMetadataContext();
@@ -14,13 +15,7 @@ export default function DynamicFormView({ tab, record }: { tab: Tab; record: Rec
   const mappedMetadata = useMemo(() => mapWindowMetadata(windowData), [windowData]);
   const handleSave = useCallback(() => navigate('/'), [navigate]);
   const handleCancel = useCallback(() => navigate('/'), [navigate]);
-  const methods = useForm({
-    values: Object.entries(tab.fields).reduce((acc, [fieldName, field]) => {
-      acc[field.inpName] = record[fieldName];
-
-      return acc;
-    }, {} as Record<string, unknown>),
-  });
+  const methods = useForm({ values: buildFormState(tab.fields, record) });
 
   const handleChange = useCallback((updatedData: FormData) => {
     setFormData(updatedData);
