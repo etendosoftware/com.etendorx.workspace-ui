@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { memo, useCallback, useMemo } from 'react';
 import { Box, Link } from '@mui/material';
 import { useStyle } from '../styles';
@@ -32,23 +31,19 @@ const FieldLabel: React.FC<FieldLabelProps> = ({ isEntityReference, label, requi
   );
 };
 
-const RenderField = ({ field, onChange, readOnly, renderFieldValue }: FormFieldGroupProps) => {
-  const formMethods = useFormContext();
+const RenderField = ({ field, onChange, readOnly }: FormFieldGroupProps) => {
+  const { getValues, setValue } = useFormContext();
+  const value = getValues(field.name);
 
   const handleChange = useCallback(
-    (name: string, value: string) => {
+    (name: string, value: string | number) => {
       if (field.original?.column?.callout$_identifier) {
         // TODO: Execute callout
       }
 
-      onChange(name, value);
+      setValue(name, value);
     },
-    [field.original?.column?.callout$_identifier, onChange],
-  );
-
-  const value = useMemo(
-    () => (renderFieldValue ? renderFieldValue(field) : field.value ?? ''),
-    [renderFieldValue, field],
+    [field.original?.column?.callout$_identifier, setValue],
   );
 
   switch (field.type) {
