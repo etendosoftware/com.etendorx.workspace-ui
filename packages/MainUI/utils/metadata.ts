@@ -1,5 +1,4 @@
 import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
   if (!windowData?.tabs) {
@@ -62,22 +61,3 @@ export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
 
   return result;
 };
-
-export const getInputName = (field: Field) => `inp${field.inpName}`;
-
-export const getFieldValue = (field: Field, record: Record<string, unknown>) => {
-  const inpName = getInputName(field);
-
-  if (inpName in record) {
-    return record[inpName];
-  } else {
-    return record[field.fieldName];
-  }
-};
-
-export const buildFormState = (fields: Tab['fields'], record: Record<string, unknown>) =>
-  Object.values(fields).reduce((state, field) => {
-    state[getInputName(field)] = getFieldValue(field, record);
-
-    return state;
-  }, {} as Record<string, unknown>);

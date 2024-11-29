@@ -1,12 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
 import { FormData } from './types';
 import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import { buildFormState } from '@workspaceui/etendohookbinder/src/utils/form';
 import { useRouter } from 'next/navigation';
 import { adaptFormData, mapWindowMetadata } from '../../utils/FormUtils';
 import FormView from '@workspaceui/componentlibrary/src/components/FormView';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { useForm, FormProvider } from 'react-hook-form';
-import { buildFormState } from '../../utils/metadata';
 
 export default function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unknown> }) {
   const { windowData = {} as WindowMetadata } = useMetadataContext();

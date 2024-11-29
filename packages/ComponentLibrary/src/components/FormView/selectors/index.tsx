@@ -12,6 +12,7 @@ import ListSelector from './ListSelector';
 import TextInputBase from '../../Input/TextInput/TextInputBase';
 import SearchSelector from './SearchSelector';
 import { useFormContext } from 'react-hook-form';
+import { getInputName } from '@workspaceui/etendohookbinder/src/utils/form';
 
 const FieldLabel: React.FC<FieldLabelProps> = ({ isEntityReference, label, required, onLinkClick }) => {
   const { styles, sx } = useStyle();
@@ -33,7 +34,7 @@ const FieldLabel: React.FC<FieldLabelProps> = ({ isEntityReference, label, requi
 
 const RenderField = ({ field, onChange, readOnly }: FormFieldGroupProps) => {
   const { getValues, setValue } = useFormContext();
-  const value = getValues(field.original.inpName);
+  const value = getValues(getInputName(field.original));
 
   const handleChange = useCallback(
     (name: string, value: string | number) => {
@@ -48,7 +49,7 @@ const RenderField = ({ field, onChange, readOnly }: FormFieldGroupProps) => {
 
   switch (field.type) {
     case 'boolean':
-      return <BooleanSelector label={field.label} readOnly={readOnly} />;
+      return <BooleanSelector checked={value} label={field.label} readOnly={readOnly} />;
     case 'number':
       return <NumberSelector name={field.label} value={Number(value)} onChange={handleChange} readOnly={readOnly} />;
     case 'date':
