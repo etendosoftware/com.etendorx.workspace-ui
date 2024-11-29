@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo } from 'react';
+import React, { memo, useCallback, useMemo, useRef } from 'react';
 import { Box, Link } from '@mui/material';
 import { useStyle } from '../styles';
 import { FieldLabelProps, FieldValue, FormFieldGroupProps } from '../types';
@@ -33,16 +33,17 @@ const FieldLabel: React.FC<FieldLabelProps> = ({ isEntityReference, label, requi
 };
 
 const RenderField = ({ field, onChange, readOnly }: FormFieldGroupProps) => {
-  const { getValues, setValue } = useFormContext();
-  const value = getValues(getInputName(field.original));
+  const { watch, setValue } = useFormContext();
+  const name = useRef(getInputName(field.original));
+  const value = watch(name.current, field.initialValue);
 
   const handleChange = useCallback(
-    (name: string, value: string | number) => {
+    (value: FieldValue) => {
       if (field.original?.column?.callout$_identifier) {
         // TODO: Execute callout
       }
 
-      setValue(name, value);
+      setValue(name.current, value);
     },
     [field.original?.column?.callout$_identifier, setValue],
   );
@@ -51,9 +52,9 @@ const RenderField = ({ field, onChange, readOnly }: FormFieldGroupProps) => {
     case 'boolean':
       return <BooleanSelector checked={value} label={field.label} readOnly={readOnly} />;
     case 'number':
-      return <NumberSelector name={field.label} value={Number(value)} onChange={handleChange} readOnly={readOnly} />;
+      return <NumberSelector name={name.current} value={Number(value)} onChange={handleChange} readOnly={readOnly} />;
     case 'date':
-      return <DateSelector name={field.name} value={value as string} onChange={handleChange} readOnly={readOnly} />;
+      return <DateSelector name={name.current} value={value as string} onChange={handleChange} readOnly={readOnly} />;
     case 'select':
       return <SelectSelector name={field.name} title={field.label} onChange={handleChange} readOnly={readOnly} />;
     case 'search':
@@ -91,9 +92,8 @@ const RenderField = ({ field, onChange, readOnly }: FormFieldGroupProps) => {
     default:
       return (
         <TextInputBase
-          onRightIconClick={() => alert('Icon clicked')}
           value={value as string}
-          setValue={(value: FieldValue) => onChange(field.label, value)}
+          setValue={handleChange}
           placeholder={field.value ? String(field.value) : undefined}
           disabled={readOnly}
         />

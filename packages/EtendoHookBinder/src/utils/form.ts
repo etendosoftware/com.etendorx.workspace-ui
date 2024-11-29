@@ -1,16 +1,16 @@
 import { Field, Tab } from '../api/types';
 
-export const getInputName = (field: Field) => `inp${field.inpName}`;
+const inputNameCache: Record<string, string> = {};
 
-export const getFieldValue = (field: Field, record: Record<string, unknown>) => {
-  const inpName = getInputName(field);
+export function getInputName(field: Field) {
+  console.log('calling getInputName for ', field.name);
 
-  if (inpName in record) {
-    return record[inpName];
-  } else {
-    return record[field.fieldName];
+  if (!inputNameCache[field.inpName]) {
+    inputNameCache[field.inpName] = `inp${field.inpName}`
   }
-};
+
+  return inputNameCache[field.inpName];
+}
 
 export const buildFormState = (fields: Tab['fields'], record: Record<string, unknown>) =>
   Object.entries(fields).reduce((state, [fieldName, field]) => {
