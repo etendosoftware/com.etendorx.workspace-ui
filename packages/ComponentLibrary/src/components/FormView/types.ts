@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { MappedData, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field, MappedData, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface GridItemProps {
@@ -113,6 +113,10 @@ export interface Option {
   id: string;
   title: string;
   value: string;
+}
+
+export interface GenericSelectorProps {
+  field: Field;
 }
 
 export interface BooleanSelectorProps {

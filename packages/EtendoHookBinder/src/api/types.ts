@@ -77,6 +77,11 @@ export interface Field {
   gridProps: GridProps;
   type: string; // Consider specifying possible values if known
   selector?: Record<string, string>;
+  refList: Array<{ id: string; label: string; value: string }>;
+  referencedEntity: string;
+  referencedWindowId: string;
+  referencedTabId: string;
+  fieldName: string;
 }
 
 export interface Column {
@@ -292,7 +297,7 @@ export interface BaseFieldDefinition<T> {
   section?: string;
   required?: boolean;
   initialValue?: T;
-  original?: {
+  original: {
     refList: Array<{ id: string; label: string; value: string }>;
     referencedEntity: string;
     referencedWindowId: string;

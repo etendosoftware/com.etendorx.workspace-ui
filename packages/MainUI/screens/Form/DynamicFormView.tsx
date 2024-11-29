@@ -16,7 +16,7 @@ export default function DynamicFormView({ tab, record }: { tab: Tab; record: Rec
   const handleCancel = useCallback(() => navigate('/'), [navigate]);
   const methods = useForm({
     values: Object.entries(tab.fields).reduce((acc, [fieldName, field]) => {
-      acc['inp' + field.inpName] = record[fieldName];
+      acc[field.inpName] = record[fieldName];
 
       return acc;
     }, {} as Record<string, unknown>),
