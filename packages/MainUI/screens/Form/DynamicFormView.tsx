@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { FormData } from './types';
 import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { buildFormState } from '@workspaceui/etendohookbinder/src/utils/form';
@@ -8,15 +8,15 @@ import FormView from '@workspaceui/componentlibrary/src/components/FormView';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { useForm, FormProvider } from 'react-hook-form';
 
-export default function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unknown> }) {
+function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unknown> }) {
   const { windowData = {} as WindowMetadata } = useMetadataContext();
   const navigate = useRouter().push;
   const [formData, setFormData] = useState<FormData | null>(adaptFormData(tab, record));
   const mappedMetadata = useMemo(() => mapWindowMetadata(windowData), [windowData]);
   const handleSave = useCallback(() => navigate('/'), [navigate]);
   const handleCancel = useCallback(() => navigate('/'), [navigate]);
-  const initialState = useRef(buildFormState(tab.fields, record));
-  const methods = useForm({ values: initialState.current });
+  const formOptions = useRef({ values: buildFormState(tab.fields, record) });
+  const methods = useForm(formOptions.current);
 
   const handleChange = useCallback((updatedData: FormData) => {
     setFormData(updatedData);
@@ -37,3 +37,5 @@ export default function DynamicFormView({ tab, record }: { tab: Tab; record: Rec
     </FormProvider>
   );
 }
+
+export default memo(DynamicFormView, (prev, next) => true);
