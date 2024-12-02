@@ -15,7 +15,6 @@ const FormSection: React.FC<FormSectionProps> = ({
   onAccordionChange,
   onHover,
   hoveredSection,
-  onInputChange,
   sectionRef,
   gridItemProps = { xs: 12, sm: 6, md: 6 },
   dottedLineInterval = 2,
@@ -71,7 +70,6 @@ const FormSection: React.FC<FormSectionProps> = ({
                 <FormFieldGroup
                   name={key}
                   field={field}
-                  onChange={onInputChange}
                   readOnly={readOnly}
                   renderFieldValue={renderFieldValue}
                 />

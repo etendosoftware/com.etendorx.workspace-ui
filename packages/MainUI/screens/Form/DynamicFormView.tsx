@@ -11,7 +11,7 @@ import { useForm, FormProvider } from 'react-hook-form';
 function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unknown> }) {
   const { windowData = {} as WindowMetadata } = useMetadataContext();
   const navigate = useRouter().push;
-  const [formData, setFormData] = useState<FormData | null>(adaptFormData(tab, record));
+  const [formData] = useState<FormData | null>(adaptFormData(tab, record));
   const mappedMetadata = useMemo(() => mapWindowMetadata(windowData), [windowData]);
   const handleSave = useCallback(() => navigate('/'), [navigate]);
   const handleCancel = useCallback(() => navigate('/'), [navigate]);
@@ -38,4 +38,4 @@ function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unk
   );
 }
 
-export default memo(DynamicFormView, (prev, next) => true);
+export default memo(DynamicFormView, () => true);

@@ -13,6 +13,7 @@ import TextInputBase from '../../Input/TextInput/TextInputBase';
 import SearchSelector from './SearchSelector';
 import { useFormContext } from 'react-hook-form';
 import { getInputName } from '@workspaceui/etendohookbinder/src/utils/form';
+import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 
 const FieldLabel: React.FC<FieldLabelProps> = ({ isEntityReference, label, required, onLinkClick }) => {
   const { styles, sx } = useStyle();
@@ -32,7 +33,7 @@ const FieldLabel: React.FC<FieldLabelProps> = ({ isEntityReference, label, requi
   );
 };
 
-const RenderField = ({ field, onChange, readOnly }: FormFieldGroupProps) => {
+const RenderField = ({ field }: { field: FieldDefinition }) => {
   const { watch, setValue } = useFormContext();
   const name = useRef(getInputName(field.original));
   const value = watch(name.current, field.initialValue);
@@ -50,13 +51,13 @@ const RenderField = ({ field, onChange, readOnly }: FormFieldGroupProps) => {
 
   switch (field.type) {
     case 'boolean':
-      return <BooleanSelector checked={value} label={field.label} readOnly={readOnly} />;
+      return <BooleanSelector checked={value} label={field.label} />;
     case 'number':
-      return <NumberSelector name={name.current} value={Number(value)} onChange={handleChange} readOnly={readOnly} />;
+      return <NumberSelector name={name.current} value={Number(value)} onChange={handleChange} />;
     case 'date':
-      return <DateSelector name={name.current} value={value as string} onChange={handleChange} readOnly={readOnly} />;
+      return <DateSelector name={name.current} value={value as string} onChange={handleChange} />;
     case 'select':
-      return <SelectSelector name={field.name} title={field.label} onChange={handleChange} readOnly={readOnly} />;
+      return <SelectSelector name={field.name} title={field.label} onChange={handleChange} />;
     case 'search':
       return (
         <SearchSelector
@@ -83,25 +84,23 @@ const RenderField = ({ field, onChange, readOnly }: FormFieldGroupProps) => {
           maxLength={field.original?.column?.length}
           min={field.original?.column?.minValue ?? null}
           max={field.original?.column?.maxValue ?? null}
-          onChange={value => onChange(field.label, value)}
-          readOnly={readOnly}
+          onChange={handleChange}
         />
       );
     case 'list':
-      return <ListSelector field={field} onChange={handleChange} readOnly={readOnly} />;
+      return <ListSelector field={field} onChange={handleChange} />;
     default:
       return (
         <TextInputBase
           value={value as string}
           setValue={handleChange}
           placeholder={field.value ? String(field.value) : undefined}
-          disabled={readOnly}
         />
       );
   }
 };
 
-const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, readOnly, renderFieldValue }) => {
+const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field }) => {
   const { styles, sx } = useStyle();
 
   const isEntityReference = useMemo(() => ['tabledir', 'search'].includes(field.type), [field.type]);
@@ -124,11 +123,10 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onChange, r
           fieldType={field.type}
           isEntityReference={isEntityReference}
           onLinkClick={handleLinkClick}
-          readOnly={readOnly}
         />
       </Box>
       <Box sx={sx.inputBox}>
-        <RenderField field={field} onChange={onChange} readOnly={readOnly} renderFieldValue={renderFieldValue} />
+        <RenderField field={field} />
       </Box>
     </Box>
   );

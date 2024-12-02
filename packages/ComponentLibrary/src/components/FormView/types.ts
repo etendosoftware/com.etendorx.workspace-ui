@@ -55,7 +55,6 @@ export type FieldValue = string | number | boolean | string[] | Date | null | Fi
 export interface FormFieldGroupProps {
   name?: string;
   field: FieldDefinition;
-  onChange: (name: string, value: FieldValue) => void;
   entityName?: string;
   accessor?: string;
   windowMetadata?: WindowMetadata;
