@@ -1,9 +1,15 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  cleanDistDir: true,
-  bundlePagesRouterDependencies: true,
-  output: 'standalone',
+  transpilePackages: ['@mui/material', '@mui/system', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+  modularizeImports: {
+    '@mui/material': {
+      transform: '@mui/material/{{member}}',
+    },
+    '@mui/icons-material': {
+      transform: '@mui/icons-material/{{member}}',
+    },
+  },
   reactStrictMode: false,
   webpack(config) {
     config.module.rules.push({
