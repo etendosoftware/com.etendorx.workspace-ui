@@ -4,19 +4,18 @@ import { FormViewProps } from './types';
 import PrimaryTabs from '../PrimaryTab';
 import { TabItem } from '../PrimaryTab/types';
 import SectionRenderer from './Sections/sectionRendered';
-import type { FieldValue, FormData, Section } from './types';
+import type { FormData, Section } from './types';
 import Chevrons from '../../assets/icons/chevrons-right.svg';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 
 const FormView: React.FC<FormViewProps> = ({
   data,
-  onChange,
   readOnly = false,
   gridItemProps,
   dottedLineInterval,
   initialValues = true,
 }) => {
-  const [formData, setFormData] = useState<FormData>(data);
+  const [formData] = useState<FormData>(data);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('');
@@ -101,26 +100,6 @@ const FormView: React.FC<FormViewProps> = ({
     [initialValues],
   );
 
-  const handleInputChange = useCallback(
-    (name: string, value: FieldValue) => {
-      if (readOnly) return;
-
-      setFormData(
-        prev =>
-          ({
-            ...prev,
-            [name]: {
-              ...prev[name],
-              value: value,
-            },
-          } as FormData),
-      );
-
-      onChange?.(formData);
-    },
-    [formData, onChange, readOnly],
-  );
-
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
   }, []);
@@ -163,7 +142,6 @@ const FormView: React.FC<FormViewProps> = ({
                   onAccordionChange={handleAccordionChange}
                   onHover={setHoveredSection}
                   hoveredSection={hoveredSection}
-                  onInputChange={handleInputChange}
                   sectionRef={el => (sectionRefs.current[sectionData.id] = el)}
                   gridItemProps={gridItemProps}
                   dottedLineInterval={dottedLineInterval}

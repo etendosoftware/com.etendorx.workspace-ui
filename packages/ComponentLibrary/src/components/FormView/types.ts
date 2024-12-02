@@ -42,7 +42,6 @@ export interface FormSectionProps {
   onAccordionChange: (sectionId: string, isExpanded: boolean) => void;
   onHover: (sectionName: string | null) => void;
   hoveredSection: string | null;
-  onInputChange: (name: string, value: FieldValue) => void;
   sectionRef: React.Ref<HTMLDivElement>;
   gridItemProps?: GridItemProps;
   dottedLineInterval?: number;

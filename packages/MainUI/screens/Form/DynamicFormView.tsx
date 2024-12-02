@@ -15,12 +15,13 @@ function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unk
   const mappedMetadata = useMemo(() => mapWindowMetadata(windowData), [windowData]);
   const handleSave = useCallback(() => navigate('/'), [navigate]);
   const handleCancel = useCallback(() => navigate('/'), [navigate]);
-  const formOptions = useRef({ values: buildFormState(tab.fields, record) });
+  const formOptions = useRef<Parameters<typeof useForm>[0]>({
+    values: buildFormState(tab.fields, record),
+    criteriaMode: 'all',
+    mode: 'onSubmit',
+    reValidateMode: 'onSubmit',
+  });
   const methods = useForm(formOptions.current);
-
-  const handleChange = useCallback((updatedData: FormData) => {
-    setFormData(updatedData);
-  }, []);
 
   if (!formData || !mappedMetadata) return <div>No form data available</div>;
 
@@ -30,7 +31,6 @@ function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unk
         data={formData}
         onSave={handleSave}
         onCancel={handleCancel}
-        onChange={handleChange}
         windowMetadata={mappedMetadata}
         initialValues
       />
