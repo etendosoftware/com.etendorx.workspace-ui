@@ -13,6 +13,10 @@ export type IconName =
   | 'paperclip'
   | 'process';
 
+export interface ToolbarResponseButton extends ToolbarButton {
+  icon: IconName;
+}
+
 export interface ToolbarProps {
   windowId: string;
   tabId?: string;
@@ -68,14 +72,6 @@ export interface ProcessButton extends BaseButton {
 }
 
 export type Button = StandardButton | ProcessButton;
-
-export interface ToolbarResponse {
-  response: {
-    buttons: Button[];
-    windowId: string;
-    isNew: boolean;
-  };
-}
 
 export const isProcessButton = (button: Button): button is ProcessButton => {
   return button.action === 'PROCESS';
