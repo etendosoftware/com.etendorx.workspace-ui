@@ -284,7 +284,6 @@ export interface FieldInfo {
   fieldGroup$_identifier?: string;
 }
 
-
 export interface BaseFieldDefinition<T> {
   value: T;
   type: FieldType;
@@ -307,4 +306,4 @@ export type FieldDefinition =
   | BaseFieldDefinition<boolean>
   | BaseFieldDefinition<Date>
   | BaseFieldDefinition<string[]>
-  | BaseFieldDefinition<{ id: string; title: string; value: string}>;
+  | BaseFieldDefinition<{ id: string; title: string; value: string }>;

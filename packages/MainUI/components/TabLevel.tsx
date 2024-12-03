@@ -1,6 +1,6 @@
 'use client';
 
-import { Toolbar } from './Toolbar';
+import { Toolbar } from './Toolbar/Toolbar';
 import DynamicTable from './Table';
 import { styles } from './styles';
 import { TabLevelProps } from './types';
