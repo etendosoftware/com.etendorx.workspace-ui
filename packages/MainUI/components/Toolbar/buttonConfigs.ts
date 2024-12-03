@@ -11,7 +11,13 @@ export const createStandardButtonConfig = (
   handleAction: (action: string) => void,
 ): StandardButtonConfig => {
   const getIconFill = (buttonId: StandardButtonId): string => {
-    const specialButtons = [BUTTON_IDS.GRID_VIEW, BUTTON_IDS.FIND] as const;
+    const specialButtons = [
+      BUTTON_IDS.GRID_VIEW,
+      BUTTON_IDS.FIND,
+      BUTTON_IDS.DELETE,
+      BUTTON_IDS.EXPORT,
+      BUTTON_IDS.ATTACHMENTS,
+    ] as const;
     return specialButtons.includes(buttonId as (typeof specialButtons)[number])
       ? theme.palette.baselineColor.neutral[100]
       : theme.palette.baselineColor.neutral[0];
