@@ -1,0 +1,129 @@
+import React, { useMemo } from 'react';
+import { Box } from '@mui/material';
+import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
+import { IconSize, ProcessButton, StandardButton, ToolbarProps, isProcessButton } from './types';
+import {
+  LEFT_SECTION_BUTTONS,
+  CENTER_SECTION_BUTTONS,
+  RIGHT_SECTION_BUTTONS,
+  StandardButtonId,
+} from '../../constants/Toolbar';
+import { useTranslation } from '../../hooks/useTranslation';
+import { useProcessExecution } from '../../hooks/Toolbar/useProcessExecution';
+import { createStandardButtonConfig, getStandardButtonStyle } from './buttonConfigs';
+import GenericProcessButton from './GenericProcessButton';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
+import { useProcessButton } from '../../hooks/Toolbar/useProcessButton';
+import { useToolbarConfig } from '../../hooks/Toolbar/useToolbarConfig';
+import { iconMap } from './iconMap';
+import { useToolbar } from '../../hooks/Toolbar/useToolbar';
+import { useMetadataContext } from '../../hooks/useMetadataContext';
+
+export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
+  const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
+  const { selected, tabs } = useMetadataContext();
+  const { executeProcess } = useProcessExecution();
+  const { t } = useTranslation();
+  const { handleAction } = useToolbarConfig(windowId, tabId);
+  const { handleProcessClick } = useProcessButton(executeProcess, refetch);
+
+  const tab = useMemo(() => tabs.find(tab => tab.id === tabId), [tabs, tabId]);
+
+  const selectedRecord = tab ? selected[tab.level] : undefined;
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height={64}>
+        {t('common.loading')}
+      </Box>
+    );
+  }
+
+  const createToolbarConfig = () => {
+    const buttons = toolbar?.response?.buttons || [];
+
+    const createProcessButtonConfig = (btn: ProcessButton) => {
+      const config = {
+        key: btn.id,
+        icon: React.createElement(iconMap.process),
+        tooltip: btn.name,
+        height: IconSize,
+        width: IconSize,
+        sx: {
+          background: theme.palette.specificColor.warning.main,
+          opacity: selectedRecord ? 1 : 0.5,
+          cursor: selectedRecord ? 'pointer' : 'not-allowed',
+        },
+        onClick: () => handleProcessClick(btn, selectedRecord?.id),
+      };
+
+      return {
+        ...config,
+        customComponent: () => (
+          <GenericProcessButton button={btn} onClick={config.onClick} disabled={!selectedRecord?.id} />
+        ),
+      };
+    };
+
+    const sections = {
+      leftSection: LEFT_SECTION_BUTTONS,
+      centerSection: CENTER_SECTION_BUTTONS,
+      rightSection: RIGHT_SECTION_BUTTONS,
+    };
+
+    const createSectionConfig = (sectionButtons: StandardButtonId[], includeProcess = false) => ({
+      buttons: buttons
+        .filter((btn: StandardButton) => {
+          if (includeProcess && isProcessButton(btn)) return true;
+          return sectionButtons.includes(btn.id as StandardButtonId);
+        })
+        .map(btn => {
+          if (isProcessButton(btn)) {
+            return createProcessButtonConfig(btn);
+          }
+          const config = createStandardButtonConfig(btn as StandardButton, handleAction);
+          const style = getStandardButtonStyle(btn.id as StandardButtonId);
+          if (style) {
+            config.sx = style;
+          }
+          return config;
+        }),
+      style: getSectionStyle(sectionButtons),
+    });
+
+    return {
+      leftSection: createSectionConfig(sections.leftSection),
+      centerSection: createSectionConfig(sections.centerSection),
+      rightSection: createSectionConfig(sections.rightSection, true),
+      isItemSelected: !!selectedRecord?.id,
+    };
+  };
+
+  return <TopToolbar {...createToolbarConfig()} />;
+};
+
+const getSectionStyle = (sectionType: string[]) => {
+  const baseStyle = {
+    display: 'flex',
+    borderRadius: '10rem',
+    padding: '0.25rem',
+    gap: '0.25rem',
+  };
+
+  if (sectionType === LEFT_SECTION_BUTTONS) {
+    return {
+      ...baseStyle,
+      width: 'auto',
+      alignItems: 'center',
+      background: theme.palette.baselineColor.neutral[0],
+      maxHeight: '2.5rem',
+      gap: '0.05rem',
+    };
+  }
+
+  return {
+    ...baseStyle,
+    width: sectionType === CENTER_SECTION_BUTTONS ? '100%' : 'auto',
+    background: theme.palette.baselineColor.transparentNeutral[5],
+  };
+};

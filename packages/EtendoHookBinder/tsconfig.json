@@ -1,18 +1,18 @@
 {
   "compilerOptions": {
-    "target": "ES5",                    // Target ES5 for wide compatibility
-    "module": "ESNext",                 // Leave module setting flexible for overrides
-    "declaration": true,                // Generate .d.ts declaration files
-    "declarationDir": "./dist/types",   // Output directory for .d.ts files
-    "rootDir": "./src",                 // Root directory of the source files
-    "outDir": "./dist",                 // Output directory for transpiled files
-    "strict": true,                     // Enable strict type-checking
-    "esModuleInterop": true,            // Interop for CommonJS modules
-    "skipLibCheck": true,               // Skip type checks for libraries for faster builds
+    "target": "ES5", // Target ES5 for wide compatibility
+    "module": "ESNext", // Leave module setting flexible for overrides
+    "declaration": true, // Generate .d.ts declaration files
+    "declarationDir": "./dist/types", // Output directory for .d.ts files
+    "rootDir": "./src", // Root directory of the source files
+    "outDir": "./dist", // Output directory for transpiled files
+    "strict": true, // Enable strict type-checking
+    "esModuleInterop": true, // Interop for CommonJS modules
+    "skipLibCheck": true, // Skip type checks for libraries for faster builds
     "forceConsistentCasingInFileNames": true,
     "removeComments": true,
-    "listEmittedFiles": true,
+    "listEmittedFiles": true
   },
-  "include": ["src"],                   // Include the source directory
+  "include": ["src", "../MainUI/hooks/Toolbar/useToolbar.ts"], // Include the source directory
   "exclude": ["node_modules", "**/*.test.ts"]
 }

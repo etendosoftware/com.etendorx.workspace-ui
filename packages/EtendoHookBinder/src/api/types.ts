@@ -318,6 +318,6 @@ export type FieldDefinition =
 type EntityKey = string;
 type EntityValue = string | number | boolean | symbol;
 
-export interface Entity {
+export interface EntityData {
   [key: EntityKey]: EntityValue;
 }

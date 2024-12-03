@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Metadata } from '../api/metadata';
+import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { ToolbarResponse } from './types';
 
 export function useToolbar(windowId: string, tabId?: string) {
@@ -13,8 +13,10 @@ export function useToolbar(windowId: string, tabId?: string) {
     try {
       setLoading(true);
       setError(null);
+
       const url = tabId ? `toolbar/${windowId}/${tabId}` : `toolbar/${windowId}`;
       const response = await Metadata.client.post(url);
+
       setToolbar(response.data);
     } catch (error) {
       console.error('Error fetching toolbar:', error);
@@ -25,8 +27,10 @@ export function useToolbar(windowId: string, tabId?: string) {
   }, [windowId, tabId]);
 
   useEffect(() => {
-    fetchToolbar();
-  }, [fetchToolbar]);
+    if (windowId) {
+      fetchToolbar();
+    }
+  }, [fetchToolbar, windowId]);
 
   return {
     toolbar,

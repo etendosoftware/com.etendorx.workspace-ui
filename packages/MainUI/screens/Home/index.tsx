@@ -34,7 +34,7 @@ const Home: React.FC = () => {
         backgroundImage: `url(${BackgroundGradientUrl})`,
         transform: isSidebarOpen ? 'translateX(0)' : 'translateX(100%)',
         visibility: isSidebarOpen ? 'visible' : 'hidden',
-      }) as const,
+      } as const),
     [isSidebarOpen, styles.sidebarPaper],
   );
 
@@ -43,7 +43,7 @@ const Home: React.FC = () => {
       ({
         ...styles.tablePaper,
         width: isSidebarOpen ? 'calc(68% - 0.5rem)' : '100%',
-      }) as const,
+      } as const),
     [isSidebarOpen, styles.tablePaper],
   );
 
