@@ -76,7 +76,6 @@ export interface ToolbarButton {
   height?: number;
   width?: number;
   sx?: SxProps<Theme>;
-  customComponent?: () => React.ReactNode;
 }
 
 export interface ToolbarSectionConfig {
