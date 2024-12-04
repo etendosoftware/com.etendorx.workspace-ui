@@ -11,7 +11,6 @@ import {
 import { useTranslation } from '../../hooks/useTranslation';
 import { useProcessExecution } from '../../hooks/Toolbar/useProcessExecution';
 import { createStandardButtonConfig, getStandardButtonStyle } from './buttonConfigs';
-import GenericProcessButton from './GenericProcessButton';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { useProcessButton } from '../../hooks/Toolbar/useProcessButton';
 import { useToolbarConfig } from '../../hooks/Toolbar/useToolbarConfig';
@@ -47,9 +46,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
         key: btn.id,
         icon: React.createElement(iconMap.process),
         tooltip: btn.name,
+        iconText: btn.name,
         height: IconSize,
         width: IconSize,
         sx: {
+          color: theme.palette.baselineColor.neutral[100],
           background: theme.palette.specificColor.warning.main,
           opacity: selectedRecord ? 1 : 0.5,
           cursor: selectedRecord ? 'pointer' : 'not-allowed',
@@ -59,9 +60,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
 
       return {
         ...config,
-        customComponent: () => (
-          <GenericProcessButton button={btn} onClick={config.onClick} disabled={!selectedRecord?.id} />
-        ),
       };
     };
 
@@ -118,6 +116,14 @@ const getSectionStyle = (sectionType: string[]) => {
       background: theme.palette.baselineColor.neutral[0],
       maxHeight: '2.5rem',
       gap: '0.05rem',
+    };
+  }
+
+  if (sectionType === RIGHT_SECTION_BUTTONS) {
+    return {
+      ...baseStyle,
+      background: theme.palette.baselineColor.transparentNeutral[5],
+      maxHeight: '2.5rem',
     };
   }
 
