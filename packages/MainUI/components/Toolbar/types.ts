@@ -23,15 +23,15 @@ export interface ToolbarProps {
 }
 
 export interface ProcessResponse {
-  response: {
-    status: number;
-    error?: {
-      message: string;
+  responseActions?: Array<{
+    showMsgInProcessView?: {
+      msgType: string;
+      msgTitle: string;
+      msgText: string;
     };
-    data?: unknown;
-  };
+  }>;
+  refreshParent?: boolean;
 }
-
 export interface ProcessButtonProps {
   button: ProcessButton;
   onClick: () => void;
@@ -86,7 +86,12 @@ export interface StandardButtonConfig extends ToolbarButton {
 }
 
 export interface ProcessButtonConfig extends ToolbarButton {
-  customComponent: () => React.ReactElement;
+  icon: React.ReactNode;
+  iconText?: string;
+  height?: number;
+  width?: number;
+  onProcess?: () => Promise<void>;
+  additionalContent: () => React.ReactElement | null;
 }
 
 export type ButtonConfig = StandardButtonConfig | ProcessButtonConfig;
