@@ -1,7 +1,6 @@
 import React from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from '@mui/material';
 import { ProcessButton, ProcessResponse } from '@workspaceui/mainui/components/Toolbar/types';
-import { useTranslation } from '@workspaceui/mainui/hooks/useTranslation';
 import { useStyle } from './styles';
 
 interface ProcessModalProps {
@@ -11,6 +10,9 @@ interface ProcessModalProps {
   onConfirm: () => void;
   isExecuting: boolean;
   processResponse: ProcessResponse | null;
+  confirmationMessage: string;
+  cancelButtonText: string;
+  executeButtonText: string;
 }
 
 const ProcessModal: React.FC<ProcessModalProps> = ({
@@ -20,8 +22,10 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
   onConfirm,
   isExecuting,
   processResponse,
+  confirmationMessage,
+  cancelButtonText,
+  executeButtonText,
 }) => {
-  const { t } = useTranslation();
   const { styles } = useStyle();
 
   const responseMessage = processResponse?.responseActions?.[0]?.showMsgInProcessView;
@@ -31,7 +35,7 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth sx={styles.dialog}>
       <DialogTitle sx={styles.dialogTitle}>{button.name}</DialogTitle>
       <DialogContent sx={styles.dialogContent}>
-        <Typography sx={styles.message}>{t('process.confirmationMessage')}</Typography>
+        <Typography sx={styles.message}>{confirmationMessage}</Typography>
 
         {processResponse && (
           <Box sx={styles.messageBox}>
@@ -46,11 +50,11 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
       </DialogContent>
       <DialogActions sx={styles.dialogActions}>
         <Button onClick={onClose} sx={styles.cancelButton}>
-          {t('common.cancel')}
+          {cancelButtonText}
         </Button>
         {!processResponse && (
           <Button onClick={onConfirm} disabled={isExecuting} sx={styles.executeButton}>
-            {t('common.execute')}
+            {executeButtonText}
           </Button>
         )}
       </DialogActions>

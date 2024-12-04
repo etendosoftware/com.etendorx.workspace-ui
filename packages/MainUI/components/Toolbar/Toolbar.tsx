@@ -150,6 +150,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
           onConfirm={handleConfirm}
           isExecuting={isExecuting}
           processResponse={processResponse}
+          confirmationMessage={t('process.confirmationMessage')}
+          cancelButtonText={t('common.cancel')}
+          executeButtonText={t('common.execute')}
         />
       )}
     </>
