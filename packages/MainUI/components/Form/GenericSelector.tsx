@@ -1,32 +1,45 @@
 import { useCallback, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { getInputName } from '@workspaceui/etendohookbinder/src/utils/form';
-import type { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
-import type { FieldValue } from '../types';
-import BooleanSelector from './BooleanSelector';
-import NumberSelector from './NumberSelector';
-import DateSelector from './DateSelector';
-import SelectSelector from './SelectSelector';
-import QuantitySelector from './QuantitySelector';
-import ListSelector from './ListSelector';
-import SearchSelector from './SearchSelector';
-import TableDirSelector from './TableDirSelector';
-import { StringSelector } from './StringSelector';
+import type { FieldDefinition, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import type { FieldValue } from '@workspaceui/componentlibrary/src/components/FormView/types';
+import BooleanSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/BooleanSelector';
+import NumberSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/NumberSelector';
+import DateSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/DateSelector';
+import SelectSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/SelectSelector';
+import QuantitySelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/QuantitySelector';
+import ListSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/ListSelector';
+import SearchSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/SearchSelector';
+import TableDirSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/TableDirSelector';
+import { StringSelector } from '@workspaceui/componentlibrary/src/components/FormView/selectors/StringSelector';
+import { useCallout } from '../../hooks/useCallout';
 
-export const GenericSelector = ({ field }: { field: FieldDefinition }) => {
-  const { watch, setValue } = useFormContext();
+export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: Tab }) => {
+  const { watch, setValue, getValues } = useFormContext();
   const name = useRef(getInputName(field.original));
   const value = watch(name.current, field.initialValue);
+  const callout = useCallout({
+    field: field.original,
+    tab,
+    payload: getValues(),
+  });
 
   const handleChange = useCallback(
     (value: FieldValue) => {
-      if (field.original?.column?.callout$_identifier) {
-        // TODO: Execute callout
-      }
+      const f = async () => {
+        if (field.original?.column?.callout$_identifier) {
+          // TODO: Handle callout response
+          console.debug('Calling callout...');
+          await callout();
+          console.debug('After returning callout...');
+        }
 
-      setValue(name.current, value);
+        setValue(name.current, value);
+      };
+
+      return f();
     },
-    [field.original?.column?.callout$_identifier, setValue],
+    [callout, field.original?.column?.callout$_identifier, setValue],
   );
 
   switch (field.type) {

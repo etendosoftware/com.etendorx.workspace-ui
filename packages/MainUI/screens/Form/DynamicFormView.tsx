@@ -32,6 +32,7 @@ function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unk
         onCancel={handleCancel}
         windowMetadata={mappedMetadata}
         initialValues
+        tab={tab}
       />
     </FormProvider>
   );

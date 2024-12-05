@@ -2,11 +2,11 @@ import { memo, useCallback } from 'react';
 import { Box } from '@mui/material';
 import { useStyle } from '../styles';
 import { FormFieldGroupProps } from '../types';
-import { GenericSelector } from './GenericSelector';
+import { GenericSelector } from '@workspaceui/mainui/components/Form/GenericSelector';
 import { FieldLabel } from '../Sections/FieldLabel';
 import { isEntityReference } from '@workspaceui/etendohookbinder/src/utils/form';
 
-const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onLabelClick }) => {
+const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ tab, field, onLabelClick }) => {
   const { styles, sx } = useStyle();
 
   const handleLinkClick = useCallback(() => {
@@ -31,7 +31,7 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onLabelClic
         />
       </Box>
       <Box sx={sx.inputBox}>
-        <GenericSelector field={field} />
+        <GenericSelector tab={tab} field={field} />
       </Box>
     </Box>
   );

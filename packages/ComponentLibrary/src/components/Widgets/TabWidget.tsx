@@ -5,6 +5,7 @@ import SaveIcon from '../../assets/icons/save.svg';
 import { dotIntervals, gridSizes, useStyle } from './styles';
 import { TabWidgetProps } from './types';
 import FormView from '../FormView';
+import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 
 const TabWidget: React.FC<TabWidgetProps> = ({
   selectedRecord,
@@ -61,6 +62,7 @@ const TabWidget: React.FC<TabWidgetProps> = ({
         gridItemProps={gridSizes}
         dottedLineInterval={dotIntervals}
         onChange={handleFormChange}
+        tab={{} as Tab}
       />
     );
   }, [selectedRecord, handleSave, handleCancel, isEditing, handleFormChange]);
