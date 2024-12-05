@@ -3,8 +3,6 @@ import { Field, Tab } from '../api/types';
 const inputNameCache: Record<string, string> = {};
 
 export function getInputName(field: Field) {
-  console.log('calling getInputName for ', field.name);
-
   if (!inputNameCache[field.inpName]) {
     inputNameCache[field.inpName] = `inp${field.inpName}`
   }

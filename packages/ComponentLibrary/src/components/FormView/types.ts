@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import { Field, MappedData, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 
@@ -121,7 +121,8 @@ export interface BooleanSelectorProps {
   label: string;
   readOnly?: boolean;
   checked?: boolean;
-  onChange?: (checked: boolean) => void;
+  name: string;
+  onChange: (name: string, value: boolean) => void;
 }
 
 export interface NumberSelectorProps {

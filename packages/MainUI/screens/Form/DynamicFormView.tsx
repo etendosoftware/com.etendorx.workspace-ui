@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { FormData } from './types';
 import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { buildFormState } from '@workspaceui/etendohookbinder/src/utils/form';
@@ -15,13 +15,12 @@ function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unk
   const mappedMetadata = useMemo(() => mapWindowMetadata(windowData), [windowData]);
   const handleSave = useCallback(() => navigate('/'), [navigate]);
   const handleCancel = useCallback(() => navigate('/'), [navigate]);
-  const formOptions = useRef<Parameters<typeof useForm>[0]>({
-    values: buildFormState(tab.fields, record),
+  const methods = useForm({
+    defaultValues: buildFormState(tab.fields, record),
     criteriaMode: 'all',
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
   });
-  const methods = useForm(formOptions.current);
 
   if (!formData || !mappedMetadata) return <div>No form data available</div>;
 

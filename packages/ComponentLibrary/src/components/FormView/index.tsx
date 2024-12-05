@@ -15,7 +15,6 @@ const FormView: React.FC<FormViewProps> = ({
   dottedLineInterval,
   initialValues = true,
 }) => {
-  const [formData] = useState<FormData>(data);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('');
@@ -29,7 +28,7 @@ const FormView: React.FC<FormViewProps> = ({
   );
 
   const tabs: TabItem[] = useMemo(() => {
-    return Object.values(formData)
+    return Object.values(data)
       .filter((field): field is Section => field.type === 'section')
       .map(section => ({
         id: section.id,
@@ -39,7 +38,7 @@ const FormView: React.FC<FormViewProps> = ({
         hoverFill: section.hoverFill,
         showInTab: section.showInTab,
       }));
-  }, [formData]);
+  }, [data]);
 
   const handleTabChange = useCallback((newTabId: string) => {
     setSelectedTab(newTabId);
@@ -106,7 +105,7 @@ const FormView: React.FC<FormViewProps> = ({
 
   const groupedFields = useMemo(
     () =>
-      Object.entries(formData).reduce((acc, [key, value]) => {
+      Object.entries(data).reduce((acc, [key, value]) => {
         if ('section' in value) {
           const section = value.section ?? '_mainSection';
           if (!acc[section]) acc[section] = [];
@@ -114,7 +113,7 @@ const FormView: React.FC<FormViewProps> = ({
         }
         return acc;
       }, {} as { [key: string]: [string, FieldDefinition][] }),
-    [formData],
+    [data],
   );
 
   return (
@@ -126,7 +125,7 @@ const FormView: React.FC<FormViewProps> = ({
         <form onSubmit={handleSubmit}>
           <Grid container>
             {Object.entries(groupedFields).map(([sectionName, fields]) => {
-              const sectionData = formData[sectionName] as Section;
+              const sectionData = data[sectionName] as Section;
               if (!sectionData || sectionData.type !== 'section') {
                 console.warn(`Section ${sectionName} is not properly defined`);
                 return null;

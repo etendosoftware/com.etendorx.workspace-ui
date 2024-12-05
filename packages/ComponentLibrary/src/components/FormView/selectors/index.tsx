@@ -51,7 +51,7 @@ const RenderField = ({ field }: { field: FieldDefinition }) => {
 
   switch (field.type) {
     case 'boolean':
-      return <BooleanSelector checked={value} label={field.label} />;
+      return <BooleanSelector label={field.label} name={name.current} onChange={handleChange} checked={value} />;
     case 'number':
       return <NumberSelector name={name.current} value={Number(value)} onChange={handleChange} />;
     case 'date':
