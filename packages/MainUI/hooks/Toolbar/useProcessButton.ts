@@ -1,16 +1,15 @@
 import { ProcessButton, ProcessResponse } from '../../components/Toolbar/types';
 import { ExecuteProcessParams } from './types';
 import { BaseFieldDefinition, Field } from '@workspaceui/etendohookbinder/src/api/types';
-import { FieldType } from '@workspaceui/etendohookbinder/src/api/types'; // Asegúrate de importar FieldType
+import { FieldType } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const useProcessButton = (
   executeProcess: (params: ExecuteProcessParams) => Promise<ProcessResponse>,
   refetch: () => Promise<void>,
 ) => {
-  const handleProcessClick = async (btn: ProcessButton, recordId: string | undefined) => {
+  const handleProcessClick = async (btn: ProcessButton, recordId: string | undefined): Promise<ProcessResponse> => {
     if (!recordId) {
-      console.warn('No record selected');
-      return;
+      throw new Error('No record selected');
     }
 
     const processParams =
@@ -37,12 +36,23 @@ export const useProcessButton = (
         params: processParams,
       });
 
-      if (result.response.status === 0) {
-        return refetch();
+      if (result.refreshParent) {
+        await refetch();
       }
-      console.error('Process error:', result.response.error?.message);
+
+      return result;
     } catch (error) {
-      console.error('Process execution failed:', error);
+      return {
+        responseActions: [
+          {
+            showMsgInProcessView: {
+              msgType: 'error',
+              msgTitle: 'Error',
+              msgText: error instanceof Error ? error.message : 'Unknown error occurred',
+            },
+          },
+        ],
+      };
     }
   };
 
