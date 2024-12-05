@@ -3,6 +3,8 @@ const en = {
     etendo: 'Etendo',
     cancel: 'Cancel',
     confirm: 'Confirm',
+    close: 'Close',
+    execute: 'Execute',
     register: 'Register',
     save: 'Save',
     edit: 'Edit',
@@ -107,6 +109,9 @@ const en = {
   breadcrumb: {
     home: 'Home',
     newRecord: 'Creating a new Record',
+  },
+  process: {
+    confirmationMessage: 'Want to execute this process?',
   },
 };
 

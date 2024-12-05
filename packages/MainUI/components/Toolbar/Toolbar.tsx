@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
-import { IconSize, ProcessButton, StandardButton, ToolbarProps, isProcessButton } from './types';
+import ProcessModal from '@workspaceui/componentlibrary/src/components/ProcessModal';
+import { IconSize, ProcessButton, ProcessResponse, StandardButton, ToolbarProps, isProcessButton } from './types';
 import {
   LEFT_SECTION_BUTTONS,
   CENTER_SECTION_BUTTONS,
@@ -19,6 +20,11 @@ import { useToolbar } from '../../hooks/Toolbar/useToolbar';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 
 export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
+  const [openModal, setOpenModal] = React.useState(false);
+  const [isExecuting, setIsExecuting] = React.useState(false);
+  const [processResponse, setProcessResponse] = React.useState<ProcessResponse | null>(null);
+  const [selectedProcessButton, setSelectedProcessButton] = React.useState<ProcessButton | null>(null);
+
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
   const { selected, tabs } = useMetadataContext();
   const { executeProcess } = useProcessExecution();
@@ -27,8 +33,41 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
 
   const tab = useMemo(() => tabs.find(tab => tab.id === tabId), [tabs, tabId]);
-
   const selectedRecord = tab ? selected[tab.level] : undefined;
+
+  const handleConfirm = useCallback(async () => {
+    if (!selectedProcessButton || !selectedRecord?.id) return;
+
+    setIsExecuting(true);
+    try {
+      const response = await handleProcessClick(selectedProcessButton, selectedRecord?.id);
+      if (response) {
+        setProcessResponse(response);
+      } else {
+        setProcessResponse(null);
+      }
+    } catch (error) {
+      setProcessResponse({
+        responseActions: [
+          {
+            showMsgInProcessView: {
+              msgType: 'error',
+              msgTitle: 'Error',
+              msgText: error instanceof Error ? error.message : 'Unknown error',
+            },
+          },
+        ],
+      });
+    } finally {
+      setIsExecuting(false);
+    }
+  }, [handleProcessClick, selectedProcessButton, selectedRecord?.id]);
+
+  const handleClose = useCallback(() => {
+    setOpenModal(false);
+    setSelectedProcessButton(null);
+    setProcessResponse(null);
+  }, []);
 
   if (loading) {
     return (
@@ -55,7 +94,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
           opacity: selectedRecord ? 1 : 0.5,
           cursor: selectedRecord ? 'pointer' : 'not-allowed',
         },
-        onClick: () => handleProcessClick(btn, selectedRecord?.id),
+        onClick: () => {
+          if (selectedRecord) {
+            setSelectedProcessButton(btn);
+            setOpenModal(true);
+          }
+        },
       };
 
       return {
@@ -97,7 +141,24 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
     };
   };
 
-  return <TopToolbar {...createToolbarConfig()} />;
+  return (
+    <>
+      <TopToolbar {...createToolbarConfig()} />
+      {selectedProcessButton && (
+        <ProcessModal
+          open={openModal}
+          onClose={handleClose}
+          button={selectedProcessButton}
+          onConfirm={handleConfirm}
+          isExecuting={isExecuting}
+          processResponse={processResponse}
+          confirmationMessage={t('process.confirmationMessage')}
+          cancelButtonText={t('common.cancel')}
+          executeButtonText={t('common.execute')}
+        />
+      )}
+    </>
+  );
 };
 
 const getSectionStyle = (sectionType: string[]) => {
