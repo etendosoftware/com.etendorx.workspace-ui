@@ -32,6 +32,7 @@ export interface FormViewProps {
   dottedLineInterval?: number;
   onChange?: (updatedData: FormData) => void;
   initialValues?: boolean;
+  onLabelClick?: (url: string) => void;
 }
 
 export interface FormSectionProps {
@@ -48,6 +49,7 @@ export interface FormSectionProps {
   readOnly?: boolean;
   renderFieldValue?: (field: FieldDefinition) => FieldValue;
   children?: ReactNode;
+  onLabelClick?: FormViewProps['onLabelClick'];
 }
 
 export type FieldValue = string | number | boolean | string[] | Date | null | FieldDefinition['value'];
@@ -60,6 +62,7 @@ export interface FormFieldGroupProps {
   windowMetadata?: WindowMetadata;
   readOnly?: boolean;
   renderFieldValue?: (field: FieldDefinition) => FieldValue;
+  onLabelClick?: FormSectionProps['onLabelClick'];
 }
 
 export interface FieldLabelProps {

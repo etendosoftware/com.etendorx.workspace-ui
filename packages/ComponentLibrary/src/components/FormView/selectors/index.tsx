@@ -1,23 +1,23 @@
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback } from 'react';
 import { Box } from '@mui/material';
 import { useStyle } from '../styles';
 import { FormFieldGroupProps } from '../types';
 import { GenericSelector } from './GenericSelector';
 import { FieldLabel } from '../Sections/FieldLabel';
+import { isEntityReference } from '@workspaceui/etendohookbinder/src/utils/form';
 
-const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field }) => {
+const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field, onLabelClick }) => {
   const { styles, sx } = useStyle();
 
-  const isEntityReference = useMemo(() => ['tabledir', 'search'].includes(field.type), [field.type]);
-
   const handleLinkClick = useCallback(() => {
-    if (isEntityReference && typeof field.value === 'object' && 'id' in field.value) {
+    if (isEntityReference(field.type) && typeof field.value === 'object' && 'id' in field.value) {
       const recordId = field.value.id;
       const windowId = field.original?.referencedWindowId;
       const tabId = field.original?.referencedTabId;
-      location.href = `/window/${windowId}/${tabId}/${recordId}`;
+
+      onLabelClick?.(`/window/${windowId}/${tabId}/${recordId}`);
     }
-  }, [field.original?.referencedTabId, field.original?.referencedWindowId, field.value, isEntityReference]);
+  }, [field, onLabelClick]);
 
   return (
     <Box style={styles.fieldContainer}>
@@ -26,7 +26,7 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ field }) => {
           label={field.label}
           required={field.required}
           fieldType={field.type}
-          isEntityReference={isEntityReference}
+          isEntityReference={isEntityReference(field.type)}
           onLinkClick={handleLinkClick}
         />
       </Box>

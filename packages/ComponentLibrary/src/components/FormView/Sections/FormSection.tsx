@@ -21,6 +21,7 @@ const FormSection: React.FC<FormSectionProps> = ({
   readOnly = false,
   renderFieldValue,
   children,
+  onLabelClick,
 }) => {
   const { sx, styles } = useStyle();
   const theme = useTheme();
@@ -72,6 +73,7 @@ const FormSection: React.FC<FormSectionProps> = ({
                   field={field}
                   readOnly={readOnly}
                   renderFieldValue={renderFieldValue}
+                  onLabelClick={onLabelClick}
                 />
                 {index < fields.length && (index + 1) % dottedLineInterval !== 0 && <Box sx={styles.dottedLine} />}
               </Grid>

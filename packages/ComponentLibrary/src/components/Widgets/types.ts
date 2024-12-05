@@ -1,7 +1,8 @@
 import { Organization } from '@workspaceui/storybook/src/stories/Components/Table/types';
+import { FormViewProps } from '../FormView/types';
 
 export interface TabWidgetProps {
-  selectedRecord: Organization | null;
+  selectedRecord: Organization & FormViewProps['data'];
   setSelectedRecord: React.Dispatch<Organization | null>;
   onSave: (data: Organization) => void;
   onCancel: () => void;

@@ -14,6 +14,7 @@ const FormView: React.FC<FormViewProps> = ({
   gridItemProps,
   dottedLineInterval,
   initialValues = true,
+  onLabelClick,
 }) => {
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
@@ -145,6 +146,7 @@ const FormView: React.FC<FormViewProps> = ({
                   gridItemProps={gridItemProps}
                   dottedLineInterval={dottedLineInterval}
                   readOnly={readOnly}
+                  onLabelClick={onLabelClick}
                 />
               );
             })}

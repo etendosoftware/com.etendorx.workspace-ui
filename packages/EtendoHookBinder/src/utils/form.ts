@@ -1,4 +1,4 @@
-import { Field, Tab } from '../api/types';
+import { Field, FieldType, Tab } from '../api/types';
 
 const inputNameCache: Record<string, string> = {};
 
@@ -16,3 +16,6 @@ export const buildFormState = (fields: Tab['fields'], record: Record<string, unk
 
     return state;
   }, {} as Record<string, unknown>);
+
+
+export const isEntityReference = (type: FieldType) => ['tabledir', 'search'].includes(type);
