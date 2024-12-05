@@ -4,7 +4,7 @@ import { FormViewProps } from './types';
 import PrimaryTabs from '../PrimaryTab';
 import { TabItem } from '../PrimaryTab/types';
 import SectionRenderer from './Sections/sectionRendered';
-import type { FormData, Section } from './types';
+import type { Section } from './types';
 import Chevrons from '../../assets/icons/chevrons-right.svg';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 
