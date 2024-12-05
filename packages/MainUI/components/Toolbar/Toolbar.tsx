@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import ProcessModal from '@workspaceui/componentlibrary/src/components/ProcessModal';
@@ -35,12 +35,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   const tab = useMemo(() => tabs.find(tab => tab.id === tabId), [tabs, tabId]);
   const selectedRecord = tab ? selected[tab.level] : undefined;
 
-  const handleConfirm = async () => {
+  const handleConfirm = useCallback(async () => {
     if (!selectedProcessButton || !selectedRecord?.id) return;
 
     setIsExecuting(true);
     try {
-      const response = await handleProcessClick(selectedProcessButton, selectedRecord.id);
+      const response = await handleProcessClick(selectedProcessButton, selectedRecord?.id);
       if (response) {
         setProcessResponse(response);
       } else {
@@ -61,7 +61,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
     } finally {
       setIsExecuting(false);
     }
-  };
+  }, [handleProcessClick, selectedProcessButton, selectedRecord?.id]);
+
+  const handleClose = useCallback(() => {
+    setOpenModal(false);
+    setSelectedProcessButton(null);
+    setProcessResponse(null);
+  }, []);
 
   if (loading) {
     return (
@@ -141,11 +147,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
       {selectedProcessButton && (
         <ProcessModal
           open={openModal}
-          onClose={() => {
-            setOpenModal(false);
-            setSelectedProcessButton(null);
-            setProcessResponse(null);
-          }}
+          onClose={handleClose}
           button={selectedProcessButton}
           onConfirm={handleConfirm}
           isExecuting={isExecuting}
