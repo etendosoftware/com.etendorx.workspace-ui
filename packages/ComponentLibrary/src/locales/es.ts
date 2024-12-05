@@ -3,6 +3,8 @@ const es = {
     etendo: 'Etendo',
     cancel: 'Cancelar',
     confirm: 'Confirmar',
+    close: 'Cerrar',
+    execute: 'Ejecutar',
     register: 'Registrar',
     save: 'Guardar',
     edit: 'Editar',
@@ -106,6 +108,9 @@ const es = {
   breadcrumb: {
     home: 'Inicio',
     newRecord: 'Crando un nuevo registro',
+  },
+  process: {
+    confirmationMessage: '¿Deseas ejecutar este proceso?',
   },
 };
 

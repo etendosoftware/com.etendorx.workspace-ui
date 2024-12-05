@@ -1,4 +1,4 @@
-import { API_FORM_INITIALIZATION_URL } from '../api/constants';
+import { API_CLIENT_KERNEL_URL } from '../api/constants';
 import { BasicAuthHelper } from '../auth/basicAuth';
 
 interface FormInitializationParams {
@@ -16,7 +16,7 @@ export const getFormInitialization = async (params: FormInitializationParams) =>
       _action: 'org.openbravo.client.application.window.FormInitializationComponent',
     }).toString();
 
-    const response = await fetch(`${API_FORM_INITIALIZATION_URL}?${queryString}`, {
+    const response = await fetch(`${API_CLIENT_KERNEL_URL}?${queryString}`, {
       method: 'POST',
       credentials: 'include',
       headers: BasicAuthHelper.createHeaders(),

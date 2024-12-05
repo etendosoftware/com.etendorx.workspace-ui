@@ -11,7 +11,11 @@
     "skipLibCheck": true, // Skip type checks for libraries for faster builds
     "forceConsistentCasingInFileNames": true,
     "removeComments": true,
-    "listEmittedFiles": true
+    "listEmittedFiles": true,
+    "baseUrl": "",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src"], // Include the source directory
   "exclude": ["node_modules", "**/*.test.ts"]

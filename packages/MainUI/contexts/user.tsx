@@ -134,7 +134,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         localStorage.setItem('token', loginResponse.token);
         setToken(loginResponse.token);
 
-        Metadata.authorize(loginResponse.token);
+        Metadata.setToken(loginResponse.token);
         Datasource.authorize(loginResponse.token);
 
         const sessionResponse = await getSession(loginResponse.token);
@@ -182,7 +182,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   useEffect(() => {
     if (token) {
-      Metadata.authorize(token);
+      Metadata.setToken(token);
       Datasource.authorize(token);
     }
   }, [token]);

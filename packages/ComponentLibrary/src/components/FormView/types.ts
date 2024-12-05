@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { Field, MappedData, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field, MappedData, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface GridItemProps {
@@ -33,6 +33,7 @@ export interface FormViewProps {
   onChange?: (updatedData: FormData) => void;
   initialValues?: boolean;
   onLabelClick?: (url: string) => void;
+  tab: Tab;
 }
 
 export interface FormSectionProps {
@@ -50,11 +51,13 @@ export interface FormSectionProps {
   renderFieldValue?: (field: FieldDefinition) => FieldValue;
   children?: ReactNode;
   onLabelClick?: FormViewProps['onLabelClick'];
+  tab: Tab;
 }
 
 export type FieldValue = string | number | boolean | string[] | Date | null | FieldDefinition['value'];
 
 export interface FormFieldGroupProps {
+  tab: Tab;
   name?: string;
   field: FieldDefinition;
   entityName?: string;
