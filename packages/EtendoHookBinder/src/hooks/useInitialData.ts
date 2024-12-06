@@ -16,16 +16,7 @@ export const getFormInitialization = async (params: FormInitializationParams) =>
       _action: 'org.openbravo.client.application.window.FormInitializationComponent',
     }).toString();
 
-    const response = await Metadata.kernelClient.post(`${API_CLIENT_KERNEL_SWS_URL}?${queryString}`);
-    const data = await response.json();
-
-    if (data.response?.status === -1) {
-      throw new Error(data.response.error?.message || 'Unknown server error');
-    }
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    const { data } = await Metadata.kernelClient.post(`?${queryString}`);
 
     return data;
   } catch (error) {
