@@ -5,7 +5,6 @@ import {
   NotificationButton,
   NotificationModal,
   IconButton,
-  Profile,
   Waterfall,
 } from '@workspaceui/componentlibrary/src/components';
 import profilePicture from '@workspaceui/componentlibrary/src/assets/images/profile_picture_mock.png';
@@ -17,14 +16,12 @@ import { modalConfig, menuItems, initialPeople, sections, NOTIFICATIONS } from '
 import { Person } from '@workspaceui/componentlibrary/src/components/DragModal/DragModal.types';
 import Nav from '@workspaceui/componentlibrary/src/components/Nav/Nav';
 import { useTranslation } from '../hooks/useTranslation';
-import { Role } from '@workspaceui/etendohookbinder/src/api/types';
+import ProfileWrapper from './Nav/Profile';
 
 const handleClose = () => {
   return true;
 };
 
-const noop = () => {};
-const roles: Role[] = [];
 const people: Person[] = [];
 
 const Navigation: React.FC = () => {
@@ -70,11 +67,10 @@ const Navigation: React.FC = () => {
           actionButtonLabel={t('navigation.notificationModal.actionButtonLabel')}
         />
       </NotificationButton>
-      <Profile
+      <ProfileWrapper
         cancelButtonText={t('common.cancel')}
         saveButtonText={t('common.save')}
         tooltipButtonProfile={t('navigation.profile.tooltipButtonProfile')}
-        section="profile"
         passwordLabel={t('navigation.profile.passwordLabel')}
         newPasswordLabel={t('navigation.profile.newPasswordLabel')}
         confirmPasswordLabel={t('navigation.profile.confirmPasswordLabel')}
@@ -84,13 +80,10 @@ const Navigation: React.FC = () => {
         sectionTooltip={t('navigation.profile.signOffTooltip')}
         icon={<PersonIcon />}
         sections={sections}
-        onRoleChange={noop}
-        onWarehouseChange={noop}
-        roles={roles}
-        selectedRole={null}
-        selectedWarehouse={null}
-        saveAsDefault={false}
-        onSaveAsDefaultChange={noop}
+        section={''}
+        translations={{
+          saveAsDefault: t('navigation.profile.saveAsDefault'),
+        }}
       />
     </Nav>
   );

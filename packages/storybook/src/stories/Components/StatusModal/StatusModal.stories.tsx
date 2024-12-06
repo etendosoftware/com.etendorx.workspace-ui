@@ -6,6 +6,8 @@ interface StatusModalStoryProps {
   statusText: string;
   statusType: StatusType;
   errorMessage?: string;
+  saveLabel: string;
+  secondaryButtonLabel: string;
 }
 
 const meta: Meta<typeof StatusModal> = {
@@ -17,6 +19,8 @@ const meta: Meta<typeof StatusModal> = {
       control: 'select',
       options: ['success', 'error', 'warning'],
     },
+    saveLabel: { control: 'text' },
+    secondaryButtonLabel: { control: 'text' },
     errorMessage: { control: 'text' },
   },
 };
@@ -34,6 +38,8 @@ export const SuccessStatus: Story = {
   args: {
     statusText: 'Operation completed successfully',
     statusType: 'success',
+    saveLabel: 'Save',
+    secondaryButtonLabel: 'Cancel',
   },
 };
 

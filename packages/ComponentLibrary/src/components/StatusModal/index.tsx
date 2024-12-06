@@ -2,13 +2,17 @@ import React from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 import { Modal } from '..';
 import SaveIcon from '../../assets/icons/save.svg';
-import { useTranslation } from '@workspaceui/mainui/hooks/useTranslation';
 import { statusConfig } from './states';
 import { useStyle } from './styles';
 import { StatusModalProps } from './types';
 
-const StatusModal: React.FC<StatusModalProps> = ({ statusText, statusType, errorMessage }) => {
-  const { t } = useTranslation();
+const StatusModal: React.FC<StatusModalProps> = ({
+  statusText,
+  statusType,
+  errorMessage,
+  saveLabel,
+  secondaryButtonLabel,
+}) => {
   const { gradientColor, iconBackgroundColor, icon: StatusIcon } = statusConfig[statusType];
   const theme = useTheme();
   const { sx } = useStyle();
@@ -18,8 +22,8 @@ const StatusModal: React.FC<StatusModalProps> = ({ statusText, statusType, error
   return (
     <Modal
       showHeader={false}
-      saveButtonLabel={t('common.save')}
-      secondaryButtonLabel={t('common.cancel')}
+      saveButtonLabel={saveLabel}
+      secondaryButtonLabel={secondaryButtonLabel}
       SaveIcon={SaveIcon}
       backgroundGradient={backgroundGradient}>
       <Box sx={sx.statusModalContainer}>

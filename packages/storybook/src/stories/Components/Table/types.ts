@@ -26,13 +26,6 @@ export interface TableProps {
   isTreeStructure?: boolean;
 }
 
-export interface SidebarContentProps {
-  icon: React.ReactNode;
-  identifier: string | null;
-  title: string | null;
-  widgets: Widget[];
-  onClose: () => void;
-}
 export interface Widget extends React.PropsWithChildren {
   id: string;
   title?: string;
@@ -50,17 +43,6 @@ export interface Widget extends React.PropsWithChildren {
 }
 
 export interface ContentGridProps {
-  widgets: Widget[];
-}
-
-export interface SidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
-  selectedItem: {
-    icon: React.ReactNode;
-    identifier: string | null;
-    title: string | null;
-  };
   widgets: Widget[];
 }
 

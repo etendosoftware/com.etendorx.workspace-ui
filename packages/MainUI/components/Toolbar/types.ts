@@ -1,4 +1,5 @@
 import { ToolbarButton } from '@workspaceui/storybook/src/stories/Components/Table/types';
+import { BaseButton, ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
 
 export const IconSize = 16;
 
@@ -32,18 +33,11 @@ export interface ProcessResponse {
   }>;
   refreshParent?: boolean;
 }
+
 export interface ProcessButtonProps {
   button: ProcessButton;
   onClick: () => void;
   disabled?: boolean;
-}
-
-interface BaseButton {
-  id: string;
-  name: string;
-  action: string;
-  enabled: boolean;
-  visible: boolean;
 }
 
 export interface StandardButton extends BaseButton {
@@ -52,23 +46,6 @@ export interface StandardButton extends BaseButton {
   fill?: string;
   height?: number;
   width?: number;
-}
-
-export interface ProcessButton extends BaseButton {
-  processId: string;
-  buttonText: string;
-  displayLogic?: string;
-  processInfo: {
-    _entityName: string;
-    id: string;
-    name: string;
-    javaClassName: string;
-    parameters: Array<{
-      defaultValue: string;
-      id: string;
-      name: string;
-    }>;
-  };
 }
 
 export type Button = StandardButton | ProcessButton;

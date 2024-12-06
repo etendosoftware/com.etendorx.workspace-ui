@@ -115,7 +115,12 @@ const Home: React.FC = () => {
     <Box sx={styles.mainContainer}>
       <Box flexShrink={0}>
         <TopToolbar {...toolbarConfig} isItemSelected={!!selectedRecord} />
-        <ExpandMenu anchorEl={expandAnchorEl} onClose={handleExpandClose} open={Boolean(expandAnchorEl)} />
+        <ExpandMenu
+          anchorEl={expandAnchorEl}
+          onClose={handleExpandClose}
+          open={Boolean(expandAnchorEl)}
+          placeholderTranslation={t('table.placeholders.search')}
+        />
       </Box>
       <Box sx={styles.container}>
         <Box sx={tablePaper}>
@@ -131,6 +136,14 @@ const Home: React.FC = () => {
               title: t('table.content.currentTitle') ?? t('table.labels.noTitle'),
             }}
             widgets={updatedWidgets}
+            translations={{
+              register: t('common.register'),
+              save: t('common.save'),
+              cancel: t('common.cancel'),
+              descriptionText: t('registerModal.descriptionText'),
+              noIdentifier: t('table.labels.noIdentifier'),
+              noTitle: t('table.labels.noTitle'),
+            }}
           />
         </Paper>
         <ResizableRecordContainer
