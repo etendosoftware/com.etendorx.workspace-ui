@@ -1,5 +1,4 @@
 import { Metadata } from '../api/metadata';
-import { API_CLIENT_KERNEL_SWS_URL } from '../api/constants';
 
 interface FormInitializationParams {
   MODE: string;

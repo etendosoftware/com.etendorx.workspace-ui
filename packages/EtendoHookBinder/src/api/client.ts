@@ -25,7 +25,7 @@ export class Client {
   private readonly FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded'!;
 
   constructor(url: string) {
-    this.baseUrl = url.endsWith('/') ? url : url + '/';
+    this.baseUrl = url;
     this.baseHeaders = {};
     this.interceptor = null;
   }

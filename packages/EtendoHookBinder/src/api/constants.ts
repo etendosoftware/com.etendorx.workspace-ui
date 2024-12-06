@@ -10,18 +10,14 @@ const getDefaultCacheDuration = () => {
 
 export const TOKEN = process.env.NEXT_PUBLIC_TOKEN;
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-export const API_SANITY_CHECK_URL = `${API_BASE_URL}/security/Login`;
 export const API_LOGIN_URL = `${API_BASE_URL}/sws/login`;
 export const DEFAULT_LOGIN_CHARSET = 'ISO-8859-1';
-export const API_DATASOURCE_BASE_URL = `${API_BASE_URL}/sws/com.smf.securewebservices.datasource`;
-export const API_DATASOURCE_URL = `${API_BASE_URL}/sws/com.smf.securewebservices.datasource/org.openbravo.service.datasource`;
-export const API_OBREST_URL = `${API_BASE_URL}/sws/com.smf.securewebservices.obRest`;
-export const API_METADATA_URL = `${API_BASE_URL}/meta`;
-export const API_METADATA_JSON_URL = `${API_BASE_URL}/com.etendo.metadata`;
+export const API_DATASOURCE_URL = `${API_BASE_URL}/sws/com.smf.securewebservices.datasource/org.openbravo.service.datasource/`;
+export const API_OBREST_URL = `${API_BASE_URL}/sws/com.smf.securewebservices.obRest/`;
+export const API_METADATA_URL = `${API_BASE_URL}/meta/`;
 export const API_DEFAULT_CACHE_DURATION = getDefaultCacheDuration();
 export const AUTH_HEADER_NAME = process.env.NEXT_PUBLIC_AUTH_HEADER_NAME as string;
 export const API_CLIENT_KERNEL_SWS_URL = `${API_BASE_URL}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel`;
-export const API_FORM_INITIALIZATION_URL = `${API_BASE_URL}/org.openbravo.client.kernel`;
 
 export enum HTTP_CODES {
   UNAUTHORIZED = 401,
