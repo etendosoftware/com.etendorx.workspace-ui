@@ -11,6 +11,27 @@ export interface User {
   sectionTooltip: string;
 }
 
+interface Logger {
+  debug(...data: unknown[]): void;
+  info(...data: unknown[]): void;
+  log(...data: unknown[]): void;
+  warn(...data: unknown[]): void;
+  error(...data: unknown[]): void;
+}
+
+interface Warehouse {
+  id: string;
+  name: string;
+}
+
+interface DefaultConfiguration {
+  defaultRole?: string;
+  defaultWarehouse?: string;
+  organization?: string;
+  language?: string;
+  client?: string;
+}
+
 export interface ProfileModalProps extends SelectorListProps {
   icon: string | ReactNode;
   cancelButtonText?: string;
@@ -21,6 +42,13 @@ export interface ProfileModalProps extends SelectorListProps {
   userEmail: string;
   sectionTooltip: string;
   sections: Section[];
+  currentRole: Role | null;
+  currentWarehouse: Warehouse | null;
+  roles: Role[];
+  onChangeRole: (roleId: string) => Promise<void>;
+  onChangeWarehouse: (warehouseId: string) => Promise<void>;
+  onSetDefaultConfiguration: (config: DefaultConfiguration) => Promise<void>;
+  logger: Logger;
 }
 
 export interface SelectorListProps {

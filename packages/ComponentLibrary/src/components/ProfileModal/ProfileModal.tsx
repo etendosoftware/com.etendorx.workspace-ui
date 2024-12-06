@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useContext, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Button, Menu, useTheme } from '@mui/material';
 import CheckCircle from '../../assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';
@@ -9,9 +9,7 @@ import SelectorList from './ToggleSection';
 import { ProfileModalProps } from './types';
 import { MODAL_WIDTH, menuSyle, useStyle } from './styles';
 import IconButton from '../IconButton';
-import { UserContext } from '@workspaceui/mainui/contexts/user';
 import { Option } from '../Input/Select/types';
-import { logger } from '@workspaceui/mainui/utils/logger';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,
@@ -26,14 +24,19 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   sectionTooltip,
   icon,
   sections,
+  currentRole,
+  currentWarehouse,
+  roles,
+  onChangeRole,
+  onChangeWarehouse,
+  onSetDefaultConfiguration,
+  logger,
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedRole, setSelectedRole] = useState<Option | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(null);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
-  const { changeRole, changeWarehouse, currentRole, currentWarehouse, roles, setDefaultConfiguration, token } =
-    useContext(UserContext);
   const theme = useTheme();
   const { styles, sx } = useStyle();
 
@@ -78,13 +81,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     if (currentSection === 'profile') {
       try {
         if (selectedRole && selectedRole.value !== currentRole?.id) {
-          await changeRole(selectedRole.value);
+          await onChangeRole(selectedRole.value);
         }
         if (selectedWarehouse && selectedWarehouse.value !== currentWarehouse?.id) {
-          await changeWarehouse(selectedWarehouse.value);
+          await onChangeWarehouse(selectedWarehouse.value);
         }
-        if (saveAsDefault && token) {
-          await setDefaultConfiguration(token, {
+        if (saveAsDefault) {
+          await onSetDefaultConfiguration({
             defaultRole: selectedRole?.value,
             defaultWarehouse: selectedWarehouse?.value,
             organization: currentRole?.orgList[0]?.id,
@@ -98,18 +101,17 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       }
     }
   }, [
-    changeRole,
-    changeWarehouse,
-    currentRole?.id,
-    currentRole?.orgList,
     currentSection,
-    currentWarehouse?.id,
-    handleClose,
-    saveAsDefault,
     selectedRole,
+    currentRole,
     selectedWarehouse,
-    setDefaultConfiguration,
-    token,
+    currentWarehouse,
+    saveAsDefault,
+    onChangeRole,
+    onChangeWarehouse,
+    onSetDefaultConfiguration,
+    handleClose,
+    logger,
   ]);
 
   const isSaveDisabled = useMemo(
