@@ -4,7 +4,7 @@ import { useStyle } from '../styles';
 import { FormFieldGroupProps } from '../types';
 import { GenericSelector } from '@workspaceui/mainui/components/Form/GenericSelector';
 import { FieldLabel } from '../Sections/FieldLabel';
-import { isEntityReference } from '@workspaceui/etendohookbinder/src/utils/form';
+import { isEntityReference } from '@workspaceui/etendohookbinder/src/utils/metadata';
 
 const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ tab, field, onLabelClick }) => {
   const { styles, sx } = useStyle();

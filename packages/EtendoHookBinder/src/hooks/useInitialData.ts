@@ -1,5 +1,5 @@
-import { API_CLIENT_KERNEL_URL } from '../api/constants';
-import { BasicAuthHelper } from '../auth/basicAuth';
+import { Metadata } from '../api/metadata';
+import { API_CLIENT_KERNEL_SWS_URL } from '../api/constants';
 
 interface FormInitializationParams {
   MODE: string;
@@ -16,12 +16,7 @@ export const getFormInitialization = async (params: FormInitializationParams) =>
       _action: 'org.openbravo.client.application.window.FormInitializationComponent',
     }).toString();
 
-    const response = await fetch(`${API_CLIENT_KERNEL_URL}?${queryString}`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: BasicAuthHelper.createHeaders(),
-    });
-
+    const response = await Metadata.kernelClient.post(`${API_CLIENT_KERNEL_SWS_URL}?${queryString}`);
     const data = await response.json();
 
     if (data.response?.status === -1) {

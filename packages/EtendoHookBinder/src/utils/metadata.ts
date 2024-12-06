@@ -1,4 +1,5 @@
-import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { type Etendo, Metadata } from '../api/metadata';
+import { Field, FieldType, Tab } from '../api/types';
 
 export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
   if (!windowData?.tabs) {
@@ -61,3 +62,29 @@ export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
 
   return result;
 };
+
+const inputNameCache: Record<string, string> = {};
+
+export function getInputName(field: Field) {
+  if (!inputNameCache[field.inpName]) {
+    inputNameCache[field.inpName] = `inp${field.inpName}`;
+  }
+
+  return inputNameCache[field.inpName];
+}
+
+export const buildFormState = (fields: Tab['fields'], record: Record<string, unknown>) =>
+  Object.entries(fields).reduce((state, [fieldName, field]) => {
+    state[getInputName(field)] = record[fieldName];
+
+    return state;
+  }, {} as Record<string, unknown>);
+
+export const isEntityReference = (type: FieldType) => ['tabledir', 'search'].includes(type);
+
+export const getFieldsByDBColumnName = (tab: Tab) =>
+  Object.entries(tab.fields).reduce((acc, [_, field]) => {
+    acc[field.column.dBColumnName] = field;
+
+    return acc;
+  }, {} as Record<string, Field>);

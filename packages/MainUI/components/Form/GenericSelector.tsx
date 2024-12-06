@@ -1,6 +1,5 @@
 import { useCallback, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { getInputName } from '@workspaceui/etendohookbinder/src/utils/form';
 import type { FieldDefinition, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import type { FieldValue } from '@workspaceui/componentlibrary/src/components/FormView/types';
 import BooleanSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/BooleanSelector';
@@ -13,6 +12,7 @@ import SearchSelector from '@workspaceui/componentlibrary/src/components/FormVie
 import TableDirSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/TableDirSelector';
 import { StringSelector } from '@workspaceui/componentlibrary/src/components/FormView/selectors/StringSelector';
 import { useCallout } from '../../hooks/useCallout';
+import { getFieldsByDBColumnName, getInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 
 export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: Tab }) => {
   const { watch, setValue, getValues } = useFormContext();
@@ -24,14 +24,30 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
     payload: getValues(),
   });
 
+  const applyCallout = useCallback(
+    (data: { [key: string]: unknown }) => {
+      const columns = getFieldsByDBColumnName(tab);
+      const columnValues = data.columnValues as Record<string, { value: unknown; classicValue: unknown }>;
+
+      Object.entries(columnValues).forEach(([column, valueObj]) => {
+        const inputName = getInputName(columns[column]);
+        setValue(inputName, valueObj.value);
+      });
+    },
+    [setValue, tab],
+  );
+
   const handleChange = useCallback(
     (value: FieldValue) => {
       const f = async () => {
         if (field.original?.column?.callout$_identifier) {
-          // TODO: Handle callout response
-          console.debug('Calling callout...');
-          await callout();
-          console.debug('After returning callout...');
+          const { data } = await callout();
+
+          if (data.response?.status === -1) {
+            console.warn('Callout execution error', data);
+          } else {
+            applyCallout(data);
+          }
         }
 
         setValue(name.current, value);
@@ -39,7 +55,7 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
 
       return f();
     },
-    [callout, field.original?.column?.callout$_identifier, setValue],
+    [applyCallout, callout, field.original?.column?.callout$_identifier, setValue],
   );
 
   switch (field.type) {
