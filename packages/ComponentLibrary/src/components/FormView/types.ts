@@ -1,4 +1,3 @@
-import React, { ReactNode } from 'react';
 import { Field, MappedData, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 
@@ -49,7 +48,7 @@ export interface FormSectionProps {
   dottedLineInterval?: number;
   readOnly?: boolean;
   renderFieldValue?: (field: FieldDefinition) => FieldValue;
-  children?: ReactNode;
+  children?: React.ReactNode;
   onLabelClick?: FormViewProps['onLabelClick'];
   tab: Tab;
 }
