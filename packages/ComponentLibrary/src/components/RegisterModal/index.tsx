@@ -7,10 +7,8 @@ import Modal from '../BasicModal';
 import { processMock } from '@workspaceui/storybook/src/stories/Components/RegisterModal/registerMock';
 import RadioButtonItem from '../RadioButton';
 import CheckIcon from '../../assets/icons/check-circle.svg';
-import { useTranslation } from '@workspaceui/mainui/hooks/useTranslation';
 
-const RegisterModal: React.FC<RegisterModalProps> = ({ registerText }) => {
-  const { t } = useTranslation();
+const RegisterModal: React.FC<RegisterModalProps> = ({ registerText, translations }) => {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isHovering, setIsHovering] = useState(false);
   const theme = useTheme();
@@ -24,10 +22,10 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ registerText }) => {
 
   return (
     <Modal
-      tittleHeader={t('common.register')}
-      descriptionText={t('registerModal.descriptionText')}
-      saveButtonLabel={t('common.save')}
-      secondaryButtonLabel={t('common.cancel')}
+      tittleHeader={translations.register}
+      descriptionText={translations.descriptionText}
+      saveButtonLabel={translations.save}
+      secondaryButtonLabel={translations.cancel}
       SaveIcon={CheckIcon}
       HeaderIcon={CloseRecordIcon}
       showHeader

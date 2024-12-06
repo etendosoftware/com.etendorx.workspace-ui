@@ -1,12 +1,10 @@
 import { Box, Typography } from '@mui/material';
-import { SidebarContentProps } from '@workspaceui/storybook/src/stories/Components/Table/types';
 import ContentGrid from './WidgetContent';
 import { useStyle } from '../styles';
 import RegisterModal from '../../RegisterModal';
-import { useTranslation } from '@workspaceui/mainui/hooks/useTranslation';
+import { SidebarContentProps } from './types';
 
-export const SidebarContent: React.FC<SidebarContentProps> = ({ icon, identifier, title, widgets }) => {
-  const { t } = useTranslation();
+export const SidebarContent: React.FC<SidebarContentProps> = ({ icon, identifier, title, widgets, translations }) => {
   const { sx } = useStyle();
 
   return (
@@ -23,7 +21,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({ icon, identifier
         </Box>
       </Box>
       <Box ml={2.5}>
-        <RegisterModal registerText={t('common.register')} />
+        <RegisterModal registerText={translations.register} translations={translations} />
       </Box>
       <ContentGrid widgets={widgets} />
     </Box>

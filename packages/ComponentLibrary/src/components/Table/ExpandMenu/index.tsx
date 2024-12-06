@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Menu, MenuItem, TextField, PopoverOrigin } from '@mui/material';
-import { useTranslation } from '@workspaceui/mainui/hooks/useTranslation';
 
 interface ExpandMenuProps {
   anchorEl: null | HTMLElement;
   onClose: () => void;
   open: boolean;
+  placeholderTranslation: string;
 }
 
 const bottomRightOrigin: PopoverOrigin = {
@@ -18,8 +18,7 @@ const transformOrigin: PopoverOrigin = {
   horizontal: 'left',
 };
 
-const ExpandMenu = ({ anchorEl, onClose, open }: ExpandMenuProps) => {
-  const { t } = useTranslation();
+const ExpandMenu = ({ anchorEl, onClose, open, placeholderTranslation }: ExpandMenuProps) => {
   const [inputValue, setInputValue] = useState('');
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,7 +36,7 @@ const ExpandMenu = ({ anchorEl, onClose, open }: ExpandMenuProps) => {
         <TextField
           value={inputValue}
           onChange={handleInputChange}
-          placeholder={t('table.placeholders.search')}
+          placeholder={placeholderTranslation}
           variant="outlined"
           size="small"
         />

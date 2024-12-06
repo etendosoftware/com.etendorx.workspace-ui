@@ -1,19 +1,7 @@
 import React from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from '@mui/material';
-import { ProcessButton, ProcessResponse } from '@workspaceui/mainui/components/Toolbar/types';
 import { useStyle } from './styles';
-
-interface ProcessModalProps {
-  open: boolean;
-  onClose: () => void;
-  button: ProcessButton;
-  onConfirm: () => void;
-  isExecuting: boolean;
-  processResponse: ProcessResponse | null;
-  confirmationMessage: string;
-  cancelButtonText: string;
-  executeButtonText: string;
-}
+import { ProcessModalProps } from './types';
 
 const ProcessModal: React.FC<ProcessModalProps> = ({
   open,

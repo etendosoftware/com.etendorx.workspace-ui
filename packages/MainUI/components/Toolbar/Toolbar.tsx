@@ -2,7 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import ProcessModal from '@workspaceui/componentlibrary/src/components/ProcessModal';
-import { IconSize, ProcessButton, ProcessResponse, StandardButton, ToolbarProps, isProcessButton } from './types';
+import { IconSize, ProcessResponse, StandardButton, ToolbarProps, isProcessButton } from './types';
 import {
   LEFT_SECTION_BUTTONS,
   CENTER_SECTION_BUTTONS,
@@ -18,6 +18,7 @@ import { useToolbarConfig } from '../../hooks/Toolbar/useToolbarConfig';
 import { iconMap } from './iconMap';
 import { useToolbar } from '../../hooks/Toolbar/useToolbar';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
+import { ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
 
 export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   const [openModal, setOpenModal] = React.useState(false);
