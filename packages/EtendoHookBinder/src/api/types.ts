@@ -71,12 +71,17 @@ export interface Field {
   required: boolean;
   hasDefaultValue: boolean;
   columnName: string;
-  inpColumnName: string;
+  inpName: string;
   refColumnName: string;
   targetEntity: string;
   gridProps: GridProps;
   type: string; // Consider specifying possible values if known
   selector?: Record<string, string>;
+  refList: Array<{ id: string; label: string; value: string }>;
+  referencedEntity: string;
+  referencedWindowId: string;
+  referencedTabId: string;
+  fieldName: string;
 }
 
 export interface Column {
@@ -292,7 +297,7 @@ export interface BaseFieldDefinition<T> {
   section?: string;
   required?: boolean;
   initialValue?: T;
-  original?: {
+  original: {
     refList: Array<{ id: string; label: string; value: string }>;
     referencedEntity: string;
     referencedWindowId: string;
@@ -300,10 +305,19 @@ export interface BaseFieldDefinition<T> {
     fieldName: string;
   } & Field;
 }
+
+export type SelectOption = { id: string; title: string; value: string };
 export type FieldDefinition =
   | BaseFieldDefinition<string>
   | BaseFieldDefinition<number>
   | BaseFieldDefinition<boolean>
   | BaseFieldDefinition<Date>
   | BaseFieldDefinition<string[]>
-  | BaseFieldDefinition<{ id: string; title: string; value: string }>;
+  | BaseFieldDefinition<SelectOption>;
+
+type EntityKey = string;
+type EntityValue = string | number | boolean | symbol;
+
+export interface EntityData {
+  [key: EntityKey]: EntityValue;
+}

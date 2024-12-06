@@ -18,8 +18,6 @@ export function useComboSelect(field: FieldDefinition) {
         return;
       }
 
-      console.debug(field.original.selector);
-
       const payload = new URLSearchParams();
       const p = {
         _startRow: 0,

@@ -4,19 +4,19 @@ import { FormViewProps } from './types';
 import PrimaryTabs from '../PrimaryTab';
 import { TabItem } from '../PrimaryTab/types';
 import SectionRenderer from './Sections/sectionRendered';
-import type { FieldValue, FormData, Section } from './types';
+import type { Section } from './types';
 import Chevrons from '../../assets/icons/chevrons-right.svg';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 
 const FormView: React.FC<FormViewProps> = ({
   data,
-  onChange,
   readOnly = false,
   gridItemProps,
   dottedLineInterval,
   initialValues = true,
+  onLabelClick,
+  tab,
 }) => {
-  const [formData, setFormData] = useState<FormData>(data);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('');
@@ -30,7 +30,7 @@ const FormView: React.FC<FormViewProps> = ({
   );
 
   const tabs: TabItem[] = useMemo(() => {
-    return Object.values(formData)
+    return Object.values(data)
       .filter((field): field is Section => field.type === 'section')
       .map(section => ({
         id: section.id,
@@ -40,7 +40,7 @@ const FormView: React.FC<FormViewProps> = ({
         hoverFill: section.hoverFill,
         showInTab: section.showInTab,
       }));
-  }, [formData]);
+  }, [data]);
 
   const handleTabChange = useCallback((newTabId: string) => {
     setSelectedTab(newTabId);
@@ -101,33 +101,13 @@ const FormView: React.FC<FormViewProps> = ({
     [initialValues],
   );
 
-  const handleInputChange = useCallback(
-    (name: string, value: FieldValue) => {
-      if (readOnly) return;
-
-      setFormData(
-        prev =>
-          ({
-            ...prev,
-            [name]: {
-              ...prev[name],
-              value: value,
-            },
-          } as FormData),
-      );
-
-      onChange?.(formData);
-    },
-    [formData, onChange, readOnly],
-  );
-
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
   }, []);
 
   const groupedFields = useMemo(
     () =>
-      Object.entries(formData).reduce((acc, [key, value]) => {
+      Object.entries(data).reduce((acc, [key, value]) => {
         if ('section' in value) {
           const section = value.section ?? '_mainSection';
           if (!acc[section]) acc[section] = [];
@@ -135,7 +115,7 @@ const FormView: React.FC<FormViewProps> = ({
         }
         return acc;
       }, {} as { [key: string]: [string, FieldDefinition][] }),
-    [formData],
+    [data],
   );
 
   return (
@@ -147,7 +127,7 @@ const FormView: React.FC<FormViewProps> = ({
         <form onSubmit={handleSubmit}>
           <Grid container>
             {Object.entries(groupedFields).map(([sectionName, fields]) => {
-              const sectionData = formData[sectionName] as Section;
+              const sectionData = data[sectionName] as Section;
               if (!sectionData || sectionData.type !== 'section') {
                 console.warn(`Section ${sectionName} is not properly defined`);
                 return null;
@@ -163,11 +143,12 @@ const FormView: React.FC<FormViewProps> = ({
                   onAccordionChange={handleAccordionChange}
                   onHover={setHoveredSection}
                   hoveredSection={hoveredSection}
-                  onInputChange={handleInputChange}
                   sectionRef={el => (sectionRefs.current[sectionData.id] = el)}
                   gridItemProps={gridItemProps}
                   dottedLineInterval={dottedLineInterval}
                   readOnly={readOnly}
+                  onLabelClick={onLabelClick}
+                  tab={tab}
                 />
               );
             })}
