@@ -5,15 +5,13 @@ import OrganizationIcon from '../../../assets/icons/user.svg';
 import ClientIcon from '../../../assets/icons/github.svg';
 import WarehouseIcon from '../../../assets/icons/warehouse.svg';
 import LanguageIcon from '../../../assets/icons/flags/spain.svg';
-import { SelectorListProps, Item } from '../types';
-import { InputPassword } from '../..';
 import LockOutlined from '../../../assets/icons/lock.svg';
 import Select from '../../Input/Select';
-import { useTranslation } from '@workspaceui/mainui/hooks/useTranslation';
-import { Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
+import { InputPassword } from '../..';
 import { Option } from '../../Input/Select/types';
+import { SelectorListProps, Item, BaseWarehouse } from '../types';
 
-const isOptionEqualToValue = (option: Option<string>, value: Option<string>) => option.id === value.id;
+const isOptionEqualToValue = (option: Option, value: Option) => option.id === value.id;
 
 const SelectorList: React.FC<SelectorListProps> = ({
   section,
@@ -27,8 +25,8 @@ const SelectorList: React.FC<SelectorListProps> = ({
   selectedWarehouse,
   saveAsDefault,
   onSaveAsDefaultChange,
+  translations,
 }) => {
-  const { t } = useTranslation();
   const { styles, defaultFill } = useStyle();
   const theme = useTheme();
 
@@ -48,10 +46,10 @@ const SelectorList: React.FC<SelectorListProps> = ({
 
   const warehouses = useMemo(() => {
     if (selectedRole) {
-      const _warehouses = {} as Record<string, Warehouse>;
+      const _warehouses = {} as Record<string, BaseWarehouse>;
       const role = roles.find(r => r.id === selectedRole.value);
 
-      role?.orgList.forEach((org: { warehouseList: Warehouse[] }) => {
+      role?.orgList.forEach(org => {
         org.warehouseList.forEach(w => {
           _warehouses[w.id] = w;
         });
@@ -109,7 +107,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
           </FormControl>
           <FormControlLabel
             control={<CustomCheckbox size="small" checked={saveAsDefault} onChange={onSaveAsDefaultChange} />}
-            label={t('navigation.profile.saveAsDefault')}
+            label={translations?.saveAsDefault}
           />
         </>
       )}

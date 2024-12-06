@@ -31,6 +31,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   onChangeWarehouse,
   onSetDefaultConfiguration,
   logger,
+  translations,
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -141,7 +142,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           },
         }}
         MenuListProps={{ sx: menuSyle }}>
-        <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} sectionTooltip={sectionTooltip} />
+        <UserProfile
+          photoUrl={userPhotoUrl}
+          name={userName}
+          email={userEmail}
+          sectionTooltip={sectionTooltip}
+          onSignOff={() => {}}
+        />
         <div style={styles.toggleSectionStyles}>
           <ToggleSection sections={sections} currentSection={currentSection} onToggle={handleToggle} />
         </div>
@@ -157,6 +164,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           selectedWarehouse={selectedWarehouse}
           saveAsDefault={saveAsDefault}
           onSaveAsDefaultChange={handleSaveAsDefaultChange}
+          translations={translations}
         />
         <div style={styles.buttonContainerStyles}>
           <Button sx={sx.buttonStyles} onClick={handleClose}>

@@ -1,18 +1,16 @@
+import { useCallback } from 'react';
 import { useStyle } from './styles';
 import BackgroundGradient from '../../assets/images/backgroundGradient.svg?url';
 import LogoutIcon from '../../assets/icons/log-out.svg';
-import { User } from './types';
 import IconButton from '../IconButton';
-import { UserContext } from '@workspaceui/mainui/contexts/user';
-import { useCallback, useContext } from 'react';
+import { UserProfileProps } from './types';
 
-const UserProfile: React.FC<User> = ({ photoUrl, name, email, sectionTooltip }) => {
-  const { clearUserData } = useContext(UserContext);
+const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, email, sectionTooltip, onSignOff }) => {
   const { styles } = useStyle();
 
   const handleSignOff = useCallback(() => {
-    clearUserData();
-  }, [clearUserData]);
+    onSignOff();
+  }, [onSignOff]);
 
   return (
     <div style={styles.userProfileStyles}>

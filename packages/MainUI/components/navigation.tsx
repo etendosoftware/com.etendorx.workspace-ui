@@ -80,6 +80,10 @@ const Navigation: React.FC = () => {
         sectionTooltip={t('navigation.profile.signOffTooltip')}
         icon={<PersonIcon />}
         sections={sections}
+        section={''}
+        translations={{
+          saveAsDefault: t('navigation.profile.saveAsDefault'),
+        }}
       />
     </Nav>
   );
