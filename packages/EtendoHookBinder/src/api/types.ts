@@ -85,7 +85,7 @@ export interface Field {
 }
 
 export interface Option<T extends string = string> {
-  title: string;
+  label: string;
   value: T;
   id: string;
 }
@@ -304,7 +304,6 @@ export interface BaseFieldDefinition<T> {
   required?: boolean;
   initialValue?: T;
   original: {
-    refList: Array<{ id: string; label: string; value: string }>;
     referencedEntity: string;
     referencedWindowId: string;
     referencedTabId: string;

@@ -8,7 +8,15 @@ import { useTheme } from '@mui/material';
 const ListSelector: React.FC<ListSelectorProps> = ({ field, value, onChange, readOnly }) => {
   const [selectedValue, setSelectedValue] = useState<Option | null>(() => {
     if (field.original?.refList) {
-      return field.original.refList.find((item: Option) => item.value === value) ?? null;
+      const option = field.original.refList.find(item => item.value === value);
+
+      if (option) {
+        return {
+          id: option.id,
+          title: option.label,
+          value: option.value,
+        };
+      }
     }
 
     return null;
