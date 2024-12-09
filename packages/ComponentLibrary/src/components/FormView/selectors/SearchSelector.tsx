@@ -10,7 +10,7 @@ const getOptionLabel = (option: Option) => option.title;
 
 const optionEqualValue = (option: Option, value: { id: string }) => option.id === value.id || option.value === value.id;
 
-const SearchSelector = ({ onChange, label, value, field }: SearchSelectorProps) => {
+const SearchSelector = ({ onChange, value, field }: SearchSelectorProps) => {
   const theme = useTheme();
   const { records, loading, error, loaded } = useComboSelect(field);
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
@@ -47,10 +47,10 @@ const SearchSelector = ({ onChange, label, value, field }: SearchSelectorProps) 
     (_event: React.SyntheticEvent<Element, Event>, newValue: Option | null) => {
       setSelectedValue(newValue);
       if (newValue) {
-        onChange(label, newValue.id);
+        onChange(newValue.id);
       }
     },
-    [label, onChange],
+    [onChange],
   );
 
   if (loading || !loaded) return <Spinner />;

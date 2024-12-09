@@ -77,11 +77,17 @@ export interface Field {
   gridProps: GridProps;
   type: string; // Consider specifying possible values if known
   selector?: Record<string, string>;
-  refList: Array<{ id: string; label: string; value: string }>;
+  refList: Option<string>[];
   referencedEntity: string;
   referencedWindowId: string;
   referencedTabId: string;
   fieldName: string;
+}
+
+export interface Option<T extends string = string> {
+  title: string;
+  value: T;
+  id: string;
 }
 
 export interface Column {

@@ -13,11 +13,12 @@ import TableDirSelector from '@workspaceui/componentlibrary/src/components/FormV
 import { StringSelector } from '@workspaceui/componentlibrary/src/components/FormView/selectors/StringSelector';
 import { useCallout } from '../../hooks/useCallout';
 import { getFieldsByDBColumnName, getInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { CALLOUTS_ENABLED } from '../../constants/config';
 
 export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: Tab }) => {
   const { watch, setValue, getValues } = useFormContext();
   const name = useRef(getInputName(field.original));
-  const value = watch(name.current, field.initialValue);
+  const value = watch(name.current);
   const callout = useCallout({
     field: field.original,
     tab,
@@ -40,7 +41,9 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
   const handleChange = useCallback(
     (value: FieldValue) => {
       const f = async () => {
-        if (field.original?.column?.callout$_identifier) {
+        setValue(name.current, value);
+
+        if (CALLOUTS_ENABLED && field.original?.column?.callout$_identifier) {
           const { data } = await callout();
 
           if (data.response?.status === -1) {
@@ -49,8 +52,6 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
             applyCallout(data);
           }
         }
-
-        setValue(name.current, value);
       };
 
       return f();
@@ -71,7 +72,7 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
       return (
         <SearchSelector
           field={field}
-          value={field.value}
+          value={value}
           label={field.label}
           entity={field.original?.referencedEntity || ''}
           onChange={handleChange}
@@ -97,7 +98,7 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
         />
       );
     case 'list':
-      return <ListSelector field={field} onChange={handleChange} />;
+      return <ListSelector value={value} field={field} onChange={handleChange} />;
     default:
       return (
         <StringSelector

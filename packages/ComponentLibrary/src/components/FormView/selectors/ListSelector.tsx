@@ -5,8 +5,14 @@ import { Option } from '../../Input/Select/types';
 import { ListSelectorProps } from '../types';
 import { useTheme } from '@mui/material';
 
-const ListSelector: React.FC<ListSelectorProps> = ({ field, onChange, readOnly }) => {
-  const [selectedValue, setSelectedValue] = useState<Option | null>(null);
+const ListSelector: React.FC<ListSelectorProps> = ({ field, value, onChange, readOnly }) => {
+  const [selectedValue, setSelectedValue] = useState<Option | null>(() => {
+    if (field.original?.refList) {
+      return field.original.refList.find((item: Option) => item.value === value) ?? null;
+    }
+
+    return null;
+  });
   const theme = useTheme();
 
   const options: Option[] = useMemo(() => {
@@ -29,10 +35,10 @@ const ListSelector: React.FC<ListSelectorProps> = ({ field, onChange, readOnly }
     (_event: React.SyntheticEvent<Element, Event>, newValue: Option | null) => {
       if (newValue) {
         setSelectedValue(newValue);
-        onChange(field.name, newValue.value);
+        onChange(newValue.value);
       }
     },
-    [field.name, onChange],
+    [onChange],
   );
 
   const isOptionEqualToValue = useCallback((option: Option, value: Option) => option.value === value.value, []);

@@ -101,14 +101,14 @@ export interface TableDirSelectorProps {
   label: string;
   value: FieldValue;
   entity: string;
-  onChange: (name: string, value: string) => void;
+  onChange: (value: string) => void;
 }
 
 export interface SearchSelectorProps {
   label: string;
   value: FieldValue;
   entity: string;
-  onChange: (name: string, value: string) => void;
+  onChange: (value: string) => void;
   field: FieldDefinition;
 }
 
@@ -162,6 +162,7 @@ export interface QuantityProps {
 
 export interface ListSelectorProps {
   field: FieldDefinition;
-  onChange: (name: string, value: string) => void;
+  value: string;
+  onChange: (value: string) => void;
   readOnly?: boolean;
 }

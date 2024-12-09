@@ -15,7 +15,7 @@ export const getFormInitialization = async (params: FormInitializationParams) =>
       _action: 'org.openbravo.client.application.window.FormInitializationComponent',
     }).toString();
 
-    const { data } = await Metadata.kernelClient.post(`?${queryString}`);
+    const { data } = await Metadata.kernelClient.post(`?${queryString}`, {});
 
     return data;
   } catch (error) {
