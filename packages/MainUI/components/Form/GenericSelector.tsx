@@ -18,7 +18,7 @@ import { CALLOUTS_ENABLED } from '../../constants/config';
 export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: Tab }) => {
   const { watch, setValue, getValues } = useFormContext();
   const name = useRef(getInputName(field.original));
-  const value = watch(name.current);
+  const value = watch(name.current, field.initialValue);
   const callout = useCallout({
     field: field.original,
     tab,
