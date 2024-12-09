@@ -26,21 +26,18 @@ const TableDirSelector = ({ onChange, entity, value }: TableDirSelectorProps) =>
   );
 
   useEffect(() => {
+    let option;
+
     if (value && options.length > 0) {
-      const option = options.find(opt => {
+      option = options.find(opt => {
         if (typeof value === 'object' && 'id' in value) {
           return opt.id === value.id || opt.value === value.id;
         }
         return opt.id === String(value) || opt.value === String(value);
       });
-      if (option) {
-        setSelectedValue(option);
-      } else {
-        setSelectedValue(null);
-      }
-    } else {
-      setSelectedValue(null);
     }
+
+    setSelectedValue(option ?? null);
   }, [value, options]);
 
   const handleChange = useCallback(

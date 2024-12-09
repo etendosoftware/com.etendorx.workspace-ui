@@ -27,9 +27,8 @@ const ListSelector: React.FC<ListSelectorProps> = ({ field, value, onChange, rea
   }, [field.original?.refList]);
 
   useEffect(() => {
-    const currentOption = options.find(option => option.value === field.value);
-    setSelectedValue(currentOption || null);
-  }, [field.value, options]);
+    setSelectedValue(options.find(option => option.value === value) || null);
+  }, [value, options]);
 
   const handleChange = useCallback(
     (_event: React.SyntheticEvent<Element, Event>, newValue: Option | null) => {
