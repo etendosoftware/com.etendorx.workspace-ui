@@ -17,5 +17,6 @@ export interface ISelectInput<T extends string = string>
     icon?: React.ReactElement;
   };
   value?: Option<T> | null;
+  name?: string;
   onChange?: (event: React.SyntheticEvent<Element, Event>, value: Option<T> | null) => void;
 }

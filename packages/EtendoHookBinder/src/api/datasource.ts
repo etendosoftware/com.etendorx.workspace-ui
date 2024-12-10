@@ -4,22 +4,12 @@ import { DatasourceParams } from './types';
 
 export class Datasource {
   public static client = new Client(API_DATASOURCE_URL);
-  public static restClient = new Client(API_OBREST_URL);
 
-  public static authorize(token: string) {
+  public static authorize = (token: string) => {
     this.client.setAuthHeader(token, 'Bearer');
-    this.restClient.setAuthHeader(token, 'Bearer');
-  }
+  };
 
-  public static registerInterceptor(interceptor: Interceptor) {
-    const listener1 = this.client.registerInterceptor(interceptor);
-    const listener2 = this.restClient.registerInterceptor(interceptor);
-
-    return () => {
-      listener1();
-      listener2();
-    };
-  }
+  public static registerInterceptor = (interceptor: Interceptor) => this.client.registerInterceptor(interceptor);
 
   public static async get(
     entity: string,

@@ -19,7 +19,6 @@ const FormSection: React.FC<FormSectionProps> = ({
   gridItemProps = { xs: 12, sm: 6, md: 6 },
   dottedLineInterval = 2,
   readOnly = false,
-  renderFieldValue,
   children,
   onLabelClick,
   tab,
@@ -68,12 +67,11 @@ const FormSection: React.FC<FormSectionProps> = ({
         ) : (
           <Grid container>
             {fields.map(([key, field], index) => (
-              <Grid item {...gridItemProps} key={key} sx={sx.gridItem}>
+              <Grid item {...gridItemProps} key={field.original.id} sx={sx.gridItem}>
                 <FormFieldGroup
                   name={key}
                   field={field}
                   readOnly={readOnly}
-                  renderFieldValue={renderFieldValue}
                   onLabelClick={onLabelClick}
                   tab={tab}
                 />

@@ -9,8 +9,8 @@ const SelectSelector = memo(({ name, title, onChange, readOnly }: SelectSelector
   const theme = useTheme();
   const options = useMemo(() => [], []);
   const handleChange = useCallback(
-    (_: React.SyntheticEvent<Element, Event>, newValue: Option<string> | null) => onChange(name, newValue?.value || ''),
-    [name, onChange],
+    (_: React.SyntheticEvent<Element, Event>, newValue: Option<string> | null) => onChange(newValue?.value || ''),
+    [onChange],
   );
 
   return (
@@ -21,6 +21,7 @@ const SelectSelector = memo(({ name, title, onChange, readOnly }: SelectSelector
       getOptionLabel={option => option.title}
       onChange={handleChange}
       disabled={readOnly}
+      name={name}
     />
   );
 });

@@ -1,4 +1,4 @@
-import { memo, useRef } from 'react';
+import { memo, useCallback, useMemo, useRef } from 'react';
 import { InputAdornment, TextField } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import CalendarIcon from '../../../assets/icons/calendar.svg';
@@ -21,15 +21,30 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
 const DateSelector: React.FC<DateSelectorProps> = memo(({ name, value, onChange, readOnly }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(name, event.target.value);
-  };
+  const handleChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      onChange(event.currentTarget.value);
+    },
+    [onChange],
+  );
 
-  const handleIconClick = () => {
-    if (inputRef.current) {
-      inputRef.current.showPicker();
-    }
-  };
+  const handleIconClick = useCallback(() => {
+    inputRef.current?.showPicker();
+  }, []);
+
+  const InputProps = useMemo(
+    () => ({
+      name,
+      endAdornment: (
+        <InputAdornment position="end">
+          <IconButton onClick={handleIconClick} disabled={readOnly} height={16} width={16}>
+            <CalendarIcon />
+          </IconButton>
+        </InputAdornment>
+      ),
+    }),
+    [handleIconClick, name, readOnly],
+  );
 
   return (
     <StyledTextField
@@ -38,19 +53,11 @@ const DateSelector: React.FC<DateSelectorProps> = memo(({ name, value, onChange,
       type="date"
       variant="standard"
       margin="normal"
-      value={value || ''}
+      value={value}
       onChange={handleChange}
       disabled={readOnly}
       inputRef={inputRef}
-      InputProps={{
-        endAdornment: (
-          <InputAdornment position="end">
-            <IconButton onClick={handleIconClick} disabled={readOnly} height={16} width={16}>
-              <CalendarIcon />
-            </IconButton>
-          </InputAdornment>
-        ),
-      }}
+      InputProps={InputProps}
     />
   );
 });

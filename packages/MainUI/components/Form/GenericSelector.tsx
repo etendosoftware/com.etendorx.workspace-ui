@@ -67,7 +67,7 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
     case 'date':
       return <DateSelector name={name.current} value={value as string} onChange={handleChange} />;
     case 'select':
-      return <SelectSelector name={field.name} title={field.label} onChange={handleChange} />;
+      return <SelectSelector name={name.current} title={field.label} onChange={handleChange} />;
     case 'search':
       return (
         <SearchSelector
@@ -76,6 +76,7 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
           label={field.label}
           entity={field.original?.referencedEntity || ''}
           onChange={handleChange}
+          name={name.current}
         />
       );
     case 'tabledir':
@@ -85,6 +86,7 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
           label={field.label}
           entity={field.original?.referencedEntity || ''}
           onChange={handleChange}
+          name={name.current}
         />
       );
     case 'quantity':
@@ -95,16 +97,18 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
           min={field.original?.column?.minValue ?? null}
           max={field.original?.column?.maxValue ?? null}
           onChange={handleChange}
+          name={name.current}
         />
       );
     case 'list':
-      return <ListSelector value={value} field={field} onChange={handleChange} />;
+      return <ListSelector name={name.current} value={value} field={field} onChange={handleChange} />;
     default:
       return (
         <StringSelector
           value={value as string}
           setValue={handleChange}
           placeholder={field.value ? String(field.value) : undefined}
+          name={name.current}
         />
       );
   }

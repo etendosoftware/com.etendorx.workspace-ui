@@ -10,7 +10,7 @@ const getOptionLabel = (option: Option) => option.title;
 
 const optionEqualValue = (option: Option, value: { id: string }) => option.id === value.id || option.value === value.id;
 
-const TableDirSelector = ({ onChange, entity, value }: TableDirSelectorProps) => {
+const TableDirSelector = ({ onChange, entity, value, name }: TableDirSelectorProps) => {
   const theme = useTheme();
   const { records, loading, error, loaded } = useDatasource(entity);
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
@@ -61,6 +61,7 @@ const TableDirSelector = ({ onChange, entity, value }: TableDirSelectorProps) =>
       value={selectedValue}
       getOptionLabel={getOptionLabel}
       isOptionEqualToValue={optionEqualValue}
+      name={name}
     />
   );
 };
