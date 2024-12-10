@@ -25,7 +25,7 @@ const ListSelector: React.FC<ListSelectorProps> = ({ field, value, onChange, rea
 
   const options: Option[] = useMemo(() => {
     if (field.original?.refList) {
-      return field.original.refList.map((item: { id: string; label: string; value: string }) => ({
+      return field.original.refList.map((item) => ({
         id: item.id,
         title: item.label,
         value: item.value,

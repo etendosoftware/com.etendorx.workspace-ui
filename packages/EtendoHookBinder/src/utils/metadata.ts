@@ -65,7 +65,7 @@ export function getInputName(field: Field) {
 
     return inputNameCache[field.inpName];
   } catch (e) {
-    console.warn(e);
+    console.warn(field, e);
 
     return '';
   }
@@ -74,7 +74,13 @@ export function getInputName(field: Field) {
 export const buildFormState = (fields: Tab['fields'], record: Record<string, unknown>) => {
   try {
     return Object.entries(fields).reduce((state, [fieldName, field]) => {
-      state[getInputName(field)] = record[fieldName] ?? "";
+      const inputName = getInputName(field);
+
+      if (inputName?.length) {
+        state[inputName] = record[fieldName];
+      } else {
+        alert(JSON.stringify({ name: fieldName, inputName }, null, 2));
+      }
 
       return state;
     }, {} as Record<string, unknown>);
@@ -89,8 +95,12 @@ export const isEntityReference = (type: FieldType) => ['tabledir', 'search'].inc
 
 export const getFieldsByDBColumnName = (tab: Tab) => {
   try {
-    return Object.entries(tab.fields).reduce((acc, [_, field]) => {
+    return Object.entries(tab.fields).reduce((acc, [f, field]) => {
       acc[field.column.dBColumnName] = field;
+
+      if (!field.column.dBColumnName?.length) {
+        alert(JSON.stringify(field, null, 2));
+      }
 
       return acc;
     }, {} as Record<string, Field>);

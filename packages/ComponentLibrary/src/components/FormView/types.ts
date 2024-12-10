@@ -150,6 +150,8 @@ export interface SelectSelectorProps {
   title: string;
   onChange: (value: string) => void;
   readOnly?: boolean;
+  field: Field;
+  value: string;
 }
 
 export interface QuantityProps {

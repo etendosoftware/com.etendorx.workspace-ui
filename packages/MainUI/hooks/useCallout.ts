@@ -7,7 +7,6 @@ import { FieldValues } from 'react-hook-form';
 export interface UseCalloutProps {
   field: Field;
   tab: Tab;
-  payload: FieldValues;
   parentId?: string | null;
   rowId?: string | null;
 }
@@ -15,17 +14,23 @@ export interface UseCalloutProps {
 const _action = 'org.openbravo.client.application.window.FormInitializationComponent';
 const MODE = 'CHANGE';
 
-export const useCallout = ({ field, tab, payload, parentId, rowId }: UseCalloutProps) => {
-  return useCallback(async () => {
+export const useCallout = ({ field, tab, parentId, rowId }: UseCalloutProps) => {
+  return useCallback(async (payload: FieldValues) => {
     const params = new URLSearchParams({
       _action,
       MODE,
       TAB_ID: tab.id,
       CHANGED_COLUMN: getInputName(field),
-      PARENT_ID: parentId ?? 'null',
-      ROW_ID: rowId ?? 'null',
     });
 
+    if (rowId) {
+      params.set("ROW_ID", rowId);
+    }
+
+    if (parentId) {
+      params.set("PARENT_ID", parentId);
+    }
+
     return Metadata.kernelClient.post(`?${params}`, payload);
-  }, [field, parentId, payload, rowId, tab.id]);
+  }, [field, parentId, rowId, tab.id]);
 };

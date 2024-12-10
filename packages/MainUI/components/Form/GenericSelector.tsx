@@ -19,11 +19,7 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
   const { watch, setValue, getValues } = useFormContext();
   const name = useRef(getInputName(field.original));
   const value = watch(name.current, field.initialValue);
-  const callout = useCallout({
-    field: field.original,
-    tab,
-    payload: getValues(),
-  });
+  const callout = useCallout({ field: field.original, tab });
 
   const applyCallout = useCallback(
     (data: { [key: string]: unknown }) => {
@@ -31,8 +27,11 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
       const columnValues = data.columnValues as Record<string, { value: unknown; classicValue: unknown }>;
 
       Object.entries(columnValues).forEach(([column, valueObj]) => {
-        const inputName = getInputName(columns[column]);
-        setValue(inputName, valueObj.value);
+        const _field = columns[column];
+
+        if (_field) {
+          setValue('inp' + _field.inpName, valueObj.value);
+        }
       });
     },
     [setValue, tab],
@@ -44,7 +43,7 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
         setValue(name.current, value);
 
         if (CALLOUTS_ENABLED && field.original?.column?.callout$_identifier) {
-          const { data } = await callout();
+          const { data } = await callout(getValues());
 
           if (data.response?.status === -1) {
             console.warn('Callout execution error', data);
@@ -56,7 +55,7 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
 
       return f();
     },
-    [applyCallout, callout, field.original?.column?.callout$_identifier, setValue],
+    [applyCallout, callout, field.original?.column?.callout$_identifier, getValues, setValue],
   );
 
   switch (field.type) {
@@ -67,7 +66,15 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
     case 'date':
       return <DateSelector name={name.current} value={value as string} onChange={handleChange} />;
     case 'select':
-      return <SelectSelector name={name.current} title={field.label} onChange={handleChange} />;
+      return (
+        <SelectSelector
+          value={value}
+          name={name.current}
+          title={field.label}
+          onChange={handleChange}
+          field={field.original}
+        />
+      );
     case 'search':
       return (
         <SearchSelector
