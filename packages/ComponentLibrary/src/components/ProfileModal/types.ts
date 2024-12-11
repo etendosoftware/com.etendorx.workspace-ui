@@ -61,7 +61,6 @@ export interface BaseProfileModalProps {
   passwordLabel: string;
   newPasswordLabel: string;
   confirmPasswordLabel: string;
-  onSignOff?: () => void;
   translations: Translations;
 }
 
@@ -85,6 +84,7 @@ export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps
   currentWarehouse: BaseWarehouse | null;
   roles: BaseRole[];
   logger: Logger;
+  onSignOff: () => void;
 }
 
 export interface UserProfileProps {

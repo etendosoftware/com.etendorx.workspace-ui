@@ -1,5 +1,4 @@
-import { API_FORM_INITIALIZATION_URL } from '../api/constants';
-import { BasicAuthHelper } from '../auth/basicAuth';
+import { Metadata } from '../api/metadata';
 
 interface FormInitializationParams {
   MODE: string;
@@ -16,21 +15,7 @@ export const getFormInitialization = async (params: FormInitializationParams) =>
       _action: 'org.openbravo.client.application.window.FormInitializationComponent',
     }).toString();
 
-    const response = await fetch(`${API_FORM_INITIALIZATION_URL}?${queryString}`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: BasicAuthHelper.createHeaders(),
-    });
-
-    const data = await response.json();
-
-    if (data.response?.status === -1) {
-      throw new Error(data.response.error?.message || 'Unknown server error');
-    }
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    const { data } = await Metadata.kernelClient.post(`?${queryString}`, {});
 
     return data;
   } catch (error) {

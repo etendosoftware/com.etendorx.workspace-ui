@@ -1,5 +1,5 @@
 import { Client } from './client';
-import { API_SET_DEFAULT_CONFIGURATION_URL } from './constants';
+import { API_METADATA_URL } from './constants';
 import { DefaultConfiguration } from './types';
 
 const DEFAULT_CONFIG = {
@@ -12,7 +12,7 @@ const DEFAULT_CONFIG = {
 };
 
 export const setDefaultConfiguration = async (token: string, config: DefaultConfiguration): Promise<void> => {
-  const client = new Client(API_SET_DEFAULT_CONFIGURATION_URL).setAuthHeader(token, 'Bearer');
+  const client = new Client(API_METADATA_URL).setAuthHeader(token, 'Bearer');
 
   const params = {
     language: (config.language || DEFAULT_CONFIG.language).toString(),

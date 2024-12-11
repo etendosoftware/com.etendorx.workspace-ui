@@ -1,4 +1,9 @@
-import { API_DATASOURCE_URL, API_DEFAULT_CACHE_DURATION, API_METADATA_URL } from './constants';
+import {
+  API_DATASOURCE_URL,
+  API_DEFAULT_CACHE_DURATION,
+  API_METADATA_URL,
+  API_CLIENT_KERNEL_SWS_URL,
+} from './constants';
 import { Client, Interceptor } from './client';
 import { CacheStore } from './cache';
 import * as Etendo from './types';
@@ -8,22 +13,32 @@ export type { Etendo };
 
 export class Metadata {
   public static client = new Client(API_METADATA_URL);
+  public static kernelClient = new Client(API_CLIENT_KERNEL_SWS_URL);
   public static datasourceClient = new Client(API_DATASOURCE_URL);
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
   private static currentRoleId: string | null = null;
+  private static token: string | null = null;
 
-  public static authorize(token: string) {
+  public static setToken(token: string) {
+    this.token = token;
     this.client.setAuthHeader(token, 'Bearer');
     this.datasourceClient.setAuthHeader(token, 'Bearer');
+    this.kernelClient.setAuthHeader(token, 'Bearer');
+  }
+
+  public static getToken() {
+    return this.token;
   }
 
   public static registerInterceptor(interceptor: Interceptor) {
     const listener1 = this.client.registerInterceptor(interceptor);
-    const listener2 = this.datasourceClient.registerInterceptor(interceptor)
+    const listener2 = this.datasourceClient.registerInterceptor(interceptor);
+    const listener3 = this.kernelClient.registerInterceptor(interceptor);
 
     return () => {
       listener1();
       listener2();
+      listener3();
     };
   }
 
@@ -102,13 +117,10 @@ export class Metadata {
   }
 
   public static getTabsColumns(tabs?: Etendo.Tab[]) {
-    return (tabs || []).reduce(
-      (cols, tab) => {
-        cols[tab.id] = Metadata.getColumns(tab.id);
+    return (tabs || []).reduce((cols, tab) => {
+      cols[tab.id] = Metadata.getColumns(tab.id);
 
-        return cols;
-      },
-      {} as Record<string, Etendo.Column[]>,
-    );
+      return cols;
+    }, {} as Record<string, Etendo.Column[]>);
   }
 }
