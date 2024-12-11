@@ -32,6 +32,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   onSetDefaultConfiguration,
   logger,
   translations,
+  onSignOff,
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -147,7 +148,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           name={userName}
           email={userEmail}
           sectionTooltip={sectionTooltip}
-          onSignOff={() => {}}
+          onSignOff={onSignOff}
         />
         <div style={styles.toggleSectionStyles}>
           <ToggleSection sections={sections} currentSection={currentSection} onToggle={handleToggle} />

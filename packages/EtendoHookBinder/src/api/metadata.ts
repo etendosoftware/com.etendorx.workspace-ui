@@ -1,4 +1,9 @@
-import { API_DATASOURCE_URL, API_DEFAULT_CACHE_DURATION, API_METADATA_URL, API_CLIENT_KERNEL_SWS_URL } from './constants';
+import {
+  API_DATASOURCE_URL,
+  API_DEFAULT_CACHE_DURATION,
+  API_METADATA_URL,
+  API_CLIENT_KERNEL_SWS_URL,
+} from './constants';
 import { Client, Interceptor } from './client';
 import { CacheStore } from './cache';
 import * as Etendo from './types';

@@ -182,10 +182,19 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   useEffect(() => {
     if (token) {
-      Metadata.setToken(token);
-      Datasource.authorize(token);
+      const verifySession = async () => {
+        try {
+          Metadata.setToken(token);
+          Datasource.authorize(token);
+          await getSession(token);
+        } catch (error) {
+          clearUserData();
+          navigate('/login');
+        }
+      };
+      verifySession();
     }
-  }, [token]);
+  }, [token, clearUserData, navigate]);
 
   useLayoutEffect(() => {
     if (token || pathname === '/login') {

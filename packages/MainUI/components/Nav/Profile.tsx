@@ -12,7 +12,12 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
   const [selectedRole, setSelectedRole] = useState<Option | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(null);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
+
   const { clearUserData } = useContext(UserContext);
+
+  const handleSignOff = useCallback(() => {
+    clearUserData();
+  }, [clearUserData]);
 
   const handleRoleChange = useCallback((event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
     setSelectedRole(value);
@@ -46,7 +51,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
         return setDefaultConfiguration(token, config);
       }}
       logger={logger}
-      onSignOff={clearUserData}
+      onSignOff={handleSignOff}
     />
   );
 };
