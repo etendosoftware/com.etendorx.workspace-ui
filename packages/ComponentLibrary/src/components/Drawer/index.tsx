@@ -28,7 +28,15 @@ const findItemByWindowId = (items?: Menu[], windowId?: string): Menu | null => {
   return null;
 };
 
-const Drawer: React.FC<DrawerProps> = ({ windowId, items = [], logo, title, onClick }) => {
+const Drawer: React.FC<DrawerProps> = ({
+  windowId,
+  items = [],
+  logo,
+  title,
+  onClick,
+  onReportClick,
+  onProcessClick,
+}) => {
   const [open, setOpen] = useState<boolean>(true);
   const [searchValue, setSearchValue] = useState<string>('');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -116,6 +124,24 @@ const Drawer: React.FC<DrawerProps> = ({ windowId, items = [], logo, title, onCl
     [items, onClick],
   );
 
+  const handleReportClick = useCallback(
+    (reportId: string) => {
+      if (onReportClick) {
+        onReportClick(reportId);
+      }
+    },
+    [onReportClick],
+  );
+
+  const handleProcessClick = useCallback(
+    (processId: string) => {
+      if (onProcessClick) {
+        onProcessClick(processId);
+      }
+    },
+    [onProcessClick],
+  );
+
   const handleWindowAccess = useCallback((item: { id: string; name: string; windowId: string }) => {
     setRecentItems(prev => {
       const newItems = [item, ...prev.filter(i => i.id !== item.id)].slice(0, 5);
@@ -149,6 +175,8 @@ const Drawer: React.FC<DrawerProps> = ({ windowId, items = [], logo, title, onCl
           <DrawerItems
             items={filteredItems}
             onClick={handleItemClick}
+            onReportClick={handleReportClick}
+            onProcessClick={handleProcessClick}
             open={open}
             expandedItems={expandedItems}
             toggleItemExpansion={toggleItemExpansion}

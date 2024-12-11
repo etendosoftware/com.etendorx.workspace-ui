@@ -10,6 +10,7 @@ const DrawerItems: React.FC<DrawerItemsProps> = ({
   toggleItemExpansion,
   searchValue,
   windowId,
+  reportId,
 }) => {
   const refs = useRef<Record<string, () => unknown>>({});
 
@@ -30,6 +31,7 @@ const DrawerItems: React.FC<DrawerItemsProps> = ({
               isExpandable={!searchValue && Array.isArray(item.children) && item.children.length > 0}
               isSearchActive={Boolean(searchValue)}
               windowId={windowId}
+              reportId={reportId}
             />
           </React.Fragment>
         );

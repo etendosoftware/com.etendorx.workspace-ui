@@ -181,6 +181,7 @@ export interface Menu {
   name: string;
   windowId?: string;
   window?: Window | null;
+  type: string;
   action?: Action[keyof Action] | null;
   isSearchResult?: boolean;
   path?: string[];

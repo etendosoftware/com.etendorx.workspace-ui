@@ -31,6 +31,8 @@ export default function Sidebar() {
       title={t('common.etendo')}
       items={menu}
       onClick={handleClick}
+      onReportClick={handleClick}
+      onProcessClick={handleClick}
     />
   );
 }

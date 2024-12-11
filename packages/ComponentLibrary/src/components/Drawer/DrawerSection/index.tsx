@@ -4,6 +4,7 @@ import { useStyle } from '../styles';
 import MenuTitle from '../MenuTitle';
 import { DrawerSectionProps } from '../types';
 import { findActive } from '../../../utils/drawerUtils';
+import { useItemActions } from '../../../hooks/useItemType';
 
 const DrawerSection: React.FC<DrawerSectionProps> = ({
   item,
@@ -28,6 +29,12 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
   const expanded = Boolean(externalExpanded || localExpanded);
 
   const popperOpen = Boolean(anchorEl);
+
+  const { handleItemClick } = useItemActions({
+    onWindowClick: useCallback((windowId: string) => onClick(`/window/${windowId}`), [onClick]),
+    onReportClick: useCallback((reportId: string) => onClick(`/report/${reportId}`), [onClick]),
+    onProcessClick: useCallback((processId: string) => onClick(`/process/${processId}`), [onClick]),
+  });
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -61,13 +68,22 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
           handleNestedToggle(item.id);
         }
         onToggleExpand();
-      } else if (item.windowId) {
-        onClick(`/window/${item.windowId}`);
       } else {
-        console.error('DrawerSection: unexpected type');
+        handleItemClick(item);
       }
     },
-    [item, onClick, open, anchorEl, hasChildren, isExpandable, onToggleExpand, expanded, parentId, handleNestedToggle],
+    [
+      open,
+      hasChildren,
+      isExpandable,
+      anchorEl,
+      expanded,
+      parentId,
+      onToggleExpand,
+      handleNestedToggle,
+      item,
+      handleItemClick,
+    ],
   );
 
   const handleClose = useCallback(() => {
