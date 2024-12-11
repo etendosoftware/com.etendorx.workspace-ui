@@ -4,6 +4,7 @@ import SideIcon from '@workspaceui/componentlibrary/src/assets/icons/codesandbox
 import TabWidget from '@workspaceui/componentlibrary/src/components/Widgets/TabWidget';
 import React from 'react';
 import { TranslateFunction } from '@workspaceui/mainui/hooks/types';
+import { TabWidgetProps } from '@workspaceui/componentlibrary/src/components/Widgets/types';
 
 const colors = {
   backgrounds: [
@@ -52,7 +53,7 @@ const getContrastColor = (bgColor: string) => {
 };
 
 export const createWidgets = (
-  selectedRecord: Organization | null,
+  selectedRecord: TabWidgetProps['selectedRecord'],
   setSelectedRecord: React.Dispatch<Organization | null>,
   t: TranslateFunction,
 ) => {

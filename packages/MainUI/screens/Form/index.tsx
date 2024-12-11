@@ -4,6 +4,7 @@ import { mockOrganizations } from '@workspaceui/storybook/src/stories/Components
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useRouter, useParams } from 'next/navigation';
 import FormView from '@workspaceui/componentlibrary/src/components/FormView';
+import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 
 export default function Form() {
   const navigate = useRouter().push;
@@ -35,5 +36,5 @@ export default function Form() {
     return <Spinner />;
   }
 
-  return <FormView data={formData} onSave={handleSave} onCancel={handleCancel} />;
+  return <FormView data={formData} onSave={handleSave} onCancel={handleCancel} tab={{} as Tab} />;
 }

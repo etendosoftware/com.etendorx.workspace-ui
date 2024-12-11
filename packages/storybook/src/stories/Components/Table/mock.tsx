@@ -26,7 +26,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Organization',
       section: '_mainSection',
       required: true,
-      original: undefined,
+      original: {} as never,
     },
     transactionDocument: {
       value: 'Sales Order',
@@ -35,7 +35,7 @@ export const mockOrganizations: Organization[] = [
       section: '_mainSection',
       required: true,
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     documentNo: {
       value: 'SO-001',
@@ -44,7 +44,7 @@ export const mockOrganizations: Organization[] = [
       section: '_mainSection',
       required: true,
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     orderDate: {
       value: '2023-08-15',
@@ -53,7 +53,7 @@ export const mockOrganizations: Organization[] = [
       section: '_mainSection',
       required: true,
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     iscancelled: {
       value: false,
@@ -62,7 +62,7 @@ export const mockOrganizations: Organization[] = [
       section: '_mainSection',
       required: true,
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     businessPartner: {
       value: 'TechCorp Inc.',
@@ -71,7 +71,7 @@ export const mockOrganizations: Organization[] = [
       section: '_mainSection',
       required: true,
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     partnerAddress: {
       value: '123 Tech St, Silicon Valley, CA',
@@ -79,7 +79,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Partner Address',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     priceList: {
       value: 'Standard Price List',
@@ -87,7 +87,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Price List',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     scheduledDeliveryDate: {
       value: '2023-08-30',
@@ -95,7 +95,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Scheduled Delivery Date',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     paymentMethod: {
       value: 'Credit Card',
@@ -103,7 +103,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Payment Method',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     paymentTerms: {
       value: 'Net 30',
@@ -111,7 +111,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Payment Terms',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     _linkedItems: {
       name: '_linkedItems',
@@ -130,7 +130,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Warehouse',
       section: '_linkedItems',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     invoiceTerms: {
       value: 'Standard Terms',
@@ -138,7 +138,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Invoice Terms',
       section: '_linkedItems',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     orderReference: {
       value: 'REF-001',
@@ -147,7 +147,7 @@ export const mockOrganizations: Organization[] = [
       section: '_linkedItems',
 
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     _moreInformation: {
       name: '_moreInformation',
@@ -166,7 +166,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Sales Representative',
       section: '_moreInformation',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     description: {
       value: 'Order for Q3 supplies',
@@ -174,7 +174,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Description',
       section: '_moreInformation',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     invoiceAddress: {
       value: '456 Finance Ave, New York, NY',
@@ -182,7 +182,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Invoice Address',
       section: '_moreInformation',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     _attachments: {
       name: '_attachments',
@@ -201,7 +201,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Delivery Location',
       section: '_attachments',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     quotation: {
       value: 'Q-001',
@@ -209,7 +209,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Quotation',
       section: '_attachments',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     cancelledorder: {
       value: 'ASD',
@@ -217,7 +217,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Cancelled Order',
       section: '_attachments',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     project: {
       value: 'Q3 Expansion',
@@ -225,14 +225,14 @@ export const mockOrganizations: Organization[] = [
       label: 'Project',
       section: '_attachments',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     id: {
       value: '1',
       type: 'text',
       label: 'ID',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     _noteSection: {
       name: '_noteSection',
@@ -251,7 +251,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Project',
       section: '_noteSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
   },
   {
@@ -272,7 +272,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Organization',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     transactionDocument: {
       value: 'Sales Order',
@@ -280,7 +280,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Transaction Document',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     documentNo: {
       value: 'SO-002',
@@ -288,7 +288,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Document No.',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     orderDate: {
       value: '2023-08-15',
@@ -296,7 +296,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Order Date',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     iscancelled: {
       value: false,
@@ -304,7 +304,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Is Cancelled',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     businessPartner: {
       value: 'Etendo.',
@@ -312,7 +312,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Business Partner',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     partnerAddress: {
       value: '123 Tech St, Silicon Valley, CA',
@@ -320,7 +320,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Partner Address',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     priceList: {
       value: 'Standard Price List',
@@ -328,7 +328,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Price List',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     scheduledDeliveryDate: {
       value: '2023-08-30',
@@ -336,7 +336,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Scheduled Delivery Date',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     paymentMethod: {
       value: 'Credit Card',
@@ -344,7 +344,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Payment Method',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     paymentTerms: {
       value: 'Net 30',
@@ -352,7 +352,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Payment Terms',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     _linkedItems: {
       name: '_linkedItems',
@@ -371,7 +371,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Warehouse',
       section: '_linkedItems',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     invoiceTerms: {
       value: 'Standard Terms',
@@ -379,7 +379,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Invoice Terms',
       section: '_linkedItems',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     orderReference: {
       value: 'REF-001',
@@ -387,7 +387,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Order Reference',
       section: '_linkedItems',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     _moreInformation: {
       name: '_moreInformation',
@@ -406,7 +406,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Sales Representative',
       section: '_moreInformation',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     description: {
       value: 'Order for Q3 supplies',
@@ -414,7 +414,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Description',
       section: '_moreInformation',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     invoiceAddress: {
       value: '456 Finance Ave, New York, NY',
@@ -422,7 +422,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Invoice Address',
       section: '_moreInformation',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     _attachments: {
       name: '_attachments',
@@ -441,7 +441,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Delivery Location',
       section: '_attachments',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     quotation: {
       value: 'Q-001',
@@ -449,7 +449,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Quotation',
       section: '_attachments',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     cancelledorder: {
       value: '',
@@ -457,7 +457,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Cancelled Order',
       section: '_attachments',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     replacedorder: {
       value: '',
@@ -465,7 +465,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Replaced Order',
       section: '_attachments',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     externalBusinessPartnerReference: {
       value: 'EXT-001',
@@ -473,14 +473,14 @@ export const mockOrganizations: Organization[] = [
       label: 'External Business Partner Reference',
       section: '_attachments',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     project: {
       value: 'Q3 Expansion',
       type: 'text',
       label: 'Project',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     costcenter: {
       value: 'Sales Department',
@@ -488,7 +488,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Cost Center',
       section: '_attachments',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     asset: {
       value: 'N/A',
@@ -496,7 +496,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Asset',
       section: '_attachments',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     stDimension: {
       value: 'West Coast',
@@ -504,7 +504,7 @@ export const mockOrganizations: Organization[] = [
       label: '1st Dimension',
       section: '_attachments',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     ndDimension: {
       value: 'Electronics',
@@ -512,7 +512,7 @@ export const mockOrganizations: Organization[] = [
       label: '2nd Dimension',
       section: '_attachments',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     transactionDocumentType: {
       value: 'Purchase Order',
@@ -520,7 +520,7 @@ export const mockOrganizations: Organization[] = [
       label: 'Transaction Document Type',
       section: '_mainSection',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     warehouseRule: {
       value: 'FIFO',
@@ -528,14 +528,14 @@ export const mockOrganizations: Organization[] = [
       label: 'Warehouse Rule',
       section: '_linkedItems',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     id: {
       value: '2',
       type: 'text',
       label: 'ID',
       name: '',
-      original: undefined,
+      original: {} as never,
     },
     _noteSection: {
       name: '_noteSection',

@@ -1,5 +1,4 @@
-import { ReactNode } from 'react';
-import { MappedData, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field, MappedData, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface GridItemProps {
@@ -32,6 +31,8 @@ export interface FormViewProps {
   dottedLineInterval?: number;
   onChange?: (updatedData: FormData) => void;
   initialValues?: boolean;
+  onLabelClick?: (url: string) => void;
+  tab: Tab;
 }
 
 export interface FormSectionProps {
@@ -42,26 +43,28 @@ export interface FormSectionProps {
   onAccordionChange: (sectionId: string, isExpanded: boolean) => void;
   onHover: (sectionName: string | null) => void;
   hoveredSection: string | null;
-  onInputChange: (name: string, value: FieldValue) => void;
   sectionRef: React.Ref<HTMLDivElement>;
   gridItemProps?: GridItemProps;
   dottedLineInterval?: number;
   readOnly?: boolean;
   renderFieldValue?: (field: FieldDefinition) => FieldValue;
-  children?: ReactNode;
+  children?: React.ReactNode;
+  onLabelClick?: FormViewProps['onLabelClick'];
+  tab: Tab;
 }
 
 export type FieldValue = string | number | boolean | string[] | Date | null | FieldDefinition['value'];
 
 export interface FormFieldGroupProps {
+  tab: Tab;
   name?: string;
   field: FieldDefinition;
-  onChange: (name: string, value: FieldValue) => void;
   entityName?: string;
   accessor?: string;
   windowMetadata?: WindowMetadata;
   readOnly?: boolean;
   renderFieldValue?: (field: FieldDefinition) => FieldValue;
+  onLabelClick?: FormSectionProps['onLabelClick'];
 }
 
 export interface FieldLabelProps {
@@ -115,11 +118,16 @@ export interface Option {
   value: string;
 }
 
+export interface GenericSelectorProps {
+  field: Field;
+}
+
 export interface BooleanSelectorProps {
   label: string;
   readOnly?: boolean;
   checked?: boolean;
-  onChange?: (checked: boolean) => void;
+  name: string;
+  onChange: (name: string, value: boolean) => void;
 }
 
 export interface NumberSelectorProps {

@@ -7,7 +7,7 @@ import { memo, useCallback, useContext, useMemo, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { useParams, useRouter } from 'next/navigation';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
-import { parseColumns } from '../../utils/metadata';
+import { parseColumns } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { Button } from '@mui/material';
 import DynamicFormView from '../../screens/Form/DynamicFormView';
 import { WindowParams } from '../../app/types';
