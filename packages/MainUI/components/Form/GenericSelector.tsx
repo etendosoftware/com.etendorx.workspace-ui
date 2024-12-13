@@ -40,7 +40,7 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
   const handleChange = useCallback(
     (value: FieldValue) => {
       const f = async () => {
-        setValue(name.current, value);
+        setValue(name.current, value || "");
 
         if (CALLOUTS_ENABLED && field.original?.column?.callout$_identifier) {
           const { data } = await callout(getValues());

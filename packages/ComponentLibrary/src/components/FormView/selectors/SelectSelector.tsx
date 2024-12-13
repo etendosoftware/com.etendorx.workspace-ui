@@ -17,7 +17,11 @@ const SelectSelector = memo(({ value, name, title, onChange, readOnly, field }: 
     [field.refList],
   );
   const handleChange = useCallback(
-    (_: React.SyntheticEvent<Element, Event>, newValue: Option<string> | null) => onChange(newValue?.value || ''),
+    (_: React.SyntheticEvent<Element, Event>, newValue: Option<string> | null) => {
+      console.debug(_);
+      console.debug({ newValue });
+      onChange(newValue?.value || '');
+    },
     [onChange],
   );
   const current = useMemo(() => options.find(opt => opt.value === value), [options, value]);
