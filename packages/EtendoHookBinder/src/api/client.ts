@@ -43,7 +43,9 @@ export class Client {
 
     if (!headers['Content-Type']) {
       headers['Content-Type'] =
-        body instanceof URLSearchParams || typeof body === 'string' || body instanceof FormData ? this.FORM_CONTENT_TYPE : this.JSON_CONTENT_TYPE;
+        body instanceof URLSearchParams || typeof body === 'string' || body instanceof FormData
+          ? this.FORM_CONTENT_TYPE
+          : this.JSON_CONTENT_TYPE;
     }
 
     options.headers = headers;
@@ -70,7 +72,9 @@ export class Client {
         body:
           options.body instanceof URLSearchParams || typeof options.body === 'string'
             ? options.body
-            : JSON.stringify(options.body),
+            : options.body
+            ? JSON.stringify(options.body)
+            : undefined,
         headers: {
           ...this.baseHeaders,
           ...options.headers,
