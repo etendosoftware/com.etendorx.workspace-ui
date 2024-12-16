@@ -30,7 +30,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
 
   const popperOpen = Boolean(anchorEl);
 
-  const { handleItemClick } = useItemActions({
+  const handleItemClick = useItemActions({
     onWindowClick: useCallback((windowId: string) => onClick(`/window/${windowId}`), [onClick]),
     onReportClick: useCallback((reportId: string) => onClick(`/report/${reportId}`), [onClick]),
     onProcessClick: useCallback((processId: string) => onClick(`/process/${processId}`), [onClick]),

@@ -180,8 +180,10 @@ export interface Menu {
   id: string;
   name: string;
   windowId?: string;
+  recordId?: string;
+  tableId?: string;
   window?: Window | null;
-  type: string;
+  type?: string;
   action?: Action[keyof Action] | null;
   isSearchResult?: boolean;
   path?: string[];
@@ -289,6 +291,11 @@ export interface ToolbarMetadata {
 export interface FieldInfo {
   fieldGroup$_identifier?: string;
 }
+
+export type CustomListField = Pick<
+  Field,
+  'refList' | 'referencedEntity' | 'referencedWindowId' | 'referencedTabId' | 'fieldName'
+>;
 
 export interface BaseFieldDefinition<T> {
   value: T;

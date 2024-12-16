@@ -1,29 +1,24 @@
 import { useCallback } from 'react';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import { UseItemActionsProps } from './types';
 
-interface UseItemActionsProps {
-  onWindowClick?: (windowId: string) => void;
-  onReportClick?: (reportId: string, recordId: string) => void;
-  onProcessClick?: (processId: string) => void;
-}
+const getReportRecordId = (item: Menu) => {
+  if (item.recordId) {
+    return item.recordId;
+  }
+
+  if (item.windowId) {
+    return item.windowId;
+  }
+
+  if (item.tableId) {
+    return item.tableId;
+  }
+
+  return item.id;
+};
 
 export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }: UseItemActionsProps) => {
-  const getReportRecordId = useCallback((item: Menu) => {
-    if (item.recordId) {
-      return item.recordId;
-    }
-
-    if (item.windowId) {
-      return item.windowId;
-    }
-
-    if (item.tableId) {
-      return item.tableId;
-    }
-
-    return item.id;
-  }, []);
-
   const handleItemClick = useCallback(
     (item: Menu) => {
       switch (item.type) {
@@ -47,8 +42,8 @@ export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }:
           console.warn(`Unhandled item type: ${item.type}`);
       }
     },
-    [onWindowClick, onReportClick, onProcessClick, getReportRecordId],
+    [onWindowClick, onReportClick, onProcessClick],
   );
 
-  return { handleItemClick };
+  return handleItemClick;
 };

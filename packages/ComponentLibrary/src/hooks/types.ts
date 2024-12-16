@@ -9,3 +9,9 @@ export interface UseRecentItemsReturn {
   hasItems: boolean;
   resetManualToggle: () => void;
 }
+
+export interface UseItemActionsProps {
+  onWindowClick?: (windowId: string) => void;
+  onReportClick?: (reportId: string, recordId: string) => void;
+  onProcessClick?: (processId: string) => void;
+}
