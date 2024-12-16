@@ -1,10 +1,7 @@
 import { AutocompleteProps } from '@mui/material';
+import { Option } from '@workspaceui/etendohookbinder/src/api/types';
 
-export interface Option<T extends string = string> {
-  title: string;
-  value: T;
-  id: string;
-}
+export type { Option };
 
 export interface ISelectInput<T extends string = string>
   extends Omit<AutocompleteProps<Option<T>, false, false, false>, 'renderInput'> {
@@ -17,5 +14,6 @@ export interface ISelectInput<T extends string = string>
     icon?: React.ReactElement;
   };
   value?: Option<T> | null;
+  name?: string;
   onChange?: (event: React.SyntheticEvent<Element, Event>, value: Option<T> | null) => void;
 }

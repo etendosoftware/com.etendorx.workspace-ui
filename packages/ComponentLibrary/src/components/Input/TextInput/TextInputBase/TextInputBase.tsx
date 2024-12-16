@@ -16,19 +16,19 @@ const TextInputBase = (props: TextInputProps) => {
     <>
       <style>{cssString}</style>
       <TextField
-        id="input-base"
+        id={props.name}
         variant="standard"
         required
         fullWidth
         value={value}
         onChange={handleChange}
         InputLabelProps={{
-          htmlFor: 'input-base',
-          id: 'input-base-label',
+          htmlFor: props.name,
         }}
         label={label}
         type={type}
         InputProps={{
+          name: props.name,
           startAdornment: leftIcon && (
             <InputAdornment position="start" sx={styles.inputAdornment}>
               <IconButton

@@ -5,13 +5,27 @@ import { Option } from '../../Input/Select/types';
 import { ListSelectorProps } from '../types';
 import { useTheme } from '@mui/material';
 
-const ListSelector: React.FC<ListSelectorProps> = ({ field, onChange, readOnly }) => {
-  const [selectedValue, setSelectedValue] = useState<Option | null>(null);
+const ListSelector: React.FC<ListSelectorProps> = ({ field, value, onChange, readOnly }) => {
+  const [selectedValue, setSelectedValue] = useState<Option | null>(() => {
+    if (field.original?.refList) {
+      const option = field.original.refList.find(item => item.value === value);
+
+      if (option) {
+        return {
+          id: option.id,
+          title: option.label,
+          value: option.value,
+        };
+      }
+    }
+
+    return null;
+  });
   const theme = useTheme();
 
   const options: Option[] = useMemo(() => {
     if (field.original?.refList) {
-      return field.original.refList.map((item: { id: string; label: string; value: string }) => ({
+      return field.original.refList.map((item) => ({
         id: item.id,
         title: item.label,
         value: item.value,
@@ -21,18 +35,17 @@ const ListSelector: React.FC<ListSelectorProps> = ({ field, onChange, readOnly }
   }, [field.original?.refList]);
 
   useEffect(() => {
-    const currentOption = options.find(option => option.value === field.value);
-    setSelectedValue(currentOption || null);
-  }, [field.value, options]);
+    setSelectedValue(options.find(option => option.value === value) || null);
+  }, [value, options]);
 
   const handleChange = useCallback(
     (_event: React.SyntheticEvent<Element, Event>, newValue: Option | null) => {
       if (newValue) {
         setSelectedValue(newValue);
-        onChange(field.name, newValue.value);
+        onChange(newValue.value);
       }
     },
-    [field.name, onChange],
+    [onChange],
   );
 
   const isOptionEqualToValue = useCallback((option: Option, value: Option) => option.value === value.value, []);

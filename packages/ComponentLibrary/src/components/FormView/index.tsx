@@ -13,7 +13,6 @@ const FormView: React.FC<FormViewProps> = ({
   readOnly = false,
   gridItemProps,
   dottedLineInterval,
-  initialValues = true,
   onLabelClick,
   tab,
 }) => {
@@ -88,19 +87,6 @@ const FormView: React.FC<FormViewProps> = ({
     }
   }, []);
 
-  const renderFieldValue = useCallback(
-    (field: FieldDefinition) => {
-      if (initialValues && 'initialValue' in field && field.initialValue !== undefined) {
-        return field.initialValue;
-      }
-      if (field.value === undefined) {
-        return '';
-      }
-      return field.value;
-    },
-    [initialValues],
-  );
-
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
   }, []);
@@ -118,6 +104,13 @@ const FormView: React.FC<FormViewProps> = ({
     [data],
   );
 
+  const handleSectionRef = useCallback(
+    (sectionData: Section) => (el: HTMLElement | null) => {
+      sectionRefs.current[sectionData.id] = el;
+    },
+    [],
+  );
+
   return (
     <Box display="flex" flexDirection="column" height="100%" width="100%" padding="0 0 0.5rem 0.5rem">
       <Box flexShrink={1}>
@@ -132,18 +125,18 @@ const FormView: React.FC<FormViewProps> = ({
                 console.warn(`Section ${sectionName} is not properly defined`);
                 return null;
               }
+
               return (
                 <SectionRenderer
-                  key={sectionName}
+                  key={sectionData.id}
                   sectionName={sectionName}
                   sectionData={sectionData}
                   fields={fields}
-                  renderFieldValue={renderFieldValue}
                   isExpanded={expandedSections.includes(sectionData.id)}
                   onAccordionChange={handleAccordionChange}
                   onHover={setHoveredSection}
                   hoveredSection={hoveredSection}
-                  sectionRef={el => (sectionRefs.current[sectionData.id] = el)}
+                  sectionRef={handleSectionRef(sectionData)}
                   gridItemProps={gridItemProps}
                   dottedLineInterval={dottedLineInterval}
                   readOnly={readOnly}

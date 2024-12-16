@@ -10,8 +10,13 @@ const en = {
     edit: 'Edit',
     loading: 'Loading...',
     loadingFormData: 'Loading form data...',
+    retry: 'Retry',
   },
   errors: {
+    networkError: {
+      title: 'Could not connect to Etendo',
+      description: 'Looks like there is a network issue or the server is down',
+    },
     notFound: {
       title: 'Not found',
       description: "We couldn't find the page you're looking for",

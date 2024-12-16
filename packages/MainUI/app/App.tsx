@@ -11,16 +11,16 @@ const queryClient = new QueryClient();
 
 export default function App({ children }: React.PropsWithChildren) {
   return (
-    <SanityChecker>
-      <QueryClientProvider client={queryClient}>
-        <LanguageProvider>
+    <LanguageProvider>
+      <SanityChecker>
+        <QueryClientProvider client={queryClient}>
           <UserProvider>
             <MetadataProvider>
               <RecordProvider>{children}</RecordProvider>
             </MetadataProvider>
           </UserProvider>
-        </LanguageProvider>
-      </QueryClientProvider>
-    </SanityChecker>
+        </QueryClientProvider>
+      </SanityChecker>
+    </LanguageProvider>
   );
 }

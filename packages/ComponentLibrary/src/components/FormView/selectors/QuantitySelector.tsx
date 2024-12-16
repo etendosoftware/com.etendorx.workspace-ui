@@ -11,7 +11,7 @@ const INPUT_PROPS = {
 };
 
 const QuantitySelector: React.FC<QuantityProps> = memo(
-  ({ value: initialValue, min, max, onChange, readOnly, maxLength }) => {
+  ({ value: initialValue, min, max, onChange, readOnly, maxLength, name }) => {
     const [value, setValue] = useState(initialValue);
     const [error, setError] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
@@ -70,6 +70,7 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
         helperText={error ? errorMessage : ' '}
         disabled={readOnly}
         InputProps={INPUT_PROPS}
+        name={name}
       />
     );
   },
