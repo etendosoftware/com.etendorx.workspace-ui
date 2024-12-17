@@ -24,5 +24,4 @@ const SelectSelector = memo(({ name, title, onChange, readOnly }: SelectSelector
     />
   );
 });
-
 export default SelectSelector;
