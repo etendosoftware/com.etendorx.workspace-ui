@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import DynamicReport from '../../../components/ad_reports/DynamicReport';
 import { SALES_ORDER_REPORT_META } from '../../../reports/sales-order';
 import { ReportMetadata } from '../../../reports/types';
-import { useReport } from '../../../hooks/useReport';
+import { useReport } from '@workspaceui/etendohookbinder/src/hooks/useReport';
 
 type ReportMap = {
   [key: string]: ReportMetadata;
@@ -20,9 +20,8 @@ export default function ReportPage() {
   const reportId = params.reportId as string;
 
   const metadata = REPORT_METADATA[reportId];
-  const endpoint = `/api/report/${reportId}`;
 
-  const { generateReport } = useReport({ endpoint });
+  const { generateReport } = useReport();
 
   if (!metadata) {
     return <Box>Report not found</Box>;

@@ -122,11 +122,13 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
       id: 'html',
       name: 'HTML Format',
       format: 'html',
+      command: 'EDIT_HTML',
     },
     {
       id: 'pdf',
       name: 'PDF Format',
       format: 'pdf',
+      command: 'EDIT_PDF',
     },
   ],
 };

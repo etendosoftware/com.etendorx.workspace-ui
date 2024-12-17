@@ -1,7 +1,3 @@
-export interface BaseReportParams {
-  format: string;
-}
-
 export interface ReportField {
   id: string;
   name: string;
@@ -44,6 +40,7 @@ export interface ReportMetadata {
     id: string;
     name: string;
     format: string;
+    command: string;
   }>;
 }
 
