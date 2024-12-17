@@ -10,6 +10,12 @@ interface DynamicFieldProps {
 function DynamicFieldComponent({ field }: DynamicFieldProps) {
   const { register } = useFormContext();
 
+  const formDate = (date: string) => {
+    if (!date) return '';
+    const [year, month, day] = date.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
   switch (field.type) {
     case 'date':
       return (
@@ -20,7 +26,9 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
           required={field.required}
           variant="standard"
           InputLabelProps={{ shrink: true }}
-          {...register(field.name)}
+          {...register(field.name, {
+            setValueAs: (value: string) => formDate(value),
+          })}
         />
       );
 

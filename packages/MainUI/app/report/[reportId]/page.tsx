@@ -6,6 +6,7 @@ import DynamicReport from '../../../components/ad_reports/DynamicReport';
 import { SALES_ORDER_REPORT_META } from '../../../reports/sales-order';
 import { ReportMetadata } from '../../../reports/types';
 import { useReport } from '@workspaceui/etendohookbinder/src/hooks/useReport';
+import { FieldValues } from 'react-hook-form';
 
 type ReportMap = {
   [key: string]: ReportMetadata;
@@ -18,18 +19,24 @@ const REPORT_METADATA: ReportMap = {
 export default function ReportPage() {
   const params = useParams();
   const reportId = params.reportId as string;
-
   const metadata = REPORT_METADATA[reportId];
-
   const { generateReport } = useReport();
 
   if (!metadata) {
     return <Box>Report not found</Box>;
   }
 
+  const handleSubmit = async (format: string, data: FieldValues) => {
+    const reportData = {
+      ...data,
+      format,
+    };
+    await generateReport(format, reportData);
+  };
+
   return (
     <Box m={2}>
-      <DynamicReport metadata={metadata} onSubmit={generateReport} />
+      <DynamicReport metadata={metadata} onSubmit={handleSubmit} />
     </Box>
   );
 }

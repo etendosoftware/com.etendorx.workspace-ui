@@ -9,7 +9,7 @@ export function useReport() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const generateReport = async (format: string, data: BaseReportParams) => {
+  const generateReport = async <T extends BaseReportParams>(format: string, data: T) => {
     setLoading(true);
     setError(null);
 
