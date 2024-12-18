@@ -22,6 +22,7 @@ interface IMetadataContext {
   tabs: Tab[];
   tab?: Tab;
   columns?: Record<string, Field>;
+  currentRecord: Record<string, never> | null;
 }
 
 export const MetadataContext = createContext({} as IMetadataContext);
@@ -79,6 +80,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
 
   const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [tabId, windowData?.tabs]);
   const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
+  const currentRecord = useMemo(() => (tab ? selected[tab.level] : null), [selected, tab]);
 
   const value = useMemo(
     () => ({
@@ -94,8 +96,9 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       selected,
       tabs,
       tab,
+      currentRecord,
     }),
-    [windowId, recordId, loading, error, groupedTabs, windowData, selectRecord, selected, tabs, tab],
+    [windowId, recordId, loading, error, groupedTabs, windowData, selectRecord, selected, tabs, tab, currentRecord],
   );
 
   useEffect(() => {

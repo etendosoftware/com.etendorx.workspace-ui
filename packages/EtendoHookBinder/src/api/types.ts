@@ -383,3 +383,27 @@ type EntityValue = string | number | boolean | symbol;
 export interface EntityData {
   [key: EntityKey]: EntityValue;
 }
+
+export type ProcessBindings = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onLoad: (...args: any[]) => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onProcess: (...args: any[]) => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  metadata: Record<string, any>;
+} | null;
+
+export interface ProcessInfo {
+  loadFunction: string;
+  searchKey: string;
+  clientSideValidation: string;
+  _entityName: string;
+  id: string;
+  name: string;
+  javaClassName: string;
+  parameters: Array<{
+    defaultValue: string;
+    id: string;
+    name: string;
+  }>;
+}
