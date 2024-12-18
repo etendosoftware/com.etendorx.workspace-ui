@@ -1,4 +1,3 @@
-import React from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from '@mui/material';
 import { useStyle } from './styles';
 import { ProcessModalProps } from './types';
@@ -15,16 +14,15 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
   executeButtonText,
 }) => {
   const { styles } = useStyle();
-
   const responseMessage = processResponse?.responseActions?.[0]?.showMsgInProcessView;
   const isError = responseMessage?.msgType === 'error';
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth sx={styles.dialog}>
-      <DialogTitle sx={styles.dialogTitle}>{button.name}</DialogTitle>
+      <DialogTitle sx={styles.dialogTitle}>{button.processInfo.name}</DialogTitle>
       <DialogContent sx={styles.dialogContent}>
         <Typography sx={styles.message}>{confirmationMessage}</Typography>
-
+        {button.processInfo.searchKey}
         {processResponse && (
           <Box sx={styles.messageBox}>
             {responseMessage && (

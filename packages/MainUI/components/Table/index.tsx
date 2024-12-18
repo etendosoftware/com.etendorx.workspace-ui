@@ -93,7 +93,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
           columns={columns}
           data={records}
           enableRowSelection
-          enableMultiRowSelection={false}
+          enableMultiRowSelection
           positionToolbarAlertBanner="none"
           muiTableBodyRowProps={rowProps}
           enablePagination={false}
