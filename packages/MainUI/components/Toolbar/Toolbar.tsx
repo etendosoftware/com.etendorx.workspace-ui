@@ -19,6 +19,7 @@ import { iconMap } from './iconMap';
 import { useToolbar } from '../../hooks/Toolbar/useToolbar';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
+import { useProcessMetadata } from '../../hooks/useProcess';
 
 export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   const [openModal, setOpenModal] = React.useState(false);
@@ -31,7 +32,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { handleAction } = useToolbarConfig(windowId, tabId);
-  const { handleProcessClick } = useProcessButton(executeProcess, refetch);
+  const handleProcessClick = useProcessButton(executeProcess, refetch);
 
   const tab = useMemo(() => tabs.find(tab => tab.id === tabId), [tabs, tabId]);
   const selectedRecord = tab ? selected[tab.level] : undefined;
@@ -70,15 +71,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
     setProcessResponse(null);
   }, []);
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height={64}>
-        {t('common.loading')}
-      </Box>
-    );
-  }
+  const { metadata } = useProcessMetadata(selectedProcessButton?.processInfo);
 
-  const createToolbarConfig = () => {
+  const createToolbarConfig = useMemo(() => {
     const buttons = toolbar?.response?.buttons || [];
 
     const createProcessButtonConfig = (btn: ProcessButton) => {
@@ -140,13 +135,22 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
       rightSection: createSectionConfig(sections.rightSection, true),
       isItemSelected: !!selectedRecord?.id,
     };
-  };
+  }, [handleAction, selectedRecord, toolbar?.response?.buttons]);
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height={64}>
+        {t('common.loading')}
+      </Box>
+    );
+  }
 
   return (
     <>
-      <TopToolbar {...createToolbarConfig()} />
+      <TopToolbar {...createToolbarConfig} />
       {selectedProcessButton && (
         <ProcessModal
+          process={metadata}
           open={openModal}
           onClose={handleClose}
           button={selectedProcessButton}

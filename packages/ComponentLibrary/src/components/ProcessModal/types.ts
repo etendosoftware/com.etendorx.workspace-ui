@@ -1,3 +1,5 @@
+import { ProcessBindings, ProcessInfo } from '@workspaceui/etendohookbinder/src/api/types';
+
 export interface BaseButton {
   id: string;
   name: string;
@@ -10,17 +12,7 @@ export interface ProcessButton extends BaseButton {
   processId: string;
   buttonText: string;
   displayLogic?: string;
-  processInfo: {
-    _entityName: string;
-    id: string;
-    name: string;
-    javaClassName: string;
-    parameters: Array<{
-      defaultValue: string;
-      id: string;
-      name: string;
-    }>;
-  };
+  processInfo: ProcessInfo;
 }
 
 export interface ProcessResponse {
@@ -44,4 +36,5 @@ export interface ProcessModalProps {
   confirmationMessage: string;
   cancelButtonText: string;
   executeButtonText: string;
+  process: ProcessBindings;
 }
