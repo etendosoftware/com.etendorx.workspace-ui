@@ -1,9 +1,9 @@
 import Box from '@mui/material/Box';
-import { MaterialReactTable, MRT_Row } from 'material-react-table';
+import { MaterialReactTable, MRT_Row, MRT_RowSelectionState, MRT_Updater } from 'material-react-table';
 import { useStyle } from './styles';
 import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { memo, useCallback, useContext, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { useParams, useRouter } from 'next/navigation';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
@@ -11,7 +11,6 @@ import { parseColumns } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { Button } from '@mui/material';
 import DynamicFormView from '../../screens/Form/DynamicFormView';
 import { WindowParams } from '../../app/types';
-import { RecordContext } from '../../contexts/record';
 
 type DynamicTableProps = {
   tab: Tab;
@@ -19,7 +18,6 @@ type DynamicTableProps = {
 
 const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTableProps) {
   const { selected, selectRecord } = useMetadataContext();
-  const { setSelectedRecord } = useContext(RecordContext);
   const { windowId } = useParams<WindowParams>();
   const parent = selected[tab.level - 1];
   const navigate = useRouter().push;
@@ -54,22 +52,33 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const rowProps = useCallback(
     ({ row }: { row: MRT_Row<Record<string, unknown>> }) => ({
       onClick: () => {
-        selectRecord(row.original as never, tab);
-        setSelectedRecord(row.original as never);
+        // selectRecord(row.original as never, tab);
 
         row.toggleSelected();
       },
       onDoubleClick: () => {
-        selectRecord(row.original as never, tab);
+        // selectRecord(row.original as never, tab);
         navigate(`${windowId}/${tab.id}/${row.original.id}`);
       },
       onAuxClick: () => {
-        selectRecord(row.original as never, tab);
-        setEditing(true);
+        // selectRecord(row.original as never, tab);
+        // setEditing(true);
       },
     }),
-    [navigate, selectRecord, setSelectedRecord, tab, windowId],
+    [navigate, tab.id, windowId],
   );
+
+  const [state, setRowSelection] = useState({ rowSelection: {} });
+
+  const handleRowSelection = useCallback(e => {
+    setRowSelection(prev => ({
+      ...prev,
+      rowSelection: {
+        ...prev.rowSelection,
+        ...e(prev),
+      },
+    }));
+  }, []);
 
   const handleBack = useCallback(() => setEditing(false), []);
 
@@ -97,6 +106,8 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
           positionToolbarAlertBanner="none"
           muiTableBodyRowProps={rowProps}
           enablePagination={false}
+          onRowSelectionChange={handleRowSelection}
+          state={state}
           renderBottomToolbar={tab.uIPattern == 'STD' ? <Button onClick={fetchMore}>Load more</Button> : null}
           initialState={{ density: 'compact' }}
           enableTopToolbar={false}
