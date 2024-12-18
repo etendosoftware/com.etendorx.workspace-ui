@@ -138,10 +138,15 @@ export interface NumberSelectorProps {
 }
 
 export interface DateSelectorProps {
+  label?: string;
   name: string;
-  value: string;
-  onChange: (name: string, value: string) => void;
+  value?: string;
+  onChange: (event: unknown) => void;
+  onBlur?: () => void;
   readOnly?: boolean;
+  required?: boolean;
+  error?: boolean;
+  helperText?: string;
 }
 
 export interface SelectSelectorProps {

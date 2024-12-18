@@ -2,8 +2,8 @@ import { memo, useRef } from 'react';
 import { InputAdornment, TextField } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import CalendarIcon from '../../../assets/icons/calendar.svg';
-import { DateSelectorProps } from '../types';
 import IconButton from '../../IconButton';
+import { DateSelectorProps } from '../types';
 
 const StyledTextField = styled(TextField)(({ theme }) => ({
   '& .MuiInputBase-root': {
@@ -18,41 +18,67 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
   },
 }));
 
-const DateSelector: React.FC<DateSelectorProps> = memo(({ name, value, onChange, readOnly }) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+const DateSelector = memo(
+  ({ label, name, value, onChange, onBlur, readOnly, required, error, helperText }: DateSelectorProps) => {
+    const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(name, event.target.value);
-  };
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = event.target.value;
+      if (newValue) {
+        const [year, month, day] = newValue.split('-');
+        const formattedDate = `${day}/${month}/${year}`;
+        onChange({
+          target: {
+            name,
+            value: formattedDate,
+          },
+        });
+      } else {
+        onChange(event);
+      }
+    };
 
-  const handleIconClick = () => {
-    if (inputRef.current) {
-      inputRef.current.showPicker();
-    }
-  };
+    const handleIconClick = () => {
+      if (inputRef.current && !readOnly) {
+        inputRef.current.showPicker();
+      }
+    };
 
-  return (
-    <StyledTextField
-      fullWidth
-      name={name}
-      type="date"
-      variant="standard"
-      margin="normal"
-      value={value || ''}
-      onChange={handleChange}
-      disabled={readOnly}
-      inputRef={inputRef}
-      InputProps={{
-        endAdornment: (
-          <InputAdornment position="end">
-            <IconButton onClick={handleIconClick} disabled={readOnly} height={16} width={16}>
-              <CalendarIcon />
-            </IconButton>
-          </InputAdornment>
-        ),
-      }}
-    />
-  );
-});
+    const formatDateForInput = (dateString?: string) => {
+      if (!dateString) return '';
+      const [day, month, year] = dateString.split('/');
+      return `${year}-${month}-${day}`;
+    };
+
+    return (
+      <StyledTextField
+        fullWidth
+        label={label}
+        name={name}
+        type="date"
+        variant="standard"
+        margin="normal"
+        value={formatDateForInput(value)}
+        onChange={handleChange}
+        onBlur={onBlur}
+        disabled={readOnly}
+        required={required}
+        error={error}
+        helperText={helperText}
+        inputRef={inputRef}
+        InputLabelProps={{ shrink: true }}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton onClick={handleIconClick} disabled={readOnly} height={16} width={16}>
+                <CalendarIcon />
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+      />
+    );
+  },
+);
 
 export default DateSelector;
