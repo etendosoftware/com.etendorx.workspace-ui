@@ -1,14 +1,22 @@
-import { API_METADATA_URL, MAX_ATTEMPTS } from '@workspaceui/etendohookbinder/src/api/constants';
+'use client';
+
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
+import { Button } from '@mui/material';
+import { API_METADATA_URL, MAX_ATTEMPTS } from '@workspaceui/etendohookbinder/src/api/constants';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { logger } from '../../utils/logger';
-import { Button } from '@mui/material';
+import { useTranslation } from '../../hooks/useTranslation';
+import { useScreenSizes } from '../../hooks/useScreenSizes';
+import Logo from '../../public/etendo.svg?url';
 
 export default function SanityChecker(props: React.PropsWithChildren) {
   const [connected, setConnected] = useState(false);
   const checker = useRef<number>(NaN);
   const [error, setError] = useState(false);
   const attempts = useRef(0);
+  const { t } = useTranslation();
+  const { clientWidth, clientHeight } = useScreenSizes();
 
   const handleRetry = useCallback(() => {
     clearTimeout(checker.current);
@@ -56,18 +64,23 @@ export default function SanityChecker(props: React.PropsWithChildren) {
         clearInterval(checker.current);
       }
     };
-  }, [error]);
+  }, []);
 
   if (connected) {
     return <>{props.children}</>;
   }
 
   return (
-    <div className="center-all">
+    <div className="center-all flex-column">
       {error ? (
-        <Button variant="contained" color="warning" onClick={handleRetry}>
-          Retry
-        </Button>
+        <div className="center-all flex-column">
+          <Image src={Logo} width={clientWidth} height={clientHeight} alt="Etendo" className="etendo-logo" />
+          <h1>{t('errors.networkError.title')}</h1>
+          <p>{t('errors.networkError.description')}</p>
+          <Button variant="contained" color="warning" onClick={handleRetry}>
+            {t('common.retry')}
+          </Button>
+        </div>
       ) : (
         <Spinner />
       )}

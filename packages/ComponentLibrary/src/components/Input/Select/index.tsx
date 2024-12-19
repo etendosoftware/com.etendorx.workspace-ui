@@ -19,7 +19,7 @@ import { ISelectInput, Option } from './types';
 
 type OptionProps = React.HTMLAttributes<HTMLLIElement> & { key?: string };
 
-const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disabled = false, helperText, ...props }) => {
+const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disabled = false, helperText, name, ...props }) => {
   const { sx } = useStyle();
   const theme = useTheme();
   const [inputValue, setInputValue] = useState<string>('');
@@ -70,6 +70,7 @@ const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disable
         }}
         InputProps={{
           ...params.InputProps,
+          name,
           sx: sx.props,
           startAdornment: iconLeft && <InputAdornment position="start">{iconLeft}</InputAdornment>,
           endAdornment: <div style={sx.buttonsContainer}>{params.InputProps.endAdornment}</div>,
@@ -79,6 +80,7 @@ const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disable
         onChange={handleInputChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
+        name={name}
       />
     </Tooltip>
   );
@@ -102,7 +104,7 @@ const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disable
         renderOption={({ key, ...props }: OptionProps, option, { selected }) => {
           return (
             <li
-              key={key || option.id}
+              key={option.value + key}
               style={{
                 ...sx.optionContainer,
                 backgroundColor: selected ? theme.palette.baselineColor.neutral[0] : undefined,

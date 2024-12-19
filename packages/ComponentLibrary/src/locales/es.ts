@@ -10,8 +10,13 @@ const es = {
     edit: 'Editar',
     loading: 'Cargando...',
     loadingFormData: 'Cargando información del formulario...',
+    retry: 'Reintentar',
   },
   errors: {
+    networkError: {
+      title: 'No se pudo conectar con Etendo',
+      description: 'Parece que hay algún problema en la red o el servidor está caído',
+    },
     notFound: {
       title: 'Algo salió mal',
       description: 'No pudimos encontrar la página que buscas',

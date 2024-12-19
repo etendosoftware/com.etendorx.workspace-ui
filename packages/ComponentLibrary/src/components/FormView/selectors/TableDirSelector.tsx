@@ -10,7 +10,7 @@ const getOptionLabel = (option: Option) => option.title;
 
 const optionEqualValue = (option: Option, value: { id: string }) => option.id === value.id || option.value === value.id;
 
-const TableDirSelector = ({ onChange, label, entity, value }: TableDirSelectorProps) => {
+const TableDirSelector = ({ onChange, entity, value, name }: TableDirSelectorProps) => {
   const theme = useTheme();
   const { records, loading, error, loaded } = useDatasource(entity);
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
@@ -26,31 +26,28 @@ const TableDirSelector = ({ onChange, label, entity, value }: TableDirSelectorPr
   );
 
   useEffect(() => {
+    let option;
+
     if (value && options.length > 0) {
-      const option = options.find(opt => {
+      option = options.find(opt => {
         if (typeof value === 'object' && 'id' in value) {
           return opt.id === value.id || opt.value === value.id;
         }
         return opt.id === String(value) || opt.value === String(value);
       });
-      if (option) {
-        setSelectedValue(option);
-      } else {
-        setSelectedValue(null);
-      }
-    } else {
-      setSelectedValue(null);
     }
+
+    setSelectedValue(option ?? null);
   }, [value, options]);
 
   const handleChange = useCallback(
     (_event: React.SyntheticEvent<Element, Event>, newValue: Option | null) => {
       setSelectedValue(newValue);
       if (newValue) {
-        onChange(label, newValue.id);
+        onChange(newValue.id);
       }
     },
-    [label, onChange],
+    [onChange],
   );
 
   if (loading || !loaded) return <Spinner />;
@@ -64,6 +61,7 @@ const TableDirSelector = ({ onChange, label, entity, value }: TableDirSelectorPr
       value={selectedValue}
       getOptionLabel={getOptionLabel}
       isOptionEqualToValue={optionEqualValue}
+      name={name}
     />
   );
 };

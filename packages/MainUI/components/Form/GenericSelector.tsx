@@ -13,16 +13,13 @@ import TableDirSelector from '@workspaceui/componentlibrary/src/components/FormV
 import { StringSelector } from '@workspaceui/componentlibrary/src/components/FormView/selectors/StringSelector';
 import { useCallout } from '../../hooks/useCallout';
 import { getFieldsByDBColumnName, getInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { CALLOUTS_ENABLED } from '../../constants/config';
 
 export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: Tab }) => {
   const { watch, setValue, getValues } = useFormContext();
   const name = useRef(getInputName(field.original));
   const value = watch(name.current, field.initialValue);
-  const callout = useCallout({
-    field: field.original,
-    tab,
-    payload: getValues(),
-  });
+  const callout = useCallout({ field: field.original, tab });
 
   const applyCallout = useCallback(
     (data: { [key: string]: unknown }) => {
@@ -30,8 +27,11 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
       const columnValues = data.columnValues as Record<string, { value: unknown; classicValue: unknown }>;
 
       Object.entries(columnValues).forEach(([column, valueObj]) => {
-        const inputName = getInputName(columns[column]);
-        setValue(inputName, valueObj.value);
+        const _field = columns[column];
+
+        if (_field) {
+          setValue('inp' + _field.inpName, valueObj.value);
+        }
       });
     },
     [setValue, tab],
@@ -40,8 +40,10 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
   const handleChange = useCallback(
     (value: FieldValue) => {
       const f = async () => {
-        if (field.original?.column?.callout$_identifier) {
-          const { data } = await callout();
+        setValue(name.current, value || "");
+
+        if (CALLOUTS_ENABLED && field.original?.column?.callout$_identifier) {
+          const { data } = await callout(getValues());
 
           if (data.response?.status === -1) {
             console.warn('Callout execution error', data);
@@ -49,13 +51,11 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
             applyCallout(data);
           }
         }
-
-        setValue(name.current, value);
       };
 
       return f();
     },
-    [applyCallout, callout, field.original?.column?.callout$_identifier, setValue],
+    [applyCallout, callout, field.original?.column?.callout$_identifier, getValues, setValue],
   );
 
   const handleDateChange = useCallback(
@@ -83,15 +83,24 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
     case 'date':
       return <DateSelector name={name.current} value={value as string} onChange={handleDateChange} />;
     case 'select':
-      return <SelectSelector name={field.name} title={field.label} onChange={handleChange} />;
+      return (
+        <SelectSelector
+          value={value}
+          name={name.current}
+          title={field.label}
+          onChange={handleChange}
+          field={field.original}
+        />
+      );
     case 'search':
       return (
         <SearchSelector
           field={field}
-          value={field.value}
+          value={value}
           label={field.label}
           entity={field.original?.referencedEntity || ''}
           onChange={handleChange}
+          name={name.current}
         />
       );
     case 'tabledir':
@@ -101,6 +110,7 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
           label={field.label}
           entity={field.original?.referencedEntity || ''}
           onChange={handleChange}
+          name={name.current}
         />
       );
     case 'quantity':
@@ -111,16 +121,18 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
           min={field.original?.column?.minValue ?? null}
           max={field.original?.column?.maxValue ?? null}
           onChange={handleChange}
+          name={name.current}
         />
       );
     case 'list':
-      return <ListSelector field={field} onChange={handleChange} />;
+      return <ListSelector name={name.current} value={value} field={field} onChange={handleChange} />;
     default:
       return (
         <StringSelector
           value={value as string}
           setValue={handleChange}
           placeholder={field.value ? String(field.value) : undefined}
+          name={name.current}
         />
       );
   }

@@ -47,7 +47,6 @@ export interface FormSectionProps {
   gridItemProps?: GridItemProps;
   dottedLineInterval?: number;
   readOnly?: boolean;
-  renderFieldValue?: (field: FieldDefinition) => FieldValue;
   children?: React.ReactNode;
   onLabelClick?: FormViewProps['onLabelClick'];
   tab: Tab;
@@ -101,15 +100,17 @@ export interface TableDirSelectorProps {
   label: string;
   value: FieldValue;
   entity: string;
-  onChange: (name: string, value: string) => void;
+  name: string;
+  onChange: (value: string) => void;
 }
 
 export interface SearchSelectorProps {
   label: string;
   value: FieldValue;
   entity: string;
-  onChange: (name: string, value: string) => void;
+  onChange: (value: string) => void;
   field: FieldDefinition;
+  name: string;
 }
 
 export interface Option {
@@ -152,8 +153,10 @@ export interface DateSelectorProps {
 export interface SelectSelectorProps {
   name: string;
   title: string;
-  onChange: (name: string, value: string) => void;
+  onChange: (value: string) => void;
   readOnly?: boolean;
+  field: Field;
+  value: string;
 }
 
 export interface QuantityProps {
@@ -162,11 +165,14 @@ export interface QuantityProps {
   min?: number | string | null;
   max?: number | string | null;
   onChange?: (value: number) => void;
+  name: string;
   readOnly?: boolean;
 }
 
 export interface ListSelectorProps {
   field: FieldDefinition;
-  onChange: (name: string, value: string) => void;
+  value: string;
+  onChange: (value: string) => void;
+  name: string;
   readOnly?: boolean;
 }
