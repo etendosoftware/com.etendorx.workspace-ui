@@ -1,8 +1,8 @@
 import { memo } from 'react';
 import { useFormContext, Controller } from 'react-hook-form';
 import { TextField, MenuItem, Autocomplete } from '@mui/material';
-import type { ReportField } from '../../reports/types';
 import DateSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/DateSelector';
+import { ReportField } from '@workspaceui/etendohookbinder/src/hooks/types';
 
 interface DynamicFieldProps {
   field: ReportField;

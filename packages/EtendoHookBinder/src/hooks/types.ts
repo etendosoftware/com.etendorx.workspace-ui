@@ -28,9 +28,15 @@ export interface ReportField {
   };
 }
 
+export interface ReportResponse {
+  url?: string;
+  blob?: Blob;
+}
+
 export interface ReportMetadata {
   id: string;
   title: string;
+  sourcePath: string;
   sections: Array<{
     id: string;
     title: string;
@@ -44,7 +50,8 @@ export interface ReportMetadata {
   }>;
 }
 
-export interface ReportResponse {
-  url?: string;
-  blob?: Blob;
+export interface ReportMetadataHook {
+  metadata: ReportMetadata | null;
+  loading: boolean;
+  error: string | null;
 }

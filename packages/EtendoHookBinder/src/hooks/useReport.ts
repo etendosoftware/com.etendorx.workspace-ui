@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { API_BASE_URL } from '../api/constants';
+import { ReportMetadata } from './types';
 
 interface BaseReportParams {
   format: string;
+  reportId: string;
+  metadata: ReportMetadata;
 }
 
 export function useReport() {
@@ -14,8 +17,11 @@ export function useReport() {
     setError(null);
 
     try {
+      const { metadata } = data;
       const formData = new URLSearchParams();
-      formData.append('Command', format === 'html' ? 'EDIT_HTML' : 'EDIT_PDF');
+
+      const action = metadata.actions.find(a => a.format === format);
+      formData.append('Command', action?.command || 'EDIT_HTML');
 
       const fieldMapping: Record<string, string> = {
         dateFrom: 'inpDateFrom',
@@ -27,13 +33,13 @@ export function useReport() {
       };
 
       Object.entries(data).forEach(([key, value]) => {
-        if (value) {
+        if (value && key !== 'metadata') {
           const fieldName = fieldMapping[key] || key;
           formData.append(fieldName, value.toString());
         }
       });
 
-      const response = await fetch(`${API_BASE_URL}/ad_reports/ReportSalesOrderFilterJR.html`, {
+      const response = await fetch(`${API_BASE_URL}/ad_reports/${metadata.sourcePath}.html`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

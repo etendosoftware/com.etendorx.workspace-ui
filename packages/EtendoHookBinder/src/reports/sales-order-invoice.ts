@@ -1,8 +1,9 @@
-import { ReportMetadata } from './types';
+import { ReportMetadata } from '../hooks/types';
 
-export const SALES_ORDER_REPORT_META: ReportMetadata = {
-  id: '800261',
-  title: 'Sales Order Report',
+export const INVOICED_SALES_ORDERS_REPORT_META: ReportMetadata = {
+  id: '800069',
+  title: 'Invoiced sale orders report',
+  sourcePath: 'ReportSalesOrderInvoicedJasper',
   sections: [
     {
       id: 'filter',
@@ -39,6 +40,20 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           },
         },
         {
+          id: 'businessPartner',
+          name: 'inpcBPartnerId',
+          label: 'Business Partner',
+          type: 'search',
+          required: false,
+          gridWidth: 2,
+          lookupConfig: {
+            selector: {
+              icon: 'BusinessPartner',
+              title: 'Business Partner',
+            },
+          },
+        },
+        {
           id: 'project',
           name: 'inpcProjectId',
           label: 'Project',
@@ -48,7 +63,7 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           lookupConfig: {
             selector: {
               icon: 'Project',
-              title: 'Search Project',
+              title: 'Project',
             },
           },
         },
@@ -64,46 +79,6 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           },
         },
         {
-          id: 'businessPartner',
-          name: 'inpcBPartnerId_IN',
-          label: 'Business Partner',
-          type: 'multiselect',
-          required: false,
-          gridWidth: 2,
-          lookupConfig: {
-            multiple: true,
-            selector: {
-              title: 'Select Business Partners',
-            },
-          },
-        },
-        {
-          id: 'product',
-          name: 'inpmProductId_IN',
-          label: 'Product',
-          type: 'multiselect',
-          required: false,
-          gridWidth: 2,
-          lookupConfig: {
-            multiple: true,
-            selector: {
-              title: 'Select Products',
-            },
-          },
-        },
-        {
-          id: 'productCategory',
-          name: 'inpmProductCategoryId',
-          label: 'Product Category',
-          type: 'multiselect',
-          required: false,
-          gridWidth: 2,
-          lookupConfig: {
-            url: '/api/selector/productCategories',
-            multiple: true,
-          },
-        },
-        {
           id: 'region',
           name: 'inpcRegionId',
           label: 'Region',
@@ -114,6 +89,53 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
             url: '/api/selector/regions',
           },
         },
+        {
+          id: 'productCategory',
+          name: 'inpProductCategory',
+          label: 'Product Category',
+          type: 'select',
+          required: false,
+          gridWidth: 2,
+          lookupConfig: {
+            url: '/api/selector/productCategories',
+          },
+        },
+        {
+          id: 'product',
+          name: 'inpmProductId',
+          label: 'Product',
+          type: 'search',
+          required: false,
+          gridWidth: 2,
+          lookupConfig: {
+            selector: {
+              icon: 'Product',
+              title: 'Product',
+            },
+          },
+        },
+        {
+          id: 'projectKind',
+          name: 'inpProjectkind',
+          label: 'Building Site Type',
+          type: 'select',
+          required: false,
+          gridWidth: 2,
+          lookupConfig: {
+            url: '/api/selector/projectKinds',
+          },
+        },
+        {
+          id: 'projectPublic',
+          name: 'inpProjectpublic',
+          label: 'Initiative Type',
+          type: 'select',
+          required: false,
+          gridWidth: 2,
+          lookupConfig: {
+            url: '/api/selector/projectPublics',
+          },
+        },
       ],
     },
   ],
@@ -122,13 +144,7 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
       id: 'html',
       name: 'HTML Format',
       format: 'html',
-      command: 'EDIT_HTML',
-    },
-    {
-      id: 'pdf',
-      name: 'PDF Format',
-      format: 'pdf',
-      command: 'EDIT_PDF',
+      command: 'FIND',
     },
   ],
 };

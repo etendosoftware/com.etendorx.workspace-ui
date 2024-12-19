@@ -1,8 +1,8 @@
 import { memo } from 'react';
 import { useForm, FormProvider, FieldValues } from 'react-hook-form';
 import { Box, Paper, Button, Grid, Typography } from '@mui/material';
-import type { ReportMetadata, ReportField } from '../../reports/types';
 import DynamicField from './DynamicField';
+import { ReportMetadata, ReportField } from '@workspaceui/etendohookbinder/src/hooks/types';
 
 interface DynamicReportProps<T> {
   metadata: ReportMetadata;

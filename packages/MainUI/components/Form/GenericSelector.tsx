@@ -58,13 +58,30 @@ export const GenericSelector = ({ field, tab }: { field: FieldDefinition; tab: T
     [applyCallout, callout, field.original?.column?.callout$_identifier, setValue],
   );
 
+  const handleDateChange = useCallback(
+    (event: unknown) => {
+      if (
+        event &&
+        typeof event === 'object' &&
+        'target' in event &&
+        event.target &&
+        typeof event.target === 'object' &&
+        'value' in event.target
+      ) {
+        const dateEvent = event as { target: { value: string; name: string } };
+        handleChange(dateEvent.target.value);
+      }
+    },
+    [handleChange],
+  );
+
   switch (field.type) {
     case 'boolean':
       return <BooleanSelector label={field.label} name={name.current} onChange={handleChange} checked={value} />;
     case 'number':
       return <NumberSelector name={name.current} value={Number(value)} onChange={handleChange} />;
     case 'date':
-      return <DateSelector name={name.current} value={value as string} onChange={handleChange} />;
+      return <DateSelector name={name.current} value={value as string} onChange={handleDateChange} />;
     case 'select':
       return <SelectSelector name={field.name} title={field.label} onChange={handleChange} />;
     case 'search':

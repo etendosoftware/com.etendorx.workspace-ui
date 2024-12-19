@@ -1,35 +1,36 @@
 'use client';
 
-import { Box } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 import { useParams } from 'next/navigation';
 import DynamicReport from '../../../components/ad_reports/DynamicReport';
-import { SALES_ORDER_REPORT_META } from '../../../reports/sales-order';
-import { ReportMetadata } from '../../../reports/types';
 import { useReport } from '@workspaceui/etendohookbinder/src/hooks/useReport';
+import { useReportMetadata } from '@workspaceui/etendohookbinder/src/hooks/useReportMetadata';
 import { FieldValues } from 'react-hook-form';
-
-type ReportMap = {
-  [key: string]: ReportMetadata;
-};
-
-const REPORT_METADATA: ReportMap = {
-  '800261': SALES_ORDER_REPORT_META,
-};
 
 export default function ReportPage() {
   const params = useParams();
   const reportId = params.reportId as string;
-  const metadata = REPORT_METADATA[reportId];
+  const { metadata, loading, error } = useReportMetadata(reportId);
   const { generateReport } = useReport();
 
-  if (!metadata) {
-    return <Box>Report not found</Box>;
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" m={4}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error || !metadata) {
+    return <Box m={2}>Report not found</Box>;
   }
 
   const handleSubmit = async (format: string, data: FieldValues) => {
     const reportData = {
       ...data,
       format,
+      reportId,
+      metadata,
     };
     await generateReport(format, reportData);
   };
