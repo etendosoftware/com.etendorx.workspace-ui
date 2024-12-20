@@ -53,7 +53,7 @@ jobs:
         run: pnpm install --force
 
       - name: Build all packages
-        run: pnpm build:all
+        run: pnpm build
 
       - name: Calculate run time
         if: always()
@@ -80,5 +80,5 @@ jobs:
               owner,
               repo,
               issue_number: number,
-              body: `Build Status: ${status}\n\nBuild completed in ${process.env.DURATION_TEXT}\n\nBuilt packages:\n- @workspaceui/storybook\n- @workspaceui/mainui`
+              body: `Build Status: ${status}\n\nBuild completed in ${process.env.DURATION_TEXT}\n\nBuilt packages:\n- @workspaceui/mainui`
             });
