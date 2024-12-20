@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import { Box, CircularProgress } from '@mui/material';
 import { useParams } from 'next/navigation';
 import DynamicReport from '../../../components/ad_reports/DynamicReport';
@@ -13,6 +14,21 @@ export default function ReportPage() {
   const { metadata, loading, error } = useReportMetadata(reportId);
   const { generateReport } = useReport();
 
+  const handleSubmit = useCallback(
+    async (format: string, data: FieldValues) => {
+      if (!metadata) return;
+
+      const reportData = {
+        ...data,
+        format,
+        reportId,
+        metadata,
+      };
+      await generateReport(format, reportData);
+    },
+    [generateReport, metadata, reportId],
+  );
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" m={4}>
@@ -24,16 +40,6 @@ export default function ReportPage() {
   if (error || !metadata) {
     return <Box m={2}>Report not found</Box>;
   }
-
-  const handleSubmit = async (format: string, data: FieldValues) => {
-    const reportData = {
-      ...data,
-      format,
-      reportId,
-      metadata,
-    };
-    await generateReport(format, reportData);
-  };
 
   return (
     <Box m={2}>

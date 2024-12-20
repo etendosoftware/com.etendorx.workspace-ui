@@ -124,24 +124,6 @@ const Drawer: React.FC<DrawerProps> = ({
     [items, onClick],
   );
 
-  const handleReportClick = useCallback(
-    (reportId: string) => {
-      if (onReportClick) {
-        onReportClick(reportId);
-      }
-    },
-    [onReportClick],
-  );
-
-  const handleProcessClick = useCallback(
-    (processId: string) => {
-      if (onProcessClick) {
-        onProcessClick(processId);
-      }
-    },
-    [onProcessClick],
-  );
-
   const handleWindowAccess = useCallback((item: { id: string; name: string; windowId: string }) => {
     setRecentItems(prev => {
       const newItems = [item, ...prev.filter(i => i.id !== item.id)].slice(0, 5);
@@ -175,8 +157,8 @@ const Drawer: React.FC<DrawerProps> = ({
           <DrawerItems
             items={filteredItems}
             onClick={handleItemClick}
-            onReportClick={handleReportClick}
-            onProcessClick={handleProcessClick}
+            onReportClick={onReportClick}
+            onProcessClick={onProcessClick}
             open={open}
             expandedItems={expandedItems}
             toggleItemExpansion={toggleItemExpansion}
