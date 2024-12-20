@@ -60,7 +60,7 @@ export const useReportMetadata = (reportId?: string): ReportMetadataHook => {
     return () => {
       controller.abort();
     };
-  }, [reportId, fetchMetadata]);
+  }, [fetchMetadata]);
 
   return { metadata, loading, error };
 };

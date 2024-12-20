@@ -20,14 +20,6 @@
       }
     ]
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    "types/svgr.d.ts",
-    "types/theme.d.ts",
-    "../EtendoHookBinder/src/hooks/useReport.ts"
-  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "types/svgr.d.ts", "types/theme.d.ts"],
   "exclude": ["node_modules"]
 }

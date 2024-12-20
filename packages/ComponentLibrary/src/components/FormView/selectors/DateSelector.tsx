@@ -18,6 +18,8 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
   },
 }));
 
+const INPUT_LABEL_PROPS = { shrink: true } as const;
+
 const DateSelector = memo(
   ({ label, name, value, onChange, onBlur, readOnly, required, error, helperText }: DateSelectorProps) => {
     const inputRef = useRef<HTMLInputElement>(null);
@@ -66,7 +68,7 @@ const DateSelector = memo(
         error={error}
         helperText={helperText}
         inputRef={inputRef}
-        InputLabelProps={{ shrink: true }}
+        InputLabelProps={INPUT_LABEL_PROPS}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
