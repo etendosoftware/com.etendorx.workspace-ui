@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useMetadataContext } from '../../../../../hooks/useMetadataContext';
 import { Toolbar } from '../../../../../components/Toolbar/Toolbar';
 import DynamicFormView from '../../../../../screens/Form/DynamicFormView';
@@ -11,12 +11,21 @@ import { useFormInitialization } from '../../../../../hooks/useFormInitialValues
 import { ErrorDisplay } from '../../../../../components/ErrorDisplay';
 import { useTranslation } from '../../../../../hooks/useTranslation';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
+import MultiSelect from '@workspaceui/componentlibrary/src/components/FormView/selectors/MultiSelector';
+
+interface Option<T extends string = string> {
+  title: string;
+  value: T;
+  id: string;
+}
 
 export default function NewRecordPage() {
   const { windowId, tabId } = useParams<{
     windowId: string;
     tabId: string;
   }>();
+
+  const [selectedValues, setSelectedValues] = useState<Option[]>([]);
 
   const { t } = useTranslation();
   const { windowData, tab, loading: metadataLoading } = useMetadataContext();
@@ -72,6 +81,9 @@ export default function NewRecordPage() {
     <>
       <div style={styles.box}>
         <Toolbar windowId={windowId} tabId={tabId} />
+        <div style={{ padding: '2rem' }}>
+          <MultiSelect value={selectedValues} onChange={setSelectedValues} tab={''} />
+        </div>
       </div>
       <DynamicFormView tab={tab} record={record} />
     </>
