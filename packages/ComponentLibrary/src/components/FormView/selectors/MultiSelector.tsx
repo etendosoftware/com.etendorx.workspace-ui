@@ -129,46 +129,56 @@ const MultiSelect: React.FC<MultiSelectProps> = ({ value = [], onChange, readOnl
   }, []);
 
   return (
-    <div>
-      <Typography>Bussines Partner Selector</Typography>
-      <Box sx={sx.selectedContainer}>
-        {selected.map(item => (
-          <Box key={item.id} sx={sx.selectedItem}>
-            <Typography>{item.title}</Typography>
-            <IconButton
-              size="small"
-              onClick={() => {
-                setSelected(prev => prev.filter(i => i.id !== item.id));
-              }}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
+    <>
+      <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ flex: 1 }}>
+          <Typography>Business Partner Selector</Typography>
+          <Box sx={sx.selectedContainer}>
+            {selected.map(item => (
+              <Box key={item.id} sx={sx.selectedItem}>
+                <Typography>{item.title}</Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    setSelected(prev => prev.filter(i => i.id !== item.id));
+                  }}>
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            ))}
+            {selected.length === 0 && <Box sx={sx.emptyState}>No items selected</Box>}
           </Box>
-        ))}
-        {selected.length === 0 && <Box sx={sx.emptyState}>No items selected</Box>}
-      </Box>
-      <Box
-        onClick={handleOpenModal}
-        sx={{
-          ...sx.searchBar,
-          '&:hover': {
-            backgroundColor: readOnly ? 'transparent' : theme.palette.baselineColor.neutral[10],
-          },
-        }}>
-        <SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />
-        <Typography>Add</Typography>
-        <IconButton
-          size="small"
-          onClick={e => {
-            e.stopPropagation();
-            setSelected([]);
-            onChange([]);
-          }}
-          disabled={readOnly || selected.length === 0}
+        </Box>
+        <Box
+          onClick={handleOpenModal}
           sx={{
-            visibility: selected.length > 0 ? 'visible' : 'hidden',
+            ...sx.searchBar,
+            cursor: readOnly ? 'default' : 'pointer',
+            opacity: readOnly ? 0.7 : 1,
+            '&:hover': {
+              backgroundColor: readOnly ? 'transparent' : theme.palette.baselineColor.neutral[10],
+            },
           }}>
-          <CloseIcon fontSize="small" />
-        </IconButton>
+          <SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />
+          <Typography>Add</Typography>
+          <IconButton
+            size="small"
+            onClick={e => {
+              e.stopPropagation();
+              setSelected([]);
+              onChange([]);
+            }}
+            disabled={readOnly || selected.length === 0}
+            sx={{
+              visibility: selected.length > 0 ? 'visible' : 'hidden',
+              background: theme.palette.baselineColor.neutral[10],
+              '&:hover': {
+                background: theme.palette.baselineColor.neutral[50],
+              },
+            }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
       </Box>
       <Dialog open={open} onClose={handleCloseModal} maxWidth="lg" fullWidth>
         <DialogTitle>Business Partner selector</DialogTitle>
@@ -182,7 +192,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({ value = [], onChange, readOnl
           </Button>
         </DialogActions>
       </Dialog>
-    </div>
+    </>
   );
 };
 
