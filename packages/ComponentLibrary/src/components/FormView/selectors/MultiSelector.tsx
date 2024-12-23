@@ -2,13 +2,14 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, IconButton } from '@mui/material';
 import SearchOutlined from '../../../assets/icons/search.svg';
 import { useTheme } from '@mui/material';
-import { MaterialReactTable, MRT_Row } from 'material-react-table';
+import { MaterialReactTable } from 'material-react-table';
 import { useStyle } from '@workspaceui/mainui/components/Table/styles';
 import CloseIcon from '../../../assets/icons/x.svg';
+import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 
-interface Option<T extends string = string> {
+interface Option {
   title: string;
-  value: T;
+  value: string;
   id: string;
 }
 
@@ -17,32 +18,13 @@ interface MultiSelectProps {
   onChange: (values: Option[]) => void;
   readOnly?: boolean;
   title?: string;
+  entity: string;
+  columnName: string;
+  identifierField: string;
 }
 
-const SelectorTable = ({ data, onRowClick }) => {
+const SelectorTable = ({ data, onRowClick, columns }) => {
   const { sx } = useStyle();
-
-  const columns = useMemo(
-    () => [
-      {
-        header: 'ID',
-        accessorKey: 'id',
-      },
-      {
-        header: 'Name',
-        accessorKey: 'name',
-      },
-      {
-        header: 'Credit Available',
-        accessorKey: 'creditAvail',
-      },
-      {
-        header: 'Credit Used',
-        accessorKey: 'creditUsed',
-      },
-    ],
-    [],
-  );
 
   return (
     <MaterialReactTable
@@ -73,126 +55,123 @@ const SelectorTable = ({ data, onRowClick }) => {
   );
 };
 
-const MultiSelect: React.FC<MultiSelectProps> = ({ value = [], onChange, readOnly }) => {
+const MultiSelect: React.FC<MultiSelectProps> = ({ value = [], onChange, readOnly, title, entity }) => {
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<Option[]>(value);
   const theme = useTheme();
   const { sx } = useStyle();
 
-  const mockData = useMemo(
+  const query = useMemo(
+    () => ({
+      pageSize: 10,
+      _entityName: entity,
+    }),
+    [entity],
+  );
+
+  const { records = [], loading } = useDatasource(entity, query);
+
+  console.log('Entity:', entity);
+
+  const tableData = useMemo(() => {
+    if (!records || records.length === 0) return [];
+    return records;
+  }, [records]);
+
+  const columns = useMemo(
     () => [
       {
-        id: 'ES-C1/0001',
-        name: 'Alimentos y Supermercados, S.A',
-        creditAvail: '0.00',
-        creditUsed: '0.00',
+        header: 'ID',
+        accessorKey: 'id',
       },
       {
-        id: 'ES-C2/0001',
-        name: 'Restaurantes Luna Llena, S.A.',
-        creditAvail: '0.00',
-        creditUsed: '0.00',
+        header: 'Name',
+        accessorKey: '_identifier',
       },
     ],
     [],
   );
 
-  const handleOpenModal = useCallback(() => {
-    if (!readOnly) {
-      setOpen(true);
-    }
-  }, [readOnly]);
+  console.log('tableData:', tableData, 'columns:', columns, 'records:', records);
 
-  const handleCloseModal = useCallback(() => {
-    setOpen(false);
-  }, []);
-
-  const handleConfirm = useCallback(() => {
-    onChange(selected);
-    handleCloseModal();
-  }, [onChange, selected, handleCloseModal]);
-
-  const handleRowClick = useCallback((row: MRT_Row<(typeof mockData)[0]>) => {
-    setSelected(prev => {
+  const handleRowClick = useCallback(
+    row => {
+      const record = row.original;
       const option = {
-        id: row.original.id,
-        title: row.original.name,
-        value: row.original.id,
+        id: record.id,
+        title: record._identifier || record.name,
+        value: record.id,
       };
 
-      const exists = prev.find(item => item.id === option.id);
-      if (exists) {
-        return prev.filter(item => item.id !== option.id);
-      }
-      return [...prev, option];
-    });
-  }, []);
+      const exists = value.some(item => item.id === option.id);
+      const newValue = exists ? value.filter(item => item.id !== option.id) : [...value, option];
+
+      onChange(newValue);
+    },
+    [onChange, value],
+  );
+
+  const handleClear = useCallback(
+    e => {
+      e.stopPropagation();
+      onChange([]);
+    },
+    [onChange],
+  );
+
+  if (loading) return <div>Loading...</div>;
 
   return (
-    <>
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Box sx={{ flex: 1 }}>
-          <Typography>Business Partner Selector</Typography>
-          <Box sx={sx.selectedContainer}>
-            {selected.map(item => (
-              <Box key={item.id} sx={sx.selectedItem}>
-                <Typography>{item.title}</Typography>
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    setSelected(prev => prev.filter(i => i.id !== item.id));
-                  }}>
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-              </Box>
-            ))}
-            {selected.length === 0 && <Box sx={sx.emptyState}>No items selected</Box>}
-          </Box>
-        </Box>
-        <Box
-          onClick={handleOpenModal}
-          sx={{
-            ...sx.searchBar,
-            cursor: readOnly ? 'default' : 'pointer',
-            opacity: readOnly ? 0.7 : 1,
-            '&:hover': {
-              backgroundColor: readOnly ? 'transparent' : theme.palette.baselineColor.neutral[10],
-            },
-          }}>
-          <SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />
-          <Typography>Add</Typography>
-          <IconButton
-            size="small"
-            onClick={e => {
-              e.stopPropagation();
-              setSelected([]);
-              onChange([]);
-            }}
-            disabled={readOnly || selected.length === 0}
-            sx={{
-              visibility: selected.length > 0 ? 'visible' : 'hidden',
-              background: theme.palette.baselineColor.neutral[10],
-              '&:hover': {
-                background: theme.palette.baselineColor.neutral[50],
-              },
-            }}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
+    <Box sx={{ display: 'flex', gap: 2 }}>
+      <Box sx={{ flex: 1 }}>
+        <Typography>{title || 'Select Items'}</Typography>
+        <Box sx={sx.selectedContainer}>
+          {value.map(item => (
+            <Box key={item.id} sx={sx.selectedItem}>
+              <Typography>{item.title}</Typography>
+              <IconButton size="small" onClick={() => onChange(value.filter(i => i.id !== item.id))}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          ))}
+          {value.length === 0 && <Box sx={sx.emptyState}>No items selected</Box>}
         </Box>
       </Box>
-      <Dialog open={open} onClose={handleCloseModal} maxWidth="lg" fullWidth>
-        <DialogTitle>Business Partner selector</DialogTitle>
+      <Box
+        onClick={() => !readOnly && setOpen(true)}
+        sx={{
+          ...sx.searchBar,
+          cursor: readOnly ? 'default' : 'pointer',
+          opacity: readOnly ? 0.7 : 1,
+          '&:hover': {
+            backgroundColor: readOnly ? 'transparent' : theme.palette.baselineColor.neutral[10],
+          },
+        }}>
+        <SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />
+        <Typography>Add</Typography>
+        <IconButton
+          size="small"
+          onClick={handleClear}
+          disabled={readOnly || value.length === 0}
+          sx={{
+            visibility: value.length > 0 ? 'visible' : 'hidden',
+            background: theme.palette.baselineColor.neutral[10],
+            '&:hover': {
+              background: theme.palette.baselineColor.neutral[50],
+            },
+          }}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Box>
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="lg" fullWidth>
+        <DialogTitle>{title || 'Select Items'}</DialogTitle>
         <DialogContent>
-          <SelectorTable data={mockData} onRowClick={handleRowClick} />
+          <SelectorTable data={tableData} onRowClick={handleRowClick} columns={columns} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseModal}>Cancel</Button>
-          <Button onClick={handleConfirm} variant="contained">
-            OK
-          </Button>
+          <Button onClick={() => setOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-    </>
+    </Box>
   );
 };
 

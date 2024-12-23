@@ -3,6 +3,7 @@ import { useFormContext, Controller } from 'react-hook-form';
 import { TextField, MenuItem, Autocomplete } from '@mui/material';
 import DateSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/DateSelector';
 import { ReportField } from '@workspaceui/etendohookbinder/src/hooks/types';
+import MultiSelect from '@workspaceui/componentlibrary/src/components/FormView/selectors/MultiSelector';
 
 interface DynamicFieldProps {
   field: ReportField;
@@ -63,30 +64,38 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
         />
       );
     case 'search':
-    case 'multiselect':
       return (
         <Controller
           name={field.name}
           control={control}
           rules={{ required: field.required }}
-          render={({ field: { onChange, value }, fieldState: { error } }) => (
+          render={({ field: { onChange, value } }) => (
             <Autocomplete
-              multiple={field.type === 'multiselect'}
               options={field.lookupConfig?.values || []}
-              value={value || (field.type === 'multiselect' ? [] : null)}
-              getOptionLabel={option => option.name}
+              value={value || null}
+              getOptionLabel={option => option?.name || ''}
               onChange={(_, newValue) => onChange(newValue)}
               fullWidth
               renderInput={params => (
-                <TextField
-                  {...params}
-                  variant="standard"
-                  label={field.label}
-                  required={field.required}
-                  error={!!error}
-                  helperText={error?.message}
-                />
+                <TextField {...params} variant="standard" label={field.label} required={field.required} />
               )}
+            />
+          )}
+        />
+      );
+    case 'multiselect':
+      return (
+        <Controller
+          name={field.name}
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <MultiSelect
+              value={value || []}
+              onChange={onChange}
+              title={field.label}
+              entity={field.entity || ''}
+              columnName={field.columnName || ''}
+              identifierField={field.identifierField || '_identifier'}
             />
           )}
         />

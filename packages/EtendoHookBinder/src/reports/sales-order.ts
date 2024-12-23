@@ -71,6 +71,9 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           type: 'multiselect',
           required: false,
           gridWidth: 2,
+          entity: 'ADUser',
+          columnName: 'C_BPartner_ID',
+          identifierField: 'name',
           lookupConfig: {
             multiple: true,
             selector: {
@@ -85,6 +88,9 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           type: 'multiselect',
           required: false,
           gridWidth: 2,
+          entity: 'Product',
+          columnName: 'M_Product_ID',
+          identifierField: 'name',
           lookupConfig: {
             multiple: true,
             selector: {
@@ -99,6 +105,9 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           type: 'multiselect',
           required: false,
           gridWidth: 2,
+          entity: 'ProductCategory',
+          columnName: 'M_Product_Category_ID',
+          identifierField: 'name',
           lookupConfig: {
             url: '/api/selector/productCategories',
             multiple: true,

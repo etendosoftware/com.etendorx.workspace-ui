@@ -5,6 +5,9 @@ export interface ReportField {
   type: 'date' | 'select' | 'multiselect' | 'search' | 'string';
   required: boolean;
   gridWidth?: 1 | 2 | 3;
+  entity?: string;
+  columnName?: string;
+  identifierField?: string;
   original?: {
     referencedEntity?: string;
     referencedWindowId?: string;
