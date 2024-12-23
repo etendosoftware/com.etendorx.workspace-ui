@@ -1,7 +1,7 @@
-import type { StorybookConfig } from '@storybook/react-vite';
-import { mergeConfig } from 'vite';
+const { mergeConfig } = require('vite');
 
-const config: StorybookConfig = {
+/** @type {import('@storybook/react-vite').StorybookConfig} */
+module.exports = {
   stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
   addons: [
     '@storybook/addon-essentials',
@@ -42,5 +42,3 @@ const config: StorybookConfig = {
     });
   },
 };
-
-export default config;

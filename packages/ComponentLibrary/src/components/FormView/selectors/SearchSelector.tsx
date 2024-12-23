@@ -16,7 +16,7 @@ const SearchSelector = ({ onChange, value, field, name }: SearchSelectorProps) =
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
 
   const options = useMemo(() => {
-    const valueField = (field.original?.selector?.valueField ?? '') as string;
+    const valueField = (field.original.selector?.valueField ?? '') as string;
 
     return records.map(record => ({
       id: record[valueField] as string,

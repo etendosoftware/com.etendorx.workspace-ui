@@ -12,6 +12,7 @@ import { ErrorDisplay } from '../../../../../components/ErrorDisplay';
 import { useTranslation } from '../../../../../hooks/useTranslation';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import MultiSelect from '@workspaceui/componentlibrary/src/components/FormView/selectors/MultiSelector';
+import { WindowParams } from '../../../../types';
 
 interface Option<T extends string = string> {
   title: string;
@@ -20,10 +21,7 @@ interface Option<T extends string = string> {
 }
 
 export default function NewRecordPage() {
-  const { windowId, tabId } = useParams<{
-    windowId: string;
-    tabId: string;
-  }>();
+  const { windowId, tabId } = useParams<WindowParams>();
 
   const [selectedValues, setSelectedValues] = useState<Option[]>([]);
 

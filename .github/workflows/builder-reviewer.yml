@@ -31,10 +31,16 @@ jobs:
           version: 8
           run_install: false
 
+      - name: Clean node_modules
+        run: |
+          rm -rf node_modules
+          rm -rf packages/*/node_modules
+
       - name: Get pnpm store directory
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
       - name: Setup pnpm cache
         uses: actions/cache@v3
         with:
@@ -42,11 +48,12 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
+
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --force
 
       - name: Build all packages
-        run: pnpm build:all
+        run: pnpm build
 
       - name: Calculate run time
         if: always()
@@ -73,5 +80,5 @@ jobs:
               owner,
               repo,
               issue_number: number,
-              body: `Build Status: ${status}\n\nBuild completed in ${process.env.DURATION_TEXT}\n\nBuilt packages:\n- @workspaceui/storybook\n- @workspaceui/mainui`
+              body: `Build Status: ${status}\n\nBuild completed in ${process.env.DURATION_TEXT}\n\nBuilt packages:\n- @workspaceui/mainui`
             });
