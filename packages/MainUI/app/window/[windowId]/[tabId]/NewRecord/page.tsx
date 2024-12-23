@@ -11,12 +11,10 @@ import { useFormInitialization } from '../../../../../hooks/useFormInitialValues
 import { ErrorDisplay } from '../../../../../components/ErrorDisplay';
 import { useTranslation } from '../../../../../hooks/useTranslation';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
+import { WindowParams } from '../../../../types';
 
 export default function NewRecordPage() {
-  const { windowId, tabId } = useParams<{
-    windowId: string;
-    tabId: string;
-  }>();
+  const { windowId, tabId } = useParams<WindowParams>();
 
   const { t } = useTranslation();
   const { windowData, tab, loading: metadataLoading } = useMetadataContext();

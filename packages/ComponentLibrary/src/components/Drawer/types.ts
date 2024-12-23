@@ -7,6 +7,8 @@ export interface DrawerProps {
   logo?: string | React.ReactNode;
   title: string;
   onClick: NavigateFn;
+  onReportClick: NavigateFn;
+  onProcessClick: NavigateFn;
   // Mock Props
   headerImage?: string;
   headerTitle?: string;
@@ -27,12 +29,15 @@ export interface MenuTitleProps {
 export interface DrawerSectionProps extends React.PropsWithChildren {
   item: Menu;
   onClick: NavigateFn;
+  onReportClick?: NavigateFn;
+  onProcessClick?: NavigateFn;
   open?: boolean;
   onToggleExpand: () => void;
   hasChildren: boolean;
   isExpanded: boolean;
   isExpandable: boolean;
   isSearchActive: boolean;
+  reportId?: string;
   windowId?: string;
   parentId?: string;
 }
@@ -64,11 +69,14 @@ export interface SearchIndex {
 export interface DrawerItemsProps {
   items: Menu[];
   onClick: (path: string) => void;
+  onReportClick?: NavigateFn;
+  onProcessClick?: NavigateFn;
   open: boolean;
   expandedItems: Set<string>;
   toggleItemExpansion: (itemId: string) => void;
   searchValue: string;
   windowId?: string;
+  reportId?: string;
 }
 
 export interface RecentItem {
