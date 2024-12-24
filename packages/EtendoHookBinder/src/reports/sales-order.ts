@@ -65,6 +65,17 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           },
         },
         {
+          id: 'region',
+          name: 'inpcRegionId',
+          label: 'Region',
+          type: 'select',
+          required: false,
+          gridWidth: 2,
+          lookupConfig: {
+            url: '/api/selector/regions',
+          },
+        },
+        {
           id: 'businessPartner',
           name: 'inpcBPartnerId_IN',
           label: 'Business Partner',
@@ -74,6 +85,20 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           entity: 'ADUser',
           columnName: 'C_BPartner_ID',
           identifierField: 'name',
+          columns: [
+            {
+              header: 'ID',
+              accessorKey: 'id',
+            },
+            {
+              header: 'Name',
+              accessorKey: '_identifier',
+            },
+            {
+              header: 'Email',
+              accessorKey: 'email',
+            },
+          ],
           lookupConfig: {
             multiple: true,
             selector: {
@@ -91,6 +116,20 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           entity: 'Product',
           columnName: 'M_Product_ID',
           identifierField: 'name',
+          columns: [
+            {
+              header: 'ID',
+              accessorKey: 'id',
+            },
+            {
+              header: 'Name',
+              accessorKey: '_identifier',
+            },
+            {
+              header: 'Category',
+              accessorKey: 'productCategory',
+            },
+          ],
           lookupConfig: {
             multiple: true,
             selector: {
@@ -111,17 +150,6 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           lookupConfig: {
             url: '/api/selector/productCategories',
             multiple: true,
-          },
-        },
-        {
-          id: 'region',
-          name: 'inpcRegionId',
-          label: 'Region',
-          type: 'select',
-          required: false,
-          gridWidth: 2,
-          lookupConfig: {
-            url: '/api/selector/regions',
           },
         },
       ],

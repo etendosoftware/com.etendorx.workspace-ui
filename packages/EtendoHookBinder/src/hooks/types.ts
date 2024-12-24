@@ -1,3 +1,8 @@
+export interface ReportColumn {
+  header: string;
+  accessorKey: string;
+}
+
 export interface ReportField {
   id: string;
   name: string;
@@ -8,6 +13,7 @@ export interface ReportField {
   entity?: string;
   columnName?: string;
   identifierField?: string;
+  columns?: ReportColumn[];
   original?: {
     referencedEntity?: string;
     referencedWindowId?: string;

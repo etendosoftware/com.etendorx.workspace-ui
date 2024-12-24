@@ -2,28 +2,13 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, IconButton } from '@mui/material';
 import SearchOutlined from '../../../assets/icons/search.svg';
 import { useTheme } from '@mui/material';
-import { MaterialReactTable } from 'material-react-table';
+import { MaterialReactTable, MRT_Row } from 'material-react-table';
 import { useStyle } from '@workspaceui/mainui/components/Table/styles';
 import CloseIcon from '../../../assets/icons/x.svg';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
+import { SelectorTableProps, MultiSelectProps, TableData, Option } from '../types';
 
-interface Option {
-  title: string;
-  value: string;
-  id: string;
-}
-
-interface MultiSelectProps {
-  value: Option[];
-  onChange: (values: Option[]) => void;
-  readOnly?: boolean;
-  title?: string;
-  entity: string;
-  columnName: string;
-  identifierField: string;
-}
-
-const SelectorTable = ({ data, onRowClick, columns }) => {
+const SelectorTable: React.FC<SelectorTableProps> = ({ data, onRowClick, columns }) => {
   const { sx } = useStyle();
 
   return (
@@ -32,11 +17,6 @@ const SelectorTable = ({ data, onRowClick, columns }) => {
       data={data}
       enableRowSelection
       enableMultiRowSelection={false}
-      enableTopToolbar={false}
-      enableColumnActions={false}
-      enableColumnFilters={false}
-      enablePagination={false}
-      enableSorting={false}
       muiTableBodyRowProps={({ row }) => ({
         onClick: () => onRowClick(row),
         sx: sx.tableBody,
@@ -55,51 +35,41 @@ const SelectorTable = ({ data, onRowClick, columns }) => {
   );
 };
 
-const MultiSelect: React.FC<MultiSelectProps> = ({ value = [], onChange, readOnly, title, entity }) => {
+const MultiSelect: React.FC<MultiSelectProps> = ({
+  value = [],
+  onChange,
+  readOnly,
+  title,
+  entity,
+  columns = [
+    {
+      header: 'ID',
+      accessorKey: 'id',
+    },
+    {
+      header: 'Name',
+      accessorKey: '_identifier',
+    },
+  ],
+}) => {
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const { sx } = useStyle();
 
-  const query = useMemo(
-    () => ({
-      pageSize: 10,
-      _entityName: entity,
-    }),
-    [entity],
-  );
-
-  const { records = [], loading } = useDatasource(entity, query);
-
-  console.log('Entity:', entity);
+  const { records = [], loading } = useDatasource(entity);
 
   const tableData = useMemo(() => {
     if (!records || records.length === 0) return [];
-    return records;
+    return records as TableData[];
   }, [records]);
 
-  const columns = useMemo(
-    () => [
-      {
-        header: 'ID',
-        accessorKey: 'id',
-      },
-      {
-        header: 'Name',
-        accessorKey: '_identifier',
-      },
-    ],
-    [],
-  );
-
-  console.log('tableData:', tableData, 'columns:', columns, 'records:', records);
-
   const handleRowClick = useCallback(
-    row => {
+    (row: MRT_Row<TableData>) => {
       const record = row.original;
-      const option = {
-        id: record.id,
-        title: record._identifier || record.name,
-        value: record.id,
+      const option: Option = {
+        id: String(record.id),
+        title: String(record._identifier || record.name),
+        value: String(record.id),
       };
 
       const exists = value.some(item => item.id === option.id);
@@ -111,7 +81,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({ value = [], onChange, readOnl
   );
 
   const handleClear = useCallback(
-    e => {
+    (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
       onChange([]);
     },
@@ -121,7 +91,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({ value = [], onChange, readOnl
   if (loading) return <div>Loading...</div>;
 
   return (
-    <Box sx={{ display: 'flex', gap: 2 }}>
+    <Box sx={{ display: 'flex' }}>
       <Box sx={{ flex: 1 }}>
         <Typography>{title || 'Select Items'}</Typography>
         <Box sx={sx.selectedContainer}>
@@ -144,6 +114,8 @@ const MultiSelect: React.FC<MultiSelectProps> = ({ value = [], onChange, readOnl
           opacity: readOnly ? 0.7 : 1,
           '&:hover': {
             backgroundColor: readOnly ? 'transparent' : theme.palette.baselineColor.neutral[10],
+            color: theme.palette.baselineColor.neutral[100],
+            background: theme.palette.baselineColor.neutral[30],
           },
         }}>
         <SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />

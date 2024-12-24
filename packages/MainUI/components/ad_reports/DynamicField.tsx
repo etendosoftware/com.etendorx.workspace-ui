@@ -96,6 +96,7 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
               entity={field.entity || ''}
               columnName={field.columnName || ''}
               identifierField={field.identifierField || '_identifier'}
+              columns={field.columns}
             />
           )}
         />
