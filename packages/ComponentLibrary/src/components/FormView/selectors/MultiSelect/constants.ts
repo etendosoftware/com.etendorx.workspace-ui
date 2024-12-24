@@ -27,18 +27,7 @@ export const DIALOG_PROPS = {
 
 export const ICON_BUTTON_SIZE = 'small' as const;
 
-export const TABLE_FEATURES_CONFIG = {
-  enableRowSelection: true,
-  enableMultiRowSelection: false,
-  enableTopToolbar: true,
-  enableColumnActions: false,
-  enableColumnFilters: false,
-  enablePagination: false,
-  enableSorting: false,
-} as const;
-
 export const LOADING_TEXT = 'Loading...' as const;
 export const EMPTY_STATE_TEXT = 'No items selected' as const;
 export const ADD_BUTTON_TEXT = 'Add' as const;
 export const CLOSE_BUTTON_TEXT = 'Close' as const;
-export const addText = 'Add' as const;
