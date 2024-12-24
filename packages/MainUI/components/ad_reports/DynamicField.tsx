@@ -3,7 +3,7 @@ import { useFormContext, Controller } from 'react-hook-form';
 import { TextField, MenuItem, Autocomplete } from '@mui/material';
 import DateSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/DateSelector';
 import { ReportField } from '@workspaceui/etendohookbinder/src/hooks/types';
-import MultiSelect from '@workspaceui/componentlibrary/src/components/FormView/selectors/MultiSelector';
+import MultiSelect from '@workspaceui/componentlibrary/src/components/FormView/selectors/MultiSelect/MultiSelector';
 
 interface DynamicFieldProps {
   field: ReportField;
