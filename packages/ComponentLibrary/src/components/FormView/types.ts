@@ -197,4 +197,5 @@ export interface SelectorTableProps {
   data: TableData[];
   onRowClick: (row: MRT_Row<TableData>) => void;
   columns: MRT_ColumnDef<TableData>[];
+  title: string;
 }

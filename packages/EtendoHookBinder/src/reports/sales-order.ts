@@ -82,17 +82,33 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           type: 'multiselect',
           required: false,
           gridWidth: 2,
-          entity: 'ADUser',
+          entity: 'BusinessPartner',
           columnName: 'C_BPartner_ID',
           identifierField: 'name',
           columns: [
             {
-              header: 'ID',
-              accessorKey: 'id',
+              header: 'Key',
+              accessorKey: 'searchKey',
             },
             {
               header: 'Name',
               accessorKey: '_identifier',
+            },
+            {
+              header: 'Credit Available',
+              accessorKey: 'creditStatus',
+            },
+            {
+              header: 'Credit Used',
+              accessorKey: 'creditUsed',
+            },
+            {
+              header: 'Sales Representative',
+              accessorKey: 'salesRepresentative',
+            },
+            {
+              header: 'URL',
+              accessorKey: 'url',
             },
             {
               header: 'Email',
@@ -118,16 +134,16 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           identifierField: 'name',
           columns: [
             {
-              header: 'ID',
-              accessorKey: 'id',
+              header: 'Key',
+              accessorKey: 'searchKey',
             },
             {
               header: 'Name',
-              accessorKey: '_identifier',
+              accessorKey: 'name',
             },
             {
               header: 'Category',
-              accessorKey: 'productCategory',
+              accessorKey: 'productCategory$_identifier',
             },
           ],
           lookupConfig: {

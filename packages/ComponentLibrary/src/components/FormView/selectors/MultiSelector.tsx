@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, IconButton } from '@mui/material';
+import { Dialog, DialogContent, DialogActions, Button, Box, Typography, IconButton } from '@mui/material';
 import SearchOutlined from '../../../assets/icons/search.svg';
 import { useTheme } from '@mui/material';
 import { MaterialReactTable, MRT_Row } from 'material-react-table';
@@ -8,7 +8,7 @@ import CloseIcon from '../../../assets/icons/x.svg';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { SelectorTableProps, MultiSelectProps, TableData, Option } from '../types';
 
-const SelectorTable: React.FC<SelectorTableProps> = ({ data, onRowClick, columns }) => {
+const SelectorTable: React.FC<SelectorTableProps> = ({ data, onRowClick, columns, title }) => {
   const { sx } = useStyle();
 
   return (
@@ -17,6 +17,11 @@ const SelectorTable: React.FC<SelectorTableProps> = ({ data, onRowClick, columns
       data={data}
       enableRowSelection
       enableMultiRowSelection={false}
+      renderTopToolbarCustomActions={() => (
+        <Box sx={{ margin: '0.5rem' }}>
+          <Typography>{title}</Typography>
+        </Box>
+      )}
       muiTableBodyRowProps={({ row }) => ({
         onClick: () => onRowClick(row),
         sx: sx.tableBody,
@@ -93,7 +98,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   return (
     <Box sx={{ display: 'flex' }}>
       <Box sx={{ flex: 1 }}>
-        <Typography>{title || 'Select Items'}</Typography>
+        <Typography>{title}</Typography>
         <Box sx={sx.selectedContainer}>
           {value.map(item => (
             <Box key={item.id} sx={sx.selectedItem}>
@@ -135,9 +140,8 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
         </IconButton>
       </Box>
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="lg" fullWidth>
-        <DialogTitle>{title || 'Select Items'}</DialogTitle>
         <DialogContent>
-          <SelectorTable data={tableData} onRowClick={handleRowClick} columns={columns} />
+          <SelectorTable data={tableData} onRowClick={handleRowClick} columns={columns} title={title || ''} />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Close</Button>
