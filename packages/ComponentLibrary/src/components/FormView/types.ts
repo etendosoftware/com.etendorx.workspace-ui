@@ -161,6 +161,15 @@ export interface SelectSelectorProps {
   value: string;
 }
 
+export interface DatabaseSelectSelector {
+  name: string;
+  title: string;
+  onChange: (value: string) => void;
+  readOnly?: boolean;
+  value: string;
+  entity: string;
+}
+
 export interface QuantityProps {
   value: FieldValue;
   maxLength?: string;

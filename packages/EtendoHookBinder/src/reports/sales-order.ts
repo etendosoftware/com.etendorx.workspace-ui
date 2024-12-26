@@ -35,6 +35,7 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           label: 'Currency',
           type: 'select',
           required: true,
+          entity: 'Currency',
           lookupConfig: {
             url: '/api/selector/currencies',
           },
@@ -60,6 +61,7 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           type: 'select',
           required: false,
           gridWidth: 2,
+          entity: 'Warehouse',
           lookupConfig: {
             url: '/api/selector/warehouses',
           },

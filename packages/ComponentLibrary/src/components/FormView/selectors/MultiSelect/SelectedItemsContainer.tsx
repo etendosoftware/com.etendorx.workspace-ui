@@ -1,13 +1,8 @@
 import { Typography, IconButton, Box } from '@mui/material';
 import CloseIcon from '../../../../assets/icons/x.svg';
 import { useStyle } from '@workspaceui/mainui/components/Table/styles';
-import { Option } from '../../types';
 import { ICON_BUTTON_SIZE } from './constants';
-
-interface SelectedItemProps {
-  item: Option;
-  onRemove: (id: string) => void;
-}
+import { SelectedItemProps, SelectedItemsContainerProps } from './types';
 
 export const SelectedItem: React.FC<SelectedItemProps> = ({ item, onRemove }) => {
   const { sx } = useStyle();
@@ -21,11 +16,6 @@ export const SelectedItem: React.FC<SelectedItemProps> = ({ item, onRemove }) =>
     </Box>
   );
 };
-
-interface SelectedItemsContainerProps {
-  items: Option[];
-  onRemove: (id: string) => void;
-}
 
 export const SelectedItemsContainer: React.FC<SelectedItemsContainerProps> = ({ items, onRemove }) => {
   const { sx } = useStyle();

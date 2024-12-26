@@ -1,7 +1,8 @@
 import { memo } from 'react';
 import { useFormContext, Controller } from 'react-hook-form';
-import { TextField, MenuItem, Autocomplete } from '@mui/material';
+import { TextField, Autocomplete } from '@mui/material';
 import DateSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/DateSelector';
+import DatabaseSelectSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/DatabaseSelect';
 import { ReportField } from '@workspaceui/etendohookbinder/src/hooks/types';
 import MultiSelect from '@workspaceui/componentlibrary/src/components/FormView/selectors/MultiSelect/MultiSelector';
 
@@ -33,33 +34,20 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
           )}
         />
       );
-
     case 'select':
       return (
         <Controller
           name={field.name}
           control={control}
-          render={({ field: { onChange, value, onBlur }, fieldState: { error } }) => (
-            <TextField
-              select
-              fullWidth
-              label={field.label}
+          render={({ field: { onChange, value } }) => (
+            <DatabaseSelectSelector
               value={value || ''}
+              name={field.name}
+              title={field.label}
               onChange={onChange}
-              onBlur={onBlur}
-              required={field.required}
-              error={!!error}
-              helperText={error?.message}
-              variant="standard">
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
-              {field.lookupConfig?.values?.map(option => (
-                <MenuItem key={option.id} value={option.id}>
-                  {option.name}
-                </MenuItem>
-              ))}
-            </TextField>
+              readOnly={false}
+              entity={field.entity || ''}
+            />
           )}
         />
       );
