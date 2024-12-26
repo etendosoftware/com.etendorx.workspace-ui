@@ -8,7 +8,13 @@ import { DEFAULT_COLUMNS, TABLE_INITIAL_STATE, DIALOG_PROPS } from './constants'
 import { SelectedItemsContainer } from './SelectedItemsContainer';
 import { SearchBar } from './SearchBar';
 
-const SelectorTable: React.FC<SelectorTableProps> = ({ data, onRowClick, columns, title }) => {
+const SelectorTable: React.FC<SelectorTableProps & { selectedIds: string[] }> = ({
+  data,
+  onRowClick,
+  columns,
+  title,
+  selectedIds,
+}) => {
   const { sx } = useStyle();
 
   return (
@@ -17,6 +23,8 @@ const SelectorTable: React.FC<SelectorTableProps> = ({ data, onRowClick, columns
       data={data}
       enableRowSelection
       enableMultiRowSelection={false}
+      getRowId={row => String(row.id)}
+      state={{ rowSelection: selectedIds.reduce((acc, id) => ({ ...acc, [id]: true }), {}) }}
       renderTopToolbarCustomActions={() => (
         <Box sx={sx.titleContainer}>
           <Typography>{title}</Typography>
@@ -24,7 +32,10 @@ const SelectorTable: React.FC<SelectorTableProps> = ({ data, onRowClick, columns
       )}
       muiTableBodyRowProps={({ row }) => ({
         onClick: () => onRowClick(row),
-        sx: sx.tableBody,
+        sx: {
+          ...sx.tableBody,
+          cursor: 'pointer',
+        },
       })}
       muiTablePaperProps={{
         sx: sx.tablePaper,
@@ -65,6 +76,10 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
         value: String(record.id),
       }));
   }, [value, records]);
+
+  const selectedIds = useMemo(() => {
+    return selectedOptions.map(option => option.id);
+  }, [selectedOptions]);
 
   const tableData = useMemo(() => {
     if (!records || records.length === 0) return [];
@@ -116,7 +131,13 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
       />
       <Dialog open={open} onClose={() => setOpen(false)} {...DIALOG_PROPS}>
         <DialogContent sx={sx.dialogContent}>
-          <SelectorTable data={tableData} onRowClick={handleRowClick} columns={columns} title={title || ''} />
+          <SelectorTable
+            data={tableData}
+            onRowClick={handleRowClick}
+            columns={columns}
+            title={title || ''}
+            selectedIds={selectedIds}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Close</Button>
