@@ -1,5 +1,7 @@
 import { Field, MappedData, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
+import { ReportColumn } from '@workspaceui/etendohookbinder/src/hooks/types';
+import { MRT_ColumnDef, MRT_Row } from 'material-react-table';
 
 export interface GridItemProps {
   xs?: number;
@@ -159,6 +161,15 @@ export interface SelectSelectorProps {
   value: string;
 }
 
+export interface DatabaseSelectSelector {
+  name: string;
+  title: string;
+  onChange: (value: string) => void;
+  readOnly?: boolean;
+  value: string;
+  entity: string;
+}
+
 export interface QuantityProps {
   value: FieldValue;
   maxLength?: string;
@@ -175,4 +186,25 @@ export interface ListSelectorProps {
   onChange: (value: string) => void;
   name: string;
   readOnly?: boolean;
+}
+
+//MultiSelect
+export interface MultiSelectProps {
+  value?: string | string[];
+  onChange: (value: string[]) => void;
+  readOnly?: boolean;
+  title?: string;
+  entity: string;
+  columnName: string;
+  identifierField: string;
+  columns?: ReportColumn[];
+}
+
+export type TableData = Record<string, unknown>;
+
+export interface SelectorTableProps {
+  data: TableData[];
+  onRowClick: (row: MRT_Row<TableData>) => void;
+  columns: MRT_ColumnDef<TableData>[];
+  title: string;
 }
