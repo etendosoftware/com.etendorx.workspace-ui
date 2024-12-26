@@ -190,8 +190,8 @@ export interface ListSelectorProps {
 
 //MultiSelect
 export interface MultiSelectProps {
-  value: Option[];
-  onChange: (values: Option[]) => void;
+  value?: string | string[];
+  onChange: (value: string[]) => void;
   readOnly?: boolean;
   title?: string;
   entity: string;

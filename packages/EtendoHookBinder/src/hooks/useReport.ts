@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { API_BASE_URL } from '../api/constants';
-import { ReportMetadata } from './types';
+import { ReportField, ReportMetadata } from './types';
 
-interface BaseReportParams {
+type ReportFields = {
+  [K in ReportField['name']]: unknown;
+};
+
+interface BaseReportParams extends ReportFields {
   format: string;
   reportId: string;
   metadata: ReportMetadata;
@@ -23,21 +27,24 @@ export function useReport() {
       const action = metadata.actions.find(a => a.format === format);
       formData.append('Command', action?.command || 'EDIT_HTML');
 
-      const fieldMapping: Record<string, string> = {
-        dateFrom: 'inpDateFrom',
-        dateTo: 'inpDateTo',
-        currencyId: 'inpCurrencyId',
-        projectId: 'inpcProjectId',
-        warehouseId: 'inpmWarehouseId',
-        regionId: 'inpcRegionId',
-      };
+      metadata.sections.forEach(section => {
+        section.fields.forEach(field => {
+          const value = data[field.name];
 
-      Object.entries(data).forEach(([key, value]) => {
-        if (value && key !== 'metadata') {
-          const fieldName = fieldMapping[key] || key;
-          formData.append(fieldName, value.toString());
-        }
+          if (field.type === 'multiselect' && Array.isArray(value)) {
+            value.forEach(val => {
+              if (val) {
+                formData.append(field.name, val);
+              }
+            });
+          } else if (value !== undefined && value !== null) {
+            formData.append(field.name, value.toString());
+          }
+        });
       });
+
+      formData.append('format', format);
+      formData.append('reportId', data.reportId);
 
       const response = await fetch(`${API_BASE_URL}/ad_reports/${metadata.sourcePath}.html`, {
         method: 'POST',

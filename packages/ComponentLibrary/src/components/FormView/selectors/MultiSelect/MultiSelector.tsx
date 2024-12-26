@@ -52,6 +52,20 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   const { sx } = useStyle();
   const { records = [], loading } = useDatasource(entity);
 
+  const selectedOptions = useMemo(() => {
+    const valueArray = Array.isArray(value) ? value : value ? [value] : [];
+
+    const typedRecords = records as TableData[];
+
+    return typedRecords
+      .filter(record => valueArray.includes(String(record.id)))
+      .map(record => ({
+        id: String(record.id),
+        title: String(record._identifier || record.name || ''),
+        value: String(record.id),
+      }));
+  }, [value, records]);
+
   const tableData = useMemo(() => {
     if (!records || records.length === 0) return [];
     return records as TableData[];
@@ -62,23 +76,24 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
       const record = row.original;
       const option: Option = {
         id: String(record.id),
-        title: String(record._identifier || record.name),
+        title: String(record._identifier || record.name || ''),
         value: String(record.id),
       };
 
-      const exists = value.some(item => item.id === option.id);
-      const newValue = exists ? value.filter(item => item.id !== option.id) : [...value, option];
+      const exists = selectedOptions.some(item => item.id === option.id);
+      const newOptions = exists ? selectedOptions.filter(item => item.id !== option.id) : [...selectedOptions, option];
 
-      onChange(newValue);
+      onChange(newOptions.map(opt => opt.id));
     },
-    [onChange, value],
+    [onChange, selectedOptions],
   );
 
   const handleRemoveItem = useCallback(
     (id: string) => {
-      onChange(value.filter(item => item.id !== id));
+      const newOptions = selectedOptions.filter(item => item.id !== id);
+      onChange(newOptions.map(opt => opt.id));
     },
-    [onChange, value],
+    [onChange, selectedOptions],
   );
 
   const handleClear = useCallback(() => {
@@ -91,9 +106,14 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
     <Box sx={sx.multiSelectContainer}>
       <Box sx={sx.contentContainer}>
         <Typography>{title}</Typography>
-        <SelectedItemsContainer items={value} onRemove={handleRemoveItem} />
+        <SelectedItemsContainer items={selectedOptions} onRemove={handleRemoveItem} />
       </Box>
-      <SearchBar readOnly={readOnly} onClear={handleClear} onOpen={() => setOpen(true)} hasItems={value.length > 0} />
+      <SearchBar
+        readOnly={readOnly}
+        onClear={handleClear}
+        onOpen={() => setOpen(true)}
+        hasItems={selectedOptions.length > 0}
+      />
       <Dialog open={open} onClose={() => setOpen(false)} {...DIALOG_PROPS}>
         <DialogContent sx={sx.dialogContent}>
           <SelectorTable data={tableData} onRowClick={handleRowClick} columns={columns} title={title || ''} />

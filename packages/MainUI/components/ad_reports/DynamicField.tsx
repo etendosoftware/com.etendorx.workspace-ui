@@ -11,7 +11,7 @@ interface DynamicFieldProps {
 }
 
 function DynamicFieldComponent({ field }: DynamicFieldProps) {
-  const { control } = useFormContext();
+  const { control, setValue } = useFormContext();
 
   switch (field.type) {
     case 'date':
@@ -76,10 +76,12 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
         <Controller
           name={field.name}
           control={control}
-          render={({ field: { onChange, value } }) => (
+          render={({ field: { value } }) => (
             <MultiSelect
               value={value || []}
-              onChange={onChange}
+              onChange={selectedIds => {
+                setValue(field.name, selectedIds, { shouldDirty: true });
+              }}
               title={field.label}
               entity={field.entity || ''}
               columnName={field.columnName || ''}
