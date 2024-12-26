@@ -64,12 +64,19 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   const { records = [], loading } = useDatasource(entity);
 
   const selectedOptions = useMemo(() => {
-    const valueArray = Array.isArray(value) ? value : value ? [value] : [];
-
+    const normalizeValue = (value: string | string[] | undefined): string[] => {
+      if (Array.isArray(value)) {
+        return value;
+      }
+      if (value) {
+        return [value];
+      }
+      return [];
+    };
     const typedRecords = records as TableData[];
 
     return typedRecords
-      .filter(record => valueArray.includes(String(record.id)))
+      .filter(record => normalizeValue(value).includes(String(record.id)))
       .map(record => ({
         id: String(record.id),
         title: String(record._identifier || record.name || ''),
