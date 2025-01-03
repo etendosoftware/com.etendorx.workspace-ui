@@ -29,4 +29,5 @@ export enum HTTP_CODES {
   UNAUTHORIZED = 401,
   NOT_FOUND = 404,
 }
-export const MAX_ATTEMPTS = 20;
+export const MAX_ATTEMPTS = 5;
+export const RETRY_DELAY_MS = 2000;
