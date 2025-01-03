@@ -35,6 +35,7 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           label: 'Currency',
           type: 'select',
           required: true,
+          entity: 'Currency',
           lookupConfig: {
             url: '/api/selector/currencies',
           },
@@ -60,8 +61,20 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           type: 'select',
           required: false,
           gridWidth: 2,
+          entity: 'Warehouse',
           lookupConfig: {
             url: '/api/selector/warehouses',
+          },
+        },
+        {
+          id: 'region',
+          name: 'inpcRegionId',
+          label: 'Region',
+          type: 'select',
+          required: false,
+          gridWidth: 2,
+          lookupConfig: {
+            url: '/api/selector/regions',
           },
         },
         {
@@ -71,6 +84,39 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           type: 'multiselect',
           required: false,
           gridWidth: 2,
+          entity: 'BusinessPartner',
+          columnName: 'C_BPartner_ID',
+          identifierField: 'name',
+          columns: [
+            {
+              header: 'Key',
+              accessorKey: 'searchKey',
+            },
+            {
+              header: 'Name',
+              accessorKey: '_identifier',
+            },
+            {
+              header: 'Credit Available',
+              accessorKey: 'creditStatus',
+            },
+            {
+              header: 'Credit Used',
+              accessorKey: 'creditUsed',
+            },
+            {
+              header: 'Sales Representative',
+              accessorKey: 'salesRepresentative',
+            },
+            {
+              header: 'URL',
+              accessorKey: 'url',
+            },
+            {
+              header: 'Email',
+              accessorKey: 'email',
+            },
+          ],
           lookupConfig: {
             multiple: true,
             selector: {
@@ -85,6 +131,23 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           type: 'multiselect',
           required: false,
           gridWidth: 2,
+          entity: 'Product',
+          columnName: 'M_Product_ID',
+          identifierField: 'name',
+          columns: [
+            {
+              header: 'Key',
+              accessorKey: 'searchKey',
+            },
+            {
+              header: 'Name',
+              accessorKey: 'name',
+            },
+            {
+              header: 'Category',
+              accessorKey: 'productCategory$_identifier',
+            },
+          ],
           lookupConfig: {
             multiple: true,
             selector: {
@@ -99,20 +162,12 @@ export const SALES_ORDER_REPORT_META: ReportMetadata = {
           type: 'multiselect',
           required: false,
           gridWidth: 2,
+          entity: 'ProductCategory',
+          columnName: 'M_Product_Category_ID',
+          identifierField: 'name',
           lookupConfig: {
             url: '/api/selector/productCategories',
             multiple: true,
-          },
-        },
-        {
-          id: 'region',
-          name: 'inpcRegionId',
-          label: 'Region',
-          type: 'select',
-          required: false,
-          gridWidth: 2,
-          lookupConfig: {
-            url: '/api/selector/regions',
           },
         },
       ],

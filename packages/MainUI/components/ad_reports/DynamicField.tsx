@@ -1,15 +1,17 @@
 import { memo } from 'react';
 import { useFormContext, Controller } from 'react-hook-form';
-import { TextField, MenuItem, Autocomplete } from '@mui/material';
+import { TextField, Autocomplete } from '@mui/material';
 import DateSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/DateSelector';
+import DatabaseSelectSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/DatabaseSelect';
 import { ReportField } from '@workspaceui/etendohookbinder/src/hooks/types';
+import MultiSelect from '@workspaceui/componentlibrary/src/components/FormView/selectors/MultiSelect/MultiSelector';
 
 interface DynamicFieldProps {
   field: ReportField;
 }
 
 function DynamicFieldComponent({ field }: DynamicFieldProps) {
-  const { control } = useFormContext();
+  const { control, setValue } = useFormContext();
 
   switch (field.type) {
     case 'date':
@@ -32,61 +34,59 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
           )}
         />
       );
-
     case 'select':
       return (
         <Controller
           name={field.name}
           control={control}
-          render={({ field: { onChange, value, onBlur }, fieldState: { error } }) => (
-            <TextField
-              select
-              fullWidth
-              label={field.label}
+          render={({ field: { onChange, value } }) => (
+            <DatabaseSelectSelector
               value={value || ''}
+              name={field.name}
+              title={field.label}
               onChange={onChange}
-              onBlur={onBlur}
-              required={field.required}
-              error={!!error}
-              helperText={error?.message}
-              variant="standard">
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
-              {field.lookupConfig?.values?.map(option => (
-                <MenuItem key={option.id} value={option.id}>
-                  {option.name}
-                </MenuItem>
-              ))}
-            </TextField>
+              readOnly={false}
+              entity={field.entity || ''}
+            />
           )}
         />
       );
     case 'search':
-    case 'multiselect':
       return (
         <Controller
           name={field.name}
           control={control}
           rules={{ required: field.required }}
-          render={({ field: { onChange, value }, fieldState: { error } }) => (
+          render={({ field: { onChange, value } }) => (
             <Autocomplete
-              multiple={field.type === 'multiselect'}
               options={field.lookupConfig?.values || []}
-              value={value || (field.type === 'multiselect' ? [] : null)}
-              getOptionLabel={option => option.name}
+              value={value || null}
+              getOptionLabel={option => option?.name || ''}
               onChange={(_, newValue) => onChange(newValue)}
               fullWidth
               renderInput={params => (
-                <TextField
-                  {...params}
-                  variant="standard"
-                  label={field.label}
-                  required={field.required}
-                  error={!!error}
-                  helperText={error?.message}
-                />
+                <TextField {...params} variant="standard" label={field.label} required={field.required} />
               )}
+            />
+          )}
+        />
+      );
+    case 'multiselect':
+      return (
+        <Controller
+          name={field.name}
+          control={control}
+          render={({ field: { value } }) => (
+            <MultiSelect
+              value={value || []}
+              onChange={selectedIds => {
+                setValue(field.name, selectedIds, { shouldDirty: true });
+              }}
+              title={field.label}
+              entity={field.entity || ''}
+              columnName={field.columnName || ''}
+              identifierField={field.identifierField || ''}
+              columns={field.columns}
             />
           )}
         />

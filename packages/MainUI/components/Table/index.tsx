@@ -16,12 +16,18 @@ type DynamicTableProps = {
   tab: Tab;
 };
 
+const initialState = { density: 'compact' as const };
+
 const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTableProps) {
   const { selected, selectRecord } = useMetadataContext();
   const { windowId } = useParams<WindowParams>();
   const parent = selected[tab.level - 1];
   const navigate = useRouter().push;
   const { sx } = useStyle();
+  const muiTablePaperProps = useMemo(() => ({ sx: sx.tablePaper }), [sx.tablePaper]);
+  const muiTableHeadCellProps = useMemo(() => ({ sx: sx.tableHeadCell }), [sx.tableHeadCell]);
+  const muiTableBodyCellProps = useMemo(() => ({ sx: sx.tableBodyCell }), [sx.tableBodyCell]);
+  const muiTableBodyProps = useMemo(() => ({ sx: sx.tableBody }), [sx.tableBody]);
   const [editing, setEditing] = useState(false);
 
   const query: DatasourceOptions = useMemo(() => {
@@ -109,17 +115,15 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
           onRowSelectionChange={handleRowSelection}
           state={state}
           renderBottomToolbar={tab.uIPattern == 'STD' ? <Button onClick={fetchMore}>Load more</Button> : null}
-          initialState={{ density: 'compact' }}
+          initialState={initialState}
           enableTopToolbar={false}
           enableSorting={false}
           enableColumnFilters={false}
           enableColumnActions={false}
-          muiTablePaperProps={{
-            sx: sx.tablePaper,
-          }}
-          muiTableHeadCellProps={{ sx: sx.tableHeadCell }}
-          muiTableBodyCellProps={{ sx: sx.tableBodyCell }}
-          muiTableBodyProps={{ sx: sx.tableBody }}
+          muiTablePaperProps={muiTablePaperProps}
+          muiTableHeadCellProps={muiTableHeadCellProps}
+          muiTableBodyCellProps={muiTableBodyCellProps}
+          muiTableBodyProps={muiTableBodyProps}
         />
       </Box>
     </Box>
