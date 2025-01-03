@@ -1,71 +1,47 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { API_METADATA_URL, MAX_ATTEMPTS, RETRY_DELAY_MS } from '@workspaceui/etendohookbinder/src/api/constants';
-import { useTranslation } from '@/hooks/useTranslation';
-import GlobalError from '@/app/error';
-import { delay } from '@/utils';
+import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { CircularProgress } from '@mui/material';
+import GlobalError from '@/app/error';
+import { useTranslation } from '@/hooks/useTranslation';
+import { HEALTH_CHECK_MAX_ATTEMPTS, HEALTH_CHECK_RETRY_DELAY_MS } from '@/constants/config';
+import { initialState, stateReducer } from './state';
+import { performHealthCheck } from './checker';
 
-export default function SanityChecker(props: React.PropsWithChildren) {
-  const [connected, setConnected] = useState(false);
-  const [error, setError] = useState(false);
-  const attempts = useRef(0);
-  const controller = useRef(new AbortController());
+export default function SanityChecker({ children }: React.PropsWithChildren) {
+  const [state, dispatch] = useReducer(stateReducer, initialState);
+  const controllerRef = useRef(new AbortController());
   const { t } = useTranslation();
 
-  const healthCheck = useCallback(async () => {
-    attempts.current += 1;
-
-    try {
-      const response = await fetch(API_METADATA_URL, {
-        method: 'OPTIONS',
-        signal: controller.current.signal,
-      });
-
-      if (response.ok) {
-        setConnected(true);
-      } else {
-        throw new Error(response.statusText);
-      }
-    } catch (e) {
-      if (controller.current.signal.aborted) return;
-
-      console.warn(`Health check failed (Attempt ${attempts.current}): ${e instanceof Error ? e.message : e}`);
-
-      if (attempts.current < MAX_ATTEMPTS) {
-        await delay(RETRY_DELAY_MS);
-        healthCheck();
-      } else {
-        setError(true);
-      }
-    }
+  const healthCheck = useCallback(() => {
+    dispatch({ type: 'RESET' });
+    performHealthCheck(
+      controllerRef.current.signal,
+      HEALTH_CHECK_MAX_ATTEMPTS,
+      HEALTH_CHECK_RETRY_DELAY_MS,
+      () => dispatch({ type: 'SET_CONNECTED' }),
+      () => dispatch({ type: 'SET_ERROR' }),
+    );
   }, []);
 
-  const handleRetry = useCallback(() => {
-    attempts.current = 0;
-    setConnected(false);
-    setError(false);
-    controller.current = new AbortController();
-    healthCheck();
-  }, [healthCheck]);
-
   useEffect(() => {
+    const controller = controllerRef.current;
+
     healthCheck();
 
     return () => {
-      controller.current.abort();
+      controller.abort();
     };
   }, [healthCheck]);
 
-  if (connected) {
-    return <>{props.children}</>;
+  if (state.connected) {
+    return <>{children}</>;
   }
 
   return (
     <div className="center-all flex-column">
-      {error ? (
-        <GlobalError reset={handleRetry}>
+      {state.error ? (
+        <GlobalError reset={healthCheck}>
           <h1>{t('errors.networkError.title')}</h1>
           <p>{t('errors.networkError.description')}</p>
         </GlobalError>
