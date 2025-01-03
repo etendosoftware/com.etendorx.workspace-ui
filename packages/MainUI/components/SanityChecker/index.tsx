@@ -1,70 +1,62 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
-import { Button } from '@mui/material';
-import { API_METADATA_URL, MAX_ATTEMPTS } from '@workspaceui/etendohookbinder/src/api/constants';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { logger } from '../../utils/logger';
-import { useTranslation } from '../../hooks/useTranslation';
-import { useScreenSizes } from '../../hooks/useScreenSizes';
-import Logo from '../../public/etendo.svg?url';
+import { API_METADATA_URL, MAX_ATTEMPTS, RETRY_DELAY_MS } from '@workspaceui/etendohookbinder/src/api/constants';
+import { useTranslation } from '@/hooks/useTranslation';
+import GlobalError from '@/app/error';
+import { delay } from '@/utils';
+import { CircularProgress } from '@mui/material';
 
 export default function SanityChecker(props: React.PropsWithChildren) {
   const [connected, setConnected] = useState(false);
-  const checker = useRef<number>(NaN);
   const [error, setError] = useState(false);
   const attempts = useRef(0);
+  const controller = useRef(new AbortController());
   const { t } = useTranslation();
-  const { clientWidth, clientHeight } = useScreenSizes();
+
+  const healthCheck = useCallback(async () => {
+    attempts.current += 1;
+
+    try {
+      const response = await fetch(API_METADATA_URL, {
+        method: 'OPTIONS',
+        signal: controller.current.signal,
+      });
+
+      if (response.ok) {
+        setConnected(true);
+      } else {
+        throw new Error(response.statusText);
+      }
+    } catch (e) {
+      if (controller.current.signal.aborted) return;
+
+      console.warn(`Health check failed (Attempt ${attempts.current}): ${e instanceof Error ? e.message : e}`);
+
+      if (attempts.current < MAX_ATTEMPTS) {
+        await delay(RETRY_DELAY_MS);
+        healthCheck();
+      } else {
+        setError(true);
+      }
+    }
+  }, []);
 
   const handleRetry = useCallback(() => {
-    clearTimeout(checker.current);
     attempts.current = 0;
     setConnected(false);
     setError(false);
-  }, []);
+    controller.current = new AbortController();
+    healthCheck();
+  }, [healthCheck]);
 
   useEffect(() => {
-    const healthCheck = async () => {
-      try {
-        if (attempts.current < MAX_ATTEMPTS) {
-          attempts.current = attempts.current + 1;
-          const response = await fetch(API_METADATA_URL, {
-            method: 'OPTIONS',
-          });
-
-          if (response.ok) {
-            attempts.current = 0;
-            setConnected(true);
-
-            if (checker.current) {
-              clearInterval(checker.current);
-            }
-          } else {
-            logger.warn('Error while trying to connect to API ', response);
-          }
-        } else {
-          setError(true);
-        }
-      } catch (e) {
-        logger.warn('Could not connect to the API after ' + attempts.current + ' attempts');
-
-        if (attempts.current >= MAX_ATTEMPTS) {
-          setError(true);
-        }
-      }
-    };
-
     healthCheck();
-    checker.current = window.setInterval(healthCheck, 1000);
 
     return () => {
-      if (checker.current) {
-        clearInterval(checker.current);
-      }
+      controller.current.abort();
     };
-  }, []);
+  }, [healthCheck]);
 
   if (connected) {
     return <>{props.children}</>;
@@ -73,16 +65,15 @@ export default function SanityChecker(props: React.PropsWithChildren) {
   return (
     <div className="center-all flex-column">
       {error ? (
-        <div className="center-all flex-column">
-          <Image src={Logo} width={clientWidth} height={clientHeight} alt="Etendo" className="etendo-logo" />
+        <GlobalError reset={handleRetry}>
           <h1>{t('errors.networkError.title')}</h1>
           <p>{t('errors.networkError.description')}</p>
-          <Button variant="contained" color="warning" onClick={handleRetry}>
-            {t('common.retry')}
-          </Button>
-        </div>
+        </GlobalError>
       ) : (
-        <Spinner />
+        <>
+          <CircularProgress />
+          <span>{t('common.loading')}</span>
+        </>
       )}
     </div>
   );
