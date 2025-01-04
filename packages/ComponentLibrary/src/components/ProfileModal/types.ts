@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Section } from './ToggleButton/types';
 import { Option } from '../Input/Select/types';
+import { Language } from '../../locales/types';
 
 export interface Translations {
   saveAsDefault: string;
@@ -85,6 +86,8 @@ export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps
   roles: BaseRole[];
   logger: Logger;
   onSignOff: () => void;
+  onLanguageChange: (e: Language) => void;
+  language: string;
 }
 
 export interface UserProfileProps {

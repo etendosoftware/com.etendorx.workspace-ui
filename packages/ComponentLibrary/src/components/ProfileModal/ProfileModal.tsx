@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Button, Menu, useTheme } from '@mui/material';
 import CheckCircle from '../../assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';
@@ -10,6 +10,7 @@ import { ProfileModalProps } from './types';
 import { MODAL_WIDTH, menuSyle, useStyle } from './styles';
 import IconButton from '../IconButton';
 import { Option } from '../Input/Select/types';
+import { Language } from '../../locales/types';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,
@@ -33,6 +34,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   logger,
   translations,
   onSignOff,
+  onLanguageChange,
+  language,
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -125,6 +128,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     [currentRole?.id, currentSection, currentWarehouse?.id, saveAsDefault, selectedRole, selectedWarehouse],
   );
 
+  const handleLanguageChange = useCallback<React.ChangeEventHandler<HTMLSelectElement>>(
+    e => {
+      onLanguageChange(e.currentTarget.value as Language);
+    },
+    [onLanguageChange],
+  );
+
   return (
     <>
       <IconButton tooltip={tooltipButtonProfile} onClick={handleClick}>
@@ -167,6 +177,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           onSaveAsDefaultChange={handleSaveAsDefaultChange}
           translations={translations}
         />
+        <select value={language} onChange={handleLanguageChange}>
+          <option value="en_US">en_US</option>
+          <option value="es_ES">es_ES</option>
+        </select>
         <div style={styles.buttonContainerStyles}>
           <Button sx={sx.buttonStyles} onClick={handleClose}>
             {cancelButtonText}

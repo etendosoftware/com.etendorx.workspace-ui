@@ -1,9 +1,10 @@
 import { useContext, useState, useCallback } from 'react';
-import { Profile } from '@workspaceui/componentlibrary/src/components';
 import { UserContext } from '../../contexts/user';
 import { logger } from '../../utils/logger';
 import { ProfileWrapperProps } from './types';
 import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
+import ProfileModal from '@workspaceui/componentlibrary/src/components/ProfileModal/ProfileModal';
+import { useLanguage } from '../../hooks/useLanguage';
 
 const ProfileWrapper = (props: ProfileWrapperProps) => {
   const { changeRole, changeWarehouse, setDefaultConfiguration, currentRole, currentWarehouse, roles, token } =
@@ -12,6 +13,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
   const [selectedRole, setSelectedRole] = useState<Option | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(null);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
+  const { language, setLanguage } = useLanguage();
 
   const { clearUserData } = useContext(UserContext);
 
@@ -33,7 +35,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
   }, []);
 
   return (
-    <Profile
+    <ProfileModal
       {...props}
       currentRole={currentRole}
       currentWarehouse={currentWarehouse}
@@ -43,6 +45,8 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
       saveAsDefault={saveAsDefault}
       onRoleChange={handleRoleChange}
       onWarehouseChange={handleWarehouseChange}
+      onLanguageChange={setLanguage}
+      language={language}
       onSaveAsDefaultChange={handleSaveAsDefaultChange}
       onChangeRole={changeRole}
       onChangeWarehouse={changeWarehouse}

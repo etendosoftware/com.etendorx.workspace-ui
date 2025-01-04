@@ -95,20 +95,7 @@ const en = {
     },
     notificationModal: {
       title: 'Notifications',
-      markAllAsRead: 'Mark all as read',
-      emptyStateImageAlt: 'No Notifications',
-      emptyStateMessage: 'You have no notifications',
-      emptyStateDescription:
-        'Great! You are up to date with everything. We will notify you here if there is anything new.',
-      actionButtonLabel: 'Configure notifications',
-    },
-    profile: {
-      tooltipButtonProfile: 'Account Settings',
-      passwordLabel: 'Password',
-      newPasswordLabel: 'New Password',
-      confirmPasswordLabel: 'Confirm New Password',
-      signOffTooltip: 'Sign off',
-      saveAsDefault: 'Save as default profile',
+      markAllAsRead: 'Mark all .ault profile',
     },
   },
   breadcrumb: {

@@ -19,6 +19,12 @@ export class Metadata {
   private static currentRoleId: string | null = null;
   private static token: string | null = null;
 
+  public static setLanguage(value: string) {
+    this.client.setLanguageHeader(value);
+    this.datasourceClient.setLanguageHeader(value);
+    this.kernelClient.setLanguageHeader(value);
+  }
+
   public static setToken(token: string) {
     this.token = token;
     this.client.setAuthHeader(token, 'Bearer');
@@ -47,36 +53,28 @@ export class Metadata {
   }
 
   private static async _getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
-    const { data } = await Metadata.client.post(`window/${windowId}`);
+    const { data } = await this.client.post(`window/${windowId}`);
 
-    Metadata.cache.set(`window-${windowId}`, data);
+    this.cache.set(`window-${windowId}`, data);
     data.tabs.forEach((tab: Record<string, string>) => {
-      Metadata.cache.set(`tab-${tab.id}`, tab);
+      this.cache.set(`tab-${tab.id}`, tab);
     });
 
     return data;
   }
 
   public static async getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
-    const cached = Metadata.cache.get<Etendo.WindowMetadata>(`window-${windowId}`);
+    const cached = this.cache.get<Etendo.WindowMetadata>(`window-${windowId}`);
 
     if (cached) {
       return cached;
     } else {
-      return Metadata._getWindow(windowId);
+      return this._getWindow(windowId);
     }
   }
 
   public static getColumns(tabId: string): Etendo.Column[] {
-    return Metadata.cache.get<{ fields: Etendo.Column[] }>(`tab-${tabId}`)?.fields ?? [];
-  }
-
-  public static async getSession() {
-    const response = await Metadata.client.get(`/OBCLKER_Kernel/SessionDynamic`);
-
-    this.client.run(response.data);
-
-    return {};
+    return this.cache.get<{ fields: Etendo.Column[] }>(`tab-${tabId}`)?.fields ?? [];
   }
 
   public static async getMenu(forceRefresh: boolean = false): Promise<Menu[]> {
@@ -104,21 +102,21 @@ export class Metadata {
   }
 
   public static getCachedMenu(): Menu[] {
-    return Metadata.cache.get<Menu[]>('OBMenu') ?? [];
+    return this.cache.get<Menu[]>('OBMenu') ?? [];
   }
 
   public static getCachedWindow(windowId: string): Etendo.WindowMetadata {
-    return Metadata.cache.get<Etendo.WindowMetadata>(`window-${windowId}`) || ({} as Etendo.WindowMetadata);
+    return this.cache.get<Etendo.WindowMetadata>(`window-${windowId}`) || ({} as Etendo.WindowMetadata);
   }
 
   public static clearMenuCache() {
-    Metadata.cache.delete('OBMenu');
+    this.cache.delete('OBMenu');
     this.currentRoleId = null;
   }
 
   public static getTabsColumns(tabs?: Etendo.Tab[]) {
     return (tabs || []).reduce((cols, tab) => {
-      cols[tab.id] = Metadata.getColumns(tab.id);
+      cols[tab.id] = this.getColumns(tab.id);
 
       return cols;
     }, {} as Record<string, Etendo.Column[]>);

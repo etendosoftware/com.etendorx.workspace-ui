@@ -19,6 +19,7 @@ export class UnauthorizedError extends Error {
 
 export class Client {
   private baseHeaders: HeadersInit;
+  private baseQueryParams: URLSearchParams;
   private baseUrl: string;
   private interceptor: Interceptor | null;
   private readonly JSON_CONTENT_TYPE = 'application/json'!;
@@ -28,6 +29,9 @@ export class Client {
     this.baseUrl = url;
     this.baseHeaders = {};
     this.interceptor = null;
+    this.baseQueryParams = new URLSearchParams({
+      language: 'en_US',
+    });
   }
 
   private cleanUrl(url: string) {
@@ -60,14 +64,23 @@ export class Client {
     return this;
   }
 
+  public setLanguageHeader(value: string) {
+    this.baseQueryParams.set('language', value);
+
+    return this;
+  }
+
   private async request(url: string, options: ClientOptions = {}) {
     try {
       if (options.method !== 'GET') {
         this.setContentType(options);
       }
 
+      const destination = new URL(`${this.baseUrl}${this.cleanUrl(url)}`);
+      this.baseQueryParams.forEach((value, key) => destination.searchParams.append(key, value));
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let response: Response & { data?: any } = await fetch(`${this.baseUrl}${this.cleanUrl(url)}`, {
+      let response: Response & { data?: any } = await fetch(destination, {
         ...options,
         body:
           options.body instanceof URLSearchParams || typeof options.body === 'string'
@@ -103,10 +116,6 @@ export class Client {
     this.interceptor = interceptor;
 
     return () => (this.interceptor = null);
-  }
-
-  public async get(url: string, options: ClientOptions = {}) {
-    return this.request(url, { ...options, method: 'GET' });
   }
 
   public async post(url: string, payload: ClientOptions['body'] = null, options: ClientOptions = {}) {
