@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 export interface ProcessMetadata {
   metadata: ProcessBindings;
   loading: boolean;
-  error: string | null;
+  error: string | null; 
 }
 
 export const useProcessMetadata = (process?: ProcessInfo): ProcessMetadata => {
