@@ -1,5 +1,5 @@
 import Box from '@mui/material/Box';
-import { MaterialReactTable, MRT_Row, MRT_RowSelectionState, MRT_Updater } from 'material-react-table';
+import { MaterialReactTable, MRT_Row } from 'material-react-table';
 import { useStyle } from './styles';
 import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
@@ -58,33 +58,16 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const rowProps = useCallback(
     ({ row }: { row: MRT_Row<Record<string, unknown>> }) => ({
       onClick: () => {
-        // selectRecord(row.original as never, tab);
-
+        selectRecord(row.original as never, tab);
         row.toggleSelected();
       },
       onDoubleClick: () => {
-        // selectRecord(row.original as never, tab);
+        selectRecord(row.original as never, tab);
         navigate(`${windowId}/${tab.id}/${row.original.id}`);
       },
-      onAuxClick: () => {
-        // selectRecord(row.original as never, tab);
-        // setEditing(true);
-      },
     }),
-    [navigate, tab.id, windowId],
+    [navigate, selectRecord, tab, windowId],
   );
-
-  const [state, setRowSelection] = useState({ rowSelection: {} });
-
-  const handleRowSelection = useCallback(e => {
-    setRowSelection(prev => ({
-      ...prev,
-      rowSelection: {
-        ...prev.rowSelection,
-        ...e(prev),
-      },
-    }));
-  }, []);
 
   const handleBack = useCallback(() => setEditing(false), []);
 
@@ -112,8 +95,6 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
           positionToolbarAlertBanner="none"
           muiTableBodyRowProps={rowProps}
           enablePagination={false}
-          onRowSelectionChange={handleRowSelection}
-          state={state}
           renderBottomToolbar={tab.uIPattern == 'STD' ? <Button onClick={fetchMore}>Load more</Button> : null}
           initialState={initialState}
           enableTopToolbar={false}
