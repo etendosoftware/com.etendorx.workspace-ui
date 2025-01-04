@@ -1,4 +1,4 @@
-import { ProcessMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import { ProcessInfo } from '@workspaceui/etendohookbinder/src/api/types';
 
-export const onLoad = (process: ProcessMetadata) => alert('onLoad ' + process.searchKey);
-export const onProcess = (process: ProcessMetadata) => alert('onProcess ' + process.searchKey);
+export const onLoad = (process: ProcessInfo) => alert('onLoad ' + process.searchKey);
+export const onProcess = (process: ProcessInfo) => alert('onProcess ' + process.searchKey);
