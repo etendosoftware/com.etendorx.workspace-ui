@@ -88,6 +88,8 @@ export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps
   onSignOff: () => void;
   onLanguageChange: (e: Language) => void;
   language: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  languages: Record<string, any>[];
 }
 
 export interface UserProfileProps {

@@ -1,6 +1,6 @@
 import { Role, Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
 
-export type Language = 'es' | 'en';
+export type Language = 'en_US' | 'es_ES';
 
 export interface LanguageContextType {
   language: Language;
@@ -26,4 +26,6 @@ export interface IUserContext {
   setToken: React.Dispatch<React.SetStateAction<string | null>>;
   clearUserData: () => void;
   setDefaultConfiguration: (token: string, config: DefaultConfiguration) => Promise<void>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  languages: Record<string, any>[];
 }

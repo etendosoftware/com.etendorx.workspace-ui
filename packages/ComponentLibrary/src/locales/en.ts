@@ -97,6 +97,14 @@ const en = {
       title: 'Notifications',
       markAllAsRead: 'Mark all .ault profile',
     },
+    profile: {
+      tooltipButtonProfile: 'Account Settings',
+      passwordLabel: 'Password',
+      newPasswordLabel: 'New Password',
+      confirmPasswordLabel: 'Confirm password',
+      signOffTooltip: 'Log out',
+      saveAsDefault: 'Save as default',
+    },
   },
   breadcrumb: {
     home: 'Home',

@@ -5,10 +5,19 @@ import { ProfileWrapperProps } from './types';
 import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
 import ProfileModal from '@workspaceui/componentlibrary/src/components/ProfileModal/ProfileModal';
 import { useLanguage } from '../../hooks/useLanguage';
+import { Language } from '../../contexts/types';
 
 const ProfileWrapper = (props: ProfileWrapperProps) => {
-  const { changeRole, changeWarehouse, setDefaultConfiguration, currentRole, currentWarehouse, roles, token } =
-    useContext(UserContext);
+  const {
+    changeRole,
+    changeWarehouse,
+    setDefaultConfiguration,
+    currentRole,
+    currentWarehouse,
+    roles,
+    token,
+    languages,
+  } = useContext(UserContext);
 
   const [selectedRole, setSelectedRole] = useState<Option | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(null);
@@ -34,6 +43,13 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
     setSaveAsDefault(event.target.checked);
   }, []);
 
+  const handleLanguageChange = useCallback(
+    (l: Language) => {
+      setLanguage(l);
+    },
+    [setLanguage],
+  );
+
   return (
     <ProfileModal
       {...props}
@@ -45,7 +61,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
       saveAsDefault={saveAsDefault}
       onRoleChange={handleRoleChange}
       onWarehouseChange={handleWarehouseChange}
-      onLanguageChange={setLanguage}
+      onLanguageChange={handleLanguageChange}
       language={language}
       onSaveAsDefaultChange={handleSaveAsDefaultChange}
       onChangeRole={changeRole}
@@ -56,6 +72,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
       }}
       logger={logger}
       onSignOff={handleSignOff}
+      languages={languages}
     />
   );
 };

@@ -18,8 +18,6 @@ const SelectSelector = memo(({ value, name, title, onChange, readOnly, field }: 
   );
   const handleChange = useCallback(
     (_: React.SyntheticEvent<Element, Event>, newValue: Option<string> | null) => {
-      console.debug(_);
-      console.debug({ newValue });
       onChange(newValue?.value || '');
     },
     [onChange],

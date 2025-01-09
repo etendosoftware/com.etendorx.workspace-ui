@@ -25,8 +25,10 @@
     "module": "ESNext",                 // Leave module setting flexible for overrides
     "declaration": true,                // Generate .d.ts declaration files
     "declarationDir": "./dist/types",   // Output directory for .d.ts files
-    "rootDir": "./src",                 // Root directory of the source files
     "outDir": "./dist",                 // Output directory for transpiled files
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
   "include": ["src"],
   "exclude": ["node_modules"],

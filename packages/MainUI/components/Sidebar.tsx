@@ -8,12 +8,14 @@ import EtendoLogotype from '../public/etendo.png';
 import { useTranslation } from '../hooks/useTranslation';
 import { useUserContext } from '../hooks/useUserContext';
 import { WindowParams } from '../app/types';
+import { useLanguage } from '../hooks/useLanguage';
 
 export default function Sidebar() {
   const { t } = useTranslation();
   const { token, currentRole } = useUserContext();
+  const { language } = useLanguage();
 
-  const menu = useMenu(token, currentRole || undefined);
+  const menu = useMenu(token, currentRole || undefined, language);
   const router = useRouter();
   const { windowId } = useParams<WindowParams>();
 

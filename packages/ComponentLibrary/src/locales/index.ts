@@ -1,11 +1,11 @@
 import { Translations } from './types';
 
-import es from './es';
-import en from './en';
+import es_ES from './es';
+import en_US from './en';
 
 const translations: Translations = {
-  es,
-  en,
+  es_ES,
+  en_US,
 };
 
 export default translations;

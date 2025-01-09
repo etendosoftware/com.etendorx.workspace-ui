@@ -29,9 +29,7 @@ export class Client {
     this.baseUrl = url;
     this.baseHeaders = {};
     this.interceptor = null;
-    this.baseQueryParams = new URLSearchParams({
-      language: 'en_US',
-    });
+    this.baseQueryParams = new URLSearchParams();
   }
 
   private cleanUrl(url: string) {
