@@ -22,10 +22,8 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
 
     if (savedLanguage) {
       setLanguage(savedLanguage as Language);
-    } else {
-      setLanguage('en_US');
     }
   }, [setLanguage]);
 
-  return <LanguageContext.Provider value={value}>{language ? children : null}</LanguageContext.Provider>;
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

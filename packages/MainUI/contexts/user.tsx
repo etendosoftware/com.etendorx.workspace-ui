@@ -21,7 +21,7 @@ export const UserContext = createContext({} as IUserContext);
 export default function UserProvider(props: React.PropsWithChildren) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [ready, setReady] = useState(false);
-  const { setLanguage: setLanguageContext } = useLanguage();
+  const { language, setLanguage: setLanguageContext } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
   const navigate = router.push;
@@ -61,7 +61,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   );
 
   const updateSessionInfo = useCallback(
-    (sessionResponse: SessionResponse) => {
+    (sessionResponse: SessionResponse, skipLanguage: boolean = false) => {
       const currentRole: Role = {
         id: sessionResponse.role.id,
         name: sessionResponse.role.name,
@@ -69,7 +69,11 @@ export default function UserProvider(props: React.PropsWithChildren) {
       };
       localStorage.setItem('currentRole', JSON.stringify(currentRole));
       localStorage.setItem('currentRoleId', currentRole.id);
-      // setLanguage(sessionResponse.user.defaultLanguage as Language);
+
+      if (!skipLanguage) {
+        setLanguage(sessionResponse.user.defaultLanguage as Language);
+      }
+
       setLanguages(sessionResponse.languages);
       setCurrentRole(currentRole);
 
@@ -205,7 +209,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
           Metadata.setToken(token);
           Datasource.authorize(token);
           const sessionResponse = await getSession(token);
-          updateSessionInfo(sessionResponse);
+          updateSessionInfo(sessionResponse, language != null);
         } catch (error) {
           clearUserData();
           navigate('/login');
@@ -213,7 +217,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       };
       verifySession();
     }
-  }, [clearUserData, navigate, token, updateSessionInfo]);
+  }, [clearUserData, language, navigate, token, updateSessionInfo]);
 
   useLayoutEffect(() => {
     if (token || pathname === '/login') {
