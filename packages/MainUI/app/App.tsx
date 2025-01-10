@@ -1,7 +1,7 @@
 'use client';
 
 import SanityChecker from '../components/SanityChecker';
-import { LanguageProvider } from '../contexts/languageProvider';
+import LanguageProvider from '../contexts/languageProvider';
 import MetadataProvider from '../contexts/metadata';
 import UserProvider from '../contexts/user';
 

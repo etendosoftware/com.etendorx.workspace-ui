@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -5,8 +6,8 @@ import LanguageContext from './languageContext';
 import { Language } from './types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 
-export const LanguageProvider = ({ children }: React.PropsWithChildren) => {
-  const [language, setLanguageValue] = useState<Language>('en_US');
+export default function LanguageProvider({ children }: React.PropsWithChildren) {
+  const [language, setLanguageValue] = useState<any | null>(null);
 
   const setLanguage = useCallback((lang: Language) => {
     localStorage.setItem('currentLanguage', lang);
@@ -20,9 +21,11 @@ export const LanguageProvider = ({ children }: React.PropsWithChildren) => {
     const savedLanguage = localStorage.getItem('currentLanguage');
 
     if (savedLanguage) {
-      setLanguageValue(savedLanguage as Language);
+      setLanguage(savedLanguage as Language);
+    } else {
+      setLanguage('en_US');
     }
-  }, []);
+  }, [setLanguage]);
 
-  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
-};
+  return <LanguageContext.Provider value={value}>{language ? children : null}</LanguageContext.Provider>;
+}

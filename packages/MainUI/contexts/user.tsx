@@ -19,9 +19,9 @@ import { useLanguage } from '../hooks/useLanguage';
 export const UserContext = createContext({} as IUserContext);
 
 export default function UserProvider(props: React.PropsWithChildren) {
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [ready, setReady] = useState(false);
-  const { language, setLanguage: setLanguageContext } = useLanguage();
+  const { setLanguage: setLanguageContext } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
   const navigate = router.push;
@@ -69,7 +69,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       };
       localStorage.setItem('currentRole', JSON.stringify(currentRole));
       localStorage.setItem('currentRoleId', currentRole.id);
-      setLanguage(sessionResponse.user.defaultLanguage as Language);
+      // setLanguage(sessionResponse.user.defaultLanguage as Language);
       setLanguages(sessionResponse.languages);
       setCurrentRole(currentRole);
 
@@ -249,12 +249,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
       };
     }
   }, [navigate, token]);
-
-  useEffect(() => {
-    if (ready) {
-      Metadata.setLanguage(language);
-    }
-  }, [language, ready]);
 
   return <UserContext.Provider value={value}>{ready ? props.children : <Spinner />}</UserContext.Provider>;
 }
