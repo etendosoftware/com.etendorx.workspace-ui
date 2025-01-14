@@ -23,6 +23,9 @@ const SelectorList: React.FC<SelectorListProps> = ({
   roles,
   selectedRole,
   selectedWarehouse,
+  onLanguageChange,
+  selectedLanguage,
+  languages,
   saveAsDefault,
   onSaveAsDefaultChange,
   translations,
@@ -81,6 +84,16 @@ const SelectorList: React.FC<SelectorListProps> = ({
     [warehouses],
   );
 
+  const languageOptions = useMemo(
+    () =>
+      languages?.map((lang: { name: string; language: string; id: string }) => ({
+        title: lang.name,
+        value: lang.language,
+        id: lang.id,
+      })),
+    [languages],
+  );
+
   return (
     <div style={styles.selectorListStyles}>
       {section === 'profile' && (
@@ -103,6 +116,14 @@ const SelectorList: React.FC<SelectorListProps> = ({
               onChange={onWarehouseChange}
               iconLeft={icons[Item.Warehouse]}
               disabled={!selectedRole}
+            />
+            <Select
+              id="language-select"
+              title={Item.Language}
+              options={languageOptions}
+              value={selectedLanguage}
+              onChange={onLanguageChange}
+              iconLeft={icons[Item.Language]}
             />
           </FormControl>
           <FormControlLabel

@@ -15,6 +15,12 @@ export interface DefaultConfiguration {
   client?: string;
 }
 
+export interface LanguageOption {
+  id: string;
+  language: string;
+  name: string;
+}
+
 export interface IUserContext {
   login: (username: string, password: string) => Promise<void>;
   changeRole: (roleId: string) => Promise<void>;
@@ -27,5 +33,5 @@ export interface IUserContext {
   clearUserData: () => void;
   setDefaultConfiguration: (token: string, config: DefaultConfiguration) => Promise<void>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  languages: Record<string, any>[];
+  languages: LanguageOption[];
 }

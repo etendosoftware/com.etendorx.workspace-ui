@@ -11,7 +11,6 @@ import { MODAL_WIDTH, menuSyle, useStyle } from './styles';
 import IconButton from '../IconButton';
 import { Option } from '../Input/Select/types';
 import { Language } from '../../locales/types';
-import Select from '../Select';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,
@@ -43,7 +42,16 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedRole, setSelectedRole] = useState<Option | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(null);
-  const [selectedLanguage, setSelectedLanguage] = useState(language);
+  const [selectedLanguage, setSelectedLanguage] = useState<Option | null>(() => {
+    const currentLang = languages.find(lang => lang.language === language);
+    return currentLang
+      ? {
+          title: currentLang.name,
+          value: currentLang.language,
+          id: currentLang.id,
+        }
+      : null;
+  });
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const theme = useTheme();
   const { styles, sx } = useStyle();
@@ -95,10 +103,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           await onChangeWarehouse(selectedWarehouse.value);
         }
 
-        const newLanguage = languages.find(lang => lang.language == selectedLanguage);
-
-        if (newLanguage?.language) {
-          onLanguageChange(newLanguage?.language);
+        if (selectedLanguage && selectedLanguage.value !== language) {
+          onLanguageChange(selectedLanguage.value as Language);
         }
 
         if (saveAsDefault) {
@@ -106,7 +112,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             defaultRole: selectedRole?.value,
             defaultWarehouse: selectedWarehouse?.value,
             organization: currentRole?.orgList[0]?.id,
-            language: newLanguage?.id,
+            language: selectedLanguage?.id,
             client: 'System',
           });
         }
@@ -122,12 +128,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     currentRole?.orgList,
     selectedWarehouse,
     currentWarehouse?.id,
-    languages,
+    selectedLanguage,
+    language,
     saveAsDefault,
     handleClose,
     onChangeRole,
     onChangeWarehouse,
-    selectedLanguage,
     onLanguageChange,
     onSetDefaultConfiguration,
     logger,
@@ -154,8 +160,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const isSaveDisabled = false;
 
-  const handleLanguageChange = useCallback<React.ChangeEventHandler<HTMLSelectElement>>(e => {
-    setSelectedLanguage(e.currentTarget.value as Language);
+  const handleLanguageChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
+    if (value) {
+      setSelectedLanguage(value);
+    }
   }, []);
 
   return (
@@ -167,12 +175,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleClose}
-        slotProps={{
-          paper: {
-            sx: {
-              width: MODAL_WIDTH,
-              ...styles.paperStyleMenu,
-            },
+        sx={{
+          '& .MuiPaper-root': {
+            width: MODAL_WIDTH,
+            ...styles.paperStyleMenu,
           },
         }}
         MenuListProps={{ sx: menuSyle }}>
@@ -193,20 +199,16 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           confirmPasswordLabel={confirmPasswordLabel}
           onRoleChange={handleRoleChange}
           onWarehouseChange={handleWarehouseChange}
+          onLanguageChange={handleLanguageChange}
           roles={roles}
           selectedRole={selectedRole}
           selectedWarehouse={selectedWarehouse}
+          languages={languages}
+          selectedLanguage={selectedLanguage}
           saveAsDefault={saveAsDefault}
           onSaveAsDefaultChange={handleSaveAsDefaultChange}
           translations={translations}
         />
-        <Select value={selectedLanguage} onChange={handleLanguageChange}>
-          {languages.map(lang => (
-            <option key={lang.id} value={lang.language}>
-              {lang.name}
-            </option>
-          ))}
-        </Select>
         <div style={styles.buttonContainerStyles}>
           <Button sx={sx.buttonStyles} onClick={handleClose}>
             {cancelButtonText}

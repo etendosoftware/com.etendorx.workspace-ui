@@ -9,7 +9,7 @@ import { changeRole as doChangeRole } from '@workspaceui/etendohookbinder/src/ap
 import { getSession } from '@workspaceui/etendohookbinder/src/api/getSession';
 import { changeWarehouse as doChangeWarehouse } from '@workspaceui/etendohookbinder/src/api/warehouse';
 import { HTTP_CODES } from '@workspaceui/etendohookbinder/src/api/constants';
-import { DefaultConfiguration, IUserContext, Language } from './types';
+import { DefaultConfiguration, IUserContext, Language, LanguageOption } from './types';
 import { Role, SessionResponse, Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/src/api/defaultConfig';
 import { usePathname, useRouter } from 'next/navigation';
@@ -41,7 +41,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     return savedCurrentWarehouse ? JSON.parse(savedCurrentWarehouse) : null;
   });
 
-  const [languages, setLanguages] = useState<SessionResponse['languages']>([]);
+  const [languages, setLanguages] = useState<LanguageOption[]>([]);
 
   const setDefaultConfiguration = useCallback(async (token: string, config: DefaultConfiguration) => {
     try {
@@ -74,7 +74,14 @@ export default function UserProvider(props: React.PropsWithChildren) {
         setLanguage(sessionResponse.user.defaultLanguage as Language);
       }
 
-      setLanguages(sessionResponse.languages);
+      setLanguages(
+        sessionResponse.languages.map(lang => ({
+          id: lang.id,
+          language: lang.language,
+          name: lang.name,
+        })),
+      );
+
       setCurrentRole(currentRole);
 
       if (sessionResponse.user.defaultWarehouse) {
