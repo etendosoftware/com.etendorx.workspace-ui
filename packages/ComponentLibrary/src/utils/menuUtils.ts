@@ -22,5 +22,7 @@ export const createRecentMenuItem = (item: RecentItem): Menu => ({
 export const createParentMenuItem = (items: RecentItem[], t: TranslateFunction): Menu => ({
   ...createMenuItem('recently-viewed', t('drawer.recentlyViewed'), 'RecentlyViewed'),
   icon: RECENTLY_VIEWED_ICON,
+  type: items.type || 'Window',
+  action: 'W',
   children: items.map(createRecentMenuItem),
 });

@@ -4,12 +4,20 @@ import { createParentMenuItem } from '@workspaceui/componentlibrary/src/utils/me
 import { useRecentItems } from '../../../hooks/useRecentItems';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useMemo } from 'react';
+import { useItemActions } from '@workspaceui/componentlibrary/src/hooks/useItemType';
 
 const RecentlyViewed: React.FC<RecentlyViewedProps> = ({ windowId, onClick, open, onWindowAccess, recentItems }) => {
   const { t } = useTranslation();
-  const { localRecentItems, isExpanded, handleItemClick, handleToggleExpand, hasItems } = useRecentItems(
+
+  const handleItemClick = useItemActions({
+    onWindowClick: (windowId: string) => onClick(`/window/${windowId}`),
+    onReportClick: (reportId: string) => onClick(`/report/${reportId}`),
+    onProcessClick: (processId: string) => onClick(`/process/${processId}`),
+  });
+
+  const { localRecentItems, isExpanded, handleRecentItemClick, handleToggleExpand, hasItems } = useRecentItems(
     recentItems,
-    onClick,
+    handleItemClick,
     onWindowAccess,
   );
 
@@ -18,7 +26,7 @@ const RecentlyViewed: React.FC<RecentlyViewedProps> = ({ windowId, onClick, open
   return (
     <DrawerSection
       item={parentMenuItem}
-      onClick={handleItemClick}
+      onClick={handleRecentItemClick}
       open={open}
       hasChildren={hasItems}
       isExpandable={hasItems}

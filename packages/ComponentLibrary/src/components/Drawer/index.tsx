@@ -133,6 +133,7 @@ const Drawer: React.FC<DrawerProps> = ({
             id: item.id,
             name: getTranslatedName ? getTranslatedName(item) : item._identifier || item.name,
             windowId: item.windowId!,
+            type: item.type,
           };
           setRecentItems(prev => {
             const newItems = [recentItem, ...prev.filter(i => i.id !== recentItem.id)].slice(0, 5);
