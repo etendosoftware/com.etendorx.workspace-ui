@@ -1,14 +1,13 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import Breadcrumb from '@workspaceui/componentlibrary/src/components/Breadcrums';
 import type { BreadcrumbItem } from '@workspaceui/componentlibrary/src/components/Breadcrums/types';
-import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { styles } from './styles';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import { BREADCRUMB, ROUTE_IDS } from '../constants/breadcrumb';
 import { useTranslation } from '../hooks/useTranslation';
 import { useLanguage } from '../hooks/useLanguage';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { useMetadataContext } from '../hooks/useMetadataContext';
 
 const AppBreadcrumb: React.FC = () => {
   const { t } = useTranslation();
@@ -17,22 +16,24 @@ const AppBreadcrumb: React.FC = () => {
   const pathname = usePathname();
   const navigate = router.push;
   const { language } = useLanguage();
+  const { windowData } = useMetadataContext();
 
   const windowId = Array.isArray(params.windowId) ? params.windowId[0] : params.windowId || '';
   const recordId = Array.isArray(params.recordId) ? params.recordId[0] : params.recordId || '';
-
-  const { windowData, load: loadWindow } = useWindow(windowId);
 
   const isNewRecord = useCallback(() => pathname.includes('/NewRecord'), [pathname]);
 
   const query = useMemo(
     () => ({
       criteria: [{ fieldName: 'id', operator: 'equals', value: recordId }],
+      headers: {
+        'Accept-Language': language,
+      },
     }),
-    [recordId],
+    [recordId, language],
   );
 
-  const { records, load: loadRecords } = useDatasource(windowData?.tabs?.[0]?.entityName || '', query);
+  const { records } = useDatasource(windowData?.tabs?.[0]?.entityName || '', query);
 
   const breadcrumbItems = useMemo(() => {
     const items: BreadcrumbItem[] = [];
@@ -62,16 +63,6 @@ const AppBreadcrumb: React.FC = () => {
   }, [windowId, windowData, isNewRecord, recordId, records, navigate, t]);
 
   const handleHomeClick = useCallback(() => navigate('/'), [navigate]);
-
-  useEffect(() => {
-    if (windowId) {
-      Metadata.setLanguage(language);
-      loadWindow();
-      if (recordId && windowData?.tabs?.[0]?.entityName) {
-        loadRecords();
-      }
-    }
-  }, [language, windowId, recordId, windowData?.tabs, loadWindow, loadRecords]);
 
   return (
     <div style={styles.breadCrum}>

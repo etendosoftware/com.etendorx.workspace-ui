@@ -12,6 +12,7 @@ import { Button } from '@mui/material';
 import DynamicFormView from '../../screens/Form/DynamicFormView';
 import { WindowParams } from '../../app/types';
 import { RecordContext } from '../../contexts/record';
+import { useLanguage } from '../../hooks/useLanguage';
 
 type DynamicTableProps = {
   tab: Tab;
@@ -25,6 +26,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const navigate = useRouter().push;
   const { sx } = useStyle();
   const [editing, setEditing] = useState(false);
+  const { language } = useLanguage();
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || 'id';
@@ -32,6 +34,9 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     const operator = 'equals';
     const options: DatasourceOptions = {
       pageSize: 10,
+      headers: {
+        'Accept-Language': language,
+      },
     };
 
     if (value) {
@@ -45,7 +50,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     }
 
     return options;
-  }, [tab.parentColumns, parent?.id]);
+  }, [tab.parentColumns, parent?.id, language]);
 
   const { records, loading, error, fetchMore, loaded } = useDatasource(tab.entityName, query);
 
@@ -56,7 +61,6 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
       onClick: () => {
         selectRecord(row.original as never, tab);
         setSelectedRecord(row.original as never);
-
         row.toggleSelected();
       },
       onDoubleClick: () => {

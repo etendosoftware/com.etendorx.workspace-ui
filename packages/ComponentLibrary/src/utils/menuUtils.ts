@@ -1,5 +1,6 @@
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { RecentItem } from '../components/Drawer/types';
+import { TranslateFunction } from '@workspaceui/mainui/hooks/types';
 
 const RECENTLY_VIEWED_ICON = '⌛';
 
@@ -13,13 +14,13 @@ export const createMenuItem = (id: string, name: string, entityName: string): Me
 });
 
 export const createRecentMenuItem = (item: RecentItem): Menu => ({
-  ...createMenuItem(`recent-${item.id}`, item.name, 'RecentItem'),
+  ...createMenuItem(`recent-${item.id}`, item.name, item.windowId),
   windowId: item.windowId,
   action: 'W',
 });
 
-export const createParentMenuItem = (items: RecentItem[]): Menu => ({
-  ...createMenuItem('recently-viewed', `Recently Viewed`, 'RecentlyViewed'),
+export const createParentMenuItem = (items: RecentItem[], t: TranslateFunction): Menu => ({
+  ...createMenuItem('recently-viewed', t('drawer.recentlyViewed'), 'RecentlyViewed'),
   icon: RECENTLY_VIEWED_ICON,
   children: items.map(createRecentMenuItem),
 });

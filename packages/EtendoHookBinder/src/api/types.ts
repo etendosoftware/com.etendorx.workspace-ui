@@ -35,6 +35,7 @@ export interface DatasourceOptions {
   isImplicitFilterApplied?: boolean;
   operator?: 'and' | 'or';
   pageSize?: number;
+  headers?: Record<string, string>;
 }
 
 export interface GridProps {

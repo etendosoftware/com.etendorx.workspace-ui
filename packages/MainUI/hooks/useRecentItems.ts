@@ -1,7 +1,8 @@
+import { RecentItem } from '@workspaceui/componentlibrary/src/components/Drawer/types';
+import { UseRecentItemsReturn } from '@workspaceui/componentlibrary/src/hooks/types';
+import { useLocalStorage } from '@workspaceui/componentlibrary/src/hooks/useLocalStorage';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useLocalStorage } from './useLocalStorage';
-import { RecentItem } from '../components/Drawer/types';
-import { UseRecentItemsReturn } from './types';
+import { useLanguage } from './useLanguage';
 
 export function useRecentItems(
   recentItems: RecentItem[],
@@ -10,6 +11,7 @@ export function useRecentItems(
 ): UseRecentItemsReturn {
   const [localRecentItems, setLocalRecentItems] = useLocalStorage<RecentItem[]>('recentlyViewedItems', []);
   const [isExpanded, setIsExpanded] = useState(false);
+  const { language } = useLanguage();
 
   const hasManuallyToggled = useRef(false);
 
@@ -29,7 +31,7 @@ export function useRecentItems(
         setIsExpanded(true);
       }
     }
-  }, [recentItems, setLocalRecentItems]);
+  }, [recentItems, setLocalRecentItems, language]);
 
   const handleItemClick = useCallback(
     (path: string) => {

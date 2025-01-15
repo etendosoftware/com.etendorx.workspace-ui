@@ -1,4 +1,4 @@
-import type { Menu } from '../../../../EtendoHookBinder/src/api/types';
+import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 
 type NavigateFn = (pathname: string) => void;
 
@@ -15,6 +15,8 @@ export interface DrawerProps {
   children?: React.ReactNode;
   sectionGroups?: SectionGroup[];
   windowId?: string;
+  RecentlyViewedComponent?: React.ComponentType<RecentlyViewedProps>;
+  getTranslatedName?: (item: Menu) => string;
 }
 
 export interface MenuTitleProps {

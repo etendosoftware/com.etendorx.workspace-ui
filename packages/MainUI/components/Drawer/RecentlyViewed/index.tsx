@@ -1,16 +1,19 @@
-import DrawerSection from '../DrawerSection';
-import { RecentlyViewedProps } from '../types';
+import DrawerSection from '@workspaceui/componentlibrary/src/components/Drawer/DrawerSection';
+import { RecentlyViewedProps } from '@workspaceui/componentlibrary/src/components/Drawer/types';
+import { createParentMenuItem } from '@workspaceui/componentlibrary/src/utils/menuUtils';
 import { useRecentItems } from '../../../hooks/useRecentItems';
-import { createParentMenuItem } from '../../../utils/menuUtils';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { useMemo } from 'react';
 
 const RecentlyViewed: React.FC<RecentlyViewedProps> = ({ windowId, onClick, open, onWindowAccess, recentItems }) => {
+  const { t } = useTranslation();
   const { localRecentItems, isExpanded, handleItemClick, handleToggleExpand, hasItems } = useRecentItems(
     recentItems,
     onClick,
     onWindowAccess,
   );
 
-  const parentMenuItem = createParentMenuItem(localRecentItems);
+  const parentMenuItem = useMemo(() => createParentMenuItem(localRecentItems, t), [localRecentItems, t]);
 
   return (
     <DrawerSection

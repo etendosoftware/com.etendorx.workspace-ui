@@ -117,6 +117,9 @@ const es = {
   process: {
     confirmationMessage: '¿Deseas ejecutar este proceso?',
   },
+  drawer: {
+    recentlyViewed: 'Visto recientemente',
+  },
 };
 
 export default es;

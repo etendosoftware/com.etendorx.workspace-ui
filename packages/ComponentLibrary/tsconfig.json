@@ -21,15 +21,15 @@
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
 
-    "target": "ES5",                    // Target ES5 for wide compatibility
-    "module": "ESNext",                 // Leave module setting flexible for overrides
-    "declaration": true,                // Generate .d.ts declaration files
-    "declarationDir": "./dist/types",   // Output directory for .d.ts files
-    "outDir": "./dist",                 // Output directory for transpiled files
+    "target": "ES5", // Target ES5 for wide compatibility
+    "module": "ESNext", // Leave module setting flexible for overrides
+    "declaration": true, // Generate .d.ts declaration files
+    "declarationDir": "./dist/types", // Output directory for .d.ts files
+    "outDir": "./dist", // Output directory for transpiled files
     "paths": {
       "@/*": ["./*"]
     }
   },
   "include": ["src"],
-  "exclude": ["node_modules"],
+  "exclude": ["node_modules"]
 }

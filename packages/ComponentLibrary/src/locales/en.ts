@@ -113,6 +113,9 @@ const en = {
   process: {
     confirmationMessage: 'Want to execute this process?',
   },
+  drawer: {
+    recentlyViewed: 'Recently Viewed',
+  },
 };
 
 export default en;

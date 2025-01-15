@@ -114,6 +114,14 @@ export class Metadata {
     this.currentRoleId = null;
   }
 
+  public static clearWindowCache(windowId: string) {
+    this.cache.delete(`window-${windowId}`);
+  }
+
+  public static forceWindowReload(windowId: string) {
+    return this._getWindow(windowId);
+  }
+
   public static getTabsColumns(tabs?: Etendo.Tab[]) {
     return (tabs || []).reduce((cols, tab) => {
       cols[tab.id] = this.getColumns(tab.id);
