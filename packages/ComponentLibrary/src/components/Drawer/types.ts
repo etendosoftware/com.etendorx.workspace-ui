@@ -85,7 +85,7 @@ export interface RecentItem {
   id: string;
   name: string;
   windowId: string;
-  type: 'Window' | 'Report' | 'ProcessDefinition';
+  type: string;
 }
 
 export interface DrawerHeaderProps {

@@ -1,5 +1,5 @@
+import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { IndexedMenu, SearchIndex } from '../components/Drawer/types';
-import type { Menu } from '../../../EtendoHookBinder/src/api/types';
 
 const index: SearchIndex = {
   byId: new Map(),
@@ -37,7 +37,7 @@ export const createSearchIndex = (items: Menu[]): SearchIndex => {
   try {
     traverse(items);
   } catch (e) {
-    console.warn('Error in createSearchIndex', e)
+    console.warn('Error in createSearchIndex', e);
   }
 
   return index;

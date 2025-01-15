@@ -178,10 +178,10 @@ export interface RecordPayload extends Record<string, string> {
 }
 
 export interface Menu {
-  _identifier: string;
-  _entityName: string;
-  $ref: string;
-  recordTime: number;
+  _identifier?: string;
+  _entityName?: string;
+  $ref?: string;
+  recordTime?: number;
   children?: Menu[];
   icon?: string | null;
   id: string;

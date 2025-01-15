@@ -2,7 +2,7 @@
 
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { useStyle } from './styles';
-import { DrawerProps } from './types';
+import { DrawerProps, RecentItem } from './types';
 import DrawerHeader from './Header';
 import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
 import { createSearchIndex, filterItems, getAllItemTitles } from '../../utils/searchUtils';
@@ -44,13 +44,7 @@ const Drawer: React.FC<DrawerProps> = ({
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const { language } = useLanguage();
 
-  const [recentItems, setRecentItems] = useState<
-    Array<{
-      id: string;
-      name: string;
-      windowId: string;
-    }>
-  >([]);
+  const [recentItems, setRecentItems] = useState<Array<RecentItem>>([]);
   const { sx } = useStyle();
 
   const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
@@ -129,11 +123,11 @@ const Drawer: React.FC<DrawerProps> = ({
       if (windowId) {
         const item = findItemByWindowId(items, windowId);
         if (item) {
-          const recentItem = {
+          const recentItem: RecentItem = {
             id: item.id,
-            name: getTranslatedName ? getTranslatedName(item) : item._identifier || item.name,
+            name: getTranslatedName ? getTranslatedName(item) : item._identifier || item.name || '',
             windowId: item.windowId!,
-            type: item.type,
+            type: item.type || ('Window' as RecentItem['type']),
           };
           setRecentItems(prev => {
             const newItems = [recentItem, ...prev.filter(i => i.id !== recentItem.id)].slice(0, 5);
@@ -150,9 +144,10 @@ const Drawer: React.FC<DrawerProps> = ({
   const handleWindowAccess = useCallback(
     (item: { id: string; name: string; windowId: string }) => {
       const menuItem = findItemByWindowId(items, item.windowId);
-      const updatedItem = {
+      const updatedItem: RecentItem = {
         ...item,
         name: menuItem?._identifier || menuItem?.name || item.name,
+        type: (menuItem?.type || 'Window') as RecentItem['type'],
       };
 
       setRecentItems(prev => {
