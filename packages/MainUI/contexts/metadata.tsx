@@ -73,7 +73,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     }
   }, [windowId, language]);
 
-  // Efecto para cargar datos iniciales y cuando cambia el idioma
   useEffect(() => {
     loadWindowData();
   }, [loadWindowData]);

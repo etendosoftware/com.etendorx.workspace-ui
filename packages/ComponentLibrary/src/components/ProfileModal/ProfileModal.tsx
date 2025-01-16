@@ -139,25 +139,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     logger,
   ]);
 
-  /*   const isSaveDisabled = useMemo(
-    () =>
-      currentSection === 'profile' &&
-      language == selectedLanguage &&
-      (!selectedRole || selectedRole.value === currentRole?.id) &&
-      (!selectedWarehouse || selectedWarehouse.value === currentWarehouse?.id) &&
-      !saveAsDefault,
-    [
-      currentRole?.id,
-      currentSection,
-      currentWarehouse?.id,
-      language,
-      saveAsDefault,
-      selectedLanguage,
-      selectedRole,
-      selectedWarehouse,
-    ],
-  ); */
-
+  //TODO: Implement disable state for save button
   const isSaveDisabled = false;
 
   const handleLanguageChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
