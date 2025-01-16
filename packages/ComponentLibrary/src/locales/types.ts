@@ -11,7 +11,7 @@ export type NestedKeyOf<T> = T extends Primitive
 
 export type TranslationKeys = NestedKeyOf<typeof en | typeof es>;
 
-export type Language = 'es' | 'en';
+export type Language = 'en_US' | 'es_ES';
 
 export type Translations = {
   [key in Language]: typeof en | typeof es;

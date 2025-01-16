@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button, Menu, useTheme } from '@mui/material';
 import CheckCircle from '../../assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';
@@ -10,6 +10,7 @@ import { ProfileModalProps } from './types';
 import { MODAL_WIDTH, menuSyle, useStyle } from './styles';
 import IconButton from '../IconButton';
 import { Option } from '../Input/Select/types';
+import { Language } from '../../locales/types';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,
@@ -33,11 +34,24 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   logger,
   translations,
   onSignOff,
+  language,
+  languages,
+  onLanguageChange,
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedRole, setSelectedRole] = useState<Option | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<Option | null>(() => {
+    const currentLang = languages.find(lang => lang.language === language);
+    return currentLang
+      ? {
+          title: currentLang.name,
+          value: currentLang.language,
+          id: currentLang.id,
+        }
+      : null;
+  });
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const theme = useTheme();
   const { styles, sx } = useStyle();
@@ -88,12 +102,17 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         if (selectedWarehouse && selectedWarehouse.value !== currentWarehouse?.id) {
           await onChangeWarehouse(selectedWarehouse.value);
         }
+
+        if (selectedLanguage && selectedLanguage.value !== language) {
+          onLanguageChange(selectedLanguage.value as Language);
+        }
+
         if (saveAsDefault) {
           await onSetDefaultConfiguration({
             defaultRole: selectedRole?.value,
             defaultWarehouse: selectedWarehouse?.value,
             organization: currentRole?.orgList[0]?.id,
-            language: '192',
+            language: selectedLanguage?.id,
             client: 'System',
           });
         }
@@ -105,25 +124,29 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   }, [
     currentSection,
     selectedRole,
-    currentRole,
+    currentRole?.id,
+    currentRole?.orgList,
     selectedWarehouse,
-    currentWarehouse,
+    currentWarehouse?.id,
+    selectedLanguage,
+    language,
     saveAsDefault,
+    handleClose,
     onChangeRole,
     onChangeWarehouse,
+    onLanguageChange,
     onSetDefaultConfiguration,
-    handleClose,
     logger,
   ]);
 
-  const isSaveDisabled = useMemo(
-    () =>
-      currentSection === 'profile' &&
-      (!selectedRole || selectedRole.value === currentRole?.id) &&
-      (!selectedWarehouse || selectedWarehouse.value === currentWarehouse?.id) &&
-      !saveAsDefault,
-    [currentRole?.id, currentSection, currentWarehouse?.id, saveAsDefault, selectedRole, selectedWarehouse],
-  );
+  //TODO: Implement disable state for save button
+  const isSaveDisabled = false;
+
+  const handleLanguageChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
+    if (value) {
+      setSelectedLanguage(value);
+    }
+  }, []);
 
   return (
     <>
@@ -134,12 +157,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleClose}
-        slotProps={{
-          paper: {
-            sx: {
-              width: MODAL_WIDTH,
-              ...styles.paperStyleMenu,
-            },
+        sx={{
+          '& .MuiPaper-root': {
+            width: MODAL_WIDTH,
+            ...styles.paperStyleMenu,
           },
         }}
         MenuListProps={{ sx: menuSyle }}>
@@ -160,9 +181,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           confirmPasswordLabel={confirmPasswordLabel}
           onRoleChange={handleRoleChange}
           onWarehouseChange={handleWarehouseChange}
+          onLanguageChange={handleLanguageChange}
           roles={roles}
           selectedRole={selectedRole}
           selectedWarehouse={selectedWarehouse}
+          languages={languages}
+          selectedLanguage={selectedLanguage}
           saveAsDefault={saveAsDefault}
           onSaveAsDefaultChange={handleSaveAsDefaultChange}
           translations={translations}

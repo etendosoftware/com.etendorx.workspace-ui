@@ -2,11 +2,11 @@
 
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
 import { groupTabsByLevel } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useParams } from 'next/navigation';
 import { WindowParams } from '../app/types';
+import { useLanguage } from '../hooks/useLanguage';
 
 interface IMetadataContext {
   getWindow: (windowId: string) => Promise<Etendo.WindowMetadata>;
@@ -28,8 +28,12 @@ export const MetadataContext = createContext({} as IMetadataContext);
 
 export default function MetadataProvider({ children }: React.PropsWithChildren) {
   const { windowId = '', tabId = '', recordId = '' } = useParams<WindowParams>();
-  const { windowData, loading, error } = useWindow(windowId);
+  const [windowData, setWindowData] = useState<Etendo.WindowMetadata | undefined>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error>();
   const [selected, setSelected] = useState<IMetadataContext['selected']>({});
+  const [groupedTabs, setGroupedTabs] = useState<Etendo.Tab[][]>([]);
+  const { language } = useLanguage();
 
   const selectRecord: IMetadataContext['selectRecord'] = useCallback(
     (record, tab) => {
@@ -49,9 +53,32 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [selected],
   );
 
+  const loadWindowData = useCallback(async () => {
+    if (!windowId) return;
+
+    try {
+      setLoading(true);
+      setError(undefined);
+
+      Metadata.setLanguage(language);
+      Metadata.clearWindowCache(windowId);
+      const newWindowData = await Metadata.forceWindowReload(windowId);
+
+      setWindowData(newWindowData);
+      setGroupedTabs(groupTabsByLevel(newWindowData));
+    } catch (err) {
+      setError(err as Error);
+    } finally {
+      setLoading(false);
+    }
+  }, [windowId, language]);
+
+  useEffect(() => {
+    loadWindowData();
+  }, [loadWindowData]);
+
   const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [tabId, windowData?.tabs]);
   const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
-  const groupedTabs = useMemo(() => groupTabsByLevel(windowData), [windowData]);
 
   const value = useMemo(
     () => ({

@@ -1,18 +1,18 @@
+import { RecentItem } from '@workspaceui/componentlibrary/src/components/Drawer/types';
+import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import { useLocalStorage } from '@workspaceui/componentlibrary/src/hooks/useLocalStorage';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useLocalStorage } from './useLocalStorage';
-import { RecentItem } from '../components/Drawer/types';
-import { UseRecentItemsReturn } from './types';
+import { useLanguage } from './useLanguage';
 
 export function useRecentItems(
   recentItems: RecentItem[],
-  onClick: (path: string) => void,
+  handleItemClick: (item: Menu) => void,
   onWindowAccess: (item: RecentItem) => void,
-): UseRecentItemsReturn {
+) {
   const [localRecentItems, setLocalRecentItems] = useLocalStorage<RecentItem[]>('recentlyViewedItems', []);
   const [isExpanded, setIsExpanded] = useState(false);
-
+  const { language } = useLanguage();
   const hasManuallyToggled = useRef(false);
-
   const isFirstLoad = useRef(true);
 
   useEffect(() => {
@@ -29,21 +29,29 @@ export function useRecentItems(
         setIsExpanded(true);
       }
     }
-  }, [recentItems, setLocalRecentItems]);
+  }, [recentItems, setLocalRecentItems, language]);
 
-  const handleItemClick = useCallback(
+  const handleRecentItemClick = useCallback(
     (path: string) => {
       const windowId = path.split('/').pop();
       if (windowId) {
-        const item = localRecentItems.find(item => item.windowId === windowId);
-        if (item) {
-          onWindowAccess(item);
+        const recentItem = localRecentItems.find(item => item.windowId === windowId);
+        if (recentItem) {
+          onWindowAccess(recentItem);
+          const menuItem: Menu = {
+            ...recentItem,
+            id: recentItem.id,
+            name: recentItem.name,
+            windowId: recentItem.windowId,
+            type: recentItem.type || 'Window',
+            action: 'W',
+          };
+          handleItemClick(menuItem);
           setIsExpanded(true);
         }
       }
-      onClick(path);
     },
-    [localRecentItems, onWindowAccess, onClick],
+    [localRecentItems, onWindowAccess, handleItemClick],
   );
 
   const handleToggleExpand = useCallback(() => {
@@ -51,17 +59,12 @@ export function useRecentItems(
     setIsExpanded(prev => !prev);
   }, []);
 
-  const resetManualToggle = useCallback(() => {
-    hasManuallyToggled.current = false;
-  }, []);
-
   return {
     localRecentItems,
     isExpanded,
     setIsExpanded,
-    handleItemClick,
+    handleRecentItemClick,
     handleToggleExpand,
     hasItems: localRecentItems.length > 0,
-    resetManualToggle,
   };
 }

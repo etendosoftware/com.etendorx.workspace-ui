@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Section } from './ToggleButton/types';
 import { Option } from '../Input/Select/types';
+import { Language } from '../../locales/types';
 
 export interface Translations {
   saveAsDefault: string;
@@ -79,12 +80,21 @@ export interface ActionProps {
   onSetDefaultConfiguration: (config: BaseDefaultConfiguration) => Promise<void>;
 }
 
+export interface LanguageOption {
+  id: string;
+  language: string;
+  name: string;
+}
 export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps, ActionProps {
   currentRole: BaseRole | null;
   currentWarehouse: BaseWarehouse | null;
   roles: BaseRole[];
   logger: Logger;
   onSignOff: () => void;
+  onLanguageChange: (e: Language) => void;
+  language: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  languages: LanguageOption[];
 }
 
 export interface UserProfileProps {
@@ -113,6 +123,13 @@ export interface SelectorListProps {
   roles: BaseRole[];
   selectedRole: Option | null;
   selectedWarehouse: Option | null;
+  onLanguageChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
+  selectedLanguage: Option | null;
+  languages: Array<{
+    id: string;
+    language: string;
+    name: string;
+  }>;
   saveAsDefault: boolean;
   onSaveAsDefaultChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   translations: Translations;
