@@ -19,10 +19,21 @@ export const createRecentMenuItem = (item: RecentItem): Menu => ({
   action: 'W',
 });
 
-export const createParentMenuItem = (items: RecentItem[], t: TranslateFunction): Menu => ({
-  ...createMenuItem('recently-viewed', t('drawer.recentlyViewed'), 'RecentlyViewed'),
-  icon: RECENTLY_VIEWED_ICON,
-  type: items[0].type || 'Window',
-  action: 'W',
-  children: items.map(createRecentMenuItem),
-});
+export const createParentMenuItem = (items: RecentItem[], t: TranslateFunction): Menu => {
+  const baseMenuItem = {
+    ...createMenuItem('recently-viewed', t('drawer.recentlyViewed'), 'RecentlyViewed'),
+    icon: RECENTLY_VIEWED_ICON,
+    type: 'Window',
+    action: 'W',
+  };
+
+  if (!items?.length) {
+    return baseMenuItem;
+  }
+
+  return {
+    ...baseMenuItem,
+    type: items[0].type || 'Window',
+    children: items.map(createRecentMenuItem),
+  };
+};
