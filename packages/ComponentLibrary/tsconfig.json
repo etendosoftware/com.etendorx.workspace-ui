@@ -10,7 +10,6 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -21,13 +20,15 @@
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
 
-    "target": "ES5",                    // Target ES5 for wide compatibility
-    "module": "ESNext",                 // Leave module setting flexible for overrides
-    "declaration": true,                // Generate .d.ts declaration files
-    "declarationDir": "./dist/types",   // Output directory for .d.ts files
-    "rootDir": "./src",                 // Root directory of the source files
-    "outDir": "./dist",                 // Output directory for transpiled files
+    "target": "ES5",
+    "module": "ESNext",
+    "declaration": true,
+    "declarationDir": "./dist/types",
+    "outDir": "./dist",
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
   "include": ["src"],
-  "exclude": ["node_modules"],
+  "exclude": ["node_modules"]
 }

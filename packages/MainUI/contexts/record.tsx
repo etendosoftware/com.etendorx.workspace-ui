@@ -20,8 +20,8 @@ export function RecordProvider({ children }: React.PropsWithChildren) {
   const getFormattedRecord: RecordContextType['getFormattedRecord'] = useCallback((record: Organization | null) => {
     if (!record) return null;
     return {
-      identifier: ensureString(record.documentNo?.value) || translations.es.table.labels.noIdentifier,
-      type: ensureString(record.transactionDocument?.value) || translations.es.table.labels.noType,
+      identifier: ensureString(record.documentNo?.value) || translations.en_US.table.labels.noIdentifier,
+      type: ensureString(record.transactionDocument?.value) || translations.en_US.table.labels.noType,
     };
   }, []);
 

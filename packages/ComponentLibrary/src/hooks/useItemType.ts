@@ -21,6 +21,15 @@ const getReportRecordId = (item: Menu) => {
 export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }: UseItemActionsProps) => {
   const handleItemClick = useCallback(
     (item: Menu) => {
+      const validType = ['Window', 'Report', 'ProcessDefinition'].includes(item.type || '');
+      if (!validType) {
+        console.warn(`Invalid item type: ${item.type}, defaulting to Window`);
+        if (item.windowId && onWindowClick) {
+          onWindowClick(item.windowId);
+        }
+        return;
+      }
+
       switch (item.type) {
         case 'Window':
           if (item.windowId && onWindowClick) {

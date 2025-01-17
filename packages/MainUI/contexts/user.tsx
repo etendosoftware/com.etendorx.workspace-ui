@@ -9,17 +9,19 @@ import { changeRole as doChangeRole } from '@workspaceui/etendohookbinder/src/ap
 import { getSession } from '@workspaceui/etendohookbinder/src/api/getSession';
 import { changeWarehouse as doChangeWarehouse } from '@workspaceui/etendohookbinder/src/api/warehouse';
 import { HTTP_CODES } from '@workspaceui/etendohookbinder/src/api/constants';
-import { DefaultConfiguration, IUserContext } from './types';
+import { DefaultConfiguration, IUserContext, Language, LanguageOption } from './types';
 import { Role, SessionResponse, Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/src/api/defaultConfig';
 import { usePathname, useRouter } from 'next/navigation';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
+import { useLanguage } from '../hooks/useLanguage';
 
 export const UserContext = createContext({} as IUserContext);
 
 export default function UserProvider(props: React.PropsWithChildren) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [ready, setReady] = useState(false);
+  const { language, setLanguage: setLanguageContext } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
   const navigate = router.push;
@@ -39,6 +41,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
     return savedCurrentWarehouse ? JSON.parse(savedCurrentWarehouse) : null;
   });
 
+  const [languages, setLanguages] = useState<LanguageOption[]>([]);
+
   const setDefaultConfiguration = useCallback(async (token: string, config: DefaultConfiguration) => {
     try {
       await apiSetDefaultConfiguration(token, config);
@@ -48,25 +52,49 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }
   }, []);
 
-  const updateSessionInfo = useCallback((sessionResponse: SessionResponse) => {
-    const currentRole: Role = {
-      id: sessionResponse.role.id,
-      name: sessionResponse.role.name,
-      orgList: [],
-    };
-    localStorage.setItem('currentRole', JSON.stringify(currentRole));
-    localStorage.setItem('currentRoleId', currentRole.id);
-    setCurrentRole(currentRole);
+  const setLanguage = useCallback(
+    (language: Language) => {
+      localStorage.setItem('currentLanguage', language);
+      setLanguageContext(language);
+    },
+    [setLanguageContext],
+  );
 
-    if (sessionResponse.user.defaultWarehouse) {
-      const defaultWarehouse: Warehouse = {
-        id: sessionResponse.user.defaultWarehouse,
-        name: sessionResponse.user.defaultWarehouse$_identifier,
+  const updateSessionInfo = useCallback(
+    (sessionResponse: SessionResponse, skipLanguage: boolean = false) => {
+      const currentRole: Role = {
+        id: sessionResponse.role.id,
+        name: sessionResponse.role.name,
+        orgList: [],
       };
-      localStorage.setItem('currentWarehouse', JSON.stringify(defaultWarehouse));
-      setCurrentWarehouse(defaultWarehouse);
-    }
-  }, []);
+      localStorage.setItem('currentRole', JSON.stringify(currentRole));
+      localStorage.setItem('currentRoleId', currentRole.id);
+
+      if (!skipLanguage) {
+        setLanguage(sessionResponse.user.defaultLanguage as Language);
+      }
+
+      setLanguages(
+        sessionResponse.languages.map(lang => ({
+          id: lang.id,
+          language: lang.language,
+          name: lang.name,
+        })),
+      );
+
+      setCurrentRole(currentRole);
+
+      if (sessionResponse.user.defaultWarehouse) {
+        const defaultWarehouse: Warehouse = {
+          id: sessionResponse.user.defaultWarehouse,
+          name: sessionResponse.user.defaultWarehouse$_identifier,
+        };
+        localStorage.setItem('currentWarehouse', JSON.stringify(defaultWarehouse));
+        setCurrentWarehouse(defaultWarehouse);
+      }
+    },
+    [setLanguage],
+  );
 
   const clearUserData = useCallback(() => {
     setToken(null);
@@ -77,6 +105,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     localStorage.removeItem('roles');
     localStorage.removeItem('currentRole');
     localStorage.removeItem('currentWarehouse');
+    localStorage.removeItem('currentLanguage');
   }, []);
 
   const changeRole = useCallback(
@@ -144,8 +173,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
           localStorage.setItem('roles', JSON.stringify(loginResponse.roleList));
           setRoles(loginResponse.roleList);
         }
-
-        await Metadata.refreshMenuOnLogin();
       } catch (e) {
         logger.error('Login or session retrieval error:', e);
         throw e;
@@ -166,6 +193,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       clearUserData,
       setToken,
       setDefaultConfiguration,
+      languages,
     }),
     [
       login,
@@ -177,6 +205,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       token,
       clearUserData,
       setDefaultConfiguration,
+      languages,
     ],
   );
 
@@ -186,7 +215,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
         try {
           Metadata.setToken(token);
           Datasource.authorize(token);
-          await getSession(token);
+          const sessionResponse = await getSession(token);
+          updateSessionInfo(sessionResponse, language != null);
         } catch (error) {
           clearUserData();
           navigate('/login');
@@ -194,7 +224,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       };
       verifySession();
     }
-  }, [token, clearUserData, navigate]);
+  }, [clearUserData, language, navigate, token, updateSessionInfo]);
 
   useLayoutEffect(() => {
     if (token || pathname === '/login') {

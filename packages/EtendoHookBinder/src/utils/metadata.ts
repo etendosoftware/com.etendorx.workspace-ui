@@ -1,4 +1,4 @@
-import { type Etendo, Metadata } from '../api/metadata';
+import { type Etendo } from '../api/metadata';
 import { Field, FieldType, Tab } from '../api/types';
 
 export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
