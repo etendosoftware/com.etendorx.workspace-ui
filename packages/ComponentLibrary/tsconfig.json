@@ -29,6 +29,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "../MainUI/components/Forms"],
   "exclude": ["node_modules"]
 }
