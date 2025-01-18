@@ -1,8 +1,8 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Login from '@workspaceui/componentlibrary/src/components/Forms/Login';
 import { useUserContext } from '../../hooks/useUserContext';
+import Login from '../../components/Forms/Login';
 
 export default function LoginPage() {
   const [error, setError] = useState('');

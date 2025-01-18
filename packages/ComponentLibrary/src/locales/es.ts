@@ -120,6 +120,38 @@ const es = {
   drawer: {
     recentlyViewed: 'Visto recientemente',
   },
+  login: {
+    subtitle: 'Ingresé sus credenciales para acceder a su cuenta!.',
+    fields: {
+      username: {
+        label: 'Nombre',
+        placeholder: 'Nombre',
+      },
+      password: {
+        label: 'Contraseña',
+        placeholder: 'Contraseña',
+      },
+    },
+    buttons: {
+      submit: 'Acceso',
+    },
+  },
+  grid: {
+    items: {
+      erp: {
+        text: 'ERP software',
+      },
+      tailored: {
+        text: 'Adaptado a sus necesidades',
+      },
+      adaptable: {
+        text: 'Altamente escalable',
+      },
+    },
+    alt: {
+      logo: 'Etendo Logo',
+    },
+  },
 };
 
 export default es;
