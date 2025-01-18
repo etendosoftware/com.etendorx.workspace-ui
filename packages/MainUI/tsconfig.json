@@ -27,7 +27,6 @@
     ".next/types/**/*.ts",
     "types/svgr.d.ts",
     "types/theme.d.ts",
-    "../EtendoHookBinder/src/hooks/useReport.ts"
   ],
   "exclude": ["node_modules"]
 }
