@@ -116,6 +116,38 @@ const en = {
   drawer: {
     recentlyViewed: 'Recently Viewed',
   },
+  login: {
+    subtitle: 'Enter your credentials to access your account.',
+    fields: {
+      username: {
+        label: 'Username',
+        placeholder: 'Username',
+      },
+      password: {
+        label: 'Password',
+        placeholder: 'Password',
+      },
+    },
+    buttons: {
+      submit: 'Log In',
+    },
+  },
+  grid: {
+    items: {
+      erp: {
+        text: 'ERP software',
+      },
+      tailored: {
+        text: 'Tailored to suit your needs',
+      },
+      adaptable: {
+        text: 'Highly scalable',
+      },
+    },
+    alt: {
+      logo: 'Etendo Logo',
+    },
+  },
 };
 
 export default en;
