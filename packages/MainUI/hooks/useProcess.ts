@@ -18,11 +18,14 @@ export const useProcessMetadata = (process?: ProcessInfo): ProcessMetadata => {
         return;
       }
 
+      console.debug(process);
+
       setLoading(true);
       setError(null);
 
       try {
         const { onProcess, onLoad, metadata } = await import(`../process/${process.searchKey}`);
+
         if (!controller.signal.aborted) {
           setMetadata({ onProcess, onLoad, metadata });
         }
