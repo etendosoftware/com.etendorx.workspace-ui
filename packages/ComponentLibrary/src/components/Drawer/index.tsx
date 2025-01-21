@@ -9,7 +9,6 @@ import { createSearchIndex, filterItems, getAllItemTitles } from '../../utils/se
 import DrawerItems from './Search';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { Box } from '@mui/material';
-import { useLanguage } from '@workspaceui/mainui/hooks/useLanguage';
 
 const findItemByWindowId = (items?: Menu[], windowId?: string): Menu | null => {
   if (!items || !windowId) {
@@ -42,7 +41,6 @@ const Drawer: React.FC<DrawerProps> = ({
   const [open, setOpen] = useState<boolean>(true);
   const [searchValue, setSearchValue] = useState<string>('');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
-  const { language } = useLanguage();
 
   const [recentItems, setRecentItems] = useState<Array<RecentItem>>([]);
   const { sx } = useStyle();
@@ -56,22 +54,6 @@ const Drawer: React.FC<DrawerProps> = ({
       searchInputRef.current.focus();
     }
   }, [open]);
-
-  useEffect(() => {
-    const storedItems = localStorage.getItem('recentlyViewedItems');
-    if (storedItems) {
-      const parsedItems = JSON.parse(storedItems);
-      const updatedItems = parsedItems.map((storedItem: Record<string, string>) => {
-        const menuItem = findItemByWindowId(items, storedItem.windowId);
-        return {
-          ...storedItem,
-          name: menuItem?._identifier || menuItem?.name || storedItem.name,
-        };
-      });
-      setRecentItems(updatedItems);
-      localStorage.setItem('recentlyViewedItems', JSON.stringify(updatedItems));
-    }
-  }, [items, language]);
 
   const drawerStyle = useMemo(
     () => ({

@@ -5,9 +5,11 @@ import { useRecentItems } from '../../../hooks/useRecentItems';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useMemo } from 'react';
 import { useItemActions } from '@workspaceui/componentlibrary/src/hooks/useItemType';
+import { useUserContext } from '@/hooks/useUserContext';
 
 const RecentlyViewed: React.FC<RecentlyViewedProps> = ({ windowId, onClick, open, onWindowAccess, recentItems }) => {
   const { t } = useTranslation();
+  const { currentRole } = useUserContext();
 
   const handleItemClick = useItemActions({
     onWindowClick: (windowId: string) => onClick(`/window/${windowId}`),
@@ -19,6 +21,7 @@ const RecentlyViewed: React.FC<RecentlyViewedProps> = ({ windowId, onClick, open
     recentItems,
     handleItemClick,
     onWindowAccess,
+    currentRole?.id,
   );
 
   const parentMenuItem = useMemo(() => createParentMenuItem(localRecentItems, t), [localRecentItems, t]);
@@ -28,8 +31,8 @@ const RecentlyViewed: React.FC<RecentlyViewedProps> = ({ windowId, onClick, open
       item={parentMenuItem}
       onClick={handleRecentItemClick}
       open={open}
-      hasChildren={hasItems}
-      isExpandable={hasItems}
+      hasChildren={!!hasItems}
+      isExpandable={!!hasItems}
       isExpanded={isExpanded}
       onToggleExpand={handleToggleExpand}
       isSearchActive={false}

@@ -8,34 +8,38 @@ export function useRecentItems(
   recentItems: RecentItem[],
   handleItemClick: (item: Menu) => void,
   onWindowAccess: (item: RecentItem) => void,
+  role?: string,
 ) {
-  const [localRecentItems, setLocalRecentItems] = useLocalStorage<RecentItem[]>('recentlyViewedItems', []);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [localRecentItems, setLocalRecentItems] = useLocalStorage<Record<string, RecentItem[]>>(
+    'recentlyViewedItems',
+    {},
+  );
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const { language } = useLanguage();
   const hasManuallyToggled = useRef(false);
   const isFirstLoad = useRef(true);
 
   useEffect(() => {
-    if (isFirstLoad.current && localRecentItems.length > 0) {
+    if (isFirstLoad.current && role && localRecentItems[role]?.length > 0) {
       setIsExpanded(true);
       isFirstLoad.current = false;
     }
-  }, [localRecentItems]);
+  }, [localRecentItems, role, language]);
 
   useEffect(() => {
-    if (recentItems.length > 0) {
-      setLocalRecentItems(recentItems);
+    if (recentItems.length > 0 && role) {
+      setLocalRecentItems(prev => ({ ...prev, [role]: recentItems }));
       if (!hasManuallyToggled.current) {
         setIsExpanded(true);
       }
     }
-  }, [recentItems, setLocalRecentItems, language]);
+  }, [recentItems, role, setLocalRecentItems]);
 
   const handleRecentItemClick = useCallback(
     (path: string) => {
       const windowId = path.split('/').pop();
-      if (windowId) {
-        const recentItem = localRecentItems.find(item => item.windowId === windowId);
+      if (windowId && role) {
+        const recentItem = localRecentItems[role].find(item => item.windowId === windowId);
         if (recentItem) {
           onWindowAccess(recentItem);
           const menuItem: Menu = {
@@ -51,7 +55,7 @@ export function useRecentItems(
         }
       }
     },
-    [localRecentItems, onWindowAccess, handleItemClick],
+    [role, localRecentItems, onWindowAccess, handleItemClick],
   );
 
   const handleToggleExpand = useCallback(() => {
@@ -60,11 +64,11 @@ export function useRecentItems(
   }, []);
 
   return {
-    localRecentItems,
+    localRecentItems: role ? localRecentItems[role] : [],
     isExpanded,
     setIsExpanded,
     handleRecentItemClick,
     handleToggleExpand,
-    hasItems: localRecentItems.length > 0,
+    hasItems: role && localRecentItems[role]?.length > 0,
   };
 }
