@@ -2,31 +2,14 @@
 
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { useStyle } from './styles';
-import { DrawerProps, RecentItem } from './types';
+import { DrawerProps } from './types';
 import DrawerHeader from './Header';
 import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
 import { createSearchIndex, filterItems, getAllItemTitles } from '../../utils/searchUtils';
 import DrawerItems from './Search';
-import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { Box } from '@mui/material';
-import { useLanguage } from '@workspaceui/mainui/hooks/useLanguage';
-
-const findItemByWindowId = (items?: Menu[], windowId?: string): Menu | null => {
-  if (!items || !windowId) {
-    return null;
-  }
-
-  for (const item of items) {
-    if (item.windowId === windowId) {
-      return item;
-    }
-    if (item.children) {
-      const found = findItemByWindowId(item.children, windowId);
-      if (found) return found;
-    }
-  }
-  return null;
-};
+import { findItemByWindowId } from '../../utils/menuUtils';
+import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 
 const Drawer: React.FC<DrawerProps> = ({
   windowId,
@@ -42,9 +25,6 @@ const Drawer: React.FC<DrawerProps> = ({
   const [open, setOpen] = useState<boolean>(true);
   const [searchValue, setSearchValue] = useState<string>('');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
-  const { language } = useLanguage();
-
-  const [recentItems, setRecentItems] = useState<Array<RecentItem>>([]);
   const { sx } = useStyle();
 
   const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
@@ -56,22 +36,6 @@ const Drawer: React.FC<DrawerProps> = ({
       searchInputRef.current.focus();
     }
   }, [open]);
-
-  useEffect(() => {
-    const storedItems = localStorage.getItem('recentlyViewedItems');
-    if (storedItems) {
-      const parsedItems = JSON.parse(storedItems);
-      const updatedItems = parsedItems.map((storedItem: Record<string, string>) => {
-        const menuItem = findItemByWindowId(items, storedItem.windowId);
-        return {
-          ...storedItem,
-          name: menuItem?._identifier || menuItem?.name || storedItem.name,
-        };
-      });
-      setRecentItems(updatedItems);
-      localStorage.setItem('recentlyViewedItems', JSON.stringify(updatedItems));
-    }
-  }, [items, language]);
 
   const drawerStyle = useMemo(
     () => ({
@@ -117,46 +81,28 @@ const Drawer: React.FC<DrawerProps> = ({
     });
   }, []);
 
+  const [recentlyViewedRef, setRecentlyViewedRef] = useState<{
+    handleWindowAccess?: (item: Menu) => void;
+  }>({});
+
   const handleItemClick = useCallback(
     (path: string) => {
-      const windowId = path.split('/').pop();
-      if (windowId) {
-        const item = findItemByWindowId(items, windowId);
-        if (item) {
-          const recentItem: RecentItem = {
-            id: item.id,
-            name: getTranslatedName ? getTranslatedName(item) : item._identifier || item.name || '',
-            windowId: item.windowId!,
-            type: item.type || ('Window' as RecentItem['type']),
+      const clickedWindowId = path.split('/').pop();
+      if (clickedWindowId) {
+        const menuItem = findItemByWindowId(items, clickedWindowId);
+        if (menuItem && recentlyViewedRef.handleWindowAccess) {
+          const syntheticEvent = {
+            id: menuItem.id,
+            name: getTranslatedName ? getTranslatedName(menuItem) : menuItem._identifier || menuItem.name || '',
+            windowId: menuItem.windowId!,
+            type: menuItem.type || 'Window',
           };
-          setRecentItems(prev => {
-            const newItems = [recentItem, ...prev.filter(i => i.id !== recentItem.id)].slice(0, 5);
-            localStorage.setItem('recentlyViewedItems', JSON.stringify(newItems));
-            return newItems;
-          });
+          recentlyViewedRef.handleWindowAccess(syntheticEvent);
         }
       }
       onClick(path);
     },
-    [getTranslatedName, items, onClick],
-  );
-
-  const handleWindowAccess = useCallback(
-    (item: { id: string; name: string; windowId: string }) => {
-      const menuItem = findItemByWindowId(items, item.windowId);
-      const updatedItem: RecentItem = {
-        ...item,
-        name: menuItem?._identifier || menuItem?.name || item.name,
-        type: (menuItem?.type || 'Window') as RecentItem['type'],
-      };
-
-      setRecentItems(prev => {
-        const newItems = [updatedItem, ...prev.filter(i => i.id !== item.id)].slice(0, 5);
-        localStorage.setItem('recentlyViewedItems', JSON.stringify(newItems));
-        return newItems;
-      });
-    },
-    [items],
+    [onClick, items, getTranslatedName, recentlyViewedRef],
   );
 
   return (
@@ -166,9 +112,10 @@ const Drawer: React.FC<DrawerProps> = ({
         <RecentlyViewedComponent
           onClick={handleItemClick}
           open={open}
-          onWindowAccess={handleWindowAccess}
-          recentItems={recentItems}
+          items={items}
           windowId={windowId}
+          getTranslatedName={getTranslatedName}
+          ref={setRecentlyViewedRef}
         />
       )}
       {open && (
@@ -200,5 +147,4 @@ const Drawer: React.FC<DrawerProps> = ({
     </Box>
   );
 };
-
 export default Drawer;

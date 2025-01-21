@@ -1,42 +1,66 @@
 import DrawerSection from '@workspaceui/componentlibrary/src/components/Drawer/DrawerSection';
 import { RecentlyViewedProps } from '@workspaceui/componentlibrary/src/components/Drawer/types';
-import { createParentMenuItem } from '@workspaceui/componentlibrary/src/utils/menuUtils';
+import { createParentMenuItem, findItemByWindowId } from '@workspaceui/componentlibrary/src/utils/menuUtils';
 import { useRecentItems } from '../../../hooks/useRecentItems';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { useMemo } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useMemo } from 'react';
 import { useItemActions } from '@workspaceui/componentlibrary/src/hooks/useItemType';
+import { useUserContext } from '../../../hooks/useUserContext';
+import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 
-const RecentlyViewed: React.FC<RecentlyViewedProps> = ({ windowId, onClick, open, onWindowAccess, recentItems }) => {
-  const { t } = useTranslation();
+const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, RecentlyViewedProps>(
+  ({ windowId, onClick, open, items, getTranslatedName }, ref) => {
+    const { t } = useTranslation();
+    const { currentRole } = useUserContext();
 
-  const handleItemClick = useItemActions({
-    onWindowClick: (windowId: string) => onClick(`/window/${windowId}`),
-    onReportClick: (reportId: string) => onClick(`/report/${reportId}`),
-    onProcessClick: (processId: string) => onClick(`/process/${processId}`),
-  });
+    const handleItemClick = useItemActions({
+      onWindowClick: (windowId: string) => onClick(`/window/${windowId}`),
+      onReportClick: (reportId: string) => onClick(`/report/${reportId}`),
+      onProcessClick: (processId: string) => onClick(`/process/${processId}`),
+    });
 
-  const { localRecentItems, isExpanded, handleRecentItemClick, handleToggleExpand, hasItems } = useRecentItems(
-    recentItems,
-    handleItemClick,
-    onWindowAccess,
-  );
+    const { localRecentItems, isExpanded, handleRecentItemClick, handleToggleExpand, hasItems, addRecentItem } =
+      useRecentItems(items, handleItemClick, onClick, currentRole?.id, getTranslatedName);
 
-  const parentMenuItem = useMemo(() => createParentMenuItem(localRecentItems, t), [localRecentItems, t]);
+    const handleWindowAccess = useCallback(
+      (item: Menu) => {
+        const menuItem = findItemByWindowId(items, item.windowId);
+        if (menuItem) {
+          addRecentItem(menuItem);
+        }
+      },
+      [items, addRecentItem],
+    );
 
-  return (
-    <DrawerSection
-      item={parentMenuItem}
-      onClick={handleRecentItemClick}
-      open={open}
-      hasChildren={hasItems}
-      isExpandable={hasItems}
-      isExpanded={isExpanded}
-      onToggleExpand={handleToggleExpand}
-      isSearchActive={false}
-      parentId=""
-      windowId={windowId}
-    />
-  );
-};
+    useImperativeHandle(
+      ref,
+      () => ({
+        handleWindowAccess,
+      }),
+      [handleWindowAccess],
+    );
+
+    const parentMenuItem = useMemo(() => createParentMenuItem(localRecentItems, t), [localRecentItems, t]);
+
+    if (!currentRole?.id) return null;
+
+    return (
+      <DrawerSection
+        item={parentMenuItem}
+        onClick={handleRecentItemClick}
+        open={open}
+        hasChildren={hasItems}
+        isExpandable={hasItems}
+        isExpanded={isExpanded}
+        onToggleExpand={handleToggleExpand}
+        isSearchActive={false}
+        parentId=""
+        windowId={windowId}
+      />
+    );
+  },
+);
+
+RecentlyViewed.displayName = 'RecentlyViewed';
 
 export default RecentlyViewed;

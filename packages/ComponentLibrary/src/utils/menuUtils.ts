@@ -37,3 +37,16 @@ export const createParentMenuItem = (items: RecentItem[], t: TranslateFunction):
     children: items.map(createRecentMenuItem),
   };
 };
+
+export const findItemByWindowId = (items?: Menu[], windowId?: string): Menu | null => {
+  if (!items || !windowId) return null;
+
+  for (const item of items) {
+    if (item.windowId === windowId) return item;
+    if (item.children) {
+      const found = findItemByWindowId(item.children, windowId);
+      if (found) return found;
+    }
+  }
+  return null;
+};

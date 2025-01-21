@@ -15,7 +15,8 @@ export interface DrawerProps {
   children?: React.ReactNode;
   sectionGroups?: SectionGroup[];
   windowId?: string;
-  RecentlyViewedComponent?: React.ComponentType<RecentlyViewedProps>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  RecentlyViewedComponent?: any;
   getTranslatedName?: (item: Menu) => string;
 }
 
@@ -99,7 +100,9 @@ export interface DrawerHeaderProps {
 export interface RecentlyViewedProps {
   onClick: (path: string) => void;
   open: boolean;
-  onWindowAccess: (item: RecentItem) => void;
-  recentItems: RecentItem[];
+  onWindowAccess?: (item: RecentItem) => void;
+  recentItems?: RecentItem[];
   windowId?: string;
+  items: Menu[];
+  getTranslatedName?: (item: Menu) => string;
 }
