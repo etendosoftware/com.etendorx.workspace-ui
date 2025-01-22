@@ -2,6 +2,16 @@ import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 
 type NavigateFn = (pathname: string) => void;
 
+export interface SearchContextType {
+  searchValue: string;
+  setSearchValue: (value: string) => void;
+  filteredItems: Menu[];
+  expandedItems: Set<string>;
+  searchExpandedItems: Set<string>;
+  setExpandedItems: React.Dispatch<React.SetStateAction<Set<string>>>;
+  searchIndex: SearchIndex;
+}
+
 export interface DrawerProps {
   items: Menu[];
   logo?: string | React.ReactNode;
@@ -18,6 +28,7 @@ export interface DrawerProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   RecentlyViewedComponent?: any;
   getTranslatedName?: (item: Menu) => string;
+  searchContext: SearchContextType;
 }
 
 export interface MenuTitleProps {

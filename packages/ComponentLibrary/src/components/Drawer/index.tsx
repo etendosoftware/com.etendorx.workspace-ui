@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
+import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react';
 import { useStyle } from './styles';
 import { DrawerProps } from './types';
 import DrawerHeader from './Header';
 import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
-import { createSearchIndex, filterItems, getAllItemTitles } from '../../utils/searchUtils';
+import { getAllItemTitles } from '../../utils/searchUtils';
 import DrawerItems from './Search';
 import { Box } from '@mui/material';
 import { findItemByWindowId } from '../../utils/menuUtils';
@@ -21,15 +21,13 @@ const Drawer: React.FC<DrawerProps> = ({
   onProcessClick,
   RecentlyViewedComponent,
   getTranslatedName,
+  searchContext,
 }) => {
   const [open, setOpen] = useState<boolean>(true);
-  const [searchValue, setSearchValue] = useState<string>('');
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const { sx } = useStyle();
-
-  const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
-
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const { searchValue, setSearchValue, filteredItems, expandedItems, setExpandedItems, searchIndex } = searchContext;
 
   useEffect(() => {
     if (open && searchInputRef.current) {
@@ -48,38 +46,24 @@ const Drawer: React.FC<DrawerProps> = ({
     [open, sx.drawerPaper],
   );
 
-  const searchIndex = useMemo(() => createSearchIndex(items), [items]);
+  const allItemTitles = useMemo(() => (searchIndex ? getAllItemTitles(searchIndex) : []), [searchIndex]);
 
-  const { filteredItems, searchExpandedItems } = useMemo(
-    () => filterItems(items, searchValue, searchIndex),
-    [items, searchValue, searchIndex],
-  );
+  const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
 
-  const allItemTitles = useMemo(() => getAllItemTitles(searchIndex), [searchIndex]);
-
-  const handleSearch = useCallback(
-    (value: string) => {
-      setSearchValue(value);
-      if (value) {
-        setExpandedItems(prev => new Set([...prev, ...searchExpandedItems]));
-      } else {
-        setExpandedItems(new Set());
-      }
+  const toggleItemExpansion = useCallback(
+    (itemId: string) => {
+      setExpandedItems((prev: Set<string>) => {
+        const newSet = new Set(prev);
+        if (newSet.has(itemId)) {
+          newSet.delete(itemId);
+        } else {
+          newSet.add(itemId);
+        }
+        return newSet;
+      });
     },
-    [searchExpandedItems],
+    [setExpandedItems],
   );
-
-  const toggleItemExpansion = useCallback((itemId: string) => {
-    setExpandedItems(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
-      } else {
-        newSet.add(itemId);
-      }
-      return newSet;
-    });
-  }, []);
 
   const [recentlyViewedRef, setRecentlyViewedRef] = useState<{
     handleWindowAccess?: (item: Menu) => void;
@@ -122,7 +106,7 @@ const Drawer: React.FC<DrawerProps> = ({
         <Box sx={{ padding: '0.5rem' }}>
           <TextInputAutocomplete
             value={searchValue}
-            setValue={handleSearch}
+            setValue={setSearchValue}
             placeholder="Search"
             autoCompleteTexts={allItemTitles}
             inputRef={searchInputRef}
@@ -130,21 +114,20 @@ const Drawer: React.FC<DrawerProps> = ({
         </Box>
       )}
       <Box sx={sx.drawerContent} tabIndex={2}>
-        {Array.isArray(searchValue ? filteredItems : items) ? (
-          <DrawerItems
-            items={filteredItems}
-            onClick={handleItemClick}
-            onReportClick={onReportClick}
-            onProcessClick={onProcessClick}
-            open={open}
-            expandedItems={expandedItems}
-            toggleItemExpansion={toggleItemExpansion}
-            searchValue={searchValue}
-            windowId={windowId}
-          />
-        ) : null}
+        <DrawerItems
+          items={searchValue ? filteredItems : items}
+          onClick={handleItemClick}
+          onReportClick={onReportClick}
+          onProcessClick={onProcessClick}
+          open={open}
+          expandedItems={expandedItems}
+          toggleItemExpansion={toggleItemExpansion}
+          searchValue={searchValue}
+          windowId={windowId}
+        />
       </Box>
     </Box>
   );
 };
+
 export default Drawer;
