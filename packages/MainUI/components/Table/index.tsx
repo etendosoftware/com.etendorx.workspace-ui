@@ -3,7 +3,7 @@ import { MaterialReactTable, MRT_Row } from 'material-react-table';
 import { useStyle } from './styles';
 import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { memo, useCallback, useContext, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { useParams, useRouter } from 'next/navigation';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
@@ -11,7 +11,6 @@ import { parseColumns } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { Button } from '@mui/material';
 import DynamicFormView from '../../screens/Form/DynamicFormView';
 import { WindowParams } from '../../app/types';
-import { RecordContext } from '../../contexts/record';
 import { useLanguage } from '../../hooks/useLanguage';
 
 type DynamicTableProps = {
@@ -20,7 +19,6 @@ type DynamicTableProps = {
 
 const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTableProps) {
   const { selected, selectRecord } = useMetadataContext();
-  const { setSelectedRecord } = useContext(RecordContext);
   const { windowId } = useParams<WindowParams>();
   const parent = selected[tab.level - 1];
   const navigate = useRouter().push;
@@ -60,7 +58,6 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     ({ row }: { row: MRT_Row<Record<string, unknown>> }) => ({
       onClick: () => {
         selectRecord(row.original as never, tab);
-        setSelectedRecord(row.original as never);
         row.toggleSelected();
       },
       onDoubleClick: () => {
@@ -72,7 +69,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
         setEditing(true);
       },
     }),
-    [navigate, selectRecord, setSelectedRecord, tab, windowId],
+    [navigate, selectRecord, tab, windowId],
   );
 
   const handleBack = useCallback(() => setEditing(false), []);
