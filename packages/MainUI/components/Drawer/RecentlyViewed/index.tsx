@@ -1,6 +1,6 @@
 import DrawerSection from '@workspaceui/componentlibrary/src/components/Drawer/DrawerSection';
 import { RecentlyViewedProps } from '@workspaceui/componentlibrary/src/components/Drawer/types';
-import { createParentMenuItem, findItemByWindowId } from '@workspaceui/componentlibrary/src/utils/menuUtils';
+import { createParentMenuItem, findItemByIdentifier } from '@workspaceui/componentlibrary/src/utils/menuUtils';
 import { useRecentItems } from '../../../hooks/useRecentItems';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { forwardRef, useCallback, useImperativeHandle, useMemo } from 'react';
@@ -24,7 +24,12 @@ const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, 
 
     const handleWindowAccess = useCallback(
       (item: Menu) => {
-        const menuItem = findItemByWindowId(items, item.windowId);
+        if (item.id && item.type) {
+          addRecentItem(item);
+          return;
+        }
+
+        const menuItem = findItemByIdentifier(items, item.id);
         if (menuItem) {
           addRecentItem(menuItem);
         }

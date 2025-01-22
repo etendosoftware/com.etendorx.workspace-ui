@@ -8,7 +8,6 @@ import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
 import { getAllItemTitles } from '../../utils/searchUtils';
 import DrawerItems from './Search';
 import { Box } from '@mui/material';
-import { findItemByWindowId } from '../../utils/menuUtils';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 
 const Drawer: React.FC<DrawerProps> = ({
@@ -71,14 +70,28 @@ const Drawer: React.FC<DrawerProps> = ({
 
   const handleItemClick = useCallback(
     (path: string) => {
-      const clickedWindowId = path.split('/').pop();
-      if (clickedWindowId) {
-        const menuItem = findItemByWindowId(items, clickedWindowId);
+      const clickedId = path.split('/').pop();
+      if (clickedId) {
+        const findItemByIdentifier = (items: Menu[], identifier: string): Menu | null => {
+          for (const item of items) {
+            if (item.windowId === identifier || item.id === identifier) {
+              return item;
+            }
+            if (item.children) {
+              const found = findItemByIdentifier(item.children, identifier);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+
+        const menuItem = findItemByIdentifier(items, clickedId);
+
         if (menuItem && recentlyViewedRef.handleWindowAccess) {
           const syntheticEvent = {
             id: menuItem.id,
             name: getTranslatedName ? getTranslatedName(menuItem) : menuItem._identifier || menuItem.name || '',
-            windowId: menuItem.windowId!,
+            windowId: menuItem.windowId,
             type: menuItem.type || 'Window',
           };
           recentlyViewedRef.handleWindowAccess(syntheticEvent);

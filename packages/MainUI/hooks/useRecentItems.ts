@@ -2,7 +2,7 @@ import { RecentItem } from '@workspaceui/componentlibrary/src/components/Drawer/
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { useLocalStorage } from '@workspaceui/componentlibrary/src/hooks/useLocalStorage';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { findItemByWindowId } from '@workspaceui/componentlibrary/src/utils/menuUtils';
+import { findItemByIdentifier } from '@workspaceui/componentlibrary/src/utils/menuUtils';
 
 export function useRecentItems(
   menuItems: Menu[],
@@ -34,7 +34,7 @@ export function useRecentItems(
     if (!needsUpdate) return;
 
     const updatedItems = currentItems.map(storedItem => {
-      const menuItem = findItemByWindowId(menuItems, storedItem.windowId);
+      const menuItem = findItemByIdentifier(menuItems, storedItem.windowId);
       if (!menuItem) return storedItem;
 
       return {
@@ -60,12 +60,14 @@ export function useRecentItems(
 
   const addRecentItem = useCallback(
     (item: Menu) => {
-      if (!roleId || !item.windowId) return null;
+      if (!roleId) {
+        return null;
+      }
 
       const recentItem: RecentItem = {
         id: item.id,
         name: getTranslatedName?.(item) ?? item._identifier ?? item.name ?? '',
-        windowId: item.windowId,
+        windowId: item.type === 'Window' ? item.windowId! : item.id,
         type: item.type ?? 'Window',
       };
 
@@ -90,10 +92,10 @@ export function useRecentItems(
 
   const handleRecentItemClick = useCallback(
     (path: string) => {
-      const windowId = path.split('/').pop();
-      if (!windowId || !roleId) return;
+      const itemId = path.split('/').pop();
+      if (!itemId || !roleId) return;
 
-      const menuItem = findItemByWindowId(menuItems, windowId);
+      const menuItem = findItemByIdentifier(menuItems, itemId);
       if (!menuItem) return;
 
       const recentItem = addRecentItem(menuItem);

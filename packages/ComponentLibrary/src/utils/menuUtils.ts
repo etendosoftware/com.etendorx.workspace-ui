@@ -14,9 +14,10 @@ export const createMenuItem = (id: string, name: string, entityName: string): Me
 });
 
 export const createRecentMenuItem = (item: RecentItem): Menu => ({
-  ...createMenuItem(`recent-${item.id}`, item.name, item.windowId),
-  windowId: item.windowId,
-  action: 'W',
+  ...createMenuItem(`recent-${item.id}`, item.name, item.type),
+  windowId: item.type === 'Window' ? item.windowId : item.id,
+  action: item.type === 'Process' ? 'P' : item.type === 'Report' ? 'R' : 'W',
+  type: item.type,
 });
 
 export const createParentMenuItem = (items: RecentItem[], t: TranslateFunction): Menu => {
@@ -38,13 +39,18 @@ export const createParentMenuItem = (items: RecentItem[], t: TranslateFunction):
   };
 };
 
-export const findItemByWindowId = (items?: Menu[], windowId?: string): Menu | null => {
-  if (!items || !windowId) return null;
+export const findItemByIdentifier = (items?: Menu[], identifier?: string): Menu | null => {
+  if (!items || !identifier) return null;
 
   for (const item of items) {
-    if (item.windowId === windowId) return item;
+    if (item.type === 'Window' && item.windowId === identifier) {
+      return item;
+    }
+    if ((item.type === 'Report' || item.type === 'Process') && item.id === identifier) {
+      return item;
+    }
     if (item.children) {
-      const found = findItemByWindowId(item.children, windowId);
+      const found = findItemByIdentifier(item.children, identifier);
       if (found) return found;
     }
   }
