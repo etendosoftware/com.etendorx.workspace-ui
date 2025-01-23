@@ -4,6 +4,33 @@ import { useLocalStorage } from '@workspaceui/componentlibrary/src/hooks/useLoca
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { findItemByIdentifier } from '@workspaceui/componentlibrary/src/utils/menuUtils';
 
+const getItemName = (menuItem: Menu, getTranslatedName?: (item: Menu) => string): string => {
+  return getTranslatedName?.(menuItem) ?? menuItem._identifier ?? menuItem.name ?? '';
+};
+
+const createRecentItem = (item: Menu, getTranslatedName?: (item: Menu) => string): RecentItem => ({
+  id: item.id,
+  name: getItemName(item, getTranslatedName),
+  windowId: item.type === 'Window' ? item.windowId! : item.id,
+  type: item.type ?? 'Window',
+});
+
+const updateItemsWithTranslations = (
+  items: RecentItem[],
+  menuItems: Menu[],
+  getTranslatedName?: (item: Menu) => string,
+): RecentItem[] => {
+  return items.map(storedItem => {
+    const menuItem = findItemByIdentifier(menuItems, storedItem.windowId);
+    if (!menuItem) return storedItem;
+
+    return {
+      ...storedItem,
+      name: getItemName(menuItem, getTranslatedName),
+    };
+  });
+};
+
 export function useRecentItems(
   menuItems: Menu[],
   handleItemClick: (item: Menu) => void,
@@ -23,25 +50,14 @@ export function useRecentItems(
   const updateTranslations = useCallback(
     (items: Menu[]) => {
       if (!roleId) return;
-
       const currentItems = localRecentItems[roleId] || [];
       if (!currentItems.length) return;
 
-      const updatedItems = currentItems.map(storedItem => {
-        const menuItem = findItemByIdentifier(items, storedItem.windowId);
-        if (!menuItem) return storedItem;
+      const updatedItems = updateItemsWithTranslations(currentItems, items, getTranslatedName);
+      const hasChanges = JSON.stringify(updatedItems) !== JSON.stringify(currentItems);
 
-        return {
-          ...storedItem,
-          name: getTranslatedName?.(menuItem) ?? menuItem._identifier ?? menuItem.name ?? storedItem.name,
-        };
-      });
-
-      if (JSON.stringify(updatedItems) !== JSON.stringify(currentItems)) {
-        setLocalRecentItems(prev => ({
-          ...prev,
-          [roleId]: updatedItems,
-        }));
+      if (hasChanges) {
+        setLocalRecentItems(prev => ({ ...prev, [roleId]: updatedItems }));
       }
     },
     [roleId, localRecentItems, getTranslatedName, setLocalRecentItems],
@@ -49,34 +65,22 @@ export function useRecentItems(
 
   useEffect(() => {
     if (!roleId) return;
-
     const currentItems = localRecentItems[roleId] || [];
     if (!currentItems.length) return;
 
-    const needsUpdate = currentItems.some((item, index) => {
+    const hasNewItems = currentItems.some((item, index) => {
       const prevItem = previousItems.current[index];
       return !prevItem || item.windowId !== prevItem.windowId;
     });
 
-    if (!needsUpdate) return;
+    if (!hasNewItems) return;
 
-    const updatedItems = currentItems.map(storedItem => {
-      const menuItem = findItemByIdentifier(menuItems, storedItem.windowId);
-      if (!menuItem) return storedItem;
-
-      return {
-        ...storedItem,
-        name: getTranslatedName?.(menuItem) ?? menuItem._identifier ?? menuItem.name ?? storedItem.name,
-      };
-    });
-
+    const updatedItems = updateItemsWithTranslations(currentItems, menuItems, getTranslatedName);
     previousItems.current = updatedItems;
 
-    if (JSON.stringify(updatedItems) !== JSON.stringify(currentItems)) {
-      setLocalRecentItems(prev => ({
-        ...prev,
-        [roleId]: updatedItems,
-      }));
+    const hasChanges = JSON.stringify(updatedItems) !== JSON.stringify(currentItems);
+    if (hasChanges) {
+      setLocalRecentItems(prev => ({ ...prev, [roleId]: updatedItems }));
     }
   }, [menuItems, roleId, getTranslatedName, localRecentItems, setLocalRecentItems]);
 
@@ -87,29 +91,17 @@ export function useRecentItems(
 
   const addRecentItem = useCallback(
     (item: Menu) => {
-      if (!roleId) {
-        return null;
-      }
+      if (!roleId) return null;
 
-      const recentItem: RecentItem = {
-        id: item.id,
-        name: getTranslatedName?.(item) ?? item._identifier ?? item.name ?? '',
-        windowId: item.type === 'Window' ? item.windowId! : item.id,
-        type: item.type ?? 'Window',
-      };
-
+      const recentItem = createRecentItem(item, getTranslatedName);
       setLocalRecentItems(prev => {
         const currentItems = prev[roleId] || [];
         const newItems = [recentItem, ...currentItems.filter(i => i.id !== recentItem.id)].slice(0, 5);
 
-        if (JSON.stringify(newItems) === JSON.stringify(currentItems)) {
-          return prev;
-        }
+        const hasChanges = JSON.stringify(newItems) !== JSON.stringify(currentItems);
+        if (!hasChanges) return prev;
 
-        return {
-          ...prev,
-          [roleId]: newItems,
-        };
+        return { ...prev, [roleId]: newItems };
       });
 
       return recentItem;

@@ -35,15 +35,18 @@ export const SearchProvider: React.FC<SearchProviderProps> = ({ children, items 
     }
   }, [searchValue, searchExpandedItems]);
 
-  const value = {
-    searchValue,
-    setSearchValue,
-    filteredItems,
-    expandedItems,
-    setExpandedItems,
-    searchExpandedItems,
-    searchIndex,
-  };
+  const value = useMemo(
+    () => ({
+      searchValue,
+      setSearchValue,
+      filteredItems,
+      expandedItems,
+      setExpandedItems,
+      searchExpandedItems,
+      searchIndex,
+    }),
+    [searchValue, setSearchValue, filteredItems, expandedItems, setExpandedItems, searchExpandedItems, searchIndex],
+  );
 
   return <SearchContext.Provider value={value}>{children}</SearchContext.Provider>;
 };

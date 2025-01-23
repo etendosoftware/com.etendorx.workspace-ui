@@ -9,6 +9,7 @@ import { getAllItemTitles } from '../../utils/searchUtils';
 import DrawerItems from './Search';
 import { Box } from '@mui/material';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import { findItemByIdentifier } from '../../utils/menuUtils';
 
 const Drawer: React.FC<DrawerProps> = ({
   windowId,
@@ -72,19 +73,6 @@ const Drawer: React.FC<DrawerProps> = ({
     (path: string) => {
       const clickedId = path.split('/').pop();
       if (clickedId) {
-        const findItemByIdentifier = (items: Menu[], identifier: string): Menu | null => {
-          for (const item of items) {
-            if (item.windowId === identifier || item.id === identifier) {
-              return item;
-            }
-            if (item.children) {
-              const found = findItemByIdentifier(item.children, identifier);
-              if (found) return found;
-            }
-          }
-          return null;
-        };
-
         const menuItem = findItemByIdentifier(items, clickedId);
 
         if (menuItem && recentlyViewedRef.handleWindowAccess) {
