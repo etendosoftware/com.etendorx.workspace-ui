@@ -2,6 +2,16 @@ import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 
 type NavigateFn = (pathname: string) => void;
 
+export interface SearchContextType {
+  searchValue: string;
+  setSearchValue: (value: string) => void;
+  filteredItems: Menu[];
+  expandedItems: Set<string>;
+  searchExpandedItems: Set<string>;
+  setExpandedItems: React.Dispatch<React.SetStateAction<Set<string>>>;
+  searchIndex: SearchIndex;
+}
+
 export interface DrawerProps {
   items: Menu[];
   logo?: string | React.ReactNode;
@@ -15,8 +25,10 @@ export interface DrawerProps {
   children?: React.ReactNode;
   sectionGroups?: SectionGroup[];
   windowId?: string;
-  RecentlyViewedComponent?: React.ComponentType<RecentlyViewedProps>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  RecentlyViewedComponent?: any;
   getTranslatedName?: (item: Menu) => string;
+  searchContext: SearchContextType;
 }
 
 export interface MenuTitleProps {
@@ -85,7 +97,7 @@ export interface RecentItem {
   id: string;
   name: string;
   windowId: string;
-  type: string;
+  type: string | 'Window' | 'Process' | 'Report';
 }
 
 export interface DrawerHeaderProps {
@@ -99,7 +111,9 @@ export interface DrawerHeaderProps {
 export interface RecentlyViewedProps {
   onClick: (path: string) => void;
   open: boolean;
-  onWindowAccess: (item: RecentItem) => void;
-  recentItems: RecentItem[];
+  onWindowAccess?: (item: RecentItem) => void;
+  recentItems?: RecentItem[];
   windowId?: string;
+  items: Menu[];
+  getTranslatedName?: (item: Menu) => string;
 }
