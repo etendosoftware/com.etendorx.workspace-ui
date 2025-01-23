@@ -20,6 +20,33 @@ export function useRecentItems(
   const isFirstLoad = useRef(true);
   const previousItems = useRef<RecentItem[]>([]);
 
+  const updateTranslations = useCallback(
+    (items: Menu[]) => {
+      if (!roleId) return;
+
+      const currentItems = localRecentItems[roleId] || [];
+      if (!currentItems.length) return;
+
+      const updatedItems = currentItems.map(storedItem => {
+        const menuItem = findItemByIdentifier(items, storedItem.windowId);
+        if (!menuItem) return storedItem;
+
+        return {
+          ...storedItem,
+          name: getTranslatedName?.(menuItem) ?? menuItem._identifier ?? menuItem.name ?? storedItem.name,
+        };
+      });
+
+      if (JSON.stringify(updatedItems) !== JSON.stringify(currentItems)) {
+        setLocalRecentItems(prev => ({
+          ...prev,
+          [roleId]: updatedItems,
+        }));
+      }
+    },
+    [roleId, localRecentItems, getTranslatedName, setLocalRecentItems],
+  );
+
   useEffect(() => {
     if (!roleId) return;
 
@@ -123,5 +150,6 @@ export function useRecentItems(
     handleToggleExpand,
     hasItems: Boolean(roleId && localRecentItems[roleId]?.length),
     addRecentItem,
+    updateTranslations,
   };
 }

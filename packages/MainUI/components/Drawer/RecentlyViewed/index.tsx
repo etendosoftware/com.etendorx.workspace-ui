@@ -1,17 +1,19 @@
+import { forwardRef, useCallback, useImperativeHandle, useEffect, useMemo } from 'react';
 import DrawerSection from '@workspaceui/componentlibrary/src/components/Drawer/DrawerSection';
 import { RecentlyViewedProps } from '@workspaceui/componentlibrary/src/components/Drawer/types';
 import { createParentMenuItem, findItemByIdentifier } from '@workspaceui/componentlibrary/src/utils/menuUtils';
 import { useRecentItems } from '../../../hooks/useRecentItems';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { forwardRef, useCallback, useImperativeHandle, useMemo } from 'react';
 import { useItemActions } from '@workspaceui/componentlibrary/src/hooks/useItemType';
 import { useUserContext } from '../../../hooks/useUserContext';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import { useLanguage } from '../../../hooks/useLanguage';
 
 const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, RecentlyViewedProps>(
   ({ windowId, onClick, open, items, getTranslatedName }, ref) => {
     const { t } = useTranslation();
     const { currentRole } = useUserContext();
+    const { language } = useLanguage();
 
     const handleItemClick = useItemActions({
       onWindowClick: (windowId: string) => onClick(`/window/${windowId}`),
@@ -19,8 +21,21 @@ const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, 
       onProcessClick: (processId: string) => onClick(`/process/${processId}`),
     });
 
-    const { localRecentItems, isExpanded, handleRecentItemClick, handleToggleExpand, hasItems, addRecentItem } =
-      useRecentItems(items, handleItemClick, onClick, currentRole?.id, getTranslatedName);
+    const {
+      localRecentItems,
+      isExpanded,
+      handleRecentItemClick,
+      handleToggleExpand,
+      hasItems,
+      addRecentItem,
+      updateTranslations,
+    } = useRecentItems(items, handleItemClick, onClick, currentRole?.id, getTranslatedName);
+
+    useEffect(() => {
+      if (currentRole?.id && items.length > 0) {
+        updateTranslations(items);
+      }
+    }, [language, items, currentRole?.id, updateTranslations]);
 
     const handleWindowAccess = useCallback(
       (item: Menu) => {
