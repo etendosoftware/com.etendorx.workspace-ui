@@ -10,12 +10,15 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ tab, field, onLabe
   const { styles, sx } = useStyle();
 
   const handleLinkClick = useCallback(() => {
-    if (isEntityReference(field.type) && typeof field.value === 'object' && 'id' in field.value) {
+    if (isEntityReference(field.type) && field.value && typeof field.value === 'object' && 'id' in field.value) {
       const recordId = field.value.id;
       const windowId = field.original?.referencedWindowId;
       const tabId = field.original?.referencedTabId;
 
-      onLabelClick?.(`/window/${windowId}/${tabId}/${recordId}`);
+      if (recordId && windowId && tabId && onLabelClick) {
+        const path = `/window/${windowId}/${tabId}/${recordId}`;
+        onLabelClick(path);
+      }
     }
   }, [field, onLabelClick]);
 
