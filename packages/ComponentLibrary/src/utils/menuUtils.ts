@@ -65,7 +65,7 @@ export const createParentMenuItem = (items: RecentItem[], t: TranslateFunction):
     action: 'W',
   };
 
-  if (!items?.length) {
+  if (!items?.length || typeof items.map != 'function') {
     return baseMenuItem;
   }
 

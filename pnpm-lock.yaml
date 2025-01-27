@@ -1799,6 +1799,7 @@ packages:
   '@mui/x-license-pro@6.10.2':
     resolution: {integrity: sha512-Baw3shilU+eHgU+QYKNPFUKvfS5rSyNJ98pQx02E0gKA22hWp/XAt88K1qUfUMPlkPpvg/uci6gviQSSLZkuKw==}
     engines: {node: '>=14.0.0'}
+    deprecated: In MUI X v7 the name of this package changed to @mui/x-license to reflect the existence of the premium plan.
     peerDependencies:
       react: ^17.0.0 || ^18.0.0
 
