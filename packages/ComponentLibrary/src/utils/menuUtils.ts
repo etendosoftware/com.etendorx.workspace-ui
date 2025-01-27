@@ -57,6 +57,7 @@ export const createRecentMenuItem = (item: RecentItem): Menu => ({
   action: getActionByType(item.type),
   type: item.type,
 });
+
 export const createParentMenuItem = (items: RecentItem[], t: TranslateFunction): Menu => {
   const baseMenuItem = {
     ...createMenuItem('recently-viewed', t('drawer.recentlyViewed'), 'RecentlyViewed'),
@@ -69,9 +70,17 @@ export const createParentMenuItem = (items: RecentItem[], t: TranslateFunction):
     return baseMenuItem;
   }
 
+  let children: Menu[] = [];
+
+  try {
+    children = items.map(createRecentMenuItem);
+  } catch (e) {
+    console.warn('Error in createParentMenuItem', e);
+  }
+
   return {
     ...baseMenuItem,
     type: items[0].type || 'Window',
-    children: items.map(createRecentMenuItem),
+    children,
   };
 };
