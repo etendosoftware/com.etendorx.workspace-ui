@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DatasourceOptions, Column } from '../api/types';
+import { DatasourceOptions, Column, CompositeCriteria } from '../api/types';
 import { Datasource } from '../api/datasource';
 
 const loadData = async (entity: string, page: number, pageSize: number, params: DatasourceOptions) => {
@@ -32,28 +32,38 @@ export function useDatasource(
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
 
+  const fetchMore = useCallback(() => {
+    if (!searchQuery) {
+      setPage(prev => prev + 1);
+    }
+  }, [searchQuery]);
+
+  const changePageSize = useCallback((size: number) => {
+    setPageSize(size);
+  }, []);
+
   const searchCriteria = useMemo(() => {
     if (!searchQuery || !columns) return [];
 
-    const searchFields = columns
-      .filter(column => column.name && !column.name.includes('.'))
-      .map(column => ({
-        fieldName: column.name,
-        operator: 'iContains',
-        value: searchQuery,
-      }));
+    const referenceFields = ['organization', 'transactionDocument', 'businessPartner', 'partnerAddress'];
 
-    if (searchFields.length > 0) {
-      return [
-        {
-          fieldName: '_identifier',
+    //TODO: Implement util either in the front or back to parse dif columns types
+    const excludedFields = ['orderDate', 'grandTotalAmount', 'amount', 'price', 'quantity'];
+
+    const compositeCriteria: CompositeCriteria = {
+      operator: 'or',
+      criteria: columns
+        .filter(column => !excludedFields.includes(column.columnName))
+        .map(column => ({
+          fieldName: referenceFields.includes(column.columnName)
+            ? `${column.columnName}$_identifier`
+            : column.columnName,
           operator: 'iContains',
           value: searchQuery,
-        },
-      ];
-    }
+        })),
+    };
 
-    return [];
+    return [compositeCriteria];
   }, [searchQuery, columns]);
 
   const queryParams = useMemo(() => {
@@ -125,14 +135,4 @@ export function useDatasource(
     }),
     [error, loading, fetchMore, changePageSize, load, records, loaded],
   );
-
-  function fetchMore() {
-    if (!searchQuery) {
-      setPage(prev => prev + 1);
-    }
-  }
-
-  function changePageSize(size: number) {
-    setPageSize(size);
-  }
 }

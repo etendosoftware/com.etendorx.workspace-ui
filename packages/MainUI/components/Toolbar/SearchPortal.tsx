@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Box, Portal, Theme } from '@mui/material';
 import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
 import { useStyle } from './styles';
@@ -30,21 +30,24 @@ const SearchPortal: React.FC<SearchPortalProps> = ({
 }) => {
   const { styles } = useStyle();
 
-  if (!isOpen) return null;
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === 'Escape') {
-      onClose();
-      if (e.key === 'Escape') {
-        onSearchChange('');
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter' || e.key === 'Escape') {
+        onClose();
+        if (e.key === 'Escape') {
+          onSearchChange('');
+        }
       }
-    }
-  };
+    },
+    [onClose, onSearchChange],
+  );
 
-  const handleBlur = (): void => {
+  const handleBlur = useCallback((): void => {
     onClose();
     onSearchChange('');
-  };
+  }, [onClose, onSearchChange]);
+
+  if (!isOpen) return null;
 
   return (
     <Portal>

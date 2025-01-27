@@ -7,11 +7,18 @@ export interface CachedData<T> {
 
 export interface CacheStore<T> extends Map<string, CachedData<T>> {}
 
-export interface Criteria {
+export interface BaseCriteria {
   fieldName: string;
   operator: string;
   value?: string;
 }
+
+export interface CompositeCriteria {
+  operator: 'and' | 'or';
+  criteria: BaseCriteria[];
+}
+
+export type Criteria = BaseCriteria | CompositeCriteria;
 
 export interface DatasourceParams {
   windowId?: string;
