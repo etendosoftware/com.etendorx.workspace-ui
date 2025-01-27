@@ -4,6 +4,7 @@
   "description": "",
   "type": "module",
   "main": "packages/MainUI/server.js",
+  "packpackageManager": "pnpm",
   "scripts": {
     "build:all": "pnpm --filter @workspaceui/storybook build && pnpm --filter @workspaceui/mainui build",
     "dev": "pnpm --filter @workspaceui/mainui dev",
