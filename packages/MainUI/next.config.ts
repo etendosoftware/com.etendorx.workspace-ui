@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
   //   },
   // },
   reactStrictMode: true,
+  cleanDistDir: true,
+  bundlePagesRouterDependencies: true,
+  output: 'standalone',
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,
