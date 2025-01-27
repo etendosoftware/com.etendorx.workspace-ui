@@ -121,11 +121,11 @@ const es = {
     recentlyViewed: 'Visto recientemente',
   },
   login: {
-    subtitle: 'Ingresé sus credenciales para acceder a su cuenta!.',
+    subtitle: 'Ingrese sus credenciales para acceder a su cuenta',
     fields: {
       username: {
-        label: 'Nombre',
-        placeholder: 'Nombre',
+        label: 'Usuario',
+        placeholder: 'Usuario',
       },
       password: {
         label: 'Contraseña',

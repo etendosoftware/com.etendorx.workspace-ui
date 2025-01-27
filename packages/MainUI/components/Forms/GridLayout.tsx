@@ -21,9 +21,10 @@ const GridItem = ({ bgColor = 'transparent', children }: GridItemProps) => {
   );
 };
 
+const { ITEMS } = GRID_CONSTANTS;
+
 const GridLayout = () => {
   const { styles } = useStyle();
-  const { ITEMS } = GRID_CONSTANTS;
   const { t } = useTranslation();
 
   return (

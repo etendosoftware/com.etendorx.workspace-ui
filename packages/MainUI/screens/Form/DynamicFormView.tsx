@@ -15,6 +15,13 @@ function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unk
   const mappedMetadata = useMemo(() => mapWindowMetadata(windowData), [windowData]);
   const handleSave = useCallback(() => navigate('/'), [navigate]);
   const handleCancel = useCallback(() => navigate('/'), [navigate]);
+  const handleLabelClick = useCallback(
+    (path: string) => {
+      navigate(path);
+    },
+    [navigate],
+  );
+
   const methods = useForm({
     defaultValues: buildFormState(tab.fields, record),
     criteriaMode: 'all',
@@ -33,6 +40,7 @@ function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unk
         windowMetadata={mappedMetadata}
         initialValues
         tab={tab}
+        onLabelClick={handleLabelClick}
       />
     </FormProvider>
   );

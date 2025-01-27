@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Drawer } from '@workspaceui/componentlibrary/src/components';
 import { useMenu } from '@workspaceui/etendohookbinder/src/hooks/useMenu';
@@ -12,16 +12,25 @@ import { useLanguage } from '../hooks/useLanguage';
 import RecentlyViewed from './Drawer/RecentlyViewed';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { useMenuTranslation } from '../hooks/useMenuTranslation';
+import { createSearchIndex, filterItems } from '@workspaceui/componentlibrary/src/utils/searchUtils';
 
 export default function Sidebar() {
   const { t } = useTranslation();
   const { token, currentRole } = useUserContext();
   const { language } = useLanguage();
   const { translateMenuItem } = useMenuTranslation();
-
   const menu = useMenu(token, currentRole || undefined, language);
   const router = useRouter();
   const { windowId } = useParams<WindowParams>();
+
+  const [searchValue, setSearchValue] = useState('');
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  const searchIndex = useMemo(() => createSearchIndex(menu), [menu]);
+  const { filteredItems, searchExpandedItems } = useMemo(
+    () => filterItems(menu, searchValue, searchIndex),
+    [menu, searchValue, searchIndex],
+  );
 
   const handleClick = useCallback(
     (pathname: string) => {
@@ -29,6 +38,16 @@ export default function Sidebar() {
     },
     [router],
   );
+
+  const searchContext = {
+    searchValue,
+    setSearchValue,
+    filteredItems,
+    searchExpandedItems,
+    expandedItems,
+    setExpandedItems,
+    searchIndex,
+  };
 
   const getTranslatedName = useCallback((item: Menu) => translateMenuItem(item), [translateMenuItem]);
 
@@ -43,6 +62,7 @@ export default function Sidebar() {
       onProcessClick={handleClick}
       getTranslatedName={getTranslatedName}
       RecentlyViewedComponent={RecentlyViewed}
+      searchContext={searchContext}
     />
   );
 }

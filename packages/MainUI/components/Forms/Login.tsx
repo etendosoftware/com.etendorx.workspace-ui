@@ -40,7 +40,7 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
           <GridLayout />
         </Box>
         <Box sx={styles.rightSection}>
-          <form onSubmit={handleSubmit} noValidate style={{ width: '100%' }}>
+          <form onSubmit={handleSubmit} noValidate>
             <Paper sx={styles.paper} elevation={0}>
               <Typography variant="h1" sx={styles.title}>
                 {title}
