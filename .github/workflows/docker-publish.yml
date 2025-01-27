@@ -27,7 +27,7 @@ jobs:
       # Build the Docker image
       - name: Build Docker image
         run: |
-          docker build -t mainui:latest .
+          docker build --no-cache --progress=plain -t mainui:latest .
 
       # Push the Docker image to the registry
       - name: Push Docker image
