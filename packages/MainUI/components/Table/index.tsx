@@ -54,9 +54,9 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     return options;
   }, [tab.parentColumns, parent?.id, language]);
 
-  const { records, loading, error, fetchMore, loaded } = useDatasource(tab.entityName, query);
-
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
+
+  const { records, loading, error, fetchMore, loaded } = useDatasource(tab.entityName, query, searchQuery, columns);
 
   const rowProps = useCallback(
     ({ row }: { row: MRT_Row<Record<string, unknown>> }) => ({
@@ -76,14 +76,6 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     }),
     [navigate, selectRecord, setSelectedRecord, tab, windowId],
   );
-
-  const filteredRecords = useMemo(() => {
-    if (!searchQuery) return records;
-
-    return records.filter(record =>
-      Object.values(record).some(value => String(value).toLowerCase().includes(searchQuery.toLowerCase())),
-    );
-  }, [records, searchQuery]);
 
   const handleBack = useCallback(() => setEditing(false), []);
 
@@ -107,13 +99,15 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
           enableTopToolbar={false}
           enableGlobalFilter={false}
           columns={columns}
-          data={filteredRecords}
+          data={records}
           enableRowSelection
           enableMultiRowSelection={false}
           positionToolbarAlertBanner="none"
           muiTableBodyRowProps={rowProps}
           enablePagination={false}
-          renderBottomToolbar={tab.uIPattern == 'STD' ? <Button onClick={fetchMore}>Load more</Button> : null}
+          renderBottomToolbar={
+            tab.uIPattern == 'STD' && !searchQuery ? <Button onClick={fetchMore}>Load more</Button> : null
+          }
           initialState={{ density: 'compact' }}
           muiTablePaperProps={{
             sx: sx.tablePaper,

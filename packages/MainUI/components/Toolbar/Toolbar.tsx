@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
-import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
 import ProcessModal from '@workspaceui/componentlibrary/src/components/ProcessModal';
 import { IconSize, ProcessResponse, StandardButton, ToolbarProps, isProcessButton } from './types';
 import {
@@ -10,6 +9,7 @@ import {
   RIGHT_SECTION_BUTTONS,
   StandardButtonId,
 } from '../../constants/Toolbar';
+import SearchPortal from './SearchPortal';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useProcessExecution } from '../../hooks/Toolbar/useProcessExecution';
 import { createStandardButtonConfig, getStandardButtonStyle } from './buttonConfigs';
@@ -136,6 +136,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
           }
           const config = createStandardButtonConfig(btn as StandardButton, handleAction);
           const style = getStandardButtonStyle(btn.id as StandardButtonId);
+
           if (style) {
             config.sx = style;
           }
@@ -154,29 +155,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
 
   return (
     <>
+      <TopToolbar {...createToolbarConfig()} />
       {searchOpen && (
-        <TextInputAutocomplete
-          sx={{ width: '20rem' }}
-          value={searchValue}
-          setValue={handleSearchChange}
+        <SearchPortal
+          isOpen={searchOpen}
+          searchValue={searchValue}
+          onSearchChange={handleSearchChange}
+          onClose={() => setSearchOpen(false)}
           placeholder={t('table.placeholders.search')}
           autoCompleteTexts={[]}
-          onKeyDown={e => {
-            if (e.key === 'Enter') {
-              handleSearch(searchValue);
-              setSearchOpen(false);
-            } else if (e.key === 'Escape') {
-              setSearchOpen(false);
-              setSearchValue('');
-            }
-          }}
-          onBlur={() => {
-            setSearchOpen(false);
-            setSearchValue('');
-          }}
         />
       )}
-      <TopToolbar {...createToolbarConfig()} />
       {selectedProcessButton && (
         <ProcessModal
           open={openModal}
