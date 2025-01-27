@@ -1,6 +1,7 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
+import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
 import ProcessModal from '@workspaceui/componentlibrary/src/components/ProcessModal';
 import { IconSize, ProcessResponse, StandardButton, ToolbarProps, isProcessButton } from './types';
 import {
@@ -25,16 +26,25 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   const [isExecuting, setIsExecuting] = React.useState(false);
   const [processResponse, setProcessResponse] = React.useState<ProcessResponse | null>(null);
   const [selectedProcessButton, setSelectedProcessButton] = React.useState<ProcessButton | null>(null);
+  const [searchValue, setSearchValue] = useState('');
 
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
   const { selected, tabs } = useMetadataContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
-  const { handleAction } = useToolbarConfig(windowId, tabId);
+  const { handleAction, searchOpen, setSearchOpen, handleSearch } = useToolbarConfig(windowId, tabId);
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
 
   const tab = useMemo(() => tabs.find(tab => tab.id === tabId), [tabs, tabId]);
   const selectedRecord = tab ? selected[tab.level] : undefined;
+
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchValue(value);
+      handleSearch(value);
+    },
+    [handleSearch],
+  );
 
   const handleConfirm = useCallback(async () => {
     if (!selectedProcessButton || !selectedRecord?.id) return;
@@ -144,6 +154,28 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
 
   return (
     <>
+      {searchOpen && (
+        <TextInputAutocomplete
+          sx={{ width: '20rem' }}
+          value={searchValue}
+          setValue={handleSearchChange}
+          placeholder={t('table.placeholders.search')}
+          autoCompleteTexts={[]}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              handleSearch(searchValue);
+              setSearchOpen(false);
+            } else if (e.key === 'Escape') {
+              setSearchOpen(false);
+              setSearchValue('');
+            }
+          }}
+          onBlur={() => {
+            setSearchOpen(false);
+            setSearchValue('');
+          }}
+        />
+      )}
       <TopToolbar {...createToolbarConfig()} />
       {selectedProcessButton && (
         <ProcessModal

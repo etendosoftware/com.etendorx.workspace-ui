@@ -13,6 +13,7 @@ import DynamicFormView from '../../screens/Form/DynamicFormView';
 import { WindowParams } from '../../app/types';
 import { RecordContext } from '../../contexts/record';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useSearch } from '../../contexts/searchContext';
 
 type DynamicTableProps = {
   tab: Tab;
@@ -27,6 +28,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const { sx } = useStyle();
   const [editing, setEditing] = useState(false);
   const { language } = useLanguage();
+  const { searchQuery } = useSearch();
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || 'id';
@@ -75,6 +77,14 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     [navigate, selectRecord, setSelectedRecord, tab, windowId],
   );
 
+  const filteredRecords = useMemo(() => {
+    if (!searchQuery) return records;
+
+    return records.filter(record =>
+      Object.values(record).some(value => String(value).toLowerCase().includes(searchQuery.toLowerCase())),
+    );
+  }, [records, searchQuery]);
+
   const handleBack = useCallback(() => setEditing(false), []);
 
   if (loading && !loaded) return <Spinner />;
@@ -94,8 +104,10 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     <Box sx={sx.container}>
       <Box sx={sx.table}>
         <MaterialReactTable
+          enableTopToolbar={false}
+          enableGlobalFilter={false}
           columns={columns}
-          data={records}
+          data={filteredRecords}
           enableRowSelection
           enableMultiRowSelection={false}
           positionToolbarAlertBanner="none"
