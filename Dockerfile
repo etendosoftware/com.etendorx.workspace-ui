@@ -3,7 +3,13 @@
 FROM node:18-alpine AS base
 
 ARG NEXT_PUBLIC_API_BASE_URL
+ARG NEXT_PUBLIC_CACHE_DURATION
+ARG NEXT_PUBLIC_AUTH_HEADER_NAME
+ARG DEBUG_MODE
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+ENV NEXT_PUBLIC_CACHE_DURATION=${NEXT_PUBLIC_CACHE_DURATION}
+ENV NEXT_PUBLIC_AUTH_HEADER_NAME=${NEXT_PUBLIC_AUTH_HEADER_NAME}
+ENV DEBUG_MODE=${DEBUG_MODE}
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -27,7 +33,7 @@ RUN adduser --system --uid 1001 nextjs
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nextjs:nodejs /app/dist ./
 
 USER nextjs
 
@@ -38,5 +44,5 @@ ENV PORT=3000
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
 ENV HOSTNAME="0.0.0.0"
-CMD ["node", "dist"]
+CMD ["node", "."]
 
