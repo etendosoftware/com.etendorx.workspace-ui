@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import ProcessModal from '@workspaceui/componentlibrary/src/components/ProcessModal';
@@ -9,6 +9,7 @@ import {
   RIGHT_SECTION_BUTTONS,
   StandardButtonId,
 } from '../../constants/Toolbar';
+import SearchPortal from './SearchPortal';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useProcessExecution } from '../../hooks/Toolbar/useProcessExecution';
 import { createStandardButtonConfig, getStandardButtonStyle } from './buttonConfigs';
@@ -25,16 +26,25 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   const [isExecuting, setIsExecuting] = React.useState(false);
   const [processResponse, setProcessResponse] = React.useState<ProcessResponse | null>(null);
   const [selectedProcessButton, setSelectedProcessButton] = React.useState<ProcessButton | null>(null);
+  const [searchValue, setSearchValue] = useState('');
 
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
   const { selected, tabs } = useMetadataContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
-  const { handleAction } = useToolbarConfig(windowId, tabId);
+  const { handleAction, searchOpen, setSearchOpen, handleSearch } = useToolbarConfig(windowId, tabId);
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
 
   const tab = useMemo(() => tabs.find(tab => tab.id === tabId), [tabs, tabId]);
   const selectedRecord = tab ? selected[tab.level] : undefined;
+
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchValue(value);
+      handleSearch(value);
+    },
+    [handleSearch],
+  );
 
   const handleConfirm = useCallback(async () => {
     if (!selectedProcessButton || !selectedRecord?.id) return;
@@ -126,6 +136,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
           }
           const config = createStandardButtonConfig(btn as StandardButton, handleAction);
           const style = getStandardButtonStyle(btn.id as StandardButtonId);
+
           if (style) {
             config.sx = style;
           }
@@ -145,6 +156,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   return (
     <>
       <TopToolbar {...createToolbarConfig()} />
+      {searchOpen && (
+        <SearchPortal
+          isOpen={searchOpen}
+          searchValue={searchValue}
+          onSearchChange={handleSearchChange}
+          onClose={() => setSearchOpen(false)}
+          placeholder={t('table.placeholders.search')}
+          autoCompleteTexts={[]}
+        />
+      )}
       {selectedProcessButton && (
         <ProcessModal
           open={openModal}

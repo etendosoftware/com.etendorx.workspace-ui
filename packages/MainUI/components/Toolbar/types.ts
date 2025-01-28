@@ -21,6 +21,7 @@ export interface ToolbarResponseButton extends ToolbarButton {
 export interface ToolbarProps {
   windowId: string;
   tabId?: string;
+  onSearch?: (value: string) => void;
 }
 
 export interface ProcessResponse {
