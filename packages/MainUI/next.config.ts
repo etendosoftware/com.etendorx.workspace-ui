@@ -1,5 +1,7 @@
 import type { NextConfig } from 'next';
 
+const DEBUG_MODE = process.env.DEBUG_MODE === "true";
+
 const nextConfig: NextConfig = {
   // transpilePackages: ['@mui/material', '@mui/system', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
   // modularizeImports: {
@@ -10,8 +12,17 @@ const nextConfig: NextConfig = {
   //     transform: '@mui/icons-material/{{member}}',
   //   },
   // },
-  reactStrictMode: true,
+  // reactStrictMode: true,
+  // cleanDistDir: true,
+  // bundlePagesRouterDependencies: true,
+  output: 'standalone',
+  compress: !DEBUG_MODE,
   webpack(config) {
+    config.optimization = {
+      ...config.optimization,
+      minimize: !DEBUG_MODE,
+    };
+
     config.module.rules.push({
       test: /\.svg$/,
       issuer: /\.[jt]sx?$/,

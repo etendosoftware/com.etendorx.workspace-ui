@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "proxy": "http://localhost:8092",
+  "packageManager": "pnpm@9.15.2",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
