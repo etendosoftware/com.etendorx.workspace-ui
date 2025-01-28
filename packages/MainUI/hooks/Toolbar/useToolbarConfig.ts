@@ -7,6 +7,7 @@ export const useToolbarConfig = (windowId: string, tabId?: string) => {
   const router = useRouter();
   const { setSearchQuery } = useSearch();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
 
   const handleAction = useCallback(
     (action: string) => {
@@ -23,6 +24,7 @@ export const useToolbarConfig = (windowId: string, tabId?: string) => {
   );
 
   const handleSearch = (query: string) => {
+    setSearchValue(query);
     setSearchQuery(query);
   };
 
@@ -31,5 +33,7 @@ export const useToolbarConfig = (windowId: string, tabId?: string) => {
     searchOpen,
     setSearchOpen,
     handleSearch,
+    searchValue,
+    setSearchValue,
   };
 };

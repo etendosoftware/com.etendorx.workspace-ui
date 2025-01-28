@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import ProcessModal from '@workspaceui/componentlibrary/src/components/ProcessModal';
@@ -26,13 +26,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   const [isExecuting, setIsExecuting] = React.useState(false);
   const [processResponse, setProcessResponse] = React.useState<ProcessResponse | null>(null);
   const [selectedProcessButton, setSelectedProcessButton] = React.useState<ProcessButton | null>(null);
-  const [searchValue, setSearchValue] = useState('');
 
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
   const { selected, tabs } = useMetadataContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
-  const { handleAction, searchOpen, setSearchOpen, handleSearch } = useToolbarConfig(windowId, tabId);
+  const { handleAction, searchOpen, setSearchOpen, handleSearch, searchValue, setSearchValue } = useToolbarConfig(
+    windowId,
+    tabId,
+  );
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
 
   const tab = useMemo(() => tabs.find(tab => tab.id === tabId), [tabs, tabId]);
@@ -43,7 +45,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
       setSearchValue(value);
       handleSearch(value);
     },
-    [handleSearch],
+    [handleSearch, setSearchValue],
   );
 
   const handleConfirm = useCallback(async () => {
