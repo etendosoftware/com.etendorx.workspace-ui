@@ -15,7 +15,10 @@ RUN corepack enable pnpm && pnpm i --frozen-lockfile
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
-# COPY --from=deps /app/node_modules ./node_modules
+
+ARG NEXT_PUBLIC_API_BASE_URL="https://classic-new-mainui.erp.labs.etendo.cloud/etendo"
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+
 COPY . .
 
 RUN corepack enable pnpm && pnpm build

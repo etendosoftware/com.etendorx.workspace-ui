@@ -1,21 +1,29 @@
 const getDefaultCacheDuration = () => {
-  try {
-    const value = parseInt(process.env.NEXT_PUBLIC_CACHE_DURATION || '300000');
-    return Math.abs(value);
-  } catch (e) {
-    console.warn(e);
-    return 5 * 60 * 1000;
+  if (process.env.NEXT_PUBLIC_CACHE_DURATION) {
+    return Math.abs(parseInt(process.env.NEXT_PUBLIC_CACHE_DURATION));
+  } else {
+    return 3600000;
   }
 };
 
 const getAuthHeaderName = () => {
-  const value = process.env.NEXT_PUBLIC_AUTH_HEADER_NAME;
+  if (process.env.NEXT_PUBLIC_AUTH_HEADER_NAME) {
+    return process.env.NEXT_PUBLIC_AUTH_HEADER_NAME;
+  } else {
+    return 'Authorization';
+  }
+};
 
-  return value ? (value as string) : 'Authorization';
+const getApiBaseURL = () => {
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  } else {
+    return 'http://localhost:8080/etendo';
+  }
 };
 
 export const TOKEN = process.env.NEXT_PUBLIC_TOKEN;
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+export const API_BASE_URL = getApiBaseURL();
 export const API_LOGIN_URL = `${API_BASE_URL}/sws/login`;
 export const DEFAULT_LOGIN_CHARSET = 'ISO-8859-1';
 export const API_DATASOURCE_URL = `${API_BASE_URL}/sws/com.smf.securewebservices.datasource/org.openbravo.service.datasource/`;
