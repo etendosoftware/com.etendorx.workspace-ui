@@ -1,52 +1,19 @@
-import { createContext, useContext, ReactNode, useEffect, useMemo, useState } from 'react';
-import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
-import { createSearchIndex, filterItems } from '@workspaceui/componentlibrary/src/utils/searchUtils';
-import { SearchContextType } from '@workspaceui/componentlibrary/src/components/Drawer/types';
+import { createContext, useContext, useState } from 'react';
 
-const SearchContext = createContext<SearchContextType | undefined>(undefined);
-
-export const useSearch = () => {
-  const context = useContext(SearchContext);
-  if (!context) {
-    throw new Error('useSearch must be used within a SearchProvider');
-  }
-  return context;
-};
-
-interface SearchProviderProps {
-  children: ReactNode;
-  items: Menu[];
+interface SearchContextType {
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
 }
 
-export const SearchProvider: React.FC<SearchProviderProps> = ({ children, items }) => {
-  const [searchValue, setSearchValue] = useState('');
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+const SearchContext = createContext<SearchContextType>({
+  searchQuery: '',
+  setSearchQuery: () => {},
+});
 
-  const searchIndex = useMemo(() => createSearchIndex(items), [items]);
+export const SearchProvider = ({ children }: { children: React.ReactNode }) => {
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const { filteredItems, searchExpandedItems } = useMemo(
-    () => filterItems(items, searchValue, searchIndex),
-    [items, searchValue, searchIndex],
-  );
-
-  useEffect(() => {
-    if (searchValue) {
-      setExpandedItems(prev => new Set([...prev, ...searchExpandedItems]));
-    }
-  }, [searchValue, searchExpandedItems]);
-
-  const value = useMemo(
-    () => ({
-      searchValue,
-      setSearchValue,
-      filteredItems,
-      expandedItems,
-      setExpandedItems,
-      searchExpandedItems,
-      searchIndex,
-    }),
-    [searchValue, setSearchValue, filteredItems, expandedItems, setExpandedItems, searchExpandedItems, searchIndex],
-  );
-
-  return <SearchContext.Provider value={value}>{children}</SearchContext.Provider>;
+  return <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>{children}</SearchContext.Provider>;
 };
+
+export const useSearch = () => useContext(SearchContext);

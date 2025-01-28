@@ -13,6 +13,7 @@ import DynamicFormView from '../../screens/Form/DynamicFormView';
 import { WindowParams } from '../../app/types';
 import { RecordContext } from '../../contexts/record';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useSearch } from '../../contexts/searchContext';
 
 type DynamicTableProps = {
   tab: Tab;
@@ -27,6 +28,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const { sx } = useStyle();
   const [editing, setEditing] = useState(false);
   const { language } = useLanguage();
+  const { searchQuery } = useSearch();
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || 'id';
@@ -52,9 +54,9 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     return options;
   }, [tab.parentColumns, parent?.id, language]);
 
-  const { records, loading, error, fetchMore, loaded } = useDatasource(tab.entityName, query);
-
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
+
+  const { records, loading, error, fetchMore, loaded } = useDatasource(tab.entityName, query, searchQuery, columns);
 
   const rowProps = useCallback(
     ({ row }: { row: MRT_Row<Record<string, unknown>> }) => ({
@@ -94,6 +96,8 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     <Box sx={sx.container}>
       <Box sx={sx.table}>
         <MaterialReactTable
+          enableTopToolbar={false}
+          enableGlobalFilter={false}
           columns={columns}
           data={records}
           enableRowSelection
@@ -101,7 +105,9 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
           positionToolbarAlertBanner="none"
           muiTableBodyRowProps={rowProps}
           enablePagination={false}
-          renderBottomToolbar={tab.uIPattern == 'STD' ? <Button onClick={fetchMore}>Load more</Button> : null}
+          renderBottomToolbar={
+            tab.uIPattern == 'STD' && !searchQuery ? <Button onClick={fetchMore}>Load more</Button> : null
+          }
           initialState={{ density: 'compact' }}
           muiTablePaperProps={{
             sx: sx.tablePaper,
