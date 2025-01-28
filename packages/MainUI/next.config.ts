@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
     config.optimization = {
       ...config.optimization,
       minimize: !DEBUG_MODE,
-    },
+    };
 
     config.module.rules.push({
       test: /\.svg$/,
