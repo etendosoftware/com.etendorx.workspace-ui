@@ -26,9 +26,9 @@ jobs:
       # Build the Docker image
       - name: Build Docker image
         run: |
-          docker build -t etendo/mainui:${{ github.ref_name }} .
+          docker build -t etendo/mainui:latest .
 
       # Push the Docker image to the registry
       - name: Push Docker image
         run: |
-          docker push etendo/mainui:${{ github.ref_name }}
+          docker push etendo/mainui:latest
