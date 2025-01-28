@@ -2,8 +2,7 @@
 
 rm -rf .next
 pnpm build
-cp -R public .next/standalone/packages/MainUI/.next/
-cd .next
-cp -R static standalone/packages/MainUI/.next/
-cp -R standalone ../dist
+cp -R public .next/standalone/packages/MainUI/.next
+cp -R .next/static .next/standalone/packages/MainUI/.next
+cp -R .next/standalone ../../dist
 exit 0

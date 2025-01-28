@@ -10,7 +10,7 @@
     "dev": "pnpm --filter @workspaceui/mainui dev",
     "build": "cd packages/MainUI && ./build.sh && cd ../..",
     "clean": "pnpm -r exec -- rm -rf dist node_modules .next && rm -rf node_modules",
-    "start": "node packages/MainUI/dist"
+    "start": "node dist"
   },
   "keywords": [],
   "author": "",
