@@ -32,11 +32,11 @@ const SearchPortal: React.FC<SearchPortalProps> = ({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter' || e.key === 'Escape') {
+      if (e.key === 'Escape') {
         onClose();
-        if (e.key === 'Escape') {
-          onSearchChange('');
-        }
+        onSearchChange('');
+      } else if (e.key === 'Enter') {
+        onClose();
       }
     },
     [onClose, onSearchChange],
@@ -44,8 +44,7 @@ const SearchPortal: React.FC<SearchPortalProps> = ({
 
   const handleBlur = useCallback((): void => {
     onClose();
-    onSearchChange('');
-  }, [onClose, onSearchChange]);
+  }, [onClose]);
 
   if (!isOpen) return null;
 
