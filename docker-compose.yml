@@ -40,13 +40,14 @@ services:
       - POSTGRES_DB=etendo
       - POSTGRES_USER=tad
       - POSTGRES_PASSWORD=tad
-      - PGDATA=/var/lib/postgresql/data/tmp
+      - PGDATA=/var/lib/postgresql/data
       - INITDB_SKIP_TZINFO=yes
     ports:
       - '5432:5432'
     volumes:
       - pg_data:/var/lib/postgresql/data
       - ./db:/docker-entrypoint-initdb.d
+      - ./docker/db/docker-entrypoint-init.sh:/docker-entrypoint-init.sh
     networks:
       - etendo
     healthcheck:
@@ -54,6 +55,7 @@ services:
       interval: 20s
       retries: 200
       timeout: 20s
+    entrypoint: ["/bin/bash", "/docker-entrypoint-init.sh"]
 
 volumes:
   pg_data:
