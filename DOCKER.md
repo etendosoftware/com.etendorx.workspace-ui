@@ -11,7 +11,7 @@ These files can be found at: https://drive.google.com/drive/folders/1QjFWT3ofthV
 
 Then, you can build and run the containers with:
 ```
-FORCE_INIT_DB=true docker-compose up --build
+FORCE_INIT_DB=true docker compose up --build --detach
 ```
 
 ## Stop containers
