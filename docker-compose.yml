@@ -27,7 +27,8 @@ services:
       - DB_USER=tad
       - DB_PASSWORD=tad
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - etendo
 
@@ -43,9 +44,14 @@ services:
       - '5432:5432'
     volumes:
       - pg_data:/var/lib/postgresql/data
-      - ./db/backup.sql:/docker-entrypoint-initdb.d/backup.sql
+      - ./db:/docker-entrypoint-initdb.d
     networks:
       - etendo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tad -d tad"]
+      interval: 20s
+      retries: 200
+      timeout: 20s
 
 volumes:
   pg_data:

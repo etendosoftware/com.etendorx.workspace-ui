@@ -8,4 +8,6 @@ EXPOSE 8080
 RUN groupadd -r tomcat && useradd -r -g tomcat tomcat
 RUN chown -R tomcat:tomcat /usr/local/tomcat
 USER tomcat
-CMD /usr/local/bin/dockerize -wait tcp://db:5432 -timeout 900s catalina.sh run
+# CMD /usr/local/bin/dockerize -wait tcp://db:5432 -timeout 900s catalina.sh run
+CMD catalina.sh run
+
