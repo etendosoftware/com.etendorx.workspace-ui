@@ -37,9 +37,11 @@ services:
     container_name: postgres_db
     restart: always
     environment:
-      POSTGRES_DB: etendo
-      POSTGRES_USER: tad
-      POSTGRES_PASSWORD: tad
+      - POSTGRES_DB=etendo
+      - POSTGRES_USER=tad
+      - POSTGRES_PASSWORD=tad
+      - PGDATA=/var/lib/postgresql/data/tmp
+      - INITDB_SKIP_TZINFO=yes
     ports:
       - '5432:5432'
     volumes:
@@ -48,7 +50,7 @@ services:
     networks:
       - etendo
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tad -d tad"]
+      test: ["CMD-SHELL", "pg_isready -U tad -d etendo"]
       interval: 20s
       retries: 200
       timeout: 20s
