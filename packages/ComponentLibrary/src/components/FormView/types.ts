@@ -1,5 +1,5 @@
 import { Field, MappedData, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
-import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
+import { FieldDefinition, ReadOnlyState } from '@workspaceui/etendohookbinder/src/api/types';
 import { ReportColumn } from '@workspaceui/etendohookbinder/src/hooks/types';
 import { MRT_ColumnDef, MRT_Row } from 'material-react-table';
 
@@ -75,6 +75,7 @@ export interface FieldLabelProps {
   fieldType: string;
   onLinkClick?: () => void;
   isEntityReference?: boolean;
+  readOnlyState?: ReadOnlyState;
 }
 
 export interface SectionRendererProps extends Omit<FormSectionProps, 'children'> {
@@ -131,6 +132,7 @@ export interface BooleanSelectorProps {
   checked?: boolean;
   name: string;
   onChange: (name: string, value: boolean) => void;
+  disabled: boolean;
 }
 
 export interface NumberSelectorProps {

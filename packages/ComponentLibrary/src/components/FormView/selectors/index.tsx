@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { Box } from '@mui/material';
 import { useStyle } from '../styles';
 import { FormFieldGroupProps } from '../types';
@@ -6,7 +6,7 @@ import { GenericSelector } from '@workspaceui/mainui/components/Form/GenericSele
 import { FieldLabel } from '../Sections/FieldLabel';
 import { isEntityReference } from '@workspaceui/etendohookbinder/src/utils/metadata';
 
-const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ tab, field, onLabelClick }) => {
+const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ tab, field, onLabelClick, formState }) => {
   const { styles, sx } = useStyle();
 
   const handleLinkClick = useCallback(() => {
@@ -22,6 +22,12 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ tab, field, onLabe
     }
   }, [field, onLabelClick]);
 
+  const isReadOnly = useMemo(() => {
+    if (formState?._readOnly) return true;
+
+    return field.readOnlyState?.readOnly ?? false;
+  }, [field.readOnlyState?.readOnly, formState?._readOnly]);
+
   return (
     <Box style={styles.fieldContainer}>
       <Box sx={sx.labelBox}>
@@ -31,10 +37,12 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ tab, field, onLabe
           fieldType={field.type}
           isEntityReference={isEntityReference(field.type)}
           onLinkClick={handleLinkClick}
+          readOnly={isReadOnly}
+          readOnlyReason={field.readOnlyState?.readOnlyReason}
         />
       </Box>
       <Box sx={sx.inputBox}>
-        <GenericSelector tab={tab} field={field} />
+        <GenericSelector tab={tab} field={field} readOnly={isReadOnly} />
       </Box>
     </Box>
   );

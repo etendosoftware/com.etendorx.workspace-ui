@@ -16,7 +16,7 @@ function DynamicFormView({
 }: {
   tab: Tab;
   record: Record<string, unknown>;
-  formState: FormInitializationResponse;
+  formState?: FormInitializationResponse;
 }) {
   const { windowData = {} as WindowMetadata } = useMetadataContext();
   const navigate = useRouter().push;

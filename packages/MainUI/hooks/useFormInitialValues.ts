@@ -78,8 +78,6 @@ export function useFormInitialization({ tabId, mode, recordId }: FormInitializat
     fetchInitialData();
   }, [fetchInitialData]);
 
-  console.log(formData);
-
   return {
     formData,
     loading,
