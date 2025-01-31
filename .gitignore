@@ -12,3 +12,5 @@ src/main/resources/static/
 
 *.d.ts.map
 tsconfig.tsbuildinfo
+docker/tomcat/etendo.war
+docker/db/backup.sql

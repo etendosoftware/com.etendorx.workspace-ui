@@ -26,7 +26,7 @@ jobs:
       # Build the Docker image
       - name: Build Docker image
         run: |
-          docker build -t etendo/mainui:latest .
+          docker buildx build -f docker/mainui/Dockerfile -t etendo/mainui:latest .
 
       # Push the Docker image to the registry
       - name: Push Docker image
