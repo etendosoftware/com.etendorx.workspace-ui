@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 import type { FieldDefinition, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import type { FieldValue } from '@workspaceui/componentlibrary/src/components/FormView/types';
@@ -21,16 +21,25 @@ interface GenericSelectorProps {
   readOnly?: boolean;
 }
 
-export const GenericSelector = ({ field, tab, readOnly }: GenericSelectorProps) => {
+export const GenericSelector = ({ field, tab }: GenericSelectorProps) => {
   const { watch, setValue, getValues } = useFormContext();
   const name = useRef(getInputName(field.original));
   const value = watch(name.current, field.initialValue);
   const callout = useCallout({ field: field.original, tab });
+  const form = useFormContext();
 
-  const isFieldReadOnly = readOnly || field.original.readOnlyState?.readOnly;
-  const readOnlyReason = field.original.readOnlyState?.readOnlyReason;
+  const isReadOnly = useMemo(() => {
+    const expr = field.original.readOnlyState?.readOnlyLogicExpr;
 
-  console.log(isFieldReadOnly, readOnlyReason)
+    if (!expr) {
+      return;
+    }
+
+    window.currentValues = form.getValues() as never;
+    const result = eval(expr);
+
+    return result;
+  }, [field.original.readOnlyState?.readOnlyLogicExpr, form]);
 
   const applyCallout = useCallback(
     (data: { [key: string]: unknown }) => {
@@ -51,7 +60,7 @@ export const GenericSelector = ({ field, tab, readOnly }: GenericSelectorProps) 
   const handleChange = useCallback(
     (value: FieldValue) => {
       const f = async () => {
-        setValue(name.current, value || "");
+        setValue(name.current, value || '');
 
         if (CALLOUTS_ENABLED && field.original?.column?.callout$_identifier) {
           const { data } = await callout(getValues());
@@ -89,32 +98,20 @@ export const GenericSelector = ({ field, tab, readOnly }: GenericSelectorProps) 
   switch (field.type) {
     case 'boolean':
       return (
-        <BooleanSelector 
-          label={field.label} 
-          name={name.current} 
-          onChange={handleChange} 
-          checked={value} 
-          readOnly={isFieldReadOnly}
-          readOnlyReason={readOnlyReason}
+        <BooleanSelector
+          label={field.label}
+          name={name.current}
+          onChange={handleChange}
+          checked={value}
+          readOnly={isReadOnly}
+          disabled={!!isReadOnly}
         />
       );
     case 'number':
-      return (
-        <NumberSelector 
-          name={name.current} 
-          value={Number(value)} 
-          onChange={handleChange} 
-          readOnly={isFieldReadOnly}
-        />
-      );
+      return <NumberSelector name={name.current} value={Number(value)} onChange={handleChange} readOnly={isReadOnly} />;
     case 'date':
       return (
-        <DateSelector 
-          name={name.current} 
-          value={value as string} 
-          onChange={handleDateChange} 
-          readOnly={isFieldReadOnly}
-        />
+        <DateSelector name={name.current} value={value as string} onChange={handleDateChange} readOnly={isReadOnly} />
       );
     case 'select':
       return (
@@ -124,7 +121,7 @@ export const GenericSelector = ({ field, tab, readOnly }: GenericSelectorProps) 
           title={field.label}
           onChange={handleChange}
           field={field.original}
-          readOnly={isFieldReadOnly}
+          readOnly={isReadOnly}
         />
       );
     case 'search':
@@ -136,7 +133,7 @@ export const GenericSelector = ({ field, tab, readOnly }: GenericSelectorProps) 
           entity={field.original?.referencedEntity || ''}
           onChange={handleChange}
           name={name.current}
-          readOnly={isFieldReadOnly}
+          readOnly={isReadOnly}
         />
       );
     case 'tabledir':
@@ -147,7 +144,7 @@ export const GenericSelector = ({ field, tab, readOnly }: GenericSelectorProps) 
           entity={field.original?.referencedEntity || ''}
           onChange={handleChange}
           name={name.current}
-          readOnly={isFieldReadOnly}
+          readOnly={isReadOnly}
         />
       );
     case 'quantity':
@@ -159,18 +156,12 @@ export const GenericSelector = ({ field, tab, readOnly }: GenericSelectorProps) 
           max={field.original?.column?.maxValue ?? null}
           onChange={handleChange}
           name={name.current}
-          readOnly={isFieldReadOnly}
+          readOnly={isReadOnly}
         />
       );
     case 'list':
       return (
-        <ListSelector 
-          name={name.current} 
-          value={value} 
-          field={field} 
-          onChange={handleChange} 
-          readOnly={isFieldReadOnly}
-        />
+        <ListSelector name={name.current} value={value} field={field} onChange={handleChange} readOnly={isReadOnly} />
       );
     default:
       return (
@@ -179,7 +170,7 @@ export const GenericSelector = ({ field, tab, readOnly }: GenericSelectorProps) 
           setValue={handleChange}
           placeholder={field.value ? String(field.value) : undefined}
           name={name.current}
-          readOnly={isFieldReadOnly}
+          readOnly={isReadOnly}
         />
       );
   }

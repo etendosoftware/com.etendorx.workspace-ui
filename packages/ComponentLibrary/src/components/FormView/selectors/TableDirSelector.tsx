@@ -15,6 +15,8 @@ const TableDirSelector = ({ onChange, entity, value, name, disabled, readOnly }:
   const { records, loading, error, loaded } = useDatasource(entity);
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
 
+  const isDisabled = disabled || readOnly;
+
   const options = useMemo(
     () =>
       records.map(record => ({
@@ -62,6 +64,7 @@ const TableDirSelector = ({ onChange, entity, value, name, disabled, readOnly }:
       getOptionLabel={getOptionLabel}
       isOptionEqualToValue={optionEqualValue}
       name={name}
+      disabled={isDisabled}
     />
   );
 };

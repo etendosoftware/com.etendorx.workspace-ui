@@ -3,7 +3,7 @@ import { useStyle } from './styles';
 import { BooleanSelectorProps } from '../types';
 
 const BooleanSelector: React.FC<BooleanSelectorProps> = memo(
-  ({ label, readOnly, checked, onChange, name, disabled }) => {
+  ({ label, checked, onChange, name, disabled, readOnly }) => {
     const [isHovered, setIsHovered] = useState(false);
     const { styles } = useStyle();
 
@@ -58,7 +58,7 @@ const BooleanSelector: React.FC<BooleanSelectorProps> = memo(
             }}>
             <span style={afterStyle} />
           </span>
-          <span style={styles.labelText}>{label}</span>
+          <span style={{ ...styles.labelText, ...(isDisabled && styles.disabled) }}>{label}</span>
         </label>
         <div style={borderStyle} />
       </div>

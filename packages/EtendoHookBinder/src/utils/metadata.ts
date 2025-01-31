@@ -58,29 +58,27 @@ export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
 const inputNameCache: Record<string, string> = {};
 
 export function getInputName(field: Field) {
-  try {
-    if (!inputNameCache[field.inpName]) {
-      inputNameCache[field.inpName] = `inp${field.inpName}`;
-    }
-
-    return inputNameCache[field.inpName];
-  } catch (e) {
-    console.warn(field, e);
-
-    return '';
-  }
+  return field.fieldName;
 }
+
+// export function getInputName(field: Field) {
+//   try {
+//     if (!inputNameCache[field.inpName]) {
+//       inputNameCache[field.inpName] = `inp${field.inpName}`;
+//     }
+
+//     return inputNameCache[field.inpName];
+//   } catch (e) {
+//     console.warn(field, e);
+
+//     return '';
+//   }
+// }
 
 export const buildFormState = (fields: Tab['fields'], record: Record<string, unknown>) => {
   try {
     return Object.entries(fields).reduce((state, [fieldName, field]) => {
-      const inputName = getInputName(field);
-
-      if (inputName?.length) {
-        state[inputName] = record[fieldName];
-      } else {
-        alert(JSON.stringify({ name: fieldName, inputName }, null, 2));
-      }
+      state[fieldName] = record[fieldName];
 
       return state;
     }, {} as Record<string, unknown>);
@@ -99,7 +97,7 @@ export const getFieldsByDBColumnName = (tab: Tab) => {
       acc[field.column.dBColumnName] = field;
 
       if (!field.column.dBColumnName?.length) {
-        alert(JSON.stringify(field, null, 2));
+        console.error(JSON.stringify(field, null, 2));
       }
 
       return acc;
