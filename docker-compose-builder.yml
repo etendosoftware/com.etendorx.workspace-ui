@@ -5,10 +5,12 @@ networks:
 services:
   etendo_ui:
     container_name: etendo_ui
-    image: etendo/etendo_ui:latest
     ports: ['3000:3000']
     depends_on: ['etendo_classic']
     networks: ['etendo']
+    build:
+      context: .
+      dockerfile: docker/mainui/Dockerfile
 
   etendo_classic:
     container_name: etendo_classic
