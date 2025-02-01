@@ -1,11 +1,7 @@
-name: Build and Publish Docker Image
+name: Build and Publish Docker Image on develop
 
 on:
   push:
-    branches:
-      - 'main'
-      - 'develop'
-  pull_request:
     branches:
       - 'develop'
 
@@ -26,14 +22,14 @@ jobs:
       # Build the Docker image
       - name: Build Docker image
         run: |
-          docker buildx build -f docker/mainui/Dockerfile -t "etendo/etendo_ui:${{ github.sha }}" .
+          docker buildx build -f docker/mainui/Dockerfile -t "etendo/etendo_ui:develop .
       
       # Tag the Docker image
       - name: Tag Docker image
         run: |
-          docker tag "etendo/etendo_ui:${{ github.sha }}" "etendo/etendo_ui:${{ github.sha }}"
+          docker tag etendo/etendo_ui:develop etendo/etendo_ui:develop
 
       # Push the Docker image to the registry
       - name: Push Docker image
         run: |
-          docker push "etendo/etendo_ui:${{ github.sha }}"
+          docker push etendo/etendo_ui:develop
