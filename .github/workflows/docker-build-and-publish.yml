@@ -26,9 +26,14 @@ jobs:
       # Build the Docker image
       - name: Build Docker image
         run: |
-          docker buildx build -f docker/mainui/Dockerfile -t etendo/mainui:latest .
+          docker buildx build -f docker/mainui/Dockerfile -t "etendo/etendo_ui:${{ github.ref_name }}" .
+      
+      # Tag the Docker image
+      - name: Tag Docker image
+        run: |
+          docker tag "etendo/etendo_ui:${{ github.ref_name }}" "etendo/etendo_ui:${{ github.ref_name }}"
 
       # Push the Docker image to the registry
       - name: Push Docker image
         run: |
-          docker push etendo/mainui:latest
+          docker push "etendo/etendo_ui:${{ github.ref_name }}"
