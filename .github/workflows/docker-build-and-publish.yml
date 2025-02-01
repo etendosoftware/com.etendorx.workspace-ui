@@ -24,17 +24,26 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+      # Get branch name
+      - name: Get branch name
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "BRANCH_NAME=${{ github.head_ref }}" >> $GITHUB_ENV
+          else
+            echo "BRANCH_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
+          fi
+
       # Build the Docker image
       - name: Build Docker image
         run: |
-          docker buildx build -f docker/mainui/Dockerfile -t etendo/etendo_ui:${{ github.ref_name }} .
+          docker buildx build -f docker/mainui/Dockerfile -t etendo/etendo_ui:${{ env.BRANCH_NAME }} .
       
       # Tag the Docker image
       - name: Tag Docker image
         run: |
-          docker tag etendo/etendo_ui:${{ github.ref_name }} etendo/etendo_ui:${{ github.ref_name }}
+          docker tag etendo/etendo_ui:${{ env.BRANCH_NAME }} etendo/etendo_ui:${{ env.BRANCH_NAME }}
 
       # Push the Docker image to the registry
       - name: Push Docker image
         run: |
-          docker push etendo/etendo_ui:${{ github.ref_name }}
+          docker push etendo/etendo_ui:${{ env.BRANCH_NAME }}
