@@ -18,12 +18,6 @@ services:
         condition: service_healthy
     ports: ['8080:8080']
     networks: ['etendo']
-    environment:
-      - DB_HOST=etendo_db
-      - DB_PORT=5432
-      - DB_NAME=etendo
-      - DB_USER=tad
-      - DB_PASSWORD=tad
 
   etendo_db:
     container_name: etendo_db
@@ -35,9 +29,3 @@ services:
       interval: 10s
       retries: 100
       timeout: 60s
-    environment:
-      - POSTGRES_DB=etendo
-      - POSTGRES_USER=tad
-      - POSTGRES_PASSWORD=tad
-      - PGDATA=/var/lib/postgresql/customdata
-      - INITDB_SKIP_TZINFO=yes
