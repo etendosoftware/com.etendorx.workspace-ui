@@ -30,24 +30,22 @@ export const GenericSelector = ({ field, tab }: GenericSelectorProps) => {
 
   const isReadOnly = useMemo(() => {
     const expr = field.original.readOnlyState?.readOnlyLogicExpr;
+    if (!expr) return false;
 
-    if (!expr) {
-      return;
-    }
+    const values = form.getValues();
 
-    const createSafeEvaluator = (values: Record<string, unknown>) => {
-      return new Function(
-        'currentValues',
-        `
-        'use strict';
-        return ${expr};
-      `,
-      )(values);
+    const OB = {
+      Utilities: {
+        getValue: (obj: Record<string, unknown>, prop: string) => obj[prop],
+      },
     };
 
-    const result = createSafeEvaluator(form.getValues());
-
-    return result;
+    try {
+      return new Function('OB', 'currentValues', `'use strict'; return ${expr}`)(OB, values);
+    } catch (e) {
+      console.error('Evaluation error:', e);
+      return false;
+    }
   }, [field.original.readOnlyState?.readOnlyLogicExpr, form]);
 
   const applyCallout = useCallback(
