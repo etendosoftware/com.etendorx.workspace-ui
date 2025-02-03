@@ -18,6 +18,11 @@ services:
         condition: service_healthy
     ports: ['8080:8080']
     networks: ['etendo']
+    environment:
+     - BBDD_URL=jdbc:postgresql://etendo_db\:5432
+     - BBDD_SID=etendo
+     - BBDD_SYSTEM_USER=postgres
+     - BBDD_SYSTEM_PASSWORD=syspass
 
   etendo_db:
     container_name: etendo_db
