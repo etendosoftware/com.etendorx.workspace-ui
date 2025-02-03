@@ -35,8 +35,17 @@ export const GenericSelector = ({ field, tab }: GenericSelectorProps) => {
       return;
     }
 
-    window.currentValues = form.getValues() as never;
-    const result = eval(expr);
+    const createSafeEvaluator = (values: Record<string, unknown>) => {
+      return new Function(
+        'currentValues',
+        `
+        'use strict';
+        return ${expr};
+      `,
+      )(values);
+    };
+
+    const result = createSafeEvaluator(form.getValues());
 
     return result;
   }, [field.original.readOnlyState?.readOnlyLogicExpr, form]);

@@ -61,19 +61,19 @@ export function getInputName(field: Field) {
   return field.fieldName;
 }
 
-// export function getInputName(field: Field) {
-//   try {
-//     if (!inputNameCache[field.inpName]) {
-//       inputNameCache[field.inpName] = `inp${field.inpName}`;
-//     }
+export function getInpName(field: Field) {
+  try {
+    if (!inputNameCache[field.inpName]) {
+      inputNameCache[field.inpName] = `inp${field.inpName}`;
+    }
 
-//     return inputNameCache[field.inpName];
-//   } catch (e) {
-//     console.warn(field, e);
+    return inputNameCache[field.inpName];
+  } catch (e) {
+    console.warn(field, e);
 
-//     return '';
-//   }
-// }
+    return '';
+  }
+}
 
 export const buildFormState = (fields: Tab['fields'], record: Record<string, unknown>) => {
   try {
