@@ -64,8 +64,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       Metadata.clearWindowCache(windowId);
       const newWindowData = await Metadata.forceWindowReload(windowId);
 
-      console.log('Window Metadata:', newWindowData);
-
       setWindowData(newWindowData);
       setGroupedTabs(groupTabsByLevel(newWindowData));
     } catch (err) {

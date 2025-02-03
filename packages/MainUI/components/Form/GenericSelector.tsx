@@ -134,6 +134,7 @@ export const GenericSelector = ({ field, tab }: GenericSelectorProps) => {
           onChange={handleChange}
           name={name.current}
           readOnly={isReadOnly}
+          disabled={isReadOnly}
         />
       );
     case 'tabledir':
@@ -145,6 +146,7 @@ export const GenericSelector = ({ field, tab }: GenericSelectorProps) => {
           onChange={handleChange}
           name={name.current}
           readOnly={isReadOnly}
+          disabled={isReadOnly}
         />
       );
     case 'quantity':
