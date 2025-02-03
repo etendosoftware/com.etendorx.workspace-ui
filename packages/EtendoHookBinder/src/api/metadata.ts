@@ -131,17 +131,12 @@ export class Metadata {
   }
 
   public static evaluateExpression(expr: string, values: Record<string, unknown>) {
-    const OB = {
-      Utilities: {
-        getValue: (obj: Record<string, unknown>, prop: string) => obj[prop],
-      },
-    };
+    const matches = expr.match(/OB\.Utilities\.getValue\(currentValues,['"](.+)['"]\)\s*===\s*(.+)/);
+    if (!matches) return false;
 
-    try {
-      return new Function('OB', 'currentValues', `'use strict'; return ${expr}`)(OB, values);
-    } catch (e) {
-      console.error('Expression evaluation error:', e);
-      return false;
-    }
+    const [, property, expectedValue] = matches;
+    const actualValue = values[property];
+
+    return actualValue === JSON.parse(expectedValue);
   }
 }
