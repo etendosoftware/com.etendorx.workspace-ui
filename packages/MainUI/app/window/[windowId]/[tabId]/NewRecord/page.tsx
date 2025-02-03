@@ -18,19 +18,19 @@ export default function NewRecordPage() {
 
   const { t } = useTranslation();
   const { windowData, tab, loading: metadataLoading } = useMetadataContext();
-  const { initialData, loading: formLoading, error } = useFormInitialization(tabId);
+  const { formData, loading: formLoading, error } = useFormInitialization({ tabId, mode: 'NEW' });
 
   const record = useMemo(() => {
-    if (!initialData?.columnValues) return {} as Record<string, unknown>;
+    if (!formData?.columnValues) return {} as Record<string, unknown>;
 
-    return Object.entries(initialData.columnValues).reduce((acc, [key, value]) => {
+    return Object.entries(formData.columnValues).reduce((acc, [key, value]) => {
       acc[key] = value.value;
       if (value.identifier) {
         acc[`${key}$_identifier`] = value.identifier;
       }
       return acc;
     }, {} as Record<string, unknown>);
-  }, [initialData]);
+  }, [formData]);
 
   const adaptedData = useMemo(() => {
     if (!tab || !record) return null;
@@ -45,7 +45,7 @@ export default function NewRecordPage() {
     return <ErrorDisplay title={t('errors.formData.title')} description={error.message} showHomeButton />;
   }
 
-  if (!windowData || !tab || !initialData) {
+  if (!windowData || !tab || !formData) {
     return (
       <ErrorDisplay
         title={t('errors.missingData.title')}
@@ -71,7 +71,7 @@ export default function NewRecordPage() {
       <div style={styles.box}>
         <Toolbar windowId={windowId} tabId={tabId} />
       </div>
-      <DynamicFormView tab={tab} record={record} />
+      <DynamicFormView tab={tab} record={record} formState={formData} />
     </>
   );
 }

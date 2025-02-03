@@ -4,9 +4,23 @@ import { TextInputProps } from '../TextInputAutocomplete/TextInputComplete.types
 import { useStyle } from './TextInputBase.styles';
 
 const TextInputBase = (props: TextInputProps) => {
-  const { value, setValue, label, leftIcon, rightIcon, onLeftIconClick, onRightIconClick, type, ...otherProps } = props;
+  const {
+    value,
+    setValue,
+    label,
+    leftIcon,
+    rightIcon,
+    onLeftIconClick,
+    onRightIconClick,
+    type,
+    disabled,
+    readOnly,
+    ...otherProps
+  } = props;
   const theme = useTheme();
   const { styles, sx, cssString } = useStyle();
+
+  const isDisabled = disabled || readOnly;
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue?.(event.target.value);
@@ -22,6 +36,7 @@ const TextInputBase = (props: TextInputProps) => {
         fullWidth
         value={value}
         onChange={handleChange}
+        disabled={isDisabled}
         InputLabelProps={{
           htmlFor: props.name,
         }}

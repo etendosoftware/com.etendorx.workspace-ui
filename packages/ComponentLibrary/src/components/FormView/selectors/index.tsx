@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { Box } from '@mui/material';
 import { useStyle } from '../styles';
 import { FormFieldGroupProps } from '../types';
@@ -22,6 +22,10 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ tab, field, onLabe
     }
   }, [field, onLabelClick]);
 
+  const isReadOnly = useMemo(() => {
+    return field.readOnlyState?.readOnly ?? false;
+  }, [field.readOnlyState?.readOnly]);
+
   return (
     <Box style={styles.fieldContainer}>
       <Box sx={sx.labelBox}>
@@ -31,10 +35,11 @@ const FormFieldGroup: React.FC<FormFieldGroupProps> = memo(({ tab, field, onLabe
           fieldType={field.type}
           isEntityReference={isEntityReference(field.type)}
           onLinkClick={handleLinkClick}
+          readOnly={isReadOnly}
         />
       </Box>
       <Box sx={sx.inputBox}>
-        <GenericSelector tab={tab} field={field} />
+        <GenericSelector tab={tab} field={field} readOnly={isReadOnly} />
       </Box>
     </Box>
   );

@@ -12,4 +12,6 @@ export interface TextInputProps extends StandardTextFieldProps {
   onRightIconClick?: () => void;
   placeholder?: string | undefined;
   margin?: FormControlOwnProps['margin'];
+  disabled?: boolean;
+  readOnly?: boolean;
 }
