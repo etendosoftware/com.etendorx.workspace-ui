@@ -14,6 +14,7 @@ import { StringSelector } from '@workspaceui/componentlibrary/src/components/For
 import { useCallout } from '../../hooks/useCallout';
 import { getFieldsByDBColumnName, getInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { CALLOUTS_ENABLED } from '../../constants/config';
+import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 
 interface GenericSelectorProps {
   field: FieldDefinition;
@@ -31,21 +32,7 @@ export const GenericSelector = ({ field, tab }: GenericSelectorProps) => {
   const isReadOnly = useMemo(() => {
     const expr = field.original.readOnlyState?.readOnlyLogicExpr;
     if (!expr) return false;
-
-    const values = form.getValues();
-
-    const OB = {
-      Utilities: {
-        getValue: (obj: Record<string, unknown>, prop: string) => obj[prop],
-      },
-    };
-
-    try {
-      return new Function('OB', 'currentValues', `'use strict'; return ${expr}`)(OB, values);
-    } catch (e) {
-      console.error('Evaluation error:', e);
-      return false;
-    }
+    return Metadata.evaluateExpression(expr, form.getValues());
   }, [field.original.readOnlyState?.readOnlyLogicExpr, form]);
 
   const applyCallout = useCallback(

@@ -129,4 +129,19 @@ export class Metadata {
       return cols;
     }, {} as Record<string, Etendo.Column[]>);
   }
+
+  public static evaluateExpression(expr: string, values: Record<string, unknown>) {
+    const OB = {
+      Utilities: {
+        getValue: (obj: Record<string, unknown>, prop: string) => obj[prop],
+      },
+    };
+
+    try {
+      return new Function('OB', 'currentValues', `'use strict'; return ${expr}`)(OB, values);
+    } catch (e) {
+      console.error('Expression evaluation error:', e);
+      return false;
+    }
+  }
 }
