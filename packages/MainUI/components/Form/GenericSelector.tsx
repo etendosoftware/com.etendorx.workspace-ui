@@ -32,6 +32,7 @@ export const GenericSelector = ({ field, tab }: GenericSelectorProps) => {
   const isReadOnly = useMemo(() => {
     const expr = field.original.readOnlyState?.readOnlyLogicExpr;
     if (!expr) return false;
+
     return Metadata.evaluateExpression(expr, form.getValues());
   }, [field.original.readOnlyState?.readOnlyLogicExpr, form]);
 

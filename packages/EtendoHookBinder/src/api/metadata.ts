@@ -131,12 +131,20 @@ export class Metadata {
   }
 
   public static evaluateExpression(expr: string, values: Record<string, unknown>) {
-    const matches = expr.match(/OB\.Utilities\.getValue\(currentValues,['"](.+)['"]\)\s*===\s*(.+)/);
-    if (!matches) return false;
+    const conditions = expr.split('||').map(c => c.trim());
 
-    const [, property, expectedValue] = matches;
-    const actualValue = values[property];
+    return conditions.some(condition => {
+      const matches = condition.match(/OB\.Utilities\.getValue\(currentValues,['"](.+)['"]\)\s*===\s*(.+)/);
+      if (!matches) return false;
 
-    return actualValue === JSON.parse(expectedValue);
+      const [, property, expectedValueStr] = matches;
+      const actualValue = values[property];
+
+      if (expectedValueStr.startsWith("'") || expectedValueStr.startsWith('"')) {
+        return actualValue === expectedValueStr.slice(1, -1);
+      }
+
+      return actualValue === JSON.parse(expectedValueStr);
+    });
   }
 }
