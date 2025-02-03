@@ -10,10 +10,12 @@ const getOptionLabel = (option: Option) => option.title;
 
 const optionEqualValue = (option: Option, value: { id: string }) => option.id === value.id || option.value === value.id;
 
-const SearchSelector = ({ onChange, value, field, name }: SearchSelectorProps) => {
+const SearchSelector = ({ onChange, value, field, name, disabled, readOnly }: SearchSelectorProps) => {
   const theme = useTheme();
   const { records, loading, error, loaded } = useComboSelect(field);
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
+
+  const isDisabled = disabled || readOnly;
 
   const options = useMemo(() => {
     const valueField = (field.original.selector?.valueField ?? '') as string;
@@ -65,6 +67,7 @@ const SearchSelector = ({ onChange, value, field, name }: SearchSelectorProps) =
       getOptionLabel={getOptionLabel}
       isOptionEqualToValue={optionEqualValue}
       name={name}
+      disabled={isDisabled}
     />
   );
 };

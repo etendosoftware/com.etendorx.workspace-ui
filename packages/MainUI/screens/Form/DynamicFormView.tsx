@@ -7,8 +7,17 @@ import FormView from '@workspaceui/componentlibrary/src/components/FormView';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { useForm, FormProvider } from 'react-hook-form';
 import { buildFormState } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { FormInitializationResponse } from '../../hooks/useFormInitialValues';
 
-function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unknown> }) {
+function DynamicFormView({
+  tab,
+  record,
+  formState,
+}: {
+  tab: Tab;
+  record: Record<string, unknown>;
+  formState?: FormInitializationResponse;
+}) {
   const { windowData = {} as WindowMetadata } = useMetadataContext();
   const navigate = useRouter().push;
   const [formData] = useState<FormData | null>(adaptFormData(tab, record));
@@ -41,6 +50,7 @@ function DynamicFormView({ tab, record }: { tab: Tab; record: Record<string, unk
         initialValues
         tab={tab}
         onLabelClick={handleLabelClick}
+        readOnly={formState?._readOnly}
       />
     </FormProvider>
   );

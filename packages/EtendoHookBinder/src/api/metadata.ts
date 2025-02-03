@@ -129,4 +129,22 @@ export class Metadata {
       return cols;
     }, {} as Record<string, Etendo.Column[]>);
   }
+
+  public static evaluateExpression(expr: string, values: Record<string, unknown>) {
+    const conditions = expr.split('||').map(c => c.trim());
+
+    return conditions.some(condition => {
+      const matches = condition.match(/OB\.Utilities\.getValue\(currentValues,['"](.+)['"]\)\s*===\s*(.+)/);
+      if (!matches) return false;
+
+      const [, property, expectedValueStr] = matches;
+      const actualValue = values[property];
+
+      if (expectedValueStr.startsWith("'") || expectedValueStr.startsWith('"')) {
+        return actualValue === expectedValueStr.slice(1, -1);
+      }
+
+      return actualValue === JSON.parse(expectedValueStr);
+    });
+  }
 }

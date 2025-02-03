@@ -64,7 +64,13 @@ export interface GridProps {
   showIf: string;
 }
 
+export interface ReadOnlyState {
+  readOnly: boolean;
+  readOnlyLogicExpr?: string;
+  readOnlyReason?: 'FIELD_READONLY' | 'READONLY_LOGIC' | 'ACCESS_LEVEL';
+}
 export interface Field {
+  readOnlyState?: ReadOnlyState;
   process: string;
   shownInStatusBar: boolean;
   displayed: boolean;
@@ -367,6 +373,7 @@ export interface BaseFieldDefinition<T> {
   section?: string;
   required?: boolean;
   initialValue?: T;
+  readOnlyState?: ReadOnlyState;
   original: {
     referencedEntity: string;
     referencedWindowId: string;

@@ -10,19 +10,35 @@ import { WindowParams } from '../../../../types';
 import { ErrorDisplay } from '../../../../../components/ErrorDisplay';
 import { useTranslation } from '../../../../../hooks/useTranslation';
 import DynamicFormView from '../../../../../screens/Form/DynamicFormView';
+import { useFormInitialization } from '../../../../../hooks/useFormInitialValues';
 
-export default function Page() {
+export default function EditRecordPage() {
   const { windowId, tabId, recordId } = useParams<WindowParams>();
   const { t } = useTranslation();
 
   const { windowData, tab, loading: metadataLoading } = useMetadataContext();
-  const { record, loading: recordLoading, loaded, error } = useSingleDatasource(tab?.entityName, recordId);
+  const { record, loading: recordLoading, loaded, error: recordError } = useSingleDatasource(tab?.entityName, recordId);
 
-  if ((metadataLoading || recordLoading) && !error && !loaded) {
+  const {
+    formData,
+    loading: formLoading,
+    error: formError,
+  } = useFormInitialization({
+    tabId,
+    mode: 'EDIT',
+    recordId,
+  });
+
+  if ((metadataLoading || recordLoading || formLoading) && !recordError && !formError && !loaded) {
     return <Spinner />;
   }
 
-  if (!windowData || !tab || !record) {
+  const error = recordError || formError;
+  if (error) {
+    return <ErrorDisplay title={t('errors.formData.title')} description={error.message} showHomeButton />;
+  }
+
+  if (!windowData || !tab || !record || !formData) {
     const isRecordMissing = loaded && !record;
     return (
       <ErrorDisplay
@@ -38,7 +54,7 @@ export default function Page() {
       <div style={styles.box}>
         <Toolbar windowId={windowId} tabId={tabId} />
       </div>
-      <DynamicFormView tab={tab} record={record} />
+      <DynamicFormView tab={tab} record={record} formState={formData} />
     </>
   );
 }
