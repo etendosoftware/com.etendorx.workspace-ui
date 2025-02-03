@@ -18,7 +18,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY . .
 
-RUN corepack enable pnpm && pnpm install --frozen-lockfile && pnpm build
+RUN corepack repare pnpm@9.15.2 --activate && pnpm install --frozen-lockfile && pnpm build
 
 # Production image, copy all the files and run next
 FROM base AS runner
