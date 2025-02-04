@@ -21,6 +21,7 @@ export const useCallout = ({ field, tab, parentId, rowId }: UseCalloutProps) => 
       MODE,
       TAB_ID: tab.id,
       CHANGED_COLUMN: getInputName(field),
+      stateless: "true",
     });
 
     if (rowId) {

@@ -2,7 +2,7 @@ import {
   API_DATASOURCE_URL,
   API_DEFAULT_CACHE_DURATION,
   API_METADATA_URL,
-  API_CLIENT_KERNEL_SWS_URL,
+  API_KERNEL_SERVLET,
 } from './constants';
 import { Client, Interceptor } from './client';
 import { CacheStore } from './cache';
@@ -13,7 +13,7 @@ export type { Etendo };
 
 export class Metadata {
   public static client = new Client(API_METADATA_URL);
-  public static kernelClient = new Client(API_CLIENT_KERNEL_SWS_URL);
+  public static kernelClient = new Client(API_KERNEL_SERVLET);
   public static datasourceClient = new Client(API_DATASOURCE_URL);
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
   private static currentRoleId: string | null = null;
@@ -27,9 +27,9 @@ export class Metadata {
 
   public static setToken(token: string) {
     this.token = token;
-    this.client.setAuthHeader(token, 'Bearer');
-    this.datasourceClient.setAuthHeader(token, 'Bearer');
-    this.kernelClient.setAuthHeader(token, 'Bearer');
+    this.client.setAuthHeader(token, 'Bearer').addQueryParam("stateless", "true");
+    this.datasourceClient.setAuthHeader(token, 'Bearer').addQueryParam("stateless", "true");
+    this.kernelClient.setAuthHeader(token, 'Bearer').addQueryParam("stateless", "true");
   }
 
   public static getToken() {

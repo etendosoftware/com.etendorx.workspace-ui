@@ -68,6 +68,12 @@ export class Client {
     return this;
   }
 
+  public addQueryParam(key: string, value: string) {
+    this.baseQueryParams.set(key, value);
+
+    return this;
+  }
+
   private async request(url: string, options: ClientOptions = {}) {
     try {
       if (options.method !== 'GET') {
