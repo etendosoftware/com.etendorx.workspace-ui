@@ -11,9 +11,11 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
   const [language, setLanguageValue] = useState<Language>(DEFAULT_LANGUAGE);
 
   const setLanguage = useCallback((lang: Language) => {
-    localStorage.setItem('currentLanguage', lang);
-    setLanguageValue(lang);
-    Metadata.setLanguage(lang);
+    if (lang) {
+      localStorage.setItem('currentLanguage', lang);
+      setLanguageValue(lang);
+      Metadata.setLanguage(lang);
+    }
   }, []);
 
   const value = useMemo(() => ({ language, setLanguage }), [language, setLanguage]);
