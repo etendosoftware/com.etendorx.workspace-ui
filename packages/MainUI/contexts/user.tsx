@@ -15,6 +15,7 @@ import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspac
 import { usePathname, useRouter } from 'next/navigation';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useLanguage } from '../hooks/useLanguage';
+import { DEFAULT_LANGUAGE } from './languageProvider';
 
 export const UserContext = createContext({} as IUserContext);
 
@@ -252,6 +253,21 @@ export default function UserProvider(props: React.PropsWithChildren) {
       };
     }
   }, [navigate, token]);
+
+  useEffect(() => {
+    if (!languages.length) {
+      return;
+    }
+
+    const savedLanguage = localStorage.getItem('currentLanguage');
+    const givenLanguage = languages.find(lang => lang.language == savedLanguage);
+
+    if (givenLanguage) {
+      setLanguage(givenLanguage.language as Language);
+    } else {
+      setLanguage(DEFAULT_LANGUAGE);
+    }
+  }, [languages, languages.length, setLanguage]);
 
   return <UserContext.Provider value={value}>{ready ? props.children : <Spinner />}</UserContext.Provider>;
 }

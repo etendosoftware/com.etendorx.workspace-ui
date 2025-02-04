@@ -1,11 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import LanguageContext from './languageContext';
 import { Language } from './types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 
-const DEFAULT_LANGUAGE: Language = 'en_US';
+export const DEFAULT_LANGUAGE: Language = 'en_US';
 
 export default function LanguageProvider({ children }: React.PropsWithChildren) {
   const [language, setLanguageValue] = useState<Language>(DEFAULT_LANGUAGE);
@@ -19,16 +19,6 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
   }, []);
 
   const value = useMemo(() => ({ language, setLanguage }), [language, setLanguage]);
-
-  useEffect(() => {
-    const savedLanguage = localStorage.getItem('currentLanguage');
-
-    if (savedLanguage && savedLanguage != 'null') {
-      setLanguage(savedLanguage as Language);
-    } else {
-      setLanguage(DEFAULT_LANGUAGE);
-    }
-  }, [setLanguage]);
 
   if (!language) {
     return null;
