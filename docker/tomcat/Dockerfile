@@ -1,11 +1,15 @@
 FROM tomcat:9.0
 WORKDIR /usr/local/tomcat/webapps/
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 ENV CATALINA_BASE=/usr/local/tomcat
-RUN apt-get update && apt-get install -y curl \
-    && curl -sSL https://github.com/jwilder/dockerize/releases/download/v0.6.1/dockerize-linux-amd64-v0.6.1.tar.gz | tar -xz -C /usr/local/bin
-COPY etendo.war ./
-EXPOSE 8080
+ENV BBDD_URL="jdbc:postgresql://etendo_db\:5432"
+ENV BBDD_SID="etendo"
+ENV BBDD_SYSTEM_USER="postgres"
+ENV BBDD_SYSTEM_PASSWORD="syspass"
 RUN groupadd -r tomcat && useradd -r -g tomcat tomcat
-RUN chown -R tomcat:tomcat /usr/local/tomcat
 USER tomcat
-CMD /usr/local/bin/dockerize -wait tcp://db:5432 -timeout 900s catalina.sh run
+COPY --chown=tomcat:tomcat etendo ./etendo
+ENTRYPOINT ["/entrypoint.sh"]
+EXPOSE 8080
+CMD ["catalina.sh", "run"]

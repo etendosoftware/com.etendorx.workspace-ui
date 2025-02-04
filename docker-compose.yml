@@ -3,59 +3,34 @@ networks:
     driver: bridge
 
 services:
-  mainui:
-    build:
-      context: .
-      dockerfile: docker/mainui/Dockerfile
-    ports:
-      - '3000:3000'
-    environment:
-      - NEXT_PUBLIC_API_BASE_URL=http://tomcat:8080/etendo
-    depends_on:
-      - tomcat
-    networks:
-      - etendo
+  etendo_ui:
+    container_name: etendo_ui
+    image: etendo/etendo_ui:latest
+    ports: ['3000:3000']
+    depends_on: ['etendo_classic']
+    networks: ['etendo']
 
-  tomcat:
-    build: docker/tomcat
-    ports:
-      - '8080:8080'
-    environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=etendo
-      - DB_USER=tad
-      - DB_PASSWORD=tad
+  etendo_classic:
+    container_name: etendo_classic
+    image: etendo/etendo_classic:latest
     depends_on:
-      db:
+      etendo_db:
         condition: service_healthy
-    networks:
-      - etendo
-
-  db:
-    image: postgres:15
-    container_name: postgres_db
-    restart: always
+    ports: ['8080:8080']
+    networks: ['etendo']
     environment:
-      - POSTGRES_DB=etendo
-      - POSTGRES_USER=tad
-      - POSTGRES_PASSWORD=tad
-      - PGDATA=/var/lib/postgresql/data
-      - INITDB_SKIP_TZINFO=yes
-    ports:
-      - '5432:5432'
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-      - ./db:/docker-entrypoint-initdb.d
-      - ./docker/db/docker-entrypoint-init.sh:/docker-entrypoint-init.sh
-    networks:
-      - etendo
+     - BBDD_URL=jdbc:postgresql://etendo_db\:5432
+     - BBDD_SID=etendo
+     - BBDD_SYSTEM_USER=postgres
+     - BBDD_SYSTEM_PASSWORD=syspass
+
+  etendo_db:
+    container_name: etendo_db
+    image: etendo/etendo_db:latest
+    ports: ['5432:5432']
+    networks: ['etendo']
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U tad -d etendo"]
-      interval: 20s
-      retries: 200
-      timeout: 20s
-    entrypoint: ["/bin/bash", "/docker-entrypoint-init.sh"]
-
-volumes:
-  pg_data:
+      interval: 10s
+      retries: 100
+      timeout: 60s

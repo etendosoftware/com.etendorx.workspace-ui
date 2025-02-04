@@ -1,9 +1,10 @@
-name: Build and Publish Docker Image
+name: Build and Publish Docker Image on PR
 
 on:
   push:
     branches:
       - 'main'
+      - 'test'
       - 'develop'
   pull_request:
     branches:
@@ -23,12 +24,27 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+      # Get branch name
+      - name: Get branch name
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            BRANCH_NAME=$(echo "${{ github.head_ref }}" | tr '/' '-')
+          else
+            BRANCH_NAME=$(echo "${{ github.ref_name }}" | tr '/' '-')
+          fi
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
       # Build the Docker image
       - name: Build Docker image
         run: |
-          docker buildx build -f docker/mainui/Dockerfile -t etendo/mainui:latest .
+          docker buildx build -f docker/mainui/Dockerfile -t etendo/etendo_ui:${{ env.BRANCH_NAME }} .
+      
+      # Tag the Docker image
+      - name: Tag Docker image
+        run: |
+          docker tag etendo/etendo_ui:${{ env.BRANCH_NAME }} etendo/etendo_ui:${{ env.BRANCH_NAME }}
 
       # Push the Docker image to the registry
       - name: Push Docker image
         run: |
-          docker push etendo/mainui:latest
+          docker push etendo/etendo_ui:${{ env.BRANCH_NAME }}
