@@ -16,15 +16,6 @@ export const useStyle = (): StylesType => {
   return useMemo(
     () => ({
       styles: {
-        dottedLine: {
-          backgroundImage: `radial-gradient(circle, ${theme.palette.divider} 1px, transparent 1px)`,
-          backgroundSize: '8px 8px',
-          backgroundPosition: 'right',
-          backgroundRepeat: 'repeat-y',
-          width: '8px',
-          height: '100%',
-          margin: '0 1rem',
-        },
         dottedSpacing: {
           flex: 1,
           backgroundImage: `radial-gradient(circle, ${theme.palette.text.secondary} 1px, transparent 1px)`,
