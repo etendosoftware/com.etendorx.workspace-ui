@@ -23,7 +23,7 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
   useEffect(() => {
     const savedLanguage = localStorage.getItem('currentLanguage');
 
-    if (savedLanguage) {
+    if (savedLanguage && savedLanguage != 'null') {
       setLanguage(savedLanguage as Language);
     } else {
       setLanguage(DEFAULT_LANGUAGE);
