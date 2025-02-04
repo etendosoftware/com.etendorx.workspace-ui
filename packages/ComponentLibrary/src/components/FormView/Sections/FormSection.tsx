@@ -68,14 +68,10 @@ const FormSection: React.FC<FormSectionProps> = ({
           <Grid container>
             {fields.map(([key, field], index) => (
               <Grid item {...gridItemProps} key={field.original.id} sx={sx.gridItem}>
-                <FormFieldGroup
-                  name={key}
-                  field={field}
-                  readOnly={readOnly}
-                  onLabelClick={onLabelClick}
-                  tab={tab}
-                />
-                {index < fields.length && (index + 1) % dottedLineInterval !== 0 && <Box sx={styles.dottedLine} />}
+                <>
+                  <FormFieldGroup name={key} field={field} readOnly={readOnly} onLabelClick={onLabelClick} tab={tab} />
+                  {index < fields.length && (index + 1) % dottedLineInterval !== 0 && <Box sx={styles.dottedLine} />}
+                </>
               </Grid>
             ))}
           </Grid>

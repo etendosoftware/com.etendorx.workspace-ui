@@ -57,10 +57,6 @@ export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
 
 const inputNameCache: Record<string, string> = {};
 
-export function getInputName(field: Field) {
-  return field.fieldName;
-}
-
 export function getInpName(field: Field) {
   try {
     if (!inputNameCache[field.inpName]) {
@@ -78,7 +74,13 @@ export function getInpName(field: Field) {
 export const buildFormState = (fields: Tab['fields'], record: Record<string, unknown>) => {
   try {
     return Object.entries(fields).reduce((state, [fieldName, field]) => {
-      state[fieldName] = record[fieldName];
+      const inputName = getInpName(field);
+
+      if (inputName?.length) {
+        state[inputName] = record[fieldName];
+      } else {
+        console.warn('Missing field input name for', JSON.stringify(field, null, 2));
+      }
 
       return state;
     }, {} as Record<string, unknown>);
@@ -99,6 +101,20 @@ export const getFieldsByDBColumnName = (tab: Tab) => {
       if (!field.column.dBColumnName?.length) {
         console.error(JSON.stringify(field, null, 2));
       }
+
+      return acc;
+    }, {} as Record<string, Field>);
+  } catch (e) {
+    console.warn(e);
+
+    return {};
+  }
+};
+
+export const getFieldsByName = (tab: Tab) => {
+  try {
+    return Object.entries(tab.fields).reduce((acc, [f, field]) => {
+      acc[getInpName(field)] = field;
 
       return acc;
     }, {} as Record<string, Field>);

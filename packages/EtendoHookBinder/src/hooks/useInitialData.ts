@@ -12,7 +12,6 @@ export const getFormInitialization = async (params: FormInitializationParams) =>
   try {
     const queryString = new URLSearchParams({
       ...params,
-      stateless: 'true',
       _action: 'org.openbravo.client.application.window.FormInitializationComponent',
     }).toString();
 
