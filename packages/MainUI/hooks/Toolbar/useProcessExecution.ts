@@ -1,8 +1,8 @@
-import { API_BASE_URL } from '@workspaceui/etendohookbinder/src/api/constants';
 import { useState, useContext, useCallback } from 'react';
 import { UserContext } from '../../contexts/user';
 import { ProcessResponse } from '../../components/Toolbar/types';
 import { ExecuteProcessParams } from './types';
+import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
@@ -19,11 +19,9 @@ export function useProcessExecution() {
         setLoading(true);
         setError(null);
 
-        const actionUrl = `${API_BASE_URL}/org.openbravo.client.kernel`;
         const queryParams = new URLSearchParams({
           _action: button.processInfo.javaClassName,
           processId: button.processId,
-          stateless: 'true',
         });
 
         const processParams: Record<string, unknown> = {};
@@ -40,20 +38,14 @@ export function useProcessExecution() {
           _entityName: button.processInfo?._entityName || '',
         };
 
-        const response = await fetch(`${actionUrl}?${queryParams}`, {
+        const { ok, data, status } = await Metadata.kernelClient.post(`?${queryParams}`, {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
           body: JSON.stringify(payload),
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        if (!ok) {
+          throw new Error(`HTTP error! status: ${status}`);
         }
-
-        const data = await response.json();
 
         if (data.response?.status === -1) {
           throw new Error(data.response.error?.message || 'Unknown server error');

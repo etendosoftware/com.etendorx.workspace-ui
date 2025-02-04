@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { adaptFormData, mapWindowMetadata } from '../../utils/FormUtils';
 import FormView from '@workspaceui/componentlibrary/src/components/FormView';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
-import { useForm, FormProvider } from 'react-hook-form';
+import { useForm, FormProvider, UseFormProps } from 'react-hook-form';
 import { buildFormState } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { FormInitializationResponse } from '../../hooks/useFormInitialValues';
 
@@ -31,12 +31,18 @@ function DynamicFormView({
     [navigate],
   );
 
-  const methods = useForm({
-    defaultValues: buildFormState(tab.fields, record),
-    criteriaMode: 'all',
-    mode: 'onSubmit',
-    reValidateMode: 'onSubmit',
-  });
+  const formOptions = useMemo<UseFormProps>(
+    () => ({
+      defaultValues: buildFormState(tab.fields, record),
+      criteriaMode: 'all',
+      mode: 'onSubmit',
+      reValidateMode: 'onSubmit',
+      progressive: true,
+    }),
+    [record, tab.fields],
+  );
+
+  const methods = useForm(formOptions);
 
   if (!formData || !mappedMetadata) return <div>No form data available</div>;
 

@@ -12,9 +12,10 @@ import SearchSelector from '@workspaceui/componentlibrary/src/components/FormVie
 import TableDirSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/TableDirSelector';
 import { StringSelector } from '@workspaceui/componentlibrary/src/components/FormView/selectors/StringSelector';
 import { useCallout } from '../../hooks/useCallout';
-import { getFieldsByDBColumnName, getInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { getInpName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { CALLOUTS_ENABLED } from '../../constants/config';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { useMetadataContext } from '@/hooks/useMetadataContext';
 
 interface GenericSelectorProps {
   field: FieldDefinition;
@@ -24,7 +25,8 @@ interface GenericSelectorProps {
 
 export const GenericSelector = ({ field, tab }: GenericSelectorProps) => {
   const { watch, setValue, getValues } = useFormContext();
-  const name = useRef(getInputName(field.original));
+  const { fieldsByColumnName, fieldsByInputName } = useMetadataContext();
+  const name = useRef(getInpName(field.original));
   const value = watch(name.current, field.initialValue);
   const callout = useCallout({ field: field.original, tab });
   const form = useFormContext();
@@ -33,23 +35,28 @@ export const GenericSelector = ({ field, tab }: GenericSelectorProps) => {
     const expr = field.original.readOnlyState?.readOnlyLogicExpr;
     if (!expr) return false;
 
-    return Metadata.evaluateExpression(expr, form.getValues());
-  }, [field.original.readOnlyState?.readOnlyLogicExpr, form]);
+    const values = Object.entries(form.getValues()).reduce((acc, [inputName, inputValue]) => {
+      acc[fieldsByInputName[inputName].columnName] = inputValue;
+
+      return acc;
+    }, {} as Record<string, unknown>);
+
+    return Metadata.evaluateExpression(expr, values);
+  }, [field.original.readOnlyState?.readOnlyLogicExpr, fieldsByInputName, form]);
 
   const applyCallout = useCallback(
     (data: { [key: string]: unknown }) => {
-      const columns = getFieldsByDBColumnName(tab);
       const columnValues = data.columnValues as Record<string, { value: unknown; classicValue: unknown }>;
 
       Object.entries(columnValues).forEach(([column, valueObj]) => {
-        const _field = columns[column];
+        const _field = fieldsByColumnName[column];
 
         if (_field) {
           setValue('inp' + _field.inpName, valueObj.value);
         }
       });
     },
-    [setValue, tab],
+    [fieldsByColumnName, setValue],
   );
 
   const handleChange = useCallback(

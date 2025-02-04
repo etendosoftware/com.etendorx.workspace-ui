@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { getInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { getInpName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { FieldValues } from 'react-hook-form';
 
 export interface UseCalloutProps {
@@ -20,7 +20,7 @@ export const useCallout = ({ field, tab, parentId, rowId }: UseCalloutProps) => 
       _action,
       MODE,
       TAB_ID: tab.id,
-      CHANGED_COLUMN: getInputName(field),
+      CHANGED_COLUMN: getInpName(field),
     });
 
     if (rowId) {
