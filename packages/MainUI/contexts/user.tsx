@@ -15,13 +15,14 @@ import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspac
 import { usePathname, useRouter } from 'next/navigation';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useLanguage } from '../hooks/useLanguage';
+import { DEFAULT_LANGUAGE } from './languageProvider';
 
 export const UserContext = createContext({} as IUserContext);
 
 export default function UserProvider(props: React.PropsWithChildren) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [ready, setReady] = useState(false);
-  const { language, setLanguage: setLanguageContext } = useLanguage();
+  const { setLanguage } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
   const navigate = router.push;
@@ -52,16 +53,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }
   }, []);
 
-  const setLanguage = useCallback(
-    (language: Language) => {
-      localStorage.setItem('currentLanguage', language);
-      setLanguageContext(language);
-    },
-    [setLanguageContext],
-  );
-
   const updateSessionInfo = useCallback(
-    (sessionResponse: SessionResponse, skipLanguage: boolean = false) => {
+    (sessionResponse: SessionResponse) => {
       const currentRole: Role = {
         id: sessionResponse.role.id,
         name: sessionResponse.role.name,
@@ -70,7 +63,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       localStorage.setItem('currentRole', JSON.stringify(currentRole));
       localStorage.setItem('currentRoleId', currentRole.id);
 
-      if (!skipLanguage) {
+      if (sessionResponse.user.defaultLanguage) {
         setLanguage(sessionResponse.user.defaultLanguage as Language);
       }
 
@@ -216,7 +209,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
           Metadata.setToken(token);
           Datasource.authorize(token);
           const sessionResponse = await getSession(token);
-          updateSessionInfo(sessionResponse, language != null);
+          updateSessionInfo(sessionResponse);
         } catch (error) {
           clearUserData();
           navigate('/login');
@@ -224,7 +217,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       };
       verifySession();
     }
-  }, [clearUserData, language, navigate, token, updateSessionInfo]);
+  }, [clearUserData, navigate, token, updateSessionInfo]);
 
   useLayoutEffect(() => {
     if (token || pathname === '/login') {
@@ -260,6 +253,21 @@ export default function UserProvider(props: React.PropsWithChildren) {
       };
     }
   }, [navigate, token]);
+
+  useEffect(() => {
+    if (!languages.length) {
+      return;
+    }
+
+    const savedLanguage = localStorage.getItem('currentLanguage');
+    const givenLanguage = languages.find(lang => lang.language == savedLanguage);
+
+    if (givenLanguage) {
+      setLanguage(givenLanguage.language as Language);
+    } else {
+      setLanguage(DEFAULT_LANGUAGE);
+    }
+  }, [languages, languages.length, setLanguage]);
 
   return <UserContext.Provider value={value}>{ready ? props.children : <Spinner />}</UserContext.Provider>;
 }

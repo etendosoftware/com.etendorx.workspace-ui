@@ -16,7 +16,7 @@ const DrawerItems: React.FC<DrawerItemsProps> = ({
 
   return (
     <>
-      {items.map(item => {
+      {Array.isArray(items) ? items.map(item => {
         refs.current[item.id] = refs.current[item.id] ? refs.current[item.id] : () => toggleItemExpansion(item.id);
 
         return (
@@ -35,7 +35,7 @@ const DrawerItems: React.FC<DrawerItemsProps> = ({
             />
           </React.Fragment>
         );
-      })}
+      }) : null}
     </>
   );
 };

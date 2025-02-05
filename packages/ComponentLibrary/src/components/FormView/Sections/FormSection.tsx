@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { Fragment, useCallback } from 'react';
 import { Accordion, AccordionSummary, AccordionDetails, Typography, Box, Grid, useTheme } from '@mui/material';
 import ChevronDown from '../../../assets/icons/chevron-down.svg';
 import InfoIcon from '../../../assets/icons/info.svg';
@@ -6,6 +6,7 @@ import { defaultFill, useStyle } from '../styles';
 import { FormSectionProps } from '../types';
 import FormFieldGroup from '../selectors';
 import IconButton from '../../IconButton';
+import DottedLine from './DottedLine';
 
 const FormSection: React.FC<FormSectionProps> = ({
   sectionName,
@@ -23,7 +24,7 @@ const FormSection: React.FC<FormSectionProps> = ({
   onLabelClick,
   tab,
 }) => {
-  const { sx, styles } = useStyle();
+  const { sx } = useStyle();
   const theme = useTheme();
   const handleChange = useCallback(
     (_: unknown, isExpanded: boolean) => onAccordionChange(sectionData.id, isExpanded),
@@ -68,14 +69,10 @@ const FormSection: React.FC<FormSectionProps> = ({
           <Grid container>
             {fields.map(([key, field], index) => (
               <Grid item {...gridItemProps} key={field.original.id} sx={sx.gridItem}>
-                <FormFieldGroup
-                  name={key}
-                  field={field}
-                  readOnly={readOnly}
-                  onLabelClick={onLabelClick}
-                  tab={tab}
-                />
-                {index < fields.length && (index + 1) % dottedLineInterval !== 0 && <Box sx={styles.dottedLine} />}
+                <Fragment>
+                  <FormFieldGroup name={key} field={field} readOnly={readOnly} onLabelClick={onLabelClick} tab={tab} />
+                  <DottedLine fields={fields} dottedLineInterval={dottedLineInterval} index={index} />
+                </Fragment>
               </Grid>
             ))}
           </Grid>

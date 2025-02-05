@@ -31,7 +31,7 @@ export const API_OBREST_URL = `${API_BASE_URL}/sws/com.smf.securewebservices.obR
 export const API_METADATA_URL = `${API_BASE_URL}/meta/`;
 export const API_DEFAULT_CACHE_DURATION = getDefaultCacheDuration();
 export const AUTH_HEADER_NAME = getAuthHeaderName();
-export const API_CLIENT_KERNEL_SWS_URL = `${API_BASE_URL}/meta/org.openbravo.client.kernel`;
+export const API_KERNEL_SERVLET = `${API_BASE_URL}/meta/servlets/org.openbravo.client.kernel.KernelServlet`;
 
 export enum HTTP_CODES {
   UNAUTHORIZED = 401,
