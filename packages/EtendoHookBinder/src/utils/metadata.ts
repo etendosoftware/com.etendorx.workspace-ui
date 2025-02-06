@@ -71,9 +71,13 @@ export function getInpName(field: Field) {
   }
 }
 
-export const buildFormState = (fields: Tab['fields'], record: Record<string, unknown>) => {
+export const buildFormState = (
+  fields: Tab['fields'],
+  record: Record<string, unknown>,
+  formState: Record<string, Record<string, never>>,
+) => {
   try {
-    return Object.entries(fields).reduce((state, [fieldName, field]) => {
+    const result = Object.entries(fields).reduce((state, [fieldName, field]) => {
       const inputName = getInpName(field);
 
       if (inputName?.length) {
@@ -84,6 +88,16 @@ export const buildFormState = (fields: Tab['fields'], record: Record<string, unk
 
       return state;
     }, {} as Record<string, unknown>);
+
+    const auxiliaryInputValues = formState?.auxiliaryInputValues;
+
+    if (auxiliaryInputValues) {
+      Object.entries(auxiliaryInputValues).forEach(([inputName, { value }]) => {
+        result[inputName] = value;
+      });
+    }
+
+    return result;
   } catch (e) {
     console.warn(e);
 

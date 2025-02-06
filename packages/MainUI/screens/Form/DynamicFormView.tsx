@@ -33,13 +33,13 @@ function DynamicFormView({
 
   const formOptions = useMemo<UseFormProps>(
     () => ({
-      defaultValues: buildFormState(tab.fields, record),
+      defaultValues: buildFormState(tab.fields, record, formState as never),
       criteriaMode: 'all',
       mode: 'onSubmit',
       reValidateMode: 'onSubmit',
       progressive: true,
     }),
-    [record, tab.fields],
+    [formState, record, tab.fields],
   );
 
   const methods = useForm(formOptions);
@@ -57,6 +57,8 @@ function DynamicFormView({
         tab={tab}
         onLabelClick={handleLabelClick}
         readOnly={formState?._readOnly}
+        sessionAttributes={formState?.sessionAttributes}
+        auxiliaryInputValues={formState?.auxiliaryInputValues}
       />
     </FormProvider>
   );

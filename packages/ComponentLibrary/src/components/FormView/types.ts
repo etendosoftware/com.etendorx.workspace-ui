@@ -35,6 +35,8 @@ export interface FormViewProps {
   initialValues?: boolean;
   onLabelClick?: (url: string) => void;
   tab: Tab;
+  sessionAttributes?: Record<string, unknown>;
+  auxiliaryInputValues?: Record<string, unknown>;
 }
 
 export interface FormSectionProps {

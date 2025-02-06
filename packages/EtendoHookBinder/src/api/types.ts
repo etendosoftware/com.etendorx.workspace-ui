@@ -96,6 +96,7 @@ export interface Field {
   referencedWindowId: string;
   referencedTabId: string;
   fieldName: string;
+  displayLogicExpression?: string;
 }
 
 export interface Option<T extends string = string> {
@@ -252,6 +253,8 @@ export interface LoginResponse {
   }>;
 }
 
+export interface ISession extends Record<string, string | number | boolean | null> {}
+
 export interface SessionResponse {
   user: {
     id: string;
@@ -273,6 +276,7 @@ export interface SessionResponse {
     name: string;
   };
   languages: Record<string, any>[];
+  session: ISession;
 }
 
 /* 

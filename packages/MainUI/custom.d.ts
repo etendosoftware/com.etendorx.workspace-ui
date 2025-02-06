@@ -1,6 +1,7 @@
 declare global {
   interface Window {
-    currentValues: Record<string, never>;
+    currentValues: unknown;
+    context: unknown;
   }
 }
 
