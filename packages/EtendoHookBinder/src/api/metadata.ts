@@ -1,9 +1,4 @@
-import {
-  API_DATASOURCE_URL,
-  API_DEFAULT_CACHE_DURATION,
-  API_METADATA_URL,
-  API_KERNEL_SERVLET,
-} from './constants';
+import { API_DATASOURCE_URL, API_DEFAULT_CACHE_DURATION, API_METADATA_URL, API_KERNEL_SERVLET } from './constants';
 import { Client, Interceptor } from './client';
 import { CacheStore } from './cache';
 import * as Etendo from './types';
@@ -27,9 +22,9 @@ export class Metadata {
 
   public static setToken(token: string) {
     this.token = token;
-    this.client.setAuthHeader(token, 'Bearer').addQueryParam("stateless", "true");
-    this.datasourceClient.setAuthHeader(token, 'Bearer').addQueryParam("stateless", "true");
-    this.kernelClient.setAuthHeader(token, 'Bearer').addQueryParam("stateless", "true");
+    this.client.setAuthHeader(token, 'Bearer').addQueryParam('stateless', 'true');
+    this.datasourceClient.setAuthHeader(token, 'Bearer').addQueryParam('stateless', 'true');
+    this.kernelClient.setAuthHeader(token, 'Bearer').addQueryParam('stateless', 'true');
   }
 
   public static getToken() {
@@ -130,21 +125,137 @@ export class Metadata {
     }, {} as Record<string, Etendo.Column[]>);
   }
 
-  public static evaluateExpression(expr: string, values: Record<string, unknown>) {
-    const conditions = expr.split('||').map(c => c.trim());
+  public static evaluateExpression(
+    expr: string,
+    values: Record<string, unknown>,
+    contextValues: Record<string, unknown> = {},
+  ): boolean {
+    if (!expr) return true;
 
-    return conditions.some(condition => {
-      const matches = condition.match(/OB\.Utilities\.getValue\(currentValues,['"](.+)['"]\)\s*===\s*(.+)/);
-      if (!matches) return false;
+    try {
+      const conditions = expr.split('||').map(c => c.trim());
 
-      const [, property, expectedValueStr] = matches;
-      const actualValue = values[property];
+      return conditions.some(condition => {
+        const andConditions = condition.split('&&').map(c => c.trim());
 
-      if (expectedValueStr.startsWith("'") || expectedValueStr.startsWith('"')) {
-        return actualValue === expectedValueStr.slice(1, -1);
-      }
+        return andConditions.every(subCondition => {
+          // Handle direct context access
+          if (subCondition.startsWith('context.')) {
+            const matches = subCondition.match(/context\.(\$?\w+)\s*([!==|===]+)\s*['"]([^'"]+)['"]/);
+            if (!matches) {
+              return false;
+            }
+            const [, contextKey, operator, value] = matches;
+            const contextValue = contextValues[contextKey];
+            const result = this.compareValues(contextValue, operator, value);
 
-      return actualValue === JSON.parse(expectedValueStr);
-    });
+            if (contextKey === '$IsAcctDimCentrally' && result) {
+              const docbaseType = 'SOO'; // Hardcodeamos SOO por ahora
+              const fullKey = `$Element_OO_${docbaseType}_H`;
+
+              const secondPartResult = this.compareValues(contextValues[fullKey], '===', 'Y');
+
+              return secondPartResult;
+            }
+
+            return result;
+          }
+
+          // Handle dynamic context access
+          if (subCondition.includes("context['")) {
+            const matches = subCondition.match(/context\[['"]([^'"]+)['"]\]\s*([!==|===]+)\s*['"]([^'"]+)['"]/);
+            if (!matches) {
+              return false;
+            }
+            const [, keyExpr, operator, expectedValue] = matches;
+
+            if (keyExpr.includes('OB.Utilities.getValue')) {
+              const fieldMatch = keyExpr.match(/OB\.Utilities\.getValue\(currentValues,\s*["'](.+?)["']\)/);
+              if (!fieldMatch) {
+                return false;
+              }
+
+              const [, field] = fieldMatch;
+
+              // TEMPORAL: Hardcodeamos "SOO" si el campo es DOCBASETYPE
+              const docbaseType = field === 'DOCBASETYPE' ? 'SOO' : values[field];
+
+              const fullKey = keyExpr.replace(
+                /OB\.Utilities\.getValue\(currentValues,\s*["'].+?["']\)/,
+                docbaseType as string,
+              );
+
+              const contextValue = contextValues[fullKey];
+
+              const result = this.compareValues(contextValue, operator, expectedValue);
+
+              return result;
+            }
+
+            return this.compareValues(contextValues[keyExpr], operator, expectedValue);
+          }
+
+          const matches = subCondition.match(
+            /OB\.Utilities\.getValue\(currentValues,\s*['"](.+)['"]\)\s*([!==><]+)\s*(.+)/,
+          );
+          if (!matches) return false;
+
+          const [, property, operator, rawValue] = matches;
+          const actualValue = property === 'DOCBASETYPE' ? 'SOO' : values[property];
+          const expectedValue = this.parseValue(rawValue);
+
+          const result = this.compareValues(actualValue, operator, expectedValue);
+
+          return result;
+        });
+      });
+    } catch (error) {
+      console.error('Error in expression evaluation:', error);
+      return true;
+    }
+  }
+
+  private static compareValues(actual: unknown, operator: string, expected: unknown): boolean {
+    // Normalize values
+    if (actual === undefined || actual === null) actual = '';
+    if (expected === undefined || expected === null) expected = '';
+
+    // Handle Y/N conversion for context values
+    if (typeof actual === 'string') {
+      if (actual === 'Y') actual = true;
+      if (actual === 'N') actual = false;
+    }
+    if (typeof expected === 'string') {
+      if (expected === 'Y') expected = true;
+      if (expected === 'N') expected = false;
+    }
+
+    switch (operator) {
+      case '===':
+        return actual === expected;
+      case '!==':
+        return actual !== expected;
+      case '<=':
+        return Number(actual) <= Number(expected);
+      case '>=':
+        return Number(actual) >= Number(expected);
+      case '<':
+        return Number(actual) < Number(expected);
+      case '>':
+        return Number(actual) > Number(expected);
+      default:
+        return false;
+    }
+  }
+
+  private static parseValue(value: string): unknown {
+    value = value.trim();
+    if (value === 'null') return null;
+    if (value === "''") return '';
+    if (value.startsWith("'") && value.endsWith("'")) return value.slice(1, -1);
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    if (!isNaN(Number(value))) return Number(value);
+    return value;
   }
 }

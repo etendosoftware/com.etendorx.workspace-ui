@@ -31,6 +31,8 @@ function DynamicFormView({
     [navigate],
   );
 
+  console.log(windowData);
+
   const formOptions = useMemo<UseFormProps>(
     () => ({
       defaultValues: buildFormState(tab.fields, record),
