@@ -11,6 +11,7 @@ const en = {
     loading: 'Loading...',
     loadingFormData: 'Loading form data...',
     retry: 'Retry',
+    processes: 'Available Process',
   },
   errors: {
     networkError: {
