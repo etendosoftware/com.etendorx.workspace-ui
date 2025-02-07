@@ -18,6 +18,8 @@ export function mapColumnTypeToFieldType(column: Column): FieldType {
 
   switch (column?.reference) {
     case '19':
+    case '95E2A8B50A254B2AAE6774B8C2F28120':
+    case '18':
       return 'tabledir';
     case '15':
     case '16':
@@ -27,11 +29,11 @@ export function mapColumnTypeToFieldType(column: Column): FieldType {
     case '29':
       return 'quantity';
     case '17':
+    case '13':
       return 'list';
     case '30':
       return 'search';
     case '12':
-    case '18':
     case '11':
     case '22':
     default:
@@ -106,21 +108,19 @@ export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormDa
 
     const dbColumnName = fieldInfo.column.dBColumnName;
     const rawValue = record[dbColumnName] ?? record[fieldName];
-    const identifierValue = record[`${dbColumnName}$_identifier`] ?? record[`${fieldName}$_identifier`];
+    const identifierValue =
+      record[`${dbColumnName}$_identifier`] ?? record[`${fieldName}$_identifier`] ?? record[`${fieldName}_identifier`];
 
     let value;
     if (fieldType === 'tabledir' && rawValue) {
       value = {
         id: rawValue,
-        title: identifierValue || rawValue,
+        title: identifierValue || String(rawValue),
         value: rawValue,
+        _identifier: identifierValue,
       };
-    } else if (fieldType === 'boolean') {
-      value = rawValue === 'true' || rawValue === true;
-    } else if (fieldType === 'date' && rawValue) {
-      value = rawValue;
     } else {
-      value = rawValue !== undefined && rawValue !== '' ? ensureFieldValue(rawValue) : '';
+      // ...
     }
 
     adaptedData[fieldName] = {
