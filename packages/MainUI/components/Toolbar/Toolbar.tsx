@@ -21,7 +21,7 @@ import { useToolbar } from '../../hooks/Toolbar/useToolbar';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
 
-export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
+export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false }) => {
   const [openModal, setOpenModal] = React.useState(false);
   const [isExecuting, setIsExecuting] = React.useState(false);
   const [processResponse, setProcessResponse] = React.useState<ProcessResponse | null>(null);
@@ -91,7 +91,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   }
 
   const createToolbarConfig = () => {
-    const buttons = toolbar?.response?.buttons || [];
+    const buttons = (toolbar?.response?.buttons || []).filter(btn => !isFormView || btn.id !== 'FIND');
 
     const createProcessButtonConfig = (btn: ProcessButton) => {
       const config = {
@@ -130,6 +130,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
       buttons: buttons
         .filter((btn: StandardButton) => {
           if (includeProcess && isProcessButton(btn)) return true;
+          if (isFormView && btn.id === 'FIND') return false;
           return sectionButtons.includes(btn.id as StandardButtonId);
         })
         .map(btn => {
@@ -158,7 +159,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   return (
     <>
       <TopToolbar {...createToolbarConfig()} />
-      {searchOpen && (
+      {searchOpen && !isFormView && (
         <SearchPortal
           isOpen={searchOpen}
           searchValue={searchValue}

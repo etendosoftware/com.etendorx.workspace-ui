@@ -69,7 +69,7 @@ export default function NewRecordPage() {
   return (
     <>
       <div style={styles.box}>
-        <Toolbar windowId={windowId} tabId={tabId} />
+        <Toolbar windowId={windowId} tabId={tabId} isFormView={true} />
       </div>
       <DynamicFormView tab={tab} record={record} formState={formData} />
     </>
