@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogActions, Button, Box, Typography } from '@
 import { MaterialReactTable, MRT_Row } from 'material-react-table';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { SelectorTableProps, MultiSelectProps, TableData, Option } from '../../types';
-import { useStyle } from '@workspaceui/mainui/components/Table/styles';
+import { useStyle } from '@/components/Table/styles';
 import { DEFAULT_COLUMNS, TABLE_INITIAL_STATE, DIALOG_PROPS } from './constants';
 import { SelectedItemsContainer } from './SelectedItemsContainer';
 import { SearchBar } from './SearchBar';

@@ -1,13 +1,13 @@
 import { memo, useCallback, useMemo, useState } from 'react';
-import { FormData } from './types';
 import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { useRouter } from 'next/navigation';
 import { adaptFormData, mapWindowMetadata } from '../../utils/FormUtils';
-import FormView from '@workspaceui/componentlibrary/src/components/FormView';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { useForm, FormProvider, UseFormProps } from 'react-hook-form';
 import { buildFormState } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { FormInitializationResponse } from '../../hooks/useFormInitialValues';
+import FormView from '@/components/Form/FormView';
+import { FormData } from '@/components/Form/FormView/types';
 
 function DynamicFormView({
   tab,
@@ -33,13 +33,13 @@ function DynamicFormView({
 
   const formOptions = useMemo<UseFormProps>(
     () => ({
-      defaultValues: buildFormState(tab.fields, record),
+      defaultValues: buildFormState(tab.fields, record, formState as never),
       criteriaMode: 'all',
       mode: 'onSubmit',
       reValidateMode: 'onSubmit',
       progressive: true,
     }),
-    [record, tab.fields],
+    [formState, record, tab.fields],
   );
 
   const methods = useForm(formOptions);
@@ -57,6 +57,8 @@ function DynamicFormView({
         tab={tab}
         onLabelClick={handleLabelClick}
         readOnly={formState?._readOnly}
+        sessionAttributes={formState?.sessionAttributes}
+        auxiliaryInputValues={formState?.auxiliaryInputValues}
       />
     </FormProvider>
   );

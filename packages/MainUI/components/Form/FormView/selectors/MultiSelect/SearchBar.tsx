@@ -1,7 +1,7 @@
 import { Typography, IconButton, Box, useTheme } from '@mui/material';
-import CloseIcon from '../../../../assets/icons/x.svg';
-import SearchOutlined from '../../../../assets/icons/search.svg';
-import { useStyle } from '@workspaceui/mainui/components/Table/styles';
+import CloseIcon from '@workspaceui/componentlibrary/src/assets/icons/x.svg';
+import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
+import { useStyle } from '@/components/Table/styles';
 import { ICON_BUTTON_SIZE, ADD_BUTTON_TEXT } from './constants';
 import { SearchBarProps } from './types';
 

@@ -10,7 +10,7 @@ import { getSession } from '@workspaceui/etendohookbinder/src/api/getSession';
 import { changeWarehouse as doChangeWarehouse } from '@workspaceui/etendohookbinder/src/api/warehouse';
 import { HTTP_CODES } from '@workspaceui/etendohookbinder/src/api/constants';
 import { DefaultConfiguration, IUserContext, Language, LanguageOption } from './types';
-import { Role, SessionResponse, Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
+import { ISession, Role, SessionResponse, Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/src/api/defaultConfig';
 import { usePathname, useRouter } from 'next/navigation';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
@@ -22,6 +22,7 @@ export const UserContext = createContext({} as IUserContext);
 export default function UserProvider(props: React.PropsWithChildren) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [ready, setReady] = useState(false);
+  const [session, setSession] = useState<ISession>({});
   const { setLanguage } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
@@ -62,6 +63,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       };
       localStorage.setItem('currentRole', JSON.stringify(currentRole));
       localStorage.setItem('currentRoleId', currentRole.id);
+      setSession(sessionResponse.session);
 
       if (sessionResponse.user.defaultLanguage) {
         setLanguage(sessionResponse.user.defaultLanguage as Language);
@@ -174,7 +176,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     [updateSessionInfo],
   );
 
-  const value = useMemo(
+  const value = useMemo<IUserContext>(
     () => ({
       login,
       changeRole,
@@ -187,6 +189,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
       setToken,
       setDefaultConfiguration,
       languages,
+      session,
+      setSession,
     }),
     [
       login,
@@ -199,6 +203,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
       clearUserData,
       setDefaultConfiguration,
       languages,
+      session,
+      setSession,
     ],
   );
 

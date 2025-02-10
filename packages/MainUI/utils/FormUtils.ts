@@ -1,6 +1,7 @@
-import { FormData, Section } from '@workspaceui/componentlibrary/src/components/FormView/types';
+import { FormData, Section } from '@/components/Form/FormView/types';
 import {
   Column,
+  Field,
   FieldDefinition,
   FieldInfo,
   FieldType,
@@ -9,6 +10,7 @@ import {
   Tab,
   WindowMetadata,
 } from '@workspaceui/etendohookbinder/src/api/types';
+import { UseFormReturn } from 'react-hook-form';
 
 export function mapColumnTypeToFieldType(column: Column): FieldType {
   if (!column || !column?.reference) {
@@ -140,3 +142,21 @@ export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormDa
 
   return adaptedData;
 }
+
+export const parseDynamicExpression = (expr: string) =>
+  expr
+    .replace(/OB\.Utilities\.getValue\((\w+),\s*['"]([^'"]+)['"]\)/g, '$1["$2"]')
+    .replace(/context\.(\$?\w+)/g, (_, prop) => `context.${prop}`);
+
+export const getMappedValues = (fieldsByInputName: Record<string, Field>, form: UseFormReturn) =>
+  Object.entries(form.getValues()).reduce((acc, [inputName, inputValue]) => {
+    const theField = fieldsByInputName[inputName];
+
+    if (theField) {
+      acc[theField.columnName] = inputValue;
+    } else {
+      acc[inputName] = inputValue;
+    }
+
+    return acc;
+  }, {} as Record<string, unknown>);

@@ -1,6 +1,6 @@
 import { Theme } from '@emotion/react';
 import { SxProps } from '@mui/material';
-import { Section } from '@workspaceui/componentlibrary/src/components/FormView/types';
+import { Section } from '@workspaceui/mainui/components/Form/FormView/types';
 import { BaseFieldDefinition, FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 
 export type OrganizationField = FieldDefinition | Section;

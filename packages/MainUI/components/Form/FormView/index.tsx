@@ -1,12 +1,17 @@
-import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useRef, useEffect, createContext } from 'react';
 import { Box, Grid, useTheme } from '@mui/material';
 import { FormViewProps } from './types';
-import PrimaryTabs from '../PrimaryTab';
-import { TabItem } from '../PrimaryTab/types';
+import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
+import { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
 import SectionRenderer from './Sections/sectionRendered';
 import type { Section } from './types';
-import Chevrons from '../../assets/icons/chevrons-right.svg';
+import Chevrons from '@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
+
+export const FormViewContext = createContext({
+  sessionAttributes: {} as FormViewProps['sessionAttributes'],
+  auxiliaryInputValues: {} as FormViewProps['auxiliaryInputValues'],
+});
 
 const FormView: React.FC<FormViewProps> = ({
   data,
@@ -15,6 +20,8 @@ const FormView: React.FC<FormViewProps> = ({
   dottedLineInterval,
   onLabelClick,
   tab,
+  sessionAttributes: initialSessionAttributes,
+  auxiliaryInputValues: initialAuxiliaryInputValues,
 }) => {
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
@@ -22,6 +29,8 @@ const FormView: React.FC<FormViewProps> = ({
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
+  const [sessionAttributes, setSessionAttributes] = useState(initialSessionAttributes);
+  const [auxiliaryInputValues, setAuxiliaryInputValues] = useState(initialAuxiliaryInputValues);
 
   const defaultIcon = useMemo(
     () => <Chevrons fill={theme.palette.baselineColor.neutral[80]} />,
@@ -111,44 +120,56 @@ const FormView: React.FC<FormViewProps> = ({
     [],
   );
 
-  return (
-    <Box display="flex" flexDirection="column" height="100%" width="100%" padding="0 0 0.5rem 0.5rem">
-      <Box flexShrink={1}>
-        <PrimaryTabs tabs={tabs} onChange={handleTabChange} icon={defaultIcon} />
-      </Box>
-      <Box flexGrow={1} overflow="auto" ref={containerRef}>
-        <form onSubmit={handleSubmit}>
-          <Grid container>
-            {Object.entries(groupedFields).map(([sectionName, fields]) => {
-              const sectionData = data[sectionName] as Section;
-              if (!sectionData || sectionData.type !== 'section') {
-                console.warn(`Section ${sectionName} is not properly defined`);
-                return null;
-              }
+  const contextValue = useMemo(
+    () => ({
+      sessionAttributes,
+      auxiliaryInputValues,
+      setSessionAttributes,
+      setAuxiliaryInputValues,
+    }),
+    [auxiliaryInputValues, sessionAttributes],
+  );
 
-              return (
-                <SectionRenderer
-                  key={sectionData.id}
-                  sectionName={sectionName}
-                  sectionData={sectionData}
-                  fields={fields}
-                  isExpanded={expandedSections.includes(sectionData.id)}
-                  onAccordionChange={handleAccordionChange}
-                  onHover={setHoveredSection}
-                  hoveredSection={hoveredSection}
-                  sectionRef={handleSectionRef(sectionData)}
-                  gridItemProps={gridItemProps}
-                  dottedLineInterval={dottedLineInterval}
-                  readOnly={readOnly}
-                  onLabelClick={onLabelClick}
-                  tab={tab}
-                />
-              );
-            })}
-          </Grid>
-        </form>
+  return (
+    <FormViewContext.Provider value={contextValue}>
+      <Box display="flex" flexDirection="column" height="100%" width="100%" padding="0 0 0.5rem 0.5rem">
+        <Box flexShrink={1}>
+          <PrimaryTabs tabs={tabs} onChange={handleTabChange} icon={defaultIcon} />
+        </Box>
+        <Box flexGrow={1} overflow="auto" ref={containerRef}>
+          <form onSubmit={handleSubmit}>
+            <Grid container>
+              {Object.entries(groupedFields).map(([sectionName, fields]) => {
+                const sectionData = data[sectionName] as Section;
+                if (!sectionData || sectionData.type !== 'section') {
+                  console.warn(`Section ${sectionName} is not properly defined`);
+                  return null;
+                }
+
+                return (
+                  <SectionRenderer
+                    key={sectionData.id}
+                    sectionName={sectionName}
+                    sectionData={sectionData}
+                    fields={fields}
+                    isExpanded={expandedSections.includes(sectionData.id)}
+                    onAccordionChange={handleAccordionChange}
+                    onHover={setHoveredSection}
+                    hoveredSection={hoveredSection}
+                    sectionRef={handleSectionRef(sectionData)}
+                    gridItemProps={gridItemProps}
+                    dottedLineInterval={dottedLineInterval}
+                    readOnly={readOnly}
+                    onLabelClick={onLabelClick}
+                    tab={tab}
+                  />
+                );
+              })}
+            </Grid>
+          </form>
+        </Box>
       </Box>
-    </Box>
+    </FormViewContext.Provider>
   );
 };
 

@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react';
-import Select from '../../Input/Select';
-import SearchOutlined from '../../../assets/icons/search.svg';
+import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
+import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
 import type { DatabaseSelectSelector } from '../types';
 import { useTheme } from '@mui/material';
 import { Option } from '@workspaceui/etendohookbinder/src/api/types';

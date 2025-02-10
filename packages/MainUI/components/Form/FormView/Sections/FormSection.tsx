@@ -1,12 +1,12 @@
 import React, { Fragment, useCallback } from 'react';
 import { Accordion, AccordionSummary, AccordionDetails, Typography, Box, Grid, useTheme } from '@mui/material';
-import ChevronDown from '../../../assets/icons/chevron-down.svg';
-import InfoIcon from '../../../assets/icons/info.svg';
+import ChevronDown from '@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg';
+import InfoIcon from '@workspaceui/componentlibrary/src/assets/icons/info.svg';
 import { defaultFill, useStyle } from '../styles';
 import { FormSectionProps } from '../types';
-import FormFieldGroup from '../selectors';
-import IconButton from '../../IconButton';
+import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import DottedLine from './DottedLine';
+import FormFieldGroup from '../../FormFieldGroup';
 
 const FormSection: React.FC<FormSectionProps> = ({
   sectionName,
