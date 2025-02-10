@@ -56,21 +56,25 @@ export default function FormFieldGroup({ tab, field, onLabelClick }: FormFieldGr
     return eval(result);
   }, [field.original.readOnlyLogicExpression, fieldsByInputName, form, sessionAttributes]);
 
-  return (
-    <Box style={styles.fieldContainer}>
-      <Box sx={sx.labelBox}>
-        <FieldLabel
-          label={field.label}
-          required={field.required}
-          fieldType={field.type}
-          isEntityReference={isEntityReference(field.type)}
-          onLinkClick={handleLinkClick}
-          readOnly={isReadOnly}
-        />
+  if (isDisplayed) {
+    return (
+      <Box style={styles.fieldContainer}>
+        <Box sx={sx.labelBox}>
+          <FieldLabel
+            label={field.label}
+            required={field.required}
+            fieldType={field.type}
+            isEntityReference={isEntityReference(field.type)}
+            onLinkClick={handleLinkClick}
+            readOnly={isReadOnly}
+          />
+        </Box>
+        <Box sx={sx.inputBox}>
+          <GenericSelector tab={tab} field={field} isReadOnly={isReadOnly} isDisplayed={isDisplayed} />
+        </Box>
       </Box>
-      <Box sx={sx.inputBox}>
-        <GenericSelector tab={tab} field={field} isReadOnly={isReadOnly} isDisplayed={isDisplayed} />
-      </Box>
-    </Box>
-  );
+    );
+  }
+
+  return null;
 }
