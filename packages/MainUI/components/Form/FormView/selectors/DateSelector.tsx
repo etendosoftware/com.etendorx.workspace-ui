@@ -1,8 +1,8 @@
 import { memo, useRef } from 'react';
 import { InputAdornment, TextField } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import CalendarIcon from '../../../assets/icons/calendar.svg';
-import IconButton from '../../IconButton';
+import CalendarIcon from '@workspaceui/componentlibrary/src/assets/icons/calendar.svg';
+import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import { DateSelectorProps } from '../types';
 
 const StyledTextField = styled(TextField)(({ theme }) => ({

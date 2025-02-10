@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Box, Grid, Card, CardContent, Typography, Button, IconButton, TextField, useTheme } from '@mui/material';
-import Modal from '../../BasicModal';
-import CloseIcon from '../../../assets/icons/x.svg';
-import NoteIcon from '../../../assets/icons/note.svg';
-import PlusIcon from '../../../assets/icons/plus-circle.svg';
+import Modal from '@workspaceui/componentlibrary/src/components/BasicModal';
+import CloseIcon from '@workspaceui/componentlibrary/src/assets/icons/x.svg';
+import NoteIcon from '@workspaceui/componentlibrary/src/assets/icons/note.svg';
+import PlusIcon from '@workspaceui/componentlibrary/src/assets/icons/plus-circle.svg';
 import { Note, NoteSectionProps } from '../types';
 import { noteColors, useStyle } from '../styles';
 
-const NoteSection: React.FC<NoteSectionProps> = ({
+const NoteSection = ({
   sectionId,
   addNoteButtonText,
   modalTitleText,
   modalDescriptionText,
   noteInputPlaceholder,
   addNoteSubmitText,
-}) => {
+}: NoteSectionProps) => {
   const { sx } = useStyle();
   const theme = useTheme();
   const [notes, setNotes] = useState<Note[]>([]);

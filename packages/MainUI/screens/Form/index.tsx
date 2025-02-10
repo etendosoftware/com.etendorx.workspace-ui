@@ -3,8 +3,8 @@ import { Organization } from '@workspaceui/storybook/src/stories/Components/Tabl
 import { mockOrganizations } from '@workspaceui/storybook/src/stories/Components/Table/mock';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useRouter, useParams } from 'next/navigation';
-import FormView from '@workspaceui/componentlibrary/src/components/FormView';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import FormView from '@/components/Form/FormView';
 
 export default function Form() {
   const navigate = useRouter().push;

@@ -1,11 +1,11 @@
 import React, { useCallback, useMemo, useState, useRef, useEffect, createContext } from 'react';
 import { Box, Grid, useTheme } from '@mui/material';
 import { FormViewProps } from './types';
-import PrimaryTabs from '../PrimaryTab';
-import { TabItem } from '../PrimaryTab/types';
+import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
+import { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
 import SectionRenderer from './Sections/sectionRendered';
 import type { Section } from './types';
-import Chevrons from '../../assets/icons/chevrons-right.svg';
+import Chevrons from '@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const FormViewContext = createContext({
@@ -20,8 +20,8 @@ const FormView: React.FC<FormViewProps> = ({
   dottedLineInterval,
   onLabelClick,
   tab,
-  sessionAttributes,
-  auxiliaryInputValues,
+  sessionAttributes: initialSessionAttributes,
+  auxiliaryInputValues: initialAuxiliaryInputValues,
 }) => {
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
@@ -29,6 +29,8 @@ const FormView: React.FC<FormViewProps> = ({
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
+  const [sessionAttributes, setSessionAttributes] = useState(initialSessionAttributes);
+  const [auxiliaryInputValues, setAuxiliaryInputValues] = useState(initialAuxiliaryInputValues);
 
   const defaultIcon = useMemo(
     () => <Chevrons fill={theme.palette.baselineColor.neutral[80]} />,
@@ -118,8 +120,18 @@ const FormView: React.FC<FormViewProps> = ({
     [],
   );
 
+  const contextValue = useMemo(
+    () => ({
+      sessionAttributes,
+      auxiliaryInputValues,
+      setSessionAttributes,
+      setAuxiliaryInputValues,
+    }),
+    [auxiliaryInputValues, sessionAttributes],
+  );
+
   return (
-    <FormViewContext.Provider value={{ sessionAttributes, auxiliaryInputValues }}>
+    <FormViewContext.Provider value={contextValue}>
       <Box display="flex" flexDirection="column" height="100%" width="100%" padding="0 0 0.5rem 0.5rem">
         <Box flexShrink={1}>
           <PrimaryTabs tabs={tabs} onChange={handleTabChange} icon={defaultIcon} />

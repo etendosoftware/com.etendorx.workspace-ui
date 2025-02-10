@@ -97,6 +97,7 @@ export interface Field {
   referencedTabId: string;
   fieldName: string;
   displayLogicExpression?: string;
+  readOnlyLogicExpression?: string;
 }
 
 export interface Option<T extends string = string> {

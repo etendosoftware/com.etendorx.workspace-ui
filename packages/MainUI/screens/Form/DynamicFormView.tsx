@@ -1,13 +1,13 @@
 import { memo, useCallback, useMemo, useState } from 'react';
-import { FormData } from './types';
 import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { useRouter } from 'next/navigation';
 import { adaptFormData, mapWindowMetadata } from '../../utils/FormUtils';
-import FormView from '@workspaceui/componentlibrary/src/components/FormView';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { useForm, FormProvider, UseFormProps } from 'react-hook-form';
 import { buildFormState } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { FormInitializationResponse } from '../../hooks/useFormInitialValues';
+import FormView from '@/components/Form/FormView';
+import { FormData } from '@/components/Form/FormView/types';
 
 function DynamicFormView({
   tab,

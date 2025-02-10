@@ -1,6 +1,6 @@
 import { Typography, IconButton, Box } from '@mui/material';
-import CloseIcon from '../../../../assets/icons/x.svg';
-import { useStyle } from '@workspaceui/mainui/components/Table/styles';
+import CloseIcon from '@workspaceui/componentlibrary/src/assets/icons/x.svg';
+import { useStyle } from '@/components/Table/styles';
 import { ICON_BUTTON_SIZE } from './constants';
 import { SelectedItemProps, SelectedItemsContainerProps } from './types';
 

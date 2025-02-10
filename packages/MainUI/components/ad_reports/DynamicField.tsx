@@ -1,10 +1,10 @@
 import { memo } from 'react';
 import { useFormContext, Controller } from 'react-hook-form';
 import { TextField, Autocomplete } from '@mui/material';
-import DateSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/DateSelector';
-import DatabaseSelectSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/DatabaseSelect';
 import { ReportField } from '@workspaceui/etendohookbinder/src/hooks/types';
-import MultiSelect from '@workspaceui/componentlibrary/src/components/FormView/selectors/MultiSelect/MultiSelector';
+import DateSelector from '../Form/FormView/selectors/DateSelector';
+import DatabaseSelectSelector from '../Form/FormView/selectors/DatabaseSelect';
+import MultiSelect from '../Form/FormView/selectors/MultiSelect/MultiSelector';
 
 interface DynamicFieldProps {
   field: ReportField;

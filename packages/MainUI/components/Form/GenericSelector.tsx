@@ -1,75 +1,34 @@
-import { useCallback, useContext, useMemo, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 import type { FieldDefinition, Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import type { FieldValue } from '@workspaceui/componentlibrary/src/components/FormView/types';
-import BooleanSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/BooleanSelector';
-import NumberSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/NumberSelector';
-import DateSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/DateSelector';
-import SelectSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/SelectSelector';
-import QuantitySelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/QuantitySelector';
-import ListSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/ListSelector';
-import SearchSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/SearchSelector';
-import TableDirSelector from '@workspaceui/componentlibrary/src/components/FormView/selectors/TableDirSelector';
-import { StringSelector } from '@workspaceui/componentlibrary/src/components/FormView/selectors/StringSelector';
 import { useCallout } from '../../hooks/useCallout';
 import { getInpName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { CALLOUTS_ENABLED } from '../../constants/config';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
-import { FormViewContext } from '@workspaceui/componentlibrary/src/components/FormView';
+import { FieldValue } from './FormView/types';
+import BooleanSelector from './FormView/selectors/BooleanSelector';
+import NumberSelector from './FormView/selectors/NumberSelector';
+import DateSelector from './FormView/selectors/DateSelector';
+import SelectSelector from './FormView/selectors/SelectSelector';
+import SearchSelector from './FormView/selectors/SearchSelector';
+import TableDirSelector from './FormView/selectors/TableDirSelector';
+import QuantitySelector from './FormView/selectors/QuantitySelector';
+import ListSelector from './FormView/selectors/ListSelector';
+import { StringSelector } from './FormView/selectors/StringSelector';
 
 interface GenericSelectorProps {
   field: FieldDefinition;
   tab: Tab;
-  readOnly?: boolean;
+  isReadOnly: boolean;
+  isDisplayed: boolean;
 }
 
-export const GenericSelector = ({ field, tab }: GenericSelectorProps) => {
+export const GenericSelector = ({ field, tab, isDisplayed, isReadOnly }: GenericSelectorProps) => {
   const { watch, setValue, getValues } = useFormContext();
-  const { fieldsByColumnName, fieldsByInputName } = useMetadataContext();
-  const { sessionAttributes } = useContext(FormViewContext);
+  const { fieldsByColumnName } = useMetadataContext();
   const name = useRef(getInpName(field.original));
   const value = watch(name.current, field.initialValue);
   const callout = useCallout({ field: field.original, tab });
-  const form = useFormContext();
-
-  const getMappedValues = useCallback(
-    () =>
-      Object.entries(form.getValues()).reduce((acc, [inputName, inputValue]) => {
-        const theField = fieldsByInputName[inputName];
-
-        if (theField) {
-          acc[theField.columnName] = inputValue;
-        } else {
-          acc[inputName] = inputValue;
-        }
-
-        return acc;
-      }, {} as Record<string, unknown>),
-    [fieldsByInputName, form],
-  );
-
-  const isDisplayed = useMemo(() => {
-    const expr = field.original.displayLogicExpression;
-
-    if (!expr) return true;
-
-    let result = expr.replace(/OB\.Utilities\.getValue\((\w+),\s*['"]([^'"]+)['"]\)/g, '$1["$2"]');
-    result = result.replace(/context\.(\$?\w+)/g, (_, prop) => `context.${prop}`);
-    window.context = sessionAttributes;
-    window.currentValues = getMappedValues();
-
-    const evalResult = eval(result);
-
-    return evalResult;
-  }, [field.original.displayLogicExpression, getMappedValues, sessionAttributes]);
-
-  const isReadOnly = useMemo(() => {
-    const expr = field.original.readOnlyState?.readOnlyLogicExpr;
-    if (!expr) return false;
-
-    return Metadata.evaluateExpression(expr, getMappedValues());
-  }, [field.original.readOnlyState?.readOnlyLogicExpr, getMappedValues]);
 
   const applyCallout = useCallback(
     (data: { [key: string]: unknown }) => {
