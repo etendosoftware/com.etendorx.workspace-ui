@@ -11,6 +11,7 @@ const es = {
     loading: 'Cargando...',
     loadingFormData: 'Cargando información del formulario...',
     retry: 'Reintentar',
+    processes: 'Procesos disponibles',
   },
   errors: {
     networkError: {

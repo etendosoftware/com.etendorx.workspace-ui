@@ -51,7 +51,7 @@ export interface ToolbarButton {
   icon: React.ReactNode;
   iconText?: string;
   tooltip?: string;
-  onClick: () => void;
+  onClick: ((event?: React.MouseEvent<HTMLElement>) => void) | (() => void);
   disabled?: boolean;
   fill?: string;
   hoverFill?: string;

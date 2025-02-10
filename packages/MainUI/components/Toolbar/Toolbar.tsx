@@ -1,8 +1,15 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import ProcessModal from '@workspaceui/componentlibrary/src/components/ProcessModal';
-import { IconSize, ProcessResponse, StandardButton, ToolbarProps, isProcessButton } from './types';
+import {
+  IconSize,
+  ProcessResponse,
+  StandardButton,
+  StandardButtonConfig,
+  ToolbarProps,
+  isProcessButton,
+} from './types';
 import {
   LEFT_SECTION_BUTTONS,
   CENTER_SECTION_BUTTONS,
@@ -20,12 +27,14 @@ import { iconMap } from './iconMap';
 import { useToolbar } from '../../hooks/Toolbar/useToolbar';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
+import ProcessMenu from './ProcessMenu';
 
-export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
+export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false }) => {
   const [openModal, setOpenModal] = React.useState(false);
   const [isExecuting, setIsExecuting] = React.useState(false);
   const [processResponse, setProcessResponse] = React.useState<ProcessResponse | null>(null);
   const [selectedProcessButton, setSelectedProcessButton] = React.useState<ProcessButton | null>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
   const { selected, tabs } = useMetadataContext();
@@ -39,6 +48,30 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
 
   const tab = useMemo(() => tabs.find(tab => tab.id === tabId), [tabs, tabId]);
   const selectedRecord = tab ? selected[tab.level] : undefined;
+
+  const processButtons = useMemo(
+    () => toolbar?.response?.buttons.filter(isProcessButton) || [],
+    [toolbar?.response?.buttons],
+  );
+
+  const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  }, []);
+
+  const handleMenuClose = useCallback(() => {
+    setAnchorEl(null);
+  }, []);
+
+  const handleProcessMenuClick = useCallback(
+    (button: ProcessButton) => {
+      if (selectedRecord) {
+        setSelectedProcessButton(button);
+        setOpenModal(true);
+      }
+      handleMenuClose();
+    },
+    [selectedRecord, handleMenuClose],
+  );
 
   const handleSearchChange = useCallback(
     (value: string) => {
@@ -93,32 +126,28 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
   const createToolbarConfig = () => {
     const buttons = toolbar?.response?.buttons || [];
 
-    const createProcessButtonConfig = (btn: ProcessButton) => {
-      const config = {
-        key: btn.id,
-        icon: React.createElement(iconMap.process),
-        tooltip: btn.name,
-        iconText: btn.name,
-        height: IconSize,
-        width: IconSize,
-        sx: {
-          color: theme.palette.baselineColor.neutral[100],
-          background: theme.palette.specificColor.warning.main,
-          opacity: selectedRecord ? 1 : 0.5,
-          cursor: selectedRecord ? 'pointer' : 'not-allowed',
-        },
-        onClick: () => {
-          if (selectedRecord) {
-            setSelectedProcessButton(btn);
-            setOpenModal(true);
-          }
-        },
-      };
-
-      return {
-        ...config,
-      };
-    };
+    const createProcessMenuButton = (): StandardButtonConfig => ({
+      key: 'process-menu',
+      action: 'MENU',
+      name: t('common.processes'),
+      icon: React.createElement(iconMap.process),
+      iconText: t('common.processes'),
+      tooltip: t('common.processes'),
+      height: IconSize,
+      width: IconSize,
+      enabled: true,
+      sx: {
+        color: theme.palette.baselineColor.neutral[100],
+        background: theme.palette.specificColor.warning.main,
+        opacity: selectedRecord ? 1 : 0.5,
+        cursor: selectedRecord ? 'pointer' : 'not-allowed',
+      },
+      onClick: (event?: React.MouseEvent<HTMLElement>) => {
+        if (selectedRecord && event) {
+          handleMenuOpen(event);
+        }
+      },
+    });
 
     const sections = {
       leftSection: LEFT_SECTION_BUTTONS,
@@ -126,19 +155,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
       rightSection: RIGHT_SECTION_BUTTONS,
     };
 
-    const createSectionConfig = (sectionButtons: StandardButtonId[], includeProcess = false) => ({
+    const createSectionConfig = (sectionButtons: StandardButtonId[]) => ({
       buttons: buttons
         .filter((btn: StandardButton) => {
-          if (includeProcess && isProcessButton(btn)) return true;
+          if (isFormView && btn.id === 'FIND') return false;
+          if (isProcessButton(btn)) return false;
           return sectionButtons.includes(btn.id as StandardButtonId);
         })
         .map(btn => {
-          if (isProcessButton(btn)) {
-            return createProcessButtonConfig(btn);
-          }
           const config = createStandardButtonConfig(btn as StandardButton, handleAction);
           const style = getStandardButtonStyle(btn.id as StandardButtonId);
-
           if (style) {
             config.sx = style;
           }
@@ -147,18 +173,34 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId }) => {
       style: getSectionStyle(sectionButtons),
     });
 
-    return {
+    const config = {
       leftSection: createSectionConfig(sections.leftSection),
       centerSection: createSectionConfig(sections.centerSection),
-      rightSection: createSectionConfig(sections.rightSection, true),
+      rightSection: createSectionConfig(sections.rightSection),
       isItemSelected: !!selectedRecord?.id,
     };
+
+    if (processButtons.length > 0) {
+      config.rightSection.buttons.push(createProcessMenuButton());
+    }
+
+    return config;
   };
 
   return (
     <>
       <TopToolbar {...createToolbarConfig()} />
-      {searchOpen && (
+      {processButtons.length > 0 && (
+        <ProcessMenu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleMenuClose}
+          processButtons={processButtons}
+          onProcessClick={handleProcessMenuClick}
+          selectedRecord={selectedRecord}
+        />
+      )}
+      {searchOpen && !isFormView && (
         <SearchPortal
           isOpen={searchOpen}
           searchValue={searchValue}

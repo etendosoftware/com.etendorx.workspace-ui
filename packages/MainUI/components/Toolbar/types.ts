@@ -16,12 +16,17 @@ export type IconName =
 
 export interface ToolbarResponseButton extends ToolbarButton {
   icon: IconName;
+  key: string;
+  onClick: () => void;
+  name: string;
+  id: string;
 }
 
 export interface ToolbarProps {
   windowId: string;
   tabId?: string;
   onSearch?: (value: string) => void;
+  isFormView?: boolean;
 }
 
 export interface ProcessResponse {
@@ -49,6 +54,10 @@ export interface StandardButton extends BaseButton {
   width?: number;
 }
 
+export interface ProcessMenuButtonConfig extends Omit<StandardButtonConfig, 'onClick'> {
+  onClick: (event: React.MouseEvent<HTMLElement>) => void;
+}
+
 export type Button = StandardButton | ProcessButton;
 
 export const isProcessButton = (button: Button): button is ProcessButton => {
@@ -61,6 +70,9 @@ export interface StandardButtonConfig extends ToolbarButton {
   fill?: string;
   height?: number;
   width?: number;
+  action?: string;
+  name?: string;
+  enabled?: boolean;
 }
 
 export interface ProcessButtonConfig extends ToolbarButton {
@@ -77,4 +89,14 @@ export type ButtonConfig = StandardButtonConfig | ProcessButtonConfig;
 export interface ToolbarSection {
   buttons: ButtonConfig[];
   style?: React.CSSProperties;
+}
+
+export interface ProcessMenuProps {
+  anchorEl: HTMLElement | null;
+  open: boolean;
+  onClose: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  processButtons: any;
+  onProcessClick: (button: ProcessButton) => void;
+  selectedRecord: unknown | undefined;
 }
