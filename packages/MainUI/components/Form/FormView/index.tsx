@@ -7,6 +7,7 @@ import SectionRenderer from './Sections/sectionRendered';
 import type { Section } from './types';
 import Chevrons from '@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
+import StatusBar from './StatusBar';
 
 export const FormViewContext = createContext({
   sessionAttributes: {} as FormViewProps['sessionAttributes'],
@@ -36,6 +37,23 @@ const FormView: React.FC<FormViewProps> = ({
     () => <Chevrons fill={theme.palette.baselineColor.neutral[80]} />,
     [theme.palette.baselineColor.neutral],
   );
+
+  const { statusFields, regularFields } = useMemo(() => {
+    const status: [string, FieldDefinition][] = [];
+    const regular: [string, FieldDefinition][] = [];
+
+    Object.entries(data).forEach(([key, value]) => {
+      if ('section' in value) {
+        if (value.section === 'Status') {
+          status.push([key, value]);
+        } else {
+          regular.push([key, value]);
+        }
+      }
+    });
+
+    return { statusFields: status, regularFields: regular };
+  }, [data]);
 
   const tabs: TabItem[] = useMemo(() => {
     return Object.values(data)
@@ -102,15 +120,13 @@ const FormView: React.FC<FormViewProps> = ({
 
   const groupedFields = useMemo(
     () =>
-      Object.entries(data).reduce((acc, [key, value]) => {
-        if ('section' in value) {
-          const section = value.section ?? '_mainSection';
-          if (!acc[section]) acc[section] = [];
-          acc[section].push([key, value]);
-        }
+      regularFields.reduce((acc, [key, value]) => {
+        const section = value.section ?? '_mainSection';
+        if (!acc[section]) acc[section] = [];
+        acc[section].push([key, value]);
         return acc;
       }, {} as { [key: string]: [string, FieldDefinition][] }),
-    [data],
+    [regularFields],
   );
 
   const handleSectionRef = useCallback(
@@ -133,9 +149,11 @@ const FormView: React.FC<FormViewProps> = ({
   return (
     <FormViewContext.Provider value={contextValue}>
       <Box display="flex" flexDirection="column" height="100%" width="100%" padding="0 0 0.5rem 0.5rem">
+        {statusFields.length > 0 && <StatusBar statusFields={statusFields} />}
         <Box flexShrink={1}>
           <PrimaryTabs tabs={tabs} onChange={handleTabChange} icon={defaultIcon} />
         </Box>
+
         <Box flexGrow={1} overflow="auto" ref={containerRef}>
           <form onSubmit={handleSubmit}>
             <Grid container>

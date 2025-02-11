@@ -16,7 +16,7 @@ const menuStyle = {
 const menuItemStyle = {
   display: 'flex',
   width: 'auto',
-  margin: '0.5rem',
+  margin: '0 0.5rem',
   padding: '0.5rem',
   borderRadius: '0.5rem',
   '&:hover': {

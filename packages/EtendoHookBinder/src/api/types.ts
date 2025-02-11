@@ -379,6 +379,7 @@ export interface BaseFieldDefinition<T> {
   required?: boolean;
   initialValue?: T;
   readOnlyState?: ReadOnlyState;
+  displayValue?: string;
   original: {
     referencedEntity: string;
     referencedWindowId: string;

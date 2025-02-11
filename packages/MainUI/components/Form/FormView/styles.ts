@@ -230,6 +230,15 @@ export const useStyle = (): StylesType => {
             display: 'flex',
           },
         },
+        //StatusBar
+        statusContainer: {
+          display: 'flex',
+          gap: 2,
+          p: 2,
+          bgcolor: 'background.paper',
+          borderBottom: 1,
+          borderColor: 'divider',
+        },
       },
     }),
     [theme],

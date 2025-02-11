@@ -3,7 +3,6 @@ import {
   Column,
   Field,
   FieldDefinition,
-  FieldInfo,
   FieldType,
   MappedData,
   MappedTab,
@@ -85,11 +84,19 @@ export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormDa
   if (!tab || !record) return null;
 
   const adaptedData: FormData = {};
-  const sections = new Set<string>(['Main']);
+  const sections = new Set<string>(['Main', 'Status']);
 
-  Object.values(tab.fields).forEach((field: FieldInfo) => {
-    const sectionName = field.fieldGroup$_identifier;
-    if (sectionName) sections.add(sectionName);
+  const statusBarFields: Field[] = [];
+  const regularFields: Field[] = [];
+
+  Object.values(tab.fields).forEach((field: Field) => {
+    if (field.shownInStatusBar) {
+      statusBarFields.push(field);
+    } else {
+      regularFields.push(field);
+      const sectionName = field.fieldGroup$_identifier;
+      if (sectionName) sections.add(sectionName);
+    }
   });
 
   sections.forEach(sectionName => {
@@ -99,12 +106,51 @@ export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormDa
       type: 'section',
       personalizable: false,
       id: sectionName,
-      showInTab: 'both',
+      showInTab: sectionName === 'Status' ? 'status' : 'both',
     } as Section;
   });
 
-  Object.entries(tab.fields).forEach(([fieldName, fieldInfo]) => {
+  statusBarFields.forEach(fieldInfo => {
     const column = fieldInfo.column as unknown as Column;
+    const fieldName = (fieldInfo.columnName || column.dBColumnName || '') as string;
+    const fieldType = mapColumnTypeToFieldType(column);
+
+    const rawValue = fieldName ? record[fieldName] ?? record[column.dBColumnName as string] : undefined;
+    const identifierValue =
+      record[`${fieldName}$_identifier`] ??
+      record[`${column.dBColumnName}$_identifier`] ??
+      record[`${fieldName}_identifier`];
+
+    let value = rawValue;
+    if (fieldType === 'tabledir' && rawValue) {
+      value = {
+        id: rawValue,
+        title: identifierValue || String(rawValue),
+        value: rawValue,
+        _identifier: identifierValue,
+      };
+    }
+
+    adaptedData[fieldName] = {
+      value: value,
+      displayValue: identifierValue || value,
+      initialValue: value,
+      type: fieldType,
+      label: column.name,
+      section: 'Status',
+      required: column.mandatory ?? false,
+      referencedTable: column.reference,
+      original: {
+        ...fieldInfo,
+        fieldName,
+        column,
+      },
+    } as unknown as FieldDefinition;
+  });
+
+  regularFields.forEach(fieldInfo => {
+    const column = fieldInfo.column as unknown as Column;
+    const fieldName = fieldInfo.name || fieldInfo.column.dBColumnName;
     const sectionName = fieldInfo.fieldGroup$_identifier ?? 'Main';
     const fieldType = mapColumnTypeToFieldType(column);
 
@@ -113,7 +159,7 @@ export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormDa
     const identifierValue =
       record[`${dbColumnName}$_identifier`] ?? record[`${fieldName}$_identifier`] ?? record[`${fieldName}_identifier`];
 
-    let value;
+    let value = rawValue;
     if (fieldType === 'tabledir' && rawValue) {
       value = {
         id: rawValue,
@@ -121,8 +167,6 @@ export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormDa
         value: rawValue,
         _identifier: identifierValue,
       };
-    } else {
-      // ...
     }
 
     adaptedData[fieldName] = {
