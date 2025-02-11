@@ -111,7 +111,7 @@ export function useDatasource(
     } finally {
       setLoading(false);
     }
-  }, [queryParams, entity, page, pageSize]);
+  }, [entity, page, pageSize, queryParams, searchQuery]);
 
   useEffect(() => {
     setRecords([]);

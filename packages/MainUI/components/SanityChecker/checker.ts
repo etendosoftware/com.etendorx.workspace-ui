@@ -13,10 +13,15 @@ export async function performHealthCheck(
       const response = await fetch(API_METADATA_URL, {
         method: 'OPTIONS',
         signal,
+        keepalive: false,
       });
 
       if (response.ok) {
         onSuccess();
+
+        break;
+      } else {
+        throw new Error(response.statusText);
       }
     } catch (error) {
       if (signal.aborted) return;

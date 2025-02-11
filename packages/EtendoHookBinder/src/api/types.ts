@@ -22,6 +22,7 @@ export type Criteria = BaseCriteria | CompositeCriteria;
 
 export interface DatasourceParams {
   windowId?: string;
+  tabId?: string;
   columns?: string[];
   startRow?: number;
   endRow?: number;
@@ -43,6 +44,8 @@ export interface DatasourceOptions {
   operator?: 'and' | 'or';
   pageSize?: number;
   headers?: Record<string, string>;
+  tabId?: string;
+  windowId?: string;
 }
 
 export interface GridProps {
