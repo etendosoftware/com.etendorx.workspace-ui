@@ -231,13 +231,26 @@ export const useStyle = (): StylesType => {
           },
         },
         //StatusBar
-        statusContainer: {
+        statusBarContainer: {
           display: 'flex',
-          gap: 2,
+          gap: 4,
           p: 2,
-          bgcolor: 'background.paper',
-          borderBottom: 1,
-          borderColor: 'divider',
+          bgcolor: theme.palette.baselineColor.neutral[10],
+          borderRadius: '2rem',
+          marginBottom: '0.5rem',
+        },
+        statusItemContainer: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        },
+        statusLabel: {
+          color: theme.palette.baselineColor.neutral[90],
+          fontWeight: 600,
+        },
+        statusValue: {
+          color: theme.palette.dynamicColor.main,
+          fontWeight: 600,
         },
       },
     }),

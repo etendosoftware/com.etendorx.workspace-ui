@@ -1,5 +1,6 @@
-import { Box, Typography, useTheme } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { BaseFieldDefinition, SelectOption } from '@workspaceui/etendohookbinder/src/api/types';
+import { useStyle } from './styles';
 
 type StatusBarFieldDefinition =
   | BaseFieldDefinition<string>
@@ -11,7 +12,7 @@ type StatusBarFieldDefinition =
   | BaseFieldDefinition<Record<string, unknown>>;
 
 const StatusBar: React.FC<{ statusFields: [string, StatusBarFieldDefinition][] }> = ({ statusFields }) => {
-  const theme = useTheme();
+  const { sx } = useStyle();
 
   const getDisplayValue = (field: StatusBarFieldDefinition): string => {
     if (field.type === 'boolean') {
@@ -33,21 +34,15 @@ const StatusBar: React.FC<{ statusFields: [string, StatusBarFieldDefinition][] }
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        gap: 4,
-        p: 2,
-        bgcolor: theme.palette.baselineColor.neutral[10],
-        borderRadius: '2rem',
-        marginBottom: '0.5rem',
-      }}>
+    <Box sx={sx.statusBarContainer}>
       {statusFields.map(([key, field]) => (
-        <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="subtitle2" color="text.secondary">
+        <Box key={key} sx={sx.statusItemContainer}>
+          <Typography variant="subtitle2" sx={sx.statusLabel}>
             {field.label}:
           </Typography>
-          <Typography variant="body2">{getDisplayValue(field)}</Typography>
+          <Typography variant="body2" sx={sx.statusValue}>
+            {getDisplayValue(field)}
+          </Typography>
         </Box>
       ))}
     </Box>
