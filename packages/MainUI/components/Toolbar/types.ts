@@ -1,5 +1,6 @@
 import { ToolbarButton } from '@workspaceui/storybook/src/stories/Components/Table/types';
 import { BaseButton, ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
+import { Theme } from '@mui/material';
 
 export const IconSize = 16;
 
