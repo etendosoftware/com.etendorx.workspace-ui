@@ -100,3 +100,20 @@ export interface ProcessMenuProps {
   onProcessClick: (button: ProcessButton) => void;
   selectedRecord: unknown | undefined;
 }
+
+export interface Position {
+  top: string;
+  right: string;
+}
+
+export interface SearchPortalProps {
+  isOpen: boolean;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  onClose: () => void;
+  placeholder?: string;
+  position?: Position;
+  width?: string;
+  autoCompleteTexts?: string[];
+  theme?: Theme;
+}
