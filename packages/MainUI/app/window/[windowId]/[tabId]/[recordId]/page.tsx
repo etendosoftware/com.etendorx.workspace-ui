@@ -33,6 +33,8 @@ export default function EditRecordPage() {
     return <Spinner />;
   }
 
+  console.log('FormData in EditRecordPage:', formData);
+
   const error = recordError || formError;
   if (error) {
     return <ErrorDisplay title={t('errors.formData.title')} description={error.message} showHomeButton />;

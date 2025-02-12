@@ -48,6 +48,11 @@ const DateSelector = memo(
 
     const formatDateForInput = (dateString?: string) => {
       if (!dateString) return '';
+
+      if (dateString.includes('-')) {
+        return dateString;
+      }
+
       const [day, month, year] = dateString.split('/');
       return `${year}-${month}-${day}`;
     };
@@ -82,5 +87,7 @@ const DateSelector = memo(
     );
   },
 );
+
+DateSelector.displayName = 'DateSelector';
 
 export default DateSelector;

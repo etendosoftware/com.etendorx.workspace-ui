@@ -37,6 +37,7 @@ export const useStyle = () => {
           },
         },
         tab: {
+          marginRight: '0.25rem',
           minHeight: 48,
           textTransform: 'none',
           borderRadius: '12.5rem',

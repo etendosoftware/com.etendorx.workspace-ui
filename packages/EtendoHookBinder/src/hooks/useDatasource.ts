@@ -48,7 +48,22 @@ export function useDatasource(
     const referenceFields = ['organization', 'transactionDocument', 'businessPartner', 'partnerAddress'];
 
     //TODO: Implement util either in the front or back to parse dif columns types
-    const excludedFields = ['orderDate', 'grandTotalAmount', 'amount', 'price', 'quantity'];
+    const excludedFields = [
+      'orderDate',
+      'grandTotalAmount',
+      'amount',
+      'price',
+      'quantity',
+      'invoiceDate',
+      'finalSettlementDate',
+      'daysSalesOutstanding',
+      'percentageOverdue',
+      'totalPaid',
+      'outstandingAmount',
+      'dueAmount',
+      'daysTillDue',
+      'percentageOverdue',
+    ];
 
     const compositeCriteria: CompositeCriteria = {
       operator: 'or',

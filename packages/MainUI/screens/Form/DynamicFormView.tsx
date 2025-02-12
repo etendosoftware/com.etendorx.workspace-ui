@@ -46,7 +46,7 @@ function DynamicFormView({
 
   if (!formData || !mappedMetadata) return <div>No form data available</div>;
 
-  console.log(formData);
+  console.log('FormData in DynamicView:', formData);
 
   return (
     <FormProvider {...methods}>
