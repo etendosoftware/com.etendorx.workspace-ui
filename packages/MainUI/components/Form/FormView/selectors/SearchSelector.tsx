@@ -5,6 +5,7 @@ import { useTheme } from '@mui/material';
 import { Option, SearchSelectorProps } from '../types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
+import { useMetadataContext } from '@/hooks/useMetadataContext';
 
 const getOptionLabel = (option: Option) => option.title;
 
@@ -12,7 +13,9 @@ const optionEqualValue = (option: Option, value: { id: string }) => option.id ==
 
 const SearchSelector = ({ onChange, value, field, name, disabled, readOnly }: SearchSelectorProps) => {
   const theme = useTheme();
-  const { records, loading, error, loaded } = useComboSelect(field);
+  const { windowId, tab } = useMetadataContext();
+  const params = useMemo(() => ({ windowId, tabId: tab?.id || '' }), [tab?.id, windowId]);
+  const { records, loading, error, loaded } = useComboSelect(field, params);
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
 
   const isDisabled = disabled || readOnly;

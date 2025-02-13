@@ -5,11 +5,13 @@ import type { DatabaseSelectSelector } from '../types';
 import { useTheme } from '@mui/material';
 import { Option } from '@workspaceui/etendohookbinder/src/api/types';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
+import { useMetadataContext } from '@/hooks/useMetadataContext';
 
 const DatabaseSelectSelector = memo(({ value, name, title, onChange, readOnly, entity }: DatabaseSelectSelector) => {
   const theme = useTheme();
-
-  const { records = [], loading } = useDatasource(entity);
+  const { windowId, tab } = useMetadataContext();
+  const query = useMemo(() => ({ windowId, tabId: tab?.id || '' }), [tab?.id, windowId]);
+  const { records = [], loading } = useDatasource(entity, query);
 
   const options = useMemo<Option<string>[]>(
     () =>
@@ -36,5 +38,7 @@ const DatabaseSelectSelector = memo(({ value, name, title, onChange, readOnly, e
     />
   );
 });
+
+DatabaseSelectSelector.displayName = 'DatabaseSelectSelector';
 
 export default DatabaseSelectSelector;

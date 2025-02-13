@@ -2,13 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FieldDefinition } from '../api/types';
 import { Metadata } from '../api/metadata';
 
-export function useComboSelect(field: FieldDefinition) {
+export function useComboSelect(field: FieldDefinition, options: Record<string, string> = {}) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState<Error | undefined>(undefined);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(100);
 
   const load = useCallback(async () => {
     try {
@@ -21,10 +19,10 @@ export function useComboSelect(field: FieldDefinition) {
       const payload = new URLSearchParams();
       const p = {
         _startRow: 0,
-        _endRow: 5000,
+        _endRow: 9999,
         _selectorDefinitionId: field.original.selector._selectorDefinitionId,
-        // windowId: '143',
-        // tabId: '186',
+        windowId: options.windowId,
+        tabId: options.tabId,
         // adTabId: '186',
         // moduleId: 0,
         // targetProperty: 'businessPartner',
@@ -57,15 +55,7 @@ export function useComboSelect(field: FieldDefinition) {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize]);
-
-  const fetchMore = useCallback(() => {
-    setPage(prev => prev + 1);
-  }, []);
-
-  const changePageSize = useCallback((size: number) => {
-    setPageSize(size);
-  }, []);
+  }, [field.original.selector, options.tabId, options.windowId]);
 
   useEffect(() => {
     load();
@@ -75,12 +65,10 @@ export function useComboSelect(field: FieldDefinition) {
     () => ({
       loading,
       error,
-      fetchMore,
-      changePageSize,
       load,
       records,
       loaded,
     }),
-    [error, loading, fetchMore, changePageSize, load, records, loaded],
+    [error, load, loaded, loading, records],
   );
 }
