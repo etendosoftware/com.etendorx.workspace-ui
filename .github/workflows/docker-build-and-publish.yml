@@ -41,6 +41,6 @@ jobs:
       - name: Build and Push Docker image (Multi-platform)
         run: |
           docker buildx build \
-            --platform=linux/amd64,darwin/arm64 \
+            --platform=linux/amd64,linux/arm64 \
             --push \
             -t etendo/etendo_ui:${{ env.BRANCH_NAME }} .
