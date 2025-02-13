@@ -29,15 +29,18 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             BRANCH_NAME=$(echo "${{ github.head_ref }}" | tr '/' '-')
+          elif [ "${{ github.ref_name }}" == "develop" ] && [ "${{ github.event_name }}" == "push" ]; then
+            BRANCH_NAME="latest"
           else
             BRANCH_NAME=$(echo "${{ github.ref_name }}" | tr '/' '-')
           fi
+
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
       # Build the Docker image
       - name: Build Docker image
         run: |
-          docker buildx build -f docker/mainui/Dockerfile -t etendo/etendo_ui:${{ env.BRANCH_NAME }} .
+          docker buildx build -t etendo/etendo_ui:${{ env.BRANCH_NAME }} .
       
       # Tag the Docker image
       - name: Tag Docker image
