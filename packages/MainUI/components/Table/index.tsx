@@ -28,10 +28,13 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const { language } = useLanguage();
   const { searchQuery } = useSearch();
 
+  console.log('Tab:', tab);
+
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || 'id';
     const value = parent?.id || '';
     const operator = 'equals';
+
     const options: DatasourceOptions = {
       pageSize: 10,
       headers: {
@@ -52,13 +55,17 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     return options;
   }, [tab.parentColumns, parent?.id, language]);
 
-  const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
+  const columns = useMemo(() => {
+    const parsedColumns = parseColumns(Object.values(tab.fields));
+    return parsedColumns;
+  }, [tab.fields]);
 
   const { records, loading, error, fetchMore, loaded } = useDatasource(tab.entityName, query, searchQuery, columns);
 
   const rowProps = useCallback(
     ({ row }: { row: MRT_Row<Record<string, unknown>> }) => ({
       onClick: () => {
+        console.log('Row clicked:', row.original);
         selectRecord(row.original as never, tab);
         row.toggleSelected();
       },
