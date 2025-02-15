@@ -3,10 +3,16 @@ name: Docker Build and Publish
 on:
   push:
     branches:
-      - 'mac-version'
+      - "develop"
+      - "main"
   pull_request:
+    types:
+      - "opened"
+      - "synchronize"
+      - "reopened"
     branches:
-      - 'mac-version'
+      - "develop"
+      - "main"
 
 jobs:
   build-and-publish:
@@ -30,7 +36,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             BRANCH_NAME=$(echo "${{ github.head_ref }}" | tr '/' '-')
-          elif [ "${{ github.ref_name }}" == "develop" ] && [ "${{ github.event_name }}" == "push" ]; then
+          elif [ "${{ github.ref_name }}" == "main" ] && [ "${{ github.event_name }}" == "push" ]; then
             BRANCH_NAME="latest"
           else
             BRANCH_NAME=$(echo "${{ github.ref_name }}" | tr '/' '-')
