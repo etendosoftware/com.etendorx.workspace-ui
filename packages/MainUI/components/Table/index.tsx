@@ -27,13 +27,16 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const [editing, setEditing] = useState(false);
   const { language } = useLanguage();
   const { searchQuery } = useSearch();
+  const tabId = tab.id;
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || 'id';
     const value = parent?.id || '';
     const operator = 'equals';
     const options: DatasourceOptions = {
-      pageSize: 10,
+      windowId,
+      tabId,
+      pageSize: 100,
       headers: {
         'Accept-Language': language,
       },
@@ -50,7 +53,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     }
 
     return options;
-  }, [tab.parentColumns, parent?.id, language]);
+  }, [language, parent?.id, tab.parentColumns, tabId, windowId]);
 
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
