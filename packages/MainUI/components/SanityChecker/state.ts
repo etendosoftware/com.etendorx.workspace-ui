@@ -9,7 +9,7 @@ export type Action = { type: 'SET_CONNECTED' } | { type: 'SET_ERROR' } | { type:
 export const initialState: State = {
   connected: false,
   error: false,
-  loading: true,
+  loading: false,
 };
 
 export function stateReducer(state: State, action: Action): State {

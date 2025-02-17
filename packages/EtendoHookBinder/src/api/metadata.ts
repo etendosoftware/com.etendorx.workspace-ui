@@ -17,23 +17,21 @@ export class Metadata {
   public static datasourceClient = new Client(API_DATASOURCE_URL);
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
   private static currentRoleId: string | null = null;
-  private static token: string | null = null;
 
   public static setLanguage(value: string) {
-    this.client.setLanguageHeader(value);
-    this.datasourceClient.setLanguageHeader(value);
-    this.kernelClient.setLanguageHeader(value);
+    [this.client, this.datasourceClient, this.kernelClient].forEach(client =>
+      client.setLanguageHeader(value)
+    );
+
+    return this;
   }
 
   public static setToken(token: string) {
-    this.token = token;
-    this.client.setAuthHeader(token, 'Bearer').addQueryParam("stateless", "true");
-    this.datasourceClient.setAuthHeader(token, 'Bearer').addQueryParam("stateless", "true");
-    this.kernelClient.setAuthHeader(token, 'Bearer').addQueryParam("stateless", "true");
-  }
+    [this.client, this.datasourceClient, this.kernelClient].forEach(client =>
+      client.setAuthHeader(token, 'Bearer').addQueryParam('stateless', 'true')
+    );
 
-  public static getToken() {
-    return this.token;
+    return this;
   }
 
   public static registerInterceptor(interceptor: Interceptor) {

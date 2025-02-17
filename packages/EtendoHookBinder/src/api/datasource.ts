@@ -20,9 +20,11 @@ export class Datasource {
   ) {
     try {
       const params = new URLSearchParams({
-        _isImplicitFilterApplied: isImplicitFilterApplied ? 'true' : 'false',
+        isImplicitFilterApplied: isImplicitFilterApplied ? 'true' : 'false',
         _noCount: noCount ? 'true' : 'false',
         _operationType: operationType,
+        windowId: options.windowId || "",
+        tabId: options.tabId || "",
       });
 
       Object.entries(options).forEach(([key, value]) => {

@@ -16,7 +16,7 @@ const AppBreadcrumb: React.FC = () => {
   const pathname = usePathname();
   const navigate = router.push;
   const { language } = useLanguage();
-  const { windowData } = useMetadataContext();
+  const { windowData, tab } = useMetadataContext();
 
   const windowId = Array.isArray(params.windowId) ? params.windowId[0] : params.windowId || '';
   const recordId = Array.isArray(params.recordId) ? params.recordId[0] : params.recordId || '';
@@ -25,12 +25,14 @@ const AppBreadcrumb: React.FC = () => {
 
   const query = useMemo(
     () => ({
+      windowId,
+      tabId: tab?.id,
       criteria: [{ fieldName: 'id', operator: 'equals', value: recordId }],
       headers: {
         'Accept-Language': language,
       },
     }),
-    [recordId, language],
+    [language, recordId, tab?.id, windowId],
   );
 
   const { records } = useDatasource(windowData?.tabs?.[0]?.entityName || '', query);
