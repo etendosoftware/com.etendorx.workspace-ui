@@ -63,6 +63,8 @@ const es = {
       closeSidebar: 'Cerrar barra lateral',
       details: 'Detalles',
       refresh: 'Actualizar',
+      implicitFilterOn: 'Filtros aplicados. Click para quitar filtros',
+      implicitFilterOff: 'Filtros desactivados. Click para aplicar filtros',
     },
     placeholders: {
       search: 'Buscar...',

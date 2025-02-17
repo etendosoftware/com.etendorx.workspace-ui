@@ -1,4 +1,4 @@
-import { API_DATASOURCE_URL, API_OBREST_URL } from './constants';
+import { API_DATASOURCE_URL } from './constants';
 import { Client, Interceptor } from './client';
 import { DatasourceParams } from './types';
 
@@ -15,12 +15,11 @@ export class Datasource {
     entity: string,
     options: DatasourceParams = {},
     operationType = 'fetch',
-    isImplicitFilterApplied = true,
     noCount = true,
   ) {
     try {
       const params = new URLSearchParams({
-        isImplicitFilterApplied: isImplicitFilterApplied ? 'true' : 'false',
+        isImplicitFilterApplied: options.isImplicitFilterApplied ? 'true' : 'false',
         _noCount: noCount ? 'true' : 'false',
         _operationType: operationType,
         windowId: options.windowId || "",

@@ -279,6 +279,7 @@ export interface SessionResponse {
     id: string;
     name: string;
   };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   languages: Record<string, any>[];
   session: ISession;
 }

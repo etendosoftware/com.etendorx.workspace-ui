@@ -13,6 +13,7 @@ import DynamicFormView from '../../screens/Form/DynamicFormView';
 import { WindowParams } from '../../app/types';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useSearch } from '../../contexts/searchContext';
+import TopToolbar from './top-toolbar';
 
 type DynamicTableProps = {
   tab: Tab;
@@ -25,9 +26,12 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const navigate = useRouter().push;
   const { sx } = useStyle();
   const [editing, setEditing] = useState(false);
+  const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState(true);
   const { language } = useLanguage();
   const { searchQuery } = useSearch();
   const tabId = tab.id;
+
+  const handleFilterToggle = useCallback(() => setIsImplicitFilterApplied(prev => !prev), []);
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || 'id';
@@ -36,6 +40,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     const options: DatasourceOptions = {
       windowId,
       tabId,
+      isImplicitFilterApplied,
       pageSize: 100,
       headers: {
         'Accept-Language': language,
@@ -53,7 +58,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     }
 
     return options;
-  }, [language, parent?.id, tab.parentColumns, tabId, windowId]);
+  }, [language, parent?.id, tab.parentColumns, tabId, windowId, isImplicitFilterApplied]);
 
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
@@ -96,7 +101,6 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     <Box sx={sx.container}>
       <Box sx={sx.table}>
         <MaterialReactTable
-          enableTopToolbar={false}
           enableGlobalFilter={false}
           columns={columns}
           data={records}
@@ -105,6 +109,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
           positionToolbarAlertBanner="none"
           muiTableBodyRowProps={rowProps}
           enablePagination={false}
+          renderTopToolbar={<TopToolbar filterActive={isImplicitFilterApplied} toggleFilter={handleFilterToggle} />}
           renderBottomToolbar={
             tab.uIPattern == 'STD' && !searchQuery ? <Button onClick={fetchMore}>Load more</Button> : null
           }
