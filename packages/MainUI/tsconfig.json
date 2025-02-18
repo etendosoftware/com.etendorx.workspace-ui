@@ -27,8 +27,8 @@
   "include": [
     "next-env.d.ts",
     "custom.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
+    "./**/*.ts",
+    "./**/*.tsx",
     ".next/types/**/*.ts",
     "types/svgr.d.ts",
     "types/theme.d.ts"

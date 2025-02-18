@@ -10,7 +10,7 @@ export class Datasource {
   }
 
   public static registerInterceptor(interceptor: Interceptor) {
-    Datasource.client.registerInterceptor(interceptor);
+    return Datasource.client.registerInterceptor(interceptor);
   }
 
   public static async get(entity: string, options: DatasourceParams = {}) {
