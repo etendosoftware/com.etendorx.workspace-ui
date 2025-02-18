@@ -46,6 +46,7 @@ export interface DatasourceOptions {
   headers?: Record<string, string>;
   tabId?: string;
   windowId?: string;
+  language?: string;
 }
 
 export interface GridProps {

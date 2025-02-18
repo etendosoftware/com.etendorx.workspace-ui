@@ -42,9 +42,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
       tabId,
       isImplicitFilterApplied,
       pageSize: 100,
-      headers: {
-        'Accept-Language': language,
-      },
+      language,
     };
 
     if (value) {
