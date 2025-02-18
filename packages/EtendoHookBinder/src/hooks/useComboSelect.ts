@@ -17,12 +17,10 @@ export function useComboSelect(field: FieldDefinition, options: Record<string, s
       }
 
       const payload = new URLSearchParams();
-      const p = {
+      const p: Record<string, string | number> = {
         _startRow: 0,
         _endRow: 9999,
         _selectorDefinitionId: field.original.selector._selectorDefinitionId,
-        windowId: options.windowId,
-        tabId: options.tabId,
         // adTabId: '186',
         // moduleId: 0,
         // targetProperty: 'businessPartner',
@@ -35,6 +33,14 @@ export function useComboSelect(field: FieldDefinition, options: Record<string, s
         // filterClass: 'org.openbravo.userinterface.selector.SelectorDataSourceFilter',
       };
 
+      if (options.windowId) {
+        p.windowId = options.windowId;
+      }
+
+      if (options.tabId) {
+        p.tabId = options.tabId;
+      }
+
       Object.entries(p).forEach(([pName, pValue]) => {
         payload.append(pName, pValue?.toString());
       });
@@ -44,18 +50,18 @@ export function useComboSelect(field: FieldDefinition, options: Record<string, s
 
       const response = await Metadata.getDatasource(field.original.selector.datasourceName, payload);
 
-      if (response.ok) {
+      if (!response.ok || response.data?.response?.error) {
+        throw new Error(await response.text());
+      } else {
         setRecords(response.data.response.data);
         setLoaded(true);
-      } else {
-        throw new Error(await response.text());
       }
     } catch (e) {
       setError(e as Error);
     } finally {
       setLoading(false);
     }
-  }, [field.original.selector, options.tabId, options.windowId]);
+  }, [field.original.selector, options.windowId, options.tabId]);
 
   useEffect(() => {
     load();

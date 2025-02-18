@@ -7,7 +7,6 @@ import { useStyle } from '@/components/Table/styles';
 import { DEFAULT_COLUMNS, TABLE_INITIAL_STATE, DIALOG_PROPS } from './constants';
 import { SelectedItemsContainer } from './SelectedItemsContainer';
 import { SearchBar } from './SearchBar';
-import { useMetadataContext } from '@/hooks/useMetadataContext';
 
 const SelectorTable: React.FC<SelectorTableProps & { selectedIds: string[] }> = ({
   data,
@@ -62,9 +61,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const { sx } = useStyle();
-  const { windowId, tab } = useMetadataContext();
-  const query = useMemo(() => ({ windowId, tabId: tab?.id || '' }), [tab?.id, windowId]);
-  const { records = [], loading } = useDatasource(entity, query);
+  const { records = [], loading } = useDatasource(entity);
 
   const selectedOptions = useMemo(() => {
     const normalizeValue = (value: string | string[] | undefined): string[] => {
