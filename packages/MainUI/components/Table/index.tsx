@@ -63,7 +63,6 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const rowProps = useCallback(
     ({ row }: { row: MRT_Row<Record<string, unknown>> }) => ({
       onClick: () => {
-        console.log('Row clicked:', row.original);
         selectRecord(row.original as never, tab);
         row.toggleSelected();
       },
