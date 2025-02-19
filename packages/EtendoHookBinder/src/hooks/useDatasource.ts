@@ -54,11 +54,6 @@ export function useDatasource(
     const baseCriteria = params.criteria || [];
     const allCriteria = searchQuery ? [...baseCriteria, ...searchCriteria] : baseCriteria;
 
-    console.log('Final Query Params:', {
-      ...params,
-      criteria: allCriteria,
-    });
-
     return {
       ...params,
       criteria: allCriteria,
