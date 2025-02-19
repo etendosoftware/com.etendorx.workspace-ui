@@ -53,10 +53,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     return options;
   }, [tab.parentColumns, parent?.id, language]);
 
-  const columns = useMemo(() => {
-    const parsedColumns = parseColumns(Object.values(tab.fields));
-    return parsedColumns;
-  }, [tab.fields]);
+  const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
   const { records, loading, error, fetchMore, loaded } = useDatasource(tab.entityName, query, searchQuery, columns);
 
