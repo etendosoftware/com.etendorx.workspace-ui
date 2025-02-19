@@ -47,7 +47,6 @@ export function useDatasource(
     if (!searchQuery || !columns) return [];
 
     const criteria = SearchUtils.createSearchCriteria(columns, searchQuery);
-    console.log('Search Criteria Generated:', criteria);
     return criteria;
   }, [searchQuery, columns]);
 
