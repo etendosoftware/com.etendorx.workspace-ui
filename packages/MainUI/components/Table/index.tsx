@@ -28,8 +28,6 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const { language } = useLanguage();
   const { searchQuery } = useSearch();
 
-  console.log('Tab:', tab);
-
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || 'id';
     const value = parent?.id || '';
