@@ -26,6 +26,42 @@ function DynamicFormView({
     return new Set(Object.values(tab.fields).map(field => field.columnName));
   }, [tab.fields]);
 
+  const getAdditionalFields = useCallback((originalRecord: Record<string, unknown>) => {
+    const additionalFields = [
+      'accountingDate',
+      'active',
+      'calculatePromotions',
+      'chargeAmount',
+      'createdBy',
+      'creationDate',
+      'deliveryStatus',
+      'deliveryTerms',
+      'formOfPayment',
+      'freightAmount',
+      'generateTemplate',
+      'invoiceStatus',
+      'print',
+      'printDiscount',
+      'priority',
+      'processNow',
+      'recordTime',
+      'reinvoice',
+      'reservationStatus',
+      'selected',
+      'selfService',
+      'summedLineAmount',
+      'updated',
+      'updatedBy',
+    ];
+
+    return additionalFields.reduce((acc, field) => {
+      if (originalRecord[field] !== undefined) {
+        acc[field] = originalRecord[field];
+      }
+      return acc;
+    }, {} as Record<string, unknown>);
+  }, []);
+
   const transformFormData = useCallback(
     (data: Record<string, unknown>) => {
       console.log('Starting data transformation. Initial data:', data);
@@ -33,11 +69,17 @@ function DynamicFormView({
       const validColumnNames = getValidColumnNames;
       const processedFields = new Set<string>();
 
+      const additionalFields = getAdditionalFields(record);
+      Object.entries(additionalFields).forEach(([key, value]) => {
+        transformedData[key] = value;
+        processedFields.add(key);
+        console.log(`Added additional field: ${key}:`, value);
+      });
+
       if (formState?.auxiliaryInputValues) {
         Object.entries(formState.auxiliaryInputValues).forEach(([key, value]) => {
           transformedData[key] = value.value;
           processedFields.add(key);
-          console.log(`Added auxiliary value: ${key}:`, value.value);
         });
       }
 
@@ -78,7 +120,15 @@ function DynamicFormView({
       console.log('Final transformed data:', finalData);
       return finalData;
     },
-    [fieldsByInputName, formState, tab.entityName, record.id, getValidColumnNames],
+    [
+      getValidColumnNames,
+      getAdditionalFields,
+      record,
+      formState?.auxiliaryInputValues,
+      formState?.columnValues,
+      tab.entityName,
+      fieldsByInputName,
+    ],
   );
 
   const handleSave = useCallback(
@@ -88,10 +138,8 @@ function DynamicFormView({
         const transformedData = transformFormData(formValues);
 
         const payload = {
-          dataSource: `isc_OBViewDataSource_0`,
           operationType: 'update',
           data: transformedData,
-          componentId: `isc_OBViewForm_0`,
         };
 
         console.log('Save payload prepared:', payload);

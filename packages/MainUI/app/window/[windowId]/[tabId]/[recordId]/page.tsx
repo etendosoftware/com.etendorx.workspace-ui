@@ -29,8 +29,6 @@ export default function EditRecordPage() {
     recordId,
   });
 
-  console.log('FormDataFromInitilization:', formData);
-
   if ((metadataLoading || recordLoading || formLoading) && !recordError && !formError && !loaded) {
     return <Spinner />;
   }
