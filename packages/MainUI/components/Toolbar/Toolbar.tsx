@@ -28,13 +28,26 @@ import { useToolbar } from '../../hooks/Toolbar/useToolbar';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
 import ProcessMenu from './ProcessMenu';
+import { useFormContext } from 'react-hook-form';
 
-export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false }) => {
+export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
   const [openModal, setOpenModal] = React.useState(false);
   const [isExecuting, setIsExecuting] = React.useState(false);
   const [processResponse, setProcessResponse] = React.useState<ProcessResponse | null>(null);
   const [selectedProcessButton, setSelectedProcessButton] = React.useState<ProcessButton | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const form = useFormContext();
+
+  const handleSaveClick = useCallback(async () => {
+    if (onSave) {
+      try {
+        await onSave();
+        console.log('form:', form);
+      } catch (error) {
+        console.error('Error saving form:', error);
+      }
+    }
+  }, [form, onSave]);
 
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
   const { selected, tabs } = useMetadataContext();
@@ -43,6 +56,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
   const { handleAction, searchOpen, setSearchOpen, handleSearch, searchValue, setSearchValue } = useToolbarConfig(
     windowId,
     tabId,
+    handleSaveClick,
   );
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
 

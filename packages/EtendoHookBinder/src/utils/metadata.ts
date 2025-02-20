@@ -71,6 +71,27 @@ export function getInpName(field: Field) {
   }
 }
 
+/**
+ * Gets the column name
+ * This function should be the one that we gonna need to pass to the formOptions to convert
+ * every field from it inpName to it columnName, InpName should be preserved for callouts
+ * The save endpoint expect the field with it columnName Format.
+ */
+
+export function getFieldName(field: Field) {
+  try {
+    if (!inputNameCache[field.fieldName]) {
+      inputNameCache[field.fieldName] = field.fieldName;
+    }
+
+    return inputNameCache[field.fieldName];
+  } catch (e) {
+    console.warn(field, e);
+
+    return '';
+  }
+}
+
 export const buildFormState = (
   fields: Tab['fields'],
   record: Record<string, unknown>,

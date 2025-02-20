@@ -129,19 +129,6 @@ export interface MappedField {
 
 export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'search' | 'tabledir' | 'quantity' | 'list';
 
-export interface MappedTab {
-  id: string;
-  name: string;
-  fields: Record<string, MappedField>;
-}
-
-export interface MappedData {
-  id: string;
-  name: string;
-  tabs: MappedTab[];
-  fields?: MappedField[];
-}
-
 export interface ViewStandardProperties extends Record<string, unknown> {}
 
 export interface WindowMetadataProperties {

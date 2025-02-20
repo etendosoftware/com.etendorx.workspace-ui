@@ -1,15 +1,5 @@
 import { FormData, Section } from '@/components/Form/FormView/types';
-import {
-  Column,
-  Field,
-  FieldDefinition,
-  FieldInfo,
-  FieldType,
-  MappedData,
-  MappedTab,
-  Tab,
-  WindowMetadata,
-} from '@workspaceui/etendohookbinder/src/api/types';
+import { Column, Field, FieldDefinition, FieldInfo, FieldType, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { UseFormReturn } from 'react-hook-form';
 
 export function mapColumnTypeToFieldType(column: Column): FieldType {
@@ -41,44 +31,6 @@ export function mapColumnTypeToFieldType(column: Column): FieldType {
     default:
       return 'text';
   }
-}
-
-export function ensureFieldValue(value: unknown): string | number | boolean | Date | string[] {
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
-  if (value instanceof Date) return value;
-  if (Array.isArray(value) && value.every(item => typeof item === 'string')) return value;
-  return String(value);
-}
-
-export function mapWindowMetadata(windowData: WindowMetadata): MappedData {
-  const mappedData: MappedData = {
-    name: windowData.name,
-    id: windowData.id,
-    tabs: [],
-  };
-
-  windowData.tabs.forEach(tab => {
-    const mappedTab: MappedTab = {
-      id: tab.id,
-      name: tab._identifier,
-      fields: {},
-    };
-
-    Object.entries(tab.fields).forEach(([fieldName, fieldInfo]) => {
-      const column = fieldInfo.column as unknown as Column;
-      mappedTab.fields[fieldName] = {
-        name: fieldName,
-        label: column.name,
-        type: mapColumnTypeToFieldType(column),
-        referencedTable: column.reference,
-        required: column.isMandatory,
-      };
-    });
-
-    mappedData.tabs.push(mappedTab);
-  });
-
-  return mappedData;
 }
 
 export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormData | null {
@@ -143,11 +95,6 @@ export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormDa
   return adaptedData;
 }
 
-export const parseDynamicExpression = (expr: string) =>
-  expr
-    .replace(/OB\.Utilities\.getValue\((\w+),\s*['"]([^'"]+)['"]\)/g, '$1["$2"]')
-    .replace(/context\.(\$?\w+)/g, (_, prop) => `context.${prop}`);
-
 export const getMappedValues = (fieldsByInputName: Record<string, Field>, form: UseFormReturn) =>
   Object.entries(form.getValues()).reduce((acc, [inputName, inputValue]) => {
     const theField = fieldsByInputName[inputName];
@@ -160,3 +107,8 @@ export const getMappedValues = (fieldsByInputName: Record<string, Field>, form: 
 
     return acc;
   }, {} as Record<string, unknown>);
+
+export const parseDynamicExpression = (expr: string) =>
+  expr
+    .replace(/OB\.Utilities\.getValue\((\w+),\s*['"]([^'"]+)['"]\)/g, '$1["$2"]')
+    .replace(/context\.(\$?\w+)/g, (_, prop) => `context.${prop}`);

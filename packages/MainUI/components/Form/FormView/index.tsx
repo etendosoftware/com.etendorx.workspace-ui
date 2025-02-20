@@ -15,7 +15,7 @@ export const FormViewContext = createContext({
 
 const FormView: React.FC<FormViewProps> = ({
   data,
-  readOnly = false,
+  readOnly,
   gridItemProps,
   dottedLineInterval,
   onLabelClick,

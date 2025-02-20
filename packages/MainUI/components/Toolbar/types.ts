@@ -27,6 +27,7 @@ export interface ToolbarProps {
   tabId?: string;
   onSearch?: (value: string) => void;
   isFormView?: boolean;
+  onSave?: () => Promise<void>;
 }
 
 export interface ProcessResponse {
