@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback, useRef } from 'react';
 import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useParams } from 'next/navigation';
@@ -29,6 +30,18 @@ export default function EditRecordPage() {
     recordId,
   });
 
+  const formRef = useRef<{ handleSave: () => Promise<void> }>();
+
+  const handleSave = useCallback(async () => {
+    if (formRef.current) {
+      try {
+        await formRef.current.handleSave();
+      } catch (error) {
+        console.error('Error saving form:', error);
+      }
+    }
+  }, []);
+
   if ((metadataLoading || recordLoading || formLoading) && !recordError && !formError && !loaded) {
     return <Spinner />;
   }
@@ -52,9 +65,9 @@ export default function EditRecordPage() {
   return (
     <>
       <div style={styles.box}>
-        <Toolbar windowId={windowId} tabId={tabId} isFormView={true} />
+        <Toolbar windowId={windowId} tabId={tabId} isFormView={true} onSave={handleSave} />
       </div>
-      <DynamicFormView tab={tab} record={record} formState={formData} />
+      <DynamicFormView ref={formRef} tab={tab} record={record} formState={formData} windowId={windowId} tabId={tabId} />
     </>
   );
 }

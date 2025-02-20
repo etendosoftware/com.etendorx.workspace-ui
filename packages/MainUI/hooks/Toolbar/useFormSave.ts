@@ -1,6 +1,7 @@
-import { useCallback } from 'react';
+import { useCallback, useContext } from 'react';
 import { useMetadataContext } from '../useMetadataContext';
 import { API_DATASOURCE_URL } from '@workspaceui/etendohookbinder/src/api/constants';
+import { UserContext } from '@/contexts/user';
 
 interface SaveFormResponse {
   success: boolean;
@@ -18,6 +19,11 @@ interface SaveFormParams {
 
 export const useFormSave = ({ windowId, tabId, moduleId = '0', recordId }: SaveFormParams) => {
   const { tab } = useMetadataContext();
+  const { session } = useContext(UserContext);
+
+  console.log(session);
+
+  const csrfToken = session['#CSRF_TOKEN'];
 
   const buildEndpointUrl = useCallback(
     (entityName: string) => {
@@ -42,7 +48,7 @@ export const useFormSave = ({ windowId, tabId, moduleId = '0', recordId }: SaveF
   );
 
   const saveForm = useCallback(
-    async (formValues: any): Promise<SaveFormResponse> => {
+    async (formValues: Record<string, unknown>): Promise<SaveFormResponse> => {
       if (!tab?.entityName) {
         return {
           success: false,
@@ -53,7 +59,6 @@ export const useFormSave = ({ windowId, tabId, moduleId = '0', recordId }: SaveF
 
       try {
         const payload = {
-          componentId: 'isc_OBViewForm_0',
           data: {
             ...formValues,
             _entityName: tab.entityName,
@@ -61,6 +66,7 @@ export const useFormSave = ({ windowId, tabId, moduleId = '0', recordId }: SaveF
             _identifier: `${formValues.documentNo} - ${formValues.orderDate} - ${formValues.grandTotalAmount}`,
           },
           operationType: 'update',
+          csrfToken: csrfToken,
         };
 
         const response = await fetch(buildEndpointUrl(tab.entityName), {
@@ -93,7 +99,7 @@ export const useFormSave = ({ windowId, tabId, moduleId = '0', recordId }: SaveF
         };
       }
     },
-    [tab?.entityName, recordId, buildEndpointUrl],
+    [tab?.entityName, recordId, csrfToken, buildEndpointUrl],
   );
 
   return { saveForm };
