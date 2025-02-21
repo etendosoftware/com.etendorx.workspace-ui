@@ -42,9 +42,15 @@ export class Datasource {
       isImplicitFilterApplied: options.isImplicitFilterApplied ? 'true' : 'false',
       _noCount: 'true',
       _operationType: 'fetch',
-      windowId: options.windowId || '',
-      tabId: options.tabId || '',
     });
+
+    if (options.windowId) {
+      params.set('windowId', options.windowId);
+    }
+
+    if (options.tabId) {
+      params.set('tabId', options.tabId);
+    }
 
     Object.entries(options).forEach(([key, value]) => {
       if (value !== undefined) {

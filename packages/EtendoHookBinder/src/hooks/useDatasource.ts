@@ -88,7 +88,7 @@ export function useDatasource(
 
       const response = await loadData(entity, page, pageSize, queryParams);
 
-      if (response.error) {
+      if (response.error || response.status != 0) {
         throw new Error(response.error.message);
       } else {
         setRecords(prevRecords => {
