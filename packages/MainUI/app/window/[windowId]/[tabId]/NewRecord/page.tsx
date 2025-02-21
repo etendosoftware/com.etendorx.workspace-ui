@@ -1,77 +1,64 @@
 'use client';
 
-import { useParams } from 'next/navigation';
-import { useMemo } from 'react';
 import { useMetadataContext } from '../../../../../hooks/useMetadataContext';
 import { Toolbar } from '../../../../../components/Toolbar/Toolbar';
-import DynamicFormView from '../../../../../screens/Form/DynamicFormView';
-import { adaptFormData } from '../../../../../utils/FormUtils';
 import { styles } from '../[recordId]/styles';
-import { useFormInitialization } from '../../../../../hooks/useFormInitialValues';
+import { useFormInitialization } from '../../../../../hooks/useFormInitialization';
 import { ErrorDisplay } from '../../../../../components/ErrorDisplay';
-import { useTranslation } from '../../../../../hooks/useTranslation';
+import { FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { WindowParams } from '../../../../types';
+import { useTranslation } from '@/hooks/useTranslation';
 
-export default function NewRecordPage() {
-  const { windowId, tabId } = useParams<WindowParams>();
-
+function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
   const { t } = useTranslation();
-  const { windowData, tab, loading: metadataLoading } = useMetadataContext();
-  const { formData, loading: formLoading, error } = useFormInitialization({ tabId, mode: 'NEW' });
-
-  const record = useMemo(() => {
-    if (!formData?.columnValues) return {} as Record<string, unknown>;
-
-    return Object.entries(formData.columnValues).reduce((acc, [key, value]) => {
-      acc[key] = value.value;
-      if (value.identifier) {
-        acc[`${key}$_identifier`] = value.identifier;
-      }
-      return acc;
-    }, {} as Record<string, unknown>);
-  }, [formData]);
-
-  const adaptedData = useMemo(() => {
-    if (!tab || !record) return null;
-    return adaptFormData(tab, record);
-  }, [tab, record]);
-
-  if (metadataLoading || formLoading) {
-    return <Spinner />;
-  }
+  const { loading, record, formInitialization, refetch, error } = useFormInitialization({
+    tab,
+    mode: FormMode.NEW,
+  });
 
   if (error) {
-    return <ErrorDisplay title={t('errors.formData.title')} description={error.message} showHomeButton />;
-  }
-
-  if (!windowData || !tab || !formData) {
     return (
       <ErrorDisplay
-        title={t('errors.missingData.title')}
-        description={t('errors.missingData.description')}
+        title={t('errors.formData.title')}
+        description={error.message}
+        onRetry={refetch}
+        showRetry
         showHomeButton
       />
     );
   }
 
-  if (!adaptedData) {
-    return (
-      <ErrorDisplay
-        title={t('errors.adaptingData.title')}
-        description={t('errors.adaptingData.description')}
-        showRetry
-        onRetry={() => window.location.reload()}
-      />
-    );
+  if (loading) {
+    return <Spinner />;
   }
 
   return (
     <>
       <div style={styles.box}>
-        <Toolbar windowId={windowId} tabId={tabId} isFormView={true} />
+        <Toolbar windowId={window.id} tabId={tab.id} isFormView={true} />
       </div>
-      <DynamicFormView tab={tab} record={record} formState={formData} />
+      <div>
+        <h2>Form Initialization</h2>
+        <pre>
+          <code>{JSON.stringify(formInitialization, null, 2)}</code>
+        </pre>
+      </div>
+      <div>
+        <h2>Record</h2>
+        <pre>
+          <code>{JSON.stringify(record, null, 2)}</code>
+        </pre>
+      </div>
     </>
   );
+}
+
+export default function NewRecordPage() {
+  const { window, tab } = useMetadataContext();
+
+  if (!window || !tab) {
+    return null;
+  }
+
+  return <Page tab={tab} window={window} />;
 }

@@ -67,4 +67,5 @@ export interface IMetadataContext {
   activeTabLevels: number[];
   setActiveTabLevels: (value: number[] | ((prev: number[]) => number[])) => void;
   closeTab: (level: number) => void;
+  window?: Etendo.WindowMetadata;
 }

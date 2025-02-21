@@ -6,32 +6,25 @@ import { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab
 import SectionRenderer from './Sections/sectionRendered';
 import type { Section } from './types';
 import Chevrons from '@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg';
-import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
+import { FieldDefinition, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
 import { logger } from '@/utils/logger';
 
 export const FormViewContext = createContext({
-  sessionAttributes: {} as FormViewProps['sessionAttributes'],
-  auxiliaryInputValues: {} as FormViewProps['auxiliaryInputValues'],
+  sessionAttributes: {} as FormInitializationResponse['sessionAttributes'],
+  auxiliaryInputValues: {} as FormInitializationResponse['auxiliaryInputValues'],
 });
 
-const FormView: React.FC<FormViewProps> = ({
-  data,
-  readOnly = false,
-  gridItemProps,
-  dottedLineInterval,
-  onLabelClick,
-  tab,
-  sessionAttributes: initialSessionAttributes,
-  auxiliaryInputValues: initialAuxiliaryInputValues,
-}) => {
+const FormView: React.FC<FormViewProps> = ({ gridItemProps, dottedLineInterval, onLabelClick, tab }) => {
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('');
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
-  const [sessionAttributes, setSessionAttributes] = useState(initialSessionAttributes);
-  const [auxiliaryInputValues, setAuxiliaryInputValues] = useState(initialAuxiliaryInputValues);
+  const [sessionAttributes, setSessionAttributes] = useState<FormInitializationResponse['sessionAttributes']>({});
+  const [auxiliaryInputValues, setAuxiliaryInputValues] = useState<FormInitializationResponse['auxiliaryInputValues']>(
+    {},
+  );
 
   const defaultIcon = useMemo(
     () => <Chevrons fill={theme.palette.baselineColor.neutral[80]} />,
@@ -103,14 +96,17 @@ const FormView: React.FC<FormViewProps> = ({
 
   const groupedFields = useMemo(
     () =>
-      Object.entries(data).reduce((acc, [key, value]) => {
-        if ('section' in value) {
-          const section = value.section ?? '_mainSection';
-          if (!acc[section]) acc[section] = [];
-          acc[section].push([key, value]);
-        }
-        return acc;
-      }, {} as { [key: string]: [string, FieldDefinition][] }),
+      Object.entries(data).reduce(
+        (acc, [key, value]) => {
+          if ('section' in value) {
+            const section = value.section ?? '_mainSection';
+            if (!acc[section]) acc[section] = [];
+            acc[section].push([key, value]);
+          }
+          return acc;
+        },
+        {} as { [key: string]: [string, FieldDefinition][] },
+      ),
     [data],
   );
 

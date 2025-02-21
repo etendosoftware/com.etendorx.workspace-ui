@@ -276,7 +276,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       loading,
       error,
       groupedTabs,
-      windowData,
+      window: windowData,
       selectRecord,
       selected,
       tabs,

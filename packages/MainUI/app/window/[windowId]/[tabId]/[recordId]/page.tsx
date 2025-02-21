@@ -1,60 +1,67 @@
 'use client';
 
-import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { useParams } from 'next/navigation';
 import { useMetadataContext } from '../../../../../hooks/useMetadataContext';
 import { Toolbar } from '../../../../../components/Toolbar/Toolbar';
-import { styles } from './styles';
-import { WindowParams } from '../../../../types';
+import { styles } from '../[recordId]/styles';
+import { useFormInitialization } from '../../../../../hooks/useFormInitialization';
 import { ErrorDisplay } from '../../../../../components/ErrorDisplay';
-import { useTranslation } from '../../../../../hooks/useTranslation';
-import DynamicFormView from '../../../../../screens/Form/DynamicFormView';
-import { useFormInitialization } from '../../../../../hooks/useFormInitialValues';
+import { FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useParams } from 'next/navigation';
 
-export default function EditRecordPage() {
-  const { windowId, tabId, recordId } = useParams<WindowParams>();
+function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
   const { t } = useTranslation();
-
-  const { windowData, tab, loading: metadataLoading } = useMetadataContext();
-  const { record, loading: recordLoading, loaded, error: recordError } = useSingleDatasource(tab?.entityName, recordId);
-
-  const {
-    formData,
-    loading: formLoading,
-    error: formError,
-  } = useFormInitialization({
-    tabId,
-    mode: 'EDIT',
+  const { recordId } = useParams<{ recordId: string }>();
+  const { loading, record, formInitialization, refetch, error } = useFormInitialization({
+    tab,
+    mode: FormMode.EDIT,
     recordId,
   });
 
-  if ((metadataLoading || recordLoading || formLoading) && !recordError && !formError && !loaded) {
-    return <Spinner />;
-  }
-
-  const error = recordError || formError;
   if (error) {
-    return <ErrorDisplay title={t('errors.formData.title')} description={error.message} showHomeButton />;
-  }
-
-  if (!windowData || !tab || !record || !formData) {
-    const isRecordMissing = loaded && !record;
     return (
       <ErrorDisplay
-        title={isRecordMissing ? t('errors.missingRecord.title') : t('errors.missingMetadata.title')}
-        description={isRecordMissing ? t('errors.missingRecord.description') : t('errors.missingMetadata.description')}
+        title={t('errors.formData.title')}
+        description={error.message}
+        onRetry={refetch}
+        showRetry
         showHomeButton
       />
     );
   }
 
+  if (loading) {
+    return <Spinner />;
+  }
+
   return (
     <>
       <div style={styles.box}>
-        <Toolbar windowId={windowId} tabId={tabId} isFormView={true} />
+        <Toolbar windowId={window.id} tabId={tab.id} isFormView={true} />
       </div>
-      <DynamicFormView tab={tab} record={record} formState={formData} />
+      <div>
+        <h2>Form Initialization</h2>
+        <pre>
+          <code>{JSON.stringify(formInitialization, null, 2)}</code>
+        </pre>
+      </div>
+      <div>
+        <h2>Record</h2>
+        <pre>
+          <code>{JSON.stringify(record, null, 2)}</code>
+        </pre>
+      </div>
     </>
   );
+}
+
+export default function EditRecordPage() {
+  const { window, tab } = useMetadataContext();
+
+  if (!window || !tab) {
+    return null;
+  }
+
+  return <Page tab={tab} window={window} />;
 }

@@ -424,3 +424,31 @@ type EntityValue = string | number | boolean | symbol;
 export interface EntityData {
   [key: EntityKey]: EntityValue;
 }
+
+export enum FormMode {
+  NEW = 'NEW',
+  EDIT = 'EDIT',
+}
+
+export interface FormInitializationParams {
+  tab: Tab;
+  mode: FormMode;
+  recordId?: string;
+}
+
+export interface FormInitializationResponse {
+  columnValues: Record<
+    string,
+    {
+      value: string;
+      classicValue?: string;
+      identifier?: string;
+      entries?: Array<{ id: string; _identifier: string }>;
+    }
+  >;
+  auxiliaryInputValues: Record<string, { value: string; classicValue?: string }>;
+  sessionAttributes: Record<string, string>;
+  dynamicCols: string[];
+  attachmentExists: boolean;
+  _readOnly?: boolean;
+}
