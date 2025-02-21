@@ -1,0 +1,68 @@
+/**
+*   This file was generated automatically by the 'createModuleBuild' task.
+*   Created at: 2025-02-21T00:24:17.613161469Z.
+*
+*   WARNING: Do not put your credentials directly in this file.
+*
+*/
+
+group          = "com.etendoerp"
+version        = "1.0.0"
+description    = "Main UI Next.js frontend"
+ext.artifact   = "mainui"
+ext.repository = "https://maven.pkg.github.com/etendosoftware/com.etendoerp.mainui"
+
+configurations {
+    moduleDependencyContainer
+}
+
+publishing {
+    publications {
+        "com.etendoerp.mainui"(MavenPublication) {
+            from components.java
+            groupId    = group
+            artifactId = artifact
+            version    = version
+        }
+    }
+    repositories {
+        maven {
+            url "https://maven.pkg.github.com/etendosoftware/com.etendoerp.mainui"
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://maven.pkg.github.com/etendosoftware/com.etendoerp.mainui"
+    }
+    maven {
+        url "https://repo.futit.cloud/repository/maven-releases"
+    }
+    maven {
+        url "https://repo.futit.cloud/repository/maven-public-releases"
+    }
+    maven {
+        url "https://repo.futit.cloud/repository/maven-public-jars"
+    }
+}
+
+/**
+* Declare Java dependencies using 'implementation'
+* Ex: implementation "com.sun.mail:javax.mail:1.6.2"
+*/
+dependencies {
+   implementation('com.etendoerp.platform:etendo-core:[21.4.0,25.1.0)')
+   implementation('com.etendoerp:etendorx:2.7.0')
+   implementation('com.etendoerp:openapi:1.2.0')
+   implementation('com.etendoerp:metadata:1.0.0')
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDirs(["compose"])
+        }
+    }
+}
