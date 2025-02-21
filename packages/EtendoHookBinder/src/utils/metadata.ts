@@ -1,5 +1,5 @@
 import { type Etendo } from '../api/metadata';
-import { Field, FieldType, Tab } from '../api/types';
+import { Field, FieldType, FormInitializationResponse, Tab } from '../api/types';
 
 export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
   const tabs: Etendo.Tab[][] = [];

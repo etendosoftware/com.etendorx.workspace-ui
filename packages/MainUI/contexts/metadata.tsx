@@ -20,7 +20,7 @@ interface IMetadataContext {
   loading: boolean;
   error: Error | undefined;
   groupedTabs: Etendo.Tab[][];
-  windowData?: Etendo.WindowMetadata;
+  window?: Etendo.WindowMetadata;
   selectRecord: (record: Record<string, never>, tab: Tab) => void;
   selected: Record<string, Record<string, never>>;
   selectedMultiple: Record<string, Record<string, boolean>>;
@@ -173,7 +173,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       loading,
       error,
       groupedTabs,
-      windowData,
+      window: windowData,
       selectRecord,
       selected,
       tabs,

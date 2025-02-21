@@ -21,8 +21,8 @@ export function useSingleDatasource(entity?: string, id?: string) {
       const response = await Datasource.getSingleRecord(entity, id);
       const res = response?.response?.data?.[0];
 
-      setLoaded(true);
       setRecord(res);
+      setLoaded(true);
     } catch (e) {
       setError(e as Error);
     } finally {
