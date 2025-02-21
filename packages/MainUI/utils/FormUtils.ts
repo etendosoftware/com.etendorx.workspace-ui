@@ -107,10 +107,10 @@ export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormDa
     const sectionName = fieldInfo.fieldGroup$_identifier ?? 'Main';
     const fieldType = mapColumnTypeToFieldType(column);
 
-    const dbColumnName = fieldInfo.hqlName;
-    const rawValue = record[dbColumnName] ?? record[fieldName];
+    const hqlName = fieldInfo.hqlName;
+    const rawValue = record[hqlName] ?? record[fieldName];
     const identifierValue =
-      record[`${dbColumnName}$_identifier`] ?? record[`${fieldName}$_identifier`] ?? record[`${fieldName}_identifier`];
+      record[`${hqlName}$_identifier`] ?? record[`${fieldName}$_identifier`] ?? record[`${fieldName}_identifier`];
 
     let value;
     if (fieldType === 'tabledir' && rawValue) {
