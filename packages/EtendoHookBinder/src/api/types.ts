@@ -91,7 +91,6 @@ export interface Field {
   title: string;
   required: boolean;
   hasDefaultValue: boolean;
-  inpName: string;
   refColumnName: string;
   targetEntity: string;
   gridProps: GridProps;

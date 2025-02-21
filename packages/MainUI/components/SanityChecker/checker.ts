@@ -1,5 +1,6 @@
 import { API_METADATA_URL } from '@workspaceui/etendohookbinder/src/api/constants';
 import { delay } from '@/utils';
+import { logger } from '@/utils/logger';
 
 export async function performHealthCheck(
   signal: AbortSignal,
@@ -26,7 +27,7 @@ export async function performHealthCheck(
     } catch (error) {
       if (signal.aborted) return;
 
-      console.warn(`Health check attempt ${attempt} failed:`, error);
+      logger.warn(`Health check attempt ${attempt} failed:`, error);
 
       if (attempt === maxAttempts) {
         onError();

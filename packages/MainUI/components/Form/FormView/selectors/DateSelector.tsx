@@ -83,4 +83,6 @@ const DateSelector = memo(
   },
 );
 
+DateSelector.displayName = 'DateSelector';
+
 export default DateSelector;

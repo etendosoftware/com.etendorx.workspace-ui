@@ -57,33 +57,17 @@ export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
   return result;
 };
 
-const inputNameCache: Record<string, string> = {};
-
-export function getInpName(field: Field) {
-  try {
-    if (!inputNameCache[field.inpName]) {
-      inputNameCache[field.inpName] = `inp${field.inpName}`;
-    }
-
-    return inputNameCache[field.inpName];
-  } catch (e) {
-    console.warn(field, e);
-
-    return '';
-  }
-}
-
 export const buildFormState = (
   fields: Tab['fields'],
   record: Record<string, unknown>,
   formState: Record<string, Record<string, never>>,
 ) => {
   try {
-    const result = Object.entries(fields).reduce((state, [fieldName, field]) => {
-      const inputName = getInpName(field);
+    const result = Object.entries(fields).reduce((state, [, field]) => {
+      const inputName = field.inputName;
 
       if (inputName?.length) {
-        state[inputName] = record[fieldName];
+        state[inputName] = record[field.hqlName];
       } else {
         console.warn('Missing field input name for', JSON.stringify(field, null, 2));
       }
@@ -111,7 +95,7 @@ export const isEntityReference = (type: FieldType) => ['tabledir', 'search'].inc
 
 export const getFieldsByDBColumnName = (tab: Tab) => {
   try {
-    return Object.entries(tab.fields).reduce((acc, [f, field]) => {
+    return Object.entries(tab.fields).reduce((acc, [, field]) => {
       acc[field.column.dBColumnName] = field;
 
       if (!field.column.dBColumnName?.length) {
@@ -129,8 +113,8 @@ export const getFieldsByDBColumnName = (tab: Tab) => {
 
 export const getFieldsByName = (tab: Tab) => {
   try {
-    return Object.entries(tab.fields).reduce((acc, [f, field]) => {
-      acc[getInpName(field)] = field;
+    return Object.entries(tab.fields).reduce((acc, [, field]) => {
+      acc[field.inputName] = field;
 
       return acc;
     }, {} as Record<string, Field>);

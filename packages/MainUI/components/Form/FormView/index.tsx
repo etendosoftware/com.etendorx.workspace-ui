@@ -7,6 +7,7 @@ import SectionRenderer from './Sections/sectionRendered';
 import type { Section } from './types';
 import Chevrons from '@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
+import { logger } from '@/utils/logger';
 
 export const FormViewContext = createContext({
   sessionAttributes: {} as FormViewProps['sessionAttributes'],
@@ -142,7 +143,7 @@ const FormView: React.FC<FormViewProps> = ({
               {Object.entries(groupedFields).map(([sectionName, fields]) => {
                 const sectionData = data[sectionName] as Section;
                 if (!sectionData || sectionData.type !== 'section') {
-                  console.warn(`Section ${sectionName} is not properly defined`);
+                  logger.warn(`Section ${sectionName} is not properly defined`);
                   return null;
                 }
 
