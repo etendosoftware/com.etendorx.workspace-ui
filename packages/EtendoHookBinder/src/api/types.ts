@@ -74,6 +74,9 @@ export interface ReadOnlyState {
   readOnlyReason?: 'FIELD_READONLY' | 'READONLY_LOGIC' | 'ACCESS_LEVEL';
 }
 export interface Field {
+  hqlName: string;
+  inputName: string;
+  columnName: string;
   readOnlyState?: ReadOnlyState;
   process: string;
   shownInStatusBar: boolean;
@@ -88,7 +91,6 @@ export interface Field {
   title: string;
   required: boolean;
   hasDefaultValue: boolean;
-  columnName: string;
   inpName: string;
   refColumnName: string;
   targetEntity: string;

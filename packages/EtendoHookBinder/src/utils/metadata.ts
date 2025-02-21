@@ -30,11 +30,13 @@ export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
     if (!columns) return result;
 
     for (const column of columns) {
+      console.debug(column);
+
       if (column.showInGridView) {
         result.push({
-          header: column.title ?? column.name ?? column.columnName,
+          header: column.title ?? column.name ?? column.hqlName,
           id: column.name,
-          columnName: column.columnName,
+          columnName: column.hqlName,
           isMandatory: column.required,
           _identifier: column.title,
           column: {
@@ -43,7 +45,7 @@ export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
           },
           name: column.name,
           accessorFn: (v: Record<string, unknown>) => {
-            return v[column.columnName + '$_identifier'] ?? v[column.columnName];
+            return v[column.hqlName + '$_identifier'] ?? v[column.hqlName];
           },
         });
       }
