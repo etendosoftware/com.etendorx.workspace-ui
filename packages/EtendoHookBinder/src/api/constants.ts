@@ -32,6 +32,7 @@ export const API_METADATA_URL = `${API_BASE_URL}/meta/`;
 export const API_DEFAULT_CACHE_DURATION = getDefaultCacheDuration();
 export const AUTH_HEADER_NAME = getAuthHeaderName();
 export const API_KERNEL_SERVLET = `${API_BASE_URL}/meta/servlets/org.openbravo.client.kernel.KernelServlet`;
+export const API_DATASOURCE_SERVLET = `${API_BASE_URL}/meta/servlets/org.openbravo.service.datasource.DataSourceServlet/`;
 
 export enum HTTP_CODES {
   UNAUTHORIZED = 401,

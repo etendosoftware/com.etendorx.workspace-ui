@@ -2,6 +2,7 @@ import { useCallback, useContext } from 'react';
 import { useMetadataContext } from '../useMetadataContext';
 import { API_DATASOURCE_URL } from '@workspaceui/etendohookbinder/src/api/constants';
 import { UserContext } from '@/contexts/user';
+import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 
 interface SaveFormResponse {
   success: boolean;
@@ -20,9 +21,6 @@ interface SaveFormParams {
 export const useFormSave = ({ windowId, tabId, moduleId = '0', recordId }: SaveFormParams) => {
   const { tab } = useMetadataContext();
   const { session } = useContext(UserContext);
-
-  console.log(session);
-
   const csrfToken = session['#CSRF_TOKEN'];
 
   const buildEndpointUrl = useCallback(
@@ -42,7 +40,7 @@ export const useFormSave = ({ windowId, tabId, moduleId = '0', recordId }: SaveF
         stateless: 'true',
       });
 
-      return `${API_DATASOURCE_URL}/${entityName}?${params.toString()}`;
+      return `/${entityName}?${params}`;
     },
     [windowId, tabId, moduleId],
   );
@@ -69,14 +67,7 @@ export const useFormSave = ({ windowId, tabId, moduleId = '0', recordId }: SaveF
           csrfToken: csrfToken,
         };
 
-        const response = await fetch(buildEndpointUrl(tab.entityName), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-          credentials: 'include',
-        });
+        const response = await Metadata.datasourceServletClient.post(buildEndpointUrl(tab.entityName), payload);
 
         if (!response.ok) {
           const errorData = await response.json();
