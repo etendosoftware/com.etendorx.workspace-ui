@@ -1,3 +1,9 @@
-import TextInputBase from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputBase';
+import { Field } from '@workspaceui/etendohookbinder/src/api/types';
+import { TextInput } from './components/TextInput';
+import { useFormContext } from 'react-hook-form';
 
-export const StringSelector = TextInputBase;
+export const StringSelector = ({ field }: { field: Field }) => {
+  const { register } = useFormContext();
+
+  return <TextInput {...register(field.hqlName)} />;
+};

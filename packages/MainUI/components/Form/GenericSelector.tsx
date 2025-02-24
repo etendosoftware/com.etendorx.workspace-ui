@@ -4,15 +4,15 @@ import type { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useCallout } from '../../hooks/useCallout';
 import { CALLOUTS_ENABLED } from '../../constants/config';
 import { FieldValue } from './FormView/types';
-import BooleanSelector from './FormView/selectors/BooleanSelector';
-import NumberSelector from './FormView/selectors/NumberSelector';
-import DateSelector from './FormView/selectors/DateSelector';
-import SelectSelector from './FormView/selectors/SelectSelector';
-import SearchSelector from './FormView/selectors/SearchSelector';
-import TableDirSelector from './FormView/selectors/TableDirSelector';
-import QuantitySelector from './FormView/selectors/QuantitySelector';
-import ListSelector from './FormView/selectors/ListSelector';
-import { StringSelector } from './FormView/selectors/StringSelector';
+import BooleanSelector from './FormView/oldSelectors/BooleanSelector';
+import NumberSelector from './FormView/oldSelectors/NumberSelector';
+import DateSelector from './FormView/oldSelectors/DateSelector';
+import SelectSelector from './FormView/oldSelectors/SelectSelector';
+import SearchSelector from './FormView/oldSelectors/SearchSelector';
+import TableDirSelector from './FormView/oldSelectors/TableDirSelector';
+import QuantitySelector from './FormView/oldSelectors/QuantitySelector';
+import ListSelector from './FormView/oldSelectors/ListSelector';
+import { StringSelector } from './FormView/oldSelectors/StringSelector';
 import { logger } from '@/utils/logger';
 
 interface GenericSelectorProps {
