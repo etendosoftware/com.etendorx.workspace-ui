@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DatasourceOptions, Column, CompositeCriteria } from '../api/types';
 import { Datasource } from '../api/datasource';
+import { SearchUtils } from '../utils/search-utils';
 
 const loadData = async (entity: string, page: number, pageSize: number, params: DatasourceOptions) => {
   const startRow = (page - 1) * pageSize;
@@ -45,25 +46,8 @@ export function useDatasource(
   const searchCriteria = useMemo(() => {
     if (!searchQuery || !columns) return [];
 
-    const referenceFields = ['organization', 'transactionDocument', 'businessPartner', 'partnerAddress'];
-
-    //TODO: Implement util either in the front or back to parse dif columns types
-    const excludedFields = ['orderDate', 'grandTotalAmount', 'amount', 'price', 'quantity'];
-
-    const compositeCriteria: CompositeCriteria = {
-      operator: 'or',
-      criteria: columns
-        .filter(column => !excludedFields.includes(column.columnName))
-        .map(column => ({
-          fieldName: referenceFields.includes(column.columnName)
-            ? `${column.columnName}$_identifier`
-            : column.columnName,
-          operator: 'iContains',
-          value: searchQuery,
-        })),
-    };
-
-    return [compositeCriteria];
+    const criteria = SearchUtils.createSearchCriteria(columns, searchQuery);
+    return criteria;
   }, [searchQuery, columns]);
 
   const queryParams = useMemo(() => {

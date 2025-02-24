@@ -37,6 +37,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     const fieldName = tab.parentColumns[0] || 'id';
     const value = parent?.id || '';
     const operator = 'equals';
+
     const options: DatasourceOptions = {
       windowId,
       tabId,

@@ -121,6 +121,7 @@ export interface Column {
   name: string;
   reference?: string;
   _identifier: string;
+  displayType?: string;
   [key: string]: unknown;
 }
 
