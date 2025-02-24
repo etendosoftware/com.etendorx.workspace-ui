@@ -10,7 +10,7 @@ import { ErrorDisplay } from '@/components/ErrorDisplay';
 import { Toolbar } from '@/components/Toolbar/Toolbar';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
 import { FormProvider, useForm } from 'react-hook-form';
-import { BaseSelector } from '@/components/Form/FormView/selectors/BaseSelector';
+import { BaseSelector } from '@/components/Form/FormView/newSelectors/BaseSelector';
 import { useMemo } from 'react';
 import { buildUpdatedValues, getCombinedEntries } from '@/utils';
 
