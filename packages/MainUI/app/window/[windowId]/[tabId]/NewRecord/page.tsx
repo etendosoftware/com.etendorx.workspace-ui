@@ -1,17 +1,15 @@
 'use client';
 
-import { styles } from '../[recordId]/styles';
 import { FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useDynamicForm } from '@/hooks/useDynamicForm';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
-import { Toolbar } from '@/components/Toolbar/Toolbar';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
-import { FormProvider, useForm } from 'react-hook-form';
-import { BaseSelector } from '@/components/Form/FormView/selectors/BaseSelector';
+import { useForm } from 'react-hook-form';
 import { useMemo } from 'react';
 import { buildUpdatedValues, getCombinedEntries } from '@/utils';
+import FormView from '@/components/Form/FormView';
 
 function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
   const { t } = useTranslation();
@@ -47,18 +45,7 @@ function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
     return <Spinner />;
   }
 
-  return (
-    <FormProvider {...form}>
-      <div style={styles.box}>
-        <Toolbar windowId={window.id} tabId={tab.id} isFormView={true} />
-      </div>
-      <div className="p-2 space-y-4">
-        {Object.entries(tab.fields).map(([hqlName, field]) => (
-          <BaseSelector field={field} key={hqlName} />
-        ))}
-      </div>
-    </FormProvider>
-  );
+  return <FormView form={form} tab={tab} window={window} />;
 }
 
 export default function EditRecordPage() {

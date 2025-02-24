@@ -4,7 +4,7 @@ import { mockOrganizations } from '@workspaceui/storybook/src/stories/Components
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useRouter, useParams } from 'next/navigation';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import FormView from '@/components/Form/FormView';
+import FormView from '@/components/Form/FormView/old';
 
 export default function Form() {
   const navigate = useRouter().push;
