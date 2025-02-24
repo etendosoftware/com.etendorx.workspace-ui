@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getFormInitialization } from '@workspaceui/etendohookbinder/src/hooks/useInitialData';
+import { logger } from '@/utils/logger';
 
 export interface FormInitializationResponse {
   columnValues: Record<
@@ -67,7 +68,7 @@ export function useFormInitialization({ tabId, mode, recordId }: FormInitializat
 
       setFormData({ ...response, _readOnly: isRecordReadOnly(response) });
     } catch (error) {
-      console.error('Error fetching initial form data:', error);
+      logger.error('Error fetching initial form data:', error);
       setError(error instanceof Error ? error : new Error('Failed to fetch initial data'));
     } finally {
       setLoading(false);

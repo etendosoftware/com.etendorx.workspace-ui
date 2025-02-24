@@ -76,4 +76,6 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
   },
 );
 
+QuantitySelector.displayName = "QualitySelector";
+
 export default QuantitySelector;

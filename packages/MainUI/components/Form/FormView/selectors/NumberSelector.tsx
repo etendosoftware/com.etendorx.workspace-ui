@@ -16,4 +16,6 @@ const NumberSelector: React.FC<NumberSelectorProps> = memo(
   ),
 );
 
+NumberSelector.displayName = "NumberSelector";
+
 export default NumberSelector;

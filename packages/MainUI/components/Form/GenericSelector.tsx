@@ -2,7 +2,6 @@ import { useCallback, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 import type { FieldDefinition, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useCallout } from '../../hooks/useCallout';
-import { getInpName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { CALLOUTS_ENABLED } from '../../constants/config';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
 import { FieldValue } from './FormView/types';
@@ -15,6 +14,7 @@ import TableDirSelector from './FormView/selectors/TableDirSelector';
 import QuantitySelector from './FormView/selectors/QuantitySelector';
 import ListSelector from './FormView/selectors/ListSelector';
 import { StringSelector } from './FormView/selectors/StringSelector';
+import { logger } from '@/utils/logger';
 
 interface GenericSelectorProps {
   field: FieldDefinition;
@@ -26,7 +26,7 @@ interface GenericSelectorProps {
 export const GenericSelector = ({ field, tab, isDisplayed, isReadOnly }: GenericSelectorProps) => {
   const { watch, setValue, getValues } = useFormContext();
   const { fieldsByColumnName } = useMetadataContext();
-  const name = useRef(getInpName(field.original));
+  const name = useRef(field.original.hqlName);
   const value = watch(name.current, field.initialValue);
   const callout = useCallout({ field: field.original, tab });
 
@@ -38,11 +38,11 @@ export const GenericSelector = ({ field, tab, isDisplayed, isReadOnly }: Generic
         const _field = fieldsByColumnName[column];
 
         if (_field) {
-          setValue('inp' + _field.inpName, valueObj.value);
+          setValue(field.original.inputName, valueObj.value);
         }
       });
     },
-    [fieldsByColumnName, setValue],
+    [field.original.inputName, fieldsByColumnName, setValue],
   );
 
   const handleChange = useCallback(
@@ -54,7 +54,7 @@ export const GenericSelector = ({ field, tab, isDisplayed, isReadOnly }: Generic
           const { data } = await callout(getValues());
 
           if (data.response?.status === -1) {
-            console.warn('Callout execution error', data);
+            logger.warn('Callout execution error', data);
           } else {
             applyCallout(data);
           }
