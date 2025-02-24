@@ -148,14 +148,17 @@ export const parseDynamicExpression = (expr: string) =>
     .replace(/context\.(\$?\w+)/g, (_, prop) => `context.${prop}`);
 
 export const getMappedValues = (fieldsByInputName: Record<string, Field>, form: UseFormReturn) =>
-  Object.entries(form.getValues()).reduce((acc, [inputName, inputValue]) => {
-    const theField = fieldsByInputName[inputName];
+  Object.entries(form.getValues()).reduce(
+    (acc, [inputName, inputValue]) => {
+      const theField = fieldsByInputName[inputName];
 
-    if (theField) {
-      acc[theField.columnName] = inputValue;
-    } else {
-      acc[inputName] = inputValue;
-    }
+      if (theField) {
+        acc[theField.columnName] = inputValue;
+      } else {
+        acc[inputName] = inputValue;
+      }
 
-    return acc;
-  }, {} as Record<string, unknown>);
+      return acc;
+    },
+    {} as Record<string, unknown>,
+  );

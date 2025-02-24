@@ -101,8 +101,8 @@ export interface TableDirSelectorProps {
   entity: string;
   name: string;
   onChange: (value: string) => void;
-  disabled: boolean;
-  readOnly: boolean;
+  disabled?: boolean;
+  readOnly?: boolean;
 }
 
 export interface SearchSelectorProps {
@@ -110,10 +110,10 @@ export interface SearchSelectorProps {
   value: FieldValue;
   entity: string;
   onChange: (value: string) => void;
-  field: FieldDefinition;
+  field: Field;
   name: string;
-  disabled: boolean;
-  readOnly: boolean;
+  disabled?: boolean;
+  readOnly?: boolean;
 }
 
 export interface Option {
@@ -132,7 +132,7 @@ export interface BooleanSelectorProps {
   checked?: boolean;
   name: string;
   onChange: (name: string, value: boolean) => void;
-  disabled: boolean;
+  disabled?: boolean;
 }
 
 export interface NumberSelectorProps {
@@ -183,7 +183,7 @@ export interface QuantityProps {
 }
 
 export interface ListSelectorProps {
-  field: FieldDefinition;
+  field: Field;
   value: string;
   onChange: (value: string) => void;
   name: string;

@@ -92,7 +92,6 @@ export interface Field {
   column: Record<string, string>;
   name: string;
   id: string;
-  title: string;
   required: boolean;
   hasDefaultValue: boolean;
   refColumnName: string;
@@ -104,7 +103,6 @@ export interface Field {
   referencedEntity: string;
   referencedWindowId: string;
   referencedTabId: string;
-  fieldName: string;
   displayLogicExpression?: string;
   readOnlyLogicExpression?: string;
 }
@@ -386,11 +384,6 @@ export interface ToolbarMetadata {
 export interface FieldInfo {
   fieldGroup$_identifier?: string;
 }
-
-export type CustomListField = Pick<
-  Field,
-  'refList' | 'referencedEntity' | 'referencedWindowId' | 'referencedTabId' | 'fieldName'
->;
 
 export interface BaseFieldDefinition<T> {
   value: T;

@@ -110,3 +110,19 @@ select:-webkit-autofill:focus {
     width: 50%;
   }
 }
+
+pre.code {
+  margin: 1rem;
+  padding: 0.5rem;
+  line-height: 1.25;
+  font-family: monospace;
+  font-size: small;
+  background-color: #FFFFFF;
+}
+
+pre.code code {
+  white-space: pre;
+  height: 100%;
+  max-height: 20rem;
+  overflow-y: scroll;
+}

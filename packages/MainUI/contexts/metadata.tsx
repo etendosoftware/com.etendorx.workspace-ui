@@ -2,11 +2,7 @@
 
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import {
-  getFieldsByDBColumnName,
-  getFieldsByName,
-  groupTabsByLevel,
-} from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { groupTabsByLevel } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useParams } from 'next/navigation';
 import { WindowParams } from '../app/types';
@@ -32,8 +28,6 @@ interface IMetadataContext {
   tabs: Tab[];
   tab?: Tab;
   columns?: Record<string, Field>;
-  fieldsByColumnName: Record<string, Field>;
-  fieldsByInputName: Record<string, Field>;
 }
 
 export const MetadataContext = createContext({} as IMetadataContext);
@@ -161,10 +155,8 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
 
   const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [tabId, windowData?.tabs]);
   const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
-  const fieldsByColumnName = useMemo(() => (tab ? getFieldsByDBColumnName(tab) : {}), [tab]);
-  const fieldsByInputName = useMemo(() => (tab ? getFieldsByName(tab) : {}), [tab]);
 
-  const value = useMemo(
+  const value = useMemo<IMetadataContext>(
     () => ({
       getWindow: Metadata.getWindow,
       getColumns: Metadata.getColumns,
@@ -178,8 +170,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       selected,
       tabs,
       tab,
-      fieldsByColumnName,
-      fieldsByInputName,
       selectedMultiple,
       selectMultiple,
       isSelected,
@@ -188,24 +178,22 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       getSelectedIds,
     }),
     [
-      windowId,
-      recordId,
-      loading,
-      error,
-      groupedTabs,
-      windowData,
-      selectRecord,
-      selected,
-      tabs,
-      tab,
-      fieldsByColumnName,
-      fieldsByInputName,
-      selectedMultiple,
-      selectMultiple,
-      isSelected,
       clearSelections,
+      error,
       getSelectedCount,
       getSelectedIds,
+      groupedTabs,
+      isSelected,
+      loading,
+      recordId,
+      selectMultiple,
+      selectRecord,
+      selected,
+      selectedMultiple,
+      tab,
+      tabs,
+      windowData,
+      windowId,
     ],
   );
 

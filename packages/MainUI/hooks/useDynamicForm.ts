@@ -7,6 +7,7 @@ import {
 import { logger } from '@/utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
+import { getFieldsByColumnName, getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 
 const getRowId = (mode: FormMode, recordId?: string): string => {
   if (mode === FormMode.EDIT && !recordId) {
@@ -64,10 +65,11 @@ const reducer = (state: State, action: Action): State => {
   }
 };
 
-export function useFormInitialization({ tab, mode, recordId }: FormInitializationParams) {
+export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams) {
   const { record } = useSingleDatasource(tab.entityName, recordId);
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { loading, error, formInitialization } = state;
+  const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
+  const fieldsByInputName = useMemo(() => getFieldsByInputName(tab), [tab]);
 
   const params = useMemo(
     () => (tab.id ? buildFormInitializationParams(tab.id, mode as FormMode, recordId) : null),
@@ -91,5 +93,5 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     refetch();
   }, [refetch]);
 
-  return { record, formInitialization, loading, error, refetch };
+  return { ...state, record, refetch, fieldsByColumnName, fieldsByInputName };
 }

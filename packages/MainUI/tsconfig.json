@@ -32,6 +32,6 @@
     ".next/types/**/*.ts",
     "types/svgr.d.ts",
     "types/theme.d.ts"
-  ],
+, "screens/Form/DynamicFormView.tsx.old"  ],
   "exclude": ["node_modules"]
 }

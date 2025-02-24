@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
-import { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { FieldValues } from 'react-hook-form';
+import { useMetadataContext } from './useMetadataContext';
 
 export interface UseCalloutProps {
   field: Field;
-  tab: Tab;
   parentId?: string | null;
   rowId?: string | null;
 }
@@ -13,23 +13,29 @@ export interface UseCalloutProps {
 const _action = 'org.openbravo.client.application.window.FormInitializationComponent';
 const MODE = 'CHANGE';
 
-export const useCallout = ({ field, tab, parentId, rowId }: UseCalloutProps) => {
-  return useCallback(async (payload: FieldValues) => {
-    const params = new URLSearchParams({
-      _action,
-      MODE,
-      TAB_ID: tab.id,
-      CHANGED_COLUMN: field.inputName,
-    });
+export const useCallout = ({ field, parentId, rowId }: UseCalloutProps) => {
+  const { tab } = useMetadataContext();
+  const TAB_ID = tab?.id || '';
 
-    if (rowId) {
-      params.set("ROW_ID", rowId);
-    }
+  return useCallback(
+    async (payload: FieldValues) => {
+      const params = new URLSearchParams({
+        _action,
+        MODE,
+        TAB_ID,
+        CHANGED_COLUMN: field.inputName,
+      });
 
-    if (parentId) {
-      params.set("PARENT_ID", parentId);
-    }
+      if (rowId) {
+        params.set('ROW_ID', rowId);
+      }
 
-    return Metadata.kernelClient.post(`?${params}`, payload);
-  }, [field, parentId, rowId, tab.id]);
+      if (parentId) {
+        params.set('PARENT_ID', parentId);
+      }
+
+      return Metadata.kernelClient.post(`?${params}`, payload);
+    },
+    [TAB_ID, field.inputName, parentId, rowId],
+  );
 };
