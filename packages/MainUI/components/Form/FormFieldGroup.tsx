@@ -8,7 +8,7 @@ import { useFormContext } from 'react-hook-form';
 import { useStyle } from './FormView/styles';
 import { FormFieldGroupProps } from './FormView/types';
 import { FieldLabel } from './FormView/Sections/FieldLabel';
-import { FormViewContext } from './FormView';
+import { FormViewContext } from './FormView/old';
 
 export default function FormFieldGroup({ tab, field, onLabelClick }: FormFieldGroupProps) {
   const { styles, sx } = useStyle();

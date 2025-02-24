@@ -1,37 +1,33 @@
 import { useState, forwardRef, useCallback } from 'react';
 
 interface SwitchProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  checked?: boolean;
-  onCheckedChange?: (checked: boolean) => void;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
   disabled?: boolean;
 }
 
 export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
   ({ checked = false, onCheckedChange, disabled = false, className = '', ...props }, ref) => {
-    const [isChecked, setIsChecked] = useState(checked);
-
     const handleToggle = useCallback(() => {
       if (disabled) return;
-      const newChecked = !isChecked;
-      setIsChecked(newChecked);
-      onCheckedChange?.(newChecked);
-    }, [disabled, isChecked, onCheckedChange]);
+      onCheckedChange(!checked);
+    }, [checked, disabled, onCheckedChange]);
 
     return (
       <button
         type="button"
         role="switch"
-        aria-checked={isChecked}
+        aria-checked={checked}
         disabled={disabled}
         onClick={handleToggle}
         ref={ref}
         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-          isChecked ? 'bg-blue-600' : 'bg-gray-300'
+          checked ? 'bg-blue-600' : 'bg-gray-300'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${className}`}
         {...props}>
         <span
           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            isChecked ? 'translate-x-6' : 'translate-x-1'
+            checked ? 'translate-x-6' : 'translate-x-1'
           }`}
         />
       </button>
