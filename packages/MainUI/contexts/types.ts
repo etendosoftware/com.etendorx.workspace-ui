@@ -48,7 +48,6 @@ export interface IMetadataContext {
   loading: boolean;
   error: Error | undefined;
   groupedTabs: Etendo.Tab[][];
-  windowData?: Etendo.WindowMetadata;
   selectRecord: (record: Record<string, never>, tab: Tab) => void;
   selected: Record<string, Record<string, never>>;
   selectedMultiple: Record<string, Record<string, boolean>>;

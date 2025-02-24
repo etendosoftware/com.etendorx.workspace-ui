@@ -9,7 +9,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { parseColumns } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { Button } from '@mui/material';
-import DynamicFormView from '../../screens/Form/DynamicFormView';
 import { WindowParams } from '../../app/types';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useSearch } from '../../contexts/searchContext';
@@ -36,7 +35,6 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const parent = selected[tab.level - 1];
   const navigate = useRouter().push;
   const { sx } = useStyle();
-  const [editing, setEditing] = useState(false);
   const { language } = useLanguage();
   const { searchQuery } = useSearch();
   const tabId = tab.id;
@@ -173,7 +171,6 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
         },
         onAuxClick: () => {
           selectRecord(record, tab);
-          setEditing(true);
         },
         sx: {
           ...(isRowSelected && {
@@ -231,8 +228,6 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     [mapSelectionToIds, rowSelection, records, selectMultiple, selectRecord, clearSelections, selected, tab, tabId],
   );
 
-  const handleBack = useCallback(() => setEditing(false), []);
-
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -261,16 +256,6 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
 
   if (loading && !loaded) return <Spinner />;
   if (error) return <div>Error: {error.message}</div>;
-  if (editing) {
-    return (
-      <Box className="max-h-50vh overflow-auto">
-        <Button variant="contained" onClick={handleBack}>
-          Back
-        </Button>
-        <DynamicFormView record={selected[tab.level]} tab={tab} />
-      </Box>
-    );
-  }
 
   return (
     <Box className="flex h-10/12">

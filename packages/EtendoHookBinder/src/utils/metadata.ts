@@ -1,5 +1,5 @@
 import { type Etendo } from '../api/metadata';
-import { Field, FieldType, FormInitializationResponse, Tab } from '../api/types';
+import { Field, FieldType, Tab } from '../api/types';
 
 export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
   const tabs: Etendo.Tab[][] = [];
@@ -100,8 +100,12 @@ export const buildFormState = (
 
 export const isEntityReference = (type: FieldType) => ['tabledir', 'search'].includes(type);
 
-export const getFieldsByDBColumnName = (tab: Tab) => {
+export const getFieldsByColumnName = (tab?: Tab) => {
   try {
+    if (!tab) {
+      return {};
+    }
+
     return Object.entries(tab.fields).reduce(
       (acc, [, field]) => {
         acc[field.column.dBColumnName] = field;
@@ -121,8 +125,12 @@ export const getFieldsByDBColumnName = (tab: Tab) => {
   }
 };
 
-export const getFieldsByName = (tab: Tab) => {
+export const getFieldsByInputName = (tab?: Tab) => {
   try {
+    if (!tab) {
+      return {};
+    }
+
     return Object.entries(tab.fields).reduce(
       (acc, [, field]) => {
         acc[field.inputName] = field;

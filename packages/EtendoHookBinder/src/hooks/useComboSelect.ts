@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FieldDefinition } from '../api/types';
 import { Metadata } from '../api/metadata';
+import { Field } from '@/api/types';
 
-export function useComboSelect(field: FieldDefinition, options: Record<string, string> = {}) {
+export function useComboSelect(field: Field, options: Record<string, string> = {}) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
@@ -10,7 +10,7 @@ export function useComboSelect(field: FieldDefinition, options: Record<string, s
 
   const load = useCallback(async () => {
     try {
-      if (!field.original?.selector || !field.original.selector._selectorDefinitionId) {
+      if (!field?.selector || !field.selector._selectorDefinitionId) {
         setLoaded(true);
 
         return;
@@ -20,7 +20,7 @@ export function useComboSelect(field: FieldDefinition, options: Record<string, s
       const p: Record<string, string | number> = {
         _startRow: 0,
         _endRow: 9999,
-        _selectorDefinitionId: field.original.selector._selectorDefinitionId,
+        _selectorDefinitionId: field.selector._selectorDefinitionId,
         // adTabId: '186',
         // moduleId: 0,
         // targetProperty: 'businessPartner',
@@ -61,7 +61,7 @@ export function useComboSelect(field: FieldDefinition, options: Record<string, s
     } finally {
       setLoading(false);
     }
-  }, [field.original.selector, options.windowId, options.tabId]);
+  }, [field, options.windowId, options.tabId]);
 
   useEffect(() => {
     load();

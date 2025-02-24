@@ -1,9 +1,8 @@
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { useFormContext } from 'react-hook-form';
-import type { FieldDefinition, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import type { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useCallout } from '../../hooks/useCallout';
 import { CALLOUTS_ENABLED } from '../../constants/config';
-import { useMetadataContext } from '@/hooks/useMetadataContext';
 import { FieldValue } from './FormView/types';
 import BooleanSelector from './FormView/selectors/BooleanSelector';
 import NumberSelector from './FormView/selectors/NumberSelector';
@@ -17,53 +16,51 @@ import { StringSelector } from './FormView/selectors/StringSelector';
 import { logger } from '@/utils/logger';
 
 interface GenericSelectorProps {
-  field: FieldDefinition;
+  field: Field;
   tab: Tab;
-  isReadOnly: boolean;
-  isDisplayed: boolean;
+  isReadOnly?: boolean;
+  isDisplayed?: boolean;
 }
 
-export const GenericSelector = ({ field, tab, isDisplayed, isReadOnly }: GenericSelectorProps) => {
+export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => {
   const { watch, setValue, getValues } = useFormContext();
-  const { fieldsByColumnName } = useMetadataContext();
-  const name = useRef(field.original.hqlName);
-  const value = watch(name.current, field.initialValue);
-  const callout = useCallout({ field: field.original, tab });
+  const value = watch(field.hqlName);
+  const callout = useCallout({ field });
 
-  const applyCallout = useCallback(
-    (data: { [key: string]: unknown }) => {
-      const columnValues = data.columnValues as Record<string, { value: unknown; classicValue: unknown }>;
+  // const applyCallout = useCallback(
+  //   (data: { [key: string]: unknown }) => {
+  //     const columnValues = data.columnValues as Record<string, { value: unknown; classicValue: unknown }>;
 
-      Object.entries(columnValues).forEach(([column, valueObj]) => {
-        const _field = fieldsByColumnName[column];
+  //     Object.entries(columnValues).forEach(([column, valueObj]) => {
+  //       const _field = fieldsByColumnName[column];
 
-        if (_field) {
-          setValue(field.original.inputName, valueObj.value);
-        }
-      });
-    },
-    [field.original.inputName, fieldsByColumnName, setValue],
-  );
+  //       if (_field) {
+  //         setValue(field.original.inputName, valueObj.value);
+  //       }
+  //     });
+  //   },
+  //   [field.original.inputName, fieldsByColumnName, setValue],
+  // );
 
   const handleChange = useCallback(
     (value: FieldValue) => {
       const f = async () => {
-        setValue(name.current, value || '');
+        setValue(field.hqlName, value || '');
 
-        if (CALLOUTS_ENABLED && field.original?.column?.callout$_identifier) {
+        if (CALLOUTS_ENABLED && field.column?.callout$_identifier) {
           const { data } = await callout(getValues());
 
           if (data.response?.status === -1) {
             logger.warn('Callout execution error', data);
           } else {
-            applyCallout(data);
+            // applyCallout(data);
           }
         }
       };
 
       return f();
     },
-    [applyCallout, callout, field.original?.column?.callout$_identifier, getValues, setValue],
+    [callout, field, getValues, setValue],
   );
 
   const handleDateChange = useCallback(
@@ -83,16 +80,12 @@ export const GenericSelector = ({ field, tab, isDisplayed, isReadOnly }: Generic
     [handleChange],
   );
 
-  if (!isDisplayed) {
-    return null;
-  }
-
   switch (field.type) {
     case 'boolean':
       return (
         <BooleanSelector
-          label={field.label}
-          name={name.current}
+          label={field.name}
+          name={field.hqlName}
           onChange={handleChange}
           checked={value}
           readOnly={isReadOnly}
@@ -100,19 +93,21 @@ export const GenericSelector = ({ field, tab, isDisplayed, isReadOnly }: Generic
         />
       );
     case 'number':
-      return <NumberSelector name={name.current} value={Number(value)} onChange={handleChange} readOnly={isReadOnly} />;
+      return (
+        <NumberSelector name={field.hqlName} value={Number(value)} onChange={handleChange} readOnly={isReadOnly} />
+      );
     case 'date':
       return (
-        <DateSelector name={name.current} value={value as string} onChange={handleDateChange} readOnly={isReadOnly} />
+        <DateSelector name={field.hqlName} value={value as string} onChange={handleDateChange} readOnly={isReadOnly} />
       );
     case 'select':
       return (
         <SelectSelector
           value={value}
-          name={name.current}
-          title={field.label}
+          name={field.hqlName}
+          title={field.name}
           onChange={handleChange}
-          field={field.original}
+          field={field}
           readOnly={isReadOnly}
         />
       );
@@ -121,10 +116,10 @@ export const GenericSelector = ({ field, tab, isDisplayed, isReadOnly }: Generic
         <SearchSelector
           field={field}
           value={value}
-          label={field.label}
-          entity={field.original?.referencedEntity || ''}
+          label={field.name}
+          entity={field.referencedEntity || ''}
           onChange={handleChange}
-          name={name.current}
+          name={field.hqlName}
           readOnly={isReadOnly}
           disabled={isReadOnly}
         />
@@ -133,10 +128,10 @@ export const GenericSelector = ({ field, tab, isDisplayed, isReadOnly }: Generic
       return (
         <TableDirSelector
           value={value}
-          label={field.label}
-          entity={field.original?.referencedEntity || ''}
+          label={field.name}
+          entity={field.referencedEntity || ''}
           onChange={handleChange}
-          name={name.current}
+          name={field.hqlName}
           readOnly={isReadOnly}
           disabled={isReadOnly}
         />
@@ -145,25 +140,25 @@ export const GenericSelector = ({ field, tab, isDisplayed, isReadOnly }: Generic
       return (
         <QuantitySelector
           value={value}
-          maxLength={field.original?.column?.length}
-          min={field.original?.column?.minValue ?? null}
-          max={field.original?.column?.maxValue ?? null}
+          maxLength={field.column?.length}
+          min={field.column?.minValue ?? null}
+          max={field.column?.maxValue ?? null}
           onChange={handleChange}
-          name={name.current}
+          name={field.hqlName}
           readOnly={isReadOnly}
         />
       );
     case 'list':
       return (
-        <ListSelector name={name.current} value={value} field={field} onChange={handleChange} readOnly={isReadOnly} />
+        <ListSelector name={field.hqlName} value={value} field={field} onChange={handleChange} readOnly={isReadOnly} />
       );
     default:
       return (
         <StringSelector
           value={value as string}
           setValue={handleChange}
-          placeholder={field.value ? String(field.value) : undefined}
-          name={name.current}
+          placeholder={field.name}
+          name={field.hqlName}
           readOnly={isReadOnly}
         />
       );

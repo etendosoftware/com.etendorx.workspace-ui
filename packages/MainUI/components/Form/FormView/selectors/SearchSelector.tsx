@@ -18,14 +18,14 @@ const SearchSelector = ({ onChange, value, field, name, disabled, readOnly }: Se
   const isDisabled = disabled || readOnly;
 
   const options = useMemo(() => {
-    const valueField = (field.original.selector?.valueField ?? '') as string;
+    const valueField = (field.selector?.valueField ?? '') as string;
 
     return records.map(record => ({
       id: record[valueField] as string,
       title: (record._identifier || record.name || record.id) as string,
       value: record[valueField] as string,
     }));
-  }, [field.original?.selector?.valueField, records]);
+  }, [field?.selector?.valueField, records]);
 
   useEffect(() => {
     if (value && options.length > 0) {

@@ -7,8 +7,8 @@ import { useTheme } from '@mui/material';
 
 const ListSelector: React.FC<ListSelectorProps> = ({ field, value, onChange, readOnly }) => {
   const [selectedValue, setSelectedValue] = useState<Option | null>(() => {
-    if (field.original?.refList) {
-      const option = field.original.refList.find(item => item.value === value);
+    if (field.refList) {
+      const option = field.refList.find(item => item.value === value);
 
       if (option) {
         return {
@@ -24,15 +24,15 @@ const ListSelector: React.FC<ListSelectorProps> = ({ field, value, onChange, rea
   const theme = useTheme();
 
   const options: Option[] = useMemo(() => {
-    if (field.original?.refList) {
-      return field.original.refList.map((item) => ({
+    if (field.refList) {
+      return field.refList.map(item => ({
         id: item.id,
         title: item.label,
         value: item.value,
       }));
     }
     return [];
-  }, [field.original?.refList]);
+  }, [field.refList]);
 
   useEffect(() => {
     setSelectedValue(options.find(option => option.value === value) || null);
