@@ -113,7 +113,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     }));
   }, []);
 
-  // Obtener la cantidad de registros seleccionados
   const getSelectedCount = useCallback(
     (tabId: string) => {
       const selections = selectedMultiple[tabId] || {};
@@ -122,7 +121,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [selectedMultiple],
   );
 
-  // Obtener los IDs de los registros seleccionados
   const getSelectedIds = useCallback(
     (tabId: string) => {
       const selections = selectedMultiple[tabId] || {};
@@ -133,7 +131,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [selectedMultiple],
   );
 
-  // Asegurarse de que la selección múltiple se limpie al cambiar de ventana
   useEffect(() => {
     setSelectedMultiple({});
   }, [windowId]);
