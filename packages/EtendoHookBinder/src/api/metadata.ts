@@ -3,6 +3,7 @@ import {
   API_DEFAULT_CACHE_DURATION,
   API_METADATA_URL,
   API_KERNEL_SERVLET,
+  API_DATASOURCE_SERVLET,
 } from './constants';
 import { Client, Interceptor } from './client';
 import { CacheStore } from './cache';
@@ -15,11 +16,12 @@ export class Metadata {
   public static client = new Client(API_METADATA_URL);
   public static kernelClient = new Client(API_KERNEL_SERVLET);
   public static datasourceClient = new Client(API_DATASOURCE_URL);
+  public static datasourceServletClient = new Client(API_DATASOURCE_SERVLET);
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
   private static currentRoleId: string | null = null;
 
   public static setLanguage(value: string) {
-    [this.client, this.datasourceClient, this.kernelClient].forEach(client =>
+    [this.client, this.datasourceClient, this.kernelClient, this.datasourceServletClient].forEach(client =>
       client.setLanguageHeader(value)
     );
 
@@ -27,7 +29,7 @@ export class Metadata {
   }
 
   public static setToken(token: string) {
-    [this.client, this.datasourceClient, this.kernelClient].forEach(client =>
+    [this.client, this.datasourceClient, this.kernelClient, this.datasourceServletClient].forEach(client =>
       client.setAuthHeader(token, 'Bearer').addQueryParam('stateless', 'true')
     );
 
@@ -38,11 +40,13 @@ export class Metadata {
     const listener1 = this.client.registerInterceptor(interceptor);
     const listener2 = this.datasourceClient.registerInterceptor(interceptor);
     const listener3 = this.kernelClient.registerInterceptor(interceptor);
+    const listener4 = this.datasourceServletClient.registerInterceptor(interceptor);
 
     return () => {
       listener1();
       listener2();
       listener3();
+      listener4();
     };
   }
 

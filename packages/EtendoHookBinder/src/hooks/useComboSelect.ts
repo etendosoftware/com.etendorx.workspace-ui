@@ -48,7 +48,7 @@ export function useComboSelect(field: Field, options: Record<string, string> = {
       setError(undefined);
       setLoading(true);
 
-      const response = await Metadata.getDatasource(field.original.selector.datasourceName, payload);
+      const response = await Metadata.getDatasource(field.selector.datasourceName, payload);
 
       if (!response.ok || response.data?.response?.error) {
         throw new Error(await response.text());
