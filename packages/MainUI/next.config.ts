@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
       transform: '@mui/icons-material/{{member}}',
     },
   },
-  reactStrictMode: true,
+  reactStrictMode: false,
   cleanDistDir: true,
   bundlePagesRouterDependencies: true,
   output: 'standalone',

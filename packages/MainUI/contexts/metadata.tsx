@@ -2,7 +2,11 @@
 
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { groupTabsByLevel } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import {
+  getFieldsByColumnName,
+  getFieldsByHqlName,
+  groupTabsByLevel,
+} from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useParams } from 'next/navigation';
 import { WindowParams } from '../app/types';
@@ -28,6 +32,8 @@ interface IMetadataContext {
   tabs: Tab[];
   tab?: Tab;
   columns?: Record<string, Field>;
+  fieldsByColumnName: Record<string, Etendo.Field>;
+  fieldsByHqlName: Record<string, Etendo.Field>;
 }
 
 export const MetadataContext = createContext({} as IMetadataContext);
@@ -155,6 +161,8 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
 
   const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [tabId, windowData?.tabs]);
   const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
+  const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
+  const fieldsByHqlName = useMemo(() => getFieldsByHqlName(tab), [tab]);
 
   const value = useMemo<IMetadataContext>(
     () => ({
@@ -176,10 +184,14 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       clearSelections,
       getSelectedCount,
       getSelectedIds,
+      fieldsByColumnName,
+      fieldsByHqlName,
     }),
     [
       clearSelections,
       error,
+      fieldsByColumnName,
+      fieldsByHqlName,
       getSelectedCount,
       getSelectedIds,
       groupedTabs,

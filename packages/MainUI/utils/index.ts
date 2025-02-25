@@ -1,4 +1,4 @@
-import { FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -23,3 +23,13 @@ export const buildUpdatedValues = (
     {} as Record<string, string | number | boolean | null>,
   );
 };
+
+export const buildCalloutPayload = (values: Record<string, unknown>, fields: Record<string, Field>) =>
+  Object.entries(values).reduce(
+    (acc, [key, value]) => {
+      acc[fields[key]?.inputName ?? key] = value;
+
+      return acc;
+    },
+    {} as Record<string, unknown>,
+  );

@@ -1,4 +1,4 @@
-import { useState, forwardRef, useCallback } from 'react';
+import { forwardRef, useCallback } from 'react';
 
 interface SwitchProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   checked: boolean;

@@ -70,6 +70,7 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
   const [state, dispatch] = useReducer(reducer, initialState);
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
   const fieldsByInputName = useMemo(() => getFieldsByInputName(tab), [tab]);
+  const { error, formInitialization, loading } = state;
 
   const params = useMemo(
     () => (tab.id ? buildFormInitializationParams(tab.id, mode as FormMode, recordId) : null),
@@ -93,5 +94,5 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
     refetch();
   }, [refetch]);
 
-  return { ...state, record, refetch, fieldsByColumnName, fieldsByInputName };
+  return { error, formInitialization, loading, record, refetch, fieldsByColumnName, fieldsByInputName };
 }
