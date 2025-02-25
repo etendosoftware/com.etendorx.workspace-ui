@@ -1,8 +1,9 @@
 import { useCallback } from 'react';
-import { Field } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { FieldValues } from 'react-hook-form';
 import { useMetadataContext } from './useMetadataContext';
+import { logger } from '@/utils/logger';
 
 export interface UseCalloutProps {
   field: Field;
@@ -10,32 +11,36 @@ export interface UseCalloutProps {
   rowId?: string | null;
 }
 
-const _action = 'org.openbravo.client.application.window.FormInitializationComponent';
+const ACTION = 'org.openbravo.client.application.window.FormInitializationComponent';
 const MODE = 'CHANGE';
 
-export const useCallout = ({ field, parentId, rowId }: UseCalloutProps) => {
+export const useCallout = ({ field, parentId = '', rowId = '' }: UseCalloutProps) => {
   const { tab } = useMetadataContext();
-  const TAB_ID = tab?.id || '';
+  const tabId = tab?.id ?? '';
 
   return useCallback(
     async (payload: FieldValues) => {
       const params = new URLSearchParams({
-        _action,
+        _action: ACTION,
         MODE,
-        TAB_ID,
+        TAB_ID: tabId,
         CHANGED_COLUMN: field.inputName,
+        ...(rowId && { ROW_ID: rowId }),
+        ...(parentId && { PARENT_ID: parentId }),
       });
 
-      if (rowId) {
-        params.set('ROW_ID', rowId);
-      }
+      try {
+        const response = await Metadata.kernelClient.post(`?${params}`, payload);
 
-      if (parentId) {
-        params.set('PARENT_ID', parentId);
-      }
+        if (!response?.data) {
+          throw new Error(`No data returned from callout for field "${field.inputName}".`);
+        }
 
-      return Metadata.kernelClient.post(`?${params}`, payload);
+        return response.data as FormInitializationResponse;
+      } catch (error) {
+        logger.error(`Error executing callout for field "${field.inputName}":`, error);
+      }
     },
-    [TAB_ID, field.inputName, parentId, rowId],
+    [tabId, field.inputName, parentId, rowId],
   );
 };

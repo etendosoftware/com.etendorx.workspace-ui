@@ -1,11 +1,11 @@
 import { useFormContext } from "react-hook-form";
 
-interface Option {
+export interface Option {
   id: string;
   label: string;
 }
 
-interface SelectProps {
+export interface SelectProps {
   name: string;
   options: Option[];
 }

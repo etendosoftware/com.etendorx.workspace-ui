@@ -2,6 +2,7 @@ import { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { StringSelector } from './StringSelector';
 import { BooleanSelector } from './BooleanSelector';
 import { DateSelector } from './DateSelector';
+import { SelectSelector } from './SelectSelector';
 
 export const GenericSelector = ({ field }: { field: Field }) => {
   const { reference } = field.column;
@@ -22,7 +23,7 @@ export const GenericSelector = ({ field }: { field: Field }) => {
     case '13':
       return 'list';
     case '30':
-      return 'search';
+      return <SelectSelector field={field} />
     case '12':
     case '11':
     case '22':

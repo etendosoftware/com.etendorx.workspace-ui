@@ -1,9 +1,19 @@
 import { Toolbar } from '@/components/Toolbar/Toolbar';
 import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
+import { FormProvider, useForm } from 'react-hook-form';
 import { BaseSelector } from './selectors/BaseSelector';
 
-export default function FormView({ form, window, tab }: { form: UseFormReturn; window: WindowMetadata; tab: Tab }) {
+export default function FormView({
+  defaultValues,
+  window,
+  tab,
+}: {
+  defaultValues: Record<string, unknown>;
+  window: WindowMetadata;
+  tab: Tab;
+}) {
+  const form = useForm({ values: defaultValues });
+
   return (
     <FormProvider {...form}>
       <div className="w-full p-2">

@@ -9,7 +9,6 @@ export const BooleanSelector = ({ field }: { field: Field }) => {
 
   const handleChange = useCallback(
     (newValue: boolean) => {
-      console.debug(newValue);
       setValue(field.hqlName, newValue);
     },
     [field.hqlName, setValue],
