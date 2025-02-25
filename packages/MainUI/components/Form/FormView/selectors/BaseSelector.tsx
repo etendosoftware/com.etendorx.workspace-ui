@@ -48,11 +48,13 @@ export const BaseSelector = ({ field }: { field: Field }) => {
   }, [runCallout, value]);
 
   return (
-    <div className="">
-      <label htmlFor={field.hqlName} className="block text-sm font-medium text-gray-700">
+    <div className="grid grid-cols-3 auto-rows-auto items-center justify-items-stretch gap-4">
+      <label htmlFor={field.hqlName} className="block text-sm font-medium text-gray-700 text-right">
         {field.name}
       </label>
-      <GenericSelector field={field} />
+      <div className="col-span-2">
+        <GenericSelector field={field} />
+      </div>
     </div>
   );
 };

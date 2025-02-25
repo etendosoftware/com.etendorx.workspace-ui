@@ -3,37 +3,21 @@ import { StringSelector } from './StringSelector';
 import { BooleanSelector } from './BooleanSelector';
 import { DateSelector } from './DateSelector';
 import { SelectSelector } from './SelectSelector';
-import ListSelector from '../oldSelectors/ListSelector';
-import { useCallback } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { TableDirSelector } from './TableDirSelector';
 import QuantitySelector from '../oldSelectors/QuantitySelector';
-import TableDirSelector from '../oldSelectors/TableDirSelector';
+import { ListSelector } from './ListSelector';
 
 export const GenericSelector = ({ field }: { field: Field }) => {
-  const { watch, setValue } = useFormContext();
+  const { watch } = useFormContext();
   const value = watch(field.hqlName);
   const { reference } = field.column;
-
-  const handleChange = useCallback(
-    (newValue: string) => {
-      setValue(field.hqlName, newValue);
-    },
-    [field.hqlName, setValue],
-  );
 
   switch (reference) {
     case '19':
     case '95E2A8B50A254B2AAE6774B8C2F28120':
     case '18':
-      return (
-        <TableDirSelector
-          entity={field.referencedEntity}
-          label={field.name}
-          name={field.hqlName}
-          onChange={handleChange}
-          value={value}
-        />
-      );
+      return <TableDirSelector field={field} />;
     case '15':
     case '16':
       return <DateSelector field={field} />;
@@ -45,7 +29,7 @@ export const GenericSelector = ({ field }: { field: Field }) => {
       );
     case '17':
     case '13':
-      return <ListSelector name={field.hqlName} field={field} onChange={handleChange} value={value} />;
+      return <ListSelector field={field} />;
     case '30':
       return <SelectSelector field={field} />;
     case '12':

@@ -18,7 +18,7 @@ export default function FormView({
     <FormProvider {...form}>
       <div className="w-full p-2 space-y-2">
         <Toolbar windowId={window.id} tabId={tab.id} isFormView={true} />
-        <div className="grid grid-cols-2 auto-rows-auto gap-4 bg-white rounded-2xl p-4">
+        <div className="grid grid-cols-2 auto-rows-auto gap-8 bg-white rounded-2xl p-4">
           {Object.entries(tab.fields).map(([hqlName, field]) => (
             <BaseSelector field={field} key={hqlName} />
           ))}
