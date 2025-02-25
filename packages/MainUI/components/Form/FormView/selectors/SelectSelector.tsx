@@ -3,10 +3,12 @@ import { useFormContext } from 'react-hook-form';
 import Select, { SelectProps } from './components/Select';
 import { useMemo } from 'react';
 import { useComboSelect } from '@workspaceui/etendohookbinder/src/hooks/useComboSelect';
+import { useMetadataContext } from '@/hooks/useMetadataContext';
 
 export const SelectSelector = ({ field }: { field: Field }) => {
-  const { register } = useFormContext();
-  const { records } = useComboSelect(field);
+  const { register, getValues } = useFormContext();
+  const { window, tab } = useMetadataContext();
+  const { records } = useComboSelect(field, { ...getValues(), windowId: window?.id, tabId: tab?.id });
   const idKey = (field.selector?.valueField ?? '') as string;
   const identifierKey = (field.selector?.displayField ?? '') as string;
 

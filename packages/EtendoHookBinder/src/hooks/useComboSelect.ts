@@ -2,7 +2,7 @@ import { Metadata } from '../api/metadata';
 import { Field } from '../api/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-export function useComboSelect(field: Field, options: Record<string, string> = {}) {
+export function useComboSelect(field: Field, options: { windowId?: string; tabId?: string } = {}) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
@@ -19,8 +19,15 @@ export function useComboSelect(field: Field, options: Record<string, string> = {
       const payload = new URLSearchParams();
       const p: Record<string, string | number | boolean> = {
         ...field.selector,
+        startRow: 0,
+        endRow: 75,
         inpissotrx: true,
         IsSelectorItem: true,
+        isc_dataFormat: "json",
+        _operationType: "fetch",
+        moduleId: "0",
+        targetProperty: field.hqlName,
+        columnName: field.columnName,
       };
 
       if (options.windowId) {
@@ -28,7 +35,7 @@ export function useComboSelect(field: Field, options: Record<string, string> = {
       }
 
       if (options.tabId) {
-        p.tabId = options.tabId;
+        p.adTabId = options.tabId;
       }
 
       Object.entries(p).forEach(([pName, pValue]) => {
