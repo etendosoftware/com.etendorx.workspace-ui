@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Metadata } from '../api/metadata';
-import { Field } from '@/api/types';
+import { Field } from '../api/types';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export function useComboSelect(field: Field, options: Record<string, string> = {}) {
   const [loading, setLoading] = useState(false);
@@ -17,20 +17,10 @@ export function useComboSelect(field: Field, options: Record<string, string> = {
       }
 
       const payload = new URLSearchParams();
-      const p: Record<string, string | number> = {
-        _startRow: 0,
-        _endRow: 9999,
-        _selectorDefinitionId: field.selector._selectorDefinitionId,
-        // adTabId: '186',
-        // moduleId: 0,
-        // targetProperty: 'businessPartner',
-        // columnName: 'C_BPartner_ID',
-        // IsSelectorItem: true,
-        // _operationType: 'fetch',
-        // operator: 'and',
-        // _org: 'E443A31992CB4635AFCAEABE7183CE85',
-        // filterClass: field.original.selector.filterClass,
-        // filterClass: 'org.openbravo.userinterface.selector.SelectorDataSourceFilter',
+      const p: Record<string, string | number | boolean> = {
+        ...field.selector,
+        inpissotrx: true,
+        IsSelectorItem: true,
       };
 
       if (options.windowId) {
@@ -61,7 +51,7 @@ export function useComboSelect(field: Field, options: Record<string, string> = {
     } finally {
       setLoading(false);
     }
-  }, [field, options.windowId, options.tabId]);
+  }, [field, options.tabId, options.windowId]);
 
   useEffect(() => {
     load();
