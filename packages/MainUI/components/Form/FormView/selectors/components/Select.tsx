@@ -14,7 +14,7 @@ export default function Select({ name, options }: SelectProps) {
   const { register } = useFormContext();
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 w-full">
       <select
         {...register(name)}
         className="w-full h-12 bg-white rounded-2xl border border-gray-300 p-3 text-sm shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-300 focus:outline-none transition">

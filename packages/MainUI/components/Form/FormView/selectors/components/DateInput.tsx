@@ -23,7 +23,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(({ name, c
   );
 
   return (
-    <div className="flex flex-col space-y-1" onClick={handleClick}>
+    <div className="flex flex-col space-y-1 w-full" onClick={handleClick}>
       <input
         type="date"
         id={name}
