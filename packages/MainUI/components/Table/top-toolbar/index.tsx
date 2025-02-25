@@ -19,17 +19,16 @@ export default function TopToolbar({
   const Icon = filterActive ? FilterAlt : FilterAltOff;
   const label = t(filterActive ? 'table.tooltips.implicitFilterOn' : 'table.tooltips.implicitFilterOff');
 
+  const selectionLabel = t(selectedCount === 1 ? 'table.selection.single' : 'table.selection.multiple');
+
   return (
     <Box sx={styles.container}>
       <Box>
         {selectedCount > 0 && onClearSelection && (
           <Stack direction="row" spacing={1} alignItems="center" pl={1}>
-            <Chip
-              label={`${selectedCount} ${selectedCount === 1 ? 'elemento' : 'elementos'} seleccionados`}
-              color="primary"
-            />
+            <Chip label={`${selectedCount} ${selectionLabel}`} color="primary" />
             <Button size="small" onClick={onClearSelection} variant="outlined">
-              Limpiar selección
+              {t('common.clear')}
             </Button>
           </Stack>
         )}

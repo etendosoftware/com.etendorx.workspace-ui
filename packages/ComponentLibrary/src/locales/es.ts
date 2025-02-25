@@ -12,6 +12,7 @@ const es = {
     loadingFormData: 'Cargando información del formulario...',
     retry: 'Reintentar',
     processes: 'Procesos disponibles',
+    clear: 'Limpiar Seleccion',
   },
   errors: {
     networkError: {
@@ -65,6 +66,10 @@ const es = {
       refresh: 'Actualizar',
       implicitFilterOn: 'Filtros aplicados. Click para quitar filtros',
       implicitFilterOff: 'Filtros desactivados. Click para aplicar filtros',
+    },
+    selection: {
+      single: 'Elemento selecccionado',
+      multiple: 'Elementos seleccionados',
     },
     placeholders: {
       search: 'Buscar...',

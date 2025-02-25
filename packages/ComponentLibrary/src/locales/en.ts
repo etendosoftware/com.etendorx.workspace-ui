@@ -12,6 +12,7 @@ const en = {
     loadingFormData: 'Loading form data...',
     retry: 'Retry',
     processes: 'Available Process',
+    clear: 'Clear Selection',
   },
   errors: {
     networkError: {
@@ -65,6 +66,10 @@ const en = {
       refresh: 'Refresh',
       implicitFilterOn: 'Filters applied. Click to remove filters',
       implicitFilterOff: 'Filters deactivated. Click to apply filters',
+    },
+    selection: {
+      single: 'Element selected',
+      multiple: 'Elements selected',
     },
     placeholders: {
       search: 'Search...',
