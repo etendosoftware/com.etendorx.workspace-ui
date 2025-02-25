@@ -1,7 +1,25 @@
 import { ToolbarButton } from '@workspaceui/storybook/src/stories/Components/Table/types';
 import { BaseButton, ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
+import { Theme } from '@mui/material';
 
 export const IconSize = 16;
+
+export interface Position {
+  top: string;
+  right: string;
+}
+
+export interface SearchPortalProps {
+  isOpen: boolean;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  onClose: () => void;
+  placeholder?: string;
+  position?: Position;
+  width?: string;
+  autoCompleteTexts?: string[];
+  theme?: Theme;
+}
 
 export type IconName =
   | 'plus'

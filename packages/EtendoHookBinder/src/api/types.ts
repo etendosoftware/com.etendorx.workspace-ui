@@ -183,6 +183,7 @@ export interface Tab {
   fields: Record<string, Field>;
   level: number;
   _identifier: string;
+  records: Record<string, never>;
 }
 
 export interface WindowMetadata {

@@ -20,18 +20,28 @@ type DynamicTableProps = {
 };
 
 const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTableProps) {
-  const { selected, selectRecord } = useMetadataContext();
+  const { selected, selectRecord, selectMultiple, isSelected, clearSelections, getSelectedCount, getSelectedIds } =
+    useMetadataContext();
   const { windowId } = useParams<WindowParams>();
   const parent = selected[tab.level - 1];
   const navigate = useRouter().push;
   const { sx } = useStyle();
   const [editing, setEditing] = useState(false);
-  const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState(true);
   const { language } = useLanguage();
   const { searchQuery } = useSearch();
   const tabId = tab.id;
+  const selectedIds = useMemo(() => getSelectedIds(tabId), [getSelectedIds, tabId]);
+  const selectedCount = useMemo(() => getSelectedCount(tabId), [getSelectedCount, tabId]);
 
-  const handleFilterToggle = useCallback(() => setIsImplicitFilterApplied(prev => !prev), []);
+  const rowSelection = useMemo(() => {
+    return selectedIds.reduce(
+      (obj, id) => {
+        obj[id] = true;
+        return obj;
+      },
+      {} as Record<string, boolean>,
+    );
+  }, [selectedIds]);
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || 'id';
@@ -41,7 +51,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     const options: DatasourceOptions = {
       windowId,
       tabId,
-      isImplicitFilterApplied,
+      isImplicitFilterApplied: true,
       pageSize: 100,
       language,
     };
@@ -57,31 +67,108 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     }
 
     return options;
-  }, [language, parent?.id, tab.parentColumns, tabId, windowId, isImplicitFilterApplied]);
+  }, [language, parent?.id, tab.parentColumns, tabId, windowId]);
 
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
-  const { records, loading, error, fetchMore, loaded } = useDatasource(tab.entityName, query, searchQuery, columns);
+  const { records, loading, error, fetchMore, loaded, isImplicitFilterApplied, toggleImplicitFilters } = useDatasource(
+    tab.entityName,
+    query,
+    searchQuery,
+    columns,
+  );
+
+  const handleFilterToggle = useCallback(() => {
+    toggleImplicitFilters();
+  }, [toggleImplicitFilters]);
+
+  const handleClearSelections = useCallback(() => {
+    clearSelections(tabId);
+  }, [clearSelections, tabId]);
+
+  const mapSelectionToIds = useCallback((selection: Record<string, boolean>): string[] => {
+    return Object.entries(selection)
+      .filter(([_, isSelected]) => isSelected)
+      .map(([id]) => id);
+  }, []);
+
+  const handleRowSelectionChange = useCallback(
+    (updaterOrValue: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => {
+      let newSelection: Record<string, boolean>;
+      if (typeof updaterOrValue === 'function') {
+        newSelection = updaterOrValue(rowSelection);
+      } else {
+        newSelection = updaterOrValue;
+      }
+
+      const newSelectedIds = mapSelectionToIds(newSelection);
+
+      selectMultiple(newSelectedIds, tab, true);
+
+      if (newSelectedIds.length === 1) {
+        const record = records.find(r => String(r.id) === newSelectedIds[0]) as Record<string, never>;
+        if (record) {
+          selectRecord(record, tab);
+        }
+      }
+    },
+    [mapSelectionToIds, rowSelection, records, selectMultiple, selectRecord, tab],
+  );
 
   const rowProps = useCallback(
-    ({ row }: { row: MRT_Row<Record<string, unknown>> }) => ({
-      onClick: () => {
-        selectRecord(row.original as never, tab);
-        row.toggleSelected();
-      },
-      onDoubleClick: () => {
-        selectRecord(row.original as never, tab);
-        navigate(`${windowId}/${tab.id}/${row.original.id}`);
-      },
-      onAuxClick: () => {
-        selectRecord(row.original as never, tab);
-        setEditing(true);
-      },
-    }),
-    [navigate, selectRecord, tab, windowId],
+    ({ row }: { row: MRT_Row<Record<string, unknown>> }) => {
+      const record = row.original as Record<string, never>;
+      const id = String(record.id);
+      const isRowSelected = isSelected(id, tabId);
+
+      return {
+        onClick: (event: React.MouseEvent) => {
+          if ((event.target as HTMLElement).closest('.MuiCheckbox-root')) {
+            return;
+          }
+
+          if (event.ctrlKey || event.metaKey) {
+            if (isRowSelected) {
+              const newSelection = selectedIds.filter(selectedId => selectedId !== id);
+              selectMultiple(newSelection, tab, true);
+            } else {
+              selectMultiple([...selectedIds, id], tab, true);
+            }
+          } else {
+            selectRecord(record, tab);
+            selectMultiple([id], tab, true);
+          }
+        },
+        onDoubleClick: () => {
+          selectRecord(record, tab);
+          navigate(`${windowId}/${tab.id}/${record.id}`);
+        },
+        onAuxClick: () => {
+          selectRecord(record, tab);
+          setEditing(true);
+        },
+        sx: {
+          ...(isRowSelected && {
+            ...sx.rowSelected,
+          }),
+        },
+      };
+    },
+    [isSelected, navigate, selectMultiple, selectRecord, selectedIds, sx.rowSelected, tab, tabId, windowId],
   );
 
   const handleBack = useCallback(() => setEditing(false), []);
+
+  const CustomTopToolbar = useCallback(() => {
+    return (
+      <TopToolbar
+        filterActive={isImplicitFilterApplied}
+        toggleFilter={handleFilterToggle}
+        selectedCount={selectedCount}
+        onClearSelection={handleClearSelections}
+      />
+    );
+  }, [isImplicitFilterApplied, handleFilterToggle, selectedCount, handleClearSelections]);
 
   if (loading && !loaded) return <Spinner />;
   if (error) return <div>Error: {error.message}</div>;
@@ -97,29 +184,39 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   }
 
   return (
-    <Box sx={sx.container}>
-      <Box sx={sx.table}>
-        <MaterialReactTable
-          enableGlobalFilter={false}
-          columns={columns}
-          data={records}
-          enableRowSelection
-          enableMultiRowSelection={false}
-          positionToolbarAlertBanner="none"
-          muiTableBodyRowProps={rowProps}
-          enablePagination={false}
-          renderTopToolbar={<TopToolbar filterActive={isImplicitFilterApplied} toggleFilter={handleFilterToggle} />}
-          renderBottomToolbar={
-            tab.uIPattern == 'STD' && !searchQuery ? <Button onClick={fetchMore}>Load more</Button> : null
-          }
-          initialState={{ density: 'compact' }}
-          muiTablePaperProps={{
-            sx: sx.tablePaper,
-          }}
-          muiTableHeadCellProps={{ sx: sx.tableHeadCell }}
-          muiTableBodyCellProps={{ sx: sx.tableBodyCell }}
-          muiTableBodyProps={{ sx: sx.tableBody }}
-        />
+    <Box>
+      <Box sx={sx.container}>
+        <Box sx={sx.table}>
+          <MaterialReactTable
+            enableGlobalFilter={false}
+            columns={columns}
+            data={records}
+            enableRowSelection={true}
+            enableMultiRowSelection={true}
+            positionToolbarAlertBanner="none"
+            muiTableBodyRowProps={rowProps}
+            enablePagination={false}
+            renderTopToolbar={<CustomTopToolbar />}
+            renderBottomToolbar={
+              tab.uIPattern == 'STD' && !searchQuery ? <Button onClick={fetchMore}>Load more</Button> : null
+            }
+            initialState={{ density: 'compact' }}
+            muiTablePaperProps={{
+              sx: sx.tablePaper,
+            }}
+            muiTableHeadCellProps={{ sx: sx.tableHeadCell }}
+            muiTableBodyCellProps={{ sx: sx.tableBodyCell }}
+            muiTableBodyProps={{ sx: sx.tableBody }}
+            state={{
+              rowSelection,
+            }}
+            onRowSelectionChange={handleRowSelectionChange}
+            getRowId={row => String(row.id)}
+            enableColumnFilters={true}
+            enableSorting={true}
+            enableColumnActions={true}
+          />
+        </Box>
       </Box>
     </Box>
   );
