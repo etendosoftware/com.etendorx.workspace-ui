@@ -16,13 +16,11 @@ export default function FormView({
 
   return (
     <FormProvider {...form}>
-      <div className="w-full p-2">
+      <div className="w-full p-2 space-y-2">
         <Toolbar windowId={window.id} tabId={tab.id} isFormView={true} />
-        <div className="grid grid-cols-2 auto-rows-auto gap-y-4 bg-white rounded-2xl">
-          {Object.entries(tab.fields).map(([hqlName, field], index) => (
-            <div key={hqlName} className={index > 1 ? 'border-t' : ''}>
-              <BaseSelector field={field} />
-            </div>
+        <div className="grid grid-cols-2 auto-rows-auto gap-4 bg-white rounded-2xl p-4">
+          {Object.entries(tab.fields).map(([hqlName, field]) => (
+            <BaseSelector field={field} key={hqlName} />
           ))}
         </div>
       </div>
