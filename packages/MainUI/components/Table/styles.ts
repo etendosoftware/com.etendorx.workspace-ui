@@ -74,6 +74,13 @@ export const useStyle = (): StylesType => {
         multiSelectContainer: {
           display: 'flex',
         },
+        rowSelected: {
+          cursor: 'pointer',
+          backgroundColor: `${theme.palette.baselineColor.neutral[20]} !important`,
+          '&:hover': {
+            backgroundColor: `${theme.palette.baselineColor.neutral[10]} !important`,
+          },
+        },
         contentContainer: {
           flex: 1,
         },

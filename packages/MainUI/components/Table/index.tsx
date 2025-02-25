@@ -148,17 +148,13 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
           setEditing(true);
         },
         sx: {
-          cursor: 'pointer',
           ...(isRowSelected && {
-            backgroundColor: 'rgba(25, 118, 210, 0.08) !important',
-            '&:hover': {
-              backgroundColor: 'rgba(25, 118, 210, 0.12) !important',
-            },
+            ...sx.rowSelected,
           }),
         },
       };
     },
-    [isSelected, navigate, selectMultiple, selectRecord, selectedIds, tab, tabId, windowId],
+    [isSelected, navigate, selectMultiple, selectRecord, selectedIds, sx.rowSelected, tab, tabId, windowId],
   );
 
   const handleBack = useCallback(() => setEditing(false), []);
