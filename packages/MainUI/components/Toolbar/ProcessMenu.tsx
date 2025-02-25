@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 import { Menu, MenuItem, Tooltip } from '@mui/material';
 import { ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
@@ -33,10 +33,20 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
   onProcessClick,
   selectedRecord,
 }) => {
+  const callbacks = useRef<Record<string, () => void>>({});
+
+  const handleClick = useCallback((button: ProcessButton) => {
+    if (!callbacks.current[button.id]) {
+      callbacks.current[button.id] = () => onProcessClick(button);
+    }
+
+    return callbacks.current[button.id];
+  }, [onProcessClick]);
+
   return (
     <Menu anchorEl={anchorEl} open={open} onClose={onClose} sx={menuStyle}>
       {processButtons.map((button: ProcessButton) => (
-        <MenuItem key={button.id} onClick={() => onProcessClick(button)} sx={menuItemStyle} disabled={!selectedRecord}>
+        <MenuItem key={button.id} onClick={handleClick(button)} sx={menuItemStyle} disabled={!selectedRecord}>
           <Tooltip title={button.name} enterDelay={600} leaveDelay={100}>
             <span>{button.name}</span>
           </Tooltip>

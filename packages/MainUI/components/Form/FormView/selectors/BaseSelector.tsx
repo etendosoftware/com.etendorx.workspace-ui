@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Field, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
 import { useCallout } from '@/hooks/useCallout';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
 import { logger } from '@/utils/logger';
 import { GenericSelector } from './GenericSelector';
-import { buildCalloutPayload } from '@/utils';
+import { buildPayloadByInputName } from '@/utils';
 
 export const BaseSelector = ({ field }: { field: Field }) => {
   const { watch, getValues, setValue } = useFormContext();
@@ -14,11 +14,15 @@ export const BaseSelector = ({ field }: { field: Field }) => {
   const value = watch(field.hqlName);
   const ready = useRef(false);
 
+  const isDisplayed = useMemo(() => {
+    return true;
+  }, []);
+
   const applyColumnValues = useCallback(
     (columnValues: FormInitializationResponse['columnValues']) => {
       Object.entries(columnValues ?? {}).forEach(([column, { value }]) => {
         const targetField = fieldsByColumnName[column];
-        if (targetField) setValue(targetField.hqlName, value);
+        if (targetField && value) setValue(targetField.hqlName, value);
       });
     },
     [fieldsByColumnName, setValue],
@@ -28,7 +32,7 @@ export const BaseSelector = ({ field }: { field: Field }) => {
     if (!field.column.callout) return;
 
     try {
-      const payload = buildCalloutPayload(getValues(), fieldsByHqlName);
+      const payload = buildPayloadByInputName(getValues(), fieldsByHqlName);
       const data = await executeCallout(payload);
 
       if (data) {
@@ -47,14 +51,18 @@ export const BaseSelector = ({ field }: { field: Field }) => {
     }
   }, [runCallout, value]);
 
-  return (
-    <div className="grid grid-cols-3 auto-rows-auto items-center justify-items-stretch gap-4">
-      <label htmlFor={field.hqlName} className="block text-sm font-medium text-gray-700 text-right">
-        {field.name}
-      </label>
-      <div className="col-span-2">
-        <GenericSelector field={field} />
+  if (isDisplayed) {
+    return (
+      <div className="flex flex-col gap-2">
+        <label htmlFor={field.hqlName} className="block text-sm font-medium text-gray-700">
+          {field.name}
+        </label>
+        <div className="col-span-2">
+          <GenericSelector field={field} />
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 };

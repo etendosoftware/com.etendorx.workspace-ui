@@ -191,7 +191,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         setToken(loginResponse.token);
 
         Metadata.setToken(loginResponse.token);
-        Datasource.authorize(loginResponse.token);
+        Datasource.setToken(loginResponse.token);
 
         const sessionResponse = await getSession(loginResponse.token);
         updateSessionInfo(sessionResponse);
@@ -247,9 +247,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
       const verifySession = async () => {
         try {
           Metadata.setToken(token);
-          Datasource.authorize(token);
-          const sessionResponse = await getSession(token);
-          updateSessionInfo(sessionResponse);
+          Datasource.setToken(token);
+
+          updateSessionInfo(await getSession(token));
         } catch (error) {
           clearUserData();
           navigate('/login');
@@ -295,19 +295,13 @@ export default function UserProvider(props: React.PropsWithChildren) {
   }, [navigate, token]);
 
   useEffect(() => {
-    if (!languages.length) {
-      return;
-    }
+    if (languages.length === 0) return;
 
     const savedLanguage = localStorage.getItem('currentLanguage');
-    const givenLanguage = languages.find(lang => lang.language == savedLanguage);
+    const matchedLanguage = languages.find(lang => lang.language === savedLanguage);
 
-    if (givenLanguage) {
-      setLanguage(givenLanguage.language as Language);
-    } else {
-      setLanguage(DEFAULT_LANGUAGE);
-    }
-  }, [languages, languages.length, setLanguage]);
+    setLanguage((matchedLanguage?.language as Language) || DEFAULT_LANGUAGE);
+  }, [languages, setLanguage]);
 
   return <UserContext.Provider value={value}>{ready ? props.children : <Spinner />}</UserContext.Provider>;
 }

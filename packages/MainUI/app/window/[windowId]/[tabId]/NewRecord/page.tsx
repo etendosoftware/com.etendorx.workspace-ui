@@ -27,8 +27,6 @@ function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
     return { ...record, ...updatedValues };
   }, [fieldsByColumnName, formInitialization, record]);
 
-  const form = useForm({ values });
-
   if (error) {
     return (
       <ErrorDisplay
@@ -45,7 +43,7 @@ function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
     return <Spinner />;
   }
 
-  return <FormView form={form} tab={tab} window={window} />;
+  return <FormView defaultValues={values} tab={tab} window={window} />;
 }
 
 export default function EditRecordPage() {
