@@ -5,7 +5,7 @@ import { DatasourceParams } from './types';
 export class Datasource {
   public static client = new Client(API_DATASOURCE_URL);
 
-  public static authorize(token: string) {
+  public static setToken(token: string) {
     Datasource.client.setAuthHeader(token, 'Bearer');
   }
 

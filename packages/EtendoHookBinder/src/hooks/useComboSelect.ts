@@ -2,7 +2,35 @@ import { Metadata } from '../api/metadata';
 import { Field } from '../api/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-export function useComboSelect(field: Field, options: { windowId?: string; tabId?: string } = {}) {
+const baseParams = {
+  inpissotrx: true,
+  IsSelectorItem: true,
+  isc_dataFormat: 'json',
+  _operationType: 'fetch',
+  moduleId: '0',
+};
+
+const buildPayload = (field: Field, params: Record<string, unknown>) => {
+  const payload = new URLSearchParams();
+
+  params = {
+    ...baseParams,
+    ...field.selector,
+    ...params,
+    targetProperty: field.hqlName,
+    columnName: field.columnName,
+  };
+
+  Object.entries(params).forEach(([name, value]) => {
+    if (value) {
+      payload.append(name, value.toString());
+    }
+  });
+
+  return payload;
+};
+
+export function useComboSelect(field: Field, options: Record<string, unknown>) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
@@ -16,36 +44,12 @@ export function useComboSelect(field: Field, options: { windowId?: string; tabId
         return;
       }
 
-      const payload = new URLSearchParams();
-      const p: Record<string, string | number | boolean> = {
-        ...field.selector,
-        startRow: 0,
-        endRow: 75,
-        inpissotrx: true,
-        IsSelectorItem: true,
-        isc_dataFormat: "json",
-        _operationType: "fetch",
-        moduleId: "0",
-        targetProperty: field.hqlName,
-        columnName: field.columnName,
-      };
-
-      if (options.windowId) {
-        p.windowId = options.windowId;
-      }
-
-      if (options.tabId) {
-        p.adTabId = options.tabId;
-      }
-
-      Object.entries(p).forEach(([pName, pValue]) => {
-        payload.append(pName, pValue?.toString());
-      });
+      const payload = buildPayload(field, options);
 
       setError(undefined);
       setLoading(true);
 
-      const response = await Metadata.getDatasource(field.selector.datasourceName, payload);
+      const response = await Metadata.datasourceServletClient.post(`${field.selector.datasourceName}?_startRow=0&_endRow=9999`, payload);
 
       if (!response.ok || response.data?.response?.error) {
         throw new Error(await response.text());
@@ -58,7 +62,7 @@ export function useComboSelect(field: Field, options: { windowId?: string; tabId
     } finally {
       setLoading(false);
     }
-  }, [field, options.tabId, options.windowId]);
+  }, [field, options]);
 
   useEffect(() => {
     load();

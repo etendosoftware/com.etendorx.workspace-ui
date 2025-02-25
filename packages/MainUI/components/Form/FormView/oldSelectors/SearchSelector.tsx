@@ -10,9 +10,11 @@ const getOptionLabel = (option: Option) => option.title;
 
 const optionEqualValue = (option: Option, value: { id: string }) => option.id === value.id || option.value === value.id;
 
+const comboSelectOptions = {};
+
 const SearchSelector = ({ onChange, value, field, name, disabled, readOnly }: SearchSelectorProps) => {
   const theme = useTheme();
-  const { records, loading, error, loaded } = useComboSelect(field);
+  const { records, loading, error, loaded } = useComboSelect(field, comboSelectOptions);
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
 
   const isDisabled = disabled || readOnly;

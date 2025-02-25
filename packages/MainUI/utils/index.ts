@@ -24,10 +24,14 @@ export const buildUpdatedValues = (
   );
 };
 
-export const buildCalloutPayload = (values: Record<string, unknown>, fields: Record<string, Field>) =>
+export const buildPayloadByInputName = (values: Record<string, unknown>, fields?: Record<string, Field>) =>
   Object.entries(values).reduce(
     (acc, [key, value]) => {
-      acc[fields[key]?.inputName ?? key] = value;
+      const newKey = fields?.[key]?.inputName;
+      
+      if (newKey) {
+        acc[newKey] = value;
+      }
 
       return acc;
     },
