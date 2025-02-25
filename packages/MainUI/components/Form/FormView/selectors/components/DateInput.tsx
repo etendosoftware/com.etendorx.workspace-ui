@@ -29,7 +29,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(({ name, c
         id={name}
         name={name}
         ref={handleRef}
-        className={`bg-white rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${className}`}
+        className={`w-full h-12 bg-white rounded-2xl border border-gray-300 p-3 text-sm shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-300 focus:outline-none transition ${className}`}
         {...props}
       />
     </div>

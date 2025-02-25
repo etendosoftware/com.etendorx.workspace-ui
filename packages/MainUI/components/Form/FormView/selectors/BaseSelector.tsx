@@ -48,9 +48,9 @@ export const BaseSelector = ({ field }: { field: Field }) => {
   }, [runCallout, value]);
 
   return (
-    <div className="w-full rounded-2xl p-2">
-      <label htmlFor={field.hqlName} className="block text-sm font-medium text-gray-700 mb-1">
-        {field.name} ({String(value)} - {String(field.column.callout)})
+    <div className="">
+      <label htmlFor={field.hqlName} className="block text-sm font-medium text-gray-700">
+        {field.name}
       </label>
       <GenericSelector field={field} />
     </div>

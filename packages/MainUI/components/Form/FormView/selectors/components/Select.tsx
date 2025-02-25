@@ -1,4 +1,4 @@
-import { useFormContext } from "react-hook-form";
+import { useFormContext } from 'react-hook-form';
 
 export interface Option {
   id: string;
@@ -17,8 +17,7 @@ export default function Select({ name, options }: SelectProps) {
     <div className="flex flex-col gap-2">
       <select
         {...register(name)}
-        className="w-full p-2 border rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-      >
+        className="w-full h-12 bg-white rounded-2xl border border-gray-300 p-3 text-sm shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-300 focus:outline-none transition">
         <option value="" disabled>
           Select an option
         </option>
