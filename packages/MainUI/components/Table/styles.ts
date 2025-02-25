@@ -35,7 +35,7 @@ export const useStyle = (): StylesType => {
         tablePaper: {
           borderRadius: '1rem 1rem 0 0',
           overflow: 'hidden',
-          border: `1px solid ${theme.palette.divider}`,
+          border: `2px solid ${theme.palette.divider}`,
         },
         fetchMore: {
           alignSelf: 'center',
@@ -78,7 +78,7 @@ export const useStyle = (): StylesType => {
           flex: 1,
         },
         titleContainer: {
-          margin: '0.5rem'
+          margin: '0.5rem',
         },
         selectedContainer: {
           borderRadius: '0.25rem 0 0 0.25rem',

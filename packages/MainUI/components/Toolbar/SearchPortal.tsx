@@ -1,24 +1,8 @@
 import React, { useCallback } from 'react';
-import { Box, Portal, Theme } from '@mui/material';
+import { Box, Portal } from '@mui/material';
 import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
 import { useStyle } from './styles';
-
-interface Position {
-  top: string;
-  right: string;
-}
-
-interface SearchPortalProps {
-  isOpen: boolean;
-  searchValue: string;
-  onSearchChange: (value: string) => void;
-  onClose: () => void;
-  placeholder?: string;
-  position?: Position;
-  width?: string;
-  autoCompleteTexts?: string[];
-  theme?: Theme;
-}
+import { SearchPortalProps } from './types';
 
 const SearchPortal: React.FC<SearchPortalProps> = ({
   isOpen,
@@ -58,6 +42,7 @@ const SearchPortal: React.FC<SearchPortalProps> = ({
           autoCompleteTexts={autoCompleteTexts}
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
+          autoFocus={true}
         />
       </Box>
     </Portal>

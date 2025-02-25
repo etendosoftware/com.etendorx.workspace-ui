@@ -9,7 +9,7 @@ export const useStyle = () => {
       container: css({
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'flex-end',
+        justifyContent: 'space-between',
       }),
       icon: css({
         cursor: 'pointer',

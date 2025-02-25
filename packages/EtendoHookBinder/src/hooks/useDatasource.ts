@@ -1,23 +1,29 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DatasourceOptions, Column, CompositeCriteria } from '../api/types';
+import { DatasourceOptions, Column } from '../api/types';
 import { Datasource } from '../api/datasource';
 import { SearchUtils } from '../utils/search-utils';
 
 const loadData = async (entity: string, page: number, pageSize: number, params: DatasourceOptions) => {
+  const safePageSize = pageSize ?? 1000;
   const startRow = (page - 1) * pageSize;
   const endRow = page * pageSize - 1;
 
-  const { response } = await Datasource.get(entity, {
+  const processedParams = {
     ...params,
     startRow,
     endRow,
-  });
+    pageSize: safePageSize,
+    isImplicitFilterApplied: params.isImplicitFilterApplied ?? true,
+  };
+
+  const { response } = await Datasource.get(entity, processedParams);
 
   return response;
 };
 
-const defaultParams = {
+const defaultParams: DatasourceOptions = {
   pageSize: 1000,
+  isImplicitFilterApplied: true,
 };
 
 export function useDatasource(
@@ -31,6 +37,7 @@ export function useDatasource(
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [page, setPage] = useState(1);
+  const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState(params.isImplicitFilterApplied ?? true);
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
 
   const fetchMore = useCallback(() => {
@@ -41,6 +48,12 @@ export function useDatasource(
 
   const changePageSize = useCallback((size: number) => {
     setPageSize(size);
+  }, []);
+
+  const toggleImplicitFilters = useCallback((value?: boolean) => {
+    setIsImplicitFilterApplied(prev => (value !== undefined ? value : !prev));
+    setPage(1);
+    setRecords([]);
   }, []);
 
   const searchCriteria = useMemo(() => {
@@ -57,8 +70,9 @@ export function useDatasource(
     return {
       ...params,
       criteria: allCriteria,
+      isImplicitFilterApplied,
     };
-  }, [params, searchCriteria, searchQuery]);
+  }, [params, searchCriteria, searchQuery, isImplicitFilterApplied]);
 
   const load = useCallback(async () => {
     try {
@@ -70,7 +84,8 @@ export function useDatasource(
       setError(undefined);
       setLoading(true);
 
-      const response = await loadData(entity, page, pageSize, queryParams);
+      const safePageSize = pageSize ?? 1000;
+      const response = await loadData(entity, page, safePageSize, queryParams);
 
       if (response.error || response.status != 0) {
         throw new Error(response.error.message);
@@ -81,10 +96,13 @@ export function useDatasource(
           }
 
           const mergedRecords = [...prevRecords, ...response.data];
-          const uniqueRecords = mergedRecords.reduce((acc, current) => {
-            acc[current.id as string] = current;
-            return acc;
-          }, {} as Record<string, unknown>);
+          const uniqueRecords = mergedRecords.reduce(
+            (acc, current) => {
+              acc[current.id as string] = current;
+              return acc;
+            },
+            {} as Record<string, unknown>,
+          );
 
           return Object.values(uniqueRecords);
         });
@@ -116,7 +134,9 @@ export function useDatasource(
       load,
       records,
       loaded,
+      isImplicitFilterApplied,
+      toggleImplicitFilters,
     }),
-    [error, loading, fetchMore, changePageSize, load, records, loaded],
+    [error, loading, fetchMore, changePageSize, load, records, loaded, isImplicitFilterApplied, toggleImplicitFilters],
   );
 }

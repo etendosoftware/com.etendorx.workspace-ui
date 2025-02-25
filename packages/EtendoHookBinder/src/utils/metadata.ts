@@ -30,8 +30,6 @@ export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
     if (!columns) return result;
 
     for (const column of columns) {
-      console.debug(column);
-
       if (column.showInGridView) {
         result.push({
           header: column.title ?? column.name ?? column.hqlName,
@@ -63,17 +61,20 @@ export const buildFormState = (
   formState: Record<string, Record<string, never>>,
 ) => {
   try {
-    const result = Object.entries(fields).reduce((state, [, field]) => {
-      const inputName = field.inputName;
+    const result = Object.entries(fields).reduce(
+      (state, [, field]) => {
+        const inputName = field.inputName;
 
-      if (inputName?.length) {
-        state[inputName] = record[field.hqlName];
-      } else {
-        console.warn('Missing field input name for', JSON.stringify(field, null, 2));
-      }
+        if (inputName?.length) {
+          state[inputName] = record[field.hqlName];
+        } else {
+          console.warn('Missing field input name for', JSON.stringify(field, null, 2));
+        }
 
-      return state;
-    }, {} as Record<string, unknown>);
+        return state;
+      },
+      {} as Record<string, unknown>,
+    );
 
     const auxiliaryInputValues = formState?.auxiliaryInputValues;
 
@@ -95,15 +96,18 @@ export const isEntityReference = (type: FieldType) => ['tabledir', 'search'].inc
 
 export const getFieldsByDBColumnName = (tab: Tab) => {
   try {
-    return Object.entries(tab.fields).reduce((acc, [, field]) => {
-      acc[field.column.dBColumnName] = field;
+    return Object.entries(tab.fields).reduce(
+      (acc, [, field]) => {
+        acc[field.column.dBColumnName] = field;
 
-      if (!field.column.dBColumnName?.length) {
-        console.error(JSON.stringify(field, null, 2));
-      }
+        if (!field.column.dBColumnName?.length) {
+          console.error(JSON.stringify(field, null, 2));
+        }
 
-      return acc;
-    }, {} as Record<string, Field>);
+        return acc;
+      },
+      {} as Record<string, Field>,
+    );
   } catch (e) {
     console.warn(e);
 
@@ -113,11 +117,14 @@ export const getFieldsByDBColumnName = (tab: Tab) => {
 
 export const getFieldsByName = (tab: Tab) => {
   try {
-    return Object.entries(tab.fields).reduce((acc, [, field]) => {
-      acc[field.inputName] = field;
+    return Object.entries(tab.fields).reduce(
+      (acc, [, field]) => {
+        acc[field.inputName] = field;
 
-      return acc;
-    }, {} as Record<string, Field>);
+        return acc;
+      },
+      {} as Record<string, Field>,
+    );
   } catch (e) {
     console.warn(e);
 
