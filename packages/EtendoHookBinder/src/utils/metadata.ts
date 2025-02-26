@@ -31,6 +31,12 @@ export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
 
     for (const column of columns) {
       if (column.showInGridView) {
+        let columnType = '';
+
+        if (column.column?.reference$_identifier) {
+          columnType = column.column.reference$_identifier;
+        }
+
         result.push({
           header: column.title ?? column.name ?? column.hqlName,
           id: column.name,
@@ -38,10 +44,10 @@ export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
           isMandatory: column.required,
           _identifier: column.title,
           column: {
-            _identifier: column.title,
-            reference: column.type,
+            _identifier: columnType,
           },
           name: column.name,
+          type: columnType,
           accessorFn: (v: Record<string, unknown>) => {
             return v[column.hqlName + '$_identifier'] ?? v[column.hqlName];
           },

@@ -1,5 +1,5 @@
 import Box from '@mui/material/Box';
-import { MaterialReactTable, MRT_Row } from 'material-react-table';
+import { MaterialReactTable, MRT_ColumnFiltersState, MRT_Row } from 'material-react-table';
 import { useStyle } from './styles';
 import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
@@ -32,6 +32,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const tabId = tab.id;
   const selectedIds = useMemo(() => getSelectedIds(tabId), [getSelectedIds, tabId]);
   const selectedCount = useMemo(() => getSelectedCount(tabId), [getSelectedCount, tabId]);
+  const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
 
   const rowSelection = useMemo(() => {
     return selectedIds.reduce(
@@ -71,11 +72,40 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
 
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
-  const { records, loading, error, fetchMore, loaded, isImplicitFilterApplied, toggleImplicitFilters } = useDatasource(
-    tab.entityName,
-    query,
-    searchQuery,
-    columns,
+  console.log('Columns:', columns, 'tabFields:', tab.fields);
+
+  const {
+    records,
+    loading,
+    error,
+    fetchMore,
+    loaded,
+    isImplicitFilterApplied,
+    toggleImplicitFilters,
+    updateColumnFilters,
+  } = useDatasource(tab.entityName, query, searchQuery, columns, columnFilters);
+
+  const handleColumnFiltersChange = useCallback(
+    (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
+      let newColumnFilters: MRT_ColumnFiltersState;
+
+      if (typeof updaterOrValue === 'function') {
+        newColumnFilters = updaterOrValue(columnFilters);
+      } else {
+        newColumnFilters = updaterOrValue;
+      }
+
+      const isRealFilterChange =
+        JSON.stringify(newColumnFilters.map(f => ({ id: f.id, value: f.value }))) !==
+        JSON.stringify(columnFilters.map(f => ({ id: f.id, value: f.value })));
+
+      setColumnFilters(newColumnFilters);
+
+      if (isRealFilterChange) {
+        updateColumnFilters(newColumnFilters);
+      }
+    },
+    [columnFilters, updateColumnFilters],
   );
 
   const handleFilterToggle = useCallback(() => {
@@ -209,12 +239,16 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
             muiTableBodyProps={{ sx: sx.tableBody }}
             state={{
               rowSelection,
+              columnFilters,
+              showColumnFilters: true,
             }}
             onRowSelectionChange={handleRowSelectionChange}
+            onColumnFiltersChange={handleColumnFiltersChange}
             getRowId={row => String(row.id)}
             enableColumnFilters={true}
             enableSorting={true}
             enableColumnActions={true}
+            manualFiltering={true}
           />
         </Box>
       </Box>

@@ -10,7 +10,7 @@ export interface CacheStore<T> extends Map<string, CachedData<T>> {}
 export interface BaseCriteria {
   fieldName: string;
   operator: string;
-  value?: string;
+  value: string | number | undefined;
 }
 
 export interface CompositeCriteria {
@@ -20,6 +20,10 @@ export interface CompositeCriteria {
 
 export type Criteria = BaseCriteria | CompositeCriteria;
 
+export type MRT_ColumnFiltersState = {
+  id: string;
+  value: unknown;
+}[];
 export interface DatasourceParams {
   windowId?: string;
   tabId?: string;
