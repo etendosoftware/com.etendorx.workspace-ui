@@ -1,5 +1,7 @@
 import { BaseCriteria, Column, CompositeCriteria, MRT_ColumnFiltersState } from '../api/types';
 
+type FormattedValue = string | number | null;
+
 interface ColumnsByType {
   string?: Column[];
   date?: Column[];
@@ -207,7 +209,7 @@ export class ColumnFilterUtils {
     return false;
   }
 
-  static formatValueForType(value: unknown, column: Column): string | number | null {
+  static formatValueForType(value: unknown, column: Column): FormattedValue {
     if (value === null || value === undefined || value === '') {
       return null;
     }
@@ -223,112 +225,130 @@ export class ColumnFilterUtils {
     return String(value);
   }
 
-  static createColumnFilterCriteria(columnFilters: MRT_ColumnFiltersState, columns: Column[]): BaseCriteria[] {
-    if (!columnFilters.length) return [];
+  private static handleRangeFilter(
+    fieldName: string,
+    rangeFilter: { from: FormattedValue; to: FormattedValue },
+    column: Column,
+  ): BaseCriteria[] {
+    const result: BaseCriteria[] = [];
 
-    const criteria: BaseCriteria[] = [];
-
-    columnFilters.forEach(filter => {
-      const column = columns.find(col => col.id === filter.id || col.columnName === filter.id);
-
-      if (!column) return;
-
-      const fieldName = column.columnName;
-
-      if (filter.value === undefined || filter.value === null) return;
-
-      if (typeof filter.value === 'object' && filter.value !== null && 'from' in filter.value && 'to' in filter.value) {
-        const rangeFilter = filter.value as { from: string | number | null; to: string | number | null };
-
-        if (rangeFilter.from !== null && rangeFilter.from !== undefined) {
-          const formattedValue = this.formatValueForType(rangeFilter.from, column);
-          if (formattedValue !== null) {
-            criteria.push({
-              fieldName,
-              operator: 'greaterOrEqual',
-              value: formattedValue,
-            });
-          }
-        }
-
-        if (rangeFilter.to !== null && rangeFilter.to !== undefined) {
-          const formattedValue = this.formatValueForType(rangeFilter.to, column);
-          if (formattedValue !== null) {
-            criteria.push({
-              fieldName,
-              operator: 'lessOrEqual',
-              value: formattedValue,
-            });
-          }
-        }
-        return;
+    if (rangeFilter.from !== null && rangeFilter.from !== undefined) {
+      const formattedValue = this.formatValueForType(rangeFilter.from, column);
+      if (formattedValue !== null) {
+        result.push({
+          fieldName,
+          operator: 'greaterOrEqual',
+          value: formattedValue,
+        });
       }
+    }
 
-      if (Array.isArray(filter.value)) {
-        if (filter.value.length === 0) return;
-
-        type CriteriaCandidate = {
-          fieldName: string;
-          operator: string;
-          value: string | number | undefined;
-        } | null;
-
-        const orCriteria: BaseCriteria[] = filter.value
-          .map((val): CriteriaCandidate => {
-            const formattedValue = this.formatValueForType(val, column);
-            if (formattedValue === null) return null;
-
-            return {
-              fieldName,
-              operator: 'equals',
-              value: typeof formattedValue === 'number' ? String(formattedValue) : formattedValue,
-            };
-          })
-          .filter((criteria): criteria is BaseCriteria => criteria !== null);
-
-        if (orCriteria.length > 0) {
-          criteria.push({
-            operator: 'or',
-            criteria: orCriteria,
-          } as unknown as BaseCriteria);
-        }
-        return;
+    if (rangeFilter.to !== null && rangeFilter.to !== undefined) {
+      const formattedValue = this.formatValueForType(rangeFilter.to, column);
+      if (formattedValue !== null) {
+        result.push({
+          fieldName,
+          operator: 'lessOrEqual',
+          value: formattedValue,
+        });
       }
+    }
 
-      const formattedValue = this.formatValueForType(filter.value, column);
-      if (formattedValue === null) return;
+    return result;
+  }
 
-      if (REFERENCE_FIELDS.includes(fieldName)) {
-        criteria.push({
+  private static handleArrayFilter(fieldName: string, values: unknown[], column: Column): BaseCriteria[] {
+    if (values.length === 0) return [];
+
+    const validCriteria: BaseCriteria[] = [];
+
+    for (const val of values) {
+      const formattedValue = this.formatValueForType(val, column);
+      if (formattedValue === null) continue;
+
+      validCriteria.push({
+        fieldName,
+        operator: 'equals',
+        value: String(formattedValue),
+      });
+    }
+
+    if (validCriteria.length === 0) return [];
+
+    return [
+      {
+        operator: 'or',
+        criteria: validCriteria,
+      } as unknown as BaseCriteria,
+    ];
+  }
+
+  private static handleSingleValueFilter(fieldName: string, value: unknown, column: Column): BaseCriteria[] {
+    const formattedValue = this.formatValueForType(value, column);
+    if (formattedValue === null) return [];
+
+    if (REFERENCE_FIELDS.includes(fieldName)) {
+      return [
+        {
           fieldName: `${fieldName}$_identifier`,
           operator: 'iContains',
           value: String(formattedValue),
-        });
-        return;
-      }
+        },
+      ];
+    }
 
-      if (fieldName.toLowerCase().includes('date')) {
-        const dateCriteria = SearchUtils.getDateCriteria(fieldName, String(formattedValue));
-        criteria.push(...dateCriteria);
-        return;
-      }
+    if (fieldName.toLowerCase().includes('date')) {
+      return SearchUtils.getDateCriteria(fieldName, String(formattedValue));
+    }
 
-      if (this.isNumericField(column)) {
-        criteria.push({
+    if (this.isNumericField(column)) {
+      return [
+        {
           fieldName,
           operator: 'equals',
           value: formattedValue,
-        });
-        return;
-      }
+        },
+      ];
+    }
 
-      criteria.push({
+    return [
+      {
         fieldName,
         operator: 'iContains',
         value: String(formattedValue),
-      });
-    });
+      },
+    ];
+  }
 
-    return criteria;
+  static createColumnFilterCriteria(columnFilters: MRT_ColumnFiltersState, columns: Column[]): BaseCriteria[] {
+    if (!columnFilters.length) return [];
+
+    const allCriteria: BaseCriteria[] = [];
+
+    for (const filter of columnFilters) {
+      const column = columns.find(col => col.id === filter.id || col.columnName === filter.id);
+      if (!column) continue;
+
+      const fieldName = column.columnName;
+      if (filter.value === undefined || filter.value === null) continue;
+
+      let filterCriteria: BaseCriteria[] = [];
+
+      if (typeof filter.value === 'object' && filter.value !== null && 'from' in filter.value && 'to' in filter.value) {
+        filterCriteria = this.handleRangeFilter(
+          fieldName,
+          filter.value as { from: FormattedValue; to: FormattedValue },
+          column,
+        );
+      } else if (Array.isArray(filter.value)) {
+        filterCriteria = this.handleArrayFilter(fieldName, filter.value, column);
+      } else {
+        filterCriteria = this.handleSingleValueFilter(fieldName, filter.value, column);
+      }
+
+      allCriteria.push(...filterCriteria);
+    }
+
+    return allCriteria;
   }
 }
