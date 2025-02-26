@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DatasourceOptions, Column } from '../api/types';
+import { DatasourceOptions, Column, MRT_ColumnFiltersState } from '../api/types';
 import { Datasource } from '../api/datasource';
-import { SearchUtils } from '../utils/search-utils';
+import { SearchUtils, ColumnFilterUtils } from '../utils/search-utils';
 
 const loadData = async (entity: string, page: number, pageSize: number, params: DatasourceOptions) => {
   const safePageSize = pageSize ?? 1000;
@@ -31,6 +31,7 @@ export function useDatasource(
   params: DatasourceOptions = defaultParams,
   searchQuery?: string,
   columns?: Column[],
+  columnFilters: MRT_ColumnFiltersState = [],
 ) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -39,12 +40,19 @@ export function useDatasource(
   const [page, setPage] = useState(1);
   const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState(params.isImplicitFilterApplied ?? true);
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
+  const [activeColumnFilters, setActiveColumnFilters] = useState<MRT_ColumnFiltersState>(columnFilters);
 
   const fetchMore = useCallback(() => {
     if (!searchQuery) {
       setPage(prev => prev + 1);
     }
   }, [searchQuery]);
+
+  const updateColumnFilters = useCallback((filters: MRT_ColumnFiltersState) => {
+    setActiveColumnFilters(filters);
+    setPage(1);
+    setRecords([]);
+  }, []);
 
   const changePageSize = useCallback((size: number) => {
     setPageSize(size);
@@ -56,23 +64,32 @@ export function useDatasource(
     setRecords([]);
   }, []);
 
-  const searchCriteria = useMemo(() => {
-    if (!searchQuery || !columns) return [];
+  const columnFilterCriteria = useMemo(() => {
+    if (!columns || !activeColumnFilters.length) return [];
 
-    const criteria = SearchUtils.createSearchCriteria(columns, searchQuery);
-    return criteria;
-  }, [searchQuery, columns]);
+    return ColumnFilterUtils.createColumnFilterCriteria(activeColumnFilters, columns);
+  }, [activeColumnFilters, columns]);
 
   const queryParams = useMemo(() => {
     const baseCriteria = params.criteria || [];
-    const allCriteria = searchQuery ? [...baseCriteria, ...searchCriteria] : baseCriteria;
+    const searchCriteriaArray = searchQuery && columns ? SearchUtils.createSearchCriteria(columns, searchQuery) : [];
+
+    let allCriteria = [...baseCriteria];
+
+    if (searchCriteriaArray.length > 0) {
+      allCriteria = [...allCriteria, ...searchCriteriaArray];
+    }
+
+    if (columnFilterCriteria.length > 0) {
+      allCriteria = [...allCriteria, ...columnFilterCriteria];
+    }
 
     return {
       ...params,
       criteria: allCriteria,
       isImplicitFilterApplied,
     };
-  }, [params, searchCriteria, searchQuery, isImplicitFilterApplied]);
+  }, [params, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied]);
 
   const load = useCallback(async () => {
     try {
@@ -136,7 +153,21 @@ export function useDatasource(
       loaded,
       isImplicitFilterApplied,
       toggleImplicitFilters,
+      updateColumnFilters,
+      activeColumnFilters,
     }),
-    [error, loading, fetchMore, changePageSize, load, records, loaded, isImplicitFilterApplied, toggleImplicitFilters],
+    [
+      error,
+      loading,
+      fetchMore,
+      changePageSize,
+      load,
+      records,
+      loaded,
+      isImplicitFilterApplied,
+      toggleImplicitFilters,
+      updateColumnFilters,
+      activeColumnFilters,
+    ],
   );
 }

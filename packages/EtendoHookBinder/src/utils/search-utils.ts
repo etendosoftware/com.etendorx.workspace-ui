@@ -1,4 +1,4 @@
-import { BaseCriteria, Column, CompositeCriteria } from '../api/types';
+import { BaseCriteria, Column, CompositeCriteria, MRT_ColumnFiltersState } from '../api/types';
 
 interface ColumnsByType {
   string?: Column[];
@@ -65,7 +65,7 @@ export class SearchUtils {
     return 'string';
   }
 
-  private static getDateCriteria(fieldName: string, searchQuery: string): BaseCriteria[] {
+  public static getDateCriteria(fieldName: string, searchQuery: string): BaseCriteria[] {
     const criteria: BaseCriteria[] = [];
 
     if (this.FULL_DATE_PATTERN.test(searchQuery)) {
@@ -179,5 +179,156 @@ export class SearchUtils {
     }
 
     return compositeCriteria;
+  }
+}
+
+export class ColumnFilterUtils {
+  static isNumericField(column: Column): boolean {
+    if (column.type && typeof column.type === 'string') {
+      const lowerType = column.type.toLowerCase();
+
+      if (
+        lowerType.includes('amount') ||
+        lowerType.includes('price') ||
+        lowerType.includes('quantity') ||
+        lowerType === 'number' ||
+        lowerType === 'costnumber' ||
+        lowerType === 'numeric' ||
+        lowerType === 'float' ||
+        lowerType === 'integer' ||
+        lowerType === 'decimal' ||
+        lowerType === 'long' ||
+        lowerType === 'bigdecimal'
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  static formatValueForType(value: unknown, column: Column): string | number | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+
+    if (this.isNumericField(column)) {
+      const numValue = parseFloat(String(value).replace(',', '.'));
+      if (!isNaN(numValue)) {
+        return numValue;
+      }
+      return null;
+    }
+
+    return String(value);
+  }
+
+  static createColumnFilterCriteria(columnFilters: MRT_ColumnFiltersState, columns: Column[]): BaseCriteria[] {
+    if (!columnFilters.length) return [];
+
+    const criteria: BaseCriteria[] = [];
+
+    columnFilters.forEach(filter => {
+      const column = columns.find(col => col.id === filter.id || col.columnName === filter.id);
+
+      if (!column) return;
+
+      const fieldName = column.columnName;
+
+      if (filter.value === undefined || filter.value === null) return;
+
+      if (typeof filter.value === 'object' && filter.value !== null && 'from' in filter.value && 'to' in filter.value) {
+        const rangeFilter = filter.value as { from: string | number | null; to: string | number | null };
+
+        if (rangeFilter.from !== null && rangeFilter.from !== undefined) {
+          const formattedValue = this.formatValueForType(rangeFilter.from, column);
+          if (formattedValue !== null) {
+            criteria.push({
+              fieldName,
+              operator: 'greaterOrEqual',
+              value: formattedValue,
+            });
+          }
+        }
+
+        if (rangeFilter.to !== null && rangeFilter.to !== undefined) {
+          const formattedValue = this.formatValueForType(rangeFilter.to, column);
+          if (formattedValue !== null) {
+            criteria.push({
+              fieldName,
+              operator: 'lessOrEqual',
+              value: formattedValue,
+            });
+          }
+        }
+        return;
+      }
+
+      if (Array.isArray(filter.value)) {
+        if (filter.value.length === 0) return;
+
+        type CriteriaCandidate = {
+          fieldName: string;
+          operator: string;
+          value: string | number | undefined;
+        } | null;
+
+        const orCriteria: BaseCriteria[] = filter.value
+          .map((val): CriteriaCandidate => {
+            const formattedValue = this.formatValueForType(val, column);
+            if (formattedValue === null) return null;
+
+            return {
+              fieldName,
+              operator: 'equals',
+              value: typeof formattedValue === 'number' ? String(formattedValue) : formattedValue,
+            };
+          })
+          .filter((criteria): criteria is BaseCriteria => criteria !== null);
+
+        if (orCriteria.length > 0) {
+          criteria.push({
+            operator: 'or',
+            criteria: orCriteria,
+          } as unknown as BaseCriteria);
+        }
+        return;
+      }
+
+      const formattedValue = this.formatValueForType(filter.value, column);
+      if (formattedValue === null) return;
+
+      if (REFERENCE_FIELDS.includes(fieldName)) {
+        criteria.push({
+          fieldName: `${fieldName}$_identifier`,
+          operator: 'iContains',
+          value: String(formattedValue),
+        });
+        return;
+      }
+
+      if (fieldName.toLowerCase().includes('date')) {
+        const dateCriteria = SearchUtils.getDateCriteria(fieldName, String(formattedValue));
+        criteria.push(...dateCriteria);
+        return;
+      }
+
+      if (this.isNumericField(column)) {
+        criteria.push({
+          fieldName,
+          operator: 'equals',
+          value: formattedValue,
+        });
+        return;
+      }
+
+      criteria.push({
+        fieldName,
+        operator: 'iContains',
+        value: String(formattedValue),
+      });
+    });
+
+    return criteria;
   }
 }
