@@ -188,6 +188,9 @@ export interface Tab {
   level: number;
   _identifier: string;
   records: Record<string, never>;
+  hqlfilterclause: string;
+  hqlwhereclause: string;
+  sQLWhereClause: string;
 }
 
 export interface WindowMetadata {

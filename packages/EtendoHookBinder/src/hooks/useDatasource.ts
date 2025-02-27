@@ -13,7 +13,6 @@ const loadData = async (entity: string, page: number, pageSize: number, params: 
     startRow,
     endRow,
     pageSize: safePageSize,
-    isImplicitFilterApplied: params.isImplicitFilterApplied ?? true,
   };
 
   const { response } = await Datasource.get(entity, processedParams);
@@ -23,7 +22,6 @@ const loadData = async (entity: string, page: number, pageSize: number, params: 
 
 const defaultParams: DatasourceOptions = {
   pageSize: 1000,
-  isImplicitFilterApplied: true,
 };
 
 export function useDatasource(
@@ -38,7 +36,7 @@ export function useDatasource(
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [page, setPage] = useState(1);
-  const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState(params.isImplicitFilterApplied ?? true);
+  const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState(params.isImplicitFilterApplied ?? false);
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
   const [activeColumnFilters, setActiveColumnFilters] = useState<MRT_ColumnFiltersState>(columnFilters);
 

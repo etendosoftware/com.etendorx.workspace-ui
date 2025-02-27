@@ -52,7 +52,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     const options: DatasourceOptions = {
       windowId,
       tabId,
-      isImplicitFilterApplied: true,
+      isImplicitFilterApplied: tab.hqlfilterclause?.length > 0 || tab.sQLWhereClause?.length > 0,
       pageSize: 100,
       language,
     };
@@ -68,7 +68,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     }
 
     return options;
-  }, [language, parent?.id, tab.parentColumns, tabId, windowId]);
+  }, [language, parent?.id, tab, tabId, windowId]);
 
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
