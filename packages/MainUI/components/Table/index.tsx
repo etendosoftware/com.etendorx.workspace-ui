@@ -72,8 +72,6 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
 
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
-  console.log('Columns:', columns, 'tabFields:', tab.fields);
-
   const {
     records,
     loading,
