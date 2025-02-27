@@ -2,7 +2,7 @@
 
 # Examples:
 
-You can use the metadata module by using the helpers provided by the Metadata Context Provider or you can directly access the metadata using the provided react hooks.
+You can use the metadata module by using the helpers provided by the Metadata Context Provider or you can directly access the metadata using the provided React hooks.
 
 In case you want to go with the context approach, you must wrap your main App like follows:
 
