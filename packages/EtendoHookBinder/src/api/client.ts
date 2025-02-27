@@ -87,11 +87,13 @@ export class Client {
       let response: Response & { data?: any } = await fetch(destination, {
         ...options,
         body:
-          options.body instanceof URLSearchParams || typeof options.body === 'string'
+          typeof options.body === 'string' ||
+          options.body instanceof URLSearchParams ||
+          options.body instanceof FormData
             ? options.body
             : options.body
-            ? JSON.stringify(options.body)
-            : undefined,
+              ? JSON.stringify(options.body)
+              : undefined,
         headers: {
           ...this.baseHeaders,
           ...options.headers,

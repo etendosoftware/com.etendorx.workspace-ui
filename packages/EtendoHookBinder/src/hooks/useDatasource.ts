@@ -41,10 +41,8 @@ export function useDatasource(
   const [activeColumnFilters, setActiveColumnFilters] = useState<MRT_ColumnFiltersState>(columnFilters);
 
   const fetchMore = useCallback(() => {
-    if (!searchQuery) {
-      setPage(prev => prev + 1);
-    }
-  }, [searchQuery]);
+    setPage(prev => prev + 1);
+  }, []);
 
   const updateColumnFilters = useCallback((filters: MRT_ColumnFiltersState) => {
     setActiveColumnFilters(filters);
@@ -93,6 +91,7 @@ export function useDatasource(
     try {
       if (!entity) {
         setLoaded(true);
+
         return;
       }
 
@@ -106,10 +105,6 @@ export function useDatasource(
         throw new Error(response.error.message);
       } else {
         setRecords(prevRecords => {
-          if (searchQuery || page === 1) {
-            return response.data;
-          }
-
           const mergedRecords = [...prevRecords, ...response.data];
           const uniqueRecords = mergedRecords.reduce(
             (acc, current) => {
@@ -128,13 +123,13 @@ export function useDatasource(
     } finally {
       setLoading(false);
     }
-  }, [entity, page, pageSize, queryParams, searchQuery]);
+  }, [entity, page, pageSize, queryParams]);
 
   useEffect(() => {
     setRecords([]);
     setLoaded(false);
     setPage(1);
-  }, [entity, searchQuery]);
+  }, []);
 
   useEffect(() => {
     load();
