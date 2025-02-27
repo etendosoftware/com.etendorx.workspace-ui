@@ -39,7 +39,6 @@ export class Datasource {
 
   private static buildParams(options: DatasourceParams) {
     const params = new URLSearchParams({
-      isImplicitFilterApplied: options.isImplicitFilterApplied ? 'true' : 'false',
       _noCount: 'true',
       _operationType: 'fetch',
     });
