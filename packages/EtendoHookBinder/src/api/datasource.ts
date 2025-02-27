@@ -13,10 +13,9 @@ export class Datasource {
     return Datasource.client.registerInterceptor(interceptor);
   }
 
-  public static async get(entity: string, options: DatasourceParams = {}) {
+  public static async get(entity: string, options: Record<string, unknown> = {}) {
     try {
-      const params = Datasource.buildParams(options);
-      const { data } = await Datasource.client.post(entity, params);
+      const { data } = await Datasource.client.post(entity, Datasource.buildFormData(options));
 
       return data;
     } catch (error) {
@@ -35,6 +34,20 @@ export class Datasource {
 
       throw error;
     }
+  }
+
+  private static buildFormData(
+    options: Record<string, unknown>,
+  ): Record<string, unknown> | BodyInit | null | undefined {
+    const result = new URLSearchParams();
+
+    Object.entries(options).forEach(([key, value]) => {
+      if (typeof value !== 'undefined') {
+        result.append(key, String(value));
+      }
+    });
+
+    return result;
   }
 
   private static buildParams(options: DatasourceParams) {
