@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useFormContext } from 'react-hook-form';
-import type { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import type { Field, FormInitializationResponse, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useCallout } from '../../hooks/useCallout';
 import { CALLOUTS_ENABLED } from '../../constants/config';
 import { FieldValue } from './FormView/types';
@@ -13,7 +13,7 @@ import TableDirSelector from './FormView/oldSelectors/TableDirSelector';
 import QuantitySelector from './FormView/oldSelectors/QuantitySelector';
 import ListSelector from './FormView/oldSelectors/ListSelector';
 import { StringSelector } from './FormView/oldSelectors/StringSelector';
-import { logger } from '@/utils/logger';
+import { useMetadataContext } from '@/hooks/useMetadataContext';
 
 interface GenericSelectorProps {
   field: Field;
@@ -24,23 +24,24 @@ interface GenericSelectorProps {
 
 export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => {
   const { watch, setValue, getValues } = useFormContext();
+  const { fieldsByColumnName } = useMetadataContext();
   const value = watch(field.hqlName);
   const callout = useCallout({ field });
 
-  // const applyCallout = useCallback(
-  //   (data: { [key: string]: unknown }) => {
-  //     const columnValues = data.columnValues as Record<string, { value: unknown; classicValue: unknown }>;
+  const applyCallout = useCallback(
+    (data: FormInitializationResponse) => {
+      const columnValues = data.columnValues as Record<string, { value: unknown; classicValue: unknown }>;
 
-  //     Object.entries(columnValues).forEach(([column, valueObj]) => {
-  //       const _field = fieldsByColumnName[column];
+      Object.entries(columnValues).forEach(([column, valueObj]) => {
+        const _field = fieldsByColumnName[column];
 
-  //       if (_field) {
-  //         setValue(field.original.inputName, valueObj.value);
-  //       }
-  //     });
-  //   },
-  //   [field.original.inputName, fieldsByColumnName, setValue],
-  // );
+        if (_field) {
+          setValue(field.inputName, valueObj.value);
+        }
+      });
+    },
+    [field.inputName, fieldsByColumnName, setValue],
+  );
 
   const handleChange = useCallback(
     (value: FieldValue) => {
@@ -48,19 +49,17 @@ export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => 
         setValue(field.hqlName, value || '');
 
         if (CALLOUTS_ENABLED && field.column?.callout$_identifier) {
-          const { data } = await callout(getValues());
+          const data = await callout(getValues());
 
-          if (data.response?.status === -1) {
-            logger.warn('Callout execution error', data);
-          } else {
-            // applyCallout(data);
+          if (data) {
+            applyCallout(data);
           }
         }
       };
 
       return f();
     },
-    [callout, field, getValues, setValue],
+    [applyCallout, callout, field.column?.callout$_identifier, field.hqlName, getValues, setValue],
   );
 
   const handleDateChange = useCallback(

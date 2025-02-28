@@ -16,7 +16,7 @@ const AppBreadcrumb: React.FC = () => {
   const pathname = usePathname();
   const navigate = router.push;
   const { language } = useLanguage();
-  const { windowData, tab } = useMetadataContext();
+  const { window, tab } = useMetadataContext();
 
   const windowId = Array.isArray(params.windowId) ? params.windowId[0] : params.windowId || '';
   const recordId = Array.isArray(params.recordId) ? params.recordId[0] : params.recordId || '';
@@ -35,15 +35,15 @@ const AppBreadcrumb: React.FC = () => {
     [language, recordId, tab?.id, windowId],
   );
 
-  const { records } = useDatasource(windowData?.tabs?.[0]?.entityName || '', query);
+  const { records } = useDatasource(window?.tabs?.[0]?.entityName || '', query);
 
   const breadcrumbItems = useMemo(() => {
     const items: BreadcrumbItem[] = [];
 
-    if (windowId && windowData) {
+    if (windowId && window) {
       items.push({
         id: windowId,
-        label: String(windowData.window$_identifier || windowData.name || t('common.loading')),
+        label: String(window.window$_identifier || window.name || t('common.loading')),
         onClick: () => navigate(`/window/${windowId}`),
       });
     }
@@ -62,7 +62,7 @@ const AppBreadcrumb: React.FC = () => {
     }
 
     return items;
-  }, [windowId, windowData, isNewRecord, recordId, records, navigate, t]);
+  }, [windowId, window, isNewRecord, recordId, records, navigate, t]);
 
   const handleHomeClick = useCallback(() => navigate('/'), [navigate]);
 
