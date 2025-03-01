@@ -13,6 +13,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
     changeWarehouse,
     setDefaultConfiguration,
     currentRole,
+    profile,
     currentWarehouse,
     roles,
     token,
@@ -73,6 +74,9 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
       logger={logger}
       onSignOff={handleSignOff}
       languages={languages}
+      userName={profile.name}
+      userEmail={profile.email}
+      userPhotoUrl={profile.image}
     />
   );
 };

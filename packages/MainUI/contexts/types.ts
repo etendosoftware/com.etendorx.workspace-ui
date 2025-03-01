@@ -1,4 +1,4 @@
-import { ISession, Role, Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
+import { ISession, ProfileInfo, Role, Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
 
 export type Language = 'en_US' | 'es_ES';
 
@@ -28,6 +28,7 @@ export interface IUserContext {
   token: string | null;
   roles: Role[];
   currentRole: Role | null;
+  profile: ProfileInfo;
   currentWarehouse: Warehouse | null;
   setToken: React.Dispatch<React.SetStateAction<string | null>>;
   clearUserData: () => void;
