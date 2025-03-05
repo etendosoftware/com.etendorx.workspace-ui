@@ -65,9 +65,26 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   useEffect(() => {
     if (currentWarehouse) {
-      setSelectedWarehouse({ title: currentWarehouse.name, value: currentWarehouse.id, id: currentWarehouse.id });
+      setSelectedWarehouse({
+        title: currentWarehouse.name,
+        value: currentWarehouse.id,
+        id: currentWarehouse.id,
+      });
     }
   }, [currentWarehouse]);
+
+  useEffect(() => {
+    if (language) {
+      const currentLang = languages.find(lang => lang.language === language);
+      if (currentLang) {
+        setSelectedLanguage({
+          title: currentLang.name,
+          value: currentLang.language,
+          id: currentLang.id,
+        });
+      }
+    }
+  }, [language, languages]);
 
   const handleRoleChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
     setSelectedRole(value);
