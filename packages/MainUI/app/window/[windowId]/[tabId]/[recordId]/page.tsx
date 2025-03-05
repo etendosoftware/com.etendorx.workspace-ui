@@ -45,7 +45,7 @@ function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
     return <Spinner />;
   }
 
-  return <FormView defaultValues={values} tab={tab} window={window} />;
+  return <FormView mode={FormMode.EDIT} defaultValues={values} tab={tab} window={window} />;
 }
 
 export default function EditRecordPage() {

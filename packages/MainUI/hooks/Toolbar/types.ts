@@ -13,9 +13,7 @@ export interface ToolbarResponseButton extends ToolbarButton {
 }
 
 export interface ToolbarResponse {
-  response: {
-    buttons: Array<ToolbarResponseButton>;
-    windowId: string;
-    isNew: boolean;
-  };
+  buttons: Array<ToolbarResponseButton>;
+  windowId: string;
+  isNew: boolean;
 }

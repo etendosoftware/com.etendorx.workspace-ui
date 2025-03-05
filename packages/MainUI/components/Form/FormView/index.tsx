@@ -1,17 +1,20 @@
 import { Toolbar } from '@/components/Toolbar/Toolbar';
-import { Field, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field, FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { FormProvider, useForm } from 'react-hook-form';
 import { BaseSelector } from './selectors/BaseSelector';
 import { useMemo } from 'react';
+import { useFormAction } from '@/hooks/useFormAction';
 
 export default function FormView({
   defaultValues,
   window,
   tab,
+  mode,
 }: {
   defaultValues: Record<string, unknown>;
   window: WindowMetadata;
   tab: Tab;
+  mode: FormMode;
 }) {
   const fields = useMemo(() => {
     const statusBarFields: Record<string, Field> = {};
@@ -37,16 +40,18 @@ export default function FormView({
 
   const form = useForm({ values: defaultValues });
 
+  const { submit } = useFormAction({ mode });
+
   return (
     <FormProvider {...form}>
-      <div className="w-full p-2 space-y-2">
+      <form className="w-full p-2 space-y-2" onSubmit={form.handleSubmit(submit)}>
         <Toolbar windowId={window.id} tabId={tab.id} isFormView={true} />
         <div className="grid grid-cols-3 auto-rows-auto gap-8 bg-white rounded-2xl p-4">
           {Object.entries(fields.formFields).map(([hqlName, field]) => (
             <BaseSelector field={field} key={hqlName} />
           ))}
         </div>
-      </div>
+      </form>
     </FormProvider>
   );
 }

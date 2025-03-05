@@ -42,9 +42,7 @@ function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
     return <Spinner />;
   }
 
-  console.debug(values);
-
-  return <FormView defaultValues={values} tab={tab} window={window} />;
+  return <FormView mode={FormMode.NEW} defaultValues={values} tab={tab} window={window} />;
 }
 
 export default function EditRecordPage() {
