@@ -17,13 +17,16 @@
     "@emotion/styled": "^11.11.5",
     "@mui/icons-material": "^5.15.19",
     "@mui/material": "^5.15.19",
+    "@tailwindcss/postcss": "^4.0.8",
     "@tanstack/react-query": "^5.59.0",
     "@workspaceui/componentlibrary": "workspace:componentlibrary",
     "@workspaceui/etendohookbinder": "workspace:etendohookbinder",
     "@workspaceui/storybook": "workspace:storybook",
     "material-react-table": "^2.12.1",
     "next": "^15.0.1",
-    "react-hook-form": "^7.53.2"
+    "postcss": "^8.5.3",
+    "react-hook-form": "^7.53.2",
+    "tailwindcss": "^4.0.8"
   },
   "peerDependencies": {
     "react": "18.3.1",
