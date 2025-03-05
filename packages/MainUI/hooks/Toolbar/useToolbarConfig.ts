@@ -23,6 +23,9 @@ export const useToolbarConfig = (windowId: string, tabId?: string) => {
         case BUTTON_IDS.TAB_CONTROL:
           setShowTabContainer(prevState => !prevState);
           break;
+        case BUTTON_IDS.SAVE:
+          alert('save');
+          break;
       }
     },
     [router, tabId, windowId, setShowTabContainer],
