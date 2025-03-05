@@ -34,7 +34,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
   const { styles, defaultFill } = useStyle();
   const theme = useTheme();
 
-  const FlagEmoji = ({ flag }: { flag: string }) => <span style={{ fontSize: '1rem', color: 'black' }}>{flag}</span>;
+  const FlagEmoji = ({ flag }: { flag: string }) => <span style={styles.flagStyles}>{flag}</span>;
 
   const icons: { [key in Item]: React.ReactElement } = {
     [Item.Role]: <></>,
