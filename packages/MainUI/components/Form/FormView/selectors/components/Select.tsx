@@ -146,3 +146,5 @@ export default function Select({ name, options }: SelectProps) {
     </div>
   );
 }
+
+export { Select };

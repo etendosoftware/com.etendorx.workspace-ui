@@ -1,6 +1,6 @@
 import { AUTH_HEADER_NAME } from './constants';
 
-interface ClientOptions extends Omit<RequestInit, 'body'> {
+export interface ClientOptions extends Omit<RequestInit, 'body'> {
   headers?: Record<string, string>;
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   body?: RequestInit['body'] | Record<string, unknown>;
@@ -74,7 +74,7 @@ export class Client {
     return this;
   }
 
-  private async request(url: string, options: ClientOptions = {}) {
+  public async request(url: string, options: ClientOptions = {}) {
     try {
       if (options.method !== 'GET') {
         this.setContentType(options);

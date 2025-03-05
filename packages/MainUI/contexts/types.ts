@@ -20,6 +20,7 @@ export interface LanguageOption {
   id: string;
   language: string;
   name: string;
+  key?: string;
 }
 
 export interface IUserContext {

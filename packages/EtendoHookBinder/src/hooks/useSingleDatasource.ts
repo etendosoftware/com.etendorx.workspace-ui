@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Datasource } from '../api/datasource';
+import { datasource } from '../api/datasource';
 
 export function useSingleDatasource(entity?: string, id?: string) {
   const [loading, setLoading] = useState(false);
@@ -18,7 +18,7 @@ export function useSingleDatasource(entity?: string, id?: string) {
       setError(undefined);
       setLoading(true);
 
-      const response = await Datasource.getSingleRecord(entity, id);
+      const response = await datasource.getSingleRecord(entity, id);
       const res = response?.response?.data?.[0];
 
       setRecord(res);
