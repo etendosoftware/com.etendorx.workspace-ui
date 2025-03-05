@@ -36,6 +36,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   onSignOff,
   language,
   languages,
+  languagesFlags,
   onLanguageChange,
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
@@ -190,6 +191,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           saveAsDefault={saveAsDefault}
           onSaveAsDefaultChange={handleSaveAsDefaultChange}
           translations={translations}
+          languagesFlags={languagesFlags}
         />
         <div style={styles.buttonContainerStyles}>
           <Button sx={sx.buttonStyles} onClick={handleClose}>

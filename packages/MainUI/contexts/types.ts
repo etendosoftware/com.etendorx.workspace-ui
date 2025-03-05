@@ -5,6 +5,7 @@ export type Language = 'en_US' | 'es_ES';
 export interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
+  getFlag: (language?: Language) => string;
 }
 
 export interface DefaultConfiguration {
