@@ -52,8 +52,6 @@ export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) =>
             if (_key) {
               body.set(_key, String(value));
             }
-          } else {
-            console.debug('found same key', { key, field });
           }
         });
 

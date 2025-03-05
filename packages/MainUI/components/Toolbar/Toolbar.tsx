@@ -50,8 +50,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
   const selectedRecord = tab ? selected[tab.level] : undefined;
 
   const processButtons = useMemo(
-    () => toolbar?.response?.buttons.filter(isProcessButton) || [],
-    [toolbar?.response?.buttons],
+    () => toolbar?.buttons.filter(isProcessButton) || [],
+    [toolbar?.buttons],
   );
 
   const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
@@ -124,7 +124,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
   }
 
   const createToolbarConfig = () => {
-    const buttons = toolbar?.response?.buttons || [];
+    const buttons = toolbar?.buttons ?? [];
 
     const createProcessMenuButton = (): StandardButtonConfig => ({
       key: 'process-menu',
