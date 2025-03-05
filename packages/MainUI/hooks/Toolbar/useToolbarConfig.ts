@@ -18,6 +18,9 @@ export const useToolbarConfig = (windowId: string, tabId?: string) => {
         case BUTTON_IDS.FIND:
           setSearchOpen(true);
           break;
+        case BUTTON_IDS.SAVE:
+          alert('save');
+          break;
       }
     },
     [router, tabId, windowId],

@@ -28,9 +28,7 @@ export default function Sidebar() {
 
   const searchIndex = useMemo(() => createSearchIndex(menu), [menu]);
   const { filteredItems, searchExpandedItems } = useMemo(() => {
-    console.time('filterItems');
     const result = filterItems(menu, searchValue, searchIndex);
-    console.timeEnd('filterItems');
 
     return result;
   }, [menu, searchValue, searchIndex]);

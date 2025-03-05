@@ -5,6 +5,8 @@ export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
   const tabs: Etendo.Tab[][] = [];
 
   try {
+    console.debug(windowData);
+
     if (!windowData?.tabs) {
       return tabs;
     }

@@ -45,6 +45,7 @@ export default function FormView({
   return (
     <FormProvider {...form}>
       <form className="w-full p-2 space-y-2" onSubmit={form.handleSubmit(submit)}>
+        <input type="submit" value="Submit" />
         <Toolbar windowId={window.id} tabId={tab.id} isFormView={true} />
         <div className="grid grid-cols-3 auto-rows-auto gap-8 bg-white rounded-2xl p-4">
           {Object.entries(fields.formFields).map(([hqlName, field]) => (
