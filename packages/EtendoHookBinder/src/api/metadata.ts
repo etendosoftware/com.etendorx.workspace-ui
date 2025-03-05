@@ -88,9 +88,11 @@ export class Metadata {
     } else {
       try {
         const { data } = await this.client.post('menu', { role: currentRoleId });
-        this.cache.set('OBMenu', data);
+        const menu = data.menu;
+        this.cache.set('OBMenu', menu);
         this.currentRoleId = currentRoleId;
-        return data;
+
+        return menu;
       } catch (error) {
         console.error('Error fetching menu:', error);
         throw error;

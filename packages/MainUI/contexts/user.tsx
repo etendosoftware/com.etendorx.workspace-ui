@@ -3,7 +3,7 @@
 import { createContext, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { logger } from '../utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { Datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
+import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { login as doLogin } from '@workspaceui/etendohookbinder/src/api/authentication';
 import { changeRole as doChangeRole } from '@workspaceui/etendohookbinder/src/api/role';
 import { getSession } from '@workspaceui/etendohookbinder/src/api/getSession';
@@ -99,14 +99,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
         setLanguage(sessionResponse.user.defaultLanguage as Language);
       }
 
-      setLanguages(
-        sessionResponse.languages.map(lang => ({
-          id: lang.id,
-          language: lang.language,
-          name: lang.name,
-        })),
-      );
+      const languages = Object.values(sessionResponse.languages);
 
+      setLanguages(languages);
       setCurrentRole(currentRole);
 
       if (sessionResponse.user.defaultWarehouse) {
@@ -191,7 +186,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         setToken(loginResponse.token);
 
         Metadata.setToken(loginResponse.token);
-        Datasource.setToken(loginResponse.token);
+        datasource.setToken(loginResponse.token);
 
         const sessionResponse = await getSession(loginResponse.token);
         updateSessionInfo(sessionResponse);
@@ -247,7 +242,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       const verifySession = async () => {
         try {
           Metadata.setToken(token);
-          Datasource.setToken(token);
+          datasource.setToken(token);
 
           updateSessionInfo(await getSession(token));
         } catch (error) {
@@ -285,7 +280,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
     if (token) {
       const unregisterMetadataInterceptor = Metadata.registerInterceptor(interceptor);
-      const unregisterDatasourceInterceptor = Datasource.registerInterceptor(interceptor);
+      const unregisterDatasourceInterceptor = datasource.registerInterceptor(interceptor);
 
       return () => {
         unregisterMetadataInterceptor();

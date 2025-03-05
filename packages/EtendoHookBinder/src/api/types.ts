@@ -84,6 +84,7 @@ export interface Field {
   readOnlyState?: ReadOnlyState;
   process: string;
   shownInStatusBar: boolean;
+  tab: string;
   displayed: boolean;
   startnewline: boolean;
   showInGridView: boolean;
@@ -290,7 +291,7 @@ export interface SessionResponse {
     name: string;
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  languages: Record<string, any>[];
+  languages: Record<string, { id: string; language: string; name: string }>;
   session: ISession;
 }
 

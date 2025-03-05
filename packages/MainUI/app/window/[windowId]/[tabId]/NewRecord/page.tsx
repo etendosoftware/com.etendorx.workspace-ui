@@ -6,7 +6,6 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useDynamicForm } from '@/hooks/useDynamicForm';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
-import { useForm } from 'react-hook-form';
 import { useMemo } from 'react';
 import { buildUpdatedValues, getCombinedEntries } from '@/utils';
 import FormView from '@/components/Form/FormView';
@@ -42,6 +41,8 @@ function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
   if (loading || !formInitialization) {
     return <Spinner />;
   }
+
+  console.debug(values);
 
   return <FormView defaultValues={values} tab={tab} window={window} />;
 }

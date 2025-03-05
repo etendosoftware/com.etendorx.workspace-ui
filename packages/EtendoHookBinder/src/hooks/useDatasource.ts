@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DatasourceOptions, Column, MRT_ColumnFiltersState } from '../api/types';
-import { Datasource } from '../api/datasource';
+import { datasource } from '../api/datasource';
 import { SearchUtils, ColumnFilterUtils } from '../utils/search-utils';
 
 const loadData = async (entity: string, page: number, pageSize: number, params: DatasourceOptions) => {
@@ -15,7 +15,7 @@ const loadData = async (entity: string, page: number, pageSize: number, params: 
     pageSize: safePageSize,
   };
 
-  const { response } = await Datasource.get(entity, processedParams);
+  const { response } = await datasource.get(entity, processedParams);
 
   return response;
 };
