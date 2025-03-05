@@ -10,7 +10,7 @@ import { getSession } from '@workspaceui/etendohookbinder/src/api/getSession';
 import { changeWarehouse as doChangeWarehouse } from '@workspaceui/etendohookbinder/src/api/warehouse';
 import { HTTP_CODES } from '@workspaceui/etendohookbinder/src/api/constants';
 import { DefaultConfiguration, IUserContext, Language, LanguageOption } from './types';
-import { ISession, Role, SessionResponse, Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
+import { ISession, Role, ProfileInfo, SessionResponse, Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/src/api/defaultConfig';
 import { usePathname, useRouter } from 'next/navigation';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
@@ -31,6 +31,20 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [roles, setRoles] = useState<Role[]>(() => {
     const savedRoles = localStorage.getItem('roles');
     return savedRoles ? JSON.parse(savedRoles) : [];
+  });
+
+  const INITIAL_PROFILE: ProfileInfo = useMemo(
+    () => ({
+      name: '',
+      email: '',
+      image: '',
+    }),
+    [],
+  );
+
+  const [profile, setProfile] = useState<ProfileInfo>(() => {
+    const savedProfile = localStorage.getItem('currentInfo');
+    return savedProfile ? JSON.parse(savedProfile) : INITIAL_PROFILE;
   });
 
   const [currentRole, setCurrentRole] = useState<Role | null>(() => {
@@ -54,6 +68,11 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }
   }, []);
 
+  const updateProfile = useCallback((newProfile: ProfileInfo) => {
+    setProfile(newProfile);
+    localStorage.setItem('currentInfo', JSON.stringify(newProfile));
+  }, []);
+
   const updateSessionInfo = useCallback(
     (sessionResponse: SessionResponse) => {
       const currentRole: Role = {
@@ -61,6 +80,17 @@ export default function UserProvider(props: React.PropsWithChildren) {
         name: sessionResponse.role.name,
         orgList: [],
       };
+
+      const currentProfileInfo: ProfileInfo = {
+        name: sessionResponse.user.name,
+        email: sessionResponse.user.client$_identifier,
+        image: sessionResponse.user.image || '',
+      };
+
+      updateProfile(currentProfileInfo);
+      setProfile(currentProfileInfo);
+
+      localStorage.setItem('currentInfo', JSON.stringify(currentProfileInfo));
       localStorage.setItem('currentRole', JSON.stringify(currentRole));
       localStorage.setItem('currentRoleId', currentRole.id);
       setSession(sessionResponse.session);
@@ -88,7 +118,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         setCurrentWarehouse(defaultWarehouse);
       }
     },
-    [setLanguage],
+    [setLanguage, updateProfile],
   );
 
   const clearUserData = useCallback(() => {
@@ -96,12 +126,14 @@ export default function UserProvider(props: React.PropsWithChildren) {
     setRoles([]);
     setCurrentRole(null);
     setCurrentWarehouse(null);
+    setProfile(INITIAL_PROFILE);
     localStorage.removeItem('token');
     localStorage.removeItem('roles');
     localStorage.removeItem('currentRole');
+    localStorage.removeItem('currentInfo');
     localStorage.removeItem('currentWarehouse');
     localStorage.removeItem('currentLanguage');
-  }, []);
+  }, [INITIAL_PROFILE]);
 
   const changeRole = useCallback(
     async (roleId: string) => {
@@ -183,6 +215,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       changeWarehouse,
       roles,
       currentRole,
+      profile,
       currentWarehouse,
       token,
       clearUserData,
@@ -197,6 +230,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       changeRole,
       changeWarehouse,
       roles,
+      profile,
       currentRole,
       currentWarehouse,
       token,

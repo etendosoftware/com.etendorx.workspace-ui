@@ -1,4 +1,4 @@
-import { useContext, useState, useCallback } from 'react';
+import { useContext, useState, useCallback, useMemo } from 'react';
 import { UserContext } from '../../contexts/user';
 import { logger } from '../../utils/logger';
 import { ProfileWrapperProps } from './types';
@@ -13,6 +13,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
     changeWarehouse,
     setDefaultConfiguration,
     currentRole,
+    profile,
     currentWarehouse,
     roles,
     token,
@@ -22,7 +23,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
   const [selectedRole, setSelectedRole] = useState<Option | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(null);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, getFlag } = useLanguage();
 
   const { clearUserData } = useContext(UserContext);
 
@@ -50,6 +51,16 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
     [setLanguage],
   );
 
+  const languagesWithFlags = useMemo(() => {
+    return languages.map(lang => ({
+      ...lang,
+      flagEmoji: getFlag(lang.language as Language),
+      displayName: `${getFlag(lang.language as Language)} ${lang.name}`,
+    }));
+  }, [languages, getFlag]);
+
+  const flagString = getFlag(language);
+
   return (
     <ProfileModal
       {...props}
@@ -63,6 +74,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
       onWarehouseChange={handleWarehouseChange}
       onLanguageChange={handleLanguageChange}
       language={language}
+      languagesFlags={flagString}
       onSaveAsDefaultChange={handleSaveAsDefaultChange}
       onChangeRole={changeRole}
       onChangeWarehouse={changeWarehouse}
@@ -72,7 +84,10 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
       }}
       logger={logger}
       onSignOff={handleSignOff}
-      languages={languages}
+      languages={languagesWithFlags}
+      userName={profile.name}
+      userEmail={profile.email}
+      userPhotoUrl={profile.image}
     />
   );
 };
