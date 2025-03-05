@@ -1,3 +1,4 @@
+@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 body {
@@ -108,4 +109,20 @@ select:-webkit-autofill:focus {
   .etendo-logo {
     width: 50%;
   }
+}
+
+pre.code {
+  margin: 1rem;
+  padding: 0.5rem;
+  line-height: 1.25;
+  font-family: monospace;
+  font-size: small;
+  background-color: #FFFFFF;
+}
+
+pre.code code {
+  white-space: pre;
+  height: 100%;
+  max-height: 20rem;
+  overflow-y: scroll;
 }
