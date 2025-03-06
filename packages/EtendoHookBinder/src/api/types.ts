@@ -93,6 +93,7 @@ export interface Field {
   column: Record<string, string>;
   name: string;
   id: string;
+  module: string;
   required: boolean;
   hasDefaultValue: boolean;
   refColumnName: string;
@@ -190,6 +191,7 @@ export interface Tab {
   hqlfilterclause: string;
   hqlwhereclause: string;
   sQLWhereClause: string;
+  module: string;
 }
 
 export interface WindowMetadata {
@@ -269,23 +271,25 @@ export interface LoginResponse {
 
 export interface ISession extends Record<string, string | number | boolean | null> {}
 
+export interface User {
+  id: string;
+  name: string;
+  username: string;
+  image: string;
+  defaultRole: string;
+  defaultWarehouse: string;
+  defaultWarehouse$_identifier: string;
+  defaultClient: string;
+  client$_identifier: string;
+  defaultLanguage: string;
+  defaultLanguage$_identifier: string;
+  defaultOrganization: string;
+  defaultOrganization$_identifier: string;
+  defaultRole$_identifier: string;
+}
+
 export interface SessionResponse {
-  user: {
-    id: string;
-    name: string;
-    username: string;
-    image: string;
-    defaultRole: string;
-    defaultWarehouse: string;
-    defaultWarehouse$_identifier: string;
-    defaultClient: string;
-    client$_identifier: string;
-    defaultLanguage: string;
-    defaultLanguage$_identifier: string;
-    defaultOrganization: string;
-    defaultOrganization$_identifier: string;
-    defaultRole$_identifier: string;
-  };
+  user: User;
   role: {
     id: string;
     name: string;

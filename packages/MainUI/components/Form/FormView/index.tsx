@@ -40,13 +40,14 @@ export default function FormView({
 
   const form = useForm({ values: defaultValues });
 
-  const { submit } = useFormAction({ mode });
+  const { submit } = useFormAction({ window, tab, mode });
+
+  const handleSave = useMemo(() => form.handleSubmit(submit), [form, submit]);
 
   return (
     <FormProvider {...form}>
-      <form className="w-full p-2 space-y-2" onSubmit={form.handleSubmit(submit)}>
-        <input type="submit" value="Submit" />
-        <Toolbar windowId={window.id} tabId={tab.id} isFormView={true} />
+      <form className="w-full p-2 space-y-2" onSubmit={handleSave}>
+        <Toolbar windowId={window.id} tabId={tab.id} isFormView={true} onSave={handleSave} />
         <div className="grid grid-cols-3 auto-rows-auto gap-8 bg-white rounded-2xl p-4">
           {Object.entries(fields.formFields).map(([hqlName, field]) => (
             <BaseSelector field={field} key={hqlName} />

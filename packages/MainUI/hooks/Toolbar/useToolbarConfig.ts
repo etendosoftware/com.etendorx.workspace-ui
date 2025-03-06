@@ -4,7 +4,15 @@ import { BUTTON_IDS } from '../../constants/Toolbar';
 import { useSearch } from '../../contexts/searchContext';
 import { useMetadataContext } from '../useMetadataContext';
 
-export const useToolbarConfig = (windowId: string, tabId?: string) => {
+export const useToolbarConfig = ({
+  windowId,
+  tabId,
+  onSave,
+}: {
+  windowId?: string;
+  tabId?: string;
+  onSave?: () => void;
+}) => {
   const router = useRouter();
   const { setSearchQuery } = useSearch();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -24,11 +32,11 @@ export const useToolbarConfig = (windowId: string, tabId?: string) => {
           setShowTabContainer(prevState => !prevState);
           break;
         case BUTTON_IDS.SAVE:
-          alert('save');
+          onSave?.();
           break;
       }
     },
-    [router, tabId, windowId, setShowTabContainer],
+    [onSave, router, setShowTabContainer, tabId, windowId],
   );
 
   const handleSearch = (query: string) => {

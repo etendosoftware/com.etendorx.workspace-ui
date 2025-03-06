@@ -3,6 +3,7 @@ import type { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { useFormContext } from 'react-hook-form';
 import { useMetadataContext } from '../useMetadataContext';
+import { useParams } from 'next/navigation';
 
 export interface UseTableDirDatasourceParams {
   field: Field;
@@ -10,20 +11,12 @@ export interface UseTableDirDatasourceParams {
 }
 
 export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) => {
-  const { getValues, watch } = useFormContext();
+  const { windowId } = useParams<{ windowId: string }>();
+  const { getValues } = useFormContext();
   const { fieldsByHqlName } = useMetadataContext();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();
-  const [values, setValues] = useState<Record<string, unknown>>(getValues());
-
-  useEffect(() => {
-    const { unsubscribe } = watch(_values => {
-      setValues(_values);
-    });
-
-    return () => unsubscribe();
-  }, [watch]);
 
   const fetch = useCallback(
     async (controller: AbortController) => {
@@ -35,27 +28,27 @@ export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) =>
         setLoading(true);
 
         const body = new URLSearchParams({
-          moduleId: '0',
           _startRow: '0',
           _endRow: '75',
           _operationType: 'fetch',
+          ...field.selector,
+          moduleId: field.module,
+          windowId,
           tabId: field.tab,
           inpTabId: field.tab,
-          ...field.selector,
+          inpTableId: field.column.table,
           initiatorField: field.hqlName,
+          _currentValue: getValues(field.hqlName),
         });
 
-        Object.entries(values).forEach(([key, value]) => {
-          if (key !== field.hqlName) {
-            const _key = fieldsByHqlName[key]?.inputName;
-
-            if (_key) {
-              body.set(_key, String(value));
-            }
-          }
+        Object.entries(getValues()).forEach(([key, value]) => {
+          const _key = fieldsByHqlName[key]?.inputName;
+          let safeValue = String(value);
+          safeValue = value === 'true' ? 'Y' : value === 'false' ? 'N' : value;
+          body.set(_key || key, safeValue);
         });
 
-        const { data, statusText } = await datasource.client.request('ComboTableDatasourceService', {
+        const { data, statusText } = await datasource.client.request(field.selector?.datasourceName ?? '', {
           signal: controller.signal,
           method: 'POST',
           body,
@@ -70,7 +63,7 @@ export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) =>
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     },
-    [field, fieldsByHqlName, values],
+    [field, fieldsByHqlName, getValues, windowId],
   );
 
   useEffect(() => {
