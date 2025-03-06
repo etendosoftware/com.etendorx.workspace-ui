@@ -16,24 +16,25 @@ export const TabContent: React.FC<TabContentProps> = ({ identifier, type, handle
   }, [groupedTabs, tab]);
 
   return (
-    <div className="flex flex-col cursor-ns-resize">
+    <div className="flex flex-col h-full">
       <div
-        className="h-11 flex justify-between items-center px-4 rounded-t-lg"
+        className="h-11 min-h-[44px] flex justify-between items-center px-4 rounded-t-lg sticky top-0 z-10 w-full flex-shrink-0 cursor-ns-resize"
         style={{
           borderBottom: '1px solid var(--transparent-neutral-10, rgba(0,3,13,0.1))',
           backgroundColor: 'var(--transparent-neutral-5, rgba(0,3,13,0.05))',
         }}>
-        <div className="flex items-center">
+        <div className="flex items-center overflow-hidden">
           <div
-            className="flex items-center px-2 rounded-full max-h-8"
+            className="flex items-center px-2 rounded-full h-8 flex-shrink-0"
             style={{
               backgroundColor: 'var(--transparent-neutral-5, rgba(0,3,13,0.05))',
               border: '1px solid var(--transparent-neutral-10, rgba(0,3,13,0.1))',
             }}>
-            <p>{type}</p>
+            <p className="text-sm whitespace-nowrap">{type}</p>
           </div>
-          <div className="ml-2 min-w-8">
+          <div className="ml-2 min-w-8 overflow-hidden">
             <p
+              className="truncate"
               style={{
                 color: 'var(--baseline-neutral-100, #00030D)',
                 fontWeight: 600,
@@ -43,7 +44,7 @@ export const TabContent: React.FC<TabContentProps> = ({ identifier, type, handle
             </p>
           </div>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center flex-shrink-0">
           <IconButton onClick={handleFullSize} size="small" className="bg-transparent">
             {isFullSize ? <ChevronDown /> : <ChevronUp />}
           </IconButton>
@@ -53,7 +54,7 @@ export const TabContent: React.FC<TabContentProps> = ({ identifier, type, handle
         </div>
       </div>
 
-      <div className="flex-grow overflow-y-auto h-full">
+      <div className="flex-grow overflow-y-auto">
         {childTabs.length > 0 ? (
           TabsGroup(childTabs)
         ) : (

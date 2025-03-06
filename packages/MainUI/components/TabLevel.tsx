@@ -22,24 +22,24 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
 
   return (
     <SearchProvider>
-      <div className={`tab-level-${tab.level} h-full flex flex-col `}>
+      <div className={`tab-level-${tab.level} h-full flex flex-col overflow-hidden`}>
         <div className="mb-2">
           <Toolbar windowId={tab.windowId} tabId={tab.id} />
         </div>
         <div className="flex-grow overflow-hidden">
           <DynamicTable tab={tab} />
         </div>
-        {showTabContainer && formattedSelectedRecord && (
-          <ResizableTabContainer
-            isOpen={showTabContainer}
-            onClose={() => setShowTabContainer(false)}
-            selectedRecord={formattedSelectedRecord}
-            tab={tab}
-            windowId={tab.windowId}
-            onHeightChange={() => {}}
-          />
-        )}
       </div>
+      {showTabContainer && formattedSelectedRecord && (
+        <ResizableTabContainer
+          isOpen={showTabContainer}
+          onClose={() => setShowTabContainer(false)}
+          selectedRecord={formattedSelectedRecord}
+          tab={tab}
+          windowId={tab.windowId}
+          onHeightChange={() => {}}
+        />
+      )}
     </SearchProvider>
   );
 }
