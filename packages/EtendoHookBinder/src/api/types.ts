@@ -188,6 +188,9 @@ export interface Tab {
   level: number;
   _identifier: string;
   records: Record<string, never>;
+  hqlfilterclause: string;
+  hqlwhereclause: string;
+  sQLWhereClause: string;
 }
 
 export interface WindowMetadata {
@@ -272,11 +275,12 @@ export interface SessionResponse {
     id: string;
     name: string;
     username: string;
+    image: string;
     defaultRole: string;
     defaultWarehouse: string;
     defaultWarehouse$_identifier: string;
     defaultClient: string;
-    defaultClient$_identifier: string;
+    client$_identifier: string;
     defaultLanguage: string;
     defaultLanguage$_identifier: string;
     defaultOrganization: string;
@@ -351,6 +355,12 @@ export interface Role {
       name: string;
     }>;
   }>;
+}
+
+export interface ProfileInfo {
+  name: string;
+  email: string;
+  image: string;
 }
 
 export interface Warehouse {

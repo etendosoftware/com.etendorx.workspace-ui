@@ -93,8 +93,8 @@ export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps
   onSignOff: () => void;
   onLanguageChange: (e: Language) => void;
   language: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   languages: LanguageOption[];
+  languagesFlags: string;
 }
 
 export interface UserProfileProps {
@@ -103,14 +103,6 @@ export interface UserProfileProps {
   email: string;
   sectionTooltip: string;
   onSignOff: () => void;
-}
-
-export enum Item {
-  Role = 'Role',
-  Client = 'Client',
-  Organization = 'Organization',
-  Warehouse = 'Warehouse',
-  Language = 'Language',
 }
 
 export interface SelectorListProps {
@@ -133,4 +125,5 @@ export interface SelectorListProps {
   saveAsDefault: boolean;
   onSaveAsDefaultChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   translations: Translations;
+  languagesFlags: string;
 }

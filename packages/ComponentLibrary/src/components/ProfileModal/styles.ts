@@ -3,6 +3,7 @@ import { SxProps, Theme, useTheme } from '@mui/material';
 
 export const MODAL_WIDTH = 332;
 export const menuSyle = { paddingY: 0 };
+export const TEXT_LOGO = 'Etendo';
 
 export const useStyle = () => {
   const theme = useTheme();
@@ -50,6 +51,15 @@ export const useStyle = () => {
           borderRadius: '50%',
           position: 'relative',
           zIndex: 2,
+        },
+        profileWithoutImage: {
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: theme.palette.baselineColor.neutral[0],
+          backgroundColor: theme.palette.baselineColor.neutral[80],
+          fontWeight: 'bold',
+          fontSize: '1rem',
         },
         svgContainerStyles: {
           display: 'flex',

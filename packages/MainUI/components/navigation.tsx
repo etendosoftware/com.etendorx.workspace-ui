@@ -7,7 +7,6 @@ import {
   IconButton,
   Waterfall,
 } from '@workspaceui/componentlibrary/src/components';
-import profilePicture from '@workspaceui/componentlibrary/src/assets/images/profile_picture_mock.png';
 import ActivityIcon from '@workspaceui/componentlibrary/src/assets/icons/activity.svg';
 import NotificationIcon from '@workspaceui/componentlibrary/src/assets/icons/bell.svg';
 import PersonIcon from '@workspaceui/componentlibrary/src/assets/icons/user.svg';
@@ -74,9 +73,6 @@ const Navigation: React.FC = () => {
         passwordLabel={t('navigation.profile.passwordLabel')}
         newPasswordLabel={t('navigation.profile.newPasswordLabel')}
         confirmPasswordLabel={t('navigation.profile.confirmPasswordLabel')}
-        userPhotoUrl={profilePicture.src}
-        userName={'Ayelén García'}
-        userEmail={'ayelen.garcia@etendo.software'}
         sectionTooltip={t('navigation.profile.signOffTooltip')}
         icon={<PersonIcon />}
         sections={sections}

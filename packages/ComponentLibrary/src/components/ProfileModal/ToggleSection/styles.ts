@@ -23,6 +23,10 @@ export const useStyle = () => {
     iconStyles: {
       paddingLeft: '0.5rem',
     },
+    flagStyles: {
+      fontSize: '1rem',
+      color: theme.palette.baselineColor.neutral[100],
+    },
   };
 
   return { styles, defaultFill };

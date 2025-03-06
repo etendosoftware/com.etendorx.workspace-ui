@@ -4,12 +4,12 @@ import { useStyle } from './styles';
 import OrganizationIcon from '../../../assets/icons/user.svg';
 import ClientIcon from '../../../assets/icons/github.svg';
 import WarehouseIcon from '../../../assets/icons/warehouse.svg';
-import LanguageIcon from '../../../assets/icons/flags/spain.svg';
 import LockOutlined from '../../../assets/icons/lock.svg';
 import Select from '../../Input/Select';
 import { InputPassword } from '../..';
 import { Option } from '../../Input/Select/types';
-import { SelectorListProps, Item, BaseWarehouse } from '../types';
+import { SelectorListProps, BaseWarehouse } from '../types';
+import { Item } from '../../enums';
 
 const isOptionEqualToValue = (option: Option, value: Option) => option.id === value.id;
 
@@ -29,16 +29,19 @@ const SelectorList: React.FC<SelectorListProps> = ({
   saveAsDefault,
   onSaveAsDefaultChange,
   translations,
+  languagesFlags,
 }) => {
   const { styles, defaultFill } = useStyle();
   const theme = useTheme();
+
+  const FlagEmoji = ({ flag }: { flag: string }) => <span style={styles.flagStyles}>{flag}</span>;
 
   const icons: { [key in Item]: React.ReactElement } = {
     [Item.Role]: <></>,
     [Item.Client]: <ClientIcon fill={defaultFill} />,
     [Item.Organization]: <OrganizationIcon fill={defaultFill} />,
     [Item.Warehouse]: <WarehouseIcon fill={defaultFill} />,
-    [Item.Language]: <LanguageIcon />,
+    [Item.Language]: <FlagEmoji flag={languagesFlags} />,
   };
 
   const CustomCheckbox = styled(Checkbox)(() => ({

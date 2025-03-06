@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useStyle } from './styles';
+import { useStyle, TEXT_LOGO } from './styles';
 import BackgroundGradient from '../../assets/images/backgroundGradient.svg?url';
 import LogoutIcon from '../../assets/icons/log-out.svg';
 import IconButton from '../IconButton';
@@ -26,7 +26,17 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, email, sectio
         <LogoutIcon />
       </IconButton>
       <div style={styles.profileImageContainerStyles}>
-        <img src={photoUrl} alt="Profile" style={styles.profileImageStyles} />
+        {photoUrl ? (
+          <img src={photoUrl} alt="Profile" style={styles.profileImageStyles} />
+        ) : (
+          <div
+            style={{
+              ...styles.profileImageStyles,
+              ...styles.profileWithoutImage,
+            }}>
+            {TEXT_LOGO}
+          </div>
+        )}
       </div>
       <p style={styles.nameStyles}>{name}</p>
       <div style={styles.profileDetailsStyles}>

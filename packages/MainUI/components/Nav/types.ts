@@ -23,4 +23,4 @@ export interface WrapperHandledProps {
   onSaveAsDefaultChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export interface ProfileWrapperProps extends BaseProfileModalProps {}
+export interface ProfileWrapperProps extends Omit<BaseProfileModalProps, 'userPhotoUrl' | 'userName' | 'userEmail'> {}
