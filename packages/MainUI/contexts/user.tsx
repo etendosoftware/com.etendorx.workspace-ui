@@ -10,7 +10,7 @@ import { getSession } from '@workspaceui/etendohookbinder/src/api/getSession';
 import { changeWarehouse as doChangeWarehouse } from '@workspaceui/etendohookbinder/src/api/warehouse';
 import { HTTP_CODES } from '@workspaceui/etendohookbinder/src/api/constants';
 import { DefaultConfiguration, IUserContext, Language, LanguageOption } from './types';
-import { ISession, Role, ProfileInfo, SessionResponse, Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
+import { ISession, Role, ProfileInfo, SessionResponse, Warehouse, User } from '@workspaceui/etendohookbinder/src/api/types';
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/src/api/defaultConfig';
 import { usePathname, useRouter } from 'next/navigation';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
@@ -22,6 +22,7 @@ export const UserContext = createContext({} as IUserContext);
 export default function UserProvider(props: React.PropsWithChildren) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [ready, setReady] = useState(false);
+  const [user, setUser] = useState<IUserContext['user']>({} as User);
   const [session, setSession] = useState<ISession>({});
   const { setLanguage } = useLanguage();
   const pathname = usePathname();
@@ -88,6 +89,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       };
 
       updateProfile(currentProfileInfo);
+      setUser(sessionResponse.user);
       setProfile(currentProfileInfo);
 
       localStorage.setItem('currentInfo', JSON.stringify(currentProfileInfo));
@@ -122,6 +124,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     setCurrentRole(null);
     setCurrentWarehouse(null);
     setProfile(INITIAL_PROFILE);
+    setUser({} as User);
     localStorage.removeItem('token');
     localStorage.removeItem('roles');
     localStorage.removeItem('currentRole');
@@ -219,6 +222,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       languages,
       session,
       setSession,
+      user,
     }),
     [
       login,
@@ -234,6 +238,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       languages,
       session,
       setSession,
+      user,
     ],
   );
 

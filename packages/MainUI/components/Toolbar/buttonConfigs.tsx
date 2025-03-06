@@ -33,7 +33,7 @@ export const createStandardButtonConfig = (
 
   const config: StandardButtonConfig = {
     key: btn.id,
-    icon: btn.id == BUTTON_IDS.SAVE ? <input type="submit" value="Submit" /> : React.createElement(iconMap[btn.icon]),
+    icon: React.createElement(iconMap[btn.icon]),
     tooltip: btn.name,
     onClick: () => handleAction(btn.action),
     disabled: !btn.enabled,

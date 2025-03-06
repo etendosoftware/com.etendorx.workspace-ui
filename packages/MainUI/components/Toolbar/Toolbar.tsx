@@ -29,7 +29,7 @@ import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
 import ProcessMenu from './ProcessMenu';
 
-export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false }) => {
+export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
   const [openModal, setOpenModal] = React.useState(false);
   const [isExecuting, setIsExecuting] = React.useState(false);
   const [processResponse, setProcessResponse] = React.useState<ProcessResponse | null>(null);
@@ -40,19 +40,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
   const { selected, tabs } = useMetadataContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
-  const { handleAction, searchOpen, setSearchOpen, handleSearch, searchValue, setSearchValue } = useToolbarConfig(
+  const { handleAction, searchOpen, setSearchOpen, handleSearch, searchValue, setSearchValue } = useToolbarConfig({
     windowId,
     tabId,
-  );
+    onSave,
+  });
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
 
   const tab = useMemo(() => tabs.find(tab => tab.id === tabId), [tabs, tabId]);
   const selectedRecord = tab ? selected[tab.level] : undefined;
 
-  const processButtons = useMemo(
-    () => toolbar?.buttons.filter(isProcessButton) || [],
-    [toolbar?.buttons],
-  );
+  const processButtons = useMemo(() => toolbar?.buttons.filter(isProcessButton) || [], [toolbar?.buttons]);
 
   const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);

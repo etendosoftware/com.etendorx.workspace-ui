@@ -3,7 +3,15 @@ import { useRouter } from 'next/navigation';
 import { BUTTON_IDS } from '../../constants/Toolbar';
 import { useSearch } from '../../contexts/searchContext';
 
-export const useToolbarConfig = (windowId: string, tabId?: string) => {
+export const useToolbarConfig = ({
+  windowId,
+  tabId,
+  onSave,
+}: {
+  windowId?: string;
+  tabId?: string;
+  onSave?: () => void;
+}) => {
   const router = useRouter();
   const { setSearchQuery } = useSearch();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -19,11 +27,11 @@ export const useToolbarConfig = (windowId: string, tabId?: string) => {
           setSearchOpen(true);
           break;
         case BUTTON_IDS.SAVE:
-          alert('save');
+          onSave?.();
           break;
       }
     },
-    [router, tabId, windowId],
+    [onSave, router, tabId, windowId],
   );
 
   const handleSearch = (query: string) => {

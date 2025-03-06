@@ -1,29 +1,44 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { FormMode } from '@workspaceui/etendohookbinder/src/api/types';
+import { FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { useUserContext } from './useUserContext';
 
 export interface UseFormActionParams {
+  window: WindowMetadata;
+  tab: Tab;
   mode: FormMode;
 }
 
-export const useFormAction = ({ mode }: UseFormActionParams) => {
+export const useFormAction = ({ window, tab, mode }: UseFormActionParams) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();
   const controller = useRef<AbortController>(new AbortController());
+  const { user } = useUserContext();
+  const userId = user?.id;
 
   const submit = useCallback(
-    async params => {
+    async (values: Record<string, unknown>) => {
       try {
-        console.debug('Submiting...', { params });
         setLoading(true);
 
-        const { data, statusText } = await Metadata.datasourceServletClient.request('ComboTableDatasourceService', {
+        const queryStringParams = buildQueryString({ mode, window, tab });
+        const url = `${tab.entityName}?${queryStringParams}`;
+        const options = {
           signal: controller.current.signal,
           method: 'POST',
           body: {
-            mode,
+            dataSource: 'isc_OBViewDataSource_0',
+            operationType: mode == FormMode.NEW ? 'add' : 'update',
+            componentId: 'isc_OBViewForm_0',
+            data: {
+              ...values,
+            },
+            oldValues: {},
+            csrfToken: userId,
           },
-        });
+        } as const;
+
+        const { data, statusText } = await Metadata.datasourceServletClient.request(url, options);
 
         if (data?.response?.data && !controller.current.signal.aborted) {
           return data.response.data;
@@ -34,7 +49,7 @@ export const useFormAction = ({ mode }: UseFormActionParams) => {
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     },
-    [mode],
+    [mode, window, tab, userId],
   );
 
   useEffect(() => {
@@ -48,3 +63,18 @@ export const useFormAction = ({ mode }: UseFormActionParams) => {
 
   return { submit, loading, error };
 };
+
+const buildQueryString = ({ mode, window, tab }: UseFormActionParams) =>
+  new URLSearchParams({
+    windowId: String(window.id),
+    tabId: String(tab.id),
+    moduleId: String(tab.module),
+    _operationType: mode == FormMode.NEW ? 'add' : 'update',
+    _noActiveFilter: String(true),
+    sendOriginalIDBack: String(true),
+    _extraProperties: '',
+    Constants_FIELDSEPARATOR: '$',
+    _className: 'OBViewDataSource',
+    Constants_IDENTIFIER: '_identifier',
+    isc_dataFormat: 'json',
+  });

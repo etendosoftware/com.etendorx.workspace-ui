@@ -2,30 +2,27 @@ import { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { useFormContext } from 'react-hook-form';
 import Select, { SelectProps } from './components/Select';
 import { useMemo } from 'react';
-import { useComboSelect } from '@workspaceui/etendohookbinder/src/hooks/useComboSelect';
-import { useMetadataContext } from '@/hooks/useMetadataContext';
-import { buildPayloadByInputName } from '@/utils';
+import { useTableDirDatasource } from '@/hooks/datasource/useTableDirDatasource';
 
 export const SelectSelector = ({ field }: { field: Field }) => {
-  const { register, getValues } = useFormContext();
-  const { tab } = useMetadataContext();
+  const { register } = useFormContext();
   const idKey = (field.selector?.valueField ?? '') as string;
   const identifierKey = (field.selector?.displayField ?? '') as string;
 
-  const params = useMemo(() => ({ ...buildPayloadByInputName(getValues(), tab?.fields) }), [getValues, tab?.fields]);
+  console.debug({ idKey, identifierKey });
 
-  const { records } = useComboSelect(field, params);
+  const { records } = useTableDirDatasource({ field });
 
   const options = useMemo<SelectProps['options']>(() => {
     const result: SelectProps['options'] = [];
 
     records.forEach(record => {
-      const option = {
-        id: record[idKey] as string,
-        label: record[identifierKey] as string,
-      };
+      const label = record[identifierKey] as string;
+      const id = record[idKey] as string;
 
-      result.push(option);
+      if (id && label) {
+        result.push({ id, label });
+      }
     });
 
     return result;
