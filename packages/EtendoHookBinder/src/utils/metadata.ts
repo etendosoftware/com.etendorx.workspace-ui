@@ -98,7 +98,7 @@ export const buildFormState = (
   }
 };
 
-export const isEntityReference = (type: FieldType) => ['tabledir', 'search'].includes(type);
+export const isEntityReference = (type: FieldType) => [FieldType.SELECT, FieldType.TABLEDIR].includes(type);
 
 export const getFieldsByColumnName = (tab?: Tab) => {
   try {

@@ -7,11 +7,12 @@ export interface UseFormActionParams {
   window: WindowMetadata;
   tab: Tab;
   mode: FormMode;
+  onSuccess: (data: unknown) => void;
+  onError: (data: unknown) => void;
 }
 
-export const useFormAction = ({ window, tab, mode }: UseFormActionParams) => {
+export const useFormAction = ({ window, tab, mode, onSuccess, onError }: UseFormActionParams) => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error>();
   const controller = useRef<AbortController>(new AbortController());
   const { user } = useUserContext();
   const userId = user?.id;
@@ -39,18 +40,18 @@ export const useFormAction = ({ window, tab, mode }: UseFormActionParams) => {
           },
         } as const;
 
-        const { data, statusText } = await Metadata.datasourceServletClient.request(url, options);
+        const { ok, data } = await Metadata.datasourceServletClient.request(url, options);
 
-        if (data?.response?.data && !controller.current.signal.aborted) {
-          return data.response.data;
+        if (ok && data?.response?.status === 0 && !controller.current.signal.aborted) {
+          onSuccess?.(data.response.data);
         } else {
-          throw new Error(statusText);
+          throw new Error(data);
         }
       } catch (err) {
-        setError(err instanceof Error ? err : new Error(String(err)));
+        onError?.(err);
       }
     },
-    [mode, window, tab, userId],
+    [mode, onError, onSuccess, tab, userId, window],
   );
 
   useEffect(() => {
@@ -62,10 +63,10 @@ export const useFormAction = ({ window, tab, mode }: UseFormActionParams) => {
     };
   }, []);
 
-  return { submit, loading, error };
+  return { submit, loading };
 };
 
-const buildQueryString = ({ mode, window, tab }: UseFormActionParams) =>
+const buildQueryString = ({ mode, window, tab }: { window: WindowMetadata; tab: Tab; mode: FormMode }) =>
   new URLSearchParams({
     windowId: String(window.id),
     tabId: String(tab.id),

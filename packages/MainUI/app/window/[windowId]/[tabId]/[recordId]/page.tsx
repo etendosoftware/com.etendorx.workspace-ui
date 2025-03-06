@@ -42,6 +42,7 @@ function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
   }
 
   if (loading || !formInitialization || !record) {
+    console.debug({ loading, formInitialization, record });
     return <Spinner />;
   }
 
