@@ -7,10 +7,8 @@ import { useFormContext } from 'react-hook-form';
 import { TableDirSelector } from './TableDirSelector';
 import QuantitySelector from '../oldSelectors/QuantitySelector';
 import { ListSelector } from './ListSelector';
-import { useMetadataContext } from '@/hooks/useMetadataContext';
 
 export const GenericSelector = ({ field }: { field: Field }) => {
-  const { tab } = useMetadataContext();
   const { watch } = useFormContext();
   const value = watch(field.hqlName);
   const { reference } = field.column;
@@ -19,7 +17,7 @@ export const GenericSelector = ({ field }: { field: Field }) => {
     case '19':
     case '95E2A8B50A254B2AAE6774B8C2F28120':
     case '18':
-      return <TableDirSelector field={field} tab={tab} />;
+      return <TableDirSelector field={field} />;
     case '15':
     case '16':
       return <DateSelector field={field} />;

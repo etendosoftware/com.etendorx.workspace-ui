@@ -115,6 +115,11 @@ export interface Option<T extends string = string> {
   id: string;
 }
 
+export interface ValueWithIdentifier {
+  value: unknown;
+  identifier: string;
+}
+
 export interface Column {
   fieldGroup?: string;
   header: string;

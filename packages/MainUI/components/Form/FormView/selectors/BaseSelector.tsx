@@ -20,9 +20,11 @@ export const BaseSelector = ({ field }: { field: Field }) => {
 
   const applyColumnValues = useCallback(
     (columnValues: FormInitializationResponse['columnValues']) => {
-      Object.entries(columnValues ?? {}).forEach(([column, { value }]) => {
+      Object.entries(columnValues ?? {}).forEach(([column, { value, classicValue }]) => {
         const targetField = fieldsByColumnName[column];
-        if (targetField && value) setValue(targetField.hqlName, value);
+        const isDate = ['15', '16'].includes(targetField?.column?.reference);
+
+        setValue(targetField?.hqlName || column, isDate ? classicValue : value);
       });
     },
     [fieldsByColumnName, setValue],
@@ -41,7 +43,7 @@ export const BaseSelector = ({ field }: { field: Field }) => {
     } catch (err) {
       logger.error('Callout execution failed:', err);
     }
-  }, [field.column.callout, executeCallout, getValues, fieldsByHqlName, applyColumnValues]);
+  }, [field, executeCallout, getValues, fieldsByHqlName, applyColumnValues]);
 
   useEffect(() => {
     if (ready.current) {
