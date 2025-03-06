@@ -1,34 +1,30 @@
-import { useMemo } from 'react';
+import { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { useFormContext } from 'react-hook-form';
-import { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import Select, { SelectProps } from './components/Select';
+import { useMemo } from 'react';
 import { useTableDirDatasource } from '@/hooks/datasource/useTableDirDatasource';
-import Select, { SelectProps } from '@/components/Form/FormView/selectors/components/Select';
-import { logger } from '@/utils/logger';
 
-export const TableDirSelector = ({ field, tab }: { field: Field; tab?: Tab }) => {
+export const TableDirSelector = ({ field }: { field: Field }) => {
   const { register } = useFormContext();
-  const { records } = useTableDirDatasource({ field, tab });
   const idKey = (field.selector?.valueField ?? '') as string;
   const identifierKey = (field.selector?.displayField ?? '') as string;
+
+  const { records, refetch } = useTableDirDatasource({ field });
 
   const options = useMemo<SelectProps['options']>(() => {
     const result: SelectProps['options'] = [];
 
-    try {
-      records.forEach(record => {
-        const id: string = record[idKey];
-        const label: string = record[identifierKey];
+    records.forEach(record => {
+      const label = record[identifierKey] as string;
+      const id = record[idKey] as string;
 
-        if (id && label) {
-          result.push({ id, label });
-        }
-      });
-    } catch (err) {
-      logger.warn(err);
-    }
+      if (id && label) {
+        result.push({ id, label });
+      }
+    });
 
     return result;
   }, [idKey, identifierKey, records]);
 
-  return <Select {...register(field.hqlName)} name={field.hqlName} options={options} />;
+  return <Select {...register(field.hqlName)} name={field.hqlName} options={options} onFocus={refetch} />;
 };

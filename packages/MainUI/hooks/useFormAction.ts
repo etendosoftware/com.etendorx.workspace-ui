@@ -31,6 +31,7 @@ export const useFormAction = ({ window, tab, mode }: UseFormActionParams) => {
             operationType: mode == FormMode.NEW ? 'add' : 'update',
             componentId: 'isc_OBViewForm_0',
             data: {
+              accountingDate: new Date(),
               ...values,
             },
             oldValues: {},

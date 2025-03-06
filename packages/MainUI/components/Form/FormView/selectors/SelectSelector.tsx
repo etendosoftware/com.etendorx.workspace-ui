@@ -9,9 +9,7 @@ export const SelectSelector = ({ field }: { field: Field }) => {
   const idKey = (field.selector?.valueField ?? '') as string;
   const identifierKey = (field.selector?.displayField ?? '') as string;
 
-  console.debug({ idKey, identifierKey });
-
-  const { records } = useTableDirDatasource({ field });
+  const { records, refetch } = useTableDirDatasource({ field });
 
   const options = useMemo<SelectProps['options']>(() => {
     const result: SelectProps['options'] = [];
@@ -28,5 +26,5 @@ export const SelectSelector = ({ field }: { field: Field }) => {
     return result;
   }, [idKey, identifierKey, records]);
 
-  return <Select {...register(field.hqlName)} name={field.hqlName} options={options} />;
+  return <Select {...register(field.hqlName)} name={field.hqlName} options={options} onFocus={refetch} />;
 };

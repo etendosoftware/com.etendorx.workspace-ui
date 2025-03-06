@@ -2,20 +2,48 @@ import { Field, FormInitializationResponse } from '@workspaceui/etendohookbinder
 
 export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const sanitizeValue = (value: unknown, key: string): string => {
-  if (typeof value === 'string') {
+export const getFieldReference = (field?: Field) => {
+  switch (field?.column?.reference) {
+    case '19':
+    case '95E2A8B50A254B2AAE6774B8C2F28120':
+    case '18':
+      return 'TableDirSelector';
+    case '15':
+    case '16':
+      return 'DateSelector';
+    case '20':
+      return 'BooleanSelector';
+    case '29':
+      return 'QuantitySelector';
+    case '17':
+    case '13':
+      return 'ListSelector';
+    case '30':
+      return 'SelectSelector';
+    case '12':
+    case '11':
+    case '22':
+    default:
+      return 'StringSelector';
+  }
+};
+
+export const sanitizeValue = (field: Field | undefined, value: unknown) => {
+  const reference = getFieldReference(field);
+
+  if (reference === "BooleanSelector") {
+    return value ? 'Y' : 'N';
+  }
+
+  if (reference === 'QuantitySelector') {
     return value;
   }
 
   if (value == null) {
-    return "";
+    return '';
   }
 
-  if (typeof value === 'boolean') {
-    return value ? 'Y' : 'N';
-  }
-
-  return String(value);
+  return value;
 };
 
 export const getCombinedEntries = (formInitialization: FormInitializationResponse) => [
@@ -24,16 +52,17 @@ export const getCombinedEntries = (formInitialization: FormInitializationRespons
 ];
 
 export const buildUpdatedValues = (
-  entries: [string, { value: unknown }][],
-  fieldsByColumnName: Record<string, { hqlName?: string }>,
+  entries: [string, { value: string; identifier?: string }][],
+  fieldsByColumnName: Record<string, Field>,
 ) => {
   return entries.reduce(
     (acc, [columnName, { value }]) => {
-      const key = fieldsByColumnName[columnName]?.hqlName ?? columnName;
-      acc[key] = sanitizeValue(value, key);
+      const field = fieldsByColumnName[columnName];
+      const key = field?.hqlName ?? columnName;
+      acc[key] = sanitizeValue(field, value);
       return acc;
     },
-    {} as Record<string, string | number | boolean | null>,
+    {} as Record<string, unknown>,
   );
 };
 
