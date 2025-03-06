@@ -107,6 +107,7 @@ export interface Field {
   referencedTabId: string;
   displayLogicExpression?: string;
   readOnlyLogicExpression?: string;
+  sequenceNumber: number;
 }
 
 export interface Option<T extends string = string> {
@@ -142,7 +143,17 @@ export interface MappedField {
   required?: boolean;
 }
 
-export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'search' | 'tabledir' | 'quantity' | 'list';
+export enum FieldType {
+  TEXT = 'text',
+  NUMBER = 'number',
+  DATE = 'date',
+  BOOLEAN = 'boolean',
+  SELECT = 'select',
+  SEARCH = 'search',
+  TABLEDIR = 'tabledir',
+  QUANTITY = 'quantity',
+  LIST = 'list'
+}
 
 export interface MappedTab {
   id: string;

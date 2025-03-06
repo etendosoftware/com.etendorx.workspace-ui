@@ -80,7 +80,7 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
   const { error, formInitialization, loading } = state;
 
   const params = useMemo(
-    () => (tab.id ? buildFormInitializationParams(tab.id, mode as FormMode, recordId) : null),
+    () => (tab.id ? buildFormInitializationParams(tab.id, mode, recordId) : null),
     [tab.id, mode, recordId],
   );
 

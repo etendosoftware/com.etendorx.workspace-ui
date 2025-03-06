@@ -1,5 +1,5 @@
 import { API_DATASOURCE_SERVLET } from './constants';
-import { Client, Interceptor } from './client';
+import { Client, ClientOptions, Interceptor } from './client';
 import { DatasourceParams } from './types';
 
 export class Datasource {
@@ -41,7 +41,7 @@ export class Datasource {
 
   public async getSingleRecord(entity: string, id: string) {
     try {
-      const { data } = await this.client.post(`${entity}/${id}`);
+      const { data } = await this.client.request(`${entity}/${id}`);
 
       return Array.isArray(data) ? data[0] : data;
     } catch (error) {

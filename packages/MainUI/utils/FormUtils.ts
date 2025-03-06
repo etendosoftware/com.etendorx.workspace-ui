@@ -1,18 +1,18 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { FormData, Section } from '@/components/Form/FormView/types';
 import {
   Column,
   Field,
   FieldDefinition,
   FieldInfo,
-  FieldType,
   MappedData,
   MappedTab,
   Tab,
   WindowMetadata,
 } from '@workspaceui/etendohookbinder/src/api/types';
-import { UseFormReturn } from 'react-hook-form';
+import { FieldValues } from 'react-hook-form';
 
-export function mapColumnTypeToFieldType(column: Column): FieldType {
+export function mapColumnTypeToFieldType(column: Column): any {
   if (!column || !column?.reference) {
     return 'text';
   }
@@ -142,13 +142,8 @@ export function adaptFormData(tab: Tab, record: Record<string, unknown>): FormDa
   return adaptedData;
 }
 
-export const parseDynamicExpression = (expr: string) =>
-  expr
-    .replace(/OB\.Utilities\.getValue\((\w+),\s*['"]([^'"]+)['"]\)/g, '$1["$2"]')
-    .replace(/context\.(\$?\w+)/g, (_, prop) => `context.${prop}`);
-
-export const getMappedValues = (fieldsByInputName: Record<string, Field>, form: UseFormReturn) =>
-  Object.entries(form.getValues()).reduce(
+export const getMappedValues = (fieldsByInputName: Record<string, Field>, values: FieldValues) =>
+  Object.entries(values).reduce(
     (acc, [inputName, inputValue]) => {
       const theField = fieldsByInputName[inputName];
 

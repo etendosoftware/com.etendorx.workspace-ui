@@ -5,18 +5,57 @@ import { useCallout } from '@/hooks/useCallout';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
 import { logger } from '@/utils/logger';
 import { GenericSelector } from './GenericSelector';
-import { buildPayloadByInputName } from '@/utils';
+import { buildPayloadByInputName, parseDynamicExpression } from '@/utils';
+import Label from '../Label';
+import { useUserContext } from '@/hooks/useUserContext';
+
+const compileExpression = (expression: string) => {
+  try {
+    return new Function('context', 'currentValues', `return ${parseDynamicExpression(expression)};`);
+  } catch (error) {
+    logger.warn('Error compiling expression:', expression, error);
+
+    return () => true;
+  }
+};
 
 export const BaseSelector = ({ field }: { field: Field }) => {
   const { watch, getValues, setValue } = useFormContext();
-  const { fieldsByColumnName, fieldsByHqlName } = useMetadataContext();
+  const { fieldsByColumnName, fieldsByHqlName, tab } = useMetadataContext();
+  const { session } = useUserContext();
   const executeCallout = useCallout({ field });
   const value = watch(field.hqlName);
   const ready = useRef(false);
 
   const isDisplayed = useMemo(() => {
-    return true;
-  }, []);
+    if (!tab || !field.displayLogicExpression) return true;
+
+    const compiledExpr = compileExpression(field.displayLogicExpression);
+    const currentValues = getValues();
+
+    try {
+      return compiledExpr(session, currentValues);
+    } catch (error) {
+      logger.warn('Error executing expression:', compiledExpr, error);
+
+      return true;
+    }
+  }, [field, session, tab, getValues]);
+
+  const isReadyOnly = useMemo(() => {
+    if (!tab || !field.readOnlyLogicExpression) return true;
+
+    const compiledExpr = compileExpression(field.readOnlyLogicExpression);
+    const currentValues = getValues();
+
+    try {
+      return compiledExpr(session, currentValues);
+    } catch (error) {
+      logger.warn('Error executing expression:', compiledExpr, error);
+
+      return true;
+    }
+  }, [field, session, tab, getValues]);
 
   const applyColumnValues = useCallback(
     (columnValues: FormInitializationResponse['columnValues']) => {
@@ -55,13 +94,9 @@ export const BaseSelector = ({ field }: { field: Field }) => {
 
   if (isDisplayed) {
     return (
-      <div className="flex flex-col gap-2">
-        <label htmlFor={field.hqlName} className="block text-sm font-medium text-gray-700">
-          {field.name}
-        </label>
-        <div className="col-span-2">
-          <GenericSelector field={field} />
-        </div>
+      <div className="grid grid-cols-3 auto-rows-auto gap-4 items-center">
+        <Label field={field} />
+        <div className="col-span-2">{isReadyOnly ? null : <GenericSelector field={field} />}</div>
       </div>
     );
   }

@@ -1,41 +1,41 @@
-import { Field, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field, FieldType, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const getFieldReference = (field?: Field) => {
+export const getFieldReference = (field?: Field): FieldType => {
   switch (field?.column?.reference) {
     case '19':
     case '95E2A8B50A254B2AAE6774B8C2F28120':
     case '18':
-      return 'TableDirSelector';
+      return FieldType.TABLEDIR;
     case '15':
     case '16':
-      return 'DateSelector';
+      return FieldType.DATE;
     case '20':
-      return 'BooleanSelector';
+      return FieldType.BOOLEAN;
     case '29':
-      return 'QuantitySelector';
+      return FieldType.QUANTITY;
     case '17':
     case '13':
-      return 'ListSelector';
+      return FieldType.LIST;
     case '30':
-      return 'SelectSelector';
+      return FieldType.SELECT;
     case '12':
     case '11':
     case '22':
     default:
-      return 'StringSelector';
+      return FieldType.TEXT;
   }
 };
 
 export const sanitizeValue = (field: Field | undefined, value: unknown) => {
   const reference = getFieldReference(field);
 
-  if (reference === "BooleanSelector") {
+  if (reference === FieldType.BOOLEAN) {
     return value ? 'Y' : 'N';
   }
 
-  if (reference === 'QuantitySelector') {
+  if (reference === FieldType.QUANTITY) {
     return value;
   }
 
@@ -79,3 +79,40 @@ export const buildPayloadByInputName = (values: Record<string, unknown>, fields?
     },
     {} as Record<string, unknown>,
   );
+
+export const parseDynamicExpression = (expr: string) => {
+  return (
+    expr
+      // Reemplaza OB.Utilities.getValue(currentValues, 'prop') -> currentValues["PROP"]
+      .replace(/OB\.Utilities\.getValue\((\w+),\s*["']([^"']+)["']\)/g, (_, obj, prop) => {
+        return `${obj}["${prop}"]`;
+      })
+
+      // Reemplaza context.PROP -> context.PROP (en mayúsculas)
+      .replace(/context\.(\$?\w+)/g, (_, prop) => {
+        return `context.${prop.toUpperCase()}`;
+      })
+
+      // Reemplaza context["prop"] y context['prop'] (claves estáticas)
+      .replace(/context\[\s*(['"])([^"'\]]+)\1\s*\]/g, (_, quote, prop) => {
+        return `context[${quote}${prop.toUpperCase()}${quote}]`;
+      })
+
+      // Reemplaza partes fijas en claves dinámicas dentro de context["..."], EXCLUYE currentValues
+      .replace(/context\[\s*(['"])(.*?)\1\s*\]/g, (_, quote, key) => {
+        // Excluye 'currentValues' de la transformación a mayúsculas
+        const transformedKey = transformDynamicKey(key);
+        return `context[${quote}${transformedKey}${quote}]`;
+      })
+  );
+};
+
+// Función auxiliar para transformar las claves dinámicas
+const transformDynamicKey = (key: string): string => {
+  return key.replace(/\b([A-Z_$][A-Z0-9_$]*)\b/gi, (match: string) => {
+    // No convertir 'currentValues'
+    if (match === 'currentValues') return match;
+    // Convierte a mayúsculas las claves que no sean identificadores reservados
+    return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(match) ? match.toUpperCase() : match;
+  });
+};
