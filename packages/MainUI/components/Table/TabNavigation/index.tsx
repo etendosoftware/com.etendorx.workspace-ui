@@ -2,17 +2,24 @@ import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from '
 import { Box, Paper } from '@mui/material';
 import TabContainer from './TabContainer';
 import { useStyle } from './styles';
-import type { ResizableTabContainerProps } from './types';
+import type { ResizableTabContainerProps, SelectedRecord } from './types';
+import { useMetadataContext } from '@/hooks/useMetadataContext';
 
 const MAX_HEIGHT = 94;
 const MIN_HEIGHT = 20;
 const DEFAULT_HEIGHT = 40;
 
 const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
-  ({ isOpen, onClose, selectedRecord, onHeightChange }) => {
+  ({ isOpen, onClose, selectedRecord, onHeightChange, tab, windowId }) => {
     const [containerHeight, setContainerHeight] = useState(DEFAULT_HEIGHT);
     const containerRef = useRef<HTMLDivElement>(null);
     const isResizing = useRef(false);
+    const { tabs } = useMetadataContext();
+
+    const childTabs = useMemo(() => {
+      if (!selectedRecord || !tab) return [];
+      return tabs.filter(t => t.level === tab.level + 1);
+    }, [selectedRecord, tab, tabs]);
 
     const handleHeightChange = useCallback(
       (newHeight: number) => {
@@ -84,7 +91,10 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
           <TabContainer
             isOpen={isOpen}
             onClose={onClose}
-            selectedRecord={selectedRecord}
+            selectedRecord={selectedRecord as SelectedRecord}
+            tab={tab}
+            childTabs={childTabs}
+            windowId={windowId}
             handleFullSize={handleDoubleClick}
             isFullSize={isFullSize}
           />
@@ -93,5 +103,7 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
     );
   },
 );
+
+ResizableTabContainer.displayName = 'ResizableTabContainer';
 
 export default ResizableTabContainer;

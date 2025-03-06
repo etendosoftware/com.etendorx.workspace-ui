@@ -34,6 +34,8 @@ interface IMetadataContext {
   columns?: Record<string, Field>;
   fieldsByColumnName: Record<string, Field>;
   fieldsByInputName: Record<string, Field>;
+  showTabContainer: boolean;
+  setShowTabContainer: (value: boolean | ((prev: boolean) => boolean)) => void;
 }
 
 export const MetadataContext = createContext({} as IMetadataContext);
@@ -47,6 +49,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const [groupedTabs, setGroupedTabs] = useState<Etendo.Tab[][]>([]);
   const { language } = useLanguage();
   const [selectedMultiple, setSelectedMultiple] = useState<Record<string, Record<string, boolean>>>({});
+  const [showTabContainer, setShowTabContainer] = useState(false);
 
   const isSelected = useCallback(
     (recordId: string, tabId: string) => {
@@ -186,6 +189,8 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       clearSelections,
       getSelectedCount,
       getSelectedIds,
+      showTabContainer,
+      setShowTabContainer,
     }),
     [
       windowId,
@@ -206,6 +211,8 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       clearSelections,
       getSelectedCount,
       getSelectedIds,
+      showTabContainer,
+      setShowTabContainer,
     ],
   );
 

@@ -50,6 +50,27 @@ export const createStandardButtonConfig = (
   return config;
 };
 
+export const createTabControlButtonConfig = (
+  isRecordSelected: boolean,
+  handleAction: (action: string) => void,
+): StandardButtonConfig => {
+  return {
+    key: BUTTON_IDS.TAB_CONTROL,
+    action: BUTTON_IDS.TAB_CONTROL,
+    icon: React.createElement(iconMap.tabControl),
+    tooltip: 'Tab Control',
+    onClick: () => handleAction(BUTTON_IDS.TAB_CONTROL),
+    disabled: !isRecordSelected,
+    height: IconSize,
+    width: IconSize,
+    fill: theme.palette.baselineColor.neutral[100],
+    sx: {
+      opacity: isRecordSelected ? 1 : 0.5,
+      cursor: isRecordSelected ? 'pointer' : 'not-allowed',
+    },
+  };
+};
+
 export const getStandardButtonStyle = (btnId: StandardButtonId) => {
   const styles: Record<StandardButtonId, React.CSSProperties | SxProps<Theme> | undefined> = {
     [BUTTON_IDS.NEW]: {
@@ -82,6 +103,13 @@ export const getStandardButtonStyle = (btnId: StandardButtonId) => {
     [BUTTON_IDS.ATTACHMENTS]: undefined,
     [BUTTON_IDS.FIND]: undefined,
     [BUTTON_IDS.GRID_VIEW]: undefined,
+    [BUTTON_IDS.TAB_CONTROL]: {
+      color: theme.palette.baselineColor.neutral[100],
+      background: theme.palette.baselineColor.neutral[0],
+      '&:hover': {
+        background: theme.palette.dynamicColor.main,
+      },
+    },
   };
 
   return styles[btnId];

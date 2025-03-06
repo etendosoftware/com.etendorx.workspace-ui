@@ -20,8 +20,16 @@ type DynamicTableProps = {
 };
 
 const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTableProps) {
-  const { selected, selectRecord, selectMultiple, isSelected, clearSelections, getSelectedCount, getSelectedIds } =
-    useMetadataContext();
+  const {
+    selected,
+    selectRecord,
+    selectMultiple,
+    isSelected,
+    clearSelections,
+    getSelectedCount,
+    getSelectedIds,
+    setShowTabContainer,
+  } = useMetadataContext();
   const { windowId } = useParams<WindowParams>();
   const parent = selected[tab.level - 1];
   const navigate = useRouter().push;
@@ -165,6 +173,10 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
           } else {
             selectRecord(record, tab);
             selectMultiple([id], tab, true);
+            selectRecord(record, tab);
+            selectMultiple([id], tab, true);
+
+            setShowTabContainer(true);
           }
         },
         onDoubleClick: () => {
@@ -182,7 +194,18 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
         },
       };
     },
-    [isSelected, navigate, selectMultiple, selectRecord, selectedIds, sx.rowSelected, tab, tabId, windowId],
+    [
+      isSelected,
+      navigate,
+      selectMultiple,
+      selectRecord,
+      selectedIds,
+      setShowTabContainer,
+      sx.rowSelected,
+      tab,
+      tabId,
+      windowId,
+    ],
   );
 
   const handleBack = useCallback(() => setEditing(false), []);

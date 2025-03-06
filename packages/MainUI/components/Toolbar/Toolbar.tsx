@@ -1,7 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Box } from '@mui/material';
+import { Box, SxProps, Theme } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import ProcessModal from '@workspaceui/componentlibrary/src/components/ProcessModal';
+import ResizableTabContainer from '../Table/TabNavigation';
 import {
   IconSize,
   ProcessResponse,
@@ -15,11 +16,12 @@ import {
   CENTER_SECTION_BUTTONS,
   RIGHT_SECTION_BUTTONS,
   StandardButtonId,
+  BUTTON_IDS,
 } from '../../constants/Toolbar';
 import SearchPortal from './SearchPortal';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useProcessExecution } from '../../hooks/Toolbar/useProcessExecution';
-import { createStandardButtonConfig, getStandardButtonStyle } from './buttonConfigs';
+import { createStandardButtonConfig, createTabControlButtonConfig, getStandardButtonStyle } from './buttonConfigs';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { useProcessButton } from '../../hooks/Toolbar/useProcessButton';
 import { useToolbarConfig } from '../../hooks/Toolbar/useToolbarConfig';
@@ -35,9 +37,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
   const [processResponse, setProcessResponse] = React.useState<ProcessResponse | null>(null);
   const [selectedProcessButton, setSelectedProcessButton] = React.useState<ProcessButton | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
-  const { selected, tabs } = useMetadataContext();
+  const { showTabContainer, setShowTabContainer, selected, tabs } = useMetadataContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { handleAction, searchOpen, setSearchOpen, handleSearch, searchValue, setSearchValue } = useToolbarConfig(
@@ -48,6 +49,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
 
   const tab = useMemo(() => tabs.find(tab => tab.id === tabId), [tabs, tabId]);
   const selectedRecord = tab ? selected[tab.level] : undefined;
+
+  const formattedSelectedRecord = useMemo(() => {
+    if (!selectedRecord) return null;
+
+    return {
+      identifier: selectedRecord._identifier || String(selectedRecord.id) || '',
+      type: tab?.title || '',
+      ...selectedRecord,
+    };
+  }, [selectedRecord, tab?.title]);
 
   const processButtons = useMemo(
     () => toolbar?.response?.buttons.filter(isProcessButton) || [],
@@ -155,23 +166,32 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
       rightSection: RIGHT_SECTION_BUTTONS,
     };
 
-    const createSectionConfig = (sectionButtons: StandardButtonId[]) => ({
-      buttons: buttons
-        .filter((btn: StandardButton) => {
-          if (isFormView && btn.id === 'FIND') return false;
-          if (isProcessButton(btn)) return false;
-          return sectionButtons.includes(btn.id as StandardButtonId);
-        })
-        .map(btn => {
-          const config = createStandardButtonConfig(btn as StandardButton, handleAction);
-          const style = getStandardButtonStyle(btn.id as StandardButtonId);
-          if (style) {
-            config.sx = style;
-          }
-          return config;
-        }),
-      style: getSectionStyle(sectionButtons),
-    });
+    const createSectionConfig = (sectionButtons: StandardButtonId[]) => {
+      const sectionConfig = {
+        buttons: buttons
+          .filter((btn: StandardButton) => {
+            if (isFormView && btn.id === 'FIND') return false;
+            if (isProcessButton(btn)) return false;
+            return sectionButtons.includes(btn.id as StandardButtonId);
+          })
+          .map(btn => {
+            const config = createStandardButtonConfig(btn as StandardButton, handleAction);
+            const style = getStandardButtonStyle(btn.id as StandardButtonId);
+            if (style) {
+              config.sx = style;
+            }
+            return config;
+          }),
+        style: getSectionStyle(sectionButtons),
+      };
+
+      if (sectionButtons.includes(BUTTON_IDS.TAB_CONTROL) && !buttons.some(btn => btn.id === BUTTON_IDS.TAB_CONTROL)) {
+        const tabControlConfig = createTabControlButtonConfig(!!selectedRecord?.id, handleAction);
+        sectionConfig.buttons.push(tabControlConfig);
+      }
+
+      return sectionConfig;
+    };
 
     const config = {
       leftSection: createSectionConfig(sections.leftSection),
@@ -190,6 +210,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
   return (
     <>
       <TopToolbar {...createToolbarConfig()} />
+      {showTabContainer && selectedRecord && (
+        <ResizableTabContainer
+          isOpen={showTabContainer}
+          onClose={() => setShowTabContainer(false)}
+          selectedRecord={formattedSelectedRecord}
+          tab={tab}
+          windowId={windowId}
+          onHeightChange={() => {}}
+        />
+      )}
       {processButtons.length > 0 && (
         <ProcessMenu
           anchorEl={anchorEl}
