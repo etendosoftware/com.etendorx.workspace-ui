@@ -225,7 +225,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   if (error) return <div>Error: {error.message}</div>;
   if (editing) {
     return (
-      <Box maxHeight="50vh" overflow="auto">
+      <Box className="max-h-50vh overflow-auto">
         <Button variant="contained" onClick={handleBack}>
           Back
         </Button>
@@ -235,7 +235,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   }
 
   return (
-    <Box>
+    <Box className="flex flex-col h-full overflow-hidden">
       <Box sx={sx.container}>
         <Box sx={sx.table}>
           <MaterialReactTable

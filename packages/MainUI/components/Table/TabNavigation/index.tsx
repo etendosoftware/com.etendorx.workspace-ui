@@ -1,7 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
-import { Box, Paper } from '@mui/material';
 import TabContainer from './TabContainer';
-import { useStyle } from './styles';
 import type { ResizableTabContainerProps, SelectedRecord } from './types';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
 
@@ -71,23 +69,28 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
       handleHeightChange(containerHeight === MAX_HEIGHT ? DEFAULT_HEIGHT : MAX_HEIGHT);
     }, [containerHeight, handleHeightChange]);
 
-    const { sx } = useStyle();
-
     const [isFullSize, setIsFullSize] = useState(false);
 
-    const paperStyle = useMemo(
-      () => ({
-        ...sx.paper,
-        height: `${containerHeight}vh`,
-        transform: `translateY(${isOpen ? '0' : '100%'})`,
-      }),
-      [containerHeight, isOpen, sx.paper],
-    );
-
     return (
-      <Paper elevation={4} ref={containerRef} sx={paperStyle}>
-        <Box data-resizer sx={sx.resizer} />
-        <Box onMouseDown={handleMouseDown} onDoubleClick={handleDoubleClick} sx={sx.container}>
+      <div
+        ref={containerRef}
+        className="sticky bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out"
+        style={{
+          height: `${containerHeight}vh`,
+          borderTopLeftRadius: '1rem',
+          borderTopRightRadius: '1rem',
+          border: '2px solid var(--transparent-neutral-10, rgba(0,3,13,0.1))',
+          borderBottom: 'none',
+          backgroundColor: 'var(--baseline-neutral-0, #FCFCFD)',
+        }}>
+        <div
+          data-resizer
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-2 mt-1 rounded-lg cursor-ns-resize"
+          style={{
+            backgroundColor: 'var(--baseline-neutral-30, #B1B8D8)',
+          }}
+        />
+        <div className="h-full overflow-auto" onMouseDown={handleMouseDown} onDoubleClick={handleDoubleClick}>
           <TabContainer
             isOpen={isOpen}
             onClose={onClose}
@@ -98,8 +101,8 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
             handleFullSize={handleDoubleClick}
             isFullSize={isFullSize}
           />
-        </Box>
-      </Paper>
+        </div>
+      </div>
     );
   },
 );

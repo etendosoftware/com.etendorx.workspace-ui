@@ -210,16 +210,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
   return (
     <>
       <TopToolbar {...createToolbarConfig()} />
-      {showTabContainer && selectedRecord && (
-        <ResizableTabContainer
-          isOpen={showTabContainer}
-          onClose={() => setShowTabContainer(false)}
-          selectedRecord={formattedSelectedRecord}
-          tab={tab}
-          windowId={windowId}
-          onHeightChange={() => {}}
-        />
-      )}
       {processButtons.length > 0 && (
         <ProcessMenu
           anchorEl={anchorEl}

@@ -23,19 +23,27 @@ export const useStyle = (): StylesType => {
           pointerEvents: 'none',
         },
         container: {
-          overflow: 'auto',
+          overflow: 'hidden',
           flex: 1,
           position: 'relative',
           display: 'flex',
           flexDirection: 'column',
+          height: 'calc(100vh - 150px)',
+          minHeight: '300px',
         },
         table: {
           flex: 1,
+          overflow: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
         },
         tablePaper: {
           borderRadius: '1rem 1rem 0 0',
           overflow: 'hidden',
           border: `2px solid ${theme.palette.divider}`,
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
         },
         fetchMore: {
           alignSelf: 'center',
@@ -69,6 +77,8 @@ export const useStyle = (): StylesType => {
           '& tr': {
             backgroundColor: theme.palette.background.paper,
           },
+          flex: 1,
+          overflow: 'auto',
         },
         // multiselect
         multiSelectContainer: {

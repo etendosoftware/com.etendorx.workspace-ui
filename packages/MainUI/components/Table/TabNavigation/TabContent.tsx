@@ -1,17 +1,13 @@
-import { Box, Typography, useTheme } from '@mui/material';
+import React, { useMemo } from 'react';
 import { TabContentProps } from './types';
-import { useStyle } from './styles';
 import ChevronUp from '../../../../ComponentLibrary/src/assets/icons/chevron-up.svg';
 import ChevronDown from '../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
 import ChevronUpRight from '../../../../ComponentLibrary/src/assets/icons/chevron-right.svg';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
-import { useMemo } from 'react';
 import TabsGroup from '@/screens/Table/TabsGroup';
 
 export const TabContent: React.FC<TabContentProps> = ({ identifier, type, handleFullSize, isFullSize, tab }) => {
-  const theme = useTheme();
-  const { sx } = useStyle();
   const { groupedTabs } = useMetadataContext();
 
   const childTabs = useMemo(() => {
@@ -20,38 +16,53 @@ export const TabContent: React.FC<TabContentProps> = ({ identifier, type, handle
   }, [groupedTabs, tab]);
 
   return (
-    <Box sx={sx.recordContainer}>
-      <Box sx={sx.recordHeader}>
-        <Box sx={sx.recordContainerItems}>
-          <Box sx={sx.typeBox}>
-            <Typography>{type}</Typography>
-          </Box>
-          <Box sx={sx.identifierBox}>
-            <Typography sx={sx.title}>{identifier}</Typography>
-          </Box>
-        </Box>
-        <Box sx={sx.recordContainerItems}>
-          <IconButton
-            onClick={handleFullSize}
-            size="small"
-            hoverFill={theme.palette.baselineColor.neutral[80]}
-            sx={sx.iconButton}>
+    <div className="flex flex-col cursor-ns-resize">
+      <div
+        className="h-11 flex justify-between items-center px-4 rounded-t-lg"
+        style={{
+          borderBottom: '1px solid var(--transparent-neutral-10, rgba(0,3,13,0.1))',
+          backgroundColor: 'var(--transparent-neutral-5, rgba(0,3,13,0.05))',
+        }}>
+        <div className="flex items-center">
+          <div
+            className="flex items-center px-2 rounded-full max-h-8"
+            style={{
+              backgroundColor: 'var(--transparent-neutral-5, rgba(0,3,13,0.05))',
+              border: '1px solid var(--transparent-neutral-10, rgba(0,3,13,0.1))',
+            }}>
+            <p>{type}</p>
+          </div>
+          <div className="ml-2 min-w-8">
+            <p
+              style={{
+                color: 'var(--baseline-neutral-100, #00030D)',
+                fontWeight: 600,
+                fontSize: '1.25rem',
+              }}>
+              {identifier}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center">
+          <IconButton onClick={handleFullSize} size="small" className="bg-transparent">
             {isFullSize ? <ChevronDown /> : <ChevronUp />}
           </IconButton>
-          <IconButton size="small" hoverFill={theme.palette.baselineColor.neutral[80]} sx={sx.iconButton}>
+          <IconButton size="small" className="bg-transparent">
             <ChevronUpRight />
           </IconButton>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
-      <Box sx={sx.contentContainer}>
+      <div className="flex-grow overflow-y-auto h-full">
         {childTabs.length > 0 ? (
           TabsGroup(childTabs)
         ) : (
-          <Box sx={{ padding: '16px', textAlign: 'center' }}>No child tabs available for this record</Box>
+          <div className="p-4 text-center" style={{ color: 'var(--baseline-neutral-70, #3F4A7E)' }}>
+            No child tabs available for this record
+          </div>
         )}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };
 

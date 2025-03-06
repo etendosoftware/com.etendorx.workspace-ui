@@ -1,5 +1,4 @@
 import React from 'react';
-import { Box } from '@mui/material';
 import TabContent from './TabContent';
 import { TabProps } from './types';
 
@@ -7,7 +6,7 @@ const TabContainer: React.FC<TabProps> = ({ onClose, selectedRecord, tab, handle
   const safeRecord = selectedRecord || { identifier: '', type: '' };
 
   return (
-    <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div className="w-full h-full flex flex-col">
       <TabContent
         onClose={onClose}
         identifier={safeRecord.identifier || ''}
@@ -17,7 +16,7 @@ const TabContainer: React.FC<TabProps> = ({ onClose, selectedRecord, tab, handle
         tab={tab}
         selectedRecord={safeRecord}
       />
-    </Box>
+    </div>
   );
 };
 
