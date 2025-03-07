@@ -6,19 +6,66 @@ import { TabLevelProps } from './types';
 import { SearchProvider } from '../contexts/searchContext';
 import ResizableTabContainer from './Table/TabNavigation';
 import { useMetadataContext } from '../hooks/useMetadataContext';
+import { useEffect, useMemo } from 'react';
 
 export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
-  const { showTabContainer, setShowTabContainer, selected } = useMetadataContext();
+  const {
+    showTabContainer,
+    setShowTabContainer,
+    selected,
+    tabs,
+    activeTabLevels,
+    setActiveTabLevels,
+    groupedTabs,
+    closeTab,
+  } = useMetadataContext();
 
   const selectedRecord = tab ? selected[tab.level] : undefined;
 
-  const formattedSelectedRecord = selectedRecord
-    ? {
-        identifier: selectedRecord._identifier || String(selectedRecord.id) || '',
-        type: tab?.title || '',
-        ...selectedRecord,
+  const childLevel = tab.level + 1;
+  const childTabs = groupedTabs.find(tabs => tabs[0]?.level === childLevel) || [];
+  const hasChildTabs = childTabs.length > 0;
+
+  const childTab = tabs.find(t => t.level === childLevel);
+  const isChildTabActive = activeTabLevels.includes(childLevel);
+
+  const grandchildLevel = childLevel + 1;
+  const isGrandchildActive = activeTabLevels.includes(grandchildLevel);
+
+  const formattedSelectedRecord = useMemo(() => {
+    if (!selectedRecord) return null;
+    return {
+      identifier: selectedRecord._identifier || String(selectedRecord.id) || '',
+      type: tab?.title || '',
+      ...selectedRecord,
+    };
+  }, [selectedRecord, tab?.title]);
+
+  const childSelectedRecord = useMemo(() => {
+    if (!childTab || !selected[childLevel]) return null;
+    return {
+      identifier: selected[childLevel]._identifier || String(selected[childLevel].id) || '',
+      type: childTab?.title || '',
+      ...selected[childLevel],
+    };
+  }, [childTab, selected, childLevel]);
+
+  useEffect(() => {
+    if (tab.level === 0 && selectedRecord && hasChildTabs) {
+      if (!activeTabLevels.includes(1)) {
+        setActiveTabLevels(prev => [...prev.filter(l => l <= 0), 1]);
       }
-    : null;
+      setShowTabContainer(true);
+    }
+  }, [selectedRecord, tab.level, activeTabLevels, setActiveTabLevels, hasChildTabs, setShowTabContainer]);
+
+  const shouldShowChildContainer = useMemo(() => {
+    return showTabContainer && formattedSelectedRecord && hasChildTabs && activeTabLevels.includes(childLevel);
+  }, [showTabContainer, formattedSelectedRecord, hasChildTabs, activeTabLevels, childLevel]);
+
+  const shouldShowGrandchildContainer = useMemo(() => {
+    return isChildTabActive && childSelectedRecord && childTab && activeTabLevels.includes(grandchildLevel);
+  }, [isChildTabActive, childSelectedRecord, childTab, activeTabLevels, grandchildLevel]);
 
   return (
     <SearchProvider>
@@ -30,14 +77,28 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
           <DynamicTable tab={tab} />
         </div>
       </div>
-      {showTabContainer && formattedSelectedRecord && (
+      {shouldShowChildContainer && (
         <ResizableTabContainer
-          isOpen={showTabContainer}
-          onClose={() => setShowTabContainer(false)}
+          key={`child-container-${childLevel}`}
+          isOpen={shouldShowChildContainer}
+          onClose={() => closeTab(childLevel)}
           selectedRecord={formattedSelectedRecord}
           tab={tab}
           windowId={tab.windowId}
           onHeightChange={() => {}}
+          isMainTab={isGrandchildActive}
+        />
+      )}
+      {shouldShowGrandchildContainer && (
+        <ResizableTabContainer
+          key={`grandchild-container-${grandchildLevel}`}
+          isOpen={shouldShowGrandchildContainer}
+          onClose={() => closeTab(grandchildLevel)}
+          selectedRecord={childSelectedRecord}
+          tab={childTab}
+          windowId={childTab?.windowId}
+          onHeightChange={() => {}}
+          isMainTab={false}
         />
       )}
     </SearchProvider>

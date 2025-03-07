@@ -8,29 +8,48 @@ const MIN_HEIGHT = 20;
 const DEFAULT_HEIGHT = 40;
 
 const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
-  ({ isOpen, onClose, selectedRecord, onHeightChange, tab, windowId }) => {
-    const [containerHeight, setContainerHeight] = useState(DEFAULT_HEIGHT);
+  ({ isOpen, onClose, selectedRecord, onHeightChange, tab, windowId, isMainTab = false }) => {
+    const [containerHeight, setContainerHeight] = useState(isMainTab ? MAX_HEIGHT : DEFAULT_HEIGHT);
     const containerRef = useRef<HTMLDivElement>(null);
     const isResizing = useRef(false);
-    const { tabs } = useMetadataContext();
+    const { tabs, activeTabLevels } = useMetadataContext();
+
+    const tabLevel = tab?.level || 0;
+    const isVisible = activeTabLevels.includes(tabLevel);
+
+    if (!isOpen || !isVisible) {
+      return null;
+    }
 
     const childTabs = useMemo(() => {
       if (!selectedRecord || !tab) return [];
       return tabs.filter(t => t.level === tab.level + 1);
     }, [selectedRecord, tab, tabs]);
 
+    useEffect(() => {
+      if (isMainTab && containerHeight !== MAX_HEIGHT) {
+        setContainerHeight(MAX_HEIGHT);
+        setIsFullSize(true);
+        onHeightChange?.(MAX_HEIGHT);
+      }
+    }, [isMainTab, containerHeight, onHeightChange]);
+
     const handleHeightChange = useCallback(
       (newHeight: number) => {
+        if (isMainTab) return;
+
         const clampedHeight = Math.min(Math.max(newHeight, MIN_HEIGHT), MAX_HEIGHT);
         setContainerHeight(clampedHeight);
         setIsFullSize(clampedHeight === MAX_HEIGHT);
         onHeightChange?.(clampedHeight);
       },
-      [onHeightChange],
+      [onHeightChange, isMainTab],
     );
 
     const handleMouseDown = useCallback(
       (e: React.MouseEvent | MouseEvent) => {
+        if (isMainTab) return;
+
         e.preventDefault();
         isResizing.current = true;
         const startY = e.clientY;
@@ -54,7 +73,7 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
         document.addEventListener('mouseup', handleMouseUp);
         document.body.style.cursor = 'ns-resize';
       },
-      [containerHeight, handleHeightChange],
+      [containerHeight, handleHeightChange, isMainTab],
     );
 
     useEffect(() => {
@@ -66,10 +85,18 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
     }, [handleMouseDown]);
 
     const handleDoubleClick = useCallback(() => {
-      handleHeightChange(containerHeight === MAX_HEIGHT ? DEFAULT_HEIGHT : MAX_HEIGHT);
-    }, [containerHeight, handleHeightChange]);
+      if (isMainTab) return;
 
-    const [isFullSize, setIsFullSize] = useState(false);
+      handleHeightChange(containerHeight === MAX_HEIGHT ? DEFAULT_HEIGHT : MAX_HEIGHT);
+    }, [containerHeight, handleHeightChange, isMainTab]);
+
+    const [isFullSize, setIsFullSize] = useState(isMainTab ? true : false);
+
+    useEffect(() => {
+      if (isMainTab) {
+        setIsFullSize(true);
+      }
+    }, [isMainTab]);
 
     return (
       <div
@@ -85,12 +112,16 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
         }}>
         <div
           data-resizer
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-2 mt-1 rounded-lg cursor-ns-resize"
+          className={`absolute top-0 left-1/2 -translate-x-1/2 w-16 h-2 mt-1 rounded-lg ${isMainTab ? 'cursor-default' : 'cursor-ns-resize'}`}
           style={{
             backgroundColor: 'var(--baseline-neutral-30, #B1B8D8)',
+            opacity: isMainTab ? 0.5 : 1,
           }}
         />
-        <div className="h-full overflow-auto" onMouseDown={handleMouseDown} onDoubleClick={handleDoubleClick}>
+        <div
+          className="h-full overflow-auto"
+          onMouseDown={isMainTab ? undefined : handleMouseDown}
+          onDoubleClick={isMainTab ? undefined : handleDoubleClick}>
           <TabContainer
             isOpen={isOpen}
             onClose={onClose}
@@ -100,6 +131,7 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
             windowId={windowId}
             handleFullSize={handleDoubleClick}
             isFullSize={isFullSize}
+            isMainTab={isMainTab}
           />
         </div>
       </div>

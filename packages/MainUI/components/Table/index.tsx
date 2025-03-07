@@ -235,42 +235,48 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   }
 
   return (
-    <Box className="flex flex-col h-full overflow-hidden">
-      <Box sx={sx.container}>
-        <Box sx={sx.table}>
-          <MaterialReactTable
-            enableGlobalFilter={false}
-            columns={columns}
-            data={records}
-            enableRowSelection={true}
-            enableMultiRowSelection={true}
-            positionToolbarAlertBanner="none"
-            muiTableBodyRowProps={rowProps}
-            enablePagination={false}
-            renderTopToolbar={<CustomTopToolbar />}
-            renderBottomToolbar={
-              tab.uIPattern == 'STD' && !searchQuery ? <Button onClick={fetchMore}>Load more</Button> : null
-            }
-            initialState={{ density: 'compact' }}
-            muiTablePaperProps={{
-              sx: sx.tablePaper,
-            }}
-            muiTableHeadCellProps={{ sx: sx.tableHeadCell }}
-            muiTableBodyCellProps={{ sx: sx.tableBodyCell }}
-            muiTableBodyProps={{ sx: sx.tableBody }}
-            state={{
-              rowSelection,
-              columnFilters,
-              showColumnFilters: true,
-            }}
-            onRowSelectionChange={handleRowSelectionChange}
-            onColumnFiltersChange={handleColumnFiltersChange}
-            getRowId={row => String(row.id)}
-            enableColumnFilters={true}
-            enableSorting={true}
-            enableColumnActions={true}
-            manualFiltering={true}
-          />
+    <Box className="flex h-10/12">
+      <Box className="flex flex-col h-full overflow-hidden">
+        <Box sx={sx.container}>
+          <Box sx={sx.table}>
+            <MaterialReactTable
+              enableGlobalFilter={false}
+              columns={columns}
+              data={records}
+              enableRowSelection={true}
+              enableMultiRowSelection={true}
+              positionToolbarAlertBanner="none"
+              muiTableBodyRowProps={rowProps}
+              enablePagination={false}
+              renderTopToolbar={<CustomTopToolbar />}
+              renderBottomToolbar={
+                tab.uIPattern == 'STD' && !searchQuery ? (
+                  <Button sx={sx.fetchMore} onClick={fetchMore}>
+                    Load more
+                  </Button>
+                ) : null
+              }
+              initialState={{ density: 'compact' }}
+              muiTablePaperProps={{
+                sx: sx.tablePaper,
+              }}
+              muiTableHeadCellProps={{ sx: sx.tableHeadCell }}
+              muiTableBodyCellProps={{ sx: sx.tableBodyCell }}
+              muiTableBodyProps={{ sx: sx.tableBody }}
+              state={{
+                rowSelection,
+                columnFilters,
+                showColumnFilters: true,
+              }}
+              onRowSelectionChange={handleRowSelectionChange}
+              onColumnFiltersChange={handleColumnFiltersChange}
+              getRowId={row => String(row.id)}
+              enableColumnFilters={true}
+              enableSorting={true}
+              enableColumnActions={true}
+              manualFiltering={true}
+            />
+          </Box>
         </Box>
       </Box>
     </Box>

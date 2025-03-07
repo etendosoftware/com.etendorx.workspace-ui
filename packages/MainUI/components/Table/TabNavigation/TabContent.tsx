@@ -3,11 +3,20 @@ import { TabContentProps } from './types';
 import ChevronUp from '../../../../ComponentLibrary/src/assets/icons/chevron-up.svg';
 import ChevronDown from '../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
 import ChevronUpRight from '../../../../ComponentLibrary/src/assets/icons/chevron-right.svg';
+import XCircle from '../../../../ComponentLibrary/src/assets/icons/x.svg'; // Importar icono de cierre
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
 import TabsGroup from '@/screens/Table/TabsGroup';
 
-export const TabContent: React.FC<TabContentProps> = ({ identifier, type, handleFullSize, isFullSize, tab }) => {
+export const TabContent: React.FC<TabContentProps> = ({
+  identifier,
+  type,
+  handleFullSize,
+  isFullSize,
+  tab,
+  isMainTab = false,
+  onClose,
+}) => {
   const { groupedTabs } = useMetadataContext();
 
   const childTabs = useMemo(() => {
@@ -15,10 +24,12 @@ export const TabContent: React.FC<TabContentProps> = ({ identifier, type, handle
     return groupedTabs.find(tabs => tabs[0].level === tab.level + 1) || [];
   }, [groupedTabs, tab]);
 
+  const hasChildTabs = childTabs.length > 0;
+
   return (
     <div className="flex flex-col h-full">
       <div
-        className="h-11 min-h-[44px] flex justify-between items-center px-4 rounded-t-lg sticky top-0 z-10 w-full flex-shrink-0 cursor-ns-resize"
+        className={`h-11 min-h-[44px] flex justify-between items-center px-4 rounded-t-lg sticky top-0 z-10 w-full flex-shrink-0 ${isMainTab ? 'cursor-default' : 'cursor-ns-resize'}`}
         style={{
           borderBottom: '1px solid var(--transparent-neutral-10, rgba(0,3,13,0.1))',
           backgroundColor: 'var(--transparent-neutral-5, rgba(0,3,13,0.05))',
@@ -45,24 +56,21 @@ export const TabContent: React.FC<TabContentProps> = ({ identifier, type, handle
           </div>
         </div>
         <div className="flex items-center flex-shrink-0">
-          <IconButton onClick={handleFullSize} size="small" className="bg-transparent">
-            {isFullSize ? <ChevronDown /> : <ChevronUp />}
-          </IconButton>
+          {!isMainTab && (
+            <IconButton onClick={handleFullSize} size="small" className="bg-transparent">
+              {isFullSize ? <ChevronDown /> : <ChevronUp />}
+            </IconButton>
+          )}
           <IconButton size="small" className="bg-transparent">
             <ChevronUpRight />
+          </IconButton>
+          <IconButton onClick={onClose} size="small" className="bg-transparent ml-1 text-red-500 hover:text-red-700">
+            <XCircle />
           </IconButton>
         </div>
       </div>
 
-      <div className="flex-grow overflow-y-auto">
-        {childTabs.length > 0 ? (
-          TabsGroup(childTabs)
-        ) : (
-          <div className="p-4 text-center" style={{ color: 'var(--baseline-neutral-70, #3F4A7E)' }}>
-            No child tabs available for this record
-          </div>
-        )}
-      </div>
+      {hasChildTabs && <div className="flex-grow overflow-y-auto">{TabsGroup(childTabs)}</div>}
     </div>
   );
 };

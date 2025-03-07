@@ -6,6 +6,8 @@ export interface SelectedRecord {
   [key: string]: unknown;
 }
 
+export type IsMainTab = boolean;
+
 export interface TabProps {
   isOpen: boolean;
   onClose: () => void;
@@ -17,6 +19,7 @@ export interface TabProps {
   tab?: Tab;
   childTabs?: Tab[];
   windowId?: string;
+  isMainTab?: IsMainTab;
 }
 
 export interface TabContentProps {
@@ -27,6 +30,7 @@ export interface TabContentProps {
   isFullSize: boolean;
   tab?: Tab;
   selectedRecord?: SelectedRecord;
+  isMainTab?: IsMainTab;
 }
 
 export interface ResizableTabContainerProps {
@@ -34,6 +38,7 @@ export interface ResizableTabContainerProps {
   onClose: () => void;
   selectedRecord?: SelectedRecord | null;
   tab?: Tab;
-  windowId: string;
+  windowId: string | undefined;
   onHeightChange?: (height: number) => void;
+  isMainTab?: IsMainTab;
 }

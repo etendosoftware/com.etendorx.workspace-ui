@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import { act, createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import {
   getFieldsByDBColumnName,
@@ -36,6 +36,9 @@ interface IMetadataContext {
   fieldsByInputName: Record<string, Field>;
   showTabContainer: boolean;
   setShowTabContainer: (value: boolean | ((prev: boolean) => boolean)) => void;
+  activeTabLevels: number[];
+  setActiveTabLevels: (value: number[] | ((prev: number[]) => number[])) => void;
+  closeTab: (level: number) => void;
 }
 
 export const MetadataContext = createContext({} as IMetadataContext);
@@ -50,6 +53,41 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const { language } = useLanguage();
   const [selectedMultiple, setSelectedMultiple] = useState<Record<string, Record<string, boolean>>>({});
   const [showTabContainer, setShowTabContainer] = useState(false);
+  const [activeTabLevels, setActiveTabLevels] = useState<number[]>([0]);
+
+  const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [tabId, windowData?.tabs]);
+  const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
+  const fieldsByColumnName = useMemo(() => (tab ? getFieldsByDBColumnName(tab) : {}), [tab]);
+  const fieldsByInputName = useMemo(() => (tab ? getFieldsByName(tab) : {}), [tab]);
+
+  const closeTab = useCallback(
+    (level: number) => {
+      if (level <= 0) {
+        return;
+      }
+
+      setActiveTabLevels(prev => {
+        const newLevels = prev.filter(l => l < level);
+        return newLevels;
+      });
+
+      if (level === 1) {
+        setShowTabContainer(false);
+        setSelected({});
+      }
+
+      setSelected(prev => {
+        const newSelections = { ...prev };
+        Object.keys(newSelections).forEach(tabLevel => {
+          if (parseInt(tabLevel) >= level) {
+            delete newSelections[tabLevel];
+          }
+        });
+        return newSelections;
+      });
+    },
+    [setActiveTabLevels, setShowTabContainer, setSelected, setSelectedMultiple],
+  );
 
   const isSelected = useCallback(
     (recordId: string, tabId: string) => {
@@ -61,19 +99,73 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const selectRecord: IMetadataContext['selectRecord'] = useCallback(
     (record, tab) => {
       const level = tab.level;
-      const max = Object.keys(selected).reduce((max, strLevel) => {
-        return Math.max(max, parseInt(strLevel));
-      }, 0);
 
-      setSelected(prev => {
-        for (let index = max; index > level; index--) {
-          delete prev[index];
+      const isDeselecting = selected[level] && selected[level].id === record.id;
+
+      if (isDeselecting) {
+        setSelected(prev => {
+          const newSelections = { ...prev };
+          Object.keys(newSelections).forEach(strLevel => {
+            if (parseInt(strLevel) >= level) {
+              delete newSelections[strLevel];
+            }
+          });
+          return newSelections;
+        });
+
+        if (level === 0) {
+          setShowTabContainer(false);
+          setActiveTabLevels([0]);
         }
 
-        return { ...prev, [level]: record };
+        return;
+      }
+
+      setSelected(prev => {
+        const newSelections = { ...prev };
+        Object.keys(newSelections).forEach(strLevel => {
+          if (parseInt(strLevel) > level) {
+            delete newSelections[strLevel];
+          }
+        });
+
+        return { ...newSelections, [level]: record };
       });
+
+      const nextLevel = level + 1;
+      const hasNextLevelTabs = groupedTabs.some(tabs => tabs[0]?.level === nextLevel);
+
+      if (level === 0 && hasNextLevelTabs) {
+        setActiveTabLevels([0, 1]);
+        setShowTabContainer(true);
+
+        setSelected(prev => {
+          const newSelections = { ...prev };
+          Object.keys(newSelections).forEach(strLevel => {
+            if (parseInt(strLevel) > 1) {
+              delete newSelections[strLevel];
+            }
+          });
+          return { ...newSelections, [level]: record };
+        });
+      } else if (level === 1 && hasNextLevelTabs) {
+        setActiveTabLevels([0, 1, 2]);
+
+        setSelected(prev => {
+          const newSelections = { ...prev };
+          Object.keys(newSelections).forEach(strLevel => {
+            if (parseInt(strLevel) > 2) {
+              delete newSelections[strLevel];
+            }
+          });
+          return { ...newSelections, [level]: record };
+        });
+      } else if (level === 2 && hasNextLevelTabs) {
+        setActiveTabLevels([0, 1, 2, 3]);
+      } else {
+      }
     },
-    [selected],
+    [groupedTabs, selected, setActiveTabLevels, setShowTabContainer, setSelected],
   );
 
   const selectMultiple = useCallback(
@@ -136,6 +228,8 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
 
   useEffect(() => {
     setSelectedMultiple({});
+    setActiveTabLevels([0]);
+    setShowTabContainer(false);
   }, [windowId]);
 
   const loadWindowData = useCallback(async () => {
@@ -162,10 +256,23 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     loadWindowData();
   }, [loadWindowData]);
 
-  const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [tabId, windowData?.tabs]);
-  const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
-  const fieldsByColumnName = useMemo(() => (tab ? getFieldsByDBColumnName(tab) : {}), [tab]);
-  const fieldsByInputName = useMemo(() => (tab ? getFieldsByName(tab) : {}), [tab]);
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        const filteredLevels = activeTabLevels.filter(level => level > 0);
+        if (filteredLevels.length > 0) {
+          const highestLevel = Math.max(...filteredLevels);
+          closeTab(highestLevel);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeTabLevels, closeTab]);
 
   const value = useMemo(
     () => ({
@@ -191,6 +298,9 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       getSelectedIds,
       showTabContainer,
       setShowTabContainer,
+      activeTabLevels,
+      setActiveTabLevels,
+      closeTab,
     }),
     [
       windowId,
@@ -213,11 +323,16 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       getSelectedIds,
       showTabContainer,
       setShowTabContainer,
+      activeTabLevels,
+      setActiveTabLevels,
+      closeTab,
     ],
   );
 
   useEffect(() => {
     setSelected({});
+    setActiveTabLevels([0]);
+    setShowTabContainer(false);
   }, [windowId]);
 
   return <MetadataContext.Provider value={value}>{children}</MetadataContext.Provider>;
