@@ -29,6 +29,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     getSelectedCount,
     getSelectedIds,
     setShowTabContainer,
+    groupedTabs,
   } = useMetadataContext();
   const { windowId } = useParams<WindowParams>();
   const parent = selected[tab.level - 1];
@@ -128,29 +129,6 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
       .map(([id]) => id);
   }, []);
 
-  const handleRowSelectionChange = useCallback(
-    (updaterOrValue: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => {
-      let newSelection: Record<string, boolean>;
-      if (typeof updaterOrValue === 'function') {
-        newSelection = updaterOrValue(rowSelection);
-      } else {
-        newSelection = updaterOrValue;
-      }
-
-      const newSelectedIds = mapSelectionToIds(newSelection);
-
-      selectMultiple(newSelectedIds, tab, true);
-
-      if (newSelectedIds.length === 1) {
-        const record = records.find(r => String(r.id) === newSelectedIds[0]) as Record<string, never>;
-        if (record) {
-          selectRecord(record, tab);
-        }
-      }
-    },
-    [mapSelectionToIds, rowSelection, records, selectMultiple, selectRecord, tab],
-  );
-
   const rowProps = useCallback(
     ({ row }: { row: MRT_Row<Record<string, unknown>> }) => {
       const record = row.original as Record<string, never>;
@@ -171,12 +149,21 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
               selectMultiple([...selectedIds, id], tab, true);
             }
           } else {
-            selectRecord(record, tab);
-            selectMultiple([id], tab, true);
-            selectRecord(record, tab);
-            selectMultiple([id], tab, true);
+            const isSameRecordSelected = selected[tab.level]?.id === record.id;
 
-            setShowTabContainer(true);
+            if (isSameRecordSelected) {
+              clearSelections(tabId);
+              selectRecord(record, tab);
+            } else {
+              selectMultiple([id], tab, true);
+              selectRecord(record, tab);
+
+              const nextLevel = tab.level + 1;
+              const hasNextLevelTabs = groupedTabs.some(tabs => tabs[0]?.level === nextLevel);
+              if (hasNextLevelTabs) {
+                setShowTabContainer(true);
+              }
+            }
           }
         },
         onDoubleClick: () => {
@@ -199,13 +186,48 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
       navigate,
       selectMultiple,
       selectRecord,
+      clearSelections,
       selectedIds,
+      selected,
       setShowTabContainer,
       sx.rowSelected,
       tab,
       tabId,
       windowId,
+      groupedTabs,
     ],
+  );
+
+  const handleRowSelectionChange = useCallback(
+    (updaterOrValue: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => {
+      let newSelection: Record<string, boolean>;
+      if (typeof updaterOrValue === 'function') {
+        newSelection = updaterOrValue(rowSelection);
+      } else {
+        newSelection = updaterOrValue;
+      }
+
+      const newSelectedIds = mapSelectionToIds(newSelection);
+
+      if (newSelectedIds.length === 0) {
+        clearSelections(tabId);
+
+        if (selected[tab.level]) {
+          selectRecord(selected[tab.level], tab);
+        }
+        return;
+      }
+
+      selectMultiple(newSelectedIds, tab, true);
+
+      if (newSelectedIds.length === 1) {
+        const record = records.find(r => String(r.id) === newSelectedIds[0]) as Record<string, never>;
+        if (record) {
+          selectRecord(record, tab);
+        }
+      }
+    },
+    [mapSelectionToIds, rowSelection, records, selectMultiple, selectRecord, clearSelections, selected, tab, tabId],
   );
 
   const handleBack = useCallback(() => setEditing(false), []);
