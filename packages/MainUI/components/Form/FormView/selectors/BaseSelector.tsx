@@ -28,7 +28,8 @@ export const BaseSelector = ({ field }: { field: Field }) => {
   const ready = useRef(false);
 
   const isDisplayed = useMemo(() => {
-    if (!tab || !field.displayLogicExpression) return true;
+    if (!tab || !field.displayed) return false;
+    if (!field.displayLogicExpression) return true;
 
     const compiledExpr = compileExpression(field.displayLogicExpression);
     const currentValues = getValues();
@@ -42,7 +43,7 @@ export const BaseSelector = ({ field }: { field: Field }) => {
     }
   }, [field, session, tab, getValues]);
 
-  const isReadyOnly = useMemo(() => {
+  const isReadOnly = useMemo(() => {
     if (!tab || !field.readOnlyLogicExpression) return true;
 
     const compiledExpr = compileExpression(field.readOnlyLogicExpression);
@@ -96,10 +97,10 @@ export const BaseSelector = ({ field }: { field: Field }) => {
     return (
       <div className="grid grid-cols-3 auto-rows-auto gap-4 items-center">
         <Label field={field} />
-        <div className="col-span-2">{isReadyOnly ? null : <GenericSelector field={field} />}</div>
+        <div className="col-span-2">
+          <GenericSelector field={field} isReadOnly={isReadOnly} />
+        </div>
       </div>
     );
   }
-
-  return null;
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 export interface Option {
@@ -10,41 +10,32 @@ export interface SelectProps {
   name: string;
   options: Option[];
   onFocus?: () => unknown;
+  isReadOnly?: boolean;
 }
 
-export default function Select({ name, options, onFocus }: SelectProps) {
+export default function Select({ name, options, onFocus, isReadOnly }: SelectProps) {
   const { register, setValue, watch } = useFormContext();
-  const selectedValue = watch(name); // Valor seleccionado en el formulario
+  const selectedValue = watch(name);
 
-  const [selectedLabel, setSelectedLabel] = useState(''); // Muestra el valor seleccionado
-  const [searchTerm, setSearchTerm] = useState(''); // Filtra opciones
-  const [isOpen, setIsOpen] = useState(false); // Controla el desplegable
-  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1); // Opción enfocada
+  const [selectedLabel, setSelectedLabel] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
 
   const listRef = useRef<HTMLUListElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const selectedOption = options.find(option => option.id === selectedValue);
-    setSelectedLabel(selectedOption?.label ?? '');
-  }, [selectedValue, options]);
+  const filteredOptions = useMemo(
+    () => options.filter(option => option.label.toLowerCase().includes(searchTerm.toLowerCase())),
+    [options, searchTerm],
+  );
 
-  useEffect(() => {
-    if (isOpen) {
-      setSearchTerm(''); // Limpia búsqueda al abrir
-      setHighlightedIndex(0);
-      setTimeout(() => searchInputRef.current?.focus(), 0); // Auto-focus al input de búsqueda
-    }
-  }, [isOpen]);
-
-  const filteredOptions = options.filter(option => option.label.toLowerCase().includes(searchTerm.toLowerCase()));
-
-  const handleSelect = (id: string, label: string) => {
-    setValue(name, id); // Actualiza react-hook-form
-    setSelectedLabel(label); // Actualiza label mostrado
-    setIsOpen(false); // Cierra menú
-    setHighlightedIndex(-1); // Reinicia foco
-  };
+  const handleSelect = useCallback((id: string, label: string) => {
+    setValue(name, id);
+    setSelectedLabel(label);
+    setIsOpen(false);
+    setHighlightedIndex(-1);
+  }, [name, setValue]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
@@ -82,6 +73,19 @@ export default function Select({ name, options, onFocus }: SelectProps) {
   }, []);
 
   useEffect(() => {
+    const selectedOption = options.find(option => option.id === selectedValue);
+    setSelectedLabel(selectedOption?.label ?? '');
+  }, [selectedValue, options]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSearchTerm('');
+      setHighlightedIndex(0);
+      setTimeout(() => searchInputRef.current?.focus(), 1);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     if (isOpen) {
       onFocus?.();
     }
@@ -89,7 +93,7 @@ export default function Select({ name, options, onFocus }: SelectProps) {
 
   return (
     <div className="relative w-full" onBlur={handleBlur} tabIndex={-1}>
-      <input {...register(name)} type="hidden" /> {/* Manejo de react-hook-form */}
+      <input {...register(name)} type="hidden" readOnly={isReadOnly} /> {/* Manejo de react-hook-form */}
       {/* Input principal que muestra el valor seleccionado */}
       <div
         onClick={handleClick}
