@@ -98,6 +98,8 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
       }
     }, [isMainTab]);
 
+    if (!isOpen) return null;
+
     return (
       <div
         ref={containerRef}

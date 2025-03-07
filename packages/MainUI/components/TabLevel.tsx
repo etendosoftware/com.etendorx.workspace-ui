@@ -32,6 +32,10 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
   const grandchildLevel = childLevel + 1;
   const isGrandchildActive = activeTabLevels.includes(grandchildLevel);
 
+  const hasGrandchildSelected = !!selected[childLevel];
+
+  const isChildTabMain = isGrandchildActive && hasGrandchildSelected;
+
   const formattedSelectedRecord = useMemo(() => {
     if (!selectedRecord) return null;
     return {
@@ -86,7 +90,7 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
           tab={tab}
           windowId={tab.windowId}
           onHeightChange={() => {}}
-          isMainTab={isGrandchildActive}
+          isMainTab={isChildTabMain}
         />
       )}
       {shouldShowGrandchildContainer && (
