@@ -4,7 +4,7 @@ import Select, { SelectProps } from './components/Select';
 import { useMemo } from 'react';
 import { useTableDirDatasource } from '@/hooks/datasource/useTableDirDatasource';
 
-export const TableDirSelector = ({ field }: { field: Field }) => {
+export const TableDirSelector = ({ field }: { field: Field, isReadOnly: boolean }) => {
   const { register } = useFormContext();
   const idKey = (field.selector?.valueField ?? '') as string;
   const identifierKey = (field.selector?.displayField ?? '') as string;

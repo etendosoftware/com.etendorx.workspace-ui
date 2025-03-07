@@ -8,7 +8,12 @@ import { TableDirSelector } from './TableDirSelector';
 import QuantitySelector from '../oldSelectors/QuantitySelector';
 import { ListSelector } from './ListSelector';
 
-export const GenericSelector = ({ field }: { field: Field }) => {
+export type GenericSelectorProps = {
+  field: Field;
+  isReadOnly: boolean;
+};
+
+export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => {
   const { watch } = useFormContext();
   const value = watch(field.hqlName);
   const { reference } = field.column;
@@ -17,7 +22,7 @@ export const GenericSelector = ({ field }: { field: Field }) => {
     case '19':
     case '95E2A8B50A254B2AAE6774B8C2F28120':
     case '18':
-      return <TableDirSelector field={field} />;
+      return <TableDirSelector field={field} isReadOnly={isReadOnly} />;
     case '15':
     case '16':
       return <DateSelector field={field} />;

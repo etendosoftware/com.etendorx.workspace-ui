@@ -102,7 +102,7 @@ export interface TableDirSelectorProps {
   name: string;
   onChange: (value: string) => void;
   disabled?: boolean;
-  readOnly?: boolean;
+  isReadOnly?: boolean;
 }
 
 export interface SearchSelectorProps {

@@ -70,6 +70,14 @@ export default function FormView({
     return groups;
   }, [fields.formFields]);
 
+  const groups = useMemo(
+    () =>
+      Object.entries(fieldGroups).toSorted(([, a], [, b]) => {
+        return a.sequenceNumber - b.sequenceNumber;
+      }),
+    [fieldGroups],
+  );
+
   const form = useForm({ values: defaultValues });
 
   const onSuccess = useCallback(
@@ -91,19 +99,15 @@ export default function FormView({
     <FormProvider {...form}>
       <form className="w-full p-2 space-y-2" onSubmit={handleSave}>
         <Toolbar windowId={window.id} tabId={tab.id} isFormView={true} onSave={handleSave} />
-        {Object.entries(fieldGroups)
-          .toSorted(([, a], [, b]) => {
-            return a.sequenceNumber - b.sequenceNumber;
-          })
-          .map(([id, group]) => (
-            <Collapsible key={id} title={group.identifier} initialState={group.id === null}>
-              <div className="grid grid-cols-4 auto-rows-auto gap-4">
-                {Object.entries(group.fields).map(([hqlName, field]) => (
-                  <BaseSelector field={field} key={hqlName} />
-                ))}
-              </div>
-            </Collapsible>
-          ))}
+        {groups.map(([id, group]) => (
+          <Collapsible key={id} title={group.identifier} initialState={group.id === null}>
+            <div className="grid grid-cols-2 lg:grid-cols-3 auto-rows-auto gap-4">
+              {Object.entries(group.fields).map(([hqlName, field]) => (
+                <BaseSelector field={field} key={hqlName} />
+              ))}
+            </div>
+          </Collapsible>
+        ))}
       </form>
     </FormProvider>
   );
