@@ -1,8 +1,7 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { Box, SxProps, Theme } from '@mui/material';
+import { useCallback, useMemo, useState, createElement } from 'react';
+import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import ProcessModal from '@workspaceui/componentlibrary/src/components/ProcessModal';
-import ResizableTabContainer from '../Table/TabNavigation';
 import {
   IconSize,
   ProcessResponse,
@@ -32,13 +31,13 @@ import { ProcessButton } from '@workspaceui/componentlibrary/src/components/Proc
 import ProcessMenu from './ProcessMenu';
 
 export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false }) => {
-  const [openModal, setOpenModal] = React.useState(false);
-  const [isExecuting, setIsExecuting] = React.useState(false);
-  const [processResponse, setProcessResponse] = React.useState<ProcessResponse | null>(null);
-  const [selectedProcessButton, setSelectedProcessButton] = React.useState<ProcessButton | null>(null);
+  const [openModal, setOpenModal] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
+  const [selectedProcessButton, setSelectedProcessButton] = useState<ProcessButton | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
-  const { showTabContainer, setShowTabContainer, selected, tabs } = useMetadataContext();
+  const { selected, tabs } = useMetadataContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { handleAction, searchOpen, setSearchOpen, handleSearch, searchValue, setSearchValue } = useToolbarConfig(
@@ -49,16 +48,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
 
   const tab = useMemo(() => tabs.find(tab => tab.id === tabId), [tabs, tabId]);
   const selectedRecord = tab ? selected[tab.level] : undefined;
-
-  const formattedSelectedRecord = useMemo(() => {
-    if (!selectedRecord) return null;
-
-    return {
-      identifier: selectedRecord._identifier || String(selectedRecord.id) || '',
-      type: tab?.title || '',
-      ...selectedRecord,
-    };
-  }, [selectedRecord, tab?.title]);
 
   const processButtons = useMemo(
     () => toolbar?.response?.buttons.filter(isProcessButton) || [],
@@ -141,7 +130,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
       key: 'process-menu',
       action: 'MENU',
       name: t('common.processes'),
-      icon: React.createElement(iconMap.process),
+      icon: createElement(iconMap.process),
       iconText: t('common.processes'),
       tooltip: t('common.processes'),
       height: IconSize,

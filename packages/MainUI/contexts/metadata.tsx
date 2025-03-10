@@ -7,39 +7,11 @@ import {
   getFieldsByName,
   groupTabsByLevel,
 } from '@workspaceui/etendohookbinder/src/utils/metadata';
-import { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useParams } from 'next/navigation';
 import { WindowParams } from '../app/types';
 import { useLanguage } from '../hooks/useLanguage';
-
-interface IMetadataContext {
-  getWindow: (windowId: string) => Promise<Etendo.WindowMetadata>;
-  getColumns: (tabId: string) => Etendo.Column[];
-  windowId: string;
-  recordId: string;
-  loading: boolean;
-  error: Error | undefined;
-  groupedTabs: Etendo.Tab[][];
-  windowData?: Etendo.WindowMetadata;
-  selectRecord: (record: Record<string, never>, tab: Tab) => void;
-  selected: Record<string, Record<string, never>>;
-  selectedMultiple: Record<string, Record<string, boolean>>;
-  selectMultiple: (recordIds: string[], tab: Tab, replace?: boolean) => void;
-  isSelected: (recordId: string, tabId: string) => boolean;
-  clearSelections: (tabId: string) => void;
-  getSelectedCount: (tabId: string) => number;
-  getSelectedIds: (tabId: string) => string[];
-  tabs: Tab[];
-  tab?: Tab;
-  columns?: Record<string, Field>;
-  fieldsByColumnName: Record<string, Field>;
-  fieldsByInputName: Record<string, Field>;
-  showTabContainer: boolean;
-  setShowTabContainer: (value: boolean | ((prev: boolean) => boolean)) => void;
-  activeTabLevels: number[];
-  setActiveTabLevels: (value: number[] | ((prev: number[]) => number[])) => void;
-  closeTab: (level: number) => void;
-}
+import { IMetadataContext } from './types';
 
 export const MetadataContext = createContext({} as IMetadataContext);
 
@@ -54,7 +26,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const [selectedMultiple, setSelectedMultiple] = useState<Record<string, Record<string, boolean>>>({});
   const [showTabContainer, setShowTabContainer] = useState(false);
   const [activeTabLevels, setActiveTabLevels] = useState<number[]>([0]);
-
   const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [tabId, windowData?.tabs]);
   const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
   const fieldsByColumnName = useMemo(() => (tab ? getFieldsByDBColumnName(tab) : {}), [tab]);
@@ -86,7 +57,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
         return newSelections;
       });
     },
-    [setActiveTabLevels, setShowTabContainer, setSelected, setSelectedMultiple],
+    [setActiveTabLevels, setShowTabContainer, setSelected],
   );
 
   const isSelected = useCallback(
@@ -163,6 +134,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       } else if (level === 2 && hasNextLevelTabs) {
         setActiveTabLevels([0, 1, 2, 3]);
       } else {
+        //
       }
     },
     [groupedTabs, selected, setActiveTabLevels, setShowTabContainer, setSelected],
@@ -227,7 +199,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   );
 
   useEffect(() => {
-    setSelectedMultiple({});
+    setSelected({}), setSelectedMultiple({});
     setActiveTabLevels([0]);
     setShowTabContainer(false);
   }, [windowId]);

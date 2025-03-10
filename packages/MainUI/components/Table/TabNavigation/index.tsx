@@ -1,25 +1,23 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
 import TabContainer from './TabContainer';
 import type { ResizableTabContainerProps, SelectedRecord } from './types';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
 
-const MAX_HEIGHT = 94;
+const MAX_HEIGHT = 100;
 const MIN_HEIGHT = 20;
 const DEFAULT_HEIGHT = 40;
 
 const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
   ({ isOpen, onClose, selectedRecord, onHeightChange, tab, windowId, isMainTab = false }) => {
     const [containerHeight, setContainerHeight] = useState(isMainTab ? MAX_HEIGHT : DEFAULT_HEIGHT);
+    const [isFullSize, setIsFullSize] = useState(isMainTab ? true : false);
     const containerRef = useRef<HTMLDivElement>(null);
     const isResizing = useRef(false);
     const { tabs, activeTabLevels } = useMetadataContext();
 
     const tabLevel = tab?.level || 0;
     const isVisible = activeTabLevels.includes(tabLevel);
-
-    if (!isOpen || !isVisible) {
-      return null;
-    }
+    const shouldRender = isOpen && isVisible;
 
     const childTabs = useMemo(() => {
       if (!selectedRecord || !tab) return [];
@@ -52,14 +50,20 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
 
         e.preventDefault();
         isResizing.current = true;
-        const startY = e.clientY;
-        const startHeight = containerHeight;
+
+        const initialMouseY = e.clientY;
+        const initialHeightPx = containerRef.current?.getBoundingClientRect().height || 0;
+        const windowHeight = window.innerHeight;
 
         const handleMouseMove = (e: MouseEvent) => {
           if (!isResizing.current) return;
-          const dy = startY - e.clientY;
-          const newHeight = startHeight + (dy / window.innerHeight) * 100;
-          handleHeightChange(newHeight);
+          const mouseDeltaY = initialMouseY - e.clientY;
+          const newHeightPx = initialHeightPx + mouseDeltaY;
+          const newHeightVh = (newHeightPx / windowHeight) * 100;
+
+          handleHeightChange(newHeightVh);
+
+          window.getSelection()?.removeAllRanges();
         };
 
         const handleMouseUp = () => {
@@ -73,7 +77,7 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
         document.addEventListener('mouseup', handleMouseUp);
         document.body.style.cursor = 'ns-resize';
       },
-      [containerHeight, handleHeightChange, isMainTab],
+      [handleHeightChange, isMainTab],
     );
 
     useEffect(() => {
@@ -90,15 +94,13 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
       handleHeightChange(containerHeight === MAX_HEIGHT ? DEFAULT_HEIGHT : MAX_HEIGHT);
     }, [containerHeight, handleHeightChange, isMainTab]);
 
-    const [isFullSize, setIsFullSize] = useState(isMainTab ? true : false);
-
     useEffect(() => {
       if (isMainTab) {
         setIsFullSize(true);
       }
     }, [isMainTab]);
 
-    if (!isOpen) return null;
+    if (!shouldRender) return null;
 
     return (
       <div
