@@ -34,7 +34,7 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
 
   const hasGrandchildSelected = !!selected[childLevel];
 
-  const isChildTabMain = isGrandchildActive && hasGrandchildSelected;
+  const isChildTabMain = tab.level === 0 && isGrandchildActive && hasGrandchildSelected;
 
   const formattedSelectedRecord = useMemo(() => {
     if (!selectedRecord) return null;
@@ -64,12 +64,24 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
   }, [selectedRecord, tab.level, activeTabLevels, setActiveTabLevels, hasChildTabs, setShowTabContainer]);
 
   const shouldShowChildContainer = useMemo(() => {
-    return showTabContainer && formattedSelectedRecord && hasChildTabs && activeTabLevels.includes(childLevel);
-  }, [showTabContainer, formattedSelectedRecord, hasChildTabs, activeTabLevels, childLevel]);
+    return (
+      tab.level === 0 &&
+      showTabContainer &&
+      formattedSelectedRecord &&
+      hasChildTabs &&
+      activeTabLevels.includes(childLevel)
+    );
+  }, [tab.level, showTabContainer, formattedSelectedRecord, hasChildTabs, activeTabLevels, childLevel]);
 
   const shouldShowGrandchildContainer = useMemo(() => {
-    return isChildTabActive && childSelectedRecord && childTab && activeTabLevels.includes(grandchildLevel);
-  }, [isChildTabActive, childSelectedRecord, childTab, activeTabLevels, grandchildLevel]);
+    return (
+      tab.level === 0 &&
+      isChildTabActive &&
+      childSelectedRecord &&
+      childTab &&
+      activeTabLevels.includes(grandchildLevel)
+    );
+  }, [tab.level, isChildTabActive, childSelectedRecord, childTab, activeTabLevels, grandchildLevel]);
 
   return (
     <SearchProvider>
@@ -83,7 +95,7 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
       </div>
       {shouldShowChildContainer && (
         <ResizableTabContainer
-          key={`child-container-${childLevel}`}
+          key={`child-container-${childLevel}-${tab.id}`}
           isOpen={shouldShowChildContainer}
           onClose={() => closeTab(childLevel)}
           selectedRecord={formattedSelectedRecord}
@@ -95,7 +107,7 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
       )}
       {shouldShowGrandchildContainer && (
         <ResizableTabContainer
-          key={`grandchild-container-${grandchildLevel}`}
+          key={`grandchild-container-${grandchildLevel}-${childTab?.id}`}
           isOpen={shouldShowGrandchildContainer}
           onClose={() => closeTab(grandchildLevel)}
           selectedRecord={childSelectedRecord}

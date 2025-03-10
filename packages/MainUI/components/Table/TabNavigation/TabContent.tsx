@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { TabContentProps } from './types';
 import ChevronUp from '../../../../ComponentLibrary/src/assets/icons/chevron-up.svg';
 import ChevronDown from '../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';

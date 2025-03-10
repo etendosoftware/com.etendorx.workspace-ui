@@ -118,6 +118,7 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
           onMouseDown={isMainTab ? undefined : handleMouseDown}
           onDoubleClick={isMainTab ? undefined : handleDoubleClick}>
           <TabContainer
+            key={`${tab?.id}-${selectedRecord?.id || 'none'}`}
             isOpen={isOpen}
             onClose={onClose}
             selectedRecord={selectedRecord as SelectedRecord}

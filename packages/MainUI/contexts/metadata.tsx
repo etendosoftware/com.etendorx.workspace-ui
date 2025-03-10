@@ -106,38 +106,19 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       const nextLevel = level + 1;
       const hasNextLevelTabs = groupedTabs.some(tabs => tabs[0]?.level === nextLevel);
 
-      if (level === 0 && hasNextLevelTabs) {
-        setActiveTabLevels([0, 1]);
-        setShowTabContainer(true);
+      if (hasNextLevelTabs) {
+        const newLevels = [];
+        for (let i = 0; i <= nextLevel; i++) {
+          newLevels.push(i);
+        }
+        setActiveTabLevels(newLevels);
 
-        setSelected(prev => {
-          const newSelections = { ...prev };
-          Object.keys(newSelections).forEach(strLevel => {
-            if (parseInt(strLevel) > 1) {
-              delete newSelections[strLevel];
-            }
-          });
-          return { ...newSelections, [level]: record };
-        });
-      } else if (level === 1 && hasNextLevelTabs) {
-        setActiveTabLevels([0, 1, 2]);
-
-        setSelected(prev => {
-          const newSelections = { ...prev };
-          Object.keys(newSelections).forEach(strLevel => {
-            if (parseInt(strLevel) > 2) {
-              delete newSelections[strLevel];
-            }
-          });
-          return { ...newSelections, [level]: record };
-        });
-      } else if (level === 2 && hasNextLevelTabs) {
-        setActiveTabLevels([0, 1, 2, 3]);
-      } else {
-        //
+        if (level === 0) {
+          setShowTabContainer(true);
+        }
       }
     },
-    [groupedTabs, selected, setActiveTabLevels, setShowTabContainer, setSelected],
+    [groupedTabs, selected],
   );
 
   const selectMultiple = useCallback(

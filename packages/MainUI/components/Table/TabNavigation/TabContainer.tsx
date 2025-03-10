@@ -20,4 +20,4 @@ const TabContainer: React.FC<TabProps> = ({ onClose, selectedRecord, tab, handle
   );
 };
 
-export default TabContainer;
+export default React.memo(TabContainer);
