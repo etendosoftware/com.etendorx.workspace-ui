@@ -50,7 +50,7 @@ export interface IMetadataContext {
   loading: boolean;
   error: Error | undefined;
   groupedTabs: Etendo.Tab[][];
-  windowData?: Etendo.WindowMetadata;
+  window?: Etendo.WindowMetadata;
   selectRecord: (record: Record<string, never>, tab: Tab) => void;
   selected: Record<string, Record<string, never>>;
   selectedMultiple: Record<string, Record<string, boolean>>;
@@ -62,9 +62,9 @@ export interface IMetadataContext {
   tabs: Tab[];
   tab?: Tab;
   columns?: Record<string, Field>;
-  fieldsByColumnName: Record<string, Field>;
-  fieldsByInputName: Record<string, Field>;
   showTabContainer: boolean;
+  fieldsByColumnName: Record<string, Etendo.Field>;
+  fieldsByHqlName: Record<string, Etendo.Field>;
   setShowTabContainer: (value: boolean | ((prev: boolean) => boolean)) => void;
   activeTabLevels: number[];
   setActiveTabLevels: (value: number[] | ((prev: number[]) => number[])) => void;

@@ -4,11 +4,12 @@ import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { TabLevel } from '../../components/TabLevel';
 
 export default function DynamicTableScreen() {
-  const { loading, error, windowData, groupedTabs } = useMetadataContext();
+  const { loading, error, window, groupedTabs } = useMetadataContext();
 
   if (loading) {
     return <Spinner />;
-  } else if (error || !windowData) {
+  } else if (error || !window) {
+    console.log(window, groupedTabs);
     return <div className="p-4 text-error-main">{error?.message ?? 'Something went wrong'}</div>;
   } else {
     const topLevelTabs = groupedTabs.find(tabs => tabs[0].level === 0) || [];
