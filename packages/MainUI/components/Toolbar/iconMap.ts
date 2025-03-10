@@ -7,6 +7,7 @@ import GridIcon from '@workspaceui/componentlibrary/src/assets/icons/grid.svg';
 import DownloadIcon from '@workspaceui/componentlibrary/src/assets/icons/download.svg';
 import PaperclipIcon from '@workspaceui/componentlibrary/src/assets/icons/paperclip.svg';
 import SettingsIcon from '@workspaceui/componentlibrary/src/assets/icons/settings.svg';
+import LowerFlap from '@workspaceui/componentlibrary/src/assets/icons/lower-flap.svg';
 
 export const iconMap = {
   plus: PlusIcon,
@@ -18,4 +19,5 @@ export const iconMap = {
   download: DownloadIcon,
   paperclip: PaperclipIcon,
   process: SettingsIcon,
+  tabControl: LowerFlap,
 } as const;

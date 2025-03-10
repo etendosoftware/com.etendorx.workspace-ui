@@ -19,7 +19,6 @@ export function useToolbar(windowId: string, tabId?: string) {
 
       setToolbar(response.data);
     } catch (error) {
-      console.error('Error fetching toolbar:', error);
       setError(error instanceof Error ? error : new Error('Failed to fetch toolbar'));
     } finally {
       setLoading(false);
