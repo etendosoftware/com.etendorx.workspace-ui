@@ -3,7 +3,7 @@ import { MaterialReactTable, MRT_ColumnFiltersState, MRT_Row } from 'material-re
 import { useStyle } from './styles';
 import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { useParams, useRouter } from 'next/navigation';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
@@ -30,6 +30,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     getSelectedIds,
     setShowTabContainer,
     groupedTabs,
+    activeTabLevels,
   } = useMetadataContext();
   const { windowId } = useParams<WindowParams>();
   const parent = selected[tab.level - 1];
@@ -231,6 +232,21 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   );
 
   const handleBack = useCallback(() => setEditing(false), []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (selected[tab.level]) {
+          clearSelections(tabId);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [clearSelections, selected, tab.level, tabId, activeTabLevels]);
 
   const CustomTopToolbar = useCallback(() => {
     return (

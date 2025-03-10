@@ -42,6 +42,27 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
         return newLevels;
       });
 
+      const tabsToUpdate = tabs.filter(t => t.level >= level);
+
+      tabsToUpdate.forEach(tab => {
+        const tabLevel = tab.level;
+        const recordToDeselect = selected[tabLevel];
+
+        if (recordToDeselect) {
+          setSelectedMultiple(prev => {
+            const updatedSelections = { ...prev };
+
+            if (updatedSelections[tab.id]) {
+              const newTabSelections = { ...updatedSelections[tab.id] };
+              delete newTabSelections[String(recordToDeselect.id)];
+              updatedSelections[tab.id] = newTabSelections;
+            }
+
+            return updatedSelections;
+          });
+        }
+      });
+
       if (level === 1) {
         setShowTabContainer(false);
         setSelected({});
@@ -57,7 +78,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
         return newSelections;
       });
     },
-    [setActiveTabLevels, setShowTabContainer, setSelected],
+    [setActiveTabLevels, setShowTabContainer, setSelected, setSelectedMultiple, selected, tabs],
   );
 
   const isSelected = useCallback(
@@ -154,12 +175,31 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [windowData?.tabs, selectRecord],
   );
 
-  const clearSelections = useCallback((tabId: string) => {
-    setSelectedMultiple(prev => ({
-      ...prev,
-      [tabId]: {},
-    }));
-  }, []);
+  const clearSelections = useCallback(
+    (tabId: string) => {
+      setSelectedMultiple(prev => ({
+        ...prev,
+        [tabId]: {},
+      }));
+      const tabLevel = tabs.find(t => t.id === tabId)?.level;
+
+      if (tabLevel !== undefined) {
+        setSelected(prev => {
+          const newSelections = { ...prev };
+          delete newSelections[tabLevel];
+
+          Object.keys(newSelections).forEach(strLevel => {
+            if (parseInt(strLevel) > tabLevel) {
+              delete newSelections[strLevel];
+            }
+          });
+
+          return newSelections;
+        });
+      }
+    },
+    [tabs],
+  );
 
   const getSelectedCount = useCallback(
     (tabId: string) => {
