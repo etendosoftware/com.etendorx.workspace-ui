@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BUTTON_IDS } from '../../constants/Toolbar';
 import { useSearch } from '../../contexts/searchContext';
+import { useMetadataContext } from '../useMetadataContext';
 
 export const useToolbarConfig = ({
   windowId,
@@ -16,6 +17,7 @@ export const useToolbarConfig = ({
   const { setSearchQuery } = useSearch();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const { setShowTabContainer } = useMetadataContext();
 
   const handleAction = useCallback(
     (action: string) => {
@@ -29,9 +31,12 @@ export const useToolbarConfig = ({
         case BUTTON_IDS.SAVE:
           onSave?.();
           break;
+        case BUTTON_IDS.TAB_CONTROL:
+          setShowTabContainer(prevState => !prevState);
+          break;
       }
     },
-    [onSave, router, tabId, windowId],
+    [onSave, router, setShowTabContainer, tabId, windowId],
   );
 
   const handleSearch = (query: string) => {
@@ -46,5 +51,6 @@ export const useToolbarConfig = ({
     handleSearch,
     searchValue,
     setSearchValue,
+    setShowTabContainer,
   };
 };

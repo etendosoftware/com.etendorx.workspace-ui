@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, createElement } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import ProcessModal from '@workspaceui/componentlibrary/src/components/ProcessModal';
@@ -15,11 +15,12 @@ import {
   CENTER_SECTION_BUTTONS,
   RIGHT_SECTION_BUTTONS,
   StandardButtonId,
+  BUTTON_IDS,
 } from '../../constants/Toolbar';
 import SearchPortal from './SearchPortal';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useProcessExecution } from '../../hooks/Toolbar/useProcessExecution';
-import { createStandardButtonConfig, getStandardButtonStyle } from './buttonConfigs';
+import { createStandardButtonConfig, createTabControlButtonConfig, getStandardButtonStyle } from './buttonConfigs';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { useProcessButton } from '../../hooks/Toolbar/useProcessButton';
 import { useToolbarConfig } from '../../hooks/Toolbar/useToolbarConfig';
@@ -30,12 +31,11 @@ import { ProcessButton } from '@workspaceui/componentlibrary/src/components/Proc
 import ProcessMenu from './ProcessMenu';
 
 export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
-  const [openModal, setOpenModal] = React.useState(false);
-  const [isExecuting, setIsExecuting] = React.useState(false);
-  const [processResponse, setProcessResponse] = React.useState<ProcessResponse | null>(null);
-  const [selectedProcessButton, setSelectedProcessButton] = React.useState<ProcessButton | null>(null);
+  const [openModal, setOpenModal] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
+  const [selectedProcessButton, setSelectedProcessButton] = useState<ProcessButton | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
   const { selected, tabs } = useMetadataContext();
   const { executeProcess } = useProcessExecution();
@@ -128,7 +128,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
       key: 'process-menu',
       action: 'MENU',
       name: t('common.processes'),
-      icon: React.createElement(iconMap.process),
+      icon: createElement(iconMap.process),
       iconText: t('common.processes'),
       tooltip: t('common.processes'),
       height: IconSize,
@@ -153,23 +153,32 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
       rightSection: RIGHT_SECTION_BUTTONS,
     };
 
-    const createSectionConfig = (sectionButtons: StandardButtonId[]) => ({
-      buttons: buttons
-        .filter((btn: StandardButton) => {
-          if (isFormView && btn.id === 'FIND') return false;
-          if (isProcessButton(btn)) return false;
-          return sectionButtons.includes(btn.id as StandardButtonId);
-        })
-        .map(btn => {
-          const config = createStandardButtonConfig(btn as StandardButton, handleAction);
-          const style = getStandardButtonStyle(btn.id as StandardButtonId);
-          if (style) {
-            config.sx = style;
-          }
-          return config;
-        }),
-      style: getSectionStyle(sectionButtons),
-    });
+    const createSectionConfig = (sectionButtons: StandardButtonId[]) => {
+      const sectionConfig = {
+        buttons: buttons
+          .filter((btn: StandardButton) => {
+            if (isFormView && btn.id === 'FIND') return false;
+            if (isProcessButton(btn)) return false;
+            return sectionButtons.includes(btn.id as StandardButtonId);
+          })
+          .map(btn => {
+            const config = createStandardButtonConfig(btn as StandardButton, handleAction);
+            const style = getStandardButtonStyle(btn.id as StandardButtonId);
+            if (style) {
+              config.sx = style;
+            }
+            return config;
+          }),
+        style: getSectionStyle(sectionButtons),
+      };
+
+      if (sectionButtons.includes(BUTTON_IDS.TAB_CONTROL) && !buttons.some(btn => btn.id === BUTTON_IDS.TAB_CONTROL)) {
+        const tabControlConfig = createTabControlButtonConfig(!!selectedRecord?.id, handleAction);
+        sectionConfig.buttons.push(tabControlConfig);
+      }
+
+      return sectionConfig;
+    };
 
     const config = {
       leftSection: createSectionConfig(sections.leftSection),

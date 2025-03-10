@@ -1,18 +1,22 @@
-import { Box } from '@mui/material';
-import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import React from 'react';
+import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
-import Tabs from './Tabs';
-
-function TabView(value: Tab[]) {
-  return <Tabs key={value[0].id} tabs={value} />;
-}
+import { TabLevel } from '../../components/TabLevel';
 
 export default function DynamicTableScreen() {
-  const { error, groupedTabs } = useMetadataContext();
+  const { loading, error, windowData, groupedTabs } = useMetadataContext();
 
-  if (error) {
-    return <Box p={1}>{error?.message ?? 'Something went wrong'}</Box>;
+  if (loading) {
+    return <Spinner />;
+  } else if (error || !windowData) {
+    return <div className="p-4 text-error-main">{error?.message ?? 'Something went wrong'}</div>;
   } else {
-    return <div>{groupedTabs.map(TabView)}</div>;
+    const topLevelTabs = groupedTabs.find(tabs => tabs[0].level === 0) || [];
+
+    return (
+      <div className="m-1 relative h-screen overflow-hidden bg-baseline-0">
+        {topLevelTabs.length > 0 && <TabLevel tab={topLevelTabs[0]} />}
+      </div>
+    );
   }
 }

@@ -3,7 +3,7 @@ import { MaterialReactTable, MRT_ColumnFiltersState, MRT_Row } from 'material-re
 import { useStyle } from './styles';
 import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { useParams, useRouter } from 'next/navigation';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
@@ -19,8 +19,18 @@ type DynamicTableProps = {
 };
 
 const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTableProps) {
-  const { selected, selectRecord, selectMultiple, isSelected, clearSelections, getSelectedCount, getSelectedIds } =
-    useMetadataContext();
+  const {
+    selected,
+    selectRecord,
+    selectMultiple,
+    isSelected,
+    clearSelections,
+    getSelectedCount,
+    getSelectedIds,
+    setShowTabContainer,
+    groupedTabs,
+    activeTabLevels,
+  } = useMetadataContext();
   const { windowId } = useParams<WindowParams>();
   const parent = selected[tab.level - 1];
   const navigate = useRouter().push;
@@ -118,29 +128,6 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
       .map(([id]) => id);
   }, []);
 
-  const handleRowSelectionChange = useCallback(
-    (updaterOrValue: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => {
-      let newSelection: Record<string, boolean>;
-      if (typeof updaterOrValue === 'function') {
-        newSelection = updaterOrValue(rowSelection);
-      } else {
-        newSelection = updaterOrValue;
-      }
-
-      const newSelectedIds = mapSelectionToIds(newSelection);
-
-      selectMultiple(newSelectedIds, tab, true);
-
-      if (newSelectedIds.length === 1) {
-        const record = records.find(r => String(r.id) === newSelectedIds[0]) as Record<string, never>;
-        if (record) {
-          selectRecord(record, tab);
-        }
-      }
-    },
-    [mapSelectionToIds, rowSelection, records, selectMultiple, selectRecord, tab],
-  );
-
   const rowProps = useCallback(
     ({ row }: { row: MRT_Row<Record<string, unknown>> }) => {
       const record = row.original as Record<string, never>;
@@ -161,8 +148,21 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
               selectMultiple([...selectedIds, id], tab, true);
             }
           } else {
-            selectRecord(record, tab);
-            selectMultiple([id], tab, true);
+            const isSameRecordSelected = selected[tab.level]?.id === record.id;
+
+            if (isSameRecordSelected) {
+              clearSelections(tabId);
+              selectRecord(record, tab);
+            } else {
+              selectMultiple([id], tab, true);
+              selectRecord(record, tab);
+
+              const nextLevel = tab.level + 1;
+              const hasNextLevelTabs = groupedTabs.some(tabs => tabs[0]?.level === nextLevel);
+              if (hasNextLevelTabs) {
+                setShowTabContainer(true);
+              }
+            }
           }
         },
         onDoubleClick: () => {
@@ -179,8 +179,69 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
         },
       };
     },
-    [isSelected, navigate, selectMultiple, selectRecord, selectedIds, sx.rowSelected, tab, tabId, windowId],
+    [
+      isSelected,
+      navigate,
+      selectMultiple,
+      selectRecord,
+      clearSelections,
+      selectedIds,
+      selected,
+      setShowTabContainer,
+      sx.rowSelected,
+      tab,
+      tabId,
+      windowId,
+      groupedTabs,
+    ],
   );
+
+  const handleRowSelectionChange = useCallback(
+    (updaterOrValue: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => {
+      let newSelection: Record<string, boolean>;
+      if (typeof updaterOrValue === 'function') {
+        newSelection = updaterOrValue(rowSelection);
+      } else {
+        newSelection = updaterOrValue;
+      }
+
+      const newSelectedIds = mapSelectionToIds(newSelection);
+
+      if (newSelectedIds.length === 0) {
+        clearSelections(tabId);
+
+        if (selected[tab.level]) {
+          selectRecord(selected[tab.level], tab);
+        }
+        return;
+      }
+
+      selectMultiple(newSelectedIds, tab, true);
+
+      if (newSelectedIds.length === 1) {
+        const record = records.find(r => String(r.id) === newSelectedIds[0]) as Record<string, never>;
+        if (record) {
+          selectRecord(record, tab);
+        }
+      }
+    },
+    [mapSelectionToIds, rowSelection, records, selectMultiple, selectRecord, clearSelections, selected, tab, tabId],
+  );
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (selected[tab.level]) {
+          clearSelections(tabId);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [clearSelections, selected, tab.level, tabId, activeTabLevels]);
 
   const CustomTopToolbar = useCallback(() => {
     return (
@@ -197,42 +258,48 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   if (error) return <div>Error: {error.message}</div>;
 
   return (
-    <Box>
-      <Box sx={sx.container}>
-        <Box sx={sx.table}>
-          <MaterialReactTable
-            enableGlobalFilter={false}
-            columns={columns}
-            data={records}
-            enableRowSelection={true}
-            enableMultiRowSelection={true}
-            positionToolbarAlertBanner="none"
-            muiTableBodyRowProps={rowProps}
-            enablePagination={false}
-            renderTopToolbar={<CustomTopToolbar />}
-            renderBottomToolbar={
-              tab.uIPattern == 'STD' && !searchQuery ? <Button onClick={fetchMore}>Load more</Button> : null
-            }
-            initialState={{ density: 'compact' }}
-            muiTablePaperProps={{
-              sx: sx.tablePaper,
-            }}
-            muiTableHeadCellProps={{ sx: sx.tableHeadCell }}
-            muiTableBodyCellProps={{ sx: sx.tableBodyCell }}
-            muiTableBodyProps={{ sx: sx.tableBody }}
-            state={{
-              rowSelection,
-              columnFilters,
-              showColumnFilters: true,
-            }}
-            onRowSelectionChange={handleRowSelectionChange}
-            onColumnFiltersChange={handleColumnFiltersChange}
-            getRowId={row => String(row.id)}
-            enableColumnFilters={true}
-            enableSorting={true}
-            enableColumnActions={true}
-            manualFiltering={true}
-          />
+    <Box className="flex h-10/12">
+      <Box className="flex flex-col h-full overflow-hidden">
+        <Box sx={sx.container}>
+          <Box sx={sx.table}>
+            <MaterialReactTable
+              enableGlobalFilter={false}
+              columns={columns}
+              data={records}
+              enableRowSelection={true}
+              enableMultiRowSelection={true}
+              positionToolbarAlertBanner="none"
+              muiTableBodyRowProps={rowProps}
+              enablePagination={false}
+              renderTopToolbar={<CustomTopToolbar />}
+              renderBottomToolbar={
+                tab.uIPattern == 'STD' && !searchQuery ? (
+                  <Button sx={sx.fetchMore} onClick={fetchMore}>
+                    Load more
+                  </Button>
+                ) : null
+              }
+              initialState={{ density: 'compact' }}
+              muiTablePaperProps={{
+                sx: sx.tablePaper,
+              }}
+              muiTableHeadCellProps={{ sx: sx.tableHeadCell }}
+              muiTableBodyCellProps={{ sx: sx.tableBodyCell }}
+              muiTableBodyProps={{ sx: sx.tableBody }}
+              state={{
+                rowSelection,
+                columnFilters,
+                showColumnFilters: true,
+              }}
+              onRowSelectionChange={handleRowSelectionChange}
+              onColumnFiltersChange={handleColumnFiltersChange}
+              getRowId={row => String(row.id)}
+              enableColumnFilters={true}
+              enableSorting={true}
+              enableColumnActions={true}
+              manualFiltering={true}
+            />
+          </Box>
         </Box>
       </Box>
     </Box>
