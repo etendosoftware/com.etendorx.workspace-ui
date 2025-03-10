@@ -105,22 +105,13 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
     return (
       <div
         ref={containerRef}
-        className="sticky bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out"
-        style={{
-          height: `${containerHeight}vh`,
-          borderTopLeftRadius: '1rem',
-          borderTopRightRadius: '1rem',
-          border: '2px solid var(--transparent-neutral-10, rgba(0,3,13,0.1))',
-          borderBottom: 'none',
-          backgroundColor: 'var(--baseline-neutral-0, #FCFCFD)',
-        }}>
+        className={`sticky bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out
+          rounded-t-2xl border-2 border-[rgba(0,3,13,0.1)] border-b-0 bg-[#FCFCFD]`}
+        style={{ height: `${containerHeight}vh` }}>
         <div
           data-resizer
-          className={`absolute top-0 left-1/2 -translate-x-1/2 w-16 h-2 mt-1 rounded-lg ${isMainTab ? 'cursor-default' : 'cursor-ns-resize'}`}
-          style={{
-            backgroundColor: 'var(--baseline-neutral-30, #B1B8D8)',
-            opacity: isMainTab ? 0.5 : 1,
-          }}
+          className={`absolute top-0 left-1/2 -translate-x-1/2 w-16 h-2 mt-1 rounded-lg bg-[#B1B8D8]
+            ${isMainTab ? 'cursor-default opacity-50' : 'cursor-ns-resize opacity-100'}`}
         />
         <div
           className="h-full overflow-auto"
