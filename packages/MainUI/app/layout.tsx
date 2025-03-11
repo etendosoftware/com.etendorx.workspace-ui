@@ -1,7 +1,7 @@
 import { Inter } from 'next/font/google';
 import './styles/global.css';
 import App from './App';
-import { ThemeRegistry } from '@workspaceui/componentlibrary/src/components/ThemeProvider';
+import ThemeProvider from '@workspaceui/componentlibrary/src/components/ThemeProvider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -20,9 +20,9 @@ export default function RootLayout({
         <meta charSet="utf-8" />
       </head>
       <body>
-        <ThemeRegistry>
+        <ThemeProvider>
           <App>{children}</App>
-        </ThemeRegistry>
+        </ThemeProvider>
       </body>
     </html>
   );

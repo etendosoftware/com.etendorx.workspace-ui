@@ -90,11 +90,11 @@ export interface Field {
   showInGridView: boolean;
   fieldGroup$_identifier: string;
   fieldGroup: string;
+  isMandatory: boolean;
   column: Record<string, string>;
   name: string;
   id: string;
   module: string;
-  required: boolean;
   hasDefaultValue: boolean;
   refColumnName: string;
   targetEntity: string;
@@ -107,6 +107,7 @@ export interface Field {
   referencedTabId: string;
   displayLogicExpression?: string;
   readOnlyLogicExpression?: string;
+  readOnly: boolean;
   sequenceNumber: number;
 }
 
@@ -199,6 +200,7 @@ export interface Tab {
   title: string;
   parentColumns: string[];
   id: string;
+  table: string;
   entityName: string;
   fields: Record<string, Field>;
   level: number;

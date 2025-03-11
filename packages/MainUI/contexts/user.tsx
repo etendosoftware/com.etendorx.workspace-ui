@@ -10,7 +10,14 @@ import { getSession } from '@workspaceui/etendohookbinder/src/api/getSession';
 import { changeWarehouse as doChangeWarehouse } from '@workspaceui/etendohookbinder/src/api/warehouse';
 import { HTTP_CODES } from '@workspaceui/etendohookbinder/src/api/constants';
 import { DefaultConfiguration, IUserContext, Language, LanguageOption } from './types';
-import { ISession, Role, ProfileInfo, SessionResponse, Warehouse, User } from '@workspaceui/etendohookbinder/src/api/types';
+import {
+  ISession,
+  Role,
+  ProfileInfo,
+  SessionResponse,
+  Warehouse,
+  User,
+} from '@workspaceui/etendohookbinder/src/api/types';
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/src/api/defaultConfig';
 import { usePathname, useRouter } from 'next/navigation';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
@@ -75,7 +82,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   }, []);
 
   const updateSessionInfo = useCallback(
-    (sessionResponse: SessionResponse) => {
+    async (sessionResponse: SessionResponse) => {
       const currentRole: Role = {
         id: sessionResponse.role.id,
         name: sessionResponse.role.name,
@@ -95,7 +102,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
       localStorage.setItem('currentInfo', JSON.stringify(currentProfileInfo));
       localStorage.setItem('currentRole', JSON.stringify(currentRole));
       localStorage.setItem('currentRoleId', currentRole.id);
-      setSession(sessionResponse.session);
 
       if (sessionResponse.user.defaultLanguage) {
         setLanguage(sessionResponse.user.defaultLanguage as Language);

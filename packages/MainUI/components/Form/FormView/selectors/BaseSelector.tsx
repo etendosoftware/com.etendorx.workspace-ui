@@ -8,55 +8,62 @@ import { GenericSelector } from './GenericSelector';
 import { buildPayloadByInputName, parseDynamicExpression } from '@/utils';
 import Label from '../Label';
 import { useUserContext } from '@/hooks/useUserContext';
+import { useParams } from 'next/navigation';
 
 const compileExpression = (expression: string) => {
   try {
-    return new Function('context', 'currentValues', `return ${parseDynamicExpression(expression)};`);
+    const expr = parseDynamicExpression(expression);
+
+    return new Function('context', 'currentValues', `return ${expr};`);
   } catch (error) {
-    logger.warn('Error compiling expression:', expression, error);
+    logger.debug('Error compiling expression:', expression, error);
 
     return () => true;
   }
 };
 
 export const BaseSelector = ({ field }: { field: Field }) => {
-  const { watch, getValues, setValue } = useFormContext();
-  const { fieldsByColumnName, fieldsByHqlName, tab } = useMetadataContext();
+  const { watch, getValues, setValue, register } = useFormContext();
+  const { fieldsByColumnName, tab } = useMetadataContext();
+  const { recordId } = useParams<{ recordId: string }>();
   const { session } = useUserContext();
-  const executeCallout = useCallout({ field });
+  const executeCallout = useCallout({ field, rowId: recordId });
   const value = watch(field.hqlName);
+  const values = watch();
   const ready = useRef(false);
+  const fieldsByHqlName = useMemo(() => tab?.fields || {}, [tab?.fields]);
 
   const isDisplayed = useMemo(() => {
-    if (!tab || !field.displayed) return false;
+    if (!field.displayed) return false;
     if (!field.displayLogicExpression) return true;
 
     const compiledExpr = compileExpression(field.displayLogicExpression);
-    const currentValues = getValues();
 
     try {
-      return compiledExpr(session, currentValues);
+      const result = compiledExpr(session, values);
+
+      return result;
     } catch (error) {
-      logger.warn('Error executing expression:', compiledExpr, error);
+      logger.debug('Error executing expression:', compiledExpr, error);
 
       return true;
     }
-  }, [field, session, tab, getValues]);
+  }, [field, values, session]);
 
   const isReadOnly = useMemo(() => {
-    if (!tab || !field.readOnlyLogicExpression) return true;
+    if (field.readOnly) return true;
+    if (!field.readOnlyLogicExpression) return false;
 
     const compiledExpr = compileExpression(field.readOnlyLogicExpression);
-    const currentValues = getValues();
 
     try {
-      return compiledExpr(session, currentValues);
+      return compiledExpr(session, values);
     } catch (error) {
-      logger.warn('Error executing expression:', compiledExpr, error);
+      logger.debug('Error executing expression:', compiledExpr, error);
 
       return true;
     }
-  }, [field, session, tab, getValues]);
+  }, [field, values, session]);
 
   const applyColumnValues = useCallback(
     (columnValues: FormInitializationResponse['columnValues']) => {
@@ -70,20 +77,54 @@ export const BaseSelector = ({ field }: { field: Field }) => {
     [fieldsByColumnName, setValue],
   );
 
+  const applyAuxiliaryInputValues = useCallback(
+    (auxiliaryInputValues: FormInitializationResponse['auxiliaryInputValues']) => {
+      Object.entries(auxiliaryInputValues ?? {}).forEach(([column, { value, classicValue }]) => {
+        const targetField = fieldsByColumnName[column];
+        const isDate = ['15', '16'].includes(targetField?.column?.reference);
+
+        setValue(targetField?.hqlName || column, isDate ? classicValue : value);
+      });
+    },
+    [fieldsByColumnName, setValue],
+  );
+
   const runCallout = useCallback(async () => {
-    if (!field.column.callout) return;
+    if (!tab || !field.column.callout) return;
 
     try {
+      const entityKeyColumn = tab.fields['id'].columnName;
       const payload = buildPayloadByInputName(getValues(), fieldsByHqlName);
-      const data = await executeCallout(payload);
+      const data = await executeCallout({
+        ...session,
+        ...payload,
+        inpKeyName: fieldsByColumnName[entityKeyColumn].inputName,
+        inpTabId: tab.id,
+        inpTableId: tab.table,
+        inpkeyColumnId: entityKeyColumn,
+        keyColumnName: entityKeyColumn,
+        _entityName: tab.entityName,
+        inpwindowId: tab.windowId,
+      });
 
       if (data) {
         applyColumnValues(data.columnValues);
+        applyAuxiliaryInputValues(data.auxiliaryInputValues);
       }
     } catch (err) {
       logger.error('Callout execution failed:', err);
     }
-  }, [field, executeCallout, getValues, fieldsByHqlName, applyColumnValues]);
+  }, [
+    applyAuxiliaryInputValues,
+    applyColumnValues,
+    executeCallout,
+    field.column.callout,
+    fieldsByColumnName,
+    fieldsByHqlName,
+    getValues,
+    session,
+    tab,
+  ]);
 
   useEffect(() => {
     if (ready.current) {
@@ -95,12 +136,14 @@ export const BaseSelector = ({ field }: { field: Field }) => {
 
   if (isDisplayed) {
     return (
-      <div className="grid grid-cols-3 auto-rows-auto gap-4 items-center">
+      <div className="grid grid-cols-3 auto-rows-auto gap-4 items-center" title={field.hqlName}>
         <Label field={field} />
         <div className="col-span-2">
           <GenericSelector field={field} isReadOnly={isReadOnly} />
         </div>
       </div>
     );
+  } else {
+    return <input type="hidden" {...register(field.hqlName)} />;
   }
 };

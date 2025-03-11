@@ -22,7 +22,7 @@ export class Metadata {
 
   public static setLanguage(value: string) {
     [this.client, this.datasourceClient, this.kernelClient, this.datasourceServletClient].forEach(client =>
-      client.setLanguageHeader(value)
+      client.setLanguageHeader(value),
     );
 
     return this;
@@ -30,7 +30,7 @@ export class Metadata {
 
   public static setToken(token: string) {
     [this.client, this.datasourceClient, this.kernelClient, this.datasourceServletClient].forEach(client =>
-      client.setAuthHeader(token, 'Bearer').addQueryParam('stateless', 'true')
+      client.setAuthHeader(token, 'Bearer'),
     );
 
     return this;
@@ -127,11 +127,14 @@ export class Metadata {
   }
 
   public static getTabsColumns(tabs?: Etendo.Tab[]) {
-    return (tabs || []).reduce((cols, tab) => {
-      cols[tab.id] = this.getColumns(tab.id);
+    return (tabs || []).reduce(
+      (cols, tab) => {
+        cols[tab.id] = this.getColumns(tab.id);
 
-      return cols;
-    }, {} as Record<string, Etendo.Column[]>);
+        return cols;
+      },
+      {} as Record<string, Etendo.Column[]>,
+    );
   }
 
   public static evaluateExpression(expr: string, values: Record<string, unknown>) {

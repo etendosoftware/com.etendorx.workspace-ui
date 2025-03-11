@@ -7,14 +7,14 @@ import { logger } from '@/utils/logger';
 
 export interface UseCalloutProps {
   field: Field;
-  parentId?: string | null;
-  rowId?: string | null;
+  parentId?: string;
+  rowId?: string;
 }
 
 const ACTION = 'org.openbravo.client.application.window.FormInitializationComponent';
 const MODE = 'CHANGE';
 
-export const useCallout = ({ field, parentId = '', rowId = '' }: UseCalloutProps) => {
+export const useCallout = ({ field, parentId = 'null', rowId = 'null' }: UseCalloutProps) => {
   const { tab } = useMetadataContext();
   const tabId = tab?.id ?? '';
 
@@ -25,8 +25,8 @@ export const useCallout = ({ field, parentId = '', rowId = '' }: UseCalloutProps
         MODE,
         TAB_ID: tabId,
         CHANGED_COLUMN: field.inputName,
-        ...(rowId && { ROW_ID: rowId }),
-        ...(parentId && { PARENT_ID: parentId }),
+        ROW_ID: rowId,
+        PARENT_ID: parentId,
       });
 
       try {

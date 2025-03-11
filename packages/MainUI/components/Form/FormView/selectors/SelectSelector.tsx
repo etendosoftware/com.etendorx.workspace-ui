@@ -1,11 +1,9 @@
 import { Field } from '@workspaceui/etendohookbinder/src/api/types';
-import { useFormContext } from 'react-hook-form';
 import Select, { SelectProps } from './components/Select';
 import { useMemo } from 'react';
 import { useTableDirDatasource } from '@/hooks/datasource/useTableDirDatasource';
 
-export const SelectSelector = ({ field }: { field: Field }) => {
-  const { register } = useFormContext();
+export const SelectSelector = ({ field, isReadOnly }: { field: Field; isReadOnly: boolean }) => {
   const idKey = (field.selector?.valueField ?? '') as string;
   const identifierKey = (field.selector?.displayField ?? '') as string;
 
@@ -26,5 +24,5 @@ export const SelectSelector = ({ field }: { field: Field }) => {
     return result;
   }, [idKey, identifierKey, records]);
 
-  return <Select {...register(field.hqlName)} name={field.hqlName} options={options} onFocus={refetch} />;
+  return <Select name={field.hqlName} options={options} onFocus={refetch} isReadOnly={isReadOnly} />;
 };

@@ -28,57 +28,48 @@ export const getFieldReference = (field?: Field): FieldType => {
   }
 };
 
-export const sanitizeValue = (field: Field | undefined, value: unknown) => {
-  const reference = getFieldReference(field);
+export const sanitizeValue = (value: unknown) => {
+  const stringValue = String(value);
+  const safeValue =
+    stringValue === 'true' ? 'Y' : stringValue === 'false' ? 'N' : stringValue === 'null' ? null : value;
 
-  if (reference === FieldType.BOOLEAN) {
-    return value ? 'Y' : 'N';
-  }
-
-  if (reference === FieldType.QUANTITY) {
-    return value;
-  }
-
-  if (value == null) {
-    return '';
-  }
-
-  return value;
+  return safeValue;
 };
 
-export const getCombinedEntries = (formInitialization: FormInitializationResponse) => [
-  ...Object.entries(formInitialization.auxiliaryInputValues),
-  ...Object.entries(formInitialization.columnValues),
-];
-
-export const buildUpdatedValues = (
-  entries: [string, { value: string; identifier?: string }][],
+export const buildInitialFormState = (
+  formInitialization: FormInitializationResponse,
   fieldsByColumnName: Record<string, Field>,
 ) => {
-  return entries.reduce(
-    (acc, [columnName, { value }]) => {
-      const field = fieldsByColumnName[columnName];
-      const key = field?.hqlName ?? columnName;
-      acc[key] = sanitizeValue(field, value);
+  const acc = { ...formInitialization.sessionAttributes } as Record<string, string | boolean | null>;
+
+  Object.entries(formInitialization.auxiliaryInputValues).forEach(([key, { value }]) => {
+    const newKey = fieldsByColumnName?.[key]?.hqlName ?? key;
+    acc[newKey] = value;
+  });
+
+  Object.entries(formInitialization.columnValues).forEach(([key, { value, identifier }]) => {
+    const newKey = fieldsByColumnName?.[key]?.hqlName ?? key;
+    acc[newKey] = value;
+
+    if (identifier) {
+      acc[newKey + '_identifier'] = identifier;
+    }
+  });
+
+  return acc;
+};
+
+export const buildPayloadByInputName = (values: Record<string, unknown>, fields?: Record<string, Field>) => {
+  return Object.entries(values).reduce(
+    (acc, [key, value]) => {
+      const newKey = fields?.[key]?.inputName ?? key;
+      acc[newKey] = sanitizeValue(value);
+
       return acc;
     },
     {} as Record<string, unknown>,
   );
 };
-
-export const buildPayloadByInputName = (values: Record<string, unknown>, fields?: Record<string, Field>) =>
-  Object.entries(values).reduce(
-    (acc, [key, value]) => {
-      const newKey = fields?.[key]?.inputName;
-
-      if (newKey) {
-        acc[newKey] = value;
-      }
-
-      return acc;
-    },
-    {} as Record<string, unknown>,
-  );
 
 export const parseDynamicExpression = (expr: string) => {
   return (
@@ -90,12 +81,12 @@ export const parseDynamicExpression = (expr: string) => {
 
       // Reemplaza context.PROP -> context.PROP (en mayúsculas)
       .replace(/context\.(\$?\w+)/g, (_, prop) => {
-        return `context.${prop.toUpperCase()}`;
+        return `context.${prop}`;
       })
 
       // Reemplaza context["prop"] y context['prop'] (claves estáticas)
       .replace(/context\[\s*(['"])([^"'\]]+)\1\s*\]/g, (_, quote, prop) => {
-        return `context[${quote}${prop.toUpperCase()}${quote}]`;
+        return `context[${quote}${prop}${quote}]`;
       })
 
       // Reemplaza partes fijas en claves dinámicas dentro de context["..."], EXCLUYE currentValues
@@ -113,6 +104,6 @@ const transformDynamicKey = (key: string): string => {
     // No convertir 'currentValues'
     if (match === 'currentValues') return match;
     // Convierte a mayúsculas las claves que no sean identificadores reservados
-    return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(match) ? match.toUpperCase() : match;
+    return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(match) ? match : match;
   });
 };

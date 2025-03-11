@@ -2,7 +2,7 @@ import { API_BASE_URL } from './constants';
 import { SessionResponse } from './types';
 
 export const getSession = async (token: string): Promise<SessionResponse> => {
-  const response = await fetch(`${API_BASE_URL}/meta/session?stateless=true`, {
+  const response = await fetch(`${API_BASE_URL}/meta/session`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

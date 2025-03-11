@@ -7,21 +7,21 @@ import { useDynamicForm } from '@/hooks/useDynamicForm';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
 import { useMemo } from 'react';
-import { buildUpdatedValues, getCombinedEntries } from '@/utils';
+import { buildInitialFormState } from '@/utils';
 import FormView from '@/components/Form/FormView';
 
 function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
   const { t } = useTranslation();
-  const { loading, record, formInitialization, refetch, error, fieldsByColumnName } = useDynamicForm({
+  const { loading, record, formInitialization, refetch, error } = useDynamicForm({
     tab,
     mode: FormMode.NEW,
   });
+  const { fieldsByColumnName } = useMetadataContext();
 
   const values = useMemo(() => {
     if (!formInitialization) return { ...record };
 
-    const combinedEntries = getCombinedEntries(formInitialization);
-    const updatedValues = buildUpdatedValues(combinedEntries, fieldsByColumnName);
+    const updatedValues = buildInitialFormState(formInitialization, fieldsByColumnName);
 
     return { ...record, ...updatedValues };
   }, [fieldsByColumnName, formInitialization, record]);

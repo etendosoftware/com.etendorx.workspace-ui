@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import { EntityData, FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useUserContext } from './useUserContext';
 
@@ -7,7 +7,7 @@ export interface UseFormActionParams {
   window: WindowMetadata;
   tab: Tab;
   mode: FormMode;
-  onSuccess: (data: unknown) => void;
+  onSuccess: (data: EntityData) => void;
   onError: (data: unknown) => void;
 }
 
@@ -43,12 +43,14 @@ export const useFormAction = ({ window, tab, mode, onSuccess, onError }: UseForm
         const { ok, data } = await Metadata.datasourceServletClient.request(url, options);
 
         if (ok && data?.response?.status === 0 && !controller.current.signal.aborted) {
-          onSuccess?.(data.response.data);
+          onSuccess?.(data.response.data[0]);
         } else {
           throw new Error(data);
         }
       } catch (err) {
-        onError?.(err);
+        onError?.(err instanceof Error ? err : err);
+      } finally {
+        setLoading(false);
       }
     },
     [mode, onError, onSuccess, tab, userId, window],

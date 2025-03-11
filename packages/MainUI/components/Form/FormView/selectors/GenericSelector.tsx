@@ -18,6 +18,8 @@ export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => 
   const value = watch(field.hqlName);
   const { reference } = field.column;
 
+  console.debug(field);
+
   switch (reference) {
     case '19':
     case '95E2A8B50A254B2AAE6774B8C2F28120':
@@ -30,17 +32,29 @@ export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => 
       return <BooleanSelector field={field} />;
     case '29':
       return (
-        <QuantitySelector name={field.hqlName} value={value} min={field.column.minValue} max={field.column.maxValue} />
+        <QuantitySelector
+          name={field.hqlName}
+          value={value}
+          min={field.column.minValue}
+          max={field.column.maxValue}
+          readOnly={isReadOnly}
+        />
       );
     case '17':
     case '13':
-      return <ListSelector field={field} />;
+      return <ListSelector field={field} isReadOnly={isReadOnly} />;
     case '30':
-      return <SelectSelector field={field} />;
+      return <SelectSelector field={field} isReadOnly={isReadOnly} />;
     case '12':
     case '11':
     case '22':
     default:
-      return <StringSelector field={field} />;
+      return (
+        <StringSelector
+          field={field}
+          readOnly={isReadOnly}
+          required={field.isMandatory}
+        />
+      );
   }
 };

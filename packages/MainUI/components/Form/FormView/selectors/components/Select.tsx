@@ -30,12 +30,15 @@ export default function Select({ name, options, onFocus, isReadOnly }: SelectPro
     [options, searchTerm],
   );
 
-  const handleSelect = useCallback((id: string, label: string) => {
-    setValue(name, id);
-    setSelectedLabel(label);
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-  }, [name, setValue]);
+  const handleSelect = useCallback(
+    (id: string, label: string) => {
+      setValue(name, id);
+      setSelectedLabel(label);
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+    },
+    [name, setValue],
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
@@ -92,12 +95,18 @@ export default function Select({ name, options, onFocus, isReadOnly }: SelectPro
   }, [isOpen, onFocus]);
 
   return (
-    <div className="relative w-full" onBlur={handleBlur} tabIndex={-1}>
+    <div
+      className={`relative w-full ${isReadOnly ? 'cursor-not-allowed user-select-none pointer-events-none' : ''}`}
+      style={{
+        cursor: 'not-allowed !important',
+      }}
+      onBlur={isReadOnly ? undefined : handleBlur}
+      tabIndex={-1}>
       <input {...register(name)} type="hidden" readOnly={isReadOnly} /> {/* Manejo de react-hook-form */}
       {/* Input principal que muestra el valor seleccionado */}
       <div
-        onClick={handleClick}
-        className="w-full h-12 bg-white rounded-2xl border border-gray-300 p-3 text-sm shadow-sm cursor-pointer flex items-center justify-between focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-300"
+        onClick={isReadOnly ? undefined : handleClick}
+        className={`w-full h-12 rounded-2xl border border-gray-300 p-3 text-sm shadow-sm flex items-center justify-between focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-300 ${isReadOnly ? 'bg-gray-200' : 'bg-white'}`}
         tabIndex={0}>
         <span className={selectedLabel ? 'text-black' : 'text-gray-400'}>{selectedLabel || 'Select an option'}</span>
         <svg
@@ -108,7 +117,7 @@ export default function Select({ name, options, onFocus, isReadOnly }: SelectPro
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </div>
-      {isOpen && (
+      {!isReadOnly && isOpen && (
         <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-2xl shadow-lg">
           {/* Input para filtrar las opciones */}
           <input
@@ -131,7 +140,7 @@ export default function Select({ name, options, onFocus, isReadOnly }: SelectPro
                   aria-selected={selectedValue === id}
                   onClick={() => handleSelect(id, label)}
                   onMouseEnter={() => setHighlightedIndex(index)}
-                  className={`p-2 cursor-pointer ${highlightedIndex === index ? 'bg-blue-100' : ''}`}>
+                  className={`p-2 ${highlightedIndex === index ? 'bg-blue-100' : ''}`}>
                   {label}
                 </li>
               ))

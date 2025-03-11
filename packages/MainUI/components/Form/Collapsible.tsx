@@ -19,14 +19,14 @@ export default function Collapsible({
     if (contentRef.current) {
       setMaxHeight(contentRef.current.scrollHeight);
     }
-  }, []);
+  }, [isOpen]);
 
   return (
     <div className={`bg-gray-100 rounded-2xl ${isOpen ? 'overflow-visible' : 'overflow-hidden'}`}>
-      <button className="w-full flex justify-between items-center p-4 cursor-pointer h-12" onClick={handleToggle}>
+      <div className="w-full flex justify-between items-center p-4 cursor-pointer h-12" onClick={handleToggle}>
         <span className="font-semibold">{title}</span>
         {isOpen ? <ChevronUp className="fill-current" /> : <ChevronDown size={20} className="fill-current" />}
-      </button>
+      </div>
       <div ref={contentRef} className={`transition-all`} style={style}>
         <div className="p-4 bg-white rounded-b-2xl">{children}</div>
       </div>

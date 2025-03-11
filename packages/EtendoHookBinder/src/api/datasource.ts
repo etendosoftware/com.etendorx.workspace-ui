@@ -1,5 +1,5 @@
 import { API_DATASOURCE_SERVLET } from './constants';
-import { Client, ClientOptions, Interceptor } from './client';
+import { Client, Interceptor } from './client';
 import { DatasourceParams } from './types';
 
 export class Datasource {
@@ -8,7 +8,6 @@ export class Datasource {
 
   private constructor(url: string) {
     this.client = new Client(url);
-    this.client.addQueryParam("stateless", "true");
   }
 
   public static getInstance(url: string = API_DATASOURCE_SERVLET) {

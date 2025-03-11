@@ -62,7 +62,7 @@ const AppBreadcrumb: React.FC = () => {
     }
 
     return items;
-  }, [windowId, window, isNewRecord, recordId, records, navigate, t]);
+  }, [windowId, window, isNewRecord, recordId, records, t, navigate]);
 
   const handleHomeClick = useCallback(() => navigate('/'), [navigate]);
 

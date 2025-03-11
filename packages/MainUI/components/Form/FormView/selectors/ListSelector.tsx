@@ -1,11 +1,8 @@
 import { Field } from '@workspaceui/etendohookbinder/src/api/types';
-import { useFormContext } from 'react-hook-form';
 import Select, { SelectProps } from './components/Select';
 import { useMemo } from 'react';
 
-export const ListSelector = ({ field }: { field: Field }) => {
-  const { register } = useFormContext();
-
+export const ListSelector = ({ field, isReadOnly }: { field: Field; isReadOnly: boolean }) => {
   const options = useMemo<SelectProps['options']>(() => {
     if (field.refList) {
       return Array.from(field.refList).map(item => ({
@@ -17,5 +14,5 @@ export const ListSelector = ({ field }: { field: Field }) => {
     return [];
   }, [field.refList]);
 
-  return <Select {...register(field.hqlName)} name={field.hqlName} options={options} />;
+  return <Select name={field.hqlName} options={options} isReadOnly={isReadOnly} />;
 };
