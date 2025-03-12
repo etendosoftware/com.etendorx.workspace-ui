@@ -1,29 +1,22 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
-
-export interface Option {
-  id: string;
-  label: string;
-}
-
-export interface SelectProps {
-  name: string;
-  options: Option[];
-  onFocus?: () => unknown;
-  isReadOnly?: boolean;
-}
+import { SelectProps } from './types';
+import checkIconUrl from '../../../../../../ComponentLibrary/src/assets/icons/check-circle-filled.svg?url';
+import closeIconUrl from '../../../../../../ComponentLibrary/src/assets/icons/x.svg?url';
+import ChevronDown from '../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
+import Image from 'next/image';
 
 export default function Select({ name, options, onFocus, isReadOnly }: SelectProps) {
   const { register, setValue, watch } = useFormContext();
   const selectedValue = watch(name);
-
   const [selectedLabel, setSelectedLabel] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
-
+  const [isHovering, setIsHovering] = useState(false);
   const listRef = useRef<HTMLUListElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   const filteredOptions = useMemo(
     () => options.filter(option => option.label.toLowerCase().includes(searchTerm.toLowerCase())),
@@ -71,8 +64,36 @@ export default function Select({ name, options, onFocus, isReadOnly }: SelectPro
     }
   };
 
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+      setIsOpen(false);
+    }
+  }, []);
+
   const handleClick = useCallback(() => {
-    setIsOpen(prev => !prev);
+    if (!isReadOnly) {
+      setIsOpen(prev => !prev);
+      if (!isOpen) {
+        onFocus?.();
+      }
+    }
+  }, [isReadOnly, isOpen, onFocus]);
+
+  const handleClear = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setValue(name, '');
+      setSelectedLabel('');
+    },
+    [name, setValue],
+  );
+
+  const handleMouseEnter = useCallback(() => {
+    setIsHovering(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovering(false);
   }, []);
 
   useEffect(() => {
@@ -89,49 +110,63 @@ export default function Select({ name, options, onFocus, isReadOnly }: SelectPro
   }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen) {
-      onFocus?.();
-    }
-  }, [isOpen, onFocus]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [handleClickOutside]);
 
   return (
     <div
-      className={`relative w-full ${isReadOnly ? 'cursor-not-allowed user-select-none pointer-events-none' : ''}`}
-      style={{
-        cursor: 'not-allowed !important',
-      }}
+      ref={wrapperRef}
+      className={`relative w-full font-['Inter'] ${isReadOnly ? 'pointer-events-none' : ''}`}
       onBlur={isReadOnly ? undefined : handleBlur}
       tabIndex={-1}>
-      <input {...register(name)} type="hidden" readOnly={isReadOnly} /> {/* Manejo de react-hook-form */}
-      {/* Input principal que muestra el valor seleccionado */}
+      <input {...register(name)} type="hidden" readOnly={isReadOnly} />
       <div
-        onClick={isReadOnly ? undefined : handleClick}
-        className={`w-full h-12 rounded-2xl border border-gray-300 p-3 text-sm shadow-sm flex items-center justify-between focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-300 ${isReadOnly ? 'bg-gray-200' : 'bg-white'}`}
+        onClick={handleClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className={`w-full flex items-center justify-between px-3 py-2 h-10 border-b border-baseline-10 hover:border-b-baseline-100
+          ${isOpen ? 'rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light' : 'border-baseline-40'} 
+          ${isReadOnly ? 'bg-baseline-20 text-baseline-60 cursor-not-allowed' : 'bg-white text-baseline-90 cursor-pointer hover:border-baseline-60'}
+          transition-colors outline-none`}
         tabIndex={0}>
-        <span className={selectedLabel ? 'text-black' : 'text-gray-400'}>{selectedLabel || 'Select an option'}</span>
-        <svg
-          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
-      {!isReadOnly && isOpen && (
-        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-2xl shadow-lg">
-          {/* Input para filtrar las opciones */}
-          <input
-            ref={searchInputRef}
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Search..."
-            className="w-full h-10 px-3 py-2 border-b border-gray-200 text-sm focus:outline-none"
-            aria-label="Search options"
+        <span
+          className={`text-sm truncate max-w-[calc(100%-40px)] ${selectedLabel ? 'text-baseline-90 font-medium' : 'text-baseline-60'}`}>
+          {selectedLabel || 'Select an option'}
+        </span>
+        <div className="flex items-center flex-shrink-0 ml-2">
+          {selectedLabel && (isHovering || isOpen) && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="mr-1 text-baseline-60 hover:text-baseline-80 transition-opacity opacity-100"
+              aria-label="Clear selection">
+              <Image src={closeIconUrl} alt="Clear" height={16} width={16} />
+            </button>
+          )}
+          <ChevronDown
+            fill="currentColor"
+            className={`w-5 h-5 text-baseline-60 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           />
+        </div>
+      </div>
 
-          {/* Lista de opciones */}
-          <ul ref={listRef} role="listbox" className="max-h-48 overflow-auto">
+      {!isReadOnly && isOpen && (
+        <div className="absolute z-10 mt-1 w-full bg-white rounded shadow-lg overflow-hidden">
+          <div className="p-2">
+            <input
+              ref={searchInputRef}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Search..."
+              className="w-full p-2 text-sm border border-baseline-30 rounded focus:outline-none focus:border-dynamic-main focus:ring-1 focus:ring-dynamic-light"
+              aria-label="Search options"
+            />
+          </div>
+          <ul ref={listRef} role="listbox" className="max-h-60 overflow-y-auto">
             {filteredOptions.length > 0 ? (
               filteredOptions.map(({ id, label }, index) => (
                 <li
@@ -140,12 +175,26 @@ export default function Select({ name, options, onFocus, isReadOnly }: SelectPro
                   aria-selected={selectedValue === id}
                   onClick={() => handleSelect(id, label)}
                   onMouseEnter={() => setHighlightedIndex(index)}
-                  className={`p-2 ${highlightedIndex === index ? 'bg-blue-100' : ''}`}>
-                  {label}
+                  className={`px-4 py-3 text-sm cursor-pointer flex items-center justify-between
+                    ${highlightedIndex === index ? 'bg-baseline-10' : ''}
+                    ${selectedValue === id ? 'bg-baseline-10 font-medium' : ''}
+                    hover:bg-baseline-10`}>
+                  <span className={`truncate mr-2 ${selectedValue === id ? 'text-dynamic-dark' : 'text-baseline-90'}`}>
+                    {label}
+                  </span>
+                  {selectedValue === id && (
+                    <Image
+                      src={checkIconUrl}
+                      alt="Selected Item"
+                      className="fade-in-left flex-shrink-0"
+                      height={16}
+                      width={16}
+                    />
+                  )}
                 </li>
               ))
             ) : (
-              <li className="p-2 text-gray-500">No options found</li>
+              <li className="px-4 py-3 text-sm text-baseline-60">No options found</li>
             )}
           </ul>
         </div>

@@ -1,9 +1,10 @@
 import { Field } from '@workspaceui/etendohookbinder/src/api/types';
-import Select, { SelectProps } from './components/Select';
+import Select from './components/Select';
 import { useMemo } from 'react';
 import { useTableDirDatasource } from '@/hooks/datasource/useTableDirDatasource';
+import { SelectProps } from './components/types';
 
-export const TableDirSelector = ({ field, isReadOnly }: { field: Field, isReadOnly: boolean }) => {
+export const TableDirSelector = ({ field, isReadOnly }: { field: Field; isReadOnly: boolean }) => {
   const idKey = (field.selector?.valueField ?? '') as string;
   const identifierKey = (field.selector?.displayField ?? '') as string;
 
