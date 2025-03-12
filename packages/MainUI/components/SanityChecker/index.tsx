@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { CircularProgress } from '@mui/material';
-import GlobalError from '@/app/error';
+import { ErrorDisplay } from '@/components/ErrorDisplay';
 import { useTranslation } from '@/hooks/useTranslation';
 import { HEALTH_CHECK_MAX_ATTEMPTS, HEALTH_CHECK_RETRY_DELAY_MS } from '@/constants/config';
 import { initialState, stateReducer } from './state';
@@ -41,10 +41,12 @@ export default function SanityChecker({ children }: React.PropsWithChildren) {
   return (
     <div className="center-all flex-column">
       {state.error ? (
-        <GlobalError reset={healthCheck}>
-          <h1>{t('errors.networkError.title')}</h1>
-          <p>{t('errors.networkError.description')}</p>
-        </GlobalError>
+        <ErrorDisplay
+          title={t('errors.networkError.title')}
+          description={t('errors.networkError.description')}
+          showRetry={true}
+          onRetry={healthCheck}
+        />
       ) : (
         <>
           <CircularProgress />

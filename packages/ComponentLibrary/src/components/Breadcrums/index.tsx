@@ -23,7 +23,6 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
     [theme],
   );
 
-  const paperConstant = useCallback(() => ({ sx: sx.menu, elevation: 3 }), [sx.menu]);
   const menuConstant = useCallback(() => ({ sx: menuStyle }), []);
 
   const handleMouseEnter = useCallback(() => setIsHomeHovered(true), []);

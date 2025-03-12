@@ -31,13 +31,15 @@ function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
 
   if (error) {
     return (
-      <ErrorDisplay
-        title={t('errors.formData.title')}
-        description={error.message}
-        onRetry={refetch}
-        showRetry
-        showHomeButton
-      />
+      <div className="mt-40">
+        <ErrorDisplay
+          title={t('errors.formData.title')}
+          description={error.message}
+          onRetry={refetch}
+          showRetry
+          showHomeButton
+        />
+      </div>
     );
   }
 

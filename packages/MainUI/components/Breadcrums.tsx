@@ -3,39 +3,50 @@ import Breadcrumb from '@workspaceui/componentlibrary/src/components/Breadcrums'
 import type { BreadcrumbItem } from '@workspaceui/componentlibrary/src/components/Breadcrums/types';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { styles } from './styles';
-import { useRouter, useParams, usePathname } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { BREADCRUMB, ROUTE_IDS } from '../constants/breadcrumb';
 import { useTranslation } from '../hooks/useTranslation';
-import { useLanguage } from '../hooks/useLanguage';
 import { useMetadataContext } from '../hooks/useMetadataContext';
 
 const AppBreadcrumb: React.FC = () => {
   const { t } = useTranslation();
   const router = useRouter();
-  const params = useParams();
   const pathname = usePathname();
   const navigate = router.push;
-  const { language } = useLanguage();
-  const { window, tab } = useMetadataContext();
-
-  const windowId = Array.isArray(params.windowId) ? params.windowId[0] : params.windowId || '';
-  const recordId = Array.isArray(params.recordId) ? params.recordId[0] : params.recordId || '';
+  const { window, tab, recordId, windowId, selected } = useMetadataContext();
 
   const isNewRecord = useCallback(() => pathname.includes('/NewRecord'), [pathname]);
 
-  const query = useMemo(
-    () => ({
+  const recordQuery = useMemo(() => {
+    if (!recordId || !windowId || !tab?.id || isNewRecord()) {
+      return null;
+    }
+
+    return {
       windowId,
-      tabId: tab?.id,
+      tabId: tab.id,
       criteria: [{ fieldName: 'id', operator: 'equals', value: recordId }],
-      headers: {
-        'Accept-Language': language,
-      },
-    }),
-    [language, recordId, tab?.id, windowId],
+      pageSize: 1,
+    };
+  }, [recordId, windowId, tab?.id, isNewRecord]);
+
+  const { records: recordData, loading: recordLoading } = useDatasource(
+    recordQuery && window?.tabs?.[0]?.entityName ? window.tabs[0].entityName : '',
+    recordQuery || { windowId: '', tabId: '' },
   );
 
-  const { records } = useDatasource(window?.tabs?.[0]?.entityName || '', query);
+  const recordIdentifier = useMemo(() => {
+    if (selected[0]?._identifier && selected[0]._identifier !== recordId) {
+      return selected[0]._identifier;
+    }
+    if (recordData?.[0]?._identifier) {
+      return recordData[0]._identifier;
+    }
+    if (recordId && recordLoading) {
+      return t('common.loading');
+    }
+    return recordId;
+  }, [selected, recordId, recordData, recordLoading, t]);
 
   const breadcrumbItems = useMemo(() => {
     const items: BreadcrumbItem[] = [];
@@ -53,16 +64,15 @@ const AppBreadcrumb: React.FC = () => {
         id: ROUTE_IDS.NEW_RECORD,
         label: t('breadcrumb.newRecord'),
       });
-    } else if (recordId && records && records.length > 0) {
-      const record = records[0];
+    } else if (recordId) {
       items.push({
         id: recordId,
-        label: String(record._identifier || record.documentNo || recordId),
+        label: String(recordIdentifier),
       });
     }
 
     return items;
-  }, [windowId, window, isNewRecord, recordId, records, t, navigate]);
+  }, [windowId, window, isNewRecord, recordId, recordIdentifier, t, navigate]);
 
   const handleHomeClick = useCallback(() => navigate('/'), [navigate]);
 
