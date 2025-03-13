@@ -54,11 +54,15 @@ export function useDatasource(
     setPageSize(size);
   }, []);
 
-  const toggleImplicitFilters = useCallback((value?: boolean) => {
-    setIsImplicitFilterApplied(prev => (value !== undefined ? value : !prev));
-    setPage(1);
-    setRecords([]);
-  }, []);
+  const toggleImplicitFilters = useCallback(
+    (value?: boolean) => {
+      const newValue = value !== undefined ? value : !isImplicitFilterApplied;
+      setIsImplicitFilterApplied(newValue);
+      setPage(1);
+      setRecords([]);
+    },
+    [isImplicitFilterApplied],
+  );
 
   const columnFilterCriteria = useMemo(() => {
     if (!columns || !activeColumnFilters.length) return [];
@@ -91,7 +95,6 @@ export function useDatasource(
     try {
       if (!entity) {
         setLoaded(true);
-
         return;
       }
 
@@ -105,6 +108,9 @@ export function useDatasource(
         throw new Error(response.error.message);
       } else {
         setRecords(prevRecords => {
+          if (page === 1 || searchQuery) {
+            return [...response.data];
+          }
           const mergedRecords = [...prevRecords, ...response.data];
           const uniqueRecords = mergedRecords.reduce(
             (acc, current) => {
@@ -123,7 +129,7 @@ export function useDatasource(
     } finally {
       setLoading(false);
     }
-  }, [entity, page, pageSize, queryParams]);
+  }, [entity, page, pageSize, queryParams, searchQuery]); // Añadir searchQuery como dependencia
 
   useEffect(() => {
     setRecords([]);
