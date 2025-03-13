@@ -14,6 +14,11 @@ const en = {
     processes: 'Available Process',
     clear: 'Clear Selection',
   },
+  forms: {
+    sections: {
+      main: 'Main Section',
+    },
+  },
   errors: {
     networkError: {
       title: 'Could not connect to Etendo',

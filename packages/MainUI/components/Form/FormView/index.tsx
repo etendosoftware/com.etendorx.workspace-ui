@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import Collapsible from '../Collapsible';
 import StatusBar from './StatusBar';
 import { MessageBox } from './MessageBox';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function FormView({
   defaultValues,
@@ -22,7 +23,7 @@ export default function FormView({
 }) {
   const [message, setMessage] = useState<string>();
   const router = useRouter();
-
+  const { t } = useTranslation();
   const handleDismiss = useCallback(() => setMessage(undefined), []);
   const fields = useMemo(() => {
     const statusBarFields: Record<string, Field> = {};
@@ -49,7 +50,7 @@ export default function FormView({
   const fieldGroups = useMemo(() => {
     const groups = {} as Record<
       string,
-      { id: string; identifier: string; sequenceNumber: number; fields: Record<string, Field> }
+      { id: string | null; identifier: string; sequenceNumber: number; fields: Record<string, Field> }
     >;
 
     Object.entries(fields.formFields).forEach(([fieldName, field]) => {
@@ -57,8 +58,8 @@ export default function FormView({
 
       if (!groups[id]) {
         groups[id] = {
-          id,
-          identifier,
+          id: id || null,
+          identifier: identifier || t('forms.sections.main'),
           sequenceNumber: Number.MAX_SAFE_INTEGER,
           fields: {},
         };
@@ -72,7 +73,7 @@ export default function FormView({
     });
 
     return groups;
-  }, [fields.formFields]);
+  }, [fields.formFields, t]);
 
   const groups = useMemo(
     () =>

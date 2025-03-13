@@ -27,7 +27,7 @@ export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => 
       return <TableDirSelector field={field} isReadOnly={isReadOnly} />;
     case '15':
     case '16':
-      return <DateSelector field={field} />;
+      return <DateSelector field={field} isReadOnly={isReadOnly} />;
     case '20':
       return <BooleanSelector field={field} />;
     case '29':
@@ -49,12 +49,6 @@ export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => 
     case '11':
     case '22':
     default:
-      return (
-        <StringSelector
-          field={field}
-          readOnly={isReadOnly}
-          required={field.isMandatory}
-        />
-      );
+      return <StringSelector field={field} readOnly={isReadOnly} required={field.isMandatory} />;
   }
 };

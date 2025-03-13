@@ -14,7 +14,7 @@ export default function DynamicTableScreen() {
     const topLevelTabs = groupedTabs.find(tabs => tabs[0].level === 0) || [];
 
     return (
-      <div className="m-1 relative h-screen overflow-hidden bg-baseline-0">
+      <div className="m-1 relative h-screen overflow-hidden ">
         {topLevelTabs.length > 0 && <TabLevel tab={topLevelTabs[0]} />}
       </div>
     );

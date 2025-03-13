@@ -9,8 +9,8 @@ interface DateInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
-  ({ name, className = '', label, isReadOnly, error, helperText, ...props }, ref) => {
-    const inputRef = useRef<HTMLInputElement | null>(null);
+  ({ name, label, isReadOnly, error, helperText, ...props }, ref) => {
+    const inputRef = useRef<HTMLInputElement>();
     const [isFocused, setIsFocused] = useState(false);
 
     const handleClick = useCallback(() => {
@@ -21,7 +21,9 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
 
     const handleRef = useCallback(
       (node: HTMLInputElement) => {
-        inputRef.current = node;
+        if (node) {
+          inputRef.current = node;
+        }
 
         if (typeof ref === 'function') {
           ref(node);
@@ -44,7 +46,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     };
 
     return (
-      <div className="w-full font-['Inter'] font-medium">
+      <div className="w-full font-medium">
         {label && (
           <label
             htmlFor={name}
@@ -53,8 +55,9 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             {props.required && <span className="text-error-main ml-1">*</span>}
           </label>
         )}
-
-        <div className={`relative w-full ${isReadOnly ? 'pointer-events-none' : ''}`} onClick={handleClick}>
+        <div
+          className={`relative w-full h-10 flex items-center ${isReadOnly ? 'pointer-events-none' : ''}`}
+          onClick={handleClick}>
           <input
             type="date"
             id={name}
@@ -62,11 +65,11 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             ref={handleRef}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            className={`w-full py-1 pr-8 border-b outline-none text-sm
+            className={`w-full h-full py-2 pl-2 pr-8 border-b outline-none text-sm
               ${isFocused ? 'border-baseline-80 bg-baseline-0' : 'border-baseline-60'} 
-              ${isReadOnly ? 'bg-baseline-20 text-baseline-60 cursor-not-allowed' : 'bg-transparent text-baseline-90 hover:border-baseline-80'}
+              ${isReadOnly ? 'bg-transparent-neutral-20 rounded-t-lg cursor-not-allowed' : 'bg-transparent text-baseline-90 hover:border-baseline-80'}
               ${error ? 'border-error-main' : ''}
-              transition-colors ${className}`}
+              transition-colors`}
             readOnly={isReadOnly}
             {...props}
           />

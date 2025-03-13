@@ -127,9 +127,9 @@ export default function Select({ name, options, onFocus, isReadOnly }: SelectPro
         onClick={handleClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className={`w-full flex items-center justify-between px-3 py-2 h-10 border-b border-baseline-10 hover:border-b-baseline-100
+        className={`w-full flex items-center justify-between px-3 py-2 h-10 border-b border-baseline-10 hover:border-baseline-100
           ${isOpen ? 'rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light' : 'border-baseline-40'} 
-          ${isReadOnly ? 'bg-baseline-20 text-baseline-60 cursor-not-allowed' : 'bg-white text-baseline-90 cursor-pointer hover:border-baseline-60'}
+          ${isReadOnly ? 'bg-transparent-neutral-20 rounded-t-lg cursor-not-allowed' : 'bg-white text-baseline-90 cursor-pointer hover:border-baseline-60'}
           transition-colors outline-none`}
         tabIndex={0}>
         <span

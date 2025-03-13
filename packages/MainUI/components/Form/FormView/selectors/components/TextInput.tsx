@@ -25,7 +25,7 @@ export const TextInput = ({
   };
 
   return (
-    <div className="relative w-full font-['Inter'] font-medium">
+    <div className="w-full font-['Inter'] font-medium">
       {label && (
         <label
           htmlFor={props.id || props.name}
@@ -34,7 +34,7 @@ export const TextInput = ({
           {props.required && <span className="text-error-main ml-1">*</span>}
         </label>
       )}
-      <div className="relative flex items-center w-full">
+      <div className={`relative flex items-center w-full h-10 ${isDisabled ? 'pointer-events-none' : ''}`}>
         {leftIcon && (
           <div className="absolute left-3 text-baseline-60">
             <button type="button" onClick={onLeftIconClick} className="p-1 focus:outline-none" disabled={isDisabled}>
@@ -43,10 +43,10 @@ export const TextInput = ({
           </div>
         )}
         <input
-          className={`w-full py-1 text-sm border-b border-baseline-60 focus:border-baseline-80 outline-none transition
-            ${leftIcon ? 'pl-10' : 'pl-0'} 
-            ${rightIcon ? 'pr-10' : 'pr-0'}
-            ${isDisabled ? 'bg-baseline-20 text-baseline-60' : 'bg-transparent text-transparent-neutral-100 hover:border-baseline-80'}
+          className={`w-full h-full py-2 border-b outline-none text-sm transition-colors
+            ${leftIcon ? 'pl-10' : 'pl-3'} 
+            ${rightIcon ? 'pr-10' : 'pr-3'}
+            ${isDisabled ? 'bg-transparent-neutral-20 rounded-t-lg cursor-not-allowed' : 'bg-transparent text-baseline-90 hover:border-baseline-80'}
             ${className || ''}`}
           onChange={handleChange}
           disabled={isDisabled}
