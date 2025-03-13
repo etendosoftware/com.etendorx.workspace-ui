@@ -32,7 +32,7 @@ export default function FormView({
 
     Object.entries(tab.fields).forEach(([, field]) => {
       // Keep this at first because a process field will have field.display == true
-      if (field.process) {
+      if (field.process || field.column.process) {
         actionFields[field.hqlName] = field;
       } else if (field.shownInStatusBar) {
         statusBarFields[field.hqlName] = field;
