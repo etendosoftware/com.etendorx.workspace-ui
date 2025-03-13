@@ -10,7 +10,7 @@ interface DateInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
   ({ name, className = '', label, isReadOnly, error, helperText, ...props }, ref) => {
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLInputElement | null>(null);
     const [isFocused, setIsFocused] = useState(false);
 
     const handleClick = useCallback(() => {
@@ -21,6 +21,8 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
 
     const handleRef = useCallback(
       (node: HTMLInputElement) => {
+        inputRef.current = node;
+
         if (typeof ref === 'function') {
           ref(node);
         } else if (ref) {
@@ -39,21 +41,6 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       if (props.onBlur) {
         props.onBlur(e);
       }
-    };
-
-    const formatDateValue = (value?: string) => {
-      if (!value) return '';
-
-      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        return value;
-      }
-
-      const parts = value.split('/');
-      if (parts.length === 3) {
-        return `${parts[2]}-${parts[1]}-${parts[0]}`;
-      }
-
-      return value;
     };
 
     return (
@@ -81,7 +68,6 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
               ${error ? 'border-error-main' : ''}
               transition-colors ${className}`}
             readOnly={isReadOnly}
-            value={formatDateValue(props.value as string)}
             {...props}
           />
           <div className="absolute right-0 top-0 h-full flex items-center pr-1 pointer-events-none">
