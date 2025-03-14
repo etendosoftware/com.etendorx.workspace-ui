@@ -4,7 +4,9 @@ import { getFieldReference } from '@/utils';
 import ReferenceLabel from './ReferenceLabel';
 
 const Content = ({ field, link }: { field: Field; link?: boolean }) => (
-  <label htmlFor={field.hqlName} className={`block text-sm font-medium select-none ${link ? 'text-blue-700 cursor-pointer' : 'text-gray-700'}`}>
+  <label
+    htmlFor={field.hqlName}
+    className={`block text-sm font-medium select-none truncate ${link ? 'text-blue-700 cursor-pointer' : 'text-gray-700'}`}>
     {field.name}
   </label>
 );

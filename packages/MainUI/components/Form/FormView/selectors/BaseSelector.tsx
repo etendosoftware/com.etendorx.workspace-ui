@@ -137,7 +137,10 @@ export const BaseSelector = ({ field }: { field: Field }) => {
   if (isDisplayed) {
     return (
       <div className="grid grid-cols-3 auto-rows-auto gap-4 items-center" title={field.hqlName}>
-        <Label field={field} />
+        <div className="relative">
+          {field.isMandatory && <span className="absolute -top-4 right-0 text-[#DC143C] font-bold">*</span>}
+          <Label field={field} />
+        </div>
         <div className="col-span-2">
           <GenericSelector field={field} isReadOnly={isReadOnly} />
         </div>

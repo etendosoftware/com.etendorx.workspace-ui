@@ -29,10 +29,6 @@ export const useStyle = () => {
               },
             },
             '&:focus-within': {
-              '&:before': {
-                borderColor: theme.palette.baselineColor.etendoPrimary.main,
-                borderWidth: '1px',
-              },
               '&:after': {
                 borderColor: theme.palette.baselineColor.etendoPrimary.main,
                 borderWidth: '0 0 2px',
