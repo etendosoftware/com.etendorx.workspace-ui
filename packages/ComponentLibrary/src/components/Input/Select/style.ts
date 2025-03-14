@@ -14,10 +14,6 @@ export const useStyle = () => {
             textAlign: 'left',
             color: theme.palette.baselineColor.neutral[100],
             borderRadius: '0.75rem 0.75rem 0 0',
-            '&:before': {
-              borderColor: theme.palette.baselineColor.transparentNeutral[10],
-              borderWidth: '1px',
-            },
             '&:after': {
               borderColor: theme.palette.baselineColor.transparentNeutral[10],
               borderWidth: '0 0 2px',

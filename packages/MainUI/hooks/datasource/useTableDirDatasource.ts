@@ -39,13 +39,22 @@ export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) =>
           inpTabId: field.tab,
           inpTableId: field.column.table,
           initiatorField: field.hqlName,
-          _currentValue: typeof _currentValue === 'undefined' ? "" : _currentValue,
+          _currentValue: typeof _currentValue === 'undefined' ? '' : _currentValue,
         });
 
         Object.entries(getValues()).forEach(([key, value]) => {
           const _key = tab.fields[key]?.inputName;
-          let safeValue = String(value);
-          safeValue = safeValue === 'true' ? 'Y' : safeValue === 'false' ? 'N' : value;
+          const stringValue = String(value);
+
+          const valueMap = {
+            true: 'Y',
+            false: 'N',
+          } as const;
+
+          const safeValue = Object.prototype.hasOwnProperty.call(valueMap, stringValue)
+            ? valueMap[stringValue as keyof typeof valueMap]
+            : value;
+
           if (safeValue) {
             body.set(_key || key, safeValue);
           }

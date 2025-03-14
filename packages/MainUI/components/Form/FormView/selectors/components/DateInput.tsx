@@ -34,27 +34,46 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       [ref],
     );
 
-    const handleFocus = () => {
-      setIsFocused(true);
-    };
+    const handleFocus = () => setIsFocused(true);
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(false);
-      if (props.onBlur) {
-        props.onBlur(e);
-      }
+      props.onBlur?.(e);
+    };
+
+    const getLabelClass = () => `block mb-1 text-sm ${isReadOnly ? 'text-baseline-60' : 'text-baseline-80'}`;
+
+    const getInputClass = () => {
+      const baseClass = 'w-full h-full py-2 pl-2 pr-8 border-b outline-none text-sm';
+      const focusClass = isFocused ? 'border-baseline-80 bg-baseline-0' : 'border-baseline-60';
+      const readOnlyClass = isReadOnly
+        ? 'bg-transparent-neutral-20 rounded-t-lg cursor-not-allowed'
+        : 'bg-transparent text-baseline-90 hover:border-baseline-80';
+      const errorClass = error ? 'border-error-main' : '';
+
+      return `${baseClass} ${focusClass} ${readOnlyClass} ${errorClass} transition-colors`;
+    };
+
+    const renderLabel = () => {
+      if (!label) return null;
+
+      return (
+        <label htmlFor={name} className={getLabelClass()}>
+          {label}
+          {props.required && <span className="text-error-main ml-1">*</span>}
+        </label>
+      );
+    };
+
+    const renderHelperText = () => {
+      if (!helperText) return null;
+
+      return <div className={`mt-1 text-xs ${error ? 'text-error-main' : 'text-baseline-60'}`}>{helperText}</div>;
     };
 
     return (
       <div className="w-full font-medium">
-        {label && (
-          <label
-            htmlFor={name}
-            className={`block mb-1 text-sm ${isReadOnly ? 'text-baseline-60' : 'text-baseline-80'}`}>
-            {label}
-            {props.required && <span className="text-error-main ml-1">*</span>}
-          </label>
-        )}
+        {renderLabel()}
         <div
           className={`relative w-full h-10 flex items-center ${isReadOnly ? 'pointer-events-none' : ''}`}
           onClick={handleClick}>
@@ -65,11 +84,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             ref={handleRef}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            className={`w-full h-full py-2 pl-2 pr-8 border-b outline-none text-sm
-              ${isFocused ? 'border-baseline-80 bg-baseline-0' : 'border-baseline-60'} 
-              ${isReadOnly ? 'bg-transparent-neutral-20 rounded-t-lg cursor-not-allowed' : 'bg-transparent text-baseline-90 hover:border-baseline-80'}
-              ${error ? 'border-error-main' : ''}
-              transition-colors`}
+            className={getInputClass()}
             readOnly={isReadOnly}
             {...props}
           />
@@ -77,9 +92,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             <CalendarIcon fill="currentColor" className="w-5 h-5 text-baseline-60" />
           </div>
         </div>
-        {helperText && (
-          <div className={`mt-1 text-xs ${error ? 'text-error-main' : 'text-baseline-60'}`}>{helperText}</div>
-        )}
+        {renderHelperText()}
       </div>
     );
   },

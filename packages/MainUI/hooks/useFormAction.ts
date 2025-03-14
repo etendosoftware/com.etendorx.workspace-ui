@@ -29,7 +29,7 @@ export const useFormAction = ({ window, tab, mode, onSuccess, onError }: UseForm
           method: 'POST',
           body: {
             dataSource: 'isc_OBViewDataSource_0',
-            operationType: mode == FormMode.NEW ? 'add' : 'update',
+            operationType: mode === FormMode.NEW ? 'add' : 'update',
             componentId: 'isc_OBViewForm_0',
             data: {
               accountingDate: new Date(),
@@ -73,7 +73,7 @@ const buildQueryString = ({ mode, window, tab }: { window: WindowMetadata; tab: 
     windowId: String(window.id),
     tabId: String(tab.id),
     moduleId: String(tab.module),
-    _operationType: mode == FormMode.NEW ? 'add' : 'update',
+    _operationType: mode === FormMode.NEW ? 'add' : 'update',
     _noActiveFilter: String(true),
     sendOriginalIDBack: String(true),
     _extraProperties: '',
