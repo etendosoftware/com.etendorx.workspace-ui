@@ -44,7 +44,7 @@ export const BaseSelector = ({ field }: { field: Field }) => {
 
       return result;
     } catch (error) {
-      logger.debug('Error executing expression:', compiledExpr, error);
+      logger.warn('Error executing expression:', compiledExpr, error);
 
       return true;
     }
@@ -59,7 +59,7 @@ export const BaseSelector = ({ field }: { field: Field }) => {
     try {
       return compiledExpr(session, values);
     } catch (error) {
-      logger.debug('Error executing expression:', compiledExpr, error);
+      logger.warn('Error executing expression:', compiledExpr, error);
 
       return true;
     }

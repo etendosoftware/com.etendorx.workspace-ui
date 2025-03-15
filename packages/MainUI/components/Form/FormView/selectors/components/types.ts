@@ -15,7 +15,7 @@ export interface Option {
 export interface SelectProps {
   name: string;
   options: Option[];
-  onFocus?: () => unknown;
+  onFocus?: (value: unknown) => unknown;
   isReadOnly?: boolean;
   required?: boolean;
 }

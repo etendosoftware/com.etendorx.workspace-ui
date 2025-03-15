@@ -160,7 +160,8 @@ select:-webkit-autofill:hover,
 select:-webkit-autofill:focus {
   border: none;
   -webkit-text-fill-color: black;
-  -webkit-box-shadow: 0px 0px 100vw #fff inset;
+  -webkit-box-shadow: none;
+  box-shadow: none;
   transition: background-color 200ms ease-in-out;
 }
 
@@ -203,4 +204,20 @@ pre.code code {
   height: 100%;
   max-height: 20rem;
   overflow-y: scroll;
+}
+
+.cursor-not-allowed-child {
+  @apply cursor-not-allowed;
+  
+  * {
+    @apply cursor-not-allowed;
+    pointer-events: none;
+  }
+}
+
+.cursor-to-children {
+  * {
+    cursor: inherit;
+    pointer-events: none;
+  }
 }

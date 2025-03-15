@@ -5,7 +5,7 @@ import { ProfileWrapperProps } from './types';
 import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
 import ProfileModal from '@workspaceui/componentlibrary/src/components/ProfileModal/ProfileModal';
 import { useLanguage } from '../../hooks/useLanguage';
-import { Language } from '../../contexts/types';
+import { DefaultConfiguration, Language } from '../../contexts/types';
 
 const ProfileWrapper = (props: ProfileWrapperProps) => {
   const {
@@ -61,6 +61,14 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
 
   const flagString = getFlag(language);
 
+  const handleSetDefaultConfiguration = useCallback(
+    (config: DefaultConfiguration) => {
+      if (!token) throw new Error('No token available');
+      return setDefaultConfiguration(token, config);
+    },
+    [setDefaultConfiguration, token],
+  );
+
   return (
     <ProfileModal
       {...props}
@@ -78,10 +86,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
       onSaveAsDefaultChange={handleSaveAsDefaultChange}
       onChangeRole={changeRole}
       onChangeWarehouse={changeWarehouse}
-      onSetDefaultConfiguration={config => {
-        if (!token) throw new Error('No token available');
-        return setDefaultConfiguration(token, config);
-      }}
+      onSetDefaultConfiguration={handleSetDefaultConfiguration}
       logger={logger}
       onSignOff={handleSignOff}
       languages={languagesWithFlags}

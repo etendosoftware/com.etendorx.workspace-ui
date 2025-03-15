@@ -1,30 +1,45 @@
 import { Toolbar } from '@/components/Toolbar/Toolbar';
-import { EntityData, Field, FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import {
+  EntityData,
+  Field,
+  FormInitializationResponse,
+  FormMode,
+  Tab,
+  WindowMetadata,
+} from '@workspaceui/etendohookbinder/src/api/types';
 import { FormProvider, useForm } from 'react-hook-form';
 import { BaseSelector } from './selectors/BaseSelector';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFormAction } from '@/hooks/useFormAction';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Collapsible from '../Collapsible';
 import StatusBar from './StatusBar';
 import { MessageBox } from './MessageBox';
 import { useTranslation } from '@/hooks/useTranslation';
+import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { buildInitialFormState } from '@/utils';
+import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
 
 export default function FormView({
-  defaultValues,
   window,
   tab,
   mode,
+  formInitialization,
 }: {
-  defaultValues: Record<string, unknown>;
   window: WindowMetadata;
   tab: Tab;
   mode: FormMode;
+  formInitialization: FormInitializationResponse;
 }) {
   const [message, setMessage] = useState<string>();
+  const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
+  const { recordId } = useParams<{ recordId: string }>();
   const router = useRouter();
   const { t } = useTranslation();
+  const { record, load } = useSingleDatasource(tab.entityName, recordId);
+
   const handleDismiss = useCallback(() => setMessage(undefined), []);
+
   const fields = useMemo(() => {
     const statusBarFields: Record<string, Field> = {};
     const formFields: Record<string, Field> = {};
@@ -83,18 +98,18 @@ export default function FormView({
     [fieldGroups],
   );
 
-  const form = useForm({ defaultValues });
+  const { reset, ...form } = useForm();
 
   const onSuccess = useCallback(
-    (data: EntityData) => {
+    async (data: EntityData) => {
       if (mode === FormMode.EDIT) {
-        router.refresh();
+        load();
       } else {
         router.replace(String(data.id));
       }
       setMessage('Saved');
     },
-    [mode, router],
+    [load, mode, router],
   );
 
   const onError = useCallback((_data: unknown) => {
@@ -105,13 +120,17 @@ export default function FormView({
 
   const handleSave = useMemo(() => form.handleSubmit(submit), [form, submit]);
 
+  useEffect(() => {
+    reset(buildInitialFormState(record, formInitialization, fieldsByColumnName));
+  }, [fieldsByColumnName, formInitialization, mode, record, reset]);
+
   return (
-    <FormProvider {...form}>
+    <FormProvider reset={reset} {...form}>
       <form
-        className={`w-full p-2 space-y-2 transition ${loading ? 'pointer-events-none opacity-50 select-none' : ''}`}
+        className={`w-full p-2 space-y-2 transition duration-300 h-full overflow-scroll ${loading ? 'opacity-50 select-none cursor-progress cursor-to-children' : ''}`}
         onSubmit={handleSave}>
         <Toolbar windowId={window.id} tabId={tab.id} isFormView={true} onSave={handleSave} />
-        <MessageBox isVisible={!!message} onDismiss={handleDismiss} message={message} />
+        <MessageBox message={message} onDismiss={handleDismiss} />
         <StatusBar fields={fields.statusBarFields} />
         {groups.map(([id, group]) => (
           <Collapsible key={id} title={group.identifier} initialState={group.id === null}>

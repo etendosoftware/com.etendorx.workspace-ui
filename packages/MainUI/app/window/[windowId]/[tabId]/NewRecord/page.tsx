@@ -6,25 +6,14 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useDynamicForm } from '@/hooks/useDynamicForm';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
-import { useMemo } from 'react';
-import { buildInitialFormState } from '@/utils';
 import FormView from '@/components/Form/FormView';
 
 function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
   const { t } = useTranslation();
-  const { loading, record, formInitialization, refetch, error } = useDynamicForm({
+  const { loading, formInitialization, refetch, error } = useDynamicForm({
     tab,
     mode: FormMode.NEW,
   });
-  const { fieldsByColumnName } = useMetadataContext();
-
-  const values = useMemo(() => {
-    if (!formInitialization) return { ...record };
-
-    const updatedValues = buildInitialFormState(formInitialization, fieldsByColumnName);
-
-    return { ...record, ...updatedValues };
-  }, [fieldsByColumnName, formInitialization, record]);
 
   if (error) {
     return (
@@ -40,11 +29,11 @@ function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
     );
   }
 
-  if (loading || !formInitialization) {
+  if (loading) {
     return <Spinner />;
   }
 
-  return <FormView mode={FormMode.NEW} defaultValues={values} tab={tab} window={window} />;
+  return <FormView mode={FormMode.NEW} tab={tab} window={window} formInitialization={formInitialization} />;
 }
 
 export default function EditRecordPage() {

@@ -7,7 +7,6 @@ import {
 } from '@workspaceui/etendohookbinder/src/api/types';
 import { logger } from '@/utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
 import { useUserContext } from './useUserContext';
 import { ClientOptions } from '@workspaceui/etendohookbinder/src/api/client';
 import { useMetadataContext } from './useMetadataContext';
@@ -42,11 +41,22 @@ const fetchFormInitialization = async (
   }
 };
 
-type State = {
-  loading: boolean;
-  error: Error | null;
-  formInitialization: FormInitializationResponse | null;
-};
+type State =
+  | {
+      loading: true;
+      error: null;
+      formInitialization: null;
+    }
+  | {
+      loading: false;
+      error: null;
+      formInitialization: FormInitializationResponse;
+    }
+  | {
+      loading: false;
+      error: Error;
+      formInitialization: FormInitializationResponse | null;
+    };
 
 type Action =
   | { type: 'FETCH_START' }
@@ -54,7 +64,7 @@ type Action =
   | { type: 'FETCH_ERROR'; payload: Error };
 
 const initialState: State = {
-  loading: false,
+  loading: true,
   error: null,
   formInitialization: null,
 };
@@ -62,24 +72,26 @@ const initialState: State = {
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case 'FETCH_START':
-      return { ...state, loading: true, error: null };
+      return { loading: true, error: null, formInitialization: null };
     case 'FETCH_SUCCESS':
       return { loading: false, error: null, formInitialization: action.payload };
     case 'FETCH_ERROR':
-      return { ...state, loading: false, error: action.payload };
+      return { loading: false, error: action.payload, formInitialization: state.formInitialization };
     default:
       return state;
   }
 };
 
-export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams) {
+export type UseDynamicForm = State & {
+  refetch: () => Promise<void>;
+};
+
+export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams): UseDynamicForm {
   const { setSession } = useUserContext();
   const { fieldsByColumnName } = useMetadataContext();
-  const { record } = useSingleDatasource(tab.entityName, recordId);
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
   const ready = !!state.formInitialization;
   const { error, formInitialization, loading } = state;
-
   const params = useMemo(
     () => (tab ? buildFormInitializationParams(tab, mode, recordId) : null),
     [tab, mode, recordId],
@@ -123,5 +135,8 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
     }
   }, [refetch, ready]);
 
-  return { error, formInitialization, loading, record, refetch };
+  return useMemo(
+    () => ({ error, formInitialization, loading, refetch }) as UseDynamicForm,
+    [error, formInitialization, loading, refetch],
+  );
 }

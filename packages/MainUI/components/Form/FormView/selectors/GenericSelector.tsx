@@ -27,7 +27,7 @@ export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => 
     case '16':
       return <DateSelector field={field} isReadOnly={isReadOnly} />;
     case '20':
-      return <BooleanSelector field={field} />;
+      return <BooleanSelector field={field} isReadOnly={isReadOnly} />;
     case '29':
       return (
         <QuantitySelector

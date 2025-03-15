@@ -43,14 +43,14 @@ export const useFormAction = ({ window, tab, mode, onSuccess, onError }: UseForm
         const { ok, data } = await Metadata.datasourceServletClient.request(url, options);
 
         if (ok && data?.response?.status === 0 && !controller.current.signal.aborted) {
+          setLoading(false);
           onSuccess?.(data.response.data[0]);
         } else {
           throw new Error(data);
         }
       } catch (err) {
-        onError?.(err instanceof Error ? err : err);
-      } finally {
         setLoading(false);
+        onError?.(err instanceof Error ? err : err);
       }
     },
     [mode, onError, onSuccess, tab, userId, window],

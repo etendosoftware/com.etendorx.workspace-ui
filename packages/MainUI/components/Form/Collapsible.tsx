@@ -1,6 +1,6 @@
 'use client';
 
-import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ChevronUp from '@workspaceui/componentlibrary/src/assets/icons/chevron-up.svg';
 import ChevronDown from '@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg';
 
@@ -19,7 +19,7 @@ export default function Collapsible({
     if (contentRef.current) {
       setMaxHeight(contentRef.current.scrollHeight);
     }
-  }, [isOpen]);
+  }, [isOpen, children]);
 
   return (
     <div className={`bg-gray-100 rounded-2xl ${isOpen ? 'overflow-visible' : 'overflow-hidden'}`}>

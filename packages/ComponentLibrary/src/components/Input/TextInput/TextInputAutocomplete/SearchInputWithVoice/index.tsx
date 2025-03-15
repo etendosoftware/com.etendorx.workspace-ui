@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { InputAdornment, Box, useTheme } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterIcon from '@mui/icons-material/FilterList';
@@ -11,41 +11,48 @@ import TextInputAutoComplete from '../TextInputAutocomplete';
 import IconButton from '../../../../IconButton';
 
 export interface SearchInputWithVoiceProps extends TextInputProps {
-  onVoiceClick: () => void;
+  onVoiceClick?: () => void;
 }
 
-const SearchInputWithVoice = (props: SearchInputWithVoiceProps) => {
-  const { onVoiceClick, ...otherProps } = props;
-  const [isRecording, setIsRecording] = useState(false);
+const StartAdornment = () => {
   const theme = useTheme();
 
-  const handleVoiceClick = () => {
-    setIsRecording(!isRecording);
-    onVoiceClick();
-  };
-
-  const startAdornment = (
+  return (
     <InputAdornment position="start">
       <SearchIcon sx={{ color: theme.palette.baselineColor.neutral[70] }} />
     </InputAdornment>
   );
+};
 
-  const endAdornment = (
+const EndAdornment = () => {
+  const theme = useTheme();
+
+  return (
     <InputAdornment position="end">
       <IconButton size="small">
         <FilterIcon sx={{ color: theme.palette.baselineColor.neutral[70] }} />
       </IconButton>
     </InputAdornment>
   );
+};
+
+const SearchInputWithVoice = ({ onVoiceClick, ...props }: SearchInputWithVoiceProps) => {
+  const [isRecording, setIsRecording] = useState(false);
+  const theme = useTheme();
+
+  const handleVoiceClick = useCallback(() => {
+    setIsRecording(!isRecording);
+    onVoiceClick?.();
+  }, [isRecording, onVoiceClick]);
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center' }}>
       <TextInputAutoComplete
-        {...otherProps}
+        {...props}
         InputProps={{
-          ...otherProps.InputProps,
-          startAdornment,
-          endAdornment,
+          ...props.InputProps,
+          startAdornment: <StartAdornment />,
+          endAdornment: <EndAdornment />,
           style: { height: '2.5rem' },
         }}
       />
@@ -80,4 +87,4 @@ const SearchInputWithVoice = (props: SearchInputWithVoiceProps) => {
   );
 };
 
-export default SearchInputWithVoice;
+export default memo(SearchInputWithVoice);

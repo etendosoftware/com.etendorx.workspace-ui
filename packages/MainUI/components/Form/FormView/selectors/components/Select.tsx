@@ -73,11 +73,8 @@ export default function Select({ name, options, onFocus, isReadOnly }: SelectPro
   const handleClick = useCallback(() => {
     if (!isReadOnly) {
       setIsOpen(prev => !prev);
-      if (!isOpen) {
-        onFocus?.();
-      }
     }
-  }, [isReadOnly, isOpen, onFocus]);
+  }, [isReadOnly]);
 
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
@@ -115,6 +112,12 @@ export default function Select({ name, options, onFocus, isReadOnly }: SelectPro
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [handleClickOutside]);
+
+  useEffect(() => {
+    if (isOpen) {
+      onFocus?.(selectedValue);
+    }
+  }, [isOpen, onFocus, selectedValue]);
 
   return (
     <div

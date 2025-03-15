@@ -1,4 +1,4 @@
-import { Field, FieldType, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
+import { EntityData, Field, FieldType, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -45,6 +45,7 @@ export const sanitizeValue = (value: unknown) => {
 };
 
 export const buildInitialFormState = (
+  record: EntityData | undefined,
   formInitialization: FormInitializationResponse,
   fieldsByColumnName: Record<string, Field>,
 ) => {
@@ -64,7 +65,11 @@ export const buildInitialFormState = (
     }
   });
 
-  return acc;
+  const result = { ...acc, ...record };
+
+  console.debug("buildInitialFormState");
+
+  return result;
 };
 
 export const buildPayloadByInputName = (values: Record<string, unknown>, fields?: Record<string, Field>) => {

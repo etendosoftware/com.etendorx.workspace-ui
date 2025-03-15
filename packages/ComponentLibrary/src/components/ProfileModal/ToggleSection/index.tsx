@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Checkbox, FormControl, FormControlLabel, Grid, styled, useTheme } from '@mui/material';
 import { useStyle } from './styles';
 import OrganizationIcon from '../../../assets/icons/user.svg';
@@ -33,6 +33,9 @@ const SelectorList: React.FC<SelectorListProps> = ({
 }) => {
   const { styles, defaultFill } = useStyle();
   const theme = useTheme();
+  const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirmation, setNewPasswordConfirmation] = useState('');
 
   const FlagEmoji = ({ flag }: { flag: string }) => <span style={styles.flagStyles}>{flag}</span>;
 
@@ -119,6 +122,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               onChange={onWarehouseChange}
               iconLeft={icons[Item.Warehouse]}
               disabled={!selectedRole}
+              isOptionEqualToValue={isOptionEqualToValue}
             />
             <Select
               id="language-select"
@@ -127,6 +131,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               value={selectedLanguage}
               onChange={onLanguageChange}
               iconLeft={icons[Item.Language]}
+              isOptionEqualToValue={isOptionEqualToValue}
             />
           </FormControl>
           <FormControlLabel
@@ -137,24 +142,29 @@ const SelectorList: React.FC<SelectorListProps> = ({
       )}
       {section === 'password' && (
         <Grid margin="0.5rem">
-          <InputPassword
-            label={passwordLabel}
-            value=""
-            setValue={undefined}
-            leftIcon={<LockOutlined fill={defaultFill} />}
-          />
-          <InputPassword
-            label={newPasswordLabel}
-            value=""
-            setValue={undefined}
-            leftIcon={<LockOutlined fill={defaultFill} />}
-          />
-          <InputPassword
-            label={confirmPasswordLabel}
-            value=""
-            setValue={undefined}
-            leftIcon={<LockOutlined fill={defaultFill} />}
-          />
+          <form action="#" autoComplete="off">
+            <InputPassword
+              label={passwordLabel}
+              value={password}
+              setValue={setPassword}
+              leftIcon={<LockOutlined fill={defaultFill} />}
+              autoComplete="new-password"
+            />
+            <InputPassword
+              label={newPasswordLabel}
+              value={newPassword}
+              setValue={setNewPassword}
+              leftIcon={<LockOutlined fill={defaultFill} />}
+              autoComplete="new-password"
+            />
+            <InputPassword
+              label={confirmPasswordLabel}
+              value={newPasswordConfirmation}
+              setValue={setNewPasswordConfirmation}
+              leftIcon={<LockOutlined fill={defaultFill} />}
+              autoComplete="new-password"
+            />
+          </form>
         </Grid>
       )}
     </div>

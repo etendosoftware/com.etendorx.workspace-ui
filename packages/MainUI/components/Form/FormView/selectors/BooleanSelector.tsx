@@ -3,7 +3,7 @@ import { useFormContext } from 'react-hook-form';
 import { Switch } from './components/Switch';
 import { useCallback } from 'react';
 
-export const BooleanSelector = ({ field }: { field: Field }) => {
+export const BooleanSelector = ({ field, isReadOnly }: { field: Field; isReadOnly: boolean }) => {
   const { watch, register, setValue } = useFormContext();
   const value = watch(field.hqlName);
 
@@ -14,5 +14,5 @@ export const BooleanSelector = ({ field }: { field: Field }) => {
     [field.hqlName, setValue],
   );
 
-  return <Switch {...register(field.hqlName)} checked={value} onCheckedChange={handleChange} />;
+  return <Switch {...register(field.hqlName)} checked={value} onCheckedChange={handleChange} disabled={isReadOnly} />;
 };
