@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { datasource } from '../api/datasource';
-import { EntityData } from '@/api/types';
+import { EntityData } from '../api/types';
 
 export function useSingleDatasource(entity?: string, id?: string) {
   const [loading, setLoading] = useState(false);

@@ -131,7 +131,7 @@ export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => 
           entity={field.referencedEntity || ''}
           onChange={handleChange}
           name={field.hqlName}
-          readOnly={isReadOnly}
+          isReadOnly={isReadOnly}
           disabled={isReadOnly}
         />
       );

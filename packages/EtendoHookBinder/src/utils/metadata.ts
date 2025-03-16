@@ -41,7 +41,7 @@ export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
           header: column.name ?? column.hqlName,
           id: column.name,
           columnName: column.hqlName,
-          isMandatory: column.required,
+          isMandatory: column.isMandatory,
           _identifier: column.name,
           column: {
             _identifier: columnType,

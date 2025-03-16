@@ -23,7 +23,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useLanguage } from '../hooks/useLanguage';
 import { DEFAULT_LANGUAGE } from './languageProvider';
-import { useApiContext } from './api';
 
 export const UserContext = createContext({} as IUserContext);
 
@@ -35,7 +34,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const { setLanguage } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
-  const apiBaseUrl = useApiContext();
   const navigate = router.push;
 
   const [roles, setRoles] = useState<Role[]>(() => {
@@ -191,7 +189,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const login = useCallback(
     async (username: string, password: string) => {
       try {
-        const loginResponse = await doLogin(apiBaseUrl, username, password);
+        const loginResponse = await doLogin(username, password);
 
         localStorage.setItem('token', loginResponse.token);
         setToken(loginResponse.token);
@@ -211,7 +209,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         throw e;
       }
     },
-    [apiBaseUrl, updateSessionInfo],
+    [updateSessionInfo],
   );
 
   const value = useMemo<IUserContext>(
