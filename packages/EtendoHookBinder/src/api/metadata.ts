@@ -1,5 +1,4 @@
 import {
-  API_DATASOURCE_URL,
   API_DEFAULT_CACHE_DURATION,
   API_METADATA_URL,
   API_KERNEL_SERVLET,
@@ -13,15 +12,20 @@ import { Menu } from './types';
 export type { Etendo };
 
 export class Metadata {
-  public static client = new Client(API_METADATA_URL);
-  public static kernelClient = new Client(API_KERNEL_SERVLET);
-  public static datasourceClient = new Client(API_DATASOURCE_URL);
-  public static datasourceServletClient = new Client(API_DATASOURCE_SERVLET);
+  public static client = new Client();
+  public static kernelClient = new Client();
+  public static datasourceServletClient = new Client();
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
   private static currentRoleId: string | null = null;
 
+  public static setBaseUrl(url: string) {
+    Metadata.client.setBaseUrl(url + API_METADATA_URL);
+    Metadata.kernelClient.setBaseUrl(url + API_KERNEL_SERVLET);
+    Metadata.datasourceServletClient.setBaseUrl(url + API_DATASOURCE_SERVLET);
+  }
+
   public static setLanguage(value: string) {
-    [this.client, this.datasourceClient, this.kernelClient, this.datasourceServletClient].forEach(client =>
+    [this.client, this.kernelClient, this.datasourceServletClient].forEach(client =>
       client.setLanguageHeader(value),
     );
 
@@ -29,7 +33,7 @@ export class Metadata {
   }
 
   public static setToken(token: string) {
-    [this.client, this.datasourceClient, this.kernelClient, this.datasourceServletClient].forEach(client =>
+    [this.client, this.kernelClient, this.datasourceServletClient].forEach(client =>
       client.setAuthHeader(token, 'Bearer'),
     );
 
@@ -38,20 +42,18 @@ export class Metadata {
 
   public static registerInterceptor(interceptor: Interceptor) {
     const listener1 = this.client.registerInterceptor(interceptor);
-    const listener2 = this.datasourceClient.registerInterceptor(interceptor);
-    const listener3 = this.kernelClient.registerInterceptor(interceptor);
-    const listener4 = this.datasourceServletClient.registerInterceptor(interceptor);
+    const listener2 = this.kernelClient.registerInterceptor(interceptor);
+    const listener3 = this.datasourceServletClient.registerInterceptor(interceptor);
 
     return () => {
       listener1();
       listener2();
       listener3();
-      listener4();
     };
   }
 
   public static getDatasource(id: string, body: BodyInit | Record<string, unknown> | null | undefined) {
-    return this.datasourceClient.post(id, body);
+    return this.datasourceServletClient.post(id, body);
   }
 
   private static async _getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {

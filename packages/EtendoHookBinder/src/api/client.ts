@@ -2,7 +2,6 @@ import { AUTH_HEADER_NAME } from './constants';
 
 export interface ClientOptions extends Omit<RequestInit, 'body'> {
   headers?: Record<string, string>;
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   body?: RequestInit['body'] | Record<string, unknown>;
 }
 
@@ -25,11 +24,15 @@ export class Client {
   private readonly JSON_CONTENT_TYPE = 'application/json'!;
   private readonly FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded'!;
 
-  constructor(url: string) {
-    this.baseUrl = url;
+  constructor(url?: string) {
+    this.baseUrl = url || "";
     this.baseHeaders = {};
     this.interceptor = null;
     this.baseQueryParams = new URLSearchParams();
+  }
+
+  public setBaseUrl(url: string) {
+    this.baseUrl = url;
   }
 
   private cleanUrl(url: string) {

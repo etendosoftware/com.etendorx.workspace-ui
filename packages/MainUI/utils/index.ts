@@ -65,11 +65,7 @@ export const buildInitialFormState = (
     }
   });
 
-  const result = { ...acc, ...record };
-
-  console.debug("buildInitialFormState");
-
-  return result;
+  return { ...acc, ...record };
 };
 
 export const buildPayloadByInputName = (values: Record<string, unknown>, fields?: Record<string, Field>) => {

@@ -90,7 +90,6 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
   const { setSession } = useUserContext();
   const { fieldsByColumnName } = useMetadataContext();
   const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
-  const ready = !!state.formInitialization;
   const { error, formInitialization, loading } = state;
   const params = useMemo(
     () => (tab ? buildFormInitializationParams(tab, mode, recordId) : null),
@@ -130,10 +129,8 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
   }, [fieldsByColumnName, params, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.windowId]);
 
   useEffect(() => {
-    if (!ready) {
-      refetch();
-    }
-  }, [refetch, ready]);
+    refetch();
+  }, [refetch]);
 
   return useMemo(
     () => ({ error, formInitialization, loading, refetch }) as UseDynamicForm,

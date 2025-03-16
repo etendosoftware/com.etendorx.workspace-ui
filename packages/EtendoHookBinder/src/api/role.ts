@@ -2,9 +2,9 @@ import { API_LOGIN_URL } from './constants';
 import { LoginResponse } from './types';
 import { getJson } from './utils';
 
-export const changeRole = async (roleId: string, token: string): Promise<LoginResponse> => {
+export const changeRole = async (baseUrl: string, roleId: string, token: string): Promise<LoginResponse> => {
   try {
-    const response = await fetch(API_LOGIN_URL, {
+    const response = await fetch(baseUrl + API_LOGIN_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

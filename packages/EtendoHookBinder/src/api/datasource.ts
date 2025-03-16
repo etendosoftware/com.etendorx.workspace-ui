@@ -10,12 +10,16 @@ export class Datasource {
     this.client = new Client(url);
   }
 
-  public static getInstance(url: string = API_DATASOURCE_SERVLET) {
+  public static getInstance(url: string = '') {
     if (!Datasource.instance) {
       Datasource.instance = new Datasource(url);
     }
 
     return Datasource.instance;
+  }
+
+  public setBaseUrl(url: string) {
+    this.client.setBaseUrl(url + API_DATASOURCE_SERVLET);
   }
 
   public setToken(token: string) {
@@ -81,4 +85,4 @@ export class Datasource {
   }
 }
 
-export const datasource = Datasource.getInstance(API_DATASOURCE_SERVLET);
+export const datasource = Datasource.getInstance();

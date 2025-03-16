@@ -7,12 +7,14 @@ import DynamicReport from '../../../components/ad_reports/DynamicReport';
 import { useReport } from '@workspaceui/etendohookbinder/src/hooks/useReport';
 import { useReportMetadata } from '@workspaceui/etendohookbinder/src/hooks/useReportMetadata';
 import { FieldValues } from 'react-hook-form';
+import { useApiContext } from '@/contexts/api';
 
 export default function ReportPage() {
   const params = useParams();
   const reportId = params.reportId as string;
   const { metadata, loading, error } = useReportMetadata(reportId);
-  const { generateReport } = useReport();
+  const apiUrl = useApiContext();
+  const { generateReport } = useReport(apiUrl);
 
   const handleSubmit = useCallback(
     async (format: string, data: FieldValues) => {

@@ -21,7 +21,7 @@ import { buildInitialFormState } from '@/utils';
 import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
 
 export default function FormView({
-  window,
+  window: windowMetadata,
   tab,
   mode,
   formInitialization,
@@ -31,10 +31,10 @@ export default function FormView({
   mode: FormMode;
   formInitialization: FormInitializationResponse;
 }) {
+  const router = useRouter();
   const [message, setMessage] = useState<string>();
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
   const { recordId } = useParams<{ recordId: string }>();
-  const router = useRouter();
   const { t } = useTranslation();
   const { record, load } = useSingleDatasource(tab.entityName, recordId);
 
@@ -105,6 +105,7 @@ export default function FormView({
       if (mode === FormMode.EDIT) {
         load();
       } else {
+        router.prefetch(String(data.id));
         router.replace(String(data.id));
       }
       setMessage('Saved');
@@ -113,10 +114,10 @@ export default function FormView({
   );
 
   const onError = useCallback((_data: unknown) => {
-    setMessage('Error saving record');
+    setMessage('Error saving record: ' + String(_data));
   }, []);
 
-  const { submit, loading } = useFormAction({ window, tab, mode, onSuccess, onError });
+  const { submit, loading } = useFormAction({ window: windowMetadata, tab, mode, onSuccess, onError });
 
   const handleSave = useMemo(() => form.handleSubmit(submit), [form, submit]);
 
@@ -129,7 +130,7 @@ export default function FormView({
       <form
         className={`w-full p-2 space-y-2 transition duration-300 h-full overflow-scroll ${loading ? 'opacity-50 select-none cursor-progress cursor-to-children' : ''}`}
         onSubmit={handleSave}>
-        <Toolbar windowId={window.id} tabId={tab.id} isFormView={true} onSave={handleSave} />
+        <Toolbar windowId={windowMetadata.id} tabId={tab.id} isFormView={true} onSave={handleSave} />
         <MessageBox message={message} onDismiss={handleDismiss} />
         <StatusBar fields={fields.statusBarFields} />
         {groups.map(([id, group]) => (

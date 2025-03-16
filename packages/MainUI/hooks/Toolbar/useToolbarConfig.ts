@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BUTTON_IDS } from '../../constants/Toolbar';
 import { useSearch } from '../../contexts/searchContext';
@@ -39,18 +39,24 @@ export const useToolbarConfig = ({
     [onSave, router, setShowTabContainer, tabId, windowId],
   );
 
-  const handleSearch = (query: string) => {
-    setSearchValue(query);
-    setSearchQuery(query);
-  };
+  const handleSearch = useCallback(
+    (query: string) => {
+      setSearchValue(query);
+      setSearchQuery(query);
+    },
+    [setSearchQuery],
+  );
 
-  return {
-    handleAction,
-    searchOpen,
-    setSearchOpen,
-    handleSearch,
-    searchValue,
-    setSearchValue,
-    setShowTabContainer,
-  };
+  return useMemo(
+    () => ({
+      handleAction,
+      searchOpen,
+      setSearchOpen,
+      handleSearch,
+      searchValue,
+      setSearchValue,
+      setShowTabContainer,
+    }),
+    [handleAction, handleSearch, searchOpen, searchValue, setShowTabContainer],
+  );
 };

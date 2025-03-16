@@ -11,10 +11,6 @@ export function MessageBox({ message, onDismiss }: { onDismiss: () => void; mess
     setIsVisible(!!message);
   }, [message]);
 
-  if (!message) {
-    return null;
-  }
-
   return (
     <div
       className={`w-full rounded-2xl relative bg-white transition-all transform-gpu overflow-hidden ${isVisible ? 'max-h-full' : 'max-h-0'}`}>
