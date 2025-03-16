@@ -10,6 +10,7 @@ import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useUserContext } from './useUserContext';
 import { ClientOptions } from '@workspaceui/etendohookbinder/src/api/client';
 import { useMetadataContext } from './useMetadataContext';
+import { getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 
 const getRowId = (mode: FormMode, recordId?: string): string => {
   if (mode === FormMode.EDIT && !recordId) {
@@ -88,7 +89,7 @@ export type UseDynamicForm = State & {
 
 export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams): UseDynamicForm {
   const { setSession } = useUserContext();
-  const { fieldsByColumnName } = useMetadataContext();
+  const { selected, tabs } = useMetadataContext();
   const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
   const { error, formInitialization, loading } = state;
   const params = useMemo(
@@ -102,18 +103,41 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
     dispatch({ type: 'FETCH_START' });
 
     try {
-      // const keyFields = Object.values(tab.fields).filter((field) => field.column.keyColumn);
-      const entityKeyColumn = tab.fields['id']?.columnName ?? "";
-      const data = await fetchFormInitialization(params, {
-        inpKeyName: fieldsByColumnName[entityKeyColumn]?.inputName,
-        inpcOrderId: null,
+      const entityKeyColumn = Object.values(tab.fields).find(field => field.column.keyColumn);
+
+      if (!entityKeyColumn) {
+        throw new Error('Missing key column');
+      }
+
+      console.debug(tab);
+
+      const parentColumns = tab.parentColumns.map(field => tab.fields[field]);
+      const parent = tab.level > 0 ? selected[tab.level - 1] : {};
+      const parentTab = tabs[tab.level - 1];
+      const parentFields = getFieldsByInputName(parentTab);
+
+      const parentData = parentColumns.reduce(
+        (acc, field) => {
+          const parentFieldName = parentFields[field.inputName].hqlName;
+          acc[field.inputName] = parent[parentFieldName];
+          return acc;
+        },
+        {} as Record<string, unknown>,
+      );
+      const payload = {
+        ...parentData,
+        inpKeyName: entityKeyColumn.inputName,
         inpTabId: tab.id,
         inpTableId: tab.table,
-        inpkeyColumnId: entityKeyColumn,
-        keyColumnName: entityKeyColumn,
+        inpkeyColumnId: entityKeyColumn.columnName,
+        keyColumnName: entityKeyColumn.columnName,
         _entityName: tab.entityName,
         inpwindowId: tab.windowId,
-      });
+      };
+
+      console.debug(payload);
+
+      const data = await fetchFormInitialization(params, payload);
       const storedInSessionAttributes = Object.entries(data.auxiliaryInputValues).reduce(
         (acc, [key, { value }]) => {
           acc[key] = value;
@@ -125,10 +149,10 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
       setSession(prev => ({ ...prev, ...storedInSessionAttributes, ...data.sessionAttributes }));
       dispatch({ type: 'FETCH_SUCCESS', payload: data });
     } catch (err) {
-      console.debug(err);
+      logger.error(err);
       dispatch({ type: 'FETCH_ERROR', payload: err instanceof Error ? err : new Error('Unknown error') });
     }
-  }, [fieldsByColumnName, params, setSession, tab]);
+  }, [params, tab, selected, tabs, setSession]);
 
   useEffect(() => {
     refetch();
