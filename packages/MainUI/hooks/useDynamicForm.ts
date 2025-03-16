@@ -102,9 +102,10 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
     dispatch({ type: 'FETCH_START' });
 
     try {
-      const entityKeyColumn = tab.fields['id'].columnName;
+      // const keyFields = Object.values(tab.fields).filter((field) => field.column.keyColumn);
+      const entityKeyColumn = tab.fields['id']?.columnName ?? "";
       const data = await fetchFormInitialization(params, {
-        inpKeyName: fieldsByColumnName[entityKeyColumn].inputName,
+        inpKeyName: fieldsByColumnName[entityKeyColumn]?.inputName,
         inpcOrderId: null,
         inpTabId: tab.id,
         inpTableId: tab.table,
@@ -124,9 +125,10 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
       setSession(prev => ({ ...prev, ...storedInSessionAttributes, ...data.sessionAttributes }));
       dispatch({ type: 'FETCH_SUCCESS', payload: data });
     } catch (err) {
+      console.debug(err);
       dispatch({ type: 'FETCH_ERROR', payload: err instanceof Error ? err : new Error('Unknown error') });
     }
-  }, [fieldsByColumnName, params, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.windowId]);
+  }, [fieldsByColumnName, params, setSession, tab]);
 
   useEffect(() => {
     refetch();
