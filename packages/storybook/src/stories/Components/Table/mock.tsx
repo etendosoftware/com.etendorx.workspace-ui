@@ -5,6 +5,7 @@ import AttachmentIcon from '@workspaceui/componentlibrary/src/assets/icons/file.
 import InformationIcon from '@workspaceui/componentlibrary/src/assets/icons/info.svg';
 import NoteIcon from '@workspaceui/componentlibrary/src/assets/icons/note.svg';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
+import { FieldType } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const mockOrganizations: Organization[] = [
   {
@@ -22,7 +23,7 @@ export const mockOrganizations: Organization[] = [
     organization: {
       name: 'organization',
       value: 'Global Enterprises',
-      type: 'select',
+      type: FieldType.SELECT,
       label: 'Organization',
       section: '_mainSection',
       required: true,
@@ -30,7 +31,7 @@ export const mockOrganizations: Organization[] = [
     },
     transactionDocument: {
       value: 'Sales Order',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Transaction Document',
       section: '_mainSection',
       required: true,
@@ -39,7 +40,7 @@ export const mockOrganizations: Organization[] = [
     },
     documentNo: {
       value: 'SO-001',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Document No.',
       section: '_mainSection',
       required: true,
@@ -48,7 +49,7 @@ export const mockOrganizations: Organization[] = [
     },
     orderDate: {
       value: '2023-08-15',
-      type: 'date',
+      type: FieldType.DATE,
       label: 'Order Date',
       section: '_mainSection',
       required: true,
@@ -57,7 +58,7 @@ export const mockOrganizations: Organization[] = [
     },
     iscancelled: {
       value: false,
-      type: 'boolean',
+      type: FieldType.BOOLEAN,
       label: 'Is Cancelled',
       section: '_mainSection',
       required: true,
@@ -66,7 +67,7 @@ export const mockOrganizations: Organization[] = [
     },
     businessPartner: {
       value: 'TechCorp Inc.',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Business Partner',
       section: '_mainSection',
       required: true,
@@ -75,7 +76,7 @@ export const mockOrganizations: Organization[] = [
     },
     partnerAddress: {
       value: '123 Tech St, Silicon Valley, CA',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Partner Address',
       section: '_mainSection',
       name: '',
@@ -83,7 +84,7 @@ export const mockOrganizations: Organization[] = [
     },
     priceList: {
       value: 'Standard Price List',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Price List',
       section: '_mainSection',
       name: '',
@@ -91,7 +92,7 @@ export const mockOrganizations: Organization[] = [
     },
     scheduledDeliveryDate: {
       value: '2023-08-30',
-      type: 'date',
+      type: FieldType.DATE,
       label: 'Scheduled Delivery Date',
       section: '_mainSection',
       name: '',
@@ -99,7 +100,7 @@ export const mockOrganizations: Organization[] = [
     },
     paymentMethod: {
       value: 'Credit Card',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Payment Method',
       section: '_mainSection',
       name: '',
@@ -107,7 +108,7 @@ export const mockOrganizations: Organization[] = [
     },
     paymentTerms: {
       value: 'Net 30',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Payment Terms',
       section: '_mainSection',
       name: '',
@@ -126,7 +127,7 @@ export const mockOrganizations: Organization[] = [
     },
     warehouse: {
       value: 'Main Warehouse',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Warehouse',
       section: '_linkedItems',
       name: '',
@@ -134,7 +135,7 @@ export const mockOrganizations: Organization[] = [
     },
     invoiceTerms: {
       value: 'Standard Terms',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Invoice Terms',
       section: '_linkedItems',
       name: '',
@@ -142,7 +143,7 @@ export const mockOrganizations: Organization[] = [
     },
     orderReference: {
       value: 'REF-001',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Order Reference',
       section: '_linkedItems',
 
@@ -162,7 +163,7 @@ export const mockOrganizations: Organization[] = [
     },
     salesRepresentative: {
       value: 'John Doe',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Sales Representative',
       section: '_moreInformation',
       name: '',
@@ -170,7 +171,7 @@ export const mockOrganizations: Organization[] = [
     },
     description: {
       value: 'Order for Q3 supplies',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Description',
       section: '_moreInformation',
       name: '',
@@ -178,7 +179,7 @@ export const mockOrganizations: Organization[] = [
     },
     invoiceAddress: {
       value: '456 Finance Ave, New York, NY',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Invoice Address',
       section: '_moreInformation',
       name: '',
@@ -197,7 +198,7 @@ export const mockOrganizations: Organization[] = [
     },
     deliveryLocation: {
       value: '789 Delivery Rd, Los Angeles, CA',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Delivery Location',
       section: '_attachments',
       name: '',
@@ -205,7 +206,7 @@ export const mockOrganizations: Organization[] = [
     },
     quotation: {
       value: 'Q-001',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Quotation',
       section: '_attachments',
       name: '',
@@ -213,7 +214,7 @@ export const mockOrganizations: Organization[] = [
     },
     cancelledorder: {
       value: 'ASD',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Cancelled Order',
       section: '_attachments',
       name: '',
@@ -221,7 +222,7 @@ export const mockOrganizations: Organization[] = [
     },
     project: {
       value: 'Q3 Expansion',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Project',
       section: '_attachments',
       name: '',
@@ -229,7 +230,7 @@ export const mockOrganizations: Organization[] = [
     },
     id: {
       value: '1',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'ID',
       name: '',
       original: {} as never,
@@ -247,7 +248,7 @@ export const mockOrganizations: Organization[] = [
     },
     note: {
       value: 'Q3 Expansion',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Project',
       section: '_noteSection',
       name: '',
@@ -268,7 +269,7 @@ export const mockOrganizations: Organization[] = [
     },
     organization: {
       value: 'Global X',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Organization',
       section: '_mainSection',
       name: '',
@@ -276,7 +277,7 @@ export const mockOrganizations: Organization[] = [
     },
     transactionDocument: {
       value: 'Sales Order',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Transaction Document',
       section: '_mainSection',
       name: '',
@@ -284,7 +285,7 @@ export const mockOrganizations: Organization[] = [
     },
     documentNo: {
       value: 'SO-002',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Document No.',
       section: '_mainSection',
       name: '',
@@ -292,7 +293,7 @@ export const mockOrganizations: Organization[] = [
     },
     orderDate: {
       value: '2023-08-15',
-      type: 'date',
+      type: FieldType.DATE,
       label: 'Order Date',
       section: '_mainSection',
       name: '',
@@ -300,7 +301,7 @@ export const mockOrganizations: Organization[] = [
     },
     iscancelled: {
       value: false,
-      type: 'boolean',
+      type: FieldType.BOOLEAN,
       label: 'Is Cancelled',
       section: '_mainSection',
       name: '',
@@ -308,7 +309,7 @@ export const mockOrganizations: Organization[] = [
     },
     businessPartner: {
       value: 'Etendo.',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Business Partner',
       section: '_mainSection',
       name: '',
@@ -316,7 +317,7 @@ export const mockOrganizations: Organization[] = [
     },
     partnerAddress: {
       value: '123 Tech St, Silicon Valley, CA',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Partner Address',
       section: '_mainSection',
       name: '',
@@ -324,7 +325,7 @@ export const mockOrganizations: Organization[] = [
     },
     priceList: {
       value: 'Standard Price List',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Price List',
       section: '_mainSection',
       name: '',
@@ -332,7 +333,7 @@ export const mockOrganizations: Organization[] = [
     },
     scheduledDeliveryDate: {
       value: '2023-08-30',
-      type: 'date',
+      type: FieldType.DATE,
       label: 'Scheduled Delivery Date',
       section: '_mainSection',
       name: '',
@@ -340,7 +341,7 @@ export const mockOrganizations: Organization[] = [
     },
     paymentMethod: {
       value: 'Credit Card',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Payment Method',
       section: '_mainSection',
       name: '',
@@ -348,7 +349,7 @@ export const mockOrganizations: Organization[] = [
     },
     paymentTerms: {
       value: 'Net 30',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Payment Terms',
       section: '_mainSection',
       name: '',
@@ -367,7 +368,7 @@ export const mockOrganizations: Organization[] = [
     },
     warehouse: {
       value: 'Main Warehouse',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Warehouse',
       section: '_linkedItems',
       name: '',
@@ -375,7 +376,7 @@ export const mockOrganizations: Organization[] = [
     },
     invoiceTerms: {
       value: 'Standard Terms',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Invoice Terms',
       section: '_linkedItems',
       name: '',
@@ -383,7 +384,7 @@ export const mockOrganizations: Organization[] = [
     },
     orderReference: {
       value: 'REF-001',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Order Reference',
       section: '_linkedItems',
       name: '',
@@ -402,7 +403,7 @@ export const mockOrganizations: Organization[] = [
     },
     salesRepresentative: {
       value: 'John Doe',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Sales Representative',
       section: '_moreInformation',
       name: '',
@@ -410,7 +411,7 @@ export const mockOrganizations: Organization[] = [
     },
     description: {
       value: 'Order for Q3 supplies',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Description',
       section: '_moreInformation',
       name: '',
@@ -418,7 +419,7 @@ export const mockOrganizations: Organization[] = [
     },
     invoiceAddress: {
       value: '456 Finance Ave, New York, NY',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Invoice Address',
       section: '_moreInformation',
       name: '',
@@ -437,7 +438,7 @@ export const mockOrganizations: Organization[] = [
     },
     deliveryLocation: {
       value: '789 Delivery Rd, Los Angeles, CA',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Delivery Location',
       section: '_attachments',
       name: '',
@@ -445,7 +446,7 @@ export const mockOrganizations: Organization[] = [
     },
     quotation: {
       value: 'Q-001',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Quotation',
       section: '_attachments',
       name: '',
@@ -453,7 +454,7 @@ export const mockOrganizations: Organization[] = [
     },
     cancelledorder: {
       value: '',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Cancelled Order',
       section: '_attachments',
       name: '',
@@ -461,7 +462,7 @@ export const mockOrganizations: Organization[] = [
     },
     replacedorder: {
       value: '',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Replaced Order',
       section: '_attachments',
       name: '',
@@ -469,7 +470,7 @@ export const mockOrganizations: Organization[] = [
     },
     externalBusinessPartnerReference: {
       value: 'EXT-001',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'External Business Partner Reference',
       section: '_attachments',
       name: '',
@@ -477,14 +478,14 @@ export const mockOrganizations: Organization[] = [
     },
     project: {
       value: 'Q3 Expansion',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Project',
       name: '',
       original: {} as never,
     },
     costcenter: {
       value: 'Sales Department',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Cost Center',
       section: '_attachments',
       name: '',
@@ -492,7 +493,7 @@ export const mockOrganizations: Organization[] = [
     },
     asset: {
       value: 'N/A',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Asset',
       section: '_attachments',
       name: '',
@@ -500,7 +501,7 @@ export const mockOrganizations: Organization[] = [
     },
     stDimension: {
       value: 'West Coast',
-      type: 'text',
+      type: FieldType.TEXT,
       label: '1st Dimension',
       section: '_attachments',
       name: '',
@@ -508,7 +509,7 @@ export const mockOrganizations: Organization[] = [
     },
     ndDimension: {
       value: 'Electronics',
-      type: 'text',
+      type: FieldType.TEXT,
       label: '2nd Dimension',
       section: '_attachments',
       name: '',
@@ -516,7 +517,7 @@ export const mockOrganizations: Organization[] = [
     },
     transactionDocumentType: {
       value: 'Purchase Order',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Transaction Document Type',
       section: '_mainSection',
       name: '',
@@ -524,7 +525,7 @@ export const mockOrganizations: Organization[] = [
     },
     warehouseRule: {
       value: 'FIFO',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'Warehouse Rule',
       section: '_linkedItems',
       name: '',
@@ -532,7 +533,7 @@ export const mockOrganizations: Organization[] = [
     },
     id: {
       value: '2',
-      type: 'text',
+      type: FieldType.TEXT,
       label: 'ID',
       name: '',
       original: {} as never,
