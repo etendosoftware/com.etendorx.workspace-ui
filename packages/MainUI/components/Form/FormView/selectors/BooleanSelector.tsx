@@ -1,67 +1,18 @@
-import { useState, useCallback } from 'react';
-import { useStyle } from './styles';
-import { BooleanSelectorProps } from '../types';
+import { Field } from '@workspaceui/etendohookbinder/src/api/types';
+import { useFormContext } from 'react-hook-form';
+import { Switch } from './components/Switch';
+import { useCallback } from 'react';
 
-const BooleanSelector = ({ label, checked, onChange, name, disabled, readOnly }: BooleanSelectorProps) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const { styles } = useStyle();
+export const BooleanSelector = ({ field, isReadOnly }: { field: Field; isReadOnly: boolean }) => {
+  const { watch, register, setValue } = useFormContext();
+  const value = watch(field.hqlName);
 
   const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      onChange(name, e.currentTarget.checked);
+    (newValue: boolean) => {
+      setValue(field.hqlName, newValue);
     },
-    [name, onChange],
+    [field.hqlName, setValue],
   );
 
-  const handleMouseEnter = useCallback(() => {
-    setIsHovered(true);
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    setIsHovered(false);
-  }, []);
-
-  const isDisabled = readOnly || disabled;
-
-  const checkboxStyle = {
-    ...styles.styledCheckbox,
-    ...((checked && styles.styledCheckboxChecked) || {}),
-    ...((readOnly && styles.disabled) || {}),
-  };
-
-  const afterStyle = {
-    ...styles.styledCheckboxAfter,
-    ...((checked && styles.styledCheckboxCheckedAfter) || {}),
-  };
-
-  const borderStyle = {
-    ...styles.checkboxBorder,
-    ...((isHovered && styles.checkboxBorderHover) || {}),
-  };
-
-  return (
-    <div style={styles.checkboxContainer} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-      <label style={styles.checkboxLabel}>
-        <input
-          type="checkbox"
-          style={styles.hiddenCheckbox}
-          checked={checked}
-          disabled={isDisabled}
-          onChange={handleChange}
-          name={name}
-        />
-        <span
-          style={{
-            ...checkboxStyle,
-            ...(isDisabled && styles.disabled),
-          }}>
-          <span style={afterStyle} />
-        </span>
-        <span style={{ ...styles.labelText, ...(isDisabled && styles.disabled) }}>{label}</span>
-      </label>
-      <div style={borderStyle} />
-    </div>
-  );
+  return <Switch {...register(field.hqlName)} checked={value} onCheckedChange={handleChange} disabled={isReadOnly} />;
 };
-
-export default BooleanSelector;

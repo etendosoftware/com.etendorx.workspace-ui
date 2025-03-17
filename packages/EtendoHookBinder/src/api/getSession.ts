@@ -1,8 +1,8 @@
-import { API_BASE_URL } from './constants';
+import { Metadata } from './metadata';
 import { SessionResponse } from './types';
 
 export const getSession = async (token: string): Promise<SessionResponse> => {
-  const response = await fetch(`${API_BASE_URL}/meta/session?stateless=true`, {
+  const response = await Metadata.client.request(`/session`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -14,5 +14,5 @@ export const getSession = async (token: string): Promise<SessionResponse> => {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
 
-  return await response.json();
+  return response.data;
 };

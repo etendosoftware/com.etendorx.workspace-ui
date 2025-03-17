@@ -1,4 +1,4 @@
-import { ISession, ProfileInfo, Role, Warehouse, Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { ISession, ProfileInfo, Role, Warehouse, User, Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { type Etendo } from '@workspaceui/etendohookbinder/src/api/metadata';
 
 export type Language = 'en_US' | 'es_ES';
@@ -21,9 +21,11 @@ export interface LanguageOption {
   id: string;
   language: string;
   name: string;
+  key?: string;
 }
 
 export interface IUserContext {
+  user: User;
   login: (username: string, password: string) => Promise<void>;
   changeRole: (roleId: string) => Promise<void>;
   changeWarehouse: (warehouseId: string) => Promise<void>;
@@ -48,7 +50,6 @@ export interface IMetadataContext {
   loading: boolean;
   error: Error | undefined;
   groupedTabs: Etendo.Tab[][];
-  windowData?: Etendo.WindowMetadata;
   selectRecord: (record: Record<string, never>, tab: Tab) => void;
   selected: Record<string, Record<string, never>>;
   selectedMultiple: Record<string, Record<string, boolean>>;
@@ -67,4 +68,5 @@ export interface IMetadataContext {
   activeTabLevels: number[];
   setActiveTabLevels: (value: number[] | ((prev: number[]) => number[])) => void;
   closeTab: (level: number) => void;
+  window?: Etendo.WindowMetadata;
 }

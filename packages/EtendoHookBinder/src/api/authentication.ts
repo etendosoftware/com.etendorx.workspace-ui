@@ -1,10 +1,10 @@
 import { API_LOGIN_URL } from './constants';
+import { Metadata } from './metadata';
 import { LoginResponse } from './types';
-import { getJson } from './utils';
 
 export const login = async (username: string, password: string): Promise<LoginResponse> => {
   try {
-    const result = await fetch(API_LOGIN_URL, {
+    const result = await Metadata.loginClient.request(API_LOGIN_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -19,7 +19,7 @@ export const login = async (username: string, password: string): Promise<LoginRe
       throw new Error(`HTTP error! status: ${result.status}`);
     }
 
-    const data = await getJson(result);
+    const data = result.data;
 
     if (data.status === 'error') {
       throw new Error(data.status);

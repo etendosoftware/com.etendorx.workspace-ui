@@ -38,11 +38,11 @@ export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
         }
 
         result.push({
-          header: column.title ?? column.name ?? column.hqlName,
+          header: column.name ?? column.hqlName,
           id: column.name,
           columnName: column.hqlName,
-          isMandatory: column.required,
-          _identifier: column.title,
+          isMandatory: column.isMandatory,
+          _identifier: column.name,
           column: {
             _identifier: columnType,
           },
@@ -98,17 +98,17 @@ export const buildFormState = (
   }
 };
 
-export const isEntityReference = (type: FieldType) => ['tabledir', 'search'].includes(type);
+export const isEntityReference = (type: FieldType) => [FieldType.SELECT, FieldType.TABLEDIR].includes(type);
 
-export const getFieldsByDBColumnName = (tab: Tab) => {
+export const getFieldsByColumnName = (tab?: Tab) => {
   try {
+    if (!tab) {
+      return {};
+    }
+
     return Object.entries(tab.fields).reduce(
       (acc, [, field]) => {
-        acc[field.column.dBColumnName] = field;
-
-        if (!field.column.dBColumnName?.length) {
-          console.error(JSON.stringify(field, null, 2));
-        }
+        acc[field.columnName] = field;
 
         return acc;
       },
@@ -121,8 +121,12 @@ export const getFieldsByDBColumnName = (tab: Tab) => {
   }
 };
 
-export const getFieldsByName = (tab: Tab) => {
+export const getFieldsByInputName = (tab?: Tab) => {
   try {
+    if (!tab) {
+      return {};
+    }
+
     return Object.entries(tab.fields).reduce(
       (acc, [, field]) => {
         acc[field.inputName] = field;

@@ -1,10 +1,11 @@
 import { API_LOGIN_URL } from './constants';
+import { Metadata } from './metadata';
 import { LoginResponse } from './types';
 import { getJson } from './utils';
 
 export const changeRole = async (roleId: string, token: string): Promise<LoginResponse> => {
   try {
-    const response = await fetch(API_LOGIN_URL, {
+    const response = await Metadata.client.request(API_LOGIN_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

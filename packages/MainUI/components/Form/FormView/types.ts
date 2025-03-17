@@ -1,4 +1,4 @@
-import { Field, MappedData, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 import { ReportColumn } from '@workspaceui/etendohookbinder/src/hooks/types';
 import { MRT_ColumnDef, MRT_Row } from 'material-react-table';
@@ -24,19 +24,14 @@ export interface Section {
 export type FormData = Record<string, FieldDefinition | Section>;
 
 export interface FormViewProps {
-  data: FormData;
-  windowMetadata?: MappedData;
   onSave: () => void;
   onCancel: () => void;
-  readOnly?: boolean;
   gridItemProps?: GridItemProps;
   dottedLineInterval?: number;
   onChange?: (updatedData: FormData) => void;
   initialValues?: boolean;
   onLabelClick?: (url: string) => void;
   tab: Tab;
-  sessionAttributes?: Record<string, unknown>;
-  auxiliaryInputValues?: Record<string, unknown>;
 }
 
 export interface FormSectionProps {
@@ -106,8 +101,8 @@ export interface TableDirSelectorProps {
   entity: string;
   name: string;
   onChange: (value: string) => void;
-  disabled: boolean;
-  readOnly: boolean;
+  disabled?: boolean;
+  isReadOnly?: boolean;
 }
 
 export interface SearchSelectorProps {
@@ -115,10 +110,10 @@ export interface SearchSelectorProps {
   value: FieldValue;
   entity: string;
   onChange: (value: string) => void;
-  field: FieldDefinition;
+  field: Field;
   name: string;
-  disabled: boolean;
-  readOnly: boolean;
+  disabled?: boolean;
+  readOnly?: boolean;
 }
 
 export interface Option {
@@ -137,7 +132,7 @@ export interface BooleanSelectorProps {
   checked?: boolean;
   name: string;
   onChange: (name: string, value: boolean) => void;
-  disabled: boolean;
+  disabled?: boolean;
 }
 
 export interface NumberSelectorProps {
@@ -188,7 +183,7 @@ export interface QuantityProps {
 }
 
 export interface ListSelectorProps {
-  field: FieldDefinition;
+  field: Field;
   value: string;
   onChange: (value: string) => void;
   name: string;

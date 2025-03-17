@@ -1,10 +1,18 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BUTTON_IDS } from '../../constants/Toolbar';
 import { useSearch } from '../../contexts/searchContext';
 import { useMetadataContext } from '../useMetadataContext';
 
-export const useToolbarConfig = (windowId: string, tabId?: string) => {
+export const useToolbarConfig = ({
+  windowId,
+  tabId,
+  onSave,
+}: {
+  windowId?: string;
+  tabId?: string;
+  onSave?: () => void;
+}) => {
   const router = useRouter();
   const { setSearchQuery } = useSearch();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -23,23 +31,32 @@ export const useToolbarConfig = (windowId: string, tabId?: string) => {
         case BUTTON_IDS.TAB_CONTROL:
           setShowTabContainer(prevState => !prevState);
           break;
+        case BUTTON_IDS.SAVE:
+          onSave?.();
+          break;
       }
     },
-    [router, tabId, windowId, setShowTabContainer],
+    [onSave, router, setShowTabContainer, tabId, windowId],
   );
 
-  const handleSearch = (query: string) => {
-    setSearchValue(query);
-    setSearchQuery(query);
-  };
+  const handleSearch = useCallback(
+    (query: string) => {
+      setSearchValue(query);
+      setSearchQuery(query);
+    },
+    [setSearchQuery],
+  );
 
-  return {
-    handleAction,
-    searchOpen,
-    setSearchOpen,
-    handleSearch,
-    searchValue,
-    setSearchValue,
-    setShowTabContainer,
-  };
+  return useMemo(
+    () => ({
+      handleAction,
+      searchOpen,
+      setSearchOpen,
+      handleSearch,
+      searchValue,
+      setSearchValue,
+      setShowTabContainer,
+    }),
+    [handleAction, handleSearch, searchOpen, searchValue, setShowTabContainer],
+  );
 };

@@ -1,9 +1,4 @@
-import {
-  API_DATASOURCE_URL,
-  API_DEFAULT_CACHE_DURATION,
-  API_METADATA_URL,
-  API_KERNEL_SERVLET,
-} from './constants';
+import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL, API_KERNEL_SERVLET, API_DATASOURCE_SERVLET } from './constants';
 import { Client, Interceptor } from './client';
 import { CacheStore } from './cache';
 import * as Etendo from './types';
@@ -12,23 +7,29 @@ import { Menu } from './types';
 export type { Etendo };
 
 export class Metadata {
-  public static client = new Client(API_METADATA_URL);
-  public static kernelClient = new Client(API_KERNEL_SERVLET);
-  public static datasourceClient = new Client(API_DATASOURCE_URL);
+  public static client = new Client();
+  public static kernelClient = new Client();
+  public static datasourceServletClient = new Client();
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
   private static currentRoleId: string | null = null;
+  public static loginClient = new Client();
+
+  public static setBaseUrl(url: string) {
+    Metadata.client.setBaseUrl(url + API_METADATA_URL);
+    Metadata.kernelClient.setBaseUrl(url + API_KERNEL_SERVLET);
+    Metadata.datasourceServletClient.setBaseUrl(url + API_DATASOURCE_SERVLET);
+    Metadata.loginClient.setBaseUrl(url + '/');
+  }
 
   public static setLanguage(value: string) {
-    [this.client, this.datasourceClient, this.kernelClient].forEach(client =>
-      client.setLanguageHeader(value)
-    );
+    [this.client, this.kernelClient, this.datasourceServletClient].forEach(client => client.setLanguageHeader(value));
 
     return this;
   }
 
   public static setToken(token: string) {
-    [this.client, this.datasourceClient, this.kernelClient].forEach(client =>
-      client.setAuthHeader(token, 'Bearer').addQueryParam('stateless', 'true')
+    [this.client, this.kernelClient, this.datasourceServletClient].forEach(client =>
+      client.setAuthHeader(token, 'Bearer'),
     );
 
     return this;
@@ -36,8 +37,8 @@ export class Metadata {
 
   public static registerInterceptor(interceptor: Interceptor) {
     const listener1 = this.client.registerInterceptor(interceptor);
-    const listener2 = this.datasourceClient.registerInterceptor(interceptor);
-    const listener3 = this.kernelClient.registerInterceptor(interceptor);
+    const listener2 = this.kernelClient.registerInterceptor(interceptor);
+    const listener3 = this.datasourceServletClient.registerInterceptor(interceptor);
 
     return () => {
       listener1();
@@ -47,7 +48,7 @@ export class Metadata {
   }
 
   public static getDatasource(id: string, body: BodyInit | Record<string, unknown> | null | undefined) {
-    return this.datasourceClient.post(id, body);
+    return this.datasourceServletClient.post(id, body);
   }
 
   private static async _getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
@@ -84,9 +85,11 @@ export class Metadata {
     } else {
       try {
         const { data } = await this.client.post('menu', { role: currentRoleId });
-        this.cache.set('OBMenu', data);
+        const menu = data.menu;
+        this.cache.set('OBMenu', menu);
         this.currentRoleId = currentRoleId;
-        return data;
+
+        return menu;
       } catch (error) {
         console.error('Error fetching menu:', error);
         throw error;
@@ -121,11 +124,14 @@ export class Metadata {
   }
 
   public static getTabsColumns(tabs?: Etendo.Tab[]) {
-    return (tabs || []).reduce((cols, tab) => {
-      cols[tab.id] = this.getColumns(tab.id);
+    return (tabs || []).reduce(
+      (cols, tab) => {
+        cols[tab.id] = this.getColumns(tab.id);
 
-      return cols;
-    }, {} as Record<string, Etendo.Column[]>);
+        return cols;
+      },
+      {} as Record<string, Etendo.Column[]>,
+    );
   }
 
   public static evaluateExpression(expr: string, values: Record<string, unknown>) {

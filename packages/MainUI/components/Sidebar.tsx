@@ -27,10 +27,11 @@ export default function Sidebar() {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   const searchIndex = useMemo(() => createSearchIndex(menu), [menu]);
-  const { filteredItems, searchExpandedItems } = useMemo(
-    () => filterItems(menu, searchValue, searchIndex),
-    [menu, searchValue, searchIndex],
-  );
+  const { filteredItems, searchExpandedItems } = useMemo(() => {
+    const result = filterItems(menu, searchValue, searchIndex);
+
+    return result;
+  }, [menu, searchValue, searchIndex]);
 
   const handleClick = useCallback(
     (pathname: string) => {
@@ -39,15 +40,18 @@ export default function Sidebar() {
     [router],
   );
 
-  const searchContext = {
-    searchValue,
-    setSearchValue,
-    filteredItems,
-    searchExpandedItems,
-    expandedItems,
-    setExpandedItems,
-    searchIndex,
-  };
+  const searchContext = useMemo(
+    () => ({
+      searchValue,
+      setSearchValue,
+      filteredItems,
+      searchExpandedItems,
+      expandedItems,
+      setExpandedItems,
+      searchIndex,
+    }),
+    [expandedItems, filteredItems, searchExpandedItems, searchIndex, searchValue],
+  );
 
   const getTranslatedName = useCallback((item: Menu) => translateMenuItem(item), [translateMenuItem]);
 

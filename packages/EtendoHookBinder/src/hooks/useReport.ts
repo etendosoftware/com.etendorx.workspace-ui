@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { API_BASE_URL } from '../api/constants';
 import { ReportField, ReportMetadata } from './types';
 
 type ReportFields = {
@@ -56,7 +55,7 @@ const openReportWindow = (html: string) => {
   }
 };
 
-export function useReport() {
+export function useReport(url: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -67,7 +66,7 @@ export function useReport() {
     try {
       const formData = setupFormData(data, format);
 
-      const response = await fetch(`${API_BASE_URL}/ad_reports/${data.metadata.sourcePath}.html`, {
+      const response = await fetch(`${url}/ad_reports/${data.metadata.sourcePath}.html`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

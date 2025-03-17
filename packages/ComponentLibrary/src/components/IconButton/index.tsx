@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Tooltip, IconButton as MUIIconButton, Box, Typography, useTheme } from '@mui/material';
 import { useStyle } from './styles';
 import { IIconComponentProps } from './types';
@@ -45,12 +45,12 @@ const IconButton: React.FC<IIconComponentProps> = ({
     }
   }, [disabled, actualFill]);
 
-  const combinedStyles = {
+  const combinedStyles = useMemo(() => ({
     ...styles.defaultContainer,
     ...sx,
-  };
+  }), [styles.defaultContainer, sx]);
 
-  const clonedIcon = React.isValidElement(children)
+  const clonedIcon = useMemo(() => React.isValidElement(children)
     ? React.cloneElement(children as React.ReactElement, {
         style: {
           fill: disabled ? theme.palette.action.disabled : iconFill,
@@ -58,7 +58,7 @@ const IconButton: React.FC<IIconComponentProps> = ({
           height,
         },
       })
-    : null;
+    : null, [children, disabled, height, iconFill, theme.palette.action.disabled, width]);
 
   const button = (
     <MUIIconButton

@@ -84,16 +84,17 @@ export interface Field {
   readOnlyState?: ReadOnlyState;
   process: string;
   shownInStatusBar: boolean;
+  tab: string;
   displayed: boolean;
   startnewline: boolean;
   showInGridView: boolean;
   fieldGroup$_identifier: string;
   fieldGroup: string;
+  isMandatory: boolean;
   column: Record<string, string>;
   name: string;
   id: string;
-  title: string;
-  required: boolean;
+  module: string;
   hasDefaultValue: boolean;
   refColumnName: string;
   targetEntity: string;
@@ -104,15 +105,21 @@ export interface Field {
   referencedEntity: string;
   referencedWindowId: string;
   referencedTabId: string;
-  fieldName: string;
   displayLogicExpression?: string;
   readOnlyLogicExpression?: string;
+  readOnly: boolean;
+  sequenceNumber: number;
 }
 
 export interface Option<T extends string = string> {
   title: string;
   value: T;
   id: string;
+}
+
+export interface ValueWithIdentifier {
+  value: unknown;
+  identifier: string;
 }
 
 export interface Column {
@@ -137,7 +144,17 @@ export interface MappedField {
   required?: boolean;
 }
 
-export type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'search' | 'tabledir' | 'quantity' | 'list';
+export enum FieldType {
+  TEXT = 'text',
+  NUMBER = 'number',
+  DATE = 'date',
+  BOOLEAN = 'boolean',
+  SELECT = 'select',
+  SEARCH = 'search',
+  TABLEDIR = 'tabledir',
+  QUANTITY = 'quantity',
+  LIST = 'list'
+}
 
 export interface MappedTab {
   id: string;
@@ -183,6 +200,7 @@ export interface Tab {
   title: string;
   parentColumns: string[];
   id: string;
+  table: string;
   entityName: string;
   fields: Record<string, Field>;
   level: number;
@@ -191,6 +209,7 @@ export interface Tab {
   hqlfilterclause: string;
   hqlwhereclause: string;
   sQLWhereClause: string;
+  module: string;
 }
 
 export interface WindowMetadata {
@@ -270,29 +289,31 @@ export interface LoginResponse {
 
 export interface ISession extends Record<string, string | number | boolean | null> {}
 
+export interface User {
+  id: string;
+  name: string;
+  username: string;
+  image: string;
+  defaultRole: string;
+  defaultWarehouse: string;
+  defaultWarehouse$_identifier: string;
+  defaultClient: string;
+  client$_identifier: string;
+  defaultLanguage: string;
+  defaultLanguage$_identifier: string;
+  defaultOrganization: string;
+  defaultOrganization$_identifier: string;
+  defaultRole$_identifier: string;
+}
+
 export interface SessionResponse {
-  user: {
-    id: string;
-    name: string;
-    username: string;
-    image: string;
-    defaultRole: string;
-    defaultWarehouse: string;
-    defaultWarehouse$_identifier: string;
-    defaultClient: string;
-    client$_identifier: string;
-    defaultLanguage: string;
-    defaultLanguage$_identifier: string;
-    defaultOrganization: string;
-    defaultOrganization$_identifier: string;
-    defaultRole$_identifier: string;
-  };
+  user: User;
   role: {
     id: string;
     name: string;
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  languages: Record<string, any>[];
+  languages: Record<string, { id: string; language: string; name: string }>;
   session: ISession;
 }
 
@@ -387,11 +408,6 @@ export interface FieldInfo {
   fieldGroup$_identifier?: string;
 }
 
-export type CustomListField = Pick<
-  Field,
-  'refList' | 'referencedEntity' | 'referencedWindowId' | 'referencedTabId' | 'fieldName'
->;
-
 export interface BaseFieldDefinition<T> {
   value: T;
   type: FieldType;
@@ -423,4 +439,32 @@ type EntityValue = string | number | boolean | symbol;
 
 export interface EntityData {
   [key: EntityKey]: EntityValue;
+}
+
+export enum FormMode {
+  NEW = 'NEW',
+  EDIT = 'EDIT',
+}
+
+export interface FormInitializationParams {
+  tab: Tab;
+  mode: FormMode;
+  recordId?: string;
+}
+
+export interface FormInitializationResponse {
+  columnValues: Record<
+    string,
+    {
+      value: string;
+      classicValue?: string;
+      identifier?: string;
+      entries?: Array<{ id: string; _identifier: string }>;
+    }
+  >;
+  auxiliaryInputValues: Record<string, { value: string; classicValue?: string }>;
+  sessionAttributes: Record<string, string>;
+  dynamicCols: string[];
+  attachmentExists: boolean;
+  _readOnly?: boolean;
 }

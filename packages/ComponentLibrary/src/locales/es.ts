@@ -14,6 +14,11 @@ const es = {
     processes: 'Procesos disponibles',
     clear: 'Limpiar Seleccion',
   },
+  forms: {
+    sections: {
+      main: 'Sección Principal',
+    },
+  },
   errors: {
     networkError: {
       title: 'No se pudo conectar con Etendo',

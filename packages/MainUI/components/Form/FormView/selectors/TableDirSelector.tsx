@@ -1,72 +1,29 @@
-import { useCallback, useMemo, useEffect, useState } from 'react';
-import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import { useTheme } from '@mui/material';
-import { Option, TableDirSelectorProps } from '../types';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
+import { Field } from '@workspaceui/etendohookbinder/src/api/types';
+import Select from './components/Select';
+import { useMemo } from 'react';
+import { useTableDirDatasource } from '@/hooks/datasource/useTableDirDatasource';
+import { SelectProps } from './components/types';
 
-const getOptionLabel = (option: Option) => option.title;
+export const TableDirSelector = ({ field, isReadOnly }: { field: Field; isReadOnly: boolean }) => {
+  const idKey = (field.selector?.valueField ?? '') as string;
+  const identifierKey = (field.selector?.displayField ?? '') as string;
 
-const optionEqualValue = (option: Option, value: { id: string }) => option.id === value.id || option.value === value.id;
+  const { records, refetch } = useTableDirDatasource({ field });
 
-const TableDirSelector = ({ onChange, entity, value, name, disabled, readOnly }: TableDirSelectorProps) => {
-  const theme = useTheme();
-  const { records, loading, error, loaded } = useDatasource(entity);
-  const [selectedValue, setSelectedValue] = useState<Option | null>(null);
+  const options = useMemo<SelectProps['options']>(() => {
+    const result: SelectProps['options'] = [];
 
-  const isDisabled = disabled || readOnly;
+    records.forEach(record => {
+      const label = record[identifierKey] as string;
+      const id = record[idKey] as string;
 
-  const options = useMemo(
-    () =>
-      records.map(record => ({
-        id: record.id as string,
-        title: (record._identifier || record.name || record.id) as string,
-        value: record.id as string,
-      })),
-    [records],
-  );
-
-  useEffect(() => {
-    let option;
-
-    if (value && options.length > 0) {
-      option = options.find(opt => {
-        if (typeof value === 'object' && 'id' in value) {
-          return opt.id === value.id || opt.value === value.id;
-        }
-        return opt.id === String(value) || opt.value === String(value);
-      });
-    }
-
-    setSelectedValue(option ?? null);
-  }, [value, options]);
-
-  const handleChange = useCallback(
-    (_event: React.SyntheticEvent<Element, Event>, newValue: Option | null) => {
-      setSelectedValue(newValue);
-      if (newValue) {
-        onChange(newValue.id);
+      if (id && label) {
+        result.push({ id, label });
       }
-    },
-    [onChange],
-  );
+    });
 
-  if (loading || !loaded) return <Spinner />;
-  if (error) return <div>Error: {error.message}</div>;
+    return result;
+  }, [idKey, identifierKey, records]);
 
-  return (
-    <Select
-      iconLeft={<SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />}
-      options={options}
-      onChange={handleChange}
-      value={selectedValue}
-      getOptionLabel={getOptionLabel}
-      isOptionEqualToValue={optionEqualValue}
-      name={name}
-      disabled={isDisabled}
-    />
-  );
+  return <Select name={field.hqlName} options={options} onFocus={refetch} isReadOnly={isReadOnly} />;
 };
-
-export default TableDirSelector;

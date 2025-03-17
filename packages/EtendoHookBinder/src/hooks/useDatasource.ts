@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DatasourceOptions, Column, MRT_ColumnFiltersState } from '../api/types';
-import { Datasource } from '../api/datasource';
+import { datasource } from '../api/datasource';
 import { SearchUtils, ColumnFilterUtils } from '../utils/search-utils';
 
 const loadData = async (entity: string, page: number, pageSize: number, params: DatasourceOptions) => {
@@ -15,7 +15,7 @@ const loadData = async (entity: string, page: number, pageSize: number, params: 
     pageSize: safePageSize,
   };
 
-  const { response } = await Datasource.get(entity, processedParams);
+  const { response } = await datasource.get(entity, processedParams);
 
   return response;
 };
@@ -41,10 +41,8 @@ export function useDatasource(
   const [activeColumnFilters, setActiveColumnFilters] = useState<MRT_ColumnFiltersState>(columnFilters);
 
   const fetchMore = useCallback(() => {
-    if (!searchQuery) {
-      setPage(prev => prev + 1);
-    }
-  }, [searchQuery]);
+    setPage(prev => prev + 1);
+  }, []);
 
   const updateColumnFilters = useCallback((filters: MRT_ColumnFiltersState) => {
     setActiveColumnFilters(filters);
@@ -56,11 +54,15 @@ export function useDatasource(
     setPageSize(size);
   }, []);
 
-  const toggleImplicitFilters = useCallback((value?: boolean) => {
-    setIsImplicitFilterApplied(prev => (value !== undefined ? value : !prev));
-    setPage(1);
-    setRecords([]);
-  }, []);
+  const toggleImplicitFilters = useCallback(
+    (value?: boolean) => {
+      const newValue = value !== undefined ? value : !isImplicitFilterApplied;
+      setIsImplicitFilterApplied(newValue);
+      setPage(1);
+      setRecords([]);
+    },
+    [isImplicitFilterApplied],
+  );
 
   const columnFilterCriteria = useMemo(() => {
     if (!columns || !activeColumnFilters.length) return [];
@@ -106,10 +108,9 @@ export function useDatasource(
         throw new Error(response.error.message);
       } else {
         setRecords(prevRecords => {
-          if (searchQuery || page === 1) {
-            return response.data;
+          if (page === 1 || searchQuery) {
+            return [...response.data];
           }
-
           const mergedRecords = [...prevRecords, ...response.data];
           const uniqueRecords = mergedRecords.reduce(
             (acc, current) => {
@@ -128,13 +129,13 @@ export function useDatasource(
     } finally {
       setLoading(false);
     }
-  }, [entity, page, pageSize, queryParams, searchQuery]);
+  }, [entity, page, pageSize, queryParams, searchQuery]); // Añadir searchQuery como dependencia
 
   useEffect(() => {
     setRecords([]);
     setLoaded(false);
     setPage(1);
-  }, [entity, searchQuery]);
+  }, []);
 
   useEffect(() => {
     load();

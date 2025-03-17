@@ -1,35 +1,46 @@
 import { useCallback } from 'react';
-import { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { FieldValues } from 'react-hook-form';
+import { useMetadataContext } from './useMetadataContext';
+import { logger } from '@/utils/logger';
 
 export interface UseCalloutProps {
   field: Field;
-  tab: Tab;
-  parentId?: string | null;
-  rowId?: string | null;
+  parentId?: string;
+  rowId?: string;
 }
 
-const _action = 'org.openbravo.client.application.window.FormInitializationComponent';
+const ACTION = 'org.openbravo.client.application.window.FormInitializationComponent';
 const MODE = 'CHANGE';
 
-export const useCallout = ({ field, tab, parentId, rowId }: UseCalloutProps) => {
-  return useCallback(async (payload: FieldValues) => {
-    const params = new URLSearchParams({
-      _action,
-      MODE,
-      TAB_ID: tab.id,
-      CHANGED_COLUMN: field.inputName,
-    });
+export const useCallout = ({ field, parentId = 'null', rowId = 'null' }: UseCalloutProps) => {
+  const { tab } = useMetadataContext();
+  const tabId = tab?.id ?? '';
 
-    if (rowId) {
-      params.set("ROW_ID", rowId);
-    }
+  return useCallback(
+    async (payload: FieldValues) => {
+      const params = new URLSearchParams({
+        _action: ACTION,
+        MODE,
+        TAB_ID: tabId,
+        CHANGED_COLUMN: field.inputName,
+        ROW_ID: rowId,
+        PARENT_ID: parentId,
+      });
 
-    if (parentId) {
-      params.set("PARENT_ID", parentId);
-    }
+      try {
+        const response = await Metadata.kernelClient.post(`?${params}`, payload);
 
-    return Metadata.kernelClient.post(`?${params}`, payload);
-  }, [field, parentId, rowId, tab.id]);
+        if (!response?.data) {
+          throw new Error(`No data returned from callout for field "${field.inputName}".`);
+        }
+
+        return response.data as FormInitializationResponse;
+      } catch (error) {
+        logger.error(`Error executing callout for field "${field.inputName}":`, error);
+      }
+    },
+    [tabId, field.inputName, parentId, rowId],
+  );
 };

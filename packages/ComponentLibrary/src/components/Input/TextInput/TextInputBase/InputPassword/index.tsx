@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { IconButton, useTheme } from '@mui/material';
+import { useCallback, useState } from 'react';
+import { Icon, useTheme } from '@mui/material';
 import { VisibilityOutlined, VisibilityOffOutlined } from '@mui/icons-material';
 import TextInputBase from '../TextInputBase';
 import { TextInputProps } from '../../TextInputAutocomplete/TextInputComplete.types';
@@ -12,13 +12,13 @@ const InputPassword = (props: TextInputProps) => {
 
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
-  const handleClickShowPassword = () => {
-    setShowPassword(!showPassword);
-  };
+  const handleClickShowPassword = useCallback(() => {
+    setShowPassword(prev => !prev);
+  }, []);
 
-  const handleMouseDownPassword = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleMouseDownPassword = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
-  };
+  }, []);
 
   return (
     <TextInputBase
@@ -29,14 +29,13 @@ const InputPassword = (props: TextInputProps) => {
       onLeftIconClick={onLeftIconClick}
       type={showPassword ? 'text' : 'password'}
       rightIcon={
-        <IconButton
+        <Icon
           aria-label="toggle password visibility"
           onClick={handleClickShowPassword}
           onMouseDown={handleMouseDownPassword}
-          size="small"
           sx={{ color: theme.palette.baselineColor.neutral[60] }}>
           {showPassword ? <VisibilityOutlined sx={{ width: 20 }} /> : <VisibilityOffOutlined sx={{ width: 20 }} />}
-        </IconButton>
+        </Icon>
       }
       {...otherProps}
     />

@@ -1,6 +1,6 @@
 import { ProcessResponse } from '../../components/Toolbar/types';
 import { ExecuteProcessParams } from './types';
-import { BaseFieldDefinition, Field } from '@workspaceui/etendohookbinder/src/api/types';
+import { BaseFieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 import { FieldType } from '@workspaceui/etendohookbinder/src/api/types';
 import { ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
 
@@ -27,7 +27,7 @@ export const useProcessButton = (
       type: 'string' as FieldType,
       label: 'Record ID',
       name: 'recordId',
-      original: {} as Field,
+      original: {} as never,
     };
 
     try {

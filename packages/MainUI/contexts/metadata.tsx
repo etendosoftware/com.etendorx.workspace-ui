@@ -3,8 +3,8 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import {
-  getFieldsByDBColumnName,
-  getFieldsByName,
+  getFieldsByColumnName,
+  getFieldsByInputName,
   groupTabsByLevel,
 } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
@@ -28,8 +28,8 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const [activeTabLevels, setActiveTabLevels] = useState<number[]>([0]);
   const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [tabId, windowData?.tabs]);
   const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
-  const fieldsByColumnName = useMemo(() => (tab ? getFieldsByDBColumnName(tab) : {}), [tab]);
-  const fieldsByInputName = useMemo(() => (tab ? getFieldsByName(tab) : {}), [tab]);
+  const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
+  const fieldsByInputName = useMemo(() => getFieldsByInputName(tab), [tab]);
 
   const closeTab = useCallback(
     (level: number) => {
@@ -267,7 +267,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     };
   }, [activeTabLevels, closeTab]);
 
-  const value = useMemo(
+  const value = useMemo<IMetadataContext>(
     () => ({
       getWindow: Metadata.getWindow,
       getColumns: Metadata.getColumns,
@@ -276,13 +276,11 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       loading,
       error,
       groupedTabs,
-      windowData,
+      window: windowData,
       selectRecord,
       selected,
       tabs,
       tab,
-      fieldsByColumnName,
-      fieldsByInputName,
       selectedMultiple,
       selectMultiple,
       isSelected,
@@ -294,31 +292,31 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       activeTabLevels,
       setActiveTabLevels,
       closeTab,
+      fieldsByColumnName,
+      fieldsByInputName,
     }),
     [
-      windowId,
-      recordId,
-      loading,
+      activeTabLevels,
+      clearSelections,
+      closeTab,
       error,
-      groupedTabs,
-      windowData,
-      selectRecord,
-      selected,
-      tabs,
-      tab,
       fieldsByColumnName,
       fieldsByInputName,
-      selectedMultiple,
-      selectMultiple,
-      isSelected,
-      clearSelections,
       getSelectedCount,
       getSelectedIds,
+      groupedTabs,
+      isSelected,
+      loading,
+      recordId,
+      selectMultiple,
+      selectRecord,
+      selected,
+      selectedMultiple,
       showTabContainer,
-      setShowTabContainer,
-      activeTabLevels,
-      setActiveTabLevels,
-      closeTab,
+      tab,
+      tabs,
+      windowData,
+      windowId,
     ],
   );
 

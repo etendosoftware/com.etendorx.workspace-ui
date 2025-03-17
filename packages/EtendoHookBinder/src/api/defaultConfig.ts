@@ -1,5 +1,4 @@
-import { Client } from './client';
-import { API_KERNEL_SERVLET } from './constants';
+import { Metadata } from './metadata';
 import { DefaultConfiguration } from './types';
 
 const DEFAULT_CONFIG = {
@@ -12,7 +11,7 @@ const DEFAULT_CONFIG = {
 };
 
 export const setDefaultConfiguration = async (token: string, config: DefaultConfiguration): Promise<void> => {
-  const client = new Client(API_KERNEL_SERVLET).setAuthHeader(token, 'Bearer');
+  const client = Metadata.kernelClient;
 
   const params = {
     language: (config.language || DEFAULT_CONFIG.language).toString(),

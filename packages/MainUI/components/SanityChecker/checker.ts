@@ -3,6 +3,7 @@ import { delay } from '@/utils';
 import { logger } from '@/utils/logger';
 
 export async function performHealthCheck(
+  url: string,
   signal: AbortSignal,
   maxAttempts: number,
   delayMs: number,
@@ -11,7 +12,7 @@ export async function performHealthCheck(
 ) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const response = await fetch(API_METADATA_URL, {
+      const response = await fetch(url + API_METADATA_URL, {
         method: 'OPTIONS',
         signal,
         keepalive: false,

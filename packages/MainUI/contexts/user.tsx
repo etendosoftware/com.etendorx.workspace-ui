@@ -3,14 +3,21 @@
 import { createContext, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { logger } from '../utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { Datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
+import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { login as doLogin } from '@workspaceui/etendohookbinder/src/api/authentication';
 import { changeRole as doChangeRole } from '@workspaceui/etendohookbinder/src/api/role';
 import { getSession } from '@workspaceui/etendohookbinder/src/api/getSession';
 import { changeWarehouse as doChangeWarehouse } from '@workspaceui/etendohookbinder/src/api/warehouse';
 import { HTTP_CODES } from '@workspaceui/etendohookbinder/src/api/constants';
 import { DefaultConfiguration, IUserContext, Language, LanguageOption } from './types';
-import { ISession, Role, ProfileInfo, SessionResponse, Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
+import {
+  ISession,
+  Role,
+  ProfileInfo,
+  SessionResponse,
+  Warehouse,
+  User,
+} from '@workspaceui/etendohookbinder/src/api/types';
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/src/api/defaultConfig';
 import { usePathname, useRouter } from 'next/navigation';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
@@ -22,6 +29,7 @@ export const UserContext = createContext({} as IUserContext);
 export default function UserProvider(props: React.PropsWithChildren) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [ready, setReady] = useState(false);
+  const [user, setUser] = useState<IUserContext['user']>({} as User);
   const [session, setSession] = useState<ISession>({});
   const { setLanguage } = useLanguage();
   const pathname = usePathname();
@@ -74,7 +82,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   }, []);
 
   const updateSessionInfo = useCallback(
-    (sessionResponse: SessionResponse) => {
+    async (sessionResponse: SessionResponse) => {
       const currentRole: Role = {
         id: sessionResponse.role.id,
         name: sessionResponse.role.name,
@@ -88,25 +96,20 @@ export default function UserProvider(props: React.PropsWithChildren) {
       };
 
       updateProfile(currentProfileInfo);
+      setUser(sessionResponse.user);
       setProfile(currentProfileInfo);
 
       localStorage.setItem('currentInfo', JSON.stringify(currentProfileInfo));
       localStorage.setItem('currentRole', JSON.stringify(currentRole));
       localStorage.setItem('currentRoleId', currentRole.id);
-      setSession(sessionResponse.session);
 
       if (sessionResponse.user.defaultLanguage) {
         setLanguage(sessionResponse.user.defaultLanguage as Language);
       }
 
-      setLanguages(
-        sessionResponse.languages.map(lang => ({
-          id: lang.id,
-          language: lang.language,
-          name: lang.name,
-        })),
-      );
+      const languages = Object.values(sessionResponse.languages);
 
+      setLanguages(languages);
       setCurrentRole(currentRole);
 
       if (sessionResponse.user.defaultWarehouse) {
@@ -127,6 +130,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     setCurrentRole(null);
     setCurrentWarehouse(null);
     setProfile(INITIAL_PROFILE);
+    setUser({} as User);
     localStorage.removeItem('token');
     localStorage.removeItem('roles');
     localStorage.removeItem('currentRole');
@@ -191,7 +195,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         setToken(loginResponse.token);
 
         Metadata.setToken(loginResponse.token);
-        Datasource.authorize(loginResponse.token);
+        datasource.setToken(loginResponse.token);
 
         const sessionResponse = await getSession(loginResponse.token);
         updateSessionInfo(sessionResponse);
@@ -224,6 +228,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       languages,
       session,
       setSession,
+      user,
     }),
     [
       login,
@@ -239,6 +244,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       languages,
       session,
       setSession,
+      user,
     ],
   );
 
@@ -247,9 +253,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
       const verifySession = async () => {
         try {
           Metadata.setToken(token);
-          Datasource.authorize(token);
-          const sessionResponse = await getSession(token);
-          updateSessionInfo(sessionResponse);
+          datasource.setToken(token);
+
+          updateSessionInfo(await getSession(token));
         } catch (error) {
           clearUserData();
           navigate('/login');
@@ -285,7 +291,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
     if (token) {
       const unregisterMetadataInterceptor = Metadata.registerInterceptor(interceptor);
-      const unregisterDatasourceInterceptor = Datasource.registerInterceptor(interceptor);
+      const unregisterDatasourceInterceptor = datasource.registerInterceptor(interceptor);
 
       return () => {
         unregisterMetadataInterceptor();
@@ -295,19 +301,13 @@ export default function UserProvider(props: React.PropsWithChildren) {
   }, [navigate, token]);
 
   useEffect(() => {
-    if (!languages.length) {
-      return;
-    }
+    if (languages.length === 0) return;
 
     const savedLanguage = localStorage.getItem('currentLanguage');
-    const givenLanguage = languages.find(lang => lang.language == savedLanguage);
+    const matchedLanguage = languages.find(lang => lang.language === savedLanguage);
 
-    if (givenLanguage) {
-      setLanguage(givenLanguage.language as Language);
-    } else {
-      setLanguage(DEFAULT_LANGUAGE);
-    }
-  }, [languages, languages.length, setLanguage]);
+    setLanguage((matchedLanguage?.language as Language) || DEFAULT_LANGUAGE);
+  }, [languages, setLanguage]);
 
   return <UserContext.Provider value={value}>{ready ? props.children : <Spinner />}</UserContext.Provider>;
 }

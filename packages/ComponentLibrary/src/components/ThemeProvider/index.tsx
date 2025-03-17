@@ -1,13 +1,11 @@
-'use client';
-
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import { ThemeProvider as MUIThemeProvider, CssBaseline } from '@mui/material';
 import { theme } from '../../theme';
 
-export function ThemeRegistry({ children }: React.PropsWithChildren) {
+export default function ThemeProvider({ children }: React.PropsWithChildren) {
   return (
-    <ThemeProvider theme={theme}>
+    <MUIThemeProvider theme={theme}>
       <CssBaseline />
       {children}
-    </ThemeProvider>
+    </MUIThemeProvider>
   );
 }

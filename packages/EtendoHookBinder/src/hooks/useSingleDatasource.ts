@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Datasource } from '../api/datasource';
+import { datasource } from '../api/datasource';
+import { EntityData } from '../api/types';
 
 export function useSingleDatasource(entity?: string, id?: string) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [record, setRecord] = useState<Record<string, unknown>>();
+  const [record, setRecord] = useState<EntityData>();
   const [error, setError] = useState<Error>();
 
   const load = useCallback(async () => {
@@ -18,11 +19,11 @@ export function useSingleDatasource(entity?: string, id?: string) {
       setError(undefined);
       setLoading(true);
 
-      const response = await Datasource.getSingleRecord(entity, id);
+      const response = await datasource.getSingleRecord(entity, id);
       const res = response?.response?.data?.[0];
 
-      setLoaded(true);
       setRecord(res);
+      setLoaded(true);
     } catch (e) {
       setError(e as Error);
     } finally {

@@ -15,14 +15,12 @@ export const useTranslation = (defaultLanguage = DEFAULT_LANGUAGE) => {
 
       for (const k of keys) {
         if (typeof value !== 'object' || value === null || !(k in value)) {
-          console.warn(`Translation key "${key}" not found.`);
           return key;
         }
         value = value[k as keyof typeof value];
       }
 
       if (typeof value !== 'string') {
-        console.warn(`Translation for key "${key}" is not a string.`);
         return key;
       }
 

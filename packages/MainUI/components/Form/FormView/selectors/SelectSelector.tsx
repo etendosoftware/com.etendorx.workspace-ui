@@ -1,43 +1,29 @@
-import { memo, useCallback, useMemo } from 'react';
-import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
-import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
-import { SelectSelectorProps } from '../types';
-import { useTheme } from '@mui/material';
-import { Option } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field } from '@workspaceui/etendohookbinder/src/api/types';
+import Select from './components/Select';
+import { useMemo } from 'react';
+import { useTableDirDatasource } from '@/hooks/datasource/useTableDirDatasource';
+import { SelectProps } from './components/types';
 
-const SelectSelector = memo(({ value, name, title, onChange, readOnly, field }: SelectSelectorProps) => {
-  const theme = useTheme();
-  const options = useMemo<Option[]>(
-    () =>
-      field.refList.map(v => ({
-        id: v.id,
-        title: v.label,
-        value: v.value,
-      })),
-    [field.refList],
-  );
-  const handleChange = useCallback(
-    (_: React.SyntheticEvent<Element, Event>, newValue: Option<string> | null) => {
-      onChange(newValue?.value || '');
-    },
-    [onChange],
-  );
-  const current = useMemo(() => options.find(opt => opt.value === value), [options, value]);
+export const SelectSelector = ({ field, isReadOnly }: { field: Field; isReadOnly: boolean }) => {
+  const idKey = (field.selector?.valueField ?? '') as string;
+  const identifierKey = (field.selector?.displayField ?? '') as string;
 
-  return (
-    <Select
-      iconLeft={<SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />}
-      title={title}
-      options={options}
-      getOptionLabel={option => option.title}
-      onChange={handleChange}
-      disabled={readOnly}
-      name={name}
-      value={current}
-    />
-  );
-});
+  const { records, refetch } = useTableDirDatasource({ field });
 
-SelectSelector.displayName = "SelectSelector";
+  const options = useMemo<SelectProps['options']>(() => {
+    const result: SelectProps['options'] = [];
 
-export default SelectSelector;
+    records.forEach(record => {
+      const label = record[identifierKey] as string;
+      const id = record[idKey] as string;
+
+      if (id && label) {
+        result.push({ id, label });
+      }
+    });
+
+    return result;
+  }, [idKey, identifierKey, records]);
+
+  return <Select name={field.hqlName} options={options} onFocus={refetch} isReadOnly={isReadOnly} />;
+};

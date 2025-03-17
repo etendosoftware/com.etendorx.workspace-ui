@@ -1,8 +1,7 @@
 import { AUTH_HEADER_NAME } from './constants';
 
-interface ClientOptions extends Omit<RequestInit, 'body'> {
+export interface ClientOptions extends Omit<RequestInit, 'body'> {
   headers?: Record<string, string>;
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   body?: RequestInit['body'] | Record<string, unknown>;
 }
 
@@ -25,11 +24,15 @@ export class Client {
   private readonly JSON_CONTENT_TYPE = 'application/json'!;
   private readonly FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded'!;
 
-  constructor(url: string) {
-    this.baseUrl = url;
+  constructor(url?: string) {
+    this.baseUrl = url || '';
     this.baseHeaders = {};
     this.interceptor = null;
     this.baseQueryParams = new URLSearchParams();
+  }
+
+  public setBaseUrl(url: string) {
+    this.baseUrl = url;
   }
 
   private cleanUrl(url: string) {
@@ -74,7 +77,7 @@ export class Client {
     return this;
   }
 
-  private async request(url: string, options: ClientOptions = {}) {
+  public async request(url: string, options: ClientOptions = {}) {
     try {
       if (options.method !== 'GET') {
         this.setContentType(options);
@@ -87,11 +90,13 @@ export class Client {
       let response: Response & { data?: any } = await fetch(destination, {
         ...options,
         body:
-          options.body instanceof URLSearchParams || typeof options.body === 'string'
+          typeof options.body === 'string' ||
+          options.body instanceof URLSearchParams ||
+          options.body instanceof FormData
             ? options.body
             : options.body
-            ? JSON.stringify(options.body)
-            : undefined,
+              ? JSON.stringify(options.body)
+              : undefined,
         headers: {
           ...this.baseHeaders,
           ...options.headers,
