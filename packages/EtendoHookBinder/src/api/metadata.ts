@@ -1,9 +1,4 @@
-import {
-  API_DEFAULT_CACHE_DURATION,
-  API_METADATA_URL,
-  API_KERNEL_SERVLET,
-  API_DATASOURCE_SERVLET,
-} from './constants';
+import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL, API_KERNEL_SERVLET, API_DATASOURCE_SERVLET } from './constants';
 import { Client, Interceptor } from './client';
 import { CacheStore } from './cache';
 import * as Etendo from './types';
@@ -17,17 +12,17 @@ export class Metadata {
   public static datasourceServletClient = new Client();
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
   private static currentRoleId: string | null = null;
+  public static loginClient = new Client();
 
   public static setBaseUrl(url: string) {
     Metadata.client.setBaseUrl(url + API_METADATA_URL);
     Metadata.kernelClient.setBaseUrl(url + API_KERNEL_SERVLET);
     Metadata.datasourceServletClient.setBaseUrl(url + API_DATASOURCE_SERVLET);
+    Metadata.loginClient.setBaseUrl(url + '/');
   }
 
   public static setLanguage(value: string) {
-    [this.client, this.kernelClient, this.datasourceServletClient].forEach(client =>
-      client.setLanguageHeader(value),
-    );
+    [this.client, this.kernelClient, this.datasourceServletClient].forEach(client => client.setLanguageHeader(value));
 
     return this;
   }
