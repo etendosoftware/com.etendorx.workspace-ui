@@ -1,21 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { EntityData, type Field, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { useFormContext } from 'react-hook-form';
-import { useMetadataContext } from '../useMetadataContext';
 import { useParams } from 'next/navigation';
 import { getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { useMetadataContext } from './useMetadataContext';
 
 export interface UseTableDirDatasourceParams {
   field: Field;
+  
   tab?: Tab;
 }
 
-export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) => {
+export const useComboSelect = ({ field }: UseTableDirDatasourceParams) => {
   const { windowId } = useParams<{ windowId: string }>();
-  const { getValues, watch } = useFormContext();
+  const { watch } = useFormContext();
   const { tab, tabs, selected } = useMetadataContext();
-  const [records, setRecords] = useState([]);
+  const [records, setRecords] = useState<EntityData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();
   const value = watch(field.hqlName);
@@ -58,25 +59,6 @@ export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) =>
           ...parentData,
         });
 
-        Object.entries(getValues()).forEach(([key, value]) => {
-          const _key = tab.fields[key]?.inputName;
-          const stringValue = String(value);
-
-          const valueMap = {
-            true: 'Y',
-            false: 'N',
-            null: 'null',
-          };
-
-          const safeValue = Object.prototype.hasOwnProperty.call(valueMap, stringValue)
-            ? valueMap[stringValue as keyof typeof valueMap]
-            : value;
-
-          if (safeValue) {
-            body.set(_key || key, safeValue);
-          }
-        });
-
         const { data, statusText } = await datasource.client.request(field.selector?.datasourceName ?? '', {
           method: 'POST',
           body,
@@ -91,7 +73,7 @@ export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) =>
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     },
-    [field, getValues, selected, tab, tabs, windowId],
+    [field, selected, tab, tabs, windowId],
   );
 
   useEffect(() => {

@@ -109,8 +109,6 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
         throw new Error('Missing key column');
       }
 
-      console.debug(tab);
-
       const parentColumns = tab.parentColumns.map(field => tab.fields[field]);
       const parent = tab.level > 0 ? selected[tab.level - 1] : {};
       const parentTab = tabs[tab.level - 1];
@@ -124,6 +122,7 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
         },
         {} as Record<string, unknown>,
       );
+
       const payload = {
         ...parentData,
         inpKeyName: entityKeyColumn.inputName,
@@ -134,8 +133,6 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
         _entityName: tab.entityName,
         inpwindowId: tab.windowId,
       };
-
-      console.debug(payload);
 
       const data = await fetchFormInitialization(params, payload);
       const storedInSessionAttributes = Object.entries(data.auxiliaryInputValues).reduce(

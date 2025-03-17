@@ -1,14 +1,14 @@
 import { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import Select from './components/Select';
 import { useMemo } from 'react';
-import { useTableDirDatasource } from '@/hooks/datasource/useTableDirDatasource';
 import { SelectProps } from './components/types';
+import { useComboSelect } from '@/hooks/useComboSelect';
 
 export const SelectSelector = ({ field, isReadOnly }: { field: Field; isReadOnly: boolean }) => {
   const idKey = (field.selector?.valueField ?? '') as string;
   const identifierKey = (field.selector?.displayField ?? '') as string;
 
-  const { records, refetch } = useTableDirDatasource({ field });
+  const { records, refetch } = useComboSelect({ field });
 
   const options = useMemo<SelectProps['options']>(() => {
     const result: SelectProps['options'] = [];
