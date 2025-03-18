@@ -22,13 +22,7 @@ const compileExpression = (expression: string) => {
   }
 };
 
-export const BaseSelector = ({
-  field,
-  formMode = FormMode.EDIT, // Valor por defecto para compatibilidad hacia atrás
-}: {
-  field: Field;
-  formMode?: FormMode;
-}) => {
+export const BaseSelector = ({ field, formMode = FormMode.EDIT }: { field: Field; formMode?: FormMode }) => {
   const { watch, getValues, setValue, register } = useFormContext();
   const { fieldsByColumnName, tab } = useMetadataContext();
   const { recordId } = useParams<{ recordId: string }>();
@@ -57,11 +51,13 @@ export const BaseSelector = ({
   }, [field, values, session]);
 
   const isReadOnly = useMemo(() => {
-    if (field.readOnly) return true;
-
-    if (field.column?.updatable === 'false') {
+    if (field.readOnly) {
+      if (field.isUpdatable === 'false') {
+        return true;
+      }
       return formMode === FormMode.EDIT;
     }
+    console.log(field);
 
     if (field.readOnlyLogicExpression) {
       const compiledExpr = compileExpression(field.readOnlyLogicExpression);

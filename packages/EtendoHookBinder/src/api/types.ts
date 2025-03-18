@@ -109,6 +109,7 @@ export interface Field {
   readOnlyLogicExpression?: string;
   readOnly: boolean;
   sequenceNumber: number;
+  isUpdatable?: string;
 }
 
 export interface Option<T extends string = string> {
@@ -153,7 +154,7 @@ export enum FieldType {
   SEARCH = 'search',
   TABLEDIR = 'tabledir',
   QUANTITY = 'quantity',
-  LIST = 'list'
+  LIST = 'list',
 }
 
 export interface MappedTab {
