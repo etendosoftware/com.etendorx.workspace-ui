@@ -6,7 +6,15 @@ import closeIconUrl from '../../../../../../ComponentLibrary/src/assets/icons/x.
 import ChevronDown from '../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
 import Image from 'next/image';
 
-export default function Select({ name, options, onFocus, isReadOnly }: SelectProps) {
+export default function Select({
+  name,
+  options,
+  onFocus,
+  isReadOnly,
+  onLoadMore,
+  loading = false,
+  hasMore = true,
+}: SelectProps) {
   const { register, setValue, watch } = useFormContext();
   const selectedValue = watch(name);
   const [selectedLabel, setSelectedLabel] = useState('');
@@ -17,6 +25,8 @@ export default function Select({ name, options, onFocus, isReadOnly }: SelectPro
   const listRef = useRef<HTMLUListElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef<HTMLLIElement>(null);
+  const hasLoadedRef = useRef<boolean>(false);
 
   const filteredOptions = useMemo(
     () => options.filter(option => option.label.toLowerCase().includes(searchTerm.toLowerCase())),
@@ -93,9 +103,24 @@ export default function Select({ name, options, onFocus, isReadOnly }: SelectPro
     setIsHovering(false);
   }, []);
 
+  const handleScroll = useCallback(() => {
+    if (!listRef.current || loading || !hasMore) return;
+
+    const list = listRef.current;
+    const scrollBottom = list.scrollTop + list.clientHeight;
+
+    if (scrollBottom >= list.scrollHeight * 0.9) {
+      onLoadMore?.();
+    }
+  }, [loading, hasMore, onLoadMore]);
+
   useEffect(() => {
     const selectedOption = options.find(option => option.id === selectedValue);
-    setSelectedLabel(selectedOption?.label ?? '');
+    if (!selectedOption && selectedValue) {
+      setSelectedLabel(selectedValue);
+    } else {
+      setSelectedLabel(selectedOption?.label ?? '');
+    }
   }, [selectedValue, options]);
 
   useEffect(() => {
@@ -103,8 +128,13 @@ export default function Select({ name, options, onFocus, isReadOnly }: SelectPro
       setSearchTerm('');
       setHighlightedIndex(0);
       setTimeout(() => searchInputRef.current?.focus(), 1);
+
+      if (!hasLoadedRef.current) {
+        onFocus?.(selectedValue);
+        hasLoadedRef.current = true;
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, onFocus, selectedValue]);
 
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside);
@@ -112,12 +142,6 @@ export default function Select({ name, options, onFocus, isReadOnly }: SelectPro
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [handleClickOutside]);
-
-  useEffect(() => {
-    if (isOpen) {
-      onFocus?.(selectedValue);
-    }
-  }, [isOpen, onFocus, selectedValue]);
 
   return (
     <div
@@ -169,7 +193,7 @@ export default function Select({ name, options, onFocus, isReadOnly }: SelectPro
               aria-label="Search options"
             />
           </div>
-          <ul ref={listRef} role="listbox" className="max-h-60 overflow-y-auto">
+          <ul ref={listRef} role="listbox" className="max-h-60 overflow-y-auto" onScroll={handleScroll}>
             {filteredOptions.length > 0 ? (
               filteredOptions.map(({ id, label }, index) => (
                 <li
@@ -198,6 +222,12 @@ export default function Select({ name, options, onFocus, isReadOnly }: SelectPro
               ))
             ) : (
               <li className="px-4 py-3 text-sm text-baseline-60">No options found</li>
+            )}
+
+            {loading && hasMore && (
+              <li ref={loadingRef} className="px-4 py-3 text-sm text-baseline-60 text-center">
+                Loading more options...
+              </li>
             )}
           </ul>
         </div>

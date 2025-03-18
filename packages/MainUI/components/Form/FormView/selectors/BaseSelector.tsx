@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { Field, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field, FormInitializationResponse, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
 import { useCallout } from '@/hooks/useCallout';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
 import { logger } from '@/utils/logger';
@@ -22,7 +22,13 @@ const compileExpression = (expression: string) => {
   }
 };
 
-export const BaseSelector = ({ field }: { field: Field }) => {
+export const BaseSelector = ({
+  field,
+  formMode = FormMode.EDIT, // Valor por defecto para compatibilidad hacia atrás
+}: {
+  field: Field;
+  formMode?: FormMode;
+}) => {
   const { watch, getValues, setValue, register } = useFormContext();
   const { fieldsByColumnName, tab } = useMetadataContext();
   const { recordId } = useParams<{ recordId: string }>();
@@ -52,18 +58,23 @@ export const BaseSelector = ({ field }: { field: Field }) => {
 
   const isReadOnly = useMemo(() => {
     if (field.readOnly) return true;
-    if (!field.readOnlyLogicExpression) return false;
 
-    const compiledExpr = compileExpression(field.readOnlyLogicExpression);
-
-    try {
-      return compiledExpr(session, values);
-    } catch (error) {
-      logger.warn('Error executing expression:', compiledExpr, error);
-
-      return true;
+    if (field.column?.updatable === 'false') {
+      return formMode === FormMode.EDIT;
     }
-  }, [field, values, session]);
+
+    if (field.readOnlyLogicExpression) {
+      const compiledExpr = compileExpression(field.readOnlyLogicExpression);
+      try {
+        return compiledExpr(session, values);
+      } catch (error) {
+        logger.warn('Error executing expression:', compiledExpr, error);
+        return true;
+      }
+    }
+
+    return false;
+  }, [field, formMode, session, values]);
 
   const applyColumnValues = useCallback(
     (columnValues: FormInitializationResponse['columnValues']) => {
