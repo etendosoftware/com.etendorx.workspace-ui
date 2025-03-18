@@ -12,7 +12,7 @@ export interface UseComboSelectParams {
 
 export const useComboSelect = ({ field }: UseComboSelectParams) => {
   const { windowId } = useParams<{ windowId: string }>();
-  const { getValues, watch } = useFormContext();
+  const { watch, getValues } = useFormContext();
   const { tab, parentTab, parentRecord } = useParentTabContext();
   const value = watch(field.hqlName);
   const [records, setRecords] = useState<Record<string, string>[]>([]);

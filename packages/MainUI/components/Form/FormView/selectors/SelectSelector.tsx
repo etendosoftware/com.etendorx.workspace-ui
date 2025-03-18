@@ -10,8 +10,9 @@ export const SelectSelector = ({ field, isReadOnly }: { field: Field; isReadOnly
   const identifierKey = (field.selector?.displayField ?? '') as string;
   const { records, refetch } = useComboSelect({ field });
   const { watch } = useFormContext();
-  const currentValue = watch(field.hqlName);
-  const currentIdentifier = watch(field.hqlName + '_identifier');
+  const name = field.hqlName;
+  const currentValue = watch(name);
+  const currentIdentifier = watch(name + '_identifier');
 
   const options = useMemo<SelectProps['options']>(() => {
     const result: SelectProps['options'] = [];
@@ -27,7 +28,7 @@ export const SelectSelector = ({ field, isReadOnly }: { field: Field; isReadOnly
       const label = record[identifierKey] as string;
       const id = record[idKey] as string;
 
-      if (id && label && id !== currentValue) {
+      if (id && label) {
         result.push({ id, label });
       }
     });

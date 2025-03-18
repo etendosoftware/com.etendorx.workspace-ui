@@ -27,7 +27,7 @@ export const TableDirSelector = ({ field, isReadOnly }: { field: Field; isReadOn
       const label = record[identifierKey] as string;
       const id = record[idKey] as string;
 
-      if (id && label && id !== currentValue) {
+      if (id && label) {
         result.push({ id, label });
       }
     });

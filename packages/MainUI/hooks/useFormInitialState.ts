@@ -1,13 +1,14 @@
-import { useEffect, useMemo } from 'react';
-import { UseFormReset } from 'react-hook-form';
+import { useMemo } from 'react';
 import { EntityData, Field, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
+import useFormParent from './useFormParent';
 
 export const useFormInitialState = (
   record: EntityData | undefined,
   formInitialization: FormInitializationResponse,
   fieldsByColumnName: Record<string, Field>,
-  reset: UseFormReset<EntityData>,
 ) => {
+  const parentData = useFormParent();
+
   const initialState = useMemo(() => {
     const acc = { ...formInitialization.sessionAttributes } as EntityData;
 
@@ -25,16 +26,15 @@ export const useFormInitialState = (
       }
     });
 
-    return { ...acc, ...record };
+    return { ...acc, ...parentData, ...record };
   }, [
     fieldsByColumnName,
     formInitialization.auxiliaryInputValues,
     formInitialization.columnValues,
     formInitialization.sessionAttributes,
+    parentData,
     record,
   ]);
 
-  useEffect(() => {
-    reset(initialState);
-  }, [reset, initialState]);
+  return initialState;
 };

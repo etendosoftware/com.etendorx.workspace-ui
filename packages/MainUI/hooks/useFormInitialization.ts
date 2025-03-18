@@ -9,10 +9,10 @@ import { logger } from '@/utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useUserContext } from './useUserContext';
 import { ClientOptions } from '@workspaceui/etendohookbinder/src/api/client';
-import { getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
-import { useParentTabContext } from '@/contexts/tab';
+import useFormParent from './useFormParent';
+import { useSearchParams } from 'next/navigation';
 
-const getRowId = (mode: FormMode, recordId?: string): string => {
+const getRowId = (mode: FormMode, recordId?: string | null): string => {
   if (mode === FormMode.EDIT && !recordId) {
     throw new Error('Record ID is required in EDIT mode');
   }
@@ -27,8 +27,8 @@ export const buildFormInitializationParams = ({
 }: {
   tab: Tab;
   mode: FormMode;
-  recordId?: string;
-  parentId?: string;
+  recordId?: string | null;
+  parentId?: string | null;
 }): URLSearchParams =>
   new URLSearchParams({
     MODE: mode,
@@ -100,16 +100,17 @@ export type useFormInitialization = State & {
 export function useFormInitialization({ tab, mode, recordId }: FormInitializationParams): useFormInitialization {
   const { setSession } = useUserContext();
   const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
-  const { parentRecord, parentTab } = useParentTabContext();
+  const loaded = !!state.formInitialization;
+  const searchParams = useSearchParams();
+  const parentId = useMemo(() => searchParams.get('parentId'), [searchParams]);
   const { error, formInitialization, loading } = state;
   const params = useMemo(
-    () =>
-      tab ? buildFormInitializationParams({ tab, mode, recordId, parentId: String(parentRecord?.id ?? null) }) : null,
-    [tab, mode, recordId, parentRecord?.id],
+    () => (tab ? buildFormInitializationParams({ tab, mode, recordId, parentId }) : null),
+    [tab, mode, recordId, parentId],
   );
-
+  const parentData = useFormParent();
   const refetch = useCallback(async () => {
-    if (!params) return;
+    if (!params || loaded) return;
 
     dispatch({ type: 'FETCH_START' });
 
@@ -118,22 +119,6 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
 
       if (!entityKeyColumn) {
         throw new Error('Missing key column');
-      }
-
-      let parentData;
-
-      if (parentTab && parentRecord) {
-        const parentColumns = tab.parentColumns.map(field => tab.fields[field]);
-        const parentFields = getFieldsByInputName(parentTab);
-
-        parentData = parentColumns.reduce(
-          (acc, field) => {
-            const parentFieldName = parentFields[field.inputName].hqlName;
-            acc[field.inputName] = parentRecord[parentFieldName];
-            return acc;
-          },
-          {} as Record<string, unknown>,
-        );
       }
 
       const payload = {
@@ -162,18 +147,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       logger.error(err);
       dispatch({ type: 'FETCH_ERROR', payload: err instanceof Error ? err : new Error('Unknown error') });
     }
-  }, [
-    params,
-    parentRecord,
-    parentTab,
-    setSession,
-    tab.entityName,
-    tab.fields,
-    tab.id,
-    tab.parentColumns,
-    tab.table,
-    tab.windowId,
-  ]);
+  }, [loaded, params, parentData, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.windowId]);
 
   useEffect(() => {
     refetch();

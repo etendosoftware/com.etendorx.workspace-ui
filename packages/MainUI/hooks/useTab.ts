@@ -19,8 +19,6 @@ export function useTab(tabId?: string) {
 
       const data = await Metadata.getTab(tabId);
 
-      console.debug(data);
-
       setData(data);
       setLoaded(true);
     } catch (e) {

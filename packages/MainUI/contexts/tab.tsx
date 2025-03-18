@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useTab } from '@/hooks/useTab';
 import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
@@ -25,10 +25,6 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
     }),
     [parentRecord, parentTab, tab],
   );
-
-  useEffect(() => {
-    // console.debug('tabprovider', value);
-  });
 
   return <TabContext.Provider value={value}>{children}</TabContext.Provider>;
 }

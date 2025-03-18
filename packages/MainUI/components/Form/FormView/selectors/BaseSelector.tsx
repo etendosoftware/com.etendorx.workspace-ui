@@ -29,6 +29,7 @@ export const BaseSelector = ({ field }: { field: Field }) => {
   const { session } = useUserContext();
   const executeCallout = useCallout({ field, rowId: recordId });
   const value = watch(field.hqlName);
+  const valueTracking = useRef(value);
   const values = watch();
   const ready = useRef(false);
   const fieldsByHqlName = useMemo(() => tab?.fields || {}, [tab?.fields]);
@@ -67,11 +68,19 @@ export const BaseSelector = ({ field }: { field: Field }) => {
 
   const applyColumnValues = useCallback(
     (columnValues: FormInitializationResponse['columnValues']) => {
-      Object.entries(columnValues ?? {}).forEach(([column, { value, classicValue }]) => {
+      Object.entries(columnValues ?? {}).forEach(([column, { value, classicValue, identifier }]) => {
         const targetField = fieldsByColumnName[column];
         const isDate = ['15', '16'].includes(targetField?.column?.reference);
 
-        setValue(targetField?.hqlName || column, isDate ? classicValue : value);
+        if (targetField) {
+          setValue(targetField.hqlName, isDate ? classicValue : value);
+
+          if (identifier) {
+            setValue(targetField.hqlName + '_identifier', identifier);
+          }
+        } else {
+          setValue(column, isDate ? classicValue : value);
+        }
       });
     },
     [fieldsByColumnName, setValue],
@@ -90,6 +99,8 @@ export const BaseSelector = ({ field }: { field: Field }) => {
   );
 
   const runCallout = useCallback(async () => {
+    valueTracking.current = value;
+
     if (!tab || !field.column.callout) return;
 
     try {
@@ -124,10 +135,11 @@ export const BaseSelector = ({ field }: { field: Field }) => {
     getValues,
     session,
     tab,
+    value,
   ]);
 
   useEffect(() => {
-    if (ready.current) {
+    if (ready.current && valueTracking != value) {
       runCallout();
     } else {
       ready.current = true;

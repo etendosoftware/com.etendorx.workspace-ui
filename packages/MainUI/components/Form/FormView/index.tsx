@@ -18,30 +18,28 @@ import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/m
 import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
 import { useFormInitialState } from '@/hooks/useFormInitialState';
 import useFormFields from '@/hooks/useFormFields';
-import useFormParent from '@/hooks/useFormParent';
 
-export default function FormView({
-  window: windowMetadata,
-  tab,
-  mode,
-  formInitialization,
-}: {
+interface FormViewProps {
+  window: WindowMetadata;
+  tab: Tab;
+  mode: FormMode;
+  initialState: EntityData;
+  load: () => Promise<void>;
+}
+
+interface FormViewWrapperProps {
   window: WindowMetadata;
   tab: Tab;
   mode: FormMode;
   formInitialization: FormInitializationResponse;
-}) {
+}
+
+const FormViewComponent = ({ window: windowMetadata, tab, mode, load, initialState }: FormViewProps) => {
   const router = useRouter();
   const [message, setMessage] = useState<string>();
-  const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
-  const { recordId } = useParams<{ recordId: string }>();
-  const { record, load } = useSingleDatasource(tab.entityName, recordId);
   const handleDismiss = useCallback(() => setMessage(undefined), []);
   const { fields, groups } = useFormFields(tab);
-  const { reset, setValue, ...form } = useForm();
-
-  useFormInitialState(record, formInitialization, fieldsByColumnName, reset);
-  useFormParent(setValue);
+  const { reset, setValue, ...form } = useForm({ defaultValues: initialState });
 
   const onSuccess = useCallback(
     async (data: EntityData) => {
@@ -84,4 +82,13 @@ export default function FormView({
       </form>
     </FormProvider>
   );
+};
+
+export default function FormView({ formInitialization, mode, tab, window }: FormViewWrapperProps) {
+  const { recordId } = useParams<{ recordId: string }>();
+  const { record, load } = useSingleDatasource(tab.entityName, recordId);
+  const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
+  const initialState = useFormInitialState(record, formInitialization, fieldsByColumnName);
+
+  return <FormViewComponent initialState={initialState} mode={mode} tab={tab} window={window} load={load} />;
 }
