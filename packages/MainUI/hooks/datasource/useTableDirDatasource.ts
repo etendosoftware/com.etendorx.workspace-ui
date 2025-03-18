@@ -5,6 +5,7 @@ import { useFormContext } from 'react-hook-form';
 import { useMetadataContext } from '../useMetadataContext';
 import { useParams } from 'next/navigation';
 import { getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 
 export interface UseTableDirDatasourceParams {
   field: Field;
@@ -14,7 +15,7 @@ export interface UseTableDirDatasourceParams {
 export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) => {
   const { windowId } = useParams<{ windowId: string }>();
   const { getValues, watch } = useFormContext();
-  const { tab, tabs, selected } = useMetadataContext();
+  const { tab, selected } = useMetadataContext();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();
@@ -29,19 +30,23 @@ export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) =>
 
         setLoading(true);
 
-        const parentColumns = tab.parentColumns.map(field => tab.fields[field]);
-        const parent = tab.level > 0 ? selected[tab.level - 1] : {};
-        const parentTab = tabs[tab.level - 1];
-        const parentFields = getFieldsByInputName(parentTab);
+        let parentData = {};
 
-        const parentData = parentColumns.reduce(
-          (acc, field) => {
-            const parentFieldName = parentFields[field.inputName].hqlName;
-            acc[field.inputName] = parent[parentFieldName];
-            return acc;
-          },
-          {} as Record<string, unknown>,
-        );
+        if (tab.parentTabId) {
+          const parentColumns = tab.parentColumns.map(field => tab.fields[field]);
+          const parent = tab.level > 0 ? selected[tab.level - 1] : {};
+          const parentTab = await Metadata.getTab(tab.parentTabId);
+          const parentFields = getFieldsByInputName(parentTab);
+
+          parentData = parentColumns.reduce(
+            (acc, field) => {
+              const parentFieldName = parentFields[field.inputName].hqlName;
+              acc[field.inputName] = parent[parentFieldName];
+              return acc;
+            },
+            {} as Record<string, unknown>,
+          );
+        }
 
         const body = new URLSearchParams({
           _startRow: '0',
@@ -91,7 +96,7 @@ export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) =>
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     },
-    [field, getValues, selected, tab, tabs, windowId],
+    [field, getValues, selected, tab, windowId],
   );
 
   useEffect(() => {

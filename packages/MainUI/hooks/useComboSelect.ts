@@ -3,19 +3,21 @@ import { EntityData, type Field, type Tab } from '@workspaceui/etendohookbinder/
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { useFormContext } from 'react-hook-form';
 import { useParams } from 'next/navigation';
-import { getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { useMetadataContext } from './useMetadataContext';
+import { useParentTabContext } from '@/contexts/tab';
+import { getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 
 export interface UseTableDirDatasourceParams {
   field: Field;
-  
+
   tab?: Tab;
 }
 
 export const useComboSelect = ({ field }: UseTableDirDatasourceParams) => {
   const { windowId } = useParams<{ windowId: string }>();
   const { watch } = useFormContext();
-  const { tab, tabs, selected } = useMetadataContext();
+  const { tab } = useMetadataContext();
+  const { parentRecord, parentTab } = useParentTabContext();
   const [records, setRecords] = useState<EntityData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();
@@ -30,19 +32,21 @@ export const useComboSelect = ({ field }: UseTableDirDatasourceParams) => {
 
         setLoading(true);
 
-        const parentColumns = tab.parentColumns.map(field => tab.fields[field]);
-        const parent = tab.level > 0 ? selected[tab.level - 1] : {};
-        const parentTab = tabs[tab.level - 1];
-        const parentFields = getFieldsByInputName(parentTab);
+        let parentData;
 
-        const parentData = parentColumns.reduce(
-          (acc, field) => {
-            const parentFieldName = parentFields[field.inputName].hqlName;
-            acc[field.inputName] = parent[parentFieldName];
-            return acc;
-          },
-          {} as Record<string, unknown>,
-        );
+        if (parentTab && parentRecord) {
+          const parentColumns = tab.parentColumns.map(field => tab.fields[field]);
+          const parentFields = getFieldsByInputName(parentTab);
+
+          parentData = parentColumns.reduce(
+            (acc, field) => {
+              const parentFieldName = parentFields[field.inputName].hqlName;
+              acc[field.inputName] = parentRecord[parentFieldName];
+              return acc;
+            },
+            {} as Record<string, unknown>,
+          );
+        }
 
         const body = new URLSearchParams({
           _startRow: '0',
@@ -73,7 +77,7 @@ export const useComboSelect = ({ field }: UseTableDirDatasourceParams) => {
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     },
-    [field, selected, tab, tabs, windowId],
+    [field, parentRecord, parentTab, tab, windowId],
   );
 
   useEffect(() => {

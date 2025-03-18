@@ -16,9 +16,10 @@ import Collapsible from '../Collapsible';
 import StatusBar from './StatusBar';
 import { MessageBox } from './MessageBox';
 import { useTranslation } from '@/hooks/useTranslation';
-import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
-import { buildInitialFormState } from '@/utils';
+import { getFieldsByColumnName, getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
+import { useFormInitialState } from '@/hooks/useFormInitialState';
+import { useParentTabContext } from '@/contexts/tab';
 
 export default function FormView({
   window: windowMetadata,
@@ -98,7 +99,7 @@ export default function FormView({
     [fieldGroups],
   );
 
-  const { reset, ...form } = useForm();
+  const { reset, setValue, ...form } = useForm();
 
   const onSuccess = useCallback(
     async (data: EntityData) => {
@@ -120,13 +121,32 @@ export default function FormView({
   const { submit, loading } = useFormAction({ window: windowMetadata, tab, mode, onSuccess, onError });
 
   const handleSave = useMemo(() => form.handleSubmit(submit), [form, submit]);
+  const initialState = useFormInitialState(record, formInitialization, fieldsByColumnName);
+
+  const { parentTab, parentRecord } = useParentTabContext();
 
   useEffect(() => {
-    reset(buildInitialFormState(record, formInitialization, fieldsByColumnName));
-  }, [fieldsByColumnName, formInitialization, mode, record, reset]);
+    reset(initialState);
+  }, [reset, initialState]);
+
+  useEffect(() => {
+    if (parentTab && parentRecord) {
+      const parentColumns = tab.parentColumns.map(field => tab.fields[field]);
+      const parentFields = getFieldsByInputName(parentTab);
+
+      parentColumns.forEach(
+        field => {
+          const parentFieldName = parentFields[field.inputName].hqlName;
+          console.debug('setValue', field.hqlName, parentRecord[parentFieldName]);
+          setValue(field.hqlName, parentRecord[parentFieldName]);
+        },
+        {} as Record<string, unknown>,
+      );
+    }
+  }, [parentRecord, parentTab, setValue, tab.fields, tab.parentColumns]);
 
   return (
-    <FormProvider reset={reset} {...form}>
+    <FormProvider setValue={setValue} reset={reset} {...form}>
       <form
         className={`w-full p-2 space-y-2 transition duration-300 h-full overflow-scroll ${loading ? 'opacity-50 select-none cursor-progress cursor-to-children' : ''}`}
         onSubmit={handleSave}>

@@ -166,7 +166,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
         },
         onDoubleClick: () => {
           selectRecord(record, tab);
-          navigate(`${windowId}/${tab.id}/${record.id}`);
+          navigate(`${windowId}/${tab.id}/${record.id}?parentId=${selected[tab.level - 1]?.id || null}`);
         },
         onAuxClick: () => {
           selectRecord(record, tab);

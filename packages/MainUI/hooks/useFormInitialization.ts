@@ -9,8 +9,8 @@ import { logger } from '@/utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useUserContext } from './useUserContext';
 import { ClientOptions } from '@workspaceui/etendohookbinder/src/api/client';
-import { useMetadataContext } from './useMetadataContext';
 import { getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { useParentTabContext } from '@/contexts/tab';
 
 const getRowId = (mode: FormMode, recordId?: string): string => {
   if (mode === FormMode.EDIT && !recordId) {
@@ -83,14 +83,14 @@ const reducer = (state: State, action: Action): State => {
   }
 };
 
-export type UseDynamicForm = State & {
+export type useFormInitialization = State & {
   refetch: () => Promise<void>;
 };
 
-export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams): UseDynamicForm {
+export function useFormInitialization({ tab, mode, recordId }: FormInitializationParams): useFormInitialization {
   const { setSession } = useUserContext();
-  const { selected, tabs } = useMetadataContext();
   const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
+  const { parentRecord, parentTab } = useParentTabContext();
   const { error, formInitialization, loading } = state;
   const params = useMemo(
     () => (tab ? buildFormInitializationParams(tab, mode, recordId) : null),
@@ -109,19 +109,21 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
         throw new Error('Missing key column');
       }
 
-      const parentColumns = tab.parentColumns.map(field => tab.fields[field]);
-      const parent = tab.level > 0 ? selected[tab.level - 1] : {};
-      const parentTab = tabs[tab.level - 1];
-      const parentFields = getFieldsByInputName(parentTab);
+      let parentData;
 
-      const parentData = parentColumns.reduce(
-        (acc, field) => {
-          const parentFieldName = parentFields[field.inputName].hqlName;
-          acc[field.inputName] = parent[parentFieldName];
-          return acc;
-        },
-        {} as Record<string, unknown>,
-      );
+      if (parentTab && parentRecord) {
+        const parentColumns = tab.parentColumns.map(field => tab.fields[field]);
+        const parentFields = getFieldsByInputName(parentTab);
+
+        parentData = parentColumns.reduce(
+          (acc, field) => {
+            const parentFieldName = parentFields[field.inputName].hqlName;
+            acc[field.inputName] = parentRecord[parentFieldName];
+            return acc;
+          },
+          {} as Record<string, unknown>,
+        );
+      }
 
       const payload = {
         ...parentData,
@@ -149,14 +151,25 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
       logger.error(err);
       dispatch({ type: 'FETCH_ERROR', payload: err instanceof Error ? err : new Error('Unknown error') });
     }
-  }, [params, tab, selected, tabs, setSession]);
+  }, [
+    params,
+    parentRecord,
+    parentTab,
+    setSession,
+    tab.entityName,
+    tab.fields,
+    tab.id,
+    tab.parentColumns,
+    tab.table,
+    tab.windowId,
+  ]);
 
   useEffect(() => {
     refetch();
   }, [refetch]);
 
   return useMemo(
-    () => ({ error, formInitialization, loading, refetch }) as UseDynamicForm,
+    () => ({ error, formInitialization, loading, refetch }) as useFormInitialization,
     [error, formInitialization, loading, refetch],
   );
 }

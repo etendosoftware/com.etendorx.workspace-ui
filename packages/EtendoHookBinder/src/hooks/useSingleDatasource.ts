@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { datasource } from '../api/datasource';
 import { EntityData } from '../api/types';
 
-export function useSingleDatasource(entity?: string, id?: string) {
+export function useSingleDatasource(entity?: string | null, id?: string | null) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [record, setRecord] = useState<EntityData>();

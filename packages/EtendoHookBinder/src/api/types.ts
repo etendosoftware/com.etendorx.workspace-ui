@@ -210,6 +210,7 @@ export interface Tab {
   hqlwhereclause: string;
   sQLWhereClause: string;
   module: string;
+  parentTabId?: string;
 }
 
 export interface WindowMetadata {
