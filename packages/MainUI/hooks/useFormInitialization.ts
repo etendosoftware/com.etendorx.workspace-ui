@@ -19,10 +19,20 @@ const getRowId = (mode: FormMode, recordId?: string): string => {
   return mode === FormMode.EDIT ? recordId! : 'null';
 };
 
-export const buildFormInitializationParams = (tab: Tab, mode: FormMode, recordId?: string): URLSearchParams =>
+export const buildFormInitializationParams = ({
+  mode,
+  tab,
+  recordId,
+  parentId,
+}: {
+  tab: Tab;
+  mode: FormMode;
+  recordId?: string;
+  parentId?: string;
+}): URLSearchParams =>
   new URLSearchParams({
     MODE: mode,
-    PARENT_ID: 'null',
+    PARENT_ID: parentId ?? 'null',
     TAB_ID: tab.id,
     ROW_ID: getRowId(mode, recordId),
     _action: 'org.openbravo.client.application.window.FormInitializationComponent',
@@ -93,8 +103,9 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   const { parentRecord, parentTab } = useParentTabContext();
   const { error, formInitialization, loading } = state;
   const params = useMemo(
-    () => (tab ? buildFormInitializationParams(tab, mode, recordId) : null),
-    [tab, mode, recordId],
+    () =>
+      tab ? buildFormInitializationParams({ tab, mode, recordId, parentId: String(parentRecord?.id ?? null) }) : null,
+    [tab, mode, recordId, parentRecord?.id],
   );
 
   const refetch = useCallback(async () => {

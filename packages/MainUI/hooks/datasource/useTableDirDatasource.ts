@@ -1,22 +1,20 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { useCallback, useState } from 'react';
+import type { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { useFormContext } from 'react-hook-form';
-import { useMetadataContext } from '../useMetadataContext';
 import { useParams } from 'next/navigation';
 import { getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { useParentTabContext } from '@/contexts/tab';
 
 export interface UseTableDirDatasourceParams {
   field: Field;
-  tab?: Tab;
 }
 
 export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) => {
   const { windowId } = useParams<{ windowId: string }>();
   const { getValues, watch } = useFormContext();
-  const { tab, selected } = useMetadataContext();
-  const [records, setRecords] = useState([]);
+  const { tab, parentTab, parentRecord } = useParentTabContext();
+  const [records, setRecords] = useState<Record<string, string>[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();
   const value = watch(field.hqlName);
@@ -30,18 +28,16 @@ export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) =>
 
         setLoading(true);
 
-        let parentData = {};
+        let parentData;
 
-        if (tab.parentTabId) {
+        if (parentTab && parentRecord) {
           const parentColumns = tab.parentColumns.map(field => tab.fields[field]);
-          const parent = tab.level > 0 ? selected[tab.level - 1] : {};
-          const parentTab = await Metadata.getTab(tab.parentTabId);
           const parentFields = getFieldsByInputName(parentTab);
 
           parentData = parentColumns.reduce(
             (acc, field) => {
               const parentFieldName = parentFields[field.inputName].hqlName;
-              acc[field.inputName] = parent[parentFieldName];
+              acc[field.inputName] = parentRecord[parentFieldName];
               return acc;
             },
             {} as Record<string, unknown>,
@@ -96,12 +92,8 @@ export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) =>
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     },
-    [field, getValues, selected, tab, windowId],
+    [field, getValues, parentRecord, parentTab, tab, windowId],
   );
-
-  useEffect(() => {
-    fetch(value);
-  }, [fetch, value]);
 
   return { records, loading, error, refetch: fetch };
 };

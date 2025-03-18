@@ -1,27 +1,23 @@
-import { useCallback, useEffect, useState } from 'react';
-import { EntityData, type Field, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { useCallback, useState } from 'react';
+import type { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { useFormContext } from 'react-hook-form';
 import { useParams } from 'next/navigation';
-import { useMetadataContext } from './useMetadataContext';
-import { useParentTabContext } from '@/contexts/tab';
 import { getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { useParentTabContext } from '@/contexts/tab';
 
-export interface UseTableDirDatasourceParams {
+export interface UseComboSelectParams {
   field: Field;
-
-  tab?: Tab;
 }
 
-export const useComboSelect = ({ field }: UseTableDirDatasourceParams) => {
+export const useComboSelect = ({ field }: UseComboSelectParams) => {
   const { windowId } = useParams<{ windowId: string }>();
-  const { watch } = useFormContext();
-  const { tab } = useMetadataContext();
-  const { parentRecord, parentTab } = useParentTabContext();
-  const [records, setRecords] = useState<EntityData[]>([]);
+  const { getValues, watch } = useFormContext();
+  const { tab, parentTab, parentRecord } = useParentTabContext();
+  const value = watch(field.hqlName);
+  const [records, setRecords] = useState<Record<string, string>[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();
-  const value = watch(field.hqlName);
 
   const fetch = useCallback(
     async (_currentValue: typeof value) => {
@@ -63,6 +59,25 @@ export const useComboSelect = ({ field }: UseTableDirDatasourceParams) => {
           ...parentData,
         });
 
+        Object.entries(getValues()).forEach(([key, value]) => {
+          const _key = tab.fields[key]?.inputName;
+          const stringValue = String(value);
+
+          const valueMap = {
+            true: 'Y',
+            false: 'N',
+            null: 'null',
+          };
+
+          const safeValue = Object.prototype.hasOwnProperty.call(valueMap, stringValue)
+            ? valueMap[stringValue as keyof typeof valueMap]
+            : value;
+
+          if (safeValue) {
+            body.set(_key || key, safeValue);
+          }
+        });
+
         const { data, statusText } = await datasource.client.request(field.selector?.datasourceName ?? '', {
           method: 'POST',
           body,
@@ -77,12 +92,8 @@ export const useComboSelect = ({ field }: UseTableDirDatasourceParams) => {
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     },
-    [field, parentRecord, parentTab, tab, windowId],
+    [field, getValues, parentRecord, parentTab, tab, windowId],
   );
-
-  useEffect(() => {
-    fetch(value);
-  }, [fetch, value]);
 
   return { records, loading, error, refetch: fetch };
 };
