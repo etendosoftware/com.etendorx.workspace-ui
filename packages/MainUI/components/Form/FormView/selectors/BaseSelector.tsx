@@ -51,13 +51,7 @@ export const BaseSelector = ({ field, formMode = FormMode.EDIT }: { field: Field
   }, [field, values, session]);
 
   const isReadOnly = useMemo(() => {
-    if (field.readOnly) {
-      if (field.isUpdatable === 'false') {
-        return true;
-      }
-      return formMode === FormMode.EDIT;
-    }
-    console.log(field);
+    if (!field.isUpdatable) return formMode !== FormMode.NEW;
 
     if (field.readOnlyLogicExpression) {
       const compiledExpr = compileExpression(field.readOnlyLogicExpression);
