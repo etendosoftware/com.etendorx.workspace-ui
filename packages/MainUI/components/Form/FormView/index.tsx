@@ -72,9 +72,9 @@ const FormViewComponent = ({ window: windowMetadata, tab, mode, load, initialSta
         <StatusBar fields={fields.statusBarFields} />
         {groups.map(([id, group]) => (
           <Collapsible key={id} title={group.identifier} initialState={group.id === null}>
-            <div className="grid grid-cols-4 auto-rows-auto gap-4">
+            <div className="grid grid-cols-3 auto-rows-auto gap-4">
               {Object.entries(group.fields).map(([hqlName, field]) => (
-                <BaseSelector field={field} key={hqlName} />
+                <BaseSelector field={field} key={hqlName} formMode={mode} />
               ))}
             </div>
           </Collapsible>
