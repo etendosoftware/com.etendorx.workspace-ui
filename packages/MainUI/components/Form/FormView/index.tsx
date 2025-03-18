@@ -8,17 +8,17 @@ import {
 } from '@workspaceui/etendohookbinder/src/api/types';
 import { FormProvider, useForm } from 'react-hook-form';
 import { BaseSelector } from './selectors/BaseSelector';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useFormAction } from '@/hooks/useFormAction';
 import { useParams, useRouter } from 'next/navigation';
 import Collapsible from '../Collapsible';
 import StatusBar from './StatusBar';
 import { MessageBox } from './MessageBox';
-import { getFieldsByColumnName, getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
 import { useFormInitialState } from '@/hooks/useFormInitialState';
-import { useParentTabContext } from '@/contexts/tab';
 import useFormFields from '@/hooks/useFormFields';
+import useFormParent from '@/hooks/useFormParent';
 
 export default function FormView({
   window: windowMetadata,
@@ -37,24 +37,11 @@ export default function FormView({
   const { recordId } = useParams<{ recordId: string }>();
   const { record, load } = useSingleDatasource(tab.entityName, recordId);
   const handleDismiss = useCallback(() => setMessage(undefined), []);
-  const { parentTab, parentRecord } = useParentTabContext();
   const { fields, groups } = useFormFields(tab);
   const { reset, setValue, ...form } = useForm();
 
-  const setParent = useCallback(() => {
-    if (parentTab && parentRecord) {
-      const parentColumns = tab.parentColumns.map(field => tab.fields[field]);
-      const parentFields = getFieldsByInputName(parentTab);
-
-      parentColumns.forEach(
-        field => {
-          const parentFieldName = parentFields[field.inputName].hqlName;
-          setValue(field.hqlName, parentRecord[parentFieldName]);
-        },
-        {} as Record<string, unknown>,
-      );
-    }
-  }, [parentRecord, parentTab, setValue, tab.fields, tab.parentColumns]);
+  useFormInitialState(record, formInitialization, fieldsByColumnName, reset);
+  useFormParent(setValue);
 
   const onSuccess = useCallback(
     async (data: EntityData) => {
@@ -76,15 +63,6 @@ export default function FormView({
   const { submit, loading } = useFormAction({ window: windowMetadata, tab, mode, onSuccess, onError });
 
   const handleSave = useMemo(() => form.handleSubmit(submit), [form, submit]);
-  const initialState = useFormInitialState(record, formInitialization, fieldsByColumnName);
-
-  useEffect(() => {
-    reset(initialState);
-  }, [reset, initialState]);
-
-  useEffect(() => {
-    setParent();
-  }, [setParent]);
 
   return (
     <FormProvider setValue={setValue} reset={reset} {...form}>
