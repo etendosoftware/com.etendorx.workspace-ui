@@ -6,7 +6,6 @@ export function useWindow(windowId: string) {
   const [error, setError] = useState<Error>();
   const [loaded, setLoaded] = useState(false);
   const [windowData, setWindowData] = useState(Metadata.getCachedWindow(windowId));
-  const [columnsData, setColumnsData] = useState(Metadata.getTabsColumns(windowData?.tabs));
 
   const load = useCallback(async () => {
     try {
@@ -20,7 +19,6 @@ export function useWindow(windowId: string) {
       const data = await Metadata.getWindow(windowId);
 
       setWindowData(data);
-      setColumnsData(Metadata.getTabsColumns(data.tabs));
       setLoaded(true);
     } catch (e) {
       setError(e as Error);
@@ -34,7 +32,7 @@ export function useWindow(windowId: string) {
   }, [load]);
 
   return useMemo(
-    () => ({ loading, windowData, error, loaded, load, columnsData }),
-    [columnsData, error, load, loaded, loading, windowData],
+    () => ({ loading, windowData, error, loaded, load }),
+    [error, load, loaded, loading, windowData],
   );
 }
