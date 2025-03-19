@@ -8,7 +8,7 @@ export interface UseFormActionParams {
   tab: Tab;
   mode: FormMode;
   onSuccess: (data: EntityData) => void;
-  onError: (data: unknown) => void;
+  onError: (data: string) => void;
 }
 
 export const useFormAction = ({ window, tab, mode, onSuccess, onError }: UseFormActionParams) => {
@@ -46,11 +46,11 @@ export const useFormAction = ({ window, tab, mode, onSuccess, onError }: UseForm
           setLoading(false);
           onSuccess?.(data.response.data[0]);
         } else {
-          throw new Error(data);
+          throw new Error(data.response.error.message);
         }
       } catch (err) {
         setLoading(false);
-        onError?.(err instanceof Error ? err : err);
+        onError?.(String(err));
       }
     },
     [mode, onError, onSuccess, tab, userId, window],

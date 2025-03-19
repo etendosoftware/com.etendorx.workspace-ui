@@ -1,22 +1,13 @@
 import { Toolbar } from '@/components/Toolbar/Toolbar';
-import {
-  EntityData,
-  FormInitializationResponse,
-  FormMode,
-  Tab,
-  WindowMetadata,
-} from '@workspaceui/etendohookbinder/src/api/types';
+import { EntityData, FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { FormProvider, useForm } from 'react-hook-form';
 import { BaseSelector } from './selectors/BaseSelector';
 import { useCallback, useMemo, useState } from 'react';
 import { useFormAction } from '@/hooks/useFormAction';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Collapsible from '../Collapsible';
 import StatusBar from './StatusBar';
 import { MessageBox } from './MessageBox';
-import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
-import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
-import { useFormInitialState } from '@/hooks/useFormInitialState';
 import useFormFields from '@/hooks/useFormFields';
 
 interface FormViewProps {
@@ -24,38 +15,29 @@ interface FormViewProps {
   tab: Tab;
   mode: FormMode;
   initialState: EntityData;
-  load: () => Promise<void>;
 }
 
-interface FormViewWrapperProps {
-  window: WindowMetadata;
-  tab: Tab;
-  mode: FormMode;
-  formInitialization: FormInitializationResponse;
-}
-
-const FormViewComponent = ({ window: windowMetadata, tab, mode, load, initialState }: FormViewProps) => {
+export default function FormView({ window: windowMetadata, tab, mode, initialState }: FormViewProps) {
   const router = useRouter();
   const [message, setMessage] = useState<string>();
   const handleDismiss = useCallback(() => setMessage(undefined), []);
   const { fields, groups } = useFormFields(tab);
-  const { reset, setValue, ...form } = useForm({ defaultValues: initialState });
+  const { reset, setValue, ...form } = useForm({ values: initialState });
 
   const onSuccess = useCallback(
     async (data: EntityData) => {
       if (mode === FormMode.EDIT) {
-        load();
+        reset({ ...initialState, ...data });
       } else {
-        router.prefetch(String(data.id));
         router.replace(String(data.id));
       }
       setMessage('Saved');
     },
-    [load, mode, router],
+    [initialState, mode, reset, router],
   );
 
-  const onError = useCallback((_data: unknown) => {
-    setMessage('Error saving record: ' + String(_data));
+  const onError = useCallback((data: string) => {
+    setMessage(data);
   }, []);
 
   const { submit, loading } = useFormAction({ window: windowMetadata, tab, mode, onSuccess, onError });
@@ -82,13 +64,4 @@ const FormViewComponent = ({ window: windowMetadata, tab, mode, load, initialSta
       </form>
     </FormProvider>
   );
-};
-
-export default function FormView({ formInitialization, mode, tab, window }: FormViewWrapperProps) {
-  const { recordId } = useParams<{ recordId: string }>();
-  const { record, load } = useSingleDatasource(tab.entityName, recordId);
-  const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
-  const initialState = useFormInitialState(record, formInitialization, fieldsByColumnName);
-
-  return <FormViewComponent initialState={initialState} mode={mode} tab={tab} window={window} load={load} />;
 }

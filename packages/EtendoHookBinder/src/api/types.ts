@@ -107,9 +107,10 @@ export interface Field {
   referencedTabId: string;
   displayLogicExpression?: string;
   readOnlyLogicExpression?: string;
-  readOnly: boolean;
+  isReadOnly: boolean;
+  isDisplayed: boolean;
   sequenceNumber: number;
-  isUpdatable?: string;
+  isUpdatable: boolean;
 }
 
 export interface Option<T extends string = string> {

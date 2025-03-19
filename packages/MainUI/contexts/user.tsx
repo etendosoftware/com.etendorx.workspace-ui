@@ -99,6 +99,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
       setUser(sessionResponse.user);
       setProfile(currentProfileInfo);
 
+      console.debug(sessionResponse);
+
       localStorage.setItem('currentInfo', JSON.stringify(currentProfileInfo));
       localStorage.setItem('currentRole', JSON.stringify(currentRole));
       localStorage.setItem('currentRoleId', currentRole.id);

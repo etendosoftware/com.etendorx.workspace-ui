@@ -12,11 +12,9 @@ import { useParams } from 'next/navigation';
 
 const compileExpression = (expression: string) => {
   try {
-    const expr = parseDynamicExpression(expression);
-
-    return new Function('context', 'currentValues', `return ${expr};`);
+    return new Function('context', 'currentValues', `return ${expression};`);
   } catch (error) {
-    logger.debug('Error compiling expression:', expression, error);
+    logger.error('Error compiling expression:', expression, error);
 
     return () => true;
   }
@@ -38,12 +36,16 @@ export const BaseSelector = ({ field, formMode = FormMode.EDIT }: { field: Field
     if (!field.displayed) return false;
     if (!field.displayLogicExpression) return true;
 
-    const compiledExpr = compileExpression(field.displayLogicExpression);
+    const parsedExpression = parseDynamicExpression(field.displayLogicExpression);
+    const compiledExpr = compileExpression(parsedExpression);
 
     try {
-      const result = compiledExpr(session, values);
+      if (field.hqlName === 'operativeUOM') {
+        console.debug(field.displayLogicExpression);
+        console.debug(values["orderUOM"])
+      }
 
-      return result;
+      return compiledExpr(session, values);
     } catch (error) {
       logger.warn('Error executing expression:', compiledExpr, error);
 
@@ -52,10 +54,13 @@ export const BaseSelector = ({ field, formMode = FormMode.EDIT }: { field: Field
   }, [field, values, session]);
 
   const isReadOnly = useMemo(() => {
-    if (!field.isUpdatable) return formMode !== FormMode.NEW;
+    if (field.isReadOnly) return true;
+    if (!field.isUpdatable) return FormMode.NEW !== formMode;
 
     if (field.readOnlyLogicExpression) {
-      const compiledExpr = compileExpression(field.readOnlyLogicExpression);
+      const parsedExpression = parseDynamicExpression(field.readOnlyLogicExpression);
+      const compiledExpr = compileExpression(parsedExpression);
+
       try {
         return compiledExpr(session, values);
       } catch (error) {
@@ -77,7 +82,7 @@ export const BaseSelector = ({ field, formMode = FormMode.EDIT }: { field: Field
           setValue(targetField.hqlName, isDate ? classicValue : value);
 
           if (identifier) {
-            setValue(targetField.hqlName + '_identifier', identifier);
+            setValue(targetField.hqlName + '$_identifier', identifier);
           }
         } else {
           setValue(column, isDate ? classicValue : value);

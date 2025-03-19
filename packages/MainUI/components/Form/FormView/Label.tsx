@@ -1,7 +1,9 @@
-import { Field } from '@workspaceui/etendohookbinder/src/api/types';
+import { useMemo } from 'react';
+import Link from 'next/link';
+import { useFormContext } from 'react-hook-form';
 import { isEntityReference } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { getFieldReference } from '@/utils';
-import ReferenceLabel from './ReferenceLabel';
 
 const Content = ({ field, link }: { field: Field; link?: boolean }) => (
   <label
@@ -12,11 +14,15 @@ const Content = ({ field, link }: { field: Field; link?: boolean }) => (
 );
 
 export default function Label({ field }: { field: Field }) {
-  if (isEntityReference(getFieldReference(field))) {
+  const { watch } = useFormContext();
+  const value = watch(field.hqlName);
+  const isReference = useMemo(() => isEntityReference(getFieldReference(field)), [field]);
+
+  if (value && isReference) {
     return (
-      <ReferenceLabel field={field}>
+      <Link href={`/window/${field.referencedWindowId}/${field.referencedTabId}/${value}`}>
         <Content field={field} link />
-      </ReferenceLabel>
+      </Link>
     );
   }
 

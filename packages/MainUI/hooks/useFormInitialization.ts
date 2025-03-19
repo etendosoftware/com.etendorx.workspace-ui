@@ -110,7 +110,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   );
   const parentData = useFormParent();
   const refetch = useCallback(async () => {
-    if (!params || loaded) return;
+    if (!params) return;
 
     dispatch({ type: 'FETCH_START' });
 
@@ -147,11 +147,13 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       logger.error(err);
       dispatch({ type: 'FETCH_ERROR', payload: err instanceof Error ? err : new Error('Unknown error') });
     }
-  }, [loaded, params, parentData, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.windowId]);
+  }, [params, parentData, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.windowId]);
 
   useEffect(() => {
-    refetch();
-  }, [refetch]);
+    if (!loaded) {
+      refetch();
+    }
+  }, [loaded, refetch]);
 
   return useMemo(
     () => ({ error, formInitialization, loading, refetch }) as useFormInitialization,

@@ -9,6 +9,7 @@ import { ErrorDisplay } from '@/components/ErrorDisplay';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
 import FormView from '@/components/Form/FormView';
 import TabContextProvider from '@/contexts/tab';
+import { useFormInitialState } from '@/hooks/useFormInitialState';
 
 function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
   const { t } = useTranslation();
@@ -18,6 +19,7 @@ function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
     mode: FormMode.EDIT,
     recordId,
   });
+  const initialState = useFormInitialState(formInitialization);
 
   if (error) {
     return (
@@ -33,11 +35,11 @@ function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
     );
   }
 
-  if (loading) {
+  if (loading || !initialState) {
     return <Spinner />;
   }
 
-  return <FormView mode={FormMode.EDIT} tab={tab} window={window} formInitialization={formInitialization} />;
+  return <FormView mode={FormMode.EDIT} tab={tab} window={window} initialState={initialState} />;
 }
 
 export default function EditRecordPage() {

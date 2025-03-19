@@ -19,9 +19,7 @@ export const SelectSelector = ({
   const idKey = (field.selector?.valueField ?? '') as string;
   const identifierKey = (field.selector?.displayField ?? '') as string;
   const { watch } = useFormContext();
-  const name = field.hqlName;
-  const currentValue = watch(name);
-  const currentIdentifier = watch(name + '_identifier');
+  const [currentValue, currentIdentifier] = watch([field.hqlName, field.hqlName + '$_identifier']);
 
   const { records, loading, refetch, loadMore, hasMore } = useTableDirDatasource({
     field,
@@ -32,7 +30,7 @@ export const SelectSelector = ({
   const options = useMemo<SelectProps['options']>(() => {
     const result: SelectProps['options'] = [];
 
-    if (currentValue && currentIdentifier) {
+    if (records.length === 0 && currentValue && currentIdentifier) {
       result.push({
         id: currentValue,
         label: currentIdentifier,

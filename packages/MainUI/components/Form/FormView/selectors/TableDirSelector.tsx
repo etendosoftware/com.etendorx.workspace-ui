@@ -1,6 +1,6 @@
 import { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import Select from './components/Select';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTableDirDatasource } from '@/hooks/datasource/useTableDirDatasource';
 import { SelectProps } from './components/types';
 import { useFormContext } from 'react-hook-form';
@@ -10,13 +10,12 @@ export const TableDirSelector = ({ field, isReadOnly }: { field: Field; isReadOn
   const identifierKey = (field.selector?.displayField ?? '') as string;
   const { records, refetch } = useTableDirDatasource({ field });
   const { watch } = useFormContext();
-  const currentValue = watch(field.hqlName);
-  const currentIdentifier = watch(field.hqlName + '_identifier');
+  const [currentValue, currentIdentifier] = watch([field.hqlName, field.hqlName + '$_identifier']);
 
   const options = useMemo<SelectProps['options']>(() => {
     const result: SelectProps['options'] = [];
 
-    if (currentValue && currentIdentifier) {
+    if (records.length === 0 && currentValue && currentIdentifier) {
       result.push({
         id: currentValue,
         label: currentIdentifier,
@@ -35,5 +34,9 @@ export const TableDirSelector = ({ field, isReadOnly }: { field: Field; isReadOn
     return result;
   }, [currentIdentifier, currentValue, idKey, identifierKey, records]);
 
-  return <Select name={field.hqlName} options={options} onFocus={refetch} isReadOnly={isReadOnly} />;
+  const handleFocus = useCallback(() => {
+    refetch(true);
+  }, [refetch]);
+
+  return <Select name={field.hqlName} options={options} onFocus={handleFocus} isReadOnly={isReadOnly} />;
 };
