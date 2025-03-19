@@ -12,7 +12,7 @@ import { useParams } from 'next/navigation';
 
 const compileExpression = (expression: string) => {
   try {
-    return new Function('context', 'currentValues', `return ${expression};`);
+    return new Function('context', 'currentValues', `return ${parseDynamicExpression(expression)};`);
   } catch (error) {
     logger.error('Error compiling expression:', expression, error);
 
@@ -36,15 +36,9 @@ export const BaseSelector = ({ field, formMode = FormMode.EDIT }: { field: Field
     if (!field.displayed) return false;
     if (!field.displayLogicExpression) return true;
 
-    const parsedExpression = parseDynamicExpression(field.displayLogicExpression);
-    const compiledExpr = compileExpression(parsedExpression);
+    const compiledExpr = compileExpression(field.displayLogicExpression);
 
     try {
-      if (field.hqlName === 'operativeUOM') {
-        console.debug(field.displayLogicExpression);
-        console.debug(values["orderUOM"])
-      }
-
       return compiledExpr(session, values);
     } catch (error) {
       logger.warn('Error executing expression:', compiledExpr, error);
@@ -56,20 +50,16 @@ export const BaseSelector = ({ field, formMode = FormMode.EDIT }: { field: Field
   const isReadOnly = useMemo(() => {
     if (field.isReadOnly) return true;
     if (!field.isUpdatable) return FormMode.NEW !== formMode;
+    if (!field.readOnlyLogicExpression) return false;
+    const compiledExpr = compileExpression(field.readOnlyLogicExpression);
 
-    if (field.readOnlyLogicExpression) {
-      const parsedExpression = parseDynamicExpression(field.readOnlyLogicExpression);
-      const compiledExpr = compileExpression(parsedExpression);
+    try {
+      return compiledExpr(session, values);
+    } catch (error) {
+      logger.warn('Error executing expression:', compiledExpr, error);
 
-      try {
-        return compiledExpr(session, values);
-      } catch (error) {
-        logger.warn('Error executing expression:', compiledExpr, error);
-        return true;
-      }
+      return true;
     }
-
-    return false;
   }, [field, formMode, session, values]);
 
   const applyColumnValues = useCallback(
@@ -145,7 +135,7 @@ export const BaseSelector = ({ field, formMode = FormMode.EDIT }: { field: Field
   ]);
 
   useEffect(() => {
-    if (ready.current && valueTracking != value) {
+    if (ready.current && valueTracking.current != value) {
       runCallout();
     } else {
       ready.current = true;
