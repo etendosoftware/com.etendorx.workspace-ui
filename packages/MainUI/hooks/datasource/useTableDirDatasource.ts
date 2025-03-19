@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react';
-import type { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { type Field, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { useFormContext } from 'react-hook-form';
 import { useParams } from 'next/navigation';
-import { getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { useParentTabContext } from '@/contexts/tab';
+import useFormParent, { ParentFieldName } from '../useFormParent';
 
 export interface UseTableDirDatasourceParams {
   field: Field;
@@ -16,9 +16,10 @@ export interface UseTableDirDatasourceParams {
 export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 20 }: UseTableDirDatasourceParams) => {
   const { windowId } = useParams<{ windowId: string }>();
   const { getValues, watch } = useFormContext();
-  const { tab, parentTab, parentRecord } = useParentTabContext();
+  const { tab } = useParentTabContext();
   const [records, setRecords] = useState<Record<string, string>[]>([]);
   const [loading, setLoading] = useState(false);
+  const parentData = useFormParent(ParentFieldName.INPUT_NAME);
   const [error, setError] = useState<Error>();
   const [currentPage, setCurrentPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -32,22 +33,6 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         }
 
         setLoading(true);
-
-        let parentData;
-
-        if (parentTab && parentRecord) {
-          const parentColumns = tab.parentColumns.map(field => tab.fields[field]);
-          const parentFields = getFieldsByInputName(parentTab);
-
-          parentData = parentColumns.reduce(
-            (acc, field) => {
-              const parentFieldName = parentFields[field.inputName].hqlName;
-              acc[field.inputName] = parentRecord[parentFieldName];
-              return acc;
-            },
-            {} as Record<string, unknown>,
-          );
-        }
 
         if (reset) {
           setCurrentPage(0);
@@ -75,7 +60,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         });
 
         Object.entries(getValues()).forEach(([key, value]) => {
-          const _key = tab.fields[key]?.inputName;
+          const _key = tab.fields[key]?.inputName || key;
           const stringValue = String(value);
 
           const valueMap = {
@@ -89,7 +74,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
             : value;
 
           if (safeValue) {
-            body.set(_key || key, safeValue);
+            body.set(_key, safeValue);
           }
         });
 
@@ -117,7 +102,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         setLoading(false);
       }
     },
-    [currentPage, field, getValues, initialPageSize, pageSize, parentRecord, parentTab, tab, windowId],
+    [currentPage, field, getValues, initialPageSize, pageSize, parentData, tab, windowId],
   );
 
   const loadMore = useCallback(() => {

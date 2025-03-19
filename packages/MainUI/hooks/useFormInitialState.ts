@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import { EntityData, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
-import useFormParent from './useFormParent';
+import useFormParent, { ParentFieldName } from './useFormParent';
 import { useParentTabContext } from '@/contexts/tab';
 import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 
 export const useFormInitialState = (formInitialization?: FormInitializationResponse | null) => {
   const { tab } = useParentTabContext();
-  const parentData = useFormParent();
+  const parentData = useFormParent(ParentFieldName.HQL_NAME);
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
 
   const initialState = useMemo(() => {

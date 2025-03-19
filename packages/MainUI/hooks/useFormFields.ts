@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field, FieldType, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useTranslation } from './useTranslation';
+import { getFieldReference } from '@/utils';
 
 export default function useFormFields(tab: Tab) {
   const { t } = useTranslation();
@@ -12,8 +13,9 @@ export default function useFormFields(tab: Tab) {
     const otherFields: Record<string, Field> = {};
 
     Object.entries(tab.fields).forEach(([, field]) => {
+      const reference = getFieldReference(field);
       // Keep this at first because a process field will have field.display == true
-      if (field.process || field.column.process) {
+      if (field.process || field.column.process || reference === FieldType.BUTTON) {
         actionFields[field.hqlName] = field;
       } else if (field.shownInStatusBar) {
         statusBarFields[field.hqlName] = field;

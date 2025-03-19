@@ -156,6 +156,7 @@ export enum FieldType {
   TABLEDIR = 'tabledir',
   QUANTITY = 'quantity',
   LIST = 'list',
+  BUTTON = 'button',
 }
 
 export interface MappedTab {

@@ -18,6 +18,8 @@ export const getFieldReference = (field?: Field): FieldType => {
     case '17':
     case '13':
       return FieldType.LIST;
+    case '28':
+      return FieldType.BUTTON;
     case '30':
       return FieldType.SELECT;
     case '12':

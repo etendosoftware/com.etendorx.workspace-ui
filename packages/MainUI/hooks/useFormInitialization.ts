@@ -9,7 +9,7 @@ import { logger } from '@/utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useUserContext } from './useUserContext';
 import { ClientOptions } from '@workspaceui/etendohookbinder/src/api/client';
-import useFormParent from './useFormParent';
+import useFormParent, { ParentFieldName } from './useFormParent';
 import { useSearchParams } from 'next/navigation';
 
 const getRowId = (mode: FormMode, recordId?: string | null): string => {
@@ -108,7 +108,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     () => (tab ? buildFormInitializationParams({ tab, mode, recordId, parentId }) : null),
     [tab, mode, recordId, parentId],
   );
-  const parentData = useFormParent();
+  const parentData = useFormParent(ParentFieldName.HQL_NAME);
   const refetch = useCallback(async () => {
     if (!params) return;
 

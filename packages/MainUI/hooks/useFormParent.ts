@@ -3,7 +3,13 @@ import { EntityData } from '@workspaceui/etendohookbinder/src/api/types';
 import { getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { useMemo } from 'react';
 
-export default function useFormParent() {
+export enum ParentFieldName {
+  INPUT_NAME = 'inputName',
+  HQL_NAME = 'hqlName',
+  COLUMN_NAME = 'columnName',
+}
+
+export default function useFormParent(nameToUse: ParentFieldName = ParentFieldName.HQL_NAME) {
   const { tab, parentTab, parentRecord } = useParentTabContext();
 
   return useMemo(() => {
@@ -16,12 +22,12 @@ export default function useFormParent() {
       parentColumns.forEach(
         field => {
           const parentFieldName = parentFields[field.inputName].hqlName;
-          result[field.hqlName] = parentRecord[parentFieldName];
+          result[field[nameToUse]] = parentRecord[parentFieldName];
         },
         {} as Record<string, unknown>,
       );
     }
 
     return result;
-  }, [parentRecord, parentTab, tab]);
+  }, [nameToUse, parentRecord, parentTab, tab]);
 }
