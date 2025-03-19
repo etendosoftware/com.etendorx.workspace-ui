@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
 import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
 import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
-import { ListSelectorProps } from '../types';
+import { ListSelectorProps } from '../../Form/FormView/types';
 import { useTheme } from '@mui/material';
 
 const ListSelector: React.FC<ListSelectorProps> = ({ field, value, onChange, readOnly }) => {

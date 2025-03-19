@@ -1,7 +1,7 @@
 import { memo, useCallback, useMemo } from 'react';
 import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
 import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
-import { SelectSelectorProps } from '../types';
+import { SelectSelectorProps } from '../../Form/FormView/types';
 import { useTheme } from '@mui/material';
 import { Option } from '@workspaceui/etendohookbinder/src/api/types';
 

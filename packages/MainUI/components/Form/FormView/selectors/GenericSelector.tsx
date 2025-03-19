@@ -5,7 +5,7 @@ import { DateSelector } from './DateSelector';
 import { SelectSelector } from './SelectSelector';
 import { useFormContext } from 'react-hook-form';
 import { TableDirSelector } from './TableDirSelector';
-import QuantitySelector from '../oldSelectors/QuantitySelector';
+import QuantitySelector from './QuantitySelector';
 import { ListSelector } from './ListSelector';
 import { NumericSelector } from './NumericSelector';
 

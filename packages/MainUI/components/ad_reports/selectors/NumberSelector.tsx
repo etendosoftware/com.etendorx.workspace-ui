@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { TextField } from '@mui/material';
-import { NumberSelectorProps } from '../types';
+import { NumberSelectorProps } from '../../Form/FormView/types';
 
 const NumberSelector: React.FC<NumberSelectorProps> = memo(
   ({ name, value, readOnly, onChange }) => (
