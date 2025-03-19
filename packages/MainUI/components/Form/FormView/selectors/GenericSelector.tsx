@@ -36,6 +36,7 @@ export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => 
           min={field.column.minValue}
           max={field.column.maxValue}
           readOnly={isReadOnly}
+          maxLength={field.column.length}
         />
       );
     case '17':
