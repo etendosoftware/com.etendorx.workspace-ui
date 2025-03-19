@@ -67,6 +67,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           windowId,
           tabId: field.tab,
           inpTabId: field.tab,
+          inpwindowId: tab.windowId,
           inpTableId: field.column.table,
           initiatorField: field.hqlName,
           ...(typeof _currentValue !== 'undefined' ? { _currentValue } : {}),
@@ -125,11 +126,13 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
     }
   }, [fetch, loading, hasMore, value]);
 
+  const refetch = useCallback((reset = true) => fetch(value, reset), [fetch, value]);
+
   return {
     records,
     loading,
     error,
-    refetch: (reset = true) => fetch(value, reset),
+    refetch,
     loadMore,
     hasMore,
   };
