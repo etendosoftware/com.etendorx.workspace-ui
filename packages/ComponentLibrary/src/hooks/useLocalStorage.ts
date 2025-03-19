@@ -1,27 +1,66 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-export function useLocalStorage<T>(key: string, initialValue: T) {
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    try {
-      const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch {
-      return initialValue;
+const isBrowser = typeof window !== 'undefined';
+
+const getStoredValue = <T>(key: string, initialValue: T | (() => T)): T => {
+  if (!isBrowser) {
+    return typeof initialValue === 'function' ? (initialValue as () => T)() : initialValue;
+  }
+
+  try {
+    const storedValue = window.localStorage.getItem(key);
+    if (storedValue !== null) {
+      return JSON.parse(storedValue) as T;
     }
-  });
+  } catch (error) {
+    console.warn(`Error reading localStorage key "${key}":`, error);
+  }
+
+  return typeof initialValue === 'function' ? (initialValue as () => T)() : initialValue;
+};
+
+const useLocalStorage = <T>(key: string, initialValue: T | (() => T)) => {
+  const [state, setState] = useState<T>(() => getStoredValue(key, initialValue));
 
   const setValue = useCallback(
-    (value: T | ((val: T) => T)) => {
-      try {
-        const valueToStore = value instanceof Function ? value(storedValue) : value;
-        setStoredValue(valueToStore);
-        localStorage.setItem(key, JSON.stringify(valueToStore));
-      } catch (error) {
-        console.error(`Error saving to localStorage key "${key}":`, error);
-      }
+    (value: T | ((prevState: T) => T)) => {
+      setState(prevState => {
+        const newValue = typeof value === 'function' ? (value as (prev: T) => T)(prevState) : value;
+
+        if (isBrowser) {
+          try {
+            if (newValue === undefined) {
+              window.localStorage.removeItem(key);
+            } else {
+              window.localStorage.setItem(key, JSON.stringify(newValue));
+            }
+          } catch (error) {
+            console.warn(`Error setting localStorage key "${key}":`, error);
+          }
+        }
+
+        return newValue;
+      });
     },
-    [key, storedValue],
+    [key],
   );
 
-  return [storedValue, setValue] as const;
-}
+  useEffect(() => {
+    if (!isBrowser) return;
+
+    try {
+      const storedValue = window.localStorage.getItem(key);
+      if (storedValue !== null) {
+        setState(JSON.parse(storedValue));
+      }
+    } catch (error) {
+      console.warn(`Error syncing localStorage key "${key}":`, error);
+    }
+  }, [key]);
+
+  return [state, setValue] as const;
+};
+
+export default useLocalStorage;
+
+export { useLocalStorage };
