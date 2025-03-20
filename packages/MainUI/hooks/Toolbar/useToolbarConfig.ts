@@ -14,6 +14,7 @@ export const useToolbarConfig = ({
   tabId,
   onSave,
   parentId,
+  isFormView,
 }: {
   windowId?: string;
   tabId?: string;
@@ -25,11 +26,12 @@ export const useToolbarConfig = ({
   const { setSearchQuery } = useSearch();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const { setShowTabContainer, tabs, selected, clearSelections, refetch } = useMetadataContext();
+  const { setShowTabContainer, tabs, selected, removeRecord } = useMetadataContext();
+
   const {
     statusModal,
     confirmAction,
-    showSuccessModal,
+    showDeleteSuccessModal,
     showErrorModal,
     showConfirmModal,
     handleConfirm,
@@ -49,23 +51,21 @@ export const useToolbarConfig = ({
   const { deleteRecord, loading: deleteLoading } = useDeleteRecord({
     tab: tab as Tab,
     onSuccess: () => {
-      const recordName = selectedRecord?._identifier || selectedRecord?.id;
+      if (!selectedRecord || !tabId) return;
+
+      const recordId = selectedRecord.id;
+      const recordName = selectedRecord._identifier || recordId;
       const entityType = tab?.title || '';
 
-      clearSelections(tabId || '');
+      // Usar directamente removeRecord para actualizar el estado
+      removeRecord(tabId, recordId);
 
       const successMessage = `${entityType} '${recordName}' ${t('status.deleteSuccess')}`;
 
-      showSuccessModal(successMessage, {
+      showDeleteSuccessModal(successMessage, {
         saveLabel: t('common.close'),
-        secondaryButtonLabel: t('modal.secondaryButtonLabel'),
         onAfterClose: () => {
-          setTimeout(() => {
-            if (typeof refetch === 'function') {
-              refetch();
-            }
-            setIsDeleting(false);
-          }, 100);
+          setIsDeleting(false);
         },
       });
     },

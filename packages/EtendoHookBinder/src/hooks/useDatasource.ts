@@ -40,6 +40,10 @@ export function useDatasource(
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
   const [activeColumnFilters, setActiveColumnFilters] = useState<MRT_ColumnFiltersState>(columnFilters);
 
+  const removeRecordLocally = useCallback((recordId: string) => {
+    setRecords(prevRecords => prevRecords.filter(record => String(record.id) !== recordId));
+  }, []);
+
   const fetchMore = useCallback(() => {
     setPage(prev => prev + 1);
   }, []);
@@ -129,7 +133,7 @@ export function useDatasource(
     } finally {
       setLoading(false);
     }
-  }, [entity, page, pageSize, queryParams, searchQuery]); // Añadir searchQuery como dependencia
+  }, [entity, page, pageSize, queryParams, searchQuery]);
 
   useEffect(() => {
     setRecords([]);
@@ -154,6 +158,7 @@ export function useDatasource(
       toggleImplicitFilters,
       updateColumnFilters,
       activeColumnFilters,
+      removeRecordLocally,
     }),
     [
       error,
@@ -167,6 +172,7 @@ export function useDatasource(
       toggleImplicitFilters,
       updateColumnFilters,
       activeColumnFilters,
+      removeRecordLocally,
     ],
   );
 }

@@ -20,4 +20,9 @@ export const statusConfig: Record<StatusType, StatusConfig> = {
     iconBackgroundColor: theme.palette.warning.main,
     icon: WarningIcon,
   },
+  info: {
+    gradientColor: theme.palette.warning.light,
+    iconBackgroundColor: theme.palette.warning.main,
+    icon: WarningIcon,
+  },
 };
