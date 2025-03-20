@@ -19,6 +19,17 @@ const es = {
       main: 'Sección Principal',
     },
   },
+  status: {
+    deleteSuccess: 'ha sido eliminado correctamente',
+    deleteError: 'Error al eliminar el registro',
+    deleteConfirmation: '¿Estás seguro de que quieres eliminar',
+    selectRecordError: 'Por favor, selecciona un registro primero',
+    saveSuccess: '{{entityType}} ha sido guardado correctamente',
+    saveError: 'Error al guardar el registro',
+    noIdError: 'No se puede borrar un registro sin identificador',
+    noEntityError: 'No hay una entidad especificada',
+    httpError: 'Error HTTP: ',
+  },
   errors: {
     networkError: {
       title: 'No se pudo conectar con Etendo',

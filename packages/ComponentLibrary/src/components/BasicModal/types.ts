@@ -9,6 +9,8 @@ export interface ModalIProps extends Omit<ModalProps, 'children' | 'open'> {
   children: ReactNode;
   customTrigger?: ReactNode;
   onClose?: () => void;
+  onSave?: () => void;
+  onCancel?: () => void;
   tittleHeader?: string | undefined;
   descriptionText?: string | undefined;
   HeaderIcon?: React.ElementType;
@@ -19,4 +21,6 @@ export interface ModalIProps extends Omit<ModalProps, 'children' | 'open'> {
   buttons?: ReactNode;
   backgroundGradient?: string;
   isFullScreenEnabled?: boolean;
+  open?: boolean;
+  onAfterClose?: () => void;
 }
