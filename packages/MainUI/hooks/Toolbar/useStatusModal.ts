@@ -5,6 +5,7 @@ const initialState: StatusModalState = {
   open: false,
   statusType: 'info',
   statusText: '',
+  isDeleteSuccess: false,
 };
 
 interface ConfirmOptions {
@@ -27,12 +28,14 @@ export const useStatusModal = () => {
         saveLabel?: string;
         secondaryButtonLabel?: string;
         onAfterClose?: () => void;
+        isDeleteSuccess?: boolean;
       },
     ) => {
       setState({
         open: true,
         statusType,
         statusText,
+        isDeleteSuccess: options?.isDeleteSuccess || false,
         ...options,
       });
     },
@@ -46,9 +49,27 @@ export const useStatusModal = () => {
         saveLabel?: string;
         secondaryButtonLabel?: string;
         onAfterClose?: () => void;
+        isDeleteSuccess?: boolean;
       },
     ) => {
       showStatusModal('success', statusText, options);
+    },
+    [showStatusModal],
+  );
+
+  const showDeleteSuccessModal = useCallback(
+    (
+      statusText: string,
+      options?: {
+        saveLabel?: string;
+        onAfterClose?: () => void;
+      },
+    ) => {
+      showStatusModal('success', statusText, {
+        ...options,
+        isDeleteSuccess: true,
+        saveLabel: options?.saveLabel || 'Close',
+      });
     },
     [showStatusModal],
   );
@@ -108,6 +129,7 @@ export const useStatusModal = () => {
     confirmAction,
     showStatusModal,
     showSuccessModal,
+    showDeleteSuccessModal,
     showErrorModal,
     showWarningModal,
     showConfirmModal,

@@ -3,7 +3,7 @@ import { MaterialReactTable, MRT_ColumnFiltersState, MRT_Row } from 'material-re
 import { useStyle } from './styles';
 import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { useParams, useRouter } from 'next/navigation';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
@@ -13,6 +13,7 @@ import { WindowParams } from '../../app/types';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useSearch } from '../../contexts/searchContext';
 import TopToolbar from './top-toolbar';
+import { useDatasourceContext } from '@/contexts/datasourceContext';
 
 type DynamicTableProps = {
   tab: Tab;
@@ -40,6 +41,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const selectedIds = useMemo(() => getSelectedIds(tabId), [getSelectedIds, tabId]);
   const selectedCount = useMemo(() => getSelectedCount(tabId), [getSelectedCount, tabId]);
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
+  const { registerDatasource, unregisterDatasource } = useDatasourceContext();
 
   const rowSelection = useMemo(() => {
     return selectedIds.reduce(
@@ -88,6 +90,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     isImplicitFilterApplied,
     toggleImplicitFilters,
     updateColumnFilters,
+    removeRecordLocally,
   } = useDatasource(tab.entityName, query, searchQuery, columns, columnFilters);
 
   const handleColumnFiltersChange = useCallback(
@@ -237,6 +240,16 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
       />
     );
   }, [isImplicitFilterApplied, handleFilterToggle, selectedCount, handleClearSelections]);
+
+  useEffect(() => {
+    if (removeRecordLocally) {
+      registerDatasource(tabId, removeRecordLocally);
+    }
+
+    return () => {
+      unregisterDatasource(tabId);
+    };
+  }, [tabId, removeRecordLocally, registerDatasource, unregisterDatasource]);
 
   if (loading && !loaded) return <Spinner />;
   if (error) return <div>Error: {error.message}</div>;
