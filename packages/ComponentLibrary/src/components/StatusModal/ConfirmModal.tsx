@@ -1,6 +1,6 @@
 import { Box, Typography, useTheme } from '@mui/material';
 import { Modal } from '..';
-import SaveIcon from '../../assets/icons/aperture.svg';
+import SaveIcon from '../../assets/icons/trash.svg';
 import { useStyle } from '../StatusModal/styles';
 import { ConfirmModalProps } from './types';
 
