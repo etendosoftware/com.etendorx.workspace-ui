@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { Typography, Button, Box, useTheme } from '@mui/material';
 import ModalMUI from '@mui/material/Modal';
 import IconButton from '../IconButton';
@@ -18,6 +18,8 @@ const Modal: React.FC<ModalIProps> = ({
   children,
   customTrigger,
   onClose,
+  onSave,
+  onCancel,
   tittleHeader,
   descriptionText,
   HeaderIcon,
@@ -28,21 +30,50 @@ const Modal: React.FC<ModalIProps> = ({
   SaveIcon,
   backgroundGradient,
   isFullScreenEnabled = false,
+  open: externalOpen,
 }) => {
-  const [open, setOpen] = useState<boolean>(false);
+  const [internalOpen, setInternalOpen] = useState<boolean>(false);
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
   const theme = useTheme();
   const { styles, sx } = useStyles();
 
-  const handleOpen = () => setOpen(true);
+  const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
+
+  useEffect(() => {
+    if (externalOpen !== undefined && externalOpen !== internalOpen) {
+      setInternalOpen(externalOpen);
+    }
+  }, [externalOpen, internalOpen]);
+
+  const handleOpen = () => {
+    setInternalOpen(true);
+  };
 
   const handleClose = useCallback(() => {
     if (typeof onClose === 'function') {
       onClose();
     }
-    setOpen(false);
+    setInternalOpen(false);
     setIsFullScreen(false);
   }, [onClose]);
+
+  const handleSave = useCallback(() => {
+    if (typeof onSave === 'function') {
+      onSave();
+    }
+    if (externalOpen === undefined) {
+      setInternalOpen(false);
+    }
+  }, [onSave, externalOpen]);
+
+  const handleCancel = useCallback(() => {
+    if (typeof onCancel === 'function') {
+      onCancel();
+    }
+    if (externalOpen === undefined) {
+      setInternalOpen(false);
+    }
+  }, [onCancel, externalOpen]);
 
   const gradientStyles = !backgroundGradient
     ? {}
@@ -78,18 +109,28 @@ const Modal: React.FC<ModalIProps> = ({
       }
     : {};
 
+  const renderTrigger = () => {
+    if (externalOpen !== undefined) {
+      return null;
+    }
+
+    if (customTrigger) {
+      return React.cloneElement(customTrigger as React.ReactElement, {
+        onClick: handleOpen,
+      });
+    }
+
+    return (
+      <Button onClick={handleOpen} variant="contained">
+        Modal
+      </Button>
+    );
+  };
+
   return (
     <>
-      {customTrigger ? (
-        React.cloneElement(customTrigger as React.ReactElement, {
-          onClick: handleOpen,
-        })
-      ) : (
-        <Button onClick={handleOpen} variant="contained">
-          Modal
-        </Button>
-      )}
-      <ModalMUI open={open} onClose={handleClose}>
+      {renderTrigger()}
+      <ModalMUI open={isOpen} onClose={handleClose}>
         <Box
           sx={{
             ...styles.boxStyles,
@@ -146,12 +187,15 @@ const Modal: React.FC<ModalIProps> = ({
               saveButtonLabel &&
               SaveIcon && (
                 <Box style={styles.buttonContainerStyles}>
-                  <Button sx={sx.cancelButton}>{secondaryButtonLabel}</Button>
+                  <Button sx={sx.cancelButton} onClick={handleCancel}>
+                    {secondaryButtonLabel}
+                  </Button>
                   <Button
                     startIcon={
                       <SaveIcon fill={theme.palette.baselineColor.neutral[0]} width={IconSize} height={IconSize} />
                     }
-                    sx={sx.saveButton}>
+                    sx={sx.saveButton}
+                    onClick={handleSave}>
                     {saveButtonLabel}
                   </Button>
                 </Box>

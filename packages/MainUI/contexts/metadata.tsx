@@ -294,6 +294,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       closeTab,
       fieldsByColumnName,
       fieldsByInputName,
+      refetch: loadWindowData,
     }),
     [
       activeTabLevels,
@@ -307,6 +308,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       groupedTabs,
       isSelected,
       loading,
+      loadWindowData,
       recordId,
       selectMultiple,
       selectRecord,
