@@ -2,7 +2,7 @@ import { useCallback, useMemo, useEffect, useState } from 'react';
 import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { useTheme } from '@mui/material';
-import { Option, TableDirSelectorProps } from '../types';
+import { Option, TableDirSelectorProps } from '../../Form/FormView/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
 

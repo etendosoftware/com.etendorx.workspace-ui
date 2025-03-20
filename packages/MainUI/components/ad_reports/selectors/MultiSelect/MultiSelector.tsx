@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogActions, Button, Box, Typography } from '@mui/material';
 import { MaterialReactTable, MRT_Row } from 'material-react-table';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import { SelectorTableProps, MultiSelectProps, TableData, Option } from '../../types';
+import { SelectorTableProps, MultiSelectProps, TableData, Option } from '../../../Form/FormView/types';
 import { useStyle } from '@/components/Table/styles';
 import { DEFAULT_COLUMNS, TABLE_INITIAL_STATE, DIALOG_PROPS } from './constants';
 import { SelectedItemsContainer } from './SelectedItemsContainer';

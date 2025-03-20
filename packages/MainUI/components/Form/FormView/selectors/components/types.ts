@@ -14,8 +14,10 @@ export interface Option {
 
 export interface SelectProps {
   name: string;
-  options: Option[];
-  onFocus?: (value: unknown) => unknown;
+  options: Array<{ id: string; label: string }>;
+  onFocus?: (currentValue: string) => void;
   isReadOnly?: boolean;
-  required?: boolean;
+  loading?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
 }

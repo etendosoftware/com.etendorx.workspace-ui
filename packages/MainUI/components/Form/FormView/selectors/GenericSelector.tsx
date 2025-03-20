@@ -5,8 +5,9 @@ import { DateSelector } from './DateSelector';
 import { SelectSelector } from './SelectSelector';
 import { useFormContext } from 'react-hook-form';
 import { TableDirSelector } from './TableDirSelector';
-import QuantitySelector from '../oldSelectors/QuantitySelector';
+import QuantitySelector from './QuantitySelector';
 import { ListSelector } from './ListSelector';
+import { NumericSelector } from './NumericSelector';
 
 export type GenericSelectorProps = {
   field: Field;
@@ -29,6 +30,7 @@ export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => 
     case '20':
       return <BooleanSelector field={field} isReadOnly={isReadOnly} />;
     case '29':
+    case '22':
       return (
         <QuantitySelector
           name={field.hqlName}
@@ -36,6 +38,7 @@ export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => 
           min={field.column.minValue}
           max={field.column.maxValue}
           readOnly={isReadOnly}
+          maxLength={field.column.length}
         />
       );
     case '17':
@@ -43,9 +46,10 @@ export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => 
       return <ListSelector field={field} isReadOnly={isReadOnly} />;
     case '30':
       return <SelectSelector field={field} isReadOnly={isReadOnly} />;
-    case '12':
+    case '800008':
+      return <NumericSelector field={field} readOnly={isReadOnly} required={field.isMandatory} />;
     case '11':
-    case '22':
+    case '12':
     default:
       return <StringSelector field={field} readOnly={isReadOnly} required={field.isMandatory} />;
   }

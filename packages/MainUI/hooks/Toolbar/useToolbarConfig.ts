@@ -8,10 +8,12 @@ export const useToolbarConfig = ({
   windowId,
   tabId,
   onSave,
+  parentId,
 }: {
   windowId?: string;
   tabId?: string;
   onSave?: () => void;
+  parentId?: string;
 }) => {
   const router = useRouter();
   const { setSearchQuery } = useSearch();
@@ -23,7 +25,7 @@ export const useToolbarConfig = ({
     (action: string) => {
       switch (action) {
         case BUTTON_IDS.NEW:
-          router.push(`/window/${windowId}/${tabId}/NewRecord`);
+          router.push(`/window/${windowId}/${tabId}/NewRecord?parentId=${parentId ?? null}`);
           break;
         case BUTTON_IDS.FIND:
           setSearchOpen(true);
@@ -36,7 +38,7 @@ export const useToolbarConfig = ({
           break;
       }
     },
-    [onSave, router, setShowTabContainer, tabId, windowId],
+    [onSave, parentId, router, setShowTabContainer, tabId, windowId],
   );
 
   const handleSearch = useCallback(

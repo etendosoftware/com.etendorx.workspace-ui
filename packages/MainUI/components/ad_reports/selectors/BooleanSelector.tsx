@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useStyle } from './styles';
-import { BooleanSelectorProps } from '../types';
+import { BooleanSelectorProps } from '../../Form/FormView/types';
 
 const BooleanSelector = ({ label, checked, onChange, name, disabled, readOnly }: BooleanSelectorProps) => {
   const [isHovered, setIsHovered] = useState(false);

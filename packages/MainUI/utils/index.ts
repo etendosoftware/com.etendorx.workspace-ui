@@ -1,4 +1,4 @@
-import { EntityData, Field, FieldType, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field, FieldType } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -18,6 +18,8 @@ export const getFieldReference = (field?: Field): FieldType => {
     case '17':
     case '13':
       return FieldType.LIST;
+    case '28':
+      return FieldType.BUTTON;
     case '30':
       return FieldType.SELECT;
     case '12':
@@ -42,30 +44,6 @@ export const sanitizeValue = (value: unknown) => {
     : value;
 
   return safeValue;
-};
-
-export const buildInitialFormState = (
-  record: EntityData | undefined,
-  formInitialization: FormInitializationResponse,
-  fieldsByColumnName: Record<string, Field>,
-) => {
-  const acc = { ...formInitialization.sessionAttributes } as Record<string, string | boolean | null>;
-
-  Object.entries(formInitialization.auxiliaryInputValues).forEach(([key, { value }]) => {
-    const newKey = fieldsByColumnName?.[key]?.hqlName ?? key;
-    acc[newKey] = value;
-  });
-
-  Object.entries(formInitialization.columnValues).forEach(([key, { value, identifier }]) => {
-    const newKey = fieldsByColumnName?.[key]?.hqlName ?? key;
-    acc[newKey] = value;
-
-    if (identifier) {
-      acc[newKey + '_identifier'] = identifier;
-    }
-  });
-
-  return { ...acc, ...record };
 };
 
 export const buildPayloadByInputName = (values: Record<string, unknown>, fields?: Record<string, Field>) => {

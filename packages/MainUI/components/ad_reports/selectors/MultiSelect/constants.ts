@@ -1,5 +1,5 @@
 import { MRT_ColumnDef } from 'material-react-table';
-import { TableData } from '../../types';
+import { TableData } from '../../../Form/FormView/types';
 
 export const DEFAULT_COLUMNS: MRT_ColumnDef<TableData>[] = [
   {

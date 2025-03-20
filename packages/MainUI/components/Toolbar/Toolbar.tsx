@@ -29,6 +29,7 @@ import { useToolbar } from '../../hooks/Toolbar/useToolbar';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
 import ProcessMenu from './ProcessMenu';
+import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
   const [openModal, setOpenModal] = useState(false);
@@ -40,15 +41,24 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
   const { selected, tabs } = useMetadataContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
+  const tab = useMemo<Tab>(() => {
+    const result = tabs.find(tab => tab.id === tabId);
+
+    if (result) {
+      return result;
+    }
+
+    throw new Error('Error creating toolbar: Missing tab');
+  }, [tabs, tabId]);
+  const selectedRecord = tab ? selected[tab.level] : undefined;
+  const parentId = useMemo(() => selected[tab?.level - 1]?.id ?? null, [selected, tab?.level]);
   const { handleAction, searchOpen, setSearchOpen, handleSearch, searchValue, setSearchValue } = useToolbarConfig({
     windowId,
     tabId,
     onSave,
+    parentId,
   });
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
-
-  const tab = useMemo(() => tabs.find(tab => tab.id === tabId), [tabs, tabId]);
-  const selectedRecord = tab ? selected[tab.level] : undefined;
 
   const processButtons = useMemo(() => toolbar?.buttons.filter(isProcessButton) || [], [toolbar?.buttons]);
 

@@ -1,20 +1,18 @@
 import { useCallback, useMemo, useEffect, useState } from 'react';
 import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
-import { useComboSelect } from '@workspaceui/etendohookbinder/src/hooks/useComboSelect';
 import { useTheme } from '@mui/material';
-import { Option, SearchSelectorProps } from '../types';
+import { Option, SearchSelectorProps } from '../../Form/FormView/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
+import { useComboSelect } from '@/hooks/useComboSelect';
 
 const getOptionLabel = (option: Option) => option.title;
 
 const optionEqualValue = (option: Option, value: { id: string }) => option.id === value.id || option.value === value.id;
 
-const comboSelectOptions = {};
-
 const SearchSelector = ({ onChange, value, field, name, disabled, readOnly }: SearchSelectorProps) => {
   const theme = useTheme();
-  const { records, loading, error, loaded } = useComboSelect(field, comboSelectOptions);
+  const { records, loading, error } = useComboSelect({ field });
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
 
   const isDisabled = disabled || readOnly;
@@ -57,7 +55,7 @@ const SearchSelector = ({ onChange, value, field, name, disabled, readOnly }: Se
     [onChange],
   );
 
-  if (loading || !loaded) return <Spinner />;
+  if (loading) return <Spinner />;
   if (error) return <div>Error: {error.message}</div>;
 
   return (

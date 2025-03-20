@@ -1,26 +1,32 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { useCallback, useState } from 'react';
+import { type Field, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { useFormContext } from 'react-hook-form';
-import { useMetadataContext } from '../useMetadataContext';
 import { useParams } from 'next/navigation';
+import { useParentTabContext } from '@/contexts/tab';
+import useFormParent, { ParentFieldName } from '../useFormParent';
 
 export interface UseTableDirDatasourceParams {
   field: Field;
   tab?: Tab;
+  pageSize?: number;
+  initialPageSize?: number;
 }
 
-export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) => {
+export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 20 }: UseTableDirDatasourceParams) => {
   const { windowId } = useParams<{ windowId: string }>();
   const { getValues, watch } = useFormContext();
-  const { tab } = useMetadataContext();
-  const [records, setRecords] = useState([]);
+  const { tab } = useParentTabContext();
+  const [records, setRecords] = useState<Record<string, string>[]>([]);
   const [loading, setLoading] = useState(false);
+  const parentData = useFormParent(ParentFieldName.INPUT_NAME);
   const [error, setError] = useState<Error>();
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const value = watch(field.hqlName);
 
   const fetch = useCallback(
-    async (_currentValue: typeof value) => {
+    async (_currentValue: typeof value, reset = false) => {
       try {
         if (!field || !tab) {
           return;
@@ -28,35 +34,47 @@ export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) =>
 
         setLoading(true);
 
+        if (reset) {
+          setCurrentPage(0);
+          setHasMore(true);
+          setRecords([]);
+        }
+
+        const startRow = reset ? 0 : currentPage * pageSize;
+        const endRow = reset ? initialPageSize : startRow + pageSize;
+
         const body = new URLSearchParams({
-          _startRow: '0',
-          _endRow: '75',
+          _startRow: startRow.toString(),
+          _endRow: endRow.toString(),
           _operationType: 'fetch',
           ...field.selector,
           moduleId: field.module,
           windowId,
           tabId: field.tab,
           inpTabId: field.tab,
+          inpwindowId: tab.windowId,
           inpTableId: field.column.table,
           initiatorField: field.hqlName,
-          _currentValue: typeof _currentValue === 'undefined' ? '' : _currentValue,
+          ...(typeof _currentValue !== 'undefined' ? { _currentValue } : {}),
+          ...parentData,
         });
 
         Object.entries(getValues()).forEach(([key, value]) => {
-          const _key = tab.fields[key]?.inputName;
+          const _key = tab.fields[key]?.inputName || key;
           const stringValue = String(value);
 
           const valueMap = {
             true: 'Y',
             false: 'N',
-          } as const;
+            null: 'null',
+          };
 
           const safeValue = Object.prototype.hasOwnProperty.call(valueMap, stringValue)
             ? valueMap[stringValue as keyof typeof valueMap]
             : value;
 
           if (safeValue) {
-            body.set(_key || key, safeValue);
+            body.set(_key, safeValue);
           }
         });
 
@@ -66,20 +84,41 @@ export const useTableDirDatasource = ({ field }: UseTableDirDatasourceParams) =>
         });
 
         if (data?.response?.data) {
-          setRecords(data.response.data);
+          if (!data.response.data.length || data.response.data.length < pageSize) {
+            setHasMore(false);
+          }
+
+          setRecords(prevRecords => (reset ? data.response.data : [...prevRecords, ...data.response.data]));
+
+          if (!reset) {
+            setCurrentPage(prev => prev + 1);
+          }
         } else {
           throw new Error(statusText);
         }
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
+      } finally {
+        setLoading(false);
       }
     },
-    [field, getValues, tab, windowId],
+    [currentPage, field, getValues, initialPageSize, pageSize, parentData, tab, windowId],
   );
 
-  useEffect(() => {
-    fetch(value);
-  }, [fetch, value]);
+  const loadMore = useCallback(() => {
+    if (!loading && hasMore) {
+      fetch(value);
+    }
+  }, [fetch, loading, hasMore, value]);
 
-  return { records, loading, error, refetch: fetch };
+  const refetch = useCallback((reset = true) => fetch(value, reset), [fetch, value]);
+
+  return {
+    records,
+    loading,
+    error,
+    refetch,
+    loadMore,
+    hasMore,
+  };
 };

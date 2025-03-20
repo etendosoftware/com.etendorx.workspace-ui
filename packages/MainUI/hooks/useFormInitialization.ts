@@ -9,20 +9,30 @@ import { logger } from '@/utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useUserContext } from './useUserContext';
 import { ClientOptions } from '@workspaceui/etendohookbinder/src/api/client';
-import { useMetadataContext } from './useMetadataContext';
-import { getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import useFormParent, { ParentFieldName } from './useFormParent';
+import { useSearchParams } from 'next/navigation';
 
-const getRowId = (mode: FormMode, recordId?: string): string => {
+const getRowId = (mode: FormMode, recordId?: string | null): string => {
   if (mode === FormMode.EDIT && !recordId) {
     throw new Error('Record ID is required in EDIT mode');
   }
   return mode === FormMode.EDIT ? recordId! : 'null';
 };
 
-export const buildFormInitializationParams = (tab: Tab, mode: FormMode, recordId?: string): URLSearchParams =>
+export const buildFormInitializationParams = ({
+  mode,
+  tab,
+  recordId,
+  parentId,
+}: {
+  tab: Tab;
+  mode: FormMode;
+  recordId?: string | null;
+  parentId?: string | null;
+}): URLSearchParams =>
   new URLSearchParams({
     MODE: mode,
-    PARENT_ID: 'null',
+    PARENT_ID: parentId ?? 'null',
     TAB_ID: tab.id,
     ROW_ID: getRowId(mode, recordId),
     _action: 'org.openbravo.client.application.window.FormInitializationComponent',
@@ -83,20 +93,22 @@ const reducer = (state: State, action: Action): State => {
   }
 };
 
-export type UseDynamicForm = State & {
+export type useFormInitialization = State & {
   refetch: () => Promise<void>;
 };
 
-export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams): UseDynamicForm {
+export function useFormInitialization({ tab, mode, recordId }: FormInitializationParams): useFormInitialization {
   const { setSession } = useUserContext();
-  const { selected, tabs } = useMetadataContext();
   const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
+  const loaded = !!state.formInitialization;
+  const searchParams = useSearchParams();
+  const parentId = useMemo(() => searchParams.get('parentId'), [searchParams]);
   const { error, formInitialization, loading } = state;
   const params = useMemo(
-    () => (tab ? buildFormInitializationParams(tab, mode, recordId) : null),
-    [tab, mode, recordId],
+    () => (tab ? buildFormInitializationParams({ tab, mode, recordId, parentId }) : null),
+    [tab, mode, recordId, parentId],
   );
-
+  const parentData = useFormParent(ParentFieldName.HQL_NAME);
   const refetch = useCallback(async () => {
     if (!params) return;
 
@@ -109,21 +121,6 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
         throw new Error('Missing key column');
       }
 
-      console.debug(tab);
-
-      const parentColumns = tab.parentColumns.map(field => tab.fields[field]);
-      const parent = tab.level > 0 ? selected[tab.level - 1] : {};
-      const parentTab = tabs[tab.level - 1];
-      const parentFields = getFieldsByInputName(parentTab);
-
-      const parentData = parentColumns.reduce(
-        (acc, field) => {
-          const parentFieldName = parentFields[field.inputName].hqlName;
-          acc[field.inputName] = parent[parentFieldName];
-          return acc;
-        },
-        {} as Record<string, unknown>,
-      );
       const payload = {
         ...parentData,
         inpKeyName: entityKeyColumn.inputName,
@@ -134,8 +131,6 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
         _entityName: tab.entityName,
         inpwindowId: tab.windowId,
       };
-
-      console.debug(payload);
 
       const data = await fetchFormInitialization(params, payload);
       const storedInSessionAttributes = Object.entries(data.auxiliaryInputValues).reduce(
@@ -152,14 +147,16 @@ export function useDynamicForm({ tab, mode, recordId }: FormInitializationParams
       logger.error(err);
       dispatch({ type: 'FETCH_ERROR', payload: err instanceof Error ? err : new Error('Unknown error') });
     }
-  }, [params, tab, selected, tabs, setSession]);
+  }, [params, parentData, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.windowId]);
 
   useEffect(() => {
-    refetch();
-  }, [refetch]);
+    if (!loaded) {
+      refetch();
+    }
+  }, [loaded, refetch]);
 
   return useMemo(
-    () => ({ error, formInitialization, loading, refetch }) as UseDynamicForm,
+    () => ({ error, formInitialization, loading, refetch }) as useFormInitialization,
     [error, formInitialization, loading, refetch],
   );
 }

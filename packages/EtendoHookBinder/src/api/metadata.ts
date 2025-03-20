@@ -72,6 +72,31 @@ export class Metadata {
     }
   }
 
+  private static async _getTab(tabId?: Etendo.Tab["id"]): Promise<Etendo.Tab | undefined> {
+    if (!tabId) {
+      return;
+    }
+    const { data } = await this.client.post(`tab/${tabId}`);
+
+    this.cache.set(`tab-${tabId}`, data);
+
+    return data;
+  }
+
+  public static async getTab(tabId?: Etendo.Tab["id"]): Promise<Etendo.Tab | undefined> {
+    if (!tabId) {
+      return;
+    }
+
+    const cached = this.cache.get<Etendo.Tab>(`tab-${tabId}`);
+
+    if (cached) {
+      return cached;
+    } else {
+      return this._getTab(tabId);
+    }
+  }
+
   public static getColumns(tabId: string): Etendo.Column[] {
     return this.cache.get<{ fields: Etendo.Column[] }>(`tab-${tabId}`)?.fields ?? [];
   }

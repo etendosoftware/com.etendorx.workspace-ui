@@ -107,8 +107,10 @@ export interface Field {
   referencedTabId: string;
   displayLogicExpression?: string;
   readOnlyLogicExpression?: string;
-  readOnly: boolean;
+  isReadOnly: boolean;
+  isDisplayed: boolean;
   sequenceNumber: number;
+  isUpdatable: boolean;
 }
 
 export interface Option<T extends string = string> {
@@ -153,7 +155,8 @@ export enum FieldType {
   SEARCH = 'search',
   TABLEDIR = 'tabledir',
   QUANTITY = 'quantity',
-  LIST = 'list'
+  LIST = 'list',
+  BUTTON = 'button',
 }
 
 export interface MappedTab {
@@ -210,6 +213,7 @@ export interface Tab {
   hqlwhereclause: string;
   sQLWhereClause: string;
   module: string;
+  parentTabId?: string;
 }
 
 export interface WindowMetadata {

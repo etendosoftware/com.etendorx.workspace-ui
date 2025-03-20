@@ -4,19 +4,22 @@ import { FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useParams } from 'next/navigation';
-import { useDynamicForm } from '@/hooks/useDynamicForm';
+import { useFormInitialization } from '@/hooks/useFormInitialization';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
 import FormView from '@/components/Form/FormView';
+import TabContextProvider from '@/contexts/tab';
+import { useFormInitialState } from '@/hooks/useFormInitialState';
 
 function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
   const { t } = useTranslation();
   const { recordId } = useParams<{ recordId: string }>();
-  const { loading, formInitialization, refetch, error } = useDynamicForm({
+  const { loading, formInitialization, refetch, error } = useFormInitialization({
     tab,
     mode: FormMode.EDIT,
     recordId,
   });
+  const initialState = useFormInitialState(formInitialization);
 
   if (error) {
     return (
@@ -32,11 +35,11 @@ function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
     );
   }
 
-  if (loading) {
+  if (loading || !initialState) {
     return <Spinner />;
   }
 
-  return <FormView mode={FormMode.EDIT} tab={tab} window={window} formInitialization={formInitialization} />;
+  return <FormView mode={FormMode.EDIT} tab={tab} window={window} initialState={initialState} />;
 }
 
 export default function EditRecordPage() {
@@ -46,5 +49,9 @@ export default function EditRecordPage() {
     return null;
   }
 
-  return <Page tab={tab} window={window} />;
+  return (
+    <TabContextProvider tab={tab}>
+      <Page tab={tab} window={window} />
+    </TabContextProvider>
+  );
 }
