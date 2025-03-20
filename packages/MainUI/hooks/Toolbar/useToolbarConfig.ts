@@ -52,15 +52,6 @@ export const useToolbarConfig = ({
       const recordName = selectedRecord?._identifier || selectedRecord?.id;
       const entityType = tab?.title || '';
 
-      if (typeof refetch === 'function') {
-        try {
-          logger.debug('Executing immediate refetch after deletion');
-          refetch();
-        } catch (error) {
-          logger.error('Error in immediate refetch:', error);
-        }
-      }
-
       clearSelections(tabId || '');
 
       const successMessage = `${entityType} '${recordName}' ${t('status.deleteSuccess')}`;
@@ -69,7 +60,12 @@ export const useToolbarConfig = ({
         saveLabel: t('common.close'),
         secondaryButtonLabel: t('modal.secondaryButtonLabel'),
         onAfterClose: () => {
-          setIsDeleting(false);
+          setTimeout(() => {
+            if (typeof refetch === 'function') {
+              refetch();
+            }
+            setIsDeleting(false);
+          }, 100);
         },
       });
     },

@@ -85,7 +85,7 @@ export const useDeleteRecord = ({ tab, onSuccess, onError }: UseDeleteRecordPara
         return false;
       }
     },
-    [tab, onError, t, userId, onSuccess],
+    [tab, onError, userId, onSuccess],
   );
 
   return { deleteRecord, loading };
