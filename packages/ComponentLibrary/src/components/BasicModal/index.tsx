@@ -40,14 +40,14 @@ const Modal: React.FC<ModalIProps> = ({
   const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
 
   useEffect(() => {
-    if (externalOpen !== undefined && externalOpen !== internalOpen) {
+    if (typeof externalOpen !== 'undefined' && externalOpen !== internalOpen) {
       setInternalOpen(externalOpen);
     }
   }, [externalOpen, internalOpen]);
 
-  const handleOpen = () => {
+  const handleOpen = useCallback(() => {
     setInternalOpen(true);
-  };
+  }, []);
 
   const handleClose = useCallback(() => {
     if (typeof onClose === 'function') {
@@ -109,7 +109,7 @@ const Modal: React.FC<ModalIProps> = ({
       }
     : {};
 
-  const renderTrigger = () => {
+  const renderTrigger = useCallback(() => {
     if (externalOpen !== undefined) {
       return null;
     }
@@ -125,7 +125,7 @@ const Modal: React.FC<ModalIProps> = ({
         Modal
       </Button>
     );
-  };
+  }, [customTrigger, externalOpen, handleOpen]);
 
   return (
     <>

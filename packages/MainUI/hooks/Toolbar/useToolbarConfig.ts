@@ -57,7 +57,6 @@ export const useToolbarConfig = ({
       const recordName = selectedRecord._identifier || recordId;
       const entityType = tab?.title || '';
 
-      // Usar directamente removeRecord para actualizar el estado
       removeRecord(tabId, recordId);
 
       const successMessage = `${entityType} '${recordName}' ${t('status.deleteSuccess')}`;

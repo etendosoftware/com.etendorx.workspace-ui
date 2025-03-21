@@ -226,8 +226,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
   return (
     <>
       <TopToolbar {...createToolbarConfig()} />
-
-      {/* Modal de éxito/error */}
       {statusModal.open && (
         <StatusModal
           statusText={statusModal.statusText}
@@ -238,8 +236,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
           onClose={hideStatusModal}
         />
       )}
-
-      {/* Modal de confirmación - Asegúrate de que sea visible cuando confirmAction es truthy */}
       {confirmAction && (
         <ConfirmModal
           confirmText={confirmAction.confirmText}
@@ -249,7 +245,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
           secondaryButtonLabel={confirmAction.secondaryButtonLabel || t('common.cancel')}
         />
       )}
-
       {processButtons.length > 0 && (
         <ProcessMenu
           anchorEl={anchorEl}
@@ -260,7 +255,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
           selectedRecord={selectedRecord}
         />
       )}
-
       {searchOpen && !isFormView && (
         <SearchPortal
           isOpen={searchOpen}
@@ -271,7 +265,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
           autoCompleteTexts={[]}
         />
       )}
-
       {selectedProcessButton && (
         <ProcessModal
           open={openModal}

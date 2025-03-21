@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useCallback, useRef, ReactNode } from 'react';
+import { createContext, useContext, useCallback, useRef, ReactNode, useMemo } from 'react';
 
 interface DatasourceContextValue {
   registerDatasource: (tabId: string, removeRecordLocally: (recordId: string) => void) => void;
@@ -28,11 +28,14 @@ export function DatasourceProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const value = {
-    registerDatasource,
-    unregisterDatasource,
-    removeRecordFromDatasource,
-  };
+  const value = useMemo(
+    () => ({
+      registerDatasource,
+      unregisterDatasource,
+      removeRecordFromDatasource,
+    }),
+    [registerDatasource, unregisterDatasource, removeRecordFromDatasource],
+  );
 
   return <DatasourceContext.Provider value={value}>{children}</DatasourceContext.Provider>;
 }
