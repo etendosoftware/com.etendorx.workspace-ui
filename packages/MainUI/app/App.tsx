@@ -5,6 +5,7 @@ import SanityChecker from '../components/SanityChecker';
 import LanguageProvider from '../contexts/languageProvider';
 import MetadataProvider from '../contexts/metadata';
 import UserProvider from '../contexts/user';
+import { DatasourceProvider } from '@/contexts/datasourceContext';
 
 export default function App({ children }: React.PropsWithChildren) {
   return (
@@ -12,7 +13,9 @@ export default function App({ children }: React.PropsWithChildren) {
       <SanityChecker>
         <RecordProvider>
           <UserProvider>
-            <MetadataProvider>{children}</MetadataProvider>
+            <DatasourceProvider>
+              <MetadataProvider>{children}</MetadataProvider>
+            </DatasourceProvider>
           </UserProvider>
         </RecordProvider>
       </SanityChecker>

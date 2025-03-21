@@ -15,6 +15,7 @@ export interface StatusModalState {
   errorMessage?: string;
   saveLabel?: string;
   secondaryButtonLabel?: string;
+  isDeleteSuccess?: boolean;
 }
 
 export interface StatusModalProps {
@@ -25,6 +26,7 @@ export interface StatusModalProps {
   secondaryButtonLabel?: string;
   onClose?: () => void;
   onAfterClose?: () => void;
+  isDeleteSuccess?: boolean;
 }
 
 export interface ConfirmModalProps {

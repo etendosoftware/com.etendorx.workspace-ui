@@ -14,6 +14,7 @@ const StatusModal: React.FC<StatusModalProps> = ({
   secondaryButtonLabel,
   onClose,
   onAfterClose,
+  isDeleteSuccess,
 }) => {
   const { gradientColor, iconBackgroundColor, icon: StatusIcon } = statusConfig[statusType];
   const theme = useTheme();
@@ -33,17 +34,21 @@ const StatusModal: React.FC<StatusModalProps> = ({
     }
   }, [onAfterClose]);
 
+  const secondaryLabel = isDeleteSuccess ? '' : secondaryButtonLabel;
+
   return (
     <Modal
       open={true}
       showHeader={false}
-      saveButtonLabel={saveLabel}
-      secondaryButtonLabel={secondaryButtonLabel}
-      SaveIcon={SaveIcon}
+      saveButtonLabel={!isDeleteSuccess ? saveLabel : undefined}
+      secondaryButtonLabel={secondaryLabel}
+      SaveIcon={!isDeleteSuccess ? SaveIcon : undefined}
       backgroundGradient={backgroundGradient}
       onSave={handleClose}
       onAfterClose={handleAfterClose}
-      onCancel={handleClose}>
+      onCancel={handleClose}
+      onClose={handleClose}
+      buttons={isDeleteSuccess ? null : undefined}>
       <Box sx={sx.statusModalContainer}>
         <Box
           sx={{

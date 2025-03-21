@@ -12,6 +12,7 @@ import { useParams } from 'next/navigation';
 import { WindowParams } from '../app/types';
 import { useLanguage } from '../hooks/useLanguage';
 import { IMetadataContext } from './types';
+import { useDatasourceContext } from './datasourceContext';
 
 export const MetadataContext = createContext({} as IMetadataContext);
 
@@ -30,6 +31,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
   const fieldsByInputName = useMemo(() => getFieldsByInputName(tab), [tab]);
+  const { removeRecordFromDatasource } = useDatasourceContext();
 
   const closeTab = useCallback(
     (level: number) => {
@@ -267,6 +269,62 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     };
   }, [activeTabLevels, closeTab]);
 
+  const removeRecord = useCallback(
+    (tabId: string, recordId: string) => {
+      setWindowData(prevWindowData => {
+        if (!prevWindowData) return prevWindowData;
+
+        const updatedTabs = prevWindowData.tabs.map(tab => {
+          if (tab.id === tabId) {
+            const updatedRecords = { ...tab.records };
+            delete updatedRecords[recordId];
+
+            return {
+              ...tab,
+              records: updatedRecords,
+            };
+          }
+          return tab;
+        });
+
+        return {
+          ...prevWindowData,
+          tabs: updatedTabs,
+        };
+      });
+
+      setSelectedMultiple(prev => {
+        const updatedSelections = { ...prev };
+        if (updatedSelections[tabId]) {
+          const newTabSelections = { ...updatedSelections[tabId] };
+          delete newTabSelections[recordId];
+          updatedSelections[tabId] = newTabSelections;
+        }
+        return updatedSelections;
+      });
+
+      setSelected(prev => {
+        const newSelections = { ...prev };
+        const tabLevel = tabs.find(t => t.id === tabId)?.level;
+
+        if (tabLevel !== undefined && newSelections[tabLevel] && newSelections[tabLevel].id === recordId) {
+          delete newSelections[tabLevel];
+
+          Object.keys(newSelections).forEach(strLevel => {
+            if (parseInt(strLevel) > tabLevel) {
+              delete newSelections[strLevel];
+            }
+          });
+        }
+
+        return newSelections;
+      });
+
+      removeRecordFromDatasource(tabId, recordId);
+    },
+    [tabs, removeRecordFromDatasource],
+  );
+
   const value = useMemo<IMetadataContext>(
     () => ({
       getWindow: Metadata.getWindow,
@@ -295,6 +353,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       fieldsByColumnName,
       fieldsByInputName,
       refetch: loadWindowData,
+      removeRecord,
     }),
     [
       activeTabLevels,
@@ -319,6 +378,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       tabs,
       windowData,
       windowId,
+      removeRecord,
     ],
   );
 
