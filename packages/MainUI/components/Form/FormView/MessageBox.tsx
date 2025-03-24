@@ -13,11 +13,11 @@ export function MessageBox({ message, onDismiss }: { onDismiss: () => void; mess
 
   return (
     <div
-      className={`w-full rounded-2xl relative bg-white transition-all transform-gpu overflow-hidden ${isVisible ? 'max-h-full' : 'max-h-0'}`}>
+      className={`w-full rounded-2xl relative bg-yellow-100 transition-all transform-gpu overflow-hidden ${isVisible ? 'max-h-full' : 'max-h-0'}`}>
       <button type="button" className="absolute top-2 right-2 p-2 text-gray-500 cursor-pointer" onClick={handleDisimss}>
         &times;
       </button>
-      <div className="p-4">{message || 'No message provided.'}</div>
+      <div className="p-4 text-red-600">{message || 'No message provided.'}</div>
     </div>
   );
 }
