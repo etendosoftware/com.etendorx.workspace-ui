@@ -14,7 +14,6 @@ export const useToolbarConfig = ({
   tabId,
   onSave,
   parentId,
-  isFormView,
 }: {
   windowId?: string;
   tabId?: string;

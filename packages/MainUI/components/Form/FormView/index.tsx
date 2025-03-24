@@ -1,5 +1,5 @@
 import { Toolbar } from '@/components/Toolbar/Toolbar';
-import { EntityData, FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import { EntityData, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
 import { FormProvider, useForm } from 'react-hook-form';
 import { BaseSelector } from './selectors/BaseSelector';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -7,7 +7,6 @@ import { useFormAction } from '@/hooks/useFormAction';
 import { useRouter } from 'next/navigation';
 import Collapsible from '../Collapsible';
 import StatusBar from './StatusBar';
-import { MessageBox } from './MessageBox';
 import useFormFields from '@/hooks/useFormFields';
 import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
 import { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
@@ -16,25 +15,21 @@ import InfoIcon from '@workspaceui/componentlibrary/src/assets/icons/file-text.s
 import FileIcon from '@workspaceui/componentlibrary/src/assets/icons/file.svg';
 import FolderIcon from '@workspaceui/componentlibrary/src/assets/icons/folder.svg';
 import { useTheme } from '@mui/material';
-
-interface FormViewProps {
-  window: WindowMetadata;
-  tab: Tab;
-  mode: FormMode;
-  initialState: EntityData;
-}
+import { FormViewProps } from './types';
+import { useStatusModal } from '@/hooks/Toolbar/useStatusModal';
+import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
 
 export default function FormView({ window: windowMetadata, tab, mode, initialState }: FormViewProps) {
   const router = useRouter();
   const theme = useTheme();
-  const [message, setMessage] = useState<string>();
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>('');
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleDismiss = useCallback(() => setMessage(undefined), []);
+  const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
+
   const { fields, groups } = useFormFields(tab);
   const { reset, setValue, ...form } = useForm({ values: initialState });
 
@@ -132,14 +127,17 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
       } else {
         router.replace(String(data.id));
       }
-      setMessage('Saved');
+      showSuccessModal('Saved');
     },
-    [initialState, mode, reset, router],
+    [initialState, mode, reset, router, showSuccessModal],
   );
 
-  const onError = useCallback((data: string) => {
-    setMessage(data);
-  }, []);
+  const onError = useCallback(
+    (data: string) => {
+      showErrorModal(data);
+    },
+    [showErrorModal],
+  );
 
   const { submit, loading } = useFormAction({ window: windowMetadata, tab, mode, onSuccess, onError });
 
@@ -169,7 +167,17 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
         </div>
         <div className="flex-shrink-0 pl-2 pr-2">
           <div className="mb-2">
-            <MessageBox message={message} onDismiss={handleDismiss} />
+            {statusModal.open && (
+              <StatusModal
+                statusType={statusModal.statusType}
+                statusText={statusModal.statusText}
+                errorMessage={statusModal.errorMessage}
+                saveLabel={statusModal.saveLabel}
+                secondaryButtonLabel={statusModal.secondaryButtonLabel}
+                onClose={hideStatusModal}
+                isDeleteSuccess={statusModal.isDeleteSuccess}
+              />
+            )}
           </div>
           <StatusBar fields={fields.statusBarFields} />
           <div className="mt-2">

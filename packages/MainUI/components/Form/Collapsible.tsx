@@ -7,6 +7,7 @@ import InfoIcon from '@workspaceui/componentlibrary/src/assets/icons/file-text.s
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import { defaultFill, useStyle } from './FormView/styles';
 import { useTheme } from '@mui/material';
+import { CollapsibleProps } from './FormView/types';
 
 export default function Collapsible({
   title,
@@ -16,14 +17,8 @@ export default function Collapsible({
   onHover = () => {},
   sectionId,
   isHovered = false,
-}: React.PropsWithChildren<{
-  title: string;
-  icon?: React.ReactNode;
-  initialState?: boolean;
-  onHover?: (sectionName: string | null) => void;
-  sectionId?: string;
-  isHovered?: boolean;
-}>) {
+  onToggle,
+}: CollapsibleProps) {
   const { sx } = useStyle();
   const theme = useTheme();
   const [isOpen, setIsOpen] = useState(initialState);
@@ -31,7 +26,18 @@ export default function Collapsible({
   const [maxHeight, setMaxHeight] = useState<CSSProperties['maxHeight']>('100%');
   const style = useMemo(() => ({ maxHeight: isOpen ? maxHeight : 0 }), [isOpen, maxHeight]);
 
-  const handleToggle = useCallback(() => setIsOpen(prev => !prev), []);
+  useEffect(() => {
+    setIsOpen(initialState);
+  }, [initialState]);
+
+  const handleToggle = useCallback(() => {
+    const newIsOpen = !isOpen;
+    setIsOpen(newIsOpen);
+    if (onToggle) {
+      onToggle(newIsOpen);
+    }
+  }, [isOpen, onToggle]);
+
   const handleMouseEnter = useCallback(() => onHover(title), [onHover, title]);
   const handleMouseLeave = useCallback(() => onHover(null), [onHover]);
 
@@ -45,15 +51,11 @@ export default function Collapsible({
     [isHovered, theme.palette.dynamicColor],
   );
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        handleToggle();
-        e.preventDefault();
-      }
-    },
-    [handleToggle],
-  );
+  useEffect(() => {
+    if (contentRef.current) {
+      setMaxHeight(contentRef.current.scrollHeight);
+    }
+  }, [isOpen, children]);
 
   useEffect(() => {
     if (!contentRef.current) return;
@@ -77,17 +79,25 @@ export default function Collapsible({
     });
   }, [isOpen]);
 
-  useEffect(() => {
-    if (contentRef.current) {
-      setMaxHeight(contentRef.current.scrollHeight);
-    }
-  }, [isOpen, children]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        handleToggle();
+        e.preventDefault();
+      }
+    },
+    [handleToggle],
+  );
 
   return (
     <div
       id={`section-${sectionId}`}
       className={`bg-white rounded-xl border border-gray-200 mb-4 ${isOpen ? 'overflow-visible' : 'overflow-hidden'}`}>
       <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={isOpen}
+        aria-controls={`section-content-${sectionId}`}
         className={`w-full h-12 flex justify-between items-center p-4 cursor-pointer transition-colors hover:bg-gray-50 ${
           isOpen ? 'rounded-xl' : ''
         }`}
@@ -107,7 +117,15 @@ export default function Collapsible({
           </IconButton>
         </div>
       </div>
-      <div ref={contentRef} className={`transition-all duration-300 ease-in-out`} style={style}>
+      <div
+        id={`section-content-${sectionId}`}
+        ref={contentRef}
+        className={`transition-all duration-300 ease-in-out ${isOpen ? '' : 'pointer-events-none'}`}
+        style={{
+          ...style,
+          visibility: isOpen ? 'visible' : 'hidden',
+        }}
+        aria-hidden={!isOpen}>
         <div className="p-4">
           {React.isValidElement(children) && children.type === 'div' ? children : <div>{children}</div>}
         </div>
