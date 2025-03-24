@@ -1,4 +1,4 @@
-import { Field, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import { EntityData, Field, FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 import { ReportColumn } from '@workspaceui/etendohookbinder/src/hooks/types';
 import { MRT_ColumnDef, MRT_Row } from 'material-react-table';
@@ -7,6 +7,17 @@ export interface GridItemProps {
   xs?: number;
   sm?: number;
   md?: number;
+}
+
+export interface CollapsibleProps {
+  title: string;
+  icon?: React.ReactNode;
+  initialState?: boolean;
+  onHover?: (sectionName: string | null) => void;
+  sectionId?: string;
+  isHovered?: boolean;
+  onToggle?: (isOpen: boolean) => void;
+  children: React.ReactNode;
 }
 
 export interface Section {
@@ -24,46 +35,13 @@ export interface Section {
 export type FormData = Record<string, FieldDefinition | Section>;
 
 export interface FormViewProps {
-  onSave: () => void;
-  onCancel: () => void;
-  gridItemProps?: GridItemProps;
-  dottedLineInterval?: number;
-  onChange?: (updatedData: FormData) => void;
-  initialValues?: boolean;
-  onLabelClick?: (url: string) => void;
+  window: WindowMetadata;
   tab: Tab;
-}
-
-export interface FormSectionProps {
-  sectionName: string;
-  sectionData: Section;
-  fields: [string, FieldDefinition][];
-  isExpanded: boolean;
-  onAccordionChange: (sectionId: string, isExpanded: boolean) => void;
-  onHover: (sectionName: string | null) => void;
-  hoveredSection: string | null;
-  sectionRef: React.Ref<HTMLDivElement>;
-  gridItemProps?: GridItemProps;
-  dottedLineInterval?: number;
-  readOnly?: boolean;
-  children?: React.ReactNode;
-  onLabelClick?: FormViewProps['onLabelClick'];
-  tab: Tab;
+  mode: FormMode;
+  initialState: EntityData;
 }
 
 export type FieldValue = string | number | boolean | string[] | Date | null | FieldDefinition['value'];
-
-export interface FormFieldGroupProps {
-  tab: Tab;
-  name?: string;
-  field: FieldDefinition;
-  entityName?: string;
-  accessor?: string;
-  windowMetadata?: WindowMetadata;
-  readOnly?: boolean;
-  renderFieldValue?: (field: FieldDefinition) => FieldValue;
-  onLabelClick?: FormSectionProps['onLabelClick'];
-}
 
 export interface FieldLabelProps {
   label: string;
@@ -72,10 +50,6 @@ export interface FieldLabelProps {
   fieldType: string;
   onLinkClick?: () => void;
   isEntityReference?: boolean;
-}
-
-export interface SectionRendererProps extends Omit<FormSectionProps, 'children'> {
-  sectionRef: (el: HTMLElement | null) => void;
 }
 
 export interface Note {

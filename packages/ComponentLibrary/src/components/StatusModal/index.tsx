@@ -1,4 +1,4 @@
-import React from 'react';
+import { useCallback } from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 import { Modal } from '..';
 import SaveIcon from '../../assets/icons/save.svg';
@@ -12,6 +12,9 @@ const StatusModal: React.FC<StatusModalProps> = ({
   errorMessage,
   saveLabel,
   secondaryButtonLabel,
+  onClose,
+  onAfterClose,
+  isDeleteSuccess,
 }) => {
   const { gradientColor, iconBackgroundColor, icon: StatusIcon } = statusConfig[statusType];
   const theme = useTheme();
@@ -19,13 +22,33 @@ const StatusModal: React.FC<StatusModalProps> = ({
 
   const backgroundGradient = `linear-gradient(to bottom, ${gradientColor}, rgba(255, 255, 255, 0))`;
 
+  const handleClose = useCallback(() => {
+    if (onClose) {
+      onClose();
+    }
+  }, [onClose]);
+
+  const handleAfterClose = useCallback(() => {
+    if (onAfterClose) {
+      onAfterClose();
+    }
+  }, [onAfterClose]);
+
+  const secondaryLabel = isDeleteSuccess ? '' : secondaryButtonLabel;
+
   return (
     <Modal
+      open={true}
       showHeader={false}
-      saveButtonLabel={saveLabel}
-      secondaryButtonLabel={secondaryButtonLabel}
-      SaveIcon={SaveIcon}
-      backgroundGradient={backgroundGradient}>
+      saveButtonLabel={!isDeleteSuccess ? saveLabel : undefined}
+      secondaryButtonLabel={secondaryLabel}
+      SaveIcon={!isDeleteSuccess ? SaveIcon : undefined}
+      backgroundGradient={backgroundGradient}
+      onSave={handleClose}
+      onAfterClose={handleAfterClose}
+      onCancel={handleClose}
+      onClose={handleClose}
+      buttons={isDeleteSuccess ? null : undefined}>
       <Box sx={sx.statusModalContainer}>
         <Box
           sx={{

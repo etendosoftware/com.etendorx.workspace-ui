@@ -30,6 +30,8 @@ import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
 import ProcessMenu from './ProcessMenu';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
+import ConfirmModal from '@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal';
 
 export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
   const [openModal, setOpenModal] = useState(false);
@@ -41,6 +43,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
   const { selected, tabs } = useMetadataContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
+
   const tab = useMemo<Tab>(() => {
     const result = tabs.find(tab => tab.id === tabId);
 
@@ -50,14 +53,30 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
 
     throw new Error('Error creating toolbar: Missing tab');
   }, [tabs, tabId]);
+
   const selectedRecord = tab ? selected[tab.level] : undefined;
   const parentId = useMemo(() => selected[tab?.level - 1]?.id ?? null, [selected, tab?.level]);
-  const { handleAction, searchOpen, setSearchOpen, handleSearch, searchValue, setSearchValue } = useToolbarConfig({
+
+  const {
+    handleAction,
+    searchOpen,
+    setSearchOpen,
+    handleSearch,
+    searchValue,
+    setSearchValue,
+    statusModal,
+    confirmAction,
+    handleConfirm,
+    handleCancelConfirm,
+    hideStatusModal,
+  } = useToolbarConfig({
     windowId,
     tabId,
     onSave,
     parentId,
+    isFormView,
   });
+
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
 
   const processButtons = useMemo(() => toolbar?.buttons.filter(isProcessButton) || [], [toolbar?.buttons]);
@@ -89,7 +108,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
     [handleSearch, setSearchValue],
   );
 
-  const handleConfirm = useCallback(async () => {
+  const handleConfirmProcess = useCallback(async () => {
     if (!selectedProcessButton || !selectedRecord?.id) return;
 
     setIsExecuting(true);
@@ -117,7 +136,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
     }
   }, [handleProcessClick, selectedProcessButton, selectedRecord?.id]);
 
-  const handleClose = useCallback(() => {
+  const handleCloseProcess = useCallback(() => {
     setOpenModal(false);
     setSelectedProcessButton(null);
     setProcessResponse(null);
@@ -207,6 +226,25 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
   return (
     <>
       <TopToolbar {...createToolbarConfig()} />
+      {statusModal.open && (
+        <StatusModal
+          statusText={statusModal.statusText}
+          statusType={statusModal.statusType}
+          errorMessage={statusModal.errorMessage}
+          saveLabel={statusModal.saveLabel || t('common.close')}
+          secondaryButtonLabel={statusModal.secondaryButtonLabel}
+          onClose={hideStatusModal}
+        />
+      )}
+      {confirmAction && (
+        <ConfirmModal
+          confirmText={confirmAction.confirmText}
+          onConfirm={handleConfirm}
+          onCancel={handleCancelConfirm}
+          saveLabel={confirmAction.saveLabel || t('common.confirm')}
+          secondaryButtonLabel={confirmAction.secondaryButtonLabel || t('common.cancel')}
+        />
+      )}
       {processButtons.length > 0 && (
         <ProcessMenu
           anchorEl={anchorEl}
@@ -230,9 +268,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
       {selectedProcessButton && (
         <ProcessModal
           open={openModal}
-          onClose={handleClose}
+          onClose={handleCloseProcess}
           button={selectedProcessButton}
-          onConfirm={handleConfirm}
+          onConfirm={handleConfirmProcess}
           isExecuting={isExecuting}
           processResponse={processResponse}
           confirmationMessage={t('process.confirmationMessage')}

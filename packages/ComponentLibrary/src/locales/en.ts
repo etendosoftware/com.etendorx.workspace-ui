@@ -19,6 +19,17 @@ const en = {
       main: 'Main Section',
     },
   },
+  status: {
+    deleteSuccess: 'has been deleted successfully',
+    deleteError: 'Error deleting record',
+    deleteConfirmation: 'Are you sure you want to delete ',
+    selectRecordError: 'Please select a record first',
+    saveSuccess: '{{entityType}} has been saved successfully',
+    saveError: 'Error saving record',
+    noIdError: 'Cannot delete a record without ID',
+    noEntityError: 'No entity has been specified',
+    httpError: 'HTTP Error: ',
+  },
   errors: {
     networkError: {
       title: 'Could not connect to Etendo',

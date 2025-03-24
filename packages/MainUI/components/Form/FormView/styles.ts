@@ -106,9 +106,6 @@ export const useStyle = (): StylesType => {
           alignItems: 'center',
           gap: '0.5rem',
         },
-        iconButton: {
-          background: theme.palette.dynamicColor.contrastText,
-        },
         chevronButton: {
           background: 'none',
           '&:hover': {
