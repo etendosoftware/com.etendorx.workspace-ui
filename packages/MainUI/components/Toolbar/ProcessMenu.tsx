@@ -1,8 +1,8 @@
 import React, { useCallback, useRef } from 'react';
 import { Menu, MenuItem, Tooltip } from '@mui/material';
-import { ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { ProcessMenuProps } from './types';
+import { ProcessButton } from '../ProcessModal/types';
 
 const menuStyle = {
   marginTop: '0.5rem',

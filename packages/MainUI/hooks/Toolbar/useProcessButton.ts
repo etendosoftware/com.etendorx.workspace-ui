@@ -1,8 +1,8 @@
+import { ProcessButton } from '@/components/ProcessModal/types';
 import { ProcessResponse } from '../../components/Toolbar/types';
 import { ExecuteProcessParams } from './types';
 import { BaseFieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 import { FieldType } from '@workspaceui/etendohookbinder/src/api/types';
-import { ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
 
 export const useProcessButton = (
   executeProcess: (params: ExecuteProcessParams) => Promise<ProcessResponse>,

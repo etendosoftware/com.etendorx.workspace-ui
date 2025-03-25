@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from '@mui/material';
 import { useStyle } from './styles';
-import { ProcessModalProps } from './types';
+import { ProcessModalProps, ProcessButtonType } from './types';
 
 const ProcessModal: React.FC<ProcessModalProps> = ({
   open,
@@ -15,9 +15,16 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
   executeButtonText,
 }) => {
   const { styles } = useStyle();
-
   const responseMessage = processResponse?.responseActions?.[0]?.showMsgInProcessView;
   const isError = responseMessage?.msgType === 'error';
+
+  useEffect(() => {
+    if (ProcessButtonType.PROCESS_DEFINITION in button) {
+      console.debug('processDefinition', button.processDefintion);
+    } else if (ProcessButtonType.PROCESS_ACTION in button) {
+      console.debug('processAction', button.processAction);
+    }
+  }, [button]);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth sx={styles.dialog}>

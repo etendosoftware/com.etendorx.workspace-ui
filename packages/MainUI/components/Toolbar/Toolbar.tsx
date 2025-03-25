@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState, createElement } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
-import ProcessModal from '@workspaceui/componentlibrary/src/components/ProcessModal';
 import {
   IconSize,
   ProcessResponse,
@@ -27,11 +26,12 @@ import { useToolbarConfig } from '../../hooks/Toolbar/useToolbarConfig';
 import { iconMap } from './iconMap';
 import { useToolbar } from '../../hooks/Toolbar/useToolbar';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
-import { ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
 import ProcessMenu from './ProcessMenu';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
 import ConfirmModal from '@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal';
+import { ProcessButton } from '../ProcessModal/types';
+import ProcessModal from '../ProcessModal';
 
 export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
   const [openModal, setOpenModal] = useState(false);
@@ -82,6 +82,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
   const processButtons = useMemo(() => toolbar?.buttons.filter(isProcessButton) || [], [toolbar?.buttons]);
 
   const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    console.debug(event.currentTarget);
     setAnchorEl(event.currentTarget);
   }, []);
 

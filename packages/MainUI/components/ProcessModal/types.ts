@@ -6,7 +6,17 @@ export interface BaseButton {
   visible: boolean;
 }
 
-export interface ProcessButton extends BaseButton {
+export interface ProcessDefinition extends Record<string, unknown> {
+  id: string;
+  name: string;
+}
+
+export interface ProcessAction extends Record<string, unknown> {
+  id: string;
+  name: string;
+}
+
+export interface BaseProcessButton extends BaseButton {
   processId: string;
   buttonText: string;
   displayLogic?: string;
@@ -21,6 +31,21 @@ export interface ProcessButton extends BaseButton {
       name: string;
     }>;
   };
+}
+
+export interface ProcessDefinitionButton extends BaseProcessButton {
+  processDefinition: ProcessDefinition;
+}
+
+export interface ProcessActionButton extends BaseProcessButton {
+  processAction: ProcessAction;
+}
+
+export type ProcessButton = ProcessDefinitionButton | ProcessActionButton;
+
+export enum ProcessButtonType {
+  PROCESS_DEFINITION = 'processDefintion',
+  PROCESS_ACTION = 'processAction',
 }
 
 export interface ProcessResponse {

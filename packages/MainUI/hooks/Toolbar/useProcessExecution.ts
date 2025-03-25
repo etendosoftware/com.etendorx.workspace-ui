@@ -19,6 +19,8 @@ export function useProcessExecution() {
         setLoading(true);
         setError(null);
 
+        console.debug(button);
+
         const queryParams = new URLSearchParams({
           _action: button.processInfo.javaClassName,
           processId: button.processId,
