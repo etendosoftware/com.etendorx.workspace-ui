@@ -1,7 +1,6 @@
-import React, { useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from '@mui/material';
 import { useStyle } from './styles';
-import { ProcessModalProps, ProcessButtonType } from './types';
+import { ProcessButtonType, type ProcessModalProps } from './types';
 
 const ProcessModal: React.FC<ProcessModalProps> = ({
   open,
@@ -17,20 +16,22 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
   const { styles } = useStyle();
   const responseMessage = processResponse?.responseActions?.[0]?.showMsgInProcessView;
   const isError = responseMessage?.msgType === 'error';
-
-  useEffect(() => {
-    if (ProcessButtonType.PROCESS_DEFINITION in button) {
-      console.debug('processDefinition', button.processDefintion);
-    } else if (ProcessButtonType.PROCESS_ACTION in button) {
-      console.debug('processAction', button.processAction);
-    }
-  }, [button]);
+  const type =
+    ProcessButtonType.PROCESS_ACTION in button
+      ? ProcessButtonType.PROCESS_ACTION
+      : ProcessButtonType.PROCESS_DEFINITION;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth sx={styles.dialog}>
       <DialogTitle sx={styles.dialogTitle}>{button.name}</DialogTitle>
       <DialogContent sx={styles.dialogContent}>
         <Typography sx={styles.message}>{confirmationMessage}</Typography>
+        <div className="text-sm hidden">
+          <b>{type}</b>
+          <pre className="code w-full h-full p-2 rounded-lg border">
+            <code>{JSON.stringify(button, null, 2)}</code>
+          </pre>
+        </div>
 
         {processResponse && (
           <Box sx={styles.messageBox}>

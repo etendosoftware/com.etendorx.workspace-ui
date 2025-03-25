@@ -1,8 +1,8 @@
-import React, { useCallback, useRef } from 'react';
 import { Menu, MenuItem, Tooltip } from '@mui/material';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { ProcessMenuProps } from './types';
 import { ProcessButton } from '../ProcessModal/types';
+import { useCallback } from 'react';
 
 const menuStyle = {
   marginTop: '0.5rem',
@@ -25,6 +25,26 @@ const menuItemStyle = {
   },
 };
 
+interface ProcessMenuItemProps {
+  button: ProcessButton;
+  onProcessClick: (button: ProcessButton) => void;
+  disabled: boolean;
+}
+
+const ProcessMenuItem: React.FC<ProcessMenuItemProps> = ({ button, onProcessClick, disabled }) => {
+  const handleClick = useCallback(() => {
+    onProcessClick(button);
+  }, [button, onProcessClick]);
+
+  return (
+    <MenuItem onClick={handleClick} sx={menuItemStyle} disabled={disabled}>
+      <Tooltip title={button.name} enterDelay={600} leaveDelay={100}>
+        <span>{button.name}</span>
+      </Tooltip>
+    </MenuItem>
+  );
+};
+
 const ProcessMenu: React.FC<ProcessMenuProps> = ({
   anchorEl,
   open,
@@ -33,24 +53,15 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
   onProcessClick,
   selectedRecord,
 }) => {
-  const callbacks = useRef<Record<string, () => void>>({});
-
-  const handleClick = useCallback((button: ProcessButton) => {
-    if (!callbacks.current[button.id]) {
-      callbacks.current[button.id] = () => onProcessClick(button);
-    }
-
-    return callbacks.current[button.id];
-  }, [onProcessClick]);
-
   return (
     <Menu anchorEl={anchorEl} open={open} onClose={onClose} sx={menuStyle}>
-      {processButtons.map((button: ProcessButton) => (
-        <MenuItem key={button.id} onClick={handleClick(button)} sx={menuItemStyle} disabled={!selectedRecord}>
-          <Tooltip title={button.name} enterDelay={600} leaveDelay={100}>
-            <span>{button.name}</span>
-          </Tooltip>
-        </MenuItem>
+      {processButtons.map((button: ProcessButton, index: number) => (
+        <ProcessMenuItem
+          key={`${button.id}-${index}`}
+          button={button}
+          onProcessClick={onProcessClick}
+          disabled={!selectedRecord}
+        />
       ))}
     </Menu>
   );
