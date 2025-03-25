@@ -29,7 +29,7 @@ const es = {
     noIdError: 'No se puede borrar un registro sin identificador',
     noEntityError: 'No hay una entidad especificada',
     httpError: 'Error HTTP: ',
-    noRecordsError: 'No Hay registros seleccionados',
+    noRecordsError: 'No hay registros seleccionados',
   },
   errors: {
     networkError: {
