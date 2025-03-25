@@ -16,21 +16,26 @@ export interface ProcessAction extends Record<string, unknown> {
   name: string;
 }
 
+export interface ProcessInfo {
+  loadFunction: string;
+  clientSideValidation: string;
+  _entityName: string;
+  id: string;
+  name: string;
+  javaClassName: string;
+  searchKey: string;
+  parameters: Array<{
+    defaultValue: string;
+    id: string;
+    name: string;
+  }>;
+}
+
 export interface BaseProcessButton extends BaseButton {
   processId: string;
   buttonText: string;
   displayLogic?: string;
-  processInfo: {
-    _entityName: string;
-    id: string;
-    name: string;
-    javaClassName: string;
-    parameters: Array<{
-      defaultValue: string;
-      id: string;
-      name: string;
-    }>;
-  };
+  processInfo: ProcessInfo;
 }
 
 export interface ProcessDefinitionButton extends BaseProcessButton {

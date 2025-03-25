@@ -472,3 +472,24 @@ export interface FormInitializationResponse {
   attachmentExists: boolean;
   _readOnly?: boolean;
 }
+
+export type ProcessBindings = {
+  onLoad: (...args: never[]) => never;
+  onProcess: (...args: never[]) => never;
+  metadata: Record<string, unknown>;
+} | null;
+
+export interface ProcessInfo {
+  loadFunction: string;
+  searchKey: string;
+  clientSideValidation: string;
+  _entityName: string;
+  id: string;
+  name: string;
+  javaClassName: string;
+  parameters: Array<{
+    defaultValue: string;
+    id: string;
+    name: string;
+  }>;
+}

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, createElement } from 'react';
+import { useCallback, useMemo, useState, createElement, useEffect } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import {
@@ -32,6 +32,7 @@ import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModa
 import ConfirmModal from '@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal';
 import { ProcessButton } from '../ProcessModal/types';
 import ProcessModal from '../ProcessModal';
+import { useProcessMetadata } from '@/hooks/useProcessMetadata';
 
 export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
   const [openModal, setOpenModal] = useState(false);
@@ -143,13 +144,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
     setProcessResponse(null);
   }, []);
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height={64}>
-        {t('common.loading')}
-      </Box>
-    );
-  }
+  const { metadata } = useProcessMetadata(selectedProcessButton);
+
+  useEffect(() => {
+    if (metadata) {
+      console.debug('process metadata', metadata);
+    }
+  }, [metadata]);
 
   const createToolbarConfig = () => {
     const buttons = toolbar?.buttons ?? [];
@@ -224,6 +225,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
     return config;
   };
 
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height={64}>
+        {t('common.loading')}
+      </Box>
+    );
+  }
   return (
     <>
       <TopToolbar {...createToolbarConfig()} />

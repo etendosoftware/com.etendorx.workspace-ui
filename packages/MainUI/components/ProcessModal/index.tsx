@@ -1,6 +1,7 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from '@mui/material';
 import { useStyle } from './styles';
 import { ProcessButtonType, type ProcessModalProps } from './types';
+import { useEffect } from 'react';
 
 const ProcessModal: React.FC<ProcessModalProps> = ({
   open,
@@ -16,22 +17,26 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
   const { styles } = useStyle();
   const responseMessage = processResponse?.responseActions?.[0]?.showMsgInProcessView;
   const isError = responseMessage?.msgType === 'error';
-  const type =
-    ProcessButtonType.PROCESS_ACTION in button
-      ? ProcessButtonType.PROCESS_ACTION
-      : ProcessButtonType.PROCESS_DEFINITION;
+  useEffect(() => {
+    if (open) {
+      console.debug('ProcessModal opened');
+      console.debug('Button process info:', button.processInfo);
+
+      if (ProcessButtonType.PROCESS_DEFINITION in button) {
+        console.debug('Process definition:', button.processDefintion);
+      } else if (ProcessButtonType.PROCESS_ACTION in button) {
+        console.debug('Process action:', button.processAction);
+      } else {
+        console.debug('Unsupported process type:', button);
+      }
+    }
+  }, [button, open]);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth sx={styles.dialog}>
       <DialogTitle sx={styles.dialogTitle}>{button.name}</DialogTitle>
       <DialogContent sx={styles.dialogContent}>
         <Typography sx={styles.message}>{confirmationMessage}</Typography>
-        <div className="text-sm hidden">
-          <b>{type}</b>
-          <pre className="code w-full h-full p-2 rounded-lg border">
-            <code>{JSON.stringify(button, null, 2)}</code>
-          </pre>
-        </div>
 
         {processResponse && (
           <Box sx={styles.messageBox}>
