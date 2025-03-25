@@ -7,7 +7,7 @@ import DynamicReport from '../../../components/ad_reports/DynamicReport';
 import { useReport } from '@workspaceui/etendohookbinder/src/hooks/useReport';
 import { useReportMetadata } from '@workspaceui/etendohookbinder/src/hooks/useReportMetadata';
 import { FieldValues } from 'react-hook-form';
-import { useApiContext } from '@/contexts/api';
+import { useApiContext } from '@/hooks/useApiContext';
 
 export default function ReportPage() {
   const params = useParams();
