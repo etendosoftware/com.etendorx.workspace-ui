@@ -29,13 +29,8 @@ export default function ApiProvider({ children }: React.PropsWithChildren) {
         controllerRef.current.signal,
         HEALTH_CHECK_MAX_ATTEMPTS,
         HEALTH_CHECK_RETRY_DELAY_MS,
-        () => {
-          dispatch({ type: 'SET_CONNECTED' });
-        },
-        () => {
-          alert('error');
-          dispatch({ type: 'SET_ERROR' });
-        },
+        () => dispatch({ type: 'SET_CONNECTED' }),
+        () => dispatch({ type: 'SET_ERROR' }),
       );
     }
   }, [url]);
@@ -54,10 +49,12 @@ export default function ApiProvider({ children }: React.PropsWithChildren) {
   useEffect(() => {
     getApiUrl()
       .then(url => {
+        logger.info('Fetched API URL', url);
         setUrl(url);
       })
       .catch(err => {
         logger.error('Error getting API URL', err);
+        logger.error('Falling back to default URL', FALLBACK_URL);
         setUrl(FALLBACK_URL);
       });
   }, []);
@@ -75,12 +72,14 @@ export default function ApiProvider({ children }: React.PropsWithChildren) {
 
   if (state.error) {
     return (
-      <ErrorDisplay
-        title={t('errors.networkError.title')}
-        description={t('errors.networkError.description')}
-        showRetry={true}
-        onRetry={healthCheck}
-      />
+      <div className="flex flex-col items-center justify-center h-full w-full">
+        <ErrorDisplay
+          title={t('errors.networkError.title')}
+          description={t('errors.networkError.description')}
+          showRetry={true}
+          onRetry={healthCheck}
+        />
+      </div>
     );
   }
 
