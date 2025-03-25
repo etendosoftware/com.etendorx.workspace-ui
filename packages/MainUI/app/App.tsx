@@ -1,7 +1,7 @@
 'use client';
 
 import { RecordProvider } from '@/contexts/record';
-import SanityChecker from '../components/SanityChecker';
+import SanityChecker from '../contexts/api';
 import LanguageProvider from '../contexts/languageProvider';
 import MetadataProvider from '../contexts/metadata';
 import UserProvider from '../contexts/user';
