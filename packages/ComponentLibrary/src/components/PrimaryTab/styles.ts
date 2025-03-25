@@ -43,6 +43,7 @@ export const useStyle = () => {
           transition: 'background-color 0.3s, color 0.4s',
           color: theme.palette.baselineColor.neutral[90],
           padding: '0.25rem 1rem',
+          marginRight: '0.25rem',
           whiteSpace: 'nowrap',
           '& .MuiTab-iconWrapper': {
             marginRight: '0.5rem',
