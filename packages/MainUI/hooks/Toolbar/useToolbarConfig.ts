@@ -107,7 +107,6 @@ export const useToolbarConfig = ({
           onSave?.();
           break;
         case BUTTON_IDS.DELETE:
-          console.log('asd');
           if (tab) {
             if (selectedIds.length > 0) {
               const recordsToDelete = selectedIds.map(id => tab.records?.[id] || { id });
