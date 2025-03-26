@@ -6,6 +6,7 @@ import LanguageProvider from '../contexts/languageProvider';
 import MetadataProvider from '../contexts/metadata';
 import UserProvider from '../contexts/user';
 import { DatasourceProvider } from '@/contexts/datasourceContext';
+import { FormProvider } from 'react-hook-form';
 
 export default function App({ children }: React.PropsWithChildren) {
   return (
@@ -14,7 +15,9 @@ export default function App({ children }: React.PropsWithChildren) {
         <RecordProvider>
           <UserProvider>
             <DatasourceProvider>
-              <MetadataProvider>{children}</MetadataProvider>
+              <MetadataProvider>
+                <FormProvider>{children}</FormProvider>
+              </MetadataProvider>
             </DatasourceProvider>
           </UserProvider>
         </RecordProvider>

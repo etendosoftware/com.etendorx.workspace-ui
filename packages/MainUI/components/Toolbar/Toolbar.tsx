@@ -33,6 +33,7 @@ import ConfirmModal from '@workspaceui/componentlibrary/src/components/StatusMod
 import { ProcessButton } from '../ProcessModal/types';
 import ProcessModal from '../ProcessModal';
 import { useProcessMetadata } from '@/hooks/useProcessMetadata';
+import { logger } from '@/utils/logger';
 
 export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
   const [openModal, setOpenModal] = useState(false);
@@ -224,6 +225,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
 
     return config;
   };
+
+  logger.debug('asd', processButtons);
 
   if (loading) {
     return (
