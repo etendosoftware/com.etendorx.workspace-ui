@@ -1,16 +1,50 @@
-# WorkspaceUI Monorepo
+# 🚀 Etendo Main UI Installation
 
-## Workflow for a monorepo with pnpm and submodules (dev environment)
+Welcome to the Etendo Main UI repository! This document provides a clear and formal guide on setting up and running the main user interface for Etendo.
+
+## 🛠 Prerequisites
+
+Ensure you have the following installed on your system:
+
+- [Node.js](https://nodejs.org/) (v18.x or higher recommended)
+- [pnpm](https://pnpm.io/) (latest version)
+
+Additionally, ensure you have the following repositories cloned in your workspace:
+
+- `com.etendoerp.openapi`
+- `com.etendoerp.etendorx`
+- `com.etendoerp.mainui`
+- `com.etendoerp.metadata`
+- `com.etendoerp.metadata.template`
+
+**Note:** The latest developments are typically found in the `develop` branch.
+
+## ⚙️ Backend Configuration (for data access)
+
+To fetch data from the backend, you need to have **Etendo Classic running** with the necessary modules installed.
+
+You can set it up in one of the following ways:
+
+- Locally with all modules properly configured.
+- **Using Docker** (recommended for quick setup):  
+  Use the official repository:  
+  [`https://github.com/etendosoftware/com.etendoerp.mainui`](https://github.com/etendosoftware/com.etendoerp.mainui)
+
+Make sure the backend is running and accessible before interacting with data in the UI.
+
+---
+
+# WorkspaceUI Monorepo
 
 ### Install pnpm
 
-Install pnpm globally if you haven't already.
+Install pnpm globally if you haven't already:
 
 ```bash
 npm install -g pnpm
 ```
 
-or using brew (MacOS)
+or using brew (MacOS):
 
 ```bash
 brew install pnpm
@@ -22,48 +56,61 @@ brew install pnpm
 pnpm install
 ```
 
-### Setup environment
-You will need to define 4 environment variables at packages/MainUI/.env. It should look something like this:
+### ▶️ Running the app
 
-```sh
-NEXT_PUBLIC_API_BASE_URL="http://localhost:8080/etendo"
-NEXT_PUBLIC_CACHE_DURATION="3600000"
-NEXT_PUBLIC_AUTH_HEADER_NAME="Authorization"
-```
-
-The NEXT_PUBLIC_API_BASE_URL must point to a working Etendo Classic app.
-The NEXT_PUBLIC_CACHE_DURATION is a configuration for the Metadata module. This setting represents the expiration time of cache entries and is a number in milliseconds.
-The NEXT_PUBLIC_AUTH_HEADER_NAME is a configuration for the Metadata module. This settings represents the name of the header that will be used by the API client. Specifically, it will be used for sending the authentication token. 
-
-### Running the app
-
-In dev mode:
-```bash
- pnpm dev
-```
-
-In production mode
-```bash
- pnpm build
- pnpm start
-```
-
-## Storybook dev and build correctly
-
-**Note:** This use both pnpm and yarn, so first of all we'll be working inside ./packages/storybook
+**Development Mode:**
 
 ```bash
-  rm -rf node_modules
-  rm -rf storybook-static
-  yarn cache clean
-  yarn install
-  yarn build
-  pnpm install
-  yarn build
+pnpm dev
 ```
 
-We can now run dev enviroment and build correctly
+**Production Mode:**
 
 ```bash
-  yarn storybook
+pnpm build
+pnpm start
 ```
+
+---
+
+## 📘 Storybook Setup
+
+**Note:** Work inside `./packages/storybook`.
+
+### Prepare Environment
+
+```bash
+rm -rf node_modules
+rm -rf storybook-static
+pnpm store prune
+pnpm install
+```
+
+### ▶️ Run Storybook in Development Mode
+
+```bash
+pnpm dev
+```
+
+### Build Storybook for Production
+
+```bash
+pnpm build
+```
+
+Make sure `package.json` inside `./packages/storybook` includes:
+
+```json
+"scripts": {
+  "dev": "start-storybook -p 6006",
+  "build": "build-storybook"
+}
+```
+
+---
+
+## 📧 Support
+
+For any issues or questions, please reach out to the maintainers or open an issue in this repository.
+
+Happy coding! 🌟
