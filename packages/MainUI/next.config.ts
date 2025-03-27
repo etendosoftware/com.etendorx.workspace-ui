@@ -49,9 +49,9 @@ const nextConfig: NextConfig = {
           {
             loader: '@svgr/webpack',
             options: {
-              dimensions: false,
-              expandProps: "start",
-            }
+              icon: true,
+              expandProps: false,
+            },
           },
         ],
       },

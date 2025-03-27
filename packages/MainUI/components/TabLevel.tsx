@@ -6,7 +6,7 @@ import { TabLevelProps } from './types';
 import { SearchProvider } from '../contexts/searchContext';
 import ResizableTabContainer from './Table/TabNavigation';
 import { useMetadataContext } from '../hooks/useMetadataContext';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
   const {
@@ -20,17 +20,25 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
     closeTab,
   } = useMetadataContext();
 
-  const selectedRecord = tab ? selected[tab.level] : undefined;
+  const selectedRecord = useMemo(() => (tab ? selected[tab.level] : undefined), [selected, tab]);
 
   const childLevel = tab.level + 1;
-  const childTabs = groupedTabs.find(tabs => tabs[0]?.level === childLevel) || [];
+
+  const childTabs = useMemo(
+    () => groupedTabs.find(tabs => tabs[0]?.level === childLevel) || [],
+    [childLevel, groupedTabs],
+  );
+
   const hasChildTabs = childTabs.length > 0;
 
-  const childTab = tabs.find(t => t.level === childLevel);
-  const isChildTabActive = activeTabLevels.includes(childLevel);
+  const childTab = useMemo(() => tabs.find(t => t.level === childLevel), [childLevel, tabs]);
+  const isChildTabActive = useMemo(() => activeTabLevels.includes(childLevel), [activeTabLevels, childLevel]);
 
   const grandchildLevel = childLevel + 1;
-  const isGrandchildActive = activeTabLevels.includes(grandchildLevel);
+  const isGrandchildActive = useMemo(
+    () => activeTabLevels.includes(grandchildLevel),
+    [activeTabLevels, grandchildLevel],
+  );
 
   const hasGrandchildSelected = !!selected[childLevel];
 
@@ -83,6 +91,10 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
     );
   }, [tab.level, isChildTabActive, childSelectedRecord, childTab, activeTabLevels, grandchildLevel]);
 
+  const handleCloseChildTab = useCallback(() => closeTab(childLevel), [childLevel, closeTab]);
+
+  const handleCloseGrandchildTab = useCallback(() => closeTab(grandchildLevel), [closeTab, grandchildLevel]);
+
   return (
     <SearchProvider>
       <div className={`tab-level-${tab.level} h-full flex flex-col overflow-hidden`}>
@@ -95,25 +107,21 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
       </div>
       {shouldShowChildContainer && (
         <ResizableTabContainer
-          key={`child-container-${childLevel}-${tab.id}`}
           isOpen={shouldShowChildContainer}
-          onClose={() => closeTab(childLevel)}
+          onClose={handleCloseChildTab}
           selectedRecord={formattedSelectedRecord}
           tab={tab}
           windowId={tab.windowId}
-          onHeightChange={() => {}}
           isMainTab={isChildTabMain}
         />
       )}
       {shouldShowGrandchildContainer && (
         <ResizableTabContainer
-          key={`grandchild-container-${grandchildLevel}-${childTab?.id}`}
           isOpen={shouldShowGrandchildContainer}
-          onClose={() => closeTab(grandchildLevel)}
+          onClose={handleCloseGrandchildTab}
           selectedRecord={childSelectedRecord}
           tab={childTab}
           windowId={childTab?.windowId}
-          onHeightChange={() => {}}
           isMainTab={false}
         />
       )}

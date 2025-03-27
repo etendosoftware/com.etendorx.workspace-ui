@@ -15,7 +15,8 @@ export function useProcessExecution() {
   const [error, setError] = useState<Error | null>(null);
   const { token } = useContext(UserContext);
   const { tab } = useMetadataContext();
-  const { getValues } = useFormContext();
+  const formContext = useFormContext();
+  const getValues = formContext?.getValues;
   const { recordId } = useParams<{ recordId: string }>();
   const fieldsByHqlName = useMemo(() => tab?.fields || {}, [tab?.fields]);
 

@@ -154,7 +154,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     }
   }, [metadata]);
 
-  const createToolbarConfig = useCallback(() => {
+  const toolbarConfig = useMemo(() => {
     const buttons = toolbar?.buttons ?? [];
 
     const createProcessMenuButton = (): StandardButtonConfig => ({
@@ -238,7 +238,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   }
   return (
     <>
-      <TopToolbar {...createToolbarConfig()} />
+      <TopToolbar {...toolbarConfig} />
       {statusModal.open && (
         <StatusModal
           statusText={statusModal.statusText}

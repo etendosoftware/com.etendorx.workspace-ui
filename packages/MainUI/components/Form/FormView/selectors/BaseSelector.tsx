@@ -2,13 +2,14 @@ import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Field, FormInitializationResponse, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
 import { useCallout } from '@/hooks/useCallout';
-import { useMetadataContext } from '@/hooks/useMetadataContext';
 import { logger } from '@/utils/logger';
 import { GenericSelector } from './GenericSelector';
 import { buildPayloadByInputName, parseDynamicExpression } from '@/utils';
 import Label from '../Label';
 import { useUserContext } from '@/hooks/useUserContext';
 import { useParams } from 'next/navigation';
+import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { useParentTabContext } from '@/contexts/tab';
 
 const compileExpression = (expression: string) => {
   try {
@@ -22,7 +23,8 @@ const compileExpression = (expression: string) => {
 
 const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; formMode?: FormMode }) => {
   const { watch, getValues, setValue, register } = useFormContext();
-  const { fieldsByColumnName, tab } = useMetadataContext();
+  const { tab } = useParentTabContext();
+  const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
   const { recordId } = useParams<{ recordId: string }>();
   const { session } = useUserContext();
   const executeCallout = useCallout({ field, rowId: recordId });
