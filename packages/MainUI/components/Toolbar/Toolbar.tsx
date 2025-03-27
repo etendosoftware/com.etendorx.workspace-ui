@@ -123,6 +123,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       }
     } catch (error) {
       setProcessResponse({
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error',
         responseActions: [
           {
             showMsgInProcessView: {
