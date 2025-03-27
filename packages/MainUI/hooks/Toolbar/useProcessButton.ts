@@ -46,13 +46,17 @@ export const useProcessButton = (
     } catch (error) {
       logger.error('Error executing process', error);
 
+      const message = error instanceof Error ? error.message : 'Unknown error occurred';
+
       return {
+        message,
+        success: false,
         responseActions: [
           {
             showMsgInProcessView: {
               msgType: 'error',
               msgTitle: 'Error',
-              msgText: error instanceof Error ? error.message : 'Unknown error occurred',
+              msgText: message,
             },
           },
         ],
