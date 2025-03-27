@@ -69,24 +69,20 @@ export function useProcessExecution() {
       setLoading(true);
       setError(null);
 
-      // URL base para las peticiones
       const baseUrl = `http://localhost:8080/etendo/SalesOrder/Header_Edition.html`;
 
-      // Configuración de la ventana emergente
       const windowFeatures =
         'width=600,height=600,left=100,top=100,resizable=yes,scrollbars=yes,status=yes,menubar=no,toolbar=no,location=no';
 
-      // Crear todos los parámetros necesarios
       const params = new URLSearchParams();
 
-      // Parámetros básicos
       params.append('IsPopUpCall', '1');
       params.append('Command', 'BUTTONDocAction104');
       params.append('inpcOrderId', recordId || '');
       params.append('inpKey', recordId || '');
-      params.append('inpdocstatus', 'DR'); // Parámetro requerido según el error
+      params.append('inpdocstatus', 'DR');
       params.append('inpprocessing', 'N');
-      params.append('inpdocaction', 'CO'); // Acción "Book" (Completar)
+      params.append('inpdocaction', 'CO');
       params.append('inpwindowId', tab?.windowId?.toString() || '143');
       params.append('inpTabId', tab?.id?.toString() || '186');
       params.append('inpTableId', tab?.table?.toString() || '259');
@@ -98,10 +94,8 @@ export function useProcessExecution() {
       params.append('keyProperty', 'id');
       params.append('_UTCOffsetMiliseconds', (new Date().getTimezoneOffset() * -60000).toString());
 
-      // Construir la URL completa con todos los parámetros
       const completeUrl = `${baseUrl}?${params.toString()}`;
 
-      // Abrir directamente en el navegador, dejando que la aplicación web maneje todo el flujo
       window.open(completeUrl, '_blank', windowFeatures);
 
       return {
