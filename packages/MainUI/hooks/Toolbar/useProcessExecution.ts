@@ -23,11 +23,9 @@ export function useProcessExecution() {
   const executeProcessDefinition = useCallback(
     async ({ button, recordId, params = {} }: ExecuteProcessDefinitionParams): Promise<ProcessResponse> => {
       try {
-        alert('execute process definition');
         setLoading(true);
         setError(null);
         const queryParams = new URLSearchParams({
-          // _action: button.processDefinition.id,
           processId: button.processDefinition.id,
         });
 
@@ -77,110 +75,130 @@ export function useProcessExecution() {
         setLoading(true);
         setError(null);
 
-        const entityName = button.processInfo?._entityName || tab?.entityName || 'SalesOrder';
-        const baseUrl = `http://localhost:8080/etendo/SalesOrder/Header_Edition.html?IsPopUpCall=1`;
-
-        logger.debug(button);
+        const baseUrl = `http://localhost:8080/etendo/SalesOrder/Header_Edition.html`;
 
         const urlParams = new URLSearchParams();
-        urlParams.append('IsPopUpCall', '1');
-        urlParams.append('Command', `BUTTON`);
-        urlParams.append('inpcOrderId', recordId);
-        urlParams.append('_buttonValue', button.buttonText);
-        urlParams.append('_entityName', entityName);
+        urlParams.append('Command', `BUTTONDocAction104`);
+        urlParams.append('inpcOrderId', recordId || '');
         urlParams.append('keyProperty', 'id');
+        urlParams.append('inpKeyName', 'inpcOrderId');
+        urlParams.append('keyColumnName', 'C_Order_ID');
+        urlParams.append('keyPropertyType', '_id_13');
+        urlParams.append('inpProcessId', '104');
+        urlParams.append('_UTCOffsetMiliseconds', (new Date().getTimezoneOffset() * -60000).toString());
+        urlParams.append('inpdocaction', 'CO');
+        if (tab?.id) urlParams.append('inpTabId', tab.id.toString());
+        if (tab?.windowId) urlParams.append('inpwindowId', tab.windowId.toString());
+        if (tab?.table) urlParams.append('inpTableId', tab.table.toString());
+        urlParams.append('inpkeyColumnId', 'C_Order_ID');
+        urlParams.append('inpdocstatus', 'DR');
+        urlParams.append('inpprocessing', 'N');
+        urlParams.append('inpprocessed', 'N');
+        urlParams.append('inpissotrx', 'Y');
+        urlParams.append('inpposted', 'N');
 
-        const fieldValues = buildPayloadByInputName(getValues(), fieldsByHqlName);
-        Object.entries(fieldValues).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            urlParams.append(
-              key,
-              typeof value === 'object' ? ("id" in value && value.id ? value.id.toString() : JSON.stringify(value)) : value.toString(),
-            );
+        let formValues = {};
+        try {
+          if (getValues && typeof getValues === 'function') {
+            const values = getValues();
+            formValues = buildPayloadByInputName(values, fieldsByHqlName);
           }
-        });
-
-        const popupName = 'etendoPopup' + new Date().getTime();
-        const windowFeatures =
-          'width=800,height=800,left=100,top=100,resizable=yes,scrollbars=yes,status=yes,menubar=no,toolbar=no,location=no';
-        const popupWindow = window.open('', popupName, windowFeatures);
-
-        if (!popupWindow) {
-          throw new Error(
-            'El navegador ha bloqueado la ventana emergente. Por favor, permite ventanas emergentes para este sitio.',
-          );
+        } catch (e) {
+          logger.error('No se pudo obtener valores del formulario, usando datos del tab');
         }
 
-        popupWindow.document.write(`
-          <html>
-            <head>
-              <title>Cargando...</title>
-              <style>
-                body { font-family: Arial, sans-serif; text-align: center; padding-top: 50px; }
-                .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; margin: 20px auto; animation: spin 2s linear infinite; }
-                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-              </style>
-            </head>
-            <body>
-              <h2>Cargando el proceso de Etendo...</h2>
-              <div class="spinner"></div>
-              <p>Por favor espere...</p>
-            </body>
-          </html>
-        `);
+        if (tab?.fields) {
+          Object.entries(tab.fields).forEach(([_, field]) => {
+            if (field && 'columnName' in field && field.columnName) {
+              const paramName = `inp${field.columnName.toLowerCase()}`;
 
-        const response = await fetch(baseUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            Authorization: `Bearer ${token}`,
-          },
-          body: urlParams,
-          redirect: 'manual',
-        });
-
-        if (response.status === 302) {
-          const redirectUrl = response.headers.get('Location');
-          if (redirectUrl) {
-            popupWindow.location.href = redirectUrl;
-            return {
-              success: true,
-              message: 'Se ha abierto una ventana emergente con el proceso de Etendo.',
-              popupOpened: true,
-              redirected: true,
-              redirectUrl,
-            };
-          }
+              const fieldKey = field.inputName || paramName;
+              if (formValues[fieldKey] !== undefined && formValues[fieldKey] !== null) {
+                urlParams.append(
+                  paramName,
+                  typeof formValues[fieldKey] === 'object'
+                    ? 'id' in formValues[fieldKey] && formValues[fieldKey].id
+                      ? formValues[fieldKey].id.toString()
+                      : JSON.stringify(formValues[fieldKey])
+                    : formValues[fieldKey].toString(),
+                );
+              } else if ('defaultValue' in field && field.defaultValue) {
+                urlParams.append(paramName, field.defaultValue.toString());
+              } else {
+                urlParams.append(paramName, 'undefined');
+              }
+            }
+          });
         }
 
-        const htmlResponse = await response.text();
+        // Asegurar que los parámetros clave estén presentes
+        if (!urlParams.has('inpadClientId')) urlParams.append('inpadClientId', '23C59575B9CF467C9620760EB255B389');
+        if (!urlParams.has('inpadOrgId')) urlParams.append('inpadOrgId', '7BABA5FF80494CAFA54DEBD22EC46F01');
 
-        if (htmlResponse.includes('<FRAMESET') || htmlResponse.includes('<frameset')) {
-          const frameUrlMatch =
-            htmlResponse.match(/src="([^"]+)"[^>]*name="mainframe"/i) ||
-            htmlResponse.match(/name="mainframe"[^>]*src="([^"]+)"/i);
+        try {
+          // Primera solicitud - con parámetros correctos
+          const firstUrl = `${baseUrl}?IsPopUpCall=1`;
+          logger.info('Iniciando primera solicitud POST a', firstUrl);
 
-          if (frameUrlMatch && frameUrlMatch[1]) {
-            const frameUrl = frameUrlMatch[1];
-            popupWindow.location.href = frameUrl;
-            return {
-              success: true,
-              message: 'Se ha abierto una ventana emergente con el proceso de Etendo.',
-              popupOpened: true,
-              frameUrl,
-            };
+          // Ejecutamos la primera solicitud y esperamos a que se complete
+          const firstResponse = await fetch(firstUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              Authorization: token ? `Bearer ${token}` : `Basic ${btoa('admin:admin')}`,
+            },
+            body: urlParams.toString(),
+            credentials: 'include',
+          });
+
+          // Consumimos completamente la respuesta
+          const firstResponseText = await firstResponse.text();
+          logger.info('Primera solicitud completada. Status:', firstResponse.status);
+
+          await new Promise(resolve => setTimeout(resolve, 800));
+
+          const cookies = firstResponse.headers.get('Set-Cookie');
+          logger.info('Cookies obtenidas:', cookies ? 'Sí' : 'No');
+
+          const secondUrl = `${baseUrl}?Command=BUTTON104`;
+          logger.info('Iniciando segunda solicitud GET a', secondUrl);
+
+          const secondResponse = await fetch(secondUrl, {
+            method: 'GET',
+            headers: {
+              Accept: 'text/html,application/xhtml+xml,application/xml',
+              Authorization: token ? `Bearer ${token}` : `Basic ${btoa('admin:admin')}`,
+              ...(cookies ? { Cookie: cookies } : {}),
+              Referer: firstUrl,
+            },
+            credentials: 'include',
+          });
+
+          const html = await secondResponse.text();
+          logger.info('Segunda solicitud completada. Status:', secondResponse.status);
+
+          const windowFeatures =
+            'width=600,height=600,left=100,top=100,resizable=yes,scrollbars=yes,status=yes,menubar=no,toolbar=no,location=no';
+          const popupWindow = window.open('', '_blank', windowFeatures);
+
+          if (popupWindow) {
+            popupWindow.document.open();
+            popupWindow.document.write(html);
+            popupWindow.document.close();
+            logger.info('Ventana emergente abierta y contenido escrito');
+          } else {
+            throw new Error('No se pudo abrir la nueva ventana (pop-up bloqueado)');
           }
+
+          return {
+            success: true,
+            message: 'Se ha abierto una ventana emergente con el proceso de Etendo.',
+            popupOpened: true,
+          };
+        } catch (fetchError) {
+          logger.error('Error al realizar la solicitud:', fetchError);
+          throw fetchError;
         }
-
-        popupWindow.document.open();
-        popupWindow.document.write(htmlResponse);
-        popupWindow.document.close();
-
-        return {
-          success: true,
-          message: 'Se ha abierto una ventana emergente con el proceso de Etendo.',
-          popupOpened: true,
-        };
       } catch (error) {
         console.error('useProcessExecution - Error details:', error);
         const processError = error instanceof Error ? error : new Error('Process execution failed');
@@ -190,25 +208,23 @@ export function useProcessExecution() {
         setLoading(false);
       }
     },
-    [fieldsByHqlName, getValues, tab, recordId, token],
+    [tab, recordId, token, fieldsByHqlName, getValues],
   );
 
   const executeProcess = useCallback(
     async ({ button, recordId, params = {} }: ExecuteProcessParams): Promise<ProcessResponse> => {
       if (!token) {
-        throw new Error('No authentication token available');
+        logger.warn('No se encontró token de autenticación, se usará autenticación básica');
       }
 
       if (ProcessButtonType.PROCESS_ACTION in button) {
-        logger.error('process action', button);
-
+        logger.info('Ejecutando acción de proceso', button);
         return executeProcessAction({ button, recordId, params });
       } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
-        logger.error('process definition', button);
-
+        logger.info('Ejecutando definición de proceso', button);
         return executeProcessDefinition({ button, recordId, params });
       } else {
-        throw new Error('Unsupported process type');
+        throw new Error('Tipo de proceso no soportado');
       }
     },
     [executeProcessAction, executeProcessDefinition, token],
