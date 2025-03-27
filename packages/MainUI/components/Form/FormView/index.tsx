@@ -10,7 +10,7 @@ import StatusBar from './StatusBar';
 import useFormFields from '@/hooks/useFormFields';
 import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
 import { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
-import Chevrons from '@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg';
+import Info from '@workspaceui/componentlibrary/src/assets/icons/info.svg';
 import InfoIcon from '@workspaceui/componentlibrary/src/assets/icons/file-text.svg';
 import FileIcon from '@workspaceui/componentlibrary/src/assets/icons/file.svg';
 import FolderIcon from '@workspaceui/componentlibrary/src/assets/icons/folder.svg';
@@ -34,7 +34,7 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
   const { reset, setValue, ...form } = useForm({ values: initialState });
 
   const defaultIcon = useMemo(
-    () => <Chevrons fill={theme.palette.baselineColor.neutral[80]} />,
+    () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
     [theme.palette.baselineColor.neutral],
   );
 
