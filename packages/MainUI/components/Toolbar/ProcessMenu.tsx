@@ -2,7 +2,7 @@ import { Menu, MenuItem, Tooltip } from '@mui/material';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { ProcessMenuProps } from './types';
 import { ProcessButton } from '../ProcessModal/types';
-import { useCallback } from 'react';
+import { forwardRef, useCallback } from 'react';
 
 const menuStyle = {
   marginTop: '0.5rem',
@@ -31,19 +31,23 @@ interface ProcessMenuItemProps {
   disabled: boolean;
 }
 
-const ProcessMenuItem: React.FC<ProcessMenuItemProps> = ({ button, onProcessClick, disabled }) => {
-  const handleClick = useCallback(() => {
-    onProcessClick(button);
-  }, [button, onProcessClick]);
+const ProcessMenuItem = forwardRef<HTMLLIElement, ProcessMenuItemProps>(
+  ({ button, onProcessClick, disabled }: ProcessMenuItemProps, ref) => {
+    const handleClick = useCallback(() => {
+      onProcessClick(button);
+    }, [button, onProcessClick]);
 
-  return (
-    <MenuItem onClick={handleClick} sx={menuItemStyle} disabled={disabled}>
+    return (
       <Tooltip title={button.name} enterDelay={600} leaveDelay={100}>
-        <span>{button.name}</span>
+        <MenuItem onClick={handleClick} sx={menuItemStyle} disabled={disabled} ref={ref}>
+          <span>{button.name}</span>
+        </MenuItem>
       </Tooltip>
-    </MenuItem>
-  );
-};
+    );
+  },
+);
+
+ProcessMenuItem.displayName = 'ProcessMenuItem';
 
 const ProcessMenu: React.FC<ProcessMenuProps> = ({
   anchorEl,

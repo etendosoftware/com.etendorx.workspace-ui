@@ -4,6 +4,7 @@ import { ProcessResponse } from '../../components/Toolbar/types';
 import { ExecuteProcessActionParams, ExecuteProcessDefinitionParams, ExecuteProcessParams } from './types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { ProcessButtonType } from '@/components/ProcessModal/types';
+import { logger } from '@/utils/logger';
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
@@ -13,6 +14,7 @@ export function useProcessExecution() {
   const executeProcessDefinition = useCallback(
     async ({ button, recordId, params = {} }: ExecuteProcessDefinitionParams): Promise<ProcessResponse> => {
       try {
+        alert('execute process definition');
         setLoading(true);
         setError(null);
         const queryParams = new URLSearchParams({
@@ -117,11 +119,11 @@ export function useProcessExecution() {
       }
 
       if (ProcessButtonType.PROCESS_ACTION in button) {
-        console.debug('process action', button);
+        logger.error('process action', button);
 
         return executeProcessAction({ button, recordId, params });
       } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
-        console.debug('process definition', button);
+        logger.error('process definition', button);
 
         return executeProcessDefinition({ button, recordId, params });
       } else {

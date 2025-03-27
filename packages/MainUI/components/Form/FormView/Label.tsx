@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import Link from 'next/link';
 import { useFormContext } from 'react-hook-form';
 import { isEntityReference } from '@workspaceui/etendohookbinder/src/utils/metadata';
@@ -13,7 +13,7 @@ const Content = ({ field, link }: { field: Field; link?: boolean }) => (
   </label>
 );
 
-export default function Label({ field }: { field: Field }) {
+function LabelCmp({ field }: { field: Field }) {
   const { watch } = useFormContext();
   const value = watch(field.hqlName);
   const isReference = useMemo(() => isEntityReference(getFieldReference(field)), [field]);
@@ -28,3 +28,7 @@ export default function Label({ field }: { field: Field }) {
 
   return <Content field={field} />;
 }
+
+const Label = memo(LabelCmp, () => true);
+export { Label };
+export default Label;

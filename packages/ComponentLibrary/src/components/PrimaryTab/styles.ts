@@ -35,6 +35,9 @@ export const useStyle = () => {
               opacity: 0.3,
             },
           },
+          '& .MuiTabs-flexContainer': {
+            gap: "0.25rem",
+          },
         },
         tab: {
           minHeight: 48,

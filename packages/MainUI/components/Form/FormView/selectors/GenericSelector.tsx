@@ -8,13 +8,14 @@ import { TableDirSelector } from './TableDirSelector';
 import QuantitySelector from './QuantitySelector';
 import { ListSelector } from './ListSelector';
 import { NumericSelector } from './NumericSelector';
+import { memo } from 'react';
 
 export type GenericSelectorProps = {
   field: Field;
   isReadOnly: boolean;
 };
 
-export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => {
+const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   const { watch } = useFormContext();
   const value = watch(field.hqlName);
   const { reference } = field.column;
@@ -33,6 +34,7 @@ export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => 
     case '22':
       return (
         <QuantitySelector
+          field={field}
           name={field.hqlName}
           value={value}
           min={field.column.minValue}
@@ -47,10 +49,14 @@ export const GenericSelector = ({ field, isReadOnly }: GenericSelectorProps) => 
     case '30':
       return <SelectSelector field={field} isReadOnly={isReadOnly} />;
     case '800008':
-      return <NumericSelector field={field} readOnly={isReadOnly} required={field.isMandatory} />;
+      return <NumericSelector field={field} readOnly={isReadOnly} />;
     case '11':
     case '12':
     default:
-      return <StringSelector field={field} readOnly={isReadOnly} required={field.isMandatory} />;
+      return <StringSelector field={field} readOnly={isReadOnly} />;
   }
 };
+
+const GenericSelector = memo(GenericSelectorCmp);
+export { GenericSelector };
+export default GenericSelector;

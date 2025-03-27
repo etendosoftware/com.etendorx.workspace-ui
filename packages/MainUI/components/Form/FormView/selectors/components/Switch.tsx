@@ -1,13 +1,15 @@
+import { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { forwardRef, useCallback } from 'react';
 
 interface SwitchProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   disabled?: boolean;
+  field: Field;
 }
 
 export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
-  ({ checked = false, onCheckedChange, disabled = false, className = '', ...props }, ref) => {
+  ({ checked = false, onCheckedChange, disabled = false, className = '', field, ...props }, ref) => {
     const handleToggle = useCallback(() => {
       if (disabled) return;
       onCheckedChange(!checked);
@@ -18,6 +20,11 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-label={field.name}
+        aria-readonly={disabled}
+        aria-required={field.isMandatory}
+        aria-disabled={disabled}
+        aria-details={field.helpComment}
         disabled={disabled}
         onClick={handleToggle}
         ref={ref}

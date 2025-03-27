@@ -3,6 +3,7 @@ import { ProcessResponse } from '../../components/Toolbar/types';
 import { ExecuteProcessParams } from './types';
 import { BaseFieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 import { FieldType } from '@workspaceui/etendohookbinder/src/api/types';
+import { logger } from '@/utils/logger';
 
 export const useProcessButton = (
   executeProcess: (params: ExecuteProcessParams) => Promise<ProcessResponse>,
@@ -43,6 +44,8 @@ export const useProcessButton = (
 
       return result;
     } catch (error) {
+      logger.error('Error executing process', error);
+
       return {
         responseActions: [
           {

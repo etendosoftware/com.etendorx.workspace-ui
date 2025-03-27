@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, createElement, useEffect } from 'react';
+import { useCallback, useMemo, useState, createElement, useEffect, memo } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import {
@@ -34,7 +34,7 @@ import { ProcessButton } from '../ProcessModal/types';
 import ProcessModal from '../ProcessModal';
 import { useProcessMetadata } from '@/hooks/useProcessMetadata';
 
-export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
+const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
   const [openModal, setOpenModal] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
@@ -83,7 +83,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
   const processButtons = useMemo(() => toolbar?.buttons.filter(isProcessButton) || [], [toolbar?.buttons]);
 
   const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
-    console.debug(event.currentTarget);
     setAnchorEl(event.currentTarget);
   }, []);
 
@@ -152,7 +151,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
     }
   }, [metadata]);
 
-  const createToolbarConfig = () => {
+  const createToolbarConfig = useCallback(() => {
     const buttons = toolbar?.buttons ?? [];
 
     const createProcessMenuButton = (): StandardButtonConfig => ({
@@ -223,7 +222,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
     }
 
     return config;
-  };
+  }, [handleAction, handleMenuOpen, isFormView, processButtons.length, selectedRecord, t, toolbar?.buttons]);
 
   if (loading) {
     return (
@@ -324,3 +323,6 @@ const getSectionStyle = (sectionType: string[]) => {
     background: theme.palette.baselineColor.transparentNeutral[5],
   };
 };
+
+export const Toolbar = memo(ToolbarCmp);
+export default Toolbar;

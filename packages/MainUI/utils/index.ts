@@ -1,4 +1,11 @@
-import { Field, FieldType } from '@workspaceui/etendohookbinder/src/api/types';
+import {
+  FieldType,
+  FormMode,
+  type EntityData,
+  type Field,
+  type Tab,
+  type WindowMetadata,
+} from '@workspaceui/etendohookbinder/src/api/types';
 
 export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -59,27 +66,80 @@ export const buildPayloadByInputName = (values: Record<string, unknown>, fields?
 };
 
 export const parseDynamicExpression = (expr: string) => {
-  return expr
-    .replace(/OB\.Utilities\.getValue\((\w+),\s*["']([^"']+)["']\)/g, (_, obj, prop) => {
-      return `${obj}["${prop}"]`;
-    })
-
-    .replace(/context\.(\$?\w+)/g, (_, prop) => {
-      return `context.${prop}`;
-    })
-
-    .replace(/context\[\s*(['"])([^"'\]]+)\1\s*\]/g, (_, quote, prop) => {
-      return `context[${quote}${prop}${quote}]`;
-    })
-
-    .replace(/context\[\s*(['"])(.*?)\1\s*\]/g, (_, quote, key) => {
-      const transformedKey = transformDynamicKey(key);
-      return `context[${quote}${transformedKey}${quote}]`;
-    });
-};
-
-const transformDynamicKey = (key: string): string => {
-  return key.replace(/\b([A-Z_$][A-Z0-9_$]*)\b/gi, (match: string) => {
-    return match === 'currentValues' ? match : match;
+  const expr1 = expr.replace(/OB\.Utilities\.getValue\((\w+),\s*["']([^"']+)["']\)/g, (_, obj, prop) => {
+    return `${obj}["${prop}"]`;
   });
+
+  const expr2 = expr1.replace(/context\.(\$?\w+)/g, (_, prop) => {
+    return `context.${prop}`;
+  });
+
+  const expr3 = expr2.replace(/context\[\s*(['"])([^"'\]]+)\1\s*\]/g, (_, quote, prop) => {
+    return `context[${quote}${prop}${quote}]`;
+  });
+
+  const expr4 = expr3.replace(/context\[\s*(['"])(.*?)\1\s*\]/g, (_, quote, key) => {
+    return `context[${quote}${key}${quote}]`;
+  });
+
+  return expr4;
 };
+
+export const buildQueryString = ({
+  mode,
+  windowMetadata,
+  tab,
+}: {
+  windowMetadata: WindowMetadata;
+  tab: Tab;
+  mode: FormMode;
+}) =>
+  new URLSearchParams({
+    windowId: String(windowMetadata.id),
+    tabId: String(tab.id),
+    moduleId: String(tab.module),
+    _operationType: mode === FormMode.NEW ? 'add' : 'update',
+    _noActiveFilter: String(true),
+    sendOriginalIDBack: String(true),
+    _extraProperties: '',
+    Constants_FIELDSEPARATOR: '$',
+    _className: 'OBViewDataSource',
+    Constants_IDENTIFIER: '_identifier',
+    isc_dataFormat: 'json',
+  });
+
+export const buildFormPayload = ({
+  values,
+  oldValues,
+  mode,
+  csrfToken,
+}: {
+  values: EntityData;
+  oldValues: EntityData;
+  mode: FormMode;
+  csrfToken: string;
+}) => ({
+  dataSource: 'isc_OBViewDataSource_0',
+  operationType: mode === FormMode.NEW ? 'add' : 'update',
+  componentId: 'isc_OBViewForm_0',
+  data: {
+    accountingDate: new Date(),
+    ...values,
+  },
+  oldValues,
+  csrfToken,
+});
+
+export const buildRequestOptions = (
+  values: EntityData,
+  initialState: EntityData,
+  mode: FormMode,
+  userId: string,
+  signal: AbortSignal,
+) => ({
+  signal,
+  method: 'POST',
+  body: buildFormPayload({ values, oldValues: initialState, mode, csrfToken: userId }),
+});
+
+export const formatNumber = (value: number) => new Intl.NumberFormat(navigator.language).format(value);

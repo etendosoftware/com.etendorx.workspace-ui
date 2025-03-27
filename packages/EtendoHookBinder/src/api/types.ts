@@ -111,6 +111,8 @@ export interface Field {
   isDisplayed: boolean;
   sequenceNumber: number;
   isUpdatable: boolean;
+  description: string;
+  helpComment: string;
 }
 
 export interface Option<T extends string = string> {

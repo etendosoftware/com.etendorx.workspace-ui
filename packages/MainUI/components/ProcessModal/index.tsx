@@ -17,6 +17,8 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
   const { styles } = useStyle();
   const responseMessage = processResponse?.responseActions?.[0]?.showMsgInProcessView;
   const isError = responseMessage?.msgType === 'error';
+  const type = ProcessButtonType.PROCESS_DEFINITION in button ? ProcessButtonType.PROCESS_DEFINITION : ProcessButtonType.PROCESS_ACTION;
+
   useEffect(() => {
     if (open) {
       console.debug('ProcessModal opened');
@@ -34,7 +36,7 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth sx={styles.dialog}>
-      <DialogTitle sx={styles.dialogTitle}>{button.name}</DialogTitle>
+      <DialogTitle sx={styles.dialogTitle}>{button.name} ({type})</DialogTitle>
       <DialogContent sx={styles.dialogContent}>
         <Typography sx={styles.message}>{confirmationMessage}</Typography>
 

@@ -18,7 +18,7 @@ export async function performHealthCheck(
         keepalive: false,
       });
 
-      if (response.ok) {
+      if (response.ok && !signal.aborted) {
         onSuccess();
 
         break;
@@ -30,7 +30,7 @@ export async function performHealthCheck(
 
       logger.warn(`Health check attempt ${attempt} failed:`, error);
 
-      if (attempt === maxAttempts) {
+      if (attempt === maxAttempts && !signal.aborted) {
         onError();
       }
 

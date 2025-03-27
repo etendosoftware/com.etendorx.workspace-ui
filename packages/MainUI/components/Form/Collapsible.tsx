@@ -1,6 +1,6 @@
 'use client';
 
-import React, { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { CSSProperties, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ChevronUp from '@workspaceui/componentlibrary/src/assets/icons/chevron-up.svg';
 import ChevronDown from '@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg';
 import InfoIcon from '@workspaceui/componentlibrary/src/assets/icons/file-text.svg';
@@ -9,7 +9,7 @@ import { defaultFill, useStyle } from './FormView/styles';
 import { useTheme } from '@mui/material';
 import { CollapsibleProps } from './FormView/types';
 
-export default function Collapsible({
+function CollapsibleCmp({
   title,
   icon,
   children,
@@ -133,3 +133,6 @@ export default function Collapsible({
     </div>
   );
 }
+
+export const Collapsible = memo(CollapsibleCmp);
+export default Collapsible;
