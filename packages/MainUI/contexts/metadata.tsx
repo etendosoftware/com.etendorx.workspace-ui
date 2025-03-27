@@ -3,6 +3,7 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { groupTabsByLevel } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { useWindow } from '@workspaceui/etendohookbinder/src/hooks/useWindow';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useParams } from 'next/navigation';
 import { WindowParams } from '../app/types';
@@ -14,17 +15,15 @@ export const MetadataContext = createContext({} as IMetadataContext);
 
 export default function MetadataProvider({ children }: React.PropsWithChildren) {
   const { windowId = '', tabId = '', recordId = '' } = useParams<WindowParams>();
-  const [windowData, setWindowData] = useState<Etendo.WindowMetadata | undefined>();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error>();
+  const { windowData, loading, error } = useWindow(windowId)
   const [selected, setSelected] = useState<IMetadataContext['selected']>({});
-  const [groupedTabs, setGroupedTabs] = useState<Etendo.Tab[][]>([]);
   const { language } = useLanguage();
   const [selectedMultiple, setSelectedMultiple] = useState<Record<string, Record<string, boolean>>>({});
   const [showTabContainer, setShowTabContainer] = useState(false);
   const [activeTabLevels, setActiveTabLevels] = useState<number[]>([0]);
   const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [tabId, windowData?.tabs]);
   const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
+  const groupedTabs = useMemo(() => groupTabsByLevel(windowData), [windowData]);
   const { removeRecordFromDatasource } = useDatasourceContext();
 
   const closeTab = useCallback(
@@ -222,23 +221,8 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   }, [windowId]);
 
   const loadWindowData = useCallback(async () => {
-    if (!windowId) return;
-
-    try {
-      setLoading(true);
-      setError(undefined);
-
       Metadata.setLanguage(language);
       Metadata.clearWindowCache(windowId);
-      const newWindowData = await Metadata.forceWindowReload(windowId);
-
-      setWindowData(newWindowData);
-      setGroupedTabs(groupTabsByLevel(newWindowData));
-    } catch (err) {
-      setError(err as Error);
-    } finally {
-      setLoading(false);
-    }
   }, [windowId, language]);
 
   useEffect(() => {
