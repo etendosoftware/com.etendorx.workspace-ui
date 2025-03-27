@@ -49,6 +49,12 @@ export interface ToolbarProps {
 }
 
 export interface ProcessResponse {
+  success: boolean;
+  message: string;
+  popupOpened?: boolean;
+  redirected?: boolean;
+  frameUrl?: string;
+  redirectUrl?: string;
   responseActions?: Array<{
     showMsgInProcessView?: {
       msgType: string;

@@ -94,7 +94,7 @@ export function useProcessExecution() {
           if (value !== undefined && value !== null) {
             urlParams.append(
               key,
-              typeof value === 'object' ? (value.id ? value.id.toString() : JSON.stringify(value)) : value.toString(),
+              typeof value === 'object' ? ("id" in value && value.id ? value.id.toString() : JSON.stringify(value)) : value.toString(),
             );
           }
         });
