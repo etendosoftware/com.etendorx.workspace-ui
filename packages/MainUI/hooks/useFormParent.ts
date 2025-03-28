@@ -13,9 +13,9 @@ export default function useFormParent(nameToUse: ParentFieldName = ParentFieldNa
   const { tab, parentTab, parentRecord } = useParentTabContext();
 
   return useMemo(() => {
-    const result = {} as EntityData;
-
     if (tab && parentTab && parentRecord) {
+      const result = {} as EntityData;
+
       const parentColumns = tab.parentColumns.map(field => tab.fields[field]);
       const parentFields = getFieldsByInputName(parentTab);
 
@@ -26,8 +26,10 @@ export default function useFormParent(nameToUse: ParentFieldName = ParentFieldNa
         },
         {} as Record<string, unknown>,
       );
+
+      return result;
     }
 
-    return result;
+    return null;
   }, [nameToUse, parentRecord, parentTab, tab]);
 }

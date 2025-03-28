@@ -11,7 +11,7 @@ export default function StatusBarField({ field }: { field: Field }) {
       return identifier;
     }
 
-    switch (getFieldReference(field)) {
+    switch (getFieldReference(field.column.reference)) {
       case FieldType.DATE:
         return new Date(value).toLocaleDateString();
       case FieldType.BOOLEAN:

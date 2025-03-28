@@ -1,13 +1,13 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { Field, FormInitializationResponse, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field, FieldType, FormInitializationResponse, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
 import { useCallout } from '@/hooks/useCallout';
 import { logger } from '@/utils/logger';
 import { GenericSelector } from './GenericSelector';
-import { buildPayloadByInputName, parseDynamicExpression } from '@/utils';
+import { buildPayloadByInputName, getFieldReference, parseDynamicExpression } from '@/utils';
 import Label from '../Label';
 import { useUserContext } from '@/hooks/useUserContext';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { useParentTabContext } from '@/contexts/tab';
 
@@ -21,18 +21,39 @@ const compileExpression = (expression: string) => {
   }
 };
 
+type ColumnValue = FormInitializationResponse['columnValues'][0];
+type AuxiliaryInputValue = FormInitializationResponse['auxiliaryInputValues'][0];
+type FieldUpdatePayload = ColumnValue | AuxiliaryInputValue;
+
 const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; formMode?: FormMode }) => {
   const { watch, getValues, setValue, register } = useFormContext();
+  const parentId = useSearchParams().get('parentId');
   const { tab } = useParentTabContext();
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
   const { recordId } = useParams<{ recordId: string }>();
   const { session } = useUserContext();
-  const executeCallout = useCallout({ field, rowId: recordId });
+  const executeCallout = useCallout({ field, rowId: recordId, parentId });
   const value = watch(field.hqlName);
   const valueTracking = useRef(value);
   const values = watch();
   const ready = useRef(false);
   const fieldsByHqlName = useMemo(() => tab?.fields || {}, [tab?.fields]);
+
+  const updateFieldValue = useCallback(
+    (column: string, { value, classicValue, ...other }: FieldUpdatePayload) => {
+      const targetField = fieldsByColumnName[column];
+      const reference = getFieldReference(targetField?.column?.reference);
+      const isDate = reference === FieldType.DATE;
+      const name = targetField ? targetField.hqlName : column;
+
+      setValue(name, isDate ? classicValue : value);
+
+      if ('identifier' in other) {
+        setValue(name + '$_identifier', other.identifier);
+      }
+    },
+    [fieldsByColumnName, setValue],
+  );
 
   const isDisplayed = useMemo(() => {
     if (!field.displayed) return false;
@@ -66,34 +87,20 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
 
   const applyColumnValues = useCallback(
     (columnValues: FormInitializationResponse['columnValues']) => {
-      Object.entries(columnValues ?? {}).forEach(([column, { value, classicValue, identifier }]) => {
-        const targetField = fieldsByColumnName[column];
-        const isDate = ['15', '16'].includes(targetField?.column?.reference);
-
-        if (targetField) {
-          setValue(targetField.hqlName, isDate ? classicValue : value);
-
-          if (identifier) {
-            setValue(targetField.hqlName + '$_identifier', identifier);
-          }
-        } else {
-          setValue(column, isDate ? classicValue : value);
-        }
+      Object.entries(columnValues ?? {}).forEach(([column, payload]) => {
+        updateFieldValue(column, payload);
       });
     },
-    [fieldsByColumnName, setValue],
+    [updateFieldValue],
   );
 
   const applyAuxiliaryInputValues = useCallback(
     (auxiliaryInputValues: FormInitializationResponse['auxiliaryInputValues']) => {
-      Object.entries(auxiliaryInputValues ?? {}).forEach(([column, { value, classicValue }]) => {
-        const targetField = fieldsByColumnName[column];
-        const isDate = ['15', '16'].includes(targetField?.column?.reference);
-
-        setValue(targetField?.hqlName || column, isDate ? classicValue : value);
+      Object.entries(auxiliaryInputValues ?? {}).forEach(([column, payload]) => {
+        updateFieldValue(column, payload);
       });
     },
-    [fieldsByColumnName, setValue],
+    [updateFieldValue],
   );
 
   const runCallout = useCallback(async () => {

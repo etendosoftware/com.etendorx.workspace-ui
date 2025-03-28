@@ -16,7 +16,7 @@ const Content = ({ field, link }: { field: Field; link?: boolean }) => (
 function LabelCmp({ field }: { field: Field }) {
   const { watch } = useFormContext();
   const value = watch(field.hqlName);
-  const isReference = useMemo(() => isEntityReference(getFieldReference(field)), [field]);
+  const isReference = useMemo(() => isEntityReference(getFieldReference(field.column.reference)), [field]);
 
   if (value && isReference) {
     return (

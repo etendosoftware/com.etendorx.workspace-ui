@@ -1,23 +1,19 @@
 import { Toolbar } from '@/components/Toolbar/Toolbar';
 import { EntityData, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
 import { FormProvider, useForm } from 'react-hook-form';
-import { BaseSelector } from './selectors/BaseSelector';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormAction } from '@/hooks/useFormAction';
 import { useRouter } from 'next/navigation';
-import Collapsible from '../Collapsible';
 import StatusBar from './StatusBar';
 import useFormFields from '@/hooks/useFormFields';
 import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
 import { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
-import Info from '@workspaceui/componentlibrary/src/assets/icons/info.svg';
-import InfoIcon from '@workspaceui/componentlibrary/src/assets/icons/file-text.svg';
-import FileIcon from '@workspaceui/componentlibrary/src/assets/icons/file.svg';
-import FolderIcon from '@workspaceui/componentlibrary/src/assets/icons/folder.svg';
 import { useTheme } from '@mui/material';
 import { FormViewProps } from './types';
 import { useStatusModal } from '@/hooks/Toolbar/useStatusModal';
 import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
+import GroupSection from './Sections';
+import { defaultIcon, getIconForGroup } from './Sections/utils';
 
 export default function FormView({ window: windowMetadata, tab, mode, initialState }: FormViewProps) {
   const router = useRouter();
@@ -33,24 +29,6 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
   const { fields, groups } = useFormFields(tab);
   const { reset, setValue, ...form } = useForm({ values: initialState });
 
-  const defaultIcon = useMemo(
-    () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
-    [theme.palette.baselineColor.neutral],
-  );
-
-  const getIconForGroup = useCallback(
-    (identifier: string) => {
-      const iconMap: Record<string, React.ReactElement> = {
-        'Main Section': <FileIcon />,
-        'More Information': <InfoIcon />,
-        Dimensions: <FolderIcon />,
-      };
-
-      return iconMap[identifier] || defaultIcon;
-    },
-    [defaultIcon],
-  );
-
   const tabs: TabItem[] = useMemo(() => {
     return groups.map(([id, group]) => ({
       id: String(id || '_main'),
@@ -60,7 +38,7 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
       hoverFill: theme.palette.baselineColor.neutral[0],
       showInTab: true,
     }));
-  }, [groups, getIconForGroup, theme.palette.baselineColor.neutral]);
+  }, [groups, theme.palette.baselineColor.neutral]);
 
   const handleTabChange = useCallback((newTabId: string) => {
     setSelectedTab(newTabId);
@@ -71,23 +49,6 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
       return prev;
     });
   }, []);
-
-  useEffect(() => {
-    if (selectedTab && containerRef.current) {
-      const sectionElement = sectionRefs.current[selectedTab];
-      if (sectionElement) {
-        const containerRect = containerRef.current.getBoundingClientRect();
-        const sectionRect = sectionElement.getBoundingClientRect();
-
-        const sectionTop = sectionRect.top - containerRect.top + containerRef.current.scrollTop;
-
-        containerRef.current.scrollTo({
-          top: Math.max(0, sectionTop - 20),
-          behavior: 'smooth',
-        });
-      }
-    }
-  }, [selectedTab, expandedSections]);
 
   const handleSectionRef = useCallback(
     (sectionId: string | null) => (el: HTMLElement | null) => {
@@ -153,6 +114,23 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
     [expandedSections],
   );
 
+  useEffect(() => {
+    if (selectedTab && containerRef.current) {
+      const sectionElement = sectionRefs.current[selectedTab];
+      if (sectionElement) {
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const sectionRect = sectionElement.getBoundingClientRect();
+
+        const sectionTop = sectionRect.top - containerRect.top + containerRef.current.scrollTop;
+
+        containerRef.current.scrollTo({
+          top: Math.max(0, sectionTop - 20),
+          behavior: 'smooth',
+        });
+      }
+    }
+  }, [selectedTab, expandedSections]);
+
   return (
     <FormProvider setValue={setValue} reset={reset} {...form}>
       <form
@@ -182,29 +160,21 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
             <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
           </div>
         </div>
-
         <div className="flex-grow overflow-auto p-2 space-y-2" ref={containerRef}>
-          {groups.map(([id, group]) => {
-            const sectionId = String(id || '_main');
-            return (
-              <div key={sectionId} ref={handleSectionRef(id)}>
-                <Collapsible
-                  title={group.identifier}
-                  initialState={isSectionExpanded(id)}
-                  sectionId={sectionId}
-                  onHover={handleHover}
-                  isHovered={hoveredSection === group.identifier}
-                  icon={getIconForGroup(group.identifier)}
-                  onToggle={(isOpen: boolean) => handleAccordionChange(id, isOpen)}>
-                  <div className="grid grid-cols-3 auto-rows-auto gap-4">
-                    {Object.entries(group.fields).map(([hqlName, field]) => (
-                      <BaseSelector field={field} key={hqlName} formMode={mode} />
-                    ))}
-                  </div>
-                </Collapsible>
-              </div>
-            );
-          })}
+          {groups.map(([id, group]) => (
+            <GroupSection
+              key={id}
+              id={id}
+              group={group}
+              handleSectionRef={handleSectionRef}
+              handleAccordionChange={handleAccordionChange}
+              handleHover={handleHover}
+              hoveredSection={hoveredSection}
+              isSectionExpanded={isSectionExpanded}
+              getIconForGroup={getIconForGroup}
+              mode={mode}
+            />
+          ))}
         </div>
       </form>
     </FormProvider>

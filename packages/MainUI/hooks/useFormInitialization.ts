@@ -4,6 +4,7 @@ import {
   FormInitializationParams,
   FormMode,
   Tab,
+  EntityData,
 } from '@workspaceui/etendohookbinder/src/api/types';
 import { logger } from '@/utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
@@ -24,19 +25,30 @@ export const buildFormInitializationParams = ({
   tab,
   recordId,
   parentId,
+  parentData,
 }: {
   tab: Tab;
   mode: FormMode;
   recordId?: string | null;
   parentId?: string | null;
-}): URLSearchParams =>
-  new URLSearchParams({
+  parentData?: EntityData | null;
+}): URLSearchParams => {
+  const result = new URLSearchParams({
     MODE: mode,
     PARENT_ID: parentId ?? 'null',
     TAB_ID: tab.id,
     ROW_ID: getRowId(mode, recordId),
     _action: 'org.openbravo.client.application.window.FormInitializationComponent',
   });
+
+  if (parentData) {
+    Object.entries(parentData).forEach(([key, value]) => {
+      result.set(key, String(value));
+    });
+  }
+
+  return result;
+};
 
 const fetchFormInitialization = async (
   params: URLSearchParams,
@@ -104,13 +116,14 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   const searchParams = useSearchParams();
   const parentId = useMemo(() => searchParams.get('parentId'), [searchParams]);
   const { error, formInitialization, loading } = state;
-  const params = useMemo(
-    () => (tab ? buildFormInitializationParams({ tab, mode, recordId, parentId }) : null),
-    [tab, mode, recordId, parentId],
-  );
+  const parentDataByInput = useFormParent(ParentFieldName.INPUT_NAME);
   const parentData = useFormParent(ParentFieldName.HQL_NAME);
+  const params = useMemo(
+    () => buildFormInitializationParams({ tab, mode, recordId, parentId, parentData: parentDataByInput }),
+    [mode, parentDataByInput, parentId, recordId, tab],
+  );
   const refetch = useCallback(async () => {
-    if (!params) return;
+    if (!params || (parentId && !parentData)) return;
 
     dispatch({ type: 'FETCH_START' });
 
@@ -147,7 +160,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       logger.error(err);
       dispatch({ type: 'FETCH_ERROR', payload: err instanceof Error ? err : new Error('Unknown error') });
     }
-  }, [params, parentData, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.windowId]);
+  }, [params, parentData, parentId, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.windowId]);
 
   useEffect(() => {
     if (!loaded) {

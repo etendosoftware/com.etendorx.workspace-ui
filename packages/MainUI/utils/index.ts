@@ -9,8 +9,8 @@ import {
 
 export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const getFieldReference = (field?: Field): FieldType => {
-  switch (field?.column?.reference) {
+export const getFieldReference = (reference?: string): FieldType => {
+  switch (reference) {
     case '19':
     case '95E2A8B50A254B2AAE6774B8C2F28120':
     case '18':
@@ -37,18 +37,40 @@ export const getFieldReference = (field?: Field): FieldType => {
   }
 };
 
-export const sanitizeValue = (value: unknown) => {
-  const stringValue = String(value);
+const valueMap = {
+  true: 'Y',
+  false: 'N',
+  null: null,
+} as const;
 
-  const valueMap = {
-    true: 'Y',
-    false: 'N',
-    null: null,
-  } as const;
+export const sanitizeValue = (field?: Field, value?: unknown) => {
+  if (typeof value == 'undefined' || value == '') {
+    return null;
+  }
+
+  const reference = getFieldReference(field?.column?.reference);
+  const stringValue = String(value);
 
   const safeValue = Object.prototype.hasOwnProperty.call(valueMap, stringValue)
     ? valueMap[stringValue as keyof typeof valueMap]
     : value;
+
+  if (reference == FieldType.DATE && value) {
+    const date = new Date(Date.parse(String(value)));
+    const year = String(date.getUTCFullYear());
+    let month = String(date.getUTCMonth() + 1);
+    let day = String(date.getUTCDate());
+
+    if (month.length == 1) {
+      month = '0' + month;
+    }
+
+    if (day.length == 1) {
+      day = '0' + day;
+    }
+
+    return `${day}-${month}-${year}`;
+  }
 
   return safeValue;
 };
@@ -56,8 +78,9 @@ export const sanitizeValue = (value: unknown) => {
 export const buildPayloadByInputName = (values: Record<string, unknown>, fields?: Record<string, Field>) => {
   return Object.entries(values).reduce(
     (acc, [key, value]) => {
-      const newKey = fields?.[key]?.inputName ?? key;
-      acc[newKey] = sanitizeValue(value);
+      const field = fields?.[key];
+      const newKey = field?.inputName ?? key;
+      acc[newKey] = sanitizeValue(field, value);
 
       return acc;
     },

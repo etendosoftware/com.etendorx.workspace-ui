@@ -2,12 +2,12 @@ import { useCallback } from 'react';
 import { Field, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { FieldValues } from 'react-hook-form';
-import { useMetadataContext } from './useMetadataContext';
 import { logger } from '@/utils/logger';
+import { useParentTabContext } from '@/contexts/tab';
 
 export interface UseCalloutProps {
   field: Field;
-  parentId?: string;
+  parentId?: string | null;
   rowId?: string;
 }
 
@@ -15,7 +15,7 @@ const ACTION = 'org.openbravo.client.application.window.FormInitializationCompon
 const MODE = 'CHANGE';
 
 export const useCallout = ({ field, parentId = 'null', rowId = 'null' }: UseCalloutProps) => {
-  const { tab } = useMetadataContext();
+  const { tab } = useParentTabContext();
   const tabId = tab?.id ?? '';
 
   return useCallback(
@@ -26,7 +26,7 @@ export const useCallout = ({ field, parentId = 'null', rowId = 'null' }: UseCall
         TAB_ID: tabId,
         CHANGED_COLUMN: field.inputName,
         ROW_ID: rowId,
-        PARENT_ID: parentId,
+        PARENT_ID: parentId ? String(parentId) : 'null',
       });
 
       try {
@@ -41,6 +41,6 @@ export const useCallout = ({ field, parentId = 'null', rowId = 'null' }: UseCall
         logger.error(`Error executing callout for field "${field.inputName}":`, error);
       }
     },
-    [tabId, field.inputName, parentId, rowId],
+    [tabId, field.inputName, rowId, parentId],
   );
 };
