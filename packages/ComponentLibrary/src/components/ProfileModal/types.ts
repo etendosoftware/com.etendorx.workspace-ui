@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Section } from './ToggleButton/types';
 import { Option } from '../Input/Select/types';
 import { Language } from '../../locales/types';
+import { LoginResponse } from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface Translations {
   saveAsDefault: string;
@@ -86,6 +87,7 @@ export interface LanguageOption {
   name: string;
 }
 export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps, ActionProps {
+  token: string;
   currentRole: BaseRole | null;
   currentWarehouse: BaseWarehouse | null;
   roles: BaseRole[];
@@ -95,6 +97,7 @@ export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps
   language: string;
   languages: LanguageOption[];
   languagesFlags: string;
+  changeProfile: (params: { role?: string; warehouse?: string }, token: string) => Promise<LoginResponse>;
 }
 
 export interface UserProfileProps {

@@ -5,9 +5,8 @@ import { logger } from '../utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { login as doLogin } from '@workspaceui/etendohookbinder/src/api/authentication';
-import { changeRole as doChangeRole } from '@workspaceui/etendohookbinder/src/api/role';
+import { changeProfile as doChangeProfile } from '@workspaceui/etendohookbinder/src/api/changeProfile';
 import { getSession } from '@workspaceui/etendohookbinder/src/api/getSession';
-import { changeWarehouse as doChangeWarehouse } from '@workspaceui/etendohookbinder/src/api/warehouse';
 import { HTTP_CODES } from '@workspaceui/etendohookbinder/src/api/constants';
 import { DefaultConfiguration, IUserContext, Language, LanguageOption } from './types';
 import {
@@ -139,51 +138,30 @@ export default function UserProvider(props: React.PropsWithChildren) {
     localStorage.removeItem('currentLanguage');
   }, [INITIAL_PROFILE]);
 
-  const changeRole = useCallback(
-    async (roleId: string) => {
+  const changeProfile = useCallback(
+    async (params: { role?: string; warehouse?: string }) => {
       if (!token) {
-        throw new Error('No authentication token available');
+        throw new Error('Authentication token is not available');
       }
 
       try {
-        const response = await doChangeRole(roleId, token);
+        const response = await doChangeProfile(params, token);
+
         localStorage.setItem('token', response.token);
         setToken(response.token);
 
         const sessionResponse = await getSession(response.token);
         updateSessionInfo(sessionResponse);
 
-        Metadata.clearMenuCache();
-        await Metadata.refreshMenuOnLogin();
-
-        navigate('/');
-      } catch (e) {
-        logger.warn('Change role error:', e);
-        throw e;
+        if (params.role) {
+          navigate('/');
+        }
+      } catch (error) {
+        logger.warn('Error updating profile:', error);
+        throw error;
       }
     },
-    [token, updateSessionInfo, navigate],
-  );
-
-  const changeWarehouse = useCallback(
-    async (warehouseId: string) => {
-      if (!token) {
-        throw new Error('No authentication token available');
-      }
-
-      try {
-        const response = await doChangeWarehouse(warehouseId, token);
-        localStorage.setItem('token', response.token);
-        setToken(response.token);
-
-        const sessionResponse = await getSession(response.token);
-        updateSessionInfo(sessionResponse);
-      } catch (e) {
-        logger.warn('Change warehouse error:', e);
-        throw e;
-      }
-    },
-    [token, updateSessionInfo],
+    [token, updateSessionInfo, navigate]
   );
 
   const login = useCallback(
@@ -215,11 +193,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const value = useMemo<IUserContext>(
     () => ({
       login,
-      changeRole,
-      changeWarehouse,
       roles,
       currentRole,
       profile,
+      changeProfile,
       currentWarehouse,
       token,
       clearUserData,
@@ -232,8 +209,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }),
     [
       login,
-      changeRole,
-      changeWarehouse,
+      changeProfile,
       roles,
       profile,
       currentRole,

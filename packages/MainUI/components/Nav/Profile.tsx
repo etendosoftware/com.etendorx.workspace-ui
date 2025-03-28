@@ -9,16 +9,16 @@ import { DefaultConfiguration, Language } from '../../contexts/types';
 
 const ProfileWrapper = (props: ProfileWrapperProps) => {
   const {
-    changeRole,
-    changeWarehouse,
     setDefaultConfiguration,
     currentRole,
     profile,
     currentWarehouse,
+    changeProfile,
     roles,
     token,
     languages,
   } = useContext(UserContext);
+  logger.debug(currentWarehouse)
 
   const [selectedRole, setSelectedRole] = useState<Option | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(null);
@@ -72,6 +72,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
   return (
     <ProfileModal
       {...props}
+      token={token}
       currentRole={currentRole}
       currentWarehouse={currentWarehouse}
       roles={roles}
@@ -84,8 +85,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
       language={language}
       languagesFlags={flagString}
       onSaveAsDefaultChange={handleSaveAsDefaultChange}
-      onChangeRole={changeRole}
-      onChangeWarehouse={changeWarehouse}
+      changeProfile={changeProfile}
       onSetDefaultConfiguration={handleSetDefaultConfiguration}
       logger={logger}
       onSignOff={handleSignOff}

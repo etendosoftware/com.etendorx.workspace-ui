@@ -28,13 +28,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   currentRole,
   currentWarehouse,
   roles,
-  onChangeRole,
-  onChangeWarehouse,
+  changeProfile,
   onSetDefaultConfiguration,
   logger,
   translations,
   onSignOff,
   language,
+  token,
   languages,
   languagesFlags,
   onLanguageChange,
@@ -47,10 +47,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     const currentLang = languages.find(lang => lang.language === language);
     return currentLang
       ? {
-          title: currentLang.name,
-          value: currentLang.language,
-          id: currentLang.id,
-        }
+        title: currentLang.name,
+        value: currentLang.language,
+        id: currentLang.id,
+      }
       : null;
   });
   const [saveAsDefault, setSaveAsDefault] = useState(false);
@@ -114,11 +114,16 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const handleSave = useCallback(async () => {
     if (currentSection === 'profile') {
       try {
+        const params: { role?: string; warehouse?: string } = {};
+
         if (selectedRole && selectedRole.value !== currentRole?.id) {
-          await onChangeRole(selectedRole.value);
+          params.role = selectedRole.value;
         }
         if (selectedWarehouse && selectedWarehouse.value !== currentWarehouse?.id) {
-          await onChangeWarehouse(selectedWarehouse.value);
+          params.warehouse = selectedWarehouse.value;
+        }
+        if (Object.keys(params).length > 0) {
+          await changeProfile(params, token);
         }
 
         if (selectedLanguage && selectedLanguage.value !== language) {
@@ -150,8 +155,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     language,
     saveAsDefault,
     handleClose,
-    onChangeRole,
-    onChangeWarehouse,
+    changeProfile,
     onLanguageChange,
     onSetDefaultConfiguration,
     logger,
