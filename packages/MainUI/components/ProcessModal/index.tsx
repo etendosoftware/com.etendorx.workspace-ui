@@ -1,79 +1,83 @@
+import { useEffect, useState, useCallback, useMemo, memo } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from '@mui/material';
 import { useStyle } from './styles';
 import { ProcessButtonType, type ProcessModalProps } from './types';
-import { useEffect, useState } from 'react';
 import ProcessIframeModal from './Iframe';
 
-const ProcessModal: React.FC<ProcessModalProps> = ({
-  open,
-  onClose,
-  button,
-  onConfirm,
-  isExecuting,
-  processResponse,
-  confirmationMessage,
-  cancelButtonText,
-  executeButtonText,
-}) => {
-  const { styles } = useStyle();
-  const responseMessage = processResponse?.responseActions?.[0]?.showMsgInProcessView;
-  const isError = responseMessage?.msgType === 'error';
-  const type =
-    ProcessButtonType.PROCESS_DEFINITION in button
-      ? ProcessButtonType.PROCESS_DEFINITION
-      : ProcessButtonType.PROCESS_ACTION;
+const ProcessModal = memo(
+  ({
+    open,
+    onClose,
+    button,
+    onConfirm,
+    isExecuting,
+    processResponse,
+    confirmationMessage,
+    cancelButtonText,
+    executeButtonText,
+  }: ProcessModalProps) => {
+    const { styles } = useStyle();
+    const [showIframeModal, setShowIframeModal] = useState(false);
+    const [iframeUrl, setIframeUrl] = useState('');
 
-  const [showIframeModal, setShowIframeModal] = useState(false);
-  const [iframeUrl, setIframeUrl] = useState('');
+    const type = useMemo(
+      () =>
+        ProcessButtonType.PROCESS_DEFINITION in button
+          ? ProcessButtonType.PROCESS_DEFINITION
+          : ProcessButtonType.PROCESS_ACTION,
+      [button],
+    );
 
-  useEffect(() => {
-    if (open) {
-      console.debug('ProcessModal opened');
-      console.debug('Button process info:', button.processInfo);
+    const responseMessage = useMemo(
+      () => processResponse?.responseActions?.[0]?.showMsgInProcessView,
+      [processResponse?.responseActions],
+    );
 
-      if (ProcessButtonType.PROCESS_DEFINITION in button) {
-        console.debug('Process definition:', button.processDefintion);
-      } else if (ProcessButtonType.PROCESS_ACTION in button) {
-        console.debug('Process action:', button.processAction);
-      } else {
-        console.debug('Unsupported process type:', button);
+    const isError = useMemo(() => responseMessage?.msgType === 'error', [responseMessage?.msgType]);
+
+    useEffect(() => {
+      if (processResponse?.showInIframe && processResponse?.iframeUrl) {
+        setIframeUrl(processResponse.iframeUrl);
+        setShowIframeModal(true);
       }
-    }
-  }, [button, open]);
+    }, [processResponse]);
 
-  useEffect(() => {
-    if (processResponse?.showInIframe && processResponse?.iframeUrl) {
-      setIframeUrl(processResponse.iframeUrl);
-      setShowIframeModal(true);
-    }
-  }, [processResponse]);
+    const handleCloseIframeModal = useCallback(() => {
+      setShowIframeModal(false);
+      setIframeUrl('');
+    }, []);
 
-  const handleCloseIframeModal = () => {
-    setShowIframeModal(false);
-    setIframeUrl('');
-  };
+    const handleCombinedClose = useCallback(() => {
+      handleCloseIframeModal();
+      onClose();
+    }, [handleCloseIframeModal, onClose]);
 
-  return (
-    <>
-      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth sx={styles.dialog}>
-        <DialogTitle sx={styles.dialogTitle}>
-          {button.name} ({type})
-        </DialogTitle>
-        <DialogContent sx={styles.dialogContent}>
-          <Typography sx={styles.message}>{confirmationMessage}</Typography>
+    const responseElement = useMemo(() => {
+      if (!processResponse) return null;
 
-          {processResponse && (
-            <Box sx={styles.messageBox}>
-              {responseMessage && (
-                <Typography sx={isError ? styles.errorMessage : styles.successMessage}>
-                  {`${responseMessage.msgTitle}: ${responseMessage.msgText}`}
-                </Typography>
-              )}
-              <pre style={styles.responseBox as React.CSSProperties}>{JSON.stringify(processResponse, null, 2)}</pre>
-            </Box>
+      return (
+        <Box sx={styles.messageBox}>
+          {responseMessage && (
+            <Typography sx={isError ? styles.errorMessage : styles.successMessage}>
+              {`${responseMessage.msgTitle}: ${responseMessage.msgText}`}
+            </Typography>
           )}
-        </DialogContent>
-        <DialogActions sx={styles.dialogActions}>
+          <pre style={styles.responseBox as React.CSSProperties}>{JSON.stringify(processResponse, null, 2)}</pre>
+        </Box>
+      );
+    }, [
+      processResponse,
+      responseMessage,
+      isError,
+      styles.messageBox,
+      styles.errorMessage,
+      styles.successMessage,
+      styles.responseBox,
+    ]);
+
+    const actionButtons = useMemo(
+      () => (
+        <>
           <Button onClick={onClose} sx={styles.cancelButton}>
             {cancelButtonText}
           </Button>
@@ -82,20 +86,46 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
               {executeButtonText}
             </Button>
           )}
-        </DialogActions>
-      </Dialog>
+        </>
+      ),
+      [
+        cancelButtonText,
+        executeButtonText,
+        isExecuting,
+        onClose,
+        onConfirm,
+        processResponse,
+        styles.cancelButton,
+        styles.executeButton,
+      ],
+    );
 
-      <ProcessIframeModal
-        isOpen={showIframeModal}
-        onClose={() => {
-          handleCloseIframeModal();
-          onClose();
-        }}
-        url={iframeUrl}
-        title={button?.name || 'Proceso de Etendo'}
-      />
-    </>
-  );
-};
+    return (
+      <>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth sx={styles.dialog} closeAfterTransition>
+          <DialogTitle sx={styles.dialogTitle}>
+            {button.name} ({type})
+          </DialogTitle>
+          <DialogContent sx={styles.dialogContent}>
+            <Typography sx={styles.message}>{confirmationMessage}</Typography>
+            {responseElement}
+          </DialogContent>
+          <DialogActions sx={styles.dialogActions}>{actionButtons}</DialogActions>
+        </Dialog>
+
+        {showIframeModal && (
+          <ProcessIframeModal
+            isOpen={showIframeModal}
+            onClose={handleCombinedClose}
+            url={iframeUrl}
+            title={button?.name || 'Proceso de Etendo'}
+          />
+        )}
+      </>
+    );
+  },
+);
+
+ProcessModal.displayName = 'ProcessModal';
 
 export default ProcessModal;
