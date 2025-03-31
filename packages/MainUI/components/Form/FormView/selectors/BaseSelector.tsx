@@ -4,7 +4,7 @@ import { Field, FieldType, FormInitializationResponse, FormMode } from '@workspa
 import { useCallout } from '@/hooks/useCallout';
 import { logger } from '@/utils/logger';
 import { GenericSelector } from './GenericSelector';
-import { buildPayloadByInputName, getFieldReference, parseDynamicExpression } from '@/utils';
+import { buildPayloadByInputName, getFieldReference, parseDynamicExpression } from '@/utils/form';
 import Label from '../Label';
 import { useUserContext } from '@/hooks/useUserContext';
 import { useParams, useSearchParams } from 'next/navigation';

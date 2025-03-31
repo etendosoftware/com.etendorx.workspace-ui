@@ -1,5 +1,5 @@
 import { API_METADATA_URL } from '@workspaceui/etendohookbinder/src/api/constants';
-import { delay } from '@/utils';
+import { delay } from '@/utils/form';
 import { logger } from '@/utils/logger';
 
 export async function performHealthCheck(

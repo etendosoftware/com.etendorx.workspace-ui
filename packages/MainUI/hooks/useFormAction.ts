@@ -3,7 +3,7 @@ import { EntityData, FormMode, Tab, WindowMetadata } from '@workspaceui/etendoho
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useUserContext } from './useUserContext';
 import { UseFormHandleSubmit } from 'react-hook-form';
-import { buildFormPayload, buildQueryString } from '@/utils';
+import { buildFormPayload, buildQueryString } from '@/utils/form';
 
 export interface UseFormActionParams {
   windowMetadata: WindowMetadata;

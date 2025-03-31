@@ -1,4 +1,4 @@
-import { formatNumber, getFieldReference } from '@/utils';
+import { formatNumber, getFieldReference } from '@/utils/form';
 import { Field, FieldType } from '@workspaceui/etendohookbinder/src/api/types';
 import { useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';

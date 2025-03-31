@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useFormContext } from 'react-hook-form';
 import { isEntityReference } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { Field } from '@workspaceui/etendohookbinder/src/api/types';
-import { getFieldReference } from '@/utils';
+import { getFieldReference } from '@/utils/form';
 
 const Content = ({ field, link }: { field: Field; link?: boolean }) => (
   <label

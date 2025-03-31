@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Field, FieldType, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useTranslation } from './useTranslation';
-import { getFieldReference } from '@/utils';
+import { getFieldReference } from '@/utils/form';
 
 export type FormFields = {
   statusBarFields: Record<string, Field>;
