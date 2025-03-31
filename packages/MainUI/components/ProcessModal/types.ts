@@ -62,6 +62,8 @@ export interface ProcessResponse {
     };
   }>;
   refreshParent?: boolean;
+  showInIframe?: boolean;
+  iframeUrl?: string;
 }
 
 export interface ProcessModalProps {
