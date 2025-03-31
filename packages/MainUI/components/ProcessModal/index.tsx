@@ -1,7 +1,8 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from '@mui/material';
 import { useStyle } from './styles';
 import { ProcessButtonType, type ProcessModalProps } from './types';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import ProcessIframeModal from './Iframe';
 
 const ProcessModal: React.FC<ProcessModalProps> = ({
   open,
@@ -17,7 +18,13 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
   const { styles } = useStyle();
   const responseMessage = processResponse?.responseActions?.[0]?.showMsgInProcessView;
   const isError = responseMessage?.msgType === 'error';
-  const type = ProcessButtonType.PROCESS_DEFINITION in button ? ProcessButtonType.PROCESS_DEFINITION : ProcessButtonType.PROCESS_ACTION;
+  const type =
+    ProcessButtonType.PROCESS_DEFINITION in button
+      ? ProcessButtonType.PROCESS_DEFINITION
+      : ProcessButtonType.PROCESS_ACTION;
+
+  const [showIframeModal, setShowIframeModal] = useState(false);
+  const [iframeUrl, setIframeUrl] = useState('');
 
   useEffect(() => {
     if (open) {
@@ -34,34 +41,60 @@ const ProcessModal: React.FC<ProcessModalProps> = ({
     }
   }, [button, open]);
 
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth sx={styles.dialog}>
-      <DialogTitle sx={styles.dialogTitle}>{button.name} ({type})</DialogTitle>
-      <DialogContent sx={styles.dialogContent}>
-        <Typography sx={styles.message}>{confirmationMessage}</Typography>
+  useEffect(() => {
+    if (processResponse?.showInIframe && processResponse?.iframeUrl) {
+      setIframeUrl(processResponse.iframeUrl);
+      setShowIframeModal(true);
+    }
+  }, [processResponse]);
 
-        {processResponse && (
-          <Box sx={styles.messageBox}>
-            {responseMessage && (
-              <Typography sx={isError ? styles.errorMessage : styles.successMessage}>
-                {`${responseMessage.msgTitle}: ${responseMessage.msgText}`}
-              </Typography>
-            )}
-            <pre style={styles.responseBox as React.CSSProperties}>{JSON.stringify(processResponse, null, 2)}</pre>
-          </Box>
-        )}
-      </DialogContent>
-      <DialogActions sx={styles.dialogActions}>
-        <Button onClick={onClose} sx={styles.cancelButton}>
-          {cancelButtonText}
-        </Button>
-        {!processResponse && (
-          <Button onClick={onConfirm} disabled={isExecuting} sx={styles.executeButton}>
-            {executeButtonText}
+  const handleCloseIframeModal = () => {
+    setShowIframeModal(false);
+    setIframeUrl('');
+  };
+
+  return (
+    <>
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth sx={styles.dialog}>
+        <DialogTitle sx={styles.dialogTitle}>
+          {button.name} ({type})
+        </DialogTitle>
+        <DialogContent sx={styles.dialogContent}>
+          <Typography sx={styles.message}>{confirmationMessage}</Typography>
+
+          {processResponse && (
+            <Box sx={styles.messageBox}>
+              {responseMessage && (
+                <Typography sx={isError ? styles.errorMessage : styles.successMessage}>
+                  {`${responseMessage.msgTitle}: ${responseMessage.msgText}`}
+                </Typography>
+              )}
+              <pre style={styles.responseBox as React.CSSProperties}>{JSON.stringify(processResponse, null, 2)}</pre>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={styles.dialogActions}>
+          <Button onClick={onClose} sx={styles.cancelButton}>
+            {cancelButtonText}
           </Button>
-        )}
-      </DialogActions>
-    </Dialog>
+          {!processResponse && (
+            <Button onClick={onConfirm} disabled={isExecuting} sx={styles.executeButton}>
+              {executeButtonText}
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      <ProcessIframeModal
+        isOpen={showIframeModal}
+        onClose={() => {
+          handleCloseIframeModal();
+          onClose();
+        }}
+        url={iframeUrl}
+        title={button?.name || 'Proceso de Etendo'}
+      />
+    </>
   );
 };
 
