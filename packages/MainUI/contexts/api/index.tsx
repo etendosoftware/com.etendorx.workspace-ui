@@ -1,63 +1,55 @@
 'use client';
 
-import { createContext, useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { createContext, useCallback, useEffect, useReducer, useRef } from 'react';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
 import { useTranslation } from '@/hooks/useTranslation';
 import { HEALTH_CHECK_MAX_ATTEMPTS, HEALTH_CHECK_RETRY_DELAY_MS } from '@/constants/config';
 import { initialState, stateReducer } from './state';
 import { performHealthCheck } from '../../utils/health-check';
-import LoadingScreen from '@/screens/Loading';
-import { getApiUrl } from '@/app/actions';
-import { logger } from '@/utils/logger';
-import { FALLBACK_URL } from '@/utils/constants';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
+import Loading from '@/components/loading';
+import { useLanguage } from '@/hooks/useLanguage';
 
 export const ApiContext = createContext<string | null>(null);
 
-export default function ApiProvider({ children }: React.PropsWithChildren) {
+export default function ApiProvider({ children, url }: React.PropsWithChildren<{ url: string }>) {
+  const { language } = useLanguage();
   const [state, dispatch] = useReducer(stateReducer, initialState);
-  const controllerRef = useRef(new AbortController());
+  const controllerRef = useRef<AbortController>(new AbortController());
   const { t } = useTranslation();
-  const [url, setUrl] = useState<string | null>(null);
 
   const healthCheck = useCallback(() => {
-    if (url) {
+    const signal = controllerRef.current.signal;
+
+    if (url && !signal.aborted) {
       dispatch({ type: 'RESET' });
       performHealthCheck(
         url,
-        controllerRef.current.signal,
+        signal,
         HEALTH_CHECK_MAX_ATTEMPTS,
         HEALTH_CHECK_RETRY_DELAY_MS,
-        () => dispatch({ type: 'SET_CONNECTED' }),
-        () => dispatch({ type: 'SET_ERROR' }),
+        () => {
+          if (signal.aborted) return;
+          dispatch({ type: 'SET_CONNECTED' });
+        },
+        () => {
+          if (signal.aborted) return;
+          dispatch({ type: 'SET_ERROR' });
+        },
       );
     }
   }, [url]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    controllerRef.current = controller;
-
+    const controller = controllerRef.current;
     healthCheck();
 
     return () => {
       controller.abort();
+      controllerRef.current = new AbortController();
     };
   }, [healthCheck]);
-
-  useEffect(() => {
-    getApiUrl()
-      .then(url => {
-        logger.info('Fetched API URL', url);
-        setUrl(url);
-      })
-      .catch(err => {
-        logger.error('Error getting API URL', err);
-        logger.error('Falling back to default URL', FALLBACK_URL);
-        setUrl(FALLBACK_URL);
-      });
-  }, []);
 
   useEffect(() => {
     if (url) {
@@ -83,5 +75,5 @@ export default function ApiProvider({ children }: React.PropsWithChildren) {
     );
   }
 
-  return <LoadingScreen />;
+  return <Loading language={language} />;
 }

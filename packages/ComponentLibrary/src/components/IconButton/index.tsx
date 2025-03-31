@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, memo } from 'react';
 import { Tooltip, IconButton as MUIIconButton, Box, Typography, useTheme } from '@mui/material';
 import { useStyle } from './styles';
 import { IIconComponentProps } from './types';
 
-const IconButton: React.FC<IIconComponentProps> = ({
+const IconButtonCmp: React.FC<IIconComponentProps> = ({
   fill,
   hoverFill,
   width = 24,
@@ -89,4 +89,6 @@ const IconButton: React.FC<IIconComponentProps> = ({
   );
 };
 
+const IconButton = memo(IconButtonCmp);
+export { IconButton };
 export default IconButton;

@@ -1,16 +1,14 @@
-'use client';
-
 import { RecordProvider } from '@/contexts/record';
-import SanityChecker from '../contexts/api';
 import LanguageProvider from '../contexts/languageProvider';
 import MetadataProvider from '../contexts/metadata';
 import UserProvider from '../contexts/user';
 import { DatasourceProvider } from '@/contexts/datasourceContext';
+import ApiProviderWrapper from '@/contexts/api/wrapper';
 
 export default function App({ children }: React.PropsWithChildren) {
   return (
     <LanguageProvider>
-      <SanityChecker>
+      <ApiProviderWrapper>
         <RecordProvider>
           <UserProvider>
             <DatasourceProvider>
@@ -18,7 +16,7 @@ export default function App({ children }: React.PropsWithChildren) {
             </DatasourceProvider>
           </UserProvider>
         </RecordProvider>
-      </SanityChecker>
+      </ApiProviderWrapper>
     </LanguageProvider>
   );
 }

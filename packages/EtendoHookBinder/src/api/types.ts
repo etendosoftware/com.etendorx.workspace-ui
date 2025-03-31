@@ -111,6 +111,8 @@ export interface Field {
   isDisplayed: boolean;
   sequenceNumber: number;
   isUpdatable: boolean;
+  description: string;
+  helpComment: string;
 }
 
 export interface Option<T extends string = string> {
@@ -471,4 +473,25 @@ export interface FormInitializationResponse {
   dynamicCols: string[];
   attachmentExists: boolean;
   _readOnly?: boolean;
+}
+
+export type ProcessBindings = {
+  onLoad: (...args: never[]) => never;
+  onProcess: (...args: never[]) => never;
+  metadata: Record<string, unknown>;
+} | null;
+
+export interface ProcessInfo {
+  loadFunction: string;
+  searchKey: string;
+  clientSideValidation: string;
+  _entityName: string;
+  id: string;
+  name: string;
+  javaClassName: string;
+  parameters: Array<{
+    defaultValue: string;
+    id: string;
+    name: string;
+  }>;
 }

@@ -11,7 +11,7 @@ const INPUT_PROPS = {
 };
 
 const QuantitySelector: React.FC<QuantityProps> = memo(
-  ({ value: initialValue, min, max, onChange, readOnly, maxLength = 100, name }) => {
+  ({ value: initialValue, min, max, onChange, readOnly, maxLength = 100, name, field }) => {
     const [value, setValue] = useState(initialValue);
     const [error, setError] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
@@ -71,11 +71,18 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
         disabled={readOnly}
         InputProps={INPUT_PROPS}
         name={name}
+        role="spinbutton"
+        aria-label={field.name}
+        aria-readonly={readOnly}
+        aria-required={field.isMandatory}
+        aria-disabled={readOnly}
+        {...(typeof minValue != 'undefined' ? { 'aria-valuemin': minValue } : {})}
+        {...(typeof maxValue != 'undefined' ? { 'aria-valuemax': maxValue } : {})}
       />
     );
   },
 );
 
-QuantitySelector.displayName = "QualitySelector";
+QuantitySelector.displayName = 'QualitySelector';
 
 export default QuantitySelector;

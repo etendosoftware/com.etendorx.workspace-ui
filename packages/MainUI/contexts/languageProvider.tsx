@@ -5,8 +5,7 @@ import LanguageContext from './languageContext';
 import { Language } from './types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { getLanguageFlag } from '../utils/languageFlags';
-
-export const DEFAULT_LANGUAGE: Language = 'en_US';
+import { DEFAULT_LANGUAGE } from '@workspaceui/componentlibrary/src/locales';
 
 export default function LanguageProvider({ children }: React.PropsWithChildren) {
   const [language, setLanguageValue] = useState<Language>(() => {
@@ -40,10 +39,6 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
     }),
     [language, setLanguage, getFlag],
   );
-
-  if (!language) {
-    return null;
-  }
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

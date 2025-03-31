@@ -22,16 +22,19 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
-    }
+    },
+    "typeRoots": ["./node_modules/@types", "./types"]
   },
   "include": [
+    "./types/svgr.d.ts",
+    "./types/theme.d.ts",
     "next-env.d.ts",
     "custom.d.ts",
     "./**/*.ts",
     "./**/*.tsx",
     ".next/types/**/*.ts",
-    "types/svgr.d.ts",
-    "types/theme.d.ts"
+    "./types/svgr.d.ts",
+    "./types/theme.d.ts"
   ],
   "exclude": ["node_modules"]
 }

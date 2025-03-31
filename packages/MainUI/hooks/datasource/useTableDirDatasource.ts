@@ -37,7 +37,6 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         if (reset) {
           setCurrentPage(0);
           setHasMore(true);
-          setRecords([]);
         }
 
         const startRow = reset ? 0 : currentPage * pageSize;
@@ -97,6 +96,10 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           throw new Error(statusText);
         }
       } catch (err) {
+        if (reset) {
+          setRecords([]);
+        }
+
         setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
         setLoading(false);
@@ -111,7 +114,12 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
     }
   }, [fetch, loading, hasMore, value]);
 
-  const refetch = useCallback((reset = true) => fetch(value, reset), [fetch, value]);
+  const refetch = useCallback(
+    (reset = true) => {
+      fetch(value, reset);
+    },
+    [fetch, value],
+  );
 
   return {
     records,

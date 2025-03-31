@@ -73,6 +73,7 @@ export const NumericSelector = ({ field, ...props }: { field: Field } & React.Co
   return (
     <TextInput
       {...props}
+      field={field}
       name={registerProps.name}
       onBlur={handleBlur}
       onChange={handleChange}

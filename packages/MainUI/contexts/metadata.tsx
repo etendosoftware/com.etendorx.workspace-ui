@@ -2,11 +2,7 @@
 
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import {
-  getFieldsByColumnName,
-  getFieldsByInputName,
-  groupTabsByLevel,
-} from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { groupTabsByLevel } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useParams } from 'next/navigation';
 import { WindowParams } from '../app/types';
@@ -29,8 +25,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const [activeTabLevels, setActiveTabLevels] = useState<number[]>([0]);
   const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [tabId, windowData?.tabs]);
   const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
-  const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
-  const fieldsByInputName = useMemo(() => getFieldsByInputName(tab), [tab]);
   const { removeRecordFromDatasource } = useDatasourceContext();
 
   const closeTab = useCallback(
@@ -350,8 +344,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       activeTabLevels,
       setActiveTabLevels,
       closeTab,
-      fieldsByColumnName,
-      fieldsByInputName,
       refetch: loadWindowData,
       removeRecord,
     }),
@@ -360,8 +352,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       clearSelections,
       closeTab,
       error,
-      fieldsByColumnName,
-      fieldsByInputName,
       getSelectedCount,
       getSelectedIds,
       groupedTabs,

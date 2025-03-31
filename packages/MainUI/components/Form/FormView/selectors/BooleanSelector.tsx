@@ -14,5 +14,5 @@ export const BooleanSelector = ({ field, isReadOnly }: { field: Field; isReadOnl
     [field.hqlName, setValue],
   );
 
-  return <Switch {...register(field.hqlName)} checked={value} onCheckedChange={handleChange} disabled={isReadOnly} />;
+  return <Switch {...register(field.hqlName)} field={field} checked={value} onCheckedChange={handleChange} disabled={isReadOnly} />;
 };

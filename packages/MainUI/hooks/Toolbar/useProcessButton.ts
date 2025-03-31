@@ -1,8 +1,9 @@
+import { ProcessButton } from '@/components/ProcessModal/types';
 import { ProcessResponse } from '../../components/Toolbar/types';
 import { ExecuteProcessParams } from './types';
 import { BaseFieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 import { FieldType } from '@workspaceui/etendohookbinder/src/api/types';
-import { ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
+import { logger } from '@/utils/logger';
 
 export const useProcessButton = (
   executeProcess: (params: ExecuteProcessParams) => Promise<ProcessResponse>,
@@ -43,13 +44,19 @@ export const useProcessButton = (
 
       return result;
     } catch (error) {
+      logger.error('Error executing process', error);
+
+      const message = error instanceof Error ? error.message : 'Unknown error occurred';
+
       return {
+        message,
+        success: false,
         responseActions: [
           {
             showMsgInProcessView: {
               msgType: 'error',
               msgTitle: 'Error',
-              msgText: error instanceof Error ? error.message : 'Unknown error occurred',
+              msgText: message,
             },
           },
         ],

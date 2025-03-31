@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { SelectProps } from './types';
 import checkIconUrl from '../../../../../../ComponentLibrary/src/assets/icons/check-circle-filled.svg?url';
@@ -6,15 +6,7 @@ import closeIconUrl from '../../../../../../ComponentLibrary/src/assets/icons/x.
 import ChevronDown from '../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
 import Image from 'next/image';
 
-export default function Select({
-  name,
-  options,
-  onFocus,
-  isReadOnly,
-  onLoadMore,
-  loading = false,
-  hasMore = true,
-}: SelectProps) {
+function SelectCmp({ name, options, onFocus, isReadOnly, onLoadMore, loading = false, hasMore = true, field }: SelectProps) {
   const { register, setValue, watch } = useFormContext();
   const selectedValue = watch(name);
   const [selectedLabel, setSelectedLabel] = useState('');
@@ -26,7 +18,6 @@ export default function Select({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef<HTMLLIElement>(null);
-  const hasLoadedRef = useRef<boolean>(false);
 
   const filteredOptions = useMemo(
     () => options.filter(option => option.label.toLowerCase().includes(searchTerm.toLowerCase())),
@@ -43,36 +34,39 @@ export default function Select({
     [name, setValue],
   );
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlightedIndex(prev => (prev + 1) % filteredOptions.length);
-    }
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setHighlightedIndex(prev => (prev + 1) % filteredOptions.length);
+      }
 
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightedIndex(prev => (prev <= 0 ? filteredOptions.length - 1 : prev - 1));
-    }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setHighlightedIndex(prev => (prev <= 0 ? filteredOptions.length - 1 : prev - 1));
+      }
 
-    if (e.key === 'Enter' && highlightedIndex >= 0) {
-      e.preventDefault();
-      const option = filteredOptions[highlightedIndex];
-      if (option) handleSelect(option.id, option.label);
-    }
+      if (e.key === 'Enter' && highlightedIndex >= 0) {
+        e.preventDefault();
+        const option = filteredOptions[highlightedIndex];
+        if (option) handleSelect(option.id, option.label);
+      }
 
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
-  };
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsOpen(false);
+        setHighlightedIndex(-1);
+      }
+    },
+    [filteredOptions, highlightedIndex, handleSelect],
+  );
 
-  const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+  const handleBlur = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       setIsOpen(false);
       setHighlightedIndex(-1);
     }
-  };
+  }, []);
 
   const handleClickOutside = useCallback((event: MouseEvent) => {
     if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
@@ -114,6 +108,25 @@ export default function Select({
     }
   }, [loading, hasMore, onLoadMore]);
 
+  const handleFocus = useCallback(() => {
+    onFocus?.();
+  }, [onFocus]);
+
+  const handleSetSearchTerm = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  }, []);
+
+  const handleOptionClick = useCallback(
+    (id: string, label: string) => {
+      handleSelect(id, label);
+    },
+    [handleSelect],
+  );
+
+  const handleOptionMouseEnter = useCallback((index: number) => {
+    setHighlightedIndex(index);
+  }, []);
+
   useEffect(() => {
     const selectedOption = options.find(option => option.id === selectedValue);
     if (!selectedOption && selectedValue) {
@@ -128,13 +141,8 @@ export default function Select({
       setSearchTerm('');
       setHighlightedIndex(0);
       setTimeout(() => searchInputRef.current?.focus(), 1);
-
-      if (!hasLoadedRef.current) {
-        onFocus?.(selectedValue);
-        hasLoadedRef.current = true;
-      }
     }
-  }, [isOpen, onFocus, selectedValue]);
+  }, [isOpen]);
 
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside);
@@ -143,11 +151,48 @@ export default function Select({
     };
   }, [handleClickOutside]);
 
+  const RenderOptions = useCallback(() => {
+    if (filteredOptions.length > 0) {
+      return filteredOptions.map(({ id, label }, index) => (
+        <li
+          key={id}
+          role="option"
+          aria-selected={selectedValue === id}
+          onClick={() => handleOptionClick(id, label)}
+          onMouseEnter={() => handleOptionMouseEnter(index)}
+          className={`px-4 py-3 text-sm cursor-pointer flex items-center justify-between
+            ${highlightedIndex === index ? 'bg-baseline-10' : ''}
+            ${selectedValue === id ? 'bg-baseline-10 font-medium' : ''}
+            hover:bg-baseline-10`}>
+          <span className={`truncate mr-2 ${selectedValue === id ? 'text-dynamic-dark' : 'text-baseline-90'}`}>
+            {label}
+          </span>
+          {selectedValue === id && (
+            <Image
+              src={checkIconUrl}
+              alt="Selected Item"
+              className="fade-in-left flex-shrink-0"
+              height={16}
+              width={16}
+            />
+          )}
+        </li>
+      ));
+    }
+    return <li className="px-4 py-3 text-sm text-baseline-60">No options found</li>;
+  }, [filteredOptions, highlightedIndex, selectedValue, handleOptionClick, handleOptionMouseEnter]);
+
   return (
     <div
       ref={wrapperRef}
       className={`relative w-full font-['Inter'] ${isReadOnly ? 'pointer-events-none' : ''}`}
       onBlur={isReadOnly ? undefined : handleBlur}
+      role="textbox"
+      aria-label={field.name}
+      aria-readonly={isReadOnly}
+      aria-required={field.isMandatory}
+      aria-disabled={isReadOnly}
+      aria-details={field.helpComment}
       tabIndex={-1}>
       <input {...register(name)} type="hidden" readOnly={isReadOnly} />
       <div
@@ -186,44 +231,16 @@ export default function Select({
             <input
               ref={searchInputRef}
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={handleSetSearchTerm}
               onKeyDown={handleKeyDown}
               placeholder="Search..."
               className="w-full p-2 text-sm border border-baseline-30 rounded focus:outline-none focus:border-dynamic-main focus:ring-1 focus:ring-dynamic-light"
               aria-label="Search options"
+              onFocus={handleFocus}
             />
           </div>
           <ul ref={listRef} role="listbox" className="max-h-60 overflow-y-auto" onScroll={handleScroll}>
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map(({ id, label }, index) => (
-                <li
-                  key={id}
-                  role="option"
-                  aria-selected={selectedValue === id}
-                  onClick={() => handleSelect(id, label)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                  className={`px-4 py-3 text-sm cursor-pointer flex items-center justify-between
-                    ${highlightedIndex === index ? 'bg-baseline-10' : ''}
-                    ${selectedValue === id ? 'bg-baseline-10 font-medium' : ''}
-                    hover:bg-baseline-10`}>
-                  <span className={`truncate mr-2 ${selectedValue === id ? 'text-dynamic-dark' : 'text-baseline-90'}`}>
-                    {label}
-                  </span>
-                  {selectedValue === id && (
-                    <Image
-                      src={checkIconUrl}
-                      alt="Selected Item"
-                      className="fade-in-left flex-shrink-0"
-                      height={16}
-                      width={16}
-                    />
-                  )}
-                </li>
-              ))
-            ) : (
-              <li className="px-4 py-3 text-sm text-baseline-60">No options found</li>
-            )}
-
+            <RenderOptions />
             {loading && hasMore && (
               <li ref={loadingRef} className="px-4 py-3 text-sm text-baseline-60 text-center">
                 Loading more options...
@@ -236,4 +253,6 @@ export default function Select({
   );
 }
 
+const Select = memo(SelectCmp);
+export default Select;
 export { Select };

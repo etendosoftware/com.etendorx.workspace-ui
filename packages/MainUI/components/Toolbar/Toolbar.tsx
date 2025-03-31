@@ -1,7 +1,6 @@
-import { useCallback, useMemo, useState, createElement } from 'react';
+import { useCallback, useMemo, useState, createElement, useEffect, memo } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
-import ProcessModal from '@workspaceui/componentlibrary/src/components/ProcessModal';
 import {
   IconSize,
   ProcessResponse,
@@ -27,13 +26,15 @@ import { useToolbarConfig } from '../../hooks/Toolbar/useToolbarConfig';
 import { iconMap } from './iconMap';
 import { useToolbar } from '../../hooks/Toolbar/useToolbar';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
-import { ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
 import ProcessMenu from './ProcessMenu';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
 import ConfirmModal from '@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal';
+import { ProcessButton } from '../ProcessModal/types';
+import ProcessModal from '../ProcessModal';
+import { useProcessMetadata } from '@/hooks/useProcessMetadata';
 
-export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
+const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
   const [openModal, setOpenModal] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
@@ -121,6 +122,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
       }
     } catch (error) {
       setProcessResponse({
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error',
         responseActions: [
           {
             showMsgInProcessView: {
@@ -142,15 +145,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
     setProcessResponse(null);
   }, []);
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height={64}>
-        {t('common.loading')}
-      </Box>
-    );
-  }
+  const { metadata } = useProcessMetadata(selectedProcessButton);
 
-  const createToolbarConfig = () => {
+  useEffect(() => {
+    if (metadata) {
+      console.debug('process metadata', metadata);
+    }
+  }, [metadata]);
+
+  const toolbarConfig = useMemo(() => {
     const buttons = toolbar?.buttons ?? [];
 
     const createProcessMenuButton = (): StandardButtonConfig => ({
@@ -221,13 +224,21 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
     }
 
     return config;
-  };
+  }, [handleAction, handleMenuOpen, isFormView, processButtons.length, selectedRecord, t, toolbar?.buttons]);
 
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height={64}>
+        {t('common.loading')}
+      </Box>
+    );
+  }
   return (
     <>
-      <TopToolbar {...createToolbarConfig()} />
+      <TopToolbar {...toolbarConfig} />
       {statusModal.open && (
         <StatusModal
+          open={statusModal.open}
           statusText={statusModal.statusText}
           statusType={statusModal.statusType}
           errorMessage={statusModal.errorMessage}
@@ -238,6 +249,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = 
       )}
       {confirmAction && (
         <ConfirmModal
+          open={!!confirmAction}
           confirmText={confirmAction.confirmText}
           onConfirm={handleConfirm}
           onCancel={handleCancelConfirm}
@@ -315,3 +327,6 @@ const getSectionStyle = (sectionType: string[]) => {
     background: theme.palette.baselineColor.transparentNeutral[5],
   };
 };
+
+export const Toolbar = memo(ToolbarCmp);
+export default Toolbar;
