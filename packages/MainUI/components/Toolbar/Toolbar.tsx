@@ -238,6 +238,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       <TopToolbar {...toolbarConfig} />
       {statusModal.open && (
         <StatusModal
+          open={statusModal.open}
           statusText={statusModal.statusText}
           statusType={statusModal.statusType}
           errorMessage={statusModal.errorMessage}
@@ -248,6 +249,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       )}
       {confirmAction && (
         <ConfirmModal
+          open={!!confirmAction}
           confirmText={confirmAction.confirmText}
           onConfirm={handleConfirm}
           onCancel={handleCancelConfirm}
