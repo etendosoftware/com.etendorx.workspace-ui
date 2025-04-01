@@ -1,4 +1,3 @@
-import { getDecodedJsonResponse } from './utils';
 import { AUTH_HEADER_NAME } from './constants';
 import { getDecodedJsonResponse } from './utils';
 
