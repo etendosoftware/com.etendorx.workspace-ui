@@ -1,3 +1,4 @@
+import { getDecodedJsonResponse } from './utils';
 import { AUTH_HEADER_NAME } from './constants';
 
 export interface ClientOptions extends Omit<RequestInit, 'body'> {
@@ -91,8 +92,8 @@ export class Client {
         ...options,
         body:
           typeof options.body === 'string' ||
-          options.body instanceof URLSearchParams ||
-          options.body instanceof FormData
+            options.body instanceof URLSearchParams ||
+            options.body instanceof FormData
             ? options.body
             : options.body
               ? JSON.stringify(options.body)
@@ -107,7 +108,7 @@ export class Client {
         response = await this.interceptor(response);
       }
 
-      response.data = await (this.isJson(response) ? response.json() : response.text());
+      response.data = await (this.isJson(response) ? getDecodedJsonResponse(response) : response.text());
 
       return response;
     } catch (error) {
