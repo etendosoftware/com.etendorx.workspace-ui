@@ -97,7 +97,7 @@ export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps
   language: string;
   languages: LanguageOption[];
   languagesFlags: string;
-  changeProfile: (params: { role?: string; warehouse?: string }, token: string) => Promise<LoginResponse>;
+  changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse>;
 }
 
 export interface UserProfileProps {

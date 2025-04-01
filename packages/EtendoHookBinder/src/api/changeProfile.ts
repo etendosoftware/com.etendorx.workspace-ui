@@ -11,19 +11,14 @@ interface ChangeProfilePayload {
  * Function to handle the profile change, including role and warehouse updates.
  * 
  * @param params - The profile change parameters, which may include a role and/or warehouse.
- * @param token - The authentication token for making the API request.
  * @returns A promise that resolves to a LoginResponse object if successful.
  */
-export const changeProfile = async (
-    params: { role?: string; warehouse?: string },
-    token: string
-): Promise<LoginResponse> => {
+export const changeProfile = async (params: { role?: string; warehouse?: string }): Promise<LoginResponse> => {
     try {
         const response = await Metadata.loginClient.request(API_LOGIN_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify(params),
         });
@@ -58,7 +53,7 @@ export default async function handler(req: any, res: any) {
         }
 
         const { role, warehouse } = req.body;
-        const data = await changeProfile({ role, warehouse }, token);
+        const data = await changeProfile({ role, warehouse });
 
         return res.status(200).json(data);
     } catch (error) {

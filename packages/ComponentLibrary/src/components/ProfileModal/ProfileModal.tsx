@@ -34,7 +34,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   translations,
   onSignOff,
   language,
-  token,
   languages,
   languagesFlags,
   onLanguageChange,
@@ -58,20 +57,23 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const { styles, sx } = useStyle();
 
   useEffect(() => {
-    if (currentRole) {
-      setSelectedRole({ title: currentRole.name, value: currentRole.id, id: currentRole.id });
-    }
-  }, [currentRole]);
+    const savedRole = localStorage.getItem('currentRole');
+    const savedWarehouse = localStorage.getItem('currentWarehouse');
 
-  useEffect(() => {
-    if (currentWarehouse) {
+    if (savedRole) {
+      const parsedRole = JSON.parse(savedRole);
+      setSelectedRole({ title: parsedRole.name, value: parsedRole.id, id: parsedRole.id });
+    }
+
+    if (savedWarehouse) {
+      const parsedWarehouse = JSON.parse(savedWarehouse);
       setSelectedWarehouse({
-        title: currentWarehouse.name,
-        value: currentWarehouse.id,
-        id: currentWarehouse.id,
+        title: parsedWarehouse.title,
+        value: parsedWarehouse.value,
+        id: parsedWarehouse.id,
       });
     }
-  }, [currentWarehouse]);
+  }, []);
 
   useEffect(() => {
     if (language) {
@@ -93,6 +95,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const handleWarehouseChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
     setSelectedWarehouse(value);
+    if (value) {
+      localStorage.setItem('currentWarehouse', JSON.stringify(value));
+    }
   }, []);
 
   const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,11 +124,21 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         if (selectedRole && selectedRole.value !== currentRole?.id) {
           params.role = selectedRole.value;
         }
+
         if (selectedWarehouse && selectedWarehouse.value !== currentWarehouse?.id) {
           params.warehouse = selectedWarehouse.value;
+
+          const newWarehouse = {
+            id: selectedWarehouse.id,
+            title: selectedWarehouse.title,
+            value: selectedWarehouse.value,
+          };
+          setSelectedWarehouse(newWarehouse);
+          localStorage.setItem('currentWarehouse', JSON.stringify(newWarehouse));  // Guardar en localStorage
         }
+
         if (Object.keys(params).length > 0) {
-          await changeProfile(params, token);
+          await changeProfile(params);
         }
 
         if (selectedLanguage && selectedLanguage.value !== language) {
@@ -139,6 +154,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             client: 'System',
           });
         }
+
         handleClose();
       } catch (error) {
         logger.error('Error changing role, warehouse, or saving default configuration:', error);

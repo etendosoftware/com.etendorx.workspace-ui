@@ -18,8 +18,6 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
     token,
     languages,
   } = useContext(UserContext);
-  logger.debug(currentWarehouse)
-
   const [selectedRole, setSelectedRole] = useState<Option | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(null);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
@@ -72,7 +70,6 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
   return (
     <ProfileModal
       {...props}
-      token={token}
       currentRole={currentRole}
       currentWarehouse={currentWarehouse}
       roles={roles}

@@ -11,7 +11,7 @@ const DEFAULT_CONFIG = {
 };
 
 export const setDefaultConfiguration = async (token: string, config: DefaultConfiguration): Promise<void> => {
-  const client = Metadata.kernelClient;
+  const client = Metadata.loginClient;
 
   const params = {
     language: (config.language || DEFAULT_CONFIG.language).toString(),

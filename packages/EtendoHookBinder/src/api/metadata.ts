@@ -28,7 +28,7 @@ export class Metadata {
   }
 
   public static setToken(token: string) {
-    [this.client, this.kernelClient, this.datasourceServletClient].forEach(client =>
+    [this.client, this.kernelClient, this.datasourceServletClient, this.loginClient].forEach(client =>
       client.setAuthHeader(token, 'Bearer'),
     );
 
