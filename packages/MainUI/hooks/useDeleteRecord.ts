@@ -6,7 +6,7 @@ import { useTranslation } from './useTranslation';
 
 export interface UseDeleteRecordParams {
   tab: Tab;
-  onSuccess?: () => void;
+  onSuccess?: (deletedCount: number) => void;
   onError?: (error: string) => void;
   showConfirmation?: boolean;
 }
@@ -19,9 +19,11 @@ export const useDeleteRecord = ({ tab, onSuccess, onError }: UseDeleteRecordPara
   const { t } = useTranslation();
 
   const deleteRecord = useCallback(
-    async (record: EntityData) => {
-      if (!record || !record.id) {
-        onError?.(t('status.noIdError'));
+    async (recordOrRecords: EntityData | EntityData[]) => {
+      const records = Array.isArray(recordOrRecords) ? recordOrRecords : [recordOrRecords];
+
+      if (records.length === 0) {
+        onError?.(t('status.noRecordsError'));
         return false;
       }
 
@@ -36,38 +38,50 @@ export const useDeleteRecord = ({ tab, onSuccess, onError }: UseDeleteRecordPara
         controller.current.abort();
         controller.current = new AbortController();
 
-        const queryParams = new URLSearchParams({
-          windowId: String(tab.windowId),
-          tabId: String(tab.id),
-          moduleId: String(tab.module || '0'),
-          _operationType: 'remove',
-          _noActiveFilter: 'true',
-          sendOriginalIDBack: 'true',
-          _extraProperties: '',
-          Constants_FIELDSEPARATOR: '$',
-          _className: 'OBViewDataSource',
-          Constants_IDENTIFIER: '_identifier',
-          csrfToken: userId || '',
-          id: String(record.id),
+        const deletePromises = records.map(record => {
+          if (!record || !record.id) {
+            throw new Error(t('status.noIdError'));
+          }
+
+          const queryParams = new URLSearchParams({
+            windowId: String(tab.windowId),
+            tabId: String(tab.id),
+            moduleId: String(tab.module || '0'),
+            _operationType: 'remove',
+            _noActiveFilter: 'true',
+            sendOriginalIDBack: 'true',
+            _extraProperties: '',
+            Constants_FIELDSEPARATOR: '$',
+            _className: 'OBViewDataSource',
+            Constants_IDENTIFIER: '_identifier',
+            csrfToken: userId || '',
+            id: String(record.id),
+          });
+
+          const url = `/${tab.entityName}?${queryParams}`;
+
+          return Metadata.datasourceServletClient.request(url, {
+            method: 'DELETE',
+            signal: controller.current.signal,
+          });
         });
 
-        const url = `/${tab.entityName}?${queryParams}`;
+        const responses = await Promise.allSettled(deletePromises);
 
-        const options = {
-          signal: controller.current.signal,
-          method: 'DELETE',
-        };
+        const errors = responses.filter(response => response.status === 'rejected') as PromiseRejectedResult[];
 
-        const response = await Metadata.datasourceServletClient.request(url, options);
+        if (errors.length > 0) {
+          const errorMessages = errors.map(err =>
+            err.reason instanceof Error ? err.reason.message : String(err.reason),
+          );
 
-        if (!response.ok) {
-          throw new Error(t('status.httpError') + response.status);
+          throw new Error(errorMessages.join('; '));
         }
 
         setLoading(false);
 
         if (onSuccess) {
-          onSuccess();
+          onSuccess(records.length);
         }
 
         return true;
@@ -85,7 +99,7 @@ export const useDeleteRecord = ({ tab, onSuccess, onError }: UseDeleteRecordPara
         return false;
       }
     },
-    [tab, onError, userId, onSuccess],
+    [tab, onError, t, userId, onSuccess],
   );
 
   return { deleteRecord, loading };

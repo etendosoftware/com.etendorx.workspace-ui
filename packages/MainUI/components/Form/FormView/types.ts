@@ -154,6 +154,7 @@ export interface QuantityProps {
   onChange?: (value: number) => void;
   name: string;
   readOnly?: boolean;
+  field: Field;
 }
 
 export interface ListSelectorProps {

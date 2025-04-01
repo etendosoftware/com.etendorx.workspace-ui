@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Field, FormInitializationResponse, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
 import { useCallout } from '@/hooks/useCallout';
-import { useMetadataContext } from '@/hooks/useMetadataContext';
 import { logger } from '@/utils/logger';
 import { GenericSelector } from './GenericSelector';
 import { buildPayloadByInputName, parseDynamicExpression } from '@/utils';
 import Label from '../Label';
 import { useUserContext } from '@/hooks/useUserContext';
 import { useParams } from 'next/navigation';
+import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { useParentTabContext } from '@/contexts/tab';
 
 const compileExpression = (expression: string) => {
   try {
@@ -20,9 +21,10 @@ const compileExpression = (expression: string) => {
   }
 };
 
-export const BaseSelector = ({ field, formMode = FormMode.EDIT }: { field: Field; formMode?: FormMode }) => {
+const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; formMode?: FormMode }) => {
   const { watch, getValues, setValue, register } = useFormContext();
-  const { fieldsByColumnName, tab } = useMetadataContext();
+  const { tab } = useParentTabContext();
+  const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
   const { recordId } = useParams<{ recordId: string }>();
   const { session } = useUserContext();
   const executeCallout = useCallout({ field, rowId: recordId });
@@ -144,9 +146,13 @@ export const BaseSelector = ({ field, formMode = FormMode.EDIT }: { field: Field
 
   if (isDisplayed) {
     return (
-      <div className="grid grid-cols-3 auto-rows-auto gap-4 items-center" title={field.hqlName}>
+      <div className="grid grid-cols-3 auto-rows-auto gap-4 items-center" title={field.helpComment}>
         <div className="relative">
-          {field.isMandatory && <span className="absolute -top-4 right-0 text-[#DC143C] font-bold">*</span>}
+          {field.isMandatory && (
+            <span className="absolute -top-4 right-0 text-[#DC143C] font-bold" aria-required>
+              *
+            </span>
+          )}
           <Label field={field} />
         </div>
         <div className="col-span-2">
@@ -158,3 +164,7 @@ export const BaseSelector = ({ field, formMode = FormMode.EDIT }: { field: Field
     return <input type="hidden" {...register(field.hqlName)} />;
   }
 };
+
+const BaseSelector = memo(BaseSelectorComp);
+export { BaseSelector };
+export default BaseSelector;

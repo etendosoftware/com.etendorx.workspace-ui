@@ -18,7 +18,7 @@ export function ErrorDisplay({
   const { t } = useTranslation();
 
   return (
-    <div className="w-full  max-w-md p-8 mx-auto bg-white rounded-lg shadow-md flex flex-col items-center">
+    <div className="w-full max-w-md p-8 mx-auto bg-white rounded-lg shadow-md flex flex-col items-center">
       <div className="mb-6 max-w-xs">
         <Image src={errorImage} width={240} height={240} alt="Error" className="mx-auto" priority />
       </div>

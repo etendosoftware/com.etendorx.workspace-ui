@@ -1,6 +1,6 @@
 import { ToolbarButton } from '@workspaceui/storybook/src/stories/Components/Table/types';
-import { BaseButton, ProcessButton } from '@workspaceui/componentlibrary/src/components/ProcessModal/types';
 import { Theme } from '@mui/material';
+import { BaseButton, ProcessButton } from '../ProcessModal/types';
 
 export const IconSize = 16;
 
@@ -49,6 +49,14 @@ export interface ToolbarProps {
 }
 
 export interface ProcessResponse {
+  success: boolean;
+  message?: string;
+  popupOpened?: boolean;
+  redirected?: boolean;
+  frameUrl?: string;
+  redirectUrl?: string;
+  showInIframe?: boolean;
+  iframeUrl?: string;
   responseActions?: Array<{
     showMsgInProcessView?: {
       msgType: string;

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BUTTON_IDS } from '../../constants/Toolbar';
 import { useSearch } from '../../contexts/searchContext';
@@ -25,7 +25,7 @@ export const useToolbarConfig = ({
   const { setSearchQuery } = useSearch();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const { setShowTabContainer, tabs, selected, removeRecord } = useMetadataContext();
+  const { setShowTabContainer, tabs, selected, removeRecord, getSelectedIds } = useMetadataContext();
 
   const {
     statusModal,
@@ -46,17 +46,19 @@ export const useToolbarConfig = ({
   }, [tabs, tabId]);
 
   const selectedRecord = tab ? selected[tab.level] : undefined;
+  const selectedIds = useMemo(() => (tab ? getSelectedIds(tab.id) : []), [getSelectedIds, tab]);
 
   const { deleteRecord, loading: deleteLoading } = useDeleteRecord({
     tab: tab as Tab,
-    onSuccess: () => {
-      if (!selectedRecord || !tabId) return;
+    onSuccess: deletedCount => {
+      if (!tabId) return;
 
-      const recordId = selectedRecord.id;
-      const recordName = selectedRecord._identifier || recordId;
+      const recordName = selectedRecord?._identifier || selectedRecord?.id || `${deletedCount} registros`;
       const entityType = tab?.title || '';
 
-      removeRecord(tabId, recordId);
+      selectedIds.forEach(recordId => {
+        removeRecord(tabId, recordId);
+      });
 
       const successMessage = `${entityType} '${recordName}' ${t('status.deleteSuccess')}`;
 
@@ -68,7 +70,7 @@ export const useToolbarConfig = ({
       });
     },
     onError: error => {
-      logger.error('Error deleting record:', error);
+      logger.error('Error deleting record(s):', error);
 
       showErrorModal(t('status.deleteError'), {
         errorMessage: error,
@@ -80,6 +82,12 @@ export const useToolbarConfig = ({
       });
     },
   });
+
+  useEffect(() => {
+    if (!statusModal.open && isDeleting) {
+      setIsDeleting(false);
+    }
+  }, [statusModal.open, isDeleting]);
 
   const handleAction = useCallback(
     (action: string) => {
@@ -99,23 +107,30 @@ export const useToolbarConfig = ({
           onSave?.();
           break;
         case BUTTON_IDS.DELETE:
-          if (tab && selectedRecord) {
-            const recordName = selectedRecord._identifier || selectedRecord.id;
+          if (tab) {
+            if (selectedIds.length > 0) {
+              const recordsToDelete = selectedIds.map(id => tab.records?.[id] || { id });
 
-            showConfirmModal({
-              confirmText: `${t('status.deleteConfirmation')}${recordName}?`,
-              onConfirm: () => {
-                setIsDeleting(true);
-                deleteRecord(selectedRecord);
-              },
-              saveLabel: t('common.confirm'),
-              secondaryButtonLabel: t('common.cancel'),
-            });
-          } else {
-            showErrorModal(t('status.selectRecordError'), {
-              saveLabel: t('common.close'),
-              secondaryButtonLabel: t('modal.secondaryButtonLabel'),
-            });
+              const confirmText =
+                selectedIds.length === 1
+                  ? `${t('status.deleteConfirmation')}${selectedRecord?._identifier || selectedRecord?.id}?`
+                  : `${t('status.deleteConfirmation')}the selected records: ${selectedIds.length}`;
+
+              showConfirmModal({
+                confirmText,
+                onConfirm: () => {
+                  setIsDeleting(true);
+                  deleteRecord(selectedIds.length === 1 ? recordsToDelete[0] : recordsToDelete);
+                },
+                saveLabel: t('common.confirm'),
+                secondaryButtonLabel: t('common.cancel'),
+              });
+            } else {
+              showErrorModal(t('status.selectRecordError'), {
+                saveLabel: t('common.close'),
+                secondaryButtonLabel: t('modal.secondaryButtonLabel'),
+              });
+            }
           }
           break;
         default:
@@ -124,18 +139,20 @@ export const useToolbarConfig = ({
     },
     [
       isDeleting,
-      deleteRecord,
-      onSave,
-      parentId,
       router,
-      selectedRecord,
-      setShowTabContainer,
-      showConfirmModal,
-      showErrorModal,
-      t,
-      tab,
-      tabId,
       windowId,
+      tabId,
+      parentId,
+      setShowTabContainer,
+      onSave,
+      tab,
+      selectedIds,
+      t,
+      selectedRecord?._identifier,
+      selectedRecord?.id,
+      showConfirmModal,
+      deleteRecord,
+      showErrorModal,
     ],
   );
 

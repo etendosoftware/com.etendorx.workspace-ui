@@ -60,8 +60,6 @@ export interface IMetadataContext {
   tabs: Tab[];
   tab?: Tab;
   columns?: Record<string, Field>;
-  fieldsByColumnName: Record<string, Field>;
-  fieldsByInputName: Record<string, Field>;
   showTabContainer: boolean;
   setShowTabContainer: (value: boolean | ((prev: boolean) => boolean)) => void;
   activeTabLevels: number[];

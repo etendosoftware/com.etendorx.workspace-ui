@@ -27,6 +27,7 @@ export interface StatusModalProps {
   onClose?: () => void;
   onAfterClose?: () => void;
   isDeleteSuccess?: boolean;
+  open?: boolean;
 }
 
 export interface ConfirmModalProps {
@@ -36,4 +37,5 @@ export interface ConfirmModalProps {
   saveLabel?: string;
   secondaryButtonLabel?: string;
   onAfterClose?: () => void;
+  open?: boolean;
 }

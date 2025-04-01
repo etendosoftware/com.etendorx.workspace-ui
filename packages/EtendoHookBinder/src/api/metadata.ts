@@ -72,10 +72,7 @@ export class Metadata {
     }
   }
 
-  private static async _getTab(tabId?: Etendo.Tab["id"]): Promise<Etendo.Tab | undefined> {
-    if (!tabId) {
-      return;
-    }
+  private static async _getTab(tabId?: Etendo.Tab["id"]): Promise<Etendo.Tab> {
     const { data } = await this.client.post(`tab/${tabId}`);
 
     this.cache.set(`tab-${tabId}`, data);
@@ -83,11 +80,7 @@ export class Metadata {
     return data;
   }
 
-  public static async getTab(tabId?: Etendo.Tab["id"]): Promise<Etendo.Tab | undefined> {
-    if (!tabId) {
-      return;
-    }
-
+  public static async getTab(tabId: Etendo.Tab["id"]): Promise<Etendo.Tab> {
     const cached = this.cache.get<Etendo.Tab>(`tab-${tabId}`);
 
     if (cached) {

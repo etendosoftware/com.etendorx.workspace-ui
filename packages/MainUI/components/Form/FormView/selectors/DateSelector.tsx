@@ -6,7 +6,7 @@ export const DateSelector = ({ field, isReadOnly }: { field: Field; isReadOnly?:
   const { register } = useFormContext();
   const { ref, ...rest } = register(field.hqlName);
 
-  return <DateInput {...rest} ref={ref} isReadOnly={isReadOnly} />;
+  return <DateInput {...rest} field={field} ref={ref} isReadOnly={isReadOnly} />;
 };
 
 export default DateSelector;

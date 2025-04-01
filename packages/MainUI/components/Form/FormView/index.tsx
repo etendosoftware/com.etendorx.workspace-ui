@@ -10,7 +10,7 @@ import StatusBar from './StatusBar';
 import useFormFields from '@/hooks/useFormFields';
 import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
 import { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
-import Chevrons from '@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg';
+import Info from '@workspaceui/componentlibrary/src/assets/icons/info.svg';
 import InfoIcon from '@workspaceui/componentlibrary/src/assets/icons/file-text.svg';
 import FileIcon from '@workspaceui/componentlibrary/src/assets/icons/file.svg';
 import FolderIcon from '@workspaceui/componentlibrary/src/assets/icons/folder.svg';
@@ -23,7 +23,7 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
   const router = useRouter();
   const theme = useTheme();
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
-  const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const [expandedSections, setExpandedSections] = useState<string[]>(['null']);
   const [selectedTab, setSelectedTab] = useState<string>('');
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
@@ -34,7 +34,7 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
   const { reset, setValue, ...form } = useForm({ values: initialState });
 
   const defaultIcon = useMemo(
-    () => <Chevrons fill={theme.palette.baselineColor.neutral[80]} />,
+    () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
     [theme.palette.baselineColor.neutral],
   );
 
@@ -61,14 +61,6 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
       showInTab: true,
     }));
   }, [groups, getIconForGroup, theme.palette.baselineColor.neutral]);
-
-  useEffect(() => {
-    if (tabs.length > 0) {
-      const initialExpandedSections = tabs.map(tab => tab.id);
-      setExpandedSections(initialExpandedSections);
-      setSelectedTab(tabs[0]?.id || '');
-    }
-  }, [tabs]);
 
   const handleTabChange = useCallback((newTabId: string) => {
     setSelectedTab(newTabId);
@@ -139,9 +131,15 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
     [showErrorModal],
   );
 
-  const { submit, loading } = useFormAction({ window: windowMetadata, tab, mode, onSuccess, onError });
-
-  const handleSave = useMemo(() => form.handleSubmit(submit), [form, submit]);
+  const { save, loading } = useFormAction({
+    windowMetadata,
+    tab,
+    mode,
+    onSuccess,
+    onError,
+    initialState,
+    submit: form.handleSubmit,
+  });
 
   const handleHover = useCallback((sectionName: string | null) => {
     setHoveredSection(sectionName);
@@ -149,7 +147,7 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
 
   const isSectionExpanded = useCallback(
     (sectionId: string | null) => {
-      const id = String(sectionId || '_main');
+      const id = String(sectionId);
       return expandedSections.includes(id);
     },
     [expandedSections],
@@ -161,9 +159,9 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
         className={`w-full h-full flex flex-col transition duration-300  ${
           loading ? 'opacity-50 select-none cursor-progress cursor-to-children' : ''
         }`}
-        onSubmit={handleSave}>
+        onSubmit={save}>
         <div className="pl-2 pr-2">
-          <Toolbar windowId={windowMetadata.id} tabId={tab.id} isFormView={true} onSave={handleSave} />
+          <Toolbar windowId={windowMetadata.id} tabId={tab.id} isFormView={true} onSave={save} />
         </div>
         <div className="flex-shrink-0 pl-2 pr-2">
           <div className="mb-2">

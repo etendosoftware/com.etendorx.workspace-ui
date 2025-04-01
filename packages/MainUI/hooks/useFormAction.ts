@@ -1,45 +1,43 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EntityData, FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useUserContext } from './useUserContext';
+import { UseFormHandleSubmit } from 'react-hook-form';
+import { buildFormPayload, buildQueryString } from '@/utils';
 
 export interface UseFormActionParams {
-  window: WindowMetadata;
+  windowMetadata: WindowMetadata;
   tab: Tab;
   mode: FormMode;
   onSuccess: (data: EntityData) => void;
   onError: (data: string) => void;
+  initialState: EntityData;
+  submit: UseFormHandleSubmit<EntityData, undefined>;
 }
 
-export const useFormAction = ({ window, tab, mode, onSuccess, onError }: UseFormActionParams) => {
+export const useFormAction = ({
+  windowMetadata,
+  tab,
+  mode,
+  onSuccess,
+  onError,
+  initialState,
+  submit,
+}: UseFormActionParams) => {
   const [loading, setLoading] = useState(false);
   const controller = useRef<AbortController>(new AbortController());
   const { user } = useUserContext();
   const userId = user?.id;
 
-  const submit = useCallback(
-    async (values: Record<string, unknown>) => {
+  const execute = useCallback(
+    async (values: EntityData) => {
       try {
         setLoading(true);
 
-        const queryStringParams = buildQueryString({ mode, window, tab });
+        const queryStringParams = buildQueryString({ mode, windowMetadata, tab });
+        const body = buildFormPayload({ values, oldValues: initialState, mode, csrfToken: userId });
         const url = `${tab.entityName}?${queryStringParams}`;
-        const options = {
-          signal: controller.current.signal,
-          method: 'POST',
-          body: {
-            dataSource: 'isc_OBViewDataSource_0',
-            operationType: mode === FormMode.NEW ? 'add' : 'update',
-            componentId: 'isc_OBViewForm_0',
-            data: {
-              accountingDate: new Date(),
-              ...values,
-            },
-            oldValues: {},
-            csrfToken: userId,
-          },
-        } as const;
-
+        const options = { signal: controller.current.signal, method: 'POST', body };
         const { ok, data } = await Metadata.datasourceServletClient.request(url, options);
 
         if (ok && data?.response?.status === 0 && !controller.current.signal.aborted) {
@@ -53,8 +51,10 @@ export const useFormAction = ({ window, tab, mode, onSuccess, onError }: UseForm
         onError?.(String(err));
       }
     },
-    [mode, onError, onSuccess, tab, userId, window],
+    [initialState, mode, onError, onSuccess, tab, userId, windowMetadata],
   );
+
+  const save = useMemo(() => submit(execute), [execute, submit]);
 
   useEffect(() => {
     const _controller = controller.current;
@@ -65,20 +65,5 @@ export const useFormAction = ({ window, tab, mode, onSuccess, onError }: UseForm
     };
   }, []);
 
-  return { submit, loading };
+  return { save, loading };
 };
-
-const buildQueryString = ({ mode, window, tab }: { window: WindowMetadata; tab: Tab; mode: FormMode }) =>
-  new URLSearchParams({
-    windowId: String(window.id),
-    tabId: String(tab.id),
-    moduleId: String(tab.module),
-    _operationType: mode === FormMode.NEW ? 'add' : 'update',
-    _noActiveFilter: String(true),
-    sendOriginalIDBack: String(true),
-    _extraProperties: '',
-    Constants_FIELDSEPARATOR: '$',
-    _className: 'OBViewDataSource',
-    Constants_IDENTIFIER: '_identifier',
-    isc_dataFormat: 'json',
-  });

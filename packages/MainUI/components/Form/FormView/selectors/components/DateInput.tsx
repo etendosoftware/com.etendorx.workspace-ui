@@ -1,15 +1,17 @@
 import { forwardRef, useCallback, useRef, useState } from 'react';
 import CalendarIcon from '../../../../../../ComponentLibrary/src/assets/icons/calendar.svg';
+import { Field } from '@workspaceui/etendohookbinder/src/api/types';
 
 interface DateInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   isReadOnly?: boolean;
   error?: boolean;
   helperText?: string;
+  field: Field;
 }
 
 export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
-  ({ name, label, isReadOnly, error, helperText, ...props }, ref) => {
+  ({ name, label, isReadOnly, error, helperText, field, ...props }, ref) => {
     const inputRef = useRef<HTMLInputElement>();
     const [isFocused, setIsFocused] = useState(false);
 
@@ -34,16 +36,22 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       [ref],
     );
 
-    const handleFocus = () => setIsFocused(true);
+    const handleFocus = useCallback(() => setIsFocused(true), []);
 
-    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-      setIsFocused(false);
-      props.onBlur?.(e);
-    };
+    const handleBlur = useCallback(
+      (e: React.FocusEvent<HTMLInputElement>) => {
+        setIsFocused(false);
+        props.onBlur?.(e);
+      },
+      [props],
+    );
 
-    const getLabelClass = () => `block mb-1 text-sm ${isReadOnly ? 'text-baseline-60' : 'text-baseline-80'}`;
+    const getLabelClass = useCallback(
+      () => `block mb-1 text-sm ${isReadOnly ? 'text-baseline-60' : 'text-baseline-80'}`,
+      [isReadOnly],
+    );
 
-    const getInputClass = () => {
+    const getInputClass = useCallback(() => {
       const baseClass = 'w-full h-full py-2 pl-2 pr-8 border-b outline-none text-sm';
       const focusClass = isFocused ? 'border-baseline-80 bg-baseline-0' : 'border-baseline-60';
       const readOnlyClass = isReadOnly
@@ -52,9 +60,9 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       const errorClass = error ? 'border-error-main' : '';
 
       return `${baseClass} ${focusClass} ${readOnlyClass} ${errorClass} transition-colors`;
-    };
+    }, [error, isFocused, isReadOnly]);
 
-    const renderLabel = () => {
+    const renderLabel = useCallback(() => {
       if (!label) return null;
 
       return (
@@ -63,13 +71,13 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
           {props.required && <span className="text-error-main ml-1">*</span>}
         </label>
       );
-    };
+    }, [getLabelClass, label, name, props.required]);
 
-    const renderHelperText = () => {
+    const renderHelperText = useCallback(() => {
       if (!helperText) return null;
 
       return <div className={`mt-1 text-xs ${error ? 'text-error-main' : 'text-baseline-60'}`}>{helperText}</div>;
-    };
+    }, [error, helperText]);
 
     return (
       <div className="w-full font-medium">
@@ -86,6 +94,12 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             onBlur={handleBlur}
             className={getInputClass()}
             readOnly={isReadOnly}
+            role="textbox"
+            aria-label={field.name}
+            aria-readonly={isReadOnly}
+            aria-required={field.isMandatory}
+            aria-disabled={isReadOnly}
+            aria-details={field.helpComment}
             {...props}
           />
           <div className="absolute right-0 top-0 h-full flex items-center pr-1 pointer-events-none">

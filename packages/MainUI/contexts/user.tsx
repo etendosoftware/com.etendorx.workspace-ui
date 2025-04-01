@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { logger } from '../utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
@@ -19,9 +19,8 @@ import {
 } from '@workspaceui/etendohookbinder/src/api/types';
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/src/api/defaultConfig';
 import { usePathname, useRouter } from 'next/navigation';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useLanguage } from '../hooks/useLanguage';
-import { DEFAULT_LANGUAGE } from './languageProvider';
+import { DEFAULT_LANGUAGE } from '@workspaceui/componentlibrary/src/locales';
 
 export const UserContext = createContext({} as IUserContext);
 
@@ -241,7 +240,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }
   }, [clearUserData, navigate, token, updateSessionInfo]);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (token || pathname === '/login') {
       setReady(true);
     }
@@ -285,5 +284,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
     setLanguage((matchedLanguage?.language as Language) || DEFAULT_LANGUAGE);
   }, [languages, setLanguage]);
 
-  return <UserContext.Provider value={value}>{ready ? props.children : <Spinner />}</UserContext.Provider>;
+  if (!ready) {
+    return null;
+  }
+
+  return <UserContext.Provider value={value}>{props.children}</UserContext.Provider>;
 }

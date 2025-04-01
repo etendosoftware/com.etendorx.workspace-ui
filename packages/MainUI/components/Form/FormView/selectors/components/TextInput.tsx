@@ -11,6 +11,7 @@ export const TextInput = ({
   disabled,
   className,
   onChange,
+  field,
   ...props
 }: TextInputProps) => {
   const isDisabled = disabled || readOnly;
@@ -25,16 +26,24 @@ export const TextInput = ({
   };
 
   return (
-    <div className="w-full font-['Inter'] font-medium">
+    <div
+      className="w-full font-['Inter'] font-medium"
+      role="textbox"
+      aria-placeholder={field.name}
+      aria-label={field.name}
+      aria-readonly={readOnly}
+      aria-required={field.isMandatory}>
       {label && (
         <label
           htmlFor={props.id || props.name}
           className={`block mb-1 text-sm ${isDisabled ? 'text-baseline-60' : 'text-baseline-80'}`}>
           {label}
-          {props.required && <span className="text-error-main ml-1">*</span>}
+          {field.isMandatory && <span className="text-error-main ml-1">*</span>}
         </label>
       )}
-      <div className={`relative flex items-center w-full h-10 ${isDisabled ? 'pointer-events-none' : ''}`}>
+      <div
+        className={`relative flex items-center w-full h-10 ${isDisabled ? 'pointer-events-none' : ''}`}
+        aria-description={field.helpComment}>
         {leftIcon && (
           <div className="absolute left-3 text-baseline-60">
             <button type="button" onClick={onLeftIconClick} className="p-1 focus:outline-none" disabled={isDisabled}>

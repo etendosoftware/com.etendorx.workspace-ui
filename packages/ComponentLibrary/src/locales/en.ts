@@ -29,6 +29,7 @@ const en = {
     noIdError: 'Cannot delete a record without ID',
     noEntityError: 'No entity has been specified',
     httpError: 'HTTP Error: ',
+    noRecordsError: 'There is no records selected',
   },
   errors: {
     networkError: {

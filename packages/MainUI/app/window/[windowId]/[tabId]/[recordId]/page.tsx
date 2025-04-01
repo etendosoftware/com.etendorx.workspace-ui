@@ -1,7 +1,6 @@
 'use client';
 
 import { FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useParams } from 'next/navigation';
 import { useFormInitialization } from '@/hooks/useFormInitialization';
@@ -36,7 +35,7 @@ function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
   }
 
   if (loading || !initialState) {
-    return <Spinner />;
+    return null;
   }
 
   return <FormView mode={FormMode.EDIT} tab={tab} window={window} initialState={initialState} />;

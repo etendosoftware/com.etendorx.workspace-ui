@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 import { Modal } from '..';
 import SaveIcon from '../../assets/icons/save.svg';
@@ -15,13 +15,16 @@ const StatusModal: React.FC<StatusModalProps> = ({
   onClose,
   onAfterClose,
   isDeleteSuccess,
+  open = true,
 }) => {
   const { gradientColor, iconBackgroundColor, icon: StatusIcon } = statusConfig[statusType];
   const theme = useTheme();
   const { sx } = useStyle();
 
-  const backgroundGradient = `linear-gradient(to bottom, ${gradientColor}, rgba(255, 255, 255, 0))`;
-
+  const backgroundGradient = useMemo(
+    () => `linear-gradient(to bottom, ${gradientColor}, rgba(255, 255, 255, 0))`,
+    [gradientColor],
+  );
   const handleClose = useCallback(() => {
     if (onClose) {
       onClose();
@@ -38,7 +41,7 @@ const StatusModal: React.FC<StatusModalProps> = ({
 
   return (
     <Modal
-      open={true}
+      open={open}
       showHeader={false}
       saveButtonLabel={!isDeleteSuccess ? saveLabel : undefined}
       secondaryButtonLabel={secondaryLabel}
