@@ -13,7 +13,7 @@ import { FormViewProps } from './types';
 import { useStatusModal } from '@/hooks/Toolbar/useStatusModal';
 import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
 import GroupSection from './Sections';
-import { defaultIcon, getIconForGroup } from './Sections/utils';
+import { DefaultIcon, getIconForGroup } from './Sections/utils';
 
 export default function FormView({ window: windowMetadata, tab, mode, initialState }: FormViewProps) {
   const router = useRouter();
@@ -157,7 +157,7 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
           </div>
           <StatusBar fields={fields.statusBarFields} />
           <div className="mt-2">
-            <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
+            <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={<DefaultIcon />} />
           </div>
         </div>
         <div className="flex-grow overflow-auto p-2 space-y-2" ref={containerRef}>
