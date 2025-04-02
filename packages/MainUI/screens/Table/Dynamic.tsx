@@ -12,10 +12,6 @@ export default function DynamicTableScreen() {
   } else if (error || !window) {
     return <ErrorDisplay title={error?.message ?? 'Something went wrong'} />;
   } else {
-    return (
-      <div className="m-1 relative h-screen overflow-hidden ">
-        {topLevelTabs.length > 0 && <TabLevel tab={topLevelTabs[0]} />}
-      </div>
-    );
+    return <>{topLevelTabs.length > 0 && <TabLevel tab={topLevelTabs[0]} />}</>;
   }
 }

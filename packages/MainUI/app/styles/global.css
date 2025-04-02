@@ -132,6 +132,12 @@ body {
   position: relative;
 }
 
+.w-fill-available {
+  width: -webkit-fill-available;
+  width: -moz-available;
+  width: stretch;
+}
+
 .animated-transform {
   transition: transform 300ms ease-in-out !important;
 }
