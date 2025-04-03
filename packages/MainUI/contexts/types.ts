@@ -1,4 +1,4 @@
-import { ISession, ProfileInfo, Role, Warehouse, User, Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { ISession, ProfileInfo, Role, Warehouse, User, Field, Tab, LoginResponse } from '@workspaceui/etendohookbinder/src/api/types';
 import { type Etendo } from '@workspaceui/etendohookbinder/src/api/metadata';
 
 export type Language = 'en_US' | 'es_ES';
@@ -27,8 +27,7 @@ export interface LanguageOption {
 export interface IUserContext {
   user: User;
   login: (username: string, password: string) => Promise<void>;
-  changeRole: (roleId: string) => Promise<void>;
-  changeWarehouse: (warehouseId: string) => Promise<void>;
+  changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | void>;
   token: string | null;
   roles: Role[];
   currentRole: Role | null;

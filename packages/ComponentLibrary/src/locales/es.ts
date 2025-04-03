@@ -30,6 +30,7 @@ const es = {
     noEntityError: 'No hay una entidad especificada',
     httpError: 'Error HTTP: ',
     noRecordsError: 'No hay registros seleccionados',
+    noRecords: 'Por favor, crea un nuevo registro',
   },
   errors: {
     networkError: {
@@ -96,6 +97,7 @@ const es = {
       noTitle: 'Sin título',
       noType: 'Sin tipo',
       noRecord: 'Ninguna fila seleccionada',
+      emptyRecords: 'No hay registros para mostrar',
     },
     content: {
       currentTitle: 'Se espera que sus ingresos aumenten a finales de este año. Felicitaciones',

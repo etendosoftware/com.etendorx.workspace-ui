@@ -1,5 +1,5 @@
-import { getDecodedJsonResponse } from './utils';
 import { AUTH_HEADER_NAME } from './constants';
+import { getDecodedJsonResponse } from './utils';
 
 export interface ClientOptions extends Omit<RequestInit, 'body'> {
   headers?: Record<string, string>;

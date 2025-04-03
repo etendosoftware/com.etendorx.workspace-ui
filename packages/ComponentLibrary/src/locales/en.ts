@@ -30,6 +30,7 @@ const en = {
     noEntityError: 'No entity has been specified',
     httpError: 'HTTP Error: ',
     noRecordsError: 'There is no records selected',
+    noRecords: 'Please create a new record',
   },
   errors: {
     networkError: {
@@ -96,6 +97,7 @@ const en = {
       noTitle: 'No title',
       noType: 'No type',
       noRecord: 'No Row Selected',
+      emptyRecords: 'No records to show',
     },
     content: {
       currentTitle: 'Its revenue is expected to increase later this year. Congratulations',
