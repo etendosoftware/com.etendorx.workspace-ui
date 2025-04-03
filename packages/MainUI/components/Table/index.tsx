@@ -30,6 +30,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     getSelectedIds,
     setShowTabContainer,
     groupedTabs,
+    refetch,
   } = useMetadataContext();
   const { windowId } = useParams<WindowParams>();
   const parent = selected[tab.level - 1];
@@ -41,7 +42,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const selectedIds = useMemo(() => getSelectedIds(tabId), [getSelectedIds, tabId]);
   const selectedCount = useMemo(() => getSelectedCount(tabId), [getSelectedCount, tabId]);
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
-  const { registerDatasource, unregisterDatasource } = useDatasourceContext();
+  const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
 
   const rowSelection = useMemo(() => {
     return selectedIds.reduce(
@@ -246,10 +247,12 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
       registerDatasource(tabId, removeRecordLocally);
     }
 
+    registerRefetchFunction(tabId, refetch);
+
     return () => {
       unregisterDatasource(tabId);
     };
-  }, [tabId, removeRecordLocally, registerDatasource, unregisterDatasource]);
+  }, [tabId, removeRecordLocally, registerDatasource, unregisterDatasource, registerRefetchFunction, refetch]);
 
   if (loading && !loaded) return <Spinner />;
   if (error) return <div>Error: {error.message}</div>;

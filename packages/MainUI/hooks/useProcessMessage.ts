@@ -81,18 +81,17 @@ export function useProcessMessage() {
 
   const handleFetchError = useCallback((error: unknown): ProcessMessage | null => {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      logger.info('Petición de mensaje de proceso abortada');
-      return null;
+      logger.info(error);
     }
 
-    logger.error('Error al obtener mensajes del proceso:', error);
+    logger.error(error);
     return null;
   }, []);
 
   const fetchProcessMessage = useCallback(
     async (signal?: AbortSignal): Promise<ProcessMessage | null> => {
       if (!apiUrl) {
-        logger.error('API URL no disponible');
+        logger.error(apiUrl, 'API-URL Error');
         return null;
       }
 
@@ -107,12 +106,12 @@ export function useProcessMessage() {
         });
 
         if (!response.ok) {
-          logger.error('Error en respuesta:', response.status);
+          logger.error(response.status);
           return null;
         }
 
         const data = await response.json();
-        logger.info('Respuesta del servidor:', data);
+        logger.info(data);
 
         return processResponseData(data);
       } catch (error) {

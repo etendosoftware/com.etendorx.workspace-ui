@@ -4,17 +4,18 @@ import { useProcessMessage, ProcessMessage } from '@/hooks/useProcessMessage';
 import { useTranslation } from '@/hooks/useTranslation';
 import { logger } from '@/utils/logger';
 
-const ProcessIframeModal = ({ isOpen, onClose, url, title }: ProcessIframeModalProps) => {
+const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess }: ProcessIframeModalProps) => {
   const { t } = useTranslation();
   const [iframeLoading, setIframeLoading] = useState(true);
   const [processMessage, setProcessMessage] = useState<ProcessMessage | null>(null);
   const [startPolling, setStartPolling] = useState(false);
   const { fetchProcessMessage } = useProcessMessage();
+  const [processWasSuccessful, setProcessWasSuccessful] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const handleReceivedMessage = useCallback(
     (message: ProcessMessage, clearFn: () => void) => {
-      logger.info('Mensaje recibido del proceso:', message);
+      logger.info(message);
       clearFn();
 
       if (message.message && message.message.toUpperCase().includes('ERROR')) {
@@ -23,17 +24,18 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title }: ProcessIframeModalP
           type: 'error',
           title: message.title || t('errors.internalServerError.title'),
         });
+        setProcessWasSuccessful(false);
       } else {
         setProcessMessage(message);
+        setProcessWasSuccessful(message.type === 'success');
       }
     },
     [t],
   );
-
   const handlePollingError = useCallback(
     (error: unknown, clearFn: () => void) => {
       if (error instanceof Error && !(error instanceof DOMException && error.name === 'AbortError')) {
-        logger.error('Error fetching process message:', error);
+        logger.error(error);
         clearFn();
         setProcessMessage({
           type: 'error',
@@ -65,6 +67,15 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title }: ProcessIframeModalP
     },
     [fetchProcessMessage, handleReceivedMessage, handlePollingError],
   );
+
+  const handleClose = useCallback(() => {
+    if (processWasSuccessful && onProcessSuccess) {
+      onProcessSuccess();
+    }
+
+    setProcessWasSuccessful(false);
+    onClose();
+  }, [onClose, onProcessSuccess, processWasSuccessful]);
 
   useEffect(() => {
     if (!isOpen || !startPolling) return;
@@ -210,7 +221,7 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title }: ProcessIframeModalP
         </div>
         <div className="p-4 border-t border-gray-200 flex justify-end rounded-xl bg-[var(--color-baseline-10)]">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-4 py-2 mx-auto bg-[var(--color-etendo-main)] text-white rounded font-medium focus:outline-none hover:bg-[var(--color-etendo-dark)]">
             {t('common.close')}
           </button>

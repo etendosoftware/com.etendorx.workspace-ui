@@ -15,6 +15,7 @@ const ProcessModal = memo(
     confirmationMessage,
     cancelButtonText,
     executeButtonText,
+    onProcessSuccess,
   }: ProcessModalProps) => {
     const { styles } = useStyle();
     const [showIframeModal, setShowIframeModal] = useState(false);
@@ -106,6 +107,7 @@ const ProcessModal = memo(
             onClose={handleCombinedClose}
             url={iframeUrl}
             title={button?.name || ''}
+            onProcessSuccess={onProcessSuccess}
           />
         )}
       </>

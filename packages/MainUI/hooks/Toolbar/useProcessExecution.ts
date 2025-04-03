@@ -27,11 +27,13 @@ export function useProcessExecution() {
         setError(null);
 
         const queryParams = new URLSearchParams({
+          _action: button.processDefinition.javaClassName,
           processId: button.processDefinition.id,
+          windowId: windowId,
         });
 
         const processParams: Record<string, unknown> = {};
-        button.processInfo.parameters?.forEach(param => {
+        button.processDefinition.parameters?.forEach(param => {
           if (params[param.id]) {
             processParams[param.id] = params[param.id];
           }
@@ -66,7 +68,7 @@ export function useProcessExecution() {
         setLoading(false);
       }
     },
-    [],
+    [windowId],
   );
 
   const executeProcessAction = useCallback(
@@ -160,15 +162,11 @@ export function useProcessExecution() {
 
   const executeProcess = useCallback(
     async ({ button, recordId, params = {} }: ExecuteProcessParams): Promise<ProcessResponse> => {
-      try {
-        if (ProcessButtonType.PROCESS_ACTION in button) {
-          return await executeProcessAction(button);
-        } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
-          return await executeProcessDefinition({ button, recordId, params });
-        } else {
-          throw new Error('Tipo de proceso no soportado');
-        }
-      } catch (error) {
+      if (ProcessButtonType.PROCESS_ACTION in button) {
+        return executeProcessAction(button);
+      } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
+        return executeProcessDefinition({ button, recordId, params });
+      } else {
         throw new Error('Tipo de proceso no soportado');
       }
     },
