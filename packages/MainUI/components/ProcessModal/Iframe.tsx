@@ -12,6 +12,60 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title }: ProcessIframeModalP
   const { fetchProcessMessage } = useProcessMessage();
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  const handleReceivedMessage = useCallback(
+    (message: ProcessMessage, clearFn: () => void) => {
+      logger.info('Mensaje recibido del proceso:', message);
+      clearFn();
+
+      if (message.message && message.message.toUpperCase().includes('ERROR')) {
+        setProcessMessage({
+          ...message,
+          type: 'error',
+          title: message.title || t('errors.internalServerError.title'),
+        });
+      } else {
+        setProcessMessage(message);
+      }
+    },
+    [t],
+  );
+
+  const handlePollingError = useCallback(
+    (error: unknown, clearFn: () => void) => {
+      if (error instanceof Error && !(error instanceof DOMException && error.name === 'AbortError')) {
+        logger.error('Error fetching process message:', error);
+        clearFn();
+        setProcessMessage({
+          type: 'error',
+          title: t('errors.internalServerError.title'),
+          message: String(error),
+        });
+      }
+    },
+    [t],
+  );
+
+  const pollOnce = useCallback(
+    async (signal: AbortSignal, clearFn: () => void) => {
+      if (signal.aborted) return;
+
+      try {
+        const message = await fetchProcessMessage(signal);
+        if (signal.aborted) return;
+        if (message) {
+          handleReceivedMessage(message, clearFn);
+          return true;
+        }
+      } catch (error) {
+        if (signal.aborted) return;
+        handlePollingError(error, clearFn);
+        return error instanceof Error && !(error instanceof DOMException && error.name === 'AbortError');
+      }
+      return false;
+    },
+    [fetchProcessMessage, handleReceivedMessage, handlePollingError],
+  );
+
   useEffect(() => {
     if (!isOpen || !startPolling) return;
 
@@ -20,45 +74,11 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title }: ProcessIframeModalP
 
     const timeoutId = setTimeout(() => {
       const intervalId = setInterval(async () => {
-        if (signal.aborted) return;
-
-        try {
-          const message = await fetchProcessMessage(signal);
-
-          if (signal.aborted) return;
-
-          if (message) {
-            logger.info('Mensaje recibido del proceso:', message);
-            clearInterval(intervalId);
-
-            if (message.message && message.message.toUpperCase().includes('ERROR')) {
-              setProcessMessage({
-                ...message,
-                type: 'error',
-                title: message.title || t('errors.internalServerError.title'),
-              });
-            } else {
-              setProcessMessage(message);
-            }
-            return;
-          }
-        } catch (error) {
-          if (signal.aborted) return;
-          logger.error('Error fetching process message:', error);
-          if (error instanceof Error && !(error instanceof DOMException && error.name === 'AbortError')) {
-            clearInterval(intervalId);
-            setProcessMessage({
-              type: 'error',
-              title: t('errors.internalServerError.title'),
-              message: String(error),
-            });
-          }
-        }
+        const shouldStop = await pollOnce(signal, () => clearInterval(intervalId));
+        if (shouldStop) return;
       }, 2000);
 
-      return () => {
-        clearInterval(intervalId);
-      };
+      return () => clearInterval(intervalId);
     }, 2000);
 
     return () => {
@@ -68,7 +88,7 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title }: ProcessIframeModalP
         abortControllerRef.current = null;
       }
     };
-  }, [fetchProcessMessage, isOpen, startPolling, t]);
+  }, [isOpen, startPolling, pollOnce]);
 
   useEffect(() => {
     return () => {

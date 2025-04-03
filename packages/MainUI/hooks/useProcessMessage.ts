@@ -1,6 +1,5 @@
-import { useCallback } from 'react';
+import { useCallback, useContext } from 'react';
 import { logger } from '@/utils/logger';
-import { useContext } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ApiContext } from '@/contexts/api';
 
@@ -15,6 +14,80 @@ const urlMessageParam = '/meta/message';
 export function useProcessMessage() {
   const apiUrl = useContext(ApiContext);
   const { t } = useTranslation();
+
+  const normalizeMessageType = useCallback(
+    (messageType: string, message: string): 'success' | 'error' | 'warning' | 'info' => {
+      const normalizedType = messageType?.toLowerCase() || 'info';
+
+      if (normalizedType === 'success' || messageType === 'Success') {
+        return 'success';
+      }
+
+      if (message && message.toUpperCase().includes('ERROR')) {
+        return 'error';
+      }
+
+      if (normalizedType.includes('success')) {
+        return 'success';
+      } else if (normalizedType.includes('error')) {
+        return 'error';
+      } else if (normalizedType.includes('warn')) {
+        return 'warning';
+      } else {
+        return 'info';
+      }
+    },
+    [],
+  );
+
+  const getMessageTitle = useCallback(
+    (originalTitle: string | undefined, type: string): string => {
+      if (originalTitle) {
+        return originalTitle;
+      }
+
+      switch (type) {
+        case 'error':
+          return t('errors.internalServerError.title');
+        case 'success':
+          return t('process.completedSuccessfully');
+        default:
+          return t('process.messageTitle');
+      }
+    },
+    [t],
+  );
+
+  const processResponseData = useCallback(
+    (data: ProcessMessage): ProcessMessage | null => {
+      if (!data) {
+        return null;
+      }
+
+      if (data.message === 'No message found') {
+        return null;
+      }
+
+      const messageType = normalizeMessageType(data.type || 'info', data.message || '');
+
+      return {
+        message: data.message || '',
+        type: messageType,
+        title: getMessageTitle(data.title, messageType),
+      };
+    },
+    [normalizeMessageType, getMessageTitle],
+  );
+
+  const handleFetchError = useCallback((error: unknown): ProcessMessage | null => {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      logger.info('Petición de mensaje de proceso abortada');
+      return null;
+    }
+
+    logger.error('Error al obtener mensajes del proceso:', error);
+    return null;
+  }, []);
 
   const fetchProcessMessage = useCallback(
     async (signal?: AbortSignal): Promise<ProcessMessage | null> => {
@@ -41,53 +114,12 @@ export function useProcessMessage() {
         const data = await response.json();
         logger.info('Respuesta del servidor:', data);
 
-        if (!data) {
-          return null;
-        }
-
-        if (data.message === 'No message found') {
-          return null;
-        }
-
-        let messageType = data.type?.toLowerCase() || 'info';
-
-        if (messageType === 'success' || data.type === 'Success') {
-          messageType = 'success';
-        } else if (data.message && data.message.toUpperCase().includes('ERROR')) {
-          messageType = 'error';
-        }
-
-        const normalizedType =
-          messageType === 'success' || messageType.includes('success')
-            ? 'success'
-            : messageType === 'error' || messageType.includes('error')
-              ? 'error'
-              : messageType === 'warning' || messageType.includes('warn')
-                ? 'warning'
-                : 'info';
-
-        return {
-          message: data.message || '',
-          type: normalizedType as 'success' | 'error' | 'warning' | 'info',
-          title:
-            data.title ||
-            (normalizedType === 'error'
-              ? t('errors.internalServerError.title')
-              : normalizedType === 'success'
-                ? t('process.completedSuccessfully')
-                : t('process.messageTitle')),
-        };
+        return processResponseData(data);
       } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          logger.info('Petición de mensaje de proceso abortada');
-          return null;
-        }
-
-        logger.error('Error al obtener mensajes del proceso:', error);
-        return null;
+        return handleFetchError(error);
       }
     },
-    [apiUrl, t],
+    [apiUrl, processResponseData, handleFetchError],
   );
 
   return { fetchProcessMessage };
