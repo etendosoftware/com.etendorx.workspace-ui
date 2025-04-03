@@ -1,9 +1,8 @@
-import Box from '@mui/material/Box';
 import { MaterialReactTable, MRT_ColumnFiltersState, MRT_Row } from 'material-react-table';
 import { useStyle } from './styles';
 import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { useParams, useRouter } from 'next/navigation';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
@@ -14,6 +13,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { useSearch } from '../../contexts/searchContext';
 import TopToolbar from './top-toolbar';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
+import EmptyState from './EmptyState';
 
 type DynamicTableProps = {
   tab: Tab;
@@ -42,6 +42,8 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const selectedCount = useMemo(() => getSelectedCount(tabId), [getSelectedCount, tabId]);
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const { registerDatasource, unregisterDatasource } = useDatasourceContext();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [maxWidth, setMaxWidth] = useState(0);
 
   const rowSelection = useMemo(() => {
     return selectedIds.reduce(
@@ -251,55 +253,63 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     };
   }, [tabId, removeRecordLocally, registerDatasource, unregisterDatasource]);
 
+  useEffect(() => {
+    if (contentRef.current) {
+      setMaxWidth(contentRef.current.clientWidth);
+    }
+  }, []);
+
   if (loading && !loaded) return <Spinner />;
   if (error) return <div>Error: {error.message}</div>;
 
   return (
-    <Box className="flex h-10/12">
-      <Box className="flex flex-col h-full overflow-hidden">
-        <Box sx={sx.container}>
-          <Box sx={sx.table}>
-            <MaterialReactTable
-              enableGlobalFilter={false}
-              columns={columns}
-              data={records}
-              enableRowSelection={true}
-              enableMultiRowSelection={true}
-              positionToolbarAlertBanner="none"
-              muiTableBodyRowProps={rowProps}
-              enablePagination={false}
-              renderTopToolbar={<CustomTopToolbar />}
-              renderBottomToolbar={
-                tab.uIPattern == 'STD' && !searchQuery ? (
-                  <Button sx={sx.fetchMore} onClick={fetchMore}>
-                    Load more
-                  </Button>
-                ) : null
-              }
-              initialState={{ density: 'compact' }}
-              muiTablePaperProps={{
-                sx: sx.tablePaper,
-              }}
-              muiTableHeadCellProps={{ sx: sx.tableHeadCell }}
-              muiTableBodyCellProps={{ sx: sx.tableBodyCell }}
-              muiTableBodyProps={{ sx: sx.tableBody }}
-              state={{
-                rowSelection,
-                columnFilters,
-                showColumnFilters: true,
-              }}
-              onRowSelectionChange={handleRowSelectionChange}
-              onColumnFiltersChange={handleColumnFiltersChange}
-              getRowId={row => String(row.id)}
-              enableColumnFilters={true}
-              enableSorting={true}
-              enableColumnActions={true}
-              manualFiltering={true}
-            />
-          </Box>
-        </Box>
-      </Box>
-    </Box>
+    <div className="flex flex-auto w-full">
+      <div className="flex flex-col w-full" ref={contentRef}>
+        <MaterialReactTable
+          muiTablePaperProps={{
+            sx: sx.tablePaper,
+          }}
+          muiTableHeadCellProps={{ sx: sx.tableHeadCell }}
+          muiTableBodyCellProps={{ sx: sx.tableBodyCell }}
+          muiTableBodyProps={{
+            sx: sx.tableBody,
+          }}
+          layoutMode="grid"
+          enableGlobalFilter={false}
+          columns={columns}
+          data={records}
+          enableRowSelection={true}
+          enableMultiRowSelection={true}
+          positionToolbarAlertBanner="none"
+          muiTableBodyRowProps={rowProps}
+          enablePagination={false}
+          renderTopToolbar={<CustomTopToolbar />}
+          renderBottomToolbar={
+            tab.uIPattern == 'STD' && !searchQuery ? (
+              <Button sx={sx.fetchMore} onClick={fetchMore}>
+                Load more
+              </Button>
+            ) : null
+          }
+          initialState={{ density: 'compact' }}
+          state={{
+            rowSelection,
+            columnFilters,
+            showColumnFilters: true,
+          }}
+          onRowSelectionChange={handleRowSelectionChange}
+          onColumnFiltersChange={handleColumnFiltersChange}
+          getRowId={row => String(row.id)}
+          enableColumnFilters={true}
+          enableSorting={true}
+          enableColumnActions={true}
+          manualFiltering={true}
+          renderEmptyRowsFallback={() => {
+            return <EmptyState maxWidth={maxWidth} />;
+          }}
+        />
+      </div>
+    </div>
   );
 });
 

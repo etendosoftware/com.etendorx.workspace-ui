@@ -63,7 +63,6 @@ export function useDatasource(
       const newValue = value !== undefined ? value : !isImplicitFilterApplied;
       setIsImplicitFilterApplied(newValue);
       setPage(1);
-      setRecords([]);
     },
     [isImplicitFilterApplied],
   );
