@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ProcessIframeModalProps, MessageStylesType } from './types';
 import { useProcessMessage, ProcessMessage } from '@/hooks/useProcessMessage';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -8,19 +8,29 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title }: ProcessIframeModalP
   const { t } = useTranslation();
   const [iframeLoading, setIframeLoading] = useState(true);
   const [processMessage, setProcessMessage] = useState<ProcessMessage | null>(null);
-  const [pollingCount, setPollingCount] = useState(0);
   const [startPolling, setStartPolling] = useState(false);
   const { fetchProcessMessage } = useProcessMessage();
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (!isOpen || !startPolling) return;
 
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
     const timeoutId = setTimeout(() => {
       const intervalId = setInterval(async () => {
+        if (signal.aborted) return;
+
         try {
-          const message = await fetchProcessMessage();
+          const message = await fetchProcessMessage(signal);
+
+          if (signal.aborted) return;
 
           if (message) {
+            logger.info('Mensaje recibido del proceso:', message);
+            clearInterval(intervalId);
+
             if (message.message && message.message.toUpperCase().includes('ERROR')) {
               setProcessMessage({
                 ...message,
@@ -32,24 +42,19 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title }: ProcessIframeModalP
             }
             return;
           }
-
-          setPollingCount(prev => {
-            const newCount = prev + 1;
-            if (newCount >= 10) {
-              clearInterval(intervalId);
-            }
-            return newCount;
-          });
         } catch (error) {
+          if (signal.aborted) return;
           logger.error('Error fetching process message:', error);
-          setProcessMessage({
-            type: 'error',
-            title: t('errors.internalServerError.title'),
-            message: String(error),
-          });
-          clearInterval(intervalId);
+          if (error instanceof Error && !(error instanceof DOMException && error.name === 'AbortError')) {
+            clearInterval(intervalId);
+            setProcessMessage({
+              type: 'error',
+              title: t('errors.internalServerError.title'),
+              message: String(error),
+            });
+          }
         }
-      }, 3000);
+      }, 2000);
 
       return () => {
         clearInterval(intervalId);
@@ -58,22 +63,38 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title }: ProcessIframeModalP
 
     return () => {
       clearTimeout(timeoutId);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
     };
   }, [fetchProcessMessage, isOpen, startPolling, t]);
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (url) {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      setIframeLoading(true);
+      setProcessMessage(null);
+      setStartPolling(false);
+    }
+  }, [url]);
 
   const handleIframeLoad = useCallback(() => {
     setIframeLoading(false);
     setStartPolling(true);
   }, []);
-
-  useEffect(() => {
-    if (url) {
-      setIframeLoading(true);
-      setProcessMessage(null);
-      setPollingCount(0);
-      setStartPolling(false);
-    }
-  }, [url]);
 
   const getMessageStyles = useCallback((type: string): MessageStylesType => {
     const normalizedType = type?.toLowerCase() || '';
@@ -153,30 +174,13 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title }: ProcessIframeModalP
                 <div className="flex-shrink-0"></div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold mb-1" style={{ color: messageStyles.textColor }}>
-                    {processMessage.title}
+                    {processMessage.title || t('common.processes')}
                   </h3>
                   {processMessage.message && <p className="text-gray-700">{processMessage.message}</p>}
                 </div>
               </div>
-              <div className="p-3 border-t border-gray-100 flex justify-end">
-                <button
-                  onClick={onClose}
-                  className="px-4 py-2 rounded text-white text-sm font-medium focus:outline-none mx-auto"
-                  style={{ backgroundColor: messageStyles.buttonBg }}>
-                  {t('common.confirm')}
-                </button>
-              </div>
             </div>
           )}
-          {startPolling && !processMessage && pollingCount > 0 && pollingCount < 10 && (
-            <div className="absolute top-3 left-1/2 transform -translate-x-1/2 z-10">
-              <div className="bg-white bg-opacity-95 py-2 px-4 rounded-full shadow-md flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-[var(--color-etendo-main)] border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-sm">{t('common.loadingFormData')}</span>
-              </div>
-            </div>
-          )}
-
           <iframe
             src={url}
             onLoad={handleIframeLoad}

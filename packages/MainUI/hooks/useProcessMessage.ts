@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
 import { logger } from '@/utils/logger';
+import { useContext } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useApiContext } from '@/hooks/useApiContext';
+import { ApiContext } from '@/contexts/api';
 
 export interface ProcessMessage {
   message: string;
@@ -12,40 +13,47 @@ export interface ProcessMessage {
 const urlMessageParam = '/meta/message';
 
 export function useProcessMessage() {
-  const apiUrl = useApiContext();
+  const apiUrl = useContext(ApiContext);
   const { t } = useTranslation();
 
-  const fetchProcessMessage = useCallback(async (): Promise<ProcessMessage | null> => {
-    if (!apiUrl) {
-      logger.error('API URL no disponible');
-      return null;
-    }
-
-    try {
-      const response = await fetch(`${apiUrl}${urlMessageParam}`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        logger.error('Error en respuesta:', response.status);
+  const fetchProcessMessage = useCallback(
+    async (signal?: AbortSignal): Promise<ProcessMessage | null> => {
+      if (!apiUrl) {
+        logger.error('API URL no disponible');
         return null;
       }
 
-      const data = await response.json();
+      try {
+        const response = await fetch(`${apiUrl}${urlMessageParam}`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal,
+        });
 
-      if (data) {
-        console.debug(data);
-        if (!data.message) {
+        if (!response.ok) {
+          logger.error('Error en respuesta:', response.status);
+          return null;
+        }
+
+        const data = await response.json();
+        logger.info('Respuesta del servidor:', data);
+
+        if (!data) {
+          return null;
+        }
+
+        if (data.message === 'No message found') {
           return null;
         }
 
         let messageType = data.type?.toLowerCase() || 'info';
 
-        if (data.message && data.message.toUpperCase().includes('ERROR')) {
+        if (messageType === 'success' || data.type === 'Success') {
+          messageType = 'success';
+        } else if (data.message && data.message.toUpperCase().includes('ERROR')) {
           messageType = 'error';
         }
 
@@ -63,16 +71,24 @@ export function useProcessMessage() {
           type: normalizedType as 'success' | 'error' | 'warning' | 'info',
           title:
             data.title ||
-            (normalizedType === 'error' ? t('errors.internalServerError.title') : t('process.messageTitle')),
+            (normalizedType === 'error'
+              ? t('errors.internalServerError.title')
+              : normalizedType === 'success'
+                ? t('process.completedSuccessfully')
+                : t('process.messageTitle')),
         };
-      }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          logger.info('Petición de mensaje de proceso abortada');
+          return null;
+        }
 
-      return null;
-    } catch (error) {
-      logger.error('Error al obtener mensajes del proceso:', error);
-      return null;
-    }
-  }, [apiUrl, t]);
+        logger.error('Error al obtener mensajes del proceso:', error);
+        return null;
+      }
+    },
+    [apiUrl, t],
+  );
 
   return { fetchProcessMessage };
 }
