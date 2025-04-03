@@ -144,7 +144,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       }
 
       try {
-        const response = await doChangeProfile(params, token);
+        const response = await doChangeProfile(params);
 
         localStorage.setItem('token', response.token);
         setToken(response.token);

@@ -27,7 +27,7 @@ export interface LanguageOption {
 export interface IUserContext {
   user: User;
   login: (username: string, password: string) => Promise<void>;
-  changeProfile: (params: { role?: string; warehouse?: string }, token: string) => Promise<LoginResponse>;
+  changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | void>;
   token: string | null;
   roles: Role[];
   currentRole: Role | null;

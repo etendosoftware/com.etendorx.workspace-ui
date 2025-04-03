@@ -76,8 +76,8 @@ export interface SelectionProps {
 }
 
 export interface ActionProps {
-  onChangeRole: (roleId: string) => Promise<void>;
-  onChangeWarehouse: (warehouseId: string) => Promise<void>;
+  onChangeRole?: (roleId: string) => Promise<void>;
+  onChangeWarehouse?: (warehouseId: string) => Promise<void>;
   onSetDefaultConfiguration: (config: BaseDefaultConfiguration) => Promise<void>;
 }
 
@@ -87,7 +87,6 @@ export interface LanguageOption {
   name: string;
 }
 export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps, ActionProps {
-  token: string;
   currentRole: BaseRole | null;
   currentWarehouse: BaseWarehouse | null;
   roles: BaseRole[];
@@ -97,7 +96,7 @@ export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps
   language: string;
   languages: LanguageOption[];
   languagesFlags: string;
-  changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse>;
+  changeProfile: (params: { role?: string; warehouse?: string; }) => Promise<LoginResponse | void>;
 }
 
 export interface UserProfileProps {
