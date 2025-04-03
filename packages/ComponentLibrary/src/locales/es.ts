@@ -143,6 +143,8 @@ const es = {
   },
   process: {
     confirmationMessage: '¿Deseas ejecutar este proceso?',
+    messageTitle: 'Proceso',
+    completedSuccessfully: 'Proceso completado exítosamente',
   },
   drawer: {
     recentlyViewed: 'Visto recientemente',

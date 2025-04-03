@@ -6,9 +6,17 @@ export interface BaseButton {
   visible: boolean;
 }
 
+export type ProcessParameters = Array<{
+  defaultValue: string;
+  id: string;
+  name: string;
+}>;
+
 export interface ProcessDefinition extends Record<string, unknown> {
   id: string;
   name: string;
+  javaClassName: string;
+  parameters: ProcessParameters;
 }
 
 export interface ProcessAction extends Record<string, unknown> {
@@ -24,11 +32,7 @@ export interface ProcessInfo {
   name: string;
   javaClassName: string;
   searchKey: string;
-  parameters: Array<{
-    defaultValue: string;
-    id: string;
-    name: string;
-  }>;
+  parameters: ProcessParameters;
 }
 
 export interface BaseProcessButton extends BaseButton {
@@ -49,7 +53,7 @@ export interface ProcessActionButton extends BaseProcessButton {
 export type ProcessButton = ProcessDefinitionButton | ProcessActionButton;
 
 export enum ProcessButtonType {
-  PROCESS_DEFINITION = 'processDefintion',
+  PROCESS_DEFINITION = 'processDefinition',
   PROCESS_ACTION = 'processAction',
 }
 
@@ -76,4 +80,20 @@ export interface ProcessModalProps {
   confirmationMessage: string;
   cancelButtonText: string;
   executeButtonText: string;
+  onProcessSuccess?: () => void;
+}
+
+export interface MessageStylesType {
+  bgColor: string;
+  borderColor: string;
+  textColor: string;
+  buttonBg: string;
+}
+
+export interface ProcessIframeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  url: string;
+  title?: string;
+  onProcessSuccess?: () => void;
 }
