@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Section } from './ToggleButton/types';
 import { Option } from '../Input/Select/types';
 import { Language } from '../../locales/types';
+import { LoginResponse } from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface Translations {
   saveAsDefault: string;
@@ -75,8 +76,8 @@ export interface SelectionProps {
 }
 
 export interface ActionProps {
-  onChangeRole: (roleId: string) => Promise<void>;
-  onChangeWarehouse: (warehouseId: string) => Promise<void>;
+  onChangeRole?: (roleId: string) => Promise<void>;
+  onChangeWarehouse?: (warehouseId: string) => Promise<void>;
   onSetDefaultConfiguration: (config: BaseDefaultConfiguration) => Promise<void>;
 }
 
@@ -95,6 +96,7 @@ export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps
   language: string;
   languages: LanguageOption[];
   languagesFlags: string;
+  changeProfile: (params: { role?: string; warehouse?: string; }) => Promise<LoginResponse | void>;
 }
 
 export interface UserProfileProps {
