@@ -3,7 +3,7 @@ import TabContainer from './TabContainer';
 import type { ResizableTabContainerProps, SelectedRecord } from './types';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
 
-const MAX_HEIGHT = 100;
+const MAX_HEIGHT = 91;
 const MIN_HEIGHT = 20;
 const DEFAULT_HEIGHT = 40;
 
@@ -105,12 +105,12 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
     return (
       <div
         ref={containerRef}
-        className={`sticky bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out
-          rounded-t-2xl border-2 border-[rgba(0,3,13,0.1)] border-b-0 bg-[#FCFCFD]`}
+        className={`fixed bottom-0 mx-1 z-50 w-fill-available transition-all duration-300 ease-in-out 
+          rounded-t-2xl border-2 border-[rgba(0,3,13,0.1)] border-b-0 bg-neutral-50`}
         style={{ height: `${containerHeight}vh` }}>
         <div
           data-resizer
-          className={`absolute top-0 left-1/2 -translate-x-1/2 w-16 h-2 mt-1 rounded-lg bg-[#B1B8D8]
+          className={`absolute top-0 left-1/2 -translate-x-1/2 w-16 h-2 mt-1 rounded-xl bg-primary-100
             ${isMainTab ? 'cursor-default opacity-50' : 'cursor-ns-resize opacity-100'}`}
         />
         <div

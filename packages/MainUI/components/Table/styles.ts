@@ -45,6 +45,8 @@ export const useStyle = (): StylesType => {
           flexDirection: 'column',
           flex: 1,
           boxShadow: 'none',
+          minHeight: 0,
+          flexGrow: 1,
         },
         fetchMore: {
           alignSelf: 'center',
@@ -80,6 +82,7 @@ export const useStyle = (): StylesType => {
           },
         },
         tableBody: {
+          minHeight: 'min-content',
           '& tr': {
             backgroundColor: theme.palette.background.paper,
           },
