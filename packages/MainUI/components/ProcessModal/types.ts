@@ -77,3 +77,17 @@ export interface ProcessModalProps {
   cancelButtonText: string;
   executeButtonText: string;
 }
+
+export interface MessageStylesType {
+  bgColor: string;
+  borderColor: string;
+  textColor: string;
+  buttonBg: string;
+}
+
+export interface ProcessIframeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  url: string;
+  title?: string;
+}

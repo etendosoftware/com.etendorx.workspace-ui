@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, memo } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from '@mui/material';
 import { useStyle } from './styles';
 import { ProcessButtonType, type ProcessModalProps } from './types';
 import ProcessIframeModal from './Iframe';
@@ -19,6 +19,7 @@ const ProcessModal = memo(
     const { styles } = useStyle();
     const [showIframeModal, setShowIframeModal] = useState(false);
     const [iframeUrl, setIframeUrl] = useState('');
+    const [showConfirmDialog, setShowConfirmDialog] = useState(open);
 
     const type = useMemo(
       () =>
@@ -28,17 +29,15 @@ const ProcessModal = memo(
       [button],
     );
 
-    const responseMessage = useMemo(
-      () => processResponse?.responseActions?.[0]?.showMsgInProcessView,
-      [processResponse?.responseActions],
-    );
-
-    const isError = useMemo(() => responseMessage?.msgType === 'error', [responseMessage?.msgType]);
+    useEffect(() => {
+      setShowConfirmDialog(open);
+    }, [open]);
 
     useEffect(() => {
       if (processResponse?.showInIframe && processResponse?.iframeUrl) {
         setIframeUrl(processResponse.iframeUrl);
         setShowIframeModal(true);
+        setShowConfirmDialog(false);
       }
     }, [processResponse]);
 
@@ -52,33 +51,17 @@ const ProcessModal = memo(
       onClose();
     }, [handleCloseIframeModal, onClose]);
 
-    const responseElement = useMemo(() => {
-      if (!processResponse) return null;
-
-      return (
-        <Box sx={styles.messageBox}>
-          {responseMessage && (
-            <Typography sx={isError ? styles.errorMessage : styles.successMessage}>
-              {`${responseMessage.msgTitle}: ${responseMessage.msgText}`}
-            </Typography>
-          )}
-          <pre style={styles.responseBox as React.CSSProperties}>{JSON.stringify(processResponse, null, 2)}</pre>
-        </Box>
-      );
-    }, [
-      processResponse,
-      responseMessage,
-      isError,
-      styles.messageBox,
-      styles.errorMessage,
-      styles.successMessage,
-      styles.responseBox,
-    ]);
+    const handleConfirmModalClose = useCallback(() => {
+      if (!isExecuting) {
+        setShowConfirmDialog(false);
+        onClose();
+      }
+    }, [isExecuting, onClose]);
 
     const actionButtons = useMemo(
       () => (
         <>
-          <Button onClick={onClose} sx={styles.cancelButton}>
+          <Button onClick={handleConfirmModalClose} sx={styles.cancelButton}>
             {cancelButtonText}
           </Button>
           {!processResponse && (
@@ -92,7 +75,7 @@ const ProcessModal = memo(
         cancelButtonText,
         executeButtonText,
         isExecuting,
-        onClose,
+        handleConfirmModalClose,
         onConfirm,
         processResponse,
         styles.cancelButton,
@@ -102,23 +85,27 @@ const ProcessModal = memo(
 
     return (
       <>
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth sx={styles.dialog} closeAfterTransition>
+        <Dialog
+          open={showConfirmDialog}
+          onClose={handleConfirmModalClose}
+          maxWidth="md"
+          fullWidth
+          sx={styles.dialog}
+          closeAfterTransition>
           <DialogTitle sx={styles.dialogTitle}>
             {button.name} ({type})
           </DialogTitle>
           <DialogContent sx={styles.dialogContent}>
             <Typography sx={styles.message}>{confirmationMessage}</Typography>
-            {responseElement}
           </DialogContent>
           <DialogActions sx={styles.dialogActions}>{actionButtons}</DialogActions>
         </Dialog>
-
         {showIframeModal && (
           <ProcessIframeModal
             isOpen={showIframeModal}
             onClose={handleCombinedClose}
             url={iframeUrl}
-            title={button?.name || 'Proceso de Etendo'}
+            title={button?.name || ''}
           />
         )}
       </>
