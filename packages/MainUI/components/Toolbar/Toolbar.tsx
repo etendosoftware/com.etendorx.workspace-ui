@@ -43,7 +43,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const [selectedProcessButton, setSelectedProcessButton] = useState<ProcessButton | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
-  const { selected, tabs } = useMetadataContext();
+  const { selected, tabs, clearSelections } = useMetadataContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { refetchDatasource } = useDatasourceContext();
@@ -117,8 +117,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const handleProcessSuccess = useCallback(() => {
     if (tabId) {
       refetchDatasource(tabId);
+
+      clearSelections(tabId);
     }
-  }, [tabId, refetchDatasource]);
+  }, [tabId, refetchDatasource, clearSelections]);
 
   const handleConfirmProcess = useCallback(async () => {
     if (!selectedProcessButton || !selectedRecord?.id) return;
