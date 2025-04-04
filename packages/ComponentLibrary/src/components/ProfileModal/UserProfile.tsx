@@ -5,7 +5,7 @@ import LogoutIcon from '../../assets/icons/log-out.svg';
 import IconButton from '../IconButton';
 import { UserProfileProps } from './types';
 
-const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, email, sectionTooltip, onSignOff }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, sectionTooltip, onSignOff }) => {
   const { styles } = useStyle();
 
   const handleSignOff = useCallback(() => {
@@ -38,9 +38,9 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, email, sectio
           </div>
         )}
       </div>
-      <p style={styles.nameStyles}>{name}</p>
+      {/* <p style={styles.nameStyles}>{name}</p> */}
       <div style={styles.profileDetailsStyles}>
-        <p style={styles.emailStyles}>{email}</p>
+        <p style={styles.emailStyles}>{name}</p>
       </div>
     </div>
   );
