@@ -6,12 +6,27 @@ interface DatasourceContextValue {
   registerDatasource: (tabId: string, removeRecordLocally: (recordId: string) => void) => void;
   unregisterDatasource: (tabId: string) => void;
   removeRecordFromDatasource: (tabId: string, recordId: string) => void;
+  refetchDatasource: (tabId: string) => void;
+  registerRefetchFunction: (tabId: string, refetchFunction: () => void) => void;
 }
 
 const DatasourceContext = createContext<DatasourceContextValue | undefined>(undefined);
 
 export function DatasourceProvider({ children }: { children: ReactNode }) {
   const datasourcesRef = useRef<Record<string, (recordId: string) => void>>({});
+
+  const refetchFunctionsRef = useRef<Record<string, () => void>>({});
+
+  const registerRefetchFunction = useCallback((tabId: string, refetchFunction: () => void) => {
+    refetchFunctionsRef.current[tabId] = refetchFunction;
+  }, []);
+
+  const refetchDatasource = useCallback((tabId: string) => {
+    const refetchFunction = refetchFunctionsRef.current[tabId];
+    if (refetchFunction) {
+      refetchFunction();
+    }
+  }, []);
 
   const registerDatasource = useCallback((tabId: string, removeRecordLocally: (recordId: string) => void) => {
     datasourcesRef.current[tabId] = removeRecordLocally;
@@ -33,8 +48,10 @@ export function DatasourceProvider({ children }: { children: ReactNode }) {
       registerDatasource,
       unregisterDatasource,
       removeRecordFromDatasource,
+      registerRefetchFunction,
+      refetchDatasource,
     }),
-    [registerDatasource, unregisterDatasource, removeRecordFromDatasource],
+    [registerDatasource, unregisterDatasource, removeRecordFromDatasource, registerRefetchFunction, refetchDatasource],
   );
 
   return <DatasourceContext.Provider value={value}>{children}</DatasourceContext.Provider>;

@@ -33,6 +33,8 @@ import ConfirmModal from '@workspaceui/componentlibrary/src/components/StatusMod
 import { ProcessButton } from '../ProcessModal/types';
 import ProcessModal from '../ProcessModal';
 import { useProcessMetadata } from '@/hooks/useProcessMetadata';
+import { useDatasourceContext } from '@/contexts/datasourceContext';
+import { logger } from '@/utils/logger';
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
   const [openModal, setOpenModal] = useState(false);
@@ -44,6 +46,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const { selected, tabs } = useMetadataContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
+  const { refetchDatasource } = useDatasourceContext();
 
   const tab = useMemo<Tab>(() => {
     const result = tabs.find(tab => tab.id === tabId);
@@ -82,6 +85,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
 
   const processButtons = useMemo(() => toolbar?.buttons.filter(isProcessButton) || [], [toolbar?.buttons]);
 
+  logger.debug(processButtons);
+
   const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   }, []);
@@ -108,6 +113,12 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     },
     [handleSearch, setSearchValue],
   );
+
+  const handleProcessSuccess = useCallback(() => {
+    if (tabId) {
+      refetchDatasource(tabId);
+    }
+  }, [tabId, refetchDatasource]);
 
   const handleConfirmProcess = useCallback(async () => {
     if (!selectedProcessButton || !selectedRecord?.id) return;
@@ -288,6 +299,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           confirmationMessage={t('process.confirmationMessage')}
           cancelButtonText={t('common.cancel')}
           executeButtonText={t('common.execute')}
+          onProcessSuccess={handleProcessSuccess}
         />
       )}
     </>
