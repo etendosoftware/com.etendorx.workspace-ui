@@ -167,7 +167,7 @@ export function useProcessExecution() {
       } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
         return executeProcessDefinition({ button, recordId, params });
       } else {
-        throw new Error('Unsupported type of process');
+        throw new Error('Unsupported process type');
       }
     },
     [executeProcessAction, executeProcessDefinition],
