@@ -12,6 +12,7 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess }: P
   const { fetchProcessMessage } = useProcessMessage();
   const [processWasSuccessful, setProcessWasSuccessful] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const ref = useRef();
 
   const handleReceivedMessage = useCallback(
     (message: ProcessMessage, clearFn: () => void) => {
@@ -217,6 +218,7 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess }: P
             onLoad={handleIframeLoad}
             className="w-full h-full border-0"
             title={t('common.processes')}
+            ref={ref}
           />
         </div>
         <div className="p-4 border-t border-gray-200 flex justify-end rounded-xl bg-[var(--color-baseline-10)]">

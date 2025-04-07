@@ -118,6 +118,7 @@ export function useProcessExecution() {
           params.append('Command', commandAction);
           params.append('inpcOrderId', safeRecordId);
           params.append('inpKey', safeRecordId);
+          params.append('C_Order_ID', safeRecordId);
 
           if (isPostedProcess) {
             params.append('inpdocstatus', docStatus);
@@ -173,12 +174,14 @@ export function useProcessExecution() {
     [executeProcessAction, executeProcessDefinition],
   );
 
+  const resetIframeUrl = useCallback(() => setIframeUrl(''), []);
+
   return {
     executeProcess,
     loading,
     error,
     iframeUrl,
-    resetIframeUrl: () => setIframeUrl(''),
+    resetIframeUrl,
     currentRecord,
     recordsLoaded: !!currentRecord,
     recordsLoading: loading,
