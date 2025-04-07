@@ -90,7 +90,7 @@ export class Client {
       const destination = new URL(`${this.baseUrl}${this.cleanUrl(url)}`);
       this.baseQueryParams.forEach((value, key) => destination.searchParams.append(key, value));
 
-      let response: Response = await fetch(destination, {
+      let response: any = await fetch(destination, {
         ...options,
         body:
           typeof options.body === 'string' ||
@@ -110,12 +110,9 @@ export class Client {
         response = await this.interceptor(response);
       }
 
-      const data = await (this.isJson(response) ? getDecodedJsonResponse<T>(response) : response.text());
+      response.data = await (this.isJson(response) ? getDecodedJsonResponse<T>(response) : response.text());
 
-      return {
-        ...response,
-        data,
-      };
+      return response;
     } catch (error) {
       console.warn('API client request failed', {
         url,
