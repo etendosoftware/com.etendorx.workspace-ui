@@ -1,7 +1,13 @@
 import { Inter } from 'next/font/google';
 import './styles/global.css';
-import App from './App';
 import ThemeProvider from '@workspaceui/componentlibrary/src/components/ThemeProvider';
+import Layout from '@/components/layout';
+import ApiProviderWrapper from '@/contexts/api/wrapper';
+import { DatasourceProvider } from '@/contexts/datasourceContext';
+import LanguageProvider from '@/contexts/languageProvider';
+import MetadataProvider from '@/contexts/metadata';
+import { RecordProvider } from '@/contexts/record';
+import UserProvider from '@/contexts/user';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -21,7 +27,19 @@ export default function RootLayout({
       </head>
       <body>
         <ThemeProvider>
-          <App>{children}</App>
+          <LanguageProvider>
+            <ApiProviderWrapper>
+              <RecordProvider>
+                <UserProvider>
+                  <DatasourceProvider>
+                    <MetadataProvider>
+                      <Layout>{children}</Layout>
+                    </MetadataProvider>
+                  </DatasourceProvider>
+                </UserProvider>
+              </RecordProvider>
+            </ApiProviderWrapper>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>
