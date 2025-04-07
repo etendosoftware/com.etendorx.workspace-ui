@@ -11,6 +11,8 @@ import { Box } from '@mui/material';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { findItemByIdentifier } from '../../utils/menuUtils';
 
+const DRAWER_STATE_KEY = 'etendo-drawer-open';
+
 const Drawer: React.FC<DrawerProps> = ({
   windowId,
   items = [],
@@ -23,11 +25,24 @@ const Drawer: React.FC<DrawerProps> = ({
   getTranslatedName,
   searchContext,
 }) => {
-  const [open, setOpen] = useState<boolean>(false);
+  const [open, setOpen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const savedState = localStorage.getItem(DRAWER_STATE_KEY);
+      return savedState ? JSON.parse(savedState) : false;
+    }
+    return false;
+  });
+
   const { sx } = useStyle();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { searchValue, setSearchValue, filteredItems, expandedItems, setExpandedItems, searchIndex } = searchContext;
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(DRAWER_STATE_KEY, JSON.stringify(open));
+    }
+  }, [open]);
 
   useEffect(() => {
     if (open && searchInputRef.current) {
