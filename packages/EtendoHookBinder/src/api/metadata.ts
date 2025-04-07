@@ -1,8 +1,7 @@
 import { API_DEFAULT_CACHE_DURATION, API_METADATA_URL, API_KERNEL_SERVLET, API_DATASOURCE_SERVLET } from './constants';
 import { Client, Interceptor } from './client';
 import { CacheStore } from './cache';
-import * as Etendo from './types';
-import { Menu } from './types';
+import type * as Etendo from './types';
 
 export type { Etendo };
 
@@ -52,10 +51,10 @@ export class Metadata {
   }
 
   private static async _getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
-    const { data } = await this.client.post(`window/${windowId}`);
+    const { data } = await this.client.post<Etendo.WindowMetadata>(`window/${windowId}`);
 
     this.cache.set(`window-${windowId}`, data);
-    data.tabs.forEach((tab: Record<string, string>) => {
+    data.tabs.forEach((tab) => {
       this.cache.set(`tab-${tab.id}`, tab);
     });
 
@@ -73,7 +72,7 @@ export class Metadata {
   }
 
   private static async _getTab(tabId?: Etendo.Tab["id"]): Promise<Etendo.Tab> {
-    const { data } = await this.client.post(`tab/${tabId}`);
+    const { data } = await this.client.post<Etendo.Tab>(`tab/${tabId}`);
 
     this.cache.set(`tab-${tabId}`, data);
 
@@ -94,15 +93,15 @@ export class Metadata {
     return this.cache.get<{ fields: Etendo.Column[] }>(`tab-${tabId}`)?.fields ?? [];
   }
 
-  public static async getMenu(forceRefresh: boolean = false): Promise<Menu[]> {
-    const cached = this.cache.get<Menu[]>('OBMenu');
+  public static async getMenu(forceRefresh: boolean = false): Promise<Etendo.Menu[]> {
+    const cached = this.cache.get<Etendo.Menu[]>('OBMenu');
     const currentRoleId = localStorage.getItem('currentRoleId');
 
     if (!forceRefresh && cached && cached.length && currentRoleId === this.currentRoleId) {
       return cached;
     } else {
       try {
-        const { data } = await this.client.post('menu', { role: currentRoleId });
+        const { data } = await this.client.post<{ menu: Etendo.Menu[] }>('menu', { role: currentRoleId });
         const menu = data.menu;
         this.cache.set('OBMenu', menu);
         this.currentRoleId = currentRoleId;
@@ -120,8 +119,8 @@ export class Metadata {
     await this.getMenu(true);
   }
 
-  public static getCachedMenu(): Menu[] {
-    return this.cache.get<Menu[]>('OBMenu') ?? [];
+  public static getCachedMenu(): Etendo.Menu[] {
+    return this.cache.get<Etendo.Menu[]>('OBMenu') ?? [];
   }
 
   public static getCachedWindow(windowId: string): Etendo.WindowMetadata {
