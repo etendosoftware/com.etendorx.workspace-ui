@@ -1,19 +1,17 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 
 interface SearchContextType {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 }
 
-const SearchContext = createContext<SearchContextType>({
-  searchQuery: '',
-  setSearchQuery: () => {},
-});
+const SearchContext = createContext<SearchContextType>({} as SearchContextType);
 
 export const SearchProvider = ({ children }: { children: React.ReactNode }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const value = useMemo(() => ({ searchQuery, setSearchQuery }), [searchQuery]);
 
-  return <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>{children}</SearchContext.Provider>;
+  return <SearchContext.Provider value={value}>{children}</SearchContext.Provider>;
 };
 
 export const useSearch = () => useContext(SearchContext);

@@ -10,7 +10,7 @@ import DrawerItems from './Search';
 import { Box } from '@mui/material';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { findItemByIdentifier } from '../../utils/menuUtils';
-import useLocalStorage from '@/src/hooks/useLocalStorage';
+import useLocalStorage from '../../hooks/useLocalStorage';
 
 const DRAWER_STATE_KEY = 'etendo-drawer-open';
 
