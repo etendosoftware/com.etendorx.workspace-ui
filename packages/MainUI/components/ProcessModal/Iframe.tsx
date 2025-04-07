@@ -15,7 +15,6 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess }: P
 
   const handleReceivedMessage = useCallback(
     (message: ProcessMessage, clearFn: () => void) => {
-      logger.info(message);
       clearFn();
 
       if (message.message && message.message.toUpperCase().includes('ERROR')) {

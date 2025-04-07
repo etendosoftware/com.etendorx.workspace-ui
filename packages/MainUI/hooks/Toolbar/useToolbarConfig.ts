@@ -134,7 +134,7 @@ export const useToolbarConfig = ({
           }
           break;
         default:
-          logger.debug(`Action not implemented: ${action}`);
+          logger.warn(`Action not implemented: ${action}`);
       }
     },
     [

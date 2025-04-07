@@ -81,10 +81,10 @@ export function useProcessMessage() {
 
   const handleFetchError = useCallback((error: unknown): ProcessMessage | null => {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      logger.info(error);
+      logger.warn(error);
     }
 
-    logger.error(error);
+    logger.warn(error);
     return null;
   }, []);
 
@@ -111,7 +111,6 @@ export function useProcessMessage() {
         }
 
         const data = await response.json();
-        logger.info(data);
 
         return processResponseData(data);
       } catch (error) {
