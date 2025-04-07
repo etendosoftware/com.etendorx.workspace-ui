@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, createElement, useEffect, memo } from 'react';
+import { useCallback, useMemo, useState, createElement, memo } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import {
@@ -33,6 +33,7 @@ import ConfirmModal from '@workspaceui/componentlibrary/src/components/StatusMod
 import { ProcessButton } from '../ProcessModal/types';
 import ProcessModal from '../ProcessModal';
 import { useProcessMetadata } from '@/hooks/useProcessMetadata';
+import { useDatasourceContext } from '@/contexts/datasourceContext';
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
   const [openModal, setOpenModal] = useState(false);
@@ -41,9 +42,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const [selectedProcessButton, setSelectedProcessButton] = useState<ProcessButton | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
-  const { selected, tabs } = useMetadataContext();
+  const { selected, tabs, clearSelections } = useMetadataContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
+  const { refetchDatasource } = useDatasourceContext();
 
   const tab = useMemo<Tab>(() => {
     const result = tabs.find(tab => tab.id === tabId);
@@ -109,6 +111,14 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     [handleSearch, setSearchValue],
   );
 
+  const handleProcessSuccess = useCallback(() => {
+    if (tabId) {
+      refetchDatasource(tabId);
+
+      clearSelections(tabId);
+    }
+  }, [tabId, refetchDatasource, clearSelections]);
+
   const handleConfirmProcess = useCallback(async () => {
     if (!selectedProcessButton || !selectedRecord?.id) return;
 
@@ -145,13 +155,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     setProcessResponse(null);
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { metadata } = useProcessMetadata(selectedProcessButton);
-
-  useEffect(() => {
-    if (metadata) {
-      console.debug('process metadata', metadata);
-    }
-  }, [metadata]);
 
   const toolbarConfig = useMemo(() => {
     const buttons = toolbar?.buttons ?? [];
@@ -288,6 +293,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           confirmationMessage={t('process.confirmationMessage')}
           cancelButtonText={t('common.cancel')}
           executeButtonText={t('common.execute')}
+          onProcessSuccess={handleProcessSuccess}
         />
       )}
     </>

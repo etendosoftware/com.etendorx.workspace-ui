@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useCallback } from 'react';
 import { MenuOpen } from '@mui/icons-material';
 import { Box } from '@mui/material';
 import { IconButton } from '../..';
@@ -10,12 +10,12 @@ const EtendoLink = 'https://docs.etendo.software/latest/';
 const DrawerHeader = forwardRef<HTMLDivElement, DrawerHeaderProps>(({ title, logo, open, onClick, tabIndex }, ref) => {
   const { sx } = useStyle();
 
-  const renderLogo = () => {
+  const renderLogo = useCallback(() => {
     if (typeof logo === 'string') {
       return <Box component="img" src={logo} alt={`${title} Logo`} sx={sx.drawerHeaderImg} />;
     }
     return <Box sx={sx.drawerHeaderImg}>{logo}</Box>;
-  };
+  }, [logo, sx.drawerHeaderImg, title]);
 
   return (
     <Box sx={sx.drawerHeader} ref={ref}>

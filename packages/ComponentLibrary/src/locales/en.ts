@@ -139,6 +139,8 @@ const en = {
   },
   process: {
     confirmationMessage: 'Want to execute this process?',
+    messageTitle: 'Process',
+    completedSuccessfully: 'Process completed successfuly',
   },
   drawer: {
     recentlyViewed: 'Recently Viewed',

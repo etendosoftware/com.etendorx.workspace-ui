@@ -75,6 +75,7 @@ export const useStyle = () => {
           padding: '0rem 0.5rem',
           background: theme.palette.dynamicColor.light,
           borderRadius: '12.5rem',
+          margin: '0.5rem 0',
         },
         nameStyles: {
           margin: 0,

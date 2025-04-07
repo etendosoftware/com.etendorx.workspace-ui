@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { AUTH_HEADER_NAME } from './constants';
 import { getDecodedJsonResponse } from './utils';
 
@@ -77,8 +79,9 @@ export class Client {
 
     return this;
   }
-
-  public async request(url: string, options: ClientOptions = {}) {
+  public async request(url: string, options?: ClientOptions): Promise<Response & { data: any }>;
+  public async request<T>(url: string, options?: ClientOptions): Promise<Response & { data: T }>;
+  public async request<T>(url: string, options: ClientOptions = {}): Promise<Response & { data: T | any }> {
     try {
       if (options.method !== 'GET') {
         this.setContentType(options);
@@ -87,13 +90,12 @@ export class Client {
       const destination = new URL(`${this.baseUrl}${this.cleanUrl(url)}`);
       this.baseQueryParams.forEach((value, key) => destination.searchParams.append(key, value));
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let response: Response & { data?: any } = await fetch(destination, {
+      let response: any = await fetch(destination, {
         ...options,
         body:
           typeof options.body === 'string' ||
-            options.body instanceof URLSearchParams ||
-            options.body instanceof FormData
+          options.body instanceof URLSearchParams ||
+          options.body instanceof FormData
             ? options.body
             : options.body
               ? JSON.stringify(options.body)
@@ -108,7 +110,7 @@ export class Client {
         response = await this.interceptor(response);
       }
 
-      response.data = await (this.isJson(response) ? getDecodedJsonResponse(response) : response.text());
+      response.data = await (this.isJson(response) ? getDecodedJsonResponse<T>(response) : response.text());
 
       return response;
     } catch (error) {
@@ -128,16 +130,15 @@ export class Client {
     return () => (this.interceptor = null);
   }
 
-  public async post(url: string, payload: ClientOptions['body'] = null, options: ClientOptions = {}) {
-    return this.request(url, { ...options, body: payload, method: 'POST' });
-  }
-
-  public run(js: string) {
-    const script = document.createElement('script');
-
-    script.type = 'text/javascript';
-    script.textContent = js;
-    document.head.appendChild(script);
-    document.head.removeChild(script);
+  public async post<T = any>(
+    url: string,
+    payload: ClientOptions['body'] = null,
+    options: ClientOptions = {},
+  ): Promise<
+    Response & {
+      data: T;
+    }
+  > {
+    return this.request<T>(url, { ...options, body: payload, method: 'POST' });
   }
 }

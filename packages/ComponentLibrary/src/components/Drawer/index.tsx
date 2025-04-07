@@ -23,7 +23,7 @@ const Drawer: React.FC<DrawerProps> = ({
   getTranslatedName,
   searchContext,
 }) => {
-  const [open, setOpen] = useState<boolean>(true);
+  const [open, setOpen] = useState<boolean>(false);
   const { sx } = useStyle();
   const searchInputRef = useRef<HTMLInputElement>(null);
 

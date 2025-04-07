@@ -2,7 +2,7 @@ import { Metadata } from './metadata';
 import { SessionResponse } from './types';
 
 export const getSession = async (token: string): Promise<SessionResponse> => {
-  const response = await Metadata.client.request(`/session`, {
+  const response = await Metadata.client.request<SessionResponse>(`/session`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

@@ -4,7 +4,7 @@ import { LoginResponse } from './types';
 
 export const login = async (username: string, password: string): Promise<LoginResponse> => {
   try {
-    const result = await Metadata.loginClient.request(API_LOGIN_URL, {
+    const result = await Metadata.loginClient.request<LoginResponse>(API_LOGIN_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
