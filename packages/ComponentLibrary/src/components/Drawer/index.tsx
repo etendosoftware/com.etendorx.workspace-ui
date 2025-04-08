@@ -10,7 +10,6 @@ import DrawerItems from './Search';
 import { Box } from '@mui/material';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { findItemByIdentifier } from '../../utils/menuUtils';
-import useLocalStorage from '../../hooks/useLocalStorage';
 
 const DRAWER_STATE_KEY = 'etendo-drawer-open';
 
@@ -26,7 +25,13 @@ const Drawer: React.FC<DrawerProps> = ({
   getTranslatedName,
   searchContext,
 }) => {
-  const [open, setOpen] = useLocalStorage<boolean>(DRAWER_STATE_KEY, false);
+  const [open, setOpen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const savedState = localStorage.getItem(DRAWER_STATE_KEY);
+      return savedState ? JSON.parse(savedState) : false;
+    }
+    return false;
+  });
 
   const { sx } = useStyle();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -58,7 +63,7 @@ const Drawer: React.FC<DrawerProps> = ({
 
   const allItemTitles = useMemo(() => (searchIndex ? getAllItemTitles(searchIndex) : []), [searchIndex]);
 
-  const handleHeaderClick = useCallback(() => setOpen(prev => !prev), [setOpen]);
+  const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
 
   const toggleItemExpansion = useCallback(
     (itemId: string) => {
