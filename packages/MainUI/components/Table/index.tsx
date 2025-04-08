@@ -1,12 +1,11 @@
 import { MaterialReactTable, MRT_ColumnFiltersState, MRT_Row } from 'material-react-table';
 import { useStyle } from './styles';
-import type { DatasourceOptions, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { type DatasourceOptions, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { useParams, useRouter } from 'next/navigation';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
-import { parseColumns } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { Button } from '@mui/material';
 import { WindowParams } from '../../app/types';
 import { useLanguage } from '../../hooks/useLanguage';
@@ -14,6 +13,7 @@ import { useSearch } from '../../contexts/searchContext';
 import TopToolbar from './top-toolbar';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
 import EmptyState from './EmptyState';
+import { parseColumns } from '@/utils/table';
 
 type DynamicTableProps = {
   tab: Tab;
@@ -95,6 +95,8 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     updateColumnFilters,
     removeRecordLocally,
   } = useDatasource(tab.entityName, query, searchQuery, columns, columnFilters);
+
+  console.debug(records);
 
   const handleColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
