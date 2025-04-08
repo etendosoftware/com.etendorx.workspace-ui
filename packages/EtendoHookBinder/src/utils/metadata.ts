@@ -23,44 +23,6 @@ export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
   return tabs;
 };
 
-export const parseColumns = (columns?: Etendo.Field[]): Etendo.Column[] => {
-  const result: Etendo.Column[] = [];
-
-  try {
-    if (!columns) return result;
-
-    for (const column of columns) {
-      if (column.showInGridView) {
-        let columnType = '';
-
-        if (column.column?.reference$_identifier) {
-          columnType = column.column.reference$_identifier;
-        }
-
-        result.push({
-          header: column.name ?? column.hqlName,
-          id: column.name,
-          columnName: column.hqlName,
-          isMandatory: column.isMandatory,
-          _identifier: column.name,
-          column: {
-            _identifier: columnType,
-          },
-          name: column.name,
-          type: columnType,
-          accessorFn: (v: Record<string, unknown>) => {
-            return v[column.hqlName + '$_identifier'] ?? v[column.hqlName];
-          },
-        });
-      }
-    }
-  } catch (e) {
-    console.warn(e);
-  }
-
-  return result;
-};
-
 export const buildFormState = (
   fields: Tab['fields'],
   record: Record<string, unknown>,

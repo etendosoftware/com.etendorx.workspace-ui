@@ -13,7 +13,7 @@ import { useSearch } from '../../contexts/searchContext';
 import TopToolbar from './top-toolbar';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
 import EmptyState from './EmptyState';
-import { parseColumns } from '@/utils/table';
+import { parseColumns } from '@/utils/tableColumns';
 
 type DynamicTableProps = {
   tab: Tab;
