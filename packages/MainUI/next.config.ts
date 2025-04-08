@@ -3,11 +3,6 @@ import { NextConfig } from 'next';
 const DEBUG_MODE = process.env.DEBUG_MODE === 'true' || process.env.NODE_ENV === 'development';
 
 const nextConfig: NextConfig = {
-  experimental: {
-    optimizeCss: !DEBUG_MODE,
-    scrollRestoration: true,
-    serverMinification: !DEBUG_MODE,
-  },
   reactStrictMode: DEBUG_MODE,
   cleanDistDir: false,
   output: 'standalone',
