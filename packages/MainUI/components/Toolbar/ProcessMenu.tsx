@@ -38,7 +38,7 @@ const ProcessMenuItem = forwardRef<HTMLLIElement, ProcessMenuItemProps>(
     }, [button, onProcessClick]);
 
     return (
-      <Tooltip title={button.name} enterDelay={600} leaveDelay={100}>
+      <Tooltip title={button.name} enterDelay={2000} leaveDelay={100}>
         <MenuItem onClick={handleClick} sx={menuItemStyle} disabled={disabled} ref={ref}>
           <span>{button.name}</span>
         </MenuItem>

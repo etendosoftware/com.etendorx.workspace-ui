@@ -1,4 +1,5 @@
 'use client';
+
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserContext } from '../../hooks/useUserContext';
@@ -13,20 +14,22 @@ export default function LoginPage() {
     async (username: string, password: string) => {
       try {
         await login(username, password);
-        router.push('/');
-        router.refresh();
       } catch (e) {
         setError((e as Error).message);
       }
     },
-    [login, router],
+    [login],
   );
 
   useEffect(() => {
     if (token) {
-      router.replace('/');
+      router.push('/');
     }
   }, [router, token]);
+
+  if (token) {
+    return null;
+  }
 
   return <Login title="Etendo" onSubmit={handleLogin} error={error} />;
 }

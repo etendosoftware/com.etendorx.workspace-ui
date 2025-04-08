@@ -1,6 +1,6 @@
+import { API_LOGIN_URL } from '@workspaceui/etendohookbinder/src/api/constants';
 import { delay } from '@/utils/form';
 import { logger } from '@/utils/logger';
-import { API_LOGIN_URL } from '@workspaceui/etendohookbinder/src/api/constants';
 
 export async function performHealthCheck(
   url: string,
@@ -30,11 +30,11 @@ export async function performHealthCheck(
 
       logger.warn(`Health check attempt ${attempt} failed:`, error);
 
-      if (attempt === maxAttempts && !signal.aborted) {
+      if (attempt === maxAttempts) {
         onError();
+      } else {
+        await delay(delayMs);
       }
-
-      await delay(delayMs);
     }
   }
 }

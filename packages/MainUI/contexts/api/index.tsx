@@ -9,54 +9,57 @@ import { performHealthCheck } from '../../utils/health-check';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import Loading from '@/components/loading';
-import { useLanguage } from '@/hooks/useLanguage';
+import { getLanguage } from '@/utils/language';
 
 export const ApiContext = createContext<string | null>(null);
 
 export default function ApiProvider({ children, url }: React.PropsWithChildren<{ url: string }>) {
-  const { language } = useLanguage();
+  const language = getLanguage();
+  const controllerRef = useRef(new AbortController());
   const [state, dispatch] = useReducer(stateReducer, initialState);
-  const controllerRef = useRef<AbortController>(new AbortController());
   const { t } = useTranslation();
 
-  const healthCheck = useCallback(() => {
-    const signal = controllerRef.current.signal;
-
-    if (url && !signal.aborted) {
+  const healthCheck = useCallback((url: string, controller: AbortController) => {
+    if (url && !controller.signal.aborted) {
       dispatch({ type: 'RESET' });
       performHealthCheck(
         url,
-        signal,
+        controller.signal,
         HEALTH_CHECK_MAX_ATTEMPTS,
         HEALTH_CHECK_RETRY_DELAY_MS,
         () => {
-          if (signal.aborted) return;
+          controller.abort();
           dispatch({ type: 'SET_CONNECTED' });
         },
         () => {
-          if (signal.aborted) return;
+          controller.abort();
           dispatch({ type: 'SET_ERROR' });
         },
       );
     }
-  }, [url]);
+  }, []);
 
-  useEffect(() => {
+  const handleRetry = useCallback(() => {
     const controller = controllerRef.current;
-    healthCheck();
+
+    healthCheck(url, controller);
 
     return () => {
       controller.abort();
       controllerRef.current = new AbortController();
     };
-  }, [healthCheck]);
+  }, [healthCheck, url]);
 
-  useEffect(() => {
-    if (url) {
+  const applyUrl = useCallback(() => {
+    if (url && state.connected) {
       Metadata.setBaseUrl(url);
       datasource.setBaseUrl(url);
     }
-  }, [url]);
+  }, [state.connected, url]);
+
+  useEffect(handleRetry, [handleRetry]);
+
+  useEffect(applyUrl, [applyUrl]);
 
   if (state.connected) {
     return <ApiContext.Provider value={url}>{children}</ApiContext.Provider>;
@@ -69,7 +72,7 @@ export default function ApiProvider({ children, url }: React.PropsWithChildren<{
           title={t('errors.networkError.title')}
           description={t('errors.networkError.description')}
           showRetry={true}
-          onRetry={healthCheck}
+          onRetry={handleRetry}
         />
       </div>
     );
