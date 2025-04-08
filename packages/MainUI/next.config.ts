@@ -3,28 +3,24 @@ import { NextConfig } from 'next';
 const DEBUG_MODE = process.env.DEBUG_MODE === 'true' || process.env.NODE_ENV === 'development';
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['@mui/material', '@mui/system', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
-  modularizeImports: {
-    '@mui/material': {
-      transform: '@mui/material/{{member}}',
-    },
-    '@mui/icons-material': {
-      transform: '@mui/icons-material/{{member}}',
-    },
+  experimental: {
+    optimizeCss: !DEBUG_MODE,
+    scrollRestoration: true,
+    serverMinification: !DEBUG_MODE,
   },
-  reactStrictMode: true,
-  cleanDistDir: true,
-  bundlePagesRouterDependencies: true,
+  reactStrictMode: DEBUG_MODE,
+  cleanDistDir: false,
   output: 'standalone',
+  excludeDefaultMomentLocales: true,
   compiler: {
     removeConsole: !DEBUG_MODE,
   },
   compress: !DEBUG_MODE,
   webpack(config) {
-    config.optimization = {
-      ...config.optimization,
-      minimize: !DEBUG_MODE,
-    };
+    // config.optimization = {
+    //   ...config.optimization,
+    //   minimize: !DEBUG_MODE,
+    // };
 
     const fileLoaderRule = config.module.rules.find(
       (rule: { test: { toString: () => string | string[] } }) => rule.test && rule.test.toString().includes('svg'),
@@ -57,18 +53,18 @@ const nextConfig: NextConfig = {
       },
     );
 
-    if (config.optimization?.minimizer) {
-      config.optimization.minimizer.forEach(
-        (plugin: { options?: { terserOptions?: { compress?: { [key: string]: unknown } } } }) => {
-          if (plugin.options && plugin.options.terserOptions) {
-            plugin.options.terserOptions.compress = {
-              ...plugin.options.terserOptions.compress,
-              drop_console: !DEBUG_MODE,
-            };
-          }
-        },
-      );
-    }
+    // if (config.optimization?.minimizer) {
+    //   config.optimization.minimizer.forEach(
+    //     (plugin: { options?: { terserOptions?: { compress?: { [key: string]: unknown } } } }) => {
+    //       if (plugin.options && plugin.options.terserOptions) {
+    //         plugin.options.terserOptions.compress = {
+    //           ...plugin.options.terserOptions.compress,
+    //           drop_console: !DEBUG_MODE,
+    //         };
+    //       }
+    //     },
+    //   );
+    // }
 
     return config;
   },

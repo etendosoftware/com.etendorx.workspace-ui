@@ -5,13 +5,12 @@ import translations from '@workspaceui/componentlibrary/src/locales';
 import DEFAULT_LANGUAGE from '../contexts/languageProvider';
 
 export const useTranslation = (defaultLanguage = DEFAULT_LANGUAGE) => {
-  const languageContext = useLanguage();
-  const language = languageContext?.language || defaultLanguage;
+  const { language } = useLanguage();
 
   const t = useCallback<TranslateFunction>(
     key => {
       const keys = key.split('.');
-      let value: unknown = translations[language ?? 'en_US'];
+      let value: unknown = translations[language ?? defaultLanguage ?? 'en_US'];
 
       for (const k of keys) {
         if (typeof value !== 'object' || value === null || !(k in value)) {
@@ -26,7 +25,7 @@ export const useTranslation = (defaultLanguage = DEFAULT_LANGUAGE) => {
 
       return value;
     },
-    [language],
+    [language, defaultLanguage],
   );
 
   return { t };

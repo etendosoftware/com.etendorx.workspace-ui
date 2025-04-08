@@ -5,5 +5,7 @@ import { FALLBACK_URL } from '@/utils/constants';
 export default async function ApiProviderWrapper({ children }: React.PropsWithChildren) {
   await connection();
 
-  return <ApiProvider url={process.env['ETENDO_CLASSIC_URL'] || FALLBACK_URL}>{children}</ApiProvider>;
+  const url = process.env['ETENDO_CLASSIC_URL'] || FALLBACK_URL;
+
+  return <ApiProvider url={url}>{children}</ApiProvider>;
 }
