@@ -113,8 +113,8 @@ export const useToolbarConfig = ({
 
               const confirmText =
                 selectedIds.length === 1
-                  ? `${t('status.deleteConfirmation')}${selectedRecord?._identifier || selectedRecord?.id}?`
-                  : `${t('status.deleteConfirmation')}the selected records: ${selectedIds.length}`;
+                  ? `${t('status.deleteConfirmation')} ${selectedRecord?._identifier || selectedRecord?.id}?`
+                  : `${t('status.multipleDeleteConfirmation')} ${selectedIds.length}`;
 
               showConfirmModal({
                 confirmText,
@@ -134,7 +134,7 @@ export const useToolbarConfig = ({
           }
           break;
         default:
-          logger.debug(`Action not implemented: ${action}`);
+          logger.warn(`Action not implemented: ${action}`);
       }
     },
     [
