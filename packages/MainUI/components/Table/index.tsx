@@ -96,8 +96,6 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     removeRecordLocally,
   } = useDatasource(tab.entityName, query, searchQuery, columns, columnFilters);
 
-  console.debug(records);
-
   const handleColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
       let newColumnFilters: MRT_ColumnFiltersState;
