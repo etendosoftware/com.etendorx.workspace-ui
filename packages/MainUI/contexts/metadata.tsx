@@ -9,6 +9,8 @@ import { WindowParams } from '../app/types';
 import { useLanguage } from '../hooks/useLanguage';
 import { IMetadataContext } from './types';
 import { useDatasourceContext } from './datasourceContext';
+import { useSetSession } from '@/hooks/useSetSession';
+import { useUserContext } from '@/hooks/useUserContext';
 
 export const MetadataContext = createContext({} as IMetadataContext);
 
@@ -26,6 +28,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [tabId, windowData?.tabs]);
   const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
   const { removeRecordFromDatasource } = useDatasourceContext();
+  const { token } = useUserContext();
 
   const closeTab = useCallback(
     (level: number) => {
@@ -84,8 +87,12 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [selectedMultiple],
   );
 
+  const setSession = useSetSession();
+
   const selectRecord: IMetadataContext['selectRecord'] = useCallback(
-    (record, tab) => {
+    async (record, tab) => {
+      await setSession(record, tab, token);
+
       const level = tab.level;
 
       const isDeselecting = selected[level] && selected[level].id === record.id;

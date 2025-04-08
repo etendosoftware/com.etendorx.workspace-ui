@@ -193,7 +193,7 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess }: P
               </div>
             </div>
           )}
-          {processMessage && (
+          {processMessage?.message && (
             <div
               className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-4/5 max-w-md rounded-lg shadow-lg overflow-hidden border"
               style={{
@@ -225,6 +225,7 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess }: P
             {t('common.close')}
           </button>
         </div>
+
       </div>
     </div>
   );

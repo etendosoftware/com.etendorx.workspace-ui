@@ -35,6 +35,12 @@ const ProcessModal = memo(
     }, [open]);
 
     useEffect(() => {
+      if (type == ProcessButtonType.PROCESS_ACTION) {
+        onConfirm();
+      }
+    }, [onConfirm, type]);
+
+    useEffect(() => {
       if (processResponse?.showInIframe && processResponse?.iframeUrl) {
         setIframeUrl(processResponse.iframeUrl);
         setShowIframeModal(true);
@@ -86,22 +92,26 @@ const ProcessModal = memo(
 
     return (
       <>
-        <Dialog
-          open={showConfirmDialog}
-          onClose={handleConfirmModalClose}
-          maxWidth="md"
-          fullWidth
-          sx={styles.dialog}
-          closeAfterTransition>
-          <DialogTitle sx={styles.dialogTitle}>
-            {button.name} ({type})
-          </DialogTitle>
-          <DialogContent sx={styles.dialogContent}>
-            <Typography sx={styles.message}>{confirmationMessage}</Typography>
-          </DialogContent>
-          <DialogActions sx={styles.dialogActions}>{actionButtons}</DialogActions>
-        </Dialog>
-        {showIframeModal && (
+        {type == ProcessButtonType.PROCESS_DEFINITION && (
+          <>
+            <Dialog
+              open={showConfirmDialog}
+              onClose={handleConfirmModalClose}
+              maxWidth="md"
+              fullWidth
+              sx={styles.dialog}
+              closeAfterTransition>
+              <DialogTitle sx={styles.dialogTitle}>
+                {button.name} ({type})
+              </DialogTitle>
+              <DialogContent sx={styles.dialogContent}>
+                <Typography sx={styles.message}>{confirmationMessage}</Typography>
+              </DialogContent>
+              <DialogActions sx={styles.dialogActions}>{actionButtons}</DialogActions>
+            </Dialog>
+          </>
+        )}
+        {showIframeModal || type == ProcessButtonType.PROCESS_ACTION && (
           <ProcessIframeModal
             isOpen={showIframeModal}
             onClose={handleCombinedClose}

@@ -230,7 +230,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
           Metadata.setToken(token);
           datasource.setToken(token);
 
-          updateSessionInfo(await getSession(token));
+          updateSessionInfo(await getSession());
         } catch (error) {
           clearUserData();
           navigate('/login');
