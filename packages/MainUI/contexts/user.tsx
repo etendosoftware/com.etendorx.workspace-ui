@@ -160,7 +160,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         throw error;
       }
     },
-    [token, updateSessionInfo, navigate]
+    [token, updateSessionInfo, navigate],
   );
 
   const login = useCallback(
@@ -259,21 +259,18 @@ export default function UserProvider(props: React.PropsWithChildren) {
         setToken(null);
         setRoles([]);
         setCurrentRole(null);
-        navigate('/login');
       }
       return response;
     };
 
-    if (token) {
-      const unregisterMetadataInterceptor = Metadata.registerInterceptor(interceptor);
-      const unregisterDatasourceInterceptor = datasource.registerInterceptor(interceptor);
+    const unregisterMetadataInterceptor = Metadata.registerInterceptor(interceptor);
+    const unregisterDatasourceInterceptor = datasource.registerInterceptor(interceptor);
 
-      return () => {
-        unregisterMetadataInterceptor();
-        unregisterDatasourceInterceptor();
-      };
-    }
-  }, [navigate, token]);
+    return () => {
+      unregisterMetadataInterceptor();
+      unregisterDatasourceInterceptor();
+    };
+  }, [navigate]);
 
   useEffect(() => {
     if (languages.length === 0) return;

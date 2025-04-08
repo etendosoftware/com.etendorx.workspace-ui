@@ -279,6 +279,7 @@ export enum WindowType {
 export interface LoginResponse {
   status: string;
   token: string;
+  message?: string;
   roleList: Array<{
     id: string;
     name: string;

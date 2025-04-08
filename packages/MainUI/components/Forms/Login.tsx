@@ -25,10 +25,10 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
   );
 
   const handleSubmit = useCallback<React.FormEventHandler>(
-    async e => {
+    e => {
       e.preventDefault();
       e.stopPropagation();
-      await onSubmit(username, password);
+      onSubmit(username, password);
     },
     [onSubmit, password, username],
   );
@@ -60,6 +60,7 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
                 fullWidth
                 sx={styles.input}
                 autoComplete="username"
+                autoFocus
               />
               <TextInputBase
                 type="password"
