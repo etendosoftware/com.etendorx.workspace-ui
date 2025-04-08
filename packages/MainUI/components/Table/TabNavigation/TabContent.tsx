@@ -29,8 +29,10 @@ export const TabContent: React.FC<TabContentProps> = ({
   return (
     <div className="flex flex-col h-full">
       <div
+        data-header
         className={`h-11 min-h-[44px] flex justify-between items-center px-4 rounded-t-xl sticky top-0 z-10 w-full flex-shrink-0 border-b border-[rgba(0,3,13,0.1)] bg-[rgba(0,3,13,0.05)]
-          ${isMainTab ? 'cursor-default' : 'cursor-ns-resize'}`}>
+          ${isMainTab ? 'cursor-default' : 'cursor-ns-resize'}`}
+        onDoubleClick={isMainTab ? undefined : handleFullSize}>
         <div className="flex items-center overflow-hidden rounded-2xl">
           <div className="flex items-center px-2 rounded-full h-8 flex-shrink-0 bg-[rgba(0,3,13,0.05)] border border-[rgba(0,3,13,0.1)]">
             <p className="text-sm whitespace-nowrap">{type}</p>
