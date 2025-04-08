@@ -176,7 +176,7 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
       <div
         ref={containerRef}
         className={`fixed bottom-0 mx-1 z-50 w-fill-available 
-          ${isDragging ? '' : 'transition-height duration-200 ease-out'} 
+          ${isDragging ? '' : 'transition-all transform-gpu duration-[20ms] ease-in-out'} 
           rounded-t-2xl border-2 border-[rgba(0,3,13,0.1)] border-b-0 bg-neutral-50`}
         style={{ height: `${containerHeight}vh` }}>
         <div
