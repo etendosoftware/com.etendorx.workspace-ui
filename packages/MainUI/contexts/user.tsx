@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
@@ -16,6 +17,10 @@ import {
   SessionResponse,
   Warehouse,
   User,
+  CurrentWarehouse,
+  CurrentRole,
+  CurrentClient,
+  CurrentOrganization,
 } from '@workspaceui/etendohookbinder/src/api/types';
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/src/api/defaultConfig';
 import { usePathname, useRouter } from 'next/navigation';
@@ -29,6 +34,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<IUserContext['user']>({} as User);
   const [session, setSession] = useState<ISession>({});
+  const [currentOrganization, setCurrentOrganization] = useState<CurrentOrganization>();
+  const [currentWarehouse, setCurrentWarehouse] = useState<CurrentWarehouse>();
+  const [currentRole, setCurrentRole] = useState<CurrentRole>();
+  const [currentClient, setCurrentClient] = useState<CurrentClient>();
   const { setLanguage } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
@@ -53,21 +62,12 @@ export default function UserProvider(props: React.PropsWithChildren) {
     return savedProfile ? JSON.parse(savedProfile) : INITIAL_PROFILE;
   });
 
-  const [currentRole, setCurrentRole] = useState<Role | null>(() => {
-    const savedCurrentRole = localStorage.getItem('currentRole');
-    return savedCurrentRole ? JSON.parse(savedCurrentRole) : null;
-  });
-
-  const [currentWarehouse, setCurrentWarehouse] = useState<Warehouse | null>(() => {
-    const savedCurrentWarehouse = localStorage.getItem('currentWarehouse');
-    return savedCurrentWarehouse ? JSON.parse(savedCurrentWarehouse) : null;
-  });
-
   const [languages, setLanguages] = useState<LanguageOption[]>([]);
 
   const setDefaultConfiguration = useCallback(async (token: string, config: DefaultConfiguration) => {
     try {
-      await apiSetDefaultConfiguration(token, config);
+      const data = await apiSetDefaultConfiguration(token, config);
+      console.debug(data);
     } catch (error) {
       logger.error('Error setting default configuration:', error);
       throw error;
@@ -81,12 +81,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   const updateSessionInfo = useCallback(
     async (sessionResponse: SessionResponse) => {
-      const currentRole: Role = {
-        id: sessionResponse.role.id,
-        name: sessionResponse.role.name,
-        orgList: [],
-      };
-
       const currentProfileInfo: ProfileInfo = {
         name: sessionResponse.user.name,
         email: sessionResponse.user.client$_identifier,
@@ -98,8 +92,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
       setProfile(currentProfileInfo);
 
       localStorage.setItem('currentInfo', JSON.stringify(currentProfileInfo));
-      localStorage.setItem('currentRole', JSON.stringify(currentRole));
-      localStorage.setItem('currentRoleId', currentRole.id);
+      localStorage.setItem('currentRole', JSON.stringify(sessionResponse.currentRole));
+      localStorage.setItem('currentRoleId', sessionResponse.currentRole.id);
 
       if (sessionResponse.user.defaultLanguage) {
         setLanguage(sessionResponse.user.defaultLanguage as Language);
@@ -108,15 +102,14 @@ export default function UserProvider(props: React.PropsWithChildren) {
       const languages = Object.values(sessionResponse.languages);
 
       setLanguages(languages);
-      setCurrentRole(currentRole);
+      setCurrentClient(sessionResponse.currentClient);
+      setCurrentRole(sessionResponse.currentRole);
+      setCurrentOrganization(sessionResponse.currentOrganization);
+      setCurrentWarehouse(sessionResponse.currentWarehouse);
 
-      if (sessionResponse.user.defaultWarehouse) {
-        const defaultWarehouse: Warehouse = {
-          id: sessionResponse.user.defaultWarehouse,
-          name: sessionResponse.user.defaultWarehouse$_identifier,
-        };
-        localStorage.setItem('currentWarehouse', JSON.stringify(defaultWarehouse));
-        setCurrentWarehouse(defaultWarehouse);
+      if (sessionResponse.currentWarehouse) {
+        localStorage.setItem('currentWarehouse', JSON.stringify(sessionResponse.currentWarehouse));
+        setCurrentWarehouse(sessionResponse.currentWarehouse);
       }
     },
     [setLanguage, updateProfile],
@@ -125,8 +118,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const clearUserData = useCallback(() => {
     setToken(null);
     setRoles([]);
-    setCurrentRole(null);
-    setCurrentWarehouse(null);
+    setCurrentRole(undefined);
+    setCurrentWarehouse(undefined);
+    setCurrentOrganization(undefined);
+    setCurrentClient(undefined);
     setProfile(INITIAL_PROFILE);
     setUser({} as User);
     localStorage.removeItem('token');
@@ -160,7 +155,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         throw error;
       }
     },
-    [token, updateSessionInfo, navigate]
+    [token, updateSessionInfo, navigate],
   );
 
   const login = useCallback(
@@ -197,6 +192,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
       profile,
       changeProfile,
       currentWarehouse,
+      currentClient,
+      currentOrganization,
       token,
       clearUserData,
       setToken,
@@ -208,17 +205,18 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }),
     [
       login,
-      changeProfile,
       roles,
-      profile,
       currentRole,
+      profile,
+      changeProfile,
       currentWarehouse,
+      currentClient,
+      currentOrganization,
       token,
       clearUserData,
       setDefaultConfiguration,
       languages,
       session,
-      setSession,
       user,
     ],
   );
@@ -253,14 +251,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
   useEffect(() => {
     const interceptor = (response: Response) => {
       if (response.status === HTTP_CODES.UNAUTHORIZED) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('roles');
-        localStorage.removeItem('currentRole');
-        setToken(null);
-        setRoles([]);
-        setCurrentRole(null);
+        clearUserData();
         navigate('/login');
       }
+
       return response;
     };
 
@@ -273,7 +267,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         unregisterDatasourceInterceptor();
       };
     }
-  }, [navigate, token]);
+  }, [clearUserData, navigate, token]);
 
   useEffect(() => {
     if (languages.length === 0) return;
