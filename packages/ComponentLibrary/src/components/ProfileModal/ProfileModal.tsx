@@ -40,16 +40,28 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedRole, setSelectedRole] = useState<Option | null>(null);
-  const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(null);
+  const [selectedRole, setSelectedRole] = useState<Option | null>(() => {
+    if (currentRole) {
+      return { title: currentRole.name, value: currentRole.id, id: currentRole.id }
+    } else {
+      return null;
+    }
+  });
+  const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(() => {
+    if (currentWarehouse) {
+      return { title: currentWarehouse.name, value: currentWarehouse.id, id: currentWarehouse.id }
+    } else {
+      return null;
+    }
+  });
   const [selectedLanguage, setSelectedLanguage] = useState<Option | null>(() => {
     const currentLang = languages.find(lang => lang.language === language);
     return currentLang
       ? {
-        title: currentLang.name,
-        value: currentLang.language,
-        id: currentLang.id,
-      }
+          title: currentLang.name,
+          value: currentLang.language,
+          id: currentLang.id,
+        }
       : null;
   });
   const [saveAsDefault, setSaveAsDefault] = useState(false);
@@ -57,23 +69,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const { styles, sx } = useStyle();
 
   useEffect(() => {
-    const savedRole = localStorage.getItem('currentRole');
-    const savedWarehouse = localStorage.getItem('currentWarehouse');
-
-    if (savedRole) {
-      const parsedRole = JSON.parse(savedRole);
-      setSelectedRole({ title: parsedRole.name, value: parsedRole.id, id: parsedRole.id });
+    if (currentRole) {
+      setSelectedRole({ title: currentRole.name, value: currentRole.id, id: currentRole.id });
     }
 
-    if (savedWarehouse) {
-      const parsedWarehouse = JSON.parse(savedWarehouse);
+    if (currentWarehouse) {
       setSelectedWarehouse({
-        title: parsedWarehouse.title,
-        value: parsedWarehouse.value,
-        id: parsedWarehouse.id,
+        title: currentWarehouse.name,
+        value: currentWarehouse.id,
+        id: currentWarehouse.id,
       });
     }
-  }, []);
+  }, [currentRole, currentWarehouse]);
 
   useEffect(() => {
     if (language) {
@@ -134,7 +141,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             value: selectedWarehouse.value,
           };
           setSelectedWarehouse(newWarehouse);
-          localStorage.setItem('currentWarehouse', JSON.stringify(newWarehouse));  // Guardar en localStorage
+          localStorage.setItem('currentWarehouse', JSON.stringify(newWarehouse)); // Guardar en localStorage
         }
 
         if (Object.keys(params).length > 0) {
@@ -149,7 +156,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           await onSetDefaultConfiguration({
             defaultRole: selectedRole?.value,
             defaultWarehouse: selectedWarehouse?.value,
-            organization: currentRole?.orgList[0]?.id,
             language: selectedLanguage?.id,
             client: 'System',
           });
@@ -164,7 +170,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     currentSection,
     selectedRole,
     currentRole?.id,
-    currentRole?.orgList,
     selectedWarehouse,
     currentWarehouse?.id,
     selectedLanguage,
