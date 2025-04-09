@@ -6,6 +6,7 @@ import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { ProcessButton, ProcessButtonType } from '@/components/ProcessModal/types';
 import { useMetadataContext } from '../useMetadataContext';
 import { useParams } from 'next/navigation';
+import { useProcessMetadata } from '../useProcessMetadata';
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
@@ -13,6 +14,7 @@ export function useProcessExecution() {
   const [iframeUrl, setIframeUrl] = useState('');
   const { token } = useContext(UserContext);
   const { tab, selected, windowId } = useMetadataContext();
+  useProcessMetadata();
   const { recordId } = useParams<{ recordId: string }>();
 
   const currentRecord = useMemo(() => {
@@ -25,6 +27,9 @@ export function useProcessExecution() {
       try {
         setLoading(true);
         setError(null);
+
+        const { onLoad, onProcess } = await import(`../../process/${button.processDefinition.searchKey}`);
+        console.debug(onLoad, onProcess);
 
         const queryParams = new URLSearchParams({
           _action: button.processDefinition.javaClassName,
