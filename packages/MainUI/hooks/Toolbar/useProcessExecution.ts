@@ -6,6 +6,8 @@ import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { ProcessButton, ProcessButtonType } from '@/components/ProcessModal/types';
 import { useMetadataContext } from '../useMetadataContext';
 import { useParams } from 'next/navigation';
+import { API_METADATA_URL } from '@workspaceui/etendohookbinder/src/api/constants';
+import { useApiContext } from '../useApiContext';
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
@@ -14,6 +16,7 @@ export function useProcessExecution() {
   const { token } = useContext(UserContext);
   const { tab, selected, windowId } = useMetadataContext();
   const { recordId } = useParams<{ recordId: string }>();
+  const apiUrl = useApiContext();
 
   const currentRecord = useMemo(() => {
     const tabLevel = tab?.level ?? 0;
@@ -108,7 +111,7 @@ export function useProcessExecution() {
 
           const isPostedProcess = button.id === 'Posted';
           const commandAction = 'BUTTONDocAction104';
-          const baseUrl = `http://localhost:8080/etendo/SalesOrder/Header_Edition.html`;
+          const baseUrl = `${apiUrl}${API_METADATA_URL}SalesOrder/Header_Edition.html`;
           const safeWindowId = windowId || (tab?.windowId ? String(tab.windowId) : '143');
           const safeTabId = tab?.id ? String(tab.id) : '186';
           const safeRecordId = String(currentRecord.id || recordId || '');
@@ -157,7 +160,7 @@ export function useProcessExecution() {
         }
       });
     },
-    [currentRecord, recordId, tab?.windowId, tab?.id, windowId, token],
+    [currentRecord, apiUrl, windowId, tab?.windowId, tab?.id, recordId, token],
   );
 
   const executeProcess = useCallback(
