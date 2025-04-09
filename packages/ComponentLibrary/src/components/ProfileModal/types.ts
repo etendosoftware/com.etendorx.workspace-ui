@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Section } from './ToggleButton/types';
 import { Option } from '../Input/Select/types';
 import { Language } from '../../locales/types';
-import { LoginResponse } from '@workspaceui/etendohookbinder/src/api/types';
+import { CurrentRole, CurrentWarehouse, LoginResponse } from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface Translations {
   saveAsDefault: string;
@@ -67,10 +67,6 @@ export interface BaseProfileModalProps {
 }
 
 export interface SelectionProps {
-  onRoleChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
-  onWarehouseChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
-  selectedRole: Option | null;
-  selectedWarehouse: Option | null;
   saveAsDefault: boolean;
   onSaveAsDefaultChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
@@ -87,8 +83,8 @@ export interface LanguageOption {
   name: string;
 }
 export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps, ActionProps {
-  currentRole: BaseRole | null;
-  currentWarehouse: BaseWarehouse | null;
+  currentRole: CurrentRole | undefined;
+  currentWarehouse: CurrentWarehouse | undefined;
   roles: BaseRole[];
   logger: Logger;
   onSignOff: () => void;
