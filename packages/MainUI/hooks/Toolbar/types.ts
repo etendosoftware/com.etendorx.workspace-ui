@@ -1,4 +1,4 @@
-import { BaseFieldDefinition, ToolbarButton } from '@workspaceui/etendohookbinder/src/api/types';
+import { BaseFieldDefinition, Field, ToolbarButton } from '@workspaceui/etendohookbinder/src/api/types';
 import { IconName } from '../../components/Toolbar/types';
 import { ProcessActionButton, ProcessButton, ProcessDefinitionButton } from '@/components/ProcessModal/types';
 
@@ -21,6 +21,7 @@ export interface ExecuteProcessActionParams {
 }
 
 export interface ToolbarResponseButton extends ToolbarButton {
+  field: Field;
   icon: IconName;
 }
 

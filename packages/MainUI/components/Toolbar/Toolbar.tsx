@@ -34,6 +34,9 @@ import { ProcessButton } from '../ProcessModal/types';
 import ProcessModal from '../ProcessModal';
 import { useProcessMetadata } from '@/hooks/useProcessMetadata';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
+import { useUserContext } from '@/hooks/useUserContext';
+import TabContextProvider from '@/contexts/tab';
+import { compileExpression } from '../Form/FormView/selectors/BaseSelector';
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
   const [openModal, setOpenModal] = useState(false);
@@ -41,6 +44,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
   const [selectedProcessButton, setSelectedProcessButton] = useState<ProcessButton | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const { session } = useUserContext();
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
   const { selected, tabs, clearSelections } = useMetadataContext();
   const { executeProcess } = useProcessExecution();
@@ -82,7 +86,32 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
 
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
 
-  const processButtons = useMemo(() => toolbar?.buttons.filter(isProcessButton) || [], [toolbar?.buttons]);
+  // Filter process buttons based on display logic
+  const processButtons = useMemo(() => {
+    const buttons = toolbar?.buttons.filter(isProcessButton) || [];
+    const selectedItems = Array.isArray(selected[tab.level])
+      ? selected[tab.level]
+      : [selectedRecord];
+
+    const filteredButtons = buttons.filter((button) => {
+      if (!button.field.displayLogicExpression) {
+        return true;
+      }
+
+      const compiledExpr = compileExpression(button.field.displayLogicExpression);
+
+      try {
+        const isVisible = selectedItems.some((record) => {
+          return compiledExpr(session, record);
+        });
+        return isVisible;
+      } catch (error) {
+        return true;
+      }
+    });
+
+    return filteredButtons;
+  }, [toolbar?.buttons, selectedRecord, selected, session, tab.level]);
 
   const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -170,7 +199,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       tooltip: t('common.processes'),
       height: IconSize,
       width: IconSize,
-      enabled: true,
+      enabled: processButtons.length > 0,
       sx: {
         color: theme.palette.baselineColor.neutral[100],
         background: theme.palette.specificColor.warning.main,
@@ -178,7 +207,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
         cursor: selectedRecord ? 'pointer' : 'not-allowed',
       },
       onClick: (event?: React.MouseEvent<HTMLElement>) => {
-        if (selectedRecord && event) {
+        if (selectedRecord && event && processButtons.length > 0) {
           handleMenuOpen(event);
         }
       },
@@ -229,7 +258,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     }
 
     return config;
-  }, [handleAction, handleMenuOpen, isFormView, processButtons.length, selectedRecord, t, toolbar?.buttons]);
+  }, [handleAction, handleMenuOpen, isFormView, processButtons, selectedRecord, t, toolbar?.buttons]);
 
   if (loading) {
     return (
@@ -238,8 +267,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       </Box>
     );
   }
+
   return (
-    <>
+    <TabContextProvider tab={tab}>
       <TopToolbar {...toolbarConfig} />
       {statusModal.open && (
         <StatusModal
@@ -296,7 +326,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           onProcessSuccess={handleProcessSuccess}
         />
       )}
-    </>
+    </TabContextProvider>
   );
 };
 

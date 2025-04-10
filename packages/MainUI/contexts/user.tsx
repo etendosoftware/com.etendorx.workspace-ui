@@ -87,6 +87,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         image: sessionResponse.user.image || '',
       };
 
+      setSession((prev) => ({...prev, ...sessionResponse.attributes}));
       updateProfile(currentProfileInfo);
       setUser(sessionResponse.user);
       setProfile(currentProfileInfo);
