@@ -1,8 +1,13 @@
+import { forwardRef, useCallback, useMemo } from 'react';
 import { Menu, MenuItem, Tooltip } from '@mui/material';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { ProcessMenuProps } from './types';
 import { ProcessButton } from '../ProcessModal/types';
-import { forwardRef, useCallback } from 'react';
+import { useParentTabContext } from '@/contexts/tab';
+import { useUserContext } from '@/hooks/useUserContext';
+import { useMetadataContext } from '@/hooks/useMetadataContext';
+import { Field } from '@workspaceui/etendohookbinder/src/api/types';
+import { compileExpression } from '../Form/FormView/selectors/BaseSelector';
 
 const menuStyle = {
   marginTop: '0.5rem',
@@ -33,9 +38,37 @@ interface ProcessMenuItemProps {
 
 const ProcessMenuItem = forwardRef<HTMLLIElement, ProcessMenuItemProps>(
   ({ button, onProcessClick, disabled }: ProcessMenuItemProps, ref) => {
+    const field = (button as unknown as { field: Field }).field;
+    const { session } = useUserContext();
+    const { selected } = useMetadataContext();
+    const { tab } = useParentTabContext();
+
+    const isDisplayed: boolean = useMemo(() => {
+      if (!tab) {
+        return false;
+      }
+
+      if (!field.displayed) return false;
+
+      if (!field.displayLogicExpression) return true;
+
+      const compiledExpr = compileExpression(field.displayLogicExpression);
+
+      try {
+        const values = selected[tab.level];
+        return compiledExpr(session, values);
+      } catch (error) {
+        return true;
+      }
+    }, [tab, selected, field, session]);
+
     const handleClick = useCallback(() => {
       onProcessClick(button);
     }, [button, onProcessClick]);
+
+    if (!isDisplayed) {
+      return null;
+    }
 
     return (
       <Tooltip title={button.name} enterDelay={600} leaveDelay={100}>
