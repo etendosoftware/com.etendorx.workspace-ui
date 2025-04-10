@@ -46,9 +46,15 @@ const ProcessMenuItem = ({ button, onProcessClick, disabled }: ProcessMenuItemPr
 ProcessMenuItem.displayName = 'ProcessMenuItem';
 
 const ProcessDefinitionMenuItem = ({ button, onProcessClick, disabled }: ProcessMenuItemProps) => {
+  const isDisplayed = useDisplayLogic(button.field);
+
   const handleClick = useCallback(() => {
     onProcessClick(button);
   }, [button, onProcessClick]);
+
+  if (!isDisplayed) {
+    return null;
+  }
 
   return (
     <Tooltip title={button.name} enterNextDelay={1000} followCursor>

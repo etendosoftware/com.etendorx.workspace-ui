@@ -1,3 +1,5 @@
+import { Field } from "@workspaceui/etendohookbinder/src/api/types";
+
 export interface BaseButton {
   id: string;
   name: string;
@@ -40,6 +42,7 @@ export interface BaseProcessButton extends BaseButton {
   buttonText: string;
   displayLogic?: string;
   processInfo: ProcessInfo;
+  field: Field;
 }
 
 export interface ProcessDefinitionButton extends BaseProcessButton {
