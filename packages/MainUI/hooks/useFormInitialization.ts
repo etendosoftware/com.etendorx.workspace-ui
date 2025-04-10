@@ -135,12 +135,13 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       const data = await fetchFormInitialization(params, payload);
       const storedInSessionAttributes = Object.entries(data.auxiliaryInputValues).reduce(
         (acc, [key, { value }]) => {
-          acc[key] = value;
+          acc[key] = value || '';
 
           return acc;
         },
         {} as Record<string, string>,
       );
+
       setSession(prev => ({ ...prev, ...storedInSessionAttributes, ...data.sessionAttributes }));
       dispatch({ type: 'FETCH_SUCCESS', payload: data });
     } catch (err) {

@@ -1,13 +1,16 @@
 import { useCallback } from 'react';
 import { logger } from '@/utils/logger';
-import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { EntityData, FormInitializationResponse, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { buildPayloadByInputName } from '@/utils';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { useUserContext } from './useUserContext';
 
 const ACTION = 'org.openbravo.client.application.window.FormInitializationComponent';
 const MODE = 'SETSESSION';
 
 export const useSetSession = () => {
+  const { setSession } = useUserContext();
+
   return useCallback(
     async (record: EntityData, tab: Tab) => {
       if (!tab) return;
@@ -22,20 +25,27 @@ export const useSetSession = () => {
 
       try {
         const payload = buildPayloadByInputName(record, tab.fields);
-        const response = await Metadata.kernelClient.post(`${params}`, payload);
+        const response = await Metadata.kernelClient.post(`?${params}`, payload);
 
         if (!response?.ok) {
           throw new Error(response.statusText);
-        } else {
-          const cookie = response.headers.getSetCookie();
-          console.debug(cookie);
         }
 
-        return response;
+        const data = response.data as FormInitializationResponse;
+
+        setSession(prev => {
+          const result = { ...prev, ...data.sessionAttributes };
+
+          Object.entries(data.auxiliaryInputValues).forEach(([inputName, { value }]) => {
+            result[inputName] = value || '';
+          });
+
+          return result;
+        });
       } catch (error) {
         logger.error(error);
       }
     },
-    [],
+    [setSession],
   );
 };
