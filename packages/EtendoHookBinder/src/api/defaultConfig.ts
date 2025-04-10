@@ -35,6 +35,8 @@ export const setDefaultConfiguration = async (token: string, config: DefaultConf
     if (typeof response.data === 'string' && response.data.includes('throw')) {
       throw new Error('Server returned an error in JavaScript');
     }
+
+    return response.data;
   } catch (error) {
     console.error('Error setting default configuration:', error);
 

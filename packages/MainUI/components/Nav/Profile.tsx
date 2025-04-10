@@ -2,7 +2,6 @@ import { useContext, useState, useCallback, useMemo } from 'react';
 import { UserContext } from '../../contexts/user';
 import { logger } from '../../utils/logger';
 import { ProfileWrapperProps } from './types';
-import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
 import ProfileModal from '@workspaceui/componentlibrary/src/components/ProfileModal/ProfileModal';
 import { useLanguage } from '../../hooks/useLanguage';
 import { DefaultConfiguration, Language } from '../../contexts/types';
@@ -18,8 +17,6 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
     token,
     languages,
   } = useContext(UserContext);
-  const [selectedRole, setSelectedRole] = useState<Option | null>(null);
-  const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(null);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const { language, setLanguage, getFlag } = useLanguage();
 
@@ -28,15 +25,6 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
   const handleSignOff = useCallback(() => {
     clearUserData();
   }, [clearUserData]);
-
-  const handleRoleChange = useCallback((event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
-    setSelectedRole(value);
-    setSelectedWarehouse(null);
-  }, []);
-
-  const handleWarehouseChange = useCallback((event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
-    setSelectedWarehouse(value);
-  }, []);
 
   const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setSaveAsDefault(event.target.checked);
@@ -67,17 +55,17 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
     [setDefaultConfiguration, token],
   );
 
+  if (!currentRole || !currentWarehouse) {
+    return null;
+  }
+
   return (
     <ProfileModal
       {...props}
       currentRole={currentRole}
       currentWarehouse={currentWarehouse}
       roles={roles}
-      selectedRole={selectedRole}
-      selectedWarehouse={selectedWarehouse}
       saveAsDefault={saveAsDefault}
-      onRoleChange={handleRoleChange}
-      onWarehouseChange={handleWarehouseChange}
       onLanguageChange={handleLanguageChange}
       language={language}
       languagesFlags={flagString}

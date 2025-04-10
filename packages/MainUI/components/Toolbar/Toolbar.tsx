@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, createElement, useEffect, memo } from 'react';
+import { useCallback, useMemo, useState, createElement, memo } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import {
@@ -34,9 +34,7 @@ import { ProcessButton } from '../ProcessModal/types';
 import ProcessModal from '../ProcessModal';
 import { useProcessMetadata } from '@/hooks/useProcessMetadata';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
-import { logger } from '@/utils/logger';
 import { useUserContext } from '@/hooks/useUserContext';
-import { parseDynamicExpression } from '@/utils';
 import TabContextProvider from '@/contexts/tab';
 import { compileExpression } from '../Form/FormView/selectors/BaseSelector';
 
@@ -186,13 +184,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     setProcessResponse(null);
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { metadata } = useProcessMetadata(selectedProcessButton);
-
-  useEffect(() => {
-    if (metadata) {
-      console.debug('process metadata', metadata);
-    }
-  }, [metadata]);
 
   const toolbarConfig = useMemo(() => {
     const buttons = toolbar?.buttons ?? [];

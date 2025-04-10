@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
+    "target": "es5",
     "lib": ["dom", "dom.iterable", "esnext"],
+    "types": ["react", "jest"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -22,19 +23,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
-    },
-    "typeRoots": ["./node_modules/@types", "./types"]
+    }
   },
-  "include": [
-    "./types/svgr.d.ts",
-    "./types/theme.d.ts",
-    "next-env.d.ts",
-    "custom.d.ts",
-    "./**/*.ts",
-    "./**/*.tsx",
-    ".next/types/**/*.ts",
-    "./types/svgr.d.ts",
-    "./types/theme.d.ts"
-  ],
+  "include": ["**/*.ts", "**/*.tsx", "next-env.d.ts", ".next/types/**/*.ts", "types/svgr.d.ts", "types/theme.d.ts"],
   "exclude": ["node_modules"]
 }

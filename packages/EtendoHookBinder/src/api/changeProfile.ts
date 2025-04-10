@@ -13,7 +13,7 @@ interface ChangeProfilePayload {
  * @param params - The profile change parameters, which may include a role and/or warehouse.
  * @returns A promise that resolves to a LoginResponse object if successful.
  */
-export const changeProfile = async (params: { role?: string; warehouse?: string }): Promise<LoginResponse> => {
+export const changeProfile = async (params:ChangeProfilePayload): Promise<LoginResponse> => {
     try {
         const response = await Metadata.loginClient.request(API_LOGIN_URL, {
             method: 'POST',
@@ -40,6 +40,7 @@ export const changeProfile = async (params: { role?: string; warehouse?: string 
     }
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function handler(req: any, res: any) {
     if (req.method !== 'POST') {
         res.setHeader('Allow', ['POST']);

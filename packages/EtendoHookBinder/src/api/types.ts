@@ -312,17 +312,275 @@ export interface User {
   defaultOrganization$_identifier: string;
   defaultRole$_identifier: string;
 }
-
 export interface SessionResponse {
-  user: User;
-  role: {
-    id: string;
-    name: string;
-  };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  languages: Record<string, { id: string; language: string; name: string }>;
-  session: ISession;
+  user:                User;
+  currentRole:         CurrentRole;
+  currentOrganization: CurrentOrganization;
+  currentClient:       CurrentClient;
+  currentWarehouse:    CurrentWarehouse;
+  languages:           Languages;
+  attributes:          { [key: string]: null | string };
 }
+
+export interface CurrentClient {
+  _identifier:                string;
+  _entityName:                string;
+  $ref:                       string;
+  id:                         string;
+  organization:               string;
+  organization$_identifier:   string;
+  active:                     boolean;
+  creationDate:               Date;
+  createdBy:                  string;
+  createdBy$_identifier:      string;
+  updated:                    Date;
+  updatedBy:                  string;
+  updatedBy$_identifier:      string;
+  searchKey:                  string;
+  name:                       string;
+  description:                string;
+  mailHost:                   null;
+  requestEmail:               null;
+  requestUser:                null;
+  requestUserPassword:        null;
+  requestFolder:              null;
+  language:                   null;
+  multilingualDocuments:      boolean;
+  sMTPAuthentification:       boolean;
+  currency:                   string;
+  currency$_identifier:       string;
+  acctdimCentrallyMaintained: boolean;
+  projectAcctdimIsenable:     boolean;
+  projectAcctdimHeader:       boolean;
+  projectAcctdimLines:        boolean;
+  projectAcctdimBreakdown:    boolean;
+  bpartnerAcctdimIsenable:    boolean;
+  bpartnerAcctdimHeader:      boolean;
+  bpartnerAcctdimLines:       boolean;
+  bpartnerAcctdimBreakdown:   boolean;
+  productAcctdimIsenable:     boolean;
+  productAcctdimHeader:       boolean;
+  productAcctdimLines:        boolean;
+  productAcctdimBreakdown:    boolean;
+  costcenterAcctdimHeader:    boolean;
+  costcenterAcctdimLines:     boolean;
+  costcenterAcctdimBreakdown: boolean;
+  user1AcctdimIsenable:       boolean;
+  user1AcctdimHeader:         boolean;
+  user1AcctdimLines:          boolean;
+  user1AcctdimBreakdown:      boolean;
+  user2AcctdimIsenable:       boolean;
+  user2AcctdimHeader:         boolean;
+  user2AcctdimLines:          boolean;
+  user2AcctdimBreakdown:      boolean;
+  costcenterAcctdimIsenable:  boolean;
+  orgAcctdimIsenable:         boolean;
+  orgAcctdimHeader:           boolean;
+  orgAcctdimLines:            boolean;
+  orgAcctdimBreakdown:        boolean;
+  daysToPasswordExpiration:   number;
+  recordTime:                 number;
+}
+
+export interface CurrentOrganization {
+  _identifier:                                  string;
+  _entityName:                                  string;
+  $ref:                                         string;
+  id:                                           string;
+  client:                                       string;
+  client$_identifier:                           string;
+  active:                                       boolean;
+  creationDate:                                 Date;
+  createdBy:                                    string;
+  createdBy$_identifier:                        string;
+  updated:                                      Date;
+  updatedBy:                                    string;
+  updatedBy$_identifier:                        string;
+  searchKey:                                    string;
+  name:                                         string;
+  description:                                  null;
+  summaryLevel:                                 boolean;
+  organizationType:                             string;
+  organizationType$_identifier:                 string;
+  allowPeriodControl:                           boolean;
+  calendar:                                     null;
+  ready:                                        boolean;
+  socialName:                                   null;
+  currency:                                     null;
+  generalLedger:                                null;
+  aPRMGlitem:                                   null;
+  periodControlAllowedOrganization:             string;
+  periodControlAllowedOrganization$_identifier: string;
+  calendarOwnerOrganization:                    string;
+  calendarOwnerOrganization$_identifier:        string;
+  legalEntityOrganization:                      string;
+  legalEntityOrganization$_identifier:          string;
+  inheritedCalendar:                            string;
+  inheritedCalendar$_identifier:                string;
+  businessUnitOrganization:                     null;
+  extbpEnabled:                                 boolean;
+  extbpConfig:                                  null;
+  recordTime:                                   number;
+}
+
+export interface CurrentRole {
+  _identifier:              string;
+  _entityName:              string;
+  $ref:                     string;
+  id:                       string;
+  client:                   string;
+  client$_identifier:       string;
+  organization:             string;
+  organization$_identifier: string;
+  active:                   boolean;
+  creationDate:             Date;
+  createdBy:                string;
+  createdBy$_identifier:    string;
+  updated:                  Date;
+  name:                     string;
+  updatedBy:                string;
+  updatedBy$_identifier:    string;
+  description:              string;
+  userLevel:                string;
+  currency:                 null;
+  approvalAmount:           number;
+  primaryTreeMenu:          null;
+  manual:                   boolean;
+  processNow:               boolean;
+  clientAdmin:              boolean;
+  advanced:                 boolean;
+  isrestrictbackend:        boolean;
+  forPortalUsers:           boolean;
+  portalAdmin:              boolean;
+  isWebServiceEnabled:      boolean;
+  template:                 boolean;
+  recalculatePermissions:   null;
+  recordTime:               number;
+}
+
+export interface CurrentWarehouse {
+  _identifier:                 string;
+  _entityName:                 string;
+  $ref:                        string;
+  id:                          string;
+  client:                      string;
+  client$_identifier:          string;
+  organization:                string;
+  organization$_identifier:    string;
+  active:                      boolean;
+  creationDate:                Date;
+  createdBy:                   string;
+  createdBy$_identifier:       string;
+  updated:                     Date;
+  updatedBy:                   string;
+  updatedBy$_identifier:       string;
+  searchKey:                   string;
+  name:                        string;
+  description:                 null;
+  locationAddress:             string;
+  locationAddress$_identifier: string;
+  storageBinSeparator:         string;
+  shipmentVehicle:             boolean;
+  shipperCode:                 null;
+  fromDocumentNo:              null;
+  toDocumentNo:                null;
+  returnlocator:               string;
+  returnlocator$_identifier:   string;
+  warehouseRule:               null;
+  allocated:                   boolean;
+  recordTime:                  number;
+}
+
+export interface Languages {
+  en_US: EnUS;
+}
+
+export interface EnUS {
+  _identifier:              string;
+  _entityName:              string;
+  $ref:                     string;
+  id:                       string;
+  language:                 string;
+  client:                   string;
+  client$_identifier:       string;
+  organization:             string;
+  organization$_identifier: string;
+  active:                   boolean;
+  creationDate:             Date;
+  createdBy:                string;
+  createdBy$_identifier:    string;
+  updated:                  Date;
+  updatedBy:                string;
+  updatedBy$_identifier:    string;
+  name:                     string;
+  iSOLanguageCode:          string;
+  iSOCountryCode:           string;
+  baseLanguage:             boolean;
+  systemLanguage:           boolean;
+  processNow:               null;
+  pixelSize:                number;
+  translatedBy:             string;
+  rTLLanguage:              boolean;
+  recordTime:               number;
+}
+
+export interface User {
+  _identifier:              string;
+  _entityName:              string;
+  $ref:                     string;
+  id:                       string;
+  client:                   string;
+  client$_identifier:       string;
+  organization:             string;
+  organization$_identifier: string;
+  active:                   boolean;
+  creationDate:             Date;
+  createdBy:                string;
+  createdBy$_identifier:    string;
+  updated:                  Date;
+  updatedBy:                string;
+  updatedBy$_identifier:    string;
+  name:                     string;
+  description:              null;
+  password:                 string;
+  email:                    null;
+  supervisor:               null;
+  businessPartner:          null;
+  processNow:               null;
+  emailServerUsername:      string;
+  emailServerPassword:      null;
+  partnerAddress:           null;
+  greeting:                 null;
+  position:                 null;
+  comments:                 null;
+  phone:                    null;
+  alternativePhone:         null;
+  fax:                      null;
+  lastContactDate:          null;
+  lastContactResult:        null;
+  birthday:                 null;
+  trxOrganization:          null;
+  firstName:                string;
+  lastName:                 null;
+  username:                 string;
+  defaultClient:            string;
+  defaultLanguage:          string;
+  defaultOrganization:      string;
+  defaultRole:              string;
+  defaultRole$_identifier:  string;
+  defaultWarehouse:         string;
+  locked:                   boolean;
+  image:                    string;
+  grantPortalAccess:        boolean;
+  lastPasswordUpdate:       Date;
+  isPasswordExpired:        boolean;
+  commercialauth:           boolean;
+  viasms:                   boolean;
+  viaemail:                 boolean;
+  smfswsDefaultWsRole:      null;
+  recordTime:               number;
+}
+
 
 /* 
 {

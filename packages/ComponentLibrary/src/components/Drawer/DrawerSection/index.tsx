@@ -30,19 +30,15 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
 
   const popperOpen = Boolean(anchorEl);
 
-  const handleItemClick = useItemActions({
-    onWindowClick: useCallback((windowId: string) => onClick(`/window/${windowId}`), [onClick]),
-    onReportClick: useCallback((reportId: string) => onClick(`/report/${reportId}`), [onClick]),
-    onProcessClick: useCallback((processId: string) => onClick(`/process/${processId}`), [onClick]),
-  });
+  const onWindowClick = useCallback((windowId: string) => onClick(`/window/${windowId}`), [onClick]);
+  const onReportClick = useCallback((reportId: string) => onClick(`/report/${reportId}`), [onClick]);
+  const onProcessClick = useCallback((processId: string) => onClick(`/process/${processId}`), [onClick]);
 
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      event.stopPropagation();
-      handleClick(event as unknown as React.MouseEvent<HTMLElement>);
-    }
-  };
+  const handleItemClick = useItemActions({
+    onWindowClick,
+    onReportClick,
+    onProcessClick,
+  });
 
   const handleNestedToggle = useCallback((sectionId: string) => {
     setExpandedSections(prev => {
@@ -84,6 +80,17 @@ const DrawerSection: React.FC<DrawerSectionProps> = ({
       item,
       handleItemClick,
     ],
+  );
+
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        event.stopPropagation();
+        handleClick(event as unknown as React.MouseEvent<HTMLElement>);
+      }
+    },
+    [handleClick],
   );
 
   const handleClose = useCallback(() => {

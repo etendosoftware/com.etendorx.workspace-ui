@@ -22,7 +22,8 @@ const en = {
   status: {
     deleteSuccess: 'has been deleted successfully',
     deleteError: 'Error deleting record',
-    deleteConfirmation: 'Are you sure you want to delete ',
+    deleteConfirmation: 'Are you sure you want to delete',
+    multipleDeleteConfirmation: 'Are you sure you want to delete the selected records?',
     selectRecordError: 'Please select a record first',
     saveSuccess: '{{entityType}} has been saved successfully',
     saveError: 'Error saving record',
@@ -35,7 +36,7 @@ const en = {
   errors: {
     networkError: {
       title: 'Could not connect to Etendo',
-      description: 'Looks like there is a network issue or the server is down',
+      description: 'Looks like there is a network issue or rver is down',
     },
     notFound: {
       title: 'Not found',

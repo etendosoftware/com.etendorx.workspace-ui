@@ -54,7 +54,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
   }));
 
   const warehouses = useMemo(() => {
-    if (selectedRole) {
+    if (selectedRole && selectedRole.id != '0') {
       const _warehouses = {} as Record<string, BaseWarehouse>;
       const role = roles.find(r => r.id === selectedRole.value);
 
@@ -80,14 +80,16 @@ const SelectorList: React.FC<SelectorListProps> = ({
     [roles],
   );
 
+  const isSystem = selectedRole?.id == '0';
+
   const warehouseOptions = useMemo(
     () =>
-      warehouses.map(warehouse => ({
+      isSystem ? [] : warehouses.map(warehouse => ({
         title: warehouse.name,
         value: warehouse.id,
         id: warehouse.id,
       })),
-    [warehouses],
+    [isSystem, warehouses],
   );
 
   const languageOptions = useMemo(
@@ -118,10 +120,10 @@ const SelectorList: React.FC<SelectorListProps> = ({
               id="warehouse-select"
               title={Item.Warehouse}
               options={warehouseOptions}
-              value={selectedWarehouse}
+              value={isSystem ? null : selectedWarehouse}
               onChange={onWarehouseChange}
               iconLeft={icons[Item.Warehouse]}
-              disabled={!selectedRole}
+              disabled={!selectedRole || isSystem}
               isOptionEqualToValue={isOptionEqualToValue}
             />
             <Select

@@ -14,7 +14,7 @@ const getAuthHeaderName = () => {
   }
 };
 
-export const API_LOGIN_URL = `/sws/login`;
+export const API_LOGIN_URL = `/meta/login`;
 export const DEFAULT_LOGIN_CHARSET = 'ISO-8859-1';
 export const API_METADATA_URL = `/meta/`;
 export const API_DEFAULT_CACHE_DURATION = getDefaultCacheDuration();

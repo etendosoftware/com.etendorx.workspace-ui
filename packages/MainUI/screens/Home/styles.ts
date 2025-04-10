@@ -1,56 +1,68 @@
-import { useTheme } from '@mui/material';
 import { useMemo } from 'react';
 
 const useStyles = () => {
-  const theme = useTheme();
   return useMemo(
     () => ({
-      mainContainer: {
-        overflow: 'hidden',
-        flex: 1,
-        position: 'relative',
+      container: {
+        py: 4,
+      },
+      headerContainer: {
+        mb: 4,
+      },
+      pageTitle: {
+        fontWeight: 'bold',
+      },
+      pageSubtitle: {
+        color: 'text.secondary',
+      },
+      widgetContainer: {
+        p: 3,
+        borderRadius: 2,
+        height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        height: '100%',
-        width: '100%',
-        padding: '0 0.5rem',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
       },
-      container: {
-        marginTop: '0.25rem',
-        overflow: 'hidden',
+      widgetHeader: {
         display: 'flex',
-        flexGrow: '1',
-        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        mb: 2,
       },
-      sidebarPaper: {
-        right: 4,
-        maxWidth: '32%',
-        position: 'absolute',
-        backgroundColor: theme.palette.baselineColor.neutral[10],
-        boxShadow: '-4px 0 10px rgba(0, 0, 0, 0.1)',
-        padding: '0.5rem',
-        borderRadius: '1rem',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        overflowY: 'auto',
-        height: '50rem',
-        transition: 'transform 0.5s ease',
-        '&::-webkit-scrollbar': {
-          width: '0px',
-        },
-        scrollbarWidth: 'none',
-        'MsOverflowStyle': 'none',
+      widgetTitleContainer: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.5,
       },
-      tablePaper: {
-        borderRadius: '1rem 1rem 0 0',
-        overflow: 'hidden',
-        height: '100%',
-        transition: 'width 0.5s ease',
-        marginTop: '0.5rem',
+      iconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+      widgetTitle: {
+        fontWeight: 'medium',
+      },
+      actionButton: {
+        width: 32,
+        height: 32,
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        transition: 'all 0.2s',
+      },
+      widgetContent: {
+        flexGrow: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       },
     }),
-    [theme.palette.baselineColor.neutral],
+    [],
   );
 };
 

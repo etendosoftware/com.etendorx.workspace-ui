@@ -23,6 +23,7 @@ const es = {
     deleteSuccess: 'ha sido eliminado correctamente',
     deleteError: 'Error al eliminar el registro',
     deleteConfirmation: '¿Estás seguro de que quieres eliminar',
+    multipleDeleteConfirmation: '¿Estás seguro de que quieres eliminar los registros seleccionados?',
     selectRecordError: 'Por favor, selecciona un registro primero',
     saveSuccess: '{{entityType}} ha sido guardado correctamente',
     saveError: 'Error al guardar el registro',
