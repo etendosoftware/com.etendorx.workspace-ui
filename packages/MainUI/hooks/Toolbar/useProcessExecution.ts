@@ -1,7 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { ProcessResponse } from '../../components/Toolbar/types';
-import { ExecuteProcessDefinitionParams, ExecuteProcessParams } from './types';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { ExecuteProcessParams } from './types';
 import { ProcessButton, ProcessButtonType } from '@/components/ProcessModal/types';
 import { useMetadataContext } from '../useMetadataContext';
 import { useParams } from 'next/navigation';
@@ -22,60 +21,6 @@ export function useProcessExecution() {
     const tabLevel = tab?.level ?? 0;
     return selected[tabLevel] || null;
   }, [tab?.level, selected]);
-
-  const executeProcessDefinition = useCallback(
-    async ({ button, recordId, params = {} }: ExecuteProcessDefinitionParams): Promise<ProcessResponse> => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const { onLoad, onProcess } = await import(`../../process/${button.processDefinition.searchKey}`);
-        console.debug(onLoad, onProcess);
-
-        const queryParams = new URLSearchParams({
-          _action: button.processDefinition.javaClassName,
-          processId: button.processDefinition.id,
-          windowId: windowId,
-        });
-
-        const processParams: Record<string, unknown> = {};
-        button.processDefinition.parameters?.forEach(param => {
-          if (params[param.id]) {
-            processParams[param.id] = params[param.id];
-          }
-        });
-
-        const payload = {
-          recordIds: [recordId],
-          _buttonValue: button.buttonText,
-          _params: processParams,
-          _entityName: button.processInfo?._entityName || '',
-        };
-
-        const { ok, data, status } = await Metadata.kernelClient.post(`?${queryParams}`, {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
-
-        if (!ok) {
-          throw new Error(`HTTP error! status: ${status}`);
-        }
-
-        if (data.response?.status === -1) {
-          throw new Error(data.response.error?.message || 'Unknown server error');
-        }
-
-        return data;
-      } catch (error) {
-        const processError = error instanceof Error ? error : new Error('Process execution failed');
-        setError(processError);
-        throw processError;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [windowId],
-  );
 
   const executeProcessAction = useCallback(
     async (button: ProcessButton): Promise<ProcessResponse> => {
@@ -163,16 +108,14 @@ export function useProcessExecution() {
   );
 
   const executeProcess = useCallback(
-    async ({ button, recordId, params = {} }: ExecuteProcessParams): Promise<ProcessResponse> => {
+    async ({ button }: ExecuteProcessParams): Promise<ProcessResponse> => {
       if (ProcessButtonType.PROCESS_ACTION in button) {
         return executeProcessAction(button);
-      } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
-        return executeProcessDefinition({ button, recordId, params });
       } else {
         throw new Error('Unsupported process type');
       }
     },
-    [executeProcessAction, executeProcessDefinition],
+    [executeProcessAction],
   );
 
   return {

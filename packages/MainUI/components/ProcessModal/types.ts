@@ -73,7 +73,7 @@ export interface ProcessResponse {
 export interface ProcessModalProps {
   open: boolean;
   onClose: () => void;
-  button: ProcessButton;
+  button: ProcessButton | null;
   onConfirm: () => void;
   isExecuting: boolean;
   processResponse: ProcessResponse | null;

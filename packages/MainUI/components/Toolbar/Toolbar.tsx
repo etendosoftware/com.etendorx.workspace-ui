@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, createElement, memo } from 'react';
+import { useCallback, useMemo, useState, createElement } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import {
@@ -30,16 +30,18 @@ import ProcessMenu from './ProcessMenu';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
 import ConfirmModal from '@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal';
-import { ProcessButton } from '../ProcessModal/types';
-import ProcessModal from '../ProcessModal';
-import { useProcessMetadata } from '@/hooks/useProcessMetadata';
+import { ProcessButton, ProcessButtonType, ProcessDefinitionButton } from '../ProcessModal/types';
+import { ProcessActionModal } from '../ProcessModal';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
+import ProcessDefinitionModal from '../ProcessModal/ProcessDefinitionModal';
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
   const [openModal, setOpenModal] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
-  const [selectedProcessButton, setSelectedProcessButton] = useState<ProcessButton | null>(null);
+  const [selectedProcessActionButton, setSelectedProcessActionButton] = useState<ProcessButton | null>(null);
+  const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
+    useState<ProcessDefinitionButton | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
   const { selected, tabs, clearSelections } = useMetadataContext();
@@ -95,7 +97,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const handleProcessMenuClick = useCallback(
     (button: ProcessButton) => {
       if (selectedRecord) {
-        setSelectedProcessButton(button);
+        if (ProcessButtonType.PROCESS_ACTION in button) {
+          setSelectedProcessActionButton(button);
+        } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
+          setSelectedProcessDefinitionButton(button);
+        } else {
+          throw new Error('Unknown process type');
+        }
         setOpenModal(true);
       }
       handleMenuClose();
@@ -120,11 +128,11 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   }, [tabId, refetchDatasource, clearSelections]);
 
   const handleConfirmProcess = useCallback(async () => {
-    if (!selectedProcessButton || !selectedRecord?.id) return;
+    if (!selectedProcessActionButton || !selectedRecord?.id) return;
 
     setIsExecuting(true);
     try {
-      const response = await handleProcessClick(selectedProcessButton, selectedRecord?.id);
+      const response = await handleProcessClick(selectedProcessActionButton, selectedRecord?.id);
       if (response) {
         setProcessResponse(response);
       } else {
@@ -147,16 +155,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     } finally {
       setIsExecuting(false);
     }
-  }, [handleProcessClick, selectedProcessButton, selectedRecord?.id]);
+  }, [handleProcessClick, selectedProcessActionButton, selectedRecord?.id]);
 
   const handleCloseProcess = useCallback(() => {
     setOpenModal(false);
-    setSelectedProcessButton(null);
+    setSelectedProcessActionButton(null);
     setProcessResponse(null);
   }, []);
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { metadata } = useProcessMetadata(selectedProcessButton);
 
   const toolbarConfig = useMemo(() => {
     const buttons = toolbar?.buttons ?? [];
@@ -282,11 +287,11 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           autoCompleteTexts={[]}
         />
       )}
-      {selectedProcessButton && (
-        <ProcessModal
+      {selectedProcessActionButton && (
+        <ProcessActionModal
           open={openModal}
           onClose={handleCloseProcess}
-          button={selectedProcessButton}
+          button={selectedProcessActionButton}
           onConfirm={handleConfirmProcess}
           isExecuting={isExecuting}
           processResponse={processResponse}
@@ -294,6 +299,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           cancelButtonText={t('common.cancel')}
           executeButtonText={t('common.execute')}
           onProcessSuccess={handleProcessSuccess}
+        />
+      )}
+      {selectedProcessDefinitionButton && (
+        <ProcessDefinitionModal
+          open={openModal}
+          onClose={handleCloseProcess}
+          button={selectedProcessDefinitionButton}
         />
       )}
     </>
@@ -334,5 +346,5 @@ const getSectionStyle = (sectionType: string[]) => {
   };
 };
 
-export const Toolbar = memo(ToolbarCmp);
+export const Toolbar = ToolbarCmp;
 export default Toolbar;
