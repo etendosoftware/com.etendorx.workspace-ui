@@ -9,6 +9,7 @@ import { WindowParams } from '../app/types';
 import { useLanguage } from '../hooks/useLanguage';
 import { IMetadataContext } from './types';
 import { useDatasourceContext } from './datasourceContext';
+import { useSetSession } from '@/hooks/useSetSession';
 
 export const MetadataContext = createContext({} as IMetadataContext);
 
@@ -84,6 +85,8 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [selectedMultiple],
   );
 
+  const setSession = useSetSession();
+
   const selectRecord: IMetadataContext['selectRecord'] = useCallback(
     (record, tab) => {
       const level = tab.level;
@@ -108,6 +111,8 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
 
         return;
       }
+
+      setSession(record, tab);
 
       setSelected(prev => {
         const newSelections = { ...prev };
