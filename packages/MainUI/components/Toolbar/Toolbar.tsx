@@ -93,7 +93,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       ? selected[tab.level]
       : [selectedRecord];
 
-    const filteredButtons = buttons.filter((button: any) => {
+    const filteredButtons = buttons.filter((button) => {
       if (!button.field.displayLogicExpression) {
         return true;
       }
@@ -111,7 +111,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     });
 
     return filteredButtons;
-  }, [toolbar?.buttons, selectedRecord, selected, session]);
+  }, [toolbar?.buttons, selectedRecord, selected, session, tab.level]);
 
   const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
