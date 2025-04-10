@@ -188,12 +188,12 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess }: P
     });
 
     const text = await res.text();
-    const iframeNode = document.createElement("document");
+    const iframeNode = document.createElement('document');
     iframeNode.setHTMLUnsafe(text);
     console.debug('fragment', iframeNode);
     const result = document.evaluate('/html/frameset//frame', iframeNode);
     console.debug('result', result);
-    // setIframeUrl(URL.createObjectURL(new Blob(text)));
+    setIframeUrl(url);
   }, []);
 
   useEffect(() => {

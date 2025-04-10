@@ -1,5 +1,4 @@
-import { useState, useContext, useCallback, useMemo } from 'react';
-import { UserContext } from '../../contexts/user';
+import { useState, useCallback, useMemo } from 'react';
 import { ProcessResponse } from '../../components/Toolbar/types';
 import { ExecuteProcessDefinitionParams, ExecuteProcessParams } from './types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
@@ -8,13 +7,14 @@ import { useMetadataContext } from '../useMetadataContext';
 import { useParams } from 'next/navigation';
 import { API_METADATA_URL } from '@workspaceui/etendohookbinder/src/api/constants';
 import { useApiContext } from '../useApiContext';
+import { useProcessMetadata } from '../useProcessMetadata';
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [iframeUrl, setIframeUrl] = useState('');
-  const { token } = useContext(UserContext);
   const { tab, selected, windowId } = useMetadataContext();
+  useProcessMetadata();
   const { recordId } = useParams<{ recordId: string }>();
   const apiUrl = useApiContext();
 
@@ -28,6 +28,9 @@ export function useProcessExecution() {
       try {
         setLoading(true);
         setError(null);
+
+        const { onLoad, onProcess } = await import(`../../process/${button.processDefinition.searchKey}`);
+        console.debug(onLoad, onProcess);
 
         const queryParams = new URLSearchParams({
           _action: button.processDefinition.javaClassName,
@@ -156,7 +159,7 @@ export function useProcessExecution() {
         }
       });
     },
-    [currentRecord, apiUrl, windowId, tab?.windowId, tab?.id, recordId, token],
+    [currentRecord, apiUrl, windowId, tab?.windowId, tab?.id, recordId],
   );
 
   const executeProcess = useCallback(
