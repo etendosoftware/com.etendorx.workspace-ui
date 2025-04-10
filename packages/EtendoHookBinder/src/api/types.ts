@@ -99,7 +99,8 @@ export interface Field {
   refColumnName: string;
   targetEntity: string;
   gridProps: GridProps;
-  type: string; // Consider specifying possible values if known
+  type: string;
+  field: unknown[];
   selector?: Record<string, string>;
   refList: { id: string; label: string; value: string }[];
   referencedEntity: string;

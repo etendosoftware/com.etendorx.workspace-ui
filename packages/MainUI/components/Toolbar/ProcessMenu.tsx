@@ -1,8 +1,10 @@
+import { ProcessButtonType } from '../ProcessModal/types';
+import { useCallback } from 'react';
 import { Menu, Tooltip } from '@mui/material';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { ProcessMenuProps } from './types';
-import { ProcessButton, ProcessButtonType } from '../ProcessModal/types';
-import { useCallback } from 'react';
+import { ProcessButton } from '../ProcessModal/types';
+import useDisplayLogic from '@/hooks/useDisplayLogic';
 
 const menuStyle = {
   marginTop: '0.5rem',
@@ -20,20 +22,28 @@ interface ProcessMenuItemProps {
 }
 
 const ProcessMenuItem = ({ button, onProcessClick, disabled }: ProcessMenuItemProps) => {
+  const isDisplayed = useDisplayLogic(button.field);
+
   const handleClick = useCallback(() => {
     onProcessClick(button);
   }, [button, onProcessClick]);
+
+  if (!isDisplayed) {
+    return null;
+  }
 
   return (
     <Tooltip title={button.name} enterNextDelay={1000} followCursor>
       <div
         onClick={disabled ? undefined : handleClick}
         className="p-2 m-2 hover:bg-(--color-baseline-20) transition rounded-lg cursor-pointer">
-        <span>{button.name}</span>
+        {button.name}
       </div>
     </Tooltip>
   );
 };
+
+ProcessMenuItem.displayName = 'ProcessMenuItem';
 
 const ProcessDefinitionMenuItem = ({ button, onProcessClick, disabled }: ProcessMenuItemProps) => {
   const handleClick = useCallback(() => {

@@ -11,7 +11,7 @@ import { useParams } from 'next/navigation';
 import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { useParentTabContext } from '@/contexts/tab';
 
-const compileExpression = (expression: string) => {
+export const compileExpression = (expression: string) => {
   try {
     return new Function('context', 'currentValues', `return ${parseDynamicExpression(expression)};`);
   } catch (error) {
