@@ -139,10 +139,6 @@ export function useProcessExecution() {
           params.append('inpkeyColumnId', 'C_Order_ID');
           params.append('keyColumnName', 'C_Order_ID');
 
-          if (token) {
-            params.append('access_token', token);
-          }
-
           const completeUrl = `${baseUrl}?${params.toString()}`;
           setIframeUrl(completeUrl);
 

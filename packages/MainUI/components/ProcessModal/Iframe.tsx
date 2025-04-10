@@ -3,12 +3,14 @@ import { ProcessIframeModalProps, MessageStylesType } from './types';
 import { useProcessMessage, ProcessMessage } from '@/hooks/useProcessMessage';
 import { useTranslation } from '@/hooks/useTranslation';
 import { logger } from '@/utils/logger';
+import { useUserContext } from '@/hooks/useUserContext';
 
 const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess }: ProcessIframeModalProps) => {
   const { t } = useTranslation();
   const [iframeLoading, setIframeLoading] = useState(true);
   const [processMessage, setProcessMessage] = useState<ProcessMessage | null>(null);
   const [startPolling, setStartPolling] = useState(false);
+  const [iframeUrl, setIframeUrl] = useState('');
   const { fetchProcessMessage } = useProcessMessage();
   const [processWasSuccessful, setProcessWasSuccessful] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -123,7 +125,6 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess }: P
 
   const handleIframeLoad = useCallback(() => {
     setIframeLoading(false);
-    setStartPolling(true);
   }, []);
 
   const getMessageStyles = useCallback((type: string): MessageStylesType => {
@@ -175,6 +176,32 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess }: P
     [processMessage, getMessageStyles],
   );
 
+  const { token } = useUserContext();
+
+  const loadIframe = useCallback(async (url: string, token: string) => {
+    const res = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const text = await res.text();
+    const iframeNode = document.createElement("document");
+    iframeNode.setHTMLUnsafe(text);
+    console.debug('fragment', iframeNode);
+    const result = document.evaluate('/html/frameset//frame', iframeNode);
+    console.debug('result', result);
+    // setIframeUrl(URL.createObjectURL(new Blob(text)));
+  }, []);
+
+  useEffect(() => {
+    if (url && token) {
+      loadIframe(url, token);
+    }
+  }, [loadIframe, token, url]);
+
   if (!isOpen) return null;
 
   return (
@@ -211,12 +238,14 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess }: P
               </div>
             </div>
           )}
-          <iframe
-            src={url}
-            onLoad={handleIframeLoad}
-            className="w-full h-full border-0"
-            title={t('common.processes')}
-          />
+          {iframeUrl && (
+            <iframe
+              src={iframeUrl}
+              onLoad={handleIframeLoad}
+              className="w-full h-full border-0"
+              title={t('common.processes')}
+            />
+          )}
         </div>
         <div className="p-4 border-t border-gray-200 flex justify-end rounded-xl bg-[var(--color-baseline-10)]">
           <button
