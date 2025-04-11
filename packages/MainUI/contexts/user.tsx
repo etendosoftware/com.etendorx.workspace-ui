@@ -145,7 +145,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         localStorage.setItem('token', response.token);
         setToken(response.token);
 
-        const sessionResponse = await getSession(response.token);
+        const sessionResponse = await getSession();
         updateSessionInfo(sessionResponse);
 
         if (params.role) {
@@ -170,7 +170,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         Metadata.setToken(loginResponse.token);
         datasource.setToken(loginResponse.token);
 
-        const sessionResponse = await getSession(loginResponse.token);
+        const sessionResponse = await getSession();
         updateSessionInfo(sessionResponse);
 
         if (loginResponse.roleList) {
@@ -229,13 +229,13 @@ export default function UserProvider(props: React.PropsWithChildren) {
           Metadata.setToken(token);
           datasource.setToken(token);
 
-          updateSessionInfo(await getSession(token));
+          updateSessionInfo(await getSession());
         } catch (error) {
           clearUserData();
-          navigate('/login');
         }
       };
-      verifySession();
+
+      verifySession().catch(logger.error);
     }
   }, [clearUserData, navigate, token, updateSessionInfo]);
 
@@ -243,11 +243,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     if (token || pathname === '/login') {
       setReady(true);
     }
-
-    if (!token) {
-      navigate('/login');
-    }
-  }, [navigate, pathname, token]);
+  }, [pathname, token]);
 
   useEffect(() => {
     const interceptor = (response: Response) => {
