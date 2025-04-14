@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   ISession,
   ProfileInfo,
@@ -65,8 +66,9 @@ export interface IMetadataContext {
   groupedTabs: Etendo.Tab[][];
   selectRecord: (record: Record<string, never>, tab: Tab) => void;
   selected: Record<string, Record<string, never>>;
-  selectedMultiple: Record<string, Record<string, boolean>>;
-  selectMultiple: (recordIds: string[], tab: Tab, replace?: boolean) => void;
+  selectedMultiple: Record<string, Record<string, Record<string, any>>>;
+  setSelectedMultiple: React.Dispatch<React.SetStateAction<Record<string, Record<string, Record<string, any>>>>>;
+  selectMultiple: (records: Record<string, string>[], tab: Tab, replace?: boolean) => void;
   isSelected: (recordId: string, tabId: string) => boolean;
   clearSelections: (tabId: string) => void;
   getSelectedCount: (tabId: string) => number;

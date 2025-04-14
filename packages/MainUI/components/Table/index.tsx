@@ -1,4 +1,13 @@
-import { MaterialReactTable, MRT_ColumnFiltersState, MRT_Row } from 'material-react-table';
+import {
+  MaterialReactTable,
+  MRT_ColumnFiltersState,
+  MRT_Row,
+  MRT_RowData,
+  MRT_RowSelectionState,
+  useMaterialReactTable,
+  MRT_TableBodyRowProps,
+  MRT_TableInstance,
+} from 'material-react-table';
 import { useStyle } from './styles';
 import { type DatasourceOptions, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
@@ -19,19 +28,15 @@ type DynamicTableProps = {
   tab: Tab;
 };
 
+type RowProps = (props: {
+  isDetailPanel?: boolean;
+  row: MRT_Row<Record<string, unknown>>;
+  table: MRT_TableInstance<Record<string, unknown>>;
+}) => Omit<MRT_TableBodyRowProps<MRT_RowData>, "staticRowIndex">;
+
 const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTableProps) {
-  const {
-    selected,
-    selectRecord,
-    selectMultiple,
-    isSelected,
-    clearSelections,
-    getSelectedCount,
-    getSelectedIds,
-    setShowTabContainer,
-    groupedTabs,
-    refetch,
-  } = useMetadataContext();
+  const { selected, selectRecord, setSelectedMultiple, clearSelections, getSelectedCount, refetch } =
+    useMetadataContext();
   const { windowId } = useParams<WindowParams>();
   const parent = selected[tab.level - 1];
   const navigate = useRouter().push;
@@ -39,22 +44,11 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const { language } = useLanguage();
   const { searchQuery } = useSearch();
   const tabId = tab.id;
-  const selectedIds = useMemo(() => getSelectedIds(tabId), [getSelectedIds, tabId]);
   const selectedCount = useMemo(() => getSelectedCount(tabId), [getSelectedCount, tabId]);
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const contentRef = useRef<HTMLDivElement>(null);
   const [maxWidth, setMaxWidth] = useState(0);
-
-  const rowSelection = useMemo(() => {
-    return selectedIds.reduce(
-      (obj, id) => {
-        obj[id] = true;
-        return obj;
-      },
-      {} as Record<string, boolean>,
-    );
-  }, [selectedIds]);
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || 'id';
@@ -123,21 +117,25 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     toggleImplicitFilters();
   }, [toggleImplicitFilters]);
 
+  const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({}); //ts type available
+
   const handleClearSelections = useCallback(() => {
     clearSelections(tabId);
+    setRowSelection({});
   }, [clearSelections, tabId]);
 
-  const mapSelectionToIds = useCallback((selection: Record<string, boolean>): string[] => {
-    return Object.entries(selection)
-      .filter(([_, isSelected]) => isSelected)
-      .map(([id]) => id);
+  const handleRowSelection = useCallback<typeof setRowSelection>(updater => {
+    if (typeof updater == 'function') {
+      setRowSelection(prev => updater(prev));
+    } else {
+      setRowSelection(prev => ({ ...prev, ...updater }));
+    }
   }, []);
 
-  const rowProps = useCallback(
-    ({ row }: { row: MRT_Row<Record<string, unknown>> }) => {
+  const rowProps = useCallback<RowProps>(
+    ({ row, table }) => {
       const record = row.original as Record<string, never>;
-      const id = String(record.id);
-      const isRowSelected = isSelected(id, tabId);
+      const isSelected = row.getIsSelected();
 
       return {
         onClick: (event: React.MouseEvent) => {
@@ -145,92 +143,43 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
             return;
           }
 
-          if (event.ctrlKey || event.metaKey) {
-            if (isRowSelected) {
-              const newSelection = selectedIds.filter(selectedId => selectedId !== id);
-              selectMultiple(newSelection, tab, true);
-            } else {
-              selectMultiple([...selectedIds, id], tab, true);
-            }
+          row.toggleSelected();
+          selectRecord(record, tab);
+
+          if (isSelected) {
+            setSelectedMultiple(prev => {
+              const result = { ...prev };
+              delete result[tab.id][record.id];
+
+              return result;
+            });
           } else {
-            const isSameRecordSelected = selected[tab.level]?.id === record.id;
+            setSelectedMultiple(prev => {
+              const result = { ...prev };
 
-            if (isSameRecordSelected) {
-              clearSelections(tabId);
-              selectRecord(record, tab);
-            } else {
-              selectMultiple([id], tab, true);
-              selectRecord(record, tab);
-
-              const nextLevel = tab.level + 1;
-              const hasNextLevelTabs = groupedTabs.some(tabs => tabs[0]?.level === nextLevel);
-              if (hasNextLevelTabs) {
-                setShowTabContainer(true);
+              if (!result[tab.id]) {
+                result[tab.id] = {};
               }
-            }
+
+              result[tab.id][record.id] = record;
+
+              return result;
+            });
           }
         },
         onDoubleClick: () => {
-          selectRecord(record, tab);
           navigate(`${windowId}/${tab.id}/${record.id}?parentId=${selected[tab.level - 1]?.id || null}`);
         },
-        onAuxClick: () => {
-          selectRecord(record, tab);
-        },
         sx: {
-          ...(isRowSelected && {
+          ...(isSelected && {
             ...sx.rowSelected,
           }),
         },
+        row,
+        table,
       };
     },
-    [
-      isSelected,
-      navigate,
-      selectMultiple,
-      selectRecord,
-      clearSelections,
-      selectedIds,
-      selected,
-      setShowTabContainer,
-      sx.rowSelected,
-      tab,
-      tabId,
-      windowId,
-      groupedTabs,
-    ],
-  );
-
-  const handleRowSelectionChange = useCallback(
-    (updaterOrValue: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => {
-      let newSelection: Record<string, boolean>;
-      if (typeof updaterOrValue === 'function') {
-        newSelection = updaterOrValue(rowSelection);
-      } else {
-        newSelection = updaterOrValue;
-      }
-
-      const newSelectedIds = mapSelectionToIds(newSelection);
-
-      if (newSelectedIds.length === 0) {
-        clearSelections(tabId);
-
-        if (selected[tab.level]) {
-          selectRecord(selected[tab.level], tab);
-        }
-        return;
-      }
-
-      selectMultiple(newSelectedIds, tab, true);
-
-      if (newSelectedIds.length === 1) {
-        const record = records.find(r => String(r.id) === newSelectedIds[0]) as Record<string, never>;
-        if (record) {
-          selectRecord(record, tab);
-        }
-      }
-    },
-    [mapSelectionToIds, rowSelection, records, selectMultiple, selectRecord, clearSelections, selected, tab, tabId],
+    [navigate, selectRecord, selected, setSelectedMultiple, sx.rowSelected, tab, windowId],
   );
 
   const CustomTopToolbar = useCallback(() => {
@@ -243,6 +192,49 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
       />
     );
   }, [isImplicitFilterApplied, handleFilterToggle, selectedCount, handleClearSelections]);
+
+  const table = useMaterialReactTable({
+    muiTablePaperProps: {
+      sx: sx.tablePaper,
+    },
+    muiTableHeadCellProps: { sx: sx.tableHeadCell },
+    muiTableBodyCellProps: { sx: sx.tableBodyCell },
+    muiTableBodyProps: {
+      sx: sx.tableBody,
+    },
+    layoutMode: 'grid',
+    enableGlobalFilter: false,
+    columns,
+    data: records,
+    enableRowSelection: true,
+    enableMultiRowSelection: true,
+    positionToolbarAlertBanner: 'none',
+    muiTableBodyRowProps: rowProps,
+    enablePagination: false,
+    renderTopToolbar: <CustomTopToolbar />,
+    renderBottomToolbar:
+      tab.uIPattern == 'STD' && !searchQuery ? (
+        <Button sx={sx.fetchMore} onClick={fetchMore}>
+          Load more
+        </Button>
+      ) : null,
+    initialState: { density: 'compact' },
+    state: {
+      rowSelection,
+      columnFilters,
+      showColumnFilters: true,
+    },
+    onRowSelectionChange: handleRowSelection,
+    onColumnFiltersChange: handleColumnFiltersChange,
+    getRowId: row => String(row.id),
+    enableColumnFilters: true,
+    enableSorting: true,
+    enableColumnActions: true,
+    manualFiltering: true,
+    renderEmptyRowsFallback: () => {
+      return <EmptyState maxWidth={maxWidth} />;
+    },
+  });
 
   useEffect(() => {
     if (removeRecordLocally) {
@@ -268,49 +260,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   return (
     <div className="flex flex-auto w-full">
       <div className="flex flex-col w-full" ref={contentRef}>
-        <MaterialReactTable
-          muiTablePaperProps={{
-            sx: sx.tablePaper,
-          }}
-          muiTableHeadCellProps={{ sx: sx.tableHeadCell }}
-          muiTableBodyCellProps={{ sx: sx.tableBodyCell }}
-          muiTableBodyProps={{
-            sx: sx.tableBody,
-          }}
-          layoutMode="grid"
-          enableGlobalFilter={false}
-          columns={columns}
-          data={records}
-          enableRowSelection={true}
-          enableMultiRowSelection={true}
-          positionToolbarAlertBanner="none"
-          muiTableBodyRowProps={rowProps}
-          enablePagination={false}
-          renderTopToolbar={<CustomTopToolbar />}
-          renderBottomToolbar={
-            tab.uIPattern == 'STD' && !searchQuery ? (
-              <Button sx={sx.fetchMore} onClick={fetchMore}>
-                Load more
-              </Button>
-            ) : null
-          }
-          initialState={{ density: 'compact' }}
-          state={{
-            rowSelection,
-            columnFilters,
-            showColumnFilters: true,
-          }}
-          onRowSelectionChange={handleRowSelectionChange}
-          onColumnFiltersChange={handleColumnFiltersChange}
-          getRowId={row => String(row.id)}
-          enableColumnFilters={true}
-          enableSorting={true}
-          enableColumnActions={true}
-          manualFiltering={true}
-          renderEmptyRowsFallback={() => {
-            return <EmptyState maxWidth={maxWidth} />;
-          }}
-        />
+        <MaterialReactTable table={table} />
       </div>
     </div>
   );

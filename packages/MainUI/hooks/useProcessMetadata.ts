@@ -1,21 +1,21 @@
-import { ProcessButton } from '@/components/ProcessModal/types';
+import { ProcessButton, ProcessButtonType } from '@/components/ProcessModal/types';
 import { ProcessBindings } from '@workspaceui/etendohookbinder/src/api/types';
 import { useState, useEffect, useCallback } from 'react';
 
 export interface ProcessMetadata {
-  metadata: ProcessBindings;
+  metadata: ProcessBindings | null;
   loading: boolean;
   error: string | null;
 }
 
 export const useProcessMetadata = (processButton?: ProcessButton | null): ProcessMetadata => {
-  const [metadata, setMetadata] = useState<ProcessBindings>(null);
+  const [metadata, setMetadata] = useState<ProcessBindings | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchMetadata = useCallback(
     async (controller: AbortController) => {
-      if (!processButton) {
+      if (!processButton || !(ProcessButtonType.PROCESS_DEFINITION in processButton)) {
         return;
       }
 
@@ -23,7 +23,7 @@ export const useProcessMetadata = (processButton?: ProcessButton | null): Proces
       setError(null);
 
       try {
-        const { onProcess, onLoad, metadata } = await import(`../process/${processButton.processInfo.searchKey}`);
+        const { onProcess, onLoad, metadata } = await import(`../process/${processButton.processDefinition.searchKey}`);
 
         if (!controller.signal.aborted) {
           setMetadata({ onProcess, onLoad, metadata });

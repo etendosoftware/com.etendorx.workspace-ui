@@ -1,14 +1,14 @@
 import { compileExpression } from '@/components/Form/FormView/selectors/BaseSelector';
 import { useUserContext } from './useUserContext';
 import { useMetadataContext } from './useMetadataContext';
-import { useParentTabContext } from '@/contexts/tab';
+import { useTabContext } from '@/contexts/tab';
 import { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { useMemo } from 'react';
 
 export default function useDisplayLogic(field: Field) {
   const { session } = useUserContext();
   const { selected } = useMetadataContext();
-  const { tab } = useParentTabContext();
+  const { tab } = useTabContext();
 
   const isDisplayed: boolean = useMemo(() => {
     if (!tab) {

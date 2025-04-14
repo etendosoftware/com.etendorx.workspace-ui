@@ -1,4 +1,4 @@
-import { ProcessInfo } from '@workspaceui/etendohookbinder/src/api/types';
+import { ProcessBindings } from '@workspaceui/etendohookbinder/src/api/types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { logger } from '@/utils/logger';
 
@@ -8,23 +8,19 @@ import { logger } from '@/utils/logger';
  * @param context Contexto adicional (opcional)
  * @returns Objeto con las acciones disponibles
  */
-export const onLoad = async (process: ProcessInfo, context?: any) => {
+export const onLoad: ProcessBindings['onLoad'] = async (process, context) => {
   try {
-    const selectedRecords = context?.selectedRecords || [];
+    const selectedRecords = context.selectedRecords;
     const tabId = context?.tabId || '';
 
-    const documentStatuses = [
-      ...new Set(selectedRecords.map((record: any) => record.documentStatus || record.docstatus || record.docStatus)),
-    ];
+    const values = Object.values(selectedRecords);
 
-    const isProcessing = selectedRecords.some(
-      (record: any) => (record.processing || record.isprocessing || 'N') === 'Y',
-    )
-      ? 'Y'
-      : '';
+    const documentStatuses = Array.from(new Set(values.map(record => record.documentStatus)));
+
+    const isProcessing = values.some(record => (record.processing || record.isprocessing || 'N') === 'Y') ? 'Y' : '';
 
     const queryParams = new URLSearchParams({
-      _action: 'com.smf.jobs.defaults.ProcessOrdersDefaults',
+      _action: `${process.javaClassName}Defaults`,
     });
 
     const payload = {
@@ -40,8 +36,7 @@ export const onLoad = async (process: ProcessInfo, context?: any) => {
     }
 
     return {
-      availableActions: data.actions || [],
-      defaultAction: data.actions && data.actions.length > 0 ? data.actions[0] : null,
+      DocAction: data.actions,
     };
   } catch (error) {
     logger.error('Error en DJOBS_ProcessOrders.onLoad:', error);
@@ -59,16 +54,12 @@ export const onLoad = async (process: ProcessInfo, context?: any) => {
  * @param params Parámetros del proceso
  * @returns Resultado del proceso
  */
-export const onProcess = async (process: ProcessInfo, params: any) => {
+export const onProcess: ProcessBindings['onProcess'] = async (process, params) => {
   try {
-    const recordIds = params.recordIds || [];
+    const recordIds = params.recordIds;
     const docAction = params.DocAction;
-    const windowId = params.windowId || '';
-    const entityName = params.entityName || 'Order';
-
-    if (!recordIds.length || !docAction) {
-      throw new Error('Faltan parámetros requeridos: recordIds o DocAction');
-    }
+    const windowId = params.windowId;
+    const entityName = params.entityName;
 
     const queryParams = new URLSearchParams({
       processId: process.id,
@@ -78,17 +69,14 @@ export const onProcess = async (process: ProcessInfo, params: any) => {
 
     const payload = {
       recordIds,
-      _buttonValue: params.buttonValue || 'DONE',
+      _buttonValue: params.buttonValue,
       _params: {
         DocAction: docAction,
       },
       _entityName: entityName,
     };
 
-    const { ok, data, status } = await Metadata.kernelClient.post(`?${queryParams}`, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+    const { ok, data, status } = await Metadata.kernelClient.post(`?${queryParams}`, payload);
 
     if (!ok) {
       throw new Error(`HTTP error! status: ${status}`);

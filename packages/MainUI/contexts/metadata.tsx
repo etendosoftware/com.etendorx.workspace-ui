@@ -21,7 +21,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const [selected, setSelected] = useState<IMetadataContext['selected']>({});
   const [groupedTabs, setGroupedTabs] = useState<Etendo.Tab[][]>([]);
   const { language } = useLanguage();
-  const [selectedMultiple, setSelectedMultiple] = useState<Record<string, Record<string, boolean>>>({});
+  const [selectedMultiple, setSelectedMultiple] = useState<IMetadataContext['selectedMultiple']>({});
   const [showTabContainer, setShowTabContainer] = useState(false);
   const [activeTabLevels, setActiveTabLevels] = useState<number[]>([0]);
   const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [tabId, windowData?.tabs]);
@@ -140,11 +140,11 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
         }
       }
     },
-    [groupedTabs, selected],
+    [groupedTabs, selected, setSession],
   );
 
   const selectMultiple = useCallback(
-    (recordIds: string[], tab: Tab, replace: boolean = false) => {
+    (records: Record<string, string>[], tab: Tab, replace: boolean = false) => {
       const tabId = tab.id;
 
       setSelectedMultiple(prev => {
@@ -152,8 +152,8 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
 
         const updatedSelections = { ...currentTabSelections };
 
-        recordIds.forEach(id => {
-          updatedSelections[id] = true;
+        records.forEach((record) => {
+          updatedSelections[record.id] = record;
         });
 
         return {
@@ -162,18 +162,18 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
         };
       });
 
-      if (recordIds.length === 1) {
-        const recordId = recordIds[0];
-        const record = windowData?.tabs.find(t => t.id === tab.id)?.records?.[recordId] as
-          | Record<string, never>
-          | undefined;
+      // if (recordIds.length === 1) {
+      //   const recordId = recordIds[0];
+      //   const record = windowData?.tabs.find(t => t.id === tab.id)?.records?.[recordId] as
+      //     | Record<string, never>
+      //     | undefined;
 
-        if (record) {
-          selectRecord(record, tab);
-        }
-      }
+      //   if (record) {
+      //     selectRecord(record, tab);
+      //   }
+      // }
     },
-    [windowData?.tabs, selectRecord],
+    [],
   );
 
   const clearSelections = useCallback(
@@ -221,7 +221,8 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   );
 
   useEffect(() => {
-    setSelected({}), setSelectedMultiple({});
+    setSelected({});
+    setSelectedMultiple({});
     setActiveTabLevels([0]);
     setShowTabContainer(false);
   }, [windowId]);
@@ -339,6 +340,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       tabs,
       tab,
       selectedMultiple,
+      setSelectedMultiple,
       selectMultiple,
       isSelected,
       clearSelections,
@@ -353,26 +355,26 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       removeRecord,
     }),
     [
-      activeTabLevels,
-      clearSelections,
-      closeTab,
-      error,
-      getSelectedCount,
-      getSelectedIds,
-      groupedTabs,
-      isSelected,
-      loading,
-      loadWindowData,
+      windowId,
       recordId,
-      selectMultiple,
+      loading,
+      error,
+      groupedTabs,
+      windowData,
       selectRecord,
       selected,
-      selectedMultiple,
-      showTabContainer,
-      tab,
       tabs,
-      windowData,
-      windowId,
+      tab,
+      selectedMultiple,
+      selectMultiple,
+      isSelected,
+      clearSelections,
+      getSelectedCount,
+      getSelectedIds,
+      showTabContainer,
+      activeTabLevels,
+      closeTab,
+      loadWindowData,
       removeRecord,
     ],
   );

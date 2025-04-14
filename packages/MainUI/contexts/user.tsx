@@ -67,7 +67,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const setDefaultConfiguration = useCallback(async (token: string, config: DefaultConfiguration) => {
     try {
       const data = await apiSetDefaultConfiguration(token, config);
-      console.debug(data);
     } catch (error) {
       logger.error('Error setting default configuration:', error);
       throw error;
@@ -87,7 +86,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         image: sessionResponse.user.image || '',
       };
 
-      setSession((prev) => ({...prev, ...sessionResponse.attributes}));
+      setSession(prev => ({ ...prev, ...sessionResponse.attributes }));
       updateProfile(currentProfileInfo);
       setUser(sessionResponse.user);
       setProfile(currentProfileInfo);
@@ -242,8 +241,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
   useEffect(() => {
     if (token || pathname === '/login') {
       setReady(true);
+    } else if (!token && pathname !== 'login') {
+      navigate('/login');
     }
-  }, [pathname, token]);
+  }, [navigate, pathname, token]);
 
   useEffect(() => {
     const interceptor = (response: Response) => {

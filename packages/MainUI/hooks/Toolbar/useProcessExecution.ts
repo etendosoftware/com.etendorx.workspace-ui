@@ -6,14 +6,12 @@ import { useMetadataContext } from '../useMetadataContext';
 import { useParams } from 'next/navigation';
 import { API_METADATA_URL } from '@workspaceui/etendohookbinder/src/api/constants';
 import { useApiContext } from '../useApiContext';
-import { useProcessMetadata } from '../useProcessMetadata';
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [iframeUrl, setIframeUrl] = useState('');
   const { tab, selected, windowId } = useMetadataContext();
-  useProcessMetadata();
   const { recordId } = useParams<{ recordId: string }>();
   const apiUrl = useApiContext();
 

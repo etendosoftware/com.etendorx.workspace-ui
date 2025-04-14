@@ -1,4 +1,4 @@
-import { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import { Field, ProcessDefinition, ProcessParameters } from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface BaseButton {
   id: string;
@@ -6,19 +6,6 @@ export interface BaseButton {
   action: string;
   enabled: boolean;
   visible: boolean;
-}
-
-export type ProcessParameters = Array<{
-  defaultValue: string;
-  id: string;
-  name: string;
-} & Field>;
-
-export interface ProcessDefinition extends Record<string, unknown> {
-  id: string;
-  name: string;
-  javaClassName: string;
-  parameters: ProcessParameters;
 }
 
 export interface ProcessAction extends Record<string, unknown> {
