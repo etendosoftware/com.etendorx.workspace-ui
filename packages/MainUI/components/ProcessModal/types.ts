@@ -12,7 +12,7 @@ export type ProcessParameters = Array<{
   defaultValue: string;
   id: string;
   name: string;
-}>;
+} & Field>;
 
 export interface ProcessDefinition extends Record<string, unknown> {
   id: string;
