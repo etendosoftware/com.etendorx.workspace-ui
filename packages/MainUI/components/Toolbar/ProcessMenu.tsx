@@ -1,4 +1,6 @@
-import { forwardRef, useCallback, useMemo } from 'react';
+'use client';
+
+import React, { forwardRef, useCallback, useMemo } from 'react';
 import { Menu, MenuItem, Tooltip } from '@mui/material';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { ProcessMenuProps } from './types';
@@ -71,7 +73,7 @@ const ProcessMenuItem = forwardRef<HTMLLIElement, ProcessMenuItemProps>(
     }
 
     return (
-      <Tooltip title={button.name} enterDelay={2000} leaveDelay={100}>
+      <Tooltip PopperProps={{ disablePortal: true }} title={button.name} enterDelay={2000} leaveDelay={100}>
         <MenuItem onClick={handleClick} sx={menuItemStyle} disabled={disabled} ref={ref}>
           <span>{button.name}</span>
         </MenuItem>

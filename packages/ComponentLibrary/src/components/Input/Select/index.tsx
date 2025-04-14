@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import {
   Autocomplete,
@@ -25,8 +27,8 @@ const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disable
   const [inputValue, setInputValue] = useState<string>('');
   const [focused, setFocused] = useState<boolean>(false);
 
-  const CustomPaper: React.FC<PaperProps> = props => {
-    return <Paper {...props} sx={sx.optionsContainer} />;
+  const CustomPaper: React.FC<PaperProps> = paperProps => {
+    return <Paper {...paperProps} sx={sx.optionsContainer} />;
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,7 +56,7 @@ const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disable
   };
 
   const renderInput = (params: AutocompleteRenderInputParams) => (
-    <Tooltip title={inputValue} arrow>
+    <Tooltip PopperProps={{ disablePortal: true }} title={inputValue} arrow>
       <TextField
         {...params}
         sx={{
@@ -101,7 +103,7 @@ const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disable
           sx: sx.listBox,
         }}
         onChange={handleSelectionChange}
-        renderOption={({ key, ...props }: OptionProps, option, { selected }) => {
+        renderOption={({ key, ...restProps }: OptionProps, option, { selected }) => {
           return (
             <li
               key={option.value + key}
@@ -109,11 +111,13 @@ const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disable
                 ...sx.optionContainer,
                 backgroundColor: selected ? theme.palette.baselineColor.neutral[0] : undefined,
               }}
-              {...props}>
+              {...restProps}
+            >
               <Typography
                 className="textOption"
                 color={selected ? theme.palette.dynamicColor.dark : theme.palette.baselineColor.neutral[90]}
-                style={sx.optionText}>
+                style={sx.optionText}
+              >
                 {option.title}
               </Typography>
               {selected && <CheckCircleIcon style={sx.checkIcon} />}

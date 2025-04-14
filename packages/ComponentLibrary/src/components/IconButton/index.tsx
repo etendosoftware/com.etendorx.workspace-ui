@@ -52,12 +52,12 @@ const IconButtonCmp: React.FC<IIconComponentProps> = ({
 
   const clonedIcon = useMemo(() => React.isValidElement(children)
     ? React.cloneElement(children as React.ReactElement, {
-        style: {
-          fill: disabled ? theme.palette.action.disabled : iconFill,
-          width,
-          height,
-        },
-      })
+      style: {
+        fill: disabled ? theme.palette.action.disabled : iconFill,
+        width,
+        height,
+      },
+    })
     : null, [children, disabled, height, iconFill, theme.palette.action.disabled, width]);
 
   const button = (
@@ -66,7 +66,8 @@ const IconButtonCmp: React.FC<IIconComponentProps> = ({
       {...props}
       disabled={disabled}
       onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}>
+      onMouseLeave={handleMouseLeave}
+    >
       <Box sx={styles.buttonContainer}>
         {clonedIcon}
         {iconText && <Typography sx={styles.iconText}>{iconText}</Typography>}
@@ -76,7 +77,7 @@ const IconButtonCmp: React.FC<IIconComponentProps> = ({
 
   if (disabled) {
     return (
-      <Tooltip title={tooltip} arrow>
+      <Tooltip title={tooltip} PopperProps={{ disablePortal: true }} arrow>
         <span>{button}</span>
       </Tooltip>
     );
