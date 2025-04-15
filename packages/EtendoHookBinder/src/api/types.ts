@@ -777,4 +777,6 @@ export interface ProcessDefinition extends Record<string, unknown> {
   name: string;
   javaClassName: string;
   parameters: ProcessParameters;
+  onLoad: string;
+  onProcess: string;
 }

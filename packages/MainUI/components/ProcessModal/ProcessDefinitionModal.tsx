@@ -6,8 +6,8 @@ import { FormProvider, useForm } from 'react-hook-form';
 import BaseSelector from './selectors/BaseSelector';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
 import { useTabContext } from '@/contexts/tab';
-import { logger } from '@/utils/logger';
-import { useProcessMetadata } from '@/hooks/useProcessMetadata';
+import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { executeStringFunction } from '@/utils/functions';
 
 interface ProcessDefinitionModalProps {
   onClose: () => void;
@@ -21,9 +21,8 @@ interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps
 
 function ProcessDefinitionModalContent({ onClose, button, open }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
-  const { metadata } = useProcessMetadata(button);
-  const onProcess = metadata?.onProcess;
-  const onLoad = metadata?.onLoad;
+  const onProcess = button.processDefinition.onProcess;
+  const onLoad = button.processDefinition.onLoad;
   const { selectedMultiple } = useMetadataContext();
   const { tab } = useTabContext();
   const tabId = tab?.id || '';
@@ -37,9 +36,14 @@ function ProcessDefinitionModalContent({ onClose, button, open }: ProcessDefinit
 
   const form = useForm();
 
+  const handleClose = useCallback(() => {
+    setResponse(undefined);
+    onClose();
+  }, [onClose]);
+
   const handleExecute = useCallback(async () => {
     if (onProcess && tab) {
-      const result = await onProcess(button.processDefinition, {
+      const result = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
         buttonValue: 'DONE',
         windowId: tab.windowId,
         entityName: tab.entityName,
@@ -53,7 +57,10 @@ function ProcessDefinitionModalContent({ onClose, button, open }: ProcessDefinit
   useEffect(() => {
     const f = async () => {
       if (onLoad && open && tab) {
-        const result = await onLoad(button.processDefinition, { selectedRecords, tabId });
+        const result = await executeStringFunction(onLoad, { Metadata }, button.processDefinition, {
+          selectedRecords,
+          tabId,
+        });
         setParameters(prev => {
           const newParameters = { ...prev };
           Object.entries(result).forEach(([parameterName, values]) => {
@@ -68,7 +75,7 @@ function ProcessDefinitionModalContent({ onClose, button, open }: ProcessDefinit
       }
     };
 
-    f().catch(logger.warn);
+    f();
   }, [button.processDefinition, onLoad, open, selectedRecords, tab, tabId]);
 
   return (
@@ -95,7 +102,7 @@ function ProcessDefinitionModalContent({ onClose, button, open }: ProcessDefinit
                 {t('common.execute')}
               </button>
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="transition px-4 py-2 bg-[var(--color-neutral-1000)] text-white rounded font-medium focus:outline-none hover:bg-[var(--color-etendo-dark)]">
                 {t('common.close')}
               </button>
