@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export type WindowId = string;
 
 export interface CachedData<T> {
@@ -313,182 +314,182 @@ export interface User {
   defaultRole$_identifier: string;
 }
 export interface SessionResponse {
-  user:                User;
-  currentRole:         CurrentRole;
+  user: User;
+  currentRole: CurrentRole;
   currentOrganization: CurrentOrganization;
-  currentClient:       CurrentClient;
-  currentWarehouse:    CurrentWarehouse;
-  languages:           Languages;
-  attributes:          { [key: string]: null | string };
+  currentClient: CurrentClient;
+  currentWarehouse: CurrentWarehouse;
+  languages: Languages;
+  attributes: { [key: string]: null | string };
 }
 
 export interface CurrentClient {
-  _identifier:                string;
-  _entityName:                string;
-  $ref:                       string;
-  id:                         string;
-  organization:               string;
-  organization$_identifier:   string;
-  active:                     boolean;
-  creationDate:               Date;
-  createdBy:                  string;
-  createdBy$_identifier:      string;
-  updated:                    Date;
-  updatedBy:                  string;
-  updatedBy$_identifier:      string;
-  searchKey:                  string;
-  name:                       string;
-  description:                string;
-  mailHost:                   null;
-  requestEmail:               null;
-  requestUser:                null;
-  requestUserPassword:        null;
-  requestFolder:              null;
-  language:                   null;
-  multilingualDocuments:      boolean;
-  sMTPAuthentification:       boolean;
-  currency:                   string;
-  currency$_identifier:       string;
+  _identifier: string;
+  _entityName: string;
+  $ref: string;
+  id: string;
+  organization: string;
+  organization$_identifier: string;
+  active: boolean;
+  creationDate: Date;
+  createdBy: string;
+  createdBy$_identifier: string;
+  updated: Date;
+  updatedBy: string;
+  updatedBy$_identifier: string;
+  searchKey: string;
+  name: string;
+  description: string;
+  mailHost: null;
+  requestEmail: null;
+  requestUser: null;
+  requestUserPassword: null;
+  requestFolder: null;
+  language: null;
+  multilingualDocuments: boolean;
+  sMTPAuthentification: boolean;
+  currency: string;
+  currency$_identifier: string;
   acctdimCentrallyMaintained: boolean;
-  projectAcctdimIsenable:     boolean;
-  projectAcctdimHeader:       boolean;
-  projectAcctdimLines:        boolean;
-  projectAcctdimBreakdown:    boolean;
-  bpartnerAcctdimIsenable:    boolean;
-  bpartnerAcctdimHeader:      boolean;
-  bpartnerAcctdimLines:       boolean;
-  bpartnerAcctdimBreakdown:   boolean;
-  productAcctdimIsenable:     boolean;
-  productAcctdimHeader:       boolean;
-  productAcctdimLines:        boolean;
-  productAcctdimBreakdown:    boolean;
-  costcenterAcctdimHeader:    boolean;
-  costcenterAcctdimLines:     boolean;
+  projectAcctdimIsenable: boolean;
+  projectAcctdimHeader: boolean;
+  projectAcctdimLines: boolean;
+  projectAcctdimBreakdown: boolean;
+  bpartnerAcctdimIsenable: boolean;
+  bpartnerAcctdimHeader: boolean;
+  bpartnerAcctdimLines: boolean;
+  bpartnerAcctdimBreakdown: boolean;
+  productAcctdimIsenable: boolean;
+  productAcctdimHeader: boolean;
+  productAcctdimLines: boolean;
+  productAcctdimBreakdown: boolean;
+  costcenterAcctdimHeader: boolean;
+  costcenterAcctdimLines: boolean;
   costcenterAcctdimBreakdown: boolean;
-  user1AcctdimIsenable:       boolean;
-  user1AcctdimHeader:         boolean;
-  user1AcctdimLines:          boolean;
-  user1AcctdimBreakdown:      boolean;
-  user2AcctdimIsenable:       boolean;
-  user2AcctdimHeader:         boolean;
-  user2AcctdimLines:          boolean;
-  user2AcctdimBreakdown:      boolean;
-  costcenterAcctdimIsenable:  boolean;
-  orgAcctdimIsenable:         boolean;
-  orgAcctdimHeader:           boolean;
-  orgAcctdimLines:            boolean;
-  orgAcctdimBreakdown:        boolean;
-  daysToPasswordExpiration:   number;
-  recordTime:                 number;
+  user1AcctdimIsenable: boolean;
+  user1AcctdimHeader: boolean;
+  user1AcctdimLines: boolean;
+  user1AcctdimBreakdown: boolean;
+  user2AcctdimIsenable: boolean;
+  user2AcctdimHeader: boolean;
+  user2AcctdimLines: boolean;
+  user2AcctdimBreakdown: boolean;
+  costcenterAcctdimIsenable: boolean;
+  orgAcctdimIsenable: boolean;
+  orgAcctdimHeader: boolean;
+  orgAcctdimLines: boolean;
+  orgAcctdimBreakdown: boolean;
+  daysToPasswordExpiration: number;
+  recordTime: number;
 }
 
 export interface CurrentOrganization {
-  _identifier:                                  string;
-  _entityName:                                  string;
-  $ref:                                         string;
-  id:                                           string;
-  client:                                       string;
-  client$_identifier:                           string;
-  active:                                       boolean;
-  creationDate:                                 Date;
-  createdBy:                                    string;
-  createdBy$_identifier:                        string;
-  updated:                                      Date;
-  updatedBy:                                    string;
-  updatedBy$_identifier:                        string;
-  searchKey:                                    string;
-  name:                                         string;
-  description:                                  null;
-  summaryLevel:                                 boolean;
-  organizationType:                             string;
-  organizationType$_identifier:                 string;
-  allowPeriodControl:                           boolean;
-  calendar:                                     null;
-  ready:                                        boolean;
-  socialName:                                   null;
-  currency:                                     null;
-  generalLedger:                                null;
-  aPRMGlitem:                                   null;
-  periodControlAllowedOrganization:             string;
+  _identifier: string;
+  _entityName: string;
+  $ref: string;
+  id: string;
+  client: string;
+  client$_identifier: string;
+  active: boolean;
+  creationDate: Date;
+  createdBy: string;
+  createdBy$_identifier: string;
+  updated: Date;
+  updatedBy: string;
+  updatedBy$_identifier: string;
+  searchKey: string;
+  name: string;
+  description: null;
+  summaryLevel: boolean;
+  organizationType: string;
+  organizationType$_identifier: string;
+  allowPeriodControl: boolean;
+  calendar: null;
+  ready: boolean;
+  socialName: null;
+  currency: null;
+  generalLedger: null;
+  aPRMGlitem: null;
+  periodControlAllowedOrganization: string;
   periodControlAllowedOrganization$_identifier: string;
-  calendarOwnerOrganization:                    string;
-  calendarOwnerOrganization$_identifier:        string;
-  legalEntityOrganization:                      string;
-  legalEntityOrganization$_identifier:          string;
-  inheritedCalendar:                            string;
-  inheritedCalendar$_identifier:                string;
-  businessUnitOrganization:                     null;
-  extbpEnabled:                                 boolean;
-  extbpConfig:                                  null;
-  recordTime:                                   number;
+  calendarOwnerOrganization: string;
+  calendarOwnerOrganization$_identifier: string;
+  legalEntityOrganization: string;
+  legalEntityOrganization$_identifier: string;
+  inheritedCalendar: string;
+  inheritedCalendar$_identifier: string;
+  businessUnitOrganization: null;
+  extbpEnabled: boolean;
+  extbpConfig: null;
+  recordTime: number;
 }
 
 export interface CurrentRole {
-  _identifier:              string;
-  _entityName:              string;
-  $ref:                     string;
-  id:                       string;
-  client:                   string;
-  client$_identifier:       string;
-  organization:             string;
+  _identifier: string;
+  _entityName: string;
+  $ref: string;
+  id: string;
+  client: string;
+  client$_identifier: string;
+  organization: string;
   organization$_identifier: string;
-  active:                   boolean;
-  creationDate:             Date;
-  createdBy:                string;
-  createdBy$_identifier:    string;
-  updated:                  Date;
-  name:                     string;
-  updatedBy:                string;
-  updatedBy$_identifier:    string;
-  description:              string;
-  userLevel:                string;
-  currency:                 null;
-  approvalAmount:           number;
-  primaryTreeMenu:          null;
-  manual:                   boolean;
-  processNow:               boolean;
-  clientAdmin:              boolean;
-  advanced:                 boolean;
-  isrestrictbackend:        boolean;
-  forPortalUsers:           boolean;
-  portalAdmin:              boolean;
-  isWebServiceEnabled:      boolean;
-  template:                 boolean;
-  recalculatePermissions:   null;
-  recordTime:               number;
+  active: boolean;
+  creationDate: Date;
+  createdBy: string;
+  createdBy$_identifier: string;
+  updated: Date;
+  name: string;
+  updatedBy: string;
+  updatedBy$_identifier: string;
+  description: string;
+  userLevel: string;
+  currency: null;
+  approvalAmount: number;
+  primaryTreeMenu: null;
+  manual: boolean;
+  processNow: boolean;
+  clientAdmin: boolean;
+  advanced: boolean;
+  isrestrictbackend: boolean;
+  forPortalUsers: boolean;
+  portalAdmin: boolean;
+  isWebServiceEnabled: boolean;
+  template: boolean;
+  recalculatePermissions: null;
+  recordTime: number;
 }
 
 export interface CurrentWarehouse {
-  _identifier:                 string;
-  _entityName:                 string;
-  $ref:                        string;
-  id:                          string;
-  client:                      string;
-  client$_identifier:          string;
-  organization:                string;
-  organization$_identifier:    string;
-  active:                      boolean;
-  creationDate:                Date;
-  createdBy:                   string;
-  createdBy$_identifier:       string;
-  updated:                     Date;
-  updatedBy:                   string;
-  updatedBy$_identifier:       string;
-  searchKey:                   string;
-  name:                        string;
-  description:                 null;
-  locationAddress:             string;
+  _identifier: string;
+  _entityName: string;
+  $ref: string;
+  id: string;
+  client: string;
+  client$_identifier: string;
+  organization: string;
+  organization$_identifier: string;
+  active: boolean;
+  creationDate: Date;
+  createdBy: string;
+  createdBy$_identifier: string;
+  updated: Date;
+  updatedBy: string;
+  updatedBy$_identifier: string;
+  searchKey: string;
+  name: string;
+  description: null;
+  locationAddress: string;
   locationAddress$_identifier: string;
-  storageBinSeparator:         string;
-  shipmentVehicle:             boolean;
-  shipperCode:                 null;
-  fromDocumentNo:              null;
-  toDocumentNo:                null;
-  returnlocator:               string;
-  returnlocator$_identifier:   string;
-  warehouseRule:               null;
-  allocated:                   boolean;
-  recordTime:                  number;
+  storageBinSeparator: string;
+  shipmentVehicle: boolean;
+  shipperCode: null;
+  fromDocumentNo: null;
+  toDocumentNo: null;
+  returnlocator: string;
+  returnlocator$_identifier: string;
+  warehouseRule: null;
+  allocated: boolean;
+  recordTime: number;
 }
 
 export interface Languages {
@@ -496,91 +497,90 @@ export interface Languages {
 }
 
 export interface EnUS {
-  _identifier:              string;
-  _entityName:              string;
-  $ref:                     string;
-  id:                       string;
-  language:                 string;
-  client:                   string;
-  client$_identifier:       string;
-  organization:             string;
+  _identifier: string;
+  _entityName: string;
+  $ref: string;
+  id: string;
+  language: string;
+  client: string;
+  client$_identifier: string;
+  organization: string;
   organization$_identifier: string;
-  active:                   boolean;
-  creationDate:             Date;
-  createdBy:                string;
-  createdBy$_identifier:    string;
-  updated:                  Date;
-  updatedBy:                string;
-  updatedBy$_identifier:    string;
-  name:                     string;
-  iSOLanguageCode:          string;
-  iSOCountryCode:           string;
-  baseLanguage:             boolean;
-  systemLanguage:           boolean;
-  processNow:               null;
-  pixelSize:                number;
-  translatedBy:             string;
-  rTLLanguage:              boolean;
-  recordTime:               number;
+  active: boolean;
+  creationDate: Date;
+  createdBy: string;
+  createdBy$_identifier: string;
+  updated: Date;
+  updatedBy: string;
+  updatedBy$_identifier: string;
+  name: string;
+  iSOLanguageCode: string;
+  iSOCountryCode: string;
+  baseLanguage: boolean;
+  systemLanguage: boolean;
+  processNow: null;
+  pixelSize: number;
+  translatedBy: string;
+  rTLLanguage: boolean;
+  recordTime: number;
 }
 
 export interface User {
-  _identifier:              string;
-  _entityName:              string;
-  $ref:                     string;
-  id:                       string;
-  client:                   string;
-  client$_identifier:       string;
-  organization:             string;
+  _identifier: string;
+  _entityName: string;
+  $ref: string;
+  id: string;
+  client: string;
+  client$_identifier: string;
+  organization: string;
   organization$_identifier: string;
-  active:                   boolean;
-  creationDate:             Date;
-  createdBy:                string;
-  createdBy$_identifier:    string;
-  updated:                  Date;
-  updatedBy:                string;
-  updatedBy$_identifier:    string;
-  name:                     string;
-  description:              null;
-  password:                 string;
-  email:                    null;
-  supervisor:               null;
-  businessPartner:          null;
-  processNow:               null;
-  emailServerUsername:      string;
-  emailServerPassword:      null;
-  partnerAddress:           null;
-  greeting:                 null;
-  position:                 null;
-  comments:                 null;
-  phone:                    null;
-  alternativePhone:         null;
-  fax:                      null;
-  lastContactDate:          null;
-  lastContactResult:        null;
-  birthday:                 null;
-  trxOrganization:          null;
-  firstName:                string;
-  lastName:                 null;
-  username:                 string;
-  defaultClient:            string;
-  defaultLanguage:          string;
-  defaultOrganization:      string;
-  defaultRole:              string;
-  defaultRole$_identifier:  string;
-  defaultWarehouse:         string;
-  locked:                   boolean;
-  image:                    string;
-  grantPortalAccess:        boolean;
-  lastPasswordUpdate:       Date;
-  isPasswordExpired:        boolean;
-  commercialauth:           boolean;
-  viasms:                   boolean;
-  viaemail:                 boolean;
-  smfswsDefaultWsRole:      null;
-  recordTime:               number;
+  active: boolean;
+  creationDate: Date;
+  createdBy: string;
+  createdBy$_identifier: string;
+  updated: Date;
+  updatedBy: string;
+  updatedBy$_identifier: string;
+  name: string;
+  description: null;
+  password: string;
+  email: null;
+  supervisor: null;
+  businessPartner: null;
+  processNow: null;
+  emailServerUsername: string;
+  emailServerPassword: null;
+  partnerAddress: null;
+  greeting: null;
+  position: null;
+  comments: null;
+  phone: null;
+  alternativePhone: null;
+  fax: null;
+  lastContactDate: null;
+  lastContactResult: null;
+  birthday: null;
+  trxOrganization: null;
+  firstName: string;
+  lastName: null;
+  username: string;
+  defaultClient: string;
+  defaultLanguage: string;
+  defaultOrganization: string;
+  defaultRole: string;
+  defaultRole$_identifier: string;
+  defaultWarehouse: string;
+  locked: boolean;
+  image: string;
+  grantPortalAccess: boolean;
+  lastPasswordUpdate: Date;
+  isPasswordExpired: boolean;
+  commercialauth: boolean;
+  viasms: boolean;
+  viaemail: boolean;
+  smfswsDefaultWsRole: null;
+  recordTime: number;
 }
-
 
 /* 
 {
@@ -734,11 +734,17 @@ export interface FormInitializationResponse {
   _readOnly?: boolean;
 }
 
-export type ProcessBindings = {
-  onLoad: (...args: never[]) => never;
-  onProcess: (...args: never[]) => never;
+export interface ProcessBindings {
+  onLoad: (
+    process: ProcessDefinition,
+    context: { selectedRecords: Record<string, EntityData>; tabId: string },
+  ) => Promise<any>;
+  onProcess: (
+    process: ProcessDefinition,
+    params: { recordIds: string[]; windowId: string; entityName: string; buttonValue: any, [param: string]: unknown },
+  ) => Promise<any>;
   metadata: Record<string, unknown>;
-} | null;
+}
 
 export interface ProcessInfo {
   loadFunction: string;
@@ -753,4 +759,24 @@ export interface ProcessInfo {
     id: string;
     name: string;
   }>;
+}
+
+export type ListOption = { id: string; label: string; value: string };
+
+export type ProcessParameter = {
+  defaultValue: string;
+  id: string;
+  name: string;
+  refList: Array<ListOption>;
+} & Record<string, string>;
+
+export type ProcessParameters = Record<string, ProcessParameter>;
+
+export interface ProcessDefinition extends Record<string, unknown> {
+  id: string;
+  name: string;
+  javaClassName: string;
+  parameters: ProcessParameters;
+  onLoad: string;
+  onProcess: string;
 }

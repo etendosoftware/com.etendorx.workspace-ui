@@ -1,22 +1,11 @@
+import { Field, ProcessDefinition, ProcessParameters } from '@workspaceui/etendohookbinder/src/api/types';
+
 export interface BaseButton {
   id: string;
   name: string;
   action: string;
   enabled: boolean;
   visible: boolean;
-}
-
-export type ProcessParameters = Array<{
-  defaultValue: string;
-  id: string;
-  name: string;
-}>;
-
-export interface ProcessDefinition extends Record<string, unknown> {
-  id: string;
-  name: string;
-  javaClassName: string;
-  parameters: ProcessParameters;
 }
 
 export interface ProcessAction extends Record<string, unknown> {
@@ -40,6 +29,7 @@ export interface BaseProcessButton extends BaseButton {
   buttonText: string;
   displayLogic?: string;
   processInfo: ProcessInfo;
+  field: Field;
 }
 
 export interface ProcessDefinitionButton extends BaseProcessButton {
@@ -73,7 +63,7 @@ export interface ProcessResponse {
 export interface ProcessModalProps {
   open: boolean;
   onClose: () => void;
-  button: ProcessButton;
+  button: ProcessButton | null;
   onConfirm: () => void;
   isExecuting: boolean;
   processResponse: ProcessResponse | null;

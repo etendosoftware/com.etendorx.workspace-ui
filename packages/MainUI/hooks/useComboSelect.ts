@@ -4,7 +4,7 @@ import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { useFormContext } from 'react-hook-form';
 import { useParams } from 'next/navigation';
 import { getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
-import { useParentTabContext } from '@/contexts/tab';
+import { useTabContext } from '@/contexts/tab';
 
 export interface UseComboSelectParams {
   field: Field;
@@ -13,7 +13,7 @@ export interface UseComboSelectParams {
 export const useComboSelect = ({ field }: UseComboSelectParams) => {
   const { windowId } = useParams<{ windowId: string }>();
   const { watch, getValues } = useFormContext();
-  const { tab, parentTab, parentRecord } = useParentTabContext();
+  const { tab, parentTab, parentRecord } = useTabContext();
   const value = watch(field.hqlName);
   const [records, setRecords] = useState<Record<string, string>[]>([]);
   const [loading, setLoading] = useState(false);

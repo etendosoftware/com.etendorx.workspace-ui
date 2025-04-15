@@ -9,7 +9,7 @@ import Label from '../Label';
 import { useUserContext } from '@/hooks/useUserContext';
 import { useParams } from 'next/navigation';
 import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
-import { useParentTabContext } from '@/contexts/tab';
+import { useTabContext } from '@/contexts/tab';
 
 export const compileExpression = (expression: string) => {
   try {
@@ -23,7 +23,7 @@ export const compileExpression = (expression: string) => {
 
 const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; formMode?: FormMode }) => {
   const { watch, getValues, setValue, register } = useFormContext();
-  const { tab } = useParentTabContext();
+  const { tab } = useTabContext();
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
   const { recordId } = useParams<{ recordId: string }>();
   const { session } = useUserContext();

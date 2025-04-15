@@ -11,7 +11,7 @@ const DEFAULT_CONFIG = {
 };
 
 export const setDefaultConfiguration = async (token: string, config: DefaultConfiguration): Promise<void> => {
-  const client = Metadata.loginClient;
+  const client = Metadata.kernelClient;
 
   const params = {
     language: (config.language || DEFAULT_CONFIG.language).toString(),
@@ -24,7 +24,7 @@ export const setDefaultConfiguration = async (token: string, config: DefaultConf
 
   try {
     const response = await client.post(
-      'org.openbravo.client.kernel?command=save&_action=org.openbravo.client.application.navigationbarcomponents.UserInfoWidgetActionHandler&stateless=true',
+      '?command=save&_action=org.openbravo.client.application.navigationbarcomponents.UserInfoWidgetActionHandler&stateless=true',
       params,
     );
 

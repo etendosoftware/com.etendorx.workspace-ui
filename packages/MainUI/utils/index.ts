@@ -9,8 +9,8 @@ import {
 
 export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const getFieldReference = (field?: Field): FieldType => {
-  switch (field?.column?.reference) {
+export const getFieldReference = (reference?: string): FieldType => {
+  switch (reference) {
     case '19':
     case '95E2A8B50A254B2AAE6774B8C2F28120':
     case '18':
