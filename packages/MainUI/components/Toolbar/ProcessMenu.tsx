@@ -1,9 +1,11 @@
-import { ProcessButtonType } from '../ProcessModal/types';
+'use client';
+
 import { useCallback } from 'react';
 import { Menu, Tooltip } from '@mui/material';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { ProcessMenuProps } from './types';
 import { ProcessButton } from '../ProcessModal/types';
+import { ProcessButtonType } from '../ProcessModal/types';
 import useDisplayLogic from '@/hooks/useDisplayLogic';
 
 const menuStyle = {

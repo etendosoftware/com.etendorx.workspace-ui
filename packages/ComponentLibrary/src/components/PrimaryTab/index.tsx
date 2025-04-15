@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useCallback, useState, useMemo } from 'react';
 import { Tabs, Tab, Box, Menu, MenuItem, ListItemIcon, Tooltip } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
@@ -17,7 +19,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
       setSelectedTab(newValue);
       onChange?.(newValue);
     },
-    [onChange],
+    [onChange]
   );
 
   const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
@@ -34,7 +36,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
       onChange?.(id);
       handleMenuClose();
     },
-    [handleMenuClose, onChange],
+    [handleMenuClose, onChange]
   );
 
   const handleMouseEnter = useCallback((id: string) => {
@@ -60,11 +62,11 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
             icon={
               showIcon
                 ? React.cloneElement(tab.icon as React.ReactElement, {
-                    style: {
-                      fill: isSelected ? tab.fill : isHovered ? tab.hoverFill : tab.fill,
-                      transition: 'fill 0.3s',
-                    },
-                  })
+                  style: {
+                    fill: isSelected ? tab.fill : isHovered ? tab.hoverFill : tab.fill,
+                    transition: 'fill 0.3s',
+                  },
+                })
                 : undefined
             }
             label={tab.showInTab !== 'icon' ? tab.label : undefined}
@@ -79,7 +81,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
           />
         );
       }),
-    [tabs, selectedTab, hoveredTab, handleMouseLeave, sx.tab, handleMouseEnter, handleChange],
+    [tabs, selectedTab, hoveredTab, handleMouseLeave, sx.tab, handleMouseEnter, handleChange]
   );
 
   return (
@@ -92,7 +94,8 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
           variant="scrollable"
           TabIndicatorProps={tabIndicatorProps}
           aria-label="primary tabs"
-          sx={sx.tabs}>
+          sx={sx.tabs}
+        >
           {buildTabs}
         </Tabs>
       </Box>
@@ -106,7 +109,8 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
         slotProps={{
           paper: { sx: sx.menu },
         }}
-        MenuListProps={{ sx: menuStyle }}>
+        MenuListProps={{ sx: menuStyle }}
+      >
         {tabs.map(tab => {
           const isSelected = selectedTab === tab.id;
           return (
@@ -116,13 +120,14 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
               sx={() => ({
                 ...sx.menuItem,
                 ...(isSelected ? sx.selectedMenuItem : {}),
-              })}>
+              })}
+            >
               <Box sx={sx.iconBox}>
                 {tab.icon &&
                   React.cloneElement(tab.icon as React.ReactElement, {
                     style: { fill: tab.fill, flexShrink: 0 },
                   })}
-                <Tooltip title={tab.label} enterDelay={500} leaveDelay={100}>
+                <Tooltip PopperProps={{ disablePortal: true }} title={tab.label} enterDelay={500} leaveDelay={100}>
                   <span>{tab.label}</span>
                 </Tooltip>
               </Box>
@@ -131,7 +136,8 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
                   sx={{
                     visibility: isSelected ? 'visible' : 'hidden',
                     flexShrink: 0,
-                  }}>
+                  }}
+                >
                   <CheckIcon sx={{ color: tab.fill }} />
                 </ListItemIcon>
               )}

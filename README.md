@@ -13,7 +13,6 @@ Additionally, ensure you have the following repositories cloned in your workspac
 
 - `com.etendoerp.openapi`
 - `com.etendoerp.etendorx`
-- `com.etendoerp.mainui`
 - `com.etendoerp.metadata`
 - `com.etendoerp.metadata.template`
 
