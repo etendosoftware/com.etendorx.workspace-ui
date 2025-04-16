@@ -15,7 +15,7 @@ export const useProcessButton = (
     }
 
     const processParams =
-      btn.processInfo?.parameters?.reduce(
+      Object.values(btn.processInfo?.parameters || {})?.reduce(
         (acc, param) => ({
           ...acc,
           [param.id]: param.defaultValue ?? null,

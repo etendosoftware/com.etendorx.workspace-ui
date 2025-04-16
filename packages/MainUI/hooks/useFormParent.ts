@@ -1,4 +1,4 @@
-import { useParentTabContext } from '@/contexts/tab';
+import { useTabContext } from '@/contexts/tab';
 import { EntityData } from '@workspaceui/etendohookbinder/src/api/types';
 import { getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { useMemo } from 'react';
@@ -10,7 +10,7 @@ export enum ParentFieldName {
 }
 
 export default function useFormParent(nameToUse: ParentFieldName = ParentFieldName.HQL_NAME) {
-  const { tab, parentTab, parentRecord } = useParentTabContext();
+  const { tab, parentTab, parentRecord } = useTabContext();
 
   return useMemo(() => {
     const result = {} as EntityData;

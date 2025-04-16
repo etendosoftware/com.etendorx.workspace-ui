@@ -1,15 +1,12 @@
 'use client';
 
-import React, { forwardRef, useCallback, useMemo } from 'react';
-import { Menu, MenuItem, Tooltip } from '@mui/material';
+import { useCallback } from 'react';
+import { Menu, Tooltip } from '@mui/material';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { ProcessMenuProps } from './types';
 import { ProcessButton } from '../ProcessModal/types';
-import { useParentTabContext } from '@/contexts/tab';
-import { useUserContext } from '@/hooks/useUserContext';
-import { useMetadataContext } from '@/hooks/useMetadataContext';
-import { Field } from '@workspaceui/etendohookbinder/src/api/types';
-import { compileExpression } from '../Form/FormView/selectors/BaseSelector';
+import { ProcessButtonType } from '../ProcessModal/types';
+import useDisplayLogic from '@/hooks/useDisplayLogic';
 
 const menuStyle = {
   marginTop: '0.5rem',
@@ -20,69 +17,57 @@ const menuStyle = {
   },
 };
 
-const menuItemStyle = {
-  display: 'flex',
-  width: 'auto',
-  margin: '0.5rem',
-  padding: '0.5rem',
-  borderRadius: '0.5rem',
-  '&:hover': {
-    background: theme.palette.baselineColor.neutral[20],
-    color: theme.palette.baselineColor.neutral[90],
-  },
-};
-
 interface ProcessMenuItemProps {
   button: ProcessButton;
   onProcessClick: (button: ProcessButton) => void;
   disabled: boolean;
 }
 
-const ProcessMenuItem = forwardRef<HTMLLIElement, ProcessMenuItemProps>(
-  ({ button, onProcessClick, disabled }: ProcessMenuItemProps, ref) => {
-    const field = (button as unknown as { field: Field }).field;
-    const { session } = useUserContext();
-    const { selected } = useMetadataContext();
-    const { tab } = useParentTabContext();
+const ProcessMenuItem = ({ button, onProcessClick, disabled }: ProcessMenuItemProps) => {
+  const isDisplayed = useDisplayLogic(button.field);
 
-    const isDisplayed: boolean = useMemo(() => {
-      if (!tab) {
-        return false;
-      }
+  const handleClick = useCallback(() => {
+    onProcessClick(button);
+  }, [button, onProcessClick]);
 
-      if (!field.displayed) return false;
+  if (!isDisplayed) {
+    return null;
+  }
 
-      if (!field.displayLogicExpression) return true;
-
-      const compiledExpr = compileExpression(field.displayLogicExpression);
-
-      try {
-        const values = selected[tab.level];
-        return compiledExpr(session, values);
-      } catch (error) {
-        return true;
-      }
-    }, [tab, selected, field, session]);
-
-    const handleClick = useCallback(() => {
-      onProcessClick(button);
-    }, [button, onProcessClick]);
-
-    if (!isDisplayed) {
-      return null;
-    }
-
-    return (
-      <Tooltip PopperProps={{ disablePortal: true }} title={button.name} enterDelay={2000} leaveDelay={100}>
-        <MenuItem onClick={handleClick} sx={menuItemStyle} disabled={disabled} ref={ref}>
-          <span>{button.name}</span>
-        </MenuItem>
-      </Tooltip>
-    );
-  },
-);
+  return (
+    <Tooltip title={button.name} enterNextDelay={1000} followCursor>
+      <div
+        onClick={disabled ? undefined : handleClick}
+        className="p-2 m-2 hover:bg-(--color-baseline-20) transition rounded-lg cursor-pointer">
+        {button.name}
+      </div>
+    </Tooltip>
+  );
+};
 
 ProcessMenuItem.displayName = 'ProcessMenuItem';
+
+const ProcessDefinitionMenuItem = ({ button, onProcessClick, disabled }: ProcessMenuItemProps) => {
+  const isDisplayed = useDisplayLogic(button.field);
+
+  const handleClick = useCallback(() => {
+    onProcessClick(button);
+  }, [button, onProcessClick]);
+
+  if (!isDisplayed) {
+    return null;
+  }
+
+  return (
+    <Tooltip title={button.name} enterNextDelay={1000} followCursor>
+      <div
+        onClick={disabled ? undefined : handleClick}
+        className="p-2 m-2 hover:bg-(--color-baseline-20) transition rounded-lg cursor-pointer">
+        {button.name}
+      </div>
+    </Tooltip>
+  );
+};
 
 const ProcessMenu: React.FC<ProcessMenuProps> = ({
   anchorEl,
@@ -94,14 +79,23 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
 }) => {
   return (
     <Menu anchorEl={anchorEl} open={open} onClose={onClose} sx={menuStyle}>
-      {processButtons.map((button: ProcessButton, index: number) => (
-        <ProcessMenuItem
-          key={`${button.id}-${index}`}
-          button={button}
-          onProcessClick={onProcessClick}
-          disabled={!selectedRecord}
-        />
-      ))}
+      {processButtons.map((button: ProcessButton, index: number) =>
+        ProcessButtonType.PROCESS_ACTION in button ? (
+          <ProcessMenuItem
+            key={`${button.id}-${index}`}
+            button={button}
+            onProcessClick={onProcessClick}
+            disabled={!selectedRecord}
+          />
+        ) : (
+          <ProcessDefinitionMenuItem
+            key={`${button.id}-${index}`}
+            button={button}
+            onProcessClick={onProcessClick}
+            disabled={!selectedRecord}
+          />
+        ),
+      )}
     </Menu>
   );
 };

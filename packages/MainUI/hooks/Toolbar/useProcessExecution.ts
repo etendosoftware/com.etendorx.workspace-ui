@@ -1,75 +1,24 @@
-import { useState, useContext, useCallback, useMemo } from 'react';
-import { UserContext } from '../../contexts/user';
+import { useState, useCallback, useMemo } from 'react';
 import { ProcessResponse } from '../../components/Toolbar/types';
-import { ExecuteProcessDefinitionParams, ExecuteProcessParams } from './types';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { ExecuteProcessParams } from './types';
 import { ProcessButton, ProcessButtonType } from '@/components/ProcessModal/types';
 import { useMetadataContext } from '../useMetadataContext';
 import { useParams } from 'next/navigation';
+import { API_METADATA_URL } from '@workspaceui/etendohookbinder/src/api/constants';
+import { useApiContext } from '../useApiContext';
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [iframeUrl, setIframeUrl] = useState('');
-  const { token } = useContext(UserContext);
   const { tab, selected, windowId } = useMetadataContext();
   const { recordId } = useParams<{ recordId: string }>();
+  const apiUrl = useApiContext();
 
   const currentRecord = useMemo(() => {
     const tabLevel = tab?.level ?? 0;
     return selected[tabLevel] || null;
   }, [tab?.level, selected]);
-
-  const executeProcessDefinition = useCallback(
-    async ({ button, recordId, params = {} }: ExecuteProcessDefinitionParams): Promise<ProcessResponse> => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const queryParams = new URLSearchParams({
-          _action: button.processDefinition.javaClassName,
-          processId: button.processDefinition.id,
-          windowId: windowId,
-        });
-
-        const processParams: Record<string, unknown> = {};
-        button.processDefinition.parameters?.forEach(param => {
-          if (params[param.id]) {
-            processParams[param.id] = params[param.id];
-          }
-        });
-
-        const payload = {
-          recordIds: [recordId],
-          _buttonValue: button.buttonText,
-          _params: processParams,
-          _entityName: button.processInfo?._entityName || '',
-        };
-
-        const { ok, data, status } = await Metadata.kernelClient.post(`?${queryParams}`, {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
-
-        if (!ok) {
-          throw new Error(`HTTP error! status: ${status}`);
-        }
-
-        if (data.response?.status === -1) {
-          throw new Error(data.response.error?.message || 'Unknown server error');
-        }
-
-        return data;
-      } catch (error) {
-        const processError = error instanceof Error ? error : new Error('Process execution failed');
-        setError(processError);
-        throw processError;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [windowId],
-  );
 
   const executeProcessAction = useCallback(
     async (button: ProcessButton): Promise<ProcessResponse> => {
@@ -108,7 +57,7 @@ export function useProcessExecution() {
 
           const isPostedProcess = button.id === 'Posted';
           const commandAction = 'BUTTONDocAction104';
-          const baseUrl = `http://localhost:8080/etendo/SalesOrder/Header_Edition.html`;
+          const baseUrl = `${apiUrl}${API_METADATA_URL}SalesOrder/Header_Edition.html`;
           const safeWindowId = windowId || (tab?.windowId ? String(tab.windowId) : '143');
           const safeTabId = tab?.id ? String(tab.id) : '186';
           const safeRecordId = String(currentRecord.id || recordId || '');
@@ -136,10 +85,6 @@ export function useProcessExecution() {
           params.append('inpkeyColumnId', 'C_Order_ID');
           params.append('keyColumnName', 'C_Order_ID');
 
-          if (token) {
-            params.append('access_token', token);
-          }
-
           const completeUrl = `${baseUrl}?${params.toString()}`;
           setIframeUrl(completeUrl);
 
@@ -157,20 +102,18 @@ export function useProcessExecution() {
         }
       });
     },
-    [currentRecord, recordId, tab?.windowId, tab?.id, windowId, token],
+    [currentRecord, apiUrl, windowId, tab?.windowId, tab?.id, recordId],
   );
 
   const executeProcess = useCallback(
-    async ({ button, recordId, params = {} }: ExecuteProcessParams): Promise<ProcessResponse> => {
+    async ({ button }: ExecuteProcessParams): Promise<ProcessResponse> => {
       if (ProcessButtonType.PROCESS_ACTION in button) {
         return executeProcessAction(button);
-      } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
-        return executeProcessDefinition({ button, recordId, params });
       } else {
         throw new Error('Unsupported process type');
       }
     },
-    [executeProcessAction, executeProcessDefinition],
+    [executeProcessAction],
   );
 
   return {

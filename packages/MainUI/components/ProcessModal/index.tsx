@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback, useMemo, memo } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from '@mui/material';
 import { useStyle } from './styles';
-import { ProcessButtonType, type ProcessModalProps } from './types';
+import { type ProcessModalProps } from './types';
 import ProcessIframeModal from './Iframe';
 
-const ProcessModal = memo(
+export const ProcessActionModal = memo(
   ({
     open,
     onClose,
@@ -21,14 +21,6 @@ const ProcessModal = memo(
     const [showIframeModal, setShowIframeModal] = useState(false);
     const [iframeUrl, setIframeUrl] = useState('');
     const [showConfirmDialog, setShowConfirmDialog] = useState(open);
-
-    const type = useMemo(
-      () =>
-        ProcessButtonType.PROCESS_DEFINITION in button
-          ? ProcessButtonType.PROCESS_DEFINITION
-          : ProcessButtonType.PROCESS_ACTION,
-      [button],
-    );
 
     useEffect(() => {
       setShowConfirmDialog(open);
@@ -84,6 +76,10 @@ const ProcessModal = memo(
       ],
     );
 
+    if (!button) {
+      return null;
+    }
+
     return (
       <>
         <Dialog
@@ -93,9 +89,7 @@ const ProcessModal = memo(
           fullWidth
           sx={styles.dialog}
           closeAfterTransition>
-          <DialogTitle sx={styles.dialogTitle}>
-            {button.name} ({type})
-          </DialogTitle>
+          <DialogTitle sx={styles.dialogTitle}>{button.name}</DialogTitle>
           <DialogContent sx={styles.dialogContent}>
             <Typography sx={styles.message}>{confirmationMessage}</Typography>
           </DialogContent>
@@ -115,6 +109,6 @@ const ProcessModal = memo(
   },
 );
 
-ProcessModal.displayName = 'ProcessModal';
+ProcessActionModal.displayName = 'ProcessActionModal';
 
-export default ProcessModal;
+export default ProcessActionModal;

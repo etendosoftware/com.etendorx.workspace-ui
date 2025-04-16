@@ -27,7 +27,7 @@ export const parseColumns = (columns?: Field[]): Column[] => {
           name: column.name,
           type: columnType,
           accessorFn: (v: Record<string, unknown>) => {
-            const reference = getFieldReference(column);
+            const reference = getFieldReference(column.column?.reference);
 
             if (reference == FieldType.BOOLEAN) {
               return v[column.hqlName] ? 'Y' : 'N';

@@ -178,6 +178,11 @@ const en = {
       logo: 'Etendo Logo',
     },
   },
+  form: {
+    select: {
+      placeholder: 'Select an option',
+    },
+  },
 };
 
 export default en;

@@ -13,7 +13,7 @@ export default function useFormFields(tab: Tab) {
     const otherFields: Record<string, Field> = {};
 
     Object.entries(tab.fields).forEach(([, field]) => {
-      const reference = getFieldReference(field);
+      const reference = getFieldReference(field.column?.reference);
       // Keep this at first because a process field will have field.display == true
       if (field.process || field.column.process || reference === FieldType.BUTTON) {
         actionFields[field.hqlName] = field;

@@ -30,6 +30,7 @@ export const useStyle = (): StylesType => {
           flexDirection: 'column',
           height: '100%',
           minHeight: '300px',
+          border: "2px solid red"
         },
         table: {
           flex: 1,
