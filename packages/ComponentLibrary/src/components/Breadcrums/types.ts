@@ -16,7 +16,9 @@ export interface BreadcrumbItem {
 export interface BreadcrumbProps {
   items: BreadcrumbItem[];
   onHomeClick: () => void;
-  homeIcon?: string | React.ReactNode;
+  homeIcon?: React.ReactNode | string;
   homeText?: string;
   separator?: React.ReactNode;
+  activeTabId?: string;
+  onTabChange: () => void;
 }

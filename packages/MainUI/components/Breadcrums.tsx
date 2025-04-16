@@ -1,85 +1,99 @@
-import React, { useCallback, useMemo } from 'react';
-import Breadcrumb from '@workspaceui/componentlibrary/src/components/Breadcrums';
-import type { BreadcrumbItem } from '@workspaceui/componentlibrary/src/components/Breadcrums/types';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import { styles } from './styles';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Breadcrumb from '@workspaceui/componentlibrary/src/components/Breadcrums';
 import { BREADCRUMB, ROUTE_IDS } from '../constants/breadcrumb';
 import { useTranslation } from '../hooks/useTranslation';
 import { useMetadataContext } from '../hooks/useMetadataContext';
+
+interface OpenWindow {
+  windowId: string;
+  windowData: any;
+}
 
 const AppBreadcrumb: React.FC = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
   const navigate = router.push;
-  const { window, tab, recordId, windowId, selected } = useMetadataContext();
+
+  const { window, recordId, windowId: currentWindowId } = useMetadataContext();
+  const [openWindows, setOpenWindows] = useState<OpenWindow[]>([]);
 
   const isNewRecord = useCallback(() => pathname.includes('/NewRecord'), [pathname]);
-
-  const recordQuery = useMemo(() => {
-    if (!recordId || !windowId || !tab?.id || isNewRecord()) {
-      return null;
-    }
-
-    return {
-      windowId,
-      tabId: tab.id,
-      criteria: [{ fieldName: 'id', operator: 'equals', value: recordId }],
-      pageSize: 1,
-    };
-  }, [recordId, windowId, tab?.id, isNewRecord]);
-
-  const { records: recordData, loading: recordLoading } = useDatasource(
-    recordQuery && window?.tabs?.[0]?.entityName ? window.tabs[0].entityName : '',
-    recordQuery || { windowId: '', tabId: '' },
-  );
-
-  const recordIdentifier = useMemo(() => {
-    if (selected[0]?._identifier && selected[0]._identifier !== recordId) {
-      return selected[0]._identifier;
-    }
-    if (recordData?.[0]?._identifier) {
-      return recordData[0]._identifier;
-    }
-    if (recordId && recordLoading) {
-      return t('common.loading');
-    }
-    return recordId;
-  }, [selected, recordId, recordData, recordLoading, t]);
-
-  const breadcrumbItems = useMemo(() => {
-    const items: BreadcrumbItem[] = [];
-
-    if (windowId && window) {
-      items.push({
-        id: windowId,
-        label: String(window.window$_identifier || window.name || t('common.loading')),
-        onClick: () => navigate(`/window/${windowId}`),
-      });
-    }
-
-    if (isNewRecord()) {
-      items.push({
-        id: ROUTE_IDS.NEW_RECORD,
-        label: t('breadcrumb.newRecord'),
-      });
-    } else if (recordId) {
-      items.push({
-        id: recordId,
-        label: String(recordIdentifier),
-      });
-    }
-
-    return items;
-  }, [windowId, window, isNewRecord, recordId, recordIdentifier, t, navigate]);
+  const isProcessOrReport = useMemo(() => pathname.includes('/process') || pathname.includes('/report'), [pathname]);
 
   const handleHomeClick = useCallback(() => navigate('/'), [navigate]);
 
+  // Update open windows if metadata or route changes
+  useEffect(() => {
+    setOpenWindows(prev => {
+      const updated = [...prev];
+      const existingIndex = prev.findIndex(win => win.windowId === currentWindowId);
+
+      if (currentWindowId && window) {
+        const existing = prev[existingIndex];
+        const hasSameName = existing?.windowData?.name === window.name;
+
+        if (existing && hasSameName) return prev;
+        if (existing) {
+          updated[existingIndex] = { ...existing, windowData: window };
+          return updated;
+        }
+        updated.push({ windowId: currentWindowId, windowData: window });
+      }
+
+      // Handle dynamic tabs for /process and /report routes
+      if (isProcessOrReport && !prev.some(win => win.windowId === pathname)) {
+        updated.push({ windowId: pathname, windowData: { name: pathname } });
+      }
+
+      return updated;
+    });
+  }, [currentWindowId, window, pathname, isProcessOrReport]);
+
+  // Determine the currently active tab
+  const activeTabId = useMemo(() => {
+    if (isNewRecord()) return ROUTE_IDS.NEW_RECORD;
+    return recordId || currentWindowId || 'home';
+  }, [currentWindowId, recordId, isNewRecord]);
+
+  // Remove tab and handle navigation
+  const handleCloseTab = useCallback(
+    (closedId: string) => {
+      setOpenWindows(prev => {
+        const index = prev.findIndex(win => win.windowId === closedId);
+        const updated = prev.filter(win => win.windowId !== closedId);
+
+        if (activeTabId === closedId) {
+          const fallback = index > 0 ? prev[index - 1] : updated[0];
+          navigate(fallback ? `/window/${fallback.windowId}` : '/');
+        }
+
+        return updated;
+      });
+    },
+    [activeTabId, navigate]
+  );
+
+  // Build breadcrumb tab items
+  const breadcrumbItems = useMemo(() => (
+    openWindows.map(({ windowId, windowData }) => ({
+      id: windowId,
+      label: windowData?.name || t('common.loading'),
+      onClick: () => {
+        if (activeTabId !== windowId) {
+          navigate(`/window/${windowId}`);
+        }
+      },
+      onClose: () => handleCloseTab(windowId)
+    }))
+  ), [openWindows, activeTabId, navigate, t, handleCloseTab]);
+
   return (
-    <div style={styles.breadCrum}>
+    <div style={{ margin: '0 1rem' }}>
       <Breadcrumb
         items={breadcrumbItems}
+        activeTabId={activeTabId}
         onHomeClick={handleHomeClick}
         homeText={t('breadcrumb.home')}
         homeIcon={BREADCRUMB.HOME.ICON}
@@ -88,4 +102,4 @@ const AppBreadcrumb: React.FC = () => {
   );
 };
 
-export default AppBreadcrumb;
+export default React.memo(AppBreadcrumb);

@@ -8,6 +8,7 @@ import LanguageProvider from '@/contexts/languageProvider';
 import MetadataProvider from '@/contexts/metadata';
 import { RecordProvider } from '@/contexts/record';
 import UserProvider from '@/contexts/user';
+import { OpenWindowsProvider } from '@/contexts/OpenWindowsContext';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -31,11 +32,13 @@ export default function RootLayout({
             <ApiProviderWrapper>
               <RecordProvider>
                 <UserProvider>
-                  <DatasourceProvider>
-                    <MetadataProvider>
-                      <Layout>{children}</Layout>
-                    </MetadataProvider>
-                  </DatasourceProvider>
+                  <OpenWindowsProvider>
+                    <DatasourceProvider>
+                      <MetadataProvider>
+                        <Layout>{children}</Layout>
+                      </MetadataProvider>
+                    </DatasourceProvider>
+                  </OpenWindowsProvider>
                 </UserProvider>
               </RecordProvider>
             </ApiProviderWrapper>

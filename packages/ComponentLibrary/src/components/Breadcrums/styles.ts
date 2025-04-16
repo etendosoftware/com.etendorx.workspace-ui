@@ -139,3 +139,55 @@ export const useStyle = () => {
     [theme],
   );
 };
+
+export const tabHeight = 36;
+
+export const tabsContainerStyle: SxProps<Theme> = (theme) => ({
+  backgroundColor: theme.palette.baselineColor.transparentNeutral[5],
+  width: '100%',
+  height: tabHeight,
+  minHeight: tabHeight,
+  borderRadius: '100px',
+  justifyContent: 'center',
+  margin: '0.5rem 0',
+  display: 'flex',
+  alignItems: 'center',
+  padding: '0.25rem',
+});
+
+export const homeIconStyle: React.CSSProperties = {
+  cursor: 'default',
+  marginRight: '0.5rem',
+  border: 'none',
+  boxShadow: 'none',
+  display: 'inline-block',
+  verticalAlign: 'middle',
+};
+
+export const tabBaseStyle = (theme: Theme, isActive: boolean, isHome: boolean): SxProps<Theme> => ({
+  position: 'relative',
+  minHeight: tabHeight,
+  padding: '0 0.75rem',
+  borderTopRightRadius: '0.5rem',
+  borderTopLeftRadius: '0.5rem',
+  backgroundColor: isActive ? theme.palette.baselineColor.neutral[0] : 'transparent',
+  borderBottom: isActive && !isHome ? '1px solid transparent' : 'none',
+  borderLeft: isActive ? 'none' : '1px solid transparent',
+  borderRight: isActive ? 'none' : '1px solid transparent',
+  '&::before': !isActive
+    ? {
+      content: '""',
+      position: 'absolute',
+      left: 0,
+      top: '25%',
+      height: '50%',
+      borderLeft: `1px solid ${theme.palette.divider}`,
+    }
+    : {},
+});
+
+export const tabLabelStyle: SxProps<Theme> = (theme) => ({
+  fontSize: '14px',
+  fontWeight: 500,
+  color: theme.palette.baselineColor.neutral[90],
+});

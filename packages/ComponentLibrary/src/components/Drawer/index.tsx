@@ -8,8 +8,6 @@ import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
 import { getAllItemTitles } from '../../utils/searchUtils';
 import DrawerItems from './Search';
 import { Box } from '@mui/material';
-import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
-import { findItemByIdentifier } from '../../utils/menuUtils';
 
 const DRAWER_STATE_KEY = 'etendo-drawer-open';
 
@@ -80,30 +78,9 @@ const Drawer: React.FC<DrawerProps> = ({
     [setExpandedItems],
   );
 
-  const [recentlyViewedRef, setRecentlyViewedRef] = useState<{
-    handleWindowAccess?: (item: Menu) => void;
-  }>({});
-
-  const handleItemClick = useCallback(
-    (path: string) => {
-      const clickedId = path.split('/').pop();
-      if (clickedId) {
-        const menuItem = findItemByIdentifier(items, clickedId);
-
-        if (menuItem && recentlyViewedRef.handleWindowAccess) {
-          const syntheticEvent = {
-            id: menuItem.id,
-            name: getTranslatedName ? getTranslatedName(menuItem) : menuItem._identifier || menuItem.name || '',
-            windowId: menuItem.windowId,
-            type: menuItem.type || 'Window',
-          };
-          recentlyViewedRef.handleWindowAccess(syntheticEvent);
-        }
-      }
-      onClick(path);
-    },
-    [onClick, items, getTranslatedName, recentlyViewedRef],
-  );
+  const handleItemClick = useCallback((path: string) => {
+    onClick(path);
+  }, [onClick, searchContext]);
 
   return (
     <Box sx={drawerStyle}>
@@ -115,7 +92,6 @@ const Drawer: React.FC<DrawerProps> = ({
           items={items}
           windowId={windowId}
           getTranslatedName={getTranslatedName}
-          ref={setRecentlyViewedRef}
         />
       )}
       {open && (
