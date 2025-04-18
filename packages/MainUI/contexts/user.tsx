@@ -143,19 +143,12 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
         localStorage.setItem('token', response.token);
         setToken(response.token);
-
-        const sessionResponse = await getSession();
-        updateSessionInfo(sessionResponse);
-
-        if (params.role) {
-          navigate('/');
-        }
       } catch (error) {
         logger.warn('Error updating profile:', error);
         throw error;
       }
     },
-    [token, updateSessionInfo, navigate],
+    [token],
   );
 
   const login = useCallback(
