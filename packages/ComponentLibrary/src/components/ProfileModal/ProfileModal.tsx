@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Button, Menu, useTheme } from '@mui/material';
 import CheckCircle from '../../assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';
@@ -182,7 +182,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     logger,
   ]);
 
-  const isSaveDisabled = useCallback(() => {
+  const isSaveDisabled = useMemo(() => {
     if (!selectedRole) {
       return true;
     }
@@ -262,7 +262,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             startIcon={<CheckCircle fill={theme.palette.baselineColor.neutral[0]} />}
             sx={sx.saveButtonStyles}
             onClick={handleSave}
-            disabled={isSaveDisabled()}>
+            disabled={isSaveDisabled}>
             {saveButtonText}
           </Button>
         </div>
