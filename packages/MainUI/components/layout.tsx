@@ -14,7 +14,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <ModalContextProvider>
         <Sidebar />
         <div id="content" className="flex flex-col h-screen overflow-hidden">
-          <div className="flex-none">
+          <div className="flex-none mt-1">
             <Navigation />
             <AppBreadcrumb />
           </div>
