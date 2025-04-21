@@ -1,0 +1,89 @@
+
+
+Sun Apr 20 14:44:24 2025
+Command line: TestDisk
+
+TestDisk 7.2, Data Recovery Utility, February 2024
+Christophe GRENIER <grenier@cgsecurity.org>
+https://www.cgsecurity.org
+OS: Darwin, kernel 24.4.0 (Darwin Kernel Version 24.4.0: Fri Apr 11 18:34:14 PDT 2025; root:xnu-11417.101.15~117/RELEASE_ARM64_T8122) arm64
+Compiler: GCC 4.2
+ext2fs lib: none, ntfs lib: none, reiserfs lib: none, ewf lib: none, curses lib: ncurses 6.0
+Hard disk list
+Disk /dev/rdisk1 - 524 MB / 500 MiB - 128000 sectors (RO), sector size=4096
+
+Partition table type (auto): None
+Media is opened in read-only.
+Disk /dev/rdisk1 - 524 MB / 500 MiB (RO)
+Partition table type: Mac
+Partition table type (auto): None
+Media is opened in read-only.
+Disk /dev/rdisk1 - 524 MB / 500 MiB (RO)
+Partition table type: EFI GPT
+
+Analyse Disk /dev/rdisk1 - 524 MB / 500 MiB - 128000 sectors (RO)
+Bad GPT partition, invalid signature.
+Trying alternate GPT
+Bad GPT partition, invalid signature.
+Current partition structure:
+Bad GPT partition, invalid signature.
+Trying alternate GPT
+Bad GPT partition, invalid signature.
+
+search_part()
+Disk /dev/rdisk1 - 524 MB / 500 MiB - 128000 sectors (RO)
+
+recover_APFS: s_blocksize=0
+recover_APFS: s_blocks_count 128000
+recover_APFS: part_size 128000
+     Apple APFS                     6     128005     128000
+This partition ends after the disk limits. (start=6, size=128000, end=128005, disk end=128000)
+
+recover_APFS: s_blocksize=0
+recover_APFS: s_blocks_count 128000
+recover_APFS: part_size 128000
+     Apple APFS                     8     128007     128000
+This partition ends after the disk limits. (start=8, size=128000, end=128007, disk end=128000)
+
+recover_APFS: s_blocksize=0
+recover_APFS: s_blocks_count 128000
+recover_APFS: part_size 128000
+     Apple APFS                    10     128009     128000
+This partition ends after the disk limits. (start=10, size=128000, end=128009, disk end=128000)
+
+recover_APFS: s_blocksize=0
+recover_APFS: s_blocks_count 128000
+recover_APFS: part_size 128000
+     Apple APFS                    12     128011     128000
+This partition ends after the disk limits. (start=12, size=128000, end=128011, disk end=128000)
+
+recover_APFS: s_blocksize=0
+recover_APFS: s_blocks_count 128000
+recover_APFS: part_size 128000
+     Apple APFS                    14     128013     128000
+This partition ends after the disk limits. (start=14, size=128000, end=128013, disk end=128000)
+
+recover_APFS: s_blocksize=0
+recover_APFS: s_blocks_count 128000
+recover_APFS: part_size 128000
+     Apple APFS                    16     128015     128000
+This partition ends after the disk limits. (start=16, size=128000, end=128015, disk end=128000)
+Disk /dev/rdisk1 - 524 MB / 500 MiB - 128000 sectors (RO)
+Check the hard disk size: HD jumper settings, BIOS detection...
+The hard disk (524 MB / 500 MiB) seems too small! (< 524 MB / 500 MiB)
+The following partitions can't be recovered:
+     Apple APFS                     6     128005     128000
+     Apple APFS                     8     128007     128000
+     Apple APFS                    10     128009     128000
+     Apple APFS                    12     128011     128000
+     Apple APFS                    14     128013     128000
+     Apple APFS                    16     128015     128000
+
+Results
+
+interface_write()
+ 
+No partition found or selected for recovery
+simulate write!
+
+TestDisk exited normally.

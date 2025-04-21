@@ -13,6 +13,7 @@ const es = {
     retry: 'Reintentar',
     processes: 'Procesos disponibles',
     clear: 'Limpiar Seleccion',
+    processTitle: 'Titulo del proceso',
   },
   forms: {
     sections: {
@@ -146,6 +147,7 @@ const es = {
     confirmationMessage: '¿Deseas ejecutar este proceso?',
     messageTitle: 'Proceso',
     completedSuccessfully: 'Proceso completado exítosamente',
+    deprecatedFeature: 'Esta funcionalidad ya no es soportada.',
   },
   drawer: {
     recentlyViewed: 'Visto recientemente',
