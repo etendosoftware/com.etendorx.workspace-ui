@@ -38,6 +38,7 @@ export interface MenuTitleProps {
   expanded?: boolean;
   open?: boolean;
   isExpandable?: boolean;
+  popperOpen?: boolean;
 }
 
 export interface DrawerSectionProps extends React.PropsWithChildren {
@@ -91,6 +92,10 @@ export interface DrawerItemsProps {
   searchValue: string;
   windowId?: string;
   reportId?: string;
+}
+
+export interface ToggleFunctions {
+  [key: string]: () => void;
 }
 
 export interface RecentItem {
