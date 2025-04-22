@@ -39,7 +39,7 @@ export const useStyle = () => {
         drawerContent: {
           flexGrow: 1,
           overflowY: 'scroll',
-          overflowX: 'hidden',
+          overflowX: 'visible',
           scrollbarWidth: 'none',
           '&::-webkit-scrollbar': {
             display: 'none',
@@ -114,11 +114,6 @@ export const useStyle = () => {
             backgroundColor: theme.palette.baselineColor.neutral[90],
           },
         },
-        tooltipTruncation: {
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        },
         popper: {
           marginLeft: '0.75rem',
           borderRadius: '0.75rem',
@@ -164,7 +159,7 @@ export const useStyle = () => {
         },
         toggleButton: {},
         drawerSectionBox: {
-          margin: '0.5rem 0.5rem 0rem 0.5rem',
+          margin: '0.5rem',
           borderRadius: '0.5rem',
           '&:focus': focusStyles,
         },

@@ -93,6 +93,10 @@ export interface DrawerItemsProps {
   reportId?: string;
 }
 
+export interface ToggleFunctions {
+  [key: string]: () => void;
+}
+
 export interface RecentItem {
   id: string;
   name: string;

@@ -12,6 +12,9 @@ import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { findItemByIdentifier } from '../../utils/menuUtils';
 
 const DRAWER_STATE_KEY = 'etendo-drawer-open';
+interface RecentlyViewedHandler {
+  handleWindowAccess?: (item: Menu) => void;
+}
 
 const Drawer: React.FC<DrawerProps> = ({
   windowId,
@@ -35,6 +38,12 @@ const Drawer: React.FC<DrawerProps> = ({
 
   const { sx } = useStyle();
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const drawerRefs = useRef<{
+    recentlyViewedHandler: RecentlyViewedHandler;
+  }>({
+    recentlyViewedHandler: {},
+  });
 
   const { searchValue, setSearchValue, filteredItems, expandedItems, setExpandedItems, searchIndex } = searchContext;
 
@@ -80,30 +89,30 @@ const Drawer: React.FC<DrawerProps> = ({
     [setExpandedItems],
   );
 
-  const [recentlyViewedRef, setRecentlyViewedRef] = useState<{
-    handleWindowAccess?: (item: Menu) => void;
-  }>({});
-
   const handleItemClick = useCallback(
     (path: string) => {
       const clickedId = path.split('/').pop();
       if (clickedId) {
         const menuItem = findItemByIdentifier(items, clickedId);
 
-        if (menuItem && recentlyViewedRef.handleWindowAccess) {
+        if (menuItem && drawerRefs.current.recentlyViewedHandler.handleWindowAccess) {
           const syntheticEvent = {
             id: menuItem.id,
             name: getTranslatedName ? getTranslatedName(menuItem) : menuItem._identifier || menuItem.name || '',
             windowId: menuItem.windowId,
             type: menuItem.type || 'Window',
           };
-          recentlyViewedRef.handleWindowAccess(syntheticEvent);
+          drawerRefs.current.recentlyViewedHandler.handleWindowAccess(syntheticEvent);
         }
       }
       onClick(path);
     },
-    [onClick, items, getTranslatedName, recentlyViewedRef],
+    [onClick, items, getTranslatedName],
   );
+
+  const setRecentlyViewedRef = useCallback((ref: RecentlyViewedHandler) => {
+    drawerRefs.current.recentlyViewedHandler = ref;
+  }, []);
 
   return (
     <Box sx={drawerStyle}>

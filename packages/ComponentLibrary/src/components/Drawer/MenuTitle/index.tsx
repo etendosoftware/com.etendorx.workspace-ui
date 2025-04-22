@@ -1,69 +1,54 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
-import { SxProps, Theme, Tooltip, Box, Typography } from '@mui/material';
+import React, { useRef } from 'react';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { MenuTitleProps } from '../types';
-import { useStyle } from '../styles';
 
-export default function MenuTitle({ item, onClick, selected, expanded, open }: MenuTitleProps) {
+const MenuTitle: React.FC<MenuTitleProps> = React.memo(({ item, onClick, selected, expanded, open }) => {
   const textRef = useRef<HTMLSpanElement>(null);
-  const [isTextTruncated, setIsTextTruncated] = useState(false);
-  const { sx } = useStyle();
-
-  useEffect(() => {
-    const checkTextTruncation = () => {
-      if (textRef.current) {
-        setIsTextTruncated(textRef.current.scrollWidth > textRef.current.clientWidth);
-      }
-    };
-
-    checkTextTruncation();
-
-    window.addEventListener('resize', checkTextTruncation);
-    return () => window.removeEventListener('resize', checkTextTruncation);
-  }, [item.id]);
-
-  const boxStyles: SxProps<Theme> = {
-    ...(sx.listItemButton as object),
-    ...(sx.listItemContentText as object),
-    ...(selected ? (sx.listItemButtonSelected as object) : {}),
-    ...(open ? {} : (sx.iconsClosed as object)),
-  };
-
-  const tooltipStyles = {
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-  };
-
-  const innerContentStyles: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    overflow: 'hidden',
-    justifyContent: 'flex-start',
-  };
 
   return (
-    <Box onClick={onClick} sx={boxStyles}>
-      <div style={innerContentStyles}>
-        <Typography sx={sx.listItemText}>
-          {item.icon ? <span>{item.icon}</span> : null}
-          {open && (
-            <Tooltip
-              title={item.name}
-              arrow
-              PopperProps={{ disablePortal: true }}
-              disableHoverListener={!isTextTruncated}
-            >
-              <span style={tooltipStyles} ref={textRef}>
-                {item.name}
-              </span>
-            </Tooltip>
+    <div
+      onClick={onClick}
+      className={`
+        flex items-center transition-colors duration-300 hover:bg-dynamic-main hover:text-neutral-50 cursor-pointer rounded-lg text-xl justify-between p-1 gap-1 ${
+          selected
+            ? 'bg-dynamic-main text-neutral-50 hover:bg-neutral-90'
+            : 'text-neutral-90 hover:bg-dynamic-main hover:text-neutral-0'
+        }
+        ${!open ? 'rounded-full flex justify-center items-center max-w-9 max-h-9' : ''}
+      `}>
+      <div className="flex items-center overflow-hidden">
+        <div className="w-8 flex justify-center">
+          {item.icon || (
+            <span className="text-base">
+              {item.type === 'Report'
+                ? '📊'
+                : item.type === 'ProcessDefinition' || item.type === 'ProcessManual'
+                  ? '⚙️'
+                  : '📁'}
+            </span>
           )}
-        </Typography>
+        </div>
+        {open && (
+          <div className="relative group flex items-center py-1.5">
+            <span
+              ref={textRef}
+              className="ml-2 font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-40">
+              {item.name}
+            </span>
+          </div>
+        )}
       </div>
-      {open && item.children && (expanded ? <ExpandLess /> : <ExpandMore />)}
-    </Box>
+      {open && item.children && (
+        <div className={`transition-transform duration-300 flex justify-center ${expanded ? 'rotate-180' : ''}`}>
+          {expanded ? <ExpandLess /> : <ExpandMore />}
+        </div>
+      )}
+    </div>
   );
-}
+});
+
+MenuTitle.displayName = 'MenuTitle';
+
+export default MenuTitle;
