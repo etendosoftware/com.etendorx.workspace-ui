@@ -53,66 +53,8 @@ export const useStyle = () => {
           padding: theme.spacing(1),
           borderBottom: `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
         },
-        appBar: {
-          height: '3.5rem',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0.25rem 0.25rem',
-          zIndex: theme.zIndex.drawer + 1,
-          transition: theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
-          boxShadow: 'none',
-        },
-        appBarShift: {
-          transition: theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
-          }),
-        },
         content: {
           flexGrow: 1,
-        },
-        listItemButton: {
-          display: 'flex',
-          alignItems: 'center',
-          cursor: 'pointer',
-          borderRadius: '0.5rem',
-          fontSize: '1.5rem',
-          justifyContent: 'space-between',
-          padding: '0.5rem',
-          color: theme.palette.baselineColor.neutral[90],
-          transition: 'background-color 500ms, color 500ms',
-          gap: '0.25rem',
-          '&:hover': {
-            backgroundColor: theme.palette.dynamicColor.main,
-            color: theme.palette.baselineColor.neutral[0],
-          },
-          '& span': {
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          },
-        },
-        listItemInnerContentText: {
-          display: 'flex',
-          alignItems: 'center',
-          overflow: 'hidden',
-          justifyContent: 'flex-start',
-        },
-        listItemContentText: {
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          width: '100%',
-        },
-        listItemButtonSelected: {
-          backgroundColor: theme.palette.dynamicColor.main,
-          color: theme.palette.dynamicColor.contrastText,
-          '&:hover': {
-            backgroundColor: theme.palette.baselineColor.neutral[90],
-          },
         },
         popper: {
           marginLeft: '0.75rem',
@@ -123,41 +65,9 @@ export const useStyle = () => {
         popperContent: {
           padding: '0.5rem',
         },
-        iconsClosed: {
-          borderRadius: '5rem',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          maxWidth: '2.25rem',
-          maxHeight: '2.25rem',
-        },
-        listItemIconContent: {
-          width: '1rem',
-          display: 'flex',
-          justifyContent: 'center',
-        },
         listItemIconTypography: {
           fontSize: '1rem',
         },
-        listItemText: {
-          fontWeight: 500,
-          fontSize: '0.875rem',
-          textOverflow: 'clip',
-          overflow: 'hidden',
-          display: 'flex',
-          gap: theme.spacing(1),
-        },
-        listItemTextSelected: {
-          fontWeight: 600,
-        },
-        summaryBadge: {
-          borderRadius: '0.75rem',
-          fontSize: '0.75rem',
-          fontWeight: 'bold',
-          minWidth: '1.25rem',
-          textAlign: 'center',
-        },
-        toggleButton: {},
         drawerSectionBox: {
           margin: '0.5rem',
           borderRadius: '0.5rem',
@@ -184,26 +94,6 @@ export const useStyle = () => {
         drawerHeaderImg: {
           width: '2.25rem',
           height: '2.25rem',
-        },
-        drawerSectionBoxMainSelected: {
-          backgroundColor: theme.palette.baselineColor.neutral[10],
-          padding: '0.5rem',
-        },
-        iconButtonBoxStyles: {
-          padding: '0.5rem',
-          color: theme.palette.baselineColor.neutral[90],
-          transition: 'background-color 500ms, color 500ms',
-          '&:hover': {
-            backgroundColor: theme.palette.dynamicColor.main,
-            color: theme.palette.dynamicColor.contrastText,
-          },
-        },
-        subsectionsContainer: {
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.5rem',
-          margin: 0,
-          padding: '0.5rem',
         },
         contentBox: {
           display: 'flex',
