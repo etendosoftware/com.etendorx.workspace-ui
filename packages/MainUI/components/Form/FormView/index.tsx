@@ -19,7 +19,7 @@ import { FormViewProps } from './types';
 import { useStatusModal } from '@/hooks/Toolbar/useStatusModal';
 import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
 
-export default function FormView({ window: windowMetadata, tab, mode, initialState }: FormViewProps) {
+export default function FormView({ window: windowMetadata, tab, mode, initialState, refetch }: FormViewProps) {
   const router = useRouter();
   const theme = useTheme();
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
@@ -153,6 +153,11 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
     [expandedSections],
   );
 
+  const handleRefresh = useCallback(() => {
+    refetch?.();
+    reset();
+  }, [refetch, reset])
+
   return (
     <FormProvider setValue={setValue} reset={reset} {...form}>
       <form
@@ -161,7 +166,7 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
         }`}
         onSubmit={save}>
         <div className="pl-2 pr-2">
-          <Toolbar windowId={windowMetadata.id} tabId={tab.id} isFormView={true} onSave={save} />
+          <Toolbar windowId={windowMetadata.id} tabId={tab.id} isFormView={true} onSave={save} onRefresh={handleRefresh}/>
         </div>
         <div className="flex-shrink-0 pl-2 pr-2">
           <div className="mb-2">
