@@ -1,10 +1,10 @@
 'use client';
 
-import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { groupTabsByLevel } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { WindowParams } from '../app/types';
 import { useLanguage } from '../hooks/useLanguage';
 import { IMetadataContext } from './types';
@@ -14,8 +14,15 @@ import { useSetSession } from '@/hooks/useSetSession';
 export const MetadataContext = createContext({} as IMetadataContext);
 
 export default function MetadataProvider({ children }: React.PropsWithChildren) {
-  const { windowId = '', tabId = '', recordId = '' } = useParams<WindowParams>();
+  const previousWindowId = useRef<string>();
+
+  const { tabId = '', recordId = '' } = useParams<WindowParams>();
+  const params = useSearchParams();
+  const windowIds = params.getAll('windowId');
+  const activeWindowId = params.get('active');
+  const windowId = activeWindowId || windowIds[0];
   const [windowData, setWindowData] = useState<Etendo.WindowMetadata | undefined>();
+  const [windowMetadataMap, setWindowMetadataMap] = useState<Record<string, Etendo.WindowMetadata>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();
   const [selected, setSelected] = useState<IMetadataContext['selected']>({});
@@ -24,8 +31,16 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const [selectedMultiple, setSelectedMultiple] = useState<IMetadataContext['selectedMultiple']>({});
   const [showTabContainer, setShowTabContainer] = useState(false);
   const [activeTabLevels, setActiveTabLevels] = useState<number[]>([0]);
-  const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [tabId, windowData?.tabs]);
-  const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
+  const currentMetadata = windowMetadataMap[windowId || ''];
+
+  // Lista de tabs de la ventana activa
+  const tabs = useMemo<Tab[]>(() => currentMetadata?.tabs ?? [], [currentMetadata]);
+
+  // Tab activa según el tabId actual
+  const tab = useMemo<Tab | undefined>(() => {
+    return tabs.find(t => t.id === tabId);
+  }, [tabs, tabId]);
+
   const { removeRecordFromDatasource } = useDatasourceContext();
 
   const closeTab = useCallback(
@@ -84,6 +99,14 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     },
     [selectedMultiple],
   );
+
+  useEffect(() => {
+    if (!windowId || windowMetadataMap[windowId]) return;
+
+    Metadata.getWindow(windowId).then(metadata => {
+      setWindowMetadataMap(prev => ({ ...prev, [windowId]: metadata }));
+    });
+  }, [windowId, windowMetadataMap]);
 
   const setSession = useSetSession();
 

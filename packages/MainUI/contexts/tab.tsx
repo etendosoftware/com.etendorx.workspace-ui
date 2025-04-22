@@ -16,7 +16,7 @@ const TabContext = createContext<TabContextI>({} as TabContextI);
 
 export default function TabContextProvider({ tab, children }: React.PropsWithChildren<{ tab: Tab }>) {
   const searchParams = useSearchParams();
-  const { data: parentTab } = useTab(tab.parentTabId);
+  const { data: parentTab } = useTab(tab?.parentTabId);
   const { record: parentRecord } = useSingleDatasource(parentTab?.entityName, searchParams.get('parentId'));
   const [selected, setSelected] = useState<Record<string, EntityData>>({});
 

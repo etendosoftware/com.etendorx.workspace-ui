@@ -60,10 +60,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       return result;
     }
 
-    throw new Error('Error creating toolbar: Missing tab');
   }, [tabs, tabId]);
 
-  const selectedRecord = tab ? selected[tab.level] : undefined;
+  const selectedRecord = tab ? selected[tab?.level] : undefined;
   const parentId = useMemo(() => selected[tab?.level - 1]?.id ?? null, [selected, tab?.level]);
 
   const {
@@ -91,7 +90,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   // Filter process buttons based on display logic
   const processButtons = useMemo(() => {
     const buttons = toolbar?.buttons.filter(isProcessButton) || [];
-    const selectedItems = Array.isArray(selected[tab.level])
+    const selectedItems = Array.isArray(selected[tab?.level])
       ? selected[tab.level]
       : [selectedRecord];
 
@@ -113,7 +112,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     });
 
     return filteredButtons;
-  }, [toolbar?.buttons, selectedRecord, selected, session, tab.level]);
+  }, [toolbar?.buttons, selectedRecord, selected, session]);
 
   const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);

@@ -1,5 +1,7 @@
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+'use client';
+
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Breadcrumb from '@workspaceui/componentlibrary/src/components/Breadcrums';
 import { BREADCRUMB, ROUTE_IDS } from '../constants/breadcrumb';
 import { useTranslation } from '../hooks/useTranslation';
@@ -14,80 +16,102 @@ const AppBreadcrumb: React.FC = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
-  const navigate = router.push;
 
-  const { window, recordId, windowId: currentWindowId } = useMetadataContext();
+  const { window: currentWindowData, recordId, windowId: currentWindowId } = useMetadataContext();
   const [openWindows, setOpenWindows] = useState<OpenWindow[]>([]);
 
   const isNewRecord = useCallback(() => pathname.includes('/NewRecord'), [pathname]);
-  const isProcessOrReport = useMemo(() => pathname.includes('/process') || pathname.includes('/report'), [pathname]);
+  const isProcessOrReport = useMemo(
+    () => pathname.includes('/process') || pathname.includes('/report'),
+    [pathname]
+  );
 
-  const handleHomeClick = useCallback(() => navigate('/'), [navigate]);
-
-  // Update open windows if metadata or route changes
   useEffect(() => {
     setOpenWindows(prev => {
       const updated = [...prev];
-      const existingIndex = prev.findIndex(win => win.windowId === currentWindowId);
-
-      if (currentWindowId && window) {
-        const existing = prev[existingIndex];
-        const hasSameName = existing?.windowData?.name === window.name;
-
-        if (existing && hasSameName) return prev;
-        if (existing) {
-          updated[existingIndex] = { ...existing, windowData: window };
-          return updated;
+      const idx = prev.findIndex(w => w.windowId === currentWindowId);
+      if (currentWindowId && currentWindowData) {
+        const exists = prev[idx];
+        if (exists && exists.windowData.name === currentWindowData.name) return prev;
+        if (exists) {
+          updated[idx] = { windowId: currentWindowId, windowData: currentWindowData };
+        } else {
+          updated.push({ windowId: currentWindowId, windowData: currentWindowData });
         }
-        updated.push({ windowId: currentWindowId, windowData: window });
       }
-
-      // Handle dynamic tabs for /process and /report routes
-      if (isProcessOrReport && !prev.some(win => win.windowId === pathname)) {
+      if (isProcessOrReport && !prev.some(w => w.windowId === pathname)) {
         updated.push({ windowId: pathname, windowData: { name: pathname } });
       }
-
       return updated;
     });
-  }, [currentWindowId, window, pathname, isProcessOrReport]);
+  }, [currentWindowId, currentWindowData, pathname, isProcessOrReport]);
 
-  // Determine the currently active tab
   const activeTabId = useMemo(() => {
     if (isNewRecord()) return ROUTE_IDS.NEW_RECORD;
     return recordId || currentWindowId || 'home';
   }, [currentWindowId, recordId, isNewRecord]);
 
-  // Remove tab and handle navigation
-  const handleCloseTab = useCallback(
-    (closedId: string) => {
-      setOpenWindows(prev => {
-        const index = prev.findIndex(win => win.windowId === closedId);
-        const updated = prev.filter(win => win.windowId !== closedId);
+  const searchParams = useSearchParams();
 
-        if (activeTabId === closedId) {
-          const fallback = index > 0 ? prev[index - 1] : updated[0];
-          navigate(fallback ? `/window/${fallback.windowId}` : '/');
-        }
+  const normalizeId = (id: string) => {
+    return id.replace(/^\/?window\/?/, '');
+  };
 
-        return updated;
-      });
+  const handleTabChangeUrl = useCallback(
+    (newIdRaw: string) => {
+      const newId = normalizeId(newIdRaw);
+      const params = new URLSearchParams(searchParams.toString());
+
+      const cleanedWindowIds = params
+        .getAll('windowId')
+        .map(normalizeId)
+        .filter((id, index, self) => id && self.indexOf(id) === index);
+
+      if (!cleanedWindowIds.includes(newId)) {
+        cleanedWindowIds.push(newId);
+      }
+
+      params.delete('windowId');
+      cleanedWindowIds.forEach(id => params.append('windowId', id));
+      params.set('active', newId);
+
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(null, '', `/window?${params.toString()}`);
+      }
     },
-    [activeTabId, navigate]
+    [searchParams]
   );
 
-  // Build breadcrumb tab items
-  const breadcrumbItems = useMemo(() => (
-    openWindows.map(({ windowId, windowData }) => ({
-      id: windowId,
-      label: windowData?.name || t('common.loading'),
-      onClick: () => {
-        if (activeTabId !== windowId) {
-          navigate(`/window/${windowId}`);
-        }
-      },
-      onClose: () => handleCloseTab(windowId)
-    }))
-  ), [openWindows, activeTabId, navigate, t, handleCloseTab]);
+  const handleCloseTab = useCallback(
+    (closedId: string) => {
+      setOpenWindows(prev => prev.filter(w => w.windowId !== closedId));
+      const params = new URLSearchParams(window.location.search);
+      const keep = params.getAll('windowId').filter(id => id !== closedId);
+      params.delete('windowId');
+      keep.forEach(id => params.append('windowId', id));
+      const active = params.get('active');
+      if (active === closedId) {
+        const fallback = keep.at(-1);
+        if (fallback) params.set('active', fallback);
+        else params.delete('active');
+      }
+      router.push(`/window?${params.toString()}`);
+    },
+    [router]
+  );
+
+  const breadcrumbItems = useMemo(
+    () =>
+      openWindows.map(({ windowId, windowData }) => ({
+        id: windowId,
+        label: windowData.name || t('common.loading'),
+        onClick: () => handleTabChangeUrl(windowId),
+        onClose: () => handleCloseTab(windowId),
+      })),
+    [openWindows, t, handleTabChangeUrl, handleCloseTab]
+  );
+
+  const handleHomeClick = useCallback(() => router.push('/'), [router]);
 
   return (
     <div style={{ margin: '0 1rem' }}>
@@ -95,6 +119,7 @@ const AppBreadcrumb: React.FC = () => {
         items={breadcrumbItems}
         activeTabId={activeTabId}
         onHomeClick={handleHomeClick}
+        onTabChange={handleTabChangeUrl}
         homeText={t('breadcrumb.home')}
         homeIcon={BREADCRUMB.HOME.ICON}
       />
