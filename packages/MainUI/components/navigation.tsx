@@ -44,7 +44,7 @@ const Navigation: React.FC = () => {
         {...modalConfig}
         tooltipButtonProfile={t('navigation.configurationModal.tooltipButtonProfile')}
       />
-      <IconButton tooltip={t('navigation.activityButton.tooltip')}>
+      <IconButton tooltip={t('navigation.activityButton.tooltip')} disabled={true}>
         <ActivityIcon />
       </IconButton>
       <NotificationButton notifications={NOTIFICATIONS} icon={<NotificationIcon />}>

@@ -64,7 +64,7 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
 
   return (
     <>
-      <IconButton tooltip={tooltipWaterfallButton} onClick={handleClick}>
+      <IconButton tooltip={tooltipWaterfallButton} onClick={handleClick} disabled={true}>
         {icon}
       </IconButton>
       <Menu
