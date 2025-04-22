@@ -70,9 +70,9 @@ const Navigation: React.FC = () => {
         cancelButtonText={t('common.cancel')}
         saveButtonText={t('common.save')}
         tooltipButtonProfile={t('navigation.profile.tooltipButtonProfile')}
-        passwordLabel={t('navigation.profile.passwordLabel')}
-        newPasswordLabel={t('navigation.profile.newPasswordLabel')}
-        confirmPasswordLabel={t('navigation.profile.confirmPasswordLabel')}
+        passwordLabel={t('common.notImplemented')}
+        newPasswordLabel={t('common.notImplemented')}
+        confirmPasswordLabel={t('common.notImplemented')}
         sectionTooltip={t('navigation.profile.signOffTooltip')}
         icon={<PersonIcon />}
         sections={sections}
