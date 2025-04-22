@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Box, useTheme } from '@mui/material';
 import { useStyle } from '../styles';
 import MenuTitle from '../MenuTitle';
 import { DrawerSectionProps, ToggleFunctions } from '../types';
 import { findActive } from '../../../utils/drawerUtils';
 import { useItemActions } from '../../../hooks/useItemType';
-import React from 'react';
 import CustomClickAwayListener from '../../../utils/clickAway';
 
 const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
