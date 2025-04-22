@@ -11,15 +11,19 @@ const MenuTitle: React.FC<MenuTitleProps> = React.memo(({ item, onClick, selecte
     <div
       onClick={onClick}
       className={`
-        flex items-center transition-colors duration-300 hover:bg-dynamic-main hover:text-neutral-50 cursor-pointer rounded-lg text-xl justify-between p-1 gap-1 ${
-          selected
-            ? 'bg-dynamic-main text-neutral-50 hover:bg-neutral-90'
-            : 'text-neutral-90 hover:bg-dynamic-main hover:text-neutral-0'
+        flex items-center transition-colors duration-300 cursor-pointer
+        ${
+          open
+            ? `rounded-lg text-xl justify-between p-1 gap-1 ${
+                selected
+                  ? 'bg-dynamic-main text-neutral-50 hover:bg-neutral-90'
+                  : 'text-neutral-90 hover:bg-dynamic-main hover:text-neutral-0'
+              }`
+            : 'hover:bg-dynamic-main rounded-full justify-center items-center w-9 h-9 p-0'
         }
-        ${!open ? 'rounded-full flex justify-center items-center max-w-9 max-h-9' : ''}
       `}>
-      <div className="flex items-center overflow-hidden">
-        <div className="w-8 flex justify-center">
+      <div className={`flex items-center ${open ? 'overflow-hidden' : ''}`}>
+        <div className={`${open ? 'w-8' : 'w-full h-full'} flex justify-center items-center`}>
           {item.icon || (
             <span className="text-base">
               {item.type === 'Report'
