@@ -4,20 +4,19 @@ import React, { useRef } from 'react';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { MenuTitleProps } from '../types';
 
-const MenuTitle: React.FC<MenuTitleProps> = React.memo(({ item, onClick, selected, expanded, open }) => {
+const MenuTitle: React.FC<MenuTitleProps> = React.memo(({ item, onClick, selected, expanded, open, popperOpen }) => {
   const textRef = useRef<HTMLSpanElement>(null);
 
   return (
     <div
       onClick={onClick}
-      className={`
-        flex items-center transition-colors duration-300 cursor-pointer
+      className={`flex items-center transition-colors duration-300 cursor-pointer
         ${
           open
             ? `rounded-lg text-xl justify-between p-1 gap-1 ${
                 selected
                   ? 'bg-dynamic-main text-neutral-50 hover:bg-neutral-90'
-                  : 'text-neutral-90 hover:bg-dynamic-main hover:text-neutral-0'
+                  : 'text-neutral-90 hover:bg-dynamic-main hover:text-neutral-50 hover:text-neutral-0'
               }`
             : 'hover:bg-dynamic-main rounded-full justify-center items-center w-9 h-9 p-0'
         }
@@ -44,7 +43,7 @@ const MenuTitle: React.FC<MenuTitleProps> = React.memo(({ item, onClick, selecte
           </div>
         )}
       </div>
-      {open && item.children && (
+      {open && item.children && !popperOpen && (
         <div className={`transition-transform duration-300 flex justify-center ${expanded ? 'rotate-180' : ''}`}>
           {expanded ? <ExpandLess /> : <ExpandMore />}
         </div>

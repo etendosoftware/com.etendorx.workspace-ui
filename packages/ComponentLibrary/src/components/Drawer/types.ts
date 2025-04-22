@@ -38,6 +38,7 @@ export interface MenuTitleProps {
   expanded?: boolean;
   open?: boolean;
   isExpandable?: boolean;
+  popperOpen?: boolean;
 }
 
 export interface DrawerSectionProps extends React.PropsWithChildren {

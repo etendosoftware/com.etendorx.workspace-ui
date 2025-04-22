@@ -189,6 +189,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
                   expanded={shouldShowChildren}
                   open={true}
                   isExpandable={isExpandable && !isSearchActive}
+                  popperOpen={true}
                 />
 
                 {item.children?.map(subitem => (
