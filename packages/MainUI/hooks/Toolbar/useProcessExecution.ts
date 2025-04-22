@@ -24,7 +24,7 @@ export function useProcessExecution() {
         resolve({
           success: false,
           showDeprecatedFeatureModal: true,
-          message: 'This feature is no longer supported.',
+          message: 'This feature is not available yet. We are sorry for the troubles.',
         });
       } catch (error) {
         const processError = error instanceof Error ? error : new Error('Process execution failed');

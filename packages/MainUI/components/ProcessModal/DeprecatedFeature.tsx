@@ -34,7 +34,7 @@ const DeprecatedFeatureModal = ({ isOpen, onClose, title, message }: ProcessDepr
         </div>
         <div className="p-4 border-t border-gray-200 flex justify-center rounded-b-xl bg-[var(--color-baseline-10)]">
           <Button onClick={handleClose} variant="contained">
-            {t('common.save')}
+            {t('common.close')}
           </Button>
         </div>
       </div>
