@@ -32,7 +32,7 @@ const NotificationButton: React.FC<ExtendedNotificationButtonProps> = ({
         color="error"
         sx={sx.badgeStyles}
         component="div">
-        <IconButton tooltip={tooltipTitle} onClick={handleClick}>
+        <IconButton tooltip={tooltipTitle} onClick={handleClick} disabled={true}>
           {icon}
         </IconButton>
       </Badge>

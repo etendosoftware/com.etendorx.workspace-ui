@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Button, Menu, useTheme } from '@mui/material';
 import CheckCircle from '../../assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';
@@ -42,14 +42,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedRole, setSelectedRole] = useState<Option | null>(() => {
     if (currentRole) {
-      return { title: currentRole.name, value: currentRole.id, id: currentRole.id }
+      return { title: currentRole.name, value: currentRole.id, id: currentRole.id };
     } else {
       return null;
     }
   });
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(() => {
     if (currentWarehouse) {
-      return { title: currentWarehouse.name, value: currentWarehouse.id, id: currentWarehouse.id }
+      return { title: currentWarehouse.name, value: currentWarehouse.id, id: currentWarehouse.id };
     } else {
       return null;
     }
@@ -182,8 +182,27 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     logger,
   ]);
 
-  //TODO: Implement disable state for save button
-  const isSaveDisabled = false;
+  const isSaveDisabled = useMemo(() => {
+    if (!selectedRole) {
+      return true;
+    }
+
+    const roleChanged = selectedRole && selectedRole?.value !== currentRole?.id;
+    const warehouseChanged = selectedWarehouse && selectedWarehouse?.value !== currentWarehouse?.id;
+    const languageChanged = selectedLanguage && selectedLanguage?.value !== language;
+
+    const somethingChanged = roleChanged || warehouseChanged || languageChanged || saveAsDefault;
+
+    return !somethingChanged;
+  }, [
+    currentRole?.id,
+    currentWarehouse?.id,
+    language,
+    saveAsDefault,
+    selectedLanguage,
+    selectedRole,
+    selectedWarehouse,
+  ]);
 
   const handleLanguageChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
     if (value) {

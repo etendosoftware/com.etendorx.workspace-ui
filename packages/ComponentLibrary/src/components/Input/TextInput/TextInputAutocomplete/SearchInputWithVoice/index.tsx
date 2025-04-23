@@ -46,7 +46,7 @@ const SearchInputWithVoice = ({ onVoiceClick, ...props }: SearchInputWithVoicePr
   }, [isRecording, onVoiceClick]);
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
       <TextInputAutoComplete
         {...props}
         InputProps={{
@@ -54,18 +54,11 @@ const SearchInputWithVoice = ({ onVoiceClick, ...props }: SearchInputWithVoicePr
           startAdornment: <StartAdornment />,
           endAdornment: <EndAdornment />,
           style: { height: '2.5rem' },
+          disabled: true,
         }}
       />
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <IconButton
-          onClick={handleVoiceClick}
-          size="medium"
-          sx={{
-            marginLeft: '0.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
+      <Box>
+        <IconButton onClick={handleVoiceClick} size="medium" sx={{ margin: '0.25rem 0' }} disabled={true}>
           {isRecording ? (
             <MicOffIcon
               sx={{
