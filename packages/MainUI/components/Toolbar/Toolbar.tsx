@@ -189,6 +189,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const handleCloseProcess = useCallback(() => {
     setOpenModal(false);
     setSelectedProcessActionButton(null);
+    setSelectedProcessDefinitionButton(null);
     setProcessResponse(null);
   }, []);
 
@@ -336,6 +337,12 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           open={openModal}
           onClose={handleCloseProcess}
           button={selectedProcessDefinitionButton}
+          onSuccess={() => {
+            handleCloseProcess();
+            if (onRefresh && tab) {
+              onRefresh();
+            }
+          }}
         />
       )}
     </TabContextProvider>
