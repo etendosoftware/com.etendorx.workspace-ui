@@ -144,7 +144,6 @@ const en = {
     confirmationMessage: 'Want to execute this process?',
     messageTitle: 'Process',
     completedSuccessfully: 'Process completed successfuly',
-    deprecatedFeature: 'This feature is no longer supported.',
   },
   drawer: {
     recentlyViewed: 'Recently Viewed',

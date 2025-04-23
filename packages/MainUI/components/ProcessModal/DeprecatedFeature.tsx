@@ -30,7 +30,7 @@ const DeprecatedFeatureModal = ({ isOpen, onClose, title, message }: ProcessDepr
           <div className="flex items-center justify-center mb-4">
             <WarningIcon fill="red" width={32} height={32} />
           </div>
-          <p className="text-center text-lg font-medium mb-4">{message || t('process.deprecatedFeature')}</p>
+          <p className="text-center text-lg font-medium mb-4">{message || t('common.notImplemented')}</p>
         </div>
         <div className="p-4 border-t border-gray-200 flex justify-center rounded-b-xl bg-[var(--color-baseline-10)]">
           <Button onClick={handleClose} variant="contained">
