@@ -22,7 +22,6 @@ import TopToolbar from './top-toolbar';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
 import EmptyState from './EmptyState';
 import { parseColumns } from '@/utils/tableColumns';
-import { useLanguage } from '@/contexts/language';
 
 type DynamicTableProps = {
   tab: Tab;
