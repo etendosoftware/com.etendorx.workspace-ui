@@ -9,7 +9,6 @@ import { WindowParams } from '../app/types';
 import { IMetadataContext } from './types';
 import { useDatasourceContext } from './datasourceContext';
 import { useSetSession } from '@/hooks/useSetSession';
-import { useLanguage } from './language';
 
 export const MetadataContext = createContext({} as IMetadataContext);
 
