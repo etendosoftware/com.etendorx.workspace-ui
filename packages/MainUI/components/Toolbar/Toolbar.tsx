@@ -148,12 +148,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   );
 
   const handleProcessSuccess = useCallback(() => {
-    if (tabId) {
-      refetchDatasource(tabId);
-
-      clearSelections(tabId);
+    if (processResponse && !processResponse.showDeprecatedFeatureModal && processResponse.success) {
+      if (tabId) {
+        refetchDatasource(tabId);
+        clearSelections(tabId);
+      }
     }
-  }, [tabId, refetchDatasource, clearSelections]);
+  }, [tabId, refetchDatasource, clearSelections, processResponse]);
 
   const handleConfirmProcess = useCallback(async () => {
     if (!selectedProcessActionButton || !selectedRecord?.id) return;

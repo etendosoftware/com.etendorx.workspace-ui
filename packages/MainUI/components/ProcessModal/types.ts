@@ -56,7 +56,8 @@ export interface ProcessResponse {
     };
   }>;
   refreshParent?: boolean;
-  showInIframe?: boolean;
+  showDeprecatedFeatureModal?: boolean;
+  message?: string;
   iframeUrl?: string;
 }
 
@@ -80,10 +81,9 @@ export interface MessageStylesType {
   buttonBg: string;
 }
 
-export interface ProcessIframeModalProps {
+export interface ProcessDeprecatedModallProps {
   isOpen: boolean;
   onClose: () => void;
-  url: string;
   title?: string;
-  onProcessSuccess?: () => void;
+  message?: string;
 }
