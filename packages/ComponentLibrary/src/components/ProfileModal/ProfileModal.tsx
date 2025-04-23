@@ -42,14 +42,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedRole, setSelectedRole] = useState<Option | null>(() => {
     if (currentRole) {
-      return { title: currentRole.name, value: currentRole.id, id: currentRole.id }
+      return { title: currentRole.name, value: currentRole.id, id: currentRole.id };
     } else {
       return null;
     }
   });
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(() => {
     if (currentWarehouse) {
-      return { title: currentWarehouse.name, value: currentWarehouse.id, id: currentWarehouse.id }
+      return { title: currentWarehouse.name, value: currentWarehouse.id, id: currentWarehouse.id };
     } else {
       return null;
     }
@@ -84,6 +84,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   useEffect(() => {
     if (language) {
+      console.debug({ languages, language });
       const currentLang = languages.find(lang => lang.language === language);
       if (currentLang) {
         setSelectedLanguage({

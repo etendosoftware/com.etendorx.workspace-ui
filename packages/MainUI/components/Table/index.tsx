@@ -17,12 +17,12 @@ import { useParams, useRouter } from 'next/navigation';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { Button } from '@mui/material';
 import { WindowParams } from '../../app/types';
-import { useLanguage } from '../../hooks/useLanguage';
 import { useSearch } from '../../contexts/searchContext';
 import TopToolbar from './top-toolbar';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
 import EmptyState from './EmptyState';
 import { parseColumns } from '@/utils/tableColumns';
+import { useLanguage } from '@/contexts/language';
 
 type DynamicTableProps = {
   tab: Tab;

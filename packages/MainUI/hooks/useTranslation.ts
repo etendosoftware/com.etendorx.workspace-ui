@@ -1,8 +1,7 @@
-import { useLanguage } from './useLanguage';
 import { TranslateFunction } from './types';
 import { useCallback } from 'react';
 import translations from '@workspaceui/componentlibrary/src/locales';
-import DEFAULT_LANGUAGE from '../contexts/languageProvider';
+import DEFAULT_LANGUAGE, { useLanguage } from '../contexts/language';
 
 export const useTranslation = (defaultLanguage = DEFAULT_LANGUAGE) => {
   const { language } = useLanguage();
