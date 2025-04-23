@@ -13,6 +13,8 @@ const en = {
     retry: 'Retry',
     processes: 'Available Process',
     clear: 'Clear Selection',
+    processTitle: 'Title of the process',
+    notImplemented: 'This feature is not implemented yet',
   },
   forms: {
     sections: {

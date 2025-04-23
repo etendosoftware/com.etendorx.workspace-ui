@@ -46,6 +46,7 @@ export interface ToolbarProps {
   onSearch?: (value: string) => void;
   isFormView?: boolean;
   onSave?: () => void;
+  onRefresh?: () => void;
 }
 
 export interface ProcessResponse {
@@ -55,8 +56,7 @@ export interface ProcessResponse {
   redirected?: boolean;
   frameUrl?: string;
   redirectUrl?: string;
-  showInIframe?: boolean;
-  iframeUrl?: string;
+  showDeprecatedFeatureModal?: boolean;
   responseActions?: Array<{
     showMsgInProcessView?: {
       msgType: string;

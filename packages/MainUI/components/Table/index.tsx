@@ -9,7 +9,7 @@ import {
   MRT_TableInstance,
 } from 'material-react-table';
 import { useStyle } from './styles';
-import { type DatasourceOptions, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { type Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
@@ -26,7 +26,7 @@ import { useLanguage } from '@/contexts/language';
 
 type DynamicTableProps = {
   tab: Tab;
-};
+} & ReturnType<typeof useDatasource>;
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -34,14 +34,11 @@ type RowProps = (props: {
   table: MRT_TableInstance<Record<string, unknown>>;
 }) => Omit<MRT_TableBodyRowProps<MRT_RowData>, "staticRowIndex">;
 
-const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTableProps) {
-  const { selected, selectRecord, setSelectedMultiple, clearSelections, getSelectedCount, refetch } =
-    useMetadataContext();
+const DynamicTableContent = memo(({ tab, records, loading, error, fetchMore, loaded, isImplicitFilterApplied, toggleImplicitFilters, updateColumnFilters, removeRecordLocally }: DynamicTableProps) => {
+  const { selected, selectRecord, setSelectedMultiple, clearSelections, getSelectedCount, refetch } = useMetadataContext();
   const { windowId } = useParams<WindowParams>();
-  const parent = selected[tab.level - 1];
   const navigate = useRouter().push;
   const { sx } = useStyle();
-  const { language } = useLanguage();
   const { searchQuery } = useSearch();
   const tabId = tab.id;
   const selectedCount = useMemo(() => getSelectedCount(tabId), [getSelectedCount, tabId]);
@@ -50,45 +47,8 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   const contentRef = useRef<HTMLDivElement>(null);
   const [maxWidth, setMaxWidth] = useState(0);
 
-  const query: DatasourceOptions = useMemo(() => {
-    const fieldName = tab.parentColumns[0] || 'id';
-    const value = parent?.id || '';
-    const operator = 'equals';
-
-    const options: DatasourceOptions = {
-      windowId,
-      tabId,
-      isImplicitFilterApplied: tab.hqlfilterclause?.length > 0 || tab.sQLWhereClause?.length > 0,
-      pageSize: 100,
-      language,
-    };
-
-    if (value) {
-      options.criteria = [
-        {
-          fieldName,
-          value,
-          operator,
-        },
-      ];
-    }
-
-    return options;
-  }, [language, parent?.id, tab, tabId, windowId]);
-
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
-  const {
-    records,
-    loading,
-    error,
-    fetchMore,
-    loaded,
-    isImplicitFilterApplied,
-    toggleImplicitFilters,
-    updateColumnFilters,
-    removeRecordLocally,
-  } = useDatasource(tab.entityName, query, searchQuery, columns, columnFilters);
 
   const handleColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
@@ -100,8 +60,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
         newColumnFilters = updaterOrValue;
       }
 
-      const isRealFilterChange =
-        JSON.stringify(newColumnFilters.map(f => ({ id: f.id, value: f.value }))) !==
+      const isRealFilterChange = JSON.stringify(newColumnFilters.map(f => ({ id: f.id, value: f.value }))) !==
         JSON.stringify(columnFilters.map(f => ({ id: f.id, value: f.value })));
 
       setColumnFilters(newColumnFilters);
@@ -110,7 +69,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
         updateColumnFilters(newColumnFilters);
       }
     },
-    [columnFilters, updateColumnFilters],
+    [columnFilters, updateColumnFilters]
   );
 
   const handleFilterToggle = useCallback(() => {
@@ -179,7 +138,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
         table,
       };
     },
-    [navigate, selectRecord, selected, setSelectedMultiple, sx.rowSelected, tab, windowId],
+    [navigate, selectRecord, selected, setSelectedMultiple, sx.rowSelected, tab, windowId]
   );
 
   const CustomTopToolbar = useCallback(() => {
@@ -188,8 +147,7 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
         filterActive={isImplicitFilterApplied}
         toggleFilter={handleFilterToggle}
         selectedCount={selectedCount}
-        onClearSelection={handleClearSelections}
-      />
+        onClearSelection={handleClearSelections} />
     );
   }, [isImplicitFilterApplied, handleFilterToggle, selectedCount, handleClearSelections]);
 
@@ -212,12 +170,11 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
     muiTableBodyRowProps: rowProps,
     enablePagination: false,
     renderTopToolbar: <CustomTopToolbar />,
-    renderBottomToolbar:
-      tab.uIPattern == 'STD' && !searchQuery ? (
-        <Button sx={sx.fetchMore} onClick={fetchMore}>
-          Load more
-        </Button>
-      ) : null,
+    renderBottomToolbar: tab.uIPattern == 'STD' && !searchQuery ? (
+      <Button sx={sx.fetchMore} onClick={fetchMore}>
+        Load more
+      </Button>
+    ) : null,
     initialState: { density: 'compact' },
     state: {
       rowSelection,
@@ -266,14 +223,17 @@ const DynamicTableContent = memo(function DynamicTableContent({ tab }: DynamicTa
   );
 });
 
-const DynamicTable = ({ tab }: DynamicTableProps) => {
+DynamicTableContent.displayName = 'DynamicTableContent';
+
+function DynamicTable({ tab, ...data }: DynamicTableProps) {
   const { selected } = useMetadataContext();
 
   if (selected && (selected[tab?.level - 1] || tab?.level === 0)) {
-    return <DynamicTableContent tab={tab} />;
+    return <DynamicTableContent tab={tab}
+      {...data} />;
   }
 
   return null;
-};
+}
 
 export default DynamicTable;

@@ -38,7 +38,7 @@ import { useUserContext } from '@/hooks/useUserContext';
 import TabContextProvider from '@/contexts/tab';
 import { compileExpression } from '../Form/FormView/selectors/BaseSelector';
 
-const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave }) => {
+const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave, onRefresh }) => {
   const [openModal, setOpenModal] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
@@ -82,6 +82,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     windowId,
     tabId,
     onSave,
+    onRefresh,
     parentId,
     isFormView,
   });
@@ -91,11 +92,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   // Filter process buttons based on display logic
   const processButtons = useMemo(() => {
     const buttons = toolbar?.buttons.filter(isProcessButton) || [];
-    const selectedItems = Array.isArray(selected[tab.level])
-      ? selected[tab.level]
-      : [selectedRecord];
+    const selectedItems = Array.isArray(selected[tab.level]) ? selected[tab.level] : [selectedRecord];
 
-    const filteredButtons = buttons.filter((button) => {
+    const filteredButtons = buttons.filter(button => {
       if (!button.field.displayLogicExpression) {
         return true;
       }
@@ -103,7 +102,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       const compiledExpr = compileExpression(button.field.displayLogicExpression);
 
       try {
-        const isVisible = selectedItems.some((record) => {
+        const isVisible = selectedItems.some(record => {
           return compiledExpr(session, record);
         });
         return isVisible;
@@ -149,12 +148,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   );
 
   const handleProcessSuccess = useCallback(() => {
-    if (tabId) {
-      refetchDatasource(tabId);
-
-      clearSelections(tabId);
+    if (processResponse && !processResponse.showDeprecatedFeatureModal && processResponse.success) {
+      if (tabId) {
+        refetchDatasource(tabId);
+        clearSelections(tabId);
+      }
     }
-  }, [tabId, refetchDatasource, clearSelections]);
+  }, [tabId, refetchDatasource, clearSelections, processResponse]);
 
   const handleConfirmProcess = useCallback(async () => {
     if (!selectedProcessActionButton || !selectedRecord?.id) return;

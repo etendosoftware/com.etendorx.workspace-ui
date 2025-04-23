@@ -144,6 +144,13 @@ export function useDatasource(
     load();
   }, [load]);
 
+  const refetch = useCallback(() => {
+    setRecords([]);
+    setLoaded(false);
+    setPage(1);
+    load();
+  }, [load]);
+
   return useMemo(
     () => ({
       loading,
@@ -158,10 +165,11 @@ export function useDatasource(
       updateColumnFilters,
       activeColumnFilters,
       removeRecordLocally,
+      refetch,
     }),
     [
-      error,
       loading,
+      error,
       fetchMore,
       changePageSize,
       load,
@@ -172,6 +180,7 @@ export function useDatasource(
       updateColumnFilters,
       activeColumnFilters,
       removeRecordLocally,
+      refetch,
     ],
   );
 }

@@ -13,11 +13,13 @@ export const useToolbarConfig = ({
   windowId,
   tabId,
   onSave,
+  onRefresh,
   parentId,
 }: {
   windowId?: string;
   tabId?: string;
   onSave?: () => void;
+  onRefresh?: () => void;
   parentId?: string | null;
   isFormView?: boolean;
 }) => {
@@ -133,6 +135,9 @@ export const useToolbarConfig = ({
             }
           }
           break;
+        case BUTTON_IDS.REFRESH:
+          onRefresh?.();
+          break;
         default:
           logger.warn(`Action not implemented: ${action}`);
       }
@@ -146,6 +151,7 @@ export const useToolbarConfig = ({
       setShowTabContainer,
       onSave,
       tab,
+      onRefresh,
       selectedIds,
       t,
       selectedRecord?._identifier,

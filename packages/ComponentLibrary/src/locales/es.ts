@@ -13,6 +13,8 @@ const es = {
     retry: 'Reintentar',
     processes: 'Procesos disponibles',
     clear: 'Limpiar Seleccion',
+    processTitle: 'Titulo del proceso',
+    notImplemented: 'Esta funcionalidad no está disponible aun',
   },
   forms: {
     sections: {
