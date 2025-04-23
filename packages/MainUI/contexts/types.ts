@@ -2,7 +2,6 @@
 import {
   ISession,
   ProfileInfo,
-  Role,
   User,
   Field,
   Tab,
@@ -11,6 +10,7 @@ import {
   CurrentClient,
   CurrentRole,
   CurrentOrganization,
+  SessionResponse,
 } from '@workspaceui/etendohookbinder/src/api/types';
 import { type Etendo } from '@workspaceui/etendohookbinder/src/api/metadata';
 
@@ -42,7 +42,7 @@ export interface IUserContext {
   login: (username: string, password: string) => Promise<void>;
   changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | void>;
   token: string | null;
-  roles: Role[];
+  roles: SessionResponse["roles"];
   currentRole: CurrentRole | undefined;
   profile: ProfileInfo;
   currentWarehouse: CurrentWarehouse | undefined;

@@ -2,7 +2,12 @@ import { ReactNode } from 'react';
 import { Section } from './ToggleButton/types';
 import { Option } from '../Input/Select/types';
 import { Language } from '../../locales/types';
-import { CurrentRole, CurrentWarehouse, LoginResponse } from '@workspaceui/etendohookbinder/src/api/types';
+import {
+  CurrentRole,
+  CurrentWarehouse,
+  LoginResponse,
+  SessionResponse,
+} from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface Translations {
   saveAsDefault: string;
@@ -85,14 +90,14 @@ export interface LanguageOption {
 export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps, ActionProps {
   currentRole: CurrentRole | undefined;
   currentWarehouse: CurrentWarehouse | undefined;
-  roles: BaseRole[];
+  roles: SessionResponse['roles'];
   logger: Logger;
   onSignOff: () => void;
   onLanguageChange: (e: Language) => void;
   language: string;
   languages: LanguageOption[];
   languagesFlags: string;
-  changeProfile: (params: { role?: string; warehouse?: string; }) => Promise<LoginResponse | void>;
+  changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | void>;
 }
 
 export interface UserProfileProps {
@@ -110,7 +115,7 @@ export interface SelectorListProps {
   confirmPasswordLabel: string;
   onRoleChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
   onWarehouseChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
-  roles: BaseRole[];
+  roles: SessionResponse['roles'];
   selectedRole: Option | null;
   selectedWarehouse: Option | null;
   onLanguageChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;

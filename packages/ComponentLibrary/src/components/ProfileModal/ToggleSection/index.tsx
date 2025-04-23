@@ -58,8 +58,8 @@ const SelectorList: React.FC<SelectorListProps> = ({
       const _warehouses = {} as Record<string, BaseWarehouse>;
       const role = roles.find(r => r.id === selectedRole.value);
 
-      role?.orgList.forEach(org => {
-        org.warehouseList.forEach(w => {
+      role?.organizations.forEach(org => {
+        org.warehouses.forEach(w => {
           _warehouses[w.id] = w;
         });
       });

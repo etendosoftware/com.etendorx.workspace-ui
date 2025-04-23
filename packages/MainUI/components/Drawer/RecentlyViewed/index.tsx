@@ -7,7 +7,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { useItemActions } from '@workspaceui/componentlibrary/src/hooks/useItemType';
 import { useUserContext } from '../../../hooks/useUserContext';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
-import { useLanguage } from '../../../hooks/useLanguage';
+import { useLanguage } from '@/contexts/language';
 
 const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, RecentlyViewedProps>(
   ({ windowId, onClick, open, items, getTranslatedName }, ref) => {

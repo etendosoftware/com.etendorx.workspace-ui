@@ -4,7 +4,7 @@ import ThemeProvider from '@workspaceui/componentlibrary/src/components/ThemePro
 import Layout from '@/components/layout';
 import ApiProviderWrapper from '@/contexts/api/wrapper';
 import { DatasourceProvider } from '@/contexts/datasourceContext';
-import LanguageProvider from '@/contexts/languageProvider';
+import LanguageProvider from '@/contexts/language';
 import MetadataProvider from '@/contexts/metadata';
 import { RecordProvider } from '@/contexts/record';
 import UserProvider from '@/contexts/user';
