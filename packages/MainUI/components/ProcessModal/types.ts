@@ -1,11 +1,22 @@
-import { Field, ProcessDefinition, ProcessParameters } from '@workspaceui/etendohookbinder/src/api/types';
-
 export interface BaseButton {
   id: string;
   name: string;
   action: string;
   enabled: boolean;
   visible: boolean;
+}
+
+export type ProcessParameters = Array<{
+  defaultValue: string;
+  id: string;
+  name: string;
+}>;
+
+export interface ProcessDefinition extends Record<string, unknown> {
+  id: string;
+  name: string;
+  javaClassName: string;
+  parameters: ProcessParameters;
 }
 
 export interface ProcessAction extends Record<string, unknown> {
@@ -29,7 +40,6 @@ export interface BaseProcessButton extends BaseButton {
   buttonText: string;
   displayLogic?: string;
   processInfo: ProcessInfo;
-  field: Field;
 }
 
 export interface ProcessDefinitionButton extends BaseProcessButton {
@@ -56,15 +66,14 @@ export interface ProcessResponse {
     };
   }>;
   refreshParent?: boolean;
-  showDeprecatedFeatureModal?: boolean;
-  message?: string;
+  showInIframe?: boolean;
   iframeUrl?: string;
 }
 
 export interface ProcessModalProps {
   open: boolean;
   onClose: () => void;
-  button: ProcessButton | null;
+  button: ProcessButton;
   onConfirm: () => void;
   isExecuting: boolean;
   processResponse: ProcessResponse | null;
@@ -81,11 +90,12 @@ export interface MessageStylesType {
   buttonBg: string;
 }
 
-export interface ProcessDeprecatedModallProps {
+export interface ProcessIframeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  url: string;
   title?: string;
-  message?: string;
+  onProcessSuccess?: () => void;
 }
 
 export interface ProcessDefinitionModalProps {
