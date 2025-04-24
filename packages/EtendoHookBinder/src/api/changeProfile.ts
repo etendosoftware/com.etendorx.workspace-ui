@@ -29,7 +29,7 @@ export const changeProfile = async (params:ChangeProfilePayload): Promise<LoginR
 
         const data: LoginResponse = response.data;
 
-        if (data.status !== 'success' || !data.token || !Array.isArray(data.roleList)) {
+        if (!data.token) {
             throw new Error('Invalid server response');
         }
 

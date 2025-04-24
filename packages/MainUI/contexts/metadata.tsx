@@ -6,7 +6,6 @@ import { groupTabsByLevel } from '@workspaceui/etendohookbinder/src/utils/metada
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useParams } from 'next/navigation';
 import { WindowParams } from '../app/types';
-import { useLanguage } from '../hooks/useLanguage';
 import { IMetadataContext } from './types';
 import { useDatasourceContext } from './datasourceContext';
 import { useSetSession } from '@/hooks/useSetSession';
@@ -20,7 +19,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const [error, setError] = useState<Error>();
   const [selected, setSelected] = useState<IMetadataContext['selected']>({});
   const [groupedTabs, setGroupedTabs] = useState<Etendo.Tab[][]>([]);
-  const { language } = useLanguage();
   const [selectedMultiple, setSelectedMultiple] = useState<IMetadataContext['selectedMultiple']>({});
   const [showTabContainer, setShowTabContainer] = useState(false);
   const [activeTabLevels, setActiveTabLevels] = useState<number[]>([0]);
@@ -234,7 +232,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       setLoading(true);
       setError(undefined);
 
-      Metadata.setLanguage(language);
       Metadata.clearWindowCache(windowId);
       const newWindowData = await Metadata.forceWindowReload(windowId);
 
@@ -245,7 +242,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     } finally {
       setLoading(false);
     }
-  }, [windowId, language]);
+  }, [windowId]);
 
   useEffect(() => {
     loadWindowData();

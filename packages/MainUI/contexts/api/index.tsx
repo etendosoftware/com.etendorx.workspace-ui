@@ -9,12 +9,10 @@ import { performHealthCheck } from '../../utils/health-check';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import Loading from '@/components/loading';
-import { useLanguage } from '@/hooks/useLanguage';
 
 export const ApiContext = createContext<string | null>(null);
 
 export default function ApiProvider({ children, url }: React.PropsWithChildren<{ url: string }>) {
-  const { language } = useLanguage();
   const [state, dispatch] = useReducer(stateReducer, initialState);
   const controllerRef = useRef<AbortController>(new AbortController());
   const { t } = useTranslation();
@@ -75,5 +73,5 @@ export default function ApiProvider({ children, url }: React.PropsWithChildren<{
     );
   }
 
-  return <Loading language={language} />;
+  return <Loading />;
 }

@@ -24,13 +24,14 @@ import {
 } from '@workspaceui/etendohookbinder/src/api/types';
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/src/api/defaultConfig';
 import { usePathname, useRouter } from 'next/navigation';
-import { useLanguage } from '../hooks/useLanguage';
 import { DEFAULT_LANGUAGE } from '@workspaceui/componentlibrary/src/locales';
+import useLocalStorage from '@workspaceui/componentlibrary/src/hooks/useLocalStorage';
+import { useLanguage } from './language';
 
 export const UserContext = createContext({} as IUserContext);
 
 export default function UserProvider(props: React.PropsWithChildren) {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [token, setToken] = useLocalStorage<string | null>('token', null);
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<IUserContext['user']>({} as User);
   const [session, setSession] = useState<ISession>({});
@@ -43,7 +44,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const router = useRouter();
   const navigate = router.push;
 
-  const [roles, setRoles] = useState<Role[]>(() => {
+  const [roles, setRoles] = useState<SessionResponse['roles']>(() => {
     const savedRoles = localStorage.getItem('roles');
     return savedRoles ? JSON.parse(savedRoles) : [];
   });
@@ -99,18 +100,12 @@ export default function UserProvider(props: React.PropsWithChildren) {
         setLanguage(sessionResponse.user.defaultLanguage as Language);
       }
 
-      const languages = Object.values(sessionResponse.languages);
-
-      setLanguages(languages);
+      setLanguages(Object.values(sessionResponse.languages));
       setCurrentClient(sessionResponse.currentClient);
       setCurrentRole(sessionResponse.currentRole);
       setCurrentOrganization(sessionResponse.currentOrganization);
       setCurrentWarehouse(sessionResponse.currentWarehouse);
-
-      if (sessionResponse.currentWarehouse) {
-        localStorage.setItem('currentWarehouse', JSON.stringify(sessionResponse.currentWarehouse));
-        setCurrentWarehouse(sessionResponse.currentWarehouse);
-      }
+      setRoles(sessionResponse.roles);
     },
     [setLanguage, updateProfile],
   );
@@ -130,7 +125,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     localStorage.removeItem('currentInfo');
     localStorage.removeItem('currentWarehouse');
     localStorage.removeItem('currentLanguage');
-  }, [INITIAL_PROFILE]);
+  }, [INITIAL_PROFILE, setToken]);
 
   const changeProfile = useCallback(
     async (params: { role?: string; warehouse?: string }) => {
@@ -143,19 +138,12 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
         localStorage.setItem('token', response.token);
         setToken(response.token);
-
-        const sessionResponse = await getSession();
-        updateSessionInfo(sessionResponse);
-
-        if (params.role) {
-          navigate('/');
-        }
       } catch (error) {
         logger.warn('Error updating profile:', error);
         throw error;
       }
     },
-    [token, updateSessionInfo, navigate],
+    [setToken, token],
   );
 
   const login = useCallback(
@@ -165,23 +153,12 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
         localStorage.setItem('token', loginResponse.token);
         setToken(loginResponse.token);
-
-        Metadata.setToken(loginResponse.token);
-        datasource.setToken(loginResponse.token);
-
-        const sessionResponse = await getSession();
-        updateSessionInfo(sessionResponse);
-
-        if (loginResponse.roleList) {
-          localStorage.setItem('roles', JSON.stringify(loginResponse.roleList));
-          setRoles(loginResponse.roleList);
-        }
       } catch (e) {
         logger.error('Login or session retrieval error:', e);
         throw e;
       }
     },
-    [updateSessionInfo],
+    [setToken],
   );
 
   const value = useMemo<IUserContext>(
@@ -214,6 +191,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       currentOrganization,
       token,
       clearUserData,
+      setToken,
       setDefaultConfiguration,
       languages,
       session,

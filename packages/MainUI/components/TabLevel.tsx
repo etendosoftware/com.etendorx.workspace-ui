@@ -9,8 +9,8 @@ import { useMetadataContext } from '../hooks/useMetadataContext';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { DatasourceOptions } from '@workspaceui/etendohookbinder/src/api/types';
-import { useLanguage } from '@/hooks/useLanguage';
 import { parseColumns } from '@/utils/tableColumns';
+import { useLanguage } from '@/contexts/language';
 
 export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
   const {
