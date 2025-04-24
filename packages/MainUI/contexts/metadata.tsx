@@ -141,38 +141,25 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [groupedTabs, selected, setSession],
   );
 
-  const selectMultiple = useCallback(
-    (records: Record<string, string>[], tab: Tab, replace: boolean = false) => {
-      const tabId = tab.id;
+  const selectMultiple = useCallback((records: Record<string, unknown>[], tab: Tab) => {
+    let last;
 
-      setSelectedMultiple(prev => {
-        const currentTabSelections = replace ? {} : prev[tabId] || {};
+    setSelectedMultiple(prev => {
+      const result = { ...prev };
 
-        const updatedSelections = { ...currentTabSelections };
-
-        records.forEach((record) => {
-          updatedSelections[record.id] = record;
-        });
-
-        return {
-          ...prev,
-          [tabId]: updatedSelections,
-        };
+      result[tab.id] = {};
+      records.forEach(record => {
+        last = record;
+        result[tab.id][record.id as string] = record;
       });
 
-      // if (recordIds.length === 1) {
-      //   const recordId = recordIds[0];
-      //   const record = windowData?.tabs.find(t => t.id === tab.id)?.records?.[recordId] as
-      //     | Record<string, never>
-      //     | undefined;
+      return result;
+    });
 
-      //   if (record) {
-      //     selectRecord(record, tab);
-      //   }
-      // }
-    },
-    [],
-  );
+    if (last) {
+      selectRecord(last, tab)
+    }
+  }, [selectRecord]);
 
   const clearSelections = useCallback(
     (tabId: string) => {
