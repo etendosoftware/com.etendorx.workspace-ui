@@ -89,7 +89,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
 
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
 
-  // Filter process buttons based on display logic
   const processButtons = useMemo(() => {
     const buttons = toolbar?.buttons.filter(isProcessButton) || [];
     const selectedItems = Array.isArray(selected[tab.level]) ? selected[tab.level] : [selectedRecord];
@@ -188,10 +187,22 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
 
   const handleCloseProcess = useCallback(() => {
     setOpenModal(false);
-    setSelectedProcessActionButton(null);
-    setSelectedProcessDefinitionButton(null);
     setProcessResponse(null);
   }, []);
+
+  const handleCompleteRefresh = useCallback(async () => {
+    refetch();
+
+    if (tabId) {
+      refetchDatasource(tabId);
+    }
+
+    if (onRefresh) {
+      onRefresh();
+    }
+
+    handleCloseProcess();
+  }, [refetch, handleCloseProcess, tabId, onRefresh, refetchDatasource]);
 
   const toolbarConfig = useMemo(() => {
     const buttons = toolbar?.buttons ?? [];
@@ -337,12 +348,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           open={openModal}
           onClose={handleCloseProcess}
           button={selectedProcessDefinitionButton}
-          onSuccess={() => {
-            handleCloseProcess();
-            if (onRefresh && tab) {
-              onRefresh();
-            }
-          }}
+          onSuccess={handleCompleteRefresh}
         />
       )}
     </TabContextProvider>

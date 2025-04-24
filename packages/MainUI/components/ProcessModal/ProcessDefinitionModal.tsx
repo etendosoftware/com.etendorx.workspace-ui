@@ -26,17 +26,22 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     msgType: string;
   }>();
   const [isExecuting, setIsExecuting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const form = useForm();
 
   const handleClose = useCallback(() => {
-    setResponse(undefined);
     onClose();
+    setResponse(undefined);
+    setIsExecuting(false);
+    setIsSuccess(false);
   }, [onClose]);
 
   const handleExecute = useCallback(async () => {
     if (onProcess && tab) {
       setIsExecuting(true);
+      setIsSuccess(false);
+
       try {
         const result = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
           buttonValue: 'DONE',
@@ -48,11 +53,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
         setResponse(result.responseActions[0].showMsgInProcessView);
 
-        if (result.responseActions[0].showMsgInProcessView.msgType === 'success' && onSuccess) {
-          setTimeout(() => {
-            onSuccess();
-          });
+        if (result.responseActions[0].showMsgInProcessView.msgType === 'success') {
+          setIsSuccess(true);
         }
+
+        setIsExecuting(false);
+
+        console.debug(isExecuting, result, onSuccess);
       } catch (error) {
         console.error('Error executing process:', error);
         setResponse({
@@ -60,11 +67,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           msgTitle: t('errors.internalServerError.title'),
           msgType: 'error',
         });
-      } finally {
         setIsExecuting(false);
+      } finally {
+        if (onSuccess) {
+          onSuccess();
+        }
       }
     }
-  }, [button.processDefinition, form, onProcess, selectedRecords, tab, onSuccess, t]);
+  }, [onProcess, tab, button.processDefinition, selectedRecords, form, isExecuting, t, onSuccess]);
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -94,53 +104,59 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     fetchOptions();
   }, [button.processDefinition, onLoad, open, selectedRecords, tab, tabId]);
 
+  useEffect(() => {
+    if (open) {
+      setIsExecuting(false);
+      setIsSuccess(false);
+      setResponse(undefined);
+    }
+  }, [open]);
+
   return (
     <Modal open={open}>
       <FormProvider {...form}>
-        <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center bg-black/50 z-100">
-          <div className="bg-white rounded-lg p-4 flex flex-col max-w-lg w-full">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-100 overflow-auto py-8">
+          <div className="bg-white rounded-lg p-4 flex flex-col w-full max-w-2xl mx-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <h3 className="font-bold">{button.name}</h3>
               </div>
-              <button onClick={handleClose} className="p-1 rounded-full hover:bg-gray-100">
+              <button
+                onClick={handleClose}
+                className="p-1 rounded-full hover:bg-(--color-baseline-10)"
+                disabled={isExecuting}>
                 <CloseIcon />
               </button>
             </div>
-            {Object.values(parameters).map(parameter => (
-              <BaseSelector key={parameter.id} parameter={parameter} />
-            ))}
-            {response ? (
-              <div
-                className={`p-3 rounded mb-4 border-l-4 ${
-                  response.msgType === 'success'
-                    ? 'bg-green-50 border-green-500'
-                    : 'bg-gray-50 border-(--color-etendo-main)'
-                }`}>
-                <h4 className="font-bold text-sm">{response.msgTitle}</h4>
-                <p className="text-sm">{response.msgText}</p>
-              </div>
-            ) : null}
+            <div className="overflow-y-auto max-h-[60vh] p-1">
+              {Object.values(parameters).map(parameter => (
+                <BaseSelector key={parameter.id} parameter={parameter} />
+              ))}
+              {response ? (
+                <div
+                  className={`p-3 rounded mb-4 border-l-4 ${
+                    response.msgType === 'success'
+                      ? 'bg-green-50 border-(--color-success-main)'
+                      : 'bg-gray-50 border-(--color-etendo-main)'
+                  }`}>
+                  <h4 className="font-bold text-sm">{response.msgTitle}</h4>
+                  <p className="text-sm">{response.msgText}</p>
+                  {isSuccess && <p className="text-xs mt-2 text-(--color-baseline-90)">{t('common.closing')}...</p>}
+                </div>
+              ) : null}
+            </div>
 
             <div className="flex gap-8 justify-center mt-4">
               <button
                 onClick={handleClose}
-                className="transition px-10 py-2 border border-(--color-baseline-60) text-(--color-baseline-90) rounded font-medium focus:outline-none hover:bg-(--color-transparent-neutral-10)"
-                disabled={isExecuting}>
+                className="transition px-10 py-2 border border-(--color-baseline-60) text-(--color-baseline-90) rounded font-medium focus:outline-none hover:bg-(--color-transparent-neutral-10)">
                 {t('common.close')}
               </button>
               <button
                 onClick={handleExecute}
-                className="transition px-4 py-2 text-white rounded font-medium flex items-center gap-2 bg-(--color-etendo-dark) hover:bg-(--color-etendo-main)"
-                disabled={isExecuting}>
-                {isExecuting ? (
-                  <span className="animate-pulse">{t('common.loading')}...</span>
-                ) : (
-                  <>
-                    {CheckIcon && <CheckIcon fill="white" />}
-                    {t('common.execute')}
-                  </>
-                )}
+                className="transition px-4 py-2 text-white rounded font-medium flex items-center gap-2 bg-(--color-etendo-dark) hover:bg-(--color-etendo-main)">
+                {CheckIcon && <CheckIcon fill="white" />}
+                {t('common.execute')}
               </button>
             </div>
           </div>

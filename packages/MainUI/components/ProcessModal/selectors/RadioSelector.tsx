@@ -17,7 +17,7 @@ const RadioSelector = ({ parameter }: { parameter: ProcessParameter }) => {
   };
 
   return (
-    <div className="flex flex-row gap-4">
+    <div className="grid grid-flow-col gap-4">
       {parameter.refList.map(option => (
         <div
           key={option.value}
