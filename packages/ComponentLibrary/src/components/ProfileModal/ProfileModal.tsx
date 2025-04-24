@@ -84,7 +84,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   useEffect(() => {
     if (language) {
-      console.debug({ languages, language });
       const currentLang = languages.find(lang => lang.language === language);
       if (currentLang) {
         setSelectedLanguage({
