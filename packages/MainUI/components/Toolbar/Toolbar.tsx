@@ -1,14 +1,7 @@
 import { useCallback, useMemo, useState, createElement } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
-import {
-  IconSize,
-  ProcessResponse,
-  StandardButton,
-  StandardButtonConfig,
-  ToolbarProps,
-  isProcessButton,
-} from './types';
+import { IconSize, StandardButton, StandardButtonConfig, ToolbarProps, isProcessButton } from './types';
 import {
   LEFT_SECTION_BUTTONS,
   CENTER_SECTION_BUTTONS,
@@ -30,8 +23,8 @@ import ProcessMenu from './ProcessMenu';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
 import ConfirmModal from '@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal';
-import { ProcessButton, ProcessButtonType, ProcessDefinitionButton } from '../ProcessModal/types';
-import { ProcessActionModal } from '../ProcessModal';
+import { ProcessButton, ProcessButtonType, ProcessDefinitionButton, ProcessResponse } from '../ProcessModal/types';
+import ProcessModal from '../ProcessModal';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
 import ProcessDefinitionModal from '../ProcessModal/ProcessDefinitionModal';
 import { useUserContext } from '@/hooks/useUserContext';
@@ -148,13 +141,11 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   );
 
   const handleProcessSuccess = useCallback(() => {
-    if (processResponse && !processResponse.showDeprecatedFeatureModal && processResponse.success) {
-      if (tabId) {
-        refetchDatasource(tabId);
-        clearSelections(tabId);
-      }
+    if (tabId) {
+      refetchDatasource(tabId);
+      clearSelections(tabId);
     }
-  }, [tabId, refetchDatasource, clearSelections, processResponse]);
+  }, [clearSelections, refetchDatasource, tabId]);
 
   const handleConfirmProcess = useCallback(async () => {
     if (!selectedProcessActionButton || !selectedRecord?.id) return;
@@ -162,6 +153,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     setIsExecuting(true);
     try {
       const response = await handleProcessClick(selectedProcessActionButton, selectedRecord?.id);
+      console.debug(response);
       if (response) {
         setProcessResponse(response);
       } else {
@@ -169,8 +161,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       }
     } catch (error) {
       setProcessResponse({
-        success: false,
-        message: error instanceof Error ? error.message : 'Unknown error',
         responseActions: [
           {
             showMsgInProcessView: {
@@ -318,7 +308,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
         />
       )}
       {selectedProcessActionButton && (
-        <ProcessActionModal
+        <ProcessModal
           open={openModal}
           onClose={handleCloseProcess}
           button={selectedProcessActionButton}
@@ -329,6 +319,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           cancelButtonText={t('common.cancel')}
           executeButtonText={t('common.execute')}
           onProcessSuccess={handleProcessSuccess}
+          tabId={tab.id}
         />
       )}
       {selectedProcessDefinitionButton && (
