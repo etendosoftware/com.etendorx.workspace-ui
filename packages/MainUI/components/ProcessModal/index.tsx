@@ -16,6 +16,7 @@ const ProcessModal = memo(
     cancelButtonText,
     executeButtonText,
     onProcessSuccess,
+    tabId,
   }: ProcessModalProps) => {
     const { styles } = useStyle();
     const [showIframeModal, setShowIframeModal] = useState(false);
@@ -35,7 +36,7 @@ const ProcessModal = memo(
     }, [open]);
 
     useEffect(() => {
-      if (processResponse?.showInIframe && processResponse?.iframeUrl) {
+      if (processResponse?.iframeUrl) {
         setIframeUrl(processResponse.iframeUrl);
         setShowIframeModal(true);
         setShowConfirmDialog(false);
@@ -108,6 +109,7 @@ const ProcessModal = memo(
             url={iframeUrl}
             title={button?.name || ''}
             onProcessSuccess={onProcessSuccess}
+            tabId={tabId}
           />
         )}
       </>

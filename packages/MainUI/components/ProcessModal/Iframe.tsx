@@ -4,12 +4,12 @@ import { useProcessMessage, ProcessMessage } from '@/hooks/useProcessMessage';
 import { useTranslation } from '@/hooks/useTranslation';
 import { logger } from '@/utils/logger';
 
-const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess }: ProcessIframeModalProps) => {
+const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess, tabId }: ProcessIframeModalProps) => {
   const { t } = useTranslation();
   const [iframeLoading, setIframeLoading] = useState(true);
   const [processMessage, setProcessMessage] = useState<ProcessMessage | null>(null);
   const [startPolling, setStartPolling] = useState(false);
-  const { fetchProcessMessage } = useProcessMessage();
+  const { fetchProcessMessage } = useProcessMessage(tabId);
   const [processWasSuccessful, setProcessWasSuccessful] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 

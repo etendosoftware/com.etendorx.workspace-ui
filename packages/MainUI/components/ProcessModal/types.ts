@@ -81,6 +81,7 @@ export interface ProcessModalProps {
   cancelButtonText: string;
   executeButtonText: string;
   onProcessSuccess?: () => void;
+  tabId: string;
 }
 
 export interface MessageStylesType {
@@ -96,6 +97,7 @@ export interface ProcessIframeModalProps {
   url: string;
   title?: string;
   onProcessSuccess?: () => void;
+  tabId: string;
 }
 
 export interface ProcessDefinitionModalProps {
