@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import Modal from '../Modal';
 import { useTranslation } from '@/hooks/useTranslation';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
@@ -10,6 +9,7 @@ import CheckIcon from '../../../ComponentLibrary/src/assets/icons/check-circle.s
 import CloseIcon from '../../../ComponentLibrary/src/assets/icons/x.svg';
 import BaseSelector from './selectors/BaseSelector';
 import { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps } from './types';
+import Modal from '../Modal';
 
 function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
@@ -55,11 +55,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
         if (result.responseActions[0].showMsgInProcessView.msgType === 'success') {
           setIsSuccess(true);
+
+          if (onSuccess) {
+            onSuccess();
+          }
         }
-
         setIsExecuting(false);
-
-        console.debug(isExecuting, result, onSuccess);
       } catch (error) {
         console.error('Error executing process:', error);
         setResponse({
@@ -68,13 +69,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           msgType: 'error',
         });
         setIsExecuting(false);
-      } finally {
-        if (onSuccess) {
-          onSuccess();
-        }
       }
     }
-  }, [onProcess, tab, button.processDefinition, selectedRecords, form, isExecuting, t, onSuccess]);
+  }, [button.processDefinition, form, onProcess, selectedRecords, tab, onSuccess, t]);
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -129,9 +126,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
               </button>
             </div>
             <div className="overflow-y-auto max-h-[60vh] p-1">
-              {Object.values(parameters).map(parameter => (
-                <BaseSelector key={parameter.id} parameter={parameter} />
-              ))}
+              {!isSuccess &&
+                Object.values(parameters).map(parameter => <BaseSelector key={parameter.id} parameter={parameter} />)}
               {response ? (
                 <div
                   className={`p-3 rounded mb-4 border-l-4 ${
@@ -141,22 +137,33 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                   }`}>
                   <h4 className="font-bold text-sm">{response.msgTitle}</h4>
                   <p className="text-sm">{response.msgText}</p>
-                  {isSuccess && <p className="text-xs mt-2 text-(--color-baseline-90)">{t('common.closing')}...</p>}
                 </div>
               ) : null}
             </div>
-
-            <div className="flex gap-8 justify-center mt-4">
+            <div className="flex gap-4 justify-end mt-4">
               <button
                 onClick={handleClose}
-                className="transition px-10 py-2 border border-(--color-baseline-60) text-(--color-baseline-90) rounded font-medium focus:outline-none hover:bg-(--color-transparent-neutral-10)">
+                className="transition px-4 py-2 border border-(--color-baseline-60) text-(--color-baseline-90) rounded font-medium focus:outline-none hover:bg-(--color-transparent-neutral-10)"
+                disabled={isExecuting}>
                 {t('common.close')}
               </button>
               <button
                 onClick={handleExecute}
-                className="transition px-4 py-2 text-white rounded font-medium flex items-center gap-2 bg-(--color-etendo-dark) hover:bg-(--color-etendo-main)">
-                {CheckIcon && <CheckIcon fill="white" />}
-                {t('common.execute')}
+                className="transition px-4 py-2 text-white rounded font-medium flex items-center gap-2 bg-(--color-etendo-dark) hover:bg-(--color-etendo-main)"
+                disabled={isExecuting || isSuccess}>
+                {isExecuting ? (
+                  <span className="animate-pulse">{t('common.loading')}...</span>
+                ) : isSuccess ? (
+                  <span className="flex items-center gap-2">
+                    <CheckIcon fill="white" />
+                    {t('process.completedSuccessfully')}
+                  </span>
+                ) : (
+                  <>
+                    {CheckIcon && <CheckIcon fill="white" />}
+                    {t('common.execute')}
+                  </>
+                )}
               </button>
             </div>
           </div>

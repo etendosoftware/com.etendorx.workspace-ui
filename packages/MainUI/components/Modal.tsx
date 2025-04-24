@@ -12,5 +12,19 @@ export default function Modal({ children, open }: { children: React.ReactNode; o
     }
   }, [children, open, setModal]);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key == 'Escape') {
+        setModal(null);
+      }
+    };
+
+    document.addEventListener('keydown', handler);
+
+    return () => {
+      document.removeEventListener('keydown', handler);
+    };
+  }, [children, open, setModal]);
+
   return null;
 }
