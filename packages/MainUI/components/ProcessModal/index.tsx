@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback, useMemo, memo } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from '@mui/material';
 import { useStyle } from './styles';
-import { type ProcessModalProps } from './types';
-import DeprecatedFeatureModal from './DeprecatedFeature';
+import { ProcessButtonType, type ProcessModalProps } from './types';
+import ProcessIframeModal from './Iframe';
 
-export const ProcessActionModal = memo(
+const ProcessModal = memo(
   ({
     open,
     onClose,
@@ -15,32 +15,42 @@ export const ProcessActionModal = memo(
     confirmationMessage,
     cancelButtonText,
     executeButtonText,
+    onProcessSuccess,
   }: ProcessModalProps) => {
     const { styles } = useStyle();
-    const [showDeprecatedFeatureModal, setShowDeprecatedFeatureModal] = useState(false);
+    const [showIframeModal, setShowIframeModal] = useState(false);
+    const [iframeUrl, setIframeUrl] = useState('');
     const [showConfirmDialog, setShowConfirmDialog] = useState(open);
-    const [deprecatedMessage, setDeprecatedMessage] = useState('');
+
+    const type = useMemo(
+      () =>
+        ProcessButtonType.PROCESS_DEFINITION in button
+          ? ProcessButtonType.PROCESS_DEFINITION
+          : ProcessButtonType.PROCESS_ACTION,
+      [button],
+    );
 
     useEffect(() => {
       setShowConfirmDialog(open);
     }, [open]);
 
     useEffect(() => {
-      if (processResponse?.showDeprecatedFeatureModal) {
-        setShowDeprecatedFeatureModal(true);
-        setDeprecatedMessage(processResponse.message || '');
+      if (processResponse?.showInIframe && processResponse?.iframeUrl) {
+        setIframeUrl(processResponse.iframeUrl);
+        setShowIframeModal(true);
         setShowConfirmDialog(false);
       }
     }, [processResponse]);
 
-    const handleCloseDeprecatedFeatureModal = useCallback(() => {
-      setShowDeprecatedFeatureModal(false);
+    const handleCloseIframeModal = useCallback(() => {
+      setShowIframeModal(false);
+      setIframeUrl('');
     }, []);
 
     const handleCombinedClose = useCallback(() => {
-      handleCloseDeprecatedFeatureModal();
+      handleCloseIframeModal();
       onClose();
-    }, [handleCloseDeprecatedFeatureModal, onClose]);
+    }, [handleCloseIframeModal, onClose]);
 
     const handleConfirmModalClose = useCallback(() => {
       if (!isExecuting) {
@@ -74,10 +84,6 @@ export const ProcessActionModal = memo(
       ],
     );
 
-    if (!button) {
-      return null;
-    }
-
     return (
       <>
         <Dialog
@@ -87,18 +93,21 @@ export const ProcessActionModal = memo(
           fullWidth
           sx={styles.dialog}
           closeAfterTransition>
-          <DialogTitle sx={styles.dialogTitle}>{button.name}</DialogTitle>
+          <DialogTitle sx={styles.dialogTitle}>
+            {button.name} ({type})
+          </DialogTitle>
           <DialogContent sx={styles.dialogContent}>
             <Typography sx={styles.message}>{confirmationMessage}</Typography>
           </DialogContent>
           <DialogActions sx={styles.dialogActions}>{actionButtons}</DialogActions>
         </Dialog>
-        {showDeprecatedFeatureModal && (
-          <DeprecatedFeatureModal
-            isOpen={showDeprecatedFeatureModal}
+        {showIframeModal && (
+          <ProcessIframeModal
+            isOpen={showIframeModal}
             onClose={handleCombinedClose}
+            url={iframeUrl}
             title={button?.name || ''}
-            message={deprecatedMessage}
+            onProcessSuccess={onProcessSuccess}
           />
         )}
       </>
@@ -106,6 +115,6 @@ export const ProcessActionModal = memo(
   },
 );
 
-ProcessActionModal.displayName = 'ProcessActionModal';
+ProcessModal.displayName = 'ProcessModal';
 
-export default ProcessActionModal;
+export default ProcessModal;
