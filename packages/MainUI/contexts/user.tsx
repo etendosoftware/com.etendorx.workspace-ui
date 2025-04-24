@@ -245,14 +245,14 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }
   }, [clearUserData, navigate, token]);
 
-  useEffect(() => {
-    if (languages.length === 0) return;
+  // useEffect(() => {
+  //   if (languages.length === 0) return;
 
-    const savedLanguage = localStorage.getItem('currentLanguage');
-    const matchedLanguage = languages.find(lang => lang.language === savedLanguage);
+  //   const savedLanguage = localStorage.getItem('currentLanguage');
+  //   const matchedLanguage = languages.find(lang => lang.language === savedLanguage);
 
-    setLanguage((matchedLanguage?.language as Language) || DEFAULT_LANGUAGE);
-  }, [languages, setLanguage]);
+  //   setLanguage((matchedLanguage?.language as Language) || DEFAULT_LANGUAGE);
+  // }, [languages, setLanguage]);
 
   if (!ready) {
     return null;

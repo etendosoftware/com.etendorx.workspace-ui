@@ -12,6 +12,7 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
   const [language, setLanguageValue] = useState<Language>(() => {
     if (typeof window !== 'undefined') {
       const savedLanguage = localStorage.getItem('currentLanguage');
+      Metadata.setLanguage((savedLanguage as Language) || DEFAULT_LANGUAGE);
       return (savedLanguage as Language) || DEFAULT_LANGUAGE;
     }
     return DEFAULT_LANGUAGE;
@@ -22,6 +23,7 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
       localStorage.setItem('currentLanguage', lang);
       setLanguageValue(lang);
       Metadata.setLanguage(lang);
+      setTimeout(() => location.reload(), 500);
     }
   }, []);
 
