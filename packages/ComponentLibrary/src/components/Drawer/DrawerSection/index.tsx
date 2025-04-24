@@ -213,16 +213,6 @@ const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
       </Box>
     );
   },
-  (prevProps, nextProps) => {
-    return (
-      prevProps.item.id === nextProps.item.id &&
-      prevProps.open === nextProps.open &&
-      prevProps.isExpanded === nextProps.isExpanded &&
-      prevProps.windowId === nextProps.windowId &&
-      prevProps.isSearchActive === nextProps.isSearchActive &&
-      prevProps.hasChildren === nextProps.hasChildren
-    );
-  },
 );
 
 DrawerSection.displayName = 'DrawerSection';
