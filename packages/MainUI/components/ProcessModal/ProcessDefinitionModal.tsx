@@ -1,25 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
-import Modal from '../Modal';
-import { ProcessDefinitionButton } from './types';
 import { useTranslation } from '@/hooks/useTranslation';
 import { FormProvider, useForm } from 'react-hook-form';
-import BaseSelector from './selectors/BaseSelector';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
 import { useTabContext } from '@/contexts/tab';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { executeStringFunction } from '@/utils/functions';
+import CheckIcon from '../../../ComponentLibrary/src/assets/icons/check-circle.svg';
+import CloseIcon from '../../../ComponentLibrary/src/assets/icons/x.svg';
+import BaseSelector from './selectors/BaseSelector';
+import { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps } from './types';
+import Modal from '../Modal';
 
-interface ProcessDefinitionModalProps {
-  onClose: () => void;
-  open: boolean;
-  button?: ProcessDefinitionButton;
-}
-
-interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
-  button: NonNullable<ProcessDefinitionModalProps['button']>;
-}
-
-function ProcessDefinitionModalContent({ onClose, button, open }: ProcessDefinitionModalContentProps) {
+function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
   const onProcess = button.processDefinition.onProcess;
   const onLoad = button.processDefinition.onLoad;
@@ -33,78 +25,145 @@ function ProcessDefinitionModalContent({ onClose, button, open }: ProcessDefinit
     msgTitle: string;
     msgType: string;
   }>();
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const form = useForm();
 
   const handleClose = useCallback(() => {
-    setResponse(undefined);
     onClose();
+    setResponse(undefined);
+    setIsExecuting(false);
+    setIsSuccess(false);
   }, [onClose]);
 
   const handleExecute = useCallback(async () => {
     if (onProcess && tab) {
-      const result = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
-        buttonValue: 'DONE',
-        windowId: tab.windowId,
-        entityName: tab.entityName,
-        recordIds: Object.keys(selectedRecords),
-        ...form.getValues(),
-      });
-      setResponse(result.responseActions[0].showMsgInProcessView);
+      setIsExecuting(true);
+      setIsSuccess(false);
+
+      try {
+        const result = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
+          buttonValue: 'DONE',
+          windowId: tab.windowId,
+          entityName: tab.entityName,
+          recordIds: Object.keys(selectedRecords),
+          ...form.getValues(),
+        });
+
+        setResponse(result.responseActions[0].showMsgInProcessView);
+
+        if (result.responseActions[0].showMsgInProcessView.msgType === 'success') {
+          setIsSuccess(true);
+
+          if (onSuccess) {
+            onSuccess();
+          }
+        }
+        setIsExecuting(false);
+      } catch (error) {
+        console.error('Error executing process:', error);
+        setResponse({
+          msgText: error instanceof Error ? error.message : 'Unknown error',
+          msgTitle: t('errors.internalServerError.title'),
+          msgType: 'error',
+        });
+        setIsExecuting(false);
+      }
     }
-  }, [button.processDefinition, form, onProcess, selectedRecords, tab]);
+  }, [button.processDefinition, form, onProcess, selectedRecords, tab, onSuccess, t]);
 
   useEffect(() => {
-    const f = async () => {
+    const fetchOptions = async () => {
       if (onLoad && open && tab) {
-        const result = await executeStringFunction(onLoad, { Metadata }, button.processDefinition, {
-          selectedRecords,
-          tabId,
-        });
-        setParameters(prev => {
-          const newParameters = { ...prev };
-          Object.entries(result).forEach(([parameterName, values]) => {
-            const newOptions = values as string[];
-            newParameters[parameterName].refList = newParameters[parameterName].refList.filter(option =>
-              newOptions.includes(option.value),
-            );
+        try {
+          const result = await executeStringFunction(onLoad, { Metadata }, button.processDefinition, {
+            selectedRecords,
+            tabId,
           });
+          setParameters(prev => {
+            const newParameters = { ...prev };
+            Object.entries(result).forEach(([parameterName, values]) => {
+              const newOptions = values as string[];
+              newParameters[parameterName].refList = newParameters[parameterName].refList.filter(option =>
+                newOptions.includes(option.value),
+              );
+            });
 
-          return newParameters;
-        });
+            return newParameters;
+          });
+        } catch (error) {
+          console.error('Error loading parameters:', error);
+        }
       }
     };
 
-    f();
+    fetchOptions();
   }, [button.processDefinition, onLoad, open, selectedRecords, tab, tabId]);
+
+  useEffect(() => {
+    if (open) {
+      setIsExecuting(false);
+      setIsSuccess(false);
+      setResponse(undefined);
+    }
+  }, [open]);
 
   return (
     <Modal open={open}>
       <FormProvider {...form}>
-        <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center bg-black/50 z-100">
-          <div className="bg-white rounded-lg p-4 flex flex-column gap-4">
-            <div className="font-bold p-2 text-center">{button.name}</div>
-            <div className="flex gap-4">
-              {Object.values(parameters).map(parameter => (
-                <BaseSelector key={parameter.id} parameter={parameter} />
-              ))}
-            </div>
-            {response ? (
-              <div>
-                <b>{response.msgTitle}</b>
-                <p>{response.msgText}</p>
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-100 overflow-auto py-8">
+          <div className="bg-white rounded-lg p-4 flex flex-col w-full max-w-2xl mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold">{button.name}</h3>
               </div>
-            ) : null}
-            <div className="flex gap-2 items-center justify-center">
-              <button
-                onClick={handleExecute}
-                className="transition px-4 py-2 bg-[var(--color-etendo-main)] text-white rounded font-medium focus:outline-none hover:bg-[var(--color-etendo-dark)]">
-                {t('common.execute')}
-              </button>
               <button
                 onClick={handleClose}
-                className="transition px-4 py-2 bg-[var(--color-neutral-1000)] text-white rounded font-medium focus:outline-none hover:bg-[var(--color-etendo-dark)]">
+                className="p-1 rounded-full hover:bg-(--color-baseline-10)"
+                disabled={isExecuting}>
+                <CloseIcon />
+              </button>
+            </div>
+            <div className="overflow-y-auto max-h-[60vh] p-1">
+              {!isSuccess &&
+                Object.values(parameters).map(parameter => <BaseSelector key={parameter.id} parameter={parameter} />)}
+              {response ? (
+                <div
+                  className={`p-3 rounded mb-4 border-l-4 ${
+                    response.msgType === 'success'
+                      ? 'bg-green-50 border-(--color-success-main)'
+                      : 'bg-gray-50 border-(--color-etendo-main)'
+                  }`}>
+                  <h4 className="font-bold text-sm">{response.msgTitle}</h4>
+                  <p className="text-sm">{response.msgText}</p>
+                </div>
+              ) : null}
+            </div>
+            <div className="flex gap-4 justify-end mt-4">
+              <button
+                onClick={handleClose}
+                className="transition px-4 py-2 border border-(--color-baseline-60) text-(--color-baseline-90) rounded font-medium focus:outline-none hover:bg-(--color-transparent-neutral-10)"
+                disabled={isExecuting}>
                 {t('common.close')}
+              </button>
+              <button
+                onClick={handleExecute}
+                className="transition px-4 py-2 text-white rounded font-medium flex items-center gap-2 bg-(--color-etendo-dark) hover:bg-(--color-etendo-main)"
+                disabled={isExecuting || isSuccess}>
+                {isExecuting ? (
+                  <span className="animate-pulse">{t('common.loading')}...</span>
+                ) : isSuccess ? (
+                  <span className="flex items-center gap-2">
+                    <CheckIcon fill="white" />
+                    {t('process.completedSuccessfully')}
+                  </span>
+                ) : (
+                  <>
+                    {CheckIcon && <CheckIcon fill="white" />}
+                    {t('common.execute')}
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -114,9 +173,9 @@ function ProcessDefinitionModalContent({ onClose, button, open }: ProcessDefinit
   );
 }
 
-export default function ProcessDefinitionModal({ button, ...props }: ProcessDefinitionModalProps) {
+export default function ProcessDefinitionModal({ button, onSuccess, ...props }: ProcessDefinitionModalProps) {
   if (typeof button != 'undefined') {
-    return <ProcessDefinitionModalContent {...props} button={button} />;
+    return <ProcessDefinitionModalContent {...props} button={button} onSuccess={onSuccess} />;
   }
 
   return null;

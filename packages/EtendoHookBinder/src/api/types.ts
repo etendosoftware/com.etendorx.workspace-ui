@@ -684,7 +684,7 @@ export interface ProcessBindings {
   ) => Promise<any>;
   onProcess: (
     process: ProcessDefinition,
-    params: { recordIds: string[]; windowId: string; entityName: string; buttonValue: any, [param: string]: unknown },
+    params: { recordIds: string[]; windowId: string; entityName: string; buttonValue: any; [param: string]: unknown },
   ) => Promise<any>;
   metadata: Record<string, unknown>;
 }

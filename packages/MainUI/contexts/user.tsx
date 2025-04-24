@@ -27,6 +27,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { DEFAULT_LANGUAGE } from '@workspaceui/componentlibrary/src/locales';
 import useLocalStorage from '@workspaceui/componentlibrary/src/hooks/useLocalStorage';
 import { useLanguage } from './language';
+import { usePrevious } from '@/hooks/usePrevious';
 
 export const UserContext = createContext({} as IUserContext);
 
@@ -39,6 +40,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [currentWarehouse, setCurrentWarehouse] = useState<CurrentWarehouse>();
   const [currentRole, setCurrentRole] = useState<CurrentRole>();
   const [currentClient, setCurrentClient] = useState<CurrentClient>();
+  const lastRole = usePrevious(currentRole, currentRole);
   const { setLanguage } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
@@ -244,6 +246,12 @@ export default function UserProvider(props: React.PropsWithChildren) {
       };
     }
   }, [clearUserData, navigate, token]);
+
+  useEffect(() => {
+    if (lastRole != currentRole) {
+      navigate('/');
+    } 
+  }, [currentRole, lastRole, navigate]);
 
   // useEffect(() => {
   //   if (languages.length === 0) return;
