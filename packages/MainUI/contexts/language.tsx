@@ -23,7 +23,7 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
       localStorage.setItem('currentLanguage', lang);
       setLanguageValue(lang);
       Metadata.setLanguage(lang);
-      setTimeout(() => location.reload(), 500);
+      // setTimeout(() => location.reload(), 500);
     }
   }, []);
 
