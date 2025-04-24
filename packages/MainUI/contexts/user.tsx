@@ -96,9 +96,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
       localStorage.setItem('currentRole', JSON.stringify(sessionResponse.currentRole));
       localStorage.setItem('currentRoleId', sessionResponse.currentRole.id);
 
-      if (sessionResponse.user.defaultLanguage) {
-        setLanguage(sessionResponse.user.defaultLanguage as Language);
-      }
+      // if (sessionResponse.user.defaultLanguage) {
+      //   setLanguage(sessionResponse.user.defaultLanguage as Language);
+      // }
 
       setLanguages(Object.values(sessionResponse.languages));
       setCurrentClient(sessionResponse.currentClient);
@@ -107,7 +107,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       setCurrentWarehouse(sessionResponse.currentWarehouse);
       setRoles(sessionResponse.roles);
     },
-    [setLanguage, updateProfile],
+    [updateProfile],
   );
 
   const clearUserData = useCallback(() => {
