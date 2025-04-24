@@ -252,7 +252,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   useEffect(() => {
     if (lastRole != currentRole) {
       navigate('/');
-    }
+    } 
   }, [currentRole, lastRole, navigate]);
 
   // useEffect(() => {
