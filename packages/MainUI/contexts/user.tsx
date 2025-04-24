@@ -222,7 +222,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
     if (token || pathname === '/login') {
       setReady(true);
     } else if (!token && pathname !== 'login') {
-      alert('te mando al login porque no tenes token');
       navigate('/login');
     }
   }, [navigate, pathname, token]);
@@ -230,7 +229,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
   useEffect(() => {
     const interceptor = (response: Response) => {
       if (response.status === HTTP_CODES.UNAUTHORIZED) {
-        alert('te deslogueo porque hubo un 401');
         clearUserData();
         navigate('/login');
       }
