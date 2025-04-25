@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserContext } from '../../hooks/useUserContext';
 import Login from '../../components/Forms/Login';
+import Loading from '@/components/loading';
 
 export default function LoginPage() {
   const [error, setError] = useState('');
@@ -28,7 +29,7 @@ export default function LoginPage() {
   }, [router, token]);
 
   if (token) {
-    return null;
+    return <Loading />;
   }
 
   return <Login title="Etendo" onSubmit={handleLogin} error={error} />;
