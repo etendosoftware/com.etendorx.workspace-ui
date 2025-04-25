@@ -50,7 +50,7 @@ export interface IUserContext {
   currentOrganization: CurrentOrganization | undefined;
   setToken: React.Dispatch<React.SetStateAction<string | null>>;
   clearUserData: () => void;
-  setDefaultConfiguration: (token: string, config: DefaultConfiguration) => Promise<void>;
+  setDefaultConfiguration: (config: DefaultConfiguration) => Promise<void>;
   languages: LanguageOption[];
   session: ISession;
   setSession: React.Dispatch<React.SetStateAction<ISession>>;

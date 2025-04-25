@@ -4,6 +4,7 @@ const en = {
     cancel: 'Cancel',
     confirm: 'Confirm',
     close: 'Close',
+    closing: 'Closing...',
     execute: 'Execute',
     register: 'Register',
     save: 'Save',

@@ -4,6 +4,7 @@ const es = {
     cancel: 'Cancelar',
     confirm: 'Confirmar',
     close: 'Cerrar',
+    closing: 'Cerrando...',
     execute: 'Ejecutar',
     register: 'Registrar',
     save: 'Guardar',

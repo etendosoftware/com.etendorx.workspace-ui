@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
@@ -12,10 +11,8 @@ import { HTTP_CODES } from '@workspaceui/etendohookbinder/src/api/constants';
 import { DefaultConfiguration, IUserContext, Language, LanguageOption } from './types';
 import {
   ISession,
-  Role,
   ProfileInfo,
   SessionResponse,
-  Warehouse,
   User,
   CurrentWarehouse,
   CurrentRole,
@@ -24,8 +21,8 @@ import {
 } from '@workspaceui/etendohookbinder/src/api/types';
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/src/api/defaultConfig';
 import { usePathname, useRouter } from 'next/navigation';
-import { DEFAULT_LANGUAGE } from '@workspaceui/componentlibrary/src/locales';
 import useLocalStorage from '@workspaceui/componentlibrary/src/hooks/useLocalStorage';
+import { usePrevious } from '@/hooks/usePrevious';
 import { useLanguage } from './language';
 
 export const UserContext = createContext({} as IUserContext);
@@ -39,7 +36,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [currentWarehouse, setCurrentWarehouse] = useState<CurrentWarehouse>();
   const [currentRole, setCurrentRole] = useState<CurrentRole>();
   const [currentClient, setCurrentClient] = useState<CurrentClient>();
-  const { setLanguage } = useLanguage();
+  const lastRole = usePrevious(currentRole, currentRole);
   const pathname = usePathname();
   const router = useRouter();
   const navigate = router.push;
@@ -65,11 +62,12 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   const [languages, setLanguages] = useState<LanguageOption[]>([]);
 
-  const setDefaultConfiguration = useCallback(async (token: string, config: DefaultConfiguration) => {
+  const setDefaultConfiguration = useCallback(async (config: DefaultConfiguration) => {
     try {
-      const data = await apiSetDefaultConfiguration(token, config);
+      return apiSetDefaultConfiguration(config);
     } catch (error) {
       logger.error('Error setting default configuration:', error);
+
       throw error;
     }
   }, []);
@@ -78,6 +76,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
     setProfile(newProfile);
     localStorage.setItem('currentInfo', JSON.stringify(newProfile));
   }, []);
+
+  const { language, setLanguage } = useLanguage();
 
   const updateSessionInfo = useCallback(
     async (sessionResponse: SessionResponse) => {
@@ -96,9 +96,11 @@ export default function UserProvider(props: React.PropsWithChildren) {
       localStorage.setItem('currentRole', JSON.stringify(sessionResponse.currentRole));
       localStorage.setItem('currentRoleId', sessionResponse.currentRole.id);
 
-      // if (sessionResponse.user.defaultLanguage) {
-      //   setLanguage(sessionResponse.user.defaultLanguage as Language);
-      // }
+      const defaultLanguage = sessionResponse.user.defaultLanguage as Language;
+
+      if (!language && defaultLanguage) {
+        setLanguage(defaultLanguage);
+      }
 
       setLanguages(Object.values(sessionResponse.languages));
       setCurrentClient(sessionResponse.currentClient);
@@ -107,7 +109,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       setCurrentWarehouse(sessionResponse.currentWarehouse);
       setRoles(sessionResponse.roles);
     },
-    [updateProfile],
+    [language, setLanguage, updateProfile],
   );
 
   const clearUserData = useCallback(() => {
@@ -206,19 +208,23 @@ export default function UserProvider(props: React.PropsWithChildren) {
           Metadata.setToken(token);
           datasource.setToken(token);
 
-          updateSessionInfo(await getSession());
+          updateSessionInfo(await getSession()).finally(() => {
+            setReady(true);
+          });
         } catch (error) {
           clearUserData();
         }
       };
 
       verifySession().catch(logger.error);
+    } else {
+      setReady(true);
     }
   }, [clearUserData, navigate, token, updateSessionInfo]);
 
   useEffect(() => {
-    if (token || pathname === '/login') {
-      setReady(true);
+    if (token && pathname === 'login') {
+      navigate('/');
     } else if (!token && pathname !== 'login') {
       navigate('/login');
     }
@@ -245,14 +251,15 @@ export default function UserProvider(props: React.PropsWithChildren) {
     }
   }, [clearUserData, navigate, token]);
 
-  // useEffect(() => {
-  //   if (languages.length === 0) return;
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
 
-  //   const savedLanguage = localStorage.getItem('currentLanguage');
-  //   const matchedLanguage = languages.find(lang => lang.language === savedLanguage);
-
-  //   setLanguage((matchedLanguage?.language as Language) || DEFAULT_LANGUAGE);
-  // }, [languages, setLanguage]);
+    if (lastRole != currentRole) {
+      navigate('/');
+    }
+  }, [currentRole, lastRole, navigate, token]);
 
   if (!ready) {
     return null;
