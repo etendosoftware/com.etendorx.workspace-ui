@@ -108,7 +108,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
       setCurrentOrganization(sessionResponse.currentOrganization);
       setCurrentWarehouse(sessionResponse.currentWarehouse);
       setRoles(sessionResponse.roles);
-      setReady(true);
     },
     [language, setLanguage, updateProfile],
   );
@@ -209,18 +208,24 @@ export default function UserProvider(props: React.PropsWithChildren) {
           Metadata.setToken(token);
           datasource.setToken(token);
 
-          updateSessionInfo(await getSession());
+          updateSessionInfo(await getSession()).finally(() => {
+            setReady(true);
+          });
         } catch (error) {
           clearUserData();
         }
       };
 
       verifySession().catch(logger.error);
+    } else {
+      setReady(true);
     }
   }, [clearUserData, navigate, token, updateSessionInfo]);
 
   useEffect(() => {
-    if (!token && pathname !== 'login') {
+    if (token && pathname === 'login') {
+      navigate('/');
+    } else if (!token && pathname !== 'login') {
       navigate('/login');
     }
   }, [navigate, pathname, token]);
@@ -229,6 +234,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     const interceptor = (response: Response) => {
       if (response.status === HTTP_CODES.UNAUTHORIZED) {
         clearUserData();
+        navigate('/login');
       }
 
       return response;
@@ -243,7 +249,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         unregisterDatasourceInterceptor();
       };
     }
-  }, [clearUserData, token]);
+  }, [clearUserData, navigate, token]);
 
   useEffect(() => {
     if (lastRole != currentRole) {
