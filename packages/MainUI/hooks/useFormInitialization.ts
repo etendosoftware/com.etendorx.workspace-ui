@@ -13,9 +13,6 @@ import useFormParent, { ParentFieldName } from './useFormParent';
 import { useSearchParams } from 'next/navigation';
 
 const getRowId = (mode: FormMode, recordId?: string | null): string => {
-  if (mode === FormMode.EDIT && !recordId) {
-    throw new Error('Record ID is required in EDIT mode');
-  }
   return mode === FormMode.EDIT ? recordId! : 'null';
 };
 

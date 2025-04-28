@@ -1,10 +1,9 @@
-import { Toolbar } from '@/components/Toolbar/Toolbar';
 import { EntityData, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
 import { FormProvider, useForm } from 'react-hook-form';
 import { BaseSelector } from './selectors/BaseSelector';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormAction } from '@/hooks/useFormAction';
-import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Collapsible from '../Collapsible';
 import StatusBar from './StatusBar';
 import useFormFields from '@/hooks/useFormFields';
@@ -18,20 +17,37 @@ import { useTheme } from '@mui/material';
 import { FormViewProps } from './types';
 import { useStatusModal } from '@/hooks/Toolbar/useStatusModal';
 import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
+import { useFormInitialization } from '@/hooks/useFormInitialization';
+import { useFormInitialState } from '@/hooks/useFormInitialState';
+import { useToolbarContext } from '@/contexts/ToolbarContext';
+import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 
-export default function FormView({ window: windowMetadata, tab, mode, initialState, refetch }: FormViewProps) {
-  const router = useRouter();
+export default function FormView({ window: windowMetadata, tab, mode, recordId }: FormViewProps) {
   const theme = useTheme();
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>(['null']);
   const [selectedTab, setSelectedTab] = useState<string>('');
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
 
   const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
 
   const { fields, groups } = useFormFields(tab);
-  const { reset, setValue, ...form } = useForm({ values: initialState });
+  const {
+    formInitialization,
+    refetch,
+    loading: loadingFormInitialization,
+  } = useFormInitialization({
+    tab,
+    mode: mode,
+    recordId,
+  });
+  const { registerActions } = useToolbarContext();
+
+  const initialState = useFormInitialState(formInitialization) || undefined;
+
+  const { reset, setValue, ...form } = useForm({ values: initialState as EntityData });
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
@@ -117,11 +133,13 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
       if (mode === FormMode.EDIT) {
         reset({ ...initialState, ...data });
       } else {
-        router.replace(String(data.id));
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('recordId', String(data.id));
+        history.pushState(null, '', `?${params.toString()}`);
       }
       showSuccessModal('Saved');
     },
-    [initialState, mode, reset, router, showSuccessModal],
+    [initialState, mode, reset, searchParams, showSuccessModal],
   );
 
   const onError = useCallback(
@@ -153,11 +171,29 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
     [expandedSections],
   );
 
-  const handleRefresh = useCallback(() => {
-    refetch?.();
-    reset();
-  }, [refetch, reset])
+  const onReset = useCallback(async () => {
+    refetch();
+  }, [refetch]);
 
+  useEffect(() => {
+    if (!initialState) return;
+
+    Object.entries(initialState).forEach(([key, value]) => {
+      if (!value) {
+        initialState[key] = '';
+      }
+    });
+
+    reset({ ...initialState });
+  }, [initialState, reset]);
+
+  useEffect(() => {
+    registerActions({ save: save, refresh: onReset, new: onReset });
+  }, [onReset, registerActions, save]);
+
+  if (loading || loadingFormInitialization) {
+    return <Spinner />;
+  }
   return (
     <FormProvider setValue={setValue} reset={reset} {...form}>
       <form
@@ -165,9 +201,6 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
           loading ? 'opacity-50 select-none cursor-progress cursor-to-children' : ''
         }`}
         onSubmit={save}>
-        <div className="pl-2 pr-2">
-          <Toolbar windowId={windowMetadata.id} tabId={tab.id} isFormView={true} onSave={save} onRefresh={handleRefresh}/>
-        </div>
         <div className="flex-shrink-0 pl-2 pr-2">
           <div className="mb-2">
             {statusModal.open && (
