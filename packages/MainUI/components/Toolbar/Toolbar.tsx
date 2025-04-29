@@ -38,7 +38,7 @@ import { useUserContext } from '@/hooks/useUserContext';
 import TabContextProvider from '@/contexts/tab';
 import { compileExpression } from '../Form/FormView/selectors/BaseSelector';
 
-const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave, onRefresh }) => {
+const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false }) => {
   const [openModal, setOpenModal] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
@@ -81,8 +81,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   } = useToolbarConfig({
     windowId,
     tabId,
-    onSave,
-    onRefresh,
     parentId,
     isFormView,
   });
@@ -191,11 +189,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   }, []);
 
   const handleCompleteRefresh = useCallback(async () => {
-    if (onRefresh) {
-      onRefresh();
-      clearSelections(tab.id);
-    }
-  }, [onRefresh, clearSelections, tab.id]);
+    clearSelections(tab.id);
+  }, [clearSelections, tab.id]);
 
   const toolbarConfig = useMemo(() => {
     const buttons = toolbar?.buttons ?? [];

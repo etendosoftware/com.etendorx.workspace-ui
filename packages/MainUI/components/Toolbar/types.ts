@@ -45,8 +45,6 @@ export interface ToolbarProps {
   tabId?: string;
   onSearch?: (value: string) => void;
   isFormView?: boolean;
-  onSave?: () => void;
-  onRefresh?: () => void;
 }
 
 export interface ProcessResponse {

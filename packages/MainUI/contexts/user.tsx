@@ -255,10 +255,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
     if (!token) {
       return;
     }
-
-    if (lastRole != currentRole) {
-      navigate('/');
-    }
   }, [currentRole, lastRole, navigate, token]);
 
   if (!ready) {

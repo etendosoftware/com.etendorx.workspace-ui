@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { BUTTON_IDS } from '../../constants/Toolbar';
 import { useSearch } from '../../contexts/searchContext';
 import { useMetadataContext } from '../useMetadataContext';
@@ -8,27 +7,22 @@ import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { logger } from '@/utils/logger';
 import { useTranslation } from '../useTranslation';
 import { useStatusModal } from './useStatusModal';
+import { useSearchParams } from 'next/navigation';
+import { useToolbarContext } from '@/contexts/ToolbarContext';
 
 export const useToolbarConfig = ({
-  windowId,
   tabId,
-  onSave,
-  onRefresh,
-  parentId,
 }: {
   windowId?: string;
   tabId?: string;
-  onSave?: () => void;
-  onRefresh?: () => void;
   parentId?: string | null;
   isFormView?: boolean;
 }) => {
-  const router = useRouter();
   const { setSearchQuery } = useSearch();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const { setShowTabContainer, tabs, selected, removeRecord, getSelectedIds } = useMetadataContext();
-
+  const searchParams = useSearchParams();
   const {
     statusModal,
     confirmAction,
@@ -40,6 +34,7 @@ export const useToolbarConfig = ({
     hideStatusModal,
   } = useStatusModal();
   const { t } = useTranslation();
+  const { onRefresh, onSave, onNew } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -96,9 +91,13 @@ export const useToolbarConfig = ({
       if (isDeleting) return;
 
       switch (action) {
-        case BUTTON_IDS.NEW:
-          router.push(`/window/${windowId}/${tabId}/NewRecord?parentId=${parentId ?? null}`);
+        case BUTTON_IDS.NEW: {
+          const params = new URLSearchParams(searchParams.toString());
+          params.set('recordId_' + tab?.id, 'new');
+          history.pushState(null, '', `?${params.toString()}`);
+          onNew?.();
           break;
+        }
         case BUTTON_IDS.FIND:
           setSearchOpen(true);
           break;
@@ -144,14 +143,12 @@ export const useToolbarConfig = ({
     },
     [
       isDeleting,
-      router,
-      windowId,
-      tabId,
-      parentId,
       setShowTabContainer,
+      onNew,
       onSave,
       tab,
       onRefresh,
+      searchParams,
       selectedIds,
       t,
       selectedRecord?._identifier,
