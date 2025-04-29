@@ -6,12 +6,12 @@ import { UseFormHandleSubmit } from 'react-hook-form';
 import { buildFormPayload, buildQueryString } from '@/utils';
 
 export interface UseFormActionParams {
-  windowMetadata: WindowMetadata;
+  windowMetadata?: WindowMetadata;
   tab: Tab;
   mode: FormMode;
   onSuccess: (data: EntityData) => void;
   onError: (data: string) => void;
-  initialState: EntityData;
+  initialState?: EntityData;
   submit: UseFormHandleSubmit<EntityData, undefined>;
 }
 
