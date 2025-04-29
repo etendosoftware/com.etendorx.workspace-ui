@@ -19,6 +19,7 @@ export const useStyle = () => {
           padding: '0 0.25rem',
           borderRadius: '6.25rem',
           background: `var(--Neutral-0, ${theme.palette.baselineColor.transparentNeutral[5]})`,
+          marginBottom: '0.25rem',
         },
         RightItems: {
           height: '3rem',

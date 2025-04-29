@@ -27,7 +27,7 @@ const Navigation: React.FC = () => {
   const { t } = useTranslation();
 
   return (
-    <Nav>
+    <Nav title={t('common.notImplemented')}>
       <Waterfall
         menuItems={menuItems}
         initialPeople={initialPeople}
