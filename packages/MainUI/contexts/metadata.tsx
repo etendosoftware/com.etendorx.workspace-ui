@@ -6,7 +6,6 @@ import { groupTabsByLevel } from '@workspaceui/etendohookbinder/src/utils/metada
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useParams } from 'next/navigation';
 import { WindowParams } from '../app/types';
-import { useLanguage } from '../hooks/useLanguage';
 import { IMetadataContext } from './types';
 import { useDatasourceContext } from './datasourceContext';
 import { useSetSession } from '@/hooks/useSetSession';
@@ -20,7 +19,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const [error, setError] = useState<Error>();
   const [selected, setSelected] = useState<IMetadataContext['selected']>({});
   const [groupedTabs, setGroupedTabs] = useState<Etendo.Tab[][]>([]);
-  const { language } = useLanguage();
   const [selectedMultiple, setSelectedMultiple] = useState<IMetadataContext['selectedMultiple']>({});
   const [showTabContainer, setShowTabContainer] = useState(false);
   const [activeTabLevels, setActiveTabLevels] = useState<number[]>([0]);
@@ -143,38 +141,35 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [groupedTabs, selected, setSession],
   );
 
-  const selectMultiple = useCallback(
-    (records: Record<string, string>[], tab: Tab, replace: boolean = false) => {
-      const tabId = tab.id;
+  const selectMultiple = useCallback((records: Record<string, string>[], tab: Tab, replace: boolean = false) => {
+    const tabId = tab.id;
 
-      setSelectedMultiple(prev => {
-        const currentTabSelections = replace ? {} : prev[tabId] || {};
+    setSelectedMultiple(prev => {
+      const currentTabSelections = replace ? {} : prev[tabId] || {};
 
-        const updatedSelections = { ...currentTabSelections };
+      const updatedSelections = { ...currentTabSelections };
 
-        records.forEach((record) => {
-          updatedSelections[record.id] = record;
-        });
-
-        return {
-          ...prev,
-          [tabId]: updatedSelections,
-        };
+      records.forEach(record => {
+        updatedSelections[record.id] = record;
       });
 
-      // if (recordIds.length === 1) {
-      //   const recordId = recordIds[0];
-      //   const record = windowData?.tabs.find(t => t.id === tab.id)?.records?.[recordId] as
-      //     | Record<string, never>
-      //     | undefined;
+      return {
+        ...prev,
+        [tabId]: updatedSelections,
+      };
+    });
 
-      //   if (record) {
-      //     selectRecord(record, tab);
-      //   }
-      // }
-    },
-    [],
-  );
+    // if (recordIds.length === 1) {
+    //   const recordId = recordIds[0];
+    //   const record = windowData?.tabs.find(t => t.id === tab.id)?.records?.[recordId] as
+    //     | Record<string, never>
+    //     | undefined;
+
+    //   if (record) {
+    //     selectRecord(record, tab);
+    //   }
+    // }
+  }, []);
 
   const clearSelections = useCallback(
     (tabId: string) => {
@@ -234,7 +229,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       setLoading(true);
       setError(undefined);
 
-      Metadata.setLanguage(language);
       Metadata.clearWindowCache(windowId);
       const newWindowData = await Metadata.forceWindowReload(windowId);
 
@@ -245,7 +239,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     } finally {
       setLoading(false);
     }
-  }, [windowId, language]);
+  }, [windowId]);
 
   useEffect(() => {
     loadWindowData();

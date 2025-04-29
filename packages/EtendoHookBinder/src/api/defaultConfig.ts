@@ -10,7 +10,7 @@ const DEFAULT_CONFIG = {
   default: 'true',
 };
 
-export const setDefaultConfiguration = async (token: string, config: DefaultConfiguration): Promise<void> => {
+export const setDefaultConfiguration = async (config: DefaultConfiguration): Promise<void> => {
   const client = Metadata.kernelClient;
 
   const params = {

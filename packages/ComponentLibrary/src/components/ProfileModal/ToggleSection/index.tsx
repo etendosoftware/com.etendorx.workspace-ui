@@ -58,8 +58,8 @@ const SelectorList: React.FC<SelectorListProps> = ({
       const _warehouses = {} as Record<string, BaseWarehouse>;
       const role = roles.find(r => r.id === selectedRole.value);
 
-      role?.orgList.forEach(org => {
-        org.warehouseList.forEach(w => {
+      role?.organizations.forEach(org => {
+        org.warehouses.forEach(w => {
           _warehouses[w.id] = w;
         });
       });
@@ -84,11 +84,13 @@ const SelectorList: React.FC<SelectorListProps> = ({
 
   const warehouseOptions = useMemo(
     () =>
-      isSystem ? [] : warehouses.map(warehouse => ({
-        title: warehouse.name,
-        value: warehouse.id,
-        id: warehouse.id,
-      })),
+      isSystem
+        ? []
+        : warehouses.map(warehouse => ({
+            title: warehouse.name,
+            value: warehouse.id,
+            id: warehouse.id,
+          })),
     [isSystem, warehouses],
   );
 
@@ -151,6 +153,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               setValue={setPassword}
               leftIcon={<LockOutlined fill={defaultFill} />}
               autoComplete="new-password"
+              disabled
             />
             <InputPassword
               label={newPasswordLabel}
@@ -158,6 +161,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               setValue={setNewPassword}
               leftIcon={<LockOutlined fill={defaultFill} />}
               autoComplete="new-password"
+              disabled
             />
             <InputPassword
               label={confirmPasswordLabel}
@@ -165,6 +169,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               setValue={setNewPasswordConfirmation}
               leftIcon={<LockOutlined fill={defaultFill} />}
               autoComplete="new-password"
+              disabled
             />
           </form>
         </Grid>

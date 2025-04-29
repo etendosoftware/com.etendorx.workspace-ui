@@ -106,7 +106,8 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
         onClick={handleClick}
         style={styles.iconButtonStyles}
         sx={sx.hoverStyles}
-        tooltip={tooltipButtonProfile}>
+        tooltip={tooltipButtonProfile}
+        disabled={true}>
         {icon}
       </IconButton>
       <Menu

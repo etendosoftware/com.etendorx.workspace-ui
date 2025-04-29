@@ -21,11 +21,11 @@ export const login = async (username: string, password: string): Promise<LoginRe
 
     const data = result.data;
 
-    if (data.status === 'error') {
-      throw new Error(data.status);
-    } else if (data.status !== 'success' || !data.token || !Array.isArray(data.roleList)) {
-      throw new Error('Invalid server response');
-    } else return data;
+    if (data.token) {
+      return data;
+    } else {
+      throw new Error('Invalid')
+    }
   } catch (error) {
     console.error('Login error:', error);
     throw error;

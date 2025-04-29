@@ -4,6 +4,7 @@ const es = {
     cancel: 'Cancelar',
     confirm: 'Confirmar',
     close: 'Cerrar',
+    closing: 'Cerrando...',
     execute: 'Ejecutar',
     register: 'Registrar',
     save: 'Guardar',
@@ -13,6 +14,8 @@ const es = {
     retry: 'Reintentar',
     processes: 'Procesos disponibles',
     clear: 'Limpiar Seleccion',
+    processTitle: 'Titulo del proceso',
+    notImplemented: 'Esta funcionalidad no está disponible aun',
   },
   forms: {
     sections: {

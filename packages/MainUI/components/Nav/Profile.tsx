@@ -3,8 +3,8 @@ import { UserContext } from '../../contexts/user';
 import { logger } from '../../utils/logger';
 import { ProfileWrapperProps } from './types';
 import ProfileModal from '@workspaceui/componentlibrary/src/components/ProfileModal/ProfileModal';
-import { useLanguage } from '../../hooks/useLanguage';
-import { DefaultConfiguration, Language } from '../../contexts/types';
+import { Language } from '../../contexts/types';
+import { useLanguage } from '@/contexts/language';
 
 const ProfileWrapper = (props: ProfileWrapperProps) => {
   const {
@@ -14,7 +14,6 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
     currentWarehouse,
     changeProfile,
     roles,
-    token,
     languages,
   } = useContext(UserContext);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
@@ -30,13 +29,6 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
     setSaveAsDefault(event.target.checked);
   }, []);
 
-  const handleLanguageChange = useCallback(
-    (l: Language) => {
-      setLanguage(l);
-    },
-    [setLanguage],
-  );
-
   const languagesWithFlags = useMemo(() => {
     return languages.map(lang => ({
       ...lang,
@@ -47,15 +39,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
 
   const flagString = getFlag(language);
 
-  const handleSetDefaultConfiguration = useCallback(
-    (config: DefaultConfiguration) => {
-      if (!token) throw new Error('No token available');
-      return setDefaultConfiguration(token, config);
-    },
-    [setDefaultConfiguration, token],
-  );
-
-  if (!currentRole || !currentWarehouse) {
+  if (!currentRole) {
     return null;
   }
 
@@ -66,12 +50,12 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
       currentWarehouse={currentWarehouse}
       roles={roles}
       saveAsDefault={saveAsDefault}
-      onLanguageChange={handleLanguageChange}
+      onLanguageChange={setLanguage}
       language={language}
       languagesFlags={flagString}
       onSaveAsDefaultChange={handleSaveAsDefaultChange}
       changeProfile={changeProfile}
-      onSetDefaultConfiguration={handleSetDefaultConfiguration}
+      onSetDefaultConfiguration={setDefaultConfiguration}
       logger={logger}
       onSignOff={handleSignOff}
       languages={languagesWithFlags}

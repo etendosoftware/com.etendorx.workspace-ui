@@ -39,6 +39,7 @@ export interface FormViewProps {
   tab: Tab;
   mode: FormMode;
   initialState: EntityData;
+  refetch?: () => void;
 }
 
 export type FieldValue = string | number | boolean | string[] | Date | null | FieldDefinition['value'];

@@ -38,7 +38,7 @@ function Page({ window, tab }: { window: WindowMetadata; tab: Tab }) {
     return null;
   }
 
-  return <FormView mode={FormMode.EDIT} tab={tab} window={window} initialState={initialState} />;
+  return <FormView mode={FormMode.EDIT} tab={tab} window={window} initialState={initialState} refetch={refetch} />;
 }
 
 export default function EditRecordPage() {
