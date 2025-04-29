@@ -2,19 +2,23 @@ import { useState, useCallback, useMemo } from 'react';
 import { ProcessResponse } from '../../components/Toolbar/types';
 import { ExecuteProcessParams } from './types';
 import { ProcessButton, ProcessButtonType } from '@/components/ProcessModal/types';
-import { useMetadataContext } from '../useMetadataContext';
 import { useParams } from 'next/navigation';
+import { useTabContext } from '@/contexts/tab';
+import { useSelected } from '@/contexts/selected';
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const { tab, selected } = useMetadataContext();
+  const { tab } = useTabContext();
+  const { record } = useSelected();
   const { recordId } = useParams<{ recordId: string }>();
 
   const currentRecord = useMemo(() => {
-    const tabLevel = tab?.level ?? 0;
-    return selected[tabLevel] || null;
-  }, [tab?.level, selected]);
+    const tabLevel = tab.level ?? 0;
+    console.debug(record);
+
+    return record[tabLevel] || null;
+  }, [tab.level, record]);
 
   const executeProcessAction = useCallback(async (_button: ProcessButton): Promise<ProcessResponse> => {
     return new Promise((resolve, reject) => {

@@ -85,7 +85,7 @@ export const parseDynamicExpression = (expr: string) => {
   return expr4;
 };
 
-export const buildQueryString = ({
+export const buildFormQueryParams = ({
   mode,
   windowMetadata,
   tab,
@@ -128,18 +128,6 @@ export const buildFormPayload = ({
   },
   oldValues,
   csrfToken,
-});
-
-export const buildRequestOptions = (
-  values: EntityData,
-  initialState: EntityData,
-  mode: FormMode,
-  userId: string,
-  signal: AbortSignal,
-) => ({
-  signal,
-  method: 'POST',
-  body: buildFormPayload({ values, oldValues: initialState, mode, csrfToken: userId }),
 });
 
 export const formatNumber = (value: number) => new Intl.NumberFormat(navigator.language).format(value);

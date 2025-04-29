@@ -11,6 +11,7 @@ import {
   CurrentRole,
   CurrentOrganization,
   SessionResponse,
+  EntityData,
 } from '@workspaceui/etendohookbinder/src/api/types';
 import { type Etendo } from '@workspaceui/etendohookbinder/src/api/metadata';
 
@@ -42,7 +43,7 @@ export interface IUserContext {
   login: (username: string, password: string) => Promise<void>;
   changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | void>;
   token: string | null;
-  roles: SessionResponse["roles"];
+  roles: SessionResponse['roles'];
   currentRole: CurrentRole | undefined;
   profile: ProfileInfo;
   currentWarehouse: CurrentWarehouse | undefined;
@@ -56,32 +57,39 @@ export interface IUserContext {
   setSession: React.Dispatch<React.SetStateAction<ISession>>;
 }
 
+// export interface IMetadataContext {
+//   getWindow: (windowId: string) => Promise<Etendo.WindowMetadata>;
+//   getColumns: (tabId: string) => Etendo.Column[];
+//   windowId: string;
+//   recordId: string;
+//   loading: boolean;
+//   error: Error | undefined;
+//   groupedTabs: Etendo.Tab[][];
+//   selectedMultiple: Record<string, Record<string, EntityData>>;
+//   selectMultiple: (records: EntityData[], tab: Tab) => void;
+//   clearSelections: (tabId: string) => void;
+//   tabs: Tab[];
+//   tab?: Tab;
+//   columns?: Record<string, Field>;
+//   showTabContainer: boolean;
+//   setShowTabContainer: (value: boolean | ((prev: boolean) => boolean)) => void;
+//   activeTabLevels: number[];
+//   setActiveTabLevels: (value: number[] | ((prev: number[]) => number[])) => void;
+//   closeTab: (level: number) => void;
+//   window?: Etendo.WindowMetadata;
+//   refetch: () => Promise<void>;
+//   removeRecord: (tabId: string, recordId: string) => void;
+// }
+
 export interface IMetadataContext {
-  getWindow: (windowId: string) => Promise<Etendo.WindowMetadata>;
-  getColumns: (tabId: string) => Etendo.Column[];
   windowId: string;
   recordId: string;
   loading: boolean;
   error: Error | undefined;
   groupedTabs: Etendo.Tab[][];
-  selectRecord: (record: Record<string, never>, tab: Tab) => void;
-  selected: Record<string, Record<string, never>>;
-  selectedMultiple: Record<string, Record<string, Record<string, any>>>;
-  setSelectedMultiple: React.Dispatch<React.SetStateAction<Record<string, Record<string, Record<string, any>>>>>;
-  selectMultiple: (records: Record<string, unknown>[], tab: Tab) => void;
-  isSelected: (recordId: string, tabId: string) => boolean;
-  clearSelections: (tabId: string) => void;
-  getSelectedCount: (tabId: string) => number;
-  getSelectedIds: (tabId: string) => string[];
-  tabs: Tab[];
-  tab?: Tab;
-  columns?: Record<string, Field>;
-  showTabContainer: boolean;
-  setShowTabContainer: (value: boolean | ((prev: boolean) => boolean)) => void;
-  activeTabLevels: number[];
-  setActiveTabLevels: (value: number[] | ((prev: number[]) => number[])) => void;
-  closeTab: (level: number) => void;
-  window?: Etendo.WindowMetadata;
+  window: Etendo.WindowMetadata | undefined;
+  tabs: Etendo.Tab[];
+  tab: Etendo.Tab | undefined;
   refetch: () => Promise<void>;
   removeRecord: (tabId: string, recordId: string) => void;
 }

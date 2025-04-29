@@ -646,6 +646,7 @@ type EntityKey = string;
 type EntityValue = string | number | boolean | symbol;
 
 export interface EntityData {
+  id: string;
   [key: EntityKey]: EntityValue;
 }
 

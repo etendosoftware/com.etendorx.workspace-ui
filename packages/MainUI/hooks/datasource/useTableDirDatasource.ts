@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { type Field, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { EntityData, type Field, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { useFormContext } from 'react-hook-form';
 import { useParams } from 'next/navigation';
@@ -17,7 +17,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
   const { windowId } = useParams<{ windowId: string }>();
   const { getValues, watch } = useFormContext();
   const { tab } = useTabContext();
-  const [records, setRecords] = useState<Record<string, string>[]>([]);
+  const [records, setRecords] = useState<EntityData[]>([]);
   const [loading, setLoading] = useState(false);
   const parentData = useFormParent(ParentFieldName.INPUT_NAME);
   const [error, setError] = useState<Error>();

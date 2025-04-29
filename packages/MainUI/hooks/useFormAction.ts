@@ -3,7 +3,7 @@ import { EntityData, FormMode, Tab, WindowMetadata } from '@workspaceui/etendoho
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useUserContext } from './useUserContext';
 import { UseFormHandleSubmit } from 'react-hook-form';
-import { buildFormPayload, buildQueryString } from '@/utils';
+import { buildFormPayload, buildFormQueryParams } from '@/utils';
 
 export interface UseFormActionParams {
   windowMetadata: WindowMetadata;
@@ -34,7 +34,7 @@ export const useFormAction = ({
       try {
         setLoading(true);
 
-        const queryStringParams = buildQueryString({ mode, windowMetadata, tab });
+        const queryStringParams = buildFormQueryParams({ mode, windowMetadata, tab });
         const body = buildFormPayload({ values, oldValues: initialState, mode, csrfToken: userId });
         const url = `${tab.entityName}?${queryStringParams}`;
         const options = { signal: controller.current.signal, method: 'POST', body };

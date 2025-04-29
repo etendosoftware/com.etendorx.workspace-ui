@@ -9,14 +9,12 @@ import {
   MRT_TableInstance,
 } from 'material-react-table';
 import { useStyle } from './styles';
-import { type Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { EntityData, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import { useParams, useRouter } from 'next/navigation';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { Button } from '@mui/material';
-import { WindowParams } from '../../app/types';
 import { useSearch } from '../../contexts/searchContext';
 import TopToolbar from './top-toolbar';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
@@ -46,13 +44,10 @@ const DynamicTableContent = memo(
     updateColumnFilters,
     removeRecordLocally,
   }: DynamicTableProps) => {
-    const { selected, selectMultiple, clearSelections, getSelectedCount, refetch } = useMetadataContext();
-    const { windowId } = useParams<WindowParams>();
-    const navigate = useRouter().push;
+    const { selectMultiple, clearSelections, refetch } = useMetadataContext();
     const { sx } = useStyle();
     const { searchQuery } = useSearch();
     const tabId = tab.id;
-    const selectedCount = useMemo(() => getSelectedCount(tabId), [getSelectedCount, tabId]);
     const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
     const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
     const contentRef = useRef<HTMLDivElement>(null);
@@ -96,31 +91,26 @@ const DynamicTableContent = memo(
 
     const handleRowSelection = useCallback<typeof setRowSelection>(updater => {
       if (typeof updater == 'function') {
-        setRowSelection(prev => {
-          const result = updater(prev);
-          return result;
-        });
+        setRowSelection(updater);
       } else {
-        alert('not a f');
         setRowSelection(prev => ({ ...prev, ...updater }));
       }
     }, []);
 
     const rowProps = useCallback<RowProps>(
       ({ row, table }) => {
-        const record = row.original as Record<string, never>;
         const isSelected = row.getIsSelected();
 
         return {
           onClick: (event: React.MouseEvent) => {
-            if ((event.target as HTMLElement).closest('.MuiCheckbox-root')) {
-              return;
+            if (!event.ctrlKey) {
+              setRowSelection({});
             }
 
             row.toggleSelected();
           },
           onDoubleClick: () => {
-            navigate(`${windowId}/${tab.id}/${record.id}?parentId=${selected[tab.level - 1]?.id || null}`);
+            // navigate(`${windowId}/${tab.id}/${record.id}?parentId=${selected[tab.level - 1]?.id || null}`);
           },
           sx: {
             ...(isSelected && {
@@ -132,19 +122,19 @@ const DynamicTableContent = memo(
           table,
         };
       },
-      [navigate, selected, sx.rowSelected, tab, windowId],
+      [sx.rowSelected],
     );
 
-    const CustomTopToolbar = useCallback(() => {
+    const renderTopToolbar = useCallback(({ table }: { table: MRT_TableInstance<Record<string, unknown>> }) => {
       return (
         <TopToolbar
           filterActive={isImplicitFilterApplied}
           toggleFilter={handleFilterToggle}
-          selectedCount={selectedCount}
+          selectedCount={table.getSelectedRowModel().rows.length}
           onClearSelection={handleClearSelections}
         />
       );
-    }, [isImplicitFilterApplied, handleFilterToggle, selectedCount, handleClearSelections]);
+    }, [handleClearSelections, handleFilterToggle, isImplicitFilterApplied]);
 
     const table = useMaterialReactTable({
       muiTablePaperProps: {
@@ -164,7 +154,7 @@ const DynamicTableContent = memo(
       positionToolbarAlertBanner: 'none',
       muiTableBodyRowProps: rowProps,
       enablePagination: false,
-      renderTopToolbar: <CustomTopToolbar />,
+      renderTopToolbar,
       renderBottomToolbar:
         tab.uIPattern == 'STD' && !searchQuery ? (
           <Button sx={sx.fetchMore} onClick={fetchMore}>
@@ -193,7 +183,7 @@ const DynamicTableContent = memo(
 
     useEffect(() => {
       selectMultiple(
-        getSelectedRowModel().rows.map(row => row.original),
+        getSelectedRowModel().rows.map(row => row.original as EntityData),
         tab,
       );
     }, [getSelectedRowModel, selectMultiple, tab, rowSelection]);
@@ -232,13 +222,7 @@ const DynamicTableContent = memo(
 DynamicTableContent.displayName = 'DynamicTableContent';
 
 function DynamicTable({ tab, ...data }: DynamicTableProps) {
-  const { selected } = useMetadataContext();
-
-  if (selected && (selected[tab?.level - 1] || tab?.level === 0)) {
-    return <DynamicTableContent tab={tab} {...data} />;
-  }
-
-  return null;
+  return <DynamicTableContent tab={tab} {...data} />;
 }
 
 export default DynamicTable;

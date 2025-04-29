@@ -8,6 +8,7 @@ import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { logger } from '@/utils/logger';
 import { useTranslation } from '../useTranslation';
 import { useStatusModal } from './useStatusModal';
+import { useSelected } from '@/contexts/selected';
 
 export const useToolbarConfig = ({
   windowId,
@@ -27,7 +28,8 @@ export const useToolbarConfig = ({
   const { setSearchQuery } = useSearch();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const { setShowTabContainer, tabs, selected, removeRecord, getSelectedIds } = useMetadataContext();
+  const { tabs, removeRecord } = useMetadataContext();
+  const { record: selected } = useSelected();
 
   const {
     statusModal,
@@ -48,7 +50,7 @@ export const useToolbarConfig = ({
   }, [tabs, tabId]);
 
   const selectedRecord = tab ? selected[tab.level] : undefined;
-  const selectedIds = useMemo(() => (tab ? getSelectedIds(tab.id) : []), [getSelectedIds, tab]);
+  const selectedIds = useMemo(() => (tab && selected[tab.id] ? Object.keys(selected[tab.id]) : []), [selected, tab]);
 
   const { deleteRecord, loading: deleteLoading } = useDeleteRecord({
     tab: tab as Tab,

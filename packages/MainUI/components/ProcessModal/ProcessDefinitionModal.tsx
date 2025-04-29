@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { FormProvider, useForm } from 'react-hook-form';
-import { useMetadataContext } from '@/hooks/useMetadataContext';
 import { useTabContext } from '@/contexts/tab';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { executeStringFunction } from '@/utils/functions';
@@ -10,15 +9,15 @@ import CloseIcon from '../../../ComponentLibrary/src/assets/icons/x.svg';
 import BaseSelector from './selectors/BaseSelector';
 import { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps } from './types';
 import Modal from '../Modal';
+import { useSelected } from '@/contexts/selected';
 
 function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
   const onProcess = button.processDefinition.onProcess;
   const onLoad = button.processDefinition.onLoad;
-  const { selectedMultiple } = useMetadataContext();
   const { tab } = useTabContext();
   const tabId = tab?.id || '';
-  const selectedRecords = selectedMultiple[tabId];
+  const { records } = useSelected();
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
   const [response, setResponse] = useState<{
     msgText: string;
@@ -47,7 +46,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           buttonValue: 'DONE',
           windowId: tab.windowId,
           entityName: tab.entityName,
-          recordIds: Object.keys(selectedRecords),
+          recordIds: Object.keys(records),
           ...form.getValues(),
         });
 
@@ -71,14 +70,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setIsExecuting(false);
       }
     }
-  }, [button.processDefinition, form, onProcess, selectedRecords, tab, onSuccess, t]);
+  }, [button.processDefinition, form, onProcess, records, tab, onSuccess, t]);
 
   useEffect(() => {
     const fetchOptions = async () => {
       if (onLoad && open && tab) {
         try {
           const result = await executeStringFunction(onLoad, { Metadata }, button.processDefinition, {
-            selectedRecords,
+            records,
             tabId,
           });
           setParameters(prev => {
@@ -99,7 +98,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     };
 
     fetchOptions();
-  }, [button.processDefinition, onLoad, open, selectedRecords, tab, tabId]);
+  }, [button.processDefinition, onLoad, open, records, tab, tabId]);
 
   useEffect(() => {
     if (open) {
