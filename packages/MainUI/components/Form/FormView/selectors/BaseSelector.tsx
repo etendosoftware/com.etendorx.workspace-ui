@@ -10,6 +10,7 @@ import { useUserContext } from '@/hooks/useUserContext';
 import { useParams } from 'next/navigation';
 import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { useTabContext } from '@/contexts/tab';
+import useDebounce from '@/hooks/useThrottle';
 
 export const compileExpression = (expression: string) => {
   try {
@@ -27,12 +28,14 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
   const { recordId } = useParams<{ recordId: string }>();
   const { session } = useUserContext();
-  const executeCallout = useCallout({ field, rowId: recordId });
+  const executeCalloutBase = useCallout({ field, rowId: recordId });
+  const debouncedCallout = useDebounce(executeCalloutBase, 300);
   const value = watch(field.hqlName);
-  const valueTracking = useRef(value);
   const values = watch();
+  const previousValue = useRef(value);
   const ready = useRef(false);
   const fieldsByHqlName = useMemo(() => tab?.fields || {}, [tab?.fields]);
+  const optionData = watch(`${field.hqlName}_data`);
 
   const isDisplayed = useMemo(() => {
     if (!field.displayed) return false;
@@ -97,14 +100,16 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
   );
 
   const runCallout = useCallback(async () => {
-    valueTracking.current = value;
+    previousValue.current = value;
+
+    console.debug(previousValue, field.column.callout);
 
     if (!tab || !field.column.callout) return;
 
     try {
       const entityKeyColumn = tab.fields['id'].columnName;
       const payload = buildPayloadByInputName(getValues(), fieldsByHqlName);
-      const data = await executeCallout({
+      const calloutData = {
         ...session,
         ...payload,
         inpKeyName: fieldsByColumnName[entityKeyColumn].inputName,
@@ -114,7 +119,16 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         keyColumnName: entityKeyColumn,
         _entityName: tab.entityName,
         inpwindowId: tab.windowId,
-      });
+        inpmProductId_CURR: session['$C_Currency_ID'],
+        inpmProductId_UOM: session['#C_UOM_ID'],
+      } as Record<string, string>;
+
+      if (optionData) {
+        calloutData.inpmProductId_PSTD = String(optionData.netListPrice);
+        calloutData.inpmProductId_PLIST = String(optionData.netListPrice);
+      }
+
+      const data = await debouncedCallout(calloutData);
 
       if (data) {
         applyColumnValues(data.columnValues);
@@ -124,20 +138,21 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
       logger.error('Callout execution failed:', err);
     }
   }, [
-    applyAuxiliaryInputValues,
-    applyColumnValues,
-    executeCallout,
-    field.column.callout,
-    fieldsByColumnName,
-    fieldsByHqlName,
-    getValues,
-    session,
-    tab,
     value,
+    field.column.callout,
+    tab,
+    getValues,
+    fieldsByHqlName,
+    session,
+    fieldsByColumnName,
+    optionData,
+    debouncedCallout,
+    applyColumnValues,
+    applyAuxiliaryInputValues,
   ]);
 
   useEffect(() => {
-    if (ready.current && valueTracking.current != value) {
+    if (ready.current && previousValue.current != value) {
       runCallout();
     } else {
       ready.current = true;

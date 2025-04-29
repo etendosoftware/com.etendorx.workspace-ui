@@ -3,6 +3,7 @@ import { EntityData, FormInitializationResponse } from '@workspaceui/etendohookb
 import useFormParent, { ParentFieldName } from './useFormParent';
 import { useTabContext } from '@/contexts/tab';
 import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { isDateField, formatDateFromEtendo } from '@/utils/formUtils';
 
 export const useFormInitialState = (formInitialization?: FormInitializationResponse | null) => {
   const { tab } = useTabContext();
@@ -16,20 +17,36 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
 
     Object.entries(formInitialization.auxiliaryInputValues).forEach(([key, { value }]) => {
       const newKey = fieldsByColumnName?.[key]?.hqlName ?? key;
+
       acc[newKey] = value;
     });
 
-    Object.entries(formInitialization.columnValues).forEach(([key, { value, identifier }]) => {
-      const newKey = fieldsByColumnName?.[key]?.hqlName ?? key;
-      acc[newKey] = value;
+    Object.entries(formInitialization.columnValues).forEach(([key, { value, classicValue, identifier }]) => {
+      const field = fieldsByColumnName?.[key];
+      const newKey = field?.hqlName ?? key;
+
+      if (field && isDateField(field)) {
+        acc[newKey] = formatDateFromEtendo(classicValue);
+      } else {
+        acc[newKey] = value;
+      }
 
       if (identifier) {
         acc[newKey + '$_identifier'] = identifier;
       }
     });
 
-    return { ...acc, ...parentData };
-  }, [fieldsByColumnName, formInitialization, parentData]);
+    const processedParentData = { ...parentData };
+    if (parentData) {
+      Object.entries(parentData).forEach(([key, value]) => {
+        if (typeof value === 'string' && tab?.fields[key] && isDateField(tab?.fields[key])) {
+          processedParentData[key] = formatDateFromEtendo(value as string);
+        }
+      });
+    }
+
+    return { ...acc, ...processedParentData };
+  }, [fieldsByColumnName, formInitialization, parentData, tab?.fields]);
 
   return initialState;
 };
