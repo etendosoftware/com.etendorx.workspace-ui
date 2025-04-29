@@ -279,20 +279,7 @@ export enum WindowType {
 }
 
 export interface LoginResponse {
-  status: string;
   token: string;
-  roleList: Array<{
-    id: string;
-    name: string;
-    orgList: Array<{
-      id: string;
-      name: string;
-      warehouseList: Array<{
-        id: string;
-        name: string;
-      }>;
-    }>;
-  }>;
 }
 
 export interface ISession extends Record<string, string | number | boolean | null> {}
@@ -313,14 +300,33 @@ export interface User {
   defaultOrganization$_identifier: string;
   defaultRole$_identifier: string;
 }
+
 export interface SessionResponse {
   user: User;
   currentRole: CurrentRole;
   currentOrganization: CurrentOrganization;
   currentClient: CurrentClient;
-  currentWarehouse: CurrentWarehouse;
+  currentWarehouse?: CurrentWarehouse;
+  roles: RoleList;
   languages: Languages;
   attributes: { [key: string]: null | string };
+}
+
+export type RoleList = {
+  id: string;
+  name: string;
+  organizations: Organization[];
+}[];
+
+export interface Organization {
+  id: string;
+  name: string;
+  warehouses: Warehouse[];
+}
+
+export interface Warehouse {
+  id: string;
+  name: string;
 }
 
 export interface CurrentClient {
@@ -493,36 +499,11 @@ export interface CurrentWarehouse {
 }
 
 export interface Languages {
-  en_US: EnUS;
-}
-
-export interface EnUS {
-  _identifier: string;
-  _entityName: string;
-  $ref: string;
-  id: string;
-  language: string;
-  client: string;
-  client$_identifier: string;
-  organization: string;
-  organization$_identifier: string;
-  active: boolean;
-  creationDate: Date;
-  createdBy: string;
-  createdBy$_identifier: string;
-  updated: Date;
-  updatedBy: string;
-  updatedBy$_identifier: string;
-  name: string;
-  iSOLanguageCode: string;
-  iSOCountryCode: string;
-  baseLanguage: boolean;
-  systemLanguage: boolean;
-  processNow: null;
-  pixelSize: number;
-  translatedBy: string;
-  rTLLanguage: boolean;
-  recordTime: number;
+  [key: string]: {
+    id: string;
+    name: string;
+    language: string;
+  };
 }
 
 export interface User {
@@ -582,46 +563,6 @@ export interface User {
   recordTime: number;
 }
 
-/* 
-{
-  "user": {
-  },
-  "role": {
-      "_identifier": "F&B International Group Admin",
-      "_entityName": "ADRole",
-      "$ref": "ADRole/42D0EEB1C66F497A90DD526DC597E6F0",
-      "id": "42D0EEB1C66F497A90DD526DC597E6F0",
-      "client": "23C59575B9CF467C9620760EB255B389",
-      "client$_identifier": "F&B International Group",
-      "organization": "0",
-      "organization$_identifier": "*",
-      "active": true,
-      "creationDate": "2013-07-04T23:45:45-03:00",
-      "createdBy": "0",
-      "createdBy$_identifier": "System",
-      "updated": "2013-07-04T23:45:45-03:00",
-      "name": "F&B International Group Admin",
-      "updatedBy": "0",
-      "updatedBy$_identifier": "System",
-      "description": "F&B International Group Admin",
-      "userLevel": " CO",
-      "currency": null,
-      "approvalAmount": 0,
-      "primaryTreeMenu": null,
-      "manual": false,
-      "processNow": false,
-      "clientAdmin": true,
-      "advanced": true,
-      "isrestrictbackend": false,
-      "forPortalUsers": false,
-      "portalAdmin": false,
-      "isWebServiceEnabled": true,
-      "template": false,
-      "recalculatePermissions": null,
-      "recordTime": 1735965470773
-  }
-}
- */
 export interface DefaultConfiguration {
   language?: string;
   client?: string;
@@ -700,7 +641,7 @@ export type FieldDefinition =
   | BaseFieldDefinition<SelectOption>;
 
 type EntityKey = string;
-type EntityValue = string | number | boolean | symbol;
+type EntityValue = string | number | boolean | symbol | null;
 
 export interface EntityData {
   [key: EntityKey]: EntityValue;
@@ -741,7 +682,7 @@ export interface ProcessBindings {
   ) => Promise<any>;
   onProcess: (
     process: ProcessDefinition,
-    params: { recordIds: string[]; windowId: string; entityName: string; buttonValue: any, [param: string]: unknown },
+    params: { recordIds: string[]; windowId: string; entityName: string; buttonValue: any; [param: string]: unknown },
   ) => Promise<any>;
   metadata: Record<string, unknown>;
 }

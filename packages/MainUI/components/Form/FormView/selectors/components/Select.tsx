@@ -6,7 +6,16 @@ import closeIconUrl from '../../../../../../ComponentLibrary/src/assets/icons/x.
 import ChevronDown from '../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
 import Image from 'next/image';
 
-function SelectCmp({ name, options, onFocus, isReadOnly, onLoadMore, loading = false, hasMore = true, field }: SelectProps) {
+function SelectCmp({
+  name,
+  options,
+  onFocus,
+  isReadOnly,
+  onLoadMore,
+  loading = false,
+  hasMore = true,
+  field,
+}: SelectProps) {
   const { register, setValue, watch } = useFormContext();
   const selectedValue = watch(name);
   const [selectedLabel, setSelectedLabel] = useState('');
@@ -26,12 +35,14 @@ function SelectCmp({ name, options, onFocus, isReadOnly, onLoadMore, loading = f
 
   const handleSelect = useCallback(
     (id: string, label: string) => {
+      const option = options.find(opt => opt.id === id);
+      setValue(`${name}_data`, option?.data);
       setValue(name, id);
       setSelectedLabel(label);
       setIsOpen(false);
       setHighlightedIndex(-1);
     },
-    [name, setValue],
+    [name, options, setValue],
   );
 
   const handleKeyDown = useCallback(
