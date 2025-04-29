@@ -93,7 +93,7 @@ export const useToolbarConfig = ({
       switch (action) {
         case BUTTON_IDS.NEW: {
           const params = new URLSearchParams(searchParams.toString());
-          params.set('recordId', 'new');
+          params.set('recordId_' + tab?.id, 'new');
           history.pushState(null, '', `?${params.toString()}`);
           onNew?.();
           break;

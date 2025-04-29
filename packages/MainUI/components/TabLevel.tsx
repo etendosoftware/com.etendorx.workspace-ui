@@ -103,6 +103,15 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
   const searchParams = useSearchParams();
   const recordId = searchParams.get('recordId') || '';
 
+  const tabEntries = Array.from(searchParams.entries())
+    .filter(([key, _]) => key.startsWith('tab_'))
+    .map(([key, value]) => {
+      const tabId = key.split('_')[1];
+      return { tabId, recordId: value };
+    });
+
+  console.log({ tabEntries, tab1: tab.id, window1: window?.id, tab, window });
+
   return (
     <ToolbarProvider>
       <TabContextProvider tab={tab}>

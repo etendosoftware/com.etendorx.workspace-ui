@@ -27,7 +27,6 @@ import { useLanguage } from '@/contexts/language';
 
 type DynamicTableProps = {
   tab: Tab;
-  recordId: string;
   window: WindowMetadata | undefined;
 };
 
@@ -174,7 +173,7 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
         },
         onDoubleClick: () => {
           const params = new URLSearchParams(searchParams.toString());
-          params.set('recordId', record.id);
+          params.set('recordId_' + tab.id, record.id);
           history.pushState(null, '', `?${params.toString()}`);
         },
         sx: {
@@ -285,8 +284,11 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
 
 DynamicTableContent.displayName = 'DynamicTableContent';
 
-function DynamicTable({ tab, recordId, window: windowMetadata }: DynamicTableProps) {
+function DynamicTable({ tab, window: windowMetadata }: DynamicTableProps) {
   const { selected } = useMetadataContext();
+  const params = useSearchParams();
+  const recordId = params.get('recordId_' + tab.id);
+
   const level = tab?.level ?? 0;
 
   const isTabVisible = level === 0 || Boolean(selected?.[level - 1]);
@@ -297,7 +299,7 @@ function DynamicTable({ tab, recordId, window: windowMetadata }: DynamicTablePro
   }
 
   if (isTabVisible) {
-    return <DynamicTableContent tab={tab} recordId={recordId} window={windowMetadata} />;
+    return <DynamicTableContent tab={tab} window={windowMetadata} />;
   }
 
   return null;
