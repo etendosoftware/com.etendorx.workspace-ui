@@ -90,12 +90,12 @@ export const buildQueryString = ({
   windowMetadata,
   tab,
 }: {
-  windowMetadata: WindowMetadata;
+  windowMetadata?: WindowMetadata;
   tab: Tab;
   mode: FormMode;
 }) =>
   new URLSearchParams({
-    windowId: String(windowMetadata.id),
+    windowId: String(windowMetadata?.id || ''),
     tabId: String(tab.id),
     moduleId: String(tab.module),
     _operationType: mode === FormMode.NEW ? 'add' : 'update',
@@ -115,7 +115,7 @@ export const buildFormPayload = ({
   csrfToken,
 }: {
   values: EntityData;
-  oldValues: EntityData;
+  oldValues?: EntityData;
   mode: FormMode;
   csrfToken: string;
 }) => ({

@@ -16,7 +16,7 @@ export interface DrawerProps {
   items: Menu[];
   logo?: string | React.ReactNode;
   title: string;
-  onClick: NavigateFn;
+  onClick: any;
   onReportClick: NavigateFn;
   onProcessClick: NavigateFn;
   // Mock Props

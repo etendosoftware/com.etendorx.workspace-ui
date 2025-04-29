@@ -32,7 +32,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
 
     const expanded = Boolean(externalExpanded || localExpanded);
 
-    const onWindowClick = useCallback((windowId: string) => onClick(`/window/${windowId}`), [onClick]);
+    const onWindowClick = useCallback((windowId: string) => onClick(windowId), [onClick]);
     const onReportClick = useCallback((reportId: string) => onClick(`/report/${reportId}`), [onClick]);
     const onProcessClick = useCallback((processId: string) => onClick(`/process/${processId}`), [onClick]);
 
