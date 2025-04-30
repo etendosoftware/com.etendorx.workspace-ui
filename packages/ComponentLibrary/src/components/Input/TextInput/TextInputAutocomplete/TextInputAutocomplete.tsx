@@ -4,7 +4,6 @@ import { useState, useEffect, KeyboardEvent, useCallback } from 'react';
 import { TextField, InputAdornment, IconButton, Box, useTheme } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterIcon from '@mui/icons-material/FilterList';
-import CircularProgress from '@mui/material/CircularProgress';
 import CloseIcon from '@mui/icons-material/Close';
 import { TextInputProps } from './TextInputComplete.types';
 import { DEFAULT_CONSTANTS } from './TextInputAutocomplete.constants';
@@ -17,14 +16,12 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     value,
     setValue,
     autoCompleteTexts = [],
-    fetchSuggestions,
     leftIcon,
     rightIcon,
     onLeftIconClick,
     ...textFieldProps
   } = props;
 
-  const [loading, setLoading] = useState<boolean>(false);
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const [suggestion, setSuggestion] = useState<string>('');
   const [smartIconActive, setSmartIconActive] = useState(false);
@@ -65,24 +62,6 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (fetchSuggestions) {
-        setLoading(true);
-        await fetchSuggestions(value);
-        setLoading(false);
-      } else if (value) {
-        setLoading(true);
-        const timer = setTimeout(() => setLoading(false), DEFAULT_CONSTANTS.TIMEOUT_DURATION);
-        return () => clearTimeout(timer);
-      } else {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [value, fetchSuggestions]);
-
-  useEffect(() => {
     if (autoCompleteTexts && isFocused && value) {
       const match = autoCompleteTexts.find(text => text.toLowerCase().startsWith(value.toLowerCase()));
       setSuggestion(match && match.toLowerCase() !== value.toLowerCase() ? match : '');
@@ -118,15 +97,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   const renderStartAdornment = () => {
     let iconElement;
 
-    if (loading) {
-      iconElement = (
-        <CircularProgress
-          sx={{ color: theme.palette.baselineColor.neutral[80] }}
-          size={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_SIZE}
-          thickness={DEFAULT_CONSTANTS.CIRCULAR_PROGRESS_THICKNESS}
-        />
-      );
-    } else if (leftIcon) {
+    if (leftIcon) {
       iconElement = (
         <IconButton onClick={onLeftIconClick} sx={{ color: theme.palette.baselineColor.neutral[70] }}>
           {leftIcon}
