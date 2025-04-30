@@ -34,5 +34,5 @@ export default function NewRecordPage({ window, tab }: { window: WindowMetadata;
     return <Spinner />;
   }
 
-  return <FormView mode={FormMode.NEW} tab={tab} window={window} initialState={initialState} />;
+  return <FormView mode={FormMode.NEW} tab={tab} window={window} />;
 }

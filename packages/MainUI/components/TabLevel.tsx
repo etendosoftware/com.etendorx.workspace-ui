@@ -121,7 +121,7 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
               <Toolbar windowId={tab.windowId} tabId={tab.id} isFormView={Boolean(recordId)} />
             </div>
             <div className="min-h-0 flex-auto overflow-auto">
-              <DynamicTable window={window} recordId={recordId} tab={tab} />
+              <DynamicTable window={window} tab={tab} />
             </div>
           </div>
           {shouldShowChildContainer && (

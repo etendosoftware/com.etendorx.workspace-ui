@@ -20,10 +20,9 @@ import {
   CurrentOrganization,
 } from '@workspaceui/etendohookbinder/src/api/types';
 import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspaceui/etendohookbinder/src/api/defaultConfig';
-import { usePathname, useRouter } from 'next/navigation';
 import useLocalStorage from '@workspaceui/componentlibrary/src/hooks/useLocalStorage';
-import { usePrevious } from '@/hooks/usePrevious';
 import { useLanguage } from './language';
+import LoginScreen from '@/screens/Login';
 
 export const UserContext = createContext({} as IUserContext);
 
@@ -36,10 +35,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [currentWarehouse, setCurrentWarehouse] = useState<CurrentWarehouse>();
   const [currentRole, setCurrentRole] = useState<CurrentRole>();
   const [currentClient, setCurrentClient] = useState<CurrentClient>();
-  const lastRole = usePrevious(currentRole, currentRole);
-  const pathname = usePathname();
-  const router = useRouter();
-  const navigate = router.push;
 
   const [roles, setRoles] = useState<SessionResponse['roles']>(() => {
     const savedRoles = localStorage.getItem('roles');
@@ -202,39 +197,28 @@ export default function UserProvider(props: React.PropsWithChildren) {
   );
 
   useEffect(() => {
-    if (token) {
-      const verifySession = async () => {
-        try {
+    const verifySession = async () => {
+      try {
+        if (token) {
           Metadata.setToken(token);
           datasource.setToken(token);
-
-          updateSessionInfo(await getSession()).finally(() => {
-            setReady(true);
-          });
-        } catch (error) {
-          clearUserData();
+          const sessionData = await getSession();
+          await updateSessionInfo(sessionData);
         }
-      };
+      } catch (error) {
+        clearUserData();
+      } finally {
+        setReady(true);
+      }
+    };
 
-      verifySession().catch(logger.error);
-    } else {
-      setReady(true);
-    }
-  }, [clearUserData, navigate, token, updateSessionInfo]);
-
-  useEffect(() => {
-    if (token && pathname === 'login') {
-      navigate('/');
-    } else if (!token && pathname !== 'login') {
-      navigate('/login');
-    }
-  }, [navigate, pathname, token]);
+    verifySession().catch(logger.warn);
+  }, [clearUserData, token, updateSessionInfo]);
 
   useEffect(() => {
     const interceptor = (response: Response) => {
       if (response.status === HTTP_CODES.UNAUTHORIZED) {
         clearUserData();
-        navigate('/login');
       }
 
       return response;
@@ -249,17 +233,11 @@ export default function UserProvider(props: React.PropsWithChildren) {
         unregisterDatasourceInterceptor();
       };
     }
-  }, [clearUserData, navigate, token]);
-
-  useEffect(() => {
-    if (!token) {
-      return;
-    }
-  }, [currentRole, lastRole, navigate, token]);
+  }, [clearUserData, token]);
 
   if (!ready) {
     return null;
   }
 
-  return <UserContext.Provider value={value}>{props.children}</UserContext.Provider>;
+  return <UserContext.Provider value={value}>{token ? props.children : <LoginScreen />}</UserContext.Provider>;
 }
