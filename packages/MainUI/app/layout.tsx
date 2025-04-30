@@ -9,6 +9,7 @@ import MetadataProvider from '@/contexts/metadata';
 import { RecordProvider } from '@/contexts/record';
 import UserProvider from '@/contexts/user';
 import ModalContextProvider from '@/contexts/modal';
+import SelectedProvider from '@/contexts/selected';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -35,7 +36,9 @@ export default function RootLayout({
                   <UserProvider>
                     <DatasourceProvider>
                       <MetadataProvider>
-                        <Layout>{children}</Layout>
+                        <SelectedProvider>
+                          <Layout>{children}</Layout>
+                        </SelectedProvider>
                       </MetadataProvider>
                     </DatasourceProvider>
                   </UserProvider>

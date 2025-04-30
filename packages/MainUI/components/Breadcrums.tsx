@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import Breadcrumb from '@workspaceui/componentlibrary/src/components/Breadcrums';
 import type { BreadcrumbItem } from '@workspaceui/componentlibrary/src/components/Breadcrums/types';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { styles } from './styles';
 import { useRouter, usePathname } from 'next/navigation';
 import { BREADCRUMB, ROUTE_IDS } from '../constants/breadcrumb';
@@ -13,40 +12,17 @@ const AppBreadcrumb: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
   const navigate = router.push;
-  const { window, tab, recordId, windowId, selected } = useMetadataContext();
+  const { window, recordId, windowId, selected } = useMetadataContext();
 
   const isNewRecord = useCallback(() => pathname.includes('/NewRecord'), [pathname]);
-
-  const recordQuery = useMemo(() => {
-    if (!recordId || !windowId || !tab?.id || isNewRecord()) {
-      return null;
-    }
-
-    return {
-      windowId,
-      tabId: tab.id,
-      criteria: [{ fieldName: 'id', operator: 'equals', value: recordId }],
-      pageSize: 1,
-    };
-  }, [recordId, windowId, tab?.id, isNewRecord]);
-
-  const { records: recordData, loading: recordLoading } = useDatasource(
-    recordQuery && window?.tabs?.[0]?.entityName ? window.tabs[0].entityName : '',
-    recordQuery || { windowId: '', tabId: '' },
-  );
 
   const recordIdentifier = useMemo(() => {
     if (selected[0]?._identifier && selected[0]._identifier !== recordId) {
       return selected[0]._identifier;
     }
-    if (recordData?.[0]?._identifier) {
-      return recordData[0]._identifier;
-    }
-    if (recordId && recordLoading) {
-      return t('common.loading');
-    }
+
     return recordId;
-  }, [selected, recordId, recordData, recordLoading, t]);
+  }, [recordId, selected]);
 
   const breadcrumbItems = useMemo(() => {
     const items: BreadcrumbItem[] = [];
@@ -55,7 +31,7 @@ const AppBreadcrumb: React.FC = () => {
       items.push({
         id: windowId,
         label: String(window.window$_identifier || window.name || t('common.loading')),
-        onClick: () => navigate(`/window/${windowId}`),
+        onClick: () => null,
       });
     }
 
@@ -72,7 +48,7 @@ const AppBreadcrumb: React.FC = () => {
     }
 
     return items;
-  }, [windowId, window, isNewRecord, recordId, recordIdentifier, t, navigate]);
+  }, [windowId, window, isNewRecord, recordId, recordIdentifier, t]);
 
   const handleHomeClick = useCallback(() => navigate('/'), [navigate]);
 

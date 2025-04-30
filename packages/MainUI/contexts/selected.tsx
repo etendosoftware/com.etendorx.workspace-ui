@@ -5,7 +5,7 @@ import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { mapBy } from '@/utils/structures';
 
 type RecordContext = {
-  record: Record<string, EntityData>;
+  selected: Record<string, EntityData>;
   records: Record<string, Record<string, EntityData>>;
   select: (record: EntityData, tab: Tab) => void;
   clear: (tab: Tab) => void;
@@ -14,7 +14,7 @@ type RecordContext = {
 };
 
 const Context = createContext<RecordContext>({
-  record: {},
+  selected: {},
   records: {},
   select: (_record: EntityData, _tab: Tab) => {},
   clear: (_tab: Tab) => {},
@@ -24,16 +24,25 @@ const Context = createContext<RecordContext>({
 
 export default function SelectedProvider({ children }: React.PropsWithChildren) {
   // Used to store the "most recent" selected record in a given tab
-  const [record, setRecord] = useState<Record<string, EntityData>>({});
+  const [selected, setSelected] = useState<Record<string, EntityData>>({});
   // Used to store the selected records in a given tab
   const [records, setRecords] = useState<Record<string, Record<string, EntityData>>>({});
 
   const select = useCallback((record: EntityData, tab: Tab) => {
-    setRecord(prev => ({ ...prev, [tab.id]: record }));
+    setSelected(prev => {
+      if (prev[tab.id]?.id === record.id) {
+        const result = { ...prev };
+        delete result[tab.id];
+
+        return result;
+      } else {
+        return { ...prev, [tab.id]: record }
+      }
+  });
   }, []);
 
   const clear = useCallback((tab: Tab) => {
-    setRecord(prev => {
+    setSelected(prev => {
       const result = { ...prev };
       delete result[tab.id];
 
@@ -51,14 +60,14 @@ export default function SelectedProvider({ children }: React.PropsWithChildren) 
 
   const value = useMemo(
     () => ({
-      record,
+      selected,
       records,
       select,
       clear,
       selectMultiple,
       clearMultiple,
     }),
-    [record, records, select, clear, selectMultiple, clearMultiple],
+    [clear, clearMultiple, records, select, selectMultiple, selected],
   );
 
   return <Context.Provider value={value}>{children}</Context.Provider>;

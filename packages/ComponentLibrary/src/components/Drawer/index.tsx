@@ -9,7 +9,6 @@ import { getAllItemTitles } from '../../utils/searchUtils';
 import DrawerItems from './Search';
 import { Box } from '@mui/material';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
-import { findItemByIdentifier } from '../../utils/menuUtils';
 
 const DRAWER_STATE_KEY = 'etendo-drawer-open';
 interface RecentlyViewedHandler {

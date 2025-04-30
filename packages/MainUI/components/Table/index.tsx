@@ -24,6 +24,7 @@ import { useSearchParams } from 'next/navigation';
 import FormView from '../Form/FormView';
 import { useToolbarContext } from '@/contexts/ToolbarContext';
 import { useLanguage } from '@/contexts/language';
+import { useSelected } from '@/contexts/selected';
 
 type DynamicTableProps = {
   tab: Tab;
@@ -37,13 +38,12 @@ type RowProps = (props: {
 }) => Omit<MRT_TableBodyRowProps<MRT_RowData>, 'staticRowIndex'>;
 
 const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
-  const { selected, selectRecord, setSelectedMultiple, clearSelections, getSelectedCount } = useMetadataContext();
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
+  const { selected } = useSelected();
 
   const tabId = tab.id;
-  const selectedCount = useMemo(() => getSelectedCount(tabId), [getSelectedCount, tabId]);
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -57,7 +57,7 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || 'id';
-    const value = parent?.id || '';
+    const value = String(parent?.id || '');
     const operator = 'equals';
 
     const options: DatasourceOptions = {
@@ -124,9 +124,8 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({}); //ts type available
 
   const handleClearSelections = useCallback(() => {
-    clearSelections(tabId);
     setRowSelection({});
-  }, [clearSelections, tabId]);
+  }, []);
 
   const handleRowSelection = useCallback<typeof setRowSelection>(updater => {
     if (typeof updater == 'function') {
@@ -143,32 +142,8 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
 
       return {
         onClick: (event: React.MouseEvent) => {
-          if ((event.target as HTMLElement).closest('.MuiCheckbox-root')) {
-            return;
-          }
-
-          row.toggleSelected();
-          selectRecord(record, tab);
-
-          if (isSelected) {
-            setSelectedMultiple(prev => {
-              const result = { ...prev };
-              delete result[tab.id][record.id];
-
-              return result;
-            });
-          } else {
-            setSelectedMultiple(prev => {
-              const result = { ...prev };
-
-              if (!result[tab.id]) {
-                result[tab.id] = {};
-              }
-
-              result[tab.id][record.id] = record;
-
-              return result;
-            });
+          if (event.ctrlKey) {
+            row.toggleSelected();
           }
         },
         onDoubleClick: () => {
@@ -185,19 +160,8 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
         table,
       };
     },
-    [searchParams, selectRecord, setSelectedMultiple, sx.rowSelected, tab],
+    [searchParams, sx.rowSelected, tab.id],
   );
-
-  const CustomTopToolbar = useCallback(() => {
-    return (
-      <TopToolbar
-        filterActive={isImplicitFilterApplied}
-        toggleFilter={handleFilterToggle}
-        selectedCount={selectedCount}
-        onClearSelection={handleClearSelections}
-      />
-    );
-  }, [isImplicitFilterApplied, handleFilterToggle, selectedCount, handleClearSelections]);
 
   const table = useMaterialReactTable({
     muiTablePaperProps: {
@@ -217,7 +181,16 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
     positionToolbarAlertBanner: 'none',
     muiTableBodyRowProps: rowProps,
     enablePagination: false,
-    renderTopToolbar: <CustomTopToolbar />,
+    renderTopToolbar: (props) => {
+      return (
+        <TopToolbar
+          filterActive={isImplicitFilterApplied}
+          toggleFilter={handleFilterToggle}
+          selectedCount={props.table.getSelectedRowModel().rows.length}
+          onClearSelection={handleClearSelections}
+        />
+      );
+    },
     renderBottomToolbar:
       tab.uIPattern == 'STD' && !searchQuery ? (
         <Button sx={sx.fetchMore} onClick={fetchMore}>

@@ -149,6 +149,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
         const loginResponse = await doLogin(username, password);
 
         localStorage.setItem('token', loginResponse.token);
+        Metadata.setToken(loginResponse.token);
+        datasource.setToken(loginResponse.token);
         setToken(loginResponse.token);
       } catch (e) {
         logger.error('Login or session retrieval error:', e);

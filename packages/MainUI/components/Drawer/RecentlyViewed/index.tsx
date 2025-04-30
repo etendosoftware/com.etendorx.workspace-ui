@@ -16,7 +16,7 @@ const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, 
     const { language } = useLanguage();
 
     const handleItemClick = useItemActions({
-      onWindowClick: (windowId: string) => onClick(`/window/${windowId}`),
+      onWindowClick: (windowId: string) => onClick(windowId),
       onReportClick: (reportId: string) => onClick(`/report/${reportId}`),
       onProcessClick: (processId: string) => onClick(`/process/${processId}`),
     });
