@@ -1,55 +1,41 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 
 type ToolbarActions = {
-  save?: () => void;
-  refresh?: () => void;
-  new?: () => void;
+  save: () => void;
+  refresh: () => void;
+  new: () => void;
 };
 
 type ToolbarContextType = {
   onSave: () => void;
   onRefresh: () => void;
   onNew: () => void;
-  registerActions: (actions: ToolbarActions) => void;
+  registerActions: (actions: Partial<ToolbarActions>) => void;
 };
 
-const ToolbarContext = createContext<ToolbarContextType>({
-  onSave: () => {},
-  onRefresh: () => {},
-  onNew: () => {},
-  registerActions: () => {},
-});
+const initialState: ToolbarActions = {
+  save: () => {},
+  refresh: () => {},
+  new: () => {},
+};
+
+const ToolbarContext = createContext<ToolbarContextType>({} as ToolbarContextType);
 
 export const useToolbarContext = () => useContext(ToolbarContext);
 
 export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
-  const [actions, setActions] = useState<ToolbarActions>({});
+  const [{ new: onNew, refresh: onRefresh, save: onSave }, setActions] = useState<ToolbarActions>(initialState);
 
-  const registerActions = useCallback((newActions: ToolbarActions) => {
+  const registerActions = useCallback((newActions: Partial<ToolbarActions>) => {
     setActions(prev => ({ ...prev, ...newActions }));
   }, []);
 
-  const onSave = useCallback(() => {
-    if (actions.save) {
-      actions.save();
-    }
-  }, [actions]);
-
-  const onRefresh = useCallback(() => {
-    if (actions.refresh) {
-      actions.refresh();
-    }
-  }, [actions]);
-
-  const onNew = useCallback(() => {
-    if (actions.new) {
-      actions.new();
-    }
-  }, [actions]);
-
-  return (
-    <ToolbarContext.Provider value={{ onSave, onRefresh, onNew, registerActions }}>{children}</ToolbarContext.Provider>
+  const value = useMemo(
+    () => ({ onSave, onRefresh, onNew, registerActions }),
+    [onNew, onRefresh, onSave, registerActions],
   );
+
+  return <ToolbarContext.Provider value={value}>{children}</ToolbarContext.Provider>;
 };

@@ -33,9 +33,9 @@ export default function TopToolbar({
           </Stack>
         )}
       </Box>
-      <Box sx={styles.container}>
+      <Box sx={styles.container} onClick={toggleFilter} className="cursor-pointer">
         <Typography aria-label={label}>{label}</Typography>
-        <Icon sx={styles.icon} onClick={toggleFilter} />
+        <Icon sx={styles.icon} />
       </Box>
     </Box>
   );

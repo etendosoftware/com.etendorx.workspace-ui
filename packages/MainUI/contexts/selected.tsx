@@ -2,23 +2,22 @@
 
 import { createContext, useState, useMemo, useCallback, useContext } from 'react';
 import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { mapBy } from '@/utils/structures';
 
 type RecordContext = {
   selected: Record<string, EntityData>;
-  records: Record<string, Record<string, EntityData>>;
+  selectedMultiple: Record<string, Record<string, EntityData>>;
   select: (record: EntityData, tab: Tab) => void;
   clear: (tab: Tab) => void;
-  selectMultiple: (records: EntityData[], tab: Tab) => void;
+  selectMultiple: (records: Record<string, EntityData>, tab: Tab) => void;
   clearMultiple: (tab: Tab) => void;
 };
 
 const Context = createContext<RecordContext>({
   selected: {},
-  records: {},
+  selectedMultiple: {},
   select: (_record: EntityData, _tab: Tab) => {},
   clear: (_tab: Tab) => {},
-  selectMultiple: (_records: EntityData[], _tab: Tab) => {},
+  selectMultiple: (_records: Record<string, EntityData>, _tab: Tab) => {},
   clearMultiple: (_tab: Tab) => {},
 });
 
@@ -26,7 +25,7 @@ export default function SelectedProvider({ children }: React.PropsWithChildren) 
   // Used to store the "most recent" selected record in a given tab
   const [selected, setSelected] = useState<Record<string, EntityData>>({});
   // Used to store the selected records in a given tab
-  const [records, setRecords] = useState<Record<string, Record<string, EntityData>>>({});
+  const [selectedMultiple, setSelectedMultiple] = useState<Record<string, Record<string, EntityData>>>({});
 
   const select = useCallback((record: EntityData, tab: Tab) => {
     setSelected(prev => {
@@ -36,9 +35,9 @@ export default function SelectedProvider({ children }: React.PropsWithChildren) 
 
         return result;
       } else {
-        return { ...prev, [tab.id]: record }
+        return { ...prev, [tab.id]: record };
       }
-  });
+    });
   }, []);
 
   const clear = useCallback((tab: Tab) => {
@@ -50,24 +49,24 @@ export default function SelectedProvider({ children }: React.PropsWithChildren) 
     });
   }, []);
 
-  const selectMultiple = useCallback((records: EntityData[], tab: Tab) => {
-    setRecords(prev => ({ ...prev, [tab.id]: mapBy(records, 'id') }));
+  const selectMultiple = useCallback((records: Record<string, EntityData>, tab: Tab) => {
+    setSelectedMultiple(prev => ({ ...prev, [tab.id]: records }));
   }, []);
 
   const clearMultiple = useCallback((tab: Tab) => {
-    setRecords(prev => ({ ...prev, [tab.id]: {} }));
+    setSelectedMultiple(prev => ({ ...prev, [tab.id]: {} }));
   }, []);
 
   const value = useMemo(
     () => ({
       selected,
-      records,
+      selectedMultiple,
       select,
       clear,
       selectMultiple,
       clearMultiple,
     }),
-    [clear, clearMultiple, records, select, selectMultiple, selected],
+    [clear, clearMultiple, selectedMultiple, select, selectMultiple, selected],
   );
 
   return <Context.Provider value={value}>{children}</Context.Provider>;

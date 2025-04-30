@@ -187,7 +187,7 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
         />
         <div className="h-full overflow-auto">
           <TabContainer
-            key={`${tab?.id}-${selectedRecord?.id || 'none'}`}
+            key={`${tab?.id}-${String(selectedRecord?.id) || 'none'}`}
             isOpen={isOpen}
             onClose={onClose}
             selectedRecord={selectedRecord as SelectedRecord}

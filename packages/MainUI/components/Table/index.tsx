@@ -9,8 +9,13 @@ import {
   MRT_TableInstance,
 } from 'material-react-table';
 import { useStyle } from './styles';
-import { DatasourceOptions, FormMode, WindowMetadata, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
+import {
+  DatasourceOptions,
+  EntityData,
+  FormMode,
+  WindowMetadata,
+  type Tab,
+} from '@workspaceui/etendohookbinder/src/api/types';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { useMetadataContext } from '../../hooks/useMetadataContext';
@@ -33,15 +38,15 @@ type DynamicTableProps = {
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
-  row: MRT_Row<Record<string, unknown>>;
-  table: MRT_TableInstance<Record<string, unknown>>;
+  row: MRT_Row<EntityData>;
+  table: MRT_TableInstance<EntityData>;
 }) => Omit<MRT_TableBodyRowProps<MRT_RowData>, 'staticRowIndex'>;
 
 const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
-  const { selected } = useSelected();
+  const { selected, selectMultiple } = useSelected();
 
   const tabId = tab.id;
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
@@ -89,9 +94,8 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
     records,
     removeRecordLocally,
     error,
-    loaded,
-    loading,
     refetch,
+    loading,
   } = useDatasource(tab.entityName, query, searchQuery, columns);
 
   const handleColumnFiltersChange = useCallback(
@@ -142,9 +146,11 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
 
       return {
         onClick: (event: React.MouseEvent) => {
-          if (event.ctrlKey) {
-            row.toggleSelected();
+          if (!event.ctrlKey) {
+            setRowSelection({});
           }
+
+          row.toggleSelected();
         },
         onDoubleClick: () => {
           const params = new URLSearchParams(searchParams.toString());
@@ -163,7 +169,7 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
     [searchParams, sx.rowSelected, tab.id],
   );
 
-  const table = useMaterialReactTable({
+  const table = useMaterialReactTable<EntityData>({
     muiTablePaperProps: {
       sx: sx.tablePaper,
     },
@@ -181,7 +187,8 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
     positionToolbarAlertBanner: 'none',
     muiTableBodyRowProps: rowProps,
     enablePagination: false,
-    renderTopToolbar: (props) => {
+    enableStickyHeader: true,
+    renderTopToolbar: props => {
       return (
         <TopToolbar
           filterActive={isImplicitFilterApplied}
@@ -208,6 +215,7 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
     getRowId: row => String(row.id),
     enableColumnFilters: true,
     enableSorting: true,
+    enableColumnResizing: true,
     enableColumnActions: true,
     manualFiltering: true,
     renderEmptyRowsFallback: () => {
@@ -239,18 +247,25 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
     });
   }, [refetch, registerActions]);
 
-  if (loading && !loaded) {
-    return <Spinner />;
-  }
+  useEffect(() => {
+    const result = {} as Record<string, EntityData>;
+
+    Object.keys(rowSelection).forEach(rowId => {
+      result[rowId] = table.getRow(rowId).original;
+    });
+
+    selectMultiple(result, tab);
+  }, [selectMultiple, tab, table, rowSelection]);
 
   if (error) {
     return <div>Error: {error.message}</div>;
   }
+
   return (
-    <div className="flex flex-auto w-full">
-      <div className="flex flex-col w-full" ref={contentRef}>
-        <MaterialReactTable table={table} />
-      </div>
+    <div
+      className={`flex flex-col w-full overflow-auto h-full transition duration-100 ${loading ? 'opacity-40 cursor-wait cursor-to-children' : 'opacity-100'}`}
+      ref={contentRef}>
+      <MaterialReactTable table={table} />
     </div>
   );
 });

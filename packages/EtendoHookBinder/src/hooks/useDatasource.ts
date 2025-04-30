@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DatasourceOptions, Column, MRT_ColumnFiltersState } from '../api/types';
+import { DatasourceOptions, Column, MRT_ColumnFiltersState, EntityData } from '../api/types';
 import { datasource } from '../api/datasource';
 import { SearchUtils, ColumnFilterUtils } from '../utils/search-utils';
 
@@ -33,7 +33,7 @@ export function useDatasource(
 ) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [records, setRecords] = useState<Record<string, unknown>[]>([]);
+  const [records, setRecords] = useState<EntityData[]>([]);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState(params.isImplicitFilterApplied ?? false);
