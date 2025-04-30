@@ -1,7 +1,10 @@
 import { FieldType, type Column, type Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { getFieldReference } from '@/utils';
+import Tag from '@workspaceui/componentlibrary/src/components/Tag';
+import { InfoOutlined, Error } from '@mui/icons-material';
+import { TranslateFunction } from '@/hooks/types';
 
-export const parseColumns = (columns?: Field[]): Column[] => {
+export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[] => {
   const result: Column[] = [];
 
   try {
@@ -30,7 +33,14 @@ export const parseColumns = (columns?: Field[]): Column[] => {
             const reference = getFieldReference(column.column?.reference);
 
             if (reference == FieldType.BOOLEAN) {
-              return v[column.hqlName] ? 'Y' : 'N';
+              const yesText = t ? t('common.trueText') : 'Yes';
+              const noText = t ? t('common.falseText') : 'No';
+
+              return v[column.hqlName] ? (
+                <Tag type="success" icon={<InfoOutlined />} label={yesText} />
+              ) : (
+                <Tag type="error" icon={<Error />} label={noText} />
+              );
             }
 
             return v[column.hqlName + '$_identifier'] ?? v[column.hqlName];
