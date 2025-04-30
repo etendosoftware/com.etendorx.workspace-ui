@@ -128,7 +128,7 @@ export function useDatasource(
         setLoaded(true);
       }
     } catch (e) {
-      if (isImplicitFilterApplied) {
+      if (!isImplicitFilterApplied) {
         setError(e as Error);
       } else {
         setIsImplicitFilterApplied(false);
