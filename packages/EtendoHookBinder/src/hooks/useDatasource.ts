@@ -128,11 +128,15 @@ export function useDatasource(
         setLoaded(true);
       }
     } catch (e) {
-      setError(e as Error);
+      if (isImplicitFilterApplied) {
+        setError(e as Error);
+      } else {
+        setIsImplicitFilterApplied(false);
+      }
     } finally {
       setLoading(false);
     }
-  }, [entity, page, pageSize, queryParams, searchQuery]);
+  }, [entity, isImplicitFilterApplied, page, pageSize, queryParams, searchQuery]);
 
   useEffect(() => {
     setRecords([]);
