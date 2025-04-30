@@ -89,22 +89,26 @@ const getExpandedIds = (matchingIds: Set<string>, searchIndex: SearchIndex): Set
   return expandedIds;
 };
 
-const rebuildTree = (originalItems: Menu[], matchingIds: Set<string>): Menu[] => {
-  return originalItems.reduce((acc, item) => {
-    if (matchingIds.has(item.id)) {
-      acc.push({ ...item, isSearchResult: true });
-    } else if (item.children) {
-      const filteredChildren = rebuildTree(item.children, matchingIds);
-      if (filteredChildren.length > 0) {
-        acc.push({
-          ...item,
-          children: filteredChildren,
-          isSearchResult: true,
-        });
-      }
+export const getAllItemTitles = (searchIndex: SearchIndex): string[] => {
+  return Array.from(searchIndex.byPhrase.keys()).sort((a, b) => a.length - b.length);
+};
+
+export const rebuildTree = (items: Menu[], matchingIds: Set<string>): Menu[] => {
+  return items.reduce<Menu[]>((acc, item) => {
+    const childrenMatching = item.children ? rebuildTree(item.children, matchingIds).length > 0 : false;
+    const shouldInclude = matchingIds.has(item.id) || childrenMatching;
+
+    if (shouldInclude) {
+      const filteredChildren = item.children ? rebuildTree(item.children, matchingIds) : [];
+      acc.push({
+        ...item,
+        isSearchResult: true,
+        children: filteredChildren.length > 0 ? filteredChildren : undefined,
+      });
     }
+
     return acc;
-  }, [] as Menu[]);
+  }, []);
 };
 
 export const filterItems = (
@@ -112,12 +116,9 @@ export const filterItems = (
   searchValue: string,
   searchIndex: SearchIndex,
 ): { filteredItems: Menu[]; searchExpandedItems: Set<string> } => {
-  if (!searchValue || !Array.isArray(items)) {
-    return { filteredItems: items, searchExpandedItems: new Set<string>() };
-  }
+  if (!searchValue || !Array.isArray(items)) return { filteredItems: items, searchExpandedItems: new Set() };
 
   let matchingIds = findMatchingIds(searchValue, searchIndex);
-
   if (matchingIds.size === 0) {
     const searchWords = searchValue.toLowerCase().split(/\s+/);
     matchingIds = findMatchingIdsForWords(searchWords, searchIndex);
@@ -126,12 +127,5 @@ export const filterItems = (
   const expandedIds = getExpandedIds(matchingIds, searchIndex);
   const filteredItems = rebuildTree(items, matchingIds);
 
-  return {
-    filteredItems,
-    searchExpandedItems: expandedIds,
-  };
-};
-
-export const getAllItemTitles = (searchIndex: SearchIndex): string[] => {
-  return Array.from(searchIndex.byPhrase.keys()).sort((a, b) => a.length - b.length);
+  return { filteredItems, searchExpandedItems: expandedIds };
 };
