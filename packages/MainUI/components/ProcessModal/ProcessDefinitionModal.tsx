@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { FormProvider, useForm } from 'react-hook-form';
-import { useMetadataContext } from '@/hooks/useMetadataContext';
 import { useTabContext } from '@/contexts/tab';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { executeStringFunction } from '@/utils/functions';
@@ -10,12 +9,15 @@ import CloseIcon from '../../../ComponentLibrary/src/assets/icons/x.svg';
 import BaseSelector from './selectors/BaseSelector';
 import { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps } from './types';
 import Modal from '../Modal';
+import { useSelected } from '@/contexts/selected';
+import Loading from '../loading';
+import { logger } from '@/utils/logger';
 
 function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
   const onProcess = button.processDefinition.onProcess;
   const onLoad = button.processDefinition.onLoad;
-  const { selectedMultiple } = useMetadataContext();
+  const { selectedMultiple } = useSelected();
   const { tab } = useTabContext();
   const tabId = tab?.id || '';
   const selectedRecords = selectedMultiple[tabId];
@@ -27,6 +29,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }>();
   const [isExecuting, setIsExecuting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const form = useForm();
 
@@ -35,6 +38,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     setResponse(undefined);
     setIsExecuting(false);
     setIsSuccess(false);
+    setLoading(true);
   }, [onClose]);
 
   const handleExecute = useCallback(async () => {
@@ -62,7 +66,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         }
         setIsExecuting(false);
       } catch (error) {
-        console.error('Error executing process:', error);
+        logger.warn('Error executing process:', error);
         setResponse({
           msgText: error instanceof Error ? error.message : 'Unknown error',
           msgTitle: t('errors.internalServerError.title'),
@@ -77,6 +81,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     const fetchOptions = async () => {
       if (onLoad && open && tab) {
         try {
+          setLoading(true);
           const result = await executeStringFunction(onLoad, { Metadata }, button.processDefinition, {
             selectedRecords,
             tabId,
@@ -93,7 +98,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             return newParameters;
           });
         } catch (error) {
-          console.error('Error loading parameters:', error);
+          logger.warn('Error loading parameters:', error);
+        } finally {
+          setLoading(false);
         }
       }
     };
@@ -103,6 +110,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   useEffect(() => {
     if (open) {
+      setLoading(true);
       setIsExecuting(false);
       setIsSuccess(false);
       setResponse(undefined);
@@ -125,20 +133,26 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                 <CloseIcon />
               </button>
             </div>
-            <div className="overflow-y-auto max-h-[60vh] p-1">
-              {!isSuccess &&
-                Object.values(parameters).map(parameter => <BaseSelector key={parameter.id} parameter={parameter} />)}
-              {response ? (
-                <div
-                  className={`p-3 rounded mb-4 border-l-4 ${
-                    response.msgType === 'success'
-                      ? 'bg-green-50 border-(--color-success-main)'
-                      : 'bg-gray-50 border-(--color-etendo-main)'
-                  }`}>
-                  <h4 className="font-bold text-sm">{response.msgTitle}</h4>
-                  <p className="text-sm">{response.msgText}</p>
-                </div>
-              ) : null}
+            <div className="overflow-y-auto max-h-[60vh] p-1 relative">
+              <div
+                className={`absolute transition-opacity inset-0 flex items-center justify-center bg-white ${loading ? 'opacity-100' : 'opacity-0'}`}>
+                <Loading />
+              </div>
+              <div className={`transition-opacity ${loading ? 'opacity-0' : 'opacity-100'}`}>
+                {!isSuccess &&
+                  Object.values(parameters).map(parameter => <BaseSelector key={parameter.id} parameter={parameter} />)}
+                {response ? (
+                  <div
+                    className={`p-3 rounded mb-4 border-l-4 ${
+                      response.msgType === 'success'
+                        ? 'bg-green-50 border-(--color-success-main)'
+                        : 'bg-gray-50 border-(--color-etendo-main)'
+                    }`}>
+                    <h4 className="font-bold text-sm">{response.msgTitle}</h4>
+                    <p className="text-sm">{response.msgText}</p>
+                  </div>
+                ) : null}
+              </div>
             </div>
             <div className="flex gap-4 justify-end mt-4">
               <button

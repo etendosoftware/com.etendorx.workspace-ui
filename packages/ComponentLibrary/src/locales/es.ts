@@ -37,6 +37,10 @@ const es = {
     noRecords: 'Por favor, crea un nuevo registro',
   },
   errors: {
+    tableError: {
+      title: 'Error',
+      description: 'Algo salió mal',
+    },
     networkError: {
       title: 'No se pudo conectar con Etendo',
       description: 'Parece que hay algún problema en la red o el servidor está caído',

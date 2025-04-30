@@ -212,3 +212,9 @@ select:-webkit-autofill:focus {
     pointer-events: none;
   }
 }
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}

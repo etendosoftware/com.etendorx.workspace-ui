@@ -30,6 +30,9 @@ import FormView from '../Form/FormView';
 import { useToolbarContext } from '@/contexts/ToolbarContext';
 import { useLanguage } from '@/contexts/language';
 import { useSelected } from '@/contexts/selected';
+import useTableSelection from '@/hooks/useTableSelection';
+import { ErrorDisplay } from '../ErrorDisplay';
+import { useTranslation } from '@/hooks/useTranslation';
 
 type DynamicTableProps = {
   tab: Tab;
@@ -46,7 +49,7 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
-  const { selected, selectMultiple } = useSelected();
+  const { selected } = useSelected();
 
   const tabId = tab.id;
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
@@ -223,6 +226,8 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
     },
   });
 
+  useTableSelection(table, rowSelection);
+
   useEffect(() => {
     if (removeRecordLocally) {
       registerDatasource(tabId, removeRecordLocally);
@@ -247,18 +252,12 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
     });
   }, [refetch, registerActions]);
 
-  useEffect(() => {
-    const result = {} as Record<string, EntityData>;
-
-    Object.keys(rowSelection).forEach(rowId => {
-      result[rowId] = table.getRow(rowId).original;
-    });
-
-    selectMultiple(result, tab);
-  }, [selectMultiple, tab, table, rowSelection]);
+  const { t } = useTranslation();
 
   if (error) {
-    return <div>Error: {error.message}</div>;
+    return (
+      <ErrorDisplay title={t('errors.tableError.title')} description={error.message} showRetry onRetry={refetch} />
+    );
   }
 
   return (

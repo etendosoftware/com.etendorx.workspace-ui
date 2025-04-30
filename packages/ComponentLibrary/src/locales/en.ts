@@ -37,6 +37,10 @@ const en = {
     noRecords: 'Please create a new record',
   },
   errors: {
+    tableError: {
+      title: 'Error',
+      description: 'Something went wrong',
+    },
     networkError: {
       title: 'Could not connect to Etendo',
       description: 'Looks like there is a network issue or rver is down',

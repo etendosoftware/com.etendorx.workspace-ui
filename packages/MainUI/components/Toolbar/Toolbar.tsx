@@ -37,6 +37,7 @@ import ProcessDefinitionModal from '../ProcessModal/ProcessDefinitionModal';
 import { useUserContext } from '@/hooks/useUserContext';
 import TabContextProvider from '@/contexts/tab';
 import { compileExpression } from '../Form/FormView/selectors/BaseSelector';
+import { useSelected } from '@/contexts/selected';
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false }) => {
   const [openModal, setOpenModal] = useState(false);
@@ -48,7 +49,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { session } = useUserContext();
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
-  const { selected, tabs, clearSelections } = useMetadataContext();
+  const { tabs, clearSelections } = useMetadataContext();
+  const { selected, selectedMultiple } = useSelected();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { refetchDatasource } = useDatasourceContext();
@@ -63,8 +65,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     throw new Error('Error creating toolbar: Missing tab');
   }, [tabs, tabId]);
 
-  const selectedRecord = tab ? selected[tab.level] : undefined;
-  const parentId = useMemo(() => selected[tab?.level - 1]?.id ?? null, [selected, tab?.level]);
+  const selectedRecord = tab ? selected[tab.id] : undefined;
+  const parentId = useMemo(() => selected[tab?.level - 1]?.id?.toString() ?? null, [selected, tab?.level]);
 
   const {
     handleAction,
@@ -89,7 +91,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
 
   const processButtons = useMemo(() => {
     const buttons = toolbar?.buttons.filter(isProcessButton) || [];
-    const selectedItems = Array.isArray(selected[tab.level]) ? selected[tab.level] : [selectedRecord];
+    const selectedItems = selectedMultiple[tab.id] ? Object.values(selectedMultiple[tab.id]) : [selectedRecord];
 
     const filteredButtons = buttons.filter(button => {
       if (!button.field.displayLogicExpression) {
@@ -99,17 +101,14 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       const compiledExpr = compileExpression(button.field.displayLogicExpression);
 
       try {
-        const isVisible = selectedItems.some(record => {
-          return compiledExpr(session, record);
-        });
-        return isVisible;
+        return selectedItems.some(record => compiledExpr(session, record));
       } catch (error) {
         return true;
       }
     });
 
     return filteredButtons;
-  }, [toolbar?.buttons, selectedRecord, selected, session, tab.level]);
+  }, [toolbar?.buttons, selectedMultiple, tab.id, selectedRecord, session]);
 
   const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -158,7 +157,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
 
     setIsExecuting(true);
     try {
-      const response = await handleProcessClick(selectedProcessActionButton, selectedRecord?.id);
+      const response = await handleProcessClick(selectedProcessActionButton, String(selectedRecord?.id));
       if (response) {
         setProcessResponse(response);
       } else {

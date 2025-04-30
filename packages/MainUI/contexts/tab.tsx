@@ -5,7 +5,7 @@ import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/use
 import { useSearchParams } from 'next/navigation';
 
 interface TabContextI {
-  tab?: Tab;
+  tab: Tab;
   parentTab?: Tab;
   parentRecord?: EntityData;
   selected: Record<string, EntityData>,
