@@ -11,8 +11,10 @@ import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDataso
 import { DatasourceOptions } from '@workspaceui/etendohookbinder/src/api/types';
 import { parseColumns } from '@/utils/tableColumns';
 import { useLanguage } from '@/contexts/language';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
+  const { t } = useTranslation();
   const {
     showTabContainer,
     setShowTabContainer,
@@ -101,7 +103,7 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
 
   const handleCloseGrandchildTab = useCallback(() => closeTab(grandchildLevel), [closeTab, grandchildLevel]);
   const parent = selected[tab.level - 1];
-  const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
+  const columns = useMemo(() => parseColumns(Object.values(tab.fields), t), [tab.fields, t]);
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || 'id';
