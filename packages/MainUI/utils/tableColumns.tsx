@@ -1,8 +1,8 @@
 import { FieldType, type Column, type Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { getFieldReference } from '@/utils';
 import Tag from '@workspaceui/componentlibrary/src/components/Tag';
-import { InfoOutlined, Error } from '@mui/icons-material';
 import { TranslateFunction } from '@/hooks/types';
+import { statusConfig, DEFAULT_STATUS_CONFIG, yesNoConfig } from './columnsConstants';
 
 export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[] => {
   const result: Column[] = [];
@@ -32,15 +32,29 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
           accessorFn: (v: Record<string, unknown>) => {
             const reference = getFieldReference(column.column?.reference);
 
-            if (reference == FieldType.BOOLEAN) {
+            if (reference === FieldType.BOOLEAN) {
               const yesText = t ? t('common.trueText') : 'Yes';
               const noText = t ? t('common.falseText') : 'No';
 
-              return v[column.hqlName] ? (
-                <Tag type="success" icon={<InfoOutlined />} label={yesText} />
-              ) : (
-                <Tag type="error" icon={<Error />} label={noText} />
-              );
+              const config = v[column.hqlName] ? yesNoConfig['Y'] : yesNoConfig['N'];
+
+              return <Tag type={config.type} icon={config.icon} label={v[column.hqlName] ? yesText : noText} />;
+            }
+
+            if (reference === FieldType.LIST && column.refList && Array.isArray(column.refList)) {
+              const codeValue = v[column.hqlName];
+
+              if (codeValue === null || codeValue === undefined) {
+                return v[column.hqlName + '$_identifier'] ?? '';
+              }
+
+              const refItem = column.refList.find(item => item.value === codeValue);
+
+              if (refItem) {
+                const config = statusConfig[refItem.value as string] || DEFAULT_STATUS_CONFIG;
+
+                return <Tag type={config.type} icon={config.icon} label={refItem.label} />;
+              }
             }
 
             return v[column.hqlName + '$_identifier'] ?? v[column.hqlName];
