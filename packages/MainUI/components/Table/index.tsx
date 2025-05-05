@@ -22,6 +22,7 @@ import TopToolbar from './top-toolbar';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
 import EmptyState from './EmptyState';
 import { parseColumns } from '@/utils/tableColumns';
+import { useTranslation } from '@/hooks/useTranslation';
 
 type DynamicTableProps = {
   tab: Tab;
@@ -45,6 +46,7 @@ const DynamicTableContent = memo(
     toggleImplicitFilters,
     updateColumnFilters,
     removeRecordLocally,
+    hasMoreRecords,
   }: DynamicTableProps) => {
     const { selected, selectRecord, setSelectedMultiple, clearSelections, getSelectedCount, refetch } =
       useMetadataContext();
@@ -58,6 +60,7 @@ const DynamicTableContent = memo(
     const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
     const contentRef = useRef<HTMLDivElement>(null);
     const [maxWidth, setMaxWidth] = useState(0);
+    const { t } = useTranslation();
 
     const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
@@ -185,9 +188,9 @@ const DynamicTableContent = memo(
       renderTopToolbar: <CustomTopToolbar />,
       enableStickyHeader: true,
       renderBottomToolbar:
-        tab.uIPattern == 'STD' && !searchQuery ? (
+        tab.uIPattern == 'STD' && !searchQuery && hasMoreRecords ? (
           <Button sx={sx.fetchMore} onClick={fetchMore}>
-            Load more
+            {t('common.loadMore')}
           </Button>
         ) : null,
       initialState: { density: 'compact' },

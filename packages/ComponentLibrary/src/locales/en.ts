@@ -16,6 +16,7 @@ const en = {
     clear: 'Clear Selection',
     processTitle: 'Title of the process',
     notImplemented: 'This feature is not implemented yet',
+    loadMore: 'Load More',
   },
   forms: {
     sections: {
