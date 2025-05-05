@@ -3,13 +3,15 @@ import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useTab } from '@/hooks/useTab';
 import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
 import { useSearchParams } from 'next/navigation';
+import { ToolbarProvider } from './ToolbarContext';
+import { SearchProvider } from './searchContext';
 
 interface TabContextI {
   tab: Tab;
   parentTab?: Tab;
   parentRecord?: EntityData;
-  selected: Record<string, EntityData>,
-  setSelected: React.Dispatch<React.SetStateAction<Record<string, EntityData>>>
+  selected: Record<string, EntityData>;
+  setSelected: React.Dispatch<React.SetStateAction<Record<string, EntityData>>>;
 }
 
 const TabContext = createContext<TabContextI>({} as TabContextI);
@@ -31,7 +33,13 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
     [parentRecord, parentTab, selected, tab],
   );
 
-  return <TabContext.Provider value={value}>{children}</TabContext.Provider>;
+  return (
+    <TabContext.Provider value={value}>
+      <ToolbarProvider>
+        <SearchProvider>{children}</SearchProvider>
+      </ToolbarProvider>
+    </TabContext.Provider>
+  );
 }
 
 export const useTabContext = () => {

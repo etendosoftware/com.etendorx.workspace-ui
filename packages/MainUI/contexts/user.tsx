@@ -61,7 +61,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
     try {
       return apiSetDefaultConfiguration(config);
     } catch (error) {
-      logger.error('Error setting default configuration:', error);
+      logger.warn('Error setting default configuration:', error);
 
       throw error;
     }
@@ -153,7 +153,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         datasource.setToken(loginResponse.token);
         setToken(loginResponse.token);
       } catch (e) {
-        logger.error('Login or session retrieval error:', e);
+        logger.warn('Login or session retrieval error:', e);
         throw e;
       }
     },

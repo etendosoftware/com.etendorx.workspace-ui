@@ -12,11 +12,10 @@ import { useStyle } from './styles';
 import {
   DatasourceOptions,
   EntityData,
-  FormMode,
   WindowMetadata,
   type Tab,
 } from '@workspaceui/etendohookbinder/src/api/types';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { Button } from '@mui/material';
 import { useSearch } from '../../contexts/searchContext';
@@ -25,7 +24,6 @@ import { useDatasourceContext } from '@/contexts/datasourceContext';
 import EmptyState from './EmptyState';
 import { parseColumns } from '@/utils/tableColumns';
 import { useSearchParams } from 'next/navigation';
-import FormView from '../Form/FormView';
 import { useToolbarContext } from '@/contexts/ToolbarContext';
 import { useLanguage } from '@/contexts/language';
 import { useSelected } from '@/contexts/selected';
@@ -44,7 +42,7 @@ type RowProps = (props: {
   table: MRT_TableInstance<EntityData>;
 }) => Omit<MRT_TableBodyRowProps<MRT_RowData>, 'staticRowIndex'>;
 
-const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
+const DynamicTable = ({ tab }: DynamicTableProps) => {
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
@@ -265,26 +263,6 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
       <MaterialReactTable table={table} />
     </div>
   );
-});
-
-DynamicTableContent.displayName = 'DynamicTableContent';
-
-function DynamicTable({ tab, window: windowMetadata }: DynamicTableProps) {
-  const params = useSearchParams();
-  const recordId = params.get('recordId_' + tab.id);
-  const level = tab?.level ?? 0;
-  const isTabVisible = level === 0;
-
-  if (recordId) {
-    const mode = recordId === 'new' ? FormMode.NEW : FormMode.EDIT;
-    return <FormView mode={mode} tab={tab} window={windowMetadata} recordId={recordId} />;
-  }
-
-  if (isTabVisible) {
-    return <DynamicTableContent tab={tab} window={windowMetadata} />;
-  }
-
-  return null;
-}
+};
 
 export default DynamicTable;

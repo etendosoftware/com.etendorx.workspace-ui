@@ -44,7 +44,7 @@ const fetchFormInitialization = async (
 
     return data;
   } catch (error) {
-    logger.error('Error fetching initial form data:', error);
+    logger.warn('Error fetching initial form data:', error);
     throw new Error('Failed to fetch initial data');
   }
 };
@@ -142,7 +142,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       setSession(prev => ({ ...prev, ...storedInSessionAttributes, ...data.sessionAttributes }));
       dispatch({ type: 'FETCH_SUCCESS', payload: data });
     } catch (err) {
-      logger.error(err);
+      logger.warn(err);
       dispatch({ type: 'FETCH_ERROR', payload: err instanceof Error ? err : new Error('Unknown error') });
     }
   }, [params, parentData, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.windowId]);

@@ -4,23 +4,23 @@ import { createContext, useCallback, useEffect, useMemo, useState } from 'react'
 import { type Etendo, Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { groupTabsByLevel } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { useParams, useSearchParams } from 'next/navigation';
-import { WindowParams } from '../app/types';
 import { IMetadataContext } from './types';
 import { useDatasourceContext } from './datasourceContext';
+import { mapBy } from '@/utils/structures';
+import { useQueryParams } from '@/hooks/useQueryParams';
 
 export const MetadataContext = createContext({} as IMetadataContext);
 
 export default function MetadataProvider({ children }: React.PropsWithChildren) {
-  const { tabId = '', recordId = '' } = useParams<WindowParams>();
-  const searchParams = useSearchParams();
-  const windowId = searchParams.get('windowId') ?? '';
+  const { windowId } = useQueryParams<{ windowId: string }>();
   const [windowData, setWindowData] = useState<Etendo.WindowMetadata | undefined>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();
   const [groupedTabs, setGroupedTabs] = useState<Etendo.Tab[][]>([]);
-  const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [tabId, windowData?.tabs]);
-  const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
+  const tabs = useMemo<Record<string, Tab>>(
+    () => (windowData?.tabs ? mapBy(windowData?.tabs, 'id') : {}),
+    [windowData],
+  );
   const { removeRecordFromDatasource } = useDatasourceContext();
 
   const loadWindowData = useCallback(async () => {
@@ -77,20 +77,16 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
 
   const value = useMemo<IMetadataContext>(
     () => ({
-      getWindow: Metadata.getWindow,
-      getColumns: Metadata.getColumns,
       windowId,
-      recordId,
       loading,
       error,
       groupedTabs,
       window: windowData,
       tabs,
-      tab,
       refetch: loadWindowData,
       removeRecord,
     }),
-    [error, groupedTabs, loadWindowData, loading, recordId, removeRecord, tab, tabs, windowData, windowId],
+    [error, groupedTabs, loadWindowData, loading, removeRecord, tabs, windowData, windowId],
   );
 
   return <MetadataContext.Provider value={value}>{children}</MetadataContext.Provider>;

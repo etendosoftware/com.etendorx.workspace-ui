@@ -10,13 +10,13 @@ import { useUserContext } from '@/hooks/useUserContext';
 import { useParams } from 'next/navigation';
 import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { useTabContext } from '@/contexts/tab';
-import useDebounce from '@/hooks/useThrottle';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export const compileExpression = (expression: string) => {
   try {
     return new Function('context', 'currentValues', `return ${parseDynamicExpression(expression)};`);
   } catch (error) {
-    logger.error('Error compiling expression:', expression, error);
+    logger.warn('Error compiling expression:', expression, error);
 
     return () => true;
   }
@@ -102,8 +102,6 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
   const runCallout = useCallback(async () => {
     previousValue.current = value;
 
-    console.debug(previousValue, field.column.callout);
-
     if (!tab || !field.column.callout) return;
 
     try {
@@ -135,7 +133,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         applyAuxiliaryInputValues(data.auxiliaryInputValues);
       }
     } catch (err) {
-      logger.error('Callout execution failed:', err);
+      logger.warn('Callout execution failed:', err);
     }
   }, [
     value,

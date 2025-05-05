@@ -2,25 +2,35 @@
 
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useMemo, useRef, useState } from 'react';
-import { Box, Button } from '@mui/material';
+import { Button } from '@mui/material';
 import { TabLevel } from '../../components/TabLevel';
 import { useStyle } from './styles';
+import { useSelected } from '@/contexts/selected';
 
 export default function Tabs({ tabs }: { tabs: Tab[]; level?: number }) {
+  const { selected } = useSelected();
+  const parentRecord = tabs[0].parentTabId ? selected[tabs[0].parentTabId] : null;
   const [activeKey, setActiveKey] = useState(tabs[0].id);
   const { sx } = useStyle();
 
   const refs = useRef(
-    tabs.reduce((acum, current) => {
-      acum[current.id] = () => setActiveKey(current.id);
-      return acum;
-    }, {} as Record<string, () => void>),
+    tabs.reduce(
+      (acum, current) => {
+        acum[current.id] = () => setActiveKey(current.id);
+        return acum;
+      },
+      {} as Record<string, () => void>,
+    ),
   );
 
   const active = useMemo(() => tabs.find(tab => tab.id === activeKey) as Tab, [activeKey, tabs]);
 
+  if (!parentRecord) {
+    return null;
+  }
+
   return (
-    <Box sx={sx.container}>
+    <div>
       {tabs.map(tab => (
         <Button
           key={tab.id}
@@ -32,6 +42,6 @@ export default function Tabs({ tabs }: { tabs: Tab[]; level?: number }) {
         </Button>
       ))}
       <TabLevel tab={active} />
-    </Box>
+    </div>
   );
 }

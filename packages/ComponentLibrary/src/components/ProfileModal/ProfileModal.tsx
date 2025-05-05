@@ -163,7 +163,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
         handleClose();
       } catch (error) {
-        logger.error('Error changing role, warehouse, or saving default configuration:', error);
+        logger.warn('Error changing role, warehouse, or saving default configuration:', error);
       }
     }
   }, [

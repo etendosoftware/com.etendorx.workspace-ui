@@ -34,7 +34,7 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess, tab
   const handlePollingError = useCallback(
     (error: unknown, clearFn: () => void) => {
       if (error instanceof Error && !(error instanceof DOMException && error.name === 'AbortError')) {
-        logger.error(error);
+        logger.warn(error);
         clearFn();
         setProcessMessage({
           type: 'error',

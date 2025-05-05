@@ -93,7 +93,7 @@ export function useProcessMessage(tabId: string) {
   const fetchProcessMessage = useCallback(
     async (signal?: AbortSignal): Promise<ProcessMessage | null> => {
       if (!apiUrl) {
-        logger.error(apiUrl, 'API-URL Error');
+        logger.warn(apiUrl, 'API-URL Error');
         return null;
       }
 
@@ -109,7 +109,7 @@ export function useProcessMessage(tabId: string) {
         });
 
         if (!response.ok) {
-          logger.error(response.status);
+          logger.warn(response.status);
           return null;
         }
 

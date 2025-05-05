@@ -57,15 +57,11 @@ export interface IUserContext {
 }
 
 export interface IMetadataContext {
-  getWindow: (windowId: string) => Promise<Etendo.WindowMetadata>;
-  getColumns: (tabId: string) => Etendo.Column[];
   windowId: string;
-  recordId: string;
   loading: boolean;
   error: Error | undefined;
   groupedTabs: Etendo.Tab[][];
-  tabs: Tab[];
-  tab?: Tab;
+  tabs: Record<string, Tab>;
   columns?: Record<string, Field>;
   window?: Etendo.WindowMetadata;
   refetch: () => Promise<void>;

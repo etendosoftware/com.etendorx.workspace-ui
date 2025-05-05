@@ -38,7 +38,7 @@ export const useCallout = ({ field, parentId = 'null', rowId = 'null' }: UseCall
 
         return response.data as FormInitializationResponse;
       } catch (error) {
-        logger.error(`Error executing callout for field "${field.inputName}":`, error);
+        logger.warn(`Error executing callout for field "${field.inputName}":`, error);
       }
     },
     [tabId, field.inputName, parentId, rowId],

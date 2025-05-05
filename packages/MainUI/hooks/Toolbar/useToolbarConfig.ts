@@ -70,7 +70,7 @@ export const useToolbarConfig = ({
       });
     },
     onError: error => {
-      logger.error('Error deleting record(s):', error);
+      logger.warn('Error deleting record(s):', error);
 
       showErrorModal(t('status.deleteError'), {
         errorMessage: error,
