@@ -110,3 +110,10 @@ export interface ProcessDefinitionModalProps {
 export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
   button: NonNullable<ProcessDefinitionModalProps['button']>;
 }
+
+export interface ProcessDeprecatedModallProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  message?: string;
+}
