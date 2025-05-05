@@ -6,33 +6,9 @@ export interface BaseButton {
   visible: boolean;
 }
 
-export type ProcessParameters = Array<{
-  defaultValue: string;
-  id: string;
-  name: string;
-}>;
-
-export interface ProcessDefinition extends Record<string, unknown> {
-  id: string;
-  name: string;
-  javaClassName: string;
-  parameters: ProcessParameters;
-}
-
 export interface ProcessAction extends Record<string, unknown> {
   id: string;
   name: string;
-}
-
-export interface ProcessInfo {
-  loadFunction: string;
-  clientSideValidation: string;
-  _entityName: string;
-  id: string;
-  name: string;
-  javaClassName: string;
-  searchKey: string;
-  parameters: ProcessParameters;
 }
 
 export interface BaseProcessButton extends BaseButton {
@@ -116,4 +92,39 @@ export interface ProcessDeprecatedModallProps {
   onClose: () => void;
   title?: string;
   message?: string;
+}
+
+export interface ProcessInfo {
+  loadFunction: string;
+  searchKey: string;
+  clientSideValidation: string;
+  _entityName: string;
+  id: string;
+  name: string;
+  javaClassName: string;
+  parameters: Array<{
+    defaultValue: string;
+    id: string;
+    name: string;
+  }>;
+}
+
+export type ListOption = { id: string; label: string; value: string };
+
+export type ProcessParameter = {
+  defaultValue: string;
+  id: string;
+  name: string;
+  refList: Array<ListOption>;
+} & Record<string, string>;
+
+export type ProcessParameters = Record<string, ProcessParameter>;
+
+export interface ProcessDefinition extends Record<string, unknown> {
+  id: string;
+  name: string;
+  javaClassName: string;
+  parameters: ProcessParameters;
+  onLoad: string;
+  onProcess: string;
 }
