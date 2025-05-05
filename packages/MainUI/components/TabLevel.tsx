@@ -10,6 +10,7 @@ import { useSearchParams } from 'next/navigation';
 import TabContextProvider from '@/contexts/tab';
 import { ToolbarProvider } from '@/contexts/ToolbarContext';
 import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import ResizableTabContainer from './Table/TabNavigation';
 
 const TabContent = ({ tab, window, recordId }: { tab: Tab; window?: WindowMetadata; recordId: string }) => {
   return (
@@ -30,6 +31,7 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
       <ToolbarProvider>
         <SearchProvider>
           <TabContent tab={tab} window={window} recordId={recordId} />
+          <ResizableTabContainer isOpen={true} onClose={() => {}} windowId={window} />
         </SearchProvider>
       </ToolbarProvider>
     </TabContextProvider>

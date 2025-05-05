@@ -40,10 +40,13 @@ export const useToolbarConfig = ({
 
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { selected } = useSelected();
+  const { selectedMultiple, selected } = useSelected();
   const { tab } = useTabContext();
   const selectedRecord = tab ? selected[tab.id] : undefined;
-  const selectedIds = useMemo(() => (tab ? Object.keys(selected[tab.id]) : []), [selected, tab]);
+  const selectedIds = useMemo(
+    () => (selectedMultiple[tab.id] ? Object.keys(selectedMultiple[tab.id]) : []),
+    [selectedMultiple, tab],
+  );
 
   const { deleteRecord, loading: deleteLoading } = useDeleteRecord({
     tab: tab as Tab,
@@ -185,7 +188,7 @@ export const useToolbarConfig = ({
     [
       handleAction,
       handleSearch,
-      searchOpen, 
+      searchOpen,
       searchValue,
       deleteLoading,
       statusModal,
