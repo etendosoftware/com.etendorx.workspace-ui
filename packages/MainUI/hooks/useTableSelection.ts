@@ -1,20 +1,30 @@
 import { useSelected } from '@/contexts/selected';
 import { useTabContext } from '@/contexts/tab';
 import { EntityData } from '@workspaceui/etendohookbinder/src/api/types';
-import { MRT_RowSelectionState, MRT_TableInstance } from 'material-react-table';
+import { MRT_RowSelectionState } from 'material-react-table';
 import { useEffect } from 'react';
 
-export default function useTableSelection(table: MRT_TableInstance<EntityData>, rowSelection: MRT_RowSelectionState) {
+const getRecord = (recordId: string, records: EntityData[]) => {
+  return records.find(r => r.id === recordId);
+};
+
+export default function useTableSelection(
+  rowSelection: MRT_RowSelectionState,
+  records: EntityData[],
+) {
   const { tab } = useTabContext();
   const { select, selectMultiple, clear } = useSelected();
 
   useEffect(() => {
     const result = {} as Record<string, EntityData>;
-    let last: EntityData | null = null;
+    let last: EntityData | null | undefined;
 
-    Object.keys(rowSelection).forEach(rowId => {
-      last = table.getRow(rowId).original;
-      result[rowId] = last;
+    Object.keys(rowSelection).forEach(recordId => {
+      last = getRecord(recordId, records);
+
+      if (last) {
+        result[recordId] = last;
+      }
     });
 
     if (last) {
@@ -24,5 +34,5 @@ export default function useTableSelection(table: MRT_TableInstance<EntityData>, 
     }
 
     selectMultiple(result, tab);
-  }, [selectMultiple, tab, table, rowSelection, select, clear]);
+  }, [clear, records, rowSelection, select, selectMultiple, tab]);
 }

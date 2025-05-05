@@ -39,7 +39,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     setIsExecuting(false);
     setIsSuccess(false);
     setLoading(true);
-  }, [onClose]);
+    setParameters(button.processDefinition.parameters);
+  }, [button.processDefinition.parameters, onClose]);
 
   const handleExecute = useCallback(async () => {
     if (onProcess && tab) {
@@ -90,6 +91,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             const newParameters = { ...prev };
             Object.entries(result).forEach(([parameterName, values]) => {
               const newOptions = values as string[];
+              newParameters[parameterName] = { ...newParameters[parameterName] };
               newParameters[parameterName].refList = newParameters[parameterName].refList.filter(option =>
                 newOptions.includes(option.value),
               );
@@ -114,8 +116,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       setIsExecuting(false);
       setIsSuccess(false);
       setResponse(undefined);
+      setParameters(button.processDefinition.parameters);
     }
-  }, [open]);
+  }, [button.processDefinition.parameters, open]);
 
   return (
     <Modal open={open}>

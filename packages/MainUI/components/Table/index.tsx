@@ -226,7 +226,7 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
     },
   });
 
-  useTableSelection(table, rowSelection);
+  useTableSelection(rowSelection, records);
 
   useEffect(() => {
     if (removeRecordLocally) {
