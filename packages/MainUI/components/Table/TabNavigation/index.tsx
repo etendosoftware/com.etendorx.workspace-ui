@@ -26,11 +26,7 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
     const containerRef = useRef<HTMLDivElement>(null);
     const isResizing = useRef(false);
     const lastHeightRef = useRef(0);
-    const { tabs, activeTabLevels } = useMetadataContext();
-
-    const tabLevel = tab?.level || 0;
-    const isVisible = activeTabLevels.includes(tabLevel);
-    const shouldRender = isOpen && isVisible;
+    const { tabs } = useMetadataContext();
 
     const childTabs = useMemo(() => {
       if (!selectedRecord || !tab) return [];
@@ -170,7 +166,7 @@ const ResizableTabContainer: React.FC<ResizableTabContainerProps> = memo(
       };
     }, [handleMouseDown, isMainTab]);
 
-    if (!shouldRender) return null;
+    if (!isOpen) return null;
 
     return (
       <div

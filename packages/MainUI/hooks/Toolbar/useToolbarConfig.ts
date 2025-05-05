@@ -9,6 +9,8 @@ import { useTranslation } from '../useTranslation';
 import { useStatusModal } from './useStatusModal';
 import { useSearchParams } from 'next/navigation';
 import { useToolbarContext } from '@/contexts/ToolbarContext';
+import { useSelected } from '@/contexts/selected';
+import { useTabContext } from '@/contexts/tab';
 
 export const useToolbarConfig = ({
   tabId,
@@ -21,7 +23,7 @@ export const useToolbarConfig = ({
   const { setSearchQuery } = useSearch();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const { setShowTabContainer, tabs, selected, removeRecord, getSelectedIds } = useMetadataContext();
+  const { removeRecord } = useMetadataContext();
   const searchParams = useSearchParams();
   const {
     statusModal,
@@ -38,12 +40,10 @@ export const useToolbarConfig = ({
 
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const tab = useMemo<Tab | undefined>(() => {
-    return tabs.find(tab => tab.id === tabId);
-  }, [tabs, tabId]);
-
-  const selectedRecord = tab ? selected[tab.level] : undefined;
-  const selectedIds = useMemo(() => (tab ? getSelectedIds(tab.id) : []), [getSelectedIds, tab]);
+  const { selected } = useSelected();
+  const { tab } = useTabContext();
+  const selectedRecord = tab ? selected[tab.id] : undefined;
+  const selectedIds = useMemo(() => (tab ? Object.keys(selected[tab.id]) : []), [selected, tab]);
 
   const { deleteRecord, loading: deleteLoading } = useDeleteRecord({
     tab: tab as Tab,
@@ -57,7 +57,7 @@ export const useToolbarConfig = ({
         removeRecord(tabId, recordId);
       });
 
-      const successMessage = `${entityType} '${recordName}' ${t('status.deleteSuccess')}`;
+      const successMessage = `${entityType} '${String(recordName)}' ${t('status.deleteSuccess')}`;
 
       showDeleteSuccessModal(successMessage, {
         saveLabel: t('common.close'),
@@ -102,7 +102,7 @@ export const useToolbarConfig = ({
           setSearchOpen(true);
           break;
         case BUTTON_IDS.TAB_CONTROL:
-          setShowTabContainer(prevState => !prevState);
+          // setShowTabContainer(prevState => !prevState);
           break;
         case BUTTON_IDS.SAVE:
           onSave?.();
@@ -114,7 +114,7 @@ export const useToolbarConfig = ({
 
               const confirmText =
                 selectedIds.length === 1
-                  ? `${t('status.deleteConfirmation')} ${selectedRecord?._identifier || selectedRecord?.id}?`
+                  ? `${t('status.deleteConfirmation')} ${String(selectedRecord?._identifier || selectedRecord?.id)}?`
                   : `${t('status.multipleDeleteConfirmation')} ${selectedIds.length}`;
 
               showConfirmModal({
@@ -142,20 +142,19 @@ export const useToolbarConfig = ({
       }
     },
     [
+      deleteRecord,
       isDeleting,
-      setShowTabContainer,
       onNew,
-      onSave,
-      tab,
       onRefresh,
+      onSave,
       searchParams,
       selectedIds,
-      t,
       selectedRecord?._identifier,
       selectedRecord?.id,
       showConfirmModal,
-      deleteRecord,
       showErrorModal,
+      t,
+      tab,
     ],
   );
 
@@ -175,7 +174,6 @@ export const useToolbarConfig = ({
       handleSearch,
       searchValue,
       setSearchValue,
-      setShowTabContainer,
       deleteLoading,
       statusModal,
       confirmAction,
@@ -187,9 +185,8 @@ export const useToolbarConfig = ({
     [
       handleAction,
       handleSearch,
-      searchOpen,
+      searchOpen, 
       searchValue,
-      setShowTabContainer,
       deleteLoading,
       statusModal,
       confirmAction,

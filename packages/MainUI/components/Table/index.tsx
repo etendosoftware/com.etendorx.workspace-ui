@@ -18,7 +18,6 @@ import {
 } from '@workspaceui/etendohookbinder/src/api/types';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import { useMetadataContext } from '../../hooks/useMetadataContext';
 import { Button } from '@mui/material';
 import { useSearch } from '../../contexts/searchContext';
 import TopToolbar from './top-toolbar';
@@ -271,13 +270,10 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
 DynamicTableContent.displayName = 'DynamicTableContent';
 
 function DynamicTable({ tab, window: windowMetadata }: DynamicTableProps) {
-  const { selected } = useMetadataContext();
   const params = useSearchParams();
   const recordId = params.get('recordId_' + tab.id);
-
   const level = tab?.level ?? 0;
-
-  const isTabVisible = level === 0 || Boolean(selected?.[level - 1]);
+  const isTabVisible = level === 0;
 
   if (recordId) {
     const mode = recordId === 'new' ? FormMode.NEW : FormMode.EDIT;

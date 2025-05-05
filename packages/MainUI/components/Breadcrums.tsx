@@ -12,17 +12,9 @@ const AppBreadcrumb: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
   const navigate = router.push;
-  const { window, recordId, windowId, selected } = useMetadataContext();
+  const { window, recordId, windowId } = useMetadataContext();
 
   const isNewRecord = useCallback(() => pathname.includes('/NewRecord'), [pathname]);
-
-  const recordIdentifier = useMemo(() => {
-    if (selected[0]?._identifier && selected[0]._identifier !== recordId) {
-      return selected[0]._identifier;
-    }
-
-    return recordId;
-  }, [recordId, selected]);
 
   const breadcrumbItems = useMemo(() => {
     const items: BreadcrumbItem[] = [];
@@ -43,12 +35,12 @@ const AppBreadcrumb: React.FC = () => {
     } else if (recordId) {
       items.push({
         id: recordId,
-        label: String(recordIdentifier),
+        label: String(recordId),
       });
     }
 
     return items;
-  }, [windowId, window, isNewRecord, recordId, recordIdentifier, t]);
+  }, [windowId, window, isNewRecord, recordId, t]);
 
   const handleHomeClick = useCallback(() => navigate('/'), [navigate]);
 

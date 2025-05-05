@@ -26,12 +26,12 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
   const recordId = searchParams.get('recordId') || '';
 
   return (
-    <ToolbarProvider>
-      <TabContextProvider tab={tab}>
+    <TabContextProvider tab={tab}>
+      <ToolbarProvider>
         <SearchProvider>
           <TabContent tab={tab} window={window} recordId={recordId} />
         </SearchProvider>
-      </TabContextProvider>
-    </ToolbarProvider>
+      </ToolbarProvider>
+    </TabContextProvider>
   );
 }

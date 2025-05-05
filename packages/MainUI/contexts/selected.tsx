@@ -2,6 +2,7 @@
 
 import { createContext, useState, useMemo, useCallback, useContext } from 'react';
 import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { useSetSession } from '@/hooks/useSetSession';
 
 type RecordContext = {
   selected: Record<string, EntityData>;
@@ -27,18 +28,31 @@ export default function SelectedProvider({ children }: React.PropsWithChildren) 
   // Used to store the selected records in a given tab
   const [selectedMultiple, setSelectedMultiple] = useState<Record<string, Record<string, EntityData>>>({});
 
-  const select = useCallback((record: EntityData, tab: Tab) => {
-    setSelected(prev => {
-      if (prev[tab.id]?.id === record.id) {
-        const result = { ...prev };
-        delete result[tab.id];
+  const setSession = useSetSession();
 
-        return result;
-      } else {
-        return { ...prev, [tab.id]: record };
+  const select = useCallback(
+    (record: EntityData, tab: Tab) => {
+      let recordForSession;
+
+      setSelected(prev => {
+        if (prev[tab.id]?.id === record.id) {
+          const result = { ...prev };
+          delete result[tab.id];
+
+          return result;
+        } else {
+          recordForSession = record;
+
+          return { ...prev, [tab.id]: record };
+        }
+      });
+
+      if (recordForSession) {
+        setSession(recordForSession, tab);
       }
-    });
-  }, []);
+    },
+    [setSession],
+  );
 
   const clear = useCallback((tab: Tab) => {
     setSelected(prev => {

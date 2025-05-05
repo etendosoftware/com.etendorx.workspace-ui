@@ -5,6 +5,8 @@ import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { ProcessButton, ProcessButtonType, ProcessResponse } from '@/components/ProcessModal/types';
 import { useMetadataContext } from '../useMetadataContext';
 import { useParams } from 'next/navigation';
+import { useSelected } from '@/contexts/selected';
+import { useTabContext } from '@/contexts/tab';
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
@@ -12,13 +14,12 @@ export function useProcessExecution() {
   const [iframeUrl, setIframeUrl] = useState('');
 
   const { token } = useContext(UserContext);
-  const { tab, selected, windowId } = useMetadataContext();
+  const { windowId } = useMetadataContext();
+  const { tab } = useTabContext();
+  const { selected } = useSelected();
   const { recordId } = useParams<{ recordId: string }>();
 
-  const currentRecord = useMemo(() => {
-    const tabLevel = tab?.level ?? 0;
-    return selected[tabLevel] || null;
-  }, [tab?.level, selected]);
+  const currentRecord = useMemo(() => selected[tab.id] || null, [selected, tab.id]);
 
   const executeProcessDefinition = useCallback(
     async ({ button, recordId, params = {} }: ExecuteProcessDefinitionParams): Promise<ProcessResponse> => {

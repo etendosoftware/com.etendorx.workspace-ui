@@ -1,13 +1,13 @@
 import { compileExpression } from '@/components/Form/FormView/selectors/BaseSelector';
 import { useUserContext } from './useUserContext';
-import { useMetadataContext } from './useMetadataContext';
 import { useTabContext } from '@/contexts/tab';
 import { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { useMemo } from 'react';
+import { useSelected } from '@/contexts/selected';
 
 export default function useDisplayLogic(field: Field) {
   const { session } = useUserContext();
-  const { selected } = useMetadataContext();
+  const { selected } = useSelected();
   const { tab } = useTabContext();
 
   const isDisplayed: boolean = useMemo(() => {
@@ -22,7 +22,7 @@ export default function useDisplayLogic(field: Field) {
     const compiledExpr = compileExpression(field.displayLogicExpression);
 
     try {
-      const values = selected[tab.level];
+      const values = selected[tab.id];
       return compiledExpr(session, values);
     } catch (error) {
       return true;
