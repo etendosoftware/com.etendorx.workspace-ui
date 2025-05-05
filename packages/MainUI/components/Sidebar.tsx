@@ -14,61 +14,6 @@ import { useMenuTranslation } from '../hooks/useMenuTranslation';
 import { createSearchIndex, filterItems } from '@workspaceui/componentlibrary/src/utils/searchUtils';
 import { useLanguage } from '@/contexts/language';
 
-function filterMenusByNameTailRecursive(
-  items: Menu[],
-  search: string,
-  acc: Menu[] = []
-): Menu[] {
-  if (items.length === 0) return acc;
-
-  const [head, ...rest] = items;
-  const normalizedSearch = search.toLowerCase();
-
-  const nameMatches = head.name.toLowerCase().includes(normalizedSearch);
-  const filteredChildren = head.children
-    ? filterMenusByNameTailRecursive(head.children, search)
-    : [];
-
-  if (nameMatches || filteredChildren.length > 0) {
-    const newItem: Menu = {
-      ...head,
-      children: filteredChildren.length > 0 ? filteredChildren : undefined,
-    };
-    return filterMenusByNameTailRecursive(rest, search, [...acc, newItem]);
-  }
-
-  return filterMenusByNameTailRecursive(rest, search, acc);
-}
-
-function filterMenusByName(menuItems: Menu[], search: string): Menu[] {
-  return filterMenusByNameTailRecursive(menuItems, search);
-}
-
-function filterMenusByNameStrict(menuItems: Menu[], search: string): Menu[] {
-  const normalizedSearch = search.toLowerCase();
-
-  function filterRecursive(items: Menu[]): Menu[] {
-    return items.reduce<Menu[]>((acc, item) => {
-      const nameMatches = item.name.toLowerCase().includes(normalizedSearch);
-      const filteredChildren = item.children ? filterRecursive(item.children) : [];
-
-      // Solo agregamos el nodo si él matchea o alguno de sus hijos
-      if (nameMatches || filteredChildren.length > 0) {
-        acc.push({
-          ...item,
-          children: filteredChildren.length > 0 ? filteredChildren : undefined,
-        });
-      }
-
-      return acc;
-    }, []);
-  }
-
-  return filterRecursive(menuItems);
-}
-
-
-
 export default function Sidebar() {
   const { t } = useTranslation();
   const { token, currentRole } = useUserContext();
@@ -124,7 +69,7 @@ export default function Sidebar() {
       windowId={windowId}
       logo={EtendoLogotype.src}
       title={t('common.etendo')}
-      items={filterMenusByNameStrict(menu, searchValue)}
+      items={menu}
       onClick={handleClick}
       onReportClick={handleClick}
       onProcessClick={handleClick}
