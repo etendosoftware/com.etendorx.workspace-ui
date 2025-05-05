@@ -12,6 +12,7 @@ import IconButton from '../../../../IconButton';
 
 export interface SearchInputWithVoiceProps extends TextInputProps {
   onVoiceClick?: () => void;
+  disabled?: boolean;
 }
 
 const StartAdornment = () => {
@@ -36,46 +37,73 @@ const EndAdornment = () => {
   );
 };
 
-const SearchInputWithVoice = ({ onVoiceClick, ...props }: SearchInputWithVoiceProps) => {
+const SearchInputWithVoice = ({ onVoiceClick, disabled = false, ...props }: SearchInputWithVoiceProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const theme = useTheme();
 
   const handleVoiceClick = useCallback(() => {
+    if (disabled) return;
     setIsRecording(!isRecording);
     onVoiceClick?.();
-  }, [isRecording, onVoiceClick]);
+  }, [isRecording, onVoiceClick, disabled]);
+
+  const wrapperStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+    cursor: disabled ? 'not-allowed' : 'default',
+    pointerEvents: disabled ? 'none' : 'auto',
+    position: 'relative',
+  };
+
+  const overlayStyle = disabled
+    ? {
+        position: 'absolute' as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'transparent',
+        cursor: 'not-allowed',
+        zIndex: 10,
+        pointerEvents: 'auto' as const,
+      }
+    : {};
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-      <TextInputAutoComplete
-        {...props}
-        InputProps={{
-          ...props.InputProps,
-          startAdornment: <StartAdornment />,
-          endAdornment: <EndAdornment />,
-          style: { height: '2.5rem' },
-          disabled: true,
-        }}
-      />
-      <Box>
-        <IconButton onClick={handleVoiceClick} size="medium" sx={{ margin: '0.25rem 0' }} disabled={true}>
-          {isRecording ? (
-            <MicOffIcon
-              sx={{
-                color: theme.palette.baselineColor.neutral[70],
-                fontSize: 30,
-              }}
-            />
-          ) : (
-            <MicIcon
-              sx={{
-                color: theme.palette.baselineColor.neutral[70],
-                fontSize: 30,
-              }}
-            />
-          )}
-        </IconButton>
+    <Box sx={{ position: 'relative' }}>
+      <Box sx={wrapperStyle}>
+        <TextInputAutoComplete
+          {...props}
+          InputProps={{
+            ...props.InputProps,
+            startAdornment: <StartAdornment />,
+            endAdornment: <EndAdornment />,
+            style: { height: '2.5rem' },
+          }}
+          disabled={disabled}
+        />
+        <Box>
+          <IconButton onClick={handleVoiceClick} size="medium" sx={{ margin: '0.25rem 0' }} disabled={disabled}>
+            {isRecording ? (
+              <MicOffIcon
+                sx={{
+                  color: theme.palette.baselineColor.neutral[70],
+                  fontSize: 30,
+                }}
+              />
+            ) : (
+              <MicIcon
+                sx={{
+                  color: theme.palette.baselineColor.neutral[70],
+                  fontSize: 30,
+                }}
+              />
+            )}
+          </IconButton>
+        </Box>
       </Box>
+      {disabled && <Box sx={overlayStyle} onClick={e => e.preventDefault()} />}
     </Box>
   );
 };
