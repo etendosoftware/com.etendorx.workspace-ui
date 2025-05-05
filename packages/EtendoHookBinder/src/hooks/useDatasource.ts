@@ -39,6 +39,7 @@ export function useDatasource(
   const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState(params.isImplicitFilterApplied ?? false);
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
   const [activeColumnFilters, setActiveColumnFilters] = useState<MRT_ColumnFiltersState>(columnFilters);
+  const [hasMoreRecords, setHasMoreRecords] = useState(true);
 
   const removeRecordLocally = useCallback((recordId: string) => {
     setRecords(prevRecords => prevRecords.filter(record => String(record.id) !== recordId));
@@ -107,6 +108,12 @@ export function useDatasource(
       const safePageSize = pageSize ?? 1000;
       const response = await loadData(entity, page, safePageSize, queryParams);
 
+      if (response.data.length < safePageSize) {
+        setHasMoreRecords(false);
+      } else {
+        setHasMoreRecords(true);
+      }
+
       if (response.error || response.status != 0) {
         throw new Error(response.error.message);
       } else {
@@ -170,6 +177,7 @@ export function useDatasource(
       activeColumnFilters,
       removeRecordLocally,
       refetch,
+      hasMoreRecords,
     }),
     [
       loading,
@@ -185,6 +193,7 @@ export function useDatasource(
       activeColumnFilters,
       removeRecordLocally,
       refetch,
+      hasMoreRecords,
     ],
   );
 }

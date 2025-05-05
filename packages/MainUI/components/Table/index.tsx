@@ -50,7 +50,7 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { selected } = useSelected();
-
+  const { t } = useTranslation();
   const tabId = tab.id;
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
@@ -99,6 +99,7 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
     error,
     refetch,
     loading,
+    hasMoreRecords,
   } = useDatasource(tab.entityName, query, searchQuery, columns);
 
   const handleColumnFiltersChange = useCallback(
@@ -202,9 +203,9 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
       );
     },
     renderBottomToolbar:
-      tab.uIPattern == 'STD' && !searchQuery ? (
+      tab.uIPattern == 'STD' && !searchQuery && hasMoreRecords ? (
         <Button sx={sx.fetchMore} onClick={fetchMore}>
-          Load more
+          {t('common.loadMore')}
         </Button>
       ) : null,
     initialState: { density: 'compact' },
@@ -251,8 +252,6 @@ const DynamicTableContent = memo(({ tab }: DynamicTableProps) => {
       refresh: refetch,
     });
   }, [refetch, registerActions]);
-
-  const { t } = useTranslation();
 
   if (error) {
     return (

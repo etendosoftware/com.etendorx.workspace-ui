@@ -16,6 +16,7 @@ const es = {
     clear: 'Limpiar Seleccion',
     processTitle: 'Titulo del proceso',
     notImplemented: 'Esta funcionalidad no está disponible aun',
+    loadMore: 'Cargar más',
     trueText: 'Si',
     falseText: 'No',
   },
