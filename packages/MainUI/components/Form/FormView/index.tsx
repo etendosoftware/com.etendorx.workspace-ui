@@ -179,7 +179,7 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
     if (!initialState) return;
 
     Object.entries(initialState).forEach(([key, value]) => {
-      if (!value) {
+      if (typeof value === 'undefined') {
         initialState[key] = '';
       }
     });

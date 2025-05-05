@@ -32,10 +32,4 @@ export interface TabContentProps {
 
 export interface ResizableTabContainerProps {
   isOpen: boolean;
-  onClose: () => void;
-  selectedRecord?: SelectedRecord | null;
-  tab?: Tab;
-  windowId: string | undefined;
-  onHeightChange?: (height: number) => void;
-  isMainTab?: IsMainTab;
 }

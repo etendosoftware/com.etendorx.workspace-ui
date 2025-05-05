@@ -31,7 +31,7 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
       <ToolbarProvider>
         <SearchProvider>
           <TabContent tab={tab} window={window} recordId={recordId} />
-          <ResizableTabContainer isOpen={true} onClose={() => {}} windowId={window} />
+          {/* <ResizableTabContainer isOpen={true} /> */}
         </SearchProvider>
       </ToolbarProvider>
     </TabContextProvider>
