@@ -1,9 +1,12 @@
+import { Field } from "@workspaceui/etendohookbinder/src/api/types";
+
 export interface BaseButton {
   id: string;
   name: string;
   action: string;
   enabled: boolean;
   visible: boolean;
+  field: Field;
 }
 
 export interface ProcessAction extends Record<string, unknown> {
