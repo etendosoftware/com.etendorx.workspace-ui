@@ -9,6 +9,16 @@ import { useSearchParams } from 'next/navigation';
 
 import TabContextProvider from '@/contexts/tab';
 import { ToolbarProvider } from '@/contexts/ToolbarContext';
+import { Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+
+const TabContent = ({ tab, window, recordId }: { tab: Tab; window?: WindowMetadata; recordId: string }) => {
+  return (
+    <div className="flex gap-2 p-2 flex-col min-h-0 flex-auto max-h-full">
+      <Toolbar windowId={tab.windowId} tabId={tab.id} isFormView={Boolean(recordId)} />
+      <DynamicTable window={window} tab={tab} />
+    </div>
+  );
+};
 
 export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
   const { window } = useMetadataContext();
@@ -19,10 +29,7 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
     <ToolbarProvider>
       <TabContextProvider tab={tab}>
         <SearchProvider>
-          <div className="flex gap-2 p-2 flex-col min-h-0 flex-auto max-h-full">
-            <Toolbar windowId={tab.windowId} tabId={tab.id} isFormView={Boolean(recordId)} />
-            <DynamicTable window={window} tab={tab} />
-          </div>
+          <TabContent tab={tab} window={window} recordId={recordId} />
         </SearchProvider>
       </TabContextProvider>
     </ToolbarProvider>
