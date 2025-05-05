@@ -135,7 +135,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             </div>
             <div className="overflow-y-auto max-h-[60vh] p-1 relative">
               <div
-                className={`absolute transition-opacity inset-0 flex items-center justify-center bg-white ${loading ? 'opacity-100' : 'opacity-0'}`}>
+                className={`absolute transition-opacity inset-0 flex items-center pointer-events-none justify-center bg-white ${loading ? 'opacity-100' : 'opacity-0'}`}>
                 <Loading />
               </div>
               <div className={`transition-opacity ${loading ? 'opacity-0' : 'opacity-100'}`}>
