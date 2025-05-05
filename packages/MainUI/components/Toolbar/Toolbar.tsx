@@ -189,7 +189,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
 
   const handleCompleteRefresh = useCallback(async () => {
     clearSelections(tab.id);
-  }, [clearSelections, tab.id]);
+    refetchDatasource(tab.id);
+  }, [clearSelections, refetchDatasource, tab.id]);
 
   const toolbarConfig = useMemo(() => {
     const buttons = toolbar?.buttons ?? [];
