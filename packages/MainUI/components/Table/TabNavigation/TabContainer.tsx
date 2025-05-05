@@ -9,8 +9,8 @@ const TabContainer: React.FC<TabProps> = ({ onClose, selectedRecord, tab, handle
     <div className="w-full h-full flex flex-col">
       <TabContent
         onClose={onClose}
-        identifier={safeRecord.identifier || ''}
-        type={safeRecord.type || ''}
+        identifier={String(safeRecord.identifier || '')}
+        type={String(safeRecord.type || '')}
         handleFullSize={handleFullSize}
         isFullSize={isFullSize}
         tab={tab}

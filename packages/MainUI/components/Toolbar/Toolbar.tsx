@@ -25,9 +25,7 @@ import { useProcessButton } from '../../hooks/Toolbar/useProcessButton';
 import { useToolbarConfig } from '../../hooks/Toolbar/useToolbarConfig';
 import { iconMap } from './iconMap';
 import { useToolbar } from '../../hooks/Toolbar/useToolbar';
-import { useMetadataContext } from '../../hooks/useMetadataContext';
 import ProcessMenu from './ProcessMenu';
-import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
 import ConfirmModal from '@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal';
 import { ProcessButton, ProcessButtonType, ProcessDefinitionButton } from '../ProcessModal/types';
@@ -35,7 +33,7 @@ import { ProcessActionModal } from '../ProcessModal';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
 import ProcessDefinitionModal from '../ProcessModal/ProcessDefinitionModal';
 import { useUserContext } from '@/hooks/useUserContext';
-import TabContextProvider from '@/contexts/tab';
+import TabContextProvider, { useTabContext } from '@/contexts/tab';
 import { compileExpression } from '../Form/FormView/selectors/BaseSelector';
 import { useSelected } from '@/contexts/selected';
 
@@ -49,21 +47,11 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { session } = useUserContext();
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
-  const { tabs, clearSelections } = useMetadataContext();
-  const { selected, selectedMultiple } = useSelected();
+  const { selected, selectedMultiple, clear } = useSelected();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { refetchDatasource } = useDatasourceContext();
-
-  const tab = useMemo<Tab>(() => {
-    const result = tabs.find(tab => tab.id === tabId);
-
-    if (result) {
-      return result;
-    }
-
-    throw new Error('Error creating toolbar: Missing tab');
-  }, [tabs, tabId]);
+  const { tab } = useTabContext();
 
   const selectedRecord = tab ? selected[tab.id] : undefined;
   const parentId = useMemo(() => selected[tab?.level - 1]?.id?.toString() ?? null, [selected, tab?.level]);
@@ -147,10 +135,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     if (processResponse && !processResponse.showDeprecatedFeatureModal && processResponse.success) {
       if (tabId) {
         refetchDatasource(tabId);
-        clearSelections(tabId);
       }
+      clear(tab);
     }
-  }, [tabId, refetchDatasource, clearSelections, processResponse]);
+  }, [processResponse, tabId, refetchDatasource, clear, tab]);
 
   const handleConfirmProcess = useCallback(async () => {
     if (!selectedProcessActionButton || !selectedRecord?.id) return;
@@ -188,9 +176,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   }, []);
 
   const handleCompleteRefresh = useCallback(async () => {
-    clearSelections(tab.id);
+    clear(tab);
     refetchDatasource(tab.id);
-  }, [clearSelections, refetchDatasource, tab.id]);
+  }, [clear, refetchDatasource, tab]);
 
   const toolbarConfig = useMemo(() => {
     const buttons = toolbar?.buttons ?? [];
