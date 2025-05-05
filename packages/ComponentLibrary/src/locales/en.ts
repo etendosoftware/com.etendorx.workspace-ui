@@ -17,6 +17,8 @@ const en = {
     processTitle: 'Title of the process',
     notImplemented: 'This feature is not implemented yet',
     loadMore: 'Load More',
+    trueText: 'Yes',
+    falseText: 'No',
   },
   forms: {
     sections: {

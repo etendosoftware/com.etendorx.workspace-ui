@@ -17,6 +17,8 @@ const es = {
     processTitle: 'Titulo del proceso',
     notImplemented: 'Esta funcionalidad no está disponible aun',
     loadMore: 'Cargar más',
+    trueText: 'Si',
+    falseText: 'No',
   },
   forms: {
     sections: {
