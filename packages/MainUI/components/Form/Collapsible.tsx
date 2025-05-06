@@ -9,12 +9,14 @@ import { defaultFill, useStyle } from './FormView/styles';
 import { useTheme } from '@mui/material';
 import { CollapsibleProps } from './FormView/types';
 
+const onHoverDefault = () => {};
+
 function CollapsibleCmp({
   title,
   icon,
   children,
   initialState = false,
-  onHover = () => {},
+  onHover = onHoverDefault,
   sectionId,
   isHovered = false,
   onToggle,

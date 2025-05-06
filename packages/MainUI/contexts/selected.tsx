@@ -3,6 +3,7 @@
 import { createContext, useState, useMemo, useCallback, useContext } from 'react';
 import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useSetSession } from '@/hooks/useSetSession';
+import { useSearchParams } from 'next/navigation';
 
 type RecordContext = {
   selected: Record<string, EntityData>;
@@ -27,15 +28,18 @@ export default function SelectedProvider({ children }: React.PropsWithChildren) 
   const [selected, setSelected] = useState<Record<string, EntityData>>({});
   // Used to store the selected records in a given tab
   const [selectedMultiple, setSelectedMultiple] = useState<Record<string, Record<string, EntityData>>>({});
-
+  const searchParams = useSearchParams();
   const setSession = useSetSession();
 
   const select = useCallback(
     (record: EntityData, tab: Tab) => {
       setSession(record, tab);
       setSelected(prev => ({ ...prev, [tab.id]: record }));
+      const params = new URLSearchParams(searchParams);
+      params.set('selected_' + tab.id, String(record.id));
+      window.history.pushState(null, '', `?${params}`);
     },
-    [setSession],
+    [searchParams, setSession],
   );
 
   const clear = useCallback((tab: Tab) => {

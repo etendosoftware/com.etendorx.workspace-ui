@@ -21,6 +21,13 @@ import { useFormInitialization } from '@/hooks/useFormInitialization';
 import { useFormInitialState } from '@/hooks/useFormInitialState';
 import { useToolbarContext } from '@/contexts/ToolbarContext';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
+import { useTranslation } from '@/hooks/useTranslation';
+
+const iconMap: Record<string, React.ReactElement> = {
+  'Main Section': <FileIcon />,
+  'More Information': <InfoIcon />,
+  Dimensions: <FolderIcon />,
+};
 
 export default function FormView({ window: windowMetadata, tab, mode, recordId }: FormViewProps) {
   const theme = useTheme();
@@ -30,6 +37,7 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
 
   const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
 
@@ -56,12 +64,6 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
 
   const getIconForGroup = useCallback(
     (identifier: string) => {
-      const iconMap: Record<string, React.ReactElement> = {
-        'Main Section': <FileIcon />,
-        'More Information': <InfoIcon />,
-        Dimensions: <FolderIcon />,
-      };
-
       return iconMap[identifier] || defaultIcon;
     },
     [defaultIcon],
@@ -191,6 +193,12 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
     registerActions({ save: save, refresh: onReset, new: onReset });
   }, [onReset, registerActions, save]);
 
+  const handleBack = useCallback(() => {
+    const params = new URLSearchParams(searchParams);
+    params.delete("recordId_" + tab.id);
+    window.history.pushState(null, "", `?${params}`)
+  }, [searchParams, tab.id]);
+
   if (loading || loadingFormInitialization) {
     return <Spinner />;
   }
@@ -216,6 +224,7 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
             )}
           </div>
           <StatusBar fields={fields.statusBarFields} />
+          <div className="p-2 shadow bg-white" onClick={handleBack}>{t("navigation.common.back")}</div>
           <div className="mt-2">
             <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
           </div>

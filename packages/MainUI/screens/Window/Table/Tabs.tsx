@@ -24,25 +24,27 @@ export default function Tabs({ tabs }: { tabs: Tab[]; level?: number }) {
 
   const active = useMemo(() => tabs.find(tab => tab.id === activeKey) as Tab, [activeKey, tabs]);
 
+  if (tabs.length === 1) {
+    return <TabLevel tab={tabs[0]} />;
+  }
+
   if (!parentRecord) {
     return null;
   }
 
   return (
-    <>
-      <div>
-        {tabs.map(tab => (
-          <Button
-            key={tab.id}
-            onClick={refs.current[tab.id]}
-            title={tab.title}
-            aria-label={tab.title}
-            sx={sx.button(tab, activeKey)}>
-            {tab.name}
-          </Button>
-        ))}
-      </div>
+  <div>
+      {tabs.map(tab => (
+        <Button
+          key={tab.id}
+          onClick={refs.current[tab.id]}
+          title={tab.title}
+          aria-label={tab.title}
+          sx={sx.button(tab, activeKey)}>
+          {tab.name}
+        </Button>
+      ))}
       <TabLevel tab={active} />
-    </>
+    </div>
   );
 }

@@ -95,6 +95,8 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
               onClick={event => {
                 if (item.actions && item.actions.length > 0) {
                   handleActionMenuOpen(item.actions, event);
+                } else if (item.onClick) {
+                  item.onClick();
                 }
               }}>
               {item.label}

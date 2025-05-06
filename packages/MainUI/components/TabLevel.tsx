@@ -16,7 +16,7 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
 
   return (
     <TabContextProvider tab={tab}>
-      <div className={`flex flex-1 max-w-auto max-h-auto gap-2 p-2 flex-col min-h-0 ${tab.level === 0 ? "" : "bg-white rounded-xl"}`}>
+      <div className={`flex flex-1 max-w-auto max-h-auto gap-2 flex-col min-h-0 ${tab.level === 0 ? "" : ""}`}>
         <Toolbar windowId={tab.windowId} tabId={tab.id} isFormView={Boolean(recordId)} />
         {recordId ? (
           <FormView

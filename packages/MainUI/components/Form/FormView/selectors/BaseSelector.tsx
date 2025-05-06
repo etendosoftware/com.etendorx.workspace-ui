@@ -11,6 +11,7 @@ import { useParams } from 'next/navigation';
 import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { useTabContext } from '@/contexts/tab';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useSelected } from '@/contexts/selected';
 
 export const compileExpression = (expression: string) => {
   try {
@@ -28,7 +29,9 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
   const { recordId } = useParams<{ recordId: string }>();
   const { session } = useUserContext();
-  const executeCalloutBase = useCallout({ field, rowId: recordId });
+  const { selected } = useSelected();
+  const parentId = tab.parentTabId ? String(selected[tab.parentTabId]?.id) : undefined;
+  const executeCalloutBase = useCallout({ field, rowId: recordId, parentId });
   const debouncedCallout = useDebounce(executeCalloutBase, 300);
   const value = watch(field.hqlName);
   const values = watch();

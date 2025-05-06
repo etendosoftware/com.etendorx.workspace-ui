@@ -117,6 +117,7 @@ const en = {
   navigation: {
     common: {
       home: 'Home',
+      back: 'Back',
     },
     waterfall: {
       activateAll: 'Activate all',

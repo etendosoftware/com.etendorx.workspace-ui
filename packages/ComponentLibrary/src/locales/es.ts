@@ -117,6 +117,7 @@ const es = {
   navigation: {
     common: {
       home: 'Ir al inicio',
+      back: 'Atrás',
     },
     waterfall: {
       activateAll: 'Activar todo',
