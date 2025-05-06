@@ -1,15 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Checkbox, FormControl, FormControlLabel, Grid, styled, useTheme } from '@mui/material';
 import { useStyle } from './styles';
-import OrganizationIcon from '../../../assets/icons/user.svg';
-import ClientIcon from '../../../assets/icons/github.svg';
-import WarehouseIcon from '../../../assets/icons/warehouse.svg';
-import LockOutlined from '../../../assets/icons/lock.svg';
-import Select from '../../Input/Select';
-import { InputPassword } from '../..';
-import { Option } from '../../Input/Select/types';
+import OrganizationIcon from '../../../../ComponentLibrary/src/assets/icons/user.svg';
+import ClientIcon from '../../../../ComponentLibrary/src/assets/icons/github.svg';
+import WarehouseIcon from '../../../../ComponentLibrary/src/assets/icons/warehouse.svg';
+import LockOutlined from '../../../../ComponentLibrary/src/assets/icons/lock.svg';
+import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
+import { InputPassword } from '@workspaceui/componentlibrary/src/components';
+import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
 import { SelectorListProps, BaseWarehouse } from '../types';
-import { Item } from '../../enums';
+import { Item } from '@workspaceui/componentlibrary/src/components/enums';
 
 const isOptionEqualToValue = (option: Option, value: Option) => option.id === value.id;
 

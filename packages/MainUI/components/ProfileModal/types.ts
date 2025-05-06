@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Section } from './ToggleButton/types';
-import { Option } from '../Input/Select/types';
-import { Language } from '../../locales/types';
+import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
+import { Language } from '@workspaceui/componentlibrary/src/locales/types';
 import {
   CurrentRole,
   CurrentWarehouse,

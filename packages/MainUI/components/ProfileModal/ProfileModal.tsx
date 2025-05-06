@@ -1,16 +1,17 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Button, Menu, useTheme } from '@mui/material';
-import CheckCircle from '../../assets/icons/check-circle.svg';
+import CheckCircle from '../../../ComponentLibrary/src/assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';
 import ToggleSection from './ToggleButton';
 import SelectorList from './ToggleSection';
 import { ProfileModalProps } from './types';
 import { MODAL_WIDTH, menuSyle, useStyle } from './styles';
-import IconButton from '../IconButton';
-import { Option } from '../Input/Select/types';
-import { Language } from '../../locales/types';
+import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
+import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
+import { Language } from '@workspaceui/componentlibrary/src/locales/types';
+import { useLanguage } from '@/contexts/language';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,
@@ -35,11 +36,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   onSignOff,
   language,
   languages,
-  languagesFlags,
   onLanguageChange,
+  saveAsDefault,
+  onSaveAsDefaultChange,
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const { language: initialLanguage, getFlag } = useLanguage();
+  const [languagesFlags, setLanguageFlags] = useState(getFlag(initialLanguage));
   const [selectedRole, setSelectedRole] = useState<Option | null>(() => {
     if (currentRole) {
       return { title: currentRole.name, value: currentRole.id, id: currentRole.id };
@@ -64,7 +68,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         }
       : null;
   });
-  const [saveAsDefault, setSaveAsDefault] = useState(false);
   const theme = useTheme();
   const { styles, sx } = useStyle();
 
@@ -107,10 +110,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     }
   }, []);
 
-  const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    setSaveAsDefault(event.target.checked);
-  }, []);
-
   const handleToggle = useCallback((section: string) => {
     setCurrentSection(section);
   }, []);
@@ -141,7 +140,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             value: selectedWarehouse.value,
           };
           setSelectedWarehouse(newWarehouse);
-          localStorage.setItem('currentWarehouse', JSON.stringify(newWarehouse)); // Guardar en localStorage
+          localStorage.setItem('currentWarehouse', JSON.stringify(newWarehouse));
         }
 
         if (Object.keys(params).length > 0) {
@@ -204,11 +203,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     selectedWarehouse,
   ]);
 
-  const handleLanguageChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
-    if (value) {
-      setSelectedLanguage(value);
-    }
-  }, []);
+  const handleLanguageChange = useCallback(
+    (_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
+      if (value) {
+        setSelectedLanguage(value);
+        setLanguageFlags(getFlag(value.value));
+      }
+    },
+    [getFlag],
+  );
 
   return (
     <>
@@ -250,7 +253,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           languages={languages}
           selectedLanguage={selectedLanguage}
           saveAsDefault={saveAsDefault}
-          onSaveAsDefaultChange={handleSaveAsDefaultChange}
+          onSaveAsDefaultChange={onSaveAsDefaultChange}
           translations={translations}
           languagesFlags={languagesFlags}
         />

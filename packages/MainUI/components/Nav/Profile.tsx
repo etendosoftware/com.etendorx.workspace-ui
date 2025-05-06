@@ -2,20 +2,13 @@ import { useContext, useState, useCallback, useMemo } from 'react';
 import { UserContext } from '../../contexts/user';
 import { logger } from '../../utils/logger';
 import { ProfileWrapperProps } from './types';
-import ProfileModal from '@workspaceui/componentlibrary/src/components/ProfileModal/ProfileModal';
 import { Language } from '../../contexts/types';
 import { useLanguage } from '@/contexts/language';
+import ProfileModal from '../ProfileModal/ProfileModal';
 
 const ProfileWrapper = (props: ProfileWrapperProps) => {
-  const {
-    setDefaultConfiguration,
-    currentRole,
-    profile,
-    currentWarehouse,
-    changeProfile,
-    roles,
-    languages,
-  } = useContext(UserContext);
+  const { setDefaultConfiguration, currentRole, profile, currentWarehouse, changeProfile, roles, languages } =
+    useContext(UserContext);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const { language, setLanguage, getFlag } = useLanguage();
 
@@ -50,10 +43,10 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
       currentWarehouse={currentWarehouse}
       roles={roles}
       saveAsDefault={saveAsDefault}
+      onSaveAsDefaultChange={handleSaveAsDefaultChange}
       onLanguageChange={setLanguage}
       language={language}
       languagesFlags={flagString}
-      onSaveAsDefaultChange={handleSaveAsDefaultChange}
       changeProfile={changeProfile}
       onSetDefaultConfiguration={setDefaultConfiguration}
       logger={logger}

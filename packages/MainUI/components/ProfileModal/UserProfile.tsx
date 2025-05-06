@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { useStyle, TEXT_LOGO } from './styles';
-import BackgroundGradient from '../../assets/images/backgroundGradient.svg?url';
-import LogoutIcon from '../../assets/icons/log-out.svg';
-import IconButton from '../IconButton';
+import BackgroundGradient from '../../../ComponentLibrary/src/assets/images/backgroundGradient.svg?url';
+import LogoutIcon from '../../../ComponentLibrary/src/assets/icons/log-out.svg';
+import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import { UserProfileProps } from './types';
 
 const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, sectionTooltip, onSignOff }) => {
