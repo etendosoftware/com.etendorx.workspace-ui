@@ -14,7 +14,7 @@ const INPUT_PROPS = {
 const QuantitySelector: React.FC<QuantityProps> = memo(
   ({ value: initialValue, min, max, onChange, readOnly, maxLength = 100, name, field }) => {
     const { watch, setValue: setActualValue } = useFormContext();
-    const value = watch(field.hqlName, initialValue);
+    const value = watch(field.hqlName, initialValue || "");
 
     const setValue = useCallback(
       (v: FieldValue) => {
@@ -93,6 +93,6 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
   },
 );
 
-QuantitySelector.displayName = 'QualitySelector';
+QuantitySelector.displayName = 'QuantitySelector';
 
 export default QuantitySelector;

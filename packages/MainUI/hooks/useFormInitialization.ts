@@ -99,7 +99,10 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
   const loaded = !!state.formInitialization;
   const searchParams = useSearchParams();
-  const parentId = useMemo(() => searchParams.get('parentId'), [searchParams]);
+  const parentId = useMemo(
+    () => searchParams.get('selected_' + tab?.parentTabId)?.toString(),
+    [searchParams, tab?.parentTabId],
+  );
   const { error, formInitialization, loading } = state;
   const params = useMemo(
     () => (tab ? buildFormInitializationParams({ tab, mode, recordId, parentId }) : null),

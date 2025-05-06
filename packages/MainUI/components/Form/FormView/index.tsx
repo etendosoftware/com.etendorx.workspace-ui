@@ -136,12 +136,12 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
         reset({ ...initialState, ...data });
       } else {
         const params = new URLSearchParams(searchParams.toString());
-        params.set('recordId', String(data.id));
+        params.set('recordId_' + tab.id, String(data.id));
         history.pushState(null, '', `?${params.toString()}`);
       }
       showSuccessModal('Saved');
     },
-    [initialState, mode, reset, searchParams, showSuccessModal],
+    [initialState, mode, reset, searchParams, showSuccessModal, tab.id],
   );
 
   const onError = useCallback(
@@ -202,6 +202,7 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
   if (loading || loadingFormInitialization) {
     return <Spinner />;
   }
+
   return (
     <FormProvider setValue={setValue} reset={reset} {...form}>
       <form

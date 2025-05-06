@@ -232,7 +232,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     },
   });
 
-  useTableSelection(tab, records, rowSelection, table);
+  useTableSelection(tab, records, rowSelection);
 
   useEffect(() => {
     if (removeRecordLocally) {

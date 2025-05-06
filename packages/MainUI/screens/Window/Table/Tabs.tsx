@@ -33,7 +33,7 @@ export default function Tabs({ tabs }: { tabs: Tab[]; level?: number }) {
   }
 
   return (
-  <div>
+    <div className="bg-gray-200 p-2">
       {tabs.map(tab => (
         <Button
           key={tab.id}

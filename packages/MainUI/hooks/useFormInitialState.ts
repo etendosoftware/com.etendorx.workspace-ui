@@ -37,6 +37,8 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
     });
 
     const processedParentData = { ...parentData };
+    console.debug("parentData", processedParentData);
+
     if (parentData) {
       Object.entries(parentData).forEach(([key, value]) => {
         if (typeof value === 'string' && tab?.fields[key] && isDateField(tab?.fields[key])) {
