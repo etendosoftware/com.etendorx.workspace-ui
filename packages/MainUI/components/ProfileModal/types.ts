@@ -8,17 +8,10 @@ import {
   LoginResponse,
   SessionResponse,
 } from '@workspaceui/etendohookbinder/src/api/types';
+import { Logger } from '@/utils/logger';
 
 export interface Translations {
   saveAsDefault: string;
-}
-
-export interface Logger {
-  debug(...data: unknown[]): void;
-  info(...data: unknown[]): void;
-  log(...data: unknown[]): void;
-  warn(...data: unknown[]): void;
-  error(...data: unknown[]): void;
 }
 
 export interface BaseUser {
@@ -94,7 +87,7 @@ export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps
   logger: Logger;
   onSignOff: () => void;
   onLanguageChange: (e: Language) => void;
-  language: string;
+  language: string | null;
   languages: LanguageOption[];
   languagesFlags: string;
   changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | void>;

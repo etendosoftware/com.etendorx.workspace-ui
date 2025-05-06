@@ -1,4 +1,7 @@
+'use client';
+
 import { useCallback } from 'react';
+import Image from 'next/image';
 import { useStyle, TEXT_LOGO } from './styles';
 import BackgroundGradient from '../../../ComponentLibrary/src/assets/images/backgroundGradient.svg?url';
 import LogoutIcon from '../../../ComponentLibrary/src/assets/icons/log-out.svg';
@@ -15,7 +18,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, sectionToolti
   return (
     <div style={styles.userProfileStyles}>
       <div style={styles.svgContainerStyles}>
-        <img src={BackgroundGradient} alt="Background Gradient" />
+        <Image src={BackgroundGradient} height={window.innerHeight} width={window.innerWidth} alt="Background Gradient" />
       </div>
       <IconButton
         style={styles.logoutButtonStyles}
@@ -27,7 +30,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, sectionToolti
       </IconButton>
       <div style={styles.profileImageContainerStyles}>
         {photoUrl ? (
-          <img src={photoUrl} alt="Profile" style={styles.profileImageStyles} />
+          <Image src={photoUrl} height={window.innerHeight} width={window.innerWidth} alt="Profile" style={styles.profileImageStyles} />
         ) : (
           <div
             style={{

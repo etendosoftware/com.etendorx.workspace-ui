@@ -207,7 +207,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     (_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
       if (value) {
         setSelectedLanguage(value);
-        setLanguageFlags(getFlag(value.value));
+        setLanguageFlags(getFlag(value.value as Language));
       }
     },
     [getFlag],

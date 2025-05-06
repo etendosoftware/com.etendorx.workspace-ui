@@ -63,8 +63,11 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
       tabId: tab.id,
       isImplicitFilterApplied: tab.hqlfilterclause?.length > 0 || tab.sQLWhereClause?.length > 0,
       pageSize: 100,
-      language,
     };
+
+    if (language) {
+      options.language = language;
+    }
 
     if (value) {
       options.criteria = [
@@ -189,7 +192,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     positionToolbarAlertBanner: 'none',
     muiTableBodyRowProps: rowProps,
     muiTableContainerProps: {
-      className: "flex-1"
+      className: 'flex-1',
     },
     enablePagination: false,
     enableStickyHeader: true,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Drawer from '@workspaceui/componentlibrary/src/components/Drawer';
 import { useMenu } from '@workspaceui/etendohookbinder/src/hooks/useMenu';
@@ -16,8 +16,8 @@ import { useLanguage } from '@/contexts/language';
 
 export default function Sidebar() {
   const { t } = useTranslation();
-  const { token, currentRole } = useUserContext();
-  const { language } = useLanguage();
+  const { token, currentRole, prevRole } = useUserContext();
+  const { language, prevLanguage } = useLanguage();
   const { translateMenuItem } = useMenuTranslation();
   const menu = useMenu(token, currentRole || undefined, language);
   const router = useRouter();
@@ -63,6 +63,12 @@ export default function Sidebar() {
   );
 
   const getTranslatedName = useCallback((item: Menu) => translateMenuItem(item), [translateMenuItem]);
+
+  useEffect(() => {
+    if (prevRole?.id !== currentRole?.id || prevLanguage !== language) {
+      setSearchValue('');
+    }
+  }, [currentRole?.id, language, prevLanguage, prevRole?.id]);
 
   return (
     <Drawer

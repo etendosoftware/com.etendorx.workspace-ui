@@ -23,10 +23,13 @@ import { setDefaultConfiguration as apiSetDefaultConfiguration } from '@workspac
 import useLocalStorage from '@workspaceui/componentlibrary/src/hooks/useLocalStorage';
 import { useLanguage } from './language';
 import LoginScreen from '@/screens/Login';
+import { usePrevious } from '@/hooks/usePrevious';
+import { useRouter } from 'next/navigation';
 
 export const UserContext = createContext({} as IUserContext);
 
 export default function UserProvider(props: React.PropsWithChildren) {
+  const router = useRouter();
   const [token, setToken] = useLocalStorage<string | null>('token', null);
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<IUserContext['user']>({} as User);
@@ -35,6 +38,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [currentWarehouse, setCurrentWarehouse] = useState<CurrentWarehouse>();
   const [currentRole, setCurrentRole] = useState<CurrentRole>();
   const [currentClient, setCurrentClient] = useState<CurrentClient>();
+  const prevRole = usePrevious(currentRole, currentRole);
 
   const [roles, setRoles] = useState<SessionResponse['roles']>(() => {
     const savedRoles = localStorage.getItem('roles');
@@ -178,6 +182,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       session,
       setSession,
       user,
+      prevRole,
     }),
     [
       login,
@@ -195,6 +200,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       languages,
       session,
       user,
+      prevRole,
     ],
   );
 
@@ -236,6 +242,12 @@ export default function UserProvider(props: React.PropsWithChildren) {
       };
     }
   }, [clearUserData, token]);
+
+  useEffect(() => {
+    if (ready && prevRole?.id !== currentRole?.id) {
+      router.push('/');
+    }
+  }, [currentRole?.id, prevRole?.id, ready, router]);
 
   if (!ready) {
     return null;

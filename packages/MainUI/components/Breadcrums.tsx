@@ -6,13 +6,15 @@ import { useRouter, usePathname } from 'next/navigation';
 import { BREADCRUMB, ROUTE_IDS } from '../constants/breadcrumb';
 import { useTranslation } from '../hooks/useTranslation';
 import { useMetadataContext } from '../hooks/useMetadataContext';
+import { useQueryParams } from '@/hooks/useQueryParams';
 
 const AppBreadcrumb: React.FC = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
   const navigate = router.push;
-  const { window, recordId, windowId } = useMetadataContext();
+  const { window, windowId } = useMetadataContext();
+  const { recordId } = useQueryParams<{ recordId: string }>();
 
   const isNewRecord = useCallback(() => pathname.includes('/NewRecord'), [pathname]);
 

@@ -17,9 +17,10 @@ import { type Etendo } from '@workspaceui/etendohookbinder/src/api/metadata';
 export type Language = 'en_US' | 'es_ES';
 
 export interface LanguageContextType {
-  language: Language;
+  language: Language | null;
+  prevLanguage: Language | null;
   setLanguage: (lang: Language) => void;
-  getFlag: (language?: Language) => string;
+  getFlag: (language?: Language | null) => string;
 }
 
 export interface DefaultConfiguration {
@@ -44,6 +45,7 @@ export interface IUserContext {
   token: string | null;
   roles: SessionResponse["roles"];
   currentRole: CurrentRole | undefined;
+  prevRole: CurrentRole | undefined;
   profile: ProfileInfo;
   currentWarehouse: CurrentWarehouse | undefined;
   currentClient: CurrentClient | undefined;
