@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import { createContext, useState, useMemo, useCallback, useContext } from 'react';
@@ -33,8 +34,8 @@ export default function SelectedProvider({ children }: React.PropsWithChildren) 
 
   const select = useCallback(
     (record: EntityData, tab: Tab) => {
-      setSession(record, tab);
       setSelected(prev => ({ ...prev, [tab.id]: record }));
+      setSession(record, tab);
       const params = new URLSearchParams(searchParams);
       params.set('selected_' + tab.id, String(record.id));
       window.history.pushState(null, '', `?${params}`);

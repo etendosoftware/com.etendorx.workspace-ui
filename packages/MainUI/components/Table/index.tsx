@@ -174,6 +174,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     [searchParams, sx.rowSelected, tab.id],
   );
 
+
   const table = useMaterialReactTable<EntityData>({
     muiTablePaperProps: {
       sx: sx.tablePaper,

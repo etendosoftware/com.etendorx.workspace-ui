@@ -74,7 +74,7 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId, onToggle
         onClick={handleToggle}
         onKeyDown={handleKeyDown}>
         <div className="flex items-center gap-3 ">
-          {(icon && false) || <InfoIcon fill="currentColor" />}
+          {icon || <InfoIcon fill="currentColor" />}
           <span className="font-semibold text-gray-800">{title}</span>
         </div>
         <div>
