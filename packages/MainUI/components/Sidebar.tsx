@@ -65,10 +65,10 @@ export default function Sidebar() {
   const getTranslatedName = useCallback((item: Menu) => translateMenuItem(item), [translateMenuItem]);
 
   useEffect(() => {
-    if (prevRole?.id !== currentRole?.id || prevLanguage !== language) {
+    if ((prevRole && prevRole?.id !== currentRole?.id) || prevLanguage !== language) {
       setSearchValue('');
     }
-  }, [currentRole?.id, language, prevLanguage, prevRole?.id]);
+  }, [currentRole?.id, language, prevLanguage, prevRole]);
 
   return (
     <Drawer

@@ -244,10 +244,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
   }, [clearUserData, token]);
 
   useEffect(() => {
-    if (ready && prevRole?.id !== currentRole?.id) {
+    if (ready && prevRole && prevRole?.id !== currentRole?.id) {
       router.push('/');
     }
-  }, [currentRole?.id, prevRole?.id, ready, router]);
+  }, [currentRole?.id, prevRole, ready, router]);
 
   if (!ready) {
     return null;

@@ -11,7 +11,8 @@ import { useQueryParams } from '@/hooks/useQueryParams';
 
 export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
   const { window } = useMetadataContext()
-  const { recordId } = useQueryParams<{ recordId: string }>();
+  const params = useQueryParams();
+  const recordId = params["recordId_" + tab.id] ? String(params["recordId_" + tab.id]) : null;
 
   return (
     <TabContextProvider tab={tab}>
