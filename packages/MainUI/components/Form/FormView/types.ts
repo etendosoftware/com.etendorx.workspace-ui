@@ -12,10 +12,8 @@ export interface GridItemProps {
 export interface CollapsibleProps {
   title: string;
   icon?: React.ReactNode;
-  initialState?: boolean;
-  onHover?: (sectionName: string | null) => void;
+  isExpanded?: boolean;
   sectionId?: string;
-  isHovered?: boolean;
   onToggle?: (isOpen: boolean) => void;
   children: React.ReactNode;
 }

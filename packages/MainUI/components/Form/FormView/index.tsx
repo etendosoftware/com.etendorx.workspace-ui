@@ -31,7 +31,6 @@ const iconMap: Record<string, React.ReactElement> = {
 
 export default function FormView({ window: windowMetadata, tab, mode, recordId }: FormViewProps) {
   const theme = useTheme();
-  const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>(['null']);
   const [selectedTab, setSelectedTab] = useState<string>('');
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
@@ -161,10 +160,6 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
     submit: form.handleSubmit,
   });
 
-  const handleHover = useCallback((sectionName: string | null) => {
-    setHoveredSection(sectionName);
-  }, []);
-
   const isSectionExpanded = useCallback(
     (sectionId: string | null) => {
       const id = String(sectionId);
@@ -195,8 +190,8 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
 
   const handleBack = useCallback(() => {
     const params = new URLSearchParams(searchParams);
-    params.delete("recordId_" + tab.id);
-    window.history.pushState(null, "", `?${params}`)
+    params.delete('recordId_' + tab.id);
+    window.history.pushState(null, '', `?${params}`);
   }, [searchParams, tab.id]);
 
   if (loading || loadingFormInitialization) {
@@ -224,7 +219,9 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
             )}
           </div>
           <StatusBar fields={fields.statusBarFields} />
-          <div className="p-2 shadow bg-white" onClick={handleBack}>{t("navigation.common.back")}</div>
+          <div className="p-2 shadow bg-white" onClick={handleBack}>
+            {t('navigation.common.back')}
+          </div>
           <div className="mt-2">
             <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
           </div>
@@ -237,10 +234,8 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
               <div key={sectionId} ref={handleSectionRef(id)}>
                 <Collapsible
                   title={group.identifier}
-                  initialState={isSectionExpanded(id)}
+                  isExpanded={isSectionExpanded(id)}
                   sectionId={sectionId}
-                  onHover={handleHover}
-                  isHovered={hoveredSection === group.identifier}
                   icon={getIconForGroup(group.identifier)}
                   onToggle={(isOpen: boolean) => handleAccordionChange(id, isOpen)}>
                   <div className="grid grid-cols-3 auto-rows-auto gap-4">
