@@ -21,15 +21,11 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
       acc[newKey] = value;
     });
 
-    Object.entries(formInitialization.columnValues).forEach(([key, { value, classicValue, identifier }]) => {
+    Object.entries(formInitialization.columnValues).forEach(([key, { value, identifier }]) => {
       const field = fieldsByColumnName?.[key];
       const newKey = field?.hqlName ?? key;
 
-      if (field && isDateField(field)) {
-        acc[newKey] = formatDateFromEtendo(classicValue);
-      } else {
-        acc[newKey] = value;
-      }
+      acc[newKey] = value;
 
       if (identifier) {
         acc[newKey + '$_identifier'] = identifier;
@@ -37,7 +33,6 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
     });
 
     const processedParentData = { ...parentData };
-    console.debug("parentData", processedParentData);
 
     if (parentData) {
       Object.entries(parentData).forEach(([key, value]) => {

@@ -7,7 +7,6 @@ import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { logger } from '@/utils/logger';
 import { useTranslation } from '../useTranslation';
 import { useStatusModal } from './useStatusModal';
-import { useSearchParams } from 'next/navigation';
 import { useToolbarContext } from '@/contexts/ToolbarContext';
 import { useSelected } from '@/contexts/selected';
 import { useTabContext } from '@/contexts/tab';
@@ -24,7 +23,6 @@ export const useToolbarConfig = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const { removeRecord } = useMetadataContext();
-  const searchParams = useSearchParams();
   const {
     statusModal,
     confirmAction,
@@ -95,7 +93,7 @@ export const useToolbarConfig = ({
 
       switch (action) {
         case BUTTON_IDS.NEW: {
-          const params = new URLSearchParams(searchParams.toString());
+          const params = new URLSearchParams(location.search);
           params.set('recordId_' + tab?.id, 'new');
           history.pushState(null, '', `?${params.toString()}`);
           onNew?.();
@@ -150,7 +148,6 @@ export const useToolbarConfig = ({
       onNew,
       onRefresh,
       onSave,
-      searchParams,
       selectedIds,
       selectedRecord?._identifier,
       selectedRecord?.id,

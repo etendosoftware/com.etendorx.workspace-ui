@@ -10,7 +10,7 @@ import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useUserContext } from './useUserContext';
 import { ClientOptions } from '@workspaceui/etendohookbinder/src/api/client';
 import useFormParent, { ParentFieldName } from './useFormParent';
-import { useSearchParams } from 'next/navigation';
+import useSelectedParentRecord from './useSelectedParentRecord';
 
 const getRowId = (mode: FormMode, recordId?: string | null): string => {
   return mode === FormMode.EDIT ? recordId! : 'null';
@@ -98,17 +98,15 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   const { setSession } = useUserContext();
   const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
   const loaded = !!state.formInitialization;
-  const searchParams = useSearchParams();
-  const parentId = useMemo(
-    () => searchParams.get('selected_' + tab?.parentTabId)?.toString(),
-    [searchParams, tab?.parentTabId],
-  );
   const { error, formInitialization, loading } = state;
+  const parentData = useFormParent(ParentFieldName.HQL_NAME);
+  const parent = useSelectedParentRecord(tab);
+  const parentId = parent?.id?.toString();
   const params = useMemo(
     () => (tab ? buildFormInitializationParams({ tab, mode, recordId, parentId }) : null),
     [tab, mode, recordId, parentId],
   );
-  const parentData = useFormParent(ParentFieldName.HQL_NAME);
+
   const refetch = useCallback(async () => {
     if (!params) return;
 

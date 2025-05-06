@@ -3,7 +3,6 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { BaseSelector } from './selectors/BaseSelector';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormAction } from '@/hooks/useFormAction';
-import { useSearchParams } from 'next/navigation';
 import Collapsible from '../Collapsible';
 import StatusBar from './StatusBar';
 import useFormFields from '@/hooks/useFormFields';
@@ -35,7 +34,6 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
   const [selectedTab, setSelectedTab] = useState<string>('');
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
-  const searchParams = useSearchParams();
   const { t } = useTranslation();
 
   const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
@@ -134,13 +132,13 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
       if (mode === FormMode.EDIT) {
         reset({ ...initialState, ...data });
       } else {
-        const params = new URLSearchParams(searchParams.toString());
+        const params = new URLSearchParams(location.search);
         params.set('recordId_' + tab.id, String(data.id));
         history.pushState(null, '', `?${params.toString()}`);
       }
       showSuccessModal('Saved');
     },
-    [initialState, mode, reset, searchParams, showSuccessModal, tab.id],
+    [initialState, mode, reset, showSuccessModal, tab.id],
   );
 
   const onError = useCallback(
@@ -189,10 +187,10 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
   }, [onReset, registerActions, save]);
 
   const handleBack = useCallback(() => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(location.search);
     params.delete('recordId_' + tab.id);
     window.history.pushState(null, '', `?${params}`);
-  }, [searchParams, tab.id]);
+  }, [tab.id]);
 
   if (loading || loadingFormInitialization) {
     return <Spinner />;

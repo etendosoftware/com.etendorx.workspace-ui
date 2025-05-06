@@ -7,8 +7,8 @@ import useSelectedParentRecord from '@/hooks/useSelectedParentRecord';
 
 interface TabContextI {
   tab: Tab;
-  parentTab?: Tab;
-  parentRecord?: EntityData;
+  parentTab?: Tab | null;
+  parentRecord?: EntityData | null;
 }
 
 const TabContext = createContext<TabContextI>({} as TabContextI);

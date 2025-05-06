@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 import Drawer from '@workspaceui/componentlibrary/src/components/Drawer';
 import { useMenu } from '@workspaceui/etendohookbinder/src/hooks/useMenu';
 import EtendoLogotype from '../public/etendo.png';
@@ -22,7 +22,6 @@ export default function Sidebar() {
   const menu = useMenu(token, currentRole || undefined, language);
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const { windowId } = useParams<WindowParams>();
 
@@ -38,7 +37,7 @@ export default function Sidebar() {
 
   const handleClick = useCallback(
     (windowId: string) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(location.search);
       params.set('windowId', windowId);
       if (pathname.includes('window')) {
         window.history.pushState(null, '', `?${params.toString()}`);
@@ -46,7 +45,7 @@ export default function Sidebar() {
         router.push(`window?${params.toString()}`);
       }
     },
-    [pathname, router, searchParams],
+    [pathname, router],
   );
 
   const searchContext = useMemo(

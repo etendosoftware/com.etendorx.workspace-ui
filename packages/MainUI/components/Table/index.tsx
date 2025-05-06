@@ -18,13 +18,12 @@ import TopToolbar from './top-toolbar';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
 import EmptyState from './EmptyState';
 import { parseColumns } from '@/utils/tableColumns';
-import { useSearchParams } from 'next/navigation';
 import { useToolbarContext } from '@/contexts/ToolbarContext';
 import { useLanguage } from '@/contexts/language';
 import useTableSelection from '@/hooks/useTableSelection';
 import { ErrorDisplay } from '../ErrorDisplay';
 import { useTranslation } from '@/hooks/useTranslation';
-import useSelectedParentRecord from '@/hooks/useSelectedParentRecord';
+import { useTabContext } from '@/contexts/tab';
 
 type DynamicTableProps = {
   tab: Tab;
@@ -47,15 +46,15 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const contentRef = useRef<HTMLDivElement>(null);
   const [maxWidth, setMaxWidth] = useState(0);
-  const searchParams = useSearchParams();
   const { registerActions } = useToolbarContext();
-  const parent = useSelectedParentRecord(tab);
+  const { parentRecord } = useTabContext();
+  const parentId = String(parentRecord?.id ?? '');
 
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || 'id';
-    const value = String(parent?.id ?? '');
+    const value = parentId;
     const operator = 'equals';
 
     const options: DatasourceOptions = {
@@ -82,7 +81,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     return options;
   }, [
     language,
-    parent,
+    parentId,
     tab.hqlfilterclause?.length,
     tab.id,
     tab.parentColumns,
@@ -158,7 +157,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
           row.toggleSelected();
         },
         onDoubleClick: () => {
-          const params = new URLSearchParams(searchParams.toString());
+          const params = new URLSearchParams(location.search);
           params.set('recordId_' + tab.id, record.id);
           history.pushState(null, '', `?${params.toString()}`);
         },
@@ -171,7 +170,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
         table,
       };
     },
-    [searchParams, sx.rowSelected, tab.id],
+    [sx.rowSelected, tab.id],
   );
 
 
