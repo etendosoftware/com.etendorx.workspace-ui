@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState, createElement } from 'react';
-import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import { IconSize, StandardButton, StandardButtonConfig, ToolbarProps, isProcessButton } from './types';
 import {
@@ -245,11 +244,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   }, [handleAction, handleMenuOpen, isFormView, processButtons, selectedRecord, t, toolbar?.buttons]);
 
   if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height={64}>
-        {t('common.loading')}
-      </Box>
-    );
+    return null;
   }
 
   return (

@@ -82,7 +82,7 @@ export interface ProcessIframeModalProps {
 export interface ProcessDefinitionModalProps {
   onClose: () => void;
   open: boolean;
-  button?: ProcessDefinitionButton;
+  button?: ProcessDefinitionButton | null;
   onSuccess?: () => void;
 }
 

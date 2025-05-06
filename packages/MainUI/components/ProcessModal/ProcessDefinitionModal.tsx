@@ -34,12 +34,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const form = useForm();
 
   const handleClose = useCallback(() => {
-    onClose();
     setResponse(undefined);
     setIsExecuting(false);
     setIsSuccess(false);
     setLoading(true);
     setParameters(button.processDefinition.parameters);
+    onClose();
   }, [button.processDefinition.parameters, onClose]);
 
   const handleExecute = useCallback(async () => {
@@ -104,6 +104,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         } finally {
           setLoading(false);
         }
+      } else if (open) {
+        setLoading(false);
       }
     };
 
@@ -191,7 +193,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 }
 
 export default function ProcessDefinitionModal({ button, onSuccess, ...props }: ProcessDefinitionModalProps) {
-  if (typeof button != 'undefined') {
+  if (button) {
     return <ProcessDefinitionModalContent {...props} button={button} onSuccess={onSuccess} />;
   }
 

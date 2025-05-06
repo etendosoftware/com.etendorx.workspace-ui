@@ -14,7 +14,7 @@ export const ModalContextProvider = ({ children }: React.PropsWithChildren) => {
     if (content == null) {
       setTimeout(() => {
         setModalContent(content);
-      }, 101);
+      }, 200);
     } else {
       setModalContent(content);
     }
@@ -25,9 +25,11 @@ export const ModalContextProvider = ({ children }: React.PropsWithChildren) => {
   return (
     <ModalContext.Provider value={setModal}>
       {children}
-      <div
-        className={`absolute inset-0 z-100 transition-opacity duration-100 ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-        {modal}
+      <div className="absolute inset-0 z-1000 pointer-events-none overflow-hidden">
+        <div
+          className={`w-full h-full transition delay-[50ms] duration-[150ms] ease-in-out ${visible ? 'opacity-100 pointer-events-auto scale-100' : 'opacity-0 pointer-events-none scale-120'}`}>
+          {modal}
+        </div>
       </div>
     </ModalContext.Provider>
   );

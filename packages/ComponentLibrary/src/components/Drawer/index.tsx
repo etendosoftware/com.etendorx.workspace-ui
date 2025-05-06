@@ -62,9 +62,10 @@ const Drawer: React.FC<DrawerProps> = ({
     () => ({
       ...sx.drawerPaper,
       width: open ? '16.25rem' : '3.5rem',
+      minWidth: open ? '16.25rem' : '3.5rem',
       height: '100vh',
+      maxHeight: '100vh',
       transition: 'width 0.5s ease-in-out',
-      display: 'flex',
     }),
     [open, sx.drawerPaper],
   );

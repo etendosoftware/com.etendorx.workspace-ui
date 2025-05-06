@@ -9,12 +9,7 @@ import {
   MRT_TableInstance,
 } from 'material-react-table';
 import { useStyle } from './styles';
-import {
-  DatasourceOptions,
-  EntityData,
-  WindowMetadata,
-  type Tab,
-} from '@workspaceui/etendohookbinder/src/api/types';
+import { DatasourceOptions, EntityData, WindowMetadata, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { Button } from '@mui/material';
@@ -26,10 +21,10 @@ import { parseColumns } from '@/utils/tableColumns';
 import { useSearchParams } from 'next/navigation';
 import { useToolbarContext } from '@/contexts/ToolbarContext';
 import { useLanguage } from '@/contexts/language';
-import { useSelected } from '@/contexts/selected';
 import useTableSelection from '@/hooks/useTableSelection';
 import { ErrorDisplay } from '../ErrorDisplay';
 import { useTranslation } from '@/hooks/useTranslation';
+import useSelectedParentRecord from '@/hooks/useSelectedParentRecord';
 
 type DynamicTableProps = {
   tab: Tab;
@@ -46,7 +41,6 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
-  const { selected } = useSelected();
   const { t } = useTranslation();
   const tabId = tab.id;
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
@@ -55,14 +49,13 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
   const [maxWidth, setMaxWidth] = useState(0);
   const searchParams = useSearchParams();
   const { registerActions } = useToolbarContext();
+  const parent = useSelectedParentRecord(tab);
 
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
-  const parent = selected[tab.level - 1];
-
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || 'id';
-    const value = String(parent?.id || '');
+    const value = String(parent?.id ?? '');
     const operator = 'equals';
 
     const options: DatasourceOptions = {
@@ -84,7 +77,15 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     }
 
     return options;
-  }, [language, parent?.id, tab]);
+  }, [
+    language,
+    parent,
+    tab.hqlfilterclause?.length,
+    tab.id,
+    tab.parentColumns,
+    tab.sQLWhereClause?.length,
+    tab.windowId,
+  ]);
 
   const {
     updateColumnFilters,
@@ -126,7 +127,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     toggleImplicitFilters();
   }, [toggleImplicitFilters]);
 
-  const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({}); //ts type available
+  const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
 
   const handleClearSelections = useCallback(() => {
     setRowSelection({});
@@ -187,8 +188,12 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     enableMultiRowSelection: true,
     positionToolbarAlertBanner: 'none',
     muiTableBodyRowProps: rowProps,
+    muiTableContainerProps: {
+      className: "flex-1"
+    },
     enablePagination: false,
     enableStickyHeader: true,
+    enableStickyFooter: true,
     renderTopToolbar: props => {
       return (
         <TopToolbar
@@ -224,7 +229,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     },
   });
 
-  useTableSelection(rowSelection, records);
+  useTableSelection(tab, records, rowSelection);
 
   useEffect(() => {
     if (removeRecordLocally) {

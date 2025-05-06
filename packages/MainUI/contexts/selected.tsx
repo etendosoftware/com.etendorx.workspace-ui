@@ -32,24 +32,8 @@ export default function SelectedProvider({ children }: React.PropsWithChildren) 
 
   const select = useCallback(
     (record: EntityData, tab: Tab) => {
-      let recordForSession;
-
-      setSelected(prev => {
-        if (prev[tab.id]?.id === record.id) {
-          const result = { ...prev };
-          delete result[tab.id];
-
-          return result;
-        } else {
-          recordForSession = record;
-
-          return { ...prev, [tab.id]: record };
-        }
-      });
-
-      if (recordForSession) {
-        setSession(recordForSession, tab);
-      }
+      setSession(record, tab);
+      setSelected(prev => ({ ...prev, [tab.id]: record }));
     },
     [setSession],
   );

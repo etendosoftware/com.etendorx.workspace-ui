@@ -87,9 +87,9 @@ export const useStyle = (): StylesType => {
           '& tr': {
             backgroundColor: theme.palette.background.paper,
           },
-          flex: 1,
           overflow: 'auto',
           cursor: 'pointer',
+          height: '100%',
         },
         // multiselect
         multiSelectContainer: {

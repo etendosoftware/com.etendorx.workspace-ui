@@ -6,7 +6,7 @@ import ChevronUpRight from '../../../../ComponentLibrary/src/assets/icons/chevro
 import XCircle from '../../../../ComponentLibrary/src/assets/icons/x.svg';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
-import TabsGroup from '@/screens/Table/TabsGroup';
+import TabsGroup from '@/screens/Window/Table/TabsGroup';
 
 export const TabContent: React.FC<TabContentProps> = ({
   identifier,
