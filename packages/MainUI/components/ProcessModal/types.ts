@@ -119,6 +119,7 @@ export type ProcessParameter = {
   id: string;
   name: string;
   refList: Array<ListOption>;
+  reference: string;
 } & Record<string, string>;
 
 export type ProcessParameters = Record<string, ProcessParameter>;

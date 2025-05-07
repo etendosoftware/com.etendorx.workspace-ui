@@ -54,7 +54,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [button.processDefinition.parameters, onClose]);
 
   const hasWindowReference = useMemo(() => {
-    return Object.values(parameters).some(param => param.reference$_identifier === 'Window Reference');
+    return Object.values(parameters).some(param => param.reference === 'FF80818132D8F0F30132D9BC395D0038');
   }, [parameters]);
 
   const handleWindowReferenceExecute = useCallback(async () => {
@@ -138,7 +138,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     onSuccess,
   ]);
   const handleExecute = useCallback(async () => {
-    console.log('gridSelection:', gridSelection);
+    console.debug('gridSelection:', gridSelection);
 
     if (hasWindowReference) {
       console.log('Executing window reference process...');
@@ -237,6 +237,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     fetchOptions();
   }, [button.processDefinition, onLoad, open, selectedRecords, tab, tabId]);
 
+  console.debug(parameters);
+
   return (
     <Modal open={open}>
       <FormProvider {...form}>
@@ -262,12 +264,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                 {!isSuccess && (
                   <>
                     {Object.values(parameters).map(parameter => {
-                      if (
-                        parameter.name === 'Pick/Edit Lines' &&
-                        parameter.dBColumnName === 'grid' &&
-                        button.processDefinition &&
-                        button.processDefinition.id === '8B81D80B06364566B87853FEECAB5DE0'
-                      ) {
+                      if (parameter.reference === 'FF80818132D8F0F30132D9BC395D0038') {
                         return (
                           <WindowReferenceGrid
                             key={parameter.id}

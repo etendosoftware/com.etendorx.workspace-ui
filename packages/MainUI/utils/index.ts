@@ -29,6 +29,8 @@ export const getFieldReference = (reference?: string): FieldType => {
       return FieldType.BUTTON;
     case '30':
       return FieldType.SELECT;
+    case 'FF80818132D8F0F30132D9BC395D0038':
+      return FieldType.WINDOW;
     case '12':
     case '11':
     case '22':

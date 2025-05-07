@@ -161,6 +161,7 @@ export enum FieldType {
   QUANTITY = 'quantity',
   LIST = 'list',
   BUTTON = 'button',
+  WINDOW = 'window',
 }
 
 export interface MappedTab {
