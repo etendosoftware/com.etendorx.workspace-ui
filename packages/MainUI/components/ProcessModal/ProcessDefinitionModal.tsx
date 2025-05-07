@@ -242,8 +242,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   return (
     <Modal open={open}>
       <FormProvider {...form}>
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-100 overflow-auto py-8">
-          <div className="bg-white rounded-lg p-4 flex flex-col w-full max-w-2xl mx-auto">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-100 p-4 sm:p-24 md:p-24">
+          <div className="bg-white rounded-lg p-4 flex flex-col w-full h-full max-w-full mx-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <h3 className="font-bold">{button.name}</h3>
@@ -261,6 +261,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                 <Loading />
               </div>
               <div className={`transition-opacity ${loading ? 'opacity-0' : 'opacity-100'}`}>
+                {response ? (
+                  <div
+                    className={`p-3 rounded mb-4 border-l-4 ${
+                      response.msgType === 'success'
+                        ? 'bg-green-50 border-(--color-success-main)'
+                        : 'bg-gray-50 border-(--color-etendo-main)'
+                    }`}>
+                    <h4 className="font-bold text-sm">{response.msgTitle}</h4>
+                    <p className="text-sm">{response.msgText}</p>
+                  </div>
+                ) : null}
                 {!isSuccess && (
                   <>
                     {Object.values(parameters).map(parameter => {
@@ -281,17 +292,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                     })}
                   </>
                 )}
-                {response ? (
-                  <div
-                    className={`p-3 rounded mb-4 border-l-4 ${
-                      response.msgType === 'success'
-                        ? 'bg-green-50 border-(--color-success-main)'
-                        : 'bg-gray-50 border-(--color-etendo-main)'
-                    }`}>
-                    <h4 className="font-bold text-sm">{response.msgTitle}</h4>
-                    <p className="text-sm">{response.msgText}</p>
-                  </div>
-                ) : null}
               </div>
             </div>
             <div className="flex gap-4 justify-end mt-4">

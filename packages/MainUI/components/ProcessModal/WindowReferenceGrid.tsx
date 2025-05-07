@@ -141,7 +141,7 @@ function WindowReferenceGrid({ parameter, onSelectionChange, tabId, windowId, en
 
   const table = useMaterialReactTable<EntityData>({
     muiTablePaperProps: {
-      sx: sx.tablePaper,
+      sx: { ...sx.tablePaper, maxHeight: '30rem' },
     },
     muiTableHeadCellProps: { sx: sx.tableHeadCell },
     muiTableBodyCellProps: { sx: sx.tableBodyCell },
@@ -229,7 +229,7 @@ function WindowReferenceGrid({ parameter, onSelectionChange, tabId, windowId, en
 
   return (
     <div
-      className={`flex flex-col w-full overflow-auto h-full transition duration-100 ${loading ? 'opacity-40 cursor-wait cursor-to-children' : 'opacity-100'}`}
+      className={`flex flex-col w-full overflow-hidden max-h-4xl h-full transition duration-100 ${loading ? 'opacity-40 cursor-wait cursor-to-children' : 'opacity-100'}`}
       ref={contentRef}>
       <MaterialReactTable table={table} />
     </div>
