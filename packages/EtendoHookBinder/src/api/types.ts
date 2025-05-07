@@ -641,7 +641,7 @@ export type FieldDefinition =
   | BaseFieldDefinition<SelectOption>;
 
 type EntityKey = string;
-type EntityValue = string | number | boolean | symbol | null;
+export type EntityValue = string | number | boolean | symbol | null;
 
 export interface EntityData {
   [key: EntityKey]: EntityValue;

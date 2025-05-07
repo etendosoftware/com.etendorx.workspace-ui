@@ -14,7 +14,6 @@ import { logger } from '@/utils/logger';
 import { useSelected } from '@/contexts/selected';
 import useRecordValues from '@/hooks/useRecordValues';
 import WindowReferenceGrid from './WindowReferenceGrid';
-import { useQueryParams } from '@/hooks/useQueryParams';
 
 function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
@@ -40,8 +39,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [inputValues]);
   const [gridSelection, setGridSelection] = useState<any[]>([]);
 
-  const params = useQueryParams();
-  const recordId = params['recordId_' + tab.id] ? String(params['recordId_' + tab.id]) : null;
+  const recordId = selectedRecord[tabId].id;
 
   const form = useForm();
 
@@ -83,13 +81,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
               _selection: gridSelection,
             },
           },
-          _entityName: 'Order',
+          _entityName: selectedRecord[tabId]._entityName,
         };
 
-        console.log('Sending payload:', payload);
-
         const response = await Metadata.kernelClient.post(`?${params}`, payload);
-        console.log('Process response:', response);
 
         if (response?.data?.message) {
           setResponse({
@@ -131,7 +126,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setIsExecuting(false);
       }
     }
-  }, [tab, button.processDefinition.id, button.processDefinition.javaClassName, gridSelection, recordId, t, onSuccess]);
+  }, [
+    tab,
+    button.processDefinition.id,
+    button.processDefinition.javaClassName,
+    selectedRecord,
+    tabId,
+    gridSelection,
+    t,
+    onSuccess,
+  ]);
   const handleExecute = useCallback(async () => {
     console.log('gridSelection:', gridSelection);
 

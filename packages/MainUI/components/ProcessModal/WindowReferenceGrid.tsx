@@ -2,12 +2,12 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import Loading from '../loading';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import type { EntityData } from '@workspaceui/etendohookbinder/src/api/types';
+import type { EntityData, EntityValue, ProcessParameter } from '@workspaceui/etendohookbinder/src/api/types';
 
 interface WindowReferenceGridProps {
-  parameter: any;
-  onSelectionChange: (selection: any[]) => void;
-  recordId?: string;
+  parameter: ProcessParameter;
+  onSelectionChange: (selection: unknown[]) => void;
+  recordId?: EntityValue;
   tabId: string;
   windowId?: string;
 }
