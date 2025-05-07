@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, createElement, useEffect } from 'react';
+import { useCallback, useMemo, useState, createElement } from 'react';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import { IconSize, StandardButton, StandardButtonConfig, ToolbarProps, isProcessButton } from './types';
 import {
@@ -39,7 +39,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { session } = useUserContext();
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
-  const graph = useSelected();
+  const { graph } = useSelected();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { refetchDatasource } = useDatasourceContext();
@@ -169,10 +169,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     graph.clearSelected(tab.id);
     refetchDatasource(tab.id);
   }, [graph, refetchDatasource, tab.id]);
-
-  useEffect(() => {
-    console.debug(selectedRecord);
-  }, [selectedRecord]);
 
   const toolbarConfig = useMemo(() => {
     const buttons = toolbar?.buttons ?? [];

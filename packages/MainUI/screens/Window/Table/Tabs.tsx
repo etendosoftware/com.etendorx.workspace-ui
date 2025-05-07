@@ -8,7 +8,7 @@ import { useStyle } from './styles';
 import { useSelected } from '@/contexts/selected';
 
 export default function Tabs({ tabs }: { tabs: Tab[]; level?: number }) {
-  const graph = useSelected();
+  const { graph } = useSelected();
   const parentTab = graph.getParent(tabs[0].id);
   const parentRecord = graph.getSelected(parentTab?.id);
   const [activeKey, setActiveKey] = useState(tabs[0].id);

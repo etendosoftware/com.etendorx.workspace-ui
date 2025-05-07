@@ -100,13 +100,17 @@ class Graph<T extends Tab> extends EventEmitter {
 
   public clearSelected(tabId?: string | null) {
     if (tabId) {
-        const node = this.nodes.get(tabId);
-        if (!node) throw new Error('Tab not found');
-        alert('cleared');
-        node.selected = undefined;
+      const node = this.nodes.get(tabId);
+      if (!node) throw new Error('Tab not found');
+      this.clearSelectedNode(node);
     }
 
     this.emit('update', tabId);
+  }
+
+  private clearSelectedNode(node: GraphNode<T>) {
+    node.selected = undefined;
+    node.neighbors.forEach(n => this.clearSelectedNode(n));
   }
 
   public setSelectedMultiple(tabId: string, records: EntityData[]) {
@@ -119,12 +123,17 @@ class Graph<T extends Tab> extends EventEmitter {
 
   public clearSelectedMultiple(tabId?: string | null) {
     if (tabId) {
-        const node = this.nodes.get(tabId);
-        if (!node) throw new Error('Tab not found');
-        node.selectedMultiple = [];
+      const node = this.nodes.get(tabId);
+      if (!node) throw new Error('Tab not found');
+      this.clearSelectedMultipleNode(node);
     }
 
     this.emit('update', tabId);
+  }
+
+  private clearSelectedMultipleNode(node: GraphNode<T>) {
+    node.selectedMultiple = [];
+    node.neighbors.forEach(n => this.clearSelectedMultipleNode(n));
   }
 
   public getSelected(tabId?: string | null) {

@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { useSelected } from '@/contexts/selected';
 
 export default function useTableSelection(tab: Tab, records: EntityData[], rowSelection: MRT_RowSelectionState) {
-  const graph = useSelected();
+  const { graph } = useSelected();
 
   useEffect(() => {
     const recordsMap = mapBy(records, 'id');

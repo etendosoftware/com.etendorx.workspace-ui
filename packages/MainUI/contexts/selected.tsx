@@ -1,12 +1,19 @@
+'use client';
+
 import { createContext, useContext, useMemo, useState } from 'react';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Graph from '@/data/graph';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
 
-const SelectContext = createContext<Graph<Tab> | null>(null);
+interface SelectedContext {
+  graph: Graph<Tab>;
+  version: number;
+}
+
+const SelectContext = createContext<SelectedContext>({} as SelectedContext);
 
 export const SelectedProvider = ({ children }: React.PropsWithChildren) => {
-  const [, setVersion] = useState(0);
+  const [version, setVersion] = useState(0);
   const { window } = useMetadataContext();
   const tabs = window?.tabs;
 
@@ -17,12 +24,22 @@ export const SelectedProvider = ({ children }: React.PropsWithChildren) => {
       result.buildTreeFromTabs(tabs);
     }
 
-    result.on('update', () => setVersion(v => v + 1));
+    result.on('update', () => {
+      setVersion(v => v + 1);
+    });
 
     return result;
   }, [tabs]);
 
-  return <SelectContext.Provider value={graph}>{children}</SelectContext.Provider>;
+  const value = useMemo<SelectedContext>(
+    () => ({
+      version,
+      graph,
+    }),
+    [graph, version],
+  );
+
+  return <SelectContext.Provider value={value}>{children}</SelectContext.Provider>;
 };
 
 export const useSelected = () => {

@@ -17,7 +17,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const { t } = useTranslation();
   const onProcess = button.processDefinition.onProcess;
   const onLoad = button.processDefinition.onLoad;
-  const graph = useSelected();
+  const { graph } = useSelected();
   const { tab } = useTabContext();
   const tabId = tab?.id || '';
   const selectedRecords = graph.getSelectedMultiple(tabId);

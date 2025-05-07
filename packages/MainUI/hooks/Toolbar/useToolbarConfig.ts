@@ -23,7 +23,7 @@ export const useToolbarConfig = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const { removeRecord } = useMetadataContext();
-  const graph = useSelected();
+  const { graph } = useSelected();
   const {
     statusModal,
     confirmAction,
