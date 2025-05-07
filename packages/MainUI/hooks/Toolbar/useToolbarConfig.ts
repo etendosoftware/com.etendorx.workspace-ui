@@ -35,13 +35,14 @@ export const useToolbarConfig = ({
     hideStatusModal,
   } = useStatusModal();
   const { t } = useTranslation();
-  const { onRefresh, onSave, onNew } = useToolbarContext();
+  const { onRefresh, onSave, onNew, onBack } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { tab, record } = useTabContext();
   const selectedRecord = record;
-  const selectedIds = useMemo(() => (tab ? graph.getSelectedMultiple(tab.id)?.map(r => String(r.id)) || [] : []), [graph, tab]);
+  const selectedMultiple = graph.getSelectedMultiple(tab.id);
+  const selectedIds = useMemo(() => selectedMultiple?.map(r => String(r.id)) ?? [], [selectedMultiple]);
 
   const { deleteRecord, loading: deleteLoading } = useDeleteRecord({
     tab: tab as Tab,
@@ -89,6 +90,9 @@ export const useToolbarConfig = ({
       if (isDeleting) return;
 
       switch (action) {
+        case BUTTON_IDS.CANCEL:
+          onBack?.();
+          break;
         case BUTTON_IDS.NEW: {
           const params = new URLSearchParams(location.search);
           params.set('recordId_' + tab?.id, 'new');
@@ -142,6 +146,7 @@ export const useToolbarConfig = ({
     [
       deleteRecord,
       isDeleting,
+      onBack,
       onNew,
       onRefresh,
       onSave,

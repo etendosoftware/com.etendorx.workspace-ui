@@ -70,18 +70,13 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
 
   const applyColumnValues = useCallback(
     (columnValues: FormInitializationResponse['columnValues']) => {
-      Object.entries(columnValues ?? {}).forEach(([column, { value, classicValue, identifier }]) => {
+      Object.entries(columnValues ?? {}).forEach(([column, { value, identifier }]) => {
         const targetField = fieldsByColumnName[column];
-        const isDate = ['15', '16'].includes(targetField?.column?.reference);
 
-        if (targetField) {
-          setValue(targetField.hqlName, isDate ? classicValue : value);
+        setValue(targetField?.hqlName ?? column, value);
 
-          if (identifier) {
-            setValue(targetField.hqlName + '$_identifier', identifier);
-          }
-        } else {
-          setValue(column, isDate ? classicValue : value);
+        if (targetField && identifier) {
+          setValue(targetField.hqlName + '$_identifier', identifier);
         }
       });
     },

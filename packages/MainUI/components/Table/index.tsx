@@ -147,16 +147,31 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     ({ row, table }) => {
       const record = row.original as Record<string, never>;
       const isSelected = row.getIsSelected();
+      let clickTimeout: NodeJS.Timeout | null = null;
 
       return {
         onClick: (event: React.MouseEvent) => {
-          if (!event.ctrlKey) {
-            setRowSelection({});
-          }
+          if (clickTimeout) return;
 
-          row.toggleSelected();
+          clickTimeout = setTimeout(() => {
+            if (!event.ctrlKey) {
+              setRowSelection({});
+            }
+
+            row.toggleSelected();
+            clickTimeout = null;
+          }, 100);
         },
         onDoubleClick: () => {
+          if (clickTimeout) {
+            clearTimeout(clickTimeout);
+            clickTimeout = null;
+          }
+
+          if (!isSelected) {
+            row.toggleSelected();
+          }
+
           const params = new URLSearchParams(location.search);
           params.set('recordId_' + tab.id, record.id);
           history.pushState(null, '', `?${params.toString()}`);
@@ -172,7 +187,6 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     },
     [sx.rowSelected, tab.id],
   );
-
 
   const table = useMaterialReactTable<EntityData>({
     muiTablePaperProps: {

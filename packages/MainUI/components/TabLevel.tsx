@@ -10,7 +10,7 @@ import { FormMode } from '@workspaceui/etendohookbinder/src/api/types';
 import { useQueryParams } from '@/hooks/useQueryParams';
 
 export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
-  const { window } = useMetadataContext();
+  const { window: windowMetadata } = useMetadataContext();
   const params = useQueryParams();
   const recordId = params['recordId_' + tab.id] ? String(params['recordId_' + tab.id]) : null;
 
@@ -22,11 +22,11 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
           <FormView
             mode={recordId === 'new' ? FormMode.NEW : FormMode.EDIT}
             tab={tab}
-            window={window}
+            window={windowMetadata}
             recordId={recordId}
           />
         ) : (
-          <DynamicTable tab={tab} window={window} />
+          <DynamicTable tab={tab} window={windowMetadata} />
         )}
       </div>
     </TabContextProvider>

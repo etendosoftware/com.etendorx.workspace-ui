@@ -20,7 +20,7 @@ import { useFormInitialization } from '@/hooks/useFormInitialization';
 import { useFormInitialState } from '@/hooks/useFormInitialState';
 import { useToolbarContext } from '@/contexts/ToolbarContext';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useRouter } from 'next/navigation';
 
 const iconMap: Record<string, React.ReactElement> = {
   'Main Section': <FileIcon />,
@@ -30,11 +30,11 @@ const iconMap: Record<string, React.ReactElement> = {
 
 export default function FormView({ window: windowMetadata, tab, mode, recordId }: FormViewProps) {
   const theme = useTheme();
+  const router = useRouter();
   const [expandedSections, setExpandedSections] = useState<string[]>(['null']);
   const [selectedTab, setSelectedTab] = useState<string>('');
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
-  const { t } = useTranslation();
 
   const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
 
@@ -53,6 +53,12 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
   const initialState = useFormInitialState(formInitialization) || undefined;
 
   const { reset, setValue, ...form } = useForm({ values: initialState as EntityData });
+
+  const handleBack = useCallback(() => {
+    const params = new URLSearchParams(location.search);
+    params.delete('recordId_' + tab.id);
+    router.replace(`${location.pathname}?${params}`);
+  }, [router, tab.id]);
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
@@ -127,6 +133,10 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
     }
   }, []);
 
+  const onReset = useCallback(async () => {
+    refetch();
+  }, [refetch]);
+
   const onSuccess = useCallback(
     async (data: EntityData) => {
       if (mode === FormMode.EDIT) {
@@ -135,10 +145,11 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
         const params = new URLSearchParams(location.search);
         params.set('recordId_' + tab.id, String(data.id));
         history.pushState(null, '', `?${params.toString()}`);
+        refetch();
       }
       showSuccessModal('Saved');
     },
-    [initialState, mode, reset, showSuccessModal, tab.id],
+    [initialState, mode, refetch, reset, showSuccessModal, tab.id],
   );
 
   const onError = useCallback(
@@ -166,10 +177,6 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
     [expandedSections],
   );
 
-  const onReset = useCallback(async () => {
-    refetch();
-  }, [refetch]);
-
   useEffect(() => {
     if (!initialState) return;
 
@@ -183,14 +190,8 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
   }, [initialState, reset]);
 
   useEffect(() => {
-    registerActions({ save: save, refresh: onReset, new: onReset });
-  }, [onReset, registerActions, save]);
-
-  const handleBack = useCallback(() => {
-    const params = new URLSearchParams(location.search);
-    params.delete('recordId_' + tab.id);
-    window.history.pushState(null, '', `?${params}`);
-  }, [tab.id]);
+    registerActions({ save: save, refresh: onReset, new: onReset, back: handleBack });
+  }, [handleBack, onReset, registerActions, save]);
 
   if (loading || loadingFormInitialization) {
     return <Spinner />;
@@ -218,9 +219,6 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
             )}
           </div>
           <StatusBar fields={fields.statusBarFields} />
-          <div className="p-2 shadow bg-white" onClick={handleBack}>
-            {t('navigation.common.back')}
-          </div>
           <div className="mt-2">
             <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
           </div>

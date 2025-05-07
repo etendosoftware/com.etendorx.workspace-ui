@@ -12,6 +12,7 @@ export const createStandardButtonConfig = (
 ): StandardButtonConfig => {
   const getIconFill = (buttonId: StandardButtonId): string => {
     const specialButtons = [
+      BUTTON_IDS.CANCEL,
       BUTTON_IDS.GRID_VIEW,
       BUTTON_IDS.FIND,
       BUTTON_IDS.DELETE,
@@ -98,6 +99,7 @@ export const getStandardButtonStyle = (btnId: StandardButtonId) => {
         background: theme.palette.dynamicColor.main,
       },
     },
+    [BUTTON_IDS.CANCEL]: undefined,
     [BUTTON_IDS.DELETE]: undefined,
     [BUTTON_IDS.EXPORT]: undefined,
     [BUTTON_IDS.ATTACHMENTS]: undefined,

@@ -3,6 +3,7 @@ export type StandardButtonId =
   | 'REFRESH'
   | 'SAVE'
   | 'DELETE'
+  | 'CANCEL'
   | 'EXPORT'
   | 'ATTACHMENTS'
   | 'FIND'
@@ -15,6 +16,7 @@ export const BUTTON_IDS = {
   NEW: 'NEW',
   REFRESH: 'REFRESH',
   SAVE: 'SAVE',
+  CANCEL: 'CANCEL',
   DELETE: 'DELETE',
   EXPORT: 'EXPORT',
   ATTACHMENTS: 'ATTACHMENTS',
@@ -26,6 +28,7 @@ export const BUTTON_IDS = {
 
 export const LEFT_SECTION_BUTTONS: StandardButtonId[] = [BUTTON_IDS.NEW, BUTTON_IDS.REFRESH, BUTTON_IDS.SAVE];
 export const CENTER_SECTION_BUTTONS: StandardButtonId[] = [
+  BUTTON_IDS.CANCEL,
   BUTTON_IDS.DELETE,
   BUTTON_IDS.EXPORT,
   BUTTON_IDS.ATTACHMENTS,
