@@ -3,12 +3,10 @@ import { useUserContext } from './useUserContext';
 import { useTabContext } from '@/contexts/tab';
 import { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { useMemo } from 'react';
-import { useSelected } from '@/contexts/selected';
 
 export default function useDisplayLogic(field: Field) {
   const { session } = useUserContext();
-  const { selected } = useSelected();
-  const { tab } = useTabContext();
+  const { tab, record } = useTabContext();
 
   const isDisplayed: boolean = useMemo(() => {
     if (!tab) {
@@ -22,12 +20,11 @@ export default function useDisplayLogic(field: Field) {
     const compiledExpr = compileExpression(field.displayLogicExpression);
 
     try {
-      const values = selected[tab.id];
-      return compiledExpr(session, values);
+      return compiledExpr(session, record);
     } catch (error) {
       return true;
     }
-  }, [tab, selected, field, session]);
+  }, [field.displayLogicExpression, field.displayed, record, session, tab]);
 
   return isDisplayed;
 }

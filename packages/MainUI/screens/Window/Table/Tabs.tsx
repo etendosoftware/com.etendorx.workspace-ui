@@ -5,10 +5,12 @@ import { useMemo, useRef, useState } from 'react';
 import { Button } from '@mui/material';
 import { TabLevel } from '../../../components/TabLevel';
 import { useStyle } from './styles';
-import useSelectedParentRecord from '@/hooks/useSelectedParentRecord';
+import { useSelected } from '@/contexts/selected';
 
 export default function Tabs({ tabs }: { tabs: Tab[]; level?: number }) {
-  const parentRecord = useSelectedParentRecord(tabs[0]);
+  const graph = useSelected();
+  const parentTab = graph.getParent(tabs[0].id);
+  const parentRecord = graph.getSelected(parentTab?.id);
   const [activeKey, setActiveKey] = useState(tabs[0].id);
   const { sx } = useStyle();
 

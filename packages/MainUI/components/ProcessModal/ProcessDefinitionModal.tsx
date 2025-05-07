@@ -9,18 +9,18 @@ import CloseIcon from '../../../ComponentLibrary/src/assets/icons/x.svg';
 import BaseSelector from './selectors/BaseSelector';
 import { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps } from './types';
 import Modal from '../Modal';
-import { useSelected } from '@/contexts/selected';
 import Loading from '../loading';
 import { logger } from '@/utils/logger';
+import { useSelected } from '@/contexts/selected';
 
 function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
   const onProcess = button.processDefinition.onProcess;
   const onLoad = button.processDefinition.onLoad;
-  const { selectedMultiple } = useSelected();
+  const graph = useSelected();
   const { tab } = useTabContext();
   const tabId = tab?.id || '';
-  const selectedRecords = selectedMultiple[tabId];
+  const selectedRecords = graph.getSelectedMultiple(tabId);
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
   const [response, setResponse] = useState<{
     msgText: string;
@@ -52,7 +52,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           buttonValue: 'DONE',
           windowId: tab.windowId,
           entityName: tab.entityName,
-          recordIds: Object.keys(selectedRecords),
+          recordIds: selectedRecords?.map((r) => r.id),
           ...form.getValues(),
         });
 

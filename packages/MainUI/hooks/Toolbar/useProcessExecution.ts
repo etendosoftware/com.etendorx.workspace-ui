@@ -1,11 +1,10 @@
-import { useState, useContext, useCallback, useMemo } from 'react';
+import { useState, useContext, useCallback } from 'react';
 import { UserContext } from '../../contexts/user';
 import { ExecuteProcessDefinitionParams, ExecuteProcessParams } from './types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { ProcessButton, ProcessButtonType, ProcessResponse } from '@/components/ProcessModal/types';
 import { useMetadataContext } from '../useMetadataContext';
 import { useParams } from 'next/navigation';
-import { useSelected } from '@/contexts/selected';
 import { useTabContext } from '@/contexts/tab';
 
 export function useProcessExecution() {
@@ -15,11 +14,8 @@ export function useProcessExecution() {
 
   const { token } = useContext(UserContext);
   const { windowId } = useMetadataContext();
-  const { tab } = useTabContext();
-  const { selected } = useSelected();
+  const { tab, record } = useTabContext();
   const { recordId } = useParams<{ recordId: string }>();
-
-  const currentRecord = useMemo(() => selected[tab.id] || null, [selected, tab.id]);
 
   const executeProcessDefinition = useCallback(
     async ({ button, recordId, params = {} }: ExecuteProcessDefinitionParams): Promise<ProcessResponse> => {
@@ -77,13 +73,13 @@ export function useProcessExecution() {
           setLoading(true);
           setError(null);
 
-          if (!currentRecord) {
+          if (!record) {
             throw new Error('No se ha cargado el registro correctamente');
           }
 
           const extractValue = (keys: string[], defaultValue: string): string => {
             for (const key of keys) {
-              const value = currentRecord[key];
+              const value = record[key];
               if (value !== undefined && value !== null && value !== '') {
                 return String(value);
               }
@@ -110,7 +106,7 @@ export function useProcessExecution() {
           const baseUrl = `http://localhost:8080/etendo/SalesOrder/Header_Edition.html`;
           const safeWindowId = windowId || (tab?.windowId ? String(tab.windowId) : '143');
           const safeTabId = tab?.id ? String(tab.id) : '186';
-          const safeRecordId = String(currentRecord.id || recordId || '');
+          const safeRecordId = String(record.id || recordId || '');
 
           const params = new URLSearchParams();
           params.append('IsPopUpCall', '1');
@@ -155,7 +151,7 @@ export function useProcessExecution() {
         }
       });
     },
-    [currentRecord, recordId, tab?.windowId, tab?.id, windowId, token],
+    [record, recordId, tab.id, tab.windowId, token, windowId],
   );
 
   const executeProcess = useCallback(
@@ -175,16 +171,18 @@ export function useProcessExecution() {
     [executeProcessAction, executeProcessDefinition],
   );
 
+  const resetIframeUrl = useCallback(() => setIframeUrl(''), []);
+
   return {
     executeProcess,
     loading,
     error,
     iframeUrl,
-    resetIframeUrl: () => setIframeUrl(''),
-    currentRecord,
-    recordsLoaded: !!currentRecord,
+    resetIframeUrl,
+    currentRecord: record,
+    recordsLoaded: !!record,
     recordsLoading: loading,
-    recordData: currentRecord,
+    recordData: record,
     recordId,
   };
 }

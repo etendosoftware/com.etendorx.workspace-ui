@@ -10,7 +10,7 @@ import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useUserContext } from './useUserContext';
 import { ClientOptions } from '@workspaceui/etendohookbinder/src/api/client';
 import useFormParent, { ParentFieldName } from './useFormParent';
-import useSelectedParentRecord from './useSelectedParentRecord';
+import { useTabContext } from '@/contexts/tab';
 
 const getRowId = (mode: FormMode, recordId?: string | null): string => {
   return mode === FormMode.EDIT ? recordId! : 'null';
@@ -96,11 +96,11 @@ export type useFormInitialization = State & {
 
 export function useFormInitialization({ tab, mode, recordId }: FormInitializationParams): useFormInitialization {
   const { setSession } = useUserContext();
+  const { parentRecord: parent } = useTabContext();
   const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
   const loaded = !!state.formInitialization;
   const { error, formInitialization, loading } = state;
   const parentData = useFormParent(ParentFieldName.HQL_NAME);
-  const parent = useSelectedParentRecord(tab);
   const parentId = parent?.id?.toString();
   const params = useMemo(
     () => (tab ? buildFormInitializationParams({ tab, mode, recordId, parentId }) : null),

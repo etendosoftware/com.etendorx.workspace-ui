@@ -10,13 +10,13 @@ import { FormMode } from '@workspaceui/etendohookbinder/src/api/types';
 import { useQueryParams } from '@/hooks/useQueryParams';
 
 export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
-  const { window } = useMetadataContext()
+  const { window } = useMetadataContext();
   const params = useQueryParams();
-  const recordId = params["recordId_" + tab.id] ? String(params["recordId_" + tab.id]) : null;
+  const recordId = params['recordId_' + tab.id] ? String(params['recordId_' + tab.id]) : null;
 
   return (
     <TabContextProvider tab={tab}>
-      <div className={`flex flex-1 max-w-auto max-h-auto gap-2 flex-col min-h-0 ${tab.level === 0 ? "" : ""}`}>
+      <div className={`flex flex-1 max-w-auto max-h-auto gap-2 flex-col min-h-0 ${tab.level === 0 ? '' : ''}`}>
         <Toolbar windowId={tab.windowId} tabId={tab.id} isFormView={Boolean(recordId)} />
         {recordId ? (
           <FormView

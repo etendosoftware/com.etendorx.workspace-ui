@@ -1,90 +1,36 @@
-'use client';
+import { createContext, useContext, useMemo, useState } from 'react';
+import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import Graph from '@/data/graph';
+import { useMetadataContext } from '@/hooks/useMetadataContext';
 
-import { createContext, useState, useMemo, useCallback, useContext } from 'react';
-import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { useSetSession } from '@/hooks/useSetSession';
+const SelectContext = createContext<Graph<Tab> | null>(null);
 
-type RecordContext = {
-  selected: Record<string, EntityData>;
-  selectedMultiple: Record<string, Record<string, EntityData>>;
-  select: (record: EntityData, tab: Tab) => void;
-  clear: (tab: Tab) => void;
-  selectMultiple: (records: Record<string, EntityData>, tab: Tab) => void;
-  clearMultiple: (tab: Tab) => void;
+export const SelectedProvider = ({ children }: React.PropsWithChildren) => {
+  const [, setVersion] = useState(0);
+  const { window } = useMetadataContext();
+  const tabs = window?.tabs;
+
+  const graph = useMemo(() => {
+    const result = new Graph<Tab>();
+
+    if (tabs) {
+      result.buildTreeFromTabs(tabs);
+    }
+
+    result.on('update', () => setVersion(v => v + 1));
+
+    return result;
+  }, [tabs]);
+
+  return <SelectContext.Provider value={graph}>{children}</SelectContext.Provider>;
 };
-
-const Context = createContext<RecordContext>({
-  selected: {},
-  selectedMultiple: {},
-  select: (_record: EntityData, _tab: Tab) => {},
-  clear: (_tab: Tab) => {},
-  selectMultiple: (_records: Record<string, EntityData>, _tab: Tab) => {},
-  clearMultiple: (_tab: Tab) => {},
-});
-
-export default function SelectedProvider({ children }: React.PropsWithChildren) {
-  // Used to store the "most recent" selected record in a given tab
-  const [selected, setSelected] = useState<Record<string, EntityData>>({});
-  // Used to store the selected records in a given tab
-  const [selectedMultiple, setSelectedMultiple] = useState<Record<string, Record<string, EntityData>>>({});
-  const setSession = useSetSession();
-
-  const select = useCallback(
-    (record: EntityData, tab: Tab) => {
-      let shouldSetSession;
-
-      setSelected(prev => {
-        const previous = prev[tab.id];
-        shouldSetSession = previous?.id !== record.id;
-
-        return { ...prev, [tab.id]: record };
-      });
-
-      if (shouldSetSession) {
-        setSession(record, tab);
-      }
-    },
-    [setSession],
-  );
-
-  const clear = useCallback((tab: Tab) => {
-    setSelected(prev => {
-      const result = { ...prev };
-      delete result[tab.id];
-
-      return result;
-    });
-  }, []);
-
-  const selectMultiple = useCallback((records: Record<string, EntityData>, tab: Tab) => {
-    setSelectedMultiple(prev => ({ ...prev, [tab.id]: records }));
-  }, []);
-
-  const clearMultiple = useCallback((tab: Tab) => {
-    setSelectedMultiple(prev => ({ ...prev, [tab.id]: {} }));
-  }, []);
-
-  const value = useMemo(
-    () => ({
-      selected,
-      selectedMultiple,
-      select,
-      clear,
-      selectMultiple,
-      clearMultiple,
-    }),
-    [clear, clearMultiple, selectedMultiple, select, selectMultiple, selected],
-  );
-
-  return <Context.Provider value={value}>{children}</Context.Provider>;
-}
 
 export const useSelected = () => {
-  const context = useContext(Context);
+  const graph = useContext(SelectContext);
 
-  if (!context) {
-    throw new Error('useSelected must be used inside of a SelectedProvider.');
-  }
+  if (!graph) throw new Error('useSelected must be used within a SelectedProvider');
 
-  return context;
+  return graph;
 };
+
+export default SelectedProvider;

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, createElement } from 'react';
+import { useCallback, useMemo, useState, createElement, useEffect } from 'react';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import { IconSize, StandardButton, StandardButtonConfig, ToolbarProps, isProcessButton } from './types';
 import {
@@ -39,14 +39,14 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { session } = useUserContext();
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
-  const { selected, selectedMultiple, clear } = useSelected();
+  const graph = useSelected();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { refetchDatasource } = useDatasourceContext();
-  const { tab } = useTabContext();
+  const { tab, record, parentRecord } = useTabContext();
 
-  const selectedRecord = tab ? selected[tab.id] : undefined;
-  const parentId = useMemo(() => selected[tab?.level - 1]?.id?.toString() ?? null, [selected, tab?.level]);
+  const selectedRecord = record;
+  const parentId = parentRecord?.id?.toString();
 
   const {
     handleAction,
@@ -68,10 +68,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   });
 
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
+  const selectedItems = useMemo(() => graph.getSelectedMultiple(tab.id) || [], [graph, tab.id]);
 
   const processButtons = useMemo(() => {
     const buttons = toolbar?.buttons.filter(isProcessButton) || [];
-    const selectedItems = selectedMultiple[tab.id] ? Object.values(selectedMultiple[tab.id]) : [selectedRecord];
 
     const filteredButtons = buttons.filter(button => {
       if (!button.field.displayLogicExpression) {
@@ -88,7 +88,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     });
 
     return filteredButtons;
-  }, [toolbar?.buttons, selectedMultiple, tab.id, selectedRecord, session]);
+  }, [selectedItems, session, toolbar?.buttons]);
 
   const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -128,9 +128,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       if (tabId) {
         refetchDatasource(tabId);
       }
-      clear(tab);
+      graph.clearSelected(tab.id);
     }
-  }, [processResponse, tabId, refetchDatasource, clear, tab]);
+  }, [graph, processResponse, refetchDatasource, tab.id, tabId]);
 
   const handleConfirmProcess = useCallback(async () => {
     if (!selectedProcessActionButton || !selectedRecord?.id) return;
@@ -166,9 +166,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   }, []);
 
   const handleCompleteRefresh = useCallback(async () => {
-    clear(tab);
+    graph.clearSelected(tab.id);
     refetchDatasource(tab.id);
-  }, [clear, refetchDatasource, tab]);
+  }, [graph, refetchDatasource, tab.id]);
+
+  useEffect(() => {
+    console.debug(selectedRecord);
+  }, [selectedRecord]);
 
   const toolbarConfig = useMemo(() => {
     const buttons = toolbar?.buttons ?? [];

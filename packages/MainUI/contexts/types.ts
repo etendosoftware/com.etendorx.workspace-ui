@@ -13,6 +13,7 @@ import {
   SessionResponse,
 } from '@workspaceui/etendohookbinder/src/api/types';
 import { type Etendo } from '@workspaceui/etendohookbinder/src/api/metadata';
+import Graph from '@/data/graph';
 
 export type Language = 'en_US' | 'es_ES';
 
