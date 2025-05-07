@@ -43,9 +43,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { refetchDatasource } = useDatasourceContext();
-  const { tab, record, parentRecord } = useTabContext();
+  const { tab, parentRecord } = useTabContext();
 
-  const selectedRecord = record;
+  const selectedRecord = graph.getSelected(tabId);
   const parentId = parentRecord?.id?.toString();
 
   const {
@@ -66,15 +66,14 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     parentId,
     isFormView,
   });
-
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
-  const selectedItems = useMemo(() => graph.getSelectedMultiple(tab.id) || [], [graph, tab.id]);
+  const selectedItems = graph.getSelectedMultiple(tab.id);
 
   const processButtons = useMemo(() => {
     const buttons = toolbar?.buttons.filter(isProcessButton) || [];
 
     const filteredButtons = buttons.filter(button => {
-      if (!button.field.displayLogicExpression) {
+      if (!button.field.displayLogicExpression || !selectedItems) {
         return true;
       }
 

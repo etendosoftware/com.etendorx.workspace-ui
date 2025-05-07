@@ -48,28 +48,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
 
   const removeRecord = useCallback(
     (tabId: string, recordId: string) => {
-      setWindowData(prevWindowData => {
-        if (!prevWindowData) return prevWindowData;
-
-        const updatedTabs = prevWindowData.tabs.map(tab => {
-          if (tab.id === tabId) {
-            const updatedRecords = { ...tab.records };
-            delete updatedRecords[recordId];
-
-            return {
-              ...tab,
-              records: updatedRecords,
-            };
-          }
-          return tab;
-        });
-
-        return {
-          ...prevWindowData,
-          tabs: updatedTabs,
-        };
-      });
-
       removeRecordFromDatasource(tabId, recordId);
     },
     [removeRecordFromDatasource],

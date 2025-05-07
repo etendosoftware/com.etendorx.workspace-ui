@@ -142,7 +142,7 @@ class Graph<T extends Tab> extends EventEmitter {
   }
 
   public getSelectedMultiple(tabId?: string | null) {
-    if (!tabId) return;
+    if (!tabId) return [];
     return this.nodes.get(tabId)?.selectedMultiple;
   }
 }
