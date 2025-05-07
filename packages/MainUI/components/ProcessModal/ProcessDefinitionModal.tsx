@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useTabContext } from '@/contexts/tab';
@@ -13,6 +13,8 @@ import Loading from '../loading';
 import { logger } from '@/utils/logger';
 import { useSelected } from '@/contexts/selected';
 import useRecordValues from '@/hooks/useRecordValues';
+import WindowReferenceGrid from './WindowReferenceGrid';
+import { useQueryParams } from '@/hooks/useQueryParams';
 
 function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
@@ -36,6 +38,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   useEffect(() => {
     console.debug(inputValues);
   }, [inputValues]);
+  const [gridSelection, setGridSelection] = useState<any[]>([]);
+
+  const params = useQueryParams();
+  const recordId = params['recordId_' + tab.id] ? String(params['recordId_' + tab.id]) : null;
 
   const form = useForm();
 
@@ -48,8 +54,91 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     onClose();
   }, [button.processDefinition.parameters, onClose]);
 
+  const hasWindowReference = useMemo(() => {
+    return Object.values(parameters).some(param => param.reference$_identifier === 'Window Reference');
+  }, [parameters]);
+
+  const handleWindowReferenceExecute = useCallback(async () => {
+    if (tab) {
+      setIsExecuting(true);
+      setIsSuccess(false);
+
+      try {
+        const processId = button.processDefinition.id;
+        const javaClassName = button.processDefinition.javaClassName;
+
+        const params = new URLSearchParams({
+          processId,
+          windowId: tab.windowId,
+          _action: javaClassName,
+        });
+
+        const payload = {
+          C_Order_ID: tabId,
+          inpcOrderId: tabId,
+          _buttonValue: 'DONE',
+          _params: {
+            ad_org_id: 'B843C30461EA4501935CB1D125C9C25A',
+            grid: {
+              _selection: gridSelection,
+            },
+          },
+          _entityName: 'Order',
+        };
+
+        console.log('Sending payload:', payload);
+
+        const response = await Metadata.kernelClient.post(`?${params}`, payload);
+        console.log('Process response:', response);
+
+        if (response?.data?.message) {
+          setResponse({
+            msgText: response.data.message.text || '',
+            msgTitle:
+              response.data.message.severity === 'success'
+                ? t('process.completedSuccessfully')
+                : t('process.processError'),
+            msgType: response.data.message.severity,
+          });
+
+          if (response.data.message.severity === 'success') {
+            setIsSuccess(true);
+            if (onSuccess) {
+              onSuccess();
+            }
+          }
+        } else if (response?.data) {
+          setResponse({
+            msgText: 'Process completed successfully',
+            msgTitle: t('process.completedSuccessfully'),
+            msgType: 'success',
+          });
+
+          setIsSuccess(true);
+          if (onSuccess) {
+            onSuccess();
+          }
+        }
+      } catch (error) {
+        console.error('Process execution error:', error);
+        logger.warn('Error executing process:', error);
+        setResponse({
+          msgText: error instanceof Error ? error.message : 'Unknown error',
+          msgTitle: t('errors.internalServerError.title'),
+          msgType: 'error',
+        });
+      } finally {
+        setIsExecuting(false);
+      }
+    }
+  }, [tab, button.processDefinition.id, button.processDefinition.javaClassName, gridSelection, recordId, t, onSuccess]);
   const handleExecute = useCallback(async () => {
-    if (onProcess && tab) {
+    console.log('gridSelection:', gridSelection);
+
+    if (hasWindowReference) {
+      console.log('Executing window reference process...');
+      await handleWindowReferenceExecute();
+    } else if (onProcess && tab) {
       setIsExecuting(true);
       setIsSuccess(false);
 
@@ -71,7 +160,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             onSuccess();
           }
         }
-        setIsExecuting(false);
       } catch (error) {
         logger.warn('Error executing process:', error);
         setResponse({
@@ -79,54 +167,70 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           msgTitle: t('errors.internalServerError.title'),
           msgType: 'error',
         });
+      } finally {
         setIsExecuting(false);
       }
     }
-  }, [button.processDefinition, form, onProcess, selectedRecords, tab, onSuccess, t]);
+  }, [
+    hasWindowReference,
+    gridSelection,
+    onProcess,
+    tab,
+    handleWindowReferenceExecute,
+    button.processDefinition,
+    selectedRecords,
+    form,
+    onSuccess,
+    t,
+  ]);
+
+  useEffect(() => {
+    if (open) {
+      setIsExecuting(false);
+      setIsSuccess(false);
+      setResponse(undefined);
+      setParameters(button.processDefinition.parameters);
+      setGridSelection([]);
+    }
+  }, [button.processDefinition.parameters, open]);
 
   useEffect(() => {
     const fetchOptions = async () => {
-      if (onLoad && open && tab) {
+      if (open) {
         try {
           setLoading(true);
-          const result = await executeStringFunction(onLoad, { Metadata }, button.processDefinition, {
-            selectedRecords,
-            tabId,
-          });
-          setParameters(prev => {
-            const newParameters = { ...prev };
-            Object.entries(result).forEach(([parameterName, values]) => {
-              const newOptions = values as string[];
-              newParameters[parameterName] = { ...newParameters[parameterName] };
-              newParameters[parameterName].refList = newParameters[parameterName].refList.filter(option =>
-                newOptions.includes(option.value),
-              );
-            });
 
-            return newParameters;
-          });
+          if (onLoad && tab) {
+            const result = await executeStringFunction(onLoad, { Metadata }, button.processDefinition, {
+              selectedRecords,
+              tabId,
+            });
+            setParameters(prev => {
+              const newParameters = { ...prev };
+              Object.entries(result).forEach(([parameterName, values]) => {
+                const newOptions = values as string[];
+                newParameters[parameterName] = { ...newParameters[parameterName] };
+                newParameters[parameterName].refList = newParameters[parameterName].refList.filter(option =>
+                  newOptions.includes(option.value),
+                );
+              });
+
+              return newParameters;
+            });
+          }
+
+          setTimeout(() => {
+            setLoading(false);
+          }, 300);
         } catch (error) {
           logger.warn('Error loading parameters:', error);
-        } finally {
           setLoading(false);
         }
-      } else if (open) {
-        setLoading(false);
       }
     };
 
     fetchOptions();
   }, [button.processDefinition, onLoad, open, selectedRecords, tab, tabId]);
-
-  useEffect(() => {
-    if (open) {
-      setLoading(true);
-      setIsExecuting(false);
-      setIsSuccess(false);
-      setResponse(undefined);
-      setParameters(button.processDefinition.parameters);
-    }
-  }, [button.processDefinition.parameters, open]);
 
   return (
     <Modal open={open}>
@@ -150,8 +254,30 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                 <Loading />
               </div>
               <div className={`transition-opacity ${loading ? 'opacity-0' : 'opacity-100'}`}>
-                {!isSuccess &&
-                  Object.values(parameters).map(parameter => <BaseSelector key={parameter.id} parameter={parameter} />)}
+                {!isSuccess && (
+                  <>
+                    {Object.values(parameters).map(parameter => {
+                      if (
+                        parameter.name === 'Pick/Edit Lines' &&
+                        parameter.dBColumnName === 'grid' &&
+                        button.processDefinition &&
+                        button.processDefinition.id === '8B81D80B06364566B87853FEECAB5DE0'
+                      ) {
+                        return (
+                          <WindowReferenceGrid
+                            key={parameter.id}
+                            parameter={parameter}
+                            onSelectionChange={setGridSelection}
+                            recordId={recordId}
+                            tabId={tabId}
+                            windowId={tab?.windowId}
+                          />
+                        );
+                      }
+                      return <BaseSelector key={parameter.id} parameter={parameter} />;
+                    })}
+                  </>
+                )}
                 {response ? (
                   <div
                     className={`p-3 rounded mb-4 border-l-4 ${
@@ -175,7 +301,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
               <button
                 onClick={handleExecute}
                 className="transition px-4 py-2 text-white rounded font-medium flex items-center gap-2 bg-(--color-etendo-dark) hover:bg-(--color-etendo-main)"
-                disabled={isExecuting || isSuccess}>
+                disabled={isExecuting || isSuccess || (hasWindowReference && gridSelection.length === 0)}>
                 {isExecuting ? (
                   <span className="animate-pulse">{t('common.loading')}...</span>
                 ) : isSuccess ? (
