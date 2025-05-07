@@ -1,71 +1,210 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
-import Loading from '../loading';
+import {
+  MaterialReactTable,
+  MRT_ColumnFiltersState,
+  MRT_Row,
+  MRT_RowSelectionState,
+  useMaterialReactTable,
+  MRT_TableInstance,
+} from 'material-react-table';
+import { Button } from '@mui/material';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import type { EntityData, EntityValue, ProcessParameter } from '@workspaceui/etendohookbinder/src/api/types';
+import Loading from '../loading';
+import { ErrorDisplay } from '../ErrorDisplay';
+import { useStyle } from '../Table/styles';
+import EmptyState from '../Table/EmptyState';
+import { parseColumns } from '@/utils/tableColumns';
+import { useTab } from '@/hooks/useTab';
 
 interface WindowReferenceGridProps {
   parameter: ProcessParameter;
   onSelectionChange: (selection: unknown[]) => void;
+  entityName: EntityValue;
   recordId?: EntityValue;
   tabId: string;
   windowId?: string;
 }
 
-function WindowReferenceGrid({ parameter, onSelectionChange, tabId, windowId }: WindowReferenceGridProps) {
+function WindowReferenceGrid({ parameter, onSelectionChange, tabId, windowId, entityName }: WindowReferenceGridProps) {
   const { t } = useTranslation();
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const { sx } = useStyle();
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const { data: tabData, loading: tabLoading, error: tabError } = useTab(parameter.tab || tabId);
+
+  const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
+  const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
+  const maxWidth = 100;
 
   const datasourceOptions = useMemo(
     () => ({
       windowId: windowId || '',
-      tabId,
+      tabId: parameter.tab || tabId,
       pageSize: 100,
     }),
-    [windowId, tabId],
+    [windowId, tabId, parameter.tab],
   );
 
-  const { records, loading, error } = useDatasource('Order', datasourceOptions);
+  const fields = useMemo(() => {
+    if (tabData?.fields) {
+      return Object.values(tabData.fields);
+    }
+    return [];
+  }, [tabData]);
 
-  const displayFields = useMemo(() => {
-    if (!records || records.length === 0) return [];
+  const columns = useMemo(() => {
+    if (fields.length > 0) {
+      return parseColumns(fields, t);
+    }
+    return [];
+  }, [fields, t]);
 
-    const firstRecord = records[0];
-    const fieldNames = Object.keys(firstRecord)
-      .filter(key => !['id', '_identifier'].includes(key) && !key.startsWith('$') && !key.startsWith('_'))
-      .slice(0, 6);
-
-    return fieldNames;
-  }, [records]);
+  const { records, loading, error, updateColumnFilters, refetch, hasMoreRecords, fetchMore } = useDatasource(
+    String(entityName),
+    datasourceOptions,
+  );
 
   useEffect(() => {
-    setSelected({});
+    setRowSelection({});
     onSelectionChange([]);
   }, [records, onSelectionChange]);
 
-  const handleSelectItem = (item: EntityData, isSelected: boolean) => {
-    setSelected(prev => {
-      const newSelection = { ...prev };
-      const itemId = typeof item.id === 'string' ? item.id : String(item.id);
-      newSelection[itemId] = isSelected;
+  const handleRowSelection = useCallback<typeof setRowSelection>(
+    updater => {
+      setRowSelection(prev => {
+        const newSelection = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
 
-      const selectedItems = records.filter(record => {
-        const recordId = typeof record.id === 'string' ? record.id : String(record.id);
-        return newSelection[recordId];
+        const selectedItems = records.filter(record => {
+          const recordId = String(record.id);
+          return newSelection[recordId];
+        });
+
+        onSelectionChange(selectedItems);
+        return newSelection;
       });
+    },
+    [records, onSelectionChange],
+  );
 
-      onSelectionChange(selectedItems);
+  const handleColumnFiltersChange = useCallback(
+    (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
+      let newColumnFilters: MRT_ColumnFiltersState;
 
-      return newSelection;
-    });
-  };
+      if (typeof updaterOrValue === 'function') {
+        newColumnFilters = updaterOrValue(columnFilters);
+      } else {
+        newColumnFilters = updaterOrValue;
+      }
 
-  const handleUnselectAll = useCallback(() => {
-    setSelected({});
+      const isRealFilterChange =
+        JSON.stringify(newColumnFilters.map(f => ({ id: f.id, value: f.value }))) !==
+        JSON.stringify(columnFilters.map(f => ({ id: f.id, value: f.value })));
+
+      setColumnFilters(newColumnFilters);
+
+      if (isRealFilterChange && updateColumnFilters) {
+        updateColumnFilters(newColumnFilters);
+      }
+    },
+    [columnFilters, updateColumnFilters],
+  );
+
+  const handleClearSelections = useCallback(() => {
+    setRowSelection({});
     onSelectionChange([]);
   }, [onSelectionChange]);
 
-  if (loading) {
+  const rowProps = useCallback(
+    ({ row, table }: { row: MRT_Row<EntityData>; table: MRT_TableInstance<EntityData> }) => {
+      const isSelected = row.getIsSelected();
+
+      return {
+        onClick: (event: React.MouseEvent) => {
+          if (!event.ctrlKey) {
+            setRowSelection({});
+          }
+          row.toggleSelected();
+        },
+        sx: {
+          ...(isSelected && {
+            ...sx.rowSelected,
+          }),
+        },
+        row,
+        table,
+      };
+    },
+    [sx.rowSelected],
+  );
+
+  const table = useMaterialReactTable<EntityData>({
+    muiTablePaperProps: {
+      sx: sx.tablePaper,
+    },
+    muiTableHeadCellProps: { sx: sx.tableHeadCell },
+    muiTableBodyCellProps: { sx: sx.tableBodyCell },
+    muiTableBodyProps: {
+      sx: sx.tableBody,
+    },
+    layoutMode: 'grid',
+    enableGlobalFilter: false,
+    columns,
+    data: records || [],
+    enableRowSelection: true,
+    enableMultiRowSelection: true,
+    positionToolbarAlertBanner: 'none',
+    muiTableBodyRowProps: rowProps,
+    muiTableContainerProps: {
+      className: 'flex-1',
+    },
+    enablePagination: false,
+    enableStickyHeader: true,
+    enableStickyFooter: true,
+    renderTopToolbar: props => {
+      const selectedCount = props.table.getSelectedRowModel().rows.length;
+      return (
+        <div className="flex justify-between p-2 bg-gray-50 border-b">
+          <div className="text-lg font-medium">{parameter.name}</div>
+          {selectedCount > 0 && (
+            <div className="flex items-center gap-2">
+              <span>
+                {selectedCount} {t('table.selection.multiple')}
+              </span>
+              <Button variant="outlined" size="small" onClick={handleClearSelections}>
+                {t('common.clear')}
+              </Button>
+            </div>
+          )}
+        </div>
+      );
+    },
+    renderBottomToolbar: hasMoreRecords ? (
+      <Button sx={sx.fetchMore} onClick={fetchMore}>
+        {t('common.loadMore')}
+      </Button>
+    ) : null,
+    initialState: { density: 'compact' },
+    state: {
+      rowSelection,
+      columnFilters,
+      showColumnFilters: true,
+    },
+    onRowSelectionChange: handleRowSelection,
+    onColumnFiltersChange: handleColumnFiltersChange,
+    getRowId: row => String(row.id),
+    enableColumnFilters: true,
+    enableSorting: true,
+    enableColumnResizing: true,
+    enableColumnActions: true,
+    manualFiltering: true,
+    renderEmptyRowsFallback: () => {
+      return <EmptyState maxWidth={maxWidth} />;
+    },
+  });
+
+  if (tabLoading || loading) {
     return (
       <div className="p-4 flex justify-center">
         <Loading />
@@ -73,77 +212,26 @@ function WindowReferenceGrid({ parameter, onSelectionChange, tabId, windowId }: 
     );
   }
 
-  if (error) {
+  if (tabError || error) {
     return (
-      <div className="p-4 text-center text-red-500">
-        {t('errors.missingData')}: {error.message}
-      </div>
+      <ErrorDisplay
+        title={t('errors.missingData')}
+        description={(tabError || error)?.message}
+        showRetry
+        onRetry={refetch}
+      />
     );
   }
 
-  if (!records || records.length === 0) {
-    return <div className="p-4 text-center text-gray-500">{t('common.noDataAvailable')}</div>;
+  if ((fields.length === 0 && !tabLoading) || !records || records.length === 0) {
+    return <EmptyState maxWidth={maxWidth} />;
   }
 
   return (
-    <div className="mt-4 mb-6">
-      <h4 className="font-medium mb-2">{parameter.name}</h4>
-      <div className="border rounded overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                    onChange={handleUnselectAll}
-                    checked={
-                      records.length > 0 &&
-                      records.every(item => {
-                        const itemId = typeof item.id === 'string' ? item.id : String(item.id);
-                        return selected[itemId];
-                      })
-                    }
-                  />
-                </th>
-                {displayFields.map(field => (
-                  <th
-                    key={field}
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {field}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {records.map(item => {
-                const itemId = typeof item.id === 'string' ? item.id : String(item.id);
-                return (
-                  <tr key={itemId} className={selected[itemId] ? 'bg-gray-50' : ''}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                        checked={!!selected[itemId]}
-                        onChange={e => handleSelectItem(item, e.target.checked)}
-                      />
-                    </td>
-                    {displayFields.map(field => (
-                      <td key={`${itemId}-${field}`} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item[field] !== undefined ? String(item[field]) : ''}
-                      </td>
-                    ))}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <div
+      className={`flex flex-col w-full overflow-auto h-full transition duration-100 ${loading ? 'opacity-40 cursor-wait cursor-to-children' : 'opacity-100'}`}
+      ref={contentRef}>
+      <MaterialReactTable table={table} />
     </div>
   );
 }

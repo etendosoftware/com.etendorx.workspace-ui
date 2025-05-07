@@ -39,7 +39,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [inputValues]);
   const [gridSelection, setGridSelection] = useState<any[]>([]);
 
-  const recordId = selectedRecord[tabId].id;
+  const recordId = selectedRecord[tabId]?.id;
+  const entityName = selectedRecord[tabId]?._entityName;
 
   const form = useForm();
 
@@ -76,7 +77,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           inpcOrderId: tabId,
           _buttonValue: 'DONE',
           _params: {
-            ad_org_id: 'B843C30461EA4501935CB1D125C9C25A',
+            ad_org_id: selectedRecord[tabId].organization,
             grid: {
               _selection: gridSelection,
             },
@@ -272,6 +273,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                             key={parameter.id}
                             parameter={parameter}
                             onSelectionChange={setGridSelection}
+                            entityName={entityName}
                             recordId={recordId}
                             tabId={tabId}
                             windowId={tab?.windowId}
