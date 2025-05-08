@@ -39,8 +39,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [inputValues]);
   const [gridSelection, setGridSelection] = useState<any[]>([]);
 
-  const recordId = selectedRecord[tabId]?.id;
-  const entityName = selectedRecord[tabId]?._entityName;
+  // const recordId = selectedRecord[tabId]?.id;
+  //const entityName = selectedRecord[tabId]?._entityName;
 
   const form = useForm();
 
@@ -77,12 +77,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           inpcOrderId: tabId,
           _buttonValue: 'DONE',
           _params: {
-            ad_org_id: selectedRecord[tabId].organization,
+            //           ad_org_id: tabId.organization,
             grid: {
               _selection: gridSelection,
             },
           },
-          _entityName: selectedRecord[tabId]._entityName,
+          //        _entityName: selectedRecord[tabId]._entityName,
         };
 
         const response = await Metadata.kernelClient.post(`?${params}`, payload);
@@ -127,16 +127,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setIsExecuting(false);
       }
     }
-  }, [
-    tab,
-    button.processDefinition.id,
-    button.processDefinition.javaClassName,
-    selectedRecord,
-    tabId,
-    gridSelection,
-    t,
-    onSuccess,
-  ]);
+  }, [tab, button.processDefinition.id, button.processDefinition.javaClassName, tabId, gridSelection, t, onSuccess]);
   const handleExecute = useCallback(async () => {
     console.debug('gridSelection:', gridSelection);
 
@@ -280,8 +271,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                               key={parameter.id}
                               parameter={parameter}
                               onSelectionChange={setGridSelection}
-                              entityName={entityName}
-                              recordId={recordId}
                               tabId={tabId}
                               windowId={tab?.windowId}
                               processId={button.processDefinition.id}

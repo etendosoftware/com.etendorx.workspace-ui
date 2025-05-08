@@ -27,7 +27,7 @@ const FALLBACK_RESULT = {};
 interface WindowReferenceGridProps {
   parameter: ProcessParameter;
   onSelectionChange: (selection: unknown[]) => void;
-  entityName: EntityValue;
+  entityName?: EntityValue;
   recordId?: EntityValue;
   tabId: string;
   windowId?: string;
@@ -46,7 +46,6 @@ function WindowReferenceGrid({
   const { t } = useTranslation();
   const { sx } = useStyle();
   const contentRef = useRef<HTMLDivElement>(null);
-  const { selected } = useSelected();
 
   const { data: tabData, loading: tabLoading, error: tabError } = useTab(parameter.tab || tabId);
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
@@ -70,7 +69,7 @@ function WindowReferenceGrid({
     };
 
     loadConfig();
-  }, [fetchConfig, recordId, selected, tabId]);
+  }, [fetchConfig, recordId, tabId]);
 
   // Construye las opciones del datasource basadas en la configuración del proceso
   const datasourceOptions = useMemo(() => {
@@ -125,14 +124,14 @@ function WindowReferenceGrid({
     fetchMore,
   } = useDatasource(String(entityName), datasourceOptions);
 
-  // const { tab, record } = useTabContext();
+  const { tab, record } = useTabContext();
 
-  // const Records = useMemo(
-  //   () => (record ? buildPayloadByInputName(record, tab.fields) : FALLBACK_RESULT),
-  //   [record, tab.fields],
-  // );
+  const Records = useMemo(
+    () => (record ? buildPayloadByInputName(record, tab.fields) : FALLBACK_RESULT),
+    [record, tab?.fields],
+  );
 
-  // console.debug('Records:', Records);
+  console.debug('Records:', Records, record, tab);
 
   // Reset selection when records change
   useEffect(() => {
