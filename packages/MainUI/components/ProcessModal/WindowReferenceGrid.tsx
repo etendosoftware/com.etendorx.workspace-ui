@@ -17,6 +17,12 @@ import { useStyle } from '../Table/styles';
 import EmptyState from '../Table/EmptyState';
 import { parseColumns } from '@/utils/tableColumns';
 import { useTab } from '@/hooks/useTab';
+import { useSelected } from '@/contexts/selected';
+import { useProcessConfig } from '@/hooks/datasource/useProcessDatasourceConfig';
+import { useTabContext } from '@/contexts/tab';
+import { buildPayloadByInputName } from '@/utils';
+
+const FALLBACK_RESULT = {};
 
 interface WindowReferenceGridProps {
   parameter: ProcessParameter;
@@ -25,27 +31,75 @@ interface WindowReferenceGridProps {
   recordId?: EntityValue;
   tabId: string;
   windowId?: string;
+  processId?: string;
 }
 
-function WindowReferenceGrid({ parameter, onSelectionChange, tabId, windowId, entityName }: WindowReferenceGridProps) {
+function WindowReferenceGrid({
+  parameter,
+  onSelectionChange,
+  tabId,
+  windowId,
+  entityName,
+  recordId,
+  processId,
+}: WindowReferenceGridProps) {
   const { t } = useTranslation();
   const { sx } = useStyle();
   const contentRef = useRef<HTMLDivElement>(null);
+  const { selected } = useSelected();
 
   const { data: tabData, loading: tabLoading, error: tabError } = useTab(parameter.tab || tabId);
-
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
   const maxWidth = 100;
 
-  const datasourceOptions = useMemo(
-    () => ({
+  const {
+    fetchConfig,
+    loading: processConfigLoading,
+    error: processConfigError,
+    config: processConfig,
+  } = useProcessConfig({
+    processId: processId || parameter.processId || '',
+    windowId: windowId || '',
+    tabId: tabId,
+  });
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      await fetchConfig();
+    };
+
+    loadConfig();
+  }, [fetchConfig, recordId, selected, tabId]);
+
+  // Construye las opciones del datasource basadas en la configuración del proceso
+  const datasourceOptions = useMemo(() => {
+    const options: Record<string, any> = {
       windowId: windowId || '',
       tabId: parameter.tab || tabId,
       pageSize: 100,
-    }),
-    [windowId, tabId, parameter.tab],
-  );
+    };
+
+    // Si tenemos expresiones de filtro para la cuadrícula, agrégalas
+    if (processConfig?.filterExpressions?.grid) {
+      options.filterExpressions = processConfig.filterExpressions.grid;
+    }
+
+    // Si tenemos valores predeterminados, construye criterios basados en ellos
+    if (processConfig?.defaults) {
+      const criteria = Object.entries(processConfig.defaults).map(([fieldName, value]) => ({
+        fieldName,
+        operator: 'equals',
+        value: value.value,
+      }));
+
+      if (criteria.length > 0) {
+        options.criteria = criteria;
+      }
+    }
+
+    return options;
+  }, [windowId, tabId, parameter.tab, processConfig]);
 
   const fields = useMemo(() => {
     if (tabData?.fields) {
@@ -61,11 +115,26 @@ function WindowReferenceGrid({ parameter, onSelectionChange, tabId, windowId, en
     return [];
   }, [fields, t]);
 
-  const { records, loading, error, updateColumnFilters, refetch, hasMoreRecords, fetchMore } = useDatasource(
-    String(entityName),
-    datasourceOptions,
-  );
+  const {
+    records,
+    loading: datasourceLoading,
+    error: datasourceError,
+    updateColumnFilters,
+    refetch,
+    hasMoreRecords,
+    fetchMore,
+  } = useDatasource(String(entityName), datasourceOptions);
 
+  // const { tab, record } = useTabContext();
+
+  // const Records = useMemo(
+  //   () => (record ? buildPayloadByInputName(record, tab.fields) : FALLBACK_RESULT),
+  //   [record, tab.fields],
+  // );
+
+  // console.debug('Records:', Records);
+
+  // Reset selection when records change
   useEffect(() => {
     setRowSelection({});
     onSelectionChange([]);
@@ -204,7 +273,13 @@ function WindowReferenceGrid({ parameter, onSelectionChange, tabId, windowId, en
     },
   });
 
-  if (tabLoading || loading) {
+  // Show loading state when any of the data fetching is in progress
+  const isLoading = tabLoading || processConfigLoading || datasourceLoading;
+
+  // Combine errors
+  const error = tabError || processConfigError || datasourceError;
+
+  if (isLoading) {
     return (
       <div className="p-4 flex justify-center">
         <Loading />
@@ -212,15 +287,8 @@ function WindowReferenceGrid({ parameter, onSelectionChange, tabId, windowId, en
     );
   }
 
-  if (tabError || error) {
-    return (
-      <ErrorDisplay
-        title={t('errors.missingData')}
-        description={(tabError || error)?.message}
-        showRetry
-        onRetry={refetch}
-      />
-    );
+  if (error) {
+    return <ErrorDisplay title={t('errors.missingData')} description={error?.message} showRetry onRetry={refetch} />;
   }
 
   if ((fields.length === 0 && !tabLoading) || !records || records.length === 0) {
@@ -229,7 +297,7 @@ function WindowReferenceGrid({ parameter, onSelectionChange, tabId, windowId, en
 
   return (
     <div
-      className={`flex flex-col w-full overflow-hidden max-h-4xl h-full transition duration-100 ${loading ? 'opacity-40 cursor-wait cursor-to-children' : 'opacity-100'}`}
+      className={`flex flex-col w-full overflow-hidden max-h-4xl h-full transition duration-100 ${datasourceLoading ? 'opacity-40 cursor-wait cursor-to-children' : 'opacity-100'}`}
       ref={contentRef}>
       <MaterialReactTable table={table} />
     </div>

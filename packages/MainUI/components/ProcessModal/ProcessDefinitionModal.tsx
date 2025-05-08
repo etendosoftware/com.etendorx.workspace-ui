@@ -237,13 +237,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     fetchOptions();
   }, [button.processDefinition, onLoad, open, selectedRecords, tab, tabId]);
 
-  console.debug(parameters);
-
   return (
     <Modal open={open}>
       <FormProvider {...form}>
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-100 p-4 sm:p-24 md:p-24">
-          <div className="bg-white rounded-lg p-4 flex flex-col w-full h-full max-w-full mx-auto">
+          <div className="bg-white rounded-lg p-4 flex flex-col w-full max-w-full max-h-full mx-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <h3 className="font-bold">{button.name}</h3>
@@ -255,7 +253,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                 <CloseIcon />
               </button>
             </div>
-            <div className="overflow-y-auto max-h-[60vh] p-1 relative">
+            <div className="  relative">
               <div
                 className={`absolute transition-opacity inset-0 flex items-center pointer-events-none justify-center bg-white ${loading ? 'opacity-100' : 'opacity-0'}`}>
                 <Loading />
@@ -277,15 +275,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                     {Object.values(parameters).map(parameter => {
                       if (parameter.reference === 'FF80818132D8F0F30132D9BC395D0038') {
                         return (
-                          <WindowReferenceGrid
-                            key={parameter.id}
-                            parameter={parameter}
-                            onSelectionChange={setGridSelection}
-                            entityName={entityName}
-                            recordId={recordId}
-                            tabId={tabId}
-                            windowId={tab?.windowId}
-                          />
+                          <>
+                            <WindowReferenceGrid
+                              key={parameter.id}
+                              parameter={parameter}
+                              onSelectionChange={setGridSelection}
+                              entityName={entityName}
+                              recordId={recordId}
+                              tabId={tabId}
+                              windowId={tab?.windowId}
+                              processId={button.processDefinition.id}
+                            />
+                          </>
                         );
                       }
                       return <BaseSelector key={parameter.id} parameter={parameter} />;

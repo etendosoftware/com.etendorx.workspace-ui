@@ -48,6 +48,7 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
     mode: mode,
     recordId,
   });
+
   const { registerActions } = useToolbarContext();
 
   const initialState = useFormInitialState(formInitialization) || undefined;
