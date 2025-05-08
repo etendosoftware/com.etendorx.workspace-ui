@@ -73,11 +73,11 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     const buttons = toolbar?.buttons.filter(isProcessButton) || [];
 
     const filteredButtons = buttons.filter(button => {
-      if (!button.field.displayLogicExpression || !selectedItems) {
+      if (!button.displayLogicExpression || !selectedItems) {
         return true;
       }
 
-      const compiledExpr = compileExpression(button.field.displayLogicExpression);
+      const compiledExpr = compileExpression(button.displayLogicExpression);
 
       try {
         return selectedItems.some(record => compiledExpr(session, record));

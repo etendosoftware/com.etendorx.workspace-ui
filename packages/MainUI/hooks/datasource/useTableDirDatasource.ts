@@ -4,7 +4,8 @@ import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { useFormContext } from 'react-hook-form';
 import { useParams } from 'next/navigation';
 import { useTabContext } from '@/contexts/tab';
-import useFormParent, { ParentFieldName } from '../useFormParent';
+import useFormParent from '../useFormParent';
+import { FieldName } from '../types';
 
 export interface UseTableDirDatasourceParams {
   field: Field;
@@ -19,7 +20,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
   const { tab } = useTabContext();
   const [records, setRecords] = useState<Record<string, string>[]>([]);
   const [loading, setLoading] = useState(false);
-  const parentData = useFormParent(ParentFieldName.INPUT_NAME);
+  const parentData = useFormParent(FieldName.INPUT_NAME);
   const [error, setError] = useState<Error>();
   const [currentPage, setCurrentPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);

@@ -21,6 +21,7 @@ export interface ExecuteProcessActionParams {
 }
 
 export interface ToolbarResponseButton extends ToolbarButton {
+  displayLogicExpression: string;
   field: Field;
   icon: IconName;
 }

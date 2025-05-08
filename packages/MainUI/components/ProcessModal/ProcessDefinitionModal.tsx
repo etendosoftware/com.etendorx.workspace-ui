@@ -12,6 +12,7 @@ import Modal from '../Modal';
 import Loading from '../loading';
 import { logger } from '@/utils/logger';
 import { useSelected } from '@/contexts/selected';
+import useRecordValues from '@/hooks/useRecordValues';
 
 function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
@@ -30,6 +31,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const [isExecuting, setIsExecuting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
+  const inputValues = useRecordValues();
+
+  useEffect(() => {
+    console.debug(inputValues);
+  }, [inputValues]);
 
   const form = useForm();
 
@@ -52,7 +58,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           buttonValue: 'DONE',
           windowId: tab.windowId,
           entityName: tab.entityName,
-          recordIds: selectedRecords?.map((r) => r.id),
+          recordIds: selectedRecords?.map(r => r.id),
           ...form.getValues(),
         });
 
