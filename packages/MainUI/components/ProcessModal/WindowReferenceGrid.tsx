@@ -17,12 +17,7 @@ import { useStyle } from '../Table/styles';
 import EmptyState from '../Table/EmptyState';
 import { parseColumns } from '@/utils/tableColumns';
 import { useTab } from '@/hooks/useTab';
-import { useSelected } from '@/contexts/selected';
 import { useProcessConfig } from '@/hooks/datasource/useProcessDatasourceConfig';
-import { useTabContext } from '@/contexts/tab';
-import { buildPayloadByInputName } from '@/utils';
-
-const FALLBACK_RESULT = {};
 
 interface WindowReferenceGridProps {
   parameter: ProcessParameter;
@@ -32,6 +27,8 @@ interface WindowReferenceGridProps {
   tabId: string;
   windowId?: string;
   processId?: string;
+  recordValues?: Record<string, any>;
+  session?: any;
 }
 
 function WindowReferenceGrid({
@@ -40,8 +37,9 @@ function WindowReferenceGrid({
   tabId,
   windowId,
   entityName,
-  recordId,
   processId,
+  recordValues = {},
+  session,
 }: WindowReferenceGridProps) {
   const { t } = useTranslation();
   const { sx } = useStyle();
@@ -51,6 +49,11 @@ function WindowReferenceGrid({
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
   const maxWidth = 100;
+
+  useEffect(() => {
+    console.debug('Record values provided:', recordValues);
+    console.debug('Session data provided:', session);
+  }, [recordValues, session]);
 
   const {
     fetchConfig,
@@ -65,13 +68,16 @@ function WindowReferenceGrid({
 
   useEffect(() => {
     const loadConfig = async () => {
-      await fetchConfig();
+      const combinedPayload = {
+        ...recordValues,
+        ...session,
+      };
+      await fetchConfig(combinedPayload);
     };
 
     loadConfig();
-  }, [fetchConfig, recordId, tabId]);
+  }, [fetchConfig, recordValues, session, tabId]);
 
-  // Construye las opciones del datasource basadas en la configuración del proceso
   const datasourceOptions = useMemo(() => {
     const options: Record<string, any> = {
       windowId: windowId || '',
@@ -79,12 +85,10 @@ function WindowReferenceGrid({
       pageSize: 100,
     };
 
-    // Si tenemos expresiones de filtro para la cuadrícula, agrégalas
     if (processConfig?.filterExpressions?.grid) {
       options.filterExpressions = processConfig.filterExpressions.grid;
     }
 
-    // Si tenemos valores predeterminados, construye criterios basados en ellos
     if (processConfig?.defaults) {
       const criteria = Object.entries(processConfig.defaults).map(([fieldName, value]) => ({
         fieldName,
@@ -124,16 +128,6 @@ function WindowReferenceGrid({
     fetchMore,
   } = useDatasource(String(entityName), datasourceOptions);
 
-  const { tab, record } = useTabContext();
-
-  const Records = useMemo(
-    () => (record ? buildPayloadByInputName(record, tab.fields) : FALLBACK_RESULT),
-    [record, tab?.fields],
-  );
-
-  console.debug('Records:', Records, record, tab);
-
-  // Reset selection when records change
   useEffect(() => {
     setRowSelection({});
     onSelectionChange([]);

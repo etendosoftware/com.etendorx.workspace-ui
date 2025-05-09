@@ -15,8 +15,11 @@ interface UseProcessConfigProps {
 }
 
 /**
- * Hook para obtener la configuración de un proceso
- * utilizando DefaultsProcessActionHandler
+ * Hook to obtain the configuration based on DefaultsProcessActionHandler
+ * @param processId - ID of the process
+ * @param windowId - ID of the window
+ * @param tabId - ID of the tab
+ * @returns Object with functions to handle the configuration of the process
  */
 export const useProcessConfig = ({ processId, windowId, tabId }: UseProcessConfigProps) => {
   const [loading, setLoading] = useState(false);
@@ -35,19 +38,13 @@ export const useProcessConfig = ({ processId, windowId, tabId }: UseProcessConfi
         _action: 'org.openbravo.client.application.process.DefaultsProcessActionHandler',
       });
 
-      const basePayload = {
-        inpissotrx: 'Y',
-        inpadOrgId: '7BABA5FF80494CAFA54DEBD22EC46F01',
-        ...payload,
-      };
+      const requestPayload = { ...payload };
 
       try {
         setLoading(true);
         setError(null);
 
-        logger.debug(`Fetching process config for process ${processId}`, basePayload);
-        const { data } = await Metadata.kernelClient.post(`?${params}`, basePayload);
-        logger.debug(`Process config response for process ${processId}:`, data);
+        const { data } = await Metadata.kernelClient.post(`?${params}`, requestPayload);
 
         const processedConfig: ProcessConfigResponse = {
           defaults: data?.defaults || {},

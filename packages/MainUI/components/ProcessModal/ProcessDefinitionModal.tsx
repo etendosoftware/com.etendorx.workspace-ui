@@ -12,15 +12,16 @@ import Modal from '../Modal';
 import Loading from '../loading';
 import { logger } from '@/utils/logger';
 import { useSelected } from '@/contexts/selected';
-import useRecordValues from '@/hooks/useRecordValues';
 import WindowReferenceGrid from './WindowReferenceGrid';
+import { buildPayloadByInputName } from '@/utils';
+import { useUserContext } from '@/hooks/useUserContext';
 
 function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
   const onProcess = button.processDefinition.onProcess;
   const onLoad = button.processDefinition.onLoad;
   const { graph } = useSelected();
-  const { tab } = useTabContext();
+  const { tab, record } = useTabContext();
   const tabId = tab?.id || '';
   const selectedRecords = graph.getSelectedMultiple(tabId);
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
@@ -32,15 +33,23 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const [isExecuting, setIsExecuting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
-  const inputValues = useRecordValues();
+  const { session } = useUserContext();
 
-  useEffect(() => {
-    console.debug(inputValues);
-  }, [inputValues]);
   const [gridSelection, setGridSelection] = useState<any[]>([]);
 
-  // const recordId = selectedRecord[tabId]?.id;
-  //const entityName = selectedRecord[tabId]?._entityName;
+  const entityName = tab.entityName;
+
+  const FALLBACK_RESULT = {};
+
+  const recordValues = useMemo(() => {
+    if (!record || !tab?.fields) return FALLBACK_RESULT;
+
+    return buildPayloadByInputName(record, tab.fields);
+  }, [record, tab?.fields]);
+
+  useEffect(() => {
+    console.debug('Record values:', recordValues);
+  }, [recordValues]);
 
   const form = useForm();
 
@@ -77,12 +86,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           inpcOrderId: tabId,
           _buttonValue: 'DONE',
           _params: {
-            //           ad_org_id: tabId.organization,
             grid: {
               _selection: gridSelection,
             },
           },
-          //        _entityName: selectedRecord[tabId]._entityName,
+          _entityName: entityName,
         };
 
         const response = await Metadata.kernelClient.post(`?${params}`, payload);
@@ -127,7 +135,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setIsExecuting(false);
       }
     }
-  }, [tab, button.processDefinition.id, button.processDefinition.javaClassName, tabId, gridSelection, t, onSuccess]);
+  }, [
+    tab,
+    button.processDefinition.id,
+    button.processDefinition.javaClassName,
+    tabId,
+    gridSelection,
+    entityName,
+    t,
+    onSuccess,
+  ]);
+
   const handleExecute = useCallback(async () => {
     console.debug('gridSelection:', gridSelection);
 
@@ -274,6 +292,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                               tabId={tabId}
                               windowId={tab?.windowId}
                               processId={button.processDefinition.id}
+                              entityName={entityName}
+                              recordValues={recordValues}
+                              session={session}
                             />
                           </>
                         );
