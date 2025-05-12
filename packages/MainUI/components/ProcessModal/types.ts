@@ -1,12 +1,11 @@
-import { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import { Field, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 
-export interface BaseButton {
+export interface BaseButton extends Field {
   id: string;
   name: string;
   action: string;
   enabled: boolean;
   visible: boolean;
-  field: Field;
 }
 
 export interface ProcessAction extends Record<string, unknown> {
@@ -120,6 +119,7 @@ export type ProcessParameter = {
   name: string;
   refList: Array<ListOption>;
   reference: string;
+  window?: WindowMetadata; // This type is for process that have defined a window reference
 } & Record<string, string>;
 
 export type ProcessParameters = Record<string, ProcessParameter>;

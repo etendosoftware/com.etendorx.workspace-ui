@@ -15,6 +15,9 @@ import { useSelected } from '@/contexts/selected';
 import WindowReferenceGrid from './WindowReferenceGrid';
 import { buildPayloadByInputName } from '@/utils';
 import { useUserContext } from '@/hooks/useUserContext';
+import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
+
+const FALLBACK_RESULT = {};
 
 function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
@@ -35,21 +38,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const [loading, setLoading] = useState(true);
   const { session } = useUserContext();
 
-  const [gridSelection, setGridSelection] = useState<any[]>([]);
+  const [gridSelection, setGridSelection] = useState<unknown[]>([]);
 
   const entityName = tab.entityName;
-
-  const FALLBACK_RESULT = {};
+  const processId = button.processDefinition.id;
+  const windowReferenceTab = parameters.grid?.window?.tabs?.[0] as Tab;
 
   const recordValues = useMemo(() => {
     if (!record || !tab?.fields) return FALLBACK_RESULT;
 
     return buildPayloadByInputName(record, tab.fields);
-  }, [record, tab?.fields]);
-
-  useEffect(() => {
-    console.debug('Record values:', recordValues);
-  }, [recordValues]);
+  }, [record, tab.fields]);
 
   const form = useForm();
 
@@ -82,7 +81,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         });
 
         const payload = {
-          C_Order_ID: tabId,
+          C_Order_ID: recordValues.inpcOrderId,
           inpcOrderId: tabId,
           _buttonValue: 'DONE',
           _params: {
@@ -290,11 +289,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                               parameter={parameter}
                               onSelectionChange={setGridSelection}
                               tabId={tabId}
+                              tab={tab}
                               windowId={tab?.windowId}
-                              processId={button.processDefinition.id}
+                              processId={processId}
                               entityName={entityName}
                               recordValues={recordValues}
                               session={session}
+                              windowReferenceTab={windowReferenceTab}
                             />
                           </>
                         );

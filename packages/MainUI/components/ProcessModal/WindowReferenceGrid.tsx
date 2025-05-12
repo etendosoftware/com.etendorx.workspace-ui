@@ -10,7 +10,13 @@ import {
 } from 'material-react-table';
 import { Button } from '@mui/material';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import type { EntityData, EntityValue, ProcessParameter } from '@workspaceui/etendohookbinder/src/api/types';
+import type {
+  EntityData,
+  EntityValue,
+  ISession,
+  ProcessParameter,
+  Tab,
+} from '@workspaceui/etendohookbinder/src/api/types';
 import Loading from '../loading';
 import { ErrorDisplay } from '../ErrorDisplay';
 import { useStyle } from '../Table/styles';
@@ -25,10 +31,12 @@ interface WindowReferenceGridProps {
   entityName?: EntityValue;
   recordId?: EntityValue;
   tabId: string;
+  tab: Tab;
+  windowReferenceTab: Tab;
   windowId?: string;
   processId?: string;
-  recordValues?: Record<string, any>;
-  session?: any;
+  recordValues?: Record<string, EntityValue>;
+  session?: ISession;
 }
 
 function WindowReferenceGrid({
@@ -40,20 +48,17 @@ function WindowReferenceGrid({
   processId,
   recordValues = {},
   session,
+  windowReferenceTab,
+  tab,
 }: WindowReferenceGridProps) {
   const { t } = useTranslation();
   const { sx } = useStyle();
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const { data: tabData, loading: tabLoading, error: tabError } = useTab(parameter.tab || tabId);
+  const { loading: tabLoading, error: tabError } = useTab(windowReferenceTab.id);
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
   const maxWidth = 100;
-
-  useEffect(() => {
-    console.debug('Record values provided:', recordValues);
-    console.debug('Session data provided:', session);
-  }, [recordValues, session]);
 
   const {
     fetchConfig,
@@ -79,37 +84,47 @@ function WindowReferenceGrid({
   }, [fetchConfig, recordValues, session, tabId]);
 
   const datasourceOptions = useMemo(() => {
-    const options: Record<string, any> = {
+    const options: Record<string, EntityValue> = {
       windowId: windowId || '',
       tabId: parameter.tab || tabId,
       pageSize: 100,
     };
 
-    if (processConfig?.filterExpressions?.grid) {
-      options.filterExpressions = processConfig.filterExpressions.grid;
+    if (processConfig?.defaults) {
+      Object.entries(processConfig.defaults).forEach(([key, value]) => {
+        options[key] = value.value;
+
+        if (key === 'ad_org_id') {
+          options.org = value.value;
+        }
+      });
     }
 
-    if (processConfig?.defaults) {
-      const criteria = Object.entries(processConfig.defaults).map(([fieldName, value]) => ({
+    let criteria: Array<{ fieldName: string; operator: string; value: EntityValue }> = [];
+
+    if (processConfig?.filterExpressions?.grid) {
+      const filterCriteria = Object.entries(processConfig.filterExpressions.grid).map(([fieldName, value]) => ({
         fieldName,
         operator: 'equals',
-        value: value.value,
+        value: value === 'true' ? true : value === 'false' ? false : value,
       }));
 
-      if (criteria.length > 0) {
-        options.criteria = criteria;
-      }
+      criteria = [...criteria, ...filterCriteria];
+    }
+
+    if (criteria.length > 0) {
+      options.orderBy = 'documentNo desc';
     }
 
     return options;
   }, [windowId, tabId, parameter.tab, processConfig]);
 
   const fields = useMemo(() => {
-    if (tabData?.fields) {
-      return Object.values(tabData.fields);
+    if (windowReferenceTab?.fields) {
+      return Object.values(windowReferenceTab.fields);
     }
     return [];
-  }, [tabData]);
+  }, [windowReferenceTab]);
 
   const columns = useMemo(() => {
     if (fields.length > 0) {
@@ -127,6 +142,10 @@ function WindowReferenceGrid({
     hasMoreRecords,
     fetchMore,
   } = useDatasource(String(entityName), datasourceOptions);
+
+  useEffect(() => {
+    console.debug('records:', records);
+  }, [records]);
 
   useEffect(() => {
     setRowSelection({});

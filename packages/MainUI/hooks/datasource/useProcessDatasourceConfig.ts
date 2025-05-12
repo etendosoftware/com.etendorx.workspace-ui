@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { logger } from '@/utils/logger';
+import { EntityValue } from '@workspaceui/etendohookbinder/src/api/types';
 
 interface ProcessConfigResponse {
   defaults?: Record<string, { value: string; identifier: string }>;
@@ -27,7 +28,7 @@ export const useProcessConfig = ({ processId, windowId, tabId }: UseProcessConfi
   const [config, setConfig] = useState<ProcessConfigResponse | null>(null);
 
   const fetchConfig = useCallback(
-    async (payload: Record<string, any> = {}) => {
+    async (payload: Record<string, EntityValue> = {}) => {
       if (!processId || !windowId || !tabId) {
         return null;
       }
