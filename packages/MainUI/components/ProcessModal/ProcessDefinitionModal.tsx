@@ -12,7 +12,6 @@ import Modal from '../Modal';
 import Loading from '../loading';
 import { logger } from '@/utils/logger';
 import { useSelected } from '@/contexts/selected';
-import useRecordValues from '@/hooks/useRecordValues';
 
 function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
@@ -31,11 +30,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const [isExecuting, setIsExecuting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
-  const inputValues = useRecordValues();
-
-  useEffect(() => {
-    console.debug(inputValues);
-  }, [inputValues]);
 
   const form = useForm();
 
@@ -198,9 +192,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   );
 }
 
-export default function ProcessDefinitionModal({ button, onSuccess, ...props }: ProcessDefinitionModalProps) {
+export default function ProcessDefinitionModal({ button, ...props }: ProcessDefinitionModalProps) {
   if (button) {
-    return <ProcessDefinitionModalContent {...props} button={button} onSuccess={onSuccess} />;
+    return <ProcessDefinitionModalContent {...props} button={button} />;
   }
 
   return null;

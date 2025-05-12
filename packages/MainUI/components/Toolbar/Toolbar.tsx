@@ -204,7 +204,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     const createSectionConfig = (sectionButtons: StandardButtonId[]) => {
       const sectionConfig = {
         buttons: buttons
-          .filter((btn: StandardButton) => {
+          .filter((btn) => {
             if (isFormView && btn.id === 'FIND') return false;
             if (isProcessButton(btn)) return false;
             return sectionButtons.includes(btn.id as StandardButtonId);
