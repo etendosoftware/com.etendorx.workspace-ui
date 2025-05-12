@@ -9,6 +9,7 @@ import { SxProps } from '@mui/material';
 export const createStandardButtonConfig = (
   btn: StandardButton,
   handleAction: (action: string) => void,
+  isFormView?: boolean,
 ): StandardButtonConfig => {
   const getIconFill = (buttonId: StandardButtonId): string => {
     const specialButtons = [
@@ -37,7 +38,7 @@ export const createStandardButtonConfig = (
     icon: React.createElement(iconMap[btn.icon]),
     tooltip: btn.name,
     onClick: () => handleAction(btn.action),
-    disabled: !btn.enabled,
+    disabled: (btn.id === BUTTON_IDS.CANCEL && !isFormView) || !btn.enabled,
     height: IconSize,
     width: IconSize,
     fill: getIconFill(btn.id as StandardButtonId),

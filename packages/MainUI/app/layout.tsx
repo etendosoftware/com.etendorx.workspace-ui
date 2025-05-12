@@ -7,14 +7,19 @@ import { DatasourceProvider } from '@/contexts/datasourceContext';
 import LanguageProvider from '@/contexts/language';
 import MetadataProvider from '@/contexts/metadata';
 import UserProvider from '@/contexts/user';
-import ModalContextProvider from '@/contexts/modal';
 import SelectedProvider from '@/contexts/selected';
+import { Metadata } from 'next/types';
 
 const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-inter',
 });
+
+export const metadata: Metadata = {
+  title: 'Etendo',
+  applicationName: 'Etendo',
+};
 
 export default function RootLayout({
   children,
@@ -25,24 +30,23 @@ export default function RootLayout({
     <html lang="en" className={inter.variable}>
       <head>
         <meta charSet="utf-8" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body>
         <ThemeProvider>
-          <ModalContextProvider>
-            <LanguageProvider>
-              <ApiProviderWrapper>
-                <UserProvider>
-                  <DatasourceProvider>
-                    <MetadataProvider>
-                      <SelectedProvider>
-                        <Layout>{children}</Layout>
-                      </SelectedProvider>
-                    </MetadataProvider>
-                  </DatasourceProvider>
-                </UserProvider>
-              </ApiProviderWrapper>
-            </LanguageProvider>
-          </ModalContextProvider>
+          <LanguageProvider>
+            <ApiProviderWrapper>
+              <UserProvider>
+                <DatasourceProvider>
+                  <MetadataProvider>
+                    <SelectedProvider>
+                      <Layout>{children}</Layout>
+                    </SelectedProvider>
+                  </MetadataProvider>
+                </DatasourceProvider>
+              </UserProvider>
+            </ApiProviderWrapper>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

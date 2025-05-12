@@ -6,6 +6,7 @@ import { Button } from '@mui/material';
 import { TabLevel } from '../../../components/TabLevel';
 import { useStyle } from './styles';
 import { useSelected } from '@/contexts/selected';
+import Container from '@/components/window/container';
 
 export default function Tabs({ tabs }: { tabs: Tab[]; level?: number }) {
   const { graph } = useSelected();
@@ -27,7 +28,11 @@ export default function Tabs({ tabs }: { tabs: Tab[]; level?: number }) {
   const active = useMemo(() => tabs.find(tab => tab.id === activeKey) as Tab, [activeKey, tabs]);
 
   if (tabs.length === 1) {
-    return <TabLevel tab={tabs[0]} />;
+    return (
+      <Container>
+        <TabLevel tab={tabs[0]} />
+      </Container>
+    );
   }
 
   if (!parentRecord) {
@@ -35,18 +40,20 @@ export default function Tabs({ tabs }: { tabs: Tab[]; level?: number }) {
   }
 
   return (
-    <div className="bg-gray-200 p-2">
-      {tabs.map(tab => (
-        <Button
-          key={tab.id}
-          onClick={refs.current[tab.id]}
-          title={tab.title}
-          aria-label={tab.title}
-          sx={sx.button(tab, activeKey)}>
-          {tab.name}
-        </Button>
-      ))}
+    <Container>
+      <div>
+        {tabs.map(tab => (
+          <Button
+            key={tab.id}
+            onClick={refs.current[tab.id]}
+            title={tab.title}
+            aria-label={tab.title}
+            sx={sx.button(tab, activeKey)}>
+            {tab.name}
+          </Button>
+        ))}
+      </div>
       <TabLevel tab={active} />
-    </div>
+    </Container>
   );
 }

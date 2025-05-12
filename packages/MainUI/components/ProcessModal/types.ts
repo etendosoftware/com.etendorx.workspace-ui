@@ -86,7 +86,6 @@ export interface ProcessDefinitionModalProps {
 }
 
 export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
-  button: NonNullable<ProcessDefinitionModalProps['button']>;
 }
 
 export interface ProcessDeprecatedModallProps {

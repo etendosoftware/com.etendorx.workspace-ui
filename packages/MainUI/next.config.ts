@@ -1,27 +1,24 @@
 import { NextConfig } from 'next';
 import analyzer from '@next/bundle-analyzer';
 
-const DEBUG_MODE = process.env.DEBUG_MODE === 'true';
+const DEBUG_MODE = process.env.DEBUG_MODE === 'true' || process.env.NODE_ENV === 'development';
 const ANALYZE = process.env.ANALYZE === 'true';
 
 const nextConfig: NextConfig = {
-  // transpilePackages: ['@mui/material', '@mui/system', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
-  // modularizeImports: {
-  //   '@mui/material': {
-  //     transform: '@mui/material/{{member}}',
-  //   },
-  //   '@mui/icons-material': {
-  //     transform: '@mui/icons-material/{{member}}',
-  //   },
-  // },
-  reactStrictMode: true,
+  transpilePackages: ['@mui/material', '@mui/system', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+  modularizeImports: {
+    '@mui/material': {
+      transform: '@mui/material/{{member}}',
+    },
+    '@mui/icons-material': {
+      transform: '@mui/icons-material/{{member}}',
+    },
+  },
+  reactStrictMode: false,
   cleanDistDir: false,
   output: 'standalone',
   compiler: {
     removeConsole: !DEBUG_MODE,
-  },
-  experimental: {
-    optimizePackageImports: ['@mui/icons-material', 'material-react-table'],
   },
   compress: !DEBUG_MODE,
   webpack(config) {

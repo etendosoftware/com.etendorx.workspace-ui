@@ -162,6 +162,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const handleCloseProcess = useCallback(() => {
     setOpenModal(false);
     setProcessResponse(null);
+    setSelectedProcessActionButton(null);
+    setSelectedProcessDefinitionButton(null);
   }, []);
 
   const handleCompleteRefresh = useCallback(async () => {
@@ -204,13 +206,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     const createSectionConfig = (sectionButtons: StandardButtonId[]) => {
       const sectionConfig = {
         buttons: buttons
-          .filter((btn) => {
+          .filter(btn => {
             if (isFormView && btn.id === 'FIND') return false;
             if (isProcessButton(btn)) return false;
             return sectionButtons.includes(btn.id as StandardButtonId);
           })
           .map(btn => {
-            const config = createStandardButtonConfig(btn as StandardButton, handleAction);
+            const config = createStandardButtonConfig(btn as StandardButton, handleAction, isFormView);
             const style = getStandardButtonStyle(btn.id as StandardButtonId);
             if (style) {
               config.sx = style;
@@ -305,20 +307,18 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           tabId={tab.id}
         />
       )}
-      {selectedProcessDefinitionButton && (
-        <ProcessDefinitionModal
-          open={openModal}
-          onClose={handleCloseProcess}
-          button={selectedProcessDefinitionButton}
-          onSuccess={handleCompleteRefresh}
-        />
-      )}
+      <ProcessDefinitionModal
+        open={openModal}
+        onClose={handleCloseProcess}
+        button={selectedProcessDefinitionButton}
+        onSuccess={handleCompleteRefresh}
+      />
     </TabContextProvider>
   );
 };
 
 const getSectionStyle = (sectionType: string[]) => {
-  const baseStyle = {
+  const baseStyle: React.CSSProperties = {
     display: 'flex',
     borderRadius: '10rem',
     padding: '0.25rem',
@@ -341,6 +341,7 @@ const getSectionStyle = (sectionType: string[]) => {
       ...baseStyle,
       background: theme.palette.baselineColor.transparentNeutral[5],
       maxHeight: '2.5rem',
+      alignItems: 'center',
     };
   }
 
