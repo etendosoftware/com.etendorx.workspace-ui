@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-const CustomClickAwayListener: React.FC<{
+export const CustomClickAwayListener: React.FC<{
   onClickAway: () => void;
   children: React.ReactNode;
 }> = ({ onClickAway, children }) => {

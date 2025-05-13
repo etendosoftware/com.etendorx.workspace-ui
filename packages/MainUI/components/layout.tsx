@@ -1,5 +1,3 @@
-'use client';
-
 import AppBreadcrumb from './Breadcrums';
 import Navigation from './navigation';
 import Sidebar from './Sidebar';

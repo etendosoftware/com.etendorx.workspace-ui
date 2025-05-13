@@ -1,7 +1,9 @@
+'use client';
+
 import { forwardRef, useCallback } from 'react';
 import { MenuOpen } from '@mui/icons-material';
 import { Box } from '@mui/material';
-import { IconButton } from '../..';
+import { IconButton } from '../../IconButton';
 import { useStyle } from '../styles';
 import { DrawerHeaderProps } from '../types';
 
@@ -44,5 +46,7 @@ const DrawerHeader = forwardRef<HTMLDivElement, DrawerHeaderProps>(({ title, log
 });
 
 DrawerHeader.displayName = 'DrawerHeader';
+
+export { DrawerHeader };
 
 export default DrawerHeader;

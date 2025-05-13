@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import DrawerSection from '../DrawerSection';
 import { DrawerItemsProps, ToggleFunctions } from '../types';
 
-const DrawerItems: React.FC<DrawerItemsProps> = React.memo(
+export const DrawerItems: React.FC<DrawerItemsProps> = React.memo(
   ({
     items,
     onClick,

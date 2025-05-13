@@ -12,7 +12,7 @@ export const LanguageContext = createContext({} as LanguageContextType);
 
 export default function LanguageProvider({ children }: React.PropsWithChildren) {
   const [language, setLanguage] = useLocalStorage<Language | null>('language', null);
-  const prevLanguage = usePrevious(language, language);
+  const prevLanguage = usePrevious(language);
   const router = useRouter();
 
   const getFlag = useCallback(
@@ -39,7 +39,7 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
   }, [language]);
 
   useEffect(() => {
-    if (language != prevLanguage) {
+    if (prevLanguage && language != prevLanguage) {
       router.push('/');
     }
   }, [language, prevLanguage, router]);

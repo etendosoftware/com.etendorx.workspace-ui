@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, usePathname, useRouter } from 'next/navigation';
-import Drawer from '@workspaceui/componentlibrary/src/components/Drawer';
+import { Drawer } from '@workspaceui/componentlibrary/src/components/Drawer/index';
 import { useMenu } from '@workspaceui/etendohookbinder/src/hooks/useMenu';
 import EtendoLogotype from '../public/etendo.png';
 import { useTranslation } from '../hooks/useTranslation';
 import { useUserContext } from '../hooks/useUserContext';
 import { WindowParams } from '../app/types';
-import RecentlyViewed from './Drawer/RecentlyViewed';
+import { RecentlyViewed } from './Drawer/RecentlyViewed';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { useMenuTranslation } from '../hooks/useMenuTranslation';
 import { createSearchIndex, filterItems } from '@workspaceui/componentlibrary/src/utils/searchUtils';

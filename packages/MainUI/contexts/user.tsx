@@ -38,7 +38,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [currentWarehouse, setCurrentWarehouse] = useState<CurrentWarehouse>();
   const [currentRole, setCurrentRole] = useState<CurrentRole>();
   const [currentClient, setCurrentClient] = useState<CurrentClient>();
-  const prevRole = usePrevious(currentRole, currentRole);
+  const prevRole = usePrevious(currentRole);
 
   const [roles, setRoles] = useState<SessionResponse['roles']>(() => {
     const savedRoles = localStorage.getItem('roles');

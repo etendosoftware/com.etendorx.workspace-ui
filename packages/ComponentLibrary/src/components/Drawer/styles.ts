@@ -116,3 +116,5 @@ export const useStyle = () => {
     [theme, focusStyles],
   );
 };
+
+export default useStyle;

@@ -5,15 +5,15 @@ const DEBUG_MODE = process.env.DEBUG_MODE === 'true' || process.env.NODE_ENV ===
 const ANALYZE = process.env.ANALYZE === 'true';
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['@mui/material', '@mui/system', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
-  modularizeImports: {
-    '@mui/material': {
-      transform: '@mui/material/{{member}}',
-    },
-    '@mui/icons-material': {
-      transform: '@mui/icons-material/{{member}}',
-    },
-  },
+  // transpilePackages: ['@mui/material', '@mui/system', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+  // modularizeImports: {
+  //   '@mui/material': {
+  //     transform: '@mui/material/{{member}}',
+  //   },
+  //   '@mui/icons-material': {
+  //     transform: '@mui/icons-material/{{member}}',
+  //   },
+  // },
   reactStrictMode: false,
   cleanDistDir: false,
   output: 'standalone',
