@@ -11,58 +11,13 @@ export const useStyle = (): StylesType => {
   return useMemo(
     () => ({
       sx: {
-        loader: {
-          position: 'absolute',
-          flex: 1,
-          height: '100%',
-          width: '100%',
-          zIndex: 2000,
-          alignItems: 'center',
-          display: 'flex',
-          justifyContent: 'center',
-          pointerEvents: 'none',
-        },
-        container: {
-          overflow: 'hidden',
-          flex: 1,
-          position: 'relative',
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%',
-          minHeight: '300px',
-        },
-        table: {
-          flex: 1,
-          overflow: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-        },
         tablePaper: {
-          borderRadius: '1rem',
-          overflow: 'hidden',
-          border: `2px solid ${theme.palette.divider}`,
-          display: 'flex',
           flexDirection: 'column',
           flex: 1,
-          boxShadow: 'none',
           minHeight: 0,
-          flexGrow: 1,
-        },
-        fetchMore: {
-          alignSelf: 'center',
-          borderRadius: '0.5rem',
-          border: `1px solid ${theme.palette.divider}`,
-          margin: theme.spacing(1),
-          padding: theme.spacing(1),
-          '&:hover': {
-            borderRadius: '0.5rem',
-            border: `1px solid ${theme.palette.divider}`,
-            background: theme.palette.baselineColor.neutral[20],
-          },
         },
         tableHeadCell: {
           whiteSpace: 'nowrap',
-          overflow: 'hidden',
           textOverflow: 'ellipsis',
           borderRight: `1px solid ${theme.palette.divider}`,
           background: theme.palette.baselineColor.transparentNeutral[5],
@@ -82,13 +37,10 @@ export const useStyle = (): StylesType => {
           },
         },
         tableBody: {
-          minHeight: 'min-content',
           '& tr': {
             backgroundColor: theme.palette.background.paper,
           },
-          overflow: 'auto',
           cursor: 'pointer',
-          height: '100%',
         },
         // multiselect
         multiSelectContainer: {

@@ -59,14 +59,10 @@ export function useDatasource(
     setPageSize(size);
   }, []);
 
-  const toggleImplicitFilters = useCallback(
-    (value?: boolean) => {
-      const newValue = value !== undefined ? value : !isImplicitFilterApplied;
-      setIsImplicitFilterApplied(newValue);
-      setPage(1);
-    },
-    [isImplicitFilterApplied],
-  );
+  const toggleImplicitFilters = useCallback(() => {
+    setIsImplicitFilterApplied(prev => !prev);
+    setPage(1);
+  }, []);
 
   const columnFilterCriteria = useMemo(() => {
     if (!columns || !activeColumnFilters.length) return [];
@@ -108,29 +104,27 @@ export function useDatasource(
       const safePageSize = pageSize ?? 1000;
       const response = await loadData(entity, page, safePageSize, queryParams);
 
-      if (response.data.length < safePageSize) {
-        setHasMoreRecords(false);
-      } else {
-        setHasMoreRecords(true);
-      }
-
       if (response.error || response.status != 0) {
         throw new Error(response.error.message);
       } else {
+        setHasMoreRecords(response.data.length >= safePageSize);
         setRecords(prevRecords => {
           if (page === 1 || searchQuery) {
-            return [...response.data];
+            return response.data;
+          } else {
+            return [...prevRecords, ...response.data];
           }
-          const mergedRecords = [...prevRecords, ...response.data];
-          const uniqueRecords = mergedRecords.reduce(
-            (acc, current) => {
-              acc[current.id as string] = current;
-              return acc;
-            },
-            {} as Record<string, unknown>,
-          );
 
-          return Object.values(uniqueRecords);
+          // const mergedRecords = [...prevRecords, ...response.data];
+          // const uniqueRecords = mergedRecords.reduce(
+          //   (acc, current) => {
+          //     acc[current.id as string] = current;
+          //     return acc;
+          //   },
+          //   {} as Record<string, unknown>,
+          // );
+
+          // return Object.values(uniqueRecords);
         });
         setLoaded(true);
       }
