@@ -1,4 +1,5 @@
 import { Field, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import type { EntityValue, ISession, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface BaseButton extends Field {
   id: string;
@@ -131,4 +132,19 @@ export interface ProcessDefinition extends Record<string, unknown> {
   parameters: ProcessParameters;
   onLoad: string;
   onProcess: string;
+}
+
+//Window References types
+export interface WindowReferenceGridProps {
+  parameter: ProcessParameter;
+  onSelectionChange: (selection: unknown[]) => void;
+  entityName?: EntityValue;
+  recordId?: EntityValue;
+  tabId: string;
+  tab: Tab;
+  windowReferenceTab: Tab;
+  windowId?: string;
+  processId?: string;
+  recordValues?: Record<string, EntityValue>;
+  session?: ISession;
 }

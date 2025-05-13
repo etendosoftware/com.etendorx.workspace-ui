@@ -51,12 +51,13 @@ export const useStyle = (): StylesType => {
         },
         fetchMore: {
           alignSelf: 'center',
-          borderRadius: '0.5rem',
+          borderRadius: '4rem',
           border: `1px solid ${theme.palette.divider}`,
           margin: theme.spacing(1),
-          padding: theme.spacing(1),
+          padding: '0.5rem 1rem',
           '&:hover': {
-            borderRadius: '0.5rem',
+            borderRadius: '4rem',
+            padding: '0.5rem 1rem',
             border: `1px solid ${theme.palette.divider}`,
             background: theme.palette.baselineColor.neutral[20],
           },

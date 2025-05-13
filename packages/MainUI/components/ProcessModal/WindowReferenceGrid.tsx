@@ -6,38 +6,17 @@ import {
   MRT_Row,
   MRT_RowSelectionState,
   useMaterialReactTable,
-  MRT_TableInstance,
 } from 'material-react-table';
-import { Button } from '@mui/material';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import type {
-  EntityData,
-  EntityValue,
-  ISession,
-  ProcessParameter,
-  Tab,
-} from '@workspaceui/etendohookbinder/src/api/types';
+import type { EntityData, EntityValue } from '@workspaceui/etendohookbinder/src/api/types';
 import Loading from '../loading';
 import { ErrorDisplay } from '../ErrorDisplay';
-import { useStyle } from '../Table/styles';
 import EmptyState from '../Table/EmptyState';
 import { parseColumns } from '@/utils/tableColumns';
 import { useTab } from '@/hooks/useTab';
 import { useProcessConfig } from '@/hooks/datasource/useProcessDatasourceConfig';
-
-interface WindowReferenceGridProps {
-  parameter: ProcessParameter;
-  onSelectionChange: (selection: unknown[]) => void;
-  entityName?: EntityValue;
-  recordId?: EntityValue;
-  tabId: string;
-  tab: Tab;
-  windowReferenceTab: Tab;
-  windowId?: string;
-  processId?: string;
-  recordValues?: Record<string, EntityValue>;
-  session?: ISession;
-}
+import { WindowReferenceGridProps } from './types';
+import { tableStyles } from './styles';
 
 function WindowReferenceGrid({
   parameter,
@@ -49,10 +28,8 @@ function WindowReferenceGrid({
   recordValues = {},
   session,
   windowReferenceTab,
-  tab,
 }: WindowReferenceGridProps) {
   const { t } = useTranslation();
-  const { sx } = useStyle();
   const contentRef = useRef<HTMLDivElement>(null);
 
   const { loading: tabLoading, error: tabError } = useTab(windowReferenceTab.id);
@@ -198,75 +175,85 @@ function WindowReferenceGrid({
   }, [onSelectionChange]);
 
   const rowProps = useCallback(
-    ({ row, table }: { row: MRT_Row<EntityData>; table: MRT_TableInstance<EntityData> }) => {
-      const isSelected = row.getIsSelected();
+    ({ row }: { row: MRT_Row<EntityData> }) => ({
+      onClick: () => {
+        const selectedRows = { ...rowSelection };
+        selectedRows[row.id] = !selectedRows[row.id];
+        handleRowSelection(selectedRows);
+      },
+      className: rowSelection[row.id]
+        ? 'bg-blue-50 hover:bg-blue-100 cursor-pointer'
+        : 'hover:bg-gray-50 cursor-pointer',
+    }),
+    [handleRowSelection, rowSelection],
+  );
 
-      return {
-        onClick: (event: React.MouseEvent) => {
-          if (!event.ctrlKey) {
-            setRowSelection({});
-          }
-          row.toggleSelected();
-        },
-        sx: {
-          ...(isSelected && {
-            ...sx.rowSelected,
-          }),
-        },
-        row,
-        table,
-      };
-    },
-    [sx.rowSelected],
+  const LoadMoreButton = ({ fetchMore }: { fetchMore: () => void }) => (
+    <div className="flex justify-center p-2 border-t border-gray-200">
+      <button
+        onClick={fetchMore}
+        className="px-4 py-2 text-sm border border-gray-300 rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
+        {t('common.loadMore')}
+      </button>
+    </div>
   );
 
   const table = useMaterialReactTable<EntityData>({
     muiTablePaperProps: {
-      sx: { ...sx.tablePaper, maxHeight: '30rem' },
+      className: tableStyles.paper,
+      style: {
+        borderRadius: '1rem',
+        boxShadow: 'none',
+      },
     },
-    muiTableHeadCellProps: { sx: sx.tableHeadCell },
-    muiTableBodyCellProps: { sx: sx.tableBodyCell },
+    muiTableHeadCellProps: {
+      className: tableStyles.headCell,
+    },
+    muiTableBodyCellProps: {
+      className: tableStyles.bodyCell,
+    },
     muiTableBodyProps: {
-      sx: sx.tableBody,
+      className: tableStyles.body,
     },
-    layoutMode: 'grid',
+    muiTableBodyRowProps: rowProps,
+    muiTableContainerProps: {
+      className: tableStyles.container,
+    },
+    layoutMode: 'semantic',
+    enableColumnResizing: true,
     enableGlobalFilter: false,
     columns,
     data: records || [],
     enableRowSelection: true,
     enableMultiRowSelection: true,
     positionToolbarAlertBanner: 'none',
-    muiTableBodyRowProps: rowProps,
-    muiTableContainerProps: {
-      className: 'flex-1',
-    },
     enablePagination: false,
     enableStickyHeader: true,
     enableStickyFooter: true,
     renderTopToolbar: props => {
       const selectedCount = props.table.getSelectedRowModel().rows.length;
       return (
-        <div className="flex justify-between p-2 bg-gray-50 border-b">
-          <div className="text-lg font-medium">{parameter.name}</div>
+        <div className="flex justify-between items-center px-4 py-2 bg-gray-50 border-b max-h-[2.5rem]">
+          <div className="text-base font-medium text-gray-800">{parameter.name}</div>
           {selectedCount > 0 && (
             <div className="flex items-center gap-2">
-              <span>
+              <span className="text-sm text-gray-600">
                 {selectedCount} {t('table.selection.multiple')}
               </span>
-              <Button variant="outlined" size="small" onClick={handleClearSelections}>
+              <button
+                onClick={handleClearSelections}
+                className="px-3 py-1 text-sm cursor-pointer text-gray-700 border border-gray-300 rounded-full hover:bg-(--color-etendo-main) hover:text-(--color-baseline-0) transition-colors">
                 {t('common.clear')}
-              </Button>
+              </button>
             </div>
           )}
         </div>
       );
     },
-    renderBottomToolbar: hasMoreRecords ? (
-      <Button sx={sx.fetchMore} onClick={fetchMore}>
-        {t('common.loadMore')}
-      </Button>
-    ) : null,
-    initialState: { density: 'compact' },
+    renderBottomToolbar: hasMoreRecords ? () => <LoadMoreButton fetchMore={fetchMore} /> : undefined,
+    initialState: {
+      density: 'compact',
+    },
     state: {
       rowSelection,
       columnFilters,
@@ -277,18 +264,17 @@ function WindowReferenceGrid({
     getRowId: row => String(row.id),
     enableColumnFilters: true,
     enableSorting: true,
-    enableColumnResizing: true,
     enableColumnActions: true,
     manualFiltering: true,
-    renderEmptyRowsFallback: () => {
-      return <EmptyState maxWidth={maxWidth} />;
-    },
+    renderEmptyRowsFallback: () => (
+      <div className="flex justify-center items-center p-8 text-gray-500">
+        <EmptyState maxWidth={maxWidth} />
+      </div>
+    ),
   });
 
-  // Show loading state when any of the data fetching is in progress
   const isLoading = tabLoading || processConfigLoading || datasourceLoading;
 
-  // Combine errors
   const error = tabError || processConfigError || datasourceError;
 
   if (isLoading) {
