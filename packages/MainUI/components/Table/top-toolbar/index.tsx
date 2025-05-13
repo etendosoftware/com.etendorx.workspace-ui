@@ -24,7 +24,7 @@ export default function TopToolbar({
   const handleClearSelection = useCallback(() => table.setRowSelection({}), [table]);
 
   return (
-    <div>
+    <div className="flex justify-between items-center p-1 bg-transparent-neutral-10 border-b border-b-transparent-neutral-10">
       <div>
         {selectedCount > 0 && (
           <Stack direction="row" spacing={1} alignItems="center" pl={1}>

@@ -16,7 +16,7 @@ export function TabLevel({ tab }: Omit<TabLevelProps, 'level'>) {
 
   return (
     <TabContextProvider tab={tab}>
-      <div className={`flex max-w-auto h-full max-h-full overflow-hidden gap-2 flex-col min-h-0`}>
+      <div className={`flex max-w-auto h-full max-h-full overflow-hidden flex-col min-h-0`}>
         <Toolbar windowId={tab.windowId} tabId={tab.id} isFormView={!!recordId} />
         {recordId ? (
           <FormView

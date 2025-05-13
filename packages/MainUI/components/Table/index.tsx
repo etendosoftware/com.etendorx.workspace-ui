@@ -33,10 +33,6 @@ type RowProps = (props: {
   table: MRT_TableInstance<EntityData>;
 }) => Omit<MRT_TableBodyRowProps<EntityData>, 'staticRowIndex'>;
 
-type renderTopToolbarProps = {
-  table: MRT_TableInstance<EntityData>;
-};
-
 const getRowId = (row: EntityData) => String(row.id);
 
 const DynamicTable = ({ tab }: DynamicTableProps) => {
@@ -261,11 +257,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     );
   }
 
-  return (
-    <div className="flex flex-1 flex-col h-full overflow-hidden">
-      <MaterialReactTable table={table} />
-    </div>
-  );
+  return <MaterialReactTable table={table} />;
 };
 
 export default DynamicTable;

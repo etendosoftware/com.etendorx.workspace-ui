@@ -2,7 +2,7 @@ export default function Container({ className, ...props }: React.PropsWithChildr
   return (
     <div
       {...props}
-      className={`bg-baseline-20 rounded-xl space-y-1 h-[50vh] max-h-full overflow-hidden p-2 min-h-0 border-4 border-blue-400 ${className}`}
+      className={`bg-white shadow rounded space-y-1 h-[50vh] max-h-full overflow-hidden min-h-0 ${className}`}
     />
   );
 }
