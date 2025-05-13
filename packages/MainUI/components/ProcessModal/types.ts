@@ -1,5 +1,6 @@
 import { Field, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
-import type { EntityValue, ISession, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import type { EntityData, EntityValue, ISession, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { MRT_Row, MRT_TableInstance, MRT_TableBodyRowProps, MRT_RowData } from 'material-react-table';
 
 export interface BaseButton extends Field {
   id: string;
@@ -133,8 +134,15 @@ export interface ProcessDefinition extends Record<string, unknown> {
   onLoad: string;
   onProcess: string;
 }
+export interface ResponseMessage {
+  msgText: string;
+  msgTitle: string;
+  msgType: string;
+}
 
 //Window References types
+
+export type RecordValues = { [key: string]: EntityValue };
 export interface WindowReferenceGridProps {
   parameter: ProcessParameter;
   onSelectionChange: (selection: unknown[]) => void;
@@ -145,6 +153,12 @@ export interface WindowReferenceGridProps {
   windowReferenceTab: Tab;
   windowId?: string;
   processId?: string;
-  recordValues?: Record<string, EntityValue>;
+  recordValues?: RecordValues;
   session?: ISession;
 }
+
+export type RowProps = (props: {
+  isDetailPanel?: boolean;
+  row: MRT_Row<EntityData>;
+  table: MRT_TableInstance<EntityData>;
+}) => Omit<MRT_TableBodyRowProps<MRT_RowData>, 'staticRowIndex'>;

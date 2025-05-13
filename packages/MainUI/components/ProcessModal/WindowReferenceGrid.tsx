@@ -5,7 +5,9 @@ import {
   MRT_ColumnFiltersState,
   MRT_Row,
   MRT_RowSelectionState,
+  MRT_TopToolbarProps,
   useMaterialReactTable,
+  MRT_TableOptions,
 } from 'material-react-table';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import type { EntityData, EntityValue } from '@workspaceui/etendohookbinder/src/api/types';
@@ -18,6 +20,13 @@ import { useProcessConfig } from '@/hooks/datasource/useProcessDatasourceConfig'
 import { WindowReferenceGridProps } from './types';
 import { tableStyles } from './styles';
 
+const MAX_WIDTH = 100;
+const PAGE_SIZE = 100;
+
+/**
+ * WindowReferenceGrid Component
+ * Displays a grid of referenced records that can be selected
+ */
 function WindowReferenceGrid({
   parameter,
   onSelectionChange,
@@ -25,17 +34,16 @@ function WindowReferenceGrid({
   windowId,
   entityName,
   processId,
-  recordValues = {},
+  recordValues = { inpcOrderId: '' },
   session,
   windowReferenceTab,
 }: WindowReferenceGridProps) {
   const { t } = useTranslation();
   const contentRef = useRef<HTMLDivElement>(null);
+  const { loading: tabLoading, error: tabError } = useTab(windowReferenceTab?.id);
 
-  const { loading: tabLoading, error: tabError } = useTab(windowReferenceTab.id);
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
-  const maxWidth = 100;
 
   const {
     fetchConfig,
@@ -45,7 +53,7 @@ function WindowReferenceGrid({
   } = useProcessConfig({
     processId: processId || parameter.processId || '',
     windowId: windowId || '',
-    tabId: tabId,
+    tabId,
   });
 
   useEffect(() => {
@@ -64,7 +72,7 @@ function WindowReferenceGrid({
     const options: Record<string, EntityValue> = {
       windowId: windowId || '',
       tabId: parameter.tab || tabId,
-      pageSize: 100,
+      pageSize: PAGE_SIZE,
     };
 
     if (processConfig?.defaults) {
@@ -121,44 +129,34 @@ function WindowReferenceGrid({
   } = useDatasource(String(entityName), datasourceOptions);
 
   useEffect(() => {
-    console.debug('records:', records);
-  }, [records]);
-
-  useEffect(() => {
     setRowSelection({});
     onSelectionChange([]);
   }, [records, onSelectionChange]);
 
-  const handleRowSelection = useCallback<typeof setRowSelection>(
-    updater => {
-      setRowSelection(prev => {
-        const newSelection = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
+  const handleRowSelection = useCallback(
+    (updaterOrValue: MRT_RowSelectionState | ((prev: MRT_RowSelectionState) => MRT_RowSelectionState)) => {
+      const newSelection = typeof updaterOrValue === 'function' ? updaterOrValue(rowSelection) : updaterOrValue;
 
-        const selectedItems = records.filter(record => {
-          const recordId = String(record.id);
-          return newSelection[recordId];
-        });
+      setRowSelection(newSelection);
 
-        onSelectionChange(selectedItems);
-        return newSelection;
+      const selectedItems = records.filter(record => {
+        const recordId = String(record.id);
+        return newSelection[recordId];
       });
+
+      onSelectionChange(selectedItems);
     },
-    [records, onSelectionChange],
+    [records, onSelectionChange, rowSelection],
   );
 
   const handleColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
-      let newColumnFilters: MRT_ColumnFiltersState;
+      const newColumnFilters = typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
 
-      if (typeof updaterOrValue === 'function') {
-        newColumnFilters = updaterOrValue(columnFilters);
-      } else {
-        newColumnFilters = updaterOrValue;
-      }
+      const normalizedNew = newColumnFilters.map(f => ({ id: f.id, value: f.value }));
+      const normalizedCurrent = columnFilters.map(f => ({ id: f.id, value: f.value }));
 
-      const isRealFilterChange =
-        JSON.stringify(newColumnFilters.map(f => ({ id: f.id, value: f.value }))) !==
-        JSON.stringify(columnFilters.map(f => ({ id: f.id, value: f.value })));
+      const isRealFilterChange = JSON.stringify(normalizedNew) !== JSON.stringify(normalizedCurrent);
 
       setColumnFilters(newColumnFilters);
 
@@ -174,63 +172,26 @@ function WindowReferenceGrid({
     onSelectionChange([]);
   }, [onSelectionChange]);
 
-  const rowProps = useCallback(
-    ({ row }: { row: MRT_Row<EntityData> }) => ({
-      onClick: () => {
-        const selectedRows = { ...rowSelection };
-        selectedRows[row.id] = !selectedRows[row.id];
-        handleRowSelection(selectedRows);
-      },
-      className: rowSelection[row.id]
-        ? 'bg-blue-50 hover:bg-blue-100 cursor-pointer'
-        : 'hover:bg-gray-50 cursor-pointer',
-    }),
-    [handleRowSelection, rowSelection],
+  const handleRowClick = useCallback(
+    (row: MRT_Row<EntityData>) => {
+      setRowSelection(prev => {
+        const newSelection = { ...prev };
+        newSelection[row.id] = !newSelection[row.id];
+
+        const selectedItems = records.filter(record => {
+          const recordId = String(record.id);
+          return newSelection[recordId];
+        });
+
+        onSelectionChange(selectedItems);
+        return newSelection;
+      });
+    },
+    [records, onSelectionChange],
   );
 
-  const LoadMoreButton = ({ fetchMore }: { fetchMore: () => void }) => (
-    <div className="flex justify-center p-2 border-t border-gray-200">
-      <button
-        onClick={fetchMore}
-        className="px-4 py-2 text-sm border border-gray-300 rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
-        {t('common.loadMore')}
-      </button>
-    </div>
-  );
-
-  const table = useMaterialReactTable<EntityData>({
-    muiTablePaperProps: {
-      className: tableStyles.paper,
-      style: {
-        borderRadius: '1rem',
-        boxShadow: 'none',
-      },
-    },
-    muiTableHeadCellProps: {
-      className: tableStyles.headCell,
-    },
-    muiTableBodyCellProps: {
-      className: tableStyles.bodyCell,
-    },
-    muiTableBodyProps: {
-      className: tableStyles.body,
-    },
-    muiTableBodyRowProps: rowProps,
-    muiTableContainerProps: {
-      className: tableStyles.container,
-    },
-    layoutMode: 'semantic',
-    enableColumnResizing: true,
-    enableGlobalFilter: false,
-    columns,
-    data: records || [],
-    enableRowSelection: true,
-    enableMultiRowSelection: true,
-    positionToolbarAlertBanner: 'none',
-    enablePagination: false,
-    enableStickyHeader: true,
-    enableStickyFooter: true,
-    renderTopToolbar: props => {
+  const renderTopToolbar = useCallback(
+    (props: MRT_TopToolbarProps<EntityData>) => {
       const selectedCount = props.table.getSelectedRowModel().rows.length;
       return (
         <div className="flex justify-between items-center px-4 py-2 bg-gray-50 border-b max-h-[2.5rem]">
@@ -250,7 +211,70 @@ function WindowReferenceGrid({
         </div>
       );
     },
+    [parameter.name, t, handleClearSelections],
+  );
+
+  const LoadMoreButton = ({ fetchMore }: { fetchMore: () => void }) => (
+    <div className="flex justify-center p-2 border-t border-gray-200">
+      <button
+        onClick={fetchMore}
+        className="px-4 py-2 text-sm border border-gray-300 rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
+        {t('common.loadMore')}
+      </button>
+    </div>
+  );
+
+  const tableOptions: MRT_TableOptions<EntityData> = {
+    muiTablePaperProps: {
+      className: tableStyles.paper,
+      style: {
+        borderRadius: '1rem',
+        boxShadow: 'none',
+      },
+    },
+    muiTableHeadCellProps: {
+      className: tableStyles.headCell,
+    },
+    muiTableBodyCellProps: {
+      className: tableStyles.bodyCell,
+    },
+    muiTableBodyProps: {
+      className: tableStyles.body,
+    },
+    muiTableBodyRowProps: ({ row }) => {
+      return {
+        onClick: () => handleRowClick(row),
+        className: rowSelection[row.id]
+          ? 'bg-blue-50 hover:bg-blue-100 cursor-pointer'
+          : 'hover:bg-gray-50 cursor-pointer',
+      };
+    },
+    muiTableContainerProps: {
+      className: tableStyles.container,
+    },
+    layoutMode: 'semantic',
+    enableColumnResizing: true,
+    enableGlobalFilter: false,
+    enableRowSelection: true,
+    enableMultiRowSelection: true,
+    positionToolbarAlertBanner: 'none',
+    enablePagination: false,
+    enableStickyHeader: true,
+    enableStickyFooter: true,
+    enableColumnFilters: true,
+    enableSorting: true,
+    enableColumnActions: true,
+    manualFiltering: true,
+    columns,
+    data: records || [],
+    getRowId: row => String(row.id),
+    renderTopToolbar,
     renderBottomToolbar: hasMoreRecords ? () => <LoadMoreButton fetchMore={fetchMore} /> : undefined,
+    renderEmptyRowsFallback: () => (
+      <div className="flex justify-center items-center p-8 text-gray-500">
+        <EmptyState maxWidth={MAX_WIDTH} />
+      </div>
+    ),
     initialState: {
       density: 'compact',
     },
@@ -261,20 +285,9 @@ function WindowReferenceGrid({
     },
     onRowSelectionChange: handleRowSelection,
     onColumnFiltersChange: handleColumnFiltersChange,
-    getRowId: row => String(row.id),
-    enableColumnFilters: true,
-    enableSorting: true,
-    enableColumnActions: true,
-    manualFiltering: true,
-    renderEmptyRowsFallback: () => (
-      <div className="flex justify-center items-center p-8 text-gray-500">
-        <EmptyState maxWidth={maxWidth} />
-      </div>
-    ),
-  });
-
+  };
+  const table = useMaterialReactTable(tableOptions);
   const isLoading = tabLoading || processConfigLoading || datasourceLoading;
-
   const error = tabError || processConfigError || datasourceError;
 
   if (isLoading) {
@@ -290,12 +303,14 @@ function WindowReferenceGrid({
   }
 
   if ((fields.length === 0 && !tabLoading) || !records || records.length === 0) {
-    return <EmptyState maxWidth={maxWidth} />;
+    return <EmptyState maxWidth={MAX_WIDTH} />;
   }
 
   return (
     <div
-      className={`flex flex-col w-full overflow-hidden max-h-4xl h-full transition duration-100 ${datasourceLoading ? 'opacity-40 cursor-wait cursor-to-children' : 'opacity-100'}`}
+      className={`flex flex-col w-full overflow-hidden max-h-4xl h-full transition duration-100 ${
+        datasourceLoading ? 'opacity-40 cursor-wait cursor-to-children' : 'opacity-100'
+      }`}
       ref={contentRef}>
       <MaterialReactTable table={table} />
     </div>

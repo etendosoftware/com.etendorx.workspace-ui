@@ -2,7 +2,6 @@ import {
   MaterialReactTable,
   MRT_ColumnFiltersState,
   MRT_Row,
-  MRT_RowData,
   MRT_RowSelectionState,
   useMaterialReactTable,
   MRT_TableBodyRowProps,
@@ -34,7 +33,7 @@ type RowProps = (props: {
   isDetailPanel?: boolean;
   row: MRT_Row<EntityData>;
   table: MRT_TableInstance<EntityData>;
-}) => Omit<MRT_TableBodyRowProps<MRT_RowData>, 'staticRowIndex'>;
+}) => Omit<MRT_TableBodyRowProps<EntityData>, 'staticRowIndex'>;
 
 const DynamicTable = ({ tab }: DynamicTableProps) => {
   const { sx } = useStyle();
@@ -150,7 +149,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
       let clickTimeout: NodeJS.Timeout | null = null;
 
       return {
-        onClick: (event: React.MouseEvent) => {
+        onClick: event => {
           if (clickTimeout) return;
 
           clickTimeout = setTimeout(() => {

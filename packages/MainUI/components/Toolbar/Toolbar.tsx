@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, createElement } from 'react';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
-import { IconSize, StandardButton, StandardButtonConfig, ToolbarProps, isProcessButton } from './types';
+import { IconSize, StandardButtonConfig, ToolbarProps, isProcessButton } from './types';
 import {
   LEFT_SECTION_BUTTONS,
   CENTER_SECTION_BUTTONS,
@@ -204,13 +204,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     const createSectionConfig = (sectionButtons: StandardButtonId[]) => {
       const sectionConfig = {
         buttons: buttons
-          .filter((btn: StandardButton) => {
+          .filter(btn => {
             if (isFormView && btn.id === 'FIND') return false;
             if (isProcessButton(btn)) return false;
             return sectionButtons.includes(btn.id as StandardButtonId);
           })
           .map(btn => {
-            const config = createStandardButtonConfig(btn as StandardButton, handleAction);
+            const config = createStandardButtonConfig(btn, handleAction);
             const style = getStandardButtonStyle(btn.id as StandardButtonId);
             if (style) {
               config.sx = style;
