@@ -6,7 +6,6 @@ import { ToolbarSectionConfig } from '@workspaceui/storybook/src/stories/Compone
 const ToolbarSection: React.FC<ToolbarSectionConfig> = ({
   buttons,
   style,
-  isItemSelected,
 }) => {
   return (
     <Box sx={style}>
@@ -28,7 +27,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({
             key={key}
             tooltip={tooltip}
             onClick={onClick}
-            disabled={disabled || isItemSelected === false}
+            disabled={disabled}
             fill={fill}
             hoverFill={hoverFill}
             width={width}

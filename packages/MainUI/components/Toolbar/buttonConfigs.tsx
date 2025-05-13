@@ -5,11 +5,10 @@ import { StandardButton, StandardButtonConfig, IconSize } from './types';
 import { iconMap } from './iconMap';
 import { Theme } from '@emotion/react';
 import { SxProps } from '@mui/material';
+import { EntityData } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const createStandardButtonConfig = (
-  btn: StandardButton,
-  handleAction: (action: string) => void,
-  isFormView?: boolean,
+btn: StandardButton, handleAction: (action: string) => void, isFormView?: boolean, selectedRecord?: EntityData | undefined,
 ): StandardButtonConfig => {
   const getIconFill = (buttonId: StandardButtonId): string => {
     const specialButtons = [
@@ -38,7 +37,7 @@ export const createStandardButtonConfig = (
     icon: React.createElement(iconMap[btn.icon]),
     tooltip: btn.name,
     onClick: () => handleAction(btn.action),
-    disabled: (btn.id === BUTTON_IDS.CANCEL && !isFormView) || !btn.enabled,
+    disabled: !btn.enabled,
     height: IconSize,
     width: IconSize,
     fill: getIconFill(btn.id as StandardButtonId),
@@ -47,6 +46,12 @@ export const createStandardButtonConfig = (
   const iconText = getButtonText(btn.id as StandardButtonId);
   if (iconText) {
     config.iconText = iconText;
+  }
+
+  if (btn.id === BUTTON_IDS.CANCEL) {
+    config.disabled = !isFormView;
+  } else if (btn.id === BUTTON_IDS.DELETE) {
+    config.disabled = !selectedRecord?.id;
   }
 
   return config;

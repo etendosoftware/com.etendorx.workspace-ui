@@ -25,7 +25,7 @@ import ProcessModal from '../ProcessModal';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
 import ProcessDefinitionModal from '../ProcessModal/ProcessDefinitionModal';
 import { useUserContext } from '@/hooks/useUserContext';
-import TabContextProvider, { useTabContext } from '@/contexts/tab';
+import { useTabContext } from '@/contexts/tab';
 import { compileExpression } from '../Form/FormView/selectors/BaseSelector';
 import { useSelected } from '@/contexts/selected';
 
@@ -212,11 +212,12 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
             return sectionButtons.includes(btn.id as StandardButtonId);
           })
           .map(btn => {
-            const config = createStandardButtonConfig(btn as StandardButton, handleAction, isFormView);
+            const config = createStandardButtonConfig(btn as StandardButton, handleAction, isFormView, selectedRecord);
             const style = getStandardButtonStyle(btn.id as StandardButtonId);
             if (style) {
               config.sx = style;
             }
+
             return config;
           }),
         style: getSectionStyle(sectionButtons),
@@ -242,14 +243,14 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     }
 
     return config;
-  }, [handleAction, handleMenuOpen, isFormView, processButtons, selectedRecord, t, toolbar?.buttons]);
+  }, [handleAction, handleMenuOpen, isFormView, processButtons.length, selectedRecord, t, toolbar?.buttons]);
 
   if (loading) {
     return null;
   }
 
   return (
-    <TabContextProvider tab={tab}>
+    <>
       <TopToolbar {...toolbarConfig} />
       {statusModal.open && (
         <StatusModal
@@ -313,7 +314,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
         button={selectedProcessDefinitionButton}
         onSuccess={handleCompleteRefresh}
       />
-    </TabContextProvider>
+    </>
   );
 };
 

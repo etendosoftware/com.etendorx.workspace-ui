@@ -4,14 +4,14 @@ import ToolbarSection from './ToolbarSection';
 import { useStyle } from '../styles';
 import type { TopToolbarProps } from '@workspaceui/storybook/src/stories/Components/Table/types';
 
-const TopToolbar: React.FC<TopToolbarProps> = ({ leftSection, centerSection, rightSection, isItemSelected }) => {
+const TopToolbar: React.FC<TopToolbarProps> = ({ leftSection, centerSection, rightSection }) => {
   const { sx } = useStyle();
 
   return (
     <Box sx={sx.topToolbar}>
       <ToolbarSection {...leftSection} />
       <Box sx={sx.topToolbarCenter}>
-        <ToolbarSection {...centerSection} isItemSelected={isItemSelected} />
+        <ToolbarSection {...centerSection} />
       </Box>
       <ToolbarSection {...rightSection} />
     </Box>
