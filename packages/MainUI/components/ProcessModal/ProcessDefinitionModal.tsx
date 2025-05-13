@@ -110,7 +110,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [open]);
 
   return (
-    <Modal open={open}>
+    <Modal open={open} onClose={handleClose}>
       <FormProvider {...form}>
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-100 overflow-auto py-8">
           <div className="bg-white rounded-lg p-4 flex flex-col w-full max-w-2xl mx-auto">
