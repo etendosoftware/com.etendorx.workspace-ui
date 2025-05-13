@@ -12,6 +12,7 @@ export const useStyle = (): StylesType => {
     () => ({
       sx: {
         tablePaper: {
+          display: 'flex',
           flexDirection: 'column',
           flex: 1,
           minHeight: 0,

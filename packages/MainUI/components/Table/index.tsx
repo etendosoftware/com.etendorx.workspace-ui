@@ -176,15 +176,6 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     [sx.rowSelected, tab.id],
   );
 
-  const renderTopToolbar = useCallback(
-    (props: renderTopToolbarProps) => {
-      return (
-        <TopToolbar filterActive={isImplicitFilterApplied} toggleFilter={toggleImplicitFilters} table={props.table} />
-      );
-    },
-    [isImplicitFilterApplied, toggleImplicitFilters],
-  );
-
   const renderEmptyRowsFallback = useCallback(
     ({ table }: { table: MRT_TableInstance<EntityData> }) => <EmptyState table={table} />,
     [],
@@ -218,13 +209,13 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     muiTableBodyRowProps: rowProps,
     muiTableContainerProps: {
       ref: tableContainerRef,
-      sx: { maxHeight: '400px', height: '100%', overflow: 'auto' }, //give the table a max height
+      sx: { flex: 1, display: 'flex', maxHeight: '400px', height: '100%', overflow: 'auto' }, //give the table a max height
       onScroll: fetchMoreOnBottomReached,
     },
     enablePagination: false,
     enableStickyHeader: true,
     enableRowVirtualization: false,
-    enableTopToolbar: false,
+    enableTopToolbar: true,
     enableBottomToolbar: false,
     initialState: { density: 'compact' },
     state: {
@@ -239,6 +230,9 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     enableColumnActions: true,
     manualFiltering: true,
     renderEmptyRowsFallback,
+    renderTopToolbar: ({ table }) => (
+      <TopToolbar filterActive={isImplicitFilterApplied} toggleFilter={toggleImplicitFilters} table={table} />
+    ),
   });
 
   useTableSelection(tab, records, table.getState().rowSelection);
@@ -268,8 +262,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
   }
 
   return (
-    <div className="flex flex-1 flex-col border-2 border-red-400 h-full box-border overflow-hidden">
-      <TopToolbar filterActive={isImplicitFilterApplied} toggleFilter={toggleImplicitFilters} table={table} />
+    <div className="flex flex-1 flex-col h-full overflow-hidden">
       <MaterialReactTable table={table} />
     </div>
   );
