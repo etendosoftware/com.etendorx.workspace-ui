@@ -16,6 +16,9 @@ export const useStyle = (): StylesType => {
           flexDirection: 'column',
           flex: 1,
           minHeight: 0,
+          height: '100%',
+          maxHeight: '100%',
+          background: 'unset',
         },
         tableHeadCell: {
           whiteSpace: 'nowrap',

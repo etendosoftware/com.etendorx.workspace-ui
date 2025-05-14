@@ -7,6 +7,7 @@ type ToolbarActions = {
   refresh: () => void;
   new: () => void;
   back: () => void;
+  filter: () => void;
 };
 
 type ToolbarContextType = {
@@ -14,6 +15,7 @@ type ToolbarContextType = {
   onRefresh: () => void;
   onNew: () => void;
   onBack: () => void;
+  onFilter: () => void;
   registerActions: (actions: Partial<ToolbarActions>) => void;
 };
 
@@ -22,6 +24,7 @@ const initialState: ToolbarActions = {
   refresh: () => {},
   new: () => {},
   back: () => {},
+  filter: () => {},
 };
 
 const ToolbarContext = createContext<ToolbarContextType>({} as ToolbarContextType);
@@ -29,7 +32,7 @@ const ToolbarContext = createContext<ToolbarContextType>({} as ToolbarContextTyp
 export const useToolbarContext = () => useContext(ToolbarContext);
 
 export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
-  const [{ new: onNew, refresh: onRefresh, save: onSave, back: onBack }, setActions] =
+  const [{ new: onNew, refresh: onRefresh, save: onSave, back: onBack, filter: onFilter }, setActions] =
     useState<ToolbarActions>(initialState);
 
   const registerActions = useCallback((newActions: Partial<ToolbarActions>) => {
@@ -37,8 +40,8 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
   }, []);
 
   const value = useMemo(
-    () => ({ onSave, onRefresh, onNew, onBack, registerActions }),
-    [onNew, onRefresh, onSave, onBack, registerActions],
+    () => ({ onSave, onRefresh, onNew, onBack, onFilter, registerActions }),
+    [onNew, onRefresh, onSave, onBack, onFilter, registerActions],
   );
 
   return <ToolbarContext.Provider value={value}>{children}</ToolbarContext.Provider>;

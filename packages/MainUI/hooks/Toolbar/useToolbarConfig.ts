@@ -35,7 +35,7 @@ export const useToolbarConfig = ({
     hideStatusModal,
   } = useStatusModal();
   const { t } = useTranslation();
-  const { onRefresh, onSave, onNew, onBack } = useToolbarContext();
+  const { onRefresh, onSave, onNew, onBack, onFilter } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -106,6 +106,9 @@ export const useToolbarConfig = ({
         case BUTTON_IDS.TAB_CONTROL:
           // setShowTabContainer(prevState => !prevState);
           break;
+        case BUTTON_IDS.FILTER:
+          onFilter?.();
+          break;
         case BUTTON_IDS.SAVE:
           onSave?.();
           break;
@@ -147,6 +150,7 @@ export const useToolbarConfig = ({
       deleteRecord,
       isDeleting,
       onBack,
+      onFilter,
       onNew,
       onRefresh,
       onSave,

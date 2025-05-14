@@ -11,7 +11,6 @@ import { DatasourceOptions, EntityData, WindowMetadata, type Tab } from '@worksp
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { useSearch } from '../../contexts/searchContext';
-import TopToolbar from './top-toolbar';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
 import EmptyState from './EmptyState';
 import { parseColumns } from '@/utils/tableColumns';
@@ -90,7 +89,6 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
   const {
     updateColumnFilters,
     toggleImplicitFilters,
-    isImplicitFilterApplied,
     fetchMore,
     records,
     removeRecordLocally,
@@ -205,13 +203,13 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     muiTableBodyRowProps: rowProps,
     muiTableContainerProps: {
       ref: tableContainerRef,
-      sx: { flex: 1, display: 'flex', maxHeight: '400px', height: '100%', overflow: 'auto' }, //give the table a max height
+      sx: { flex: 1 }, //give the table a max height
       onScroll: fetchMoreOnBottomReached,
     },
     enablePagination: false,
     enableStickyHeader: true,
     enableRowVirtualization: false,
-    enableTopToolbar: true,
+    enableTopToolbar: false,
     enableBottomToolbar: false,
     initialState: { density: 'compact' },
     state: {
@@ -226,9 +224,6 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     enableColumnActions: true,
     manualFiltering: true,
     renderEmptyRowsFallback,
-    renderTopToolbar: ({ table }) => (
-      <TopToolbar filterActive={isImplicitFilterApplied} toggleFilter={toggleImplicitFilters} table={table} />
-    ),
   });
 
   useTableSelection(tab, records, table.getState().rowSelection);
@@ -248,8 +243,9 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
   useEffect(() => {
     registerActions({
       refresh: refetch,
+      filter: toggleImplicitFilters,
     });
-  }, [refetch, registerActions]);
+  }, [refetch, registerActions, toggleImplicitFilters]);
 
   if (error) {
     return (

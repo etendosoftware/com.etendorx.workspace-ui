@@ -18,6 +18,7 @@ btn: StandardButton, handleAction: (action: string) => void, isFormView?: boolea
       BUTTON_IDS.DELETE,
       BUTTON_IDS.EXPORT,
       BUTTON_IDS.ATTACHMENTS,
+      BUTTON_IDS.FILTER,
     ] as const;
     return specialButtons.includes(buttonId as (typeof specialButtons)[number])
       ? theme.palette.baselineColor.neutral[100]
@@ -52,6 +53,8 @@ btn: StandardButton, handleAction: (action: string) => void, isFormView?: boolea
     config.disabled = !isFormView;
   } else if (btn.id === BUTTON_IDS.DELETE) {
     config.disabled = !selectedRecord?.id;
+  } else if (btn.id === BUTTON_IDS.FILTER) {
+    config.disabled = false;
   }
 
   return config;
@@ -110,6 +113,7 @@ export const getStandardButtonStyle = (btnId: StandardButtonId) => {
     [BUTTON_IDS.EXPORT]: undefined,
     [BUTTON_IDS.ATTACHMENTS]: undefined,
     [BUTTON_IDS.FIND]: undefined,
+    [BUTTON_IDS.FILTER]: undefined,
     [BUTTON_IDS.GRID_VIEW]: undefined,
     [BUTTON_IDS.TAB_CONTROL]: {
       color: theme.palette.baselineColor.neutral[100],
