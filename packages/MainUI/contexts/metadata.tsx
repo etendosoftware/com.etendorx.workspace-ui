@@ -9,6 +9,8 @@ import { WindowParams } from '../app/types';
 import { IMetadataContext } from './types';
 import { useDatasourceContext } from './datasourceContext';
 import { useSetSession } from '@/hooks/useSetSession';
+import { useLanguage } from './language';
+import { logger } from '@/utils/logger';
 
 export const MetadataContext = createContext({} as IMetadataContext);
 
@@ -25,6 +27,7 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
   const tab = useMemo(() => windowData?.tabs?.find(t => t.id === tabId), [tabId, windowData?.tabs]);
   const tabs = useMemo<Tab[]>(() => windowData?.tabs ?? [], [windowData]);
   const { removeRecordFromDatasource } = useDatasourceContext();
+  const { language, setLabels } = useLanguage();
 
   const closeTab = useCallback(
     (level: number) => {
@@ -378,6 +381,30 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     setActiveTabLevels([0]);
     setShowTabContainer(false);
   }, [windowId]);
+
+  useEffect(() => {
+    if (language) {
+      const controller = new AbortController();
+
+      const f = async () => {
+        try {
+          const data = await Metadata.getLabels();
+
+          if (!controller.signal.aborted) {
+            setLabels(data);
+          }
+        } catch (e) {
+          logger.warn('Error fetching labels', e);
+        }
+      };
+
+      f();
+
+      return () => {
+        controller.abort();
+      };
+    }
+  }, [language, setLabels]);
 
   return <MetadataContext.Provider value={value}>{children}</MetadataContext.Provider>;
 }

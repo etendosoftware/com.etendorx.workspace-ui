@@ -313,23 +313,21 @@ export interface SessionResponse {
 }
 
 export type RoleList = {
-  id: string
-  name: string
-  organizations: Organization[]
+  id: string;
+  name: string;
+  organizations: Organization[];
 }[];
 
-
 export interface Organization {
-  id: string
-  name: string
-  warehouses: Warehouse[]
+  id: string;
+  name: string;
+  warehouses: Warehouse[];
 }
 
 export interface Warehouse {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
-
 
 export interface CurrentClient {
   _identifier: string;
@@ -722,4 +720,8 @@ export interface ProcessDefinition extends Record<string, unknown> {
   parameters: ProcessParameters;
   onLoad: string;
   onProcess: string;
+}
+
+export interface Labels {
+  [key: string]: string;
 }

@@ -7,15 +7,8 @@ import { Language } from '../../contexts/types';
 import { useLanguage } from '@/contexts/language';
 
 const ProfileWrapper = (props: ProfileWrapperProps) => {
-  const {
-    setDefaultConfiguration,
-    currentRole,
-    profile,
-    currentWarehouse,
-    changeProfile,
-    roles,
-    languages,
-  } = useContext(UserContext);
+  const { setDefaultConfiguration, currentRole, profile, currentWarehouse, changeProfile, roles, languages } =
+    useContext(UserContext);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const { language, setLanguage, getFlag } = useLanguage();
 
