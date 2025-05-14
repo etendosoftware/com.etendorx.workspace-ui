@@ -24,7 +24,7 @@
     "@workspaceui/etendohookbinder": "workspace:etendohookbinder",
     "@workspaceui/storybook": "workspace:storybook",
     "framer-motion": "^12.10.1",
-    "material-react-table": "^2.12.1",
+    "material-react-table": "^3.2.1",
     "next": "^15.0.1",
     "postcss": "^8.5.3",
     "react-hook-form": "^7.53.2",

@@ -34,7 +34,7 @@ type RowProps = (props: {
 
 const getRowId = (row: EntityData) => String(row.id);
 
-const DynamicTable = ({ tab }: DynamicTableProps) => {
+const   DynamicTable = ({ tab }: DynamicTableProps) => {
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
@@ -215,6 +215,9 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     state: {
       columnFilters,
       showColumnFilters: true,
+      showProgressBars: true,
+      isLoading: loading,
+      showLoadingOverlay: false,
     },
     onColumnFiltersChange: handleColumnFiltersChange,
     getRowId,

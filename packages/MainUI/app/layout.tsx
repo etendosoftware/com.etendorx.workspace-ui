@@ -4,6 +4,11 @@ import ApiProviderWrapper from '@/contexts/api/wrapper';
 import './styles/global.css';
 import ThemeProvider from '@workspaceui/componentlibrary/src/components/ThemeProvider';
 import LanguageProvider from '@/contexts/language';
+import UserProvider from '@/contexts/user';
+import { DatasourceProvider } from '@/contexts/datasourceContext';
+import MetadataProvider from '@/contexts/metadata';
+import SelectedProvider from '@/contexts/selected';
+import Layout from '@/components/layout';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -30,7 +35,17 @@ export default function RootLayout({
       <body>
         <ApiProviderWrapper>
           <ThemeProvider>
-            <LanguageProvider>{children}</LanguageProvider>
+            <LanguageProvider>
+              <UserProvider>
+                <DatasourceProvider>
+                  <MetadataProvider>
+                    <SelectedProvider>
+                      <Layout>{children}</Layout>
+                    </SelectedProvider>
+                  </MetadataProvider>
+                </DatasourceProvider>
+              </UserProvider>
+            </LanguageProvider>
           </ThemeProvider>
         </ApiProviderWrapper>
       </body>
