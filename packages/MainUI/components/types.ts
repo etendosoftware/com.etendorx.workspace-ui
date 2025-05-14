@@ -1,9 +1,8 @@
-import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface TabLevelProps {
   tab: Tab;
-  level: number;
-  parentRecord?: EntityData;
+  collapsed?: boolean;
 }
 
 export interface ErrorDisplayProps {

@@ -5,9 +5,9 @@ import { useCallback, useMemo, useState } from 'react';
 import { Button, SxProps, Theme } from '@mui/material';
 import { TabLevel } from '../../../components/TabLevel';
 import { useStyle } from './styles';
-import { useSelected } from '@/contexts/selected';
 import Container from '@/components/window/container';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
+import { useSelected } from '@/contexts/selected';
 
 const TabButton = ({ tab, onClick, sx }: { tab: Tab; onClick: (tab: Tab) => void; sx: SxProps<Theme> }) => {
   const { window } = useMetadataContext();
@@ -38,18 +38,13 @@ const TabsSwitch = ({ tabs, current, onClick }: { tabs: Tab[]; current: Tab; onC
 };
 
 export default function Tabs({ tabs }: { tabs: Tab[] }) {
-  const { graph } = useSelected();
-  const parentTab = graph.getParent(tabs[0]);
-  const parentRecord = parentTab ? graph.getSelected(parentTab) : undefined;
-  const [current, handleClick] = useState(tabs[0]);
+  const { activeLevels } = useSelected();
+  const [current, setCurrent] = useState(tabs[0]);
 
-  if (tabs[0].level > 0 && !parentRecord) {
-    return null;
-  }
   return (
     <Container>
-      <TabsSwitch tabs={tabs} current={current} onClick={handleClick} />
-      <TabLevel tab={current} />
+      <TabsSwitch tabs={tabs} current={current} onClick={setCurrent} />
+      <TabLevel tab={current} collapsed={!activeLevels.includes(current.level)} />
     </Container>
   );
 }

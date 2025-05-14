@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Graph from '@/data/graph';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
@@ -8,12 +8,14 @@ import { useMetadataContext } from '@/hooks/useMetadataContext';
 interface SelectedContext {
   graph: Graph<Tab>;
   level: number;
+  activeLevels: number[];
 }
 
 const SelectContext = createContext<SelectedContext>({} as SelectedContext);
 
 export const SelectedProvider = ({ children }: React.PropsWithChildren) => {
   const [version, setVersion] = useState(0);
+  const [activeLevels, setActiveLevels] = useState<number[]>([]);
   const { window } = useMetadataContext();
   const tabs = window?.tabs;
 
@@ -38,9 +40,24 @@ export const SelectedProvider = ({ children }: React.PropsWithChildren) => {
       version,
       graph,
       level,
+      activeLevels,
     }),
-    [version, graph, level],
+    [activeLevels, graph, level, version],
   );
+
+  useEffect(() => {
+    setActiveLevels(prev => {
+      // If the clicked tab is already active, collapse all deeper levels
+      const trimmed = prev.filter(lvl => lvl < level);
+
+      // Add the clicked level back if it was not the last clicked
+      if (trimmed[trimmed.length - 1] !== level) {
+        return [...trimmed, level].slice(-2);
+      }
+
+      return trimmed;
+    });
+  }, [level]);
 
   return <SelectContext.Provider value={value}>{children}</SelectContext.Provider>;
 };

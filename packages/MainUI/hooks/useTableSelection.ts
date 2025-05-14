@@ -22,7 +22,7 @@ export default function useTableSelection(tab: Tab, records: EntityData[], rowSe
 
     if (last) {
       graph.setSelected(tab, last);
-    } else {
+    } else if (graph.getSelected(tab)) {
       graph.clearSelected(tab);
     }
 

@@ -103,11 +103,12 @@ class Graph<T extends Tab> extends EventEmitter {
     const node = this.nodes.get(tab.id);
 
     if (!node) throw new Error('Tab not found');
+    if (!record) throw new Error('Missing record');
 
     node.selected = record;
     node.neighbors.forEach(this.clearSelectedNode);
 
-    this.level = tab.level;
+    this.level = tab.level + 1;
     this.emit('update', tab.id);
   };
 
@@ -116,9 +117,9 @@ class Graph<T extends Tab> extends EventEmitter {
 
     if (!node) throw new Error('Tab not found');
 
+    console.debug({ tab, level: this.level });
+    this.level = this.level > tab.level && tab.level > 0 ? tab.level - 1 : 0;
     this.clearSelectedNode(node);
-    const parent = this.getParent(tab);
-    this.level = parent ? parent.level : 0;
     this.emit('update', tab.id);
   };
 
