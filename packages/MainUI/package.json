@@ -24,15 +24,10 @@
     "@workspaceui/etendohookbinder": "workspace:etendohookbinder",
     "@workspaceui/storybook": "workspace:storybook",
     "framer-motion": "^12.10.1",
-    "material-react-table": "^3.2.1",
     "next": "^15.0.1",
     "postcss": "^8.5.3",
     "react-hook-form": "^7.53.2",
     "tailwindcss": "^4.0.8"
-  },
-  "peerDependencies": {
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
   },
   "devDependencies": {
     "@svgr/webpack": "^8.1.0",
