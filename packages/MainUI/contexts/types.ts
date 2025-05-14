@@ -11,6 +11,7 @@ import {
   CurrentRole,
   CurrentOrganization,
   SessionResponse,
+  Labels,
 } from '@workspaceui/etendohookbinder/src/api/types';
 import { type Etendo } from '@workspaceui/etendohookbinder/src/api/metadata';
 
@@ -19,7 +20,9 @@ export type Language = 'en_US' | 'es_ES';
 export interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
+  setLabels: React.Dispatch<React.SetStateAction<Labels>>;
   getFlag: (language?: Language) => string;
+  getLabel: (key: string) => string;
 }
 
 export interface DefaultConfiguration {
@@ -42,7 +45,7 @@ export interface IUserContext {
   login: (username: string, password: string) => Promise<void>;
   changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | void>;
   token: string | null;
-  roles: SessionResponse["roles"];
+  roles: SessionResponse['roles'];
   currentRole: CurrentRole | undefined;
   profile: ProfileInfo;
   currentWarehouse: CurrentWarehouse | undefined;
