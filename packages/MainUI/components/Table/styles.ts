@@ -18,7 +18,6 @@ export const useStyle = (): StylesType => {
           minHeight: 0,
           height: '100%',
           maxHeight: '100%',
-          background: 'unset',
         },
         tableHeadCell: {
           whiteSpace: 'nowrap',

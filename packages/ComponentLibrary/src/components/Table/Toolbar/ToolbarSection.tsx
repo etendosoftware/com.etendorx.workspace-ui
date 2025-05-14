@@ -4,9 +4,10 @@ import { ToolbarSectionConfig } from '@workspaceui/storybook/src/stories/Compone
 const ToolbarSection: React.FC<ToolbarSectionConfig> = ({
   buttons,
   style,
+  className,
 }) => {
   return (
-    <div style={style}>
+    <div style={style} className={className}>
       {buttons.map(
         ({
           key,

@@ -203,7 +203,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     muiTableBodyRowProps: rowProps,
     muiTableContainerProps: {
       ref: tableContainerRef,
-      sx: { flex: 1 }, //give the table a max height
+      sx: { flex: 1, height: '100%', maxHeight: '100%' }, //give the table a max height
       onScroll: fetchMoreOnBottomReached,
     },
     enablePagination: false,

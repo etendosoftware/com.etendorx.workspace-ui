@@ -321,25 +321,19 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
 const getSectionStyle = (sectionType: string[]) => {
   const baseStyle: React.CSSProperties = {
     display: 'flex',
-    borderRadius: '10rem',
-    gap: '0.25rem',
+    alignItems: 'center',
   };
 
   if (sectionType === LEFT_SECTION_BUTTONS) {
     return {
       ...baseStyle,
       width: 'auto',
-      alignItems: 'center',
-      maxHeight: '2.5rem',
-      gap: '0.05rem',
     };
   }
 
   if (sectionType === RIGHT_SECTION_BUTTONS) {
     return {
       ...baseStyle,
-      maxHeight: '2.5rem',
-      alignItems: 'center',
     };
   }
 
