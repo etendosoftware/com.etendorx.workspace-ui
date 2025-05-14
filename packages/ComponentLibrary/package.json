@@ -33,7 +33,7 @@
     "@workspaceui/etendohookbinder": "workspace:etendohookbinder",
     "@workspaceui/mainui": "workspace:mainui",
     "@workspaceui/storybook": "workspace:storybook",
-    "material-react-table": "^2.12.1",
+    "material-react-table": "^3.2.1",
     "react-hook-form": "^7.53.2",
     "react-markdown": "^9.0.1"
   },
