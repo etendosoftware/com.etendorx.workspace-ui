@@ -14,7 +14,7 @@ export default function Page() {
     return <ErrorDisplay title={error?.message ?? 'Something went wrong'} />;
   } else {
     return (
-      <div className="w-full h-full max-h-full overflow-hidden space-y-4 p-2">
+      <div className="w-full h-full max-h-full overflow-hidden">
         {groupedTabs.map(tabs => {
           return <Tabs tabs={tabs} level={tabs[0].level} key={tabs[0].id} />;
         })}

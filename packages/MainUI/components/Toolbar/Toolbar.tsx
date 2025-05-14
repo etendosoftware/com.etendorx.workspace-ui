@@ -322,7 +322,6 @@ const getSectionStyle = (sectionType: string[]) => {
   const baseStyle: React.CSSProperties = {
     display: 'flex',
     borderRadius: '10rem',
-    padding: '0.25rem',
     gap: '0.25rem',
   };
 
@@ -331,7 +330,6 @@ const getSectionStyle = (sectionType: string[]) => {
       ...baseStyle,
       width: 'auto',
       alignItems: 'center',
-      background: theme.palette.baselineColor.neutral[0],
       maxHeight: '2.5rem',
       gap: '0.05rem',
     };
@@ -340,7 +338,6 @@ const getSectionStyle = (sectionType: string[]) => {
   if (sectionType === RIGHT_SECTION_BUTTONS) {
     return {
       ...baseStyle,
-      background: theme.palette.baselineColor.transparentNeutral[5],
       maxHeight: '2.5rem',
       alignItems: 'center',
     };
@@ -349,7 +346,6 @@ const getSectionStyle = (sectionType: string[]) => {
   return {
     ...baseStyle,
     width: sectionType === CENTER_SECTION_BUTTONS ? '100%' : 'auto',
-    background: theme.palette.baselineColor.transparentNeutral[5],
   };
 };
 

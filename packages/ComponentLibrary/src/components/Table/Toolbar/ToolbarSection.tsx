@@ -1,5 +1,3 @@
-import React from 'react';
-import { Box } from '@mui/material';
 import IconButton from '../../IconButton';
 import { ToolbarSectionConfig } from '@workspaceui/storybook/src/stories/Components/Table/types';
 
@@ -8,7 +6,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({
   style,
 }) => {
   return (
-    <Box sx={style}>
+    <div style={style}>
       {buttons.map(
         ({
           key,
@@ -38,7 +36,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({
           </IconButton>
         ),
       )}
-    </Box>
+    </div>
   );
 };
 
