@@ -311,7 +311,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           onClose={handleCloseProcess}
           button={selectedProcessDefinitionButton}
           onSuccess={handleCompleteRefresh}
-          // session={session}
         />
       )}
     </TabContextProvider>
