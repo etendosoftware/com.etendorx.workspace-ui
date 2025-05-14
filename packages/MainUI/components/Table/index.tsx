@@ -34,7 +34,7 @@ type RowProps = (props: {
 
 const getRowId = (row: EntityData) => String(row.id);
 
-const   DynamicTable = ({ tab }: DynamicTableProps) => {
+const DynamicTable = ({ tab }: DynamicTableProps) => {
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
@@ -208,16 +208,15 @@ const   DynamicTable = ({ tab }: DynamicTableProps) => {
     },
     enablePagination: false,
     enableStickyHeader: true,
-    enableRowVirtualization: false,
+    enableColumnVirtualization: true,
+    enableRowVirtualization: true,
     enableTopToolbar: false,
     enableBottomToolbar: false,
     initialState: { density: 'compact' },
     state: {
       columnFilters,
       showColumnFilters: true,
-      showProgressBars: true,
-      isLoading: loading,
-      showLoadingOverlay: false,
+      showProgressBars: loading,
     },
     onColumnFiltersChange: handleColumnFiltersChange,
     getRowId,
@@ -256,7 +255,12 @@ const   DynamicTable = ({ tab }: DynamicTableProps) => {
     );
   }
 
-  return <MaterialReactTable table={table} />;
+  return (
+    <div
+      className={`h-full overflow-hidden transition-opacity ${loading ? 'opacity-60 cursor-progress cursor-to-children' : 'opacity-100'}`}>
+      <MaterialReactTable table={table} />
+    </div>
+  );
 };
 
 export default DynamicTable;

@@ -91,52 +91,57 @@ export function useDatasource(
     };
   }, [params, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied]);
 
-  const load = useCallback(async () => {
-    try {
-      if (!entity) {
-        setLoaded(true);
-        return;
-      }
-
-      setError(undefined);
-      setLoading(true);
-
-      const safePageSize = pageSize ?? 1000;
-      const response = await loadData(entity, page, safePageSize, queryParams);
-
-      if (response.error || response.status != 0) {
-        throw new Error(response.error.message);
-      } else {
-        setHasMoreRecords(response.data.length >= safePageSize);
-        setRecords(prevRecords => {
-          if (page === 1 || searchQuery) {
-            return response.data;
-          } else {
-            return [...prevRecords, ...response.data];
-          }
-
-          // const mergedRecords = [...prevRecords, ...response.data];
-          // const uniqueRecords = mergedRecords.reduce(
-          //   (acc, current) => {
-          //     acc[current.id as string] = current;
-          //     return acc;
-          //   },
-          //   {} as Record<string, unknown>,
-          // );
-
-          // return Object.values(uniqueRecords);
-        });
-        setLoaded(true);
-      }
-    } catch (e) {
-      if (!isImplicitFilterApplied) {
-        setError(e as Error);
-      } else {
-        setIsImplicitFilterApplied(false);
-      }
-    } finally {
-      setLoading(false);
+  const load = useCallback(() => {
+    if (!entity) {
+      setLoaded(true);
+      return;
     }
+
+    setError(undefined);
+    setLoading(true);
+
+    const safePageSize = pageSize ?? 1000;
+
+    const f = async () => {
+      try {
+        const response = await loadData(entity, page, safePageSize, queryParams);
+
+        if (response.error || response.status != 0) {
+          throw new Error(response.error.message);
+        } else {
+          setHasMoreRecords(response.data.length >= safePageSize);
+          setRecords(prevRecords => {
+            if (page === 1 || searchQuery) {
+              return response.data;
+            } else {
+              return [...prevRecords, ...response.data];
+            }
+
+            // const mergedRecords = [...prevRecords, ...response.data];
+            // const uniqueRecords = mergedRecords.reduce(
+            //   (acc, current) => {
+            //     acc[current.id as string] = current;
+            //     return acc;
+            //   },
+            //   {} as Record<string, unknown>,
+            // );
+
+            // return Object.values(uniqueRecords);
+          });
+          setLoaded(true);
+        }
+      } catch (e) {
+        if (!isImplicitFilterApplied) {
+          setError(e as Error);
+        } else {
+          setIsImplicitFilterApplied(false);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    f();
   }, [entity, isImplicitFilterApplied, page, pageSize, queryParams, searchQuery]);
 
   useEffect(() => {
@@ -156,38 +161,20 @@ export function useDatasource(
     load();
   }, [load]);
 
-  return useMemo(
-    () => ({
-      loading,
-      error,
-      fetchMore,
-      changePageSize,
-      load,
-      records,
-      loaded,
-      isImplicitFilterApplied,
-      toggleImplicitFilters,
-      updateColumnFilters,
-      activeColumnFilters,
-      removeRecordLocally,
-      refetch,
-      hasMoreRecords,
-    }),
-    [
-      loading,
-      error,
-      fetchMore,
-      changePageSize,
-      load,
-      records,
-      loaded,
-      isImplicitFilterApplied,
-      toggleImplicitFilters,
-      updateColumnFilters,
-      activeColumnFilters,
-      removeRecordLocally,
-      refetch,
-      hasMoreRecords,
-    ],
-  );
+  return {
+    loading,
+    error,
+    fetchMore,
+    changePageSize,
+    load,
+    records,
+    loaded,
+    isImplicitFilterApplied,
+    toggleImplicitFilters,
+    updateColumnFilters,
+    activeColumnFilters,
+    removeRecordLocally,
+    refetch,
+    hasMoreRecords,
+  };
 }
