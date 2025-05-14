@@ -40,11 +40,12 @@ const TabsSwitch = ({ tabs, current, onClick }: { tabs: Tab[]; current: Tab; onC
 export default function Tabs({ tabs }: { tabs: Tab[] }) {
   const { activeLevels } = useSelected();
   const [current, setCurrent] = useState(tabs[0]);
+  const collapsed = !activeLevels.includes(current.level);
 
   return (
-    <Container>
+    <Container collapsed={collapsed}>
       <TabsSwitch tabs={tabs} current={current} onClick={setCurrent} />
-      <TabLevel tab={current} collapsed={!activeLevels.includes(current.level)} />
+      <TabLevel tab={current} collapsed={collapsed} />
     </Container>
   );
 }

@@ -16,20 +16,19 @@ export function TabLevel({ tab, collapsed }: TabLevelProps) {
 
   return (
     <TabContextProvider tab={tab}>
-      <div className={`flex flex-1 gap-2 max-w-auto overflow-hidden flex-col min-h-0`}>
+      <div
+        className={`flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 ${collapsed ? 'hidden' : 'flex-1 h-full'}`}>
         <Toolbar windowId={tab.windowId} tabId={tab.id} isFormView={!!recordId} />
-        <div className={`border-2 border-red-400 ${collapsed ? 'hidden' : ''}`}>
-          {recordId ? (
-            <FormView
-              mode={recordId === 'new' ? FormMode.NEW : FormMode.EDIT}
-              tab={tab}
-              window={windowMetadata}
-              recordId={recordId}
-            />
-          ) : (
-            <DynamicTable tab={tab} window={windowMetadata} />
-          )}
-        </div>
+        {recordId ? (
+          <FormView
+            mode={recordId === 'new' ? FormMode.NEW : FormMode.EDIT}
+            tab={tab}
+            window={windowMetadata}
+            recordId={recordId}
+          />
+        ) : (
+          <DynamicTable tab={tab} window={windowMetadata} />
+        )}
       </div>
     </TabContextProvider>
   );
