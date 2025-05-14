@@ -7,7 +7,7 @@ import { useMetadataContext } from '@/hooks/useMetadataContext';
 
 interface SelectedContext {
   graph: Graph<Tab>;
-  version: number;
+  level: number;
 }
 
 const SelectContext = createContext<SelectedContext>({} as SelectedContext);
@@ -31,12 +31,15 @@ export const SelectedProvider = ({ children }: React.PropsWithChildren) => {
     return result;
   }, [tabs]);
 
+  const level = graph.getLevel();
+
   const value = useMemo<SelectedContext>(
     () => ({
       version,
       graph,
+      level,
     }),
-    [graph, version],
+    [version, graph, level],
   );
 
   return <SelectContext.Provider value={value}>{children}</SelectContext.Provider>;

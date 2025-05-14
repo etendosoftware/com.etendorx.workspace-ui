@@ -16,7 +16,7 @@ export default function Page() {
     return (
       <div className="flex flex-col w-full h-full max-h-full overflow-hidden">
         {groupedTabs.map(tabs => {
-          return <Tabs tabs={tabs} level={tabs[0].level} key={tabs[0].id} />;
+          return <Tabs tabs={tabs} key={tabs[0].id} />;
         })}
       </div>
     );

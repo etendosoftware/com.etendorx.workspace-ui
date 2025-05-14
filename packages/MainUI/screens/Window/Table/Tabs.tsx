@@ -37,7 +37,7 @@ const TabsSwitch = ({ tabs, current, onClick }: { tabs: Tab[]; current: Tab; onC
   );
 };
 
-export default function Tabs({ tabs }: { tabs: Tab[]; level?: number }) {
+export default function Tabs({ tabs }: { tabs: Tab[] }) {
   const { graph } = useSelected();
   const parentTab = graph.getParent(tabs[0]);
   const parentRecord = parentTab ? graph.getSelected(parentTab) : undefined;
@@ -46,7 +46,6 @@ export default function Tabs({ tabs }: { tabs: Tab[]; level?: number }) {
   if (tabs[0].level > 0 && !parentRecord) {
     return null;
   }
-
   return (
     <Container>
       <TabsSwitch tabs={tabs} current={current} onClick={handleClick} />
