@@ -41,7 +41,7 @@ export const useToolbarConfig = ({
 
   const { tab, record } = useTabContext();
   const selectedRecord = record;
-  const selectedMultiple = graph.getSelectedMultiple(tab.id);
+  const selectedMultiple = graph.getSelectedMultiple(tab);
   const selectedIds = useMemo(() => selectedMultiple?.map(r => String(r.id)) ?? [], [selectedMultiple]);
 
   const { deleteRecord, loading: deleteLoading } = useDeleteRecord({

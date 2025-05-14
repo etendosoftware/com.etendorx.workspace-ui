@@ -45,7 +45,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentRecord } = useTabContext();
 
-  const selectedRecord = graph.getSelected(tabId);
+  const selectedRecord = graph.getSelected(tab);
   const parentId = parentRecord?.id?.toString();
 
   const {
@@ -67,7 +67,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     isFormView,
   });
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
-  const selectedItems = graph.getSelectedMultiple(tab.id);
+  const selectedItems = graph.getSelectedMultiple(tab);
 
   const processButtons = useMemo(() => {
     const buttons = toolbar?.buttons.filter(isProcessButton) || [];
@@ -124,12 +124,12 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
 
   const handleProcessSuccess = useCallback(() => {
     if (processResponse) {
-      if (tabId) {
-        refetchDatasource(tabId);
+      if (tab) {
+        refetchDatasource(tab.id);
+        graph.clearSelected(tab);
       }
-      graph.clearSelected(tab.id);
     }
-  }, [graph, processResponse, refetchDatasource, tab.id, tabId]);
+  }, [graph, processResponse, refetchDatasource, tab]);
 
   const handleConfirmProcess = useCallback(async () => {
     if (!selectedProcessActionButton || !selectedRecord?.id) return;
@@ -167,9 +167,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   }, []);
 
   const handleCompleteRefresh = useCallback(async () => {
-    graph.clearSelected(tab.id);
+    graph.clearSelected(tab);
     refetchDatasource(tab.id);
-  }, [graph, refetchDatasource, tab.id]);
+  }, [graph, refetchDatasource, tab]);
 
   const toolbarConfig = useMemo(() => {
     const buttons = toolbar?.buttons ?? [];

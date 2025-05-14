@@ -21,11 +21,11 @@ export default function useTableSelection(tab: Tab, records: EntityData[], rowSe
     });
 
     if (last) {
-      graph.setSelected(tab.id, last);
+      graph.setSelected(tab, last);
     } else {
-      graph.clearSelected(tab.id);
+      graph.clearSelected(tab);
     }
 
-    graph.setSelectedMultiple(tab.id, result);
-  }, [graph, records, rowSelection, tab.id]);
+    graph.setSelectedMultiple(tab, result);
+  }, [graph, records, rowSelection, tab]);
 }

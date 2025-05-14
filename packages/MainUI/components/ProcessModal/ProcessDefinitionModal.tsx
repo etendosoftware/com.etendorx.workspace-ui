@@ -20,7 +20,7 @@ export default function ProcessDefinitionModal({ onClose, button, open, onSucces
   const { graph } = useSelected();
   const { tab } = useTabContext();
   const tabId = tab?.id || '';
-  const selectedRecords = graph.getSelectedMultiple(tabId);
+  const selectedRecords = graph.getSelectedMultiple(tab);
   const [parameters, setParameters] = useState(button?.processDefinition.parameters ?? {});
   const [response, setResponse] = useState<{
     msgText: string;

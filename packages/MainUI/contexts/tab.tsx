@@ -15,9 +15,9 @@ const TabContext = createContext<TabContextI>({} as TabContextI);
 
 export default function TabContextProvider({ tab, children }: React.PropsWithChildren<{ tab: Tab }>) {
   const { graph } = useSelected();
-  const record = graph.getSelected(tab.id);
-  const parentTab = graph.getParent(tab.id);
-  const parentRecord = graph.getSelected(parentTab?.id);
+  const record = graph.getSelected(tab);
+  const parentTab = graph.getParent(tab);
+  const parentRecord = parentTab ? graph.getSelected(parentTab) : undefined;
 
   const value = useMemo(
     () => ({

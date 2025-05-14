@@ -38,9 +38,11 @@ class Graph<T extends Tab> extends EventEmitter {
   private addEdge(sourceId: string, destinationId: string) {
     const sourceNode = this.nodes.get(sourceId);
     const destNode = this.nodes.get(destinationId);
+
     if (!sourceNode || !destNode) {
       throw new Error('Both nodes must exist before adding an edge');
     }
+
     sourceNode.neighbors.add(destNode);
 
     return this;
@@ -73,77 +75,78 @@ class Graph<T extends Tab> extends EventEmitter {
     printNode(rootNode, indent);
   }
 
-  public getChildren(tabId: string) {
-    const node = this.nodes.get(tabId);
+  public getChildren(tab: Tab) {
+    const node = this.nodes.get(tab.id);
+
     if (!node) throw new Error('Tab not found');
+
     return Array.from(node.neighbors).map(child => child.value);
   }
 
-  public getParent(tabId: string) {
+  public getParent(tab: Tab) {
     for (const node of this.nodes.values()) {
       for (const neighbor of node.neighbors) {
-        if (neighbor.value.id === tabId) return node.value;
+        if (neighbor.value.id === tab.id) return node.value;
       }
     }
 
     return undefined;
   }
 
-  public setSelected(tabId: string, record: EntityData) {
-    if (!record.id) throw new Error('Missing record id');
-    const node = this.nodes.get(tabId);
-    if (!node) throw new Error('Tab not found');
-    node.selected = record;
+  public setSelected(tab: Tab, record: EntityData) {
+    const node = this.nodes.get(tab.id);
 
-    this.emit('update', tabId);
+    if (!node) throw new Error('Tab not found');
+
+    node.selected = record;
+    node.neighbors.forEach(this.clearSelectedNode);
+    this.emit('update', tab.id);
   }
 
-  public clearSelected(tabId?: string | null) {
-    if (tabId) {
-      const node = this.nodes.get(tabId);
-      if (!node) throw new Error('Tab not found');
-      this.clearSelectedNode(node);
-    }
+  public clearSelected(tab: Tab) {
+    const node = this.nodes.get(tab.id);
 
-    this.emit('update', tabId);
+    if (!node) throw new Error('Tab not found');
+
+    this.clearSelectedNode(node);
+    this.emit('update', tab.id);
   }
 
   private clearSelectedNode(node: GraphNode<T>) {
     node.selected = undefined;
-    node.neighbors.forEach(n => this.clearSelectedNode(n));
+    node.neighbors.forEach(this.clearSelectedNode);
   }
 
-  public setSelectedMultiple(tabId: string, records: EntityData[]) {
-    const node = this.nodes.get(tabId);
+  public setSelectedMultiple(tab: Tab, records: EntityData[]) {
+    const node = this.nodes.get(tab.id);
+
     if (!node) throw new Error('Tab not found');
-    node.selectedMultiple = records;
 
-    this.emit('update', tabId);
+    node.selectedMultiple = records;
+    node.neighbors.forEach(this.clearSelectedMultipleNode);
+    this.emit('update', tab.id);
   }
 
-  public clearSelectedMultiple(tabId?: string | null) {
-    if (tabId) {
-      const node = this.nodes.get(tabId);
-      if (!node) throw new Error('Tab not found');
-      this.clearSelectedMultipleNode(node);
-    }
+  public clearSelectedMultiple(tab: Tab) {
+    const node = this.nodes.get(tab.id);
 
-    this.emit('update', tabId);
+    if (!node) throw new Error('Tab not found');
+
+    this.clearSelectedMultipleNode(node);
+    this.emit('update', tab.id);
   }
 
   private clearSelectedMultipleNode(node: GraphNode<T>) {
     node.selectedMultiple = [];
-    node.neighbors.forEach(n => this.clearSelectedMultipleNode(n));
+    node.neighbors.forEach(this.clearSelectedMultipleNode);
   }
 
-  public getSelected(tabId?: string | null) {
-    if (!tabId) return;
-    return this.nodes.get(tabId)?.selected;
+  public getSelected(tab: Tab) {
+    return this.nodes.get(tab.id)?.selected;
   }
 
-  public getSelectedMultiple(tabId?: string | null) {
-    if (!tabId) return [];
-    return this.nodes.get(tabId)?.selectedMultiple;
+  public getSelectedMultiple(tab: Tab) {
+    return this.nodes.get(tab.id)?.selectedMultiple;
   }
 }
 
