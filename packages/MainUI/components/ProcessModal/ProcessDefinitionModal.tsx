@@ -21,6 +21,7 @@ import WindowReferenceGrid from './WindowReferenceGrid';
 import { buildPayloadByInputName } from '@/utils';
 import { useUserContext } from '@/hooks/useUserContext';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { useProcessConfig } from '@/hooks/datasource/useProcessDatasourceConfig';
 
 export const FALLBACK_RESULT = {};
 const WINDOW_REFERENCE_ID = 'FF80818132D8F0F30132D9BC395D0038';
@@ -47,6 +48,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const entityName = tab?.entityName || '';
   const selectedRecords = graph.getSelectedMultiple(tabId);
   const windowReferenceTab = parameters.grid?.window?.tabs?.[0] as Tab;
+  const windowId = tab?.windowId || '';
 
   const recordValues: RecordValues = useMemo(() => {
     if (!record || !tab?.fields) return FALLBACK_RESULT;
@@ -56,6 +58,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const hasWindowReference = useMemo(() => {
     return Object.values(parameters).some(param => param.reference === WINDOW_REFERENCE_ID);
   }, [parameters]);
+
+  const {
+    fetchConfig,
+    loading: processConfigLoading,
+    error: processConfigError,
+    config: processConfig,
+  } = useProcessConfig({
+    processId: processId || '',
+    windowId: windowId || '',
+    tabId,
+  });
 
   const handleClose = useCallback(() => {
     if (isExecuting) return;
@@ -179,6 +192,28 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   ]);
 
   useEffect(() => {
+    if (open && hasWindowReference) {
+      const loadConfig = async () => {
+        const combinedPayload = {
+          ...recordValues,
+          ...session,
+        };
+        await fetchConfig(combinedPayload);
+      };
+
+      loadConfig();
+    }
+  }, [fetchConfig, recordValues, session, tabId, open, hasWindowReference]);
+
+  useEffect(() => {
+    if (processConfig?.defaults) {
+      Object.entries(processConfig.defaults).forEach(([key, data]) => {
+        form.setValue(key, data.identifier);
+      });
+    }
+  }, [form, processConfig?.defaults]);
+
+  useEffect(() => {
     if (open) {
       setIsExecuting(false);
       setIsSuccess(false);
@@ -255,18 +290,15 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             parameter={parameter}
             onSelectionChange={setGridSelection}
             tabId={tabId}
-            tab={tab}
-            windowId={tab?.windowId}
-            processId={processId}
             entityName={entityName}
-            recordValues={recordValues}
-            session={session}
             windowReferenceTab={windowReferenceTab}
+            processConfig={processConfig}
+            processConfigLoading={processConfigLoading}
+            processConfigError={processConfigError}
           />
         );
       }
-
-      return <BaseSelector key={parameter.id} parameter={parameter} />;
+      return <BaseSelector key={parameter.name} parameter={parameter} />;
     });
   };
 

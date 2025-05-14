@@ -3,7 +3,7 @@ import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { logger } from '@/utils/logger';
 import { EntityValue } from '@workspaceui/etendohookbinder/src/api/types';
 
-interface ProcessConfigResponse {
+export interface ProcessConfigResponse {
   defaults?: Record<string, { value: string; identifier: string }>;
   filterExpressions?: Record<string, Record<string, string>>;
   refreshParent?: boolean;

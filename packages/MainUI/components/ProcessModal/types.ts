@@ -1,5 +1,6 @@
+import { ProcessConfigResponse } from '@/hooks/datasource/useProcessDatasourceConfig';
 import { Field, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
-import type { EntityData, EntityValue, ISession, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import type { EntityData, EntityValue, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { MRT_Row, MRT_TableInstance, MRT_TableBodyRowProps, MRT_RowData } from 'material-react-table';
 
 export interface BaseButton extends Field {
@@ -149,12 +150,11 @@ export interface WindowReferenceGridProps {
   entityName?: EntityValue;
   recordId?: EntityValue;
   tabId: string;
-  tab: Tab;
   windowReferenceTab: Tab;
   windowId?: string;
-  processId?: string;
-  recordValues?: RecordValues;
-  session?: ISession;
+  processConfig?: ProcessConfigResponse | null;
+  processConfigLoading: boolean;
+  processConfigError: Error | null;
 }
 
 export type RowProps = (props: {

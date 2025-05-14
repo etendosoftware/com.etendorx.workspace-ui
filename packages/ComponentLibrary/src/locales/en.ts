@@ -47,7 +47,7 @@ const en = {
     },
     networkError: {
       title: 'Could not connect to Etendo',
-      description: 'Looks like there is a network issue or rver is down',
+      description: 'Looks like there is a network issue or server is down',
     },
     notFound: {
       title: 'Not found',

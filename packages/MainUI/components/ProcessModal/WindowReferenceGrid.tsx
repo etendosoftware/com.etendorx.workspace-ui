@@ -16,7 +16,7 @@ import { ErrorDisplay } from '../ErrorDisplay';
 import EmptyState from '../Table/EmptyState';
 import { parseColumns } from '@/utils/tableColumns';
 import { useTab } from '@/hooks/useTab';
-import { useProcessConfig } from '@/hooks/datasource/useProcessDatasourceConfig';
+
 import { WindowReferenceGridProps } from './types';
 import { tableStyles } from './styles';
 
@@ -33,10 +33,10 @@ function WindowReferenceGrid({
   tabId,
   windowId,
   entityName,
-  processId,
-  recordValues = { inpcOrderId: '' },
-  session,
   windowReferenceTab,
+  processConfig,
+  processConfigLoading,
+  processConfigError,
 }: WindowReferenceGridProps) {
   const { t } = useTranslation();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -44,29 +44,6 @@ function WindowReferenceGrid({
 
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
-
-  const {
-    fetchConfig,
-    loading: processConfigLoading,
-    error: processConfigError,
-    config: processConfig,
-  } = useProcessConfig({
-    processId: processId || parameter.processId || '',
-    windowId: windowId || '',
-    tabId,
-  });
-
-  useEffect(() => {
-    const loadConfig = async () => {
-      const combinedPayload = {
-        ...recordValues,
-        ...session,
-      };
-      await fetchConfig(combinedPayload);
-    };
-
-    loadConfig();
-  }, [fetchConfig, recordValues, session, tabId]);
 
   const datasourceOptions = useMemo(() => {
     const options: Record<string, EntityValue> = {

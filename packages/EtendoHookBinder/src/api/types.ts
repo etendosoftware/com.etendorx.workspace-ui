@@ -710,6 +710,7 @@ export type ProcessParameter = {
   id: string;
   name: string;
   refList: Array<ListOption>;
+  readOnlyLogicExpression?: string;
 } & Record<string, string>;
 
 export type ProcessParameters = Record<string, ProcessParameter>;
