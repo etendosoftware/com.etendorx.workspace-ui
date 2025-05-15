@@ -2,12 +2,12 @@
 
 import { useCallback, useState } from 'react';
 import type { Tab as TabType } from '@workspaceui/etendohookbinder/src/api/types';
-import { useSelected } from '@/contexts/selected';
 import type { TabsProps } from '@/components/window/types';
 import { TabContainer } from '@/components/window/TabContainer';
 import { SubTabsSwitch } from '@/components/window/SubTabsSwitch';
 import { Tab } from '@/components/window/Tab';
 import { TabButton } from '@/components/window/TabButton';
+import { useSelected } from '@/hooks/useSelected';
 
 export default function Tabs({ tabs }: TabsProps) {
   const { activeLevels, setActiveLevel } = useSelected();

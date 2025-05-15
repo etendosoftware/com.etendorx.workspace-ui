@@ -20,7 +20,7 @@ export const TabButton = ({ tab, onClick, active }: TabSwitchProps) => {
         onClick={handleClick}
         title={title}
         aria-label={title}
-        className={`px-2 py-1 w-auto font-semibold hover:bg-white transition-colors ${tab.level === 0 ? 'text-xl' : active ? 'bg-white' : ''}`}>
+        className={`px-2 py-1 w-auto font-semibold hover:bg-white transition-colors appearance-none ${tab.level === 0 ? 'text-xl' : active ? 'bg-white' : ''}`}>
         {title}
       </button>
     </span>

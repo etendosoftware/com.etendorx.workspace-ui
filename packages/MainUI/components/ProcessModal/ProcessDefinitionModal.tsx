@@ -10,9 +10,9 @@ import BaseSelector from './selectors/BaseSelector';
 import Modal from '../Modal';
 import Loading from '../loading';
 import { logger } from '@/utils/logger';
-import { useSelectedRecords } from '@/contexts/selected';
 import { ProcessDefinitionModalProps } from './types';
 import { ProcessParameters } from '@workspaceui/etendohookbinder/src/api/types';
+import { useSelectedRecords } from '@/hooks/useSelectedRecords';
 
 export default function ProcessDefinitionModal({
   onClose,

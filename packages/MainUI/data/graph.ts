@@ -13,6 +13,7 @@ export type GraphEvents = {
   unselected: [tab: Tab];
   selectedMultiple: [tab: Tab, records: EntityData[]];
   unselectedMultiple: [tab: Tab];
+  levelChanged: [level: number];
 };
 
 export type GraphEventListener<K extends keyof GraphEvents> = (...args: GraphEvents[K]) => void;
@@ -21,15 +22,19 @@ export type GraphEventNames = keyof GraphEvents;
 
 export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
   private nodes: Map<string, GraphNode<T>>;
+  private activeLevels: number[];
 
   public constructor(tabs: T[]) {
     super();
     this.nodes = new Map();
+    this.activeLevels = [];
 
     tabs.forEach(this.addNode);
     tabs.forEach(tab => {
       if (tab.parentTabId) {
         this.addEdge(tab.parentTabId, tab.id);
+      } else {
+        console.debug('root tab', tab)
       }
     });
   }
@@ -82,10 +87,20 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
     printNode(rootNode, 0);
   };
 
+  public setActiveLevels = (level: number) => {
+    const trimmed = this.activeLevels.filter(lvl => lvl < level);
+
+    if (trimmed[trimmed.length - 1] !== level) {
+      this.activeLevels = [...trimmed, level].slice(-2);
+    } else {
+      this.activeLevels = trimmed;
+    }
+  };
+
   public getChildren = (tab?: Tab) => {
     if (tab) {
       const node = this.nodes.get(tab.id);
-      
+
       if (node) {
         return Array.from(node.neighbors).map(child => child.value);
       }
@@ -112,7 +127,6 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
         node.selected = record;
         node.neighbors.forEach(this.clearSelectedNode);
 
-        // this.level = tab.level + 1;
         this.emit('selected', tab, record);
       }
     }
@@ -123,7 +137,6 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
       const node = this.nodes.get(tab.id);
 
       if (node) {
-        // this.level = this.level > tab.level && tab.level > 0 ? tab.level - 1 : 0;
         this.clearSelectedNode(node);
 
         this.emit('unselected', tab);

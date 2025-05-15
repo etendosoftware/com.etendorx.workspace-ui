@@ -13,7 +13,7 @@ export const SubTabsSwitch = ({ tabs, current, onClick, onClose }: TabsSwitchPro
       </div>
       <button
         type="button"
-        className="bg-baseline-60 text-white font-bold text-xs w-6 h-6 rounded-full shadow-lg"
+        className="bg-baseline-60 text-white font-bold text-xs w-6 h-6 rounded-full shadow-lg appearance-none"
         onClick={onClose}>
         X
       </button>
