@@ -1,6 +1,6 @@
 import { mapBy } from '@/utils/structures';
-import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { MRT_RowSelectionState } from 'material-react-table';
+import type { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import type { MRT_RowSelectionState } from 'material-react-table';
 import { useEffect } from 'react';
 import { useSelected } from '@/contexts/selected';
 

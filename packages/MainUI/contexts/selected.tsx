@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import Graph from '@/data/graph';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
@@ -9,13 +9,14 @@ interface SelectedContext {
   graph: Graph<Tab>;
   level: number;
   activeLevels: number[];
+  setActiveLevel: (level: number) => void;
 }
 
 const SelectContext = createContext<SelectedContext>({} as SelectedContext);
 
 export const SelectedProvider = ({ children }: React.PropsWithChildren) => {
   const [version, setVersion] = useState(0);
-  const [activeLevels, setActiveLevels] = useState<number[]>([]);
+  const [activeLevels, setActiveLevels] = useState<number[]>([0]);
   const { window } = useMetadataContext();
   const tabs = window?.tabs;
 
@@ -35,17 +36,7 @@ export const SelectedProvider = ({ children }: React.PropsWithChildren) => {
 
   const level = graph.getLevel();
 
-  const value = useMemo<SelectedContext>(
-    () => ({
-      version,
-      graph,
-      level,
-      activeLevels,
-    }),
-    [activeLevels, graph, level, version],
-  );
-
-  useEffect(() => {
+  const setActiveLevel = useCallback((level: number) => {
     setActiveLevels(prev => {
       // If the clicked tab is already active, collapse all deeper levels
       const trimmed = prev.filter(lvl => lvl < level);
@@ -57,7 +48,24 @@ export const SelectedProvider = ({ children }: React.PropsWithChildren) => {
 
       return trimmed;
     });
-  }, [level]);
+  }, []);
+
+  useEffect(() => {
+    graph.addListener('update', nose => {
+      console.debug({ nose });
+    });
+  }, [graph]);
+
+  const value = useMemo<SelectedContext>(
+    () => ({
+      version,
+      graph,
+      level,
+      activeLevels,
+      setActiveLevel,
+    }),
+    [activeLevels, graph, level, version, setActiveLevel],
+  );
 
   return <SelectContext.Provider value={value}>{children}</SelectContext.Provider>;
 };

@@ -8,7 +8,7 @@ import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDataso
 
 const DatabaseSelectSelector = memo(({ value, name, title, onChange, readOnly, entity }: DatabaseSelectSelector) => {
   const theme = useTheme();
-  const { records = [], loading } = useDatasource(entity);
+  const { records = [], loading } = useDatasource({entity});
 
   const options = useMemo<Option<string>[]>(
     () =>

@@ -61,7 +61,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const { sx } = useStyle();
-  const { records = [], loading } = useDatasource(entity);
+  const { records = [], loading } = useDatasource({ entity });
 
   const selectedOptions = useMemo(() => {
     const normalizeValue = (value: string | string[] | undefined): string[] => {

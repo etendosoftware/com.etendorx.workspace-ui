@@ -109,7 +109,7 @@ class Graph<T extends Tab> extends EventEmitter {
     node.neighbors.forEach(this.clearSelectedNode);
 
     this.level = tab.level + 1;
-    this.emit('update', tab.id);
+    this.emit('update', tab);
   };
 
   public clearSelected = (tab: Tab) => {
@@ -117,10 +117,9 @@ class Graph<T extends Tab> extends EventEmitter {
 
     if (!node) throw new Error('Tab not found');
 
-    console.debug({ tab, level: this.level });
     this.level = this.level > tab.level && tab.level > 0 ? tab.level - 1 : 0;
     this.clearSelectedNode(node);
-    this.emit('update', tab.id);
+    this.emit('update', tab);
   };
 
   private clearSelectedNode = (node: GraphNode<T>) => {
@@ -135,7 +134,7 @@ class Graph<T extends Tab> extends EventEmitter {
 
     node.selectedMultiple = records;
     node.neighbors.forEach(this.clearSelectedMultipleNode);
-    this.emit('update', tab.id);
+    this.emit('update', tab);
   };
 
   public clearSelectedMultiple = (tab: Tab) => {
@@ -144,7 +143,7 @@ class Graph<T extends Tab> extends EventEmitter {
     if (!node) throw new Error('Tab not found');
 
     this.clearSelectedMultipleNode(node);
-    this.emit('update', tab.id);
+    this.emit('update', tab);
   };
 
   private clearSelectedMultipleNode = (node: GraphNode<T>) => {

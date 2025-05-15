@@ -204,3 +204,7 @@ select:-webkit-autofill:focus {
     opacity: 1;
   }
 }
+
+button {
+  cursor: pointer;
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import Tabs from '@/screens/Window/Table/Tabs';
+import Tabs from '@/components/window/Tabs';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
 import Loading from '@/components/loading';
 import { useMetadataContext } from '@/hooks/useMetadataContext';
@@ -14,7 +14,7 @@ export default function Page() {
     return <ErrorDisplay title={error?.message ?? 'Something went wrong'} />;
   } else {
     return (
-      <div className="flex flex-col w-full h-full max-h-full overflow-hidden">
+      <div className="flex flex-col w-full h-full max-h-full">
         {groupedTabs.map(tabs => {
           return <Tabs key={tabs[0].id} tabs={tabs} />;
         })}
