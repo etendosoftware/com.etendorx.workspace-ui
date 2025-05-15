@@ -30,8 +30,16 @@ const people: Person[] = [];
 
 const Navigation: React.FC = () => {
   const { t } = useTranslation();
-  const { setDefaultConfiguration, currentRole, profile, currentWarehouse, changeProfile, roles, languages } =
-    useContext(UserContext);
+  const {
+    setDefaultConfiguration,
+    currentRole,
+    currentOrganization,
+    profile,
+    currentWarehouse,
+    changeProfile,
+    roles,
+    languages,
+  } = useContext(UserContext);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const { language, setLanguage, getFlag } = useLanguage();
 
@@ -100,13 +108,6 @@ const Navigation: React.FC = () => {
         />
       </NotificationButton>
       <ProfileModal
-        cancelButtonText={t('common.cancel')}
-        saveButtonText={t('common.save')}
-        tooltipButtonProfile={t('navigation.profile.tooltipButtonProfile')}
-        passwordLabel={t('common.notImplemented')}
-        newPasswordLabel={t('common.notImplemented')}
-        confirmPasswordLabel={t('common.notImplemented')}
-        sectionTooltip={t('navigation.profile.signOffTooltip')}
         icon={<PersonIcon />}
         sections={sections}
         section={''}
@@ -115,6 +116,7 @@ const Navigation: React.FC = () => {
         }}
         currentRole={currentRole}
         currentWarehouse={currentWarehouse}
+        currentOrganization={currentOrganization}
         roles={roles}
         saveAsDefault={saveAsDefault}
         onSaveAsDefaultChange={handleSaveAsDefaultChange}

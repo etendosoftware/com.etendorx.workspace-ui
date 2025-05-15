@@ -12,20 +12,14 @@ import IconButton from '@workspaceui/componentlibrary/src/components/IconButton'
 import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
 import { Language } from '@workspaceui/componentlibrary/src/locales/types';
 import { useLanguage } from '@/contexts/language';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const DefaultOrg = { title: '*', value: '0', id: '0' };
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
-  cancelButtonText,
-  saveButtonText,
-  tooltipButtonProfile,
-  passwordLabel,
-  newPasswordLabel,
-  confirmPasswordLabel,
   userPhotoUrl,
   userName,
   userEmail,
-  sectionTooltip,
   icon,
   sections,
   currentRole,
@@ -43,6 +37,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   saveAsDefault,
   onSaveAsDefaultChange,
 }) => {
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const { styles, sx } = useStyle();
   const [currentSection, setCurrentSection] = useState<string>('profile');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { language: initialLanguage, getFlag } = useLanguage();
@@ -86,8 +83,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         }
       : null;
   });
-  const theme = useTheme();
-  const { styles, sx } = useStyle();
 
   useEffect(() => {
     if (currentRole) {
@@ -252,7 +247,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   return (
     <>
-      <IconButton tooltip={tooltipButtonProfile} onClick={handleClick}>
+      <IconButton tooltip={t('navigation.profile.tooltipButtonProfile')} onClick={handleClick}>
         {icon}
       </IconButton>
       <Menu
@@ -266,21 +261,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           },
         }}
         MenuListProps={{ sx: menuSyle }}>
-        <UserProfile
-          photoUrl={userPhotoUrl}
-          name={userName}
-          email={userEmail}
-          sectionTooltip={sectionTooltip}
-          onSignOff={onSignOff}
-        />
+        <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} onSignOff={onSignOff} />
         <div style={styles.toggleSectionStyles}>
           <ToggleSection sections={sections} currentSection={currentSection} onToggle={handleToggle} />
         </div>
         <SelectorList
           section={currentSection}
-          passwordLabel={passwordLabel}
-          newPasswordLabel={newPasswordLabel}
-          confirmPasswordLabel={confirmPasswordLabel}
           onRoleChange={handleRoleChange}
           onOrgChange={handleOrgChange}
           onWarehouseChange={handleWarehouseChange}
@@ -299,14 +285,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         />
         <div style={styles.buttonContainerStyles}>
           <Button sx={sx.buttonStyles} onClick={handleClose}>
-            {cancelButtonText}
+            {t('common.cancel')}
           </Button>
           <Button
             startIcon={<CheckCircle fill={theme.palette.baselineColor.neutral[0]} />}
             sx={sx.saveButtonStyles}
             onClick={handleSave}
             disabled={isSaveDisabled}>
-            {saveButtonText}
+            {t('common.save')}
           </Button>
         </div>
       </Menu>

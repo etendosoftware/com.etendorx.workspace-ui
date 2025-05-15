@@ -8,16 +8,15 @@ import LockOutlined from '../../../../ComponentLibrary/src/assets/icons/lock.svg
 import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
 import { InputPassword } from '@workspaceui/componentlibrary/src/components';
 import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
-import { SelectorListProps, BaseWarehouse } from '../types';
+import { SelectorListProps } from '../types';
 import { Item } from '@workspaceui/componentlibrary/src/components/enums';
+import { Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const isOptionEqualToValue = (option: Option, value: Option) => option.id === value.id;
 
 const SelectorList: React.FC<SelectorListProps> = ({
   section,
-  passwordLabel,
-  newPasswordLabel,
-  confirmPasswordLabel,
   onRoleChange,
   onOrgChange,
   onWarehouseChange,
@@ -34,6 +33,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
   translations,
   languagesFlags,
 }) => {
+  const { t } = useTranslation();
   const { styles, defaultFill } = useStyle();
   const theme = useTheme();
   const [password, setPassword] = useState('');
@@ -88,12 +88,15 @@ const SelectorList: React.FC<SelectorListProps> = ({
       if (org && org.warehouses.length) {
         return org.warehouses;
       } else {
-        let warehouses: Warehouse[] = [];
+        const uniqueWarehousesMap = new Map();
+
         role?.organizations.forEach(org => {
-          warehouses = [...warehouses, ...org.warehouses];
+          org.warehouses.forEach(warehouse => {
+            uniqueWarehousesMap.set(warehouse.id, warehouse);
+          });
         });
 
-        return warehouses;
+        return Array.from(uniqueWarehousesMap.values());
       }
     }
     return [];
@@ -194,7 +197,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
         <Grid margin="0.5rem">
           <form action="#" autoComplete="off">
             <InputPassword
-              label={passwordLabel}
+              label={t('common.notImplemented')}
               value={password}
               setValue={setPassword}
               leftIcon={<LockOutlined fill={defaultFill} />}
@@ -202,7 +205,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               disabled
             />
             <InputPassword
-              label={newPasswordLabel}
+              label={t('common.notImplemented')}
               value={newPassword}
               setValue={setNewPassword}
               leftIcon={<LockOutlined fill={defaultFill} />}
@@ -210,7 +213,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               disabled
             />
             <InputPassword
-              label={confirmPasswordLabel}
+              label={t('common.notImplemented')}
               value={newPasswordConfirmation}
               setValue={setNewPasswordConfirmation}
               leftIcon={<LockOutlined fill={defaultFill} />}

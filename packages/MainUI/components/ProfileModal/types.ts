@@ -50,18 +50,11 @@ export interface BaseDefaultConfiguration {
 
 export interface BaseProfileModalProps {
   icon: string | ReactNode;
-  cancelButtonText?: string;
-  saveButtonText?: string;
-  tooltipButtonProfile?: string;
   userPhotoUrl: string;
   userName: string;
   userEmail: string;
-  sectionTooltip: string;
   sections: Section[];
   section: string;
-  passwordLabel: string;
-  newPasswordLabel: string;
-  confirmPasswordLabel: string;
   translations: Translations;
 }
 
@@ -99,15 +92,11 @@ export interface UserProfileProps {
   photoUrl: string;
   name: string;
   email: string;
-  sectionTooltip: string;
   onSignOff: () => void;
 }
 
 export interface SelectorListProps {
   section: string;
-  passwordLabel: string;
-  newPasswordLabel: string;
-  confirmPasswordLabel: string;
   onRoleChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
   onWarehouseChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
   onOrgChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
