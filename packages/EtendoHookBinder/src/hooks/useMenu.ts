@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Metadata } from '../api/metadata';
 import { CurrentRole, Menu } from '../api/types';
 
-export const useMenu = (token: string | null, currentRole?: CurrentRole, language?: string) => {
+export const useMenu = (token: string | null, currentRole?: CurrentRole, language?: string | null) => {
   const [menu, setMenu] = useState<Menu[]>(Metadata.getCachedMenu());
 
   const fetchMenu = useCallback(

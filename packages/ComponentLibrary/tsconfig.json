@@ -30,6 +30,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["src", "src/components/RegisterModal"],
+  "include": ["src"],
   "exclude": ["node_modules"]
 }

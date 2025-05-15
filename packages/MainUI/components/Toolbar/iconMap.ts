@@ -8,14 +8,18 @@ import DownloadIcon from '@workspaceui/componentlibrary/src/assets/icons/downloa
 import PaperclipIcon from '@workspaceui/componentlibrary/src/assets/icons/paperclip.svg';
 import SettingsIcon from '@workspaceui/componentlibrary/src/assets/icons/settings.svg';
 import LowerFlap from '@workspaceui/componentlibrary/src/assets/icons/lower-flap.svg';
+import Filter from '@workspaceui/componentlibrary/src/assets/icons/filter.svg';
+import Back from '@workspaceui/componentlibrary/src/assets/icons/slash.svg';
 
 export const iconMap = {
+  cancel: Back,
   plus: PlusIcon,
   save: SaveIcon,
   trash: TrashIcon,
   'refresh-cw': RefreshIcon,
   search: SearchIcon,
   grid: GridIcon,
+  filter: Filter,
   download: DownloadIcon,
   paperclip: PaperclipIcon,
   process: SettingsIcon,

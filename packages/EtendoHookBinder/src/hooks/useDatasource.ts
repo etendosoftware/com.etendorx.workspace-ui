@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DatasourceOptions, Column, MRT_ColumnFiltersState } from '../api/types';
+import { DatasourceOptions, Column, MRT_ColumnFiltersState, EntityData } from '../api/types';
 import { datasource } from '../api/datasource';
 import { SearchUtils, ColumnFilterUtils } from '../utils/search-utils';
 
@@ -33,12 +33,13 @@ export function useDatasource(
 ) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [records, setRecords] = useState<Record<string, unknown>[]>([]);
+  const [records, setRecords] = useState<EntityData[]>([]);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState(params.isImplicitFilterApplied ?? false);
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
   const [activeColumnFilters, setActiveColumnFilters] = useState<MRT_ColumnFiltersState>(columnFilters);
+  const [hasMoreRecords, setHasMoreRecords] = useState(true);
 
   const removeRecordLocally = useCallback((recordId: string) => {
     setRecords(prevRecords => prevRecords.filter(record => String(record.id) !== recordId));
@@ -58,14 +59,10 @@ export function useDatasource(
     setPageSize(size);
   }, []);
 
-  const toggleImplicitFilters = useCallback(
-    (value?: boolean) => {
-      const newValue = value !== undefined ? value : !isImplicitFilterApplied;
-      setIsImplicitFilterApplied(newValue);
-      setPage(1);
-    },
-    [isImplicitFilterApplied],
-  );
+  const toggleImplicitFilters = useCallback(() => {
+    setIsImplicitFilterApplied(prev => !prev);
+    setPage(1);
+  }, []);
 
   const columnFilterCriteria = useMemo(() => {
     if (!columns || !activeColumnFilters.length) return [];
@@ -94,48 +91,57 @@ export function useDatasource(
     };
   }, [params, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied]);
 
-  const load = useCallback(async () => {
-    try {
-      if (!entity) {
-        setLoaded(true);
-        return;
-      }
-
-      setError(undefined);
-      setLoading(true);
-
-      const safePageSize = pageSize ?? 1000;
-      const response = await loadData(entity, page, safePageSize, queryParams);
-
-      if (response.error || response.status != 0) {
-        throw new Error(response.error.message);
-      } else {
-        setRecords(prevRecords => {
-          if (page === 1 || searchQuery) {
-            return [...response.data];
-          }
-          const mergedRecords = [...prevRecords, ...response.data];
-          const uniqueRecords = mergedRecords.reduce(
-            (acc, current) => {
-              acc[current.id as string] = current;
-              return acc;
-            },
-            {} as Record<string, unknown>,
-          );
-
-          return Object.values(uniqueRecords);
-        });
-        setLoaded(true);
-      }
-    } catch (e) {
-      if (!isImplicitFilterApplied) {
-        setError(e as Error);
-      } else {
-        setIsImplicitFilterApplied(false);
-      }
-    } finally {
-      setLoading(false);
+  const load = useCallback(() => {
+    if (!entity) {
+      setLoaded(true);
+      return;
     }
+
+    setError(undefined);
+    setLoading(true);
+
+    const safePageSize = pageSize ?? 1000;
+
+    const f = async () => {
+      try {
+        const response = await loadData(entity, page, safePageSize, queryParams);
+
+        if (response.error || response.status != 0) {
+          throw new Error(response.error.message);
+        } else {
+          setHasMoreRecords(response.data.length >= safePageSize);
+          setRecords(prevRecords => {
+            if (page === 1 || searchQuery) {
+              return response.data;
+            } else {
+              return [...prevRecords, ...response.data];
+            }
+
+            // const mergedRecords = [...prevRecords, ...response.data];
+            // const uniqueRecords = mergedRecords.reduce(
+            //   (acc, current) => {
+            //     acc[current.id as string] = current;
+            //     return acc;
+            //   },
+            //   {} as Record<string, unknown>,
+            // );
+
+            // return Object.values(uniqueRecords);
+          });
+          setLoaded(true);
+        }
+      } catch (e) {
+        if (!isImplicitFilterApplied) {
+          setError(e as Error);
+        } else {
+          setIsImplicitFilterApplied(false);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    f();
   }, [entity, isImplicitFilterApplied, page, pageSize, queryParams, searchQuery]);
 
   useEffect(() => {
@@ -155,36 +161,20 @@ export function useDatasource(
     load();
   }, [load]);
 
-  return useMemo(
-    () => ({
-      loading,
-      error,
-      fetchMore,
-      changePageSize,
-      load,
-      records,
-      loaded,
-      isImplicitFilterApplied,
-      toggleImplicitFilters,
-      updateColumnFilters,
-      activeColumnFilters,
-      removeRecordLocally,
-      refetch,
-    }),
-    [
-      loading,
-      error,
-      fetchMore,
-      changePageSize,
-      load,
-      records,
-      loaded,
-      isImplicitFilterApplied,
-      toggleImplicitFilters,
-      updateColumnFilters,
-      activeColumnFilters,
-      removeRecordLocally,
-      refetch,
-    ],
-  );
+  return {
+    loading,
+    error,
+    fetchMore,
+    changePageSize,
+    load,
+    records,
+    loaded,
+    isImplicitFilterApplied,
+    toggleImplicitFilters,
+    updateColumnFilters,
+    activeColumnFilters,
+    removeRecordLocally,
+    refetch,
+    hasMoreRecords,
+  };
 }

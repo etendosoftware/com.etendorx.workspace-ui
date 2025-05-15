@@ -1,37 +1,41 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { useTab } from '@/hooks/useTab';
-import { useSingleDatasource } from '@workspaceui/etendohookbinder/src/hooks/useSingleDatasource';
-import { useSearchParams } from 'next/navigation';
+import { ToolbarProvider } from './ToolbarContext';
+import { SearchProvider } from './searchContext';
+import { useSelected } from './selected';
 
 interface TabContextI {
-  tab?: Tab;
-  parentTab?: Tab;
-  parentRecord?: EntityData;
-  selected: Record<string, EntityData>,
-  setSelected: React.Dispatch<React.SetStateAction<Record<string, EntityData>>>
+  tab: Tab;
+  record?: EntityData | null;
+  parentTab?: Tab | null;
+  parentRecord?: EntityData | null;
 }
 
 const TabContext = createContext<TabContextI>({} as TabContextI);
 
 export default function TabContextProvider({ tab, children }: React.PropsWithChildren<{ tab: Tab }>) {
-  const searchParams = useSearchParams();
-  const { data: parentTab } = useTab(tab.parentTabId);
-  const { record: parentRecord } = useSingleDatasource(parentTab?.entityName, searchParams.get('parentId'));
-  const [selected, setSelected] = useState<Record<string, EntityData>>({});
+  const { graph } = useSelected();
+  const record = graph.getSelected(tab);
+  const parentTab = graph.getParent(tab);
+  const parentRecord = parentTab ? graph.getSelected(parentTab) : undefined;
 
   const value = useMemo(
     () => ({
       tab,
+      record,
       parentTab,
       parentRecord,
-      selected,
-      setSelected,
     }),
-    [parentRecord, parentTab, selected, tab],
+    [parentRecord, parentTab, record, tab],
   );
 
-  return <TabContext.Provider value={value}>{children}</TabContext.Provider>;
+  return (
+    <TabContext.Provider value={value}>
+      <ToolbarProvider>
+        <SearchProvider>{children}</SearchProvider>
+      </ToolbarProvider>
+    </TabContext.Provider>
+  );
 }
 
 export const useTabContext = () => {

@@ -5,7 +5,7 @@ import TextInputBaseMUI from './Input/TextInput/TextInputBase';
 import InputPasswordMUI from './Input/TextInput/TextInputBase/InputPassword';
 import ToggleChipMUI from './Toggle/ToggleChip';
 import Nav from './Nav/Nav';
-import ProfileModal from './ProfileModal/ProfileModal';
+import ProfileModal from '@workspaceui/mainui/components/ProfileModal/ProfileModal';
 import WaterfallModal from './Waterfall/WaterfallModal';
 import ConfigurationModalCustom from './ConfigurationModal';
 import NotificationBase from './NotificationsButton';

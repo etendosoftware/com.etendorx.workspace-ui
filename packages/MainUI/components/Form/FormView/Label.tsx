@@ -13,6 +13,7 @@ function LabelCmp({ field }: { field: Field }) {
 
   if (value && isReference) {
     return (
+      // TODO: Update this link to work with the new multi-window system
       <Link href={`/window/${field.referencedWindowId}/${field.referencedTabId}/${value}`}>
         <BaseLabel name={field.name} htmlFor={field.hqlName} link />
       </Link>

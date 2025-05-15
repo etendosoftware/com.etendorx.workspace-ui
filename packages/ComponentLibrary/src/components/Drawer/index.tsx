@@ -3,13 +3,12 @@
 import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react';
 import { useStyle } from './styles';
 import { DrawerProps } from './types';
-import DrawerHeader from './Header';
+import { DrawerHeader } from './Header';
 import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
 import { getAllItemTitles } from '../../utils/searchUtils';
-import DrawerItems from './Search';
+import { DrawerItems } from './Search';
 import { Box } from '@mui/material';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
-import { findItemByIdentifier } from '../../utils/menuUtils';
 
 const DRAWER_STATE_KEY = 'etendo-drawer-open';
 interface RecentlyViewedHandler {
@@ -64,8 +63,8 @@ const Drawer: React.FC<DrawerProps> = ({
       ...sx.drawerPaper,
       width: open ? '16.25rem' : '3.5rem',
       height: '100vh',
-      transition: 'width 0.5s ease-in-out',
-      display: 'flex',
+      maxHeight: '100vh',
+      transition: 'all 0.5s ease-in-out',
     }),
     [open, sx.drawerPaper],
   );
@@ -90,24 +89,10 @@ const Drawer: React.FC<DrawerProps> = ({
   );
 
   const handleItemClick = useCallback(
-    (path: string) => {
-      const clickedId = path.split('/').pop();
-      if (clickedId) {
-        const menuItem = findItemByIdentifier(items, clickedId);
-
-        if (menuItem && drawerRefs.current.recentlyViewedHandler.handleWindowAccess) {
-          const syntheticEvent = {
-            id: menuItem.id,
-            name: getTranslatedName ? getTranslatedName(menuItem) : menuItem._identifier || menuItem.name || '',
-            windowId: menuItem.windowId,
-            type: menuItem.type || 'Window',
-          };
-          drawerRefs.current.recentlyViewedHandler.handleWindowAccess(syntheticEvent);
-        }
-      }
-      onClick(path);
+    (windowId: string) => {
+      onClick(windowId);
     },
-    [onClick, items, getTranslatedName],
+    [onClick],
   );
 
   const setRecentlyViewedRef = useCallback((ref: RecentlyViewedHandler) => {
@@ -154,5 +139,7 @@ const Drawer: React.FC<DrawerProps> = ({
     </Box>
   );
 };
+
+export { Drawer };
 
 export default Drawer;

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useMemo, memo } from 'react';
-import { Tooltip, IconButton as MUIIconButton, Box, Typography, useTheme } from '@mui/material';
+import { IconButton as MUIIconButton, Box, Typography, useTheme } from '@mui/material';
 import { useStyle } from './styles';
 import { IIconComponentProps } from './types';
 
@@ -30,8 +30,8 @@ const IconButtonCmp: React.FC<IIconComponentProps> = ({
   const [iconFill, setIconFill] = useState<string>(actualFill);
 
   useEffect(() => {
-    setIconFill(isHovered ? actualHoverFill : actualFill);
-  }, [isHovered, actualHoverFill, actualFill]);
+    setIconFill(isHovered && !disabled ? actualHoverFill : actualFill);
+  }, [isHovered, actualHoverFill, actualFill, disabled]);
 
   const handleMouseEnter = useCallback(() => {
     if (!disabled) {
@@ -45,48 +45,42 @@ const IconButtonCmp: React.FC<IIconComponentProps> = ({
     }
   }, [disabled, actualFill]);
 
-  const combinedStyles = useMemo(() => ({
-    ...styles.defaultContainer,
-    ...sx,
-  }), [styles.defaultContainer, sx]);
-
-  const clonedIcon = useMemo(() => React.isValidElement(children)
-    ? React.cloneElement(children as React.ReactElement, {
-      style: {
-        fill: disabled ? theme.palette.action.disabled : iconFill,
-        width,
-        height,
-      },
-    })
-    : null, [children, disabled, height, iconFill, theme.palette.action.disabled, width]);
-
-  const button = (
-    <MUIIconButton
-      sx={combinedStyles}
-      {...props}
-      disabled={disabled}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <Box sx={styles.buttonContainer}>
-        {clonedIcon}
-        {iconText && <Typography sx={styles.iconText}>{iconText}</Typography>}
-      </Box>
-    </MUIIconButton>
+  const combinedStyles = useMemo(
+    () => ({
+      ...styles.defaultContainer,
+      ...sx,
+    }),
+    [styles.defaultContainer, sx],
   );
 
-  if (disabled) {
-    return (
-      <Tooltip title={tooltip} PopperProps={{ disablePortal: true }} arrow>
-        <span>{button}</span>
-      </Tooltip>
-    );
-  }
+  const clonedIcon = useMemo(
+    () =>
+      React.isValidElement(children)
+        ? React.cloneElement(children as React.ReactElement, {
+            style: {
+              fill: disabled ? theme.palette.action.disabled : iconFill,
+              width,
+              height,
+            },
+          })
+        : null,
+    [children, disabled, height, iconFill, theme.palette.action.disabled, width],
+  );
 
   return (
-    <Tooltip title={tooltip} arrow>
-      {button}
-    </Tooltip>
+    <div title={tooltip}>
+      <MUIIconButton
+        sx={combinedStyles}
+        {...props}
+        disabled={disabled}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}>
+        <Box sx={styles.buttonContainer}>
+          {clonedIcon}
+          {iconText && <Typography sx={styles.iconText}>{iconText}</Typography>}
+        </Box>
+      </MUIIconButton>
+    </div>
   );
 };
 

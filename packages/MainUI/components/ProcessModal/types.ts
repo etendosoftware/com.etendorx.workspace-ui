@@ -1,6 +1,6 @@
-import { Field, ProcessDefinition, ProcessParameters } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field } from "@workspaceui/etendohookbinder/src/api/types";
 
-export interface BaseButton {
+export interface BaseButton extends Field {
   id: string;
   name: string;
   action: string;
@@ -13,23 +13,11 @@ export interface ProcessAction extends Record<string, unknown> {
   name: string;
 }
 
-export interface ProcessInfo {
-  loadFunction: string;
-  clientSideValidation: string;
-  _entityName: string;
-  id: string;
-  name: string;
-  javaClassName: string;
-  searchKey: string;
-  parameters: ProcessParameters;
-}
-
 export interface BaseProcessButton extends BaseButton {
   processId: string;
   buttonText: string;
   displayLogic?: string;
   processInfo: ProcessInfo;
-  field: Field;
 }
 
 export interface ProcessDefinitionButton extends BaseProcessButton {
@@ -56,15 +44,14 @@ export interface ProcessResponse {
     };
   }>;
   refreshParent?: boolean;
-  showDeprecatedFeatureModal?: boolean;
-  message?: string;
+  showInIframe?: boolean;
   iframeUrl?: string;
 }
 
 export interface ProcessModalProps {
   open: boolean;
   onClose: () => void;
-  button: ProcessButton | null;
+  button: ProcessButton;
   onConfirm: () => void;
   isExecuting: boolean;
   processResponse: ProcessResponse | null;
@@ -72,6 +59,7 @@ export interface ProcessModalProps {
   cancelButtonText: string;
   executeButtonText: string;
   onProcessSuccess?: () => void;
+  tabId: string;
 }
 
 export interface MessageStylesType {
@@ -81,6 +69,25 @@ export interface MessageStylesType {
   buttonBg: string;
 }
 
+export interface ProcessIframeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  url: string;
+  title?: string;
+  onProcessSuccess?: () => void;
+  tabId: string;
+}
+
+export interface ProcessDefinitionModalProps {
+  onClose: () => void;
+  open: boolean;
+  button?: ProcessDefinitionButton | null;
+  onSuccess?: () => void;
+}
+
+export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
+}
+
 export interface ProcessDeprecatedModallProps {
   isOpen: boolean;
   onClose: () => void;
@@ -88,13 +95,37 @@ export interface ProcessDeprecatedModallProps {
   message?: string;
 }
 
-export interface ProcessDefinitionModalProps {
-  onClose: () => void;
-  open: boolean;
-  button?: ProcessDefinitionButton;
-  onSuccess?: () => void;
+export interface ProcessInfo {
+  loadFunction: string;
+  searchKey: string;
+  clientSideValidation: string;
+  _entityName: string;
+  id: string;
+  name: string;
+  javaClassName: string;
+  parameters: Array<{
+    defaultValue: string;
+    id: string;
+    name: string;
+  }>;
 }
 
-export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
-  button: NonNullable<ProcessDefinitionModalProps['button']>;
+export type ListOption = { id: string; label: string; value: string };
+
+export type ProcessParameter = {
+  defaultValue: string;
+  id: string;
+  name: string;
+  refList: Array<ListOption>;
+} & Record<string, string>;
+
+export type ProcessParameters = Record<string, ProcessParameter>;
+
+export interface ProcessDefinition extends Record<string, unknown> {
+  id: string;
+  name: string;
+  javaClassName: string;
+  parameters: ProcessParameters;
+  onLoad: string;
+  onProcess: string;
 }

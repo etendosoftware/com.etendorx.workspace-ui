@@ -1,6 +1,8 @@
 import { NextConfig } from 'next';
+import analyzer from '@next/bundle-analyzer';
 
 const DEBUG_MODE = process.env.DEBUG_MODE === 'true' || process.env.NODE_ENV === 'development';
+const ANALYZE = process.env.ANALYZE === 'true';
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@mui/material', '@mui/system', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
@@ -13,8 +15,7 @@ const nextConfig: NextConfig = {
     },
   },
   reactStrictMode: false,
-  cleanDistDir: true,
-  bundlePagesRouterDependencies: true,
+  cleanDistDir: false,
   output: 'standalone',
   compiler: {
     removeConsole: !DEBUG_MODE,
@@ -74,4 +75,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default analyzer({ enabled: ANALYZE, logLevel: 'info', openAnalyzer: ANALYZE })(nextConfig);

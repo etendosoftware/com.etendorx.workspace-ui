@@ -28,11 +28,6 @@ export const useStyle = (): StylesType => {
           alignItems: 'center',
           gap: '0.25rem',
         },
-        topToolbarCenter: {
-          flex: 1,
-          display: 'flex',
-          justifyContent: 'flex-start',
-        },
         tableBodyRow: {
           cursor: 'pointer',
         },

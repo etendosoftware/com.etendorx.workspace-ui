@@ -43,7 +43,7 @@ export const useSetSession = () => {
           return result;
         });
       } catch (error) {
-        logger.error(error);
+        logger.warn(error);
       }
     },
     [setSession],

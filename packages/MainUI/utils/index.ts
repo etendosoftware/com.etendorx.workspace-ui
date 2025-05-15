@@ -37,7 +37,13 @@ export const getFieldReference = (reference?: string): FieldType => {
   }
 };
 
-export const sanitizeValue = (value: unknown) => {
+import { formatDateForEtendo, isDateField } from './formUtils';
+
+export const sanitizeValue = (value: unknown, field?: Field) => {
+  if (typeof value === 'string' && field && isDateField(field)) {
+    return formatDateForEtendo(value);
+  }
+
   const stringValue = String(value);
 
   const valueMap = {
@@ -56,8 +62,10 @@ export const sanitizeValue = (value: unknown) => {
 export const buildPayloadByInputName = (values: Record<string, unknown>, fields?: Record<string, Field>) => {
   return Object.entries(values).reduce(
     (acc, [key, value]) => {
-      const newKey = fields?.[key]?.inputName ?? key;
-      acc[newKey] = sanitizeValue(value);
+      const field = fields?.[key];
+      const newKey = field?.inputName ?? key;
+
+      acc[newKey] = sanitizeValue(value, field);
 
       return acc;
     },
@@ -90,12 +98,12 @@ export const buildQueryString = ({
   windowMetadata,
   tab,
 }: {
-  windowMetadata: WindowMetadata;
+  windowMetadata?: WindowMetadata;
   tab: Tab;
   mode: FormMode;
 }) =>
   new URLSearchParams({
-    windowId: String(windowMetadata.id),
+    windowId: String(windowMetadata?.id || ''),
     tabId: String(tab.id),
     moduleId: String(tab.module),
     _operationType: mode === FormMode.NEW ? 'add' : 'update',
@@ -115,7 +123,7 @@ export const buildFormPayload = ({
   csrfToken,
 }: {
   values: EntityData;
-  oldValues: EntityData;
+  oldValues?: EntityData;
   mode: FormMode;
   csrfToken: string;
 }) => ({

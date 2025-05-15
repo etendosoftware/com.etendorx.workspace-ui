@@ -71,10 +71,7 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleClose}
-        MenuListProps={{ sx: menuSyle }}
-        slotProps={{
-          paper: { sx: styles.paperStyleMenu, elevation: 3 },
-        }}>
+        MenuListProps={{ sx: menuSyle }}>
         <FadeWrapper className={fade ? 'fade-out' : ''}>
           {!showDragModal ? (
             <>

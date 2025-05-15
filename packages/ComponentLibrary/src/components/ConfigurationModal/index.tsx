@@ -115,9 +115,6 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
         anchorEl={anchorEl}
         open={handleOpen()}
         onClose={handleClose}
-        slotProps={{
-          paper: { sx: styles.paperStyleMenu },
-        }}
         MenuListProps={{ sx: menuSyle }}>
         <div style={styles.titleModalContainer}>
           <div style={styles.titleModalImageContainer}>

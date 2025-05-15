@@ -1,4 +1,4 @@
-import { EntityData, Field, FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field, FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 import { ReportColumn } from '@workspaceui/etendohookbinder/src/hooks/types';
 import { MRT_ColumnDef, MRT_Row } from 'material-react-table';
@@ -12,10 +12,8 @@ export interface GridItemProps {
 export interface CollapsibleProps {
   title: string;
   icon?: React.ReactNode;
-  initialState?: boolean;
-  onHover?: (sectionName: string | null) => void;
+  isExpanded?: boolean;
   sectionId?: string;
-  isHovered?: boolean;
   onToggle?: (isOpen: boolean) => void;
   children: React.ReactNode;
 }
@@ -35,11 +33,11 @@ export interface Section {
 export type FormData = Record<string, FieldDefinition | Section>;
 
 export interface FormViewProps {
-  window: WindowMetadata;
+  window?: WindowMetadata;
   tab: Tab;
   mode: FormMode;
-  initialState: EntityData;
-  refetch?: () => void;
+  recordId?: string;
+  onSave?: (saveFn: () => void) => void;
 }
 
 export type FieldValue = string | number | boolean | string[] | Date | null | FieldDefinition['value'];

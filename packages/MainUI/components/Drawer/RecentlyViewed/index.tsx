@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useImperativeHandle, useEffect, useMemo } from 'react';
-import DrawerSection from '@workspaceui/componentlibrary/src/components/Drawer/DrawerSection';
+import { DrawerSection } from '@workspaceui/componentlibrary/src/components/Drawer/DrawerSection';
 import { RecentlyViewedProps } from '@workspaceui/componentlibrary/src/components/Drawer/types';
 import { createParentMenuItem, findItemByIdentifier } from '@workspaceui/componentlibrary/src/utils/menuUtils';
 import { useRecentItems } from '../../../hooks/useRecentItems';
@@ -9,14 +9,14 @@ import { useUserContext } from '../../../hooks/useUserContext';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { useLanguage } from '@/contexts/language';
 
-const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, RecentlyViewedProps>(
+export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, RecentlyViewedProps>(
   ({ windowId, onClick, open, items, getTranslatedName }, ref) => {
     const { t } = useTranslation();
     const { currentRole } = useUserContext();
     const { language } = useLanguage();
 
     const handleItemClick = useItemActions({
-      onWindowClick: (windowId: string) => onClick(`/window/${windowId}`),
+      onWindowClick: (windowId: string) => onClick(windowId),
       onReportClick: (reportId: string) => onClick(`/report/${reportId}`),
       onProcessClick: (processId: string) => onClick(`/process/${processId}`),
     });

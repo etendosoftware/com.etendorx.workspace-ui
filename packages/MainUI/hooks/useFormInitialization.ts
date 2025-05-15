@@ -9,13 +9,11 @@ import { logger } from '@/utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useUserContext } from './useUserContext';
 import { ClientOptions } from '@workspaceui/etendohookbinder/src/api/client';
-import useFormParent, { ParentFieldName } from './useFormParent';
-import { useSearchParams } from 'next/navigation';
+import useFormParent from './useFormParent';
+import { useTabContext } from '@/contexts/tab';
+import { FieldName } from './types';
 
 const getRowId = (mode: FormMode, recordId?: string | null): string => {
-  if (mode === FormMode.EDIT && !recordId) {
-    throw new Error('Record ID is required in EDIT mode');
-  }
   return mode === FormMode.EDIT ? recordId! : 'null';
 };
 
@@ -47,7 +45,7 @@ const fetchFormInitialization = async (
 
     return data;
   } catch (error) {
-    logger.error('Error fetching initial form data:', error);
+    logger.warn('Error fetching initial form data:', error);
     throw new Error('Failed to fetch initial data');
   }
 };
@@ -99,16 +97,17 @@ export type useFormInitialization = State & {
 
 export function useFormInitialization({ tab, mode, recordId }: FormInitializationParams): useFormInitialization {
   const { setSession } = useUserContext();
+  const { parentRecord: parent } = useTabContext();
   const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
   const loaded = !!state.formInitialization;
-  const searchParams = useSearchParams();
-  const parentId = useMemo(() => searchParams.get('parentId'), [searchParams]);
   const { error, formInitialization, loading } = state;
+  const parentData = useFormParent(FieldName.HQL_NAME);
+  const parentId = parent?.id?.toString();
   const params = useMemo(
     () => (tab ? buildFormInitializationParams({ tab, mode, recordId, parentId }) : null),
     [tab, mode, recordId, parentId],
   );
-  const parentData = useFormParent(ParentFieldName.HQL_NAME);
+
   const refetch = useCallback(async () => {
     if (!params) return;
 
@@ -145,7 +144,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       setSession(prev => ({ ...prev, ...storedInSessionAttributes, ...data.sessionAttributes }));
       dispatch({ type: 'FETCH_SUCCESS', payload: data });
     } catch (err) {
-      logger.error(err);
+      logger.warn(err);
       dispatch({ type: 'FETCH_ERROR', payload: err instanceof Error ? err : new Error('Unknown error') });
     }
   }, [params, parentData, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.windowId]);

@@ -1,20 +1,13 @@
-import React from 'react';
-import { Box } from '@mui/material';
-import ToolbarSection from './ToolbarSection';
-import { useStyle } from '../styles';
 import type { TopToolbarProps } from '@workspaceui/storybook/src/stories/Components/Table/types';
+import ToolbarSection from './ToolbarSection';
 
-const TopToolbar: React.FC<TopToolbarProps> = ({ leftSection, centerSection, rightSection, isItemSelected }) => {
-  const { sx } = useStyle();
-
+export const TopToolbar = ({ leftSection, centerSection, rightSection }: TopToolbarProps) => {
   return (
-    <Box sx={sx.topToolbar}>
-      <ToolbarSection {...leftSection} />
-      <Box sx={sx.topToolbarCenter}>
-        <ToolbarSection {...centerSection} isItemSelected={isItemSelected} />
-      </Box>
-      <ToolbarSection {...rightSection} />
-    </Box>
+    <div className="flex justify-between items-center gap-2">
+      <ToolbarSection {...leftSection} className="bg-white rounded-4xl py-1 px-1.5" />
+      <ToolbarSection {...centerSection} className="bg-transparent-neutral-5 rounded-4xl py-1 px-1.5" />
+      <ToolbarSection {...rightSection} className="bg-transparent-neutral-5 rounded-4xl py-1 px-1.5" />
+    </div>
   );
 };
 

@@ -1,15 +1,13 @@
-import React from 'react';
-import { Box } from '@mui/material';
 import IconButton from '../../IconButton';
 import { ToolbarSectionConfig } from '@workspaceui/storybook/src/stories/Components/Table/types';
 
 const ToolbarSection: React.FC<ToolbarSectionConfig> = ({
   buttons,
   style,
-  isItemSelected,
+  className,
 }) => {
   return (
-    <Box sx={style}>
+    <div style={style} className={className}>
       {buttons.map(
         ({
           key,
@@ -28,7 +26,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({
             key={key}
             tooltip={tooltip}
             onClick={onClick}
-            disabled={disabled || isItemSelected === false}
+            disabled={disabled}
             fill={fill}
             hoverFill={hoverFill}
             width={width}
@@ -39,7 +37,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({
           </IconButton>
         ),
       )}
-    </Box>
+    </div>
   );
 };
 

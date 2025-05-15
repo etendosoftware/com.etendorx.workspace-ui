@@ -1,7 +1,8 @@
 import React, { memo, useState, useCallback, useEffect } from 'react';
 import { TextField } from '@mui/material';
-import { QuantityProps } from '../types';
+import { FieldValue, QuantityProps } from '../types';
 import { validateNumber } from '@workspaceui/componentlibrary/src/utils/quantitySelectorUtil';
+import { useFormContext } from 'react-hook-form';
 
 const INPUT_PROPS = {
   inputProps: {
@@ -12,7 +13,16 @@ const INPUT_PROPS = {
 
 const QuantitySelector: React.FC<QuantityProps> = memo(
   ({ value: initialValue, min, max, onChange, readOnly, maxLength = 100, name, field }) => {
-    const [value, setValue] = useState(initialValue);
+    const { watch, setValue: setActualValue } = useFormContext();
+    const value = watch(field.hqlName, initialValue || "");
+
+    const setValue = useCallback(
+      (v: FieldValue) => {
+        setActualValue(field.hqlName, v);
+      },
+      [field.hqlName, setActualValue],
+    );
+
     const [error, setError] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
@@ -43,7 +53,7 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
           setValue(roundedValue.toString());
         }
       },
-      [minValue, maxValue, onChange, maxLength],
+      [maxLength, setValue, minValue, maxValue, onChange],
     );
 
     const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -54,7 +64,7 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
 
     useEffect(() => {
       setValue(initialValue);
-    }, [initialValue]);
+    }, [initialValue, setValue]);
 
     return (
       <TextField
@@ -83,6 +93,6 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
   },
 );
 
-QuantitySelector.displayName = 'QualitySelector';
+QuantitySelector.displayName = 'QuantitySelector';
 
 export default QuantitySelector;

@@ -13,13 +13,15 @@ import {
   SessionResponse,
 } from '@workspaceui/etendohookbinder/src/api/types';
 import { type Etendo } from '@workspaceui/etendohookbinder/src/api/metadata';
+import Graph from '@/data/graph';
 
 export type Language = 'en_US' | 'es_ES';
 
 export interface LanguageContextType {
-  language: Language;
+  language: Language | null;
+  prevLanguage: Language | null;
   setLanguage: (lang: Language) => void;
-  getFlag: (language?: Language) => string;
+  getFlag: (language?: Language | null) => string;
 }
 
 export interface DefaultConfiguration {
@@ -44,6 +46,7 @@ export interface IUserContext {
   token: string | null;
   roles: SessionResponse["roles"];
   currentRole: CurrentRole | undefined;
+  prevRole: CurrentRole | undefined;
   profile: ProfileInfo;
   currentWarehouse: CurrentWarehouse | undefined;
   currentClient: CurrentClient | undefined;
@@ -57,30 +60,12 @@ export interface IUserContext {
 }
 
 export interface IMetadataContext {
-  getWindow: (windowId: string) => Promise<Etendo.WindowMetadata>;
-  getColumns: (tabId: string) => Etendo.Column[];
   windowId: string;
-  recordId: string;
   loading: boolean;
   error: Error | undefined;
   groupedTabs: Etendo.Tab[][];
-  selectRecord: (record: Record<string, never>, tab: Tab) => void;
-  selected: Record<string, Record<string, never>>;
-  selectedMultiple: Record<string, Record<string, Record<string, any>>>;
-  setSelectedMultiple: React.Dispatch<React.SetStateAction<Record<string, Record<string, Record<string, any>>>>>;
-  selectMultiple: (records: Record<string, string>[], tab: Tab, replace?: boolean) => void;
-  isSelected: (recordId: string, tabId: string) => boolean;
-  clearSelections: (tabId: string) => void;
-  getSelectedCount: (tabId: string) => number;
-  getSelectedIds: (tabId: string) => string[];
-  tabs: Tab[];
-  tab?: Tab;
+  tabs: Record<string, Tab>;
   columns?: Record<string, Field>;
-  showTabContainer: boolean;
-  setShowTabContainer: (value: boolean | ((prev: boolean) => boolean)) => void;
-  activeTabLevels: number[];
-  setActiveTabLevels: (value: number[] | ((prev: number[]) => number[])) => void;
-  closeTab: (level: number) => void;
   window?: Etendo.WindowMetadata;
   refetch: () => Promise<void>;
   removeRecord: (tabId: string, recordId: string) => void;

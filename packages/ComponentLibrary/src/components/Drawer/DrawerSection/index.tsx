@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Box, useTheme } from '@mui/material';
 import { useStyle } from '../styles';
-import MenuTitle from '../MenuTitle';
+import { MenuTitle } from '../MenuTitle';
 import { DrawerSectionProps, ToggleFunctions } from '../types';
 import { findActive } from '../../../utils/drawerUtils';
 import { useItemActions } from '../../../hooks/useItemType';
-import CustomClickAwayListener from '../../../utils/clickAway';
+import { CustomClickAwayListener } from '../../../utils/clickAway';
 
-const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
+export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
   ({
     item,
     onClick,
@@ -32,7 +32,7 @@ const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
 
     const expanded = Boolean(externalExpanded || localExpanded);
 
-    const onWindowClick = useCallback((windowId: string) => onClick(`/window/${windowId}`), [onClick]);
+    const onWindowClick = useCallback((windowId: string) => onClick(windowId), [onClick]);
     const onReportClick = useCallback((reportId: string) => onClick(`/report/${reportId}`), [onClick]);
     const onProcessClick = useCallback((processId: string) => onClick(`/process/${processId}`), [onClick]);
 

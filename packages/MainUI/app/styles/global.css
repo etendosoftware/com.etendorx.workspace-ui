@@ -118,20 +118,6 @@ body {
   max-width: 100%;
 }
 
-#root {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  display: flex;
-}
-
-#content {
-  flex: 1;
-  overflow: auto;
-  flex-direction: column;
-  position: relative;
-}
-
 .w-fill-available {
   width: -webkit-fill-available;
   width: -moz-available;
@@ -210,5 +196,11 @@ select:-webkit-autofill:focus {
   * {
     cursor: inherit;
     pointer-events: none;
+  }
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
   }
 }

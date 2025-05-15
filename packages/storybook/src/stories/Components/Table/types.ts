@@ -63,13 +63,12 @@ export interface ToolbarButton {
 export interface ToolbarSectionConfig {
   buttons: ToolbarButton[];
   style?: React.CSSProperties;
-  isItemSelected?: boolean;
   toggleExpand?: (event?: React.MouseEvent<HTMLElement>) => void;
+  className?: string;
 }
 
 export interface TopToolbarProps {
   leftSection: ToolbarSectionConfig;
   centerSection: ToolbarSectionConfig;
   rightSection: ToolbarSectionConfig;
-  isItemSelected: boolean;
 }

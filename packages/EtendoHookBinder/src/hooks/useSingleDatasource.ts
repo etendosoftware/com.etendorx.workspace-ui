@@ -2,15 +2,20 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { datasource } from '../api/datasource';
 import { EntityData } from '../api/types';
 
-export function useSingleDatasource(entity?: string | null, id?: string | null) {
+export function useSingleDatasource(
+  entity?: string | null,
+  id?: string | null,
+  initialValue?: EntityData,
+  skip?: boolean,
+) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [record, setRecord] = useState<EntityData>();
+  const [record, setRecord] = useState(initialValue);
   const [error, setError] = useState<Error>();
 
   const load = useCallback(async () => {
     try {
-      if (!entity || !id) {
+      if (!entity || !id || skip) {
         setLoaded(true);
 
         return;
@@ -29,7 +34,7 @@ export function useSingleDatasource(entity?: string | null, id?: string | null) 
     } finally {
       setLoading(false);
     }
-  }, [entity, id]);
+  }, [entity, id, skip]);
 
   useEffect(() => {
     load();

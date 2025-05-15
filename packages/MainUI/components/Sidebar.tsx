@@ -1,14 +1,14 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Drawer from '@workspaceui/componentlibrary/src/components/Drawer';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useParams, usePathname, useRouter } from 'next/navigation';
+import { Drawer } from '@workspaceui/componentlibrary/src/components/Drawer/index';
 import { useMenu } from '@workspaceui/etendohookbinder/src/hooks/useMenu';
 import EtendoLogotype from '../public/etendo.png';
 import { useTranslation } from '../hooks/useTranslation';
 import { useUserContext } from '../hooks/useUserContext';
 import { WindowParams } from '../app/types';
-import RecentlyViewed from './Drawer/RecentlyViewed';
+import { RecentlyViewed } from './Drawer/RecentlyViewed';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { useMenuTranslation } from '../hooks/useMenuTranslation';
 import { createSearchIndex, filterItems } from '@workspaceui/componentlibrary/src/utils/searchUtils';
@@ -16,11 +16,13 @@ import { useLanguage } from '@/contexts/language';
 
 export default function Sidebar() {
   const { t } = useTranslation();
-  const { token, currentRole } = useUserContext();
-  const { language } = useLanguage();
+  const { token, currentRole, prevRole } = useUserContext();
+  const { language, prevLanguage } = useLanguage();
   const { translateMenuItem } = useMenuTranslation();
   const menu = useMenu(token, currentRole || undefined, language);
   const router = useRouter();
+  const pathname = usePathname();
+
   const { windowId } = useParams<WindowParams>();
 
   const [searchValue, setSearchValue] = useState('');
@@ -34,10 +36,16 @@ export default function Sidebar() {
   }, [menu, searchValue, searchIndex]);
 
   const handleClick = useCallback(
-    (pathname: string) => {
-      router.push(pathname);
+    (windowId: string) => {
+      const params = new URLSearchParams(location.search);
+      params.set('windowId', windowId);
+      if (pathname.includes('window')) {
+        window.history.pushState(null, '', `?${params.toString()}`);
+      } else {
+        router.push(`window?${params.toString()}`);
+      }
     },
-    [router],
+    [pathname, router],
   );
 
   const searchContext = useMemo(
@@ -54,6 +62,12 @@ export default function Sidebar() {
   );
 
   const getTranslatedName = useCallback((item: Menu) => translateMenuItem(item), [translateMenuItem]);
+
+  useEffect(() => {
+    if ((prevRole && prevRole?.id !== currentRole?.id) || prevLanguage !== language) {
+      setSearchValue('');
+    }
+  }, [currentRole?.id, language, prevLanguage, prevRole]);
 
   return (
     <Drawer

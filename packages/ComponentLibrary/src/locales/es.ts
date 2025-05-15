@@ -16,6 +16,7 @@ const es = {
     clear: 'Limpiar Seleccion',
     processTitle: 'Titulo del proceso',
     notImplemented: 'Esta funcionalidad no está disponible aun',
+    loadMore: 'Cargar más',
     trueText: 'Si',
     falseText: 'No',
   },
@@ -39,6 +40,10 @@ const es = {
     noRecords: 'Por favor, crea un nuevo registro',
   },
   errors: {
+    tableError: {
+      title: 'Error',
+      description: 'Algo salió mal',
+    },
     networkError: {
       title: 'No se pudo conectar con Etendo',
       description: 'Parece que hay algún problema en la red o el servidor está caído',
@@ -112,6 +117,7 @@ const es = {
   navigation: {
     common: {
       home: 'Ir al inicio',
+      back: 'Atrás',
     },
     waterfall: {
       activateAll: 'Activar todo',

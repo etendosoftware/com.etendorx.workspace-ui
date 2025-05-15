@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { BUTTON_IDS } from '../../constants/Toolbar';
 import { useSearch } from '../../contexts/searchContext';
 import { useMetadataContext } from '../useMetadataContext';
@@ -8,27 +7,23 @@ import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { logger } from '@/utils/logger';
 import { useTranslation } from '../useTranslation';
 import { useStatusModal } from './useStatusModal';
+import { useToolbarContext } from '@/contexts/ToolbarContext';
+import { useTabContext } from '@/contexts/tab';
+import { useSelected } from '@/contexts/selected';
 
 export const useToolbarConfig = ({
-  windowId,
   tabId,
-  onSave,
-  onRefresh,
-  parentId,
 }: {
   windowId?: string;
   tabId?: string;
-  onSave?: () => void;
-  onRefresh?: () => void;
   parentId?: string | null;
   isFormView?: boolean;
 }) => {
-  const router = useRouter();
   const { setSearchQuery } = useSearch();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const { setShowTabContainer, tabs, selected, removeRecord, getSelectedIds } = useMetadataContext();
-
+  const { removeRecord } = useMetadataContext();
+  const { graph } = useSelected();
   const {
     statusModal,
     confirmAction,
@@ -40,15 +35,14 @@ export const useToolbarConfig = ({
     hideStatusModal,
   } = useStatusModal();
   const { t } = useTranslation();
+  const { onRefresh, onSave, onNew, onBack, onFilter } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const tab = useMemo<Tab | undefined>(() => {
-    return tabs.find(tab => tab.id === tabId);
-  }, [tabs, tabId]);
-
-  const selectedRecord = tab ? selected[tab.level] : undefined;
-  const selectedIds = useMemo(() => (tab ? getSelectedIds(tab.id) : []), [getSelectedIds, tab]);
+  const { tab, record } = useTabContext();
+  const selectedRecord = record;
+  const selectedMultiple = graph.getSelectedMultiple(tab);
+  const selectedIds = useMemo(() => selectedMultiple?.map(r => String(r.id)) ?? [], [selectedMultiple]);
 
   const { deleteRecord, loading: deleteLoading } = useDeleteRecord({
     tab: tab as Tab,
@@ -62,7 +56,7 @@ export const useToolbarConfig = ({
         removeRecord(tabId, recordId);
       });
 
-      const successMessage = `${entityType} '${recordName}' ${t('status.deleteSuccess')}`;
+      const successMessage = `${entityType} '${String(recordName)}' ${t('status.deleteSuccess')}`;
 
       showDeleteSuccessModal(successMessage, {
         saveLabel: t('common.close'),
@@ -72,7 +66,7 @@ export const useToolbarConfig = ({
       });
     },
     onError: error => {
-      logger.error('Error deleting record(s):', error);
+      logger.warn('Error deleting record(s):', error);
 
       showErrorModal(t('status.deleteError'), {
         errorMessage: error,
@@ -96,14 +90,24 @@ export const useToolbarConfig = ({
       if (isDeleting) return;
 
       switch (action) {
-        case BUTTON_IDS.NEW:
-          router.push(`/window/${windowId}/${tabId}/NewRecord?parentId=${parentId ?? null}`);
+        case BUTTON_IDS.CANCEL:
+          onBack?.();
           break;
+        case BUTTON_IDS.NEW: {
+          const params = new URLSearchParams(location.search);
+          params.set('recordId_' + tab?.id, 'new');
+          history.pushState(null, '', `?${params.toString()}`);
+          onNew?.();
+          break;
+        }
         case BUTTON_IDS.FIND:
           setSearchOpen(true);
           break;
         case BUTTON_IDS.TAB_CONTROL:
-          setShowTabContainer(prevState => !prevState);
+          // setShowTabContainer(prevState => !prevState);
+          break;
+        case BUTTON_IDS.FILTER:
+          onFilter?.();
           break;
         case BUTTON_IDS.SAVE:
           onSave?.();
@@ -115,7 +119,7 @@ export const useToolbarConfig = ({
 
               const confirmText =
                 selectedIds.length === 1
-                  ? `${t('status.deleteConfirmation')} ${selectedRecord?._identifier || selectedRecord?.id}?`
+                  ? `${t('status.deleteConfirmation')} ${String(selectedRecord?._identifier || selectedRecord?.id)}?`
                   : `${t('status.multipleDeleteConfirmation')} ${selectedIds.length}`;
 
               showConfirmModal({
@@ -143,22 +147,20 @@ export const useToolbarConfig = ({
       }
     },
     [
+      deleteRecord,
       isDeleting,
-      router,
-      windowId,
-      tabId,
-      parentId,
-      setShowTabContainer,
-      onSave,
-      tab,
+      onBack,
+      onFilter,
+      onNew,
       onRefresh,
+      onSave,
       selectedIds,
-      t,
       selectedRecord?._identifier,
       selectedRecord?.id,
       showConfirmModal,
-      deleteRecord,
       showErrorModal,
+      t,
+      tab,
     ],
   );
 
@@ -178,7 +180,6 @@ export const useToolbarConfig = ({
       handleSearch,
       searchValue,
       setSearchValue,
-      setShowTabContainer,
       deleteLoading,
       statusModal,
       confirmAction,
@@ -192,7 +193,6 @@ export const useToolbarConfig = ({
       handleSearch,
       searchOpen,
       searchValue,
-      setShowTabContainer,
       deleteLoading,
       statusModal,
       confirmAction,
