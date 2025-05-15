@@ -24,13 +24,19 @@ const defaultParams: DatasourceOptions = {
   pageSize: 1000,
 };
 
-export function useDatasource(
-  entity: string,
-  params: DatasourceOptions = defaultParams,
-  searchQuery?: string,
-  columns?: Column[],
-  columnFilters: MRT_ColumnFiltersState = [],
-) {
+export function useDatasource({
+  entity,
+  params = defaultParams,
+  columns,
+  searchQuery,
+  skip,
+}: {
+  entity: string;
+  params?: DatasourceOptions;
+  searchQuery?: string;
+  columns?: Column[];
+  skip?: boolean;
+}) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [records, setRecords] = useState<EntityData[]>([]);
@@ -38,7 +44,7 @@ export function useDatasource(
   const [page, setPage] = useState(1);
   const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState(params.isImplicitFilterApplied ?? false);
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
-  const [activeColumnFilters, setActiveColumnFilters] = useState<MRT_ColumnFiltersState>(columnFilters);
+  const [activeColumnFilters, setActiveColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [hasMoreRecords, setHasMoreRecords] = useState(true);
 
   const removeRecordLocally = useCallback((recordId: string) => {
@@ -92,7 +98,7 @@ export function useDatasource(
   }, [params, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied]);
 
   const load = useCallback(() => {
-    if (!entity) {
+    if (!entity || skip) {
       setLoaded(true);
       return;
     }
@@ -142,7 +148,7 @@ export function useDatasource(
     };
 
     f();
-  }, [entity, isImplicitFilterApplied, page, pageSize, queryParams, searchQuery]);
+  }, [entity, isImplicitFilterApplied, page, pageSize, queryParams, searchQuery, skip]);
 
   useEffect(() => {
     setRecords([]);

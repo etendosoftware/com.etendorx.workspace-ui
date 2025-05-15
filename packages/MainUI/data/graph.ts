@@ -8,23 +8,30 @@ type GraphNode<T> = {
   selectedMultiple: EntityData[];
 };
 
-class Graph<T extends Tab> extends EventEmitter {
+export type GraphEvents = {
+  selected: [tab: Tab, record: EntityData];
+  unselected: [tab: Tab];
+  selectedMultiple: [tab: Tab, records: EntityData[]];
+  unselectedMultiple: [tab: Tab];
+};
+
+export type GraphEventListener<K extends keyof GraphEvents> = (...args: GraphEvents[K]) => void;
+
+export type GraphEventNames = keyof GraphEvents;
+
+export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
   private nodes: Map<string, GraphNode<T>>;
 
-  public constructor() {
+  public constructor(tabs: T[]) {
     super();
     this.nodes = new Map();
-  }
 
-  public buildTreeFromTabs = (tabs: T[]) => {
-    tabs.forEach(tab => this.addNode(tab));
+    tabs.forEach(this.addNode);
     tabs.forEach(tab => {
       if (tab.parentTabId) {
         this.addEdge(tab.parentTabId, tab.id);
       }
     });
-
-    return this;
   }
 
   private addNode = (value: T) => {
@@ -33,7 +40,7 @@ class Graph<T extends Tab> extends EventEmitter {
     }
 
     return this;
-  }
+  };
 
   private addEdge = (sourceId: string, destinationId: string) => {
     const sourceNode = this.nodes.get(sourceId);
@@ -46,14 +53,14 @@ class Graph<T extends Tab> extends EventEmitter {
     sourceNode.neighbors.add(destNode);
 
     return this;
-  }
+  };
 
   public toJSON = (rootId: string) => {
     const rootNode = this.nodes.get(rootId);
     if (!rootNode) throw new Error('Root node not found');
 
     return this.buildJSON(rootNode);
-  }
+  };
 
   private buildJSON = (node: GraphNode<T>): unknown => {
     return {
@@ -61,7 +68,7 @@ class Graph<T extends Tab> extends EventEmitter {
       name: node.value.name,
       children: Array.from(node.neighbors).map(this.buildJSON),
     };
-  }
+  };
 
   public printTree = (rootId: string) => {
     const rootNode = this.nodes.get(rootId);
@@ -73,81 +80,104 @@ class Graph<T extends Tab> extends EventEmitter {
     };
 
     printNode(rootNode, 0);
-  }
+  };
 
-  public getChildren = (tab: Tab) => {
-    const node = this.nodes.get(tab.id);
-
-    if (!node) throw new Error('Tab not found');
-
-    return Array.from(node.neighbors).map(child => child.value);
-  }
-
-  public getParent = (tab: Tab) => {
-    for (const node of this.nodes.values()) {
-      for (const neighbor of node.neighbors) {
-        if (neighbor.value.id === tab.id) return node.value;
+  public getChildren = (tab?: Tab) => {
+    if (tab) {
+      const node = this.nodes.get(tab.id);
+      
+      if (node) {
+        return Array.from(node.neighbors).map(child => child.value);
       }
     }
+  };
 
-    return undefined;
-  }
+  public getParent = (tab?: Tab) => {
+    if (tab) {
+      for (const node of this.nodes.values()) {
+        for (const neighbor of node.neighbors) {
+          if (neighbor.value.id === tab.id) {
+            return node.value;
+          }
+        }
+      }
+    }
+  };
 
-  public setSelected = (tab: Tab, record: EntityData) => {
-    const node = this.nodes.get(tab.id);
+  public setSelected = (tab?: Tab, record: EntityData = {}) => {
+    if (tab) {
+      const node = this.nodes.get(tab.id);
 
-    if (!node) throw new Error('Tab not found');
+      if (node) {
+        node.selected = record;
+        node.neighbors.forEach(this.clearSelectedNode);
 
-    node.selected = record;
-    node.neighbors.forEach(this.clearSelectedNode);
-    this.emit('update', tab.id);
-  }
+        // this.level = tab.level + 1;
+        this.emit('selected', tab, record);
+      }
+    }
+  };
 
-  public clearSelected = (tab: Tab) => {
-    const node = this.nodes.get(tab.id);
+  public clearSelected = (tab?: Tab) => {
+    if (tab) {
+      const node = this.nodes.get(tab.id);
 
-    if (!node) throw new Error('Tab not found');
+      if (node) {
+        // this.level = this.level > tab.level && tab.level > 0 ? tab.level - 1 : 0;
+        this.clearSelectedNode(node);
 
-    this.clearSelectedNode(node);
-    this.emit('update', tab.id);
-  }
+        this.emit('unselected', tab);
+      }
+    }
+  };
+
+  public clear = (tab?: Tab) => {
+    this.clearSelected(tab);
+    this.clearSelectedMultiple(tab);
+  };
 
   private clearSelectedNode = (node: GraphNode<T>) => {
     node.selected = undefined;
     node.neighbors.forEach(this.clearSelectedNode);
-  }
+  };
 
-  public setSelectedMultiple = (tab: Tab, records: EntityData[]) => {
-    const node = this.nodes.get(tab.id);
+  public setSelectedMultiple = (tab?: Tab, records: EntityData[] = []) => {
+    if (tab) {
+      const node = this.nodes.get(tab.id);
 
-    if (!node) throw new Error('Tab not found');
+      if (node) {
+        node.selectedMultiple = records;
+        node.neighbors.forEach(this.clearSelectedMultipleNode);
 
-    node.selectedMultiple = records;
-    node.neighbors.forEach(this.clearSelectedMultipleNode);
-    this.emit('update', tab.id);
-  }
+        this.emit('selectedMultiple', tab, records);
+      }
+    }
+  };
 
-  public clearSelectedMultiple = (tab: Tab) => {
-    const node = this.nodes.get(tab.id);
+  public clearSelectedMultiple = (tab?: Tab) => {
+    if (tab) {
+      const node = this.nodes.get(tab.id);
 
-    if (!node) throw new Error('Tab not found');
+      if (node) {
+        this.clearSelectedMultipleNode(node);
 
-    this.clearSelectedMultipleNode(node);
-    this.emit('update', tab.id);
-  }
+        this.emit('unselectedMultiple', tab);
+      }
+    }
+  };
 
   private clearSelectedMultipleNode = (node: GraphNode<T>) => {
     node.selectedMultiple = [];
     node.neighbors.forEach(this.clearSelectedMultipleNode);
-  }
+  };
 
-  public getSelected = (tab: Tab) => {
-    return this.nodes.get(tab.id)?.selected;
-  }
+  public getSelected = (tab?: Tab) => {
+    return tab ? this.nodes.get(tab.id)?.selected : undefined;
+  };
 
-  public getSelectedMultiple = (tab: Tab) => {
-    return this.nodes.get(tab.id)?.selectedMultiple;
-  }
+  public getSelectedMultiple = (tab?: Tab) => {
+    return tab ? this.nodes.get(tab.id)?.selectedMultiple : undefined;
+  };
 }
 
 export default Graph;

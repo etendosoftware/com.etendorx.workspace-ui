@@ -7,7 +7,7 @@ import {
   MRT_TableInstance,
 } from 'material-react-table';
 import { useStyle } from './styles';
-import { DatasourceOptions, EntityData, WindowMetadata, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { DatasourceOptions, EntityData } from '@workspaceui/etendohookbinder/src/api/types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { useSearch } from '../../contexts/searchContext';
@@ -21,11 +21,6 @@ import { ErrorDisplay } from '../ErrorDisplay';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useTabContext } from '@/contexts/tab';
 
-type DynamicTableProps = {
-  tab: Tab;
-  window: WindowMetadata | undefined;
-};
-
 type RowProps = (props: {
   isDetailPanel?: boolean;
   row: MRT_Row<EntityData>;
@@ -34,16 +29,16 @@ type RowProps = (props: {
 
 const getRowId = (row: EntityData) => String(row.id);
 
-const DynamicTable = ({ tab }: DynamicTableProps) => {
+const DynamicTable = () => {
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { t } = useTranslation();
-  const tabId = tab.id;
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
-  const { parentRecord } = useTabContext();
+  const { tab, parentTab, parentRecord } = useTabContext();
+  const tabId = tab.id;
   const parentId = String(parentRecord?.id ?? '');
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
@@ -96,7 +91,13 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     refetch,
     loading,
     hasMoreRecords,
-  } = useDatasource(tab.entityName, query, searchQuery, columns);
+  } = useDatasource({
+    entity: tab.entityName,
+    params: query,
+    columns,
+    searchQuery,
+    skip: !!parentTab && !parentRecord,
+  });
 
   const handleColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
@@ -230,6 +231,8 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
 
   useTableSelection(tab, records, table.getState().rowSelection);
 
+  const clearSelection = useCallback(() => table.resetRowSelection(true), [table]);
+
   useEffect(() => {
     if (removeRecordLocally) {
       registerDatasource(tabId, removeRecordLocally);
@@ -246,8 +249,9 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     registerActions({
       refresh: refetch,
       filter: toggleImplicitFilters,
+      back: clearSelection,
     });
-  }, [refetch, registerActions, toggleImplicitFilters]);
+  }, [clearSelection, refetch, registerActions, toggleImplicitFilters]);
 
   if (error) {
     return (
@@ -257,7 +261,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
 
   return (
     <div
-      className={`h-full overflow-hidden transition-opacity ${loading ? 'opacity-60 cursor-progress cursor-to-children' : 'opacity-100'}`}>
+      className={`h-full overflow-hidden rounded-3xl transition-opacity ${loading ? 'opacity-60 cursor-progress cursor-to-children' : 'opacity-100'}`}>
       <MaterialReactTable table={table} />
     </div>
   );

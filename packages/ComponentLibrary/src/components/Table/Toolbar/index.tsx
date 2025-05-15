@@ -4,9 +4,9 @@ import ToolbarSection from './ToolbarSection';
 export const TopToolbar = ({ leftSection, centerSection, rightSection }: TopToolbarProps) => {
   return (
     <div className="flex justify-between items-center gap-2">
-      <ToolbarSection {...leftSection} className="bg-white rounded-4xl py-1 px-1.5" />
-      <ToolbarSection {...centerSection} className="bg-transparent-neutral-5 rounded-4xl py-1 px-1.5" />
-      <ToolbarSection {...rightSection} className="bg-transparent-neutral-5 rounded-4xl py-1 px-1.5" />
+      <ToolbarSection {...leftSection} className="bg-white rounded-4xl p-1.5" />
+      <ToolbarSection {...centerSection} className="bg-transparent-neutral-5 rounded-4xl p-1.5" />
+      <ToolbarSection {...rightSection} className="bg-transparent-neutral-5 rounded-4xl p-1.5" />
     </div>
   );
 };

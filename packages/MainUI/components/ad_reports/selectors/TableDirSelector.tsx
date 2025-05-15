@@ -12,7 +12,7 @@ const optionEqualValue = (option: Option, value: { id: string }) => option.id ==
 
 const TableDirSelector = ({ onChange, entity, value, name, isReadOnly }: TableDirSelectorProps) => {
   const theme = useTheme();
-  const { records, loading, error, loaded } = useDatasource(entity);
+  const { records, loading, error, loaded } = useDatasource({entity});
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
 
   const options = useMemo(

@@ -27,10 +27,11 @@ import ProcessDefinitionModal from '../ProcessModal/ProcessDefinitionModal';
 import { useUserContext } from '@/hooks/useUserContext';
 import { useTabContext } from '@/contexts/tab';
 import { compileExpression } from '../Form/FormView/selectors/BaseSelector';
-import { useSelected } from '@/contexts/selected';
+import { useSelected, useSelectedRecord, useSelectedRecords } from '@/contexts/selected';
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false }) => {
   const [openModal, setOpenModal] = useState(false);
+  const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
   const [selectedProcessActionButton, setSelectedProcessActionButton] = useState<ProcessButton | null>(null);
@@ -45,7 +46,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentRecord } = useTabContext();
 
-  const selectedRecord = graph.getSelected(tab);
+  const selectedRecord = useSelectedRecord(tab);
   const parentId = parentRecord?.id?.toString();
 
   const {
@@ -67,7 +68,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     isFormView,
   });
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
-  const selectedItems = graph.getSelectedMultiple(tab);
+  const selectedItems = useSelectedRecords(tab);
 
   const processButtons = useMemo(() => {
     const buttons = toolbar?.buttons.filter(isProcessButton) || [];
@@ -104,6 +105,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           setSelectedProcessActionButton(button);
         } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
           setSelectedProcessDefinitionButton(button);
+          setShowProcessDefinitionModal(true);
         } else {
           throw new Error('Unknown process type');
         }
@@ -123,13 +125,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   );
 
   const handleProcessSuccess = useCallback(() => {
-    if (processResponse) {
-      if (tab) {
-        refetchDatasource(tab.id);
-        graph.clearSelected(tab);
-      }
-    }
-  }, [graph, processResponse, refetchDatasource, tab]);
+    refetchDatasource(tab.id);
+    graph.clearSelected(tab);
+  }, [graph, refetchDatasource, tab]);
 
   const handleConfirmProcess = useCallback(async () => {
     if (!selectedProcessActionButton || !selectedRecord?.id) return;
@@ -163,8 +161,12 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     setOpenModal(false);
     setProcessResponse(null);
     setSelectedProcessActionButton(null);
-    setSelectedProcessDefinitionButton(null);
   }, []);
+
+  const handleCloseProcessDefinitionModal = useCallback(() => {
+    setShowProcessDefinitionModal(false);
+    setSelectedProcessDefinitionButton(null);
+  }, []); 
 
   const handleCompleteRefresh = useCallback(async () => {
     graph.clearSelected(tab);
@@ -309,10 +311,11 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
         />
       )}
       <ProcessDefinitionModal
-        open={openModal}
-        onClose={handleCloseProcess}
+        open={showProcessDefinitionModal}
+        onClose={handleCloseProcessDefinitionModal}
         button={selectedProcessDefinitionButton}
         onSuccess={handleCompleteRefresh}
+        onError={handleCompleteRefresh}
       />
     </>
   );

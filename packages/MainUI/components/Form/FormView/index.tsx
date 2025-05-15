@@ -28,7 +28,7 @@ const iconMap: Record<string, React.ReactElement> = {
   Dimensions: <FolderIcon />,
 };
 
-export default function FormView({ window: windowMetadata, tab, mode, recordId }: FormViewProps) {
+export function FormView({ window: windowMetadata, tab, mode, recordId }: FormViewProps) {
   const theme = useTheme();
   const router = useRouter();
   const [expandedSections, setExpandedSections] = useState<string[]>(['null']);
@@ -249,3 +249,5 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
     </FormProvider>
   );
 }
+
+export default FormView;

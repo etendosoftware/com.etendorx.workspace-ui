@@ -7,21 +7,26 @@ import { executeStringFunction } from '@/utils/functions';
 import CheckIcon from '../../../ComponentLibrary/src/assets/icons/check-circle.svg';
 import CloseIcon from '../../../ComponentLibrary/src/assets/icons/x.svg';
 import BaseSelector from './selectors/BaseSelector';
-import { ProcessDefinitionModalContentProps } from './types';
 import Modal from '../Modal';
 import Loading from '../loading';
 import { logger } from '@/utils/logger';
-import { useSelected } from '@/contexts/selected';
+import { useSelectedRecords } from '@/contexts/selected';
+import { ProcessDefinitionModalProps } from './types';
+import { ProcessParameters } from '@workspaceui/etendohookbinder/src/api/types';
 
-export default function ProcessDefinitionModal({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
+export default function ProcessDefinitionModal({
+  onClose,
+  button,
+  open,
+  onSuccess,
+  onError,
+}: ProcessDefinitionModalProps) {
   const { t } = useTranslation();
   const onProcess = button?.processDefinition.onProcess;
   const onLoad = button?.processDefinition.onLoad;
-  const { graph } = useSelected();
   const { tab } = useTabContext();
-  const tabId = tab?.id || '';
-  const selectedRecords = graph.getSelectedMultiple(tab);
-  const [parameters, setParameters] = useState(button?.processDefinition.parameters ?? {});
+  const selectedRecords = useSelectedRecords(tab);
+  const [parameters, setParameters] = useState<ProcessParameters>();
   const [response, setResponse] = useState<{
     msgText: string;
     msgTitle: string;
@@ -55,6 +60,8 @@ export default function ProcessDefinitionModal({ onClose, button, open, onSucces
           if (onSuccess) {
             onSuccess();
           }
+        } else {
+          onError?.();
         }
         setIsExecuting(false);
       } catch (error) {
@@ -65,43 +72,39 @@ export default function ProcessDefinitionModal({ onClose, button, open, onSucces
           msgType: 'error',
         });
         setIsExecuting(false);
+        onError?.();
       }
     }
-  }, [button, form, onProcess, selectedRecords, tab, onSuccess, t]);
+  }, [onProcess, tab, button, selectedRecords, form, onSuccess, t, onError]);
 
   useEffect(() => {
-    const fetchOptions = async () => {
-      if (onLoad && open && tab && button) {
+    if (onLoad && open && tab && button) {
+      const fetchOptions = async () => {
         try {
           setLoading(true);
           const result = await executeStringFunction(onLoad, { Metadata }, button.processDefinition, {
             selectedRecords,
-            tabId,
+            tabId: tab.id,
           });
-          setParameters(prev => {
-            const newParameters = { ...prev };
-            Object.entries(result).forEach(([parameterName, values]) => {
-              const newOptions = values as string[];
-              newParameters[parameterName] = { ...newParameters[parameterName] };
-              newParameters[parameterName].refList = newParameters[parameterName].refList.filter(option =>
-                newOptions.includes(option.value),
-              );
-            });
-
-            return newParameters;
+          const newParameters = { ...button.processDefinition.parameters };
+          Object.entries(result).forEach(([parameterName, values]) => {
+            const newOptions = values as string[];
+            newParameters[parameterName] = { ...newParameters[parameterName] };
+            newParameters[parameterName].refList = newParameters[parameterName].refList.filter(option =>
+              newOptions.includes(option.value),
+            );
           });
+          setParameters(newParameters);
         } catch (error) {
           logger.warn('Error loading parameters:', error);
         } finally {
           setLoading(false);
         }
-      } else if (open) {
-        setLoading(false);
-      }
-    };
+      };
 
-    fetchOptions();
-  }, [button, onLoad, open, selectedRecords, tab, tabId]);
+      fetchOptions();
+    }
+  }, [button, onLoad, open, selectedRecords, tab]);
 
   useEffect(() => {
     if (open && button) {
@@ -136,6 +139,7 @@ export default function ProcessDefinitionModal({ onClose, button, open, onSucces
               </div>
               <div className={`transition-opacity ${loading ? 'opacity-0' : 'opacity-100'}`}>
                 {!isSuccess &&
+                  parameters &&
                   Object.values(parameters).map(parameter => <BaseSelector key={parameter.id} parameter={parameter} />)}
                 {response ? (
                   <div
