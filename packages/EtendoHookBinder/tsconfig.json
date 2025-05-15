@@ -17,6 +17,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"], // Include the source directory
+  "include": ["src"],
   "exclude": ["node_modules", "**/*.test.ts"]
 }

@@ -9,7 +9,6 @@ import {
 import { useStyle } from './styles';
 import { DatasourceOptions, EntityData } from '@workspaceui/etendohookbinder/src/api/types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import { useSearch } from '../../contexts/searchContext';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
 import EmptyState from './EmptyState';
@@ -20,6 +19,7 @@ import useTableSelection from '@/hooks/useTableSelection';
 import { ErrorDisplay } from '../ErrorDisplay';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useTabContext } from '@/contexts/tab';
+import { useDatasource } from '@/hooks/useDatasource';
 
 type RowProps = (props: {
   isDetailPanel?: boolean;

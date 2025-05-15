@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState, createElement } from 'react';
-import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import { IconSize, StandardButton, StandardButtonConfig, ToolbarProps, isProcessButton } from './types';
 import {
   LEFT_SECTION_BUTTONS,
@@ -30,6 +29,7 @@ import { compileExpression } from '../Form/FormView/selectors/BaseSelector';
 import { useSelectedRecord } from '@/hooks/useSelectedRecord';
 import { useSelectedRecords } from '@/hooks/useSelectedRecords';
 import { useSelected } from '@/hooks/useSelected';
+import TopToolbar from './TopToolbar';
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false }) => {
   const [openModal, setOpenModal] = useState(false);

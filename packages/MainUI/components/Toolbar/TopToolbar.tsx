@@ -1,4 +1,4 @@
-import type { TopToolbarProps } from '@workspaceui/storybook/src/stories/Components/Table/types';
+import type { TopToolbarProps } from './types';
 import ToolbarSection from './ToolbarSection';
 
 export const TopToolbar = ({ leftSection, centerSection, rightSection }: TopToolbarProps) => {

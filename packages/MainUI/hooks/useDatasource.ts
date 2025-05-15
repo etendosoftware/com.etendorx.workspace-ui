@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DatasourceOptions, Column, MRT_ColumnFiltersState, EntityData } from '../api/types';
-import { datasource } from '../api/datasource';
-import { SearchUtils, ColumnFilterUtils } from '../utils/search-utils';
+import {
+  DatasourceOptions,
+  Column,
+  MRT_ColumnFiltersState,
+  EntityData,
+} from '@workspaceui/etendohookbinder/src/api/types';
+import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
+import { SearchUtils, ColumnFilterUtils } from '@workspaceui/etendohookbinder/src/utils/search-utils';
 
 const loadData = async (entity: string, page: number, pageSize: number, params: DatasourceOptions) => {
   const safePageSize = pageSize ?? 1000;
@@ -15,9 +20,7 @@ const loadData = async (entity: string, page: number, pageSize: number, params: 
     pageSize: safePageSize,
   };
 
-  const { response } = await datasource.get(entity, processedParams);
-
-  return response;
+  return datasource.get(entity, processedParams);
 };
 
 const defaultParams: DatasourceOptions = {
@@ -48,11 +51,11 @@ export function useDatasource({
   const [hasMoreRecords, setHasMoreRecords] = useState(true);
 
   const removeRecordLocally = useCallback((recordId: string) => {
-    setRecords(prevRecords => prevRecords.filter(record => String(record.id) !== recordId));
+    setRecords((prevRecords) => prevRecords.filter((record) => String(record.id) !== recordId));
   }, []);
 
   const fetchMore = useCallback(() => {
-    setPage(prev => prev + 1);
+    setPage((prev) => prev + 1);
   }, []);
 
   const updateColumnFilters = useCallback((filters: MRT_ColumnFiltersState) => {
@@ -66,7 +69,7 @@ export function useDatasource({
   }, []);
 
   const toggleImplicitFilters = useCallback(() => {
-    setIsImplicitFilterApplied(prev => !prev);
+    setIsImplicitFilterApplied((prev) => !prev);
     setPage(1);
   }, []);
 
@@ -110,30 +113,13 @@ export function useDatasource({
 
     const f = async () => {
       try {
-        const response = await loadData(entity, page, safePageSize, queryParams);
+        const { ok, data: response } = await loadData(entity, page, safePageSize, queryParams);
 
-        if (response.error || response.status != 0) {
+        if (!ok || response.error || response.status != 0) {
           throw new Error(response.error.message);
         } else {
           setHasMoreRecords(response.data.length >= safePageSize);
-          setRecords(prevRecords => {
-            if (page === 1 || searchQuery) {
-              return response.data;
-            } else {
-              return [...prevRecords, ...response.data];
-            }
-
-            // const mergedRecords = [...prevRecords, ...response.data];
-            // const uniqueRecords = mergedRecords.reduce(
-            //   (acc, current) => {
-            //     acc[current.id as string] = current;
-            //     return acc;
-            //   },
-            //   {} as Record<string, unknown>,
-            // );
-
-            // return Object.values(uniqueRecords);
-          });
+          setRecords((prev) => (page === 1 || searchQuery ? response.data : prev.concat(response.data)));
           setLoaded(true);
         }
       } catch (e) {

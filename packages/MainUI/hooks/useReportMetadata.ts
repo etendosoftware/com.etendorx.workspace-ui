@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ReportMetadata } from './types';
+import { ReportMetadata } from '@workspaceui/etendohookbinder/src/hooks/types';
 
 export interface ReportMetadataHook {
   metadata: ReportMetadata | null;

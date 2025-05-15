@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Metadata } from '../api/metadata';
+import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 
 export function useWindow(windowId: string) {
   const [loading, setLoading] = useState(!!windowId);

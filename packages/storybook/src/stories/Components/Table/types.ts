@@ -1,5 +1,3 @@
-import { Theme } from '@emotion/react';
-import { SxProps } from '@mui/material';
 import { Section } from '@workspaceui/mainui/components/Form/FormView/types';
 import { BaseFieldDefinition, FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 
@@ -44,31 +42,4 @@ export interface Widget extends React.PropsWithChildren {
 
 export interface ContentGridProps {
   widgets: Widget[];
-}
-
-export interface ToolbarButton {
-  key: string;
-  icon: React.ReactNode;
-  iconText?: string;
-  tooltip?: string;
-  onClick: ((event?: React.MouseEvent<HTMLElement>) => void) | (() => void);
-  disabled?: boolean;
-  fill?: string;
-  hoverFill?: string;
-  height?: number;
-  width?: number;
-  sx?: SxProps<Theme>;
-}
-
-export interface ToolbarSectionConfig {
-  buttons: ToolbarButton[];
-  style?: React.CSSProperties;
-  toggleExpand?: (event?: React.MouseEvent<HTMLElement>) => void;
-  className?: string;
-}
-
-export interface TopToolbarProps {
-  leftSection: ToolbarSectionConfig;
-  centerSection: ToolbarSectionConfig;
-  rightSection: ToolbarSectionConfig;
 }

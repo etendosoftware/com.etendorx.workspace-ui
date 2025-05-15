@@ -4,7 +4,7 @@ import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/searc
 import type { DatabaseSelectSelector } from '../../Form/FormView/types';
 import { useTheme } from '@mui/material';
 import { Option } from '@workspaceui/etendohookbinder/src/api/types';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
+import { useDatasource } from '@/hooks/useDatasource';
 
 const DatabaseSelectSelector = memo(({ value, name, title, onChange, readOnly, entity }: DatabaseSelectSelector) => {
   const theme = useTheme();

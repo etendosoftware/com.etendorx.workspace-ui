@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Drawer } from '@workspaceui/componentlibrary/src/components/Drawer/index';
-import { useMenu } from '@workspaceui/etendohookbinder/src/hooks/useMenu';
 import EtendoLogotype from '../public/etendo.png';
 import { useTranslation } from '../hooks/useTranslation';
 import { useUserContext } from '../hooks/useUserContext';
@@ -14,6 +13,7 @@ import { useMenuTranslation } from '../hooks/useMenuTranslation';
 import { createSearchIndex, filterItems } from '@workspaceui/componentlibrary/src/utils/searchUtils';
 import { useLanguage } from '@/contexts/language';
 import { useQueryParams } from '@/hooks/useQueryParams';
+import { useMenu } from '@/hooks/useMenu';
 
 export default function Sidebar() {
   const { t } = useTranslation();

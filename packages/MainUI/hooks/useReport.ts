@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ReportField, ReportMetadata } from './types';
+import { ReportField, ReportMetadata } from '@workspaceui/etendohookbinder/src/hooks/types';
 
 type ReportFields = {
   [K in ReportField['name']]: unknown;
