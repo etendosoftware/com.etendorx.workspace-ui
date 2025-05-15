@@ -313,23 +313,22 @@ export interface SessionResponse {
 }
 
 export type RoleList = {
-  id: string
-  name: string
-  organizations: Organization[]
+  id: string;
+  name: string;
+  organizations: Organization[];
+  client: string;
 }[];
 
-
 export interface Organization {
-  id: string
-  name: string
-  warehouses: Warehouse[]
+  id: string;
+  name: string;
+  warehouses: Warehouse[];
 }
 
 export interface Warehouse {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
-
 
 export interface CurrentClient {
   _identifier: string;

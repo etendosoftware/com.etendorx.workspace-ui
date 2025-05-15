@@ -3,6 +3,7 @@ import { Section } from './ToggleButton/types';
 import { Option } from '../Input/Select/types';
 import { Language } from '../../locales/types';
 import {
+  CurrentOrganization,
   CurrentRole,
   CurrentWarehouse,
   LoginResponse,
@@ -90,6 +91,7 @@ export interface LanguageOption {
 export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps, ActionProps {
   currentRole: CurrentRole | undefined;
   currentWarehouse: CurrentWarehouse | undefined;
+  currentOrganization: CurrentOrganization | undefined;
   roles: SessionResponse['roles'];
   logger: Logger;
   onSignOff: () => void;
@@ -115,9 +117,12 @@ export interface SelectorListProps {
   confirmPasswordLabel: string;
   onRoleChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
   onWarehouseChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
+  onOrgChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
   roles: SessionResponse['roles'];
   selectedRole: Option | null;
   selectedWarehouse: Option | null;
+  selectedClient: Option | null;
+  selectedOrg: Option;
   onLanguageChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
   selectedLanguage: Option | null;
   languages: Array<{

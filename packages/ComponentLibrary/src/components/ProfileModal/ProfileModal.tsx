@@ -12,6 +12,8 @@ import IconButton from '../IconButton';
 import { Option } from '../Input/Select/types';
 import { Language } from '../../locales/types';
 
+const DefaultOrg = { title: '*', value: '0', id: '0' };
+
 const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,
   saveButtonText,
@@ -26,6 +28,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   icon,
   sections,
   currentRole,
+  currentOrganization,
   currentWarehouse,
   roles,
   changeProfile,
@@ -47,6 +50,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       return null;
     }
   });
+
+  const selectedClient = useMemo(() => {
+    const client = selectedRole && roles.find(r => r.id === selectedRole.value)?.client;
+    return client ? { title: client, value: client, id: client } : null;
+  }, [selectedRole, roles]);
+
+  const [selectedOrg, setSelectedOrg] = useState<Option>(() => {
+    if (currentOrganization) {
+      return { title: currentOrganization.name, value: currentOrganization.id, id: currentOrganization.id };
+    } else {
+      return DefaultOrg;
+    }
+  });
+
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(() => {
     if (currentWarehouse) {
       return { title: currentWarehouse.name, value: currentWarehouse.id, id: currentWarehouse.id };
@@ -54,6 +71,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       return null;
     }
   });
+
   const [selectedLanguage, setSelectedLanguage] = useState<Option | null>(() => {
     const currentLang = languages.find(lang => lang.language === language);
     return currentLang
@@ -64,6 +82,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         }
       : null;
   });
+
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const theme = useTheme();
   const { styles, sx } = useStyle();
@@ -73,6 +92,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       setSelectedRole({ title: currentRole.name, value: currentRole.id, id: currentRole.id });
     }
 
+    if (currentOrganization) {
+      setSelectedOrg({ title: currentOrganization.name, value: currentOrganization.id, id: currentOrganization.id });
+    }
+
     if (currentWarehouse) {
       setSelectedWarehouse({
         title: currentWarehouse.name,
@@ -80,7 +103,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         id: currentWarehouse.id,
       });
     }
-  }, [currentRole, currentWarehouse]);
+  }, [currentRole, currentOrganization, currentWarehouse]);
 
   useEffect(() => {
     if (language) {
@@ -97,6 +120,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const handleRoleChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
     setSelectedRole(value);
+    setSelectedOrg(DefaultOrg);
+    setSelectedWarehouse(null);
+  }, []);
+
+  const handleOrgChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
+    setSelectedOrg(value ?? DefaultOrg);
     setSelectedWarehouse(null);
   }, []);
 
@@ -126,10 +155,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const handleSave = useCallback(async () => {
     if (currentSection === 'profile') {
       try {
-        const params: { role?: string; warehouse?: string } = {};
+        const params: { role?: string; organization?: string; warehouse?: string } = {};
 
         if (selectedRole && selectedRole.value !== currentRole?.id) {
           params.role = selectedRole.value;
+        }
+
+        if (selectedOrg && selectedOrg.value !== currentOrganization?.id) {
+          params.organization = selectedOrg.value;
         }
 
         if (selectedWarehouse && selectedWarehouse.value !== currentWarehouse?.id) {
@@ -141,7 +174,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             value: selectedWarehouse.value,
           };
           setSelectedWarehouse(newWarehouse);
-          localStorage.setItem('currentWarehouse', JSON.stringify(newWarehouse)); // Guardar en localStorage
+          localStorage.setItem('currentWarehouse', JSON.stringify(newWarehouse));
         }
 
         if (Object.keys(params).length > 0) {
@@ -156,20 +189,22 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           await onSetDefaultConfiguration({
             defaultRole: selectedRole?.value,
             defaultWarehouse: selectedWarehouse?.value,
+            organization: selectedOrg?.value,
             language: selectedLanguage?.id,
-            client: 'System',
           });
         }
 
         handleClose();
       } catch (error) {
-        logger.error('Error changing role, warehouse, or saving default configuration:', error);
+        logger.error('Error changing profile settings:', error);
       }
     }
   }, [
     currentSection,
     selectedRole,
     currentRole?.id,
+    selectedOrg,
+    currentOrganization?.id,
     selectedWarehouse,
     currentWarehouse?.id,
     selectedLanguage,
@@ -188,20 +223,23 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     }
 
     const roleChanged = selectedRole && selectedRole?.value !== currentRole?.id;
+    const orgChanged = selectedOrg && selectedOrg?.value !== currentOrganization?.id;
     const warehouseChanged = selectedWarehouse && selectedWarehouse?.value !== currentWarehouse?.id;
     const languageChanged = selectedLanguage && selectedLanguage?.value !== language;
 
-    const somethingChanged = roleChanged || warehouseChanged || languageChanged || saveAsDefault;
+    const somethingChanged = roleChanged || orgChanged || warehouseChanged || languageChanged || saveAsDefault;
 
     return !somethingChanged;
   }, [
     currentRole?.id,
+    currentOrganization?.id,
     currentWarehouse?.id,
     language,
     saveAsDefault,
-    selectedLanguage,
     selectedRole,
+    selectedOrg,
     selectedWarehouse,
+    selectedLanguage,
   ]);
 
   const handleLanguageChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
@@ -242,10 +280,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           newPasswordLabel={newPasswordLabel}
           confirmPasswordLabel={confirmPasswordLabel}
           onRoleChange={handleRoleChange}
+          onOrgChange={handleOrgChange}
           onWarehouseChange={handleWarehouseChange}
           onLanguageChange={handleLanguageChange}
           roles={roles}
           selectedRole={selectedRole}
+          selectedClient={selectedClient}
+          selectedOrg={selectedOrg}
           selectedWarehouse={selectedWarehouse}
           languages={languages}
           selectedLanguage={selectedLanguage}

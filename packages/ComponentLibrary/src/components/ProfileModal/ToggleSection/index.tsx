@@ -8,8 +8,9 @@ import LockOutlined from '../../../assets/icons/lock.svg';
 import Select from '../../Input/Select';
 import { InputPassword } from '../..';
 import { Option } from '../../Input/Select/types';
-import { SelectorListProps, BaseWarehouse } from '../types';
+import { SelectorListProps } from '../types';
 import { Item } from '../../enums';
+import { Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
 
 const isOptionEqualToValue = (option: Option, value: Option) => option.id === value.id;
 
@@ -19,9 +20,12 @@ const SelectorList: React.FC<SelectorListProps> = ({
   newPasswordLabel,
   confirmPasswordLabel,
   onRoleChange,
+  onOrgChange,
   onWarehouseChange,
   roles,
   selectedRole,
+  selectedClient,
+  selectedOrg,
   selectedWarehouse,
   onLanguageChange,
   selectedLanguage,
@@ -53,22 +57,48 @@ const SelectorList: React.FC<SelectorListProps> = ({
     },
   }));
 
-  const warehouses = useMemo(() => {
-    if (selectedRole && selectedRole.id != '0') {
-      const _warehouses = {} as Record<string, BaseWarehouse>;
-      const role = roles.find(r => r.id === selectedRole.value);
+  const isSystem = selectedRole?.id === '0';
 
-      role?.organizations.forEach(org => {
-        org.warehouses.forEach(w => {
-          _warehouses[w.id] = w;
-        });
-      });
+  const clientOptions = useMemo(() => {
+    if (!selectedRole || isSystem) return [];
 
-      return role ? Object.values(_warehouses) : [];
+    const client = roles.find(r => r.id === selectedRole.value)?.client;
+    return client ? [{ title: client, value: client, id: client }] : [];
+  }, [roles, selectedRole, isSystem]);
+
+  const organizationOptions = useMemo(() => {
+    if (!selectedRole || isSystem) {
+      return [];
     }
 
+    const role = roles.find(r => r.id === selectedRole.value);
+    if (!role) return [];
+
+    return role.organizations.map(org => ({
+      title: org.name,
+      value: org.id,
+      id: org.id,
+    }));
+  }, [roles, selectedRole, isSystem]);
+
+  const warehouses = useMemo(() => {
+    if (selectedRole && !isSystem) {
+      const role = roles.find(r => r.id === selectedRole.value);
+      const org = role?.organizations.find(o => o.id === selectedOrg.value);
+
+      if (org && org.warehouses.length) {
+        return org.warehouses;
+      } else {
+        let warehouses: Warehouse[] = [];
+        role?.organizations.forEach(org => {
+          warehouses = [...warehouses, ...org.warehouses];
+        });
+
+        return warehouses;
+      }
+    }
     return [];
-  }, [roles, selectedRole]);
+  }, [roles, selectedRole, selectedOrg, isSystem]);
 
   const roleOptions = useMemo(
     () =>
@@ -79,8 +109,6 @@ const SelectorList: React.FC<SelectorListProps> = ({
       })),
     [roles],
   );
-
-  const isSystem = selectedRole?.id == '0';
 
   const warehouseOptions = useMemo(
     () =>
@@ -119,13 +147,32 @@ const SelectorList: React.FC<SelectorListProps> = ({
               isOptionEqualToValue={isOptionEqualToValue}
             />
             <Select
+              id="client-select"
+              title={Item.Client}
+              options={clientOptions}
+              value={selectedClient}
+              iconLeft={icons[Item.Client]}
+              isOptionEqualToValue={isOptionEqualToValue}
+              disabled={true}
+            />
+            <Select
+              id="organization-select"
+              title={Item.Organization}
+              options={organizationOptions}
+              value={selectedOrg}
+              onChange={onOrgChange}
+              iconLeft={icons[Item.Organization]}
+              isOptionEqualToValue={isOptionEqualToValue}
+              disabled={!selectedClient || isSystem}
+            />
+            <Select
               id="warehouse-select"
               title={Item.Warehouse}
               options={warehouseOptions}
               value={isSystem ? null : selectedWarehouse}
               onChange={onWarehouseChange}
               iconLeft={icons[Item.Warehouse]}
-              disabled={!selectedRole || isSystem}
+              disabled={!selectedOrg || isSystem}
               isOptionEqualToValue={isOptionEqualToValue}
             />
             <Select

@@ -10,6 +10,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
   const {
     setDefaultConfiguration,
     currentRole,
+    currentOrganization,
     profile,
     currentWarehouse,
     changeProfile,
@@ -48,6 +49,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
       {...props}
       currentRole={currentRole}
       currentWarehouse={currentWarehouse}
+      currentOrganization={currentOrganization}
       roles={roles}
       saveAsDefault={saveAsDefault}
       onLanguageChange={setLanguage}
