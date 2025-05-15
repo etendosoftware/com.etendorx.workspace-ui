@@ -8,7 +8,10 @@ import { SxProps } from '@mui/material';
 import { EntityData } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const createStandardButtonConfig = (
-btn: StandardButton, handleAction: (action: string) => void, isFormView?: boolean, selectedRecord?: EntityData | undefined,
+  btn: StandardButton,
+  handleAction: (action: string) => void,
+  isFormView?: boolean,
+  selectedRecord?: EntityData | undefined,
 ): StandardButtonConfig => {
   const getIconFill = (buttonId: StandardButtonId): string => {
     const specialButtons = [
@@ -50,11 +53,9 @@ btn: StandardButton, handleAction: (action: string) => void, isFormView?: boolea
   }
 
   if (btn.id === BUTTON_IDS.CANCEL) {
-    config.disabled = !isFormView;
+    config.disabled = !(isFormView || selectedRecord);
   } else if (btn.id === BUTTON_IDS.DELETE) {
-    config.disabled = !selectedRecord?.id;
-  } else if (btn.id === BUTTON_IDS.FILTER) {
-    config.disabled = false;
+    config.disabled = !selectedRecord;
   }
 
   return config;

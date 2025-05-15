@@ -91,7 +91,13 @@ const DynamicTable = () => {
     refetch,
     loading,
     hasMoreRecords,
-  } = useDatasource({ entity: tab.entityName, params: query, columns, searchQuery, skip: !!parentTab && !parentRecord });
+  } = useDatasource({
+    entity: tab.entityName,
+    params: query,
+    columns,
+    searchQuery,
+    skip: !!parentTab && !parentRecord,
+  });
 
   const handleColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
@@ -225,6 +231,8 @@ const DynamicTable = () => {
 
   useTableSelection(tab, records, table.getState().rowSelection);
 
+  const clearSelection = useCallback(() => table.resetRowSelection(true), [table]);
+
   useEffect(() => {
     if (removeRecordLocally) {
       registerDatasource(tabId, removeRecordLocally);
@@ -241,8 +249,9 @@ const DynamicTable = () => {
     registerActions({
       refresh: refetch,
       filter: toggleImplicitFilters,
+      back: clearSelection,
     });
-  }, [refetch, registerActions, toggleImplicitFilters]);
+  }, [clearSelection, refetch, registerActions, toggleImplicitFilters]);
 
   if (error) {
     return (

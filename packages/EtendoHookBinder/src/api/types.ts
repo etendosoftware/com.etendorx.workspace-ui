@@ -706,6 +706,7 @@ export type ListOption = { id: string; label: string; value: string };
 
 export type ProcessParameter = {
   defaultValue: string;
+  mandatory: boolean;
   id: string;
   name: string;
   refList: Array<ListOption>;

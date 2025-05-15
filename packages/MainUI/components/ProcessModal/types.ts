@@ -1,4 +1,4 @@
-import { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import { Field, ProcessDefinition, ProcessInfo } from "@workspaceui/etendohookbinder/src/api/types";
 
 export interface BaseButton extends Field {
   id: string;
@@ -83,9 +83,7 @@ export interface ProcessDefinitionModalProps {
   open: boolean;
   button?: ProcessDefinitionButton | null;
   onSuccess?: () => void;
-}
-
-export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
+  onError?: () => void;
 }
 
 export interface ProcessDeprecatedModallProps {
@@ -93,39 +91,4 @@ export interface ProcessDeprecatedModallProps {
   onClose: () => void;
   title?: string;
   message?: string;
-}
-
-export interface ProcessInfo {
-  loadFunction: string;
-  searchKey: string;
-  clientSideValidation: string;
-  _entityName: string;
-  id: string;
-  name: string;
-  javaClassName: string;
-  parameters: Array<{
-    defaultValue: string;
-    id: string;
-    name: string;
-  }>;
-}
-
-export type ListOption = { id: string; label: string; value: string };
-
-export type ProcessParameter = {
-  defaultValue: string;
-  id: string;
-  name: string;
-  refList: Array<ListOption>;
-} & Record<string, string>;
-
-export type ProcessParameters = Record<string, ProcessParameter>;
-
-export interface ProcessDefinition extends Record<string, unknown> {
-  id: string;
-  name: string;
-  javaClassName: string;
-  parameters: ProcessParameters;
-  onLoad: string;
-  onProcess: string;
 }

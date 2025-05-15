@@ -26,6 +26,10 @@ export default function useTableSelection(tab: Tab, records: EntityData[], rowSe
       graph.clearSelected(tab);
     }
 
-    graph.setSelectedMultiple(tab, result);
+    if (result.length) {
+      graph.setSelectedMultiple(tab, result);
+    } else {
+      graph.clearSelectedMultiple(tab);
+    }
   }, [graph, records, rowSelection, tab]);
 }

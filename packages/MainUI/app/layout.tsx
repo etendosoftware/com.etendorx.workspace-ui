@@ -7,7 +7,6 @@ import LanguageProvider from '@/contexts/language';
 import UserProvider from '@/contexts/user';
 import { DatasourceProvider } from '@/contexts/datasourceContext';
 import MetadataProvider from '@/contexts/metadata';
-import SelectedProvider from '@/contexts/selected';
 import Layout from '@/components/layout';
 
 const inter = Inter({
@@ -39,9 +38,7 @@ export default function RootLayout({
               <UserProvider>
                 <DatasourceProvider>
                   <MetadataProvider>
-                    <SelectedProvider>
-                      <Layout>{children}</Layout>
-                    </SelectedProvider>
+                    <Layout>{children}</Layout>
                   </MetadataProvider>
                 </DatasourceProvider>
               </UserProvider>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams, usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Drawer } from '@workspaceui/componentlibrary/src/components/Drawer/index';
 import { useMenu } from '@workspaceui/etendohookbinder/src/hooks/useMenu';
 import EtendoLogotype from '../public/etendo.png';
@@ -13,6 +13,7 @@ import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { useMenuTranslation } from '../hooks/useMenuTranslation';
 import { createSearchIndex, filterItems } from '@workspaceui/componentlibrary/src/utils/searchUtils';
 import { useLanguage } from '@/contexts/language';
+import { useQueryParams } from '@/hooks/useQueryParams';
 
 export default function Sidebar() {
   const { t } = useTranslation();
@@ -23,7 +24,7 @@ export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const { windowId } = useParams<WindowParams>();
+  const { windowId } = useQueryParams<WindowParams>();
 
   const [searchValue, setSearchValue] = useState('');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
