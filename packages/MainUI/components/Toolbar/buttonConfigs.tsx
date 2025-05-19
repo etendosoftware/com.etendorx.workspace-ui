@@ -58,6 +58,10 @@ export const createStandardButtonConfig = (
     config.disabled = !selectedRecord;
   }
 
+  if (btn.id === BUTTON_IDS.CANCEL) {
+    config.name = isFormView ? 'Cancel changes' : selectedRecord ? 'Clear selection' : '';
+  }
+
   return config;
 };
 

@@ -9,7 +9,8 @@ import { useTranslation } from '../useTranslation';
 import { useStatusModal } from './useStatusModal';
 import { useToolbarContext } from '@/contexts/ToolbarContext';
 import { useTabContext } from '@/contexts/tab';
-import { useSelected } from '@/contexts/selected';
+import { useSelectedRecord } from '../useSelectedRecord';
+import { useSelectedRecords } from '../useSelectedRecords';
 
 export const useToolbarConfig = ({
   tabId,
@@ -23,7 +24,6 @@ export const useToolbarConfig = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const { removeRecord } = useMetadataContext();
-  const { graph } = useSelected();
   const {
     statusModal,
     confirmAction,
@@ -39,9 +39,9 @@ export const useToolbarConfig = ({
 
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { tab, record } = useTabContext();
-  const selectedRecord = record;
-  const selectedMultiple = graph.getSelectedMultiple(tab);
+  const { tab } = useTabContext();
+  const selectedRecord = useSelectedRecord(tab);
+  const selectedMultiple = useSelectedRecords(tab);
   const selectedIds = useMemo(() => selectedMultiple?.map(r => String(r.id)) ?? [], [selectedMultiple]);
 
   const { deleteRecord, loading: deleteLoading } = useDeleteRecord({
