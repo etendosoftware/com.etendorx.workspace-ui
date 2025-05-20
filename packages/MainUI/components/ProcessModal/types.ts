@@ -1,22 +1,11 @@
+import { Field, ProcessDefinition, ProcessParameters } from '@workspaceui/etendohookbinder/src/api/types';
+
 export interface BaseButton {
   id: string;
   name: string;
   action: string;
   enabled: boolean;
   visible: boolean;
-}
-
-export type ProcessParameters = Array<{
-  defaultValue: string;
-  id: string;
-  name: string;
-}>;
-
-export interface ProcessDefinition extends Record<string, unknown> {
-  id: string;
-  name: string;
-  javaClassName: string;
-  parameters: ProcessParameters;
 }
 
 export interface ProcessAction extends Record<string, unknown> {
@@ -40,6 +29,7 @@ export interface BaseProcessButton extends BaseButton {
   buttonText: string;
   displayLogic?: string;
   processInfo: ProcessInfo;
+  field: Field;
 }
 
 export interface ProcessDefinitionButton extends BaseProcessButton {
@@ -66,8 +56,10 @@ export interface ProcessResponse {
     };
   }>;
   refreshParent?: boolean;
-  showInIframe?: boolean;
+  showDeprecatedFeatureModal?: boolean;
+  message?: string;
   iframeUrl?: string;
+  showInIframe?: boolean;
 }
 
 export interface ProcessModalProps {
@@ -91,13 +83,11 @@ export interface MessageStylesType {
   buttonBg: string;
 }
 
-export interface ProcessIframeModalProps {
+export interface ProcessDeprecatedModallProps {
   isOpen: boolean;
   onClose: () => void;
-  url: string;
   title?: string;
-  onProcessSuccess?: () => void;
-  tabId: string;
+  message?: string;
 }
 
 export interface ProcessDefinitionModalProps {
@@ -107,6 +97,22 @@ export interface ProcessDefinitionModalProps {
   onSuccess?: () => void;
 }
 
+export interface ProcessDeprecatedModallProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  message?: string;
+}
+
 export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
   button: NonNullable<ProcessDefinitionModalProps['button']>;
+}
+
+export interface ProcessIframeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  url: string;
+  title?: string;
+  onProcessSuccess?: () => void;
+  tabId: string;
 }

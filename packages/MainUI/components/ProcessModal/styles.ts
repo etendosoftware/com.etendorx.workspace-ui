@@ -84,6 +84,17 @@ export const useStyle = () => {
             color: theme.palette.baselineColor.neutral[80],
             marginBottom: '0.5rem',
           },
+          clearButtonHover: {
+            width: '2rem',
+            height: '2rem',
+            transition: 'background-color 0.3s, color 0.3s',
+            '&:hover': {
+              borderRadius: '50%',
+              '& .MuiSvgIcon-root': {
+                color: theme.palette.baselineColor.neutral[100],
+              },
+            },
+          },
         },
       } satisfies Record<string, SxProps<Theme>>),
     [theme],
