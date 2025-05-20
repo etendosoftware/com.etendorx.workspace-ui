@@ -87,11 +87,11 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     const selectedItems = Array.isArray(selected[tab.level]) ? selected[tab.level] : [selectedRecord];
 
     const filteredButtons = buttons.filter(button => {
-      if (!button.field.displayLogicExpression) {
+      if (!button.displayLogicExpression) {
         return true;
       }
 
-      const compiledExpr = compileExpression(button.field.displayLogicExpression);
+      const compiledExpr = compileExpression(button.displayLogicExpression);
 
       try {
         const isVisible = selectedItems.some(record => {

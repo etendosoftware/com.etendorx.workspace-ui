@@ -20,8 +20,7 @@ export interface ExecuteProcessActionParams {
   params?: Record<string, unknown>;
 }
 
-export interface ToolbarResponseButton extends ToolbarButton {
-  field: Field;
+export interface ToolbarResponseButton extends Field, ToolbarButton {
   icon: IconName;
 }
 

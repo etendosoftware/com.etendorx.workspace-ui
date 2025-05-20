@@ -1,11 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { compileExpression } from '@/components/Form/FormView/selectors/BaseSelector';
 import { useUserContext } from './useUserContext';
 import { useMetadataContext } from './useMetadataContext';
 import { useTabContext } from '@/contexts/tab';
-import { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { useMemo } from 'react';
 
-export default function useDisplayLogic(field: Field) {
+export default function useDisplayLogic(field: any) {
   const { session } = useUserContext();
   const { selected } = useMetadataContext();
   const { tab } = useTabContext();
