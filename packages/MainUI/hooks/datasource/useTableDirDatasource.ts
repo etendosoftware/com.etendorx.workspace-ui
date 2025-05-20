@@ -24,10 +24,11 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
   const [error, setError] = useState<Error>();
   const [currentPage, setCurrentPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const value = watch(field.hqlName);
 
   const fetch = useCallback(
-    async (_currentValue: typeof value, reset = false) => {
+    async (_currentValue: typeof value, reset = false, search = '') => {
       try {
         if (!field || !tab) {
           return;
@@ -55,9 +56,46 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           inpwindowId: tab.windowId,
           inpTableId: field.column.table,
           initiatorField: field.hqlName,
+          _constructor: 'AdvancedCriteria',
+          _OrExpression: 'true',
+          _textMatchStyle: 'substring',
           ...(typeof _currentValue !== 'undefined' ? { _currentValue } : {}),
           ...parentData,
         });
+
+        if (search) {
+          const dummyId = new Date().getTime();
+
+          body.append(
+            'criteria',
+            JSON.stringify({
+              fieldName: '_dummy',
+              operator: 'equals',
+              value: dummyId,
+            }),
+          );
+
+          const searchFields = [];
+          if (field.selector?.displayField) {
+            searchFields.push(field.selector.displayField);
+          }
+          if (field.selector?.extraSearchFields) {
+            searchFields.push(...field.selector.extraSearchFields.split(',').map(f => f.trim()));
+          }
+          if (searchFields.length === 0) {
+            searchFields.push('name', 'value', 'description');
+          }
+          searchFields.forEach(fieldName => {
+            body.append(
+              'criteria',
+              JSON.stringify({
+                fieldName,
+                operator: 'iContains',
+                value: search,
+              }),
+            );
+          });
+        }
 
         Object.entries(getValues()).forEach(([key, value]) => {
           const _key = tab.fields[key]?.inputName || key;
@@ -88,7 +126,23 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
             setHasMore(false);
           }
 
-          setRecords(prevRecords => (reset ? data.response.data : [...prevRecords, ...data.response.data]));
+          if (reset) {
+            setRecords(data.response.data);
+          } else {
+            const recordMap = new Map();
+
+            records.forEach(record => {
+              const recordId = record.id || JSON.stringify(record);
+              recordMap.set(recordId, record);
+            });
+
+            data.response.data.forEach((record: { id: string }) => {
+              const recordId = record.id || JSON.stringify(record);
+              recordMap.set(recordId, record);
+            });
+
+            setRecords(Array.from(recordMap.values()));
+          }
 
           if (!reset) {
             setCurrentPage(prev => prev + 1);
@@ -106,20 +160,28 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         setLoading(false);
       }
     },
-    [currentPage, field, getValues, initialPageSize, pageSize, parentData, tab, windowId],
+    [field, tab, currentPage, pageSize, initialPageSize, windowId, parentData, getValues, records],
+  );
+
+  const search = useCallback(
+    (term: string) => {
+      setSearchTerm(term);
+      fetch(value, true, term);
+    },
+    [fetch, value],
   );
 
   const loadMore = useCallback(() => {
     if (!loading && hasMore) {
-      fetch(value);
+      fetch(value, false, searchTerm);
     }
-  }, [fetch, loading, hasMore, value]);
+  }, [fetch, loading, hasMore, value, searchTerm]);
 
   const refetch = useCallback(
     (reset = true) => {
-      fetch(value, reset);
+      fetch(value, reset, searchTerm);
     },
-    [fetch, value],
+    [fetch, value, searchTerm],
   );
 
   return {
@@ -129,5 +191,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
     refetch,
     loadMore,
     hasMore,
+    search,
+    searchTerm,
   };
 };

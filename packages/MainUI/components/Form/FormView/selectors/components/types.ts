@@ -19,6 +19,7 @@ export interface SelectProps {
   name: string;
   options: Array<{ id: string; label: string; data?: EntityData }>;
   onFocus?: () => void;
+  onSearch?: (term: string) => void;
   isReadOnly?: boolean;
   loading?: boolean;
   hasMore?: boolean;
