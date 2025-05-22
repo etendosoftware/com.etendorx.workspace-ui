@@ -5,6 +5,7 @@ import checkIconUrl from '../../../../../../ComponentLibrary/src/assets/icons/ch
 import closeIconUrl from '../../../../../../ComponentLibrary/src/assets/icons/x.svg?url';
 import ChevronDown from '../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
 import Image from 'next/image';
+import useDebounce from '@/hooks/useDebounce';
 
 function SelectCmp({
   name,
@@ -28,6 +29,7 @@ function SelectCmp({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef<HTMLLIElement>(null);
+  const debouncedSetSearchTerm = useDebounce(onSearch);
 
   const filteredOptions = useMemo(
     () => options.filter(option => option.label.toLowerCase().includes(searchTerm.toLowerCase())),
@@ -129,15 +131,13 @@ function SelectCmp({
       const term = e.target.value;
       setSearchTerm(term);
 
-      if (onSearch) {
-        clearTimeout((window as any).searchTimeout);
-        (window as any).searchTimeout = setTimeout(() => {
-          onSearch(term);
-        }, 500);
+      if (debouncedSetSearchTerm) {
+        debouncedSetSearchTerm(term)
       }
     },
-    [onSearch],
+    [debouncedSetSearchTerm],
   );
+
   const handleOptionClick = useCallback(
     (id: string, label: string) => {
       handleSelect(id, label);

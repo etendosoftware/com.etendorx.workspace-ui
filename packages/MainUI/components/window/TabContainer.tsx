@@ -14,7 +14,7 @@ export function TabContainer({ className, collapsed, current, ...props }: Contai
   return (
     <div
       {...props}
-      className={`${BASE_STYLES} ${current.level === 0 ? MAIN_TAB_STYLES : SUB_TAB_STYLES} ${collapsed ? COLLAPSED_STYLES : EXPANDED_STYLES} ${className}`}
+      className={`${BASE_STYLES} ${current.tabLevel === 0 ? MAIN_TAB_STYLES : SUB_TAB_STYLES} ${collapsed ? COLLAPSED_STYLES : EXPANDED_STYLES} ${className}`}
     />
   );
 }

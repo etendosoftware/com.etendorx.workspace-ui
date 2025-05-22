@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { useTabContext } from '@/contexts/tab';
 import useFormParent from '../useFormParent';
 import { FieldName } from '../types';
+import { logger } from '@/utils/logger';
 
 export interface UseTableDirDatasourceParams {
   field: Field;
@@ -151,6 +152,8 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           throw new Error(statusText);
         }
       } catch (err) {
+        logger.warn(err);
+
         if (reset) {
           setRecords([]);
         }

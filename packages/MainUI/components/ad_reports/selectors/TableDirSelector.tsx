@@ -51,7 +51,7 @@ const TableDirSelector = ({ onChange, entity, value, name, isReadOnly }: TableDi
   );
 
   if (loading || !loaded) return <Spinner />;
-  if (error) return <div>Error: {error.message}</div>;
+  if (error) return <div>Error: {error?.message}</div>;
 
   return (
     <Select

@@ -12,23 +12,23 @@ import { useSelected } from '@/hooks/useSelected';
 export default function Tabs({ tabs }: TabsProps) {
   const { activeLevels, setActiveLevel } = useSelected();
   const [current, setCurrent] = useState(tabs[0]);
-  const collapsed = !activeLevels.includes(current.level);
+  const collapsed = !activeLevels.includes(current.tabLevel);
 
   const handleClick = useCallback(
     (tab: TabType) => {
       setCurrent(tab);
-      setActiveLevel(tab.level);
+      setActiveLevel(tab.tabLevel);
     },
     [setActiveLevel],
   );
 
   const handleClose = useCallback(() => {
-    setActiveLevel(current.level - 1);
-  }, [current.level, setActiveLevel]);
+    setActiveLevel(current.tabLevel - 1);
+  }, [current.tabLevel, setActiveLevel]);
 
   return (
     <TabContainer current={current} collapsed={collapsed}>
-      {current.level === 0 ? (
+      {current.tabLevel === 0 ? (
         <TabButton tab={current} onClick={handleClick} active />
       ) : (
         <SubTabsSwitch current={current} tabs={tabs} onClick={handleClick} onClose={handleClose} />

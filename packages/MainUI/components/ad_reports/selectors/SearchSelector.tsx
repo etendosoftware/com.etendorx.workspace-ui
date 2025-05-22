@@ -56,7 +56,7 @@ const SearchSelector = ({ onChange, value, field, name, disabled, readOnly }: Se
   );
 
   if (loading) return <Spinner />;
-  if (error) return <div>Error: {error.message}</div>;
+  if (error) return <div>Error: {error?.message}</div>;
 
   return (
     <Select

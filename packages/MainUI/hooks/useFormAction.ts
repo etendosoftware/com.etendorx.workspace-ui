@@ -44,7 +44,7 @@ export const useFormAction = ({
           setLoading(false);
           onSuccess?.(data.response.data[0]);
         } else {
-          throw new Error(data.response.error.message);
+          throw new Error(data.response.error?.message);
         }
       } catch (err) {
         setLoading(false);

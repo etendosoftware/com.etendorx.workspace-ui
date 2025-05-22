@@ -67,7 +67,7 @@ export default function ProcessDefinitionModal({
       } catch (error) {
         logger.warn('Error executing process:', error);
         setResponse({
-          msgText: error instanceof Error ? error.message : 'Unknown error',
+          msgText: error instanceof Error ? error?.message : 'Unknown error',
           msgTitle: t('errors.internalServerError.title'),
           msgType: 'error',
         });

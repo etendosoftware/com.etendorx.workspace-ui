@@ -210,7 +210,7 @@ export interface Tab {
   table: string;
   entityName: string;
   fields: Record<string, Field>;
-  level: number;
+  tabLevel: number;
   _identifier: string;
   records: Record<string, never>;
   hqlfilterclause: string;

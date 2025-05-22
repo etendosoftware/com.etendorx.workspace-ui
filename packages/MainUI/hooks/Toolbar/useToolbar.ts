@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { ToolbarResponse } from './types';
+import { logger } from '@/utils/logger';
 
 export function useToolbar(windowId: string, tabId?: string) {
   const [toolbar, setToolbar] = useState<ToolbarResponse | null>(null);
@@ -19,6 +20,8 @@ export function useToolbar(windowId: string, tabId?: string) {
 
       setToolbar(response.data);
     } catch (error) {
+      logger.warn(error);
+
       setError(error instanceof Error ? error : new Error('Failed to fetch toolbar'));
     } finally {
       setLoading(false);

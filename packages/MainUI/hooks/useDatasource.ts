@@ -7,6 +7,7 @@ import {
 } from '@workspaceui/etendohookbinder/src/api/types';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { SearchUtils, ColumnFilterUtils } from '@workspaceui/etendohookbinder/src/utils/search-utils';
+import { logger } from '@/utils/logger';
 
 const loadData = async (entity: string, page: number, pageSize: number, params: DatasourceOptions) => {
   const safePageSize = pageSize ?? 1000;
@@ -113,16 +114,20 @@ export function useDatasource({
 
     const f = async () => {
       try {
-        const { ok, data: response } = await loadData(entity, page, safePageSize, queryParams);
+        const { ok, data } = await loadData(entity, page, safePageSize, queryParams);
 
-        if (!ok || response.error || response.status != 0) {
-          throw new Error(response.error.message);
+        console.debug(data.response.data);
+
+        if (!(ok && data.response.data)) {
+          throw data;
         } else {
-          setHasMoreRecords(response.data.length >= safePageSize);
-          setRecords((prev) => (page === 1 || searchQuery ? response.data : prev.concat(response.data)));
+          setHasMoreRecords(data.response.data.length >= safePageSize);
+          setRecords((prev) => (page === 1 || searchQuery ? data.response.data : prev.concat(data.response.data)));
           setLoaded(true);
         }
       } catch (e) {
+        logger.warn(e);
+
         if (!isImplicitFilterApplied) {
           setError(e as Error);
         } else {

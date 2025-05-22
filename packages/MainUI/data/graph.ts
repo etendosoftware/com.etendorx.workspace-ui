@@ -33,8 +33,6 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
     tabs.forEach(tab => {
       if (tab.parentTabId) {
         this.addEdge(tab.parentTabId, tab.id);
-      } else {
-        console.debug('root tab', tab)
       }
     });
   }

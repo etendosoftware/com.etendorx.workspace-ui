@@ -8,6 +8,7 @@ import { IMetadataContext } from './types';
 import { useDatasourceContext } from './datasourceContext';
 import { mapBy } from '@/utils/structures';
 import { useQueryParams } from '@/hooks/useQueryParams';
+import { logger } from '@/utils/logger';
 
 export const MetadataContext = createContext({} as IMetadataContext);
 
@@ -36,6 +37,8 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       setWindowData(newWindowData);
       setGroupedTabs(groupTabsByLevel(newWindowData));
     } catch (err) {
+      logger.warn(err);
+
       setError(err as Error);
     } finally {
       setLoading(false);

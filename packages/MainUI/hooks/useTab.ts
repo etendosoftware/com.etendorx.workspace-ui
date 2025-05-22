@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -22,6 +23,8 @@ export function useTab(tabId?: string) {
       setData(data);
       setLoaded(true);
     } catch (e) {
+      logger.warn(e);
+
       setError(e as Error);
     } finally {
       setLoading(false);

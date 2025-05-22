@@ -7,7 +7,7 @@ import type { TabSwitchProps } from '@/components/window/types';
 export const TabButton = ({ tab, onClick, active }: TabSwitchProps) => {
   const { window } = useMetadataContext();
 
-  const title = useMemo(() => (tab.level === 0 ? window?.name : tab.name), [tab.level, tab.name, window?.name]);
+  const title = useMemo(() => (tab.tabLevel === 0 ? window?.name : tab.name), [tab.tabLevel, tab.name, window?.name]);
 
   const handleClick = useCallback(() => {
     onClick(tab);
@@ -20,7 +20,7 @@ export const TabButton = ({ tab, onClick, active }: TabSwitchProps) => {
         onClick={handleClick}
         title={title}
         aria-label={title}
-        className={`px-2 py-1 w-auto font-semibold hover:bg-white transition-colors appearance-none ${tab.level === 0 ? 'text-xl' : active ? 'bg-white' : ''}`}>
+        className={`px-2 py-1 w-auto font-semibold hover:bg-white transition-colors appearance-none ${tab.tabLevel === 0 ? 'text-xl' : active ? 'bg-white' : ''}`}>
         {title}
       </button>
     </span>

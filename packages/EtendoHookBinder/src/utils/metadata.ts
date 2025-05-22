@@ -10,10 +10,10 @@ export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
     }
 
     windowData?.tabs.forEach(tab => {
-      if (tabs[tab.level]) {
-        tabs[tab.level].push(tab);
+      if (tabs[tab.tabLevel]) {
+        tabs[tab.tabLevel].push(tab);
       } else {
-        tabs[tab.level] = [tab];
+        tabs[tab.tabLevel] = [tab];
       }
     });
   } catch (e) {

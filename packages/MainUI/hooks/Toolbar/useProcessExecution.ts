@@ -6,6 +6,7 @@ import { ProcessButton, ProcessButtonType, ProcessResponse } from '@/components/
 import { useMetadataContext } from '../useMetadataContext';
 import { useParams } from 'next/navigation';
 import { useTabContext } from '@/contexts/tab';
+import { logger } from '@/utils/logger';
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
@@ -56,6 +57,8 @@ export function useProcessExecution() {
 
         return data;
       } catch (error) {
+        logger.warn(error);
+
         const processError = error instanceof Error ? error : new Error('Process execution failed');
         setError(processError);
         throw processError;
@@ -143,6 +146,8 @@ export function useProcessExecution() {
             iframeUrl: completeUrl,
           });
         } catch (error) {
+          logger.warn(error);
+
           const processError = error instanceof Error ? error : new Error('Process execution failed');
           setError(processError);
           reject(processError);

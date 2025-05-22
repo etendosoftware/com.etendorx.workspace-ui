@@ -255,7 +255,7 @@ const DynamicTable = () => {
 
   if (error) {
     return (
-      <ErrorDisplay title={t('errors.tableError.title')} description={error.message} showRetry onRetry={refetch} />
+      <ErrorDisplay title={t('errors.tableError.title')} description={error?.message} showRetry onRetry={refetch} />
     );
   }
 

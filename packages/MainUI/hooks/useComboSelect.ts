@@ -5,6 +5,7 @@ import { useFormContext } from 'react-hook-form';
 import { useParams } from 'next/navigation';
 import { getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { useTabContext } from '@/contexts/tab';
+import { logger } from '@/utils/logger';
 
 export interface UseComboSelectParams {
   field: Field;
@@ -89,6 +90,8 @@ export const useComboSelect = ({ field }: UseComboSelectParams) => {
           throw new Error(statusText);
         }
       } catch (err) {
+        logger.warn(err);
+
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     },
