@@ -3,6 +3,7 @@ import { Section } from './ToggleButton/types';
 import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
 import { Language } from '@workspaceui/componentlibrary/src/locales/types';
 import {
+  CurrentOrganization,
   CurrentRole,
   CurrentWarehouse,
   LoginResponse,
@@ -49,18 +50,11 @@ export interface BaseDefaultConfiguration {
 
 export interface BaseProfileModalProps {
   icon: string | ReactNode;
-  cancelButtonText?: string;
-  saveButtonText?: string;
-  tooltipButtonProfile?: string;
   userPhotoUrl: string;
   userName: string;
   userEmail: string;
-  sectionTooltip: string;
   sections: Section[];
   section: string;
-  passwordLabel: string;
-  newPasswordLabel: string;
-  confirmPasswordLabel: string;
   translations: Translations;
 }
 
@@ -83,6 +77,7 @@ export interface LanguageOption {
 export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps, ActionProps {
   currentRole: CurrentRole | undefined;
   currentWarehouse: CurrentWarehouse | undefined;
+  currentOrganization: CurrentOrganization | undefined;
   roles: SessionResponse['roles'];
   logger: Logger;
   onSignOff: () => void;
@@ -97,20 +92,19 @@ export interface UserProfileProps {
   photoUrl: string;
   name: string;
   email: string;
-  sectionTooltip: string;
   onSignOff: () => void;
 }
 
 export interface SelectorListProps {
   section: string;
-  passwordLabel: string;
-  newPasswordLabel: string;
-  confirmPasswordLabel: string;
   onRoleChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
   onWarehouseChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
+  onOrgChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
   roles: SessionResponse['roles'];
   selectedRole: Option | null;
   selectedWarehouse: Option | null;
+  selectedClient: Option | null;
+  selectedOrg: Option;
   onLanguageChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
   selectedLanguage: Option | null;
   languages: Array<{

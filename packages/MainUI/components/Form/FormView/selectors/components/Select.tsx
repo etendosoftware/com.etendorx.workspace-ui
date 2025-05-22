@@ -11,6 +11,7 @@ function SelectCmp({
   options,
   onFocus,
   isReadOnly,
+  onSearch,
   onLoadMore,
   loading = false,
   hasMore = true,
@@ -123,10 +124,20 @@ function SelectCmp({
     onFocus?.();
   }, [onFocus]);
 
-  const handleSetSearchTerm = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  }, []);
+  const handleSetSearchTerm = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const term = e.target.value;
+      setSearchTerm(term);
 
+      if (onSearch) {
+        clearTimeout((window as any).searchTimeout);
+        (window as any).searchTimeout = setTimeout(() => {
+          onSearch(term);
+        }, 500);
+      }
+    },
+    [onSearch],
+  );
   const handleOptionClick = useCallback(
     (id: string, label: string) => {
       handleSelect(id, label);

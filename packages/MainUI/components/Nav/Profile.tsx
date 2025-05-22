@@ -7,8 +7,16 @@ import { useLanguage } from '@/contexts/language';
 import ProfileModal from '../ProfileModal/ProfileModal';
 
 const ProfileWrapper = (props: ProfileWrapperProps) => {
-  const { setDefaultConfiguration, currentRole, profile, currentWarehouse, changeProfile, roles, languages } =
-    useContext(UserContext);
+  const {
+    setDefaultConfiguration,
+    currentRole,
+    currentOrganization,
+    profile,
+    currentWarehouse,
+    changeProfile,
+    roles,
+    languages,
+  } = useContext(UserContext);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const { language, setLanguage, getFlag } = useLanguage();
 
@@ -41,6 +49,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
       {...props}
       currentRole={currentRole}
       currentWarehouse={currentWarehouse}
+      currentOrganization={currentOrganization}
       roles={roles}
       saveAsDefault={saveAsDefault}
       onLanguageChange={setLanguage}

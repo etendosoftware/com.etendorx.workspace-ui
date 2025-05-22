@@ -316,6 +316,7 @@ export type RoleList = {
   id: string;
   name: string;
   organizations: Organization[];
+  client: string;
 }[];
 
 export interface Organization {

@@ -129,7 +129,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   }, [INITIAL_PROFILE, setToken]);
 
   const changeProfile = useCallback(
-    async (params: { role?: string; warehouse?: string }) => {
+    async (params: { role?: string; client?: string; organization?: string; warehouse?: string }) => {
       if (!token) {
         throw new Error('Authentication token is not available');
       }

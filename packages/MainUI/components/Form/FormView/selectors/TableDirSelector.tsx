@@ -4,8 +4,20 @@ import { useTableDirDatasource } from '@/hooks/datasource/useTableDirDatasource'
 import { useSelectFieldOptions } from '@/hooks/useSelectFieldOptions';
 
 export const TableDirSelector = ({ field, isReadOnly }: { field: Field; isReadOnly: boolean }) => {
-  const { records, refetch } = useTableDirDatasource({ field });
+  const { records, loading, refetch, loadMore, hasMore, search } = useTableDirDatasource({ field });
   const options = useSelectFieldOptions(field, records);
 
-  return <Select name={field.hqlName} options={options} onFocus={refetch} isReadOnly={isReadOnly} field={field} />;
+  return (
+    <Select
+      name={field.hqlName}
+      options={options}
+      onFocus={refetch}
+      onSearch={search}
+      isReadOnly={isReadOnly}
+      field={field}
+      onLoadMore={loadMore}
+      loading={loading}
+      hasMore={hasMore}
+    />
+  );
 };
