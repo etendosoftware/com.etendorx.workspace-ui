@@ -296,6 +296,15 @@ importers:
       '@workspaceui/mainui':
         specifier: workspace:mainui
         version: link:../MainUI
+      material-react-table:
+        specifier: ^3.2.1
+        version: 3.2.1(llcubuqwzyybdqeuu3j7kp6xey)
+      react:
+        specifier: 18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: 18.3.1
+        version: 18.3.1(react@18.3.1)
       react-markdown:
         specifier: ^9.0.1
         version: 9.0.1(@types/react@18.3.1)(react@18.3.1)

@@ -12,21 +12,18 @@ import IconButton from '@workspaceui/componentlibrary/src/components/IconButton'
 import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
 import { Language } from '@workspaceui/componentlibrary/src/locales/types';
 import { useLanguage } from '@/contexts/language';
+import { useTranslation } from '@/hooks/useTranslation';
+
+const DefaultOrg = { title: '*', value: '0', id: '0' };
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
-  cancelButtonText,
-  saveButtonText,
-  tooltipButtonProfile,
-  passwordLabel,
-  newPasswordLabel,
-  confirmPasswordLabel,
   userPhotoUrl,
   userName,
   userEmail,
-  sectionTooltip,
   icon,
   sections,
   currentRole,
+  currentOrganization,
   currentWarehouse,
   roles,
   changeProfile,
@@ -40,6 +37,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   saveAsDefault,
   onSaveAsDefaultChange,
 }) => {
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const { styles, sx } = useStyle();
   const [currentSection, setCurrentSection] = useState<string>('profile');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { language: initialLanguage, getFlag } = useLanguage();
@@ -51,6 +51,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       return null;
     }
   });
+
+  const selectedClient = useMemo(() => {
+    const client = selectedRole && roles.find(r => r.id === selectedRole.value)?.client;
+    return client ? { title: client, value: client, id: client } : null;
+  }, [selectedRole, roles]);
+
+  const [selectedOrg, setSelectedOrg] = useState<Option>(() => {
+    if (currentOrganization) {
+      return { title: currentOrganization.name, value: currentOrganization.id, id: currentOrganization.id };
+    } else {
+      return DefaultOrg;
+    }
+  });
+
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(() => {
     if (currentWarehouse) {
       return { title: currentWarehouse.name, value: currentWarehouse.id, id: currentWarehouse.id };
@@ -58,6 +72,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       return null;
     }
   });
+
   const [selectedLanguage, setSelectedLanguage] = useState<Option | null>(() => {
     const currentLang = languages.find(lang => lang.language === language);
     return currentLang
@@ -68,12 +83,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         }
       : null;
   });
-  const theme = useTheme();
-  const { styles, sx } = useStyle();
 
   useEffect(() => {
     if (currentRole) {
       setSelectedRole({ title: currentRole.name, value: currentRole.id, id: currentRole.id });
+    }
+
+    if (currentOrganization) {
+      setSelectedOrg({ title: currentOrganization.name, value: currentOrganization.id, id: currentOrganization.id });
     }
 
     if (currentWarehouse) {
@@ -83,7 +100,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         id: currentWarehouse.id,
       });
     }
-  }, [currentRole, currentWarehouse]);
+  }, [currentRole, currentOrganization, currentWarehouse]);
 
   useEffect(() => {
     if (language) {
@@ -100,6 +117,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const handleRoleChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
     setSelectedRole(value);
+    setSelectedOrg(DefaultOrg);
+    setSelectedWarehouse(null);
+  }, []);
+
+  const handleOrgChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
+    setSelectedOrg(value ?? DefaultOrg);
     setSelectedWarehouse(null);
   }, []);
 
@@ -125,10 +148,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const handleSave = useCallback(async () => {
     if (currentSection === 'profile') {
       try {
-        const params: { role?: string; warehouse?: string } = {};
+        const params: { role?: string; organization?: string; warehouse?: string } = {};
 
         if (selectedRole && selectedRole.value !== currentRole?.id) {
           params.role = selectedRole.value;
+        }
+
+        if (selectedOrg && selectedOrg.value !== currentOrganization?.id) {
+          params.organization = selectedOrg.value;
         }
 
         if (selectedWarehouse && selectedWarehouse.value !== currentWarehouse?.id) {
@@ -155,8 +182,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           await onSetDefaultConfiguration({
             defaultRole: selectedRole?.value,
             defaultWarehouse: selectedWarehouse?.value,
+            organization: selectedOrg?.value,
             language: selectedLanguage?.id,
-            client: 'System',
           });
         }
 
@@ -169,6 +196,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     currentSection,
     selectedRole,
     currentRole?.id,
+    selectedOrg,
+    currentOrganization?.id,
     selectedWarehouse,
     currentWarehouse?.id,
     selectedLanguage,
@@ -187,20 +216,23 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     }
 
     const roleChanged = selectedRole && selectedRole?.value !== currentRole?.id;
+    const orgChanged = selectedOrg && selectedOrg?.value !== currentOrganization?.id;
     const warehouseChanged = selectedWarehouse && selectedWarehouse?.value !== currentWarehouse?.id;
     const languageChanged = selectedLanguage && selectedLanguage?.value !== language;
 
-    const somethingChanged = roleChanged || warehouseChanged || languageChanged || saveAsDefault;
+    const somethingChanged = roleChanged || orgChanged || warehouseChanged || languageChanged || saveAsDefault;
 
     return !somethingChanged;
   }, [
     currentRole?.id,
+    currentOrganization?.id,
     currentWarehouse?.id,
     language,
     saveAsDefault,
-    selectedLanguage,
     selectedRole,
+    selectedOrg,
     selectedWarehouse,
+    selectedLanguage,
   ]);
 
   const handleLanguageChange = useCallback(
@@ -215,7 +247,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   return (
     <>
-      <IconButton tooltip={tooltipButtonProfile} onClick={handleClick}>
+      <IconButton tooltip={t('navigation.profile.tooltipButtonProfile')} onClick={handleClick}>
         {icon}
       </IconButton>
       <Menu
@@ -229,26 +261,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           },
         }}
         MenuListProps={{ sx: menuSyle }}>
-        <UserProfile
-          photoUrl={userPhotoUrl}
-          name={userName}
-          email={userEmail}
-          sectionTooltip={sectionTooltip}
-          onSignOff={onSignOff}
-        />
+        <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} onSignOff={onSignOff} />
         <div style={styles.toggleSectionStyles}>
           <ToggleSection sections={sections} currentSection={currentSection} onToggle={handleToggle} />
         </div>
         <SelectorList
           section={currentSection}
-          passwordLabel={passwordLabel}
-          newPasswordLabel={newPasswordLabel}
-          confirmPasswordLabel={confirmPasswordLabel}
           onRoleChange={handleRoleChange}
+          onOrgChange={handleOrgChange}
           onWarehouseChange={handleWarehouseChange}
           onLanguageChange={handleLanguageChange}
           roles={roles}
           selectedRole={selectedRole}
+          selectedClient={selectedClient}
+          selectedOrg={selectedOrg}
           selectedWarehouse={selectedWarehouse}
           languages={languages}
           selectedLanguage={selectedLanguage}
@@ -259,14 +285,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         />
         <div style={styles.buttonContainerStyles}>
           <Button sx={sx.buttonStyles} onClick={handleClose}>
-            {cancelButtonText}
+            {t('common.cancel')}
           </Button>
           <Button
             startIcon={<CheckCircle fill={theme.palette.baselineColor.neutral[0]} />}
             sx={sx.saveButtonStyles}
             onClick={handleSave}
             disabled={isSaveDisabled}>
-            {saveButtonText}
+            {t('common.save')}
           </Button>
         </div>
       </Menu>
