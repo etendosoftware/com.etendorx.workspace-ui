@@ -1,4 +1,4 @@
-import { Field, ProcessDefinition, ProcessInfo } from "@workspaceui/etendohookbinder/src/api/types";
+import { Field, ProcessAction, ProcessDefinition, ProcessInfo } from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface BaseButton extends Field {
   id: string;
@@ -6,11 +6,6 @@ export interface BaseButton extends Field {
   action: string;
   enabled: boolean;
   visible: boolean;
-}
-
-export interface ProcessAction extends Record<string, unknown> {
-  id: string;
-  name: string;
 }
 
 export interface BaseProcessButton extends BaseButton {

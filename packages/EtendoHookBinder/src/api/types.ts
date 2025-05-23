@@ -54,6 +54,11 @@ export interface DatasourceOptions {
   language?: string;
 }
 
+export interface ProcessAction extends Record<string, unknown> {
+  id: string;
+  name: string;
+}
+
 export interface GridProps {
   sort: number;
   autoExpand: boolean;
@@ -115,6 +120,8 @@ export interface Field {
   isUpdatable: boolean;
   description: string;
   helpComment: string;
+  processDefinition?: ProcessDefinition;
+  processAction?: ProcessAction;
 }
 
 export interface Option<T extends string = string> {

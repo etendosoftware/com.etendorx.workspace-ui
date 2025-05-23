@@ -78,6 +78,8 @@ export interface StandardButton extends BaseButton {
   fill?: string;
   height?: number;
   width?: number;
+  active?: boolean;
+  seqno: number | null;
 }
 
 export interface ProcessMenuButtonConfig extends Omit<StandardButtonConfig, 'onClick'> {

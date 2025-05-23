@@ -23,10 +23,11 @@ export interface ExecuteProcessActionParams {
 export interface ToolbarResponseButton extends Field, ToolbarButton {
   displayLogicExpression: string;
   icon: IconName;
+  data: Record<string, string>;
 }
 
 export interface ToolbarResponse {
-  buttons: Array<ToolbarResponseButton>;
+  response: Array<ToolbarResponseButton>;
   windowId: string;
   isNew: boolean;
 }

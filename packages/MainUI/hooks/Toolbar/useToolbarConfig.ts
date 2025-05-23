@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BUTTON_IDS } from '../../constants/Toolbar';
 import { useSearch } from '../../contexts/searchContext';
 import { useMetadataContext } from '../useMetadataContext';
 import { useDeleteRecord } from '../useDeleteRecord';
@@ -10,6 +9,7 @@ import { useStatusModal } from './useStatusModal';
 import { useToolbarContext } from '@/contexts/ToolbarContext';
 import { useTabContext } from '@/contexts/tab';
 import { useSelected } from '@/contexts/selected';
+import { ToolbarButtonMetadata } from '@/components/Toolbar/buttonConfigs';
 
 export const useToolbarConfig = ({
   tabId,
@@ -85,83 +85,133 @@ export const useToolbarConfig = ({
     }
   }, [statusModal.open, isDeleting]);
 
-  const handleAction = useCallback(
-    (action: string) => {
-      if (isDeleting) return;
+  const actionHandlers = useMemo(
+    () => ({
+      CANCEL: () => onBack?.(),
+      NEW: () => {
+        const params = new URLSearchParams(location.search);
+        params.set('recordId_' + tab?.id, 'new');
+        history.pushState(null, '', `?${params.toString()}`);
+        onNew?.();
+      },
+      FIND: () => setSearchOpen(true),
+      TAB_CONTROL: () => {
+        logger.info('Tab control clicked');
+      },
+      FILTER: () => onFilter?.(),
+      SAVE: () => onSave?.(),
+      DELETE: () => {
+        if (tab) {
+          if (selectedIds.length > 0) {
+            const recordsToDelete = selectedIds.map(id => tab.records?.[id] || { id });
 
-      switch (action) {
-        case BUTTON_IDS.CANCEL:
-          onBack?.();
-          break;
-        case BUTTON_IDS.NEW: {
-          const params = new URLSearchParams(location.search);
-          params.set('recordId_' + tab?.id, 'new');
-          history.pushState(null, '', `?${params.toString()}`);
-          onNew?.();
-          break;
-        }
-        case BUTTON_IDS.FIND:
-          setSearchOpen(true);
-          break;
-        case BUTTON_IDS.TAB_CONTROL:
-          // setShowTabContainer(prevState => !prevState);
-          break;
-        case BUTTON_IDS.FILTER:
-          onFilter?.();
-          break;
-        case BUTTON_IDS.SAVE:
-          onSave?.();
-          break;
-        case BUTTON_IDS.DELETE:
-          if (tab) {
-            if (selectedIds.length > 0) {
-              const recordsToDelete = selectedIds.map(id => tab.records?.[id] || { id });
+            const confirmText =
+              selectedIds.length === 1
+                ? `${t('status.deleteConfirmation')} ${String(selectedRecord?._identifier || selectedRecord?.id)}?`
+                : `${t('status.multipleDeleteConfirmation')} ${selectedIds.length}`;
 
-              const confirmText =
-                selectedIds.length === 1
-                  ? `${t('status.deleteConfirmation')} ${String(selectedRecord?._identifier || selectedRecord?.id)}?`
-                  : `${t('status.multipleDeleteConfirmation')} ${selectedIds.length}`;
-
-              showConfirmModal({
-                confirmText,
-                onConfirm: () => {
-                  setIsDeleting(true);
-                  deleteRecord(selectedIds.length === 1 ? recordsToDelete[0] : recordsToDelete);
-                },
-                saveLabel: t('common.confirm'),
-                secondaryButtonLabel: t('common.cancel'),
-              });
-            } else {
-              showErrorModal(t('status.selectRecordError'), {
-                saveLabel: t('common.close'),
-                secondaryButtonLabel: t('modal.secondaryButtonLabel'),
-              });
-            }
+            showConfirmModal({
+              confirmText,
+              onConfirm: () => {
+                setIsDeleting(true);
+                deleteRecord(selectedIds.length === 1 ? recordsToDelete[0] : recordsToDelete);
+              },
+              saveLabel: t('common.confirm'),
+              secondaryButtonLabel: t('common.cancel'),
+            });
+          } else {
+            showErrorModal(t('status.selectRecordError'), {
+              saveLabel: t('common.close'),
+              secondaryButtonLabel: t('modal.secondaryButtonLabel'),
+            });
           }
-          break;
-        case BUTTON_IDS.REFRESH:
-          onRefresh?.();
-          break;
-        default:
-          logger.warn(`Action not implemented: ${action}`);
-      }
-    },
+        }
+      },
+      REFRESH: () => onRefresh?.(),
+    }),
     [
       deleteRecord,
-      isDeleting,
       onBack,
       onFilter,
       onNew,
       onRefresh,
       onSave,
       selectedIds,
-      selectedRecord?._identifier,
-      selectedRecord?.id,
+      selectedRecord,
       showConfirmModal,
       showErrorModal,
       t,
       tab,
     ],
+  );
+
+  const handleAction = useCallback(
+    (action: string, button?: ToolbarButtonMetadata) => {
+      if (isDeleting) return;
+
+      const handler = actionHandlers[action];
+      if (handler) {
+        handler();
+        return;
+      }
+      if (button) {
+        switch (button.buttonType) {
+          case 'MODAL':
+            logger.info(`Opening modal for: ${button.name}`);
+            break;
+          case 'DROPDOWN':
+            logger.info(`Opening dropdown for: ${button.name}`);
+            break;
+          case 'TOGGLE':
+            logger.info(`Toggling: ${button.name}`);
+            break;
+          case 'CUSTOM':
+            logger.info(`Custom action for: ${button.name}`);
+            break;
+
+          default:
+            logger.warn(`Action not implemented: ${action} for button type: ${button.buttonType}`);
+        }
+      } else {
+        logger.warn(`Action not implemented: ${action}`);
+      }
+    },
+    [actionHandlers, isDeleting],
+  );
+
+  const handleButtonAction = useCallback(
+    (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => {
+      logger.debug('Dynamic button action:', { action, button: button.name, buttonType: button.buttonType });
+
+      if (action in actionHandlers) {
+        handleAction(action, button);
+        return;
+      }
+
+      switch (action) {
+        case 'OPEN_MODAL':
+          logger.info(`Opening modal for button: ${button.name}`);
+          break;
+
+        case 'OPEN_DROPDOWN':
+          logger.info(`Opening dropdown for button: ${button.name}`, button.dropdownConfig);
+          break;
+
+        case 'TOGGLE':
+          logger.info(`Toggling button: ${button.name}`);
+          break;
+
+        case 'CUSTOM_ACTION':
+          logger.info(`Custom action for button: ${button.name}`);
+          handleAction(button.action, button);
+          break;
+
+        default:
+          // Fallback a acción normal
+          handleAction(action, button);
+      }
+    },
+    [actionHandlers, handleAction],
   );
 
   const handleSearch = useCallback(
@@ -175,6 +225,7 @@ export const useToolbarConfig = ({
   return useMemo(
     () => ({
       handleAction,
+      handleButtonAction,
       searchOpen,
       setSearchOpen,
       handleSearch,
@@ -187,9 +238,11 @@ export const useToolbarConfig = ({
       handleCancelConfirm,
       hideStatusModal,
       isDeleting,
+      actionHandlers,
     }),
     [
       handleAction,
+      handleButtonAction,
       handleSearch,
       searchOpen,
       searchValue,
@@ -200,6 +253,7 @@ export const useToolbarConfig = ({
       handleCancelConfirm,
       hideStatusModal,
       isDeleting,
+      actionHandlers,
     ],
   );
 };
