@@ -46,8 +46,6 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         const startRow = reset ? 0 : currentPage * pageSize;
         const endRow = reset ? initialPageSize : startRow + pageSize;
 
-        console.debug(parentData);
-
         const body = new URLSearchParams({
           _startRow: startRow.toString(),
           _endRow: endRow.toString(),
@@ -125,7 +123,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           
         });
 
-        const { data, statusText } = await datasource.client.request(field.selector?.datasourceName ?? '', {
+        const { data } = await datasource.client.request(field.selector?.datasourceName ?? '', {
           method: 'POST',
           body,
         });
@@ -157,8 +155,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
             setCurrentPage(prev => prev + 1);
           }
         } else {
-          console.debug(data);
-          throw new Error(statusText);
+          throw new Error(data);
         }
       } catch (err) {
         logger.warn(err);

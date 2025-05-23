@@ -1,4 +1,4 @@
-import { ReportMetadata } from '../hooks/types';
+import { ReportMetadata } from '@workspaceui/etendohookbinder/src/hooks/types';
 
 export const SALES_ORDER_REPORT_META: ReportMetadata = {
   id: '800261',

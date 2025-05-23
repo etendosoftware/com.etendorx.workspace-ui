@@ -8,6 +8,7 @@ import { SubTabsSwitch } from '@/components/window/SubTabsSwitch';
 import { Tab } from '@/components/window/Tab';
 import { TabButton } from '@/components/window/TabButton';
 import { useSelected } from '@/hooks/useSelected';
+import TabContextProvider from '@/contexts/tab';
 
 export default function Tabs({ tabs }: TabsProps) {
   const { activeLevels, setActiveLevel } = useSelected();
@@ -33,7 +34,9 @@ export default function Tabs({ tabs }: TabsProps) {
       ) : (
         <SubTabsSwitch current={current} tabs={tabs} onClick={handleClick} onClose={handleClose} />
       )}
-      <Tab tab={current} collapsed={collapsed} />
+      <TabContextProvider tab={current}>
+        <Tab tab={current} collapsed={collapsed} />
+      </TabContextProvider>
     </TabContainer>
   );
 }

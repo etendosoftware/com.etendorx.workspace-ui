@@ -11,7 +11,7 @@ const getItemName = (menuItem: Menu, getTranslatedName?: (item: Menu) => string)
 const createRecentItem = (item: Menu, getTranslatedName?: (item: Menu) => string): RecentItem => ({
   id: item.id,
   name: getItemName(item, getTranslatedName),
-  windowId: item.type === 'Window' ? item.window! : item.id,
+  windowId: item.type === 'Window' ? item.windowId! : item.id,
   type: item.type ?? 'Window',
 });
 
@@ -21,7 +21,7 @@ const updateItemsWithTranslations = (
   getTranslatedName?: (item: Menu) => string,
 ): RecentItem[] => {
   return items.map(storedItem => {
-    const menuItem = findItemByIdentifier(menuItems, storedItem.window);
+    const menuItem = findItemByIdentifier(menuItems, storedItem.windowId);
     if (!menuItem) return storedItem;
 
     return {
@@ -70,7 +70,7 @@ export function useRecentItems(
 
     const hasNewItems = currentItems.some((item, index) => {
       const prevItem = previousItems.current[index];
-      return !prevItem || item.window !== prevItem.window;
+      return !prevItem || item.windowId !== prevItem.windowId;
     });
 
     if (!hasNewItems) return;

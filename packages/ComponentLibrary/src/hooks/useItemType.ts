@@ -7,8 +7,8 @@ const getReportRecordId = (item: Menu) => {
     return item.recordId;
   }
 
-  if (item.window) {
-    return item.window;
+  if (item.windowId) {
+    return item.windowId;
   }
 
   if (item.tableId) {
@@ -24,21 +24,22 @@ export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }:
       const validType = ['Window', 'Report', 'ProcessDefinition'].includes(item.type || '');
       if (!validType) {
         console.warn(`Invalid item type: ${item.type}, defaulting to Window`);
-        if (item.window && onWindowClick) {
-          onWindowClick(item.window);
+        if (item.windowId && onWindowClick) {
+          onWindowClick(item.windowId);
         }
         return;
       }
 
+      const recordId = getReportRecordId(item);
+
       switch (item.type) {
         case 'Window':
-          if (item.window && onWindowClick) {
-            onWindowClick(item.window);
+          if (item.windowId && onWindowClick) {
+            onWindowClick(item.windowId);
           }
           break;
         case 'Report':
-          if (item.id && onReportClick) {
-            const recordId = getReportRecordId(item);
+          if (item.id && recordId && onReportClick) {
             onReportClick(item.id, recordId);
           }
           break;

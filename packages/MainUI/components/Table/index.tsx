@@ -29,7 +29,7 @@ type RowProps = (props: {
 
 const getRowId = (row: EntityData) => String(row.id);
 
-const DynamicTable = () => {
+const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetStateAction<string>> }) => {
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
@@ -103,7 +103,7 @@ const DynamicTable = () => {
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
       let isRealFilterChange = false;
 
-      setColumnFilters(columnFilters => {
+      setColumnFilters((columnFilters) => {
         let newColumnFilters: MRT_ColumnFiltersState;
 
         if (typeof updaterOrValue === 'function') {
@@ -113,8 +113,8 @@ const DynamicTable = () => {
         }
 
         isRealFilterChange =
-          JSON.stringify(newColumnFilters.map(f => ({ id: f.id, value: f.value }))) !==
-          JSON.stringify(columnFilters.map(f => ({ id: f.id, value: f.value })));
+          JSON.stringify(newColumnFilters.map((f) => ({ id: f.id, value: f.value }))) !==
+          JSON.stringify(columnFilters.map((f) => ({ id: f.id, value: f.value })));
 
         if (isRealFilterChange) {
           updateColumnFilters(newColumnFilters);
@@ -155,9 +155,7 @@ const DynamicTable = () => {
             row.toggleSelected();
           }
 
-          const params = new URLSearchParams(location.search);
-          params.set('recordId_' + tab.id, record.id);
-          history.pushState(null, '', `?${params.toString()}`);
+          setRecordId(record.id);
         },
         sx: {
           ...(isSelected && {
@@ -168,7 +166,7 @@ const DynamicTable = () => {
         table,
       };
     },
-    [sx.rowSelected, tab.id],
+    [setRecordId, sx.rowSelected],
   );
 
   const renderEmptyRowsFallback = useCallback(
@@ -231,7 +229,10 @@ const DynamicTable = () => {
 
   useTableSelection(tab, records, table.getState().rowSelection);
 
-  const clearSelection = useCallback(() => table.resetRowSelection(true), [table]);
+  const clearSelection = useCallback(() => {
+    table.resetRowSelection(true);
+    setRecordId('');
+  }, [setRecordId, table]);
 
   useEffect(() => {
     if (removeRecordLocally) {

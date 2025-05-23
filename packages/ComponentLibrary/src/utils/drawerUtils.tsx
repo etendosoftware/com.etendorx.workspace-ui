@@ -1,4 +1,4 @@
-import { Menu } from '../../../EtendoHookBinder/src/api/types';
+import { Menu } from "@workspaceui/etendohookbinder/src/api/types";
 
 export const findActive = (windowId: string | undefined, items: Menu[] | undefined = []): boolean => {
   if (!items || !windowId) return false;
@@ -6,7 +6,7 @@ export const findActive = (windowId: string | undefined, items: Menu[] | undefin
   while (stack.length > 0) {
     const item = stack.pop();
     if (item) {
-      if (item.window === windowId) return true;
+      if (item.windowId === windowId) return true;
       if (item.children) stack.push(...item.children);
     }
   }
