@@ -1,6 +1,6 @@
 import { Section } from '@workspaceui/mainui/components/Form/FormView/types';
 import { BaseFieldDefinition, FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
-import { IconButtonProps } from '../../../../../../../src/components/IconButton';
+import { IconButtonProps } from '@workspaceui/componentlibrary/src/components/IconButton';
 
 export type OrganizationField = FieldDefinition | Section;
 
@@ -46,7 +46,16 @@ export interface ContentGridProps {
 }
 
 export interface ToolbarButton extends IconButtonProps {
+  key?: string;
   icon: React.ReactNode;
+  iconText?: string;
+  tooltip?: string;
+  fill?: string;
+  height?: number;
+  width?: number;
+  action?: string;
+  name?: string;
+  enabled?: boolean;
 }
 
 export interface ToolbarSectionConfig {

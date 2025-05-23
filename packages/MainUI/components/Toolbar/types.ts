@@ -94,6 +94,7 @@ export const isProcessButton = (button: Button): button is ProcessButton => {
 };
 
 export interface StandardButtonConfig extends IconButtonProps {
+  key?: string;
   icon: React.ReactNode;
   iconText?: string;
   fill?: string;

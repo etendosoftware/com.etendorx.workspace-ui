@@ -9,7 +9,6 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
   className?: string;
   iconText?: string;
   ref?: React.LegacyRef<HTMLButtonElement>;
-  key?: string;
 }
 
 const IconButton = ({
@@ -38,7 +37,6 @@ const IconButton = ({
   [&>svg]:fill-current
   ${iconText ? 'px-2 gap-2' : 'w-8 h-8'}
 `;
-
   return (
     <Tooltip title={tooltip}>
       <button
