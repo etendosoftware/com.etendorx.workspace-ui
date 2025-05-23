@@ -10,7 +10,6 @@ import { InputPassword } from '@workspaceui/componentlibrary/src/components';
 import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
 import { SelectorListProps } from '../types';
 import { Item } from '@workspaceui/componentlibrary/src/components/enums';
-import { Warehouse } from '@workspaceui/etendohookbinder/src/api/types';
 import { useTranslation } from '@/hooks/useTranslation';
 
 const isOptionEqualToValue = (option: Option, value: Option) => option.id === value.id;
