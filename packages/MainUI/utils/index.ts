@@ -37,11 +37,11 @@ export const getFieldReference = (reference?: string): FieldType => {
   }
 };
 
-import { formatDateForEtendo, isDateField } from './formUtils';
-
 export const sanitizeValue = (value: unknown, field?: Field) => {
-  if (typeof value === 'string' && field && isDateField(field)) {
-    return formatDateForEtendo(value);
+  const reference = getFieldReference(field?.column?.reference);
+
+  if (reference == FieldType.DATE) {
+    return value ? String(value).split("-").toReversed().join("-") : null;
   }
 
   const stringValue = String(value);

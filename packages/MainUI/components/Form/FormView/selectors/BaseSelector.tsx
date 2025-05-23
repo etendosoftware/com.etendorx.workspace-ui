@@ -1,10 +1,10 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { Field, FormInitializationResponse, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field, FieldType, FormInitializationResponse, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
 import { useCallout } from '@/hooks/useCallout';
 import { logger } from '@/utils/logger';
 import { GenericSelector } from './GenericSelector';
-import { buildPayloadByInputName, parseDynamicExpression } from '@/utils';
+import { buildPayloadByInputName, getFieldReference, parseDynamicExpression } from '@/utils';
 import Label from '../Label';
 import { useUserContext } from '@/hooks/useUserContext';
 import { useParams } from 'next/navigation';
@@ -72,7 +72,6 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     (columnValues: FormInitializationResponse['columnValues']) => {
       Object.entries(columnValues ?? {}).forEach(([column, { value, identifier }]) => {
         const targetField = fieldsByColumnName[column];
-
         setValue(targetField?.hqlName ?? column, value);
 
         if (targetField && identifier) {
@@ -85,11 +84,10 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
 
   const applyAuxiliaryInputValues = useCallback(
     (auxiliaryInputValues: FormInitializationResponse['auxiliaryInputValues']) => {
-      Object.entries(auxiliaryInputValues ?? {}).forEach(([column, { value, classicValue }]) => {
+      Object.entries(auxiliaryInputValues ?? {}).forEach(([column, { value }]) => {
         const targetField = fieldsByColumnName[column];
-        const isDate = ['15', '16'].includes(targetField?.column?.reference);
 
-        setValue(targetField?.hqlName || column, isDate ? classicValue : value);
+        setValue(targetField?.hqlName || column, value);
       });
     },
     [fieldsByColumnName, setValue],
@@ -103,6 +101,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     try {
       const entityKeyColumn = tab.fields['id'].columnName;
       const payload = buildPayloadByInputName(getValues(), fieldsByHqlName);
+
       const calloutData = {
         ...session,
         ...payload,
@@ -133,7 +132,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     }
   }, [
     value,
-    field.column.callout, 
+    field.column.callout,
     tab,
     getValues,
     fieldsByHqlName,

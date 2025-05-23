@@ -1,13 +1,11 @@
 import { useCallback, useState } from 'react';
-import { FieldType, type Field, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { type Field, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { useFormContext } from 'react-hook-form';
 import { useTabContext } from '@/contexts/tab';
 import useFormParent from '../useFormParent';
 import { FieldName } from '../types';
 import { logger } from '@/utils/logger';
-import { getFieldReference } from '@/utils';
-import { formatDateForEtendo } from '@/utils/formUtils';
 
 export interface UseTableDirDatasourceParams {
   field: Field;
@@ -110,14 +108,9 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
             null: 'null',
           };
 
-          let safeValue = Object.prototype.hasOwnProperty.call(valueMap, stringValue)
+          const safeValue = Object.prototype.hasOwnProperty.call(valueMap, stringValue)
             ? valueMap[stringValue as keyof typeof valueMap]
             : value;
-
-
-          if (currentField && getFieldReference(currentField.column.reference) == FieldType.DATE) {
-            safeValue = formatDateForEtendo(safeValue);
-          }
 
           body.set(_key, safeValue);
           

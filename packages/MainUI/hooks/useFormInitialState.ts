@@ -3,7 +3,6 @@ import { EntityData, FormInitializationResponse } from '@workspaceui/etendohookb
 import useFormParent from './useFormParent';
 import { useTabContext } from '@/contexts/tab';
 import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
-import { isDateField, formatDateFromEtendo } from '@/utils/formUtils';
 import { FieldName } from './types';
 
 export const useFormInitialState = (formInitialization?: FormInitializationResponse | null) => {
@@ -35,16 +34,8 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
 
     const processedParentData = { ...parentData };
 
-    if (parentData) {
-      Object.entries(parentData).forEach(([key, value]) => {
-        if (typeof value === 'string' && tab?.fields[key] && isDateField(tab?.fields[key])) {
-          processedParentData[key] = formatDateFromEtendo(value as string);
-        }
-      });
-    }
-
     return { ...acc, ...processedParentData };
-  }, [fieldsByColumnName, formInitialization, parentData, tab?.fields]);
+  }, [fieldsByColumnName, formInitialization, parentData]);
 
   return initialState;
 };

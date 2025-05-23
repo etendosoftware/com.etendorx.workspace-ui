@@ -26,6 +26,7 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
 
   public constructor(tabs: T[]) {
     super();
+    this.setMaxListeners(50);
     this.nodes = new Map();
     this.activeLevels = [];
 
