@@ -107,7 +107,7 @@ export function useProcessExecution() {
           const isPostedProcess = button.id === 'Posted';
           const commandAction = 'BUTTONDocAction104';
           const baseUrl = `http://localhost:8080/etendo/SalesOrder/Header_Edition.html`;
-          const safeWindowId = windowId || (tab?.windowId ? String(tab.windowId) : '143');
+          const safeWindowId = windowId || (tab?.window ? String(tab.window) : '143');
           const safeTabId = tab?.id ? String(tab.id) : '186';
           const safeRecordId = String(record.id || recordId || '');
 
@@ -156,7 +156,7 @@ export function useProcessExecution() {
         }
       });
     },
-    [record, recordId, tab.id, tab.windowId, token, windowId],
+    [record, recordId, tab.id, tab.window, token, windowId],
   );
 
   const executeProcess = useCallback(

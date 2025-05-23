@@ -202,7 +202,7 @@ export interface WindowMetadataProperties {
 
 export interface Tab {
   uIPattern: 'STD' | 'SR';
-  windowId: string;
+  window: string;
   name: string;
   title: string;
   parentColumns: string[];

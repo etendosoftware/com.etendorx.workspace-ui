@@ -116,8 +116,6 @@ export function useDatasource({
       try {
         const { ok, data } = await loadData(entity, page, safePageSize, queryParams);
 
-        console.debug(data.response.data);
-
         if (!(ok && data.response.data)) {
           throw data;
         } else {

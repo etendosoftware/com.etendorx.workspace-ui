@@ -2,19 +2,20 @@ import { useCallback, useState } from 'react';
 import type { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { useFormContext } from 'react-hook-form';
-import { useParams } from 'next/navigation';
-import { getFieldsByInputName } from '@workspaceui/etendohookbinder/src/utils/metadata';
 import { useTabContext } from '@/contexts/tab';
 import { logger } from '@/utils/logger';
+import useFormParent from './useFormParent';
+import { FieldName } from './types';
 
 export interface UseComboSelectParams {
   field: Field;
 }
 
 export const useComboSelect = ({ field }: UseComboSelectParams) => {
-  const { windowId } = useParams<{ windowId: string }>();
   const { watch, getValues } = useFormContext();
-  const { tab, parentTab, parentRecord } = useTabContext();
+  const { tab } = useTabContext();
+  const parentData = useFormParent(FieldName.INPUT_NAME);
+  const windowId = tab.window;
   const value = watch(field.hqlName);
   const [records, setRecords] = useState<Record<string, string>[]>([]);
   const [loading, setLoading] = useState(false);
@@ -28,22 +29,6 @@ export const useComboSelect = ({ field }: UseComboSelectParams) => {
         }
 
         setLoading(true);
-
-        let parentData;
-
-        if (parentTab && parentRecord) {
-          const parentColumns = tab.parentColumns.map(field => tab.fields[field]);
-          const parentFields = getFieldsByInputName(parentTab);
-
-          parentData = parentColumns.reduce(
-            (acc, field) => {
-              const parentFieldName = parentFields[field.inputName].hqlName;
-              acc[field.inputName] = parentRecord[parentFieldName];
-              return acc;
-            },
-            {} as Record<string, unknown>,
-          );
-        }
 
         const body = new URLSearchParams({
           _startRow: '0',
@@ -95,7 +80,7 @@ export const useComboSelect = ({ field }: UseComboSelectParams) => {
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     },
-    [field, getValues, parentRecord, parentTab, tab, windowId],
+    [field, getValues, parentData, tab, windowId],
   );
 
   return { records, loading, error, refetch: fetch };

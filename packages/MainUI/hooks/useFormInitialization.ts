@@ -128,7 +128,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
         inpkeyColumnId: entityKeyColumn.columnName,
         keyColumnName: entityKeyColumn.columnName,
         _entityName: tab.entityName,
-        inpwindowId: tab.windowId,
+        inpwindowId: tab.window,
       };
 
       const data = await fetchFormInitialization(params, payload);
@@ -147,7 +147,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       logger.warn(err);
       dispatch({ type: 'FETCH_ERROR', payload: err instanceof Error ? err : new Error('Unknown error') });
     }
-  }, [params, parentData, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.windowId]);
+  }, [params, parentData, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.window]);
 
   useEffect(() => {
     if (!loaded) {

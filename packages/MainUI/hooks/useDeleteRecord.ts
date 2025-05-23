@@ -44,7 +44,7 @@ export const useDeleteRecord = ({ tab, onSuccess, onError }: UseDeleteRecordPara
           }
 
           const queryParams = new URLSearchParams({
-            windowId: String(tab.windowId),
+            windowId: String(tab.window),
             tabId: String(tab.id),
             moduleId: String(tab.module || '0'),
             _operationType: 'remove',

@@ -18,7 +18,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     <TabContextProvider tab={tab}>
       <div
         className={`flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${collapsed ? 'hidden' : 'flex-1 h-full'}`}>
-        <Toolbar windowId={window?.id || tab.windowId} tabId={tab.id} isFormView={!!recordId} />
+        <Toolbar windowId={window?.id || tab.window} tabId={tab.id} isFormView={!!recordId} />
         {recordId ? (
           <FormView
             mode={recordId === 'new' ? FormMode.NEW : FormMode.EDIT}

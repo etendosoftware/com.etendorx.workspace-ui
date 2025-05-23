@@ -50,7 +50,7 @@ const DynamicTable = () => {
     const operator = 'equals';
 
     const options: DatasourceOptions = {
-      windowId: tab.windowId,
+      windowId: tab.window,
       tabId: tab.id,
       isImplicitFilterApplied: tab.hqlfilterclause?.length > 0 || tab.sQLWhereClause?.length > 0,
       pageSize: 100,
@@ -78,7 +78,7 @@ const DynamicTable = () => {
     tab.id,
     tab.parentColumns,
     tab.sQLWhereClause?.length,
-    tab.windowId,
+    tab.window,
   ]);
 
   const {

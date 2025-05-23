@@ -46,7 +46,7 @@ export default function ProcessDefinitionModal({
       try {
         const result = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
           buttonValue: 'DONE',
-          windowId: tab.windowId,
+          windowId: tab.window,
           entityName: tab.entityName,
           recordIds: selectedRecords?.map(r => r.id),
           ...form.getValues(),

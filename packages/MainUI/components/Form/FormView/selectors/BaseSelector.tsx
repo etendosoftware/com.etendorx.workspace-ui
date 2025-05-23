@@ -112,7 +112,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         inpkeyColumnId: entityKeyColumn,
         keyColumnName: entityKeyColumn,
         _entityName: tab.entityName,
-        inpwindowId: tab.windowId,
+        inpwindowId: tab.window,
         inpmProductId_CURR: session['$C_Currency_ID'],
         inpmProductId_UOM: session['#C_UOM_ID'],
       } as Record<string, string>;
@@ -133,7 +133,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     }
   }, [
     value,
-    field.column.callout,
+    field.column.callout, 
     tab,
     getValues,
     fieldsByHqlName,

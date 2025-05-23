@@ -22,7 +22,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
   }) => {
     const theme = useTheme();
     const { sx } = useStyle();
-    const isSelected = Boolean(windowId?.length && item.windowId === windowId);
+    const isSelected = Boolean(windowId?.length && item.window === windowId);
     const [popperOpen, setPopperOpen] = useState(false);
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const toggleFunctions = useRef<ToggleFunctions>({});

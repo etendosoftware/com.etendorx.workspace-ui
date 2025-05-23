@@ -1,12 +1,13 @@
 import { useCallback, useState } from 'react';
-import { type Field, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { FieldType, type Field, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { useFormContext } from 'react-hook-form';
-import { useParams } from 'next/navigation';
 import { useTabContext } from '@/contexts/tab';
 import useFormParent from '../useFormParent';
 import { FieldName } from '../types';
 import { logger } from '@/utils/logger';
+import { getFieldReference } from '@/utils';
+import { formatDateForEtendo } from '@/utils/formUtils';
 
 export interface UseTableDirDatasourceParams {
   field: Field;
@@ -16,9 +17,9 @@ export interface UseTableDirDatasourceParams {
 }
 
 export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 20 }: UseTableDirDatasourceParams) => {
-  const { windowId } = useParams<{ windowId: string }>();
   const { getValues, watch } = useFormContext();
   const { tab } = useTabContext();
+  const windowId = tab.window;
   const [records, setRecords] = useState<Record<string, string>[]>([]);
   const [loading, setLoading] = useState(false);
   const parentData = useFormParent(FieldName.INPUT_NAME);
@@ -45,6 +46,8 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         const startRow = reset ? 0 : currentPage * pageSize;
         const endRow = reset ? initialPageSize : startRow + pageSize;
 
+        console.debug(parentData);
+
         const body = new URLSearchParams({
           _startRow: startRow.toString(),
           _endRow: endRow.toString(),
@@ -54,7 +57,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           windowId,
           tabId: field.tab,
           inpTabId: field.tab,
-          inpwindowId: tab.windowId,
+          inpwindowId: windowId,
           inpTableId: field.column.table,
           initiatorField: field.hqlName,
           _constructor: 'AdvancedCriteria',
@@ -99,7 +102,8 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         }
 
         Object.entries(getValues()).forEach(([key, value]) => {
-          const _key = tab.fields[key]?.inputName || key;
+          const currentField = tab.fields[key];
+          const _key = currentField?.inputName || key;
           const stringValue = String(value);
 
           const valueMap = {
@@ -108,13 +112,17 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
             null: 'null',
           };
 
-          const safeValue = Object.prototype.hasOwnProperty.call(valueMap, stringValue)
+          let safeValue = Object.prototype.hasOwnProperty.call(valueMap, stringValue)
             ? valueMap[stringValue as keyof typeof valueMap]
             : value;
 
-          if (safeValue) {
-            body.set(_key, safeValue);
+
+          if (currentField && getFieldReference(currentField.column.reference) == FieldType.DATE) {
+            safeValue = formatDateForEtendo(safeValue);
           }
+
+          body.set(_key, safeValue);
+          
         });
 
         const { data, statusText } = await datasource.client.request(field.selector?.datasourceName ?? '', {
@@ -149,6 +157,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
             setCurrentPage(prev => prev + 1);
           }
         } else {
+          console.debug(data);
           throw new Error(statusText);
         }
       } catch (err) {

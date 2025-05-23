@@ -17,12 +17,12 @@ const getActionByType = (type: string): string => {
 
 const isItemMatch = (item: Menu, identifier: string): boolean => {
   if (item.type === 'Window') {
-    return item.windowId === identifier;
+    return item.window === identifier;
   }
   if (item.type === 'Report' || item.type === 'Process') {
     return item.id === identifier;
   }
-  return item.windowId === identifier || item.id === identifier;
+  return item.window === identifier || item.id === identifier;
 };
 
 export const findItemByIdentifier = (items?: Menu[], identifier?: string): Menu | null => {
@@ -53,7 +53,7 @@ export const createMenuItem = (id: string, name: string, entityName: string): Me
 
 export const createRecentMenuItem = (item: RecentItem): Menu => ({
   ...createMenuItem(`recent-${item.id}`, item.name, item.type),
-  windowId: item.type === 'Window' ? item.windowId : item.id,
+  windowId: item.type === 'Window' ? item.window : item.id,
   action: getActionByType(item.type),
   type: item.type,
 });

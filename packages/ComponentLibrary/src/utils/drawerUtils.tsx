@@ -6,7 +6,7 @@ export const findActive = (windowId: string | undefined, items: Menu[] | undefin
   while (stack.length > 0) {
     const item = stack.pop();
     if (item) {
-      if (item.windowId === windowId) return true;
+      if (item.window === windowId) return true;
       if (item.children) stack.push(...item.children);
     }
   }
