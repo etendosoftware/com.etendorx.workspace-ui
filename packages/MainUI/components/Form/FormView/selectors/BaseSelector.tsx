@@ -1,10 +1,10 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { Field, FieldType, FormInitializationResponse, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field, FormInitializationResponse, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
 import { useCallout } from '@/hooks/useCallout';
 import { logger } from '@/utils/logger';
 import { GenericSelector } from './GenericSelector';
-import { buildPayloadByInputName, getFieldReference, parseDynamicExpression } from '@/utils';
+import { buildPayloadByInputName, parseDynamicExpression } from '@/utils';
 import Label from '../Label';
 import { useUserContext } from '@/hooks/useUserContext';
 import { useParams } from 'next/navigation';
