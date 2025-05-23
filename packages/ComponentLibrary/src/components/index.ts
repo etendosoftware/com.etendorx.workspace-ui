@@ -14,7 +14,7 @@ import TagMUI from './Tag';
 import SecondaryTabsMUI from './SecondaryTabs';
 import NotificationItemStates from './NotificationItemAllStates';
 import DrawerMUI from './Drawer';
-import IButton from './IconButton';
+import IconButtonCustom from './IconButton';
 
 const Modal = ModalCustom;
 const TextInput = TextInputMUI;
@@ -32,7 +32,7 @@ const Tag = TagMUI;
 const SecondaryTabs = SecondaryTabsMUI;
 const NotificationStates = NotificationItemStates;
 const Drawer = DrawerMUI;
-const IconButton = IButton;
+const IconButton = IconButtonCustom;
 
 export {
   Modal,

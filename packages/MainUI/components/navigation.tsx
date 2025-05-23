@@ -16,6 +16,7 @@ import { Person } from '@workspaceui/componentlibrary/src/components/DragModal/D
 import Nav from '@workspaceui/componentlibrary/src/components/Nav/Nav';
 import { useTranslation } from '../hooks/useTranslation';
 import ProfileWrapper from './Nav/Profile';
+import { useRef } from 'react';
 
 const handleClose = () => {
   return true;
@@ -25,7 +26,7 @@ const people: Person[] = [];
 
 const Navigation: React.FC = () => {
   const { t } = useTranslation();
-
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
   return (
     <Nav title={t('common.notImplemented')}>
       <Waterfall
@@ -44,13 +45,17 @@ const Navigation: React.FC = () => {
         {...modalConfig}
         tooltipButtonProfile={t('navigation.configurationModal.tooltipButtonProfile')}
       />
-      <IconButton tooltip={t('navigation.activityButton.tooltip')} disabled={true}>
+      <IconButton
+        ref={buttonRef}
+        className="w-10 h-10"
+        tooltip={t('navigation.activityButton.tooltip')}
+        disabled={true}>
         <ActivityIcon />
       </IconButton>
       <NotificationButton notifications={NOTIFICATIONS} icon={<NotificationIcon />}>
         <NotificationModal
           notifications={NOTIFICATIONS}
-          anchorEl={null}
+          anchorRef={buttonRef}
           onClose={handleClose}
           title={{
             icon: <NotificationIcon fill="#2E365C" />,
@@ -63,8 +68,9 @@ const Navigation: React.FC = () => {
           emptyStateImageAlt={t('navigation.notificationModal.emptyStateImageAlt')}
           emptyStateMessage={t('navigation.notificationModal.emptyStateMessage')}
           emptyStateDescription={t('navigation.notificationModal.emptyStateDescription')}
-          actionButtonLabel={t('navigation.notificationModal.actionButtonLabel')}
-        />
+          actionButtonLabel={t('navigation.notificationModal.actionButtonLabel')}>
+          <></>
+        </NotificationModal>
       </NotificationButton>
       <ProfileWrapper
         cancelButtonText={t('common.cancel')}

@@ -1,12 +1,13 @@
 import React from 'react';
-import { List, Link, Menu, Button, useTheme } from '@mui/material';
-import IconButton from '../IconButton/index';
+import { List, Link, Button } from '@mui/material';
+import IconButton from '../IconButton';
 import { INotificationModalProps } from './types';
-import { menuSyle, useStyle } from './styles';
+import { useStyle } from './styles';
 import { Settings } from '@mui/icons-material';
 import MoreVert from '../../assets/icons/more-vertical.svg';
 import NotificationItem from '../NotificationItem';
 import Image from '../../assets/images/NotificationModal/empty-state-notifications.svg?url';
+import Menu from '../Menu';
 
 const NotificationModalCustom: React.FC<INotificationModalProps> = ({
   title,
@@ -19,17 +20,9 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
   onClose,
   ...props
 }) => {
-  const theme = useTheme();
   const { styles, sx } = useStyle();
   return (
-    <Menu
-      open
-      {...props}
-      onClose={onClose}
-      slotProps={{
-        paper: { sx: styles.paperStyleMenu },
-      }}
-      MenuListProps={{ sx: menuSyle }}>
+    <Menu open {...props} onClose={onClose}>
       <div style={styles.titleModalContainer}>
         <div style={styles.titleModalImageContainer}>
           {title?.icon && <div style={styles.titleModalImageRadius}>{title?.icon}</div>}
@@ -42,16 +35,7 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
             </Link>
           )}
           <div style={styles.titleModalButtonContainer}>
-            <IconButton
-              width={20}
-              height={20}
-              fill={theme.palette.baselineColor.neutral[70]}
-              hoverFill={theme.palette.baselineColor.neutral[100]}
-              sx={{
-                '&:hover': {
-                  background: theme.palette.baselineColor.transparentNeutral[10],
-                },
-              }}>
+            <IconButton className="w-5 h-5">
               <MoreVert />
             </IconButton>
           </div>

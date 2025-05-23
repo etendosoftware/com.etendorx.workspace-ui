@@ -17,14 +17,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, sectionToolti
       <div style={styles.svgContainerStyles}>
         <img src={BackgroundGradient} alt="Background Gradient" />
       </div>
-      <IconButton
-        style={styles.logoutButtonStyles}
-        tooltip={sectionTooltip}
-        width={16}
-        height={16}
-        onClick={handleSignOff}>
-        <LogoutIcon />
-      </IconButton>
+      <div className="absolute top-4 right-4 z-10">
+        <IconButton tooltip={sectionTooltip} onClick={handleSignOff} className="h-6 w-6 [&>svg]:w-4 [&>svg]:h-4">
+          <LogoutIcon />
+        </IconButton>
+      </div>
       <div style={styles.profileImageContainerStyles}>
         {photoUrl ? (
           <img src={photoUrl} alt="Profile" style={styles.profileImageStyles} />

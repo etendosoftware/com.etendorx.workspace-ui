@@ -1,14 +1,7 @@
-import { useCallback, useMemo, useState, createElement } from 'react';
+import { useCallback, useMemo, useState, createElement, useRef } from 'react';
 import { Box } from '@mui/material';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
-import {
-  IconSize,
-  ProcessResponse,
-  StandardButton,
-  StandardButtonConfig,
-  ToolbarProps,
-  isProcessButton,
-} from './types';
+import { ProcessResponse, StandardButton, StandardButtonConfig, ToolbarProps, isProcessButton } from './types';
 import {
   LEFT_SECTION_BUTTONS,
   CENTER_SECTION_BUTTONS,
@@ -45,13 +38,16 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const [selectedProcessActionButton, setSelectedProcessActionButton] = useState<ProcessButton | null>(null);
   const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
     useState<ProcessDefinitionButton | null>(null);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { session } = useUserContext();
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
   const { selected, tabs, clearSelections } = useMetadataContext();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { refetchDatasource } = useDatasourceContext();
+
+  const [openMenu, setOpenMenu] = useState<boolean>(false);
+
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   const tab = useMemo<Tab>(() => {
     const result = tabs.find(tab => tab.id === tabId);
@@ -113,12 +109,12 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     return filteredButtons;
   }, [toolbar?.buttons, selectedRecord, selected, session, tab.level]);
 
-  const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+  const handleMenuOpen = useCallback(() => {
+    setOpenMenu(true);
   }, []);
 
   const handleMenuClose = useCallback(() => {
-    setAnchorEl(null);
+    setOpenMenu(false);
   }, []);
 
   const handleProcessMenuClick = useCallback(
@@ -204,23 +200,15 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       key: 'process-menu',
       action: 'MENU',
       name: t('common.processes'),
-      icon: createElement(iconMap.process),
+      icon: createElement(iconMap.process, {
+        className: 'w-4 h-4',
+      }),
       iconText: t('common.processes'),
       tooltip: t('common.processes'),
-      height: IconSize,
-      width: IconSize,
-      enabled: processButtons.length > 0,
-      sx: {
-        color: theme.palette.baselineColor.neutral[100],
-        background: theme.palette.specificColor.warning.main,
-        opacity: selectedRecord ? 1 : 0.5,
-        cursor: selectedRecord ? 'pointer' : 'not-allowed',
-      },
-      onClick: (event?: React.MouseEvent<HTMLElement>) => {
-        if (selectedRecord && event && processButtons.length > 0) {
-          handleMenuOpen(event);
-        }
-      },
+      disabled: !selectedRecord,
+      ref: buttonRef,
+      className: `bg-(--color-warning-main) disabled:bg-(--color-warning-light) h-8 [&>svg]:w-4 [&>svg]:h-4`,
+      onClick: () => handleMenuOpen(),
     });
 
     const sections = {
@@ -241,7 +229,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
             const config = createStandardButtonConfig(btn as StandardButton, handleAction);
             const style = getStandardButtonStyle(btn.id as StandardButtonId);
             if (style) {
-              config.sx = style;
+              config.className = style;
             }
             return config;
           }),
@@ -268,7 +256,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     }
 
     return config;
-  }, [handleAction, handleMenuOpen, isFormView, processButtons, selectedRecord, t, toolbar?.buttons]);
+  }, [handleAction, handleMenuOpen, isFormView, processButtons.length, selectedRecord, t, toolbar?.buttons]);
 
   if (loading) {
     return (
@@ -304,8 +292,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       )}
       {processButtons.length > 0 && (
         <ProcessMenu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
+          anchorRef={buttonRef}
+          open={openMenu}
           onClose={handleMenuClose}
           processButtons={processButtons}
           onProcessClick={handleProcessMenuClick}
@@ -352,18 +340,15 @@ const getSectionStyle = (sectionType: string[]) => {
   const baseStyle = {
     display: 'flex',
     borderRadius: '10rem',
+    alignItems: 'center',
+    maxHeight: '2.5rem',
     padding: '0.25rem',
-    gap: '0.25rem',
   };
 
   if (sectionType === LEFT_SECTION_BUTTONS) {
     return {
       ...baseStyle,
-      width: 'auto',
-      alignItems: 'center',
       background: theme.palette.baselineColor.neutral[0],
-      maxHeight: '2.5rem',
-      gap: '0.05rem',
     };
   }
 
@@ -372,11 +357,13 @@ const getSectionStyle = (sectionType: string[]) => {
       ...baseStyle,
       background: theme.palette.baselineColor.transparentNeutral[5],
       maxHeight: '2.5rem',
+      gap: '0.20rem',
     };
   }
 
   return {
     ...baseStyle,
+    gap: '0.20rem',
     width: sectionType === CENTER_SECTION_BUTTONS ? '100%' : 'auto',
     background: theme.palette.baselineColor.transparentNeutral[5],
   };

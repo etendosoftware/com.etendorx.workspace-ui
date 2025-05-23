@@ -43,14 +43,14 @@ export const TabContent: React.FC<TabContentProps> = ({
         </div>
         <div className="flex items-center flex-shrink-0">
           {!isMainTab && (
-            <IconButton onClick={handleFullSize} size="small" className="bg-transparent">
+            <IconButton onClick={handleFullSize} className="bg-transparent">
               {isFullSize ? <ChevronDown /> : <ChevronUp />}
             </IconButton>
           )}
-          <IconButton size="small" className="bg-transparent">
+          <IconButton className="bg-transparent">
             <ChevronUpRight />
           </IconButton>
-          <IconButton onClick={onClose} size="small" className="bg-transparent ml-1 text-red-500 hover:text-red-700">
+          <IconButton onClick={onClose} className="bg-transparent ml-1 text-red-500 hover:text-red-700">
             <XCircle />
           </IconButton>
         </div>

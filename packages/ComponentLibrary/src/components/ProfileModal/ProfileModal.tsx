@@ -1,21 +1,21 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Button, Menu, useTheme } from '@mui/material';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { Button, useTheme } from '@mui/material';
 import CheckCircle from '../../assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';
 import ToggleSection from './ToggleButton';
 import SelectorList from './ToggleSection';
 import { ProfileModalProps } from './types';
-import { MODAL_WIDTH, menuSyle, useStyle } from './styles';
-import IconButton from '../IconButton';
+import { useStyle } from './styles';
 import { Option } from '../Input/Select/types';
 import { Language } from '../../locales/types';
+import Menu from '../Menu';
+import IconButton from '../IconButton';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   cancelButtonText,
   saveButtonText,
-  tooltipButtonProfile,
   passwordLabel,
   newPasswordLabel,
   confirmPasswordLabel,
@@ -39,7 +39,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   onLanguageChange,
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('profile');
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [openMenu, setOpenMenu] = useState<boolean>(false);
+
   const [selectedRole, setSelectedRole] = useState<Option | null>(() => {
     if (currentRole) {
       return { title: currentRole.name, value: currentRole.id, id: currentRole.id };
@@ -115,12 +117,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     setCurrentSection(section);
   }, []);
 
-  const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
+  const handleClick = useCallback(() => {
+    setOpenMenu(true);
   }, []);
 
   const handleClose = useCallback(() => {
-    setAnchorEl(null);
+    setOpenMenu(false);
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -141,7 +143,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             value: selectedWarehouse.value,
           };
           setSelectedWarehouse(newWarehouse);
-          localStorage.setItem('currentWarehouse', JSON.stringify(newWarehouse)); // Guardar en localStorage
+          localStorage.setItem('currentWarehouse', JSON.stringify(newWarehouse));
         }
 
         if (Object.keys(params).length > 0) {
@@ -159,6 +161,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             language: selectedLanguage?.id,
             client: 'System',
           });
+          setSaveAsDefault(false);
         }
 
         handleClose();
@@ -211,21 +214,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   }, []);
 
   return (
-    <>
-      <IconButton tooltip={tooltipButtonProfile} onClick={handleClick}>
+    <div>
+      <IconButton ref={buttonRef} onClick={handleClick} className="w-10 h-10">
         {icon}
       </IconButton>
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleClose}
-        sx={{
-          '& .MuiPaper-root': {
-            width: MODAL_WIDTH,
-            ...styles.paperStyleMenu,
-          },
-        }}
-        MenuListProps={{ sx: menuSyle }}>
+      <Menu className="rounded-2xl w-88" open={openMenu} anchorRef={buttonRef} onClose={handleClose}>
         <UserProfile
           photoUrl={userPhotoUrl}
           name={userName}
@@ -267,7 +260,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           </Button>
         </div>
       </Menu>
-    </>
+    </div>
   );
 };
 

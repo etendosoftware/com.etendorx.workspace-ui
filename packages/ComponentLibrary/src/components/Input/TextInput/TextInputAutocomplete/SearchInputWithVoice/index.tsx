@@ -1,11 +1,11 @@
 'use client';
 
 import { memo, useCallback, useState } from 'react';
-import { InputAdornment, Box, useTheme } from '@mui/material';
+import { InputAdornment, Box } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterIcon from '@mui/icons-material/FilterList';
-import MicIcon from '@mui/icons-material/Mic';
-import MicOffIcon from '@mui/icons-material/MicOff';
+import MicIcon from '../../../../../assets/icons/mic.svg';
+import MicOffIcon from '../../../../../assets/icons/mic-off.svg';
 import { TextInputProps } from '../TextInputComplete.types';
 import TextInputAutoComplete from '../TextInputAutocomplete';
 import IconButton from '../../../../IconButton';
@@ -16,22 +16,18 @@ export interface SearchInputWithVoiceProps extends TextInputProps {
 }
 
 const StartAdornment = () => {
-  const theme = useTheme();
-
   return (
     <InputAdornment position="start">
-      <SearchIcon sx={{ color: theme.palette.baselineColor.neutral[70] }} />
+      <SearchIcon />
     </InputAdornment>
   );
 };
 
 const EndAdornment = () => {
-  const theme = useTheme();
-
   return (
     <InputAdornment position="end">
-      <IconButton size="small">
-        <FilterIcon sx={{ color: theme.palette.baselineColor.neutral[70] }} />
+      <IconButton>
+        <FilterIcon />
       </IconButton>
     </InputAdornment>
   );
@@ -39,7 +35,6 @@ const EndAdornment = () => {
 
 const SearchInputWithVoice = ({ onVoiceClick, disabled = false, ...props }: SearchInputWithVoiceProps) => {
   const [isRecording, setIsRecording] = useState(false);
-  const theme = useTheme();
 
   const handleVoiceClick = useCallback(() => {
     if (disabled) return;
@@ -84,22 +79,8 @@ const SearchInputWithVoice = ({ onVoiceClick, disabled = false, ...props }: Sear
           disabled={disabled}
         />
         <Box>
-          <IconButton onClick={handleVoiceClick} size="medium" sx={{ margin: '0.25rem 0' }} disabled={disabled}>
-            {isRecording ? (
-              <MicOffIcon
-                sx={{
-                  color: theme.palette.baselineColor.neutral[70],
-                  fontSize: 30,
-                }}
-              />
-            ) : (
-              <MicIcon
-                sx={{
-                  color: theme.palette.baselineColor.neutral[70],
-                  fontSize: 30,
-                }}
-              />
-            )}
+          <IconButton onClick={handleVoiceClick} className="w-10 h-10 my-1" disabled={true}>
+            {isRecording ? <MicOffIcon className="w-8 h-8" /> : <MicIcon className="w-5 h-5" />}
           </IconButton>
         </Box>
       </Box>
