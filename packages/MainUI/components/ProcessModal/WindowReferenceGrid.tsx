@@ -31,7 +31,6 @@ function WindowReferenceGrid({
   parameter,
   onSelectionChange,
   tabId,
-  windowId,
   entityName,
   windowReferenceTab,
   processConfig,
@@ -47,7 +46,6 @@ function WindowReferenceGrid({
 
   const datasourceOptions = useMemo(() => {
     const options: Record<string, EntityValue> = {
-      windowId: windowId || '',
       tabId: parameter.tab || tabId,
       pageSize: PAGE_SIZE,
     };
@@ -79,7 +77,7 @@ function WindowReferenceGrid({
     }
 
     return options;
-  }, [windowId, tabId, parameter.tab, processConfig]);
+  }, [tabId, parameter.tab, processConfig]);
 
   const fields = useMemo(() => {
     if (windowReferenceTab?.fields) {
@@ -105,13 +103,13 @@ function WindowReferenceGrid({
     fetchMore,
   } = useDatasource({
     entity: String(entityName),
-    ...datasourceOptions,
+    params: datasourceOptions, 
   });
 
   useEffect(() => {
     setRowSelection({});
     onSelectionChange([]);
-  }, [records, onSelectionChange]);
+  }, [onSelectionChange]);
 
   const handleRowSelection = useCallback(
     (updaterOrValue: MRT_RowSelectionState | ((prev: MRT_RowSelectionState) => MRT_RowSelectionState)) => {

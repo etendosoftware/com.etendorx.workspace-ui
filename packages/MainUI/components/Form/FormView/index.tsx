@@ -27,7 +27,7 @@ const iconMap: Record<string, React.ReactElement> = {
   Dimensions: <FolderIcon />,
 };
 
-export function FormView({ window: windowMetadata, tab, mode, recordId }: FormViewProps) {
+export function FormView({ window: windowMetadata, tab, mode, recordId, setRecordId }: FormViewProps) {
   const theme = useTheme();
   const [expandedSections, setExpandedSections] = useState<string[]>(['null']);
   const [selectedTab, setSelectedTab] = useState<string>('');
@@ -46,7 +46,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId }: FormVi
     mode: mode,
     recordId,
   });
-  const { registerActions, onBack } = useToolbarContext();
+  const { registerActions } = useToolbarContext();
 
   const initialState = useFormInitialState(formInitialization) || undefined;
 
@@ -134,15 +134,12 @@ export function FormView({ window: windowMetadata, tab, mode, recordId }: FormVi
       if (mode === FormMode.EDIT) {
         reset({ ...initialState, ...data });
       } else {
-        const params = new URLSearchParams(location.search);
-        params.set('recordId_' + tab.id, String(data.id));
-        history.pushState(null, '', `?${params.toString()}`);
+        setRecordId(String(data.id));
         refetch();
-        onBack?.();
       }
       showSuccessModal('Saved');
     },
-    [initialState, mode, onBack, refetch, reset, showSuccessModal, tab.id],
+    [initialState, mode, refetch, reset, setRecordId, showSuccessModal],
   );
 
   const onError = useCallback(

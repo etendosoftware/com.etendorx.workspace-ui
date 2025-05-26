@@ -30,6 +30,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
             tab={tab}
             window={window}
             recordId={recordId}
+            setRecordId={setRecordId}
           />
         ) : (
           <DynamicTable setRecordId={setRecordId} />
