@@ -2,9 +2,9 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { EntityData } from '@workspaceui/etendohookbinder/src/api/types';
 import { MRT_TableInstance } from 'material-react-table';
 
-const EmptyState = ({ table }: { table: MRT_TableInstance<EntityData> }) => {
+const EmptyState = ({ table, maxWidth }: { table?: MRT_TableInstance<EntityData>; maxWidth?: number }) => {
   const { t } = useTranslation();
-  const maxWidth = table.refs.tableContainerRef.current?.clientWidth;
+  maxWidth = table?.refs.tableContainerRef.current?.clientWidth ?? maxWidth;
 
   return (
     <span className="text-center py-8" style={{ maxWidth }}>

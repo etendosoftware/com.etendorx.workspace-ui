@@ -9,7 +9,6 @@ import {
   useMaterialReactTable,
   MRT_TableOptions,
 } from 'material-react-table';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
 import type { EntityData, EntityValue } from '@workspaceui/etendohookbinder/src/api/types';
 import Loading from '../loading';
 import { ErrorDisplay } from '../ErrorDisplay';
@@ -19,6 +18,7 @@ import { useTab } from '@/hooks/useTab';
 
 import { WindowReferenceGridProps } from './types';
 import { tableStyles } from './styles';
+import { useDatasource } from '@/hooks/useDatasource';
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
@@ -103,7 +103,10 @@ function WindowReferenceGrid({
     refetch,
     hasMoreRecords,
     fetchMore,
-  } = useDatasource(String(entityName), datasourceOptions);
+  } = useDatasource({
+    entity: String(entityName),
+    ...datasourceOptions,
+  });
 
   useEffect(() => {
     setRowSelection({});
@@ -116,7 +119,7 @@ function WindowReferenceGrid({
 
       setRowSelection(newSelection);
 
-      const selectedItems = records.filter(record => {
+      const selectedItems = records.filter((record) => {
         const recordId = String(record.id);
         return newSelection[recordId];
       });
@@ -130,8 +133,8 @@ function WindowReferenceGrid({
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
       const newColumnFilters = typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
 
-      const normalizedNew = newColumnFilters.map(f => ({ id: f.id, value: f.value }));
-      const normalizedCurrent = columnFilters.map(f => ({ id: f.id, value: f.value }));
+      const normalizedNew = newColumnFilters.map((f) => ({ id: f.id, value: f.value }));
+      const normalizedCurrent = columnFilters.map((f) => ({ id: f.id, value: f.value }));
 
       const isRealFilterChange = JSON.stringify(normalizedNew) !== JSON.stringify(normalizedCurrent);
 
@@ -151,11 +154,11 @@ function WindowReferenceGrid({
 
   const handleRowClick = useCallback(
     (row: MRT_Row<EntityData>) => {
-      setRowSelection(prev => {
+      setRowSelection((prev) => {
         const newSelection = { ...prev };
         newSelection[row.id] = !newSelection[row.id];
 
-        const selectedItems = records.filter(record => {
+        const selectedItems = records.filter((record) => {
           const recordId = String(record.id);
           return newSelection[recordId];
         });
@@ -244,7 +247,7 @@ function WindowReferenceGrid({
     manualFiltering: true,
     columns,
     data: records || [],
-    getRowId: row => String(row.id),
+    getRowId: (row) => String(row.id),
     renderTopToolbar,
     renderBottomToolbar: hasMoreRecords ? () => <LoadMoreButton fetchMore={fetchMore} /> : undefined,
     renderEmptyRowsFallback: () => (

@@ -28,19 +28,21 @@ const defaultParams: DatasourceOptions = {
   pageSize: 1000,
 };
 
+export type UseDatasourceOptions = {
+  entity: string;
+  params?: DatasourceOptions;
+  searchQuery?: string;
+  columns?: Column[];
+  skip?: boolean;
+};
+
 export function useDatasource({
   entity,
   params = defaultParams,
   columns,
   searchQuery,
   skip,
-}: {
-  entity: string;
-  params?: DatasourceOptions;
-  searchQuery?: string;
-  columns?: Column[];
-  skip?: boolean;
-}) {
+}: UseDatasourceOptions) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [records, setRecords] = useState<EntityData[]>([]);
