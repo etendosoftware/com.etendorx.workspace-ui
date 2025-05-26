@@ -1,35 +1,8 @@
 import React from 'react';
-import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { StandardButtonConfig, IconSize } from './types';
 import { TranslateFunction } from '@/hooks/types';
 import Base64Icon from './Base64Icon';
-
-export type ButtonType = 'ACTION' | 'DROPDOWN' | 'MODAL' | 'TOGGLE' | 'CUSTOM';
-export type ButtonSection = 'left' | 'center' | 'right';
-
-export interface ToolbarButtonMetadata {
-  id: string;
-  action: string;
-  name: string;
-  icon?: string | null;
-  active: boolean;
-  seqno?: number | null;
-  buttonType: ButtonType;
-  section: ButtonSection;
-  modalConfig?: {
-    title?: string;
-    size?: 'small' | 'medium' | 'large';
-  };
-  dropdownConfig?: {
-    items?: Array<{ label: string; action: string }>;
-  };
-}
-
-export interface OrganizedSections {
-  left: ToolbarButtonMetadata[];
-  center: ToolbarButtonMetadata[];
-  right: ToolbarButtonMetadata[];
-}
+import { ToolbarButtonMetadata, OrganizedSections } from '@/hooks/Toolbar/types';
 
 export const DefaultIcon = () => <span style={{ fontSize: '1rem' }}>✣</span>;
 
@@ -197,15 +170,15 @@ export const createProcessMenuButton = (
   hasSelectedRecord: boolean,
   onMenuOpen: (event: React.MouseEvent<HTMLElement>) => void,
   t: TranslateFunction,
+  buttonRef: React.LegacyRef<HTMLButtonElement>,
 ): StandardButtonConfig => ({
   key: 'process-menu',
   icon: <ProcessMenuIcon />,
   iconText: t('common.processes'),
   tooltip: t('common.processes'),
-  height: IconSize,
-  width: IconSize,
-  enabled: processCount > 0,
-  className: `bg-(--color-warning) color-(--color-baseline-100) max-h-8 ${hasSelectedRecord ? 'opacity-100 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`,
+  ref: buttonRef,
+  disabled: !hasSelectedRecord,
+  className: `bg-(--color-warning-main) disabled:bg-(--color-warning-light) h-8 [&>svg]:w-4 [&>svg]:h-4`,
   onClick: (event?: React.MouseEvent<HTMLElement>) => {
     if (hasSelectedRecord && event && processCount > 0) {
       onMenuOpen(event);

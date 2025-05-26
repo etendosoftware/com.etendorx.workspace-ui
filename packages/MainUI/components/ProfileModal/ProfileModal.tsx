@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Button, useTheme } from '@mui/material';
-import CheckCircle from '../../assets/icons/check-circle.svg';
+import CheckCircle from '../../../ComponentLibrary/src/assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';
 import ToggleSection from './ToggleButton';
 import SelectorList from './ToggleSection';
