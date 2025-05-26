@@ -4,17 +4,14 @@ import { ToolbarSectionConfig } from '@workspaceui/storybook/src/stories/Compone
 const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style, className }) => {
   return (
     <div style={style} className={className}>
-      {buttons.map(({ key, icon, iconText, tooltip, onClick, disabled, fill, hoverFill, width, height, sx }) => (
+      {buttons.map(({ key, icon, iconText, tooltip, onClick, disabled, ref }) => (
         <IconButton
           key={key}
+          ref={ref}
           tooltip={tooltip}
           onClick={onClick}
           disabled={disabled}
-          fill={fill}
-          hoverFill={hoverFill}
-          width={width}
-          height={height}
-          sx={sx}
+          className={className}
           iconText={iconText}>
           {icon}
         </IconButton>

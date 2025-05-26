@@ -1,7 +1,6 @@
-import { Theme } from '@emotion/react';
-import { SxProps } from '@mui/material';
 import { Section } from '@workspaceui/mainui/components/Form/FormView/types';
 import { BaseFieldDefinition, FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
+import { IconButtonProps } from '@workspaceui/componentlibrary/src/components/IconButton';
 
 export type OrganizationField = FieldDefinition | Section;
 
@@ -46,18 +45,17 @@ export interface ContentGridProps {
   widgets: Widget[];
 }
 
-export interface ToolbarButton {
-  key: string;
+export interface ToolbarButton extends IconButtonProps {
+  key?: string;
   icon: React.ReactNode;
   iconText?: string;
   tooltip?: string;
-  onClick: ((event?: React.MouseEvent<HTMLElement>) => void) | (() => void);
-  disabled?: boolean;
   fill?: string;
-  hoverFill?: string;
   height?: number;
   width?: number;
-  sx?: SxProps<Theme>;
+  action?: string;
+  name?: string;
+  enabled?: boolean;
 }
 
 export interface ToolbarSectionConfig {

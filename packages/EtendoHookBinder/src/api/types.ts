@@ -730,3 +730,7 @@ export interface ProcessDefinition extends Record<string, unknown> {
   onLoad: string;
   onProcess: string;
 }
+
+export interface Labels {
+  [key: string]: string;
+}

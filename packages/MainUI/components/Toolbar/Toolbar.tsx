@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
 import { ToolbarProps } from './types';
 import SearchPortal from './SearchPortal';
@@ -24,10 +24,11 @@ import {
   createButtonByType,
   createProcessMenuButton,
   getButtonStyles,
-  ToolbarButtonMetadata,
 } from './buttonConfigs';
+import { ToolbarButtonMetadata } from '@/hooks/Toolbar/types';
 
-const BaseSection = { display: 'flex', alignItems: 'center', gap: '0.25rem' };
+const BaseSection = { display: 'flex', alignItems: 'center' };
+const EmptyArray: ToolbarButtonMetadata[] = [];
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false }) => {
   const [openModal, setOpenModal] = useState(false);
@@ -37,16 +38,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const [selectedProcessActionButton, setSelectedProcessActionButton] = useState<ProcessButton | null>(null);
   const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
     useState<ProcessDefinitionButton | null>(null);
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   const [activeModal, setActiveModal] = useState<{
     button: ToolbarButtonMetadata;
     isOpen: boolean;
-  } | null>(null);
-
-  const [activeDropdown, setActiveDropdown] = useState<{
-    button: ToolbarButtonMetadata;
-    anchorEl: HTMLElement;
   } | null>(null);
 
   const { session } = useUserContext();
@@ -57,7 +52,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentRecord } = useTabContext();
 
-  const buttons: ToolbarButtonMetadata[] = toolbar?.response.data ?? [];
+  const [openMenu, setOpenMenu] = useState<boolean>(false);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+
+  const buttons: ToolbarButtonMetadata[] = toolbar?.response.data ?? EmptyArray;
   const selectedRecord = useSelectedRecord(tab);
   const parentId = parentRecord?.id?.toString();
 
@@ -95,12 +93,12 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     });
   }, [actionFields, selectedItems, session]);
 
-  const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+  const handleMenuToggle = useCallback(() => {
+    setOpenMenu(prev => !prev);
   }, []);
 
   const handleMenuClose = useCallback(() => {
-    setAnchorEl(null);
+    setOpenMenu(false);
   }, []);
 
   const handleProcessMenuClick = useCallback(
@@ -185,7 +183,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
 
         const styles = getButtonStyles(button);
         if (styles) {
-          config.sx = { ...config.sx, ...styles };
+          config.className = config.className ? `${config.className} ${styles}` : styles;
         }
 
         return config;
@@ -198,23 +196,23 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       },
       centerSection: {
         buttons: createSectionButtons(organizedButtons.center),
-        style: BaseSection,
+        style: { ...BaseSection, gap: '0.25rem' },
       },
       rightSection: {
         buttons: createSectionButtons(organizedButtons.right),
-        style: BaseSection,
+        style: { ...BaseSection, gap: '0.25rem' },
       },
       isItemSelected: hasSelectedRecord,
     };
 
     if (processButtons.length > 0) {
       config.rightSection.buttons.push(
-        createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuOpen, t),
+        createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, buttonRef),
       );
     }
 
     return config;
-  }, [buttons, isFormView, selectedRecord?.id, handleAction, processButtons.length, handleMenuOpen, t]);
+  }, [buttons, isFormView, selectedRecord?.id, processButtons.length, handleAction, handleMenuToggle, t]);
 
   if (loading) return null;
 
@@ -228,19 +226,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           statusType="info"
           saveLabel="Cerrar"
           onClose={() => setActiveModal(null)}
-        />
-      )}
-      {activeDropdown && (
-        <ProcessMenu
-          anchorEl={activeDropdown.anchorEl}
-          open={Boolean(activeDropdown.anchorEl)}
-          onClose={() => setActiveDropdown(null)}
-          processButtons={activeDropdown.button.dropdownConfig?.items || []}
-          onProcessClick={() => {
-            console.log('Dropdown item clicked');
-            setActiveDropdown(null);
-          }}
-          selectedRecord={selectedRecord}
         />
       )}
       {statusModal.open && (
@@ -266,8 +251,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       )}
       {processButtons.length > 0 && (
         <ProcessMenu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
+          anchorRef={buttonRef}
+          open={openMenu}
           onClose={handleMenuClose}
           processButtons={processButtons}
           onProcessClick={handleProcessMenuClick}

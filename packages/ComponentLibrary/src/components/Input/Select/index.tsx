@@ -9,7 +9,6 @@ import {
   Paper,
   PaperProps,
   TextField,
-  Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
@@ -18,10 +17,19 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { ISelectInput, Option } from './types';
+import Tooltip from '../../Tooltip';
 
 type OptionProps = React.HTMLAttributes<HTMLLIElement> & { key?: string };
 
-const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disabled = false, helperText, name, ...props }) => {
+const Select: React.FC<ISelectInput> = ({
+  title,
+  iconLeft,
+  options = [],
+  disabled = false,
+  helperText,
+  name,
+  ...props
+}) => {
   const { sx } = useStyle();
   const theme = useTheme();
   const [inputValue, setInputValue] = useState<string>('');
@@ -56,7 +64,7 @@ const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disable
   };
 
   const renderInput = (params: AutocompleteRenderInputParams) => (
-    <Tooltip PopperProps={{ disablePortal: true }} title={inputValue} arrow>
+    <Tooltip title={inputValue}>
       <TextField
         {...params}
         sx={{
@@ -111,13 +119,11 @@ const Select: React.FC<ISelectInput> = ({ title, iconLeft, options = [], disable
                 ...sx.optionContainer,
                 backgroundColor: selected ? theme.palette.baselineColor.neutral[0] : undefined,
               }}
-              {...restProps}
-            >
+              {...restProps}>
               <Typography
                 className="textOption"
                 color={selected ? theme.palette.dynamicColor.dark : theme.palette.baselineColor.neutral[90]}
-                style={sx.optionText}
-              >
+                style={sx.optionText}>
                 {option.title}
               </Typography>
               {selected && <CheckCircleIcon style={sx.checkIcon} />}

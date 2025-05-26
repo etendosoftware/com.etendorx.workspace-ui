@@ -3,7 +3,7 @@
 import { forwardRef, useCallback } from 'react';
 import { MenuOpen } from '@mui/icons-material';
 import { Box } from '@mui/material';
-import { IconButton } from '../../IconButton';
+import IconButton from '../../IconButton';
 import { useStyle } from '../styles';
 import { DrawerHeaderProps } from '../types';
 
@@ -29,16 +29,7 @@ const DrawerHeader = forwardRef<HTMLDivElement, DrawerHeaderProps>(({ title, log
           </a>
         </div>
       ) : null}
-      <IconButton
-        onClick={onClick}
-        sx={{
-          transform: open ? 'rotate(0deg)' : 'rotate(180deg)',
-          transition: 'transform 0.3s ease',
-        }}
-        className="animated-transform"
-        height={20}
-        width={20}
-        tabIndex={tabIndex}>
+      <IconButton onClick={onClick} className="animated-transform w-9	h-9" tabIndex={tabIndex}>
         <MenuOpen />
       </IconButton>
     </Box>

@@ -1,15 +1,16 @@
-import { Typography, IconButton, Box, useTheme } from '@mui/material';
+import { Typography, Box, useTheme } from '@mui/material';
 import CloseIcon from '@workspaceui/componentlibrary/src/assets/icons/x.svg';
 import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
 import { useStyle } from '@/components/Table/styles';
 import { ICON_BUTTON_SIZE, ADD_BUTTON_TEXT } from './constants';
 import { SearchBarProps } from './types';
+import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 
 export const SearchBar: React.FC<SearchBarProps> = ({ readOnly, onClear, onOpen, hasItems }) => {
   const { sx } = useStyle();
   const theme = useTheme();
 
-  const handleClear = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClear = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     e.stopPropagation();
     onClear();
   };
@@ -27,19 +28,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({ readOnly, onClear, onOpen,
       : undefined,
   };
 
-  const iconButtonStyles = {
-    visibility: hasItems ? 'visible' : 'hidden',
-    backgroundColor: theme.palette.baselineColor.neutral[10],
-    '&:hover': {
-      backgroundColor: theme.palette.baselineColor.neutral[50],
-    },
-  };
-
   return (
     <Box onClick={() => !readOnly && onOpen()} sx={searchBarStyles}>
       <SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />
       <Typography>{ADD_BUTTON_TEXT}</Typography>
-      <IconButton size={ICON_BUTTON_SIZE} onClick={handleClear} disabled={readOnly || !hasItems} sx={iconButtonStyles}>
+      <IconButton onClick={handleClear} disabled={readOnly || !hasItems}>
         <CloseIcon fontSize={ICON_BUTTON_SIZE} />
       </IconButton>
     </Box>

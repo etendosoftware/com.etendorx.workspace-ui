@@ -1,6 +1,8 @@
 import { ToolbarButton } from '@workspaceui/storybook/src/stories/Components/Table/types';
 import { Theme } from '@mui/material';
 import { BaseButton, ProcessButton } from '../ProcessModal/types';
+import { RefObject } from 'react';
+import { IconButtonProps } from '@workspaceui/componentlibrary/src/components/IconButton';
 
 export const IconSize = 16;
 
@@ -92,7 +94,8 @@ export const isProcessButton = (button: Button): button is ProcessButton => {
   return button.action === 'PROCESS';
 };
 
-export interface StandardButtonConfig extends ToolbarButton {
+export interface StandardButtonConfig extends IconButtonProps {
+  key?: string;
   icon: React.ReactNode;
   iconText?: string;
   fill?: string;
@@ -120,7 +123,7 @@ export interface ToolbarSection {
 }
 
 export interface ProcessMenuProps {
-  anchorEl: HTMLElement | null;
+  anchorRef: RefObject<HTMLElement> | null;
   open: boolean;
   onClose: () => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

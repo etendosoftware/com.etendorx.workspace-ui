@@ -7,11 +7,9 @@ import BackgroundGradient from '../../../ComponentLibrary/src/assets/images/back
 import LogoutIcon from '../../../ComponentLibrary/src/assets/icons/log-out.svg';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import { UserProfileProps } from './types';
-import { useTranslation } from '@/hooks/useTranslation';
 
 const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, onSignOff }) => {
   const { styles } = useStyle();
-  const { t } = useTranslation();
 
   const handleSignOff = useCallback(() => {
     onSignOff();
@@ -27,14 +25,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, onSignOff }) 
           alt="Background Gradient"
         />
       </div>
-      <IconButton
-        style={styles.logoutButtonStyles}
-        tooltip={t('navigation.profile.signOffTooltip')}
-        width={16}
-        height={16}
-        onClick={handleSignOff}>
-        <LogoutIcon />
-      </IconButton>
+      <div className="absolute top-4 right-4 z-10">
+        <IconButton onClick={handleSignOff} className="h-6 w-6 [&>svg]:w-4 [&>svg]:h-4">
+          <LogoutIcon />
+        </IconButton>
+      </div>
       <div style={styles.profileImageContainerStyles}>
         {photoUrl ? (
           <Image

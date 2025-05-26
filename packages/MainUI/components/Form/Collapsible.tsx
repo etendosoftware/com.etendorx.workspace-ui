@@ -5,13 +5,9 @@ import ChevronUp from '@workspaceui/componentlibrary/src/assets/icons/chevron-up
 import ChevronDown from '@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg';
 import InfoIcon from '@workspaceui/componentlibrary/src/assets/icons/file-text.svg';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
-import { useStyle } from './FormView/styles';
-import { useTheme } from '@mui/material';
 import { CollapsibleProps } from './FormView/types';
 
 function CollapsibleCmp({ title, icon, children, isExpanded, sectionId, onToggle }: CollapsibleProps) {
-  const { sx } = useStyle();
-  const theme = useTheme();
   const contentRef = useRef<React.ElementRef<'div'>>(null);
   const [maxHeight, setMaxHeight] = useState<CSSProperties['maxHeight']>('100%');
   const style = useMemo(() => ({ maxHeight: isExpanded ? maxHeight : 0 }), [isExpanded, maxHeight]);
@@ -73,14 +69,12 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId, onToggle
           items-center p-4 cursor-pointer transition-colors hover:bg-(--color-dynamic-contrast-text) bg-gray-50 ${isExpanded ? 'rounded-xl' : ''}`}
         onClick={handleToggle}
         onKeyDown={handleKeyDown}>
-        <div className="flex items-center gap-3 ">
-          {icon || <InfoIcon fill="currentColor" />}
+        <div className="flex items-center gap-3">
+          <IconButton className="h-6 w-6">{icon || <InfoIcon />}</IconButton>
           <span className="font-semibold text-gray-800">{title}</span>
         </div>
         <div>
-          <IconButton size="small" sx={sx.chevronButton} hoverFill={theme.palette.baselineColor.neutral[80]}>
-            {isExpanded ? <ChevronUp /> : <ChevronDown />}
-          </IconButton>
+          <IconButton>{isExpanded ? <ChevronUp /> : <ChevronDown />}</IconButton>
         </div>
       </div>
       <div

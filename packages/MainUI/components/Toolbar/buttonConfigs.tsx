@@ -182,30 +182,10 @@ export const createButtonByType = (
 };
 
 const BUTTON_STYLES = {
-  NEW: {
-    padding: '0.75rem',
-    maxHeight: '2rem',
-    background: theme.palette.baselineColor.neutral[100],
-    borderRadius: '6.25rem 0 0 6.25rem',
-    color: theme.palette.baselineColor.neutral[0],
-    '&:hover': {
-      background: theme.palette.dynamicColor.main,
-    },
-  },
-  SAVE: {
-    background: theme.palette.baselineColor.neutral[100],
-    border: `1px solid ${theme.palette.baselineColor.transparentNeutral[30]}`,
-  },
-  REFRESH: {
-    padding: '0.75rem',
-    maxHeight: '2rem',
-    background: theme.palette.baselineColor.neutral[100],
-    borderRadius: '0 6.25rem 6.25rem 0',
-    color: theme.palette.baselineColor.neutral[0],
-    '&:hover': {
-      background: theme.palette.dynamicColor.main,
-    },
-  },
+  NEW: 'bg-(--color-baseline-100) text-(--color-baseline-0) rounded-l-full h-8 px-3',
+  SAVE: 'bg-(--color-baseline-100) text-(--color-baseline-0) h-8.5 w-8.5 ml-1',
+  REFRESH:
+    'bg-(--color-baseline-100) text-(--color-baseline-0) rounded-r-full  border-l-1 border-l-[color:var(--color-baseline-0)] w-10',
 } as const;
 
 export const getButtonStyles = (button: ToolbarButtonMetadata) => {
@@ -225,13 +205,7 @@ export const createProcessMenuButton = (
   height: IconSize,
   width: IconSize,
   enabled: processCount > 0,
-  sx: {
-    color: theme.palette.baselineColor.neutral[100],
-    background: theme.palette.specificColor.warning.main,
-    opacity: hasSelectedRecord ? 1 : 0.5,
-    cursor: hasSelectedRecord ? 'pointer' : 'not-allowed',
-    maxHeight: '2rem',
-  },
+  className: `bg-(--color-warning) color-(--color-baseline-100) max-h-8 ${hasSelectedRecord ? 'opacity-100 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`,
   onClick: (event?: React.MouseEvent<HTMLElement>) => {
     if (hasSelectedRecord && event && processCount > 0) {
       onMenuOpen(event);

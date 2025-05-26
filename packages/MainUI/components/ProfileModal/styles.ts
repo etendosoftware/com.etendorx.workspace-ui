@@ -39,12 +39,7 @@ export const useStyle = () => {
           borderRadius: '4.5rem',
           border: `4px solid ${theme.palette.baselineColor.neutral[0]}`,
         },
-        logoutButtonStyles: {
-          position: 'absolute',
-          top: '1rem',
-          right: '1rem',
-          zIndex: '1',
-        },
+
         profileImageStyles: {
           width: '100%',
           height: '100%',

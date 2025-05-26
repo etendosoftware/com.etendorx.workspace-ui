@@ -1,5 +1,6 @@
 'use client';
 
+import { useContext, useState, useCallback, useMemo, useRef } from 'react';
 import {
   ConfigurationModal,
   NotificationButton,
@@ -20,7 +21,6 @@ import { useLanguage } from '@/contexts/language';
 import { Language } from '@/contexts/types';
 import { UserContext } from '@/contexts/user';
 import { logger } from '@/utils/logger';
-import { useContext, useState, useCallback, useMemo } from 'react';
 
 const handleClose = () => {
   return true;
@@ -42,6 +42,7 @@ const Navigation: React.FC = () => {
   } = useContext(UserContext);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const { language, setLanguage, getFlag } = useLanguage();
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   const { clearUserData } = useContext(UserContext);
 
@@ -85,13 +86,17 @@ const Navigation: React.FC = () => {
         {...modalConfig}
         tooltipButtonProfile={t('navigation.configurationModal.tooltipButtonProfile')}
       />
-      <IconButton tooltip={t('navigation.activityButton.tooltip')} disabled={true}>
+      <IconButton
+        ref={buttonRef}
+        className="w-10 h-10"
+        tooltip={t('navigation.activityButton.tooltip')}
+        disabled={true}>
         <ActivityIcon />
       </IconButton>
       <NotificationButton notifications={NOTIFICATIONS} icon={<NotificationIcon />}>
         <NotificationModal
           notifications={NOTIFICATIONS}
-          anchorEl={null}
+          anchorRef={buttonRef}
           onClose={handleClose}
           title={{
             icon: <NotificationIcon fill="#2E365C" />,
@@ -104,8 +109,9 @@ const Navigation: React.FC = () => {
           emptyStateImageAlt={t('navigation.notificationModal.emptyStateImageAlt')}
           emptyStateMessage={t('navigation.notificationModal.emptyStateMessage')}
           emptyStateDescription={t('navigation.notificationModal.emptyStateDescription')}
-          actionButtonLabel={t('navigation.notificationModal.actionButtonLabel')}
-        />
+          actionButtonLabel={t('navigation.notificationModal.actionButtonLabel')}>
+          <></>
+        </NotificationModal>
       </NotificationButton>
       <ProfileModal
         icon={<PersonIcon />}

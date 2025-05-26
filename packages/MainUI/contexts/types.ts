@@ -13,7 +13,6 @@ import {
   SessionResponse,
 } from '@workspaceui/etendohookbinder/src/api/types';
 import { type Etendo } from '@workspaceui/etendohookbinder/src/api/metadata';
-import Graph from '@/data/graph';
 
 export type Language = 'en_US' | 'es_ES';
 
@@ -44,7 +43,7 @@ export interface IUserContext {
   login: (username: string, password: string) => Promise<void>;
   changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | void>;
   token: string | null;
-  roles: SessionResponse["roles"];
+  roles: SessionResponse['roles'];
   currentRole: CurrentRole | undefined;
   prevRole: CurrentRole | undefined;
   profile: ProfileInfo;

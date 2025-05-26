@@ -1,17 +1,19 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useEffect } from 'react';
+import { createContext, useCallback, useContext, useMemo, useEffect, useState } from 'react';
 import { LanguageContextType, Language } from './types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { getLanguageFlag } from '../utils/languageFlags';
 import useLocalStorage from '@workspaceui/componentlibrary/src/hooks/useLocalStorage';
 import { usePrevious } from '@/hooks/usePrevious';
 import { useRouter } from 'next/navigation';
+import { Labels } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const LanguageContext = createContext({} as LanguageContextType);
 
 export default function LanguageProvider({ children }: React.PropsWithChildren) {
   const [language, setLanguage] = useLocalStorage<Language | null>('language', null);
+  const [labels, setLabels] = useState<Labels>({});
   const prevLanguage = usePrevious(language);
   const router = useRouter();
 
@@ -22,14 +24,18 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
     [language],
   );
 
+  const getLabel = useCallback((label: string) => labels[label] ?? label, [labels]);
+
   const value = useMemo(
     () => ({
       language,
       setLanguage,
+      setLabels,
       getFlag,
       prevLanguage,
+      getLabel,
     }),
-    [language, setLanguage, getFlag, prevLanguage],
+    [language, setLanguage, getFlag, prevLanguage, getLabel],
   );
 
   useEffect(() => {
