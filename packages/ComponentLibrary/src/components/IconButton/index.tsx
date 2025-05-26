@@ -33,6 +33,7 @@ const IconButton = ({
   items-center
   justify-center
   text-[0.825rem]
+  min-w-max
   [&>svg]:text-[1.5rem]
   [&>svg]:fill-current
   ${iconText ? 'px-2 gap-2' : 'w-8 h-8'}
