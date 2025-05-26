@@ -13,7 +13,6 @@ export type GraphEvents = {
   unselected: [tab: Tab];
   selectedMultiple: [tab: Tab, records: EntityData[]];
   unselectedMultiple: [tab: Tab];
-  levelChanged: [level: number];
 };
 
 export type GraphEventListener<K extends keyof GraphEvents> = (...args: GraphEvents[K]) => void;

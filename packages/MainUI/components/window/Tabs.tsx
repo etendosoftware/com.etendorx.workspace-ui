@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Tab as TabType } from '@workspaceui/etendohookbinder/src/api/types';
 import type { TabsProps } from '@/components/window/types';
 import { TabContainer } from '@/components/window/TabContainer';

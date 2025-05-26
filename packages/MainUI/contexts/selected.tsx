@@ -1,8 +1,8 @@
 'use client';
 
-import { createContext, useCallback, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import Graph from '@/data/graph';
+import Graph, { GraphEventListener } from '@/data/graph';
 
 interface SelectedContext {
   graph: Graph<Tab>;
@@ -17,16 +17,18 @@ export const SelectedProvider = ({ children, tabs }: React.PropsWithChildren<{ t
   const graph = useRef(new Graph<Tab>(tabs)).current;
 
   const setActiveLevel = useCallback((level: number) => {
-    setActiveLevels(prev => {
-      // If the clicked tab is already active, collapse all deeper levels
-      const trimmed = prev.filter(lvl => lvl < level);
+    setActiveLevels((prev) => {
+      const maxLevel = prev[prev.length - 1];
 
-      // Add the clicked level back if it was not the last clicked
-      if (trimmed[trimmed.length - 1] !== level) {
-        return [...trimmed, level].slice(-2);
+      if (level === 0) {
+        return [0];
+      } else if (maxLevel == level) {
+        return prev;
+      } else if (maxLevel > level) {
+        return [level - 1, level];
+      } else {
+        return [maxLevel, level];
       }
-
-      return trimmed;
     });
   }, []);
 
@@ -38,6 +40,26 @@ export const SelectedProvider = ({ children, tabs }: React.PropsWithChildren<{ t
     }),
     [activeLevels, graph, setActiveLevel],
   );
+
+  useEffect(() => {
+    const handleSelected: GraphEventListener<'selected'> = (tab) => {
+      setActiveLevel(tab.tabLevel + 1);
+    };
+
+    const handleUnselected: GraphEventListener<'unselected'> = (tab) => {
+      setActiveLevel(tab.tabLevel);
+    };
+
+    graph //
+      .on('selected', handleSelected)
+      .on('unselected', handleUnselected);
+
+    return () => {
+      graph //
+        .off('selected', handleSelected)
+        .off('unselected', handleUnselected);
+    };
+  }, [graph, setActiveLevel]);
 
   return <SelectContext.Provider value={value}>{children}</SelectContext.Provider>;
 };
