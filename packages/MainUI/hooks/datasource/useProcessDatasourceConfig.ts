@@ -36,6 +36,7 @@ export const useProcessConfig = ({ processId, windowId, tabId }: UseProcessConfi
       const params = new URLSearchParams({
         processId,
         windowId,
+        // TODO: Remove hardcoded value and use action provided by process metadata
         _action: 'org.openbravo.client.application.process.DefaultsProcessActionHandler',
       });
 
