@@ -63,7 +63,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
 
   const {
     handleAction,
-    handleButtonAction,
     searchOpen,
     setSearchOpen,
     handleSearch,
@@ -176,40 +175,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     refetchDatasource(tab.id);
   }, [graph, refetchDatasource, tab]);
 
-  const handleDynamicButtonAction = useCallback(
-    (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => {
-      console.debug('Button action:', action, 'Button:', button);
-      handleButtonAction(action, button, event);
-
-      switch (action) {
-        case 'OPEN_MODAL':
-          setActiveModal({ button, isOpen: true });
-          break;
-
-        case 'OPEN_DROPDOWN':
-          if (event?.currentTarget) {
-            setActiveDropdown({
-              button,
-              anchorEl: event.currentTarget as HTMLElement,
-            });
-          }
-          break;
-        // TODO: handle TOGGLE and CUSTOMS_ACTION
-        default:
-          handleAction(action);
-          break;
-      }
-    },
-    [handleAction, handleButtonAction],
-  );
-
   const toolbarConfig = useMemo(() => {
     const organizedButtons = organizeButtonsBySection(buttons, isFormView);
     const hasSelectedRecord = !!selectedRecord?.id;
 
     const createSectionButtons = (sectionButtons: ToolbarButtonMetadata[]) =>
       sectionButtons.map(button => {
-        const config = createButtonByType(button, handleDynamicButtonAction, isFormView, hasSelectedRecord);
+        const config = createButtonByType(button, handleAction, isFormView, hasSelectedRecord);
 
         const styles = getButtonStyles(button);
         if (styles) {
@@ -242,7 +214,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     }
 
     return config;
-  }, [buttons, isFormView, selectedRecord?.id, handleDynamicButtonAction, processButtons.length, handleMenuOpen, t]);
+  }, [buttons, isFormView, selectedRecord?.id, handleAction, processButtons.length, handleMenuOpen, t]);
 
   if (loading) return null;
 

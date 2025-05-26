@@ -9,7 +9,6 @@ import { useStatusModal } from './useStatusModal';
 import { useToolbarContext } from '@/contexts/ToolbarContext';
 import { useTabContext } from '@/contexts/tab';
 import { useSelected } from '@/contexts/selected';
-import { ToolbarButtonMetadata } from '@/components/Toolbar/buttonConfigs';
 
 export const useToolbarConfig = ({
   tabId,
@@ -146,7 +145,7 @@ export const useToolbarConfig = ({
   );
 
   const handleAction = useCallback(
-    (action: string, button?: ToolbarButtonMetadata) => {
+    (action: string) => {
       if (isDeleting) return;
 
       const handler = actionHandlers[action];
@@ -154,64 +153,8 @@ export const useToolbarConfig = ({
         handler();
         return;
       }
-      if (button) {
-        switch (button.buttonType) {
-          case 'MODAL':
-            logger.info(`Opening modal for: ${button.name}`);
-            break;
-          case 'DROPDOWN':
-            logger.info(`Opening dropdown for: ${button.name}`);
-            break;
-          case 'TOGGLE':
-            logger.info(`Toggling: ${button.name}`);
-            break;
-          case 'CUSTOM':
-            logger.info(`Custom action for: ${button.name}`);
-            break;
-
-          default:
-            logger.warn(`Action not implemented: ${action} for button type: ${button.buttonType}`);
-        }
-      } else {
-        logger.warn(`Action not implemented: ${action}`);
-      }
     },
     [actionHandlers, isDeleting],
-  );
-
-  const handleButtonAction = useCallback(
-    (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => {
-      logger.debug('Dynamic button action:', { action, button: button.name, buttonType: button.buttonType });
-
-      if (action in actionHandlers) {
-        handleAction(action, button);
-        return;
-      }
-
-      switch (action) {
-        case 'OPEN_MODAL':
-          logger.info(`Opening modal for button: ${button.name}`);
-          break;
-
-        case 'OPEN_DROPDOWN':
-          logger.info(`Opening dropdown for button: ${button.name}`, button.dropdownConfig);
-          break;
-
-        case 'TOGGLE':
-          logger.info(`Toggling button: ${button.name}`);
-          break;
-
-        case 'CUSTOM_ACTION':
-          logger.info(`Custom action for button: ${button.name}`);
-          handleAction(button.action, button);
-          break;
-
-        default:
-          // Fallback a acción normal
-          handleAction(action, button);
-      }
-    },
-    [actionHandlers, handleAction],
   );
 
   const handleSearch = useCallback(
@@ -225,7 +168,6 @@ export const useToolbarConfig = ({
   return useMemo(
     () => ({
       handleAction,
-      handleButtonAction,
       searchOpen,
       setSearchOpen,
       handleSearch,
@@ -242,7 +184,6 @@ export const useToolbarConfig = ({
     }),
     [
       handleAction,
-      handleButtonAction,
       handleSearch,
       searchOpen,
       searchValue,
