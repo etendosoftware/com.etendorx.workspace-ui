@@ -161,6 +161,7 @@ export enum FieldType {
   QUANTITY = 'quantity',
   LIST = 'list',
   BUTTON = 'button',
+  WINDOW = 'window',
 }
 
 export interface MappedTab {
@@ -642,7 +643,7 @@ export type FieldDefinition =
   | BaseFieldDefinition<SelectOption>;
 
 type EntityKey = string;
-type EntityValue = string | number | boolean | symbol | null;
+export type EntityValue = string | number | boolean | symbol | null;
 
 export interface EntityData {
   [key: EntityKey]: EntityValue;
@@ -711,6 +712,9 @@ export type ProcessParameter = {
   id: string;
   name: string;
   refList: Array<ListOption>;
+  readOnlyLogicExpression?: string;
+  reference: string;
+  window?: WindowMetadata; // This type is for process that have defined a window reference
 } & Record<string, string>;
 
 export type ProcessParameters = Record<string, ProcessParameter>;

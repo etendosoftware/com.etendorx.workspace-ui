@@ -19,6 +19,7 @@ const es = {
     loadMore: 'Cargar más',
     trueText: 'Si',
     falseText: 'No',
+    noDataAvailable: 'No hay información disponible',
   },
   forms: {
     sections: {
@@ -157,6 +158,7 @@ const es = {
     confirmationMessage: '¿Deseas ejecutar este proceso?',
     messageTitle: 'Proceso',
     completedSuccessfully: 'Proceso completado exítosamente',
+    processError: 'Error mientras se cargaba la informacion del proceso',
   },
   drawer: {
     recentlyViewed: 'Visto recientemente',

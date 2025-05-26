@@ -133,7 +133,7 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
       let clickTimeout: NodeJS.Timeout | null = null;
 
       return {
-        onClick: (event: React.MouseEvent) => {
+        onClick: event => {
           if (clickTimeout) return;
 
           clickTimeout = setTimeout(() => {

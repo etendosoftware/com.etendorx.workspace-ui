@@ -19,6 +19,7 @@ const en = {
     loadMore: 'Load More',
     trueText: 'Yes',
     falseText: 'No',
+    noDataAvailable: 'No data available',
   },
   forms: {
     sections: {
@@ -46,7 +47,7 @@ const en = {
     },
     networkError: {
       title: 'Could not connect to Etendo',
-      description: 'Looks like there is a network issue or rver is down',
+      description: 'Looks like there is a network issue or server is down',
     },
     notFound: {
       title: 'Not found',
@@ -153,6 +154,7 @@ const en = {
     confirmationMessage: 'Want to execute this process?',
     messageTitle: 'Process',
     completedSuccessfully: 'Process completed successfuly',
+    processError: 'Error while loading process data',
   },
   drawer: {
     recentlyViewed: 'Recently Viewed',
