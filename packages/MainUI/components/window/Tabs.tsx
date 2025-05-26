@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { Tab as TabType } from '@workspaceui/etendohookbinder/src/api/types';
 import type { TabsProps } from '@/components/window/types';
 import { TabContainer } from '@/components/window/TabContainer';
@@ -14,6 +14,7 @@ export default function Tabs({ tabs }: TabsProps) {
   const { activeLevels, setActiveLevel } = useSelected();
   const [current, setCurrent] = useState(tabs[0]);
   const collapsed = !activeLevels.includes(current.tabLevel);
+  const [expand, setExpanded] = useState(false);
 
   const handleClick = useCallback(
     (tab: TabType) => {
@@ -23,6 +24,16 @@ export default function Tabs({ tabs }: TabsProps) {
     [setActiveLevel],
   );
 
+  const handleDoubleClick = useCallback(
+    (tab: TabType) => {
+      setCurrent(tab);
+      const newExpand = !expand;
+      setExpanded(newExpand);
+      setActiveLevel(tab.tabLevel, newExpand);
+    },
+    [expand, setActiveLevel],
+  );
+
   const handleClose = useCallback(() => {
     setActiveLevel(current.tabLevel - 1);
   }, [current.tabLevel, setActiveLevel]);
@@ -30,9 +41,15 @@ export default function Tabs({ tabs }: TabsProps) {
   return (
     <TabContainer current={current} collapsed={collapsed}>
       {current.tabLevel === 0 ? (
-        <TabButton tab={current} onClick={handleClick} active />
+        <TabButton tab={current} onClick={handleClick} onDoubleClick={handleDoubleClick} active />
       ) : (
-        <SubTabsSwitch current={current} tabs={tabs} onClick={handleClick} onClose={handleClose} />
+        <SubTabsSwitch
+          current={current}
+          tabs={tabs}
+          onClick={handleClick}
+          onDoubleClick={handleDoubleClick}
+          onClose={handleClose}
+        />
       )}
       <TabContextProvider tab={current}>
         <Tab tab={current} collapsed={collapsed} />

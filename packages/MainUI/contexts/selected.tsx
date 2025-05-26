@@ -7,7 +7,7 @@ import Graph, { GraphEventListener } from '@/data/graph';
 interface SelectedContext {
   graph: Graph<Tab>;
   activeLevels: number[];
-  setActiveLevel: (level: number) => void;
+  setActiveLevel: (level: number, expand?: boolean) => void;
 }
 
 export const SelectContext = createContext<SelectedContext>({} as SelectedContext);
@@ -16,8 +16,13 @@ export const SelectedProvider = ({ children, tabs }: React.PropsWithChildren<{ t
   const [activeLevels, setActiveLevels] = useState<number[]>([0]);
   const graph = useRef(new Graph<Tab>(tabs)).current;
 
-  const setActiveLevel = useCallback((level: number) => {
+  const setActiveLevel = useCallback((level: number, expand?: boolean) => {
     setActiveLevels((prev) => {
+      console.debug({ level, expand });
+      if (expand) {
+        return [level];
+      }
+
       const maxLevel = prev[prev.length - 1];
 
       if (level === 0) {
