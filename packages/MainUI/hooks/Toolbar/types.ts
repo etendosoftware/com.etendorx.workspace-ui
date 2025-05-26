@@ -1,6 +1,32 @@
-import { BaseFieldDefinition, Field, ToolbarButton } from '@workspaceui/etendohookbinder/src/api/types';
-import { IconName } from '../../components/Toolbar/types';
+import { BaseFieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 import { ProcessActionButton, ProcessButton, ProcessDefinitionButton } from '@/components/ProcessModal/types';
+
+export type ButtonType = 'ACTION' | 'DROPDOWN' | 'MODAL' | 'TOGGLE' | 'CUSTOM';
+export type ButtonSection = 'left' | 'center' | 'right';
+
+export interface ToolbarButtonMetadata {
+  id: string;
+  action: string;
+  name: string;
+  icon?: string | null;
+  active: boolean;
+  seqno?: number | null;
+  buttonType: ButtonType;
+  section: ButtonSection;
+  modalConfig?: {
+    title?: string;
+    size?: 'small' | 'medium' | 'large';
+  };
+  dropdownConfig?: {
+    items?: Array<{ label: string; action: string }>;
+  };
+}
+
+export interface OrganizedSections {
+  left: ToolbarButtonMetadata[];
+  center: ToolbarButtonMetadata[];
+  right: ToolbarButtonMetadata[];
+}
 
 export interface ExecuteProcessParams {
   button: ProcessButton;
@@ -20,13 +46,10 @@ export interface ExecuteProcessActionParams {
   params?: Record<string, unknown>;
 }
 
-export interface ToolbarResponseButton extends Field, ToolbarButton {
-  displayLogicExpression: string;
-  icon: IconName;
-}
-
 export interface ToolbarResponse {
-  buttons: Array<ToolbarResponseButton>;
+  response: {
+    data: Array<ToolbarButtonMetadata>;
+  } & Record<string, string>;
   windowId: string;
   isNew: boolean;
 }

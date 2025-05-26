@@ -1,5 +1,6 @@
 import { SxProps, Theme } from '@mui/material';
-import { BaseButton, ProcessButton } from '../ProcessModal/types';
+import { ProcessButton } from '../ProcessModal/types';
+import { RefObject } from 'react';
 
 export const IconSize = 16;
 
@@ -18,25 +19,6 @@ export interface SearchPortalProps {
   width?: string;
   autoCompleteTexts?: string[];
   theme?: Theme;
-}
-
-export type IconName =
-  | 'plus'
-  | 'save'
-  | 'trash'
-  | 'refresh-cw'
-  | 'search'
-  | 'grid'
-  | 'download'
-  | 'paperclip'
-  | 'process';
-
-export interface ToolbarResponseButton extends ToolbarButton {
-  icon: IconName;
-  key: string;
-  onClick: () => void;
-  name: string;
-  id: string;
 }
 
 export interface ToolbarProps {
@@ -71,61 +53,16 @@ export interface ProcessButtonProps {
   disabled?: boolean;
 }
 
-export interface StandardButton extends BaseButton {
-  icon: IconName;
-  iconText?: string;
-  fill?: string;
-  height?: number;
-  width?: number;
-}
-
-export interface ProcessMenuButtonConfig extends Omit<StandardButtonConfig, 'onClick'> {
-  onClick: (event: React.MouseEvent<HTMLElement>) => void;
-}
-
-export type Button = StandardButton | ProcessButton;
-
-export const isProcessButton = (button: Button): button is ProcessButton => {
-  return button.action === 'PROCESS';
-};
-
-export interface StandardButtonConfig extends ToolbarButton {
-  icon: React.ReactNode;
-  iconText?: string;
-  fill?: string;
-  height?: number;
-  width?: number;
-  action?: string;
-  name?: string;
-  enabled?: boolean;
-}
-
-export interface ProcessButtonConfig extends ToolbarButton {
-  icon: React.ReactNode;
-  iconText?: string;
-  height?: number;
-  width?: number;
-  onProcess?: () => Promise<void>;
-  additionalContent: () => React.ReactElement | null;
-}
-
-export type ButtonConfig = StandardButtonConfig | ProcessButtonConfig;
-
-export interface ToolbarSection {
-  buttons: ButtonConfig[];
-  style?: React.CSSProperties;
-}
-
 export interface ProcessMenuProps {
-  anchorEl: HTMLElement | null;
+  anchorRef: RefObject<HTMLElement> | null;
   open: boolean;
   onClose: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  processButtons: any;
+  processButtons: ProcessButton[];
   onProcessClick: (button: ProcessButton) => void;
   selectedRecord: unknown | undefined;
 }
 
+// Adaptador para convertir ToolbarButtonMetadata a ToolbarButton para TopToolbar
 export interface ToolbarButton {
   key: string;
   icon: React.ReactNode;
@@ -138,6 +75,8 @@ export interface ToolbarButton {
   height?: number;
   width?: number;
   sx?: SxProps<Theme>;
+  className?: string;
+  ref?: React.LegacyRef<HTMLButtonElement>;
 }
 
 export interface ToolbarSectionConfig {

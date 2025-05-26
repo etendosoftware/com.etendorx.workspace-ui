@@ -13,10 +13,6 @@ const WidgetComponent: React.FC<Widget> = ({
   bgcolor,
   children,
   iconBgColor,
-  iconButtonColor,
-  iconButtonHoverColor,
-  iconButtonBgColor,
-  iconButtonHoverBgColor,
 }) => {
   const { sx } = useStyle();
 
@@ -34,17 +30,7 @@ const WidgetComponent: React.FC<Widget> = ({
           <Typography sx={{ ml: 1 }}>{title}</Typography>
         </Box>
         {iconButtonAction && (
-          <IconButton
-            width={16}
-            height={16}
-            tooltip={tooltip}
-            onClick={iconButtonAction}
-            fill={iconButtonColor}
-            hoverFill={iconButtonHoverColor}
-            sx={{
-              background: iconButtonBgColor,
-              '&:hover': { background: iconButtonHoverBgColor },
-            }}>
+          <IconButton tooltip={tooltip} onClick={iconButtonAction}>
             <InformationIcon />
           </IconButton>
         )}

@@ -1,7 +1,7 @@
 import { ProcessConfigResponse } from '@/hooks/datasource/useProcessDatasourceConfig';
-import { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import type { EntityData, EntityValue, ProcessParameter, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { MRT_Row, MRT_TableInstance, MRT_TableBodyRowProps, MRT_RowData } from 'material-react-table';
+import { Field, ProcessAction } from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface BaseButton extends Field {
   id: string;
@@ -9,11 +9,6 @@ export interface BaseButton extends Field {
   action: string;
   enabled: boolean;
   visible: boolean;
-}
-
-export interface ProcessAction extends Record<string, unknown> {
-  id: string;
-  name: string;
 }
 
 export interface BaseProcessButton extends BaseButton {

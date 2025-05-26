@@ -1,89 +1,58 @@
-'use client';
+import React from 'react';
+import Tooltip from '../Tooltip';
+import { cleanDefaultClasses } from '../../utils/classUtil';
 
-import React, { useState, useCallback, useEffect, useMemo, memo } from 'react';
-import { IconButton as MUIIconButton, Box, Typography, useTheme } from '@mui/material';
-import { useStyle } from './styles';
-import { IIconComponentProps } from './types';
+export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  disabled?: boolean;
+  ariaLabel?: string;
+  tooltip?: string;
+  className?: string;
+  iconText?: string;
+  ref?: React.LegacyRef<HTMLButtonElement>;
+}
 
-const IconButtonCmp: React.FC<IIconComponentProps> = ({
-  fill,
-  hoverFill,
-  width = 24,
-  height = 24,
-  tooltip,
-  sx,
+const IconButton = ({
+  className = '',
   children,
-  disabled,
-  isHovered = false,
+  disabled = false,
+  ariaLabel,
+  tooltip,
   iconText,
-  ...props
-}) => {
-  const { styles } = useStyle();
-  const theme = useTheme();
-
-  const defaultFill = theme.palette.baselineColor.neutral[80];
-  const defaultHoverFill = theme.palette.baselineColor.neutral[0];
-
-  const actualFill = fill ?? defaultFill;
-  const actualHoverFill = hoverFill ?? defaultHoverFill;
-
-  const [iconFill, setIconFill] = useState<string>(actualFill);
-
-  useEffect(() => {
-    setIconFill(isHovered && !disabled ? actualHoverFill : actualFill);
-  }, [isHovered, actualHoverFill, actualFill, disabled]);
-
-  const handleMouseEnter = useCallback(() => {
-    if (!disabled) {
-      setIconFill(actualHoverFill);
-    }
-  }, [disabled, actualHoverFill]);
-
-  const handleMouseLeave = useCallback(() => {
-    if (!disabled) {
-      setIconFill(actualFill);
-    }
-  }, [disabled, actualFill]);
-
-  const combinedStyles = useMemo(
-    () => ({
-      ...styles.defaultContainer,
-      ...sx,
-    }),
-    [styles.defaultContainer, sx],
-  );
-
-  const clonedIcon = useMemo(
-    () =>
-      React.isValidElement(children)
-        ? React.cloneElement(children as React.ReactElement, {
-            style: {
-              fill: disabled ? theme.palette.action.disabled : iconFill,
-              width,
-              height,
-            },
-          })
-        : null,
-    [children, disabled, height, iconFill, theme.palette.action.disabled, width],
-  );
-
+  ref,
+  ...rest
+}: IconButtonProps) => {
+  const DEFAULT_BUTTON_CLASSES = `
+  disabled:bg-transparent
+  disabled:text-(--color-transparent-neutral-30)
+  rounded-full
+  text-(--color-baseline-80)
+  hover:text-(--color-baseline-0)
+  bg-(--color-baseline-0)
+  hover:bg-(--color-dynamic-main)
+  inline-flex
+  items-center
+  justify-center
+  text-[0.825rem]
+  min-w-max
+  [&>svg]:text-[1.5rem]
+  [&>svg]:fill-current
+  ${iconText ? 'px-2 gap-2' : 'w-8 h-8'}
+`;
   return (
-    <div title={tooltip}>
-      <MUIIconButton
-        sx={combinedStyles}
-        {...props}
+    <Tooltip title={tooltip}>
+      <button
+        ref={ref}
+        type="button"
+        aria-label={ariaLabel}
         disabled={disabled}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}>
-        <Box sx={styles.buttonContainer}>
-          {clonedIcon}
-          {iconText && <Typography sx={styles.iconText}>{iconText}</Typography>}
-        </Box>
-      </MUIIconButton>
-    </div>
+        className={cleanDefaultClasses(className, DEFAULT_BUTTON_CLASSES)}
+        {...rest}>
+        {children}
+        {iconText && <span>{iconText}</span>}
+      </button>
+    </Tooltip>
   );
 };
 
-const IconButton = memo(IconButtonCmp);
-export { IconButton };
+IconButton.displayName = 'IconButton';
 export default IconButton;

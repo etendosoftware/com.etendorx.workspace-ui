@@ -4,12 +4,10 @@ import { ProcessDeprecatedModallProps } from './types';
 import CloseIcon from '../../../ComponentLibrary/src/assets/icons/x.svg';
 import WarningIcon from '../../../ComponentLibrary/src/assets/icons/alert-triangle.svg';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
-import { useStyle } from './styles';
 import { Button } from '@mui/material';
 
 const DeprecatedFeatureModal = ({ isOpen, onClose, title, message }: ProcessDeprecatedModallProps) => {
   const { t } = useTranslation();
-  const { styles } = useStyle();
 
   const handleClose = useCallback(() => {
     onClose();
@@ -22,7 +20,7 @@ const DeprecatedFeatureModal = ({ isOpen, onClose, title, message }: ProcessDepr
       <div className="relative bg-white flex flex-col w-full max-w-md border-4 border-gray-300 rounded-xl">
         <div className="flex justify-between items-center p-4 border-b border-gray-200 rounded-t-xl bg-[var(--color-baseline-10)]">
           <h2 className="text-lg font-semibold">{title || t('common.processTitle')}</h2>
-          <IconButton onClick={onClose} sx={styles.clearButtonHover}>
+          <IconButton onClick={onClose}>
             <CloseIcon />
           </IconButton>
         </div>

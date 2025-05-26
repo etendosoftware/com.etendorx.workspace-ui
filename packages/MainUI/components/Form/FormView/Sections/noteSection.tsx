@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Box, Grid, Card, CardContent, Typography, Button, IconButton, TextField, useTheme } from '@mui/material';
+import { Box, Grid, Card, CardContent, Typography, Button, TextField, useTheme } from '@mui/material';
 import Modal from '@workspaceui/componentlibrary/src/components/BasicModal';
 import CloseIcon from '@workspaceui/componentlibrary/src/assets/icons/x.svg';
 import NoteIcon from '@workspaceui/componentlibrary/src/assets/icons/note.svg';
 import PlusIcon from '@workspaceui/componentlibrary/src/assets/icons/plus-circle.svg';
 import { Note, NoteSectionProps } from '../types';
 import { noteColors, useStyle } from '../styles';
+import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 
 const NoteSection = ({
   sectionId,
@@ -97,7 +98,7 @@ const NoteSection = ({
                   {new Date(note.createdAt).toDateString()}
                 </Typography>
                 <Box sx={sx.deleteButtonBox}>
-                  <IconButton size="small" onClick={() => deleteNote(note.id)}>
+                  <IconButton onClick={() => deleteNote(note.id)}>
                     <CloseIcon fontSize="small" />
                   </IconButton>
                 </Box>

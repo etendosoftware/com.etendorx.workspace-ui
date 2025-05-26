@@ -15,7 +15,7 @@ export default function useFormFields(tab: Tab) {
     Object.entries(tab.fields).forEach(([, field]) => {
       const reference = getFieldReference(field.column?.reference);
       // Keep this at first because a process field will have field.display == true
-      if (field.process || field.column.process || reference === FieldType.BUTTON) {
+      if (field.processAction || field.processDefinition || reference === FieldType.BUTTON) {
         actionFields[field.hqlName] = field;
       } else if (field.shownInStatusBar) {
         statusBarFields[field.hqlName] = field;

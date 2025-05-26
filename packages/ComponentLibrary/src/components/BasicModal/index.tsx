@@ -182,25 +182,11 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
               {descriptionText && <Typography sx={sx.descriptionText}>{descriptionText}</Typography>}
               <Box sx={sx.actionButtons}>
                 {isFullScreenEnabled && (
-                  <IconButton
-                    aria-label="fullscreen"
-                    size="small"
-                    hoverFill={theme.palette.baselineColor.neutral[80]}
-                    width={IconSize}
-                    height={IconSize}
-                    onClick={toggleFullScreen}
-                    sx={sx.actionButton}>
+                  <IconButton aria-label="fullscreen" className="w-4 h-4" onClick={toggleFullScreen}>
                     {isFullScreen ? <MinimizeIcon /> : <MaximizeIcon />}
                   </IconButton>
                 )}
-                <IconButton
-                  aria-label="close"
-                  size="small"
-                  hoverFill={theme.palette.baselineColor.neutral[80]}
-                  width={IconSize}
-                  height={IconSize}
-                  onClick={handleClose}
-                  sx={sx.actionButton}>
+                <IconButton aria-label="close" className="w-4 h-4" onClick={handleClose}>
                   <CloseIcon />
                 </IconButton>
               </Box>

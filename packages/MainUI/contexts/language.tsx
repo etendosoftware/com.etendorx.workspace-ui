@@ -34,7 +34,6 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
       getFlag,
       prevLanguage,
       getLabel,
-
     }),
     [language, setLanguage, getFlag, prevLanguage, getLabel],
   );

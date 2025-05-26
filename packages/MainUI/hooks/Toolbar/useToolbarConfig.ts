@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BUTTON_IDS } from '../../constants/Toolbar';
 import { useSearch } from '../../contexts/searchContext';
 import { useMetadataContext } from '../useMetadataContext';
 import { useDeleteRecord } from '../useDeleteRecord';
@@ -42,17 +41,17 @@ export const useToolbarConfig = ({
   const { tab } = useTabContext();
   const selectedRecord = useSelectedRecord(tab);
   const selectedMultiple = useSelectedRecords(tab);
-  const selectedIds = useMemo(() => selectedMultiple?.map(r => String(r.id)) ?? [], [selectedMultiple]);
+  const selectedIds = useMemo(() => selectedMultiple?.map((r) => String(r.id)) ?? [], [selectedMultiple]);
 
   const { deleteRecord, loading: deleteLoading } = useDeleteRecord({
     tab: tab as Tab,
-    onSuccess: deletedCount => {
+    onSuccess: (deletedCount) => {
       if (!tabId) return;
 
       const recordName = selectedRecord?._identifier || selectedRecord?.id || `${deletedCount} registros`;
       const entityType = tab?.title || '';
 
-      selectedIds.forEach(recordId => {
+      selectedIds.forEach((recordId) => {
         removeRecord(tabId, recordId);
       });
 
@@ -65,7 +64,7 @@ export const useToolbarConfig = ({
         },
       });
     },
-    onError: error => {
+    onError: (error) => {
       logger.warn('Error deleting record(s):', error);
 
       showErrorModal(t('status.deleteError'), {
@@ -85,80 +84,77 @@ export const useToolbarConfig = ({
     }
   }, [statusModal.open, isDeleting]);
 
-  const handleAction = useCallback(
-    (action: string) => {
-      if (isDeleting) return;
+  const actionHandlers = useMemo<Record<string, () => void>>(
+    () => ({
+      CANCEL: () => onBack?.(),
+      NEW: () => {
+        const params = new URLSearchParams(location.search);
+        params.set('recordId_' + tab?.id, 'new');
+        history.pushState(null, '', `?${params.toString()}`);
+        onNew?.();
+      },
+      FIND: () => setSearchOpen(true),
+      TAB_CONTROL: () => {
+        logger.info('Tab control clicked');
+      },
+      FILTER: () => onFilter?.(),
+      SAVE: () => onSave?.(),
+      DELETE: () => {
+        if (tab) {
+          if (selectedIds.length > 0) {
+            const recordsToDelete = selectedIds.map((id) => tab.records?.[id] || { id });
 
-      switch (action) {
-        case BUTTON_IDS.CANCEL:
-          onBack?.();
-          break;
-        case BUTTON_IDS.NEW: {
-          onNew?.();
-          break;
-        }
-        case BUTTON_IDS.FIND:
-          setSearchOpen(true);
-          break;
-        case BUTTON_IDS.TAB_CONTROL:
-          // setShowTabContainer(prevState => !prevState);
-          break;
-        case BUTTON_IDS.FILTER:
-          onFilter?.();
-          break;
-        case BUTTON_IDS.SAVE:
-          onSave?.();
-          break;
-        case BUTTON_IDS.DELETE:
-          if (tab) {
-            if (selectedIds.length > 0) {
-              const recordsToDelete = selectedIds.map(id => tab.records?.[id] || { id });
+            const confirmText =
+              selectedIds.length === 1
+                ? `${t('status.deleteConfirmation')} ${String(selectedRecord?._identifier || selectedRecord?.id)}?`
+                : `${t('status.multipleDeleteConfirmation')} ${selectedIds.length}`;
 
-              const confirmText =
-                selectedIds.length === 1
-                  ? `${t('status.deleteConfirmation')} ${String(selectedRecord?._identifier || selectedRecord?.id)}?`
-                  : `${t('status.multipleDeleteConfirmation')} ${selectedIds.length}`;
-
-              showConfirmModal({
-                confirmText,
-                onConfirm: () => {
-                  setIsDeleting(true);
-                  deleteRecord(selectedIds.length === 1 ? recordsToDelete[0] : recordsToDelete);
-                },
-                saveLabel: t('common.confirm'),
-                secondaryButtonLabel: t('common.cancel'),
-              });
-            } else {
-              showErrorModal(t('status.selectRecordError'), {
-                saveLabel: t('common.close'),
-                secondaryButtonLabel: t('modal.secondaryButtonLabel'),
-              });
-            }
+            showConfirmModal({
+              confirmText,
+              onConfirm: () => {
+                setIsDeleting(true);
+                deleteRecord(selectedIds.length === 1 ? recordsToDelete[0] : recordsToDelete);
+              },
+              saveLabel: t('common.confirm'),
+              secondaryButtonLabel: t('common.cancel'),
+            });
+          } else {
+            showErrorModal(t('status.selectRecordError'), {
+              saveLabel: t('common.close'),
+              secondaryButtonLabel: t('modal.secondaryButtonLabel'),
+            });
           }
-          break;
-        case BUTTON_IDS.REFRESH:
-          onRefresh?.();
-          break;
-        default:
-          logger.warn(`Action not implemented: ${action}`);
-      }
-    },
+        }
+      },
+      REFRESH: () => onRefresh?.(),
+    }),
     [
       deleteRecord,
-      isDeleting,
       onBack,
       onFilter,
       onNew,
       onRefresh,
       onSave,
       selectedIds,
-      selectedRecord?._identifier,
-      selectedRecord?.id,
+      selectedRecord,
       showConfirmModal,
       showErrorModal,
       t,
       tab,
     ],
+  );
+
+  const handleAction = useCallback(
+    (action: string) => {
+      if (isDeleting) return;
+
+      const handler = actionHandlers[action];
+      if (handler) {
+        handler();
+        return;
+      }
+    },
+    [actionHandlers, isDeleting],
   );
 
   const handleSearch = useCallback(
@@ -184,6 +180,7 @@ export const useToolbarConfig = ({
       handleCancelConfirm,
       hideStatusModal,
       isDeleting,
+      actionHandlers,
     }),
     [
       handleAction,
@@ -197,6 +194,7 @@ export const useToolbarConfig = ({
       handleCancelConfirm,
       hideStatusModal,
       isDeleting,
+      actionHandlers,
     ],
   );
 };

@@ -1,8 +1,8 @@
 import React from 'react';
-import { TextField, InputAdornment, IconButton, useTheme } from '@mui/material';
+import { TextField, InputAdornment } from '@mui/material';
 import { TextInputProps } from '../TextInputAutocomplete/TextInputComplete.types';
 import { useStyle } from './TextInputBase.styles';
-
+import IconButton from '../../../IconButton';
 const TextInputBase = (props: TextInputProps) => {
   const {
     value,
@@ -17,7 +17,6 @@ const TextInputBase = (props: TextInputProps) => {
     readOnly,
     ...otherProps
   } = props;
-  const theme = useTheme();
   const { styles, sx, cssString } = useStyle();
 
   const isDisabled = disabled || readOnly;
@@ -46,22 +45,14 @@ const TextInputBase = (props: TextInputProps) => {
           name: props.name,
           startAdornment: leftIcon && (
             <InputAdornment position="start" sx={styles.inputAdornment}>
-              <IconButton
-                aria-label="left icon"
-                onClick={onLeftIconClick}
-                size="small"
-                sx={{ color: theme.palette.baselineColor.neutral[60] }}>
+              <IconButton aria-label="left icon" onClick={onLeftIconClick}>
                 {leftIcon}
               </IconButton>
             </InputAdornment>
           ),
           endAdornment: rightIcon && (
             <InputAdornment position="end" sx={styles.inputAdornment}>
-              <IconButton
-                aria-label="right-icon"
-                onClick={onRightIconClick}
-                size="small"
-                sx={{ color: theme.palette.baselineColor.neutral[60] }}>
+              <IconButton aria-label="right-icon" onClick={onRightIconClick}>
                 {rightIcon}
               </IconButton>
             </InputAdornment>
