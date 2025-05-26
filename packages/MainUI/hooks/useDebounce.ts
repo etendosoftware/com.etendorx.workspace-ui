@@ -19,9 +19,9 @@ interface PromiseRef<T> {
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function useDebounce<T, Args extends any[] = any[]>(
-  fn: (...args: Args) => Promise<T> | T,
+  fn: ((...args: Args) => Promise<T> | T) | undefined,
   delay: number = 500,
-): (...args: Args) => Promise<T> {
+) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const latestPromiseRef = useRef<PromiseRef<T> | null>(null);
 
@@ -34,7 +34,8 @@ function useDebounce<T, Args extends any[] = any[]>(
   }, []);
 
   return useCallback(
-    (...args: Args): Promise<T> => {
+    (...args: Args): Promise<T> | undefined => {
+      if (!fn) return undefined;
       // Creamos una nueva promesa
       const promiseRef: PromiseRef<T> = {} as PromiseRef<T>;
       const promise = new Promise<T>((resolve, reject) => {

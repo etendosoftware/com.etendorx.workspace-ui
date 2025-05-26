@@ -6,6 +6,7 @@ export type StandardButtonId =
   | 'CANCEL'
   | 'EXPORT'
   | 'ATTACHMENTS'
+  | 'FILTER'
   | 'FIND'
   | 'GRID_VIEW'
   | 'TAB_CONTROL';
@@ -21,6 +22,7 @@ export const BUTTON_IDS = {
   EXPORT: 'EXPORT',
   ATTACHMENTS: 'ATTACHMENTS',
   FIND: 'FIND',
+  FILTER: 'FILTER',
   GRID_VIEW: 'GRID_VIEW',
   PROCESS: 'PROCESS',
   TAB_CONTROL: 'TAB_CONTROL',
@@ -35,6 +37,7 @@ export const CENTER_SECTION_BUTTONS: StandardButtonId[] = [
 ];
 export const RIGHT_SECTION_BUTTONS: StandardButtonId[] = [
   BUTTON_IDS.FIND,
+  BUTTON_IDS.FILTER,
   BUTTON_IDS.GRID_VIEW,
   BUTTON_IDS.TAB_CONTROL,
 ];

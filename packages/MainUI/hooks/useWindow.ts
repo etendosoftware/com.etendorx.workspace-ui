@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Metadata } from '../api/metadata';
+import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { logger } from '@/utils/logger';
 
 export function useWindow(windowId: string) {
   const [loading, setLoading] = useState(!!windowId);
@@ -21,6 +22,8 @@ export function useWindow(windowId: string) {
       setWindowData(data);
       setLoaded(true);
     } catch (e) {
+      logger.warn(e);
+
       setError(e as Error);
     } finally {
       setLoading(false);

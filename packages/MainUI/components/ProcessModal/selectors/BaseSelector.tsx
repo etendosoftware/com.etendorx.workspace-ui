@@ -27,7 +27,7 @@ const BaseSelector = ({ parameter }: { parameter: ProcessParameter }) => {
   return (
     <div className="flex flex-col gap-4 items-start justify-start" title={'description'}>
       <div className="relative pr-2">
-        {true && (
+        {parameter.mandatory && (
           <span className="absolute -top-1 right-0 text-[#DC143C] font-bold" aria-required>
             *
           </span>

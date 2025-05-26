@@ -26,9 +26,6 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
       open
       {...props}
       onClose={onClose}
-      slotProps={{
-        paper: { sx: styles.paperStyleMenu },
-      }}
       MenuListProps={{ sx: menuSyle }}>
       <div style={styles.titleModalContainer}>
         <div style={styles.titleModalImageContainer}>

@@ -1,5 +1,4 @@
-import { ToolbarButton } from '@workspaceui/storybook/src/stories/Components/Table/types';
-import { Theme } from '@mui/material';
+import { SxProps, Theme } from '@mui/material';
 import { BaseButton, ProcessButton } from '../ProcessModal/types';
 
 export const IconSize = 16;
@@ -125,4 +124,31 @@ export interface ProcessMenuProps {
   processButtons: any;
   onProcessClick: (button: ProcessButton) => void;
   selectedRecord: unknown | undefined;
+}
+
+export interface ToolbarButton {
+  key: string;
+  icon: React.ReactNode;
+  iconText?: string;
+  tooltip?: string;
+  onClick: ((event?: React.MouseEvent<HTMLElement>) => void) | (() => void);
+  disabled?: boolean;
+  fill?: string;
+  hoverFill?: string;
+  height?: number;
+  width?: number;
+  sx?: SxProps<Theme>;
+}
+
+export interface ToolbarSectionConfig {
+  buttons: ToolbarButton[];
+  style?: React.CSSProperties;
+  toggleExpand?: (event?: React.MouseEvent<HTMLElement>) => void;
+  className?: string;
+}
+
+export interface TopToolbarProps {
+  leftSection: ToolbarSectionConfig;
+  centerSection: ToolbarSectionConfig;
+  rightSection: ToolbarSectionConfig;
 }

@@ -1,53 +1,72 @@
 'use client';
 
-import { createContext, useContext, useMemo, useState } from 'react';
-import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import Graph from '@/data/graph';
-import { useMetadataContext } from '@/hooks/useMetadataContext';
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import Graph, { GraphEventListener } from '@/data/graph';
 
 interface SelectedContext {
   graph: Graph<Tab>;
-  version: number;
+  activeLevels: number[];
+  setActiveLevel: (level: number, expand?: boolean) => void;
 }
 
-const SelectContext = createContext<SelectedContext>({} as SelectedContext);
+export const SelectContext = createContext<SelectedContext>({} as SelectedContext);
 
-export const SelectedProvider = ({ children }: React.PropsWithChildren) => {
-  const [version, setVersion] = useState(0);
-  const { window } = useMetadataContext();
-  const tabs = window?.tabs;
+export const SelectedProvider = ({ children, tabs }: React.PropsWithChildren<{ tabs: Tab[] }>) => {
+  const [activeLevels, setActiveLevels] = useState<number[]>([0]);
+  const graph = useRef(new Graph<Tab>(tabs)).current;
 
-  const graph = useMemo(() => {
-    const result = new Graph<Tab>();
+  const setActiveLevel = useCallback((level: number, expand?: boolean) => {
+    setActiveLevels((prev) => {
+      console.debug({ level, expand });
+      if (expand) {
+        return [level];
+      }
 
-    if (tabs) {
-      result.buildTreeFromTabs(tabs);
-    }
+      const maxLevel = prev[prev.length - 1];
 
-    result.on('update', () => {
-      setVersion(v => v + 1);
+      if (level === 0) {
+        return [0];
+      } else if (maxLevel == level) {
+        return prev;
+      } else if (maxLevel > level) {
+        return [level - 1, level];
+      } else {
+        return [maxLevel, level];
+      }
     });
-
-    return result;
-  }, [tabs]);
+  }, []);
 
   const value = useMemo<SelectedContext>(
     () => ({
-      version,
       graph,
+      activeLevels,
+      setActiveLevel,
     }),
-    [graph, version],
+    [activeLevels, graph, setActiveLevel],
   );
 
+  useEffect(() => {
+    const handleSelected: GraphEventListener<'selected'> = (tab) => {
+      setActiveLevel(tab.tabLevel + 1);
+    };
+
+    const handleUnselected: GraphEventListener<'unselected'> = (tab) => {
+      setActiveLevel(tab.tabLevel);
+    };
+
+    graph //
+      .on('selected', handleSelected)
+      .on('unselected', handleUnselected);
+
+    return () => {
+      graph //
+        .off('selected', handleSelected)
+        .off('unselected', handleUnselected);
+    };
+  }, [graph, setActiveLevel]);
+
   return <SelectContext.Provider value={value}>{children}</SelectContext.Provider>;
-};
-
-export const useSelected = () => {
-  const graph = useContext(SelectContext);
-
-  if (!graph) throw new Error('useSelected must be used within a SelectedProvider');
-
-  return graph;
 };
 
 export default SelectedProvider;

@@ -6,6 +6,7 @@ import { ProcessButton, ProcessButtonType, ProcessResponse } from '@/components/
 import { useMetadataContext } from '../useMetadataContext';
 import { useParams } from 'next/navigation';
 import { useTabContext } from '@/contexts/tab';
+import { logger } from '@/utils/logger';
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
@@ -56,6 +57,8 @@ export function useProcessExecution() {
 
         return data;
       } catch (error) {
+        logger.warn(error);
+
         const processError = error instanceof Error ? error : new Error('Process execution failed');
         setError(processError);
         throw processError;
@@ -104,7 +107,7 @@ export function useProcessExecution() {
           const isPostedProcess = button.id === 'Posted';
           const commandAction = 'BUTTONDocAction104';
           const baseUrl = `http://localhost:8080/etendo/SalesOrder/Header_Edition.html`;
-          const safeWindowId = windowId || (tab?.windowId ? String(tab.windowId) : '143');
+          const safeWindowId = windowId || (tab?.window ? String(tab.window) : '143');
           const safeTabId = tab?.id ? String(tab.id) : '186';
           const safeRecordId = String(record.id || recordId || '');
 
@@ -143,6 +146,8 @@ export function useProcessExecution() {
             iframeUrl: completeUrl,
           });
         } catch (error) {
+          logger.warn(error);
+
           const processError = error instanceof Error ? error : new Error('Process execution failed');
           setError(processError);
           reject(processError);
@@ -151,7 +156,7 @@ export function useProcessExecution() {
         }
       });
     },
-    [record, recordId, tab.id, tab.windowId, token, windowId],
+    [record, recordId, tab.id, tab.window, token, windowId],
   );
 
   const executeProcess = useCallback(

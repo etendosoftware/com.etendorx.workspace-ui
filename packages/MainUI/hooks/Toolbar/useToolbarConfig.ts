@@ -9,7 +9,8 @@ import { useTranslation } from '../useTranslation';
 import { useStatusModal } from './useStatusModal';
 import { useToolbarContext } from '@/contexts/ToolbarContext';
 import { useTabContext } from '@/contexts/tab';
-import { useSelected } from '@/contexts/selected';
+import { useSelectedRecord } from '../useSelectedRecord';
+import { useSelectedRecords } from '../useSelectedRecords';
 
 export const useToolbarConfig = ({
   tabId,
@@ -23,7 +24,6 @@ export const useToolbarConfig = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const { removeRecord } = useMetadataContext();
-  const { graph } = useSelected();
   const {
     statusModal,
     confirmAction,
@@ -35,13 +35,13 @@ export const useToolbarConfig = ({
     hideStatusModal,
   } = useStatusModal();
   const { t } = useTranslation();
-  const { onRefresh, onSave, onNew, onBack } = useToolbarContext();
+  const { onRefresh, onSave, onNew, onBack, onFilter } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { tab, record } = useTabContext();
-  const selectedRecord = record;
-  const selectedMultiple = graph.getSelectedMultiple(tab.id);
+  const { tab } = useTabContext();
+  const selectedRecord = useSelectedRecord(tab);
+  const selectedMultiple = useSelectedRecords(tab);
   const selectedIds = useMemo(() => selectedMultiple?.map(r => String(r.id)) ?? [], [selectedMultiple]);
 
   const { deleteRecord, loading: deleteLoading } = useDeleteRecord({
@@ -94,9 +94,6 @@ export const useToolbarConfig = ({
           onBack?.();
           break;
         case BUTTON_IDS.NEW: {
-          const params = new URLSearchParams(location.search);
-          params.set('recordId_' + tab?.id, 'new');
-          history.pushState(null, '', `?${params.toString()}`);
           onNew?.();
           break;
         }
@@ -105,6 +102,9 @@ export const useToolbarConfig = ({
           break;
         case BUTTON_IDS.TAB_CONTROL:
           // setShowTabContainer(prevState => !prevState);
+          break;
+        case BUTTON_IDS.FILTER:
+          onFilter?.();
           break;
         case BUTTON_IDS.SAVE:
           onSave?.();
@@ -147,6 +147,7 @@ export const useToolbarConfig = ({
       deleteRecord,
       isDeleting,
       onBack,
+      onFilter,
       onNew,
       onRefresh,
       onSave,

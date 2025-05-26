@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 import React, { useState, useRef, useEffect, useCallback, useMemo, ReactElement } from 'react';
 import { Tabs, Tab, Box, IconButton, Menu, MenuItem, Typography, useTheme } from '@mui/material';
@@ -103,7 +104,6 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleClose}
-        slotProps={{ root: { sx: sx.menuItemRoot } }}
         PaperProps={{ sx: sx.menuPaper }}>
         {hiddenTabs.map((tab: TabContent, index: number) => (
           <MenuItem

@@ -16,7 +16,9 @@ export default function useFormParent(nameToUse: FieldName = FieldName.HQL_NAME)
 
       parentColumns.forEach(
         field => {
-          const parentFieldName = parentFields[field.inputName].hqlName;
+          const parentField = parentFields[field.inputName];
+          const parentFieldName = parentField.hqlName;
+
           result[field[nameToUse]] = parentRecord[parentFieldName];
         },
         {} as Record<string, unknown>,

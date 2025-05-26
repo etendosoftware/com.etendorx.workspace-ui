@@ -1,4 +1,5 @@
 import { ProcessButton, ProcessButtonType } from '@/components/ProcessModal/types';
+import { logger } from '@/utils/logger';
 import { ProcessBindings } from '@workspaceui/etendohookbinder/src/api/types';
 import { useState, useEffect, useCallback } from 'react';
 
@@ -29,6 +30,8 @@ export const useProcessMetadata = (processButton?: ProcessButton | null): Proces
           setMetadata({ onProcess, onLoad, metadata });
         }
       } catch (err) {
+        logger.warn(err);
+
         if (!controller.signal.aborted) {
           setError('Failed to load process metadata: ' + (err as Error).message);
         }

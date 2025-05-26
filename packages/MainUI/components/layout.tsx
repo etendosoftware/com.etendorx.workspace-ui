@@ -1,12 +1,10 @@
-'use client';
-
 import AppBreadcrumb from './Breadcrums';
 import Navigation from './navigation';
 import Sidebar from './Sidebar';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-1 max-h-screen max-w-screen relative overflow-hidden">
+    <div className="flex w-full h-full relative overflow-hidden">
       <Sidebar />
       <div className="flex flex-1 flex-col max-w-auto max-h-auto overflow-hidden">
         <div className="w-full p-1">

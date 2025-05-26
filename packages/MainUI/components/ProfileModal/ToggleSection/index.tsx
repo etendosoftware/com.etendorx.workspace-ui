@@ -8,20 +8,21 @@ import LockOutlined from '../../../../ComponentLibrary/src/assets/icons/lock.svg
 import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
 import { InputPassword } from '@workspaceui/componentlibrary/src/components';
 import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
-import { SelectorListProps, BaseWarehouse } from '../types';
+import { SelectorListProps } from '../types';
 import { Item } from '@workspaceui/componentlibrary/src/components/enums';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const isOptionEqualToValue = (option: Option, value: Option) => option.id === value.id;
 
 const SelectorList: React.FC<SelectorListProps> = ({
   section,
-  passwordLabel,
-  newPasswordLabel,
-  confirmPasswordLabel,
   onRoleChange,
+  onOrgChange,
   onWarehouseChange,
   roles,
   selectedRole,
+  selectedClient,
+  selectedOrg,
   selectedWarehouse,
   onLanguageChange,
   selectedLanguage,
@@ -31,6 +32,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
   translations,
   languagesFlags,
 }) => {
+  const { t } = useTranslation();
   const { styles, defaultFill } = useStyle();
   const theme = useTheme();
   const [password, setPassword] = useState('');
@@ -53,22 +55,51 @@ const SelectorList: React.FC<SelectorListProps> = ({
     },
   }));
 
-  const warehouses = useMemo(() => {
-    if (selectedRole && selectedRole.id != '0') {
-      const _warehouses = {} as Record<string, BaseWarehouse>;
-      const role = roles.find(r => r.id === selectedRole.value);
+  const isSystem = selectedRole?.id === '0';
 
-      role?.organizations.forEach(org => {
-        org.warehouses.forEach(w => {
-          _warehouses[w.id] = w;
-        });
-      });
+  const clientOptions = useMemo(() => {
+    if (!selectedRole || isSystem) return [];
 
-      return role ? Object.values(_warehouses) : [];
+    const client = roles.find(r => r.id === selectedRole.value)?.client;
+    return client ? [{ title: client, value: client, id: client }] : [];
+  }, [roles, selectedRole, isSystem]);
+
+  const organizationOptions = useMemo(() => {
+    if (!selectedRole || isSystem) {
+      return [];
     }
 
+    const role = roles.find(r => r.id === selectedRole.value);
+    if (!role) return [];
+
+    return role.organizations.map(org => ({
+      title: org.name,
+      value: org.id,
+      id: org.id,
+    }));
+  }, [roles, selectedRole, isSystem]);
+
+  const warehouses = useMemo(() => {
+    if (selectedRole && !isSystem) {
+      const role = roles.find(r => r.id === selectedRole.value);
+      const org = role?.organizations.find(o => o.id === selectedOrg.value);
+
+      if (org && org.warehouses.length) {
+        return org.warehouses;
+      } else {
+        const uniqueWarehousesMap = new Map();
+
+        role?.organizations.forEach(org => {
+          org.warehouses.forEach(warehouse => {
+            uniqueWarehousesMap.set(warehouse.id, warehouse);
+          });
+        });
+
+        return Array.from(uniqueWarehousesMap.values());
+      }
+    }
     return [];
-  }, [roles, selectedRole]);
+  }, [roles, selectedRole, selectedOrg, isSystem]);
 
   const roleOptions = useMemo(
     () =>
@@ -79,8 +110,6 @@ const SelectorList: React.FC<SelectorListProps> = ({
       })),
     [roles],
   );
-
-  const isSystem = selectedRole?.id == '0';
 
   const warehouseOptions = useMemo(
     () =>
@@ -119,13 +148,32 @@ const SelectorList: React.FC<SelectorListProps> = ({
               isOptionEqualToValue={isOptionEqualToValue}
             />
             <Select
+              id="client-select"
+              title={Item.Client}
+              options={clientOptions}
+              value={selectedClient}
+              iconLeft={icons[Item.Client]}
+              isOptionEqualToValue={isOptionEqualToValue}
+              disabled={true}
+            />
+            <Select
+              id="organization-select"
+              title={Item.Organization}
+              options={organizationOptions}
+              value={selectedOrg}
+              onChange={onOrgChange}
+              iconLeft={icons[Item.Organization]}
+              isOptionEqualToValue={isOptionEqualToValue}
+              disabled={!selectedClient || isSystem}
+            />
+            <Select
               id="warehouse-select"
               title={Item.Warehouse}
               options={warehouseOptions}
               value={isSystem ? null : selectedWarehouse}
               onChange={onWarehouseChange}
               iconLeft={icons[Item.Warehouse]}
-              disabled={!selectedRole || isSystem}
+              disabled={!selectedOrg || isSystem}
               isOptionEqualToValue={isOptionEqualToValue}
             />
             <Select
@@ -148,7 +196,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
         <Grid margin="0.5rem">
           <form action="#" autoComplete="off">
             <InputPassword
-              label={passwordLabel}
+              label={t('common.notImplemented')}
               value={password}
               setValue={setPassword}
               leftIcon={<LockOutlined fill={defaultFill} />}
@@ -156,7 +204,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               disabled
             />
             <InputPassword
-              label={newPasswordLabel}
+              label={t('common.notImplemented')}
               value={newPassword}
               setValue={setNewPassword}
               leftIcon={<LockOutlined fill={defaultFill} />}
@@ -164,7 +212,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               disabled
             />
             <InputPassword
-              label={confirmPasswordLabel}
+              label={t('common.notImplemented')}
               value={newPasswordConfirmation}
               setValue={setNewPasswordConfirmation}
               leftIcon={<LockOutlined fill={defaultFill} />}

@@ -5,10 +5,13 @@ import { StandardButton, StandardButtonConfig, IconSize } from './types';
 import { iconMap } from './iconMap';
 import { Theme } from '@emotion/react';
 import { SxProps } from '@mui/material';
+import { EntityData } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const createStandardButtonConfig = (
   btn: StandardButton,
   handleAction: (action: string) => void,
+  isFormView?: boolean,
+  selectedRecord?: EntityData | undefined,
 ): StandardButtonConfig => {
   const getIconFill = (buttonId: StandardButtonId): string => {
     const specialButtons = [
@@ -18,6 +21,7 @@ export const createStandardButtonConfig = (
       BUTTON_IDS.DELETE,
       BUTTON_IDS.EXPORT,
       BUTTON_IDS.ATTACHMENTS,
+      BUTTON_IDS.FILTER,
     ] as const;
     return specialButtons.includes(buttonId as (typeof specialButtons)[number])
       ? theme.palette.baselineColor.neutral[100]
@@ -46,6 +50,16 @@ export const createStandardButtonConfig = (
   const iconText = getButtonText(btn.id as StandardButtonId);
   if (iconText) {
     config.iconText = iconText;
+  }
+
+  if (btn.id === BUTTON_IDS.CANCEL) {
+    config.disabled = !(isFormView || selectedRecord);
+  } else if (btn.id === BUTTON_IDS.DELETE) {
+    config.disabled = !selectedRecord;
+  }
+
+  if (btn.id === BUTTON_IDS.CANCEL) {
+    config.name = isFormView ? 'Cancel changes' : selectedRecord ? 'Clear selection' : '';
   }
 
   return config;
@@ -104,6 +118,7 @@ export const getStandardButtonStyle = (btnId: StandardButtonId) => {
     [BUTTON_IDS.EXPORT]: undefined,
     [BUTTON_IDS.ATTACHMENTS]: undefined,
     [BUTTON_IDS.FIND]: undefined,
+    [BUTTON_IDS.FILTER]: undefined,
     [BUTTON_IDS.GRID_VIEW]: undefined,
     [BUTTON_IDS.TAB_CONTROL]: {
       color: theme.palette.baselineColor.neutral[100],

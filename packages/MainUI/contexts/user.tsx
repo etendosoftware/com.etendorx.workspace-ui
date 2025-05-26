@@ -38,7 +38,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [currentWarehouse, setCurrentWarehouse] = useState<CurrentWarehouse>();
   const [currentRole, setCurrentRole] = useState<CurrentRole>();
   const [currentClient, setCurrentClient] = useState<CurrentClient>();
-  const prevRole = usePrevious(currentRole, currentRole);
+  const prevRole = usePrevious(currentRole);
 
   const [roles, setRoles] = useState<SessionResponse['roles']>(() => {
     const savedRoles = localStorage.getItem('roles');
@@ -129,7 +129,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   }, [INITIAL_PROFILE, setToken]);
 
   const changeProfile = useCallback(
-    async (params: { role?: string; warehouse?: string }) => {
+    async (params: { role?: string; client?: string; organization?: string; warehouse?: string }) => {
       if (!token) {
         throw new Error('Authentication token is not available');
       }

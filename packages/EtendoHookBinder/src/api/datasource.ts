@@ -30,11 +30,9 @@ export class Datasource {
     return this.client.registerInterceptor(interceptor);
   }
 
-  public async get(entity: string, options: Record<string, unknown> = {}) {
+  public get(entity: string, options: Record<string, unknown> = {}) {
     try {
-      const { data } = await this.client.post(entity, this.buildParams(options));
-
-      return data;
+      return this.client.post(entity, this.buildParams(options));
     } catch (error) {
       console.error(`Error fetching from datasource for entity ${entity}: ${error}`);
 
@@ -72,7 +70,7 @@ export class Datasource {
     Object.entries(options).forEach(([key, value]) => {
       if (typeof value !== 'undefined') {
         if (key === 'criteria' && Array.isArray(value)) {
-          value.forEach(criteria => {
+          value.forEach((criteria) => {
             params.append(key, JSON.stringify(criteria));
           });
         } else {

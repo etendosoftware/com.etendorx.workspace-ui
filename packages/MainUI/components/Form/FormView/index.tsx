@@ -20,7 +20,6 @@ import { useFormInitialization } from '@/hooks/useFormInitialization';
 import { useFormInitialState } from '@/hooks/useFormInitialState';
 import { useToolbarContext } from '@/contexts/ToolbarContext';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { useRouter } from 'next/navigation';
 
 const iconMap: Record<string, React.ReactElement> = {
   'Main Section': <FileIcon />,
@@ -28,9 +27,8 @@ const iconMap: Record<string, React.ReactElement> = {
   Dimensions: <FolderIcon />,
 };
 
-export default function FormView({ window: windowMetadata, tab, mode, recordId }: FormViewProps) {
+export function FormView({ window: windowMetadata, tab, mode, recordId }: FormViewProps) {
   const theme = useTheme();
-  const router = useRouter();
   const [expandedSections, setExpandedSections] = useState<string[]>(['null']);
   const [selectedTab, setSelectedTab] = useState<string>('');
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
@@ -48,18 +46,11 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
     mode: mode,
     recordId,
   });
-
-  const { registerActions } = useToolbarContext();
+  const { registerActions, onBack } = useToolbarContext();
 
   const initialState = useFormInitialState(formInitialization) || undefined;
 
   const { reset, setValue, ...form } = useForm({ values: initialState as EntityData });
-
-  const handleBack = useCallback(() => {
-    const params = new URLSearchParams(location.search);
-    params.delete('recordId_' + tab.id);
-    router.replace(`${location.pathname}?${params}`);
-  }, [router, tab.id]);
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
@@ -86,7 +77,7 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
 
   const handleTabChange = useCallback((newTabId: string) => {
     setSelectedTab(newTabId);
-    setExpandedSections(prev => {
+    setExpandedSections((prev) => {
       if (!prev.includes(newTabId)) {
         return [...prev, newTabId];
       }
@@ -122,11 +113,11 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
   const handleAccordionChange = useCallback((sectionId: string | null, isExpanded: boolean) => {
     const id = String(sectionId || '_main');
 
-    setExpandedSections(prev => {
+    setExpandedSections((prev) => {
       if (isExpanded) {
         return [...prev, id];
       }
-      return prev.filter(existingId => existingId !== id);
+      return prev.filter((existingId) => existingId !== id);
     });
 
     if (isExpanded) {
@@ -147,10 +138,11 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
         params.set('recordId_' + tab.id, String(data.id));
         history.pushState(null, '', `?${params.toString()}`);
         refetch();
+        onBack?.();
       }
       showSuccessModal('Saved');
     },
-    [initialState, mode, refetch, reset, showSuccessModal, tab.id],
+    [initialState, mode, onBack, refetch, reset, showSuccessModal, tab.id],
   );
 
   const onError = useCallback(
@@ -191,8 +183,8 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
   }, [initialState, reset]);
 
   useEffect(() => {
-    registerActions({ save: save, refresh: onReset, new: onReset, back: handleBack });
-  }, [handleBack, onReset, registerActions, save]);
+    registerActions({ save: save, refresh: onReset, new: onReset });
+  }, [onReset, registerActions, save]);
 
   if (loading || loadingFormInitialization) {
     return <Spinner />;
@@ -201,7 +193,7 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
   return (
     <FormProvider setValue={setValue} reset={reset} {...form}>
       <form
-        className={`w-full h-full flex flex-col transition duration-300  ${
+        className={`w-full h-full max-h-full overflow-hidden flex flex-col transition duration-300  ${
           loading ? 'opacity-50 select-none cursor-progress cursor-to-children' : ''
         }`}
         onSubmit={save}>
@@ -250,3 +242,5 @@ export default function FormView({ window: windowMetadata, tab, mode, recordId }
     </FormProvider>
   );
 }
+
+export default FormView;

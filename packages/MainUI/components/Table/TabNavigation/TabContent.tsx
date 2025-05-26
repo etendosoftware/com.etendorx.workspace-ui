@@ -1,31 +1,18 @@
-import { useMemo } from 'react';
 import { TabContentProps } from './types';
 import ChevronUp from '../../../../ComponentLibrary/src/assets/icons/chevron-up.svg';
 import ChevronDown from '../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
 import ChevronUpRight from '../../../../ComponentLibrary/src/assets/icons/chevron-right.svg';
 import XCircle from '../../../../ComponentLibrary/src/assets/icons/x.svg';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
-import { useMetadataContext } from '@/hooks/useMetadataContext';
-import TabsGroup from '@/screens/Window/Table/TabsGroup';
 
 export const TabContent: React.FC<TabContentProps> = ({
   identifier,
   type,
   handleFullSize,
   isFullSize,
-  tab,
   isMainTab = false,
   onClose,
 }) => {
-  const { groupedTabs } = useMetadataContext();
-
-  const childTabs = useMemo(() => {
-    if (!tab) return [];
-    return groupedTabs.find(tabs => tabs[0].level === tab.level + 1) || [];
-  }, [groupedTabs, tab]);
-
-  const hasChildTabs = childTabs.length > 0;
-
   return (
     <div className="flex flex-col h-full">
       <div
@@ -55,8 +42,6 @@ export const TabContent: React.FC<TabContentProps> = ({
           </IconButton>
         </div>
       </div>
-
-      {hasChildTabs && <div className="flex-grow overflow-y-auto">{TabsGroup(childTabs)}</div>}
     </div>
   );
 };

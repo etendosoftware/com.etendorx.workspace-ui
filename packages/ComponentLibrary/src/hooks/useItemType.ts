@@ -30,6 +30,8 @@ export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }:
         return;
       }
 
+      const recordId = getReportRecordId(item);
+
       switch (item.type) {
         case 'Window':
           if (item.windowId && onWindowClick) {
@@ -37,8 +39,7 @@ export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }:
           }
           break;
         case 'Report':
-          if (item.id && onReportClick) {
-            const recordId = getReportRecordId(item);
+          if (item.id && recordId && onReportClick) {
             onReportClick(item.id, recordId);
           }
           break;

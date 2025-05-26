@@ -203,7 +203,7 @@ export interface WindowMetadataProperties {
 
 export interface Tab {
   uIPattern: 'STD' | 'SR';
-  windowId: string;
+  window: string;
   name: string;
   title: string;
   parentColumns: string[];
@@ -211,7 +211,7 @@ export interface Tab {
   table: string;
   entityName: string;
   fields: Record<string, Field>;
-  level: number;
+  tabLevel: number;
   _identifier: string;
   records: Record<string, never>;
   hqlfilterclause: string;
@@ -317,6 +317,7 @@ export type RoleList = {
   id: string;
   name: string;
   organizations: Organization[];
+  client: string;
 }[];
 
 export interface Organization {
@@ -707,10 +708,13 @@ export type ListOption = { id: string; label: string; value: string };
 
 export type ProcessParameter = {
   defaultValue: string;
+  mandatory: boolean;
   id: string;
   name: string;
   refList: Array<ListOption>;
   readOnlyLogicExpression?: string;
+  reference: string;
+  window?: WindowMetadata; // This type is for process that have defined a window reference
 } & Record<string, string>;
 
 export type ProcessParameters = Record<string, ProcessParameter>;
@@ -722,4 +726,8 @@ export interface ProcessDefinition extends Record<string, unknown> {
   parameters: ProcessParameters;
   onLoad: string;
   onProcess: string;
+}
+
+export interface Labels {
+  [key: string]: string;
 }

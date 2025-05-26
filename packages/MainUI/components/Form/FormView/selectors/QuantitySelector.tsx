@@ -18,7 +18,7 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
 
     const setValue = useCallback(
       (v: FieldValue) => {
-        setActualValue(field.hqlName, v);
+        setActualValue(field.hqlName, Number(v));
       },
       [field.hqlName, setActualValue],
     );

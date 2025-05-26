@@ -1,6 +1,6 @@
 import { ProcessConfigResponse } from '@/hooks/datasource/useProcessDatasourceConfig';
-import { Field, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
-import type { EntityData, EntityValue, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { Field } from '@workspaceui/etendohookbinder/src/api/types';
+import type { EntityData, EntityValue, ProcessParameter, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { MRT_Row, MRT_TableInstance, MRT_TableBodyRowProps, MRT_RowData } from 'material-react-table';
 
 export interface BaseButton extends Field {
@@ -86,6 +86,7 @@ export interface ProcessDefinitionModalProps {
   open: boolean;
   button?: ProcessDefinitionButton | null;
   onSuccess?: () => void;
+  onError?: () => void;
 }
 
 export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
@@ -115,15 +116,6 @@ export interface ProcessInfo {
 }
 
 export type ListOption = { id: string; label: string; value: string };
-
-export type ProcessParameter = {
-  defaultValue: string;
-  id: string;
-  name: string;
-  refList: Array<ListOption>;
-  reference: string;
-  window?: WindowMetadata; // This type is for process that have defined a window reference
-} & Record<string, string>;
 
 export type ProcessParameters = Record<string, ProcessParameter>;
 

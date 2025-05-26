@@ -72,7 +72,6 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     (columnValues: FormInitializationResponse['columnValues']) => {
       Object.entries(columnValues ?? {}).forEach(([column, { value, identifier }]) => {
         const targetField = fieldsByColumnName[column];
-
         setValue(targetField?.hqlName ?? column, value);
 
         if (targetField && identifier) {
@@ -85,11 +84,10 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
 
   const applyAuxiliaryInputValues = useCallback(
     (auxiliaryInputValues: FormInitializationResponse['auxiliaryInputValues']) => {
-      Object.entries(auxiliaryInputValues ?? {}).forEach(([column, { value, classicValue }]) => {
+      Object.entries(auxiliaryInputValues ?? {}).forEach(([column, { value }]) => {
         const targetField = fieldsByColumnName[column];
-        const isDate = ['15', '16'].includes(targetField?.column?.reference);
 
-        setValue(targetField?.hqlName || column, isDate ? classicValue : value);
+        setValue(targetField?.hqlName || column, value);
       });
     },
     [fieldsByColumnName, setValue],
@@ -103,6 +101,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     try {
       const entityKeyColumn = tab.fields['id'].columnName;
       const payload = buildPayloadByInputName(getValues(), fieldsByHqlName);
+
       const calloutData = {
         ...session,
         ...payload,
@@ -112,7 +111,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         inpkeyColumnId: entityKeyColumn,
         keyColumnName: entityKeyColumn,
         _entityName: tab.entityName,
-        inpwindowId: tab.windowId,
+        inpwindowId: tab.window,
         inpmProductId_CURR: session['$C_Currency_ID'],
         inpmProductId_UOM: session['#C_UOM_ID'],
       } as Record<string, string>;

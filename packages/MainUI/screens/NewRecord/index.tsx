@@ -21,7 +21,7 @@ export default function NewRecordPage({ window, tab }: { window: WindowMetadata;
       <div className="mt-40">
         <ErrorDisplay
           title={t('errors.formData.title')}
-          description={error.message}
+          description={error?.message}
           onRetry={refetch}
           showRetry
           showHomeButton

@@ -7,9 +7,11 @@ import BackgroundGradient from '../../../ComponentLibrary/src/assets/images/back
 import LogoutIcon from '../../../ComponentLibrary/src/assets/icons/log-out.svg';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import { UserProfileProps } from './types';
+import { useTranslation } from '@/hooks/useTranslation';
 
-const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, sectionTooltip, onSignOff }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, onSignOff }) => {
   const { styles } = useStyle();
+  const { t } = useTranslation();
 
   const handleSignOff = useCallback(() => {
     onSignOff();
@@ -18,11 +20,16 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, sectionToolti
   return (
     <div style={styles.userProfileStyles}>
       <div style={styles.svgContainerStyles}>
-        <Image src={BackgroundGradient} height={window.innerHeight} width={window.innerWidth} alt="Background Gradient" />
+        <Image
+          src={BackgroundGradient}
+          height={window.innerHeight}
+          width={window.innerWidth}
+          alt="Background Gradient"
+        />
       </div>
       <IconButton
         style={styles.logoutButtonStyles}
-        tooltip={sectionTooltip}
+        tooltip={t('navigation.profile.signOffTooltip')}
         width={16}
         height={16}
         onClick={handleSignOff}>
@@ -30,7 +37,13 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, sectionToolti
       </IconButton>
       <div style={styles.profileImageContainerStyles}>
         {photoUrl ? (
-          <Image src={photoUrl} height={window.innerHeight} width={window.innerWidth} alt="Profile" style={styles.profileImageStyles} />
+          <Image
+            src={photoUrl}
+            height={window.innerHeight}
+            width={window.innerWidth}
+            alt="Profile"
+            style={styles.profileImageStyles}
+          />
         ) : (
           <div
             style={{

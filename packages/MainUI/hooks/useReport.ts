@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ReportField, ReportMetadata } from './types';
+import { ReportField, ReportMetadata } from '@workspaceui/etendohookbinder/src/hooks/types';
+import { logger } from '@/utils/logger';
 
 type ReportFields = {
   [K in ReportField['name']]: unknown;
@@ -82,8 +83,9 @@ export function useReport(url: string) {
       const html = await response.text();
       openReportWindow(html);
     } catch (err) {
+      logger.warn(err);
+
       setError(err instanceof Error ? err : new Error('Unknown error'));
-      console.error('Error generating report:', err);
     } finally {
       setLoading(false);
     }

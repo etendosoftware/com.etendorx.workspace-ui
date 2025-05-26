@@ -2,18 +2,14 @@ import {
   MaterialReactTable,
   MRT_ColumnFiltersState,
   MRT_Row,
-  MRT_RowSelectionState,
   useMaterialReactTable,
   MRT_TableBodyRowProps,
   MRT_TableInstance,
 } from 'material-react-table';
 import { useStyle } from './styles';
-import { DatasourceOptions, EntityData, WindowMetadata, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { DatasourceOptions, EntityData } from '@workspaceui/etendohookbinder/src/api/types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useDatasource } from '@workspaceui/etendohookbinder/src/hooks/useDatasource';
-import { Button } from '@mui/material';
 import { useSearch } from '../../contexts/searchContext';
-import TopToolbar from './top-toolbar';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
 import EmptyState from './EmptyState';
 import { parseColumns } from '@/utils/tableColumns';
@@ -23,11 +19,7 @@ import useTableSelection from '@/hooks/useTableSelection';
 import { ErrorDisplay } from '../ErrorDisplay';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useTabContext } from '@/contexts/tab';
-
-type DynamicTableProps = {
-  tab: Tab;
-  window: WindowMetadata | undefined;
-};
+import { useDatasource } from '@/hooks/useDatasource';
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -35,19 +27,20 @@ type RowProps = (props: {
   table: MRT_TableInstance<EntityData>;
 }) => Omit<MRT_TableBodyRowProps<EntityData>, 'staticRowIndex'>;
 
-const DynamicTable = ({ tab }: DynamicTableProps) => {
+const getRowId = (row: EntityData) => String(row.id);
+
+const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetStateAction<string>> }) => {
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { t } = useTranslation();
-  const tabId = tab.id;
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [maxWidth, setMaxWidth] = useState(0);
   const { registerActions } = useToolbarContext();
-  const { parentRecord } = useTabContext();
+  const { tab, parentTab, parentRecord } = useTabContext();
+  const tabId = tab.id;
   const parentId = String(parentRecord?.id ?? '');
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
@@ -57,7 +50,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     const operator = 'equals';
 
     const options: DatasourceOptions = {
-      windowId: tab.windowId,
+      windowId: tab.window,
       tabId: tab.id,
       isImplicitFilterApplied: tab.hqlfilterclause?.length > 0 || tab.sQLWhereClause?.length > 0,
       pageSize: 100,
@@ -85,13 +78,12 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     tab.id,
     tab.parentColumns,
     tab.sQLWhereClause?.length,
-    tab.windowId,
+    tab.window,
   ]);
 
   const {
     updateColumnFilters,
     toggleImplicitFilters,
-    isImplicitFilterApplied,
     fetchMore,
     records,
     removeRecordLocally,
@@ -99,48 +91,40 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     refetch,
     loading,
     hasMoreRecords,
-  } = useDatasource(tab.entityName, query, searchQuery, columns);
+  } = useDatasource({
+    entity: tab.entityName,
+    params: query,
+    columns,
+    searchQuery,
+    skip: !!parentTab && !parentRecord,
+  });
 
   const handleColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
-      let newColumnFilters: MRT_ColumnFiltersState;
+      let isRealFilterChange = false;
 
-      if (typeof updaterOrValue === 'function') {
-        newColumnFilters = updaterOrValue(columnFilters);
-      } else {
-        newColumnFilters = updaterOrValue;
-      }
+      setColumnFilters((columnFilters) => {
+        let newColumnFilters: MRT_ColumnFiltersState;
 
-      const isRealFilterChange =
-        JSON.stringify(newColumnFilters.map(f => ({ id: f.id, value: f.value }))) !==
-        JSON.stringify(columnFilters.map(f => ({ id: f.id, value: f.value })));
+        if (typeof updaterOrValue === 'function') {
+          newColumnFilters = updaterOrValue(columnFilters);
+        } else {
+          newColumnFilters = updaterOrValue;
+        }
 
-      setColumnFilters(newColumnFilters);
+        isRealFilterChange =
+          JSON.stringify(newColumnFilters.map((f) => ({ id: f.id, value: f.value }))) !==
+          JSON.stringify(columnFilters.map((f) => ({ id: f.id, value: f.value })));
 
-      if (isRealFilterChange) {
-        updateColumnFilters(newColumnFilters);
-      }
+        if (isRealFilterChange) {
+          updateColumnFilters(newColumnFilters);
+        }
+
+        return newColumnFilters;
+      });
     },
-    [columnFilters, updateColumnFilters],
+    [updateColumnFilters],
   );
-
-  const handleFilterToggle = useCallback(() => {
-    toggleImplicitFilters();
-  }, [toggleImplicitFilters]);
-
-  const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
-
-  const handleClearSelections = useCallback(() => {
-    setRowSelection({});
-  }, []);
-
-  const handleRowSelection = useCallback<typeof setRowSelection>(updater => {
-    if (typeof updater == 'function') {
-      setRowSelection(prev => updater(prev));
-    } else {
-      setRowSelection(prev => ({ ...prev, ...updater }));
-    }
-  }, []);
 
   const rowProps = useCallback<RowProps>(
     ({ row, table }) => {
@@ -154,7 +138,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
 
           clickTimeout = setTimeout(() => {
             if (!event.ctrlKey) {
-              setRowSelection({});
+              table.setRowSelection({});
             }
 
             row.toggleSelected();
@@ -171,9 +155,7 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
             row.toggleSelected();
           }
 
-          const params = new URLSearchParams(location.search);
-          params.set('recordId_' + tab.id, record.id);
-          history.pushState(null, '', `?${params.toString()}`);
+          setRecordId(record.id);
         },
         sx: {
           ...(isSelected && {
@@ -184,19 +166,33 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
         table,
       };
     },
-    [sx.rowSelected, tab.id],
+    [setRecordId, sx.rowSelected],
+  );
+
+  const renderEmptyRowsFallback = useCallback(
+    ({ table }: { table: MRT_TableInstance<EntityData> }) => <EmptyState table={table} />,
+    [],
+  );
+
+  const fetchMoreOnBottomReached = useCallback(
+    (event: React.UIEvent<HTMLDivElement>) => {
+      const containerRefElement = event.target as HTMLDivElement;
+
+      if (containerRefElement) {
+        const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
+        if (scrollHeight - scrollTop - clientHeight < 10 && !loading && hasMoreRecords) {
+          fetchMore();
+        }
+      }
+    },
+    [fetchMore, hasMoreRecords, loading],
   );
 
   const table = useMaterialReactTable<EntityData>({
-    muiTablePaperProps: {
-      sx: sx.tablePaper,
-    },
+    muiTablePaperProps: { sx: sx.tablePaper },
     muiTableHeadCellProps: { sx: sx.tableHeadCell },
     muiTableBodyCellProps: { sx: sx.tableBodyCell },
-    muiTableBodyProps: {
-      sx: sx.tableBody,
-    },
-    layoutMode: 'grid',
+    muiTableBodyProps: { sx: sx.tableBody },
     enableGlobalFilter: false,
     columns,
     data: records,
@@ -205,47 +201,38 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
     positionToolbarAlertBanner: 'none',
     muiTableBodyRowProps: rowProps,
     muiTableContainerProps: {
-      className: 'flex-1',
+      ref: tableContainerRef,
+      sx: { flex: 1, height: '100%', maxHeight: '100%' }, //give the table a max height
+      onScroll: fetchMoreOnBottomReached,
     },
     enablePagination: false,
     enableStickyHeader: true,
-    enableStickyFooter: true,
-    renderTopToolbar: props => {
-      return (
-        <TopToolbar
-          filterActive={isImplicitFilterApplied}
-          toggleFilter={handleFilterToggle}
-          selectedCount={props.table.getSelectedRowModel().rows.length}
-          onClearSelection={handleClearSelections}
-        />
-      );
-    },
-    renderBottomToolbar:
-      tab.uIPattern == 'STD' && !searchQuery && hasMoreRecords ? (
-        <Button sx={sx.fetchMore} onClick={fetchMore}>
-          {t('common.loadMore')}
-        </Button>
-      ) : null,
+    enableColumnVirtualization: true,
+    enableRowVirtualization: true,
+    enableTopToolbar: false,
+    enableBottomToolbar: false,
     initialState: { density: 'compact' },
     state: {
-      rowSelection,
       columnFilters,
       showColumnFilters: true,
+      showProgressBars: loading,
     },
-    onRowSelectionChange: handleRowSelection,
     onColumnFiltersChange: handleColumnFiltersChange,
-    getRowId: row => String(row.id),
+    getRowId,
     enableColumnFilters: true,
     enableSorting: true,
     enableColumnResizing: true,
     enableColumnActions: true,
     manualFiltering: true,
-    renderEmptyRowsFallback: () => {
-      return <EmptyState maxWidth={maxWidth} />;
-    },
+    renderEmptyRowsFallback,
   });
 
-  useTableSelection(tab, records, rowSelection);
+  useTableSelection(tab, records, table.getState().rowSelection);
+
+  const clearSelection = useCallback(() => {
+    table.resetRowSelection(true);
+    setRecordId('');
+  }, [setRecordId, table]);
 
   useEffect(() => {
     if (removeRecordLocally) {
@@ -260,27 +247,22 @@ const DynamicTable = ({ tab }: DynamicTableProps) => {
   }, [tabId, removeRecordLocally, registerDatasource, unregisterDatasource, registerRefetchFunction, refetch]);
 
   useEffect(() => {
-    if (contentRef.current) {
-      setMaxWidth(contentRef.current.clientWidth);
-    }
-  }, []);
-
-  useEffect(() => {
     registerActions({
       refresh: refetch,
+      filter: toggleImplicitFilters,
+      back: clearSelection,
     });
-  }, [refetch, registerActions]);
+  }, [clearSelection, refetch, registerActions, toggleImplicitFilters]);
 
   if (error) {
     return (
-      <ErrorDisplay title={t('errors.tableError.title')} description={error.message} showRetry onRetry={refetch} />
+      <ErrorDisplay title={t('errors.tableError.title')} description={error?.message} showRetry onRetry={refetch} />
     );
   }
 
   return (
     <div
-      className={`flex flex-col w-full overflow-auto h-full transition duration-100 ${loading ? 'opacity-40 cursor-wait cursor-to-children' : 'opacity-100'}`}
-      ref={contentRef}>
+      className={`h-full overflow-hidden rounded-3xl transition-opacity ${loading ? 'opacity-60 cursor-progress cursor-to-children' : 'opacity-100'}`}>
       <MaterialReactTable table={table} />
     </div>
   );

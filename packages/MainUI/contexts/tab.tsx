@@ -2,7 +2,8 @@ import { createContext, useContext, useMemo } from 'react';
 import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { ToolbarProvider } from './ToolbarContext';
 import { SearchProvider } from './searchContext';
-import { useSelected } from './selected';
+import { useSelectedRecord } from '@/hooks/useSelectedRecord';
+import { useSelected } from '@/hooks/useSelected';
 
 interface TabContextI {
   tab: Tab;
@@ -15,9 +16,9 @@ const TabContext = createContext<TabContextI>({} as TabContextI);
 
 export default function TabContextProvider({ tab, children }: React.PropsWithChildren<{ tab: Tab }>) {
   const { graph } = useSelected();
-  const record = graph.getSelected(tab.id);
-  const parentTab = graph.getParent(tab.id);
-  const parentRecord = graph.getSelected(parentTab?.id);
+  const record = useSelectedRecord(tab);
+  const parentTab = graph.getParent(tab);
+  const parentRecord = useSelectedRecord(parentTab);
 
   const value = useMemo(
     () => ({

@@ -8,60 +8,72 @@ type GraphNode<T> = {
   selectedMultiple: EntityData[];
 };
 
-class Graph<T extends Tab> extends EventEmitter {
+export type GraphEvents = {
+  selected: [tab: Tab, record: EntityData];
+  unselected: [tab: Tab];
+  selectedMultiple: [tab: Tab, records: EntityData[]];
+  unselectedMultiple: [tab: Tab];
+};
+
+export type GraphEventListener<K extends keyof GraphEvents> = (...args: GraphEvents[K]) => void;
+
+export type GraphEventNames = keyof GraphEvents;
+
+export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
   private nodes: Map<string, GraphNode<T>>;
+  private activeLevels: number[];
 
-  public constructor() {
+  public constructor(tabs: T[]) {
     super();
+    this.setMaxListeners(50);
     this.nodes = new Map();
-  }
+    this.activeLevels = [];
 
-  public buildTreeFromTabs(tabs: T[]) {
-    tabs.forEach(tab => this.addNode(tab));
+    tabs.forEach(this.addNode);
     tabs.forEach(tab => {
       if (tab.parentTabId) {
         this.addEdge(tab.parentTabId, tab.id);
       }
     });
-
-    return this;
   }
 
-  private addNode(value: T) {
+  private addNode = (value: T) => {
     if (!this.nodes.has(value.id)) {
       this.nodes.set(value.id, { value, neighbors: new Set(), selectedMultiple: [] });
     }
 
     return this;
-  }
+  };
 
-  private addEdge(sourceId: string, destinationId: string) {
+  private addEdge = (sourceId: string, destinationId: string) => {
     const sourceNode = this.nodes.get(sourceId);
     const destNode = this.nodes.get(destinationId);
+
     if (!sourceNode || !destNode) {
       throw new Error('Both nodes must exist before adding an edge');
     }
+
     sourceNode.neighbors.add(destNode);
 
     return this;
-  }
+  };
 
-  public toJSON(rootId: string) {
+  public toJSON = (rootId: string) => {
     const rootNode = this.nodes.get(rootId);
     if (!rootNode) throw new Error('Root node not found');
 
     return this.buildJSON(rootNode);
-  }
+  };
 
-  private buildJSON(node: GraphNode<T>): unknown {
+  private buildJSON = (node: GraphNode<T>): unknown => {
     return {
       id: node.value.id,
       name: node.value.name,
       children: Array.from(node.neighbors).map(this.buildJSON),
     };
-  }
+  };
 
-  public printTree(rootId: string, indent = 0) {
+  public printTree = (rootId: string) => {
     const rootNode = this.nodes.get(rootId);
     if (!rootNode) throw new Error('Root node not found');
 
@@ -70,81 +82,113 @@ class Graph<T extends Tab> extends EventEmitter {
       node.neighbors.forEach(child => printNode(child, level + 1));
     };
 
-    printNode(rootNode, indent);
-  }
+    printNode(rootNode, 0);
+  };
 
-  public getChildren(tabId: string) {
-    const node = this.nodes.get(tabId);
-    if (!node) throw new Error('Tab not found');
-    return Array.from(node.neighbors).map(child => child.value);
-  }
+  public setActiveLevels = (level: number) => {
+    const trimmed = this.activeLevels.filter(lvl => lvl < level);
 
-  public getParent(tabId: string) {
-    for (const node of this.nodes.values()) {
-      for (const neighbor of node.neighbors) {
-        if (neighbor.value.id === tabId) return node.value;
+    if (trimmed[trimmed.length - 1] !== level) {
+      this.activeLevels = [...trimmed, level].slice(-2);
+    } else {
+      this.activeLevels = trimmed;
+    }
+  };
+
+  public getChildren = (tab?: Tab) => {
+    if (tab) {
+      const node = this.nodes.get(tab.id);
+
+      if (node) {
+        return Array.from(node.neighbors).map(child => child.value);
       }
     }
+  };
 
-    return undefined;
-  }
-
-  public setSelected(tabId: string, record: EntityData) {
-    if (!record.id) throw new Error('Missing record id');
-    const node = this.nodes.get(tabId);
-    if (!node) throw new Error('Tab not found');
-    node.selected = record;
-
-    this.emit('update', tabId);
-  }
-
-  public clearSelected(tabId?: string | null) {
-    if (tabId) {
-      const node = this.nodes.get(tabId);
-      if (!node) throw new Error('Tab not found');
-      this.clearSelectedNode(node);
+  public getParent = (tab?: Tab) => {
+    if (tab) {
+      for (const node of this.nodes.values()) {
+        for (const neighbor of node.neighbors) {
+          if (neighbor.value.id === tab.id) {
+            return node.value;
+          }
+        }
+      }
     }
+  };
 
-    this.emit('update', tabId);
-  }
+  public setSelected = (tab?: Tab, record: EntityData = {}) => {
+    if (tab) {
+      const node = this.nodes.get(tab.id);
 
-  private clearSelectedNode(node: GraphNode<T>) {
+      if (node) {
+        node.selected = record;
+        node.neighbors.forEach(this.clearSelectedNode);
+
+        this.emit('selected', tab, record);
+      }
+    }
+  };
+
+  public clearSelected = (tab?: Tab) => {
+    if (tab) {
+      const node = this.nodes.get(tab.id);
+
+      if (node) {
+        this.clearSelectedNode(node);
+
+        this.emit('unselected', tab);
+      }
+    }
+  };
+
+  public clear = (tab?: Tab) => {
+    this.clearSelected(tab);
+    this.clearSelectedMultiple(tab);
+  };
+
+  private clearSelectedNode = (node: GraphNode<T>) => {
     node.selected = undefined;
-    node.neighbors.forEach(n => this.clearSelectedNode(n));
-  }
+    node.neighbors.forEach(this.clearSelectedNode);
+  };
 
-  public setSelectedMultiple(tabId: string, records: EntityData[]) {
-    const node = this.nodes.get(tabId);
-    if (!node) throw new Error('Tab not found');
-    node.selectedMultiple = records;
+  public setSelectedMultiple = (tab?: Tab, records: EntityData[] = []) => {
+    if (tab) {
+      const node = this.nodes.get(tab.id);
 
-    this.emit('update', tabId);
-  }
+      if (node) {
+        node.selectedMultiple = records;
+        node.neighbors.forEach(this.clearSelectedMultipleNode);
 
-  public clearSelectedMultiple(tabId?: string | null) {
-    if (tabId) {
-      const node = this.nodes.get(tabId);
-      if (!node) throw new Error('Tab not found');
-      this.clearSelectedMultipleNode(node);
+        this.emit('selectedMultiple', tab, records);
+      }
     }
+  };
 
-    this.emit('update', tabId);
-  }
+  public clearSelectedMultiple = (tab?: Tab) => {
+    if (tab) {
+      const node = this.nodes.get(tab.id);
 
-  private clearSelectedMultipleNode(node: GraphNode<T>) {
+      if (node) {
+        this.clearSelectedMultipleNode(node);
+
+        this.emit('unselectedMultiple', tab);
+      }
+    }
+  };
+
+  private clearSelectedMultipleNode = (node: GraphNode<T>) => {
     node.selectedMultiple = [];
-    node.neighbors.forEach(n => this.clearSelectedMultipleNode(n));
-  }
+    node.neighbors.forEach(this.clearSelectedMultipleNode);
+  };
 
-  public getSelected(tabId?: string | null) {
-    if (!tabId) return;
-    return this.nodes.get(tabId)?.selected;
-  }
+  public getSelected = (tab?: Tab) => {
+    return tab ? this.nodes.get(tab.id)?.selected : undefined;
+  };
 
-  public getSelectedMultiple(tabId?: string | null) {
-    if (!tabId) return [];
-    return this.nodes.get(tabId)?.selectedMultiple;
-  }
+  public getSelectedMultiple = (tab?: Tab) => {
+    return tab ? this.nodes.get(tab.id)?.selectedMultiple : undefined;
+  };
 }
 
 export default Graph;

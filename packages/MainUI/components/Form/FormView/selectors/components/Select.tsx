@@ -5,12 +5,14 @@ import checkIconUrl from '../../../../../../ComponentLibrary/src/assets/icons/ch
 import closeIconUrl from '../../../../../../ComponentLibrary/src/assets/icons/x.svg?url';
 import ChevronDown from '../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
 import Image from 'next/image';
+import useDebounce from '@/hooks/useDebounce';
 
 function SelectCmp({
   name,
   options,
   onFocus,
   isReadOnly,
+  onSearch,
   onLoadMore,
   loading = false,
   hasMore = true,
@@ -27,6 +29,7 @@ function SelectCmp({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef<HTMLLIElement>(null);
+  const debouncedSetSearchTerm = useDebounce(onSearch);
 
   const filteredOptions = useMemo(
     () => options.filter(option => option.label.toLowerCase().includes(searchTerm.toLowerCase())),
@@ -123,9 +126,17 @@ function SelectCmp({
     onFocus?.();
   }, [onFocus]);
 
-  const handleSetSearchTerm = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  }, []);
+  const handleSetSearchTerm = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const term = e.target.value;
+      setSearchTerm(term);
+
+      if (debouncedSetSearchTerm) {
+        debouncedSetSearchTerm(term)
+      }
+    },
+    [debouncedSetSearchTerm],
+  );
 
   const handleOptionClick = useCallback(
     (id: string, label: string) => {

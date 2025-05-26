@@ -13,6 +13,7 @@ export class Metadata {
   private static cache = new CacheStore(API_DEFAULT_CACHE_DURATION);
   private static currentRoleId: string | null = null;
   public static loginClient = new Client();
+  private static language: string | null = null;
 
   public static setBaseUrl(url: string) {
     Metadata.client.setBaseUrl(url + API_METADATA_URL);
@@ -22,6 +23,7 @@ export class Metadata {
   }
 
   public static setLanguage(value: string) {
+    this.language = value;
     [this.client, this.kernelClient, this.datasourceServletClient].forEach(client => client.setLanguageHeader(value));
 
     return this;
@@ -91,6 +93,24 @@ export class Metadata {
       return cached;
     } else {
       return this._getTab(tabId);
+    }
+  }
+
+  private static async _getLabels(): Promise<Etendo.Labels> {
+    const { data } = await this.client.request(`labels`);
+
+    this.cache.set(`labels-${this.language}`, data);
+
+    return data;
+  }
+
+  public static async getLabels(): Promise<Etendo.Labels> {
+    const cached = this.cache.get<Etendo.Labels>(`labels-${this.language}`);
+
+    if (cached) {
+      return cached;
+    } else {
+      return this._getLabels();
     }
   }
 

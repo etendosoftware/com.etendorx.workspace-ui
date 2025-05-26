@@ -1,20 +1,24 @@
+import { Metadata } from 'next/types';
 import { Inter } from 'next/font/google';
+import ApiProviderWrapper from '@/contexts/api/wrapper';
 import './styles/global.css';
 import ThemeProvider from '@workspaceui/componentlibrary/src/components/ThemeProvider';
-import Layout from '@/components/layout';
-import ApiProviderWrapper from '@/contexts/api/wrapper';
-import { DatasourceProvider } from '@/contexts/datasourceContext';
 import LanguageProvider from '@/contexts/language';
-import MetadataProvider from '@/contexts/metadata';
 import UserProvider from '@/contexts/user';
-import ModalContextProvider from '@/contexts/modal';
-import SelectedProvider from '@/contexts/selected';
+import { DatasourceProvider } from '@/contexts/datasourceContext';
+import MetadataProvider from '@/contexts/metadata';
+import Layout from '@/components/layout';
 
 const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-inter',
 });
+
+export const metadata: Metadata = {
+  title: 'Etendo',
+  applicationName: 'Etendo',
+};
 
 export default function RootLayout({
   children,
@@ -25,25 +29,22 @@ export default function RootLayout({
     <html lang="en" className={inter.variable}>
       <head>
         <meta charSet="utf-8" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body>
-        <ThemeProvider>
-          <ModalContextProvider>
+        <ApiProviderWrapper>
+          <ThemeProvider>
             <LanguageProvider>
-              <ApiProviderWrapper>
-                <UserProvider>
-                  <DatasourceProvider>
-                    <MetadataProvider>
-                      <SelectedProvider>
-                        <Layout>{children}</Layout>
-                      </SelectedProvider>
-                    </MetadataProvider>
-                  </DatasourceProvider>
-                </UserProvider>
-              </ApiProviderWrapper>
+              <UserProvider>
+                <DatasourceProvider>
+                  <MetadataProvider>
+                    <Layout>{children}</Layout>
+                  </MetadataProvider>
+                </DatasourceProvider>
+              </UserProvider>
             </LanguageProvider>
-          </ModalContextProvider>
-        </ThemeProvider>
+          </ThemeProvider>
+        </ApiProviderWrapper>
       </body>
     </html>
   );

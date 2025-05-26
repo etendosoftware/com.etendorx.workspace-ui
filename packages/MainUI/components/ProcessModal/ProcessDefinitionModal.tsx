@@ -16,12 +16,12 @@ import {
 import Modal from '../Modal';
 import Loading from '../loading';
 import { logger } from '@/utils/logger';
-import { useSelected } from '@/contexts/selected';
 import WindowReferenceGrid from './WindowReferenceGrid';
 import { buildPayloadByInputName } from '@/utils';
 import { useUserContext } from '@/hooks/useUserContext';
 import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useProcessConfig } from '@/hooks/datasource/useProcessDatasourceConfig';
+import { useSelected } from '@/hooks/useSelected';
 
 export const FALLBACK_RESULT = {};
 const WINDOW_REFERENCE_ID = 'FF80818132D8F0F30132D9BC395D0038';
@@ -46,9 +46,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   const tabId = tab?.id || '';
   const entityName = tab?.entityName || '';
-  const selectedRecords = graph.getSelectedMultiple(tabId);
+  const selectedRecords = graph.getSelectedMultiple(tab);
   const windowReferenceTab = parameters.grid?.window?.tabs?.[0] as Tab;
-  const windowId = tab?.windowId || '';
+  const windowId = tab?.window || '';
 
   const recordValues: RecordValues = useMemo(() => {
     if (!record || !tab?.fields) return FALLBACK_RESULT;
@@ -89,7 +89,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     try {
       const params = new URLSearchParams({
         processId,
-        windowId: tab.windowId,
+        windowId: tab.window,
         _action: javaClassName,
       });
 
@@ -156,7 +156,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     try {
       const result = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
         buttonValue: 'DONE',
-        windowId: tab.windowId,
+        windowId: tab.window,
         entityName: tab.entityName,
         recordIds: selectedRecords?.map(r => r.id),
         ...form.getValues(),
@@ -327,7 +327,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const isActionButtonDisabled = isExecuting || isSuccess || (hasWindowReference && gridSelection.length === 0);
 
   return (
-    <Modal open={open}>
+    <Modal open={open} onClose={handleClose}>
       <FormProvider {...form}>
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-5xl max-h-full overflow-hidden flex flex-col">
