@@ -1,3 +1,4 @@
+import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { RecentItem } from '../components/Drawer/types';
 
 export interface UseRecentItemsReturn {
@@ -11,7 +12,7 @@ export interface UseRecentItemsReturn {
 }
 
 export interface UseItemActionsProps {
-  onWindowClick?: (windowId: string) => void;
-  onReportClick?: (reportId: string, recordId: string) => void;
-  onProcessClick?: (processId: string) => void;
+  onWindowClick?: (item: Menu) => void;
+  onReportClick?: (item: Menu) => void;
+  onProcessClick?: (item: Menu) => void;
 }

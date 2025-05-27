@@ -37,7 +37,8 @@ export default function Sidebar() {
   }, [menu, searchValue, searchIndex]);
 
   const handleClick = useCallback(
-    (windowId: string) => {
+    (item: Menu) => {
+      const windowId = item.windowId ?? "";
       const params = new URLSearchParams(location.search);
       params.set('windowId', windowId);
       if (pathname.includes('window')) {

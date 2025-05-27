@@ -1,6 +1,6 @@
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 
-type NavigateFn = (pathname: string) => void;
+type NavigateFn = (item: Menu) => void;
 
 export interface SearchContextType {
   searchValue: string;
@@ -16,7 +16,7 @@ export interface DrawerProps {
   items: Menu[];
   logo?: string | React.ReactNode;
   title: string;
-  onClick: any;
+  onClick: NavigateFn;
   onReportClick: NavigateFn;
   onProcessClick: NavigateFn;
   // Mock Props
@@ -83,7 +83,7 @@ export interface SearchIndex {
 
 export interface DrawerItemsProps {
   items: Menu[];
-  onClick: (path: string) => void;
+  onClick: NavigateFn;
   onReportClick?: NavigateFn;
   onProcessClick?: NavigateFn;
   open: boolean;
@@ -114,7 +114,7 @@ export interface DrawerHeaderProps {
 }
 
 export interface RecentlyViewedProps {
-  onClick: (path: string) => void;
+  onClick: (item: Menu) => void;
   open: boolean;
   onWindowAccess?: (item: RecentItem) => void;
   recentItems?: RecentItem[];

@@ -6,6 +6,7 @@ import { DrawerSectionProps, ToggleFunctions } from '../types';
 import { findActive } from '../../../utils/drawerUtils';
 import { useItemActions } from '../../../hooks/useItemType';
 import { CustomClickAwayListener } from '../../../utils/clickAway';
+import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
   ({
@@ -32,9 +33,9 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
 
     const expanded = Boolean(externalExpanded || localExpanded);
 
-    const onWindowClick = useCallback((windowId: string) => onClick(windowId), [onClick]);
-    const onReportClick = useCallback((reportId: string) => onClick(`/report/${reportId}`), [onClick]);
-    const onProcessClick = useCallback((processId: string) => onClick(`/process/${processId}`), [onClick]);
+    const onWindowClick = useCallback((item: Menu) => onClick(item), [onClick]);
+    const onReportClick = useCallback((item: Menu) => onClick(item), [onClick]);
+    const onProcessClick = useCallback((item: Menu) => onClick(item), [onClick]);
 
     const handleItemClick = useItemActions({
       onWindowClick,
@@ -99,8 +100,8 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     }, []);
 
     const handleClickAndClose = useCallback(
-      (path: string) => {
-        onClick(path);
+      (item: Menu) => {
+        onClick(item);
         handleClose();
       },
       [handleClose, onClick],

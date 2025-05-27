@@ -15,10 +15,14 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
     const { currentRole } = useUserContext();
     const { language } = useLanguage();
 
+    const onWindowClick = useCallback((item: Menu) => onClick(item), [onClick]);
+    const onReportClick = useCallback((item: Menu) => onClick(item), [onClick]);
+    const onProcessClick = useCallback((item: Menu) => onClick(item), [onClick]);
+
     const handleItemClick = useItemActions({
-      onWindowClick: (windowId: string) => onClick(windowId),
-      onReportClick: (reportId: string) => onClick(`/report/${reportId}`),
-      onProcessClick: (processId: string) => onClick(`/process/${processId}`),
+      onWindowClick,
+      onReportClick,
+      onProcessClick,
     });
 
     const {

@@ -34,7 +34,7 @@ const updateItemsWithTranslations = (
 export function useRecentItems(
   menuItems: Menu[],
   handleItemClick: (item: Menu) => void,
-  onClick: (path: string) => void,
+  onClick: (item: Menu) => void,
   roleId?: string,
   getTranslatedName?: (item: Menu) => string,
 ) {
@@ -110,8 +110,8 @@ export function useRecentItems(
   );
 
   const handleRecentItemClick = useCallback(
-    (path: string) => {
-      const itemId = path.split('/').pop();
+    (item: Menu) => {
+      const itemId = item.id; 
       if (!itemId || !roleId) return;
 
       const menuItem = findItemByIdentifier(menuItems, itemId);
@@ -119,7 +119,7 @@ export function useRecentItems(
 
       const recentItem = addRecentItem(menuItem);
       if (recentItem) {
-        onClick(path);
+        onClick(recentItem);
         handleItemClick(menuItem);
         setIsExpanded(true);
       }
