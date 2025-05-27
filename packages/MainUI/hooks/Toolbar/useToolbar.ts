@@ -26,7 +26,7 @@ export function useToolbar(windowId: string, tabId?: string) {
       //   }),
       // );
 
-      const url = tabId ? 'etmeta_toolbar' : `toolbar/${windowId}`;
+      const url = tabId ? 'etmeta_Toolbar' : `toolbar/${windowId}`;
 
       const response = await Metadata.datasourceServletClient.post(url, params, {
         headers: {
