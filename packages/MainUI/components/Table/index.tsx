@@ -133,7 +133,7 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
       let clickTimeout: NodeJS.Timeout | null = null;
 
       return {
-        onClick: event => {
+        onClick: (event) => {
           if (clickTimeout) return;
 
           clickTimeout = setTimeout(() => {
@@ -193,6 +193,7 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
     muiTableHeadCellProps: { sx: sx.tableHeadCell },
     muiTableBodyCellProps: { sx: sx.tableBodyCell },
     muiTableBodyProps: { sx: sx.tableBody },
+    layoutMode: 'semantic',
     enableGlobalFilter: false,
     columns,
     data: records,
