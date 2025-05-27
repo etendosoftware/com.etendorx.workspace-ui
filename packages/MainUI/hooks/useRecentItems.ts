@@ -111,12 +111,13 @@ export function useRecentItems(
 
   const handleRecentItemClick = useCallback(
     (item: Menu) => {
-      const itemId = item.id; 
+
+      const itemId = item.id;
       if (!itemId || !roleId) return;
 
       const menuItem = findItemByIdentifier(menuItems, itemId);
       if (!menuItem) return;
-
+      
       const recentItem = addRecentItem(menuItem);
       if (recentItem) {
         onClick(recentItem);
@@ -124,7 +125,7 @@ export function useRecentItems(
         setIsExpanded(true);
       }
     },
-    [roleId, menuItems, addRecentItem, onClick, handleItemClick],
+    [addRecentItem, handleItemClick, menuItems, onClick, roleId],
   );
 
   useEffect(() => {

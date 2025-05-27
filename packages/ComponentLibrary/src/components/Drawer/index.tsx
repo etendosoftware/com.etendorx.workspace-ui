@@ -90,6 +90,7 @@ const Drawer: React.FC<DrawerProps> = ({
 
   const handleItemClick = useCallback(
     (item: Menu) => {
+      alert('onClick ' + item.name);
       drawerRefs.current.recentlyViewedHandler.handleWindowAccess?.(item);
       onClick(item);
     },

@@ -40,7 +40,7 @@ export default function Sidebar() {
     (item: Menu) => {
       const windowId = item.windowId ?? "";
       const params = new URLSearchParams(location.search);
-      params.set('windowId', windowId);
+      params.append('windowId', windowId);
       if (pathname.includes('window')) {
         window.history.pushState(null, '', `?${params.toString()}`);
       } else {
