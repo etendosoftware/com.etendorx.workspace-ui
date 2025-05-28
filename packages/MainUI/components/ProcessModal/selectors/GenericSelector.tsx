@@ -3,7 +3,7 @@ import { getFieldReference } from '@/utils';
 import { FieldType, ProcessParameter } from '@workspaceui/etendohookbinder/src/api/types';
 import RadioSelector from './RadioSelector';
 
-const GenericSelector = ({ parameter }: { parameter: ProcessParameter }) => {
+const GenericSelector = ({ parameter, readOnly }: { parameter: ProcessParameter; readOnly?: boolean }) => {
   const { register } = useFormContext();
   const reference = getFieldReference(parameter.reference);
 
@@ -13,9 +13,11 @@ const GenericSelector = ({ parameter }: { parameter: ProcessParameter }) => {
   } else {
     return (
       <input
-        className="w-full px-3 py-2 border-(--color-baseline-60) rounded-md focus:outline-none focus:border-(--color-etendo-main)"
+        readOnly={readOnly}
+        className={`w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:border-(--color-etendo-main) ${readOnly ? 'bg-(--color-baseline-10) font-medium text-zinc-500' : ''}`}
         {...register(parameter.dBColumnName, {
           required: parameter.required,
+          disabled: readOnly,
         })}
       />
     );

@@ -38,6 +38,6 @@ const SelectSelector = memo(({ value, name, title, onChange, readOnly, field }: 
   );
 });
 
-SelectSelector.displayName = "SelectSelector";
+SelectSelector.displayName = 'SelectSelector';
 
 export default SelectSelector;

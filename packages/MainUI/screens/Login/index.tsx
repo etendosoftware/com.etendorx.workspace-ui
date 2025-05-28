@@ -13,7 +13,8 @@ export default function LoginScreen() {
         await login(username, password);
       } catch (e) {
         logger.warn(e);
-        setError((e as Error).message);
+
+        setError(e instanceof Error ? e.message : String(e));
       }
     },
     [login],

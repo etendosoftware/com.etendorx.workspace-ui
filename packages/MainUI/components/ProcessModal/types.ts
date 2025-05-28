@@ -1,6 +1,9 @@
-import { Field, ProcessDefinition, ProcessParameters } from '@workspaceui/etendohookbinder/src/api/types';
+import { ProcessConfigResponse } from '@/hooks/datasource/useProcessDatasourceConfig';
+import type { EntityData, EntityValue, ProcessParameter, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { MRT_Row, MRT_TableInstance, MRT_TableBodyRowProps, MRT_RowData } from 'material-react-table';
+import { Field, ProcessAction } from '@workspaceui/etendohookbinder/src/api/types';
 
-export interface BaseButton {
+export interface BaseButton extends Field {
   id: string;
   name: string;
   action: string;
@@ -8,28 +11,11 @@ export interface BaseButton {
   visible: boolean;
 }
 
-export interface ProcessAction extends Record<string, unknown> {
-  id: string;
-  name: string;
-}
-
-export interface ProcessInfo {
-  loadFunction: string;
-  clientSideValidation: string;
-  _entityName: string;
-  id: string;
-  name: string;
-  javaClassName: string;
-  searchKey: string;
-  parameters: ProcessParameters;
-}
-
 export interface BaseProcessButton extends BaseButton {
   processId: string;
   buttonText: string;
   displayLogic?: string;
   processInfo: ProcessInfo;
-  field: Field;
 }
 
 export interface ProcessDefinitionButton extends BaseProcessButton {
@@ -56,15 +42,14 @@ export interface ProcessResponse {
     };
   }>;
   refreshParent?: boolean;
-  showDeprecatedFeatureModal?: boolean;
-  message?: string;
+  showInIframe?: boolean;
   iframeUrl?: string;
 }
 
 export interface ProcessModalProps {
   open: boolean;
   onClose: () => void;
-  button: ProcessButton | null;
+  button: ProcessButton;
   onConfirm: () => void;
   isExecuting: boolean;
   processResponse: ProcessResponse | null;
@@ -72,6 +57,7 @@ export interface ProcessModalProps {
   cancelButtonText: string;
   executeButtonText: string;
   onProcessSuccess?: () => void;
+  tabId: string;
 }
 
 export interface MessageStylesType {
@@ -81,6 +67,27 @@ export interface MessageStylesType {
   buttonBg: string;
 }
 
+export interface ProcessIframeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  url: string;
+  title?: string;
+  onProcessSuccess?: () => void;
+  tabId: string;
+}
+
+export interface ProcessDefinitionModalProps {
+  onClose: () => void;
+  open: boolean;
+  button?: ProcessDefinitionButton | null;
+  onSuccess?: () => void;
+  onError?: () => void;
+}
+
+export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
+  button: NonNullable<ProcessDefinitionModalProps['button']>;
+}
+
 export interface ProcessDeprecatedModallProps {
   isOpen: boolean;
   onClose: () => void;
@@ -88,13 +95,57 @@ export interface ProcessDeprecatedModallProps {
   message?: string;
 }
 
-export interface ProcessDefinitionModalProps {
-  onClose: () => void;
-  open: boolean;
-  button?: ProcessDefinitionButton;
-  onSuccess?: () => void;
+export interface ProcessInfo {
+  loadFunction: string;
+  searchKey: string;
+  clientSideValidation: string;
+  _entityName: string;
+  id: string;
+  name: string;
+  javaClassName: string;
+  parameters: Array<{
+    defaultValue: string;
+    id: string;
+    name: string;
+  }>;
 }
 
-export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
-  button: NonNullable<ProcessDefinitionModalProps['button']>;
+export type ListOption = { id: string; label: string; value: string };
+
+export type ProcessParameters = Record<string, ProcessParameter>;
+
+export interface ProcessDefinition extends Record<string, unknown> {
+  id: string;
+  name: string;
+  javaClassName: string;
+  parameters: ProcessParameters;
+  onLoad: string;
+  onProcess: string;
 }
+export interface ResponseMessage {
+  msgText: string;
+  msgTitle: string;
+  msgType: string;
+}
+
+//Window References types
+
+export type RecordValues = { [key: string]: EntityValue };
+export interface WindowReferenceGridProps {
+  parameter: ProcessParameter;
+  onSelectionChange: (selection: unknown[]) => void;
+  entityName?: EntityValue;
+  recordId?: EntityValue;
+  tabId: string;
+  windowReferenceTab: Tab;
+  windowId?: string;
+  processConfig?: ProcessConfigResponse | null;
+  processConfigLoading: boolean;
+  processConfigError: Error | null;
+}
+
+export type RowProps = (props: {
+  isDetailPanel?: boolean;
+  row: MRT_Row<EntityData>;
+  table: MRT_TableInstance<EntityData>;
+}) => Omit<MRT_TableBodyRowProps<MRT_RowData>, 'staticRowIndex'>;

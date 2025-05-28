@@ -103,6 +103,8 @@ export const languageFlags: Record<string, string> = {
   en_KW: '🇰🇼',
 };
 
-export const getLanguageFlag = (languageCode: string): string => {
-  return languageFlags[languageCode] || '🌐';
+const FALLBACK_FLAG = '🌐';
+
+export const getLanguageFlag = (languageCode: string | null): string => {
+  return languageCode ? languageFlags[languageCode] || FALLBACK_FLAG : FALLBACK_FLAG;
 };

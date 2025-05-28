@@ -1,5 +1,4 @@
-import { ProcessButton } from '@/components/ProcessModal/types';
-import { ProcessResponse } from '../../components/Toolbar/types';
+import { ProcessButton, ProcessResponse } from '@/components/ProcessModal/types';
 import { ExecuteProcessParams } from './types';
 import { BaseFieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 import { FieldType } from '@workspaceui/etendohookbinder/src/api/types';
@@ -13,9 +12,9 @@ export const useProcessButton = (
     if (!recordId) {
       throw new Error('No record selected');
     }
-
+    
     const processParams =
-      Object.values(btn.processInfo?.parameters || {})?.reduce(
+    Object.values(btn.processInfo?.parameters || {})?.reduce(
         (acc, param) => ({
           ...acc,
           [param.id]: param.defaultValue ?? null,
@@ -23,14 +22,14 @@ export const useProcessButton = (
         {},
       ) || {};
 
-    const recordIdField: BaseFieldDefinition<string> = {
-      value: recordId,
+      const recordIdField: BaseFieldDefinition<string> = {
+        value: recordId,
       type: 'string' as FieldType,
       label: 'Record ID',
       name: 'recordId',
       original: {} as never,
     };
-
+    
     try {
       const result = await executeProcess({
         button: btn,
@@ -44,13 +43,11 @@ export const useProcessButton = (
 
       return result;
     } catch (error) {
-      logger.error('Error executing process', error);
+      logger.warn('Error executing process', error);
 
-      const message = error instanceof Error ? error.message : 'Unknown error occurred';
+      const message = error instanceof Error ? error?.message : 'Unknown error occurred';
 
       return {
-        message,
-        success: false,
         responseActions: [
           {
             showMsgInProcessView: {

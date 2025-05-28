@@ -4,7 +4,7 @@ import React, { useRef } from 'react';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { MenuTitleProps } from '../types';
 
-const MenuTitle: React.FC<MenuTitleProps> = React.memo(({ item, onClick, selected, expanded, open, popperOpen }) => {
+export const MenuTitle: React.FC<MenuTitleProps> = React.memo(({ item, onClick, selected, expanded, open, popperOpen }) => {
   const textRef = useRef<HTMLSpanElement>(null);
 
   return (

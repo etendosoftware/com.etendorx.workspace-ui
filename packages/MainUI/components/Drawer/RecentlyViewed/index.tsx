@@ -1,25 +1,18 @@
 import { forwardRef, useCallback, useImperativeHandle, useEffect, useMemo } from 'react';
-import DrawerSection from '@workspaceui/componentlibrary/src/components/Drawer/DrawerSection';
+import { DrawerSection } from '@workspaceui/componentlibrary/src/components/Drawer/DrawerSection';
 import { RecentlyViewedProps } from '@workspaceui/componentlibrary/src/components/Drawer/types';
-import { createParentMenuItem, findItemByIdentifier } from '@workspaceui/componentlibrary/src/utils/menuUtils';
+import { createParentMenuItem } from '@workspaceui/componentlibrary/src/utils/menuUtils';
 import { useRecentItems } from '../../../hooks/useRecentItems';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { useItemActions } from '@workspaceui/componentlibrary/src/hooks/useItemType';
 import { useUserContext } from '../../../hooks/useUserContext';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { useLanguage } from '@/contexts/language';
 
-const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, RecentlyViewedProps>(
+export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, RecentlyViewedProps>(
   ({ windowId, onClick, open, items, getTranslatedName }, ref) => {
     const { t } = useTranslation();
     const { currentRole } = useUserContext();
     const { language } = useLanguage();
-
-    const handleItemClick = useItemActions({
-      onWindowClick: (windowId: string) => onClick(`/window/${windowId}`),
-      onReportClick: (reportId: string) => onClick(`/report/${reportId}`),
-      onProcessClick: (processId: string) => onClick(`/process/${processId}`),
-    });
 
     const {
       localRecentItems,
@@ -29,7 +22,7 @@ const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, 
       hasItems,
       addRecentItem,
       updateTranslations,
-    } = useRecentItems(items, handleItemClick, onClick, currentRole?.id, getTranslatedName);
+    } = useRecentItems(items, onClick, currentRole?.id ?? "", getTranslatedName);
 
     useEffect(() => {
       if (currentRole?.id && items.length > 0) {
@@ -43,13 +36,8 @@ const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, 
           addRecentItem(item);
           return;
         }
-
-        const menuItem = findItemByIdentifier(items, item.id);
-        if (menuItem) {
-          addRecentItem(menuItem);
-        }
       },
-      [items, addRecentItem],
+      [addRecentItem],
     );
 
     useImperativeHandle(

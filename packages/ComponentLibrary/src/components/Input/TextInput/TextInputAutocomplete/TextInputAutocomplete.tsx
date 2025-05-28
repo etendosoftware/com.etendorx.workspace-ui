@@ -1,59 +1,29 @@
 'use client';
 
 import { useState, useEffect, KeyboardEvent, useCallback } from 'react';
-import { TextField, InputAdornment, IconButton, Box, useTheme } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import FilterIcon from '@mui/icons-material/FilterList';
-import CloseIcon from '@mui/icons-material/Close';
+import { TextField, InputAdornment, Box, useTheme } from '@mui/material';
 import { TextInputProps } from './TextInputComplete.types';
 import { DEFAULT_CONSTANTS } from './TextInputAutocomplete.constants';
 import SuggestionBox from './SuggestionBox';
-import { SmartButton } from '@mui/icons-material';
 import { useStyle } from './TextInputAutocomplete.styles';
 
+import SmartButton from '../../../../assets/icons/box.svg';
+import SearchIcon from '../../../../assets/icons/search.svg';
+import FilterIcon from '../../../../assets/icons/filter.svg';
+import CloseIcon from '../../../../assets/icons/menu-close.svg';
+import IconButton from '../../../IconButton';
+
 const TextInputAutoComplete = (props: TextInputProps) => {
-  const {
-    value,
-    setValue,
-    autoCompleteTexts = [],
-    leftIcon,
-    rightIcon,
-    onLeftIconClick,
-    ...textFieldProps
-  } = props;
+  const { value, setValue, autoCompleteTexts = [], rightIcon, onLeftIconClick, ...textFieldProps } = props;
 
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const [suggestion, setSuggestion] = useState<string>('');
   const [smartIconActive, setSmartIconActive] = useState(false);
-  const [activeIcon, setActiveIcon] = useState('');
   const theme = useTheme();
   const { sx, styles, gradients } = useStyle();
 
-  const getIconStyle = (iconName: string) => ({
-    backgroundColor:
-      activeIcon === iconName
-        ? theme.palette.dynamicColor.main
-        : isFocused
-          ? theme.palette.baselineColor.neutral[0]
-          : 'transparent',
-    color: activeIcon === iconName ? theme.palette.dynamicColor.contrastText : theme.palette.baselineColor.neutral[70],
-    borderRadius: '50%',
-    width: '2rem',
-    height: '2rem',
-    transition: 'background-color 0.3s, color 0.3s',
-    '&:hover': {
-      backgroundColor: theme.palette.dynamicColor.main,
-      color: theme.palette.dynamicColor.contrastText,
-    },
-  });
-
-  const handleIconClick = useCallback((iconName: string) => {
-    setActiveIcon(prevIcon => (prevIcon === iconName ? '' : iconName));
-  }, []);
-
   const handleSmartIconClick = useCallback(() => {
     setSmartIconActive(prev => !prev);
-    setActiveIcon(prev => (prev === 'smart' ? '' : 'smart'));
   }, []);
 
   const handleBlur = useCallback(() => {
@@ -95,29 +65,12 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   );
 
   const renderStartAdornment = () => {
-    let iconElement;
-
-    if (leftIcon) {
-      iconElement = (
-        <IconButton onClick={onLeftIconClick} sx={{ color: theme.palette.baselineColor.neutral[70] }}>
-          {leftIcon}
-        </IconButton>
-      );
-    } else {
-      iconElement = (
-        <SearchIcon
-          sx={{
-            color:
-              isFocused && value.length > 0 ? theme.palette.dynamicColor.main : theme.palette.baselineColor.neutral[70],
-          }}
-        />
-      );
-    }
-
     return (
-      <InputAdornment position="start">
-        <Box sx={sx.startAdornment}>{iconElement}</Box>
-      </InputAdornment>
+      <IconButton
+        className={`[&>svg]:w-4 [&>svg]:h-4 w-6 h-6 mr-2 bg-transparent hover:bg-transparent hover:text- ${value && isFocused ? 'text-(--color-dynamic-main)' : ''}`}
+        onClick={onLeftIconClick}>
+        <SearchIcon />
+      </IconButton>
     );
   };
 
@@ -126,20 +79,18 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     !props.disabled && (
       <InputAdornment position="end">
         {value && (
-          <IconButton onClick={handleClear} sx={sx.clearButtonHover}>
-            <CloseIcon sx={{ color: theme.palette.baselineColor.neutral[70] }} />
+          <IconButton onClick={handleClear}>
+            <CloseIcon />
           </IconButton>
         )}
         <Box sx={sx.containerIcon}>
           <IconButton
             onClick={() => {
-              handleIconClick('smart');
               handleSmartIconClick();
-            }}
-            sx={getIconStyle('smart')}>
+            }}>
             <SmartButton />
           </IconButton>
-          <IconButton onClick={() => handleIconClick('filter')} sx={getIconStyle('filter')}>
+          <IconButton>
             <FilterIcon />
           </IconButton>
         </Box>

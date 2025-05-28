@@ -1,18 +1,21 @@
-import { FC, useState, useCallback, useMemo } from 'react';
-import { Breadcrumbs, Link, Typography, Box, IconButton, MenuItem, useTheme } from '@mui/material';
+import { FC, useState, useCallback, useMemo, useRef } from 'react';
+import { Breadcrumbs, Link, Typography, Box, MenuItem, useTheme } from '@mui/material';
 import NavigateNextIcon from '../../assets/icons/chevron-right.svg';
 import ArrowLeftIcon from '../../assets/icons/arrow-left.svg';
 import ChevronDown from '../../assets/icons/chevron-down.svg';
 import MoreHorizIcon from '../../assets/icons/more-horizontal.svg';
-import { menuStyle, useStyle } from './styles';
+import { useStyle } from './styles';
 import { BreadcrumbProps, BreadcrumbAction, BreadcrumbItem } from './types';
 import ToggleChip from '../Toggle/ToggleChip';
-import { Menu } from '@mui/material';
+import IconButton from '../IconButton';
+import Menu from '../Menu';
 
 const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, homeText = 'Home', separator }) => {
-  const [isHomeHovered, setIsHomeHovered] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [middleMenuAnchorEl, setMiddleMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [isHomeHovered, setIsHomeHovered] = useState<boolean>(false);
+  const [isOpenMenu, setIsOpenMenu] = useState<boolean>(false);
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const [middleRect, setMiddleRect] = useState<DOMRect | null>(null);
+
   const [currentActions, setCurrentActions] = useState<BreadcrumbAction[]>([]);
   const [toggleStates, setToggleStates] = useState<Record<string, boolean>>({});
   const theme = useTheme();
@@ -23,26 +26,26 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
     [theme],
   );
 
-  const menuConstant = useCallback(() => ({ sx: menuStyle }), []);
-
   const handleMouseEnter = useCallback(() => setIsHomeHovered(true), []);
   const handleMouseLeave = useCallback(() => setIsHomeHovered(false), []);
 
-  const handleActionMenuOpen = useCallback((actions: BreadcrumbAction[], event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+  const handleActionMenuOpen = useCallback((actions: BreadcrumbAction[]) => {
     setCurrentActions(actions);
+    setIsOpenMenu(true);
   }, []);
 
   const handleActionMenuClose = useCallback(() => {
-    setAnchorEl(null);
+    setIsOpenMenu(false);
   }, []);
 
   const handleMiddleMenuOpen = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    setMiddleMenuAnchorEl(event.currentTarget);
+    const newRect = event.currentTarget.getBoundingClientRect();
+    setRect(newRect);
+    setIsOpenMenu((prev) => !prev);
   }, []);
 
   const handleMiddleMenuClose = useCallback(() => {
-    setMiddleMenuAnchorEl(null);
+    setMiddleRect(null);
   }, []);
 
   const handleClick = useCallback(
@@ -54,7 +57,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
   );
 
   const handleToggle = useCallback((actionId: string) => {
-    setToggleStates(prevStates => ({
+    setToggleStates((prevStates) => ({
       ...prevStates,
       [actionId]: !prevStates[actionId],
     }));
@@ -63,26 +66,13 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
   const renderHomeIcon = useCallback(() => {
     if (isHomeHovered) {
       return (
-        <IconButton sx={sx.homeIconHovered}>
-          <ArrowLeftIcon fill={theme.palette.baselineColor.neutral[80]} />
+        <IconButton className="w-10 h-10 bg-(--color-baseline-0) hover:bg-(--color-baseline-0) hover:text-(--color-baseline-80)">
+          <ArrowLeftIcon />
         </IconButton>
       );
-    } else if (homeIcon) {
-      if (typeof homeIcon === 'string') {
-        return <Box sx={sx.homeIconString}>{homeIcon}</Box>;
-      } else {
-        return <IconButton sx={sx.homeIconComponent}>{homeIcon}</IconButton>;
-      }
     }
-    return null;
-  }, [
-    homeIcon,
-    isHomeHovered,
-    sx.homeIconComponent,
-    sx.homeIconHovered,
-    sx.homeIconString,
-    theme.palette.baselineColor.neutral,
-  ]);
+    return <IconButton className="w-10 h-10 text-[1.5rem] bg-(--color-transparent-neutral-5)">{homeIcon}</IconButton>;
+  }, [homeIcon, isHomeHovered]);
 
   const renderBreadcrumbItem = useCallback(
     (item: BreadcrumbItem, isLast: boolean) => (
@@ -92,18 +82,15 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
             <Typography
               noWrap
               sx={sx.lastItemTypography}
-              onClick={event => {
+              onClick={() => {
                 if (item.actions && item.actions.length > 0) {
-                  handleActionMenuOpen(item.actions, event);
+                  handleActionMenuOpen(item.actions);
                 }
               }}>
               {item.label}
             </Typography>
             {item.actions && item.actions.length > 0 && (
-              <IconButton
-                size="small"
-                onClick={event => handleActionMenuOpen(item.actions!, event)}
-                sx={sx.actionButton}>
+              <IconButton onClick={() => handleActionMenuOpen(item.actions!)}>
                 <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
               </IconButton>
             )}
@@ -111,7 +98,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
         ) : (
           <Link
             href="#"
-            onClick={e => {
+            onClick={(e) => {
               e.preventDefault();
               item.onClick && item.onClick();
             }}
@@ -125,7 +112,6 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
     ),
     [
       handleActionMenuOpen,
-      sx.actionButton,
       sx.breadcrumbItem,
       sx.breadcrumbTypography,
       sx.lastItemTypography,
@@ -147,15 +133,11 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
           {renderBreadcrumbItem(firstItem, false)}
           {middleItems.length > 0 && (
             <Box sx={sx.breadcrumbItem}>
-              <IconButton onClick={handleMiddleMenuOpen} size="small">
+              <IconButton onClick={handleMiddleMenuOpen}>
                 <MoreHorizIcon fill={theme.palette.baselineColor.neutral[80]} />
               </IconButton>
-              <Menu
-                anchorEl={middleMenuAnchorEl}
-                open={Boolean(middleMenuAnchorEl)}
-                onClose={handleMiddleMenuClose}
-                MenuListProps={{ sx: menuStyle }}>
-                {middleItems.map(item => (
+              <Menu rect={middleRect} open={isOpenMenu} onClose={handleMiddleMenuClose}>
+                {middleItems.map((item) => (
                   <MenuItem
                     key={item.id}
                     onClick={() => {
@@ -176,8 +158,9 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
   }, [
     handleMiddleMenuClose,
     handleMiddleMenuOpen,
+    isOpenMenu,
     items,
-    middleMenuAnchorEl,
+    middleRect,
     renderBreadcrumbItem,
     sx.breadcrumbItem,
     sx.menuItem,
@@ -190,12 +173,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
     <Box sx={sx.container}>
       <Breadcrumbs separator={activeSeparator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
         <Box sx={sx.homeContainer}>
-          <Link
-            href="#"
-            onClick={handleClick}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            sx={sx.homeLink}>
+          <Link href="#" onClick={handleClick} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
             {renderHomeIcon()}
           </Link>
           <Typography onClick={onHomeClick} sx={sx.homeText}>
@@ -204,8 +182,8 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
         </Box>
         {renderBreadcrumbItems}
       </Breadcrumbs>
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleActionMenuClose} MenuListProps={menuConstant()}>
-        {currentActions.map(action => (
+      <Menu rect={rect} open={isOpenMenu} onClose={handleActionMenuClose}>
+        {currentActions.map((action) => (
           <MenuItem key={action.id} onClick={() => {}} sx={sx.menuItem}>
             <Box sx={sx.iconBox}>
               {action.icon}

@@ -1,17 +1,20 @@
 'use client';
 
-import React, { useCallback, useState, useMemo } from 'react';
-import { Tabs, Tab, Box, Menu, MenuItem, ListItemIcon, Tooltip } from '@mui/material';
+import React, { useCallback, useState, useMemo, useRef } from 'react';
+import { Tabs, Tab, Box, MenuItem, ListItemIcon } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import { PrimaryTabsProps } from './types';
-import { menuStyle, tabIndicatorProps, useStyle } from './styles';
+import { tabIndicatorProps, useStyle } from './styles';
 import IconButton from '../IconButton';
+import Menu from '../Menu';
+import Tooltip from '../Tooltip';
 
 const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, icon }) => {
   const [selectedTab, setSelectedTab] = useState(tabs[0]?.id || '');
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [isOpenMenu, setIsOpenMenu] = useState<boolean>(false);
   const { sx, styles } = useStyle();
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   const handleChange = useCallback(
     (event: React.SyntheticEvent, newValue: string) => {
@@ -19,15 +22,15 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
       setSelectedTab(newValue);
       onChange?.(newValue);
     },
-    [onChange]
+    [onChange],
   );
 
-  const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+  const handleMenuOpen = useCallback(() => {
+    setIsOpenMenu(true);
   }, []);
 
   const handleMenuClose = useCallback(() => {
-    setAnchorEl(null);
+    setIsOpenMenu(false);
   }, []);
 
   const handleMenuItemClick = useCallback(
@@ -36,7 +39,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
       onChange?.(id);
       handleMenuClose();
     },
-    [handleMenuClose, onChange]
+    [handleMenuClose, onChange],
   );
 
   const handleMouseEnter = useCallback((id: string) => {
@@ -62,11 +65,11 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
             icon={
               showIcon
                 ? React.cloneElement(tab.icon as React.ReactElement, {
-                  style: {
-                    fill: isSelected ? tab.fill : isHovered ? tab.hoverFill : tab.fill,
-                    transition: 'fill 0.3s',
-                  },
-                })
+                    style: {
+                      fill: isSelected ? tab.fill : isHovered ? tab.hoverFill : tab.fill,
+                      transition: 'fill 0.3s',
+                    },
+                  })
                 : undefined
             }
             label={tab.showInTab !== 'icon' ? tab.label : undefined}
@@ -81,7 +84,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
           />
         );
       }),
-    [tabs, selectedTab, hoveredTab, handleMouseLeave, sx.tab, handleMouseEnter, handleChange]
+    [tabs, selectedTab, hoveredTab, handleMouseLeave, sx.tab, handleMouseEnter, handleChange],
   );
 
   return (
@@ -94,23 +97,14 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
           variant="scrollable"
           TabIndicatorProps={tabIndicatorProps}
           aria-label="primary tabs"
-          sx={sx.tabs}
-        >
+          sx={sx.tabs}>
           {buildTabs}
         </Tabs>
       </Box>
-      <IconButton onClick={handleMenuOpen} sx={styles.iconButtonMore}>
+      <IconButton onClick={handleMenuOpen} ref={buttonRef}>
         {icon}
       </IconButton>
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-        slotProps={{
-          paper: { sx: sx.menu },
-        }}
-        MenuListProps={{ sx: menuStyle }}
-      >
+      <Menu anchorRef={buttonRef} open={isOpenMenu} onClose={handleMenuClose}>
         {tabs.map(tab => {
           const isSelected = selectedTab === tab.id;
           return (
@@ -120,14 +114,13 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
               sx={() => ({
                 ...sx.menuItem,
                 ...(isSelected ? sx.selectedMenuItem : {}),
-              })}
-            >
+              })}>
               <Box sx={sx.iconBox}>
                 {tab.icon &&
                   React.cloneElement(tab.icon as React.ReactElement, {
                     style: { fill: tab.fill, flexShrink: 0 },
                   })}
-                <Tooltip PopperProps={{ disablePortal: true }} title={tab.label} enterDelay={500} leaveDelay={100}>
+                <Tooltip title={tab.label}>
                   <span>{tab.label}</span>
                 </Tooltip>
               </Box>
@@ -136,8 +129,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
                   sx={{
                     visibility: isSelected ? 'visible' : 'hidden',
                     flexShrink: 0,
-                  }}
-                >
+                  }}>
                   <CheckIcon sx={{ color: tab.fill }} />
                 </ListItemIcon>
               )}

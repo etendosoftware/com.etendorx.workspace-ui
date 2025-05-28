@@ -1,24 +1,15 @@
-import { useState } from 'react';
-import { Menu, MenuItem, TextField, PopoverOrigin } from '@mui/material';
+import { RefObject, useState } from 'react';
+import { MenuItem, TextField } from '@mui/material';
+import Menu from '../../Menu';
 
 interface ExpandMenuProps {
-  anchorEl: null | HTMLElement;
+  anchorRef: RefObject<HTMLElement> | null;
   onClose: () => void;
   open: boolean;
   placeholderTranslation: string;
 }
 
-const bottomRightOrigin: PopoverOrigin = {
-  vertical: 'bottom',
-  horizontal: 'right',
-};
-
-const transformOrigin: PopoverOrigin = {
-  vertical: 'top',
-  horizontal: 'left',
-};
-
-const ExpandMenu = ({ anchorEl, onClose, open, placeholderTranslation }: ExpandMenuProps) => {
+const ExpandMenu = ({ anchorRef, onClose, open, placeholderTranslation }: ExpandMenuProps) => {
   const [inputValue, setInputValue] = useState('');
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,12 +17,7 @@ const ExpandMenu = ({ anchorEl, onClose, open, placeholderTranslation }: ExpandM
   };
 
   return (
-    <Menu
-      anchorEl={anchorEl}
-      open={open}
-      onClose={onClose}
-      anchorOrigin={bottomRightOrigin}
-      transformOrigin={transformOrigin}>
+    <Menu anchorRef={anchorRef} open={open} onClose={onClose}>
       <MenuItem>
         <TextField
           value={inputValue}

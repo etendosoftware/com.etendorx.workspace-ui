@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 export default function Modal({
@@ -10,6 +10,18 @@ export default function Modal({
   open: boolean;
   onClose: () => unknown;
 }) {
+  const [visible, setVisible] = useState(open);
+
+  useEffect(() => {
+    if (open) {
+      setVisible(true);
+
+      return () => {
+        setTimeout(() => setVisible(false), 300);
+      };
+    }
+  }, [open]);
+
   useEffect(() => {
     if (open) {
       const handler = (e: KeyboardEvent) => {
@@ -24,13 +36,13 @@ export default function Modal({
         document.removeEventListener('keydown', handler);
       };
     }
-  }, [children, open, onClose]);
+  }, [onClose, open]);
 
   return createPortal(
-    <div className="absolute inset-0 z-[1000] pointer-events-none overflow-hidden">
+    <div className="fixed inset-0 z-[1000] pointer-events-none overflow-hidden">
       <div
-        className={`w-full h-full transition delay-[50ms] duration-[150ms] ease-in-out ${open ? 'opacity-100 pointer-events-auto scale-100' : 'opacity-0 pointer-events-none scale-150'}`}>
-        {children}
+        className={`w-full h-full transition-all transform-gpu duration-200 ${open ? 'opacity-100 pointer-events-auto scale-y-100 scale-x-100 ease-out' : 'opacity-0 pointer-events-none scale-x-200 scale-y-150 ease-in'}`}>
+        {visible ? children : null}
       </div>
     </div>,
     document.body,

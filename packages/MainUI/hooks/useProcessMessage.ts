@@ -2,6 +2,7 @@ import { useCallback, useContext } from 'react';
 import { logger } from '@/utils/logger';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ApiContext } from '@/contexts/api';
+import { useUserContext } from './useUserContext';
 
 export interface ProcessMessage {
   message: string;
@@ -11,8 +12,9 @@ export interface ProcessMessage {
 
 const urlMessageParam = '/meta/message';
 
-export function useProcessMessage() {
+export function useProcessMessage(tabId: string) {
   const apiUrl = useContext(ApiContext);
+  const { token } = useUserContext();
   const { t } = useTranslation();
 
   const normalizeMessageType = useCallback(
@@ -91,22 +93,23 @@ export function useProcessMessage() {
   const fetchProcessMessage = useCallback(
     async (signal?: AbortSignal): Promise<ProcessMessage | null> => {
       if (!apiUrl) {
-        logger.error(apiUrl, 'API-URL Error');
+        logger.warn(apiUrl, 'API-URL Error');
         return null;
       }
 
       try {
-        const response = await fetch(`${apiUrl}${urlMessageParam}`, {
+        const response = await fetch(`${apiUrl}${urlMessageParam}?tabId=${tabId}`, {
           method: 'POST',
           credentials: 'include',
           headers: {
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           signal,
         });
 
         if (!response.ok) {
-          logger.error(response.status);
+          logger.warn(response.status);
           return null;
         }
 
@@ -117,7 +120,7 @@ export function useProcessMessage() {
         return handleFetchError(error);
       }
     },
-    [apiUrl, processResponseData, handleFetchError],
+    [apiUrl, tabId, token, processResponseData, handleFetchError],
   );
 
   return { fetchProcessMessage };

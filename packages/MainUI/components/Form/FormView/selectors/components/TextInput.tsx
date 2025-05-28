@@ -1,3 +1,4 @@
+import { ChangeEvent } from 'react';
 import { TextInputProps } from './types';
 
 export const TextInput = ({
@@ -16,7 +17,7 @@ export const TextInput = ({
 }: TextInputProps) => {
   const isDisabled = disabled || readOnly;
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (setValue) {
       setValue(event.target.value);
     }

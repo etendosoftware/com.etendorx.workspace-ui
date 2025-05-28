@@ -1,116 +1,191 @@
-import { theme } from '@workspaceui/componentlibrary/src/theme';
 import React from 'react';
-import { BUTTON_IDS, StandardButtonId } from '../../constants/Toolbar';
-import { StandardButton, StandardButtonConfig, IconSize } from './types';
-import { iconMap } from './iconMap';
-import { Theme } from '@emotion/react';
-import { SxProps } from '@mui/material';
+import { ToolbarButton, IconSize } from './types';
+import { TranslateFunction } from '@/hooks/types';
+import Base64Icon from './Base64Icon';
+import { ToolbarButtonMetadata, OrganizedSections } from '@/hooks/Toolbar/types';
 
-export const createStandardButtonConfig = (
-  btn: StandardButton,
-  handleAction: (action: string) => void,
-): StandardButtonConfig => {
-  const getIconFill = (buttonId: StandardButtonId): string => {
-    const specialButtons = [
-      BUTTON_IDS.GRID_VIEW,
-      BUTTON_IDS.FIND,
-      BUTTON_IDS.DELETE,
-      BUTTON_IDS.EXPORT,
-      BUTTON_IDS.ATTACHMENTS,
-    ] as const;
-    return specialButtons.includes(buttonId as (typeof specialButtons)[number])
-      ? theme.palette.baselineColor.neutral[100]
-      : theme.palette.baselineColor.neutral[0];
-  };
+export const DefaultIcon = () => <span style={{ fontSize: '1rem' }}>✣</span>;
 
-  const getButtonText = (buttonId: StandardButtonId): string | undefined => {
-    const textConfig: Partial<Record<StandardButtonId, boolean>> = {
-      [BUTTON_IDS.NEW]: true,
-    };
+const isBase64Image = (str: string): boolean => {
+  try {
+    const base64Regex = /^[A-Za-z0-9+/]+=*$/;
+    const isValidLength = str.length > 20 && str.length % 4 === 0;
+    const isValidFormat = base64Regex.test(str);
+    return isValidLength && isValidFormat;
+  } catch {
+    return false;
+  }
+};
 
-    return textConfig[buttonId] ? btn.name : undefined;
-  };
+export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }) => {
+  if (!iconKey) return <DefaultIcon />;
 
-  const config: StandardButtonConfig = {
-    key: btn.id,
-    icon: React.createElement(iconMap[btn.icon]),
-    tooltip: btn.name,
-    onClick: () => handleAction(btn.action),
-    disabled: !btn.enabled,
-    height: IconSize,
-    width: IconSize,
-    fill: getIconFill(btn.id as StandardButtonId),
-  };
-
-  const iconText = getButtonText(btn.id as StandardButtonId);
-  if (iconText) {
-    config.iconText = iconText;
+  if (iconKey.startsWith('data:image/')) {
+    return <Base64Icon src={iconKey} />;
   }
 
-  return config;
+  if (isBase64Image(iconKey)) {
+    return <Base64Icon src={`data:image/png;base64,${iconKey}`} />;
+  }
+
+  return <span style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>{iconKey}</span>;
 };
 
-export const createTabControlButtonConfig = (
-  isRecordSelected: boolean,
-  handleAction: (action: string) => void,
-): StandardButtonConfig => {
+export const ProcessMenuIcon = () => {
+  return <span style={{ fontSize: '1rem' }}>⚙️</span>;
+};
+
+const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMetadata[] => {
+  return [...buttons].sort((a, b) => {
+    const seqnoA = a.seqno ?? Number.MAX_SAFE_INTEGER;
+    const seqnoB = b.seqno ?? Number.MAX_SAFE_INTEGER;
+
+    if (seqnoA !== seqnoB) {
+      return seqnoA - seqnoB;
+    }
+
+    return a.name.localeCompare(b.name);
+  });
+};
+
+export const organizeButtonsBySection = (buttons: ToolbarButtonMetadata[], isFormView: boolean): OrganizedSections => {
+  const sections: OrganizedSections = { left: [], center: [], right: [] };
+
+  const visibleButtons = buttons.filter((button) => {
+    if (!button.active) return false;
+    if (isFormView && button.action === 'FIND') return false;
+    return true;
+  });
+
+  visibleButtons.forEach((button) => {
+    if (button.section && sections[button.section]) {
+      sections[button.section].push(button);
+    }
+  });
+
   return {
-    key: BUTTON_IDS.TAB_CONTROL,
-    action: BUTTON_IDS.TAB_CONTROL,
-    icon: React.createElement(iconMap.tabControl),
-    tooltip: 'Tab Control',
-    onClick: () => handleAction(BUTTON_IDS.TAB_CONTROL),
-    disabled: !isRecordSelected,
+    left: sortButtonsBySeqno(sections.left),
+    center: sortButtonsBySeqno(sections.center),
+    right: sortButtonsBySeqno(sections.right),
+  };
+};
+
+export const createButtonByType = (
+  button: ToolbarButtonMetadata,
+  onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void,
+  isFormView: boolean,
+  hasSelectedRecord: boolean,
+): ToolbarButton => {
+  const buttonKey = button.id || `${button.action}-${button.name}`;
+
+  const baseConfig: ToolbarButton = {
+    key: buttonKey,
+    icon: <IconComponent iconKey={button.icon} />,
+    tooltip: button.name,
+    disabled: !button.active,
     height: IconSize,
     width: IconSize,
-    fill: theme.palette.baselineColor.neutral[100],
-    sx: {
-      opacity: isRecordSelected ? 1 : 0.5,
-      cursor: isRecordSelected ? 'pointer' : 'not-allowed',
-    },
+    onClick: () => onAction(button.action, button),
+  };
+
+  const getIconTextConfig = (): Partial<ToolbarButton> => {
+    const showIconTextFor = ['NEW'];
+
+    if (showIconTextFor.includes(button.action)) {
+      return { iconText: button.name };
+    }
+
+    if (button.buttonType === 'DROPDOWN') {
+      return { iconText: `${button.name} ▼` };
+    }
+
+    if (button.buttonType === 'MODAL' && button.modalConfig?.title) {
+      return { iconText: button.modalConfig.title };
+    }
+
+    return {};
+  };
+
+  const getDisableConfig = (): Partial<ToolbarButton> => {
+    switch (button.action) {
+      case 'CANCEL':
+        return { disabled: !(isFormView || hasSelectedRecord) };
+      case 'DELETE':
+        return { disabled: !hasSelectedRecord };
+      default:
+        return { disabled: !button.active };
+    }
+  };
+
+  const getClickConfig = (): Partial<ToolbarButton> => {
+    switch (button.buttonType) {
+      case 'DROPDOWN':
+        return {
+          onClick: (event?: React.MouseEvent<HTMLElement>) => {
+            onAction('OPEN_DROPDOWN', button, event);
+          },
+        };
+      case 'MODAL':
+        return {
+          onClick: () => onAction('OPEN_MODAL', button),
+        };
+      case 'TOGGLE':
+        return {
+          onClick: () => onAction('TOGGLE', button),
+        };
+      case 'CUSTOM':
+        return {
+          onClick: (event?: React.MouseEvent<HTMLElement>) => {
+            onAction('CUSTOM_ACTION', button, event);
+          },
+        };
+      default:
+        return {
+          onClick: () => onAction(button.action, button),
+        };
+    }
+  };
+
+  return {
+    ...baseConfig,
+    ...getIconTextConfig(),
+    ...getDisableConfig(),
+    ...getClickConfig(),
   };
 };
 
-export const getStandardButtonStyle = (btnId: StandardButtonId) => {
-  const styles: Record<StandardButtonId, React.CSSProperties | SxProps<Theme> | undefined> = {
-    [BUTTON_IDS.NEW]: {
-      padding: '0.75rem',
-      maxHeight: '2rem',
-      background: theme.palette.baselineColor.neutral[100],
-      borderRadius: '6.25rem 0 0 6.25rem',
-      color: theme.palette.baselineColor.neutral[0],
-      '&:hover': {
-        background: theme.palette.dynamicColor.main,
-      },
-    },
-    [BUTTON_IDS.SAVE]: {
-      background: theme.palette.baselineColor.neutral[100],
-      marginLeft: '0.2rem',
-      border: `1px solid ${theme.palette.baselineColor.transparentNeutral[30]}`,
-    },
-    [BUTTON_IDS.REFRESH]: {
-      padding: '0.75rem',
-      maxHeight: '2rem',
-      background: theme.palette.baselineColor.neutral[100],
-      borderRadius: '0 6.25rem 6.25rem 0',
-      color: theme.palette.baselineColor.neutral[0],
-      '&:hover': {
-        background: theme.palette.dynamicColor.main,
-      },
-    },
-    [BUTTON_IDS.DELETE]: undefined,
-    [BUTTON_IDS.EXPORT]: undefined,
-    [BUTTON_IDS.ATTACHMENTS]: undefined,
-    [BUTTON_IDS.FIND]: undefined,
-    [BUTTON_IDS.GRID_VIEW]: undefined,
-    [BUTTON_IDS.TAB_CONTROL]: {
-      color: theme.palette.baselineColor.neutral[100],
-      background: theme.palette.baselineColor.neutral[0],
-      '&:hover': {
-        background: theme.palette.dynamicColor.main,
-      },
-    },
-  };
+const BUTTON_STYLES = {
+  NEW: 'toolbar-button-new bg-(--color-baseline-100) text-(--color-baseline-0) rounded-l-full h-8 px-3',
+  SAVE: 'toolbar-button-save bg-(--color-baseline-100) text-(--color-baseline-0) h-8.5 w-8.5 ml-1',
+  REFRESH:
+    'toolbar-button-refresh bg-(--color-baseline-100) text-(--color-baseline-0) rounded-r-full border-l-1 border-l-[color:var(--color-baseline-0)] w-10',
+  CANCEL: 'toolbar-button-cancel',
+  DELETE: 'toolbar-button-delete',
+  FIND: 'toolbar-button-find',
+  FILTER: 'toolbar-button-filter',
+} as const;
 
-  return styles[btnId];
+export const getButtonStyles = (button: ToolbarButtonMetadata) => {
+  return BUTTON_STYLES[button.action as keyof typeof BUTTON_STYLES];
 };
+
+export const createProcessMenuButton = (
+  processCount: number,
+  hasSelectedRecord: boolean,
+  onMenuOpen: (event: React.MouseEvent<HTMLElement>) => void,
+  t: TranslateFunction,
+  buttonRef: React.LegacyRef<HTMLButtonElement>,
+): ToolbarButton => ({
+  key: 'process-menu',
+  icon: <ProcessMenuIcon />,
+  iconText: t('common.processes'),
+  tooltip: t('common.processes'),
+  ref: buttonRef,
+  disabled: !hasSelectedRecord,
+  className: `bg-(--color-warning-main) disabled:bg-(--color-warning-light) h-8 [&>svg]:w-4 [&>svg]:h-4`,
+  onClick: (event?: React.MouseEvent<HTMLElement>) => {
+    if (hasSelectedRecord && event && processCount > 0) {
+      onMenuOpen(event);
+    }
+  },
+});

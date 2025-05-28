@@ -1,6 +1,6 @@
-import { ToolbarButton } from '@workspaceui/storybook/src/stories/Components/Table/types';
-import { Theme } from '@mui/material';
-import { BaseButton, ProcessButton } from '../ProcessModal/types';
+import { SxProps, Theme } from '@mui/material';
+import { ProcessButton } from '../ProcessModal/types';
+import { RefObject } from 'react';
 
 export const IconSize = 16;
 
@@ -21,32 +21,11 @@ export interface SearchPortalProps {
   theme?: Theme;
 }
 
-export type IconName =
-  | 'plus'
-  | 'save'
-  | 'trash'
-  | 'refresh-cw'
-  | 'search'
-  | 'grid'
-  | 'download'
-  | 'paperclip'
-  | 'process';
-
-export interface ToolbarResponseButton extends ToolbarButton {
-  icon: IconName;
-  key: string;
-  onClick: () => void;
-  name: string;
-  id: string;
-}
-
 export interface ToolbarProps {
   windowId: string;
   tabId?: string;
   onSearch?: (value: string) => void;
   isFormView?: boolean;
-  onSave?: () => void;
-  onRefresh?: () => void;
 }
 
 export interface ProcessResponse {
@@ -56,6 +35,7 @@ export interface ProcessResponse {
   redirected?: boolean;
   frameUrl?: string;
   redirectUrl?: string;
+  showInIframe?: boolean;
   showDeprecatedFeatureModal?: boolean;
   responseActions?: Array<{
     showMsgInProcessView?: {
@@ -73,57 +53,48 @@ export interface ProcessButtonProps {
   disabled?: boolean;
 }
 
-export interface StandardButton extends BaseButton {
-  icon: IconName;
-  iconText?: string;
-  fill?: string;
-  height?: number;
-  width?: number;
-}
-
-export interface ProcessMenuButtonConfig extends Omit<StandardButtonConfig, 'onClick'> {
-  onClick: (event: React.MouseEvent<HTMLElement>) => void;
-}
-
-export type Button = StandardButton | ProcessButton;
-
-export const isProcessButton = (button: Button): button is ProcessButton => {
-  return button.action === 'PROCESS';
-};
-
-export interface StandardButtonConfig extends ToolbarButton {
-  icon: React.ReactNode;
-  iconText?: string;
-  fill?: string;
-  height?: number;
-  width?: number;
-  action?: string;
-  name?: string;
-  enabled?: boolean;
-}
-
-export interface ProcessButtonConfig extends ToolbarButton {
-  icon: React.ReactNode;
-  iconText?: string;
-  height?: number;
-  width?: number;
-  onProcess?: () => Promise<void>;
-  additionalContent: () => React.ReactElement | null;
-}
-
-export type ButtonConfig = StandardButtonConfig | ProcessButtonConfig;
-
-export interface ToolbarSection {
-  buttons: ButtonConfig[];
-  style?: React.CSSProperties;
-}
-
 export interface ProcessMenuProps {
-  anchorEl: HTMLElement | null;
+  anchorRef: RefObject<HTMLElement> | null;
   open: boolean;
   onClose: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  processButtons: any;
+  processButtons: ProcessButton[];
   onProcessClick: (button: ProcessButton) => void;
   selectedRecord: unknown | undefined;
+}
+
+// Adaptador para convertir ToolbarButtonMetadata a ToolbarButton para TopToolbar
+export interface ToolbarButton {
+  key: string;
+  icon: React.ReactNode;
+  iconText?: string;
+  tooltip?: string;
+  onClick: ((event?: React.MouseEvent<HTMLElement>) => void) | (() => void);
+  disabled?: boolean;
+  fill?: string;
+  hoverFill?: string;
+  height?: number;
+  width?: number;
+  sx?: SxProps<Theme>;
+  className?: string;
+  ref?: React.LegacyRef<HTMLButtonElement>;
+}
+
+export interface ToolbarSectionConfig {
+  buttons: ToolbarButton[];
+  style?: React.CSSProperties;
+  toggleExpand?: (event?: React.MouseEvent<HTMLElement>) => void;
+  className?: string;
+}
+
+export interface TopToolbarProps {
+  leftSection: ToolbarSectionConfig;
+  centerSection: ToolbarSectionConfig;
+  rightSection: ToolbarSectionConfig;
+}
+
+export interface Base64IconProps {
+  src: string;
+  alt?: string;
+  className?: string;
+  size?: number;
 }

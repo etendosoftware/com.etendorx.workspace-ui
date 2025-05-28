@@ -16,8 +16,10 @@ const en = {
     clear: 'Clear Selection',
     processTitle: 'Title of the process',
     notImplemented: 'This feature is not implemented yet',
+    loadMore: 'Load More',
     trueText: 'Yes',
     falseText: 'No',
+    noDataAvailable: 'No data available',
   },
   forms: {
     sections: {
@@ -39,9 +41,13 @@ const en = {
     noRecords: 'Please create a new record',
   },
   errors: {
+    tableError: {
+      title: 'Error',
+      description: 'Something went wrong',
+    },
     networkError: {
       title: 'Could not connect to Etendo',
-      description: 'Looks like there is a network issue or rver is down',
+      description: 'Looks like there is a network issue or server is down',
     },
     notFound: {
       title: 'Not found',
@@ -112,6 +118,7 @@ const en = {
   navigation: {
     common: {
       home: 'Home',
+      back: 'Back',
     },
     waterfall: {
       activateAll: 'Activate all',
@@ -147,6 +154,7 @@ const en = {
     confirmationMessage: 'Want to execute this process?',
     messageTitle: 'Process',
     completedSuccessfully: 'Process completed successfuly',
+    processError: 'Error while loading process data',
   },
   drawer: {
     recentlyViewed: 'Recently Viewed',

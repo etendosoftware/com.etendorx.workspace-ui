@@ -4,18 +4,21 @@ import { createContext, useCallback, useContext, useMemo, useEffect, useState } 
 import { LanguageContextType, Language } from './types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { getLanguageFlag } from '../utils/languageFlags';
-import { DEFAULT_LANGUAGE } from '@workspaceui/componentlibrary/src/locales';
 import useLocalStorage from '@workspaceui/componentlibrary/src/hooks/useLocalStorage';
+import { usePrevious } from '@/hooks/usePrevious';
+import { useRouter } from 'next/navigation';
 import { Labels } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const LanguageContext = createContext({} as LanguageContextType);
 
 export default function LanguageProvider({ children }: React.PropsWithChildren) {
-  const [language, setLanguage] = useLocalStorage('language', DEFAULT_LANGUAGE);
+  const [language, setLanguage] = useLocalStorage<Language | null>('language', null);
   const [labels, setLabels] = useState<Labels>({});
+  const prevLanguage = usePrevious(language);
+  const router = useRouter();
 
   const getFlag = useCallback(
-    (lang?: Language) => {
+    (lang?: Language | null) => {
       return getLanguageFlag(lang || language);
     },
     [language],
@@ -29,9 +32,10 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
       setLanguage,
       setLabels,
       getFlag,
+      prevLanguage,
       getLabel,
     }),
-    [language, setLanguage, setLabels, getFlag, getLabel],
+    [language, setLanguage, getFlag, prevLanguage, getLabel],
   );
 
   useEffect(() => {
@@ -39,6 +43,12 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
       Metadata.setLanguage(language);
     }
   }, [language]);
+
+  useEffect(() => {
+    if (prevLanguage && language != prevLanguage) {
+      router.push('/');
+    }
+  }, [language, prevLanguage, router]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

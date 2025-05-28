@@ -2,9 +2,10 @@ import { useCallback, useState } from 'react';
 import { type Field, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
 import { useFormContext } from 'react-hook-form';
-import { useParams } from 'next/navigation';
 import { useTabContext } from '@/contexts/tab';
-import useFormParent, { ParentFieldName } from '../useFormParent';
+import useFormParent from '../useFormParent';
+import { FieldName } from '../types';
+import { logger } from '@/utils/logger';
 
 export interface UseTableDirDatasourceParams {
   field: Field;
@@ -14,19 +15,20 @@ export interface UseTableDirDatasourceParams {
 }
 
 export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 20 }: UseTableDirDatasourceParams) => {
-  const { windowId } = useParams<{ windowId: string }>();
   const { getValues, watch } = useFormContext();
   const { tab } = useTabContext();
+  const windowId = tab.window;
   const [records, setRecords] = useState<Record<string, string>[]>([]);
   const [loading, setLoading] = useState(false);
-  const parentData = useFormParent(ParentFieldName.INPUT_NAME);
+  const parentData = useFormParent(FieldName.INPUT_NAME);
   const [error, setError] = useState<Error>();
   const [currentPage, setCurrentPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const value = watch(field.hqlName);
 
   const fetch = useCallback(
-    async (_currentValue: typeof value, reset = false) => {
+    async (_currentValue: typeof value, reset = false, search = '') => {
       try {
         if (!field || !tab) {
           return;
@@ -51,15 +53,53 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           windowId,
           tabId: field.tab,
           inpTabId: field.tab,
-          inpwindowId: tab.windowId,
+          inpwindowId: windowId,
           inpTableId: field.column.table,
           initiatorField: field.hqlName,
+          _constructor: 'AdvancedCriteria',
+          _OrExpression: 'true',
+          _textMatchStyle: 'substring',
           ...(typeof _currentValue !== 'undefined' ? { _currentValue } : {}),
           ...parentData,
         });
 
+        if (search) {
+          const dummyId = new Date().getTime();
+
+          body.append(
+            'criteria',
+            JSON.stringify({
+              fieldName: '_dummy',
+              operator: 'equals',
+              value: dummyId,
+            }),
+          );
+
+          const searchFields = [];
+          if (field.selector?.displayField) {
+            searchFields.push(field.selector.displayField);
+          }
+          if (field.selector?.extraSearchFields) {
+            searchFields.push(...field.selector.extraSearchFields.split(',').map(f => f.trim()));
+          }
+          if (searchFields.length === 0) {
+            searchFields.push('name', 'value', 'description');
+          }
+          searchFields.forEach(fieldName => {
+            body.append(
+              'criteria',
+              JSON.stringify({
+                fieldName,
+                operator: 'iContains',
+                value: search,
+              }),
+            );
+          });
+        }
+
         Object.entries(getValues()).forEach(([key, value]) => {
-          const _key = tab.fields[key]?.inputName || key;
+          const currentField = tab.fields[key];
+          const _key = currentField?.inputName || key;
           const stringValue = String(value);
 
           const valueMap = {
@@ -72,12 +112,11 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
             ? valueMap[stringValue as keyof typeof valueMap]
             : value;
 
-          if (safeValue) {
-            body.set(_key, safeValue);
-          }
+          body.set(_key, safeValue);
+          
         });
 
-        const { data, statusText } = await datasource.client.request(field.selector?.datasourceName ?? '', {
+        const { data } = await datasource.client.request(field.selector?.datasourceName ?? '', {
           method: 'POST',
           body,
         });
@@ -87,15 +126,33 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
             setHasMore(false);
           }
 
-          setRecords(prevRecords => (reset ? data.response.data : [...prevRecords, ...data.response.data]));
+          if (reset) {
+            setRecords(data.response.data);
+          } else {
+            const recordMap = new Map();
+
+            records.forEach(record => {
+              const recordId = record.id || JSON.stringify(record);
+              recordMap.set(recordId, record);
+            });
+
+            data.response.data.forEach((record: { id: string }) => {
+              const recordId = record.id || JSON.stringify(record);
+              recordMap.set(recordId, record);
+            });
+
+            setRecords(Array.from(recordMap.values()));
+          }
 
           if (!reset) {
             setCurrentPage(prev => prev + 1);
           }
         } else {
-          throw new Error(statusText);
+          throw new Error(data);
         }
       } catch (err) {
+        logger.warn(err);
+
         if (reset) {
           setRecords([]);
         }
@@ -105,20 +162,28 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         setLoading(false);
       }
     },
-    [currentPage, field, getValues, initialPageSize, pageSize, parentData, tab, windowId],
+    [field, tab, currentPage, pageSize, initialPageSize, windowId, parentData, getValues, records],
+  );
+
+  const search = useCallback(
+    (term: string) => {
+      setSearchTerm(term);
+      fetch(value, true, term);
+    },
+    [fetch, value],
   );
 
   const loadMore = useCallback(() => {
     if (!loading && hasMore) {
-      fetch(value);
+      fetch(value, false, searchTerm);
     }
-  }, [fetch, loading, hasMore, value]);
+  }, [fetch, loading, hasMore, value, searchTerm]);
 
   const refetch = useCallback(
     (reset = true) => {
-      fetch(value, reset);
+      fetch(value, reset, searchTerm);
     },
-    [fetch, value],
+    [fetch, value, searchTerm],
   );
 
   return {
@@ -128,5 +193,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
     refetch,
     loadMore,
     hasMore,
+    search,
+    searchTerm,
   };
 };

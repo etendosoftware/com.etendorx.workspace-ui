@@ -1,10 +1,11 @@
-import { Grid, Link, Menu, useTheme } from '@mui/material';
+import { Grid, Link, useTheme } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import { BORDER_SELECT_1, BORDER_SELECT_2, COLUMN_SPACING, FIRST_MARGIN_TOP, menuSyle, useStyle } from './style';
+import { BORDER_SELECT_1, BORDER_SELECT_2, COLUMN_SPACING, FIRST_MARGIN_TOP, useStyle } from './style';
 import { IConfigurationModalProps, ISection } from './types';
 import checkIconUrl from '../../assets/icons/check-circle-filled.svg?url';
 import './style.css';
 import IconButton from '../IconButton';
+import Menu from '../Menu';
 
 const IconRenderer = ({ icon }: { icon: string | React.ReactNode }): JSX.Element => {
   if (typeof icon === 'string') {
@@ -22,12 +23,13 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
   title,
   linkTitle,
   sections = [],
-  open,
   onChangeSelect,
   ...props
 }) => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [sectionsState, setSectionsState] = useState<ISection[]>(sections);
+  const [isOpenMenu, setIsOpenMenu] = useState<boolean>(false);
+  const [rect, setRect] = useState<DOMRect | null>(null);
+
   const [hoveredItem, setHoveredItem] = useState<{
     sectionIndex: number;
     imageIndex: number;
@@ -40,22 +42,17 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
   }, [sections]);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
+    const newRect = event.currentTarget.getBoundingClientRect();
+    setRect(newRect);
+    setIsOpenMenu((prev) => !prev);
   };
 
   const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleOpen = (): boolean => {
-    if (open !== undefined) {
-      return open;
-    }
-    return Boolean(anchorEl);
+    setIsOpenMenu(false);
   };
 
   const handleImageClick = (sectionIndex: number, imageIndex: number) => {
-    setSectionsState(prevSections => {
+    setSectionsState((prevSections) => {
       const newSections = [...prevSections];
       newSections[sectionIndex] = {
         ...newSections[sectionIndex],
@@ -102,23 +99,10 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
 
   return (
     <>
-      <IconButton
-        onClick={handleClick}
-        style={styles.iconButtonStyles}
-        sx={sx.hoverStyles}
-        tooltip={tooltipButtonProfile}
-        disabled={true}>
+      <IconButton onClick={handleClick} tooltip={tooltipButtonProfile} disabled={true} className="w-10 h-10">
         {icon}
       </IconButton>
-      <Menu
-        {...props}
-        anchorEl={anchorEl}
-        open={handleOpen()}
-        onClose={handleClose}
-        slotProps={{
-          paper: { sx: styles.paperStyleMenu },
-        }}
-        MenuListProps={{ sx: menuSyle }}>
+      <Menu {...props} rect={rect} open={isOpenMenu} onClose={handleClose}>
         <div style={styles.titleModalContainer}>
           <div style={styles.titleModalImageContainer}>
             {title?.icon && (

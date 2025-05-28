@@ -54,7 +54,11 @@ export class Metadata {
   }
 
   private static async _getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
-    const { data } = await this.client.post(`window/${windowId}`);
+    const { data, ok } = await this.client.post(`window/${windowId}`);
+
+    if (!ok) {
+      throw new Error('Window not found');
+    }
 
     this.cache.set(`window-${windowId}`, data);
     data.tabs.forEach((tab: Record<string, string>) => {
@@ -74,7 +78,7 @@ export class Metadata {
     }
   }
 
-  private static async _getTab(tabId?: Etendo.Tab["id"]): Promise<Etendo.Tab> {
+  private static async _getTab(tabId?: Etendo.Tab['id']): Promise<Etendo.Tab> {
     const { data } = await this.client.post(`tab/${tabId}`);
 
     this.cache.set(`tab-${tabId}`, data);
@@ -82,7 +86,7 @@ export class Metadata {
     return data;
   }
 
-  public static async getTab(tabId: Etendo.Tab["id"]): Promise<Etendo.Tab> {
+  public static async getTab(tabId: Etendo.Tab['id']): Promise<Etendo.Tab> {
     const cached = this.cache.get<Etendo.Tab>(`tab-${tabId}`);
 
     if (cached) {

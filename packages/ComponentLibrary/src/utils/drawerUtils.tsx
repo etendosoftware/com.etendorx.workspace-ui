@@ -1,4 +1,4 @@
-import { Menu } from '../../../EtendoHookBinder/src/api/types';
+import { Menu } from "@workspaceui/etendohookbinder/src/api/types";
 
 export const findActive = (windowId: string | undefined, items: Menu[] | undefined = []): boolean => {
   if (!items || !windowId) return false;

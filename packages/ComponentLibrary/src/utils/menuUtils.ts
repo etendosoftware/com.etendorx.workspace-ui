@@ -52,7 +52,7 @@ export const createMenuItem = (id: string, name: string, entityName: string): Me
 });
 
 export const createRecentMenuItem = (item: RecentItem): Menu => ({
-  ...createMenuItem(`recent-${item.id}`, item.name, item.type),
+  ...createMenuItem(item.id, item.name, item.type),
   windowId: item.type === 'Window' ? item.windowId : item.id,
   action: getActionByType(item.type),
   type: item.type,

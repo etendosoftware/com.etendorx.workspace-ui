@@ -5,7 +5,7 @@ import TextInputBaseMUI from './Input/TextInput/TextInputBase';
 import InputPasswordMUI from './Input/TextInput/TextInputBase/InputPassword';
 import ToggleChipMUI from './Toggle/ToggleChip';
 import Nav from './Nav/Nav';
-import ProfileModal from './ProfileModal/ProfileModal';
+import ProfileModal from '@workspaceui/mainui/components/ProfileModal/ProfileModal';
 import WaterfallModal from './Waterfall/WaterfallModal';
 import ConfigurationModalCustom from './ConfigurationModal';
 import NotificationBase from './NotificationsButton';
@@ -14,7 +14,7 @@ import TagMUI from './Tag';
 import SecondaryTabsMUI from './SecondaryTabs';
 import NotificationItemStates from './NotificationItemAllStates';
 import DrawerMUI from './Drawer';
-import IButton from './IconButton';
+import IconButtonCustom from './IconButton';
 
 const Modal = ModalCustom;
 const TextInput = TextInputMUI;
@@ -32,7 +32,7 @@ const Tag = TagMUI;
 const SecondaryTabs = SecondaryTabsMUI;
 const NotificationStates = NotificationItemStates;
 const Drawer = DrawerMUI;
-const IconButton = IButton;
+const IconButton = IconButtonCustom;
 
 export {
   Modal,

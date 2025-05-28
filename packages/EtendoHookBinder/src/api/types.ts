@@ -54,6 +54,11 @@ export interface DatasourceOptions {
   language?: string;
 }
 
+export interface ProcessAction extends Record<string, unknown> {
+  id: string;
+  name: string;
+}
+
 export interface GridProps {
   sort: number;
   autoExpand: boolean;
@@ -115,6 +120,8 @@ export interface Field {
   isUpdatable: boolean;
   description: string;
   helpComment: string;
+  processDefinition?: ProcessDefinition;
+  processAction?: ProcessAction;
 }
 
 export interface Option<T extends string = string> {
@@ -161,6 +168,7 @@ export enum FieldType {
   QUANTITY = 'quantity',
   LIST = 'list',
   BUTTON = 'button',
+  WINDOW = 'window',
 }
 
 export interface MappedTab {
@@ -202,7 +210,7 @@ export interface WindowMetadataProperties {
 
 export interface Tab {
   uIPattern: 'STD' | 'SR';
-  windowId: string;
+  window: string;
   name: string;
   title: string;
   parentColumns: string[];
@@ -210,7 +218,7 @@ export interface Tab {
   table: string;
   entityName: string;
   fields: Record<string, Field>;
-  level: number;
+  tabLevel: number;
   _identifier: string;
   records: Record<string, never>;
   hqlfilterclause: string;
@@ -316,6 +324,7 @@ export type RoleList = {
   id: string;
   name: string;
   organizations: Organization[];
+  client: string;
 }[];
 
 export interface Organization {
@@ -641,7 +650,7 @@ export type FieldDefinition =
   | BaseFieldDefinition<SelectOption>;
 
 type EntityKey = string;
-type EntityValue = string | number | boolean | symbol;
+export type EntityValue = string | number | boolean | symbol | null;
 
 export interface EntityData {
   [key: EntityKey]: EntityValue;
@@ -706,9 +715,13 @@ export type ListOption = { id: string; label: string; value: string };
 
 export type ProcessParameter = {
   defaultValue: string;
+  mandatory: boolean;
   id: string;
   name: string;
   refList: Array<ListOption>;
+  readOnlyLogicExpression?: string;
+  reference: string;
+  window?: WindowMetadata; // This type is for process that have defined a window reference
 } & Record<string, string>;
 
 export type ProcessParameters = Record<string, ProcessParameter>;

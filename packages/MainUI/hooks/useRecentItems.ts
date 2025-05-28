@@ -20,7 +20,7 @@ const updateItemsWithTranslations = (
   menuItems: Menu[],
   getTranslatedName?: (item: Menu) => string,
 ): RecentItem[] => {
-  return items.map(storedItem => {
+  return items.map((storedItem) => {
     const menuItem = findItemByIdentifier(menuItems, storedItem.windowId);
     if (!menuItem) return storedItem;
 
@@ -33,9 +33,8 @@ const updateItemsWithTranslations = (
 
 export function useRecentItems(
   menuItems: Menu[],
-  handleItemClick: (item: Menu) => void,
-  onClick: (path: string) => void,
-  roleId?: string,
+  onClick: (item: Menu) => void,
+  roleId: string,
   getTranslatedName?: (item: Menu) => string,
 ) {
   const [localRecentItems, setLocalRecentItems] = useLocalStorage<Record<string, RecentItem[]>>(
@@ -57,10 +56,58 @@ export function useRecentItems(
       const hasChanges = JSON.stringify(updatedItems) !== JSON.stringify(currentItems);
 
       if (hasChanges) {
-        setLocalRecentItems(prev => ({ ...prev, [roleId]: updatedItems }));
+        setLocalRecentItems((prev) => ({ ...prev, [roleId]: updatedItems }));
       }
     },
     [roleId, localRecentItems, getTranslatedName, setLocalRecentItems],
+  );
+
+  const handleToggleExpand = useCallback(() => {
+    hasManuallyToggled.current = true;
+    setIsExpanded((prev) => !prev);
+  }, []);
+
+  const addRecentItem = useCallback(
+    (item: Menu) => {
+      const recentItem = createRecentItem(item, getTranslatedName);
+      setLocalRecentItems((prev) => {
+        const currentItems = prev[roleId] || [];
+        const existing = currentItems.find((v) => v.id === item.id);
+
+        if (existing) {
+          const newItems = { ...prev };
+          newItems[roleId] = [existing, ...newItems[roleId].filter((v) => v.id !== item.id)];
+
+          return newItems;
+        }
+
+        const newItems = [recentItem, ...currentItems.filter((i) => i.id !== recentItem.id)].slice(0, 5);
+
+        const hasChanges = JSON.stringify(newItems) !== JSON.stringify(currentItems);
+        if (!hasChanges) return prev;
+
+        return { ...prev, [roleId]: newItems };
+      });
+
+      return recentItem;
+    },
+    [roleId, getTranslatedName, setLocalRecentItems],
+  );
+
+  const handleRecentItemClick = useCallback(
+    (item: Menu) => {
+      onClick(item);
+
+      const itemId = item.id;
+      if (!itemId || !roleId) return;
+
+      const menuItem = findItemByIdentifier(menuItems, itemId);
+      if (!menuItem) return;
+
+      addRecentItem(item);
+      setIsExpanded(true);
+    },
+    [addRecentItem, menuItems, onClick, roleId],
   );
 
   useEffect(() => {
@@ -80,52 +127,9 @@ export function useRecentItems(
 
     const hasChanges = JSON.stringify(updatedItems) !== JSON.stringify(currentItems);
     if (hasChanges) {
-      setLocalRecentItems(prev => ({ ...prev, [roleId]: updatedItems }));
+      setLocalRecentItems((prev) => ({ ...prev, [roleId]: updatedItems }));
     }
   }, [menuItems, roleId, getTranslatedName, localRecentItems, setLocalRecentItems]);
-
-  const handleToggleExpand = useCallback(() => {
-    hasManuallyToggled.current = true;
-    setIsExpanded(prev => !prev);
-  }, []);
-
-  const addRecentItem = useCallback(
-    (item: Menu) => {
-      if (!roleId) return null;
-
-      const recentItem = createRecentItem(item, getTranslatedName);
-      setLocalRecentItems(prev => {
-        const currentItems = prev[roleId] || [];
-        const newItems = [recentItem, ...currentItems.filter(i => i.id !== recentItem.id)].slice(0, 5);
-
-        const hasChanges = JSON.stringify(newItems) !== JSON.stringify(currentItems);
-        if (!hasChanges) return prev;
-
-        return { ...prev, [roleId]: newItems };
-      });
-
-      return recentItem;
-    },
-    [roleId, getTranslatedName, setLocalRecentItems],
-  );
-
-  const handleRecentItemClick = useCallback(
-    (path: string) => {
-      const itemId = path.split('/').pop();
-      if (!itemId || !roleId) return;
-
-      const menuItem = findItemByIdentifier(menuItems, itemId);
-      if (!menuItem) return;
-
-      const recentItem = addRecentItem(menuItem);
-      if (recentItem) {
-        onClick(path);
-        handleItemClick(menuItem);
-        setIsExpanded(true);
-      }
-    },
-    [roleId, menuItems, addRecentItem, onClick, handleItemClick],
-  );
 
   useEffect(() => {
     if (isFirstLoad.current && roleId && localRecentItems[roleId]?.length) {

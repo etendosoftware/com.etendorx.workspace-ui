@@ -10,10 +10,10 @@ export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
     }
 
     windowData?.tabs.forEach(tab => {
-      if (tabs[tab.level]) {
-        tabs[tab.level].push(tab);
+      if (tabs[tab.tabLevel]) {
+        tabs[tab.tabLevel].push(tab);
       } else {
-        tabs[tab.level] = [tab];
+        tabs[tab.tabLevel] = [tab];
       }
     });
   } catch (e) {
@@ -92,6 +92,28 @@ export const getFieldsByInputName = (tab?: Tab) => {
     return Object.entries(tab.fields).reduce(
       (acc, [, field]) => {
         acc[field.inputName] = field;
+
+        return acc;
+      },
+      {} as Record<string, Field>,
+    );
+  } catch (e) {
+    console.warn(e);
+
+    return {};
+  }
+};
+
+
+export const getFieldsByHqlName = (tab?: Tab) => {
+  try {
+    if (!tab) {
+      return {};
+    }
+
+    return Object.entries(tab.fields).reduce(
+      (acc, [, field]) => {
+        acc[field.hqlName] = field;
 
         return acc;
       },

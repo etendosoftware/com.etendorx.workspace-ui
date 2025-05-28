@@ -1,70 +1,65 @@
-import { useCallback, useMemo, useState, createElement } from 'react';
-import { Box } from '@mui/material';
-import TopToolbar from '@workspaceui/componentlibrary/src/components/Table/Toolbar';
-import {
-  IconSize,
-  ProcessResponse,
-  StandardButton,
-  StandardButtonConfig,
-  ToolbarProps,
-  isProcessButton,
-} from './types';
-import {
-  LEFT_SECTION_BUTTONS,
-  CENTER_SECTION_BUTTONS,
-  RIGHT_SECTION_BUTTONS,
-  StandardButtonId,
-  BUTTON_IDS,
-} from '../../constants/Toolbar';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { ToolbarProps } from './types';
 import SearchPortal from './SearchPortal';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useProcessExecution } from '../../hooks/Toolbar/useProcessExecution';
-import { createStandardButtonConfig, createTabControlButtonConfig, getStandardButtonStyle } from './buttonConfigs';
-import { theme } from '@workspaceui/componentlibrary/src/theme';
 import { useProcessButton } from '../../hooks/Toolbar/useProcessButton';
 import { useToolbarConfig } from '../../hooks/Toolbar/useToolbarConfig';
-import { iconMap } from './iconMap';
 import { useToolbar } from '../../hooks/Toolbar/useToolbar';
-import { useMetadataContext } from '../../hooks/useMetadataContext';
 import ProcessMenu from './ProcessMenu';
-import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
 import ConfirmModal from '@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal';
-import { ProcessButton, ProcessButtonType, ProcessDefinitionButton } from '../ProcessModal/types';
-import { ProcessActionModal } from '../ProcessModal';
+import { ProcessButton, ProcessButtonType, ProcessDefinitionButton, ProcessResponse } from '../ProcessModal/types';
+import ProcessModal from '../ProcessModal';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
 import ProcessDefinitionModal from '../ProcessModal/ProcessDefinitionModal';
 import { useUserContext } from '@/hooks/useUserContext';
-import TabContextProvider from '@/contexts/tab';
+import { useTabContext } from '@/contexts/tab';
 import { compileExpression } from '../Form/FormView/selectors/BaseSelector';
+import { useSelectedRecord } from '@/hooks/useSelectedRecord';
+import { useSelectedRecords } from '@/hooks/useSelectedRecords';
+import { useSelected } from '@/hooks/useSelected';
+import TopToolbar from './TopToolbar';
+import useFormFields from '@/hooks/useFormFields';
+import {
+  organizeButtonsBySection,
+  createButtonByType,
+  createProcessMenuButton,
+  getButtonStyles,
+} from './buttonConfigs';
+import { ToolbarButtonMetadata } from '@/hooks/Toolbar/types';
 
-const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false, onSave, onRefresh }) => {
+const BaseSection = { display: 'flex', alignItems: 'center' };
+const EmptyArray: ToolbarButtonMetadata[] = [];
+
+const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false }) => {
   const [openModal, setOpenModal] = useState(false);
+  const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
   const [selectedProcessActionButton, setSelectedProcessActionButton] = useState<ProcessButton | null>(null);
   const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
     useState<ProcessDefinitionButton | null>(null);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const [activeModal, setActiveModal] = useState<{
+    button: ToolbarButtonMetadata;
+    isOpen: boolean;
+  } | null>(null);
+
   const { session } = useUserContext();
   const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
-  const { selected, tabs, clearSelections } = useMetadataContext();
+  const { graph } = useSelected();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { refetchDatasource } = useDatasourceContext();
+  const { tab, parentRecord } = useTabContext();
 
-  const tab = useMemo<Tab>(() => {
-    const result = tabs.find(tab => tab.id === tabId);
+  const [openMenu, setOpenMenu] = useState<boolean>(false);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
-    if (result) {
-      return result;
-    }
-
-    throw new Error('Error creating toolbar: Missing tab');
-  }, [tabs, tabId]);
-
-  const selectedRecord = tab ? selected[tab.level] : undefined;
-  const parentId = useMemo(() => selected[tab?.level - 1]?.id ?? null, [selected, tab?.level]);
+  const buttons: ToolbarButtonMetadata[] = toolbar?.response.data ?? EmptyArray;
+  const selectedRecord = useSelectedRecord(tab);
+  const parentId = parentRecord?.id?.toString();
 
   const {
     handleAction,
@@ -78,61 +73,50 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     handleConfirm,
     handleCancelConfirm,
     hideStatusModal,
-  } = useToolbarConfig({
-    windowId,
-    tabId,
-    onSave,
-    onRefresh,
-    parentId,
-    isFormView,
-  });
+  } = useToolbarConfig({ windowId, tabId, parentId, isFormView });
 
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
+  const selectedItems = useSelectedRecords(tab);
+  const {
+    fields: { actionFields },
+  } = useFormFields(tab);
 
   const processButtons = useMemo(() => {
-    const buttons = toolbar?.buttons.filter(isProcessButton) || [];
-    const selectedItems = Array.isArray(selected[tab.level]) ? selected[tab.level] : [selectedRecord];
+    const buttons = Object.values(actionFields) || [];
+    return buttons.filter((button) => {
+      if (!button.displayLogicExpression || !selectedItems) return true;
 
-    const filteredButtons = buttons.filter(button => {
-      if (!button.field.displayLogicExpression) {
-        return true;
-      }
-
-      const compiledExpr = compileExpression(button.field.displayLogicExpression);
-
+      const compiledExpr = compileExpression(button.displayLogicExpression);
       try {
-        const isVisible = selectedItems.some(record => {
-          return compiledExpr(session, record);
-        });
-        return isVisible;
-      } catch (error) {
+        return selectedItems.some((record) => compiledExpr(session, record));
+      } catch {
         return true;
       }
-    });
+    }) as ProcessButton[];
+  }, [actionFields, selectedItems, session]);
 
-    return filteredButtons;
-  }, [toolbar?.buttons, selectedRecord, selected, session, tab.level]);
-
-  const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+  const handleMenuToggle = useCallback(() => {
+    setOpenMenu((prev) => !prev);
   }, []);
 
   const handleMenuClose = useCallback(() => {
-    setAnchorEl(null);
+    setOpenMenu(false);
   }, []);
 
   const handleProcessMenuClick = useCallback(
     (button: ProcessButton) => {
-      if (selectedRecord) {
-        if (ProcessButtonType.PROCESS_ACTION in button) {
-          setSelectedProcessActionButton(button);
-        } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
-          setSelectedProcessDefinitionButton(button);
-        } else {
-          throw new Error('Unknown process type');
-        }
-        setOpenModal(true);
+      if (!selectedRecord) return;
+
+      if (ProcessButtonType.PROCESS_ACTION in button) {
+        setSelectedProcessActionButton(button);
+      } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
+        setSelectedProcessDefinitionButton(button);
+        setShowProcessDefinitionModal(true);
+      } else {
+        throw new Error('Unknown process type');
       }
+
+      setOpenModal(true);
       handleMenuClose();
     },
     [selectedRecord, handleMenuClose],
@@ -147,35 +131,25 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   );
 
   const handleProcessSuccess = useCallback(() => {
-    if (processResponse && !processResponse.showDeprecatedFeatureModal && processResponse.success) {
-      if (tabId) {
-        refetchDatasource(tabId);
-        clearSelections(tabId);
-      }
-    }
-  }, [tabId, refetchDatasource, clearSelections, processResponse]);
+    refetchDatasource(tab.id);
+    graph.clearSelected(tab);
+  }, [graph, refetchDatasource, tab]);
 
   const handleConfirmProcess = useCallback(async () => {
     if (!selectedProcessActionButton || !selectedRecord?.id) return;
 
     setIsExecuting(true);
     try {
-      const response = await handleProcessClick(selectedProcessActionButton, selectedRecord?.id);
-      if (response) {
-        setProcessResponse(response);
-      } else {
-        setProcessResponse(null);
-      }
+      const response = await handleProcessClick(selectedProcessActionButton, String(selectedRecord.id));
+      setProcessResponse(response || null);
     } catch (error) {
       setProcessResponse({
-        success: false,
-        message: error instanceof Error ? error.message : 'Unknown error',
         responseActions: [
           {
             showMsgInProcessView: {
               msgType: 'error',
               msgTitle: 'Error',
-              msgText: error instanceof Error ? error.message : 'Unknown error',
+              msgText: error instanceof Error ? error?.message : 'Unknown error',
             },
           },
         ],
@@ -188,99 +162,74 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const handleCloseProcess = useCallback(() => {
     setOpenModal(false);
     setProcessResponse(null);
+    setSelectedProcessActionButton(null);
+  }, []);
+
+  const handleCloseProcessDefinitionModal = useCallback(() => {
+    setShowProcessDefinitionModal(false);
+    setSelectedProcessDefinitionButton(null);
   }, []);
 
   const handleCompleteRefresh = useCallback(async () => {
-    if (onRefresh) {
-      onRefresh();
-      clearSelections(tab.id);
-    }
-  }, [onRefresh, clearSelections, tab.id]);
+    graph.clearSelected(tab);
+    refetchDatasource(tab.id);
+  }, [graph, refetchDatasource, tab]);
 
   const toolbarConfig = useMemo(() => {
-    const buttons = toolbar?.buttons ?? [];
+    const organizedButtons = organizeButtonsBySection(buttons, isFormView);
+    const hasSelectedRecord = !!selectedRecord?.id;
 
-    const createProcessMenuButton = (): StandardButtonConfig => ({
-      key: 'process-menu',
-      action: 'MENU',
-      name: t('common.processes'),
-      icon: createElement(iconMap.process),
-      iconText: t('common.processes'),
-      tooltip: t('common.processes'),
-      height: IconSize,
-      width: IconSize,
-      enabled: processButtons.length > 0,
-      sx: {
-        color: theme.palette.baselineColor.neutral[100],
-        background: theme.palette.specificColor.warning.main,
-        opacity: selectedRecord ? 1 : 0.5,
-        cursor: selectedRecord ? 'pointer' : 'not-allowed',
-      },
-      onClick: (event?: React.MouseEvent<HTMLElement>) => {
-        if (selectedRecord && event && processButtons.length > 0) {
-          handleMenuOpen(event);
+    const createSectionButtons = (sectionButtons: ToolbarButtonMetadata[]) =>
+      sectionButtons.map((button) => {
+        const config = createButtonByType(button, handleAction, isFormView, hasSelectedRecord);
+
+        const styles = getButtonStyles(button);
+        if (styles) {
+          config.className = config.className ? `${config.className} ${styles}` : styles;
         }
-      },
-    });
 
-    const sections = {
-      leftSection: LEFT_SECTION_BUTTONS,
-      centerSection: CENTER_SECTION_BUTTONS,
-      rightSection: RIGHT_SECTION_BUTTONS,
-    };
-
-    const createSectionConfig = (sectionButtons: StandardButtonId[]) => {
-      const sectionConfig = {
-        buttons: buttons
-          .filter((btn: StandardButton) => {
-            if (isFormView && btn.id === 'FIND') return false;
-            if (isProcessButton(btn)) return false;
-            return sectionButtons.includes(btn.id as StandardButtonId);
-          })
-          .map(btn => {
-            const config = createStandardButtonConfig(btn as StandardButton, handleAction);
-            const style = getStandardButtonStyle(btn.id as StandardButtonId);
-            if (style) {
-              config.sx = style;
-            }
-            return config;
-          }),
-        style: getSectionStyle(sectionButtons),
-      };
-
-      if (sectionButtons.includes(BUTTON_IDS.TAB_CONTROL) && !buttons.some(btn => btn.id === BUTTON_IDS.TAB_CONTROL)) {
-        const tabControlConfig = createTabControlButtonConfig(!!selectedRecord?.id, handleAction);
-        sectionConfig.buttons.push(tabControlConfig);
-      }
-
-      return sectionConfig;
-    };
+        return config;
+      });
 
     const config = {
-      leftSection: createSectionConfig(sections.leftSection),
-      centerSection: createSectionConfig(sections.centerSection),
-      rightSection: createSectionConfig(sections.rightSection),
-      isItemSelected: !!selectedRecord?.id,
+      leftSection: {
+        buttons: createSectionButtons(organizedButtons.left),
+        style: BaseSection,
+      },
+      centerSection: {
+        buttons: createSectionButtons(organizedButtons.center),
+        style: { ...BaseSection, gap: '0.25rem' },
+      },
+      rightSection: {
+        buttons: createSectionButtons(organizedButtons.right),
+        style: { ...BaseSection, gap: '0.25rem' },
+      },
+      isItemSelected: hasSelectedRecord,
     };
 
     if (processButtons.length > 0) {
-      config.rightSection.buttons.push(createProcessMenuButton());
+      config.rightSection.buttons.push(
+        createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, buttonRef),
+      );
     }
 
     return config;
-  }, [handleAction, handleMenuOpen, isFormView, processButtons, selectedRecord, t, toolbar?.buttons]);
+  }, [buttons, isFormView, selectedRecord?.id, processButtons.length, handleAction, handleMenuToggle, t]);
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height={64}>
-        {t('common.loading')}
-      </Box>
-    );
-  }
+  if (loading) return null;
 
   return (
-    <TabContextProvider tab={tab}>
+    <>
       <TopToolbar {...toolbarConfig} />
+      {activeModal && (
+        <StatusModal
+          open={activeModal.isOpen}
+          statusText={`Modal para: ${activeModal.button.name}`}
+          statusType="info"
+          saveLabel="Cerrar"
+          onClose={() => setActiveModal(null)}
+        />
+      )}
       {statusModal.open && (
         <StatusModal
           open={statusModal.open}
@@ -304,8 +253,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       )}
       {processButtons.length > 0 && (
         <ProcessMenu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
+          anchorRef={buttonRef}
+          open={openMenu}
           onClose={handleMenuClose}
           processButtons={processButtons}
           onProcessClick={handleProcessMenuClick}
@@ -323,7 +272,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
         />
       )}
       {selectedProcessActionButton && (
-        <ProcessActionModal
+        <ProcessModal
           open={openModal}
           onClose={handleCloseProcess}
           button={selectedProcessActionButton}
@@ -334,52 +283,18 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           cancelButtonText={t('common.cancel')}
           executeButtonText={t('common.execute')}
           onProcessSuccess={handleProcessSuccess}
+          tabId={tab.id}
         />
       )}
-      {selectedProcessDefinitionButton && (
-        <ProcessDefinitionModal
-          open={openModal}
-          onClose={handleCloseProcess}
-          button={selectedProcessDefinitionButton}
-          onSuccess={handleCompleteRefresh}
-        />
-      )}
-    </TabContextProvider>
+      <ProcessDefinitionModal
+        open={showProcessDefinitionModal}
+        onClose={handleCloseProcessDefinitionModal}
+        button={selectedProcessDefinitionButton}
+        onSuccess={handleCompleteRefresh}
+        onError={handleCompleteRefresh}
+      />
+    </>
   );
-};
-
-const getSectionStyle = (sectionType: string[]) => {
-  const baseStyle = {
-    display: 'flex',
-    borderRadius: '10rem',
-    padding: '0.25rem',
-    gap: '0.25rem',
-  };
-
-  if (sectionType === LEFT_SECTION_BUTTONS) {
-    return {
-      ...baseStyle,
-      width: 'auto',
-      alignItems: 'center',
-      background: theme.palette.baselineColor.neutral[0],
-      maxHeight: '2.5rem',
-      gap: '0.05rem',
-    };
-  }
-
-  if (sectionType === RIGHT_SECTION_BUTTONS) {
-    return {
-      ...baseStyle,
-      background: theme.palette.baselineColor.transparentNeutral[5],
-      maxHeight: '2.5rem',
-    };
-  }
-
-  return {
-    ...baseStyle,
-    width: sectionType === CENTER_SECTION_BUTTONS ? '100%' : 'auto',
-    background: theme.palette.baselineColor.transparentNeutral[5],
-  };
 };
 
 export const Toolbar = ToolbarCmp;

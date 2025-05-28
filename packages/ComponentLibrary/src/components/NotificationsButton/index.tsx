@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Badge } from '@mui/material';
 import { ExtendedNotificationButtonProps, NotificationModalProps } from './types';
 import { notificationMax } from './constants';
@@ -13,14 +13,14 @@ const NotificationButton: React.FC<ExtendedNotificationButtonProps> = ({
   tooltipTitle = 'Notifications',
 }) => {
   const { sx } = useStyle();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [isOpenMenu, setIsOpenMenu] = useState<boolean>(false);
+  const handleClick = () => {
+    setIsOpenMenu(true);
   };
 
   const handleClose = () => {
-    setAnchorEl(null);
+    setIsOpenMenu(false);
   };
 
   const notificationCount: number = notifications.length;
@@ -32,17 +32,17 @@ const NotificationButton: React.FC<ExtendedNotificationButtonProps> = ({
         color="error"
         sx={sx.badgeStyles}
         component="div">
-        <IconButton tooltip={tooltipTitle} onClick={handleClick} disabled={true}>
+        <IconButton tooltip={tooltipTitle} onClick={handleClick} disabled={true} className="w-10 h-10">
           {icon}
         </IconButton>
       </Badge>
       {children &&
         React.cloneElement(children, {
-          anchorEl,
-          open: Boolean(anchorEl),
+          anchorRef: buttonRef,
+          open: isOpenMenu,
           onClose: handleClose,
           notifications,
-        } as NotificationModalProps)}
+        } as unknown as NotificationModalProps)}
     </>
   );
 };

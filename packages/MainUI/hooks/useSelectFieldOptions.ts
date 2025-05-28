@@ -17,14 +17,14 @@ export const useSelectFieldOptions = (field: Field, records: EntityData[]) => {
       const id = record[idKey] as string;
 
       if (id && label) {
-        result.push({ id, label });
+        result.push({ id, label, data: record });
       }
     });
 
     const currentOption = result.find(record => record.id === currentValue);
 
     if (!currentOption && currentValue && currentIdentifier) {
-      result.push({ id: currentValue, label: currentIdentifier });
+      result.push({ id: currentValue, label: currentIdentifier, data: {} });
     }
 
     return result;

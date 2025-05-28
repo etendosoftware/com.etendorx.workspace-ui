@@ -1,17 +1,22 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 import React, { useState, useRef, useEffect, useCallback, useMemo, ReactElement } from 'react';
-import { Tabs, Tab, Box, IconButton, Menu, MenuItem, Typography, useTheme } from '@mui/material';
+import { Tabs, Tab, Box, MenuItem, Typography } from '@mui/material';
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
 import TabLabel from './components/TabLabel';
-import { getRightButtonStyles, useStyle } from './styles';
+import { useStyle } from './styles';
 import { SecondaryTabsProps, TabContent } from './types';
+import IconButton from '../IconButton';
+import Menu from '../Menu';
 
 const tabSize = 150;
 
 const renderIcon = (icon: TabContent['icon'], style: React.CSSProperties | undefined): ReactElement => {
   const safeStyle = style || {};
-  if (React.isValidElement(icon)) {
-    return React.cloneElement(icon, { style: { ...icon.props.style, ...safeStyle } } as any);
+  if (React.isValidElement<{ style?: React.CSSProperties }>(icon)) {
+    return React.cloneElement(icon, {
+      style: { ...icon.props.style, ...safeStyle },
+    });
   }
   if (typeof icon === 'string') {
     return <Typography style={safeStyle}>{icon}</Typography>;
@@ -24,11 +29,10 @@ const renderIcon = (icon: TabContent['icon'], style: React.CSSProperties | undef
 
 const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onChange }) => {
   const [visibleCount, setVisibleCount] = useState(5);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [isOpenMenu, setIsOpenMenu] = useState<boolean>(false);
   const tabsRef = useRef<HTMLDivElement>(null);
   const { sx } = useStyle();
-  const theme = useTheme();
-
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
   const updateVisibleCount = useCallback(() => {
     if (tabsRef.current) {
       const width = tabsRef.current.clientWidth;
@@ -53,11 +57,13 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
     [content, onChange],
   );
 
-  const handleMenu = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
+  const handleMenu = useCallback(() => {
+    setIsOpenMenu(true);
   }, []);
 
-  const handleClose = useCallback(() => setAnchorEl(null), []);
+  const handleClose = () => {
+    setIsOpenMenu(false);
+  };
 
   const visibleTabs = useMemo(() => content.slice(0, visibleCount), [content, visibleCount]);
   const hiddenTabs = useMemo(() => content.slice(visibleCount), [content, visibleCount]);
@@ -93,18 +99,13 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
         </Tabs>
         {hiddenTabs.length > 0 && (
           <Box sx={sx.rightButtonContainer}>
-            <IconButton onClick={handleMenu} sx={getRightButtonStyles(Boolean(anchorEl), theme)}>
+            <IconButton onClick={handleMenu} ref={buttonRef}>
               <KeyboardDoubleArrowRightIcon />
             </IconButton>
           </Box>
         )}
       </Box>
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleClose}
-        slotProps={{ root: { sx: sx.menuItemRoot } }}
-        PaperProps={{ sx: sx.menuPaper }}>
+      <Menu anchorRef={buttonRef} open={isOpenMenu} onClose={handleClose}>
         {hiddenTabs.map((tab: TabContent, index: number) => (
           <MenuItem
             key={index}

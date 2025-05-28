@@ -1,6 +1,7 @@
-import { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import { EntityData, Field } from '@workspaceui/etendohookbinder/src/api/types';
 
-export interface TextInputProps extends React.HTMLProps<HTMLInputElement> {
+export interface TextInputProps
+  extends React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement> {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   onLeftIconClick?: () => void;
@@ -17,8 +18,9 @@ export interface Option {
 
 export interface SelectProps {
   name: string;
-  options: Array<{ id: string; label: string }>;
+  options: Array<{ id: string; label: string; data?: EntityData }>;
   onFocus?: () => void;
+  onSearch?: (term: string) => void;
   isReadOnly?: boolean;
   loading?: boolean;
   hasMore?: boolean;

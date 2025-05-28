@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
 import { EntityData, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
-import useFormParent, { ParentFieldName } from './useFormParent';
+import useFormParent from './useFormParent';
 import { useTabContext } from '@/contexts/tab';
 import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
+import { FieldName } from './types';
 
 export const useFormInitialState = (formInitialization?: FormInitializationResponse | null) => {
   const { tab } = useTabContext();
-  const parentData = useFormParent(ParentFieldName.HQL_NAME);
+  const parentData = useFormParent(FieldName.HQL_NAME);
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
 
   const initialState = useMemo(() => {
@@ -16,11 +17,14 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
 
     Object.entries(formInitialization.auxiliaryInputValues).forEach(([key, { value }]) => {
       const newKey = fieldsByColumnName?.[key]?.hqlName ?? key;
+
       acc[newKey] = value;
     });
 
     Object.entries(formInitialization.columnValues).forEach(([key, { value, identifier }]) => {
-      const newKey = fieldsByColumnName?.[key]?.hqlName ?? key;
+      const field = fieldsByColumnName?.[key];
+      const newKey = field?.hqlName ?? key;
+
       acc[newKey] = value;
 
       if (identifier) {
@@ -28,7 +32,9 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
       }
     });
 
-    return { ...acc, ...parentData };
+    const processedParentData = { ...parentData };
+
+    return { ...acc, ...processedParentData };
   }, [fieldsByColumnName, formInitialization, parentData]);
 
   return initialState;

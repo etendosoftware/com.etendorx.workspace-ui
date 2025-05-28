@@ -6,12 +6,12 @@ import { UseFormHandleSubmit } from 'react-hook-form';
 import { buildFormPayload, buildQueryString } from '@/utils';
 
 export interface UseFormActionParams {
-  windowMetadata: WindowMetadata;
+  windowMetadata?: WindowMetadata;
   tab: Tab;
   mode: FormMode;
   onSuccess: (data: EntityData) => void;
   onError: (data: string) => void;
-  initialState: EntityData;
+  initialState?: EntityData;
   submit: UseFormHandleSubmit<EntityData, undefined>;
 }
 
@@ -44,7 +44,7 @@ export const useFormAction = ({
           setLoading(false);
           onSuccess?.(data.response.data[0]);
         } else {
-          throw new Error(data.response.error.message);
+          throw new Error(data.response.error?.message);
         }
       } catch (err) {
         setLoading(false);

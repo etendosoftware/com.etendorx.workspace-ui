@@ -1,10 +1,8 @@
-import { Toolbar } from '@/components/Toolbar/Toolbar';
 import { EntityData, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
 import { FormProvider, useForm } from 'react-hook-form';
 import { BaseSelector } from './selectors/BaseSelector';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormAction } from '@/hooks/useFormAction';
-import { useRouter } from 'next/navigation';
 import Collapsible from '../Collapsible';
 import StatusBar from './StatusBar';
 import useFormFields from '@/hooks/useFormFields';
@@ -18,20 +16,43 @@ import { useTheme } from '@mui/material';
 import { FormViewProps } from './types';
 import { useStatusModal } from '@/hooks/Toolbar/useStatusModal';
 import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
+import { useFormInitialization } from '@/hooks/useFormInitialization';
+import { useFormInitialState } from '@/hooks/useFormInitialState';
+import { useToolbarContext } from '@/contexts/ToolbarContext';
+import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
+import { useSelected } from '@/hooks/useSelected';
 
-export default function FormView({ window: windowMetadata, tab, mode, initialState, refetch }: FormViewProps) {
-  const router = useRouter();
+const iconMap: Record<string, React.ReactElement> = {
+  'Main Section': <FileIcon />,
+  'More Information': <InfoIcon />,
+  Dimensions: <FolderIcon />,
+};
+
+export function FormView({ window: windowMetadata, tab, mode, recordId, setRecordId }: FormViewProps) {
   const theme = useTheme();
-  const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>(['null']);
   const [selectedTab, setSelectedTab] = useState<string>('');
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
+  const { graph } = useSelected();
 
   const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
 
   const { fields, groups } = useFormFields(tab);
-  const { reset, setValue, ...form } = useForm({ values: initialState });
+  const {
+    formInitialization,
+    refetch,
+    loading: loadingFormInitialization,
+  } = useFormInitialization({
+    tab,
+    mode: mode,
+    recordId,
+  });
+  const { registerActions } = useToolbarContext();
+
+  const initialState = useFormInitialState(formInitialization) || undefined;
+
+  const { reset, setValue, ...form } = useForm({ values: initialState as EntityData });
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
@@ -40,12 +61,6 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
 
   const getIconForGroup = useCallback(
     (identifier: string) => {
-      const iconMap: Record<string, React.ReactElement> = {
-        'Main Section': <FileIcon />,
-        'More Information': <InfoIcon />,
-        Dimensions: <FolderIcon />,
-      };
-
       return iconMap[identifier] || defaultIcon;
     },
     [defaultIcon],
@@ -64,7 +79,7 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
 
   const handleTabChange = useCallback((newTabId: string) => {
     setSelectedTab(newTabId);
-    setExpandedSections(prev => {
+    setExpandedSections((prev) => {
       if (!prev.includes(newTabId)) {
         return [...prev, newTabId];
       }
@@ -100,11 +115,11 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
   const handleAccordionChange = useCallback((sectionId: string | null, isExpanded: boolean) => {
     const id = String(sectionId || '_main');
 
-    setExpandedSections(prev => {
+    setExpandedSections((prev) => {
       if (isExpanded) {
         return [...prev, id];
       }
-      return prev.filter(existingId => existingId !== id);
+      return prev.filter((existingId) => existingId !== id);
     });
 
     if (isExpanded) {
@@ -112,16 +127,23 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
     }
   }, []);
 
+  const onReset = useCallback(async () => {
+    refetch();
+  }, [refetch]);
+
   const onSuccess = useCallback(
     async (data: EntityData) => {
       if (mode === FormMode.EDIT) {
         reset({ ...initialState, ...data });
       } else {
-        router.replace(String(data.id));
+        setRecordId(String(data.id));
+        refetch();
       }
+
+      graph.setSelected(tab, data);
       showSuccessModal('Saved');
     },
-    [initialState, mode, reset, router, showSuccessModal],
+    [graph, initialState, mode, refetch, reset, setRecordId, showSuccessModal, tab],
   );
 
   const onError = useCallback(
@@ -141,10 +163,6 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
     submit: form.handleSubmit,
   });
 
-  const handleHover = useCallback((sectionName: string | null) => {
-    setHoveredSection(sectionName);
-  }, []);
-
   const isSectionExpanded = useCallback(
     (sectionId: string | null) => {
       const id = String(sectionId);
@@ -153,21 +171,33 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
     [expandedSections],
   );
 
-  const handleRefresh = useCallback(() => {
-    refetch?.();
-    reset();
-  }, [refetch, reset])
+  useEffect(() => {
+    if (!initialState) return;
+
+    Object.entries(initialState).forEach(([key, value]) => {
+      if (typeof value === 'undefined') {
+        initialState[key] = '';
+      }
+    });
+
+    reset({ ...initialState });
+  }, [initialState, reset]);
+
+  useEffect(() => {
+    registerActions({ save: save, refresh: onReset, new: onReset });
+  }, [onReset, registerActions, save]);
+
+  if (loading || loadingFormInitialization) {
+    return <Spinner />;
+  }
 
   return (
     <FormProvider setValue={setValue} reset={reset} {...form}>
       <form
-        className={`w-full h-full flex flex-col transition duration-300  ${
+        className={`w-full h-full max-h-full overflow-hidden flex flex-col transition duration-300  ${
           loading ? 'opacity-50 select-none cursor-progress cursor-to-children' : ''
         }`}
         onSubmit={save}>
-        <div className="pl-2 pr-2">
-          <Toolbar windowId={windowMetadata.id} tabId={tab.id} isFormView={true} onSave={save} onRefresh={handleRefresh}/>
-        </div>
         <div className="flex-shrink-0 pl-2 pr-2">
           <div className="mb-2">
             {statusModal.open && (
@@ -195,10 +225,8 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
               <div key={sectionId} ref={handleSectionRef(id)}>
                 <Collapsible
                   title={group.identifier}
-                  initialState={isSectionExpanded(id)}
+                  isExpanded={isSectionExpanded(id)}
                   sectionId={sectionId}
-                  onHover={handleHover}
-                  isHovered={hoveredSection === group.identifier}
                   icon={getIconForGroup(group.identifier)}
                   onToggle={(isOpen: boolean) => handleAccordionChange(id, isOpen)}>
                   <div className="grid grid-cols-3 auto-rows-auto gap-4">
@@ -215,3 +243,5 @@ export default function FormView({ window: windowMetadata, tab, mode, initialSta
     </FormProvider>
   );
 }
+
+export default FormView;

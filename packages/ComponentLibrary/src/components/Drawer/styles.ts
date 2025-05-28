@@ -35,6 +35,7 @@ export const useStyle = () => {
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
+          paddingBottom: theme.spacing(1),
         },
         drawerContent: {
           flexGrow: 1,
@@ -115,3 +116,5 @@ export const useStyle = () => {
     [theme, focusStyles],
   );
 };
+
+export default useStyle;

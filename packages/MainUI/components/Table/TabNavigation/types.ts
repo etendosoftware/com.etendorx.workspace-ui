@@ -1,9 +1,6 @@
-import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 
-export interface SelectedRecord {
-  identifier?: string | null;
-  type?: string | null;
-  [key: string]: unknown;
+export interface SelectedRecord extends EntityData {
 }
 
 export type IsMainTab = boolean;
@@ -35,10 +32,4 @@ export interface TabContentProps {
 
 export interface ResizableTabContainerProps {
   isOpen: boolean;
-  onClose: () => void;
-  selectedRecord?: SelectedRecord | null;
-  tab?: Tab;
-  windowId: string | undefined;
-  onHeightChange?: (height: number) => void;
-  isMainTab?: IsMainTab;
 }

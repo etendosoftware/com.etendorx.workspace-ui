@@ -1,5 +1,6 @@
 'use client';
 
+import { useContext, useState, useCallback, useMemo, useRef } from 'react';
 import {
   ConfigurationModal,
   NotificationButton,
@@ -15,7 +16,11 @@ import { modalConfig, menuItems, initialPeople, sections, NOTIFICATIONS } from '
 import { Person } from '@workspaceui/componentlibrary/src/components/DragModal/DragModal.types';
 import Nav from '@workspaceui/componentlibrary/src/components/Nav/Nav';
 import { useTranslation } from '../hooks/useTranslation';
-import ProfileWrapper from './Nav/Profile';
+import ProfileModal from './ProfileModal/ProfileModal';
+import { useLanguage } from '@/contexts/language';
+import { Language } from '@/contexts/types';
+import { UserContext } from '@/contexts/user';
+import { logger } from '@/utils/logger';
 
 const handleClose = () => {
   return true;
@@ -25,6 +30,43 @@ const people: Person[] = [];
 
 const Navigation: React.FC = () => {
   const { t } = useTranslation();
+  const {
+    setDefaultConfiguration,
+    currentRole,
+    currentOrganization,
+    profile,
+    currentWarehouse,
+    changeProfile,
+    roles,
+    languages,
+  } = useContext(UserContext);
+  const [saveAsDefault, setSaveAsDefault] = useState(false);
+  const { language, setLanguage, getFlag } = useLanguage();
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+
+  const { clearUserData } = useContext(UserContext);
+
+  const handleSignOff = useCallback(() => {
+    clearUserData();
+  }, [clearUserData]);
+
+  const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setSaveAsDefault(event.target.checked);
+  }, []);
+
+  const languagesWithFlags = useMemo(() => {
+    return languages.map((lang) => ({
+      ...lang,
+      flagEmoji: getFlag(lang.language as Language),
+      displayName: `${getFlag(lang.language as Language)} ${lang.name}`,
+    }));
+  }, [languages, getFlag]);
+
+  const flagString = getFlag(language);
+
+  if (!currentRole) {
+    return null;
+  }
 
   return (
     <Nav title={t('common.notImplemented')}>
@@ -44,13 +86,17 @@ const Navigation: React.FC = () => {
         {...modalConfig}
         tooltipButtonProfile={t('navigation.configurationModal.tooltipButtonProfile')}
       />
-      <IconButton tooltip={t('navigation.activityButton.tooltip')} disabled={true}>
+      <IconButton
+        ref={buttonRef}
+        className="w-10 h-10"
+        tooltip={t('navigation.activityButton.tooltip')}
+        disabled={true}>
         <ActivityIcon />
       </IconButton>
       <NotificationButton notifications={NOTIFICATIONS} icon={<NotificationIcon />}>
         <NotificationModal
           notifications={NOTIFICATIONS}
-          anchorEl={null}
+          rect={buttonRef}
           onClose={handleClose}
           title={{
             icon: <NotificationIcon fill="#2E365C" />,
@@ -63,23 +109,34 @@ const Navigation: React.FC = () => {
           emptyStateImageAlt={t('navigation.notificationModal.emptyStateImageAlt')}
           emptyStateMessage={t('navigation.notificationModal.emptyStateMessage')}
           emptyStateDescription={t('navigation.notificationModal.emptyStateDescription')}
-          actionButtonLabel={t('navigation.notificationModal.actionButtonLabel')}
-        />
+          actionButtonLabel={t('navigation.notificationModal.actionButtonLabel')}>
+          <></>
+        </NotificationModal>
       </NotificationButton>
-      <ProfileWrapper
-        cancelButtonText={t('common.cancel')}
-        saveButtonText={t('common.save')}
-        tooltipButtonProfile={t('navigation.profile.tooltipButtonProfile')}
-        passwordLabel={t('common.notImplemented')}
-        newPasswordLabel={t('common.notImplemented')}
-        confirmPasswordLabel={t('common.notImplemented')}
-        sectionTooltip={t('navigation.profile.signOffTooltip')}
+      <ProfileModal
         icon={<PersonIcon />}
         sections={sections}
         section={''}
         translations={{
           saveAsDefault: t('navigation.profile.saveAsDefault'),
         }}
+        currentRole={currentRole}
+        currentWarehouse={currentWarehouse}
+        currentOrganization={currentOrganization}
+        roles={roles}
+        saveAsDefault={saveAsDefault}
+        onSaveAsDefaultChange={handleSaveAsDefaultChange}
+        onLanguageChange={setLanguage}
+        language={language}
+        languagesFlags={flagString}
+        changeProfile={changeProfile}
+        onSetDefaultConfiguration={setDefaultConfiguration}
+        logger={logger}
+        onSignOff={handleSignOff}
+        languages={languagesWithFlags}
+        userName={profile.name}
+        userEmail={profile.email}
+        userPhotoUrl={profile.image}
       />
     </Nav>
   );
