@@ -72,10 +72,13 @@ export function useRecentItems(
       const recentItem = createRecentItem(item, getTranslatedName);
       setLocalRecentItems((prev) => {
         const currentItems = prev[roleId] || [];
-        const existing = currentItems.find(((v) => v.id === item.id));
+        const existing = currentItems.find((v) => v.id === item.id);
 
         if (existing) {
-          return prev;
+          const newItems = { ...prev };
+          newItems[roleId] = [existing, ...newItems[roleId].filter((v) => v.id !== item.id)];
+
+          return newItems;
         }
 
         const newItems = [recentItem, ...currentItems.filter((i) => i.id !== recentItem.id)].slice(0, 5);
