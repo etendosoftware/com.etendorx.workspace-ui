@@ -55,7 +55,7 @@ const Navigation: React.FC = () => {
   }, []);
 
   const languagesWithFlags = useMemo(() => {
-    return languages.map(lang => ({
+    return languages.map((lang) => ({
       ...lang,
       flagEmoji: getFlag(lang.language as Language),
       displayName: `${getFlag(lang.language as Language)} ${lang.name}`,
@@ -96,7 +96,7 @@ const Navigation: React.FC = () => {
       <NotificationButton notifications={NOTIFICATIONS} icon={<NotificationIcon />}>
         <NotificationModal
           notifications={NOTIFICATIONS}
-          anchorRef={buttonRef}
+          rect={buttonRef}
           onClose={handleClose}
           title={{
             icon: <NotificationIcon fill="#2E365C" />,

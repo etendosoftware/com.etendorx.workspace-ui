@@ -44,8 +44,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [currentSection, setCurrentSection] = useState<string>('profile');
   const { language: initialLanguage, getFlag } = useLanguage();
   const [languagesFlags, setLanguageFlags] = useState(getFlag(initialLanguage));
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const [openMenu, setOpenMenu] = useState<boolean>(false);
+  const [isOpenMenu, setIsOpenMenu] = useState<boolean>(false);
+  const [rect, setRect] = useState<DOMRect | null>(null);
 
   const [selectedRole, setSelectedRole] = useState<Option | null>(() => {
     if (currentRole) {
@@ -56,7 +56,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   });
 
   const selectedClient = useMemo(() => {
-    const client = selectedRole && roles.find(r => r.id === selectedRole.value)?.client;
+    const client = selectedRole && roles.find((r) => r.id === selectedRole.value)?.client;
     return client ? { title: client, value: client, id: client } : null;
   }, [selectedRole, roles]);
 
@@ -77,7 +77,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   });
 
   const [selectedLanguage, setSelectedLanguage] = useState<Option | null>(() => {
-    const currentLang = languages.find(lang => lang.language === language);
+    const currentLang = languages.find((lang) => lang.language === language);
     return currentLang
       ? {
           title: currentLang.name,
@@ -107,7 +107,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   useEffect(() => {
     if (language) {
-      const currentLang = languages.find(lang => lang.language === language);
+      const currentLang = languages.find((lang) => lang.language === language);
       if (currentLang) {
         setSelectedLanguage({
           title: currentLang.name,
@@ -140,12 +140,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     setCurrentSection(section);
   }, []);
 
-  const handleClick = useCallback(() => {
-    setOpenMenu(true);
+  const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    const newRect = event.currentTarget.getBoundingClientRect();
+    setRect(newRect);
+    setIsOpenMenu(true);
   }, []);
 
   const handleClose = useCallback(() => {
-    setOpenMenu(false);
+    setIsOpenMenu(false);
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -250,10 +252,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   return (
     <div>
-      <IconButton ref={buttonRef} onClick={handleClick} className="w-10 h-10">
+      <IconButton onClick={handleClick} className="w-10 h-10">
         {icon}
       </IconButton>
-      <Menu className="rounded-2xl w-88" open={openMenu} anchorRef={buttonRef} onClose={handleClose}>
+      <Menu open={isOpenMenu} rect={rect} onClose={handleClose}>
         <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} onSignOff={onSignOff} />
         <div style={styles.toggleSectionStyles}>
           <ToggleSection sections={sections} currentSection={currentSection} onToggle={handleToggle} />

@@ -1,5 +1,5 @@
 import { Grid, Link, useTheme } from '@mui/material';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BORDER_SELECT_1, BORDER_SELECT_2, COLUMN_SPACING, FIRST_MARGIN_TOP, useStyle } from './style';
 import { IConfigurationModalProps, ISection } from './types';
 import checkIconUrl from '../../assets/icons/check-circle-filled.svg?url';
@@ -28,6 +28,8 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
 }) => {
   const [sectionsState, setSectionsState] = useState<ISection[]>(sections);
   const [isOpenMenu, setIsOpenMenu] = useState<boolean>(false);
+  const [rect, setRect] = useState<DOMRect | null>(null);
+
   const [hoveredItem, setHoveredItem] = useState<{
     sectionIndex: number;
     imageIndex: number;
@@ -35,14 +37,14 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
   const theme = useTheme();
   const { styles, sx } = useStyle();
 
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
-
   useEffect(() => {
     setSectionsState(sections);
   }, [sections]);
 
-  const handleClick = () => {
-    setIsOpenMenu(true);
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const newRect = event.currentTarget.getBoundingClientRect();
+    setRect(newRect);
+    setIsOpenMenu((prev) => !prev);
   };
 
   const handleClose = () => {
@@ -50,7 +52,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
   };
 
   const handleImageClick = (sectionIndex: number, imageIndex: number) => {
-    setSectionsState(prevSections => {
+    setSectionsState((prevSections) => {
       const newSections = [...prevSections];
       newSections[sectionIndex] = {
         ...newSections[sectionIndex],
@@ -97,15 +99,10 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
 
   return (
     <>
-      <IconButton
-        ref={buttonRef}
-        onClick={handleClick}
-        tooltip={tooltipButtonProfile}
-        disabled={true}
-        className="w-10 h-10">
+      <IconButton onClick={handleClick} tooltip={tooltipButtonProfile} disabled={true} className="w-10 h-10">
         {icon}
       </IconButton>
-      <Menu {...props} anchorRef={buttonRef} open={isOpenMenu} onClose={handleClose}>
+      <Menu {...props} rect={rect} open={isOpenMenu} onClose={handleClose}>
         <div style={styles.titleModalContainer}>
           <div style={styles.titleModalImageContainer}>
             {title?.icon && (
