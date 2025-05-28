@@ -17,19 +17,6 @@ const isBase64Image = (str: string): boolean => {
   }
 };
 
-const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMetadata[] => {
-  return [...buttons].sort((a, b) => {
-    const seqnoA = a.seqno ?? Number.MAX_SAFE_INTEGER;
-    const seqnoB = b.seqno ?? Number.MAX_SAFE_INTEGER;
-
-    if (seqnoA !== seqnoB) {
-      return seqnoA - seqnoB;
-    }
-
-    return a.name.localeCompare(b.name);
-  });
-};
-
 export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }) => {
   if (!iconKey) return <DefaultIcon />;
 
@@ -46,6 +33,19 @@ export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }
 
 export const ProcessMenuIcon = () => {
   return <span style={{ fontSize: '1rem' }}>⚙️</span>;
+};
+
+const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMetadata[] => {
+  return [...buttons].sort((a, b) => {
+    const seqnoA = a.seqno ?? Number.MAX_SAFE_INTEGER;
+    const seqnoB = b.seqno ?? Number.MAX_SAFE_INTEGER;
+
+    if (seqnoA !== seqnoB) {
+      return seqnoA - seqnoB;
+    }
+
+    return a.name.localeCompare(b.name);
+  });
 };
 
 export const organizeButtonsBySection = (buttons: ToolbarButtonMetadata[], isFormView: boolean): OrganizedSections => {
@@ -70,14 +70,12 @@ export const organizeButtonsBySection = (buttons: ToolbarButtonMetadata[], isFor
   };
 };
 
-// Convertir ToolbarButtonMetadata a ToolbarButton para TopToolbar
 export const createButtonByType = (
   button: ToolbarButtonMetadata,
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void,
   isFormView: boolean,
   hasSelectedRecord: boolean,
 ): ToolbarButton => {
-  // Usar el ID del backend, con fallback si es necesario
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
   const baseConfig: ToolbarButton = {
@@ -90,7 +88,6 @@ export const createButtonByType = (
     onClick: () => onAction(button.action, button),
   };
 
-  // Configuración de iconText basada en los datos del backend
   const getIconTextConfig = (): Partial<ToolbarButton> => {
     const showIconTextFor = ['NEW'];
 
@@ -109,7 +106,6 @@ export const createButtonByType = (
     return {};
   };
 
-  // Configuración de disabled basada en los datos del backend
   const getDisableConfig = (): Partial<ToolbarButton> => {
     switch (button.action) {
       case 'CANCEL':
@@ -121,7 +117,6 @@ export const createButtonByType = (
     }
   };
 
-  // Configuración de onClick basada en buttonType del backend
   const getClickConfig = (): Partial<ToolbarButton> => {
     switch (button.buttonType) {
       case 'DROPDOWN':
@@ -160,10 +155,14 @@ export const createButtonByType = (
 };
 
 const BUTTON_STYLES = {
-  NEW: 'bg-(--color-baseline-100) text-(--color-baseline-0) rounded-l-full h-8 px-3',
-  SAVE: 'bg-(--color-baseline-100) text-(--color-baseline-0) h-8.5 w-8.5 ml-1',
+  NEW: 'toolbar-button-new bg-(--color-baseline-100) text-(--color-baseline-0) rounded-l-full h-8 px-3',
+  SAVE: 'toolbar-button-save bg-(--color-baseline-100) text-(--color-baseline-0) h-8.5 w-8.5 ml-1',
   REFRESH:
-    'bg-(--color-baseline-100) text-(--color-baseline-0) rounded-r-full  border-l-1 border-l-[color:var(--color-baseline-0)] w-10',
+    'toolbar-button-refresh bg-(--color-baseline-100) text-(--color-baseline-0) rounded-r-full border-l-1 border-l-[color:var(--color-baseline-0)] w-10',
+  CANCEL: 'toolbar-button-cancel',
+  DELETE: 'toolbar-button-delete',
+  FIND: 'toolbar-button-find',
+  FILTER: 'toolbar-button-filter',
 } as const;
 
 export const getButtonStyles = (button: ToolbarButtonMetadata) => {

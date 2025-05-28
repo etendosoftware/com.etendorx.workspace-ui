@@ -29,7 +29,7 @@ const DrawerHeader = forwardRef<HTMLDivElement, DrawerHeaderProps>(({ title, log
           </a>
         </div>
       ) : null}
-      <IconButton onClick={onClick} className="animated-transform w-9	h-9" tabIndex={tabIndex}>
+      <IconButton onClick={onClick} className="animated-transform w-full max-w-9 h-9" tabIndex={tabIndex}>
         <MenuOpen />
       </IconButton>
     </Box>

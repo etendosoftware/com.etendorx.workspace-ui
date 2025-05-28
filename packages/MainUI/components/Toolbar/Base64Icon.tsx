@@ -1,81 +1,26 @@
-import { useState } from 'react';
 import Image from 'next/image';
-import { DefaultIcon } from './buttonConfigs';
+import { Base64IconProps } from './types';
 
-const Base64Icon: React.FC<{
-  src: string;
-  alt?: string;
-  size?: number;
-  onError?: () => void;
-  // Props para filter utilities
-  filter?: string;
-  hoverFilter?: string;
-  className?: string;
-  filterClass?: string;
-  hoverFilterClass?: string;
-}> = ({
+const DEFAULT_PROPS = {
+  alt: 'Icon',
+  className: '',
+  size: 16,
+};
+
+const CSS_CLASSES = {
+  base: 'icon-base64',
+  hoverPrefix: 'icon-hover-',
+} as const;
+
+const Base64Icon: React.FC<Base64IconProps> = ({
   src,
-  alt = 'icon',
-  size = 16,
-  onError,
-  filter,
-  hoverFilter,
-  className = '',
-  filterClass,
-  hoverFilterClass,
+  alt = DEFAULT_PROPS.alt,
+  className = DEFAULT_PROPS.className,
+  size = DEFAULT_PROPS.size,
 }) => {
-  const [hasError, setHasError] = useState(false);
+  const combinedClasses = `${CSS_CLASSES.base} ${className}`.trim();
 
-  const handleError = () => {
-    setHasError(true);
-    onError?.();
-  };
-
-  if (hasError) {
-    return <DefaultIcon />;
-  }
-
-  const baseClasses = `w-4 max-w-6 transition-all duration-200 ${className}`;
-  const filterClasses = filterClass ? ` ${filterClass}` : '';
-  const hoverClasses = hoverFilterClass ? ` hover:${hoverFilterClass}` : '';
-  const finalClassName = `${baseClasses}${filterClasses}${hoverClasses}`;
-
-  const baseStyle = {
-    objectFit: 'contain' as const,
-    display: 'block',
-    ...(filter && { filter }),
-  };
-
-  const hoverStyle = hoverFilter
-    ? ({
-        '--hover-filter': hoverFilter,
-      } as React.CSSProperties)
-    : {};
-
-  return (
-    <Image
-      src={src}
-      alt={alt}
-      onError={handleError}
-      width={size}
-      height={size}
-      style={{
-        ...baseStyle,
-        ...hoverStyle,
-      }}
-      className={finalClassName}
-      onMouseEnter={e => {
-        if (hoverFilter && e.currentTarget) {
-          e.currentTarget.style.filter = hoverFilter;
-        }
-      }}
-      onMouseLeave={e => {
-        if (filter && e.currentTarget) {
-          e.currentTarget.style.filter = filter;
-        }
-      }}
-    />
-  );
+  return <Image src={src} alt={alt} width={size} height={size} className={combinedClasses} />;
 };
 
 export default Base64Icon;

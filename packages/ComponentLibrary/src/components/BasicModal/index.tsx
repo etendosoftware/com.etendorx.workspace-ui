@@ -106,7 +106,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
     );
 
     const toggleFullScreen = useCallback(() => {
-      setIsFullScreen(prev => !prev);
+      setIsFullScreen((prev) => !prev);
     }, []);
 
     const modalStyles = useMemo(
@@ -186,7 +186,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
                     {isFullScreen ? <MinimizeIcon /> : <MaximizeIcon />}
                   </IconButton>
                 )}
-                <IconButton aria-label="close" className="w-4 h-4" onClick={handleClose}>
+                <IconButton aria-label="close" className="w-4 h-6" onClick={handleClose}>
                   <CloseIcon />
                 </IconButton>
               </Box>
