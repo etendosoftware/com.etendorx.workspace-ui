@@ -22,6 +22,8 @@ const IconButton = ({
   ...rest
 }: IconButtonProps) => {
   const DEFAULT_BUTTON_CLASSES = `
+  transition
+  duration-300
   disabled:bg-transparent
   disabled:text-(--color-transparent-neutral-30)
   rounded-full

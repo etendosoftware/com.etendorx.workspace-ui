@@ -1,7 +1,7 @@
 import { forwardRef, useCallback, useImperativeHandle, useEffect, useMemo } from 'react';
 import { DrawerSection } from '@workspaceui/componentlibrary/src/components/Drawer/DrawerSection';
 import { RecentlyViewedProps } from '@workspaceui/componentlibrary/src/components/Drawer/types';
-import { createParentMenuItem, findItemByIdentifier } from '@workspaceui/componentlibrary/src/utils/menuUtils';
+import { createParentMenuItem } from '@workspaceui/componentlibrary/src/utils/menuUtils';
 import { useRecentItems } from '../../../hooks/useRecentItems';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useUserContext } from '../../../hooks/useUserContext';

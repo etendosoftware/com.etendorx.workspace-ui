@@ -20,6 +20,7 @@ import { useFormInitialization } from '@/hooks/useFormInitialization';
 import { useFormInitialState } from '@/hooks/useFormInitialState';
 import { useToolbarContext } from '@/contexts/ToolbarContext';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
+import { useSelected } from '@/hooks/useSelected';
 
 const iconMap: Record<string, React.ReactElement> = {
   'Main Section': <FileIcon />,
@@ -33,6 +34,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const [selectedTab, setSelectedTab] = useState<string>('');
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
+  const { graph } = useSelected();
 
   const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
 
@@ -137,9 +139,11 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         setRecordId(String(data.id));
         refetch();
       }
+
+      graph.setSelected(tab, data);
       showSuccessModal('Saved');
     },
-    [initialState, mode, refetch, reset, setRecordId, showSuccessModal],
+    [graph, initialState, mode, refetch, reset, setRecordId, showSuccessModal, tab],
   );
 
   const onError = useCallback(
