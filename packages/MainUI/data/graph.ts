@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import EventEmitter from 'events';
 
@@ -50,7 +51,9 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
     const destNode = this.nodes.get(destinationId);
 
     if (!sourceNode || !destNode) {
-      throw new Error('Both nodes must exist before adding an edge');
+      logger.warn('Both nodes must exist before adding an edge', {sourceNode, destNode});
+
+      return this;
     }
 
     sourceNode.neighbors.add(destNode);

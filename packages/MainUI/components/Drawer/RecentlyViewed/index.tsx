@@ -4,7 +4,6 @@ import { RecentlyViewedProps } from '@workspaceui/componentlibrary/src/component
 import { createParentMenuItem, findItemByIdentifier } from '@workspaceui/componentlibrary/src/utils/menuUtils';
 import { useRecentItems } from '../../../hooks/useRecentItems';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { useItemActions } from '@workspaceui/componentlibrary/src/hooks/useItemType';
 import { useUserContext } from '../../../hooks/useUserContext';
 import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { useLanguage } from '@/contexts/language';
@@ -15,16 +14,6 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
     const { currentRole } = useUserContext();
     const { language } = useLanguage();
 
-    const onWindowClick = useCallback((item: Menu) => onClick(item), [onClick]);
-    const onReportClick = useCallback((item: Menu) => onClick(item), [onClick]);
-    const onProcessClick = useCallback((item: Menu) => onClick(item), [onClick]);
-
-    const handleItemClick = useItemActions({
-      onWindowClick,
-      onReportClick,
-      onProcessClick,
-    });
-
     const {
       localRecentItems,
       isExpanded,
@@ -33,7 +22,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
       hasItems,
       addRecentItem,
       updateTranslations,
-    } = useRecentItems(items, handleItemClick, onClick, currentRole?.id, getTranslatedName);
+    } = useRecentItems(items, onClick, currentRole?.id ?? "", getTranslatedName);
 
     useEffect(() => {
       if (currentRole?.id && items.length > 0) {
@@ -47,13 +36,8 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
           addRecentItem(item);
           return;
         }
-
-        const menuItem = findItemByIdentifier(items, item.id);
-        if (menuItem) {
-          addRecentItem(menuItem);
-        }
       },
-      [items, addRecentItem],
+      [addRecentItem],
     );
 
     useImperativeHandle(
