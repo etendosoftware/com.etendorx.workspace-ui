@@ -25,7 +25,7 @@ export interface DrawerProps {
   children?: React.ReactNode;
   sectionGroups?: SectionGroup[];
   windowId?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   RecentlyViewedComponent?: any;
   getTranslatedName?: (item: Menu) => string;
   searchContext: SearchContextType;

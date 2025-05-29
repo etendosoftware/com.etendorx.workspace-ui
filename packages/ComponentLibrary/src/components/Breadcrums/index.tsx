@@ -1,14 +1,14 @@
-import { type FC, useState, useCallback, useMemo, useRef } from 'react';
-import { Breadcrumbs, Link, Typography, Box, MenuItem, useTheme } from '@mui/material';
-import NavigateNextIcon from '../../assets/icons/chevron-right.svg';
+import { Box, Breadcrumbs, Link, MenuItem, Typography, useTheme } from '@mui/material';
+import { type FC, useCallback, useMemo, useState } from 'react';
 import ArrowLeftIcon from '../../assets/icons/arrow-left.svg';
 import ChevronDown from '../../assets/icons/chevron-down.svg';
+import NavigateNextIcon from '../../assets/icons/chevron-right.svg';
 import MoreHorizIcon from '../../assets/icons/more-horizontal.svg';
-import { useStyle } from './styles';
-import type { BreadcrumbProps, BreadcrumbAction, BreadcrumbItem } from './types';
-import ToggleChip from '../Toggle/ToggleChip';
 import IconButton from '../IconButton';
 import Menu from '../Menu';
+import ToggleChip from '../Toggle/ToggleChip';
+import { useStyle } from './styles';
+import type { BreadcrumbAction, BreadcrumbItem, BreadcrumbProps } from './types';
 
 const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, homeText = 'Home', separator }) => {
   const [isHomeHovered, setIsHomeHovered] = useState<boolean>(false);
@@ -66,12 +66,12 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
   const renderHomeIcon = useCallback(() => {
     if (isHomeHovered) {
       return (
-        <IconButton className="w-10 h-10 bg-(--color-baseline-0) hover:bg-(--color-baseline-0) hover:text-(--color-baseline-80)">
+        <IconButton className='w-10 h-10 bg-(--color-baseline-0) hover:bg-(--color-baseline-0) hover:text-(--color-baseline-80)'>
           <ArrowLeftIcon />
         </IconButton>
       );
     }
-    return <IconButton className="w-10 h-10 text-[1.5rem] bg-(--color-transparent-neutral-5)">{homeIcon}</IconButton>;
+    return <IconButton className='w-10 h-10 text-[1.5rem] bg-(--color-transparent-neutral-5)'>{homeIcon}</IconButton>;
   }, [homeIcon, isHomeHovered]);
 
   const renderBreadcrumbItem = useCallback(
@@ -90,17 +90,23 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
               {item.label}
             </Typography>
             {item.actions && item.actions.length > 0 && (
-              <IconButton onClick={() => handleActionMenuOpen(item.actions!)}>
+              <IconButton
+                onClick={() => {
+                  if (item.actions) {
+                    handleActionMenuOpen(item.actions);
+                  }
+                }}>
+                {' '}
                 <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
               </IconButton>
             )}
           </>
         ) : (
           <Link
-            href="#"
+            href='#'
             onClick={(e) => {
               e.preventDefault();
-              item.onClick && item.onClick();
+              item.onClick?.();
             }}
             sx={sx.link}>
             <Typography noWrap sx={sx.breadcrumbTypography}>
@@ -123,38 +129,37 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
   const renderBreadcrumbItems = useMemo(() => {
     if (items.length <= 2) {
       return items.map((item, index) => renderBreadcrumbItem(item, index === items.length - 1));
-    } else {
-      const firstItem = items[0];
-      const lastItem = items[items.length - 1];
-      const middleItems = items.slice(1, -1);
-
-      return (
-        <>
-          {renderBreadcrumbItem(firstItem, false)}
-          {middleItems.length > 0 && (
-            <Box sx={sx.breadcrumbItem}>
-              <IconButton onClick={handleMiddleMenuOpen}>
-                <MoreHorizIcon fill={theme.palette.baselineColor.neutral[80]} />
-              </IconButton>
-              <Menu rect={middleRect} open={isOpenMenu} onClose={handleMiddleMenuClose}>
-                {middleItems.map((item) => (
-                  <MenuItem
-                    key={item.id}
-                    onClick={() => {
-                      item.onClick && item.onClick();
-                      handleMiddleMenuClose();
-                    }}
-                    sx={sx.menuItem}>
-                    {item.label}
-                  </MenuItem>
-                ))}
-              </Menu>
-            </Box>
-          )}
-          {renderBreadcrumbItem(lastItem, true)}
-        </>
-      );
     }
+    const firstItem = items[0];
+    const lastItem = items[items.length - 1];
+    const middleItems = items.slice(1, -1);
+
+    return (
+      <>
+        {renderBreadcrumbItem(firstItem, false)}
+        {middleItems.length > 0 && (
+          <Box sx={sx.breadcrumbItem}>
+            <IconButton onClick={handleMiddleMenuOpen}>
+              <MoreHorizIcon fill={theme.palette.baselineColor.neutral[80]} />
+            </IconButton>
+            <Menu rect={middleRect} open={isOpenMenu} onClose={handleMiddleMenuClose}>
+              {middleItems.map((item) => (
+                <MenuItem
+                  key={item.id}
+                  onClick={() => {
+                    item.onClick?.();
+                    handleMiddleMenuClose();
+                  }}
+                  sx={sx.menuItem}>
+                  {item.label}
+                </MenuItem>
+              ))}
+            </Menu>
+          </Box>
+        )}
+        {renderBreadcrumbItem(lastItem, true)}
+      </>
+    );
   }, [
     handleMiddleMenuClose,
     handleMiddleMenuOpen,
@@ -171,9 +176,9 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
 
   return (
     <Box sx={sx.container}>
-      <Breadcrumbs separator={activeSeparator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
+      <Breadcrumbs separator={activeSeparator} aria-label='breadcrumb' sx={sx.breadcrumbs}>
         <Box sx={sx.homeContainer}>
-          <Link href="#" onClick={handleClick} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+          <Link href='#' onClick={handleClick} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
             {renderHomeIcon()}
           </Link>
           <Typography onClick={onHomeClick} sx={sx.homeText}>

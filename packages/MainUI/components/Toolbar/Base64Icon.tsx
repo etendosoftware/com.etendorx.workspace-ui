@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { Base64IconProps } from './types';
+import type { Base64IconProps } from './types';
 
 const DEFAULT_PROPS = {
   alt: 'Icon',

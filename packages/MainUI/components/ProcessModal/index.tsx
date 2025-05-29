@@ -90,7 +90,7 @@ const ProcessModal = memo(
         <Dialog
           open={showConfirmDialog}
           onClose={handleConfirmModalClose}
-          maxWidth="md"
+          maxWidth='md'
           fullWidth
           sx={styles.dialog}
           closeAfterTransition>

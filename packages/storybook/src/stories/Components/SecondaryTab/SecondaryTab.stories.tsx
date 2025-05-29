@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import type React from 'react';
+import { useState, useEffect } from 'react';
 import { TABS_CONFIG } from './mock';
 import SecondaryTabs from '@workspaceui/componentlibrary/src/components/SecondaryTabs';
 import type { Meta, StoryObj } from '@storybook/react';
-import { TabContent } from '@workspaceui/componentlibrary/src/components/SecondaryTabs/types';
+import type { TabContent } from '@workspaceui/componentlibrary/src/components/SecondaryTabs/types';
 
 const meta: Meta<typeof SecondaryTabs> = {
   title: 'Components/SecondaryTabs',
@@ -20,7 +21,7 @@ const SecondaryTabsTemplate: React.FC = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const updatedTabs = tabsContent.map(tab => ({
+      const updatedTabs = tabsContent.map((tab) => ({
         ...tab,
         isLoading: false,
       }));

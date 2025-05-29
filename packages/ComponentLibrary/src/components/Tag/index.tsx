@@ -12,7 +12,7 @@ const Tag: React.FC<TagProps> = ({ type, label, icon, onClick }) => {
       icon={coloredIcon}
       label={label}
       onClick={onClick}
-      variant="outlined"
+      variant='outlined'
       style={styles.getChipStyles(type)}
       sx={styles.sx.chipLabel(icon)}
     />

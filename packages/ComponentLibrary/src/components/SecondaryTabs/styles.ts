@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
 import { type Theme, useTheme } from '@mui/material';
+import { useMemo } from 'react';
 
 export const useStyle = () => {
   const theme = useTheme();
@@ -131,7 +131,7 @@ export const getRightButtonStyles = (open: boolean, theme: Theme) => ({
   color: open ? theme.palette.dynamicColor.contrastText : theme.palette.baselineColor.neutral[80],
   backgroundColor: open ? theme.palette.baselineColor.neutral[80] : theme.palette.baselineColor.neutral[0],
   borderRadius: '50%',
-  boxShadow: `0 0.25rem 0.5rem rgba(0, 0, 0, 0.15)`,
+  boxShadow: '0 0.25rem 0.5rem rgba(0, 0, 0, 0.15)',
   transition: 'background-color 0.5s ease, color 0.5s ease, border-radius 0.5s ease, box-shadow 0.5s ease',
   '&:hover': {
     color: theme.palette.dynamicColor.contrastText,

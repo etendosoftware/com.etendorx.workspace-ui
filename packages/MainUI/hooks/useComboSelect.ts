@@ -1,11 +1,11 @@
-import { useCallback, useState } from 'react';
-import type { Field } from '@workspaceui/etendohookbinder/src/api/types';
-import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
-import { useFormContext } from 'react-hook-form';
 import { useTabContext } from '@/contexts/tab';
 import { logger } from '@/utils/logger';
-import useFormParent from './useFormParent';
+import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
+import type { Field } from '@workspaceui/etendohookbinder/src/api/types';
+import { useCallback, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 import { FieldName } from './types';
+import useFormParent from './useFormParent';
 
 export interface UseComboSelectParams {
   field: Field;
@@ -45,7 +45,7 @@ export const useComboSelect = ({ field }: UseComboSelectParams) => {
           ...parentData,
         });
 
-        Object.entries(getValues()).forEach(([key, value]) => {
+        for (const [key, value] of Object.entries(getValues())) {
           const _key = tab.fields[key]?.inputName;
           const stringValue = String(value);
 
@@ -62,7 +62,7 @@ export const useComboSelect = ({ field }: UseComboSelectParams) => {
           if (safeValue) {
             body.set(_key || key, safeValue);
           }
-        });
+        }
 
         const { data, statusText } = await datasource.client.request(field.selector?.datasourceName ?? '', {
           method: 'POST',

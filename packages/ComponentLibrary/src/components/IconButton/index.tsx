@@ -44,7 +44,7 @@ const IconButton = ({
     <Tooltip title={tooltip}>
       <button
         ref={ref}
-        type="button"
+        type='button'
         aria-label={ariaLabel}
         disabled={disabled}
         className={cleanDefaultClasses(className, DEFAULT_BUTTON_CLASSES)}

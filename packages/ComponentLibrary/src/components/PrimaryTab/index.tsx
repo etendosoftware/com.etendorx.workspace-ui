@@ -52,7 +52,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
 
   const buildTabs = useMemo(
     () =>
-      tabs.map(tab => {
+      tabs.map((tab) => {
         const isSelected = selectedTab === tab.id;
         const isHovered = hoveredTab === tab.id;
 
@@ -73,11 +73,11 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
                 : undefined
             }
             label={tab.showInTab !== 'icon' ? tab.label : undefined}
-            iconPosition="start"
+            iconPosition='start'
             onMouseEnter={() => handleMouseEnter(tab.id)}
             onMouseLeave={handleMouseLeave}
             sx={sx.tab}
-            onClick={event => {
+            onClick={(event) => {
               event.preventDefault();
               handleChange(event, tab.id);
             }}
@@ -93,10 +93,10 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
         <Tabs
           value={selectedTab}
           onChange={handleChange}
-          scrollButtons="auto"
-          variant="scrollable"
+          scrollButtons='auto'
+          variant='scrollable'
           TabIndicatorProps={tabIndicatorProps}
-          aria-label="primary tabs"
+          aria-label='primary tabs'
           sx={sx.tabs}>
           {buildTabs}
         </Tabs>
@@ -105,7 +105,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
         {icon}
       </IconButton>
       <Menu anchorRef={buttonRef} open={isOpenMenu} onClose={handleMenuClose}>
-        {tabs.map(tab => {
+        {tabs.map((tab) => {
           const isSelected = selectedTab === tab.id;
           return (
             <MenuItem

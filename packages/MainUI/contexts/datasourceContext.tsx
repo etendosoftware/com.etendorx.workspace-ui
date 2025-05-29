@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useCallback, useRef, ReactNode, useMemo } from 'react';
+import { createContext, useContext, useCallback, useRef, type ReactNode, useMemo } from 'react';
 
 interface DatasourceContextValue {
   registerDatasource: (tabId: string, removeRecordLocally: (recordId: string) => void) => void;

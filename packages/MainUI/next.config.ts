@@ -1,5 +1,5 @@
-import { NextConfig } from 'next';
 import analyzer from '@next/bundle-analyzer';
+import type { NextConfig } from 'next';
 
 const DEBUG_MODE = process.env.DEBUG_MODE === 'true' || process.env.NODE_ENV === 'development';
 const ANALYZE = process.env.ANALYZE === 'true';
@@ -27,8 +27,8 @@ const nextConfig: NextConfig = {
       minimize: !DEBUG_MODE,
     };
 
-    const fileLoaderRule = config.module.rules.find(
-      (rule: { test: { toString: () => string | string[] } }) => rule.test && rule.test.toString().includes('svg'),
+    const fileLoaderRule = config.module.rules.find((rule: { test: { toString: () => string | string[] } }) =>
+      rule.test?.toString().includes('svg'),
     );
 
     if (fileLoaderRule) {
@@ -59,16 +59,14 @@ const nextConfig: NextConfig = {
     );
 
     if (config.optimization?.minimizer) {
-      config.optimization.minimizer.forEach(
-        (plugin: { options?: { terserOptions?: { compress?: { [key: string]: unknown } } } }) => {
-          if (plugin.options && plugin.options.terserOptions) {
-            plugin.options.terserOptions.compress = {
-              ...plugin.options.terserOptions.compress,
-              drop_console: !DEBUG_MODE,
-            };
-          }
-        },
-      );
+      for (const plugin of config.optimization.minimizer) {
+        if (plugin.options?.terserOptions) {
+          plugin.options.terserOptions.compress = {
+            ...plugin.options.terserOptions.compress,
+            drop_console: !DEBUG_MODE,
+          };
+        }
+      }
     }
 
     return config;

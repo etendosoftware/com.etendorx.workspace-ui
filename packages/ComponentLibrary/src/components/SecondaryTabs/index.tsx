@@ -75,7 +75,7 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
         label={
           <TabLabel
             icon={
-              <Box component="span" sx={sx.iconContainer}>
+              <Box component='span' sx={sx.iconContainer}>
                 {renderIcon(tab.icon, sx.menuItemIcon)}
               </Box>
             }
@@ -84,7 +84,7 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
             count={tab.numberOfItems}
           />
         }
-        iconPosition="start"
+        iconPosition='start'
         sx={sx.tab}
       />
     ),
@@ -94,7 +94,7 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
   return (
     <Box sx={sx.container}>
       <Box ref={tabsRef} sx={sx.tabsContainer}>
-        <Tabs value={selectedTab} onChange={handleChange} variant="scrollable" scrollButtons="auto">
+        <Tabs value={selectedTab} onChange={handleChange} variant='scrollable' scrollButtons='auto'>
           {visibleTabs.map(renderTab)}
         </Tabs>
         {hiddenTabs.length > 0 && (

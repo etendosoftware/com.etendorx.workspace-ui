@@ -141,7 +141,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
       }
 
       return (
-        <Button onClick={handleOpen} variant="contained">
+        <Button onClick={handleOpen} variant='contained'>
           Modal
         </Button>
       );
@@ -182,11 +182,11 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
               {descriptionText && <Typography sx={sx.descriptionText}>{descriptionText}</Typography>}
               <Box sx={sx.actionButtons}>
                 {isFullScreenEnabled && (
-                  <IconButton aria-label="fullscreen" className="w-4 h-4" onClick={toggleFullScreen}>
+                  <IconButton aria-label='fullscreen' className='w-4 h-4' onClick={toggleFullScreen}>
                     {isFullScreen ? <MinimizeIcon /> : <MaximizeIcon />}
                   </IconButton>
                 )}
-                <IconButton aria-label="close" className="w-4 h-6" onClick={handleClose}>
+                <IconButton aria-label='close' className='w-4 h-6' onClick={handleClose}>
                   <CloseIcon />
                 </IconButton>
               </Box>

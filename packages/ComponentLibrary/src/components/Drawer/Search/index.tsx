@@ -19,7 +19,7 @@ export const DrawerItems: React.FC<DrawerItemsProps> = React.memo(
     return (
       <>
         {Array.isArray(items)
-          ? items.map(item => {
+          ? items.map((item) => {
               if (!toggleFunctions.current[item.id]) {
                 toggleFunctions.current[item.id] = () => toggleItemExpansion(item.id);
               }

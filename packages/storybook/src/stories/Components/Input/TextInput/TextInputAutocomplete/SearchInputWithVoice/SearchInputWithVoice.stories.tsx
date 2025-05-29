@@ -15,7 +15,7 @@ const TemplateVoice = () => {
         <SearchInputWithVoice
           value={value}
           setValue={setValue}
-          placeholder="Search"
+          placeholder='Search'
           onVoiceClick={() => alert('Voice activated')}
         />
       </Grid>

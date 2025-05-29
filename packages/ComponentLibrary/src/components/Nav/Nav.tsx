@@ -1,7 +1,7 @@
 'use client';
 
 import type React from 'react';
-import { type ReactNode, useCallback, useState } from 'react'
+import { type ReactNode, useCallback, useState } from 'react';
 import RightButtons from './RigthComponents/RightButtons';
 import SearchInputWithVoice from '../Input/TextInput/TextInputAutocomplete/SearchInputWithVoice';
 import { useStyle } from './Nav.styles';
@@ -22,7 +22,7 @@ const Nav: React.FC<NavProps> = ({ children, searchDisabled = true, title }) => 
         <SearchInputWithVoice
           value={value}
           setValue={setValue}
-          placeholder="Search"
+          placeholder='Search'
           onVoiceClick={handleVoiceClick}
           disabled={searchDisabled}
         />

@@ -13,12 +13,12 @@ module.exports = {
     name: '@storybook/react-vite',
     options: {},
   },
-  viteFinal: async config => {
+  viteFinal: async (config) => {
     return mergeConfig(config, {
       build: {
         rollupOptions: {
           output: {
-            manualChunks: id => {
+            manualChunks: (id) => {
               if (id.includes('node_modules')) {
                 if (id.includes('react')) return 'vendor-react';
                 if (id.includes('@storybook')) return 'vendor-storybook';

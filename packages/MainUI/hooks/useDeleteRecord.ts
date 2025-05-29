@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import type { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 import { useUserContext } from './useUserContext';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useTranslation } from './useTranslation';
@@ -38,7 +38,7 @@ export const useDeleteRecord = ({ tab, onSuccess, onError }: UseDeleteRecordPara
         controller.current.abort();
         controller.current = new AbortController();
 
-        const deletePromises = records.map(record => {
+        const deletePromises = records.map((record) => {
           if (!record || !record.id) {
             throw new Error(t('status.noIdError'));
           }
@@ -68,10 +68,10 @@ export const useDeleteRecord = ({ tab, onSuccess, onError }: UseDeleteRecordPara
 
         const responses = await Promise.allSettled(deletePromises);
 
-        const errors = responses.filter(response => response.status === 'rejected') as PromiseRejectedResult[];
+        const errors = responses.filter((response) => response.status === 'rejected') as PromiseRejectedResult[];
 
         if (errors.length > 0) {
-          const errorMessages = errors.map(err =>
+          const errorMessages = errors.map((err) =>
             err.reason instanceof Error ? err.reason.message : String(err.reason),
           );
 

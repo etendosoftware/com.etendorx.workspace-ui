@@ -1,5 +1,5 @@
-import { ChangeEvent } from 'react';
-import { TextInputProps } from './types';
+import type { ChangeEvent } from 'react';
+import type { TextInputProps } from './types';
 
 export const TextInput = ({
   leftIcon,
@@ -27,27 +27,19 @@ export const TextInput = ({
   };
 
   return (
-    <div
-      className="w-full font-['Inter'] font-medium"
-      role="textbox"
-      aria-placeholder={field.name}
-      aria-label={field.name}
-      aria-readonly={readOnly}
-      aria-required={field.isMandatory}>
+    <div className="w-full font-['Inter'] font-medium">
       {label && (
         <label
           htmlFor={props.id || props.name}
           className={`block mb-1 text-sm ${isDisabled ? 'text-baseline-60' : 'text-baseline-80'}`}>
           {label}
-          {field.isMandatory && <span className="text-error-main ml-1">*</span>}
+          {field.isMandatory && <span className='text-error-main ml-1'>*</span>}
         </label>
       )}
-      <div
-        className={`relative flex items-center w-full h-10 ${isDisabled ? 'pointer-events-none' : ''}`}
-        aria-description={field.helpComment}>
+      <div className={`relative flex items-center w-full h-10 ${isDisabled ? 'pointer-events-none' : ''}`}>
         {leftIcon && (
-          <div className="absolute left-3 text-baseline-60">
-            <button type="button" onClick={onLeftIconClick} className="p-1 focus:outline-none" disabled={isDisabled}>
+          <div className='absolute left-3 text-baseline-60'>
+            <button type='button' onClick={onLeftIconClick} className='p-1 focus:outline-none' disabled={isDisabled}>
               {leftIcon}
             </button>
           </div>
@@ -61,11 +53,13 @@ export const TextInput = ({
           onChange={handleChange}
           disabled={isDisabled}
           readOnly={readOnly}
+          aria-label={field.name}
+          aria-required={field.isMandatory}
           {...props}
         />
         {rightIcon && (
-          <div className="absolute right-3 text-baseline-60">
-            <button type="button" onClick={onRightIconClick} className="p-1 focus:outline-none" disabled={isDisabled}>
+          <div className='absolute right-3 text-baseline-60'>
+            <button type='button' onClick={onRightIconClick} className='p-1 focus:outline-none' disabled={isDisabled}>
               {rightIcon}
             </button>
           </div>

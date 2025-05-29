@@ -1,13 +1,13 @@
 import {
-  FieldType,
-  FormMode,
   type EntityData,
   type Field,
+  FieldType,
+  FormMode,
   type Tab,
   type WindowMetadata,
 } from '@workspaceui/etendohookbinder/src/api/types';
 
-export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const getFieldReference = (reference?: string): FieldType => {
   switch (reference) {
@@ -31,9 +31,6 @@ export const getFieldReference = (reference?: string): FieldType => {
       return FieldType.SELECT;
     case 'FF80818132D8F0F30132D9BC395D0038':
       return FieldType.WINDOW;
-    case '12':
-    case '11':
-    case '22':
     default:
       return FieldType.TEXT;
   }
@@ -42,8 +39,8 @@ export const getFieldReference = (reference?: string): FieldType => {
 export const sanitizeValue = (value: unknown, field?: Field) => {
   const reference = getFieldReference(field?.column?.reference);
 
-  if (reference == FieldType.DATE) {
-    return value ? String(value).split("-").toReversed().join("-") : null;
+  if (reference === FieldType.DATE) {
+    return value ? String(value).split('-').toReversed().join('-') : null;
   }
 
   const stringValue = String(value);

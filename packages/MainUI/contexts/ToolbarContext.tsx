@@ -36,7 +36,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
     useState<ToolbarActions>(initialState);
 
   const registerActions = useCallback((newActions: Partial<ToolbarActions>) => {
-    setActions(prev => ({ ...prev, ...newActions }));
+    setActions((prev) => ({ ...prev, ...newActions }));
   }, []);
 
   const value = useMemo(

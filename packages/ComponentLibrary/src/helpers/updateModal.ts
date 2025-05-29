@@ -9,12 +9,7 @@ interface ModalStyleProps {
   posY: string | number;
 }
 
-export const calculateModalStyles = ({
-  height,
-  width,
-  posX,
-  posY,
-}: ModalStyleProps) => {
+export const calculateModalStyles = ({ height, width, posX, posY }: ModalStyleProps) => {
   return {
     height: height === Container.Auto ? 'auto' : `${height}px`,
     width: width === Container.Auto ? 'auto' : `${width}px`,

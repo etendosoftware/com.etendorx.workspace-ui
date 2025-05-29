@@ -40,9 +40,9 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
     (event: DragEndEvent) => {
       const { active, over } = event;
       if (over && active.id !== over.id) {
-        setPeople(items => {
-          const oldIndex = items.findIndex(item => item.id === active.id);
-          const newIndex = items.findIndex(item => item.id === over.id);
+        setPeople((items) => {
+          const oldIndex = items.findIndex((item) => item.id === active.id);
+          const newIndex = items.findIndex((item) => item.id === over.id);
           return arrayMove(items, oldIndex, newIndex);
         });
       }
@@ -51,13 +51,15 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
   );
 
   const handleToggleAll = useCallback(() => {
-    const allActivated = people.every(person => person.isActive);
-    setPeople(prev => prev.map(person => ({ ...person, isActive: !allActivated })));
+    const allActivated = people.every((person) => person.isActive);
+    setPeople((prev) => prev.map((person) => ({ ...person, isActive: !allActivated })));
   }, [people, setPeople]);
 
   const handleToggle = useCallback(
     (id: UniqueIdentifier) => {
-      setPeople(prev => prev.map(person => (person.id === id ? { ...person, isActive: !person.isActive } : person)));
+      setPeople((prev) =>
+        prev.map((person) => (person.id === id ? { ...person, isActive: !person.isActive } : person)),
+      );
     },
     [setPeople],
   );
@@ -78,7 +80,7 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
       <div style={styles.containerStyles}>
         <p>{buttonText}</p>
         <Link sx={sx.linkStyles} onClick={handleToggleAll}>
-          {people.every(person => person.isActive) ? deactivateAllText : activateAllText}
+          {people.every((person) => person.isActive) ? deactivateAllText : activateAllText}
         </Link>
       </div>
       <div>
@@ -87,9 +89,9 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
           collisionDetection={closestCenter}
           modifiers={[restrictToParentElement, restrictToVerticalAxis]}
           onDragEnd={handleDragEnd}>
-          <SortableContext items={people.map(person => person.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={people.map((person) => person.id)} strategy={verticalListSortingStrategy}>
             <List>
-              {people.map(person => (
+              {people.map((person) => (
                 <SortableItem
                   key={person.id}
                   id={person.id}

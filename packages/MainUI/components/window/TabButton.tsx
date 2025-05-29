@@ -20,7 +20,7 @@ export const TabButton = ({ tab, onClick, active, onDoubleClick }: TabSwitchProp
   return (
     <span>
       <button
-        type="button"
+        type='button'
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         title={title}

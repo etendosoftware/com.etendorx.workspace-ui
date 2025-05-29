@@ -23,8 +23,8 @@ const ExpandMenu = ({ anchorRef, onClose, open, placeholderTranslation }: Expand
           value={inputValue}
           onChange={handleInputChange}
           placeholder={placeholderTranslation}
-          variant="outlined"
-          size="small"
+          variant='outlined'
+          size='small'
         />
       </MenuItem>
     </Menu>

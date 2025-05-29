@@ -1,6 +1,6 @@
 'use client';
 
-import { createTheme, type ThemeOptions } from '@mui/material';
+import { type ThemeOptions, createTheme } from '@mui/material';
 
 // Colors for MUI attributes
 export const PRIMARY_100 = '#D8DBF6';
@@ -204,7 +204,7 @@ export const themeOptions: ThemeOptions = {
           borderTopLeftRadius: '.5rem',
           backgroundColor: TERTIARY_50,
 
-          [':hover']: {
+          ':hover': {
             backgroundColor: NEUTRAL_50,
           },
           ':focus': {

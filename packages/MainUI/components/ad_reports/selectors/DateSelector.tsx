@@ -2,7 +2,7 @@ import { memo, useRef } from 'react';
 import { InputAdornment, TextField } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import CalendarIcon from '@workspaceui/componentlibrary/src/assets/icons/calendar.svg';
-import { DateSelectorProps } from '../../Form/FormView/types';
+import type { DateSelectorProps } from '../../Form/FormView/types';
 import { IconButton } from '@workspaceui/componentlibrary/src/components';
 const StyledTextField = styled(TextField)(({ theme }) => ({
   '& .MuiInputBase-root': {
@@ -56,9 +56,9 @@ const DateSelector = memo(
         fullWidth
         label={label}
         name={name}
-        type="date"
-        variant="standard"
-        margin="normal"
+        type='date'
+        variant='standard'
+        margin='normal'
         value={formatDateForInput(value)}
         onChange={handleChange}
         onBlur={onBlur}
@@ -70,8 +70,8 @@ const DateSelector = memo(
         InputLabelProps={INPUT_LABEL_PROPS}
         InputProps={{
           endAdornment: (
-            <InputAdornment position="end">
-              <IconButton onClick={handleIconClick} disabled={readOnly} className="w-1 h-1">
+            <InputAdornment position='end'>
+              <IconButton onClick={handleIconClick} disabled={readOnly} className='w-1 h-1'>
                 <CalendarIcon />
               </IconButton>
             </InputAdornment>

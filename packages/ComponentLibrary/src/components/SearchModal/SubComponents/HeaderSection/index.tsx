@@ -12,7 +12,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({ title }) => {
       <Box sx={styles.searchIconContainer}>
         <SearchIcon sx={styles.iconSearchStyles} />
       </Box>
-      <Typography variant="h6" sx={styles.headerTitle}>
+      <Typography variant='h6' sx={styles.headerTitle}>
         {title}
       </Typography>
     </Box>

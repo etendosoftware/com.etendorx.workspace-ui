@@ -1,14 +1,14 @@
-import { Field } from '@workspaceui/etendohookbinder/src/api/types';
-import { StringSelector } from './StringSelector';
+import type { Field } from '@workspaceui/etendohookbinder/src/api/types';
+import { memo } from 'react';
+import { useFormContext } from 'react-hook-form';
 import { BooleanSelector } from './BooleanSelector';
 import { DateSelector } from './DateSelector';
-import { SelectSelector } from './SelectSelector';
-import { useFormContext } from 'react-hook-form';
-import { TableDirSelector } from './TableDirSelector';
-import QuantitySelector from './QuantitySelector';
 import { ListSelector } from './ListSelector';
 import { NumericSelector } from './NumericSelector';
-import { memo } from 'react';
+import QuantitySelector from './QuantitySelector';
+import { SelectSelector } from './SelectSelector';
+import { StringSelector } from './StringSelector';
+import { TableDirSelector } from './TableDirSelector';
 
 export type GenericSelectorProps = {
   field: Field;
@@ -50,8 +50,6 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
       return <SelectSelector field={field} isReadOnly={isReadOnly} />;
     case '800008':
       return <NumericSelector field={field} readOnly={isReadOnly} />;
-    case '11':
-    case '12':
     default:
       return <StringSelector field={field} readOnly={isReadOnly} />;
   }

@@ -1,5 +1,5 @@
-import { BaseFieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
-import { ProcessActionButton, ProcessButton, ProcessDefinitionButton } from '@/components/ProcessModal/types';
+import type { BaseFieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
+import type { ProcessActionButton, ProcessButton, ProcessDefinitionButton } from '@/components/ProcessModal/types';
 
 export type ButtonType = 'ACTION' | 'DROPDOWN' | 'MODAL' | 'TOGGLE' | 'CUSTOM';
 export type ButtonSection = 'left' | 'center' | 'right';

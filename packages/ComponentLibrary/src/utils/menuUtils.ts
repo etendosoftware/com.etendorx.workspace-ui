@@ -1,6 +1,6 @@
 import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
-import type { RecentItem } from '../components/Drawer/types';
 import type { TranslateFunction } from '@workspaceui/mainui/hooks/types';
+import type { RecentItem } from '../components/Drawer/types';
 
 const RECENTLY_VIEWED_ICON = '⌛';
 
@@ -66,7 +66,7 @@ export const createParentMenuItem = (items: RecentItem[], t: TranslateFunction):
     action: 'W',
   };
 
-  if (!items?.length || typeof items.map != 'function') {
+  if (!items?.length || typeof items.map !== 'function') {
     return baseMenuItem;
   }
 

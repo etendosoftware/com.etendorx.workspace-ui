@@ -1,6 +1,7 @@
+import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
+import type { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { forwardRef, useCallback, useRef, useState } from 'react';
 import CalendarIcon from '../../../../../../ComponentLibrary/src/assets/icons/calendar.svg';
-import { Field } from '@workspaceui/etendohookbinder/src/api/types';
 
 interface DateInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -15,7 +16,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     const inputRef = useRef<HTMLInputElement>();
     const [isFocused, setIsFocused] = useState(false);
 
-    const handleClick = useCallback(() => {
+    const handleCalendarClick = useCallback(() => {
       if (!isReadOnly && inputRef.current) {
         inputRef.current.showPicker();
       }
@@ -52,7 +53,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     );
 
     const getInputClass = useCallback(() => {
-      const baseClass = 'w-full h-full py-2 pl-2 pr-8 border-b outline-none text-sm';
+      const baseClass = 'w-full h-full py-2 pl-2 pr-10 border-b outline-none text-sm';
       const focusClass = isFocused ? 'border-baseline-80 bg-baseline-0' : 'border-baseline-60';
       const readOnlyClass = isReadOnly
         ? 'bg-transparent-neutral-20 rounded-t-lg cursor-not-allowed'
@@ -68,7 +69,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       return (
         <label htmlFor={name} className={getLabelClass()}>
           {label}
-          {props.required && <span className="text-error-main ml-1">*</span>}
+          {props.required && <span className='text-error-main ml-1'>*</span>}
         </label>
       );
     }, [getLabelClass, label, name, props.required]);
@@ -80,13 +81,11 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     }, [error, helperText]);
 
     return (
-      <div className="w-full font-medium">
+      <div className='w-full font-medium'>
         {renderLabel()}
-        <div
-          className={`relative w-full h-10 flex items-center ${isReadOnly ? 'pointer-events-none' : ''}`}
-          onClick={handleClick}>
+        <div className='relative w-full h-10 flex items-center'>
           <input
-            type="date"
+            type='date'
             id={name}
             name={name}
             ref={handleRef}
@@ -94,7 +93,6 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             onBlur={handleBlur}
             className={getInputClass()}
             readOnly={isReadOnly}
-            role="textbox"
             aria-label={field.name}
             aria-readonly={isReadOnly}
             aria-required={field.isMandatory}
@@ -102,8 +100,10 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             aria-details={field.helpComment}
             {...props}
           />
-          <div className="absolute right-0 top-0 h-full flex items-center pr-1 pointer-events-none">
-            <CalendarIcon fill="currentColor" className="w-5 h-5 text-baseline-60" />
+          <div className='absolute right-1 top-1/2 transform -translate-y-1/2'>
+            <IconButton onClick={handleCalendarClick} disabled={isReadOnly} className='w-8 h-8'>
+              <CalendarIcon className='w-5 h-5' />
+            </IconButton>
           </div>
         </div>
         {renderHelperText()}

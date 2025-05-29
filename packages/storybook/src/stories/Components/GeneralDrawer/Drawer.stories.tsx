@@ -1,4 +1,4 @@
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import DrawerComponent from '@workspaceui/componentlibrary/src/components/Drawer';
 import { menuMock } from '../../../../../MainUI/mocks/Drawer/index';
 import logoUrl from '@workspaceui/componentlibrary/src/assets/images/logo.svg?url';

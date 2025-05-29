@@ -1,8 +1,8 @@
 'use client';
 
-import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Graph, { type GraphEventListener } from '@/data/graph';
 import type { Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import Graph, { GraphEventListener } from '@/data/graph';
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface SelectedContext {
   graph: Graph<Tab>;
@@ -27,13 +27,14 @@ export const SelectedProvider = ({ children, tabs }: React.PropsWithChildren<{ t
 
       if (level === 0) {
         return [0];
-      } else if (maxLevel == level) {
-        return prev;
-      } else if (maxLevel > level) {
-        return [level - 1, level];
-      } else {
-        return [maxLevel, level];
       }
+      if (maxLevel === level) {
+        return prev;
+      }
+      if (maxLevel > level) {
+        return [level - 1, level];
+      }
+      return [maxLevel, level];
     });
   }, []);
 

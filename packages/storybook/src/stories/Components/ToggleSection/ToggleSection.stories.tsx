@@ -1,5 +1,5 @@
 import SelectorList from '@workspaceui/componentlibrary/src/components/ProfileModal/ToggleSection';
-import { SelectorListProps } from '@workspaceui/componentlibrary/src/components/ProfileModal/types';
+import type { SelectorListProps } from '@workspaceui/componentlibrary/src/components/ProfileModal/types';
 import type { Meta, StoryObj } from '@storybook/react';
 import { mockRoles } from './mock';
 

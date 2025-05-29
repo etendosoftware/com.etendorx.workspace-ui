@@ -1,4 +1,4 @@
-import { StatusModalState, StatusType } from '@workspaceui/componentlibrary/src/components/StatusModal/types';
+import type { StatusModalState, StatusType } from '@workspaceui/componentlibrary/src/components/StatusModal/types';
 import { useState, useCallback } from 'react';
 
 const initialState: StatusModalState = {
@@ -121,7 +121,7 @@ export const useStatusModal = () => {
   }, []);
 
   const hideStatusModal = useCallback(() => {
-    setState(prev => ({ ...prev, open: false }));
+    setState((prev) => ({ ...prev, open: false }));
   }, []);
 
   return {

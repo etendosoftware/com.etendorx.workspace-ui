@@ -24,7 +24,7 @@ const useLocalStorage = <T>(key: string, initialValue: T | (() => T)) => {
 
   const setValue = useCallback(
     (value: T | ((prevState: T) => T)) => {
-      setState(prevState => {
+      setState((prevState) => {
         const newValue = typeof value === 'function' ? (value as (prev: T) => T)(prevState) : value;
 
         if (isBrowser) {

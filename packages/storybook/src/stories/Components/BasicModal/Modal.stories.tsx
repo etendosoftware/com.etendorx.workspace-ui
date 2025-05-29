@@ -1,5 +1,5 @@
-import { ReactNode } from 'react';
-import React from 'react';
+import type { ReactNode } from 'react';
+import type React from 'react';
 import Modal from '@workspaceui/componentlibrary/src/components//BasicModal';
 import { List, MenuItem, Button } from '@mui/material';
 import { Position, Container } from '@workspaceui/componentlibrary/src/components//enums';
@@ -65,7 +65,7 @@ export default meta;
 type Story = StoryObj<ModalStoryProps>;
 
 const ModalTemplate: Story = {
-  render: args => (
+  render: (args) => (
     <Modal
       tittleHeader={'Header Title'}
       descriptionText={'This is a generic description'}
@@ -138,8 +138,8 @@ export const WithCustomButtons: Story = {
     showHeader: true,
     buttons: (
       <>
-        <Button variant="outlined">Custom Cancel</Button>
-        <Button variant="contained">Custom Save</Button>
+        <Button variant='outlined'>Custom Cancel</Button>
+        <Button variant='contained'>Custom Save</Button>
       </>
     ),
   },
@@ -168,7 +168,7 @@ export const FullScreenEnabled: Story = {
 export const WithCustomTrigger: Story = {
   ...ModalTemplate,
   args: {
-    customTrigger: <Button variant="contained">Open Custom Modal</Button>,
+    customTrigger: <Button variant='contained'>Open Custom Modal</Button>,
     menuItems: menuItems,
   },
 };

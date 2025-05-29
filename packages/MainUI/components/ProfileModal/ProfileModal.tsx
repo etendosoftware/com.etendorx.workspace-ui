@@ -1,19 +1,20 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { Button, useTheme } from '@mui/material';
-import CheckCircle from '../../../ComponentLibrary/src/assets/icons/check-circle.svg';
-import UserProfile from './UserProfile';
-import ToggleSection from './ToggleButton';
-import SelectorList from './ToggleSection';
-import { ProfileModalProps } from './types';
-import { useStyle } from './styles';
-import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
-import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
-import { Language } from '@workspaceui/componentlibrary/src/locales/types';
 import { useLanguage } from '@/contexts/language';
 import { useTranslation } from '@/hooks/useTranslation';
+import { Button, useTheme } from '@mui/material';
+import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
+import type { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
 import Menu from '@workspaceui/componentlibrary/src/components/Menu';
+import type { Language } from '@workspaceui/componentlibrary/src/locales/types';
+import type React from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import CheckCircle from '../../../ComponentLibrary/src/assets/icons/check-circle.svg';
+import ToggleSection from './ToggleButton';
+import SelectorList from './ToggleSection';
+import UserProfile from './UserProfile';
+import { useStyle } from './styles';
+import type { ProfileModalProps } from './types';
 
 const DefaultOrg = { title: '*', value: '0', id: '0' };
 
@@ -50,9 +51,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [selectedRole, setSelectedRole] = useState<Option | null>(() => {
     if (currentRole) {
       return { title: currentRole.name, value: currentRole.id, id: currentRole.id };
-    } else {
-      return null;
     }
+    return null;
   });
 
   const selectedClient = useMemo(() => {
@@ -63,17 +63,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [selectedOrg, setSelectedOrg] = useState<Option>(() => {
     if (currentOrganization) {
       return { title: currentOrganization.name, value: currentOrganization.id, id: currentOrganization.id };
-    } else {
-      return DefaultOrg;
     }
+    return DefaultOrg;
   });
 
   const [selectedWarehouse, setSelectedWarehouse] = useState<Option | null>(() => {
     if (currentWarehouse) {
       return { title: currentWarehouse.name, value: currentWarehouse.id, id: currentWarehouse.id };
-    } else {
-      return null;
     }
+    return null;
   });
 
   const [selectedLanguage, setSelectedLanguage] = useState<Option | null>(() => {
@@ -252,7 +250,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   return (
     <div>
-      <IconButton onClick={handleClick} className="w-10 h-10">
+      <IconButton onClick={handleClick} className='w-10 h-10'>
         {icon}
       </IconButton>
       <Menu open={isOpenMenu} rect={rect} onClose={handleClose}>

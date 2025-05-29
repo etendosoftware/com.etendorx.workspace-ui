@@ -1,5 +1,5 @@
 import { DEFAULT_LOGIN_CHARSET } from './constants';
-import { LoginResponse } from './types';
+import type { LoginResponse } from './types';
 
 const getCharset = (result: Response) =>
   result.headers.get('content-type')?.split('charset=')?.pop() || DEFAULT_LOGIN_CHARSET;

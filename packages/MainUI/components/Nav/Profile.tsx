@@ -1,8 +1,8 @@
 import { useContext, useState, useCallback, useMemo } from 'react';
 import { UserContext } from '../../contexts/user';
 import { logger } from '../../utils/logger';
-import { ProfileWrapperProps } from './types';
-import { Language } from '../../contexts/types';
+import type { ProfileWrapperProps } from './types';
+import type { Language } from '../../contexts/types';
 import { useLanguage } from '@/contexts/language';
 import ProfileModal from '../ProfileModal/ProfileModal';
 
@@ -31,7 +31,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
   }, []);
 
   const languagesWithFlags = useMemo(() => {
-    return languages.map(lang => ({
+    return languages.map((lang) => ({
       ...lang,
       flagEmoji: getFlag(lang.language as Language),
       displayName: `${getFlag(lang.language as Language)} ${lang.name}`,

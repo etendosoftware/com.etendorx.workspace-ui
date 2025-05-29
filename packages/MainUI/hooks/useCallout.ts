@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
-import { Field, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
+import type { Field, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { FieldValues } from 'react-hook-form';
+import type { FieldValues } from 'react-hook-form';
 import { logger } from '@/utils/logger';
 import { useTabContext } from '@/contexts/tab';
 

@@ -3,7 +3,7 @@ import CloseIcon from '@workspaceui/componentlibrary/src/assets/icons/x.svg';
 import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
 import { useStyle } from '@/components/Table/styles';
 import { ICON_BUTTON_SIZE, ADD_BUTTON_TEXT } from './constants';
-import { SearchBarProps } from './types';
+import type { SearchBarProps } from './types';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 
 export const SearchBar: React.FC<SearchBarProps> = ({ readOnly, onClear, onOpen, hasItems }) => {

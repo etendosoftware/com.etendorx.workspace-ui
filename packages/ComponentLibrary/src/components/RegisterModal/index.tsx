@@ -44,7 +44,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ registerText, translation
         </Button>
       }>
       <List sx={sx.itemList}>
-        {processMock.map(item => (
+        {processMock.map((item) => (
           <RadioButtonItem
             key={item.id}
             id={item.id}

@@ -36,7 +36,7 @@ const Select: React.FC<ISelectInput> = ({
   const [inputValue, setInputValue] = useState<string>('');
   const [focused, setFocused] = useState<boolean>(false);
 
-  const CustomPaper: React.FC<PaperProps> = paperProps => {
+  const CustomPaper: React.FC<PaperProps> = (paperProps) => {
     return <Paper {...paperProps} sx={sx.optionsContainer} />;
   };
 
@@ -83,11 +83,11 @@ const Select: React.FC<ISelectInput> = ({
           ...params.InputProps,
           name,
           sx: sx.props,
-          startAdornment: iconLeft && <InputAdornment position="start">{iconLeft}</InputAdornment>,
+          startAdornment: iconLeft && <InputAdornment position='start'>{iconLeft}</InputAdornment>,
           endAdornment: <div style={sx.buttonsContainer}>{params.InputProps.endAdornment}</div>,
         }}
         label={title}
-        variant="standard"
+        variant='standard'
         onChange={handleInputChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
@@ -102,7 +102,7 @@ const Select: React.FC<ISelectInput> = ({
         {...props}
         disabled={disabled}
         options={options}
-        getOptionLabel={option => option.title}
+        getOptionLabel={(option) => option.title}
         clearIcon={<CancelIcon style={sx.dropdownIcons} />}
         popupIcon={<ExpandMoreIcon style={sx.dropdownIcons} />}
         renderInput={renderInput}
@@ -122,7 +122,7 @@ const Select: React.FC<ISelectInput> = ({
               }}
               {...restProps}>
               <Typography
-                className="textOption"
+                className='textOption'
                 color={selected ? theme.palette.dynamicColor.dark : theme.palette.baselineColor.neutral[90]}
                 style={sx.optionText}>
                 {option.title}
@@ -133,7 +133,7 @@ const Select: React.FC<ISelectInput> = ({
         }}
       />
       {helperText && (
-        <FormHelperText component="div" style={sx.helperTextContainer}>
+        <FormHelperText component='div' style={sx.helperTextContainer}>
           {helperText.icon}
           {helperText.label && <span style={sx.helperText}>{helperText.label}</span>}
         </FormHelperText>

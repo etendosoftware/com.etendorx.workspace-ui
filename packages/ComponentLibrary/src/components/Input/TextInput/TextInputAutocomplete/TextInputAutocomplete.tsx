@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useEffect, type KeyboardEvent, useCallback } from 'react';
-import { TextField, InputAdornment, Box, useTheme } from '@mui/material';
-import type { TextInputProps } from './TextInputComplete.types';
-import { DEFAULT_CONSTANTS } from './TextInputAutocomplete.constants';
+import { Box, InputAdornment, TextField, useTheme } from '@mui/material';
+import { type KeyboardEvent, useCallback, useEffect, useState } from 'react';
 import SuggestionBox from './SuggestionBox';
+import { DEFAULT_CONSTANTS } from './TextInputAutocomplete.constants';
 import { useStyle } from './TextInputAutocomplete.styles';
+import type { TextInputProps } from './TextInputComplete.types';
 
 import SmartButton from '../../../../assets/icons/box.svg';
-import SearchIcon from '../../../../assets/icons/search.svg';
 import FilterIcon from '../../../../assets/icons/filter.svg';
 import CloseIcon from '../../../../assets/icons/menu-close.svg';
+import SearchIcon from '../../../../assets/icons/search.svg';
 import IconButton from '../../../IconButton';
 
 const TextInputAutoComplete = (props: TextInputProps) => {
@@ -21,9 +21,10 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   const [smartIconActive, setSmartIconActive] = useState(false);
   const theme = useTheme();
   const { sx, styles, gradients } = useStyle();
+  const onChange = textFieldProps.onChange;
 
   const handleSmartIconClick = useCallback(() => {
-    setSmartIconActive(prev => !prev);
+    setSmartIconActive((prev) => !prev);
   }, []);
 
   const handleBlur = useCallback(() => {
@@ -33,7 +34,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
 
   useEffect(() => {
     if (autoCompleteTexts && isFocused && value) {
-      const match = autoCompleteTexts.find(text => text.toLowerCase().startsWith(value.toLowerCase()));
+      const match = autoCompleteTexts.find((text) => text.toLowerCase().startsWith(value.toLowerCase()));
       setSuggestion(match && match.toLowerCase() !== value.toLowerCase() ? match : '');
     } else {
       setSuggestion('');
@@ -59,9 +60,9 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setValue?.(e.target.value);
-      textFieldProps.onChange?.(e);
+      onChange?.(e);
     },
-    [setValue, textFieldProps],
+    [setValue, onChange],
   );
 
   const renderStartAdornment = () => {
@@ -77,7 +78,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   const renderEndAdornment = () =>
     rightIcon &&
     !props.disabled && (
-      <InputAdornment position="end">
+      <InputAdornment position='end'>
         {value && (
           <IconButton onClick={handleClear}>
             <CloseIcon />
@@ -134,7 +135,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
         <TextField
           placeholder={props.placeholder}
           onBlur={handleBlur}
-          variant="outlined"
+          variant='outlined'
           fullWidth
           value={value}
           onChange={handleInputChange}

@@ -1,4 +1,4 @@
-import { Metadata } from 'next/types';
+import type { Metadata } from 'next/types';
 import { Inter } from 'next/font/google';
 import ApiProviderWrapper from '@/contexts/api/wrapper';
 import './styles/global.css';
@@ -26,10 +26,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang='en' className={inter.variable}>
       <head>
-        <meta charSet="utf-8" />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <meta charSet='utf-8' />
+        <link rel='icon' href='/favicon.ico' sizes='any' />
       </head>
       <body>
         <ApiProviderWrapper>

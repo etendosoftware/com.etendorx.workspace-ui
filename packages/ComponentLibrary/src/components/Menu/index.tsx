@@ -36,7 +36,7 @@ const MenuDropdown = ({
   return (
     <div
       ref={menuRef}
-      className="fixed z-999 bg-white shadow-xl shadow-black/40 rounded w-48 py-2"
+      className='fixed z-999 bg-white shadow-xl shadow-black/40 rounded w-48 py-2'
       style={{ top: position.y, left: position.x }}>
       {children}
     </div>

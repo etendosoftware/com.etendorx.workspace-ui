@@ -17,7 +17,7 @@ export interface SearchInputWithVoiceProps extends TextInputProps {
 
 const StartAdornment = () => {
   return (
-    <InputAdornment position="start">
+    <InputAdornment position='start'>
       <SearchIcon />
     </InputAdornment>
   );
@@ -25,7 +25,7 @@ const StartAdornment = () => {
 
 const EndAdornment = () => {
   return (
-    <InputAdornment position="end">
+    <InputAdornment position='end'>
       <IconButton>
         <FilterIcon />
       </IconButton>
@@ -79,12 +79,12 @@ const SearchInputWithVoice = ({ onVoiceClick, disabled = false, ...props }: Sear
           disabled={disabled}
         />
         <Box>
-          <IconButton onClick={handleVoiceClick} className="w-10 h-10 my-1" disabled={true}>
-            {isRecording ? <MicOffIcon className="w-8 h-8" /> : <MicIcon className="w-5 h-5" />}
+          <IconButton onClick={handleVoiceClick} className='w-10 h-10 my-1' disabled={true}>
+            {isRecording ? <MicOffIcon className='w-8 h-8' /> : <MicIcon className='w-5 h-5' />}
           </IconButton>
         </Box>
       </Box>
-      {disabled && <Box sx={overlayStyle} onClick={e => e.preventDefault()} />}
+      {disabled && <Box sx={overlayStyle} onClick={(e) => e.preventDefault()} />}
     </Box>
   );
 };

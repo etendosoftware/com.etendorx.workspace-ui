@@ -2,7 +2,7 @@ import { Box, Paper, Typography } from '@mui/material';
 import { useStyle } from './styles';
 import { GRID_CONSTANTS } from './constants';
 import EtendoImg from '../../../ComponentLibrary/src/assets/images/Etendo.svg?url';
-import { GridItemProps } from './types';
+import type { GridItemProps } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 
 const GridItem = ({ bgColor = 'transparent', children }: GridItemProps) => {
@@ -37,7 +37,7 @@ const GridLayout = () => {
         </Box>
       </GridItem>
       <GridItem bgColor={ITEMS.LOGO.color}>
-        <Box component="img" src={EtendoImg} alt={t('grid.alt.logo')} sx={styles.gridImage} />
+        <Box component='img' src={EtendoImg} alt={t('grid.alt.logo')} sx={styles.gridImage} />
       </GridItem>
       <GridItem bgColor={ITEMS.TAILORED.color}>
         <Box sx={styles.gridTextYellow}>

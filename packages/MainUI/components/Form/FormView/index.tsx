@@ -1,26 +1,26 @@
-import { EntityData, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
-import { FormProvider, useForm } from 'react-hook-form';
-import { BaseSelector } from './selectors/BaseSelector';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useToolbarContext } from '@/contexts/ToolbarContext';
+import { useStatusModal } from '@/hooks/Toolbar/useStatusModal';
 import { useFormAction } from '@/hooks/useFormAction';
-import Collapsible from '../Collapsible';
-import StatusBar from './StatusBar';
 import useFormFields from '@/hooks/useFormFields';
-import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
-import { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
-import Info from '@workspaceui/componentlibrary/src/assets/icons/info.svg';
+import { useFormInitialState } from '@/hooks/useFormInitialState';
+import { useFormInitialization } from '@/hooks/useFormInitialization';
+import { useSelected } from '@/hooks/useSelected';
+import { useTheme } from '@mui/material';
 import InfoIcon from '@workspaceui/componentlibrary/src/assets/icons/file-text.svg';
 import FileIcon from '@workspaceui/componentlibrary/src/assets/icons/file.svg';
 import FolderIcon from '@workspaceui/componentlibrary/src/assets/icons/folder.svg';
-import { useTheme } from '@mui/material';
-import { FormViewProps } from './types';
-import { useStatusModal } from '@/hooks/Toolbar/useStatusModal';
-import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
-import { useFormInitialization } from '@/hooks/useFormInitialization';
-import { useFormInitialState } from '@/hooks/useFormInitialState';
-import { useToolbarContext } from '@/contexts/ToolbarContext';
+import Info from '@workspaceui/componentlibrary/src/assets/icons/info.svg';
+import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
+import type { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
 import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { useSelected } from '@/hooks/useSelected';
+import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
+import { type EntityData, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
+import Collapsible from '../Collapsible';
+import StatusBar from './StatusBar';
+import { BaseSelector } from './selectors/BaseSelector';
+import type { FormViewProps } from './types';
 
 const iconMap: Record<string, React.ReactElement> = {
   'Main Section': <FileIcon />,
@@ -174,11 +174,11 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   useEffect(() => {
     if (!initialState) return;
 
-    Object.entries(initialState).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(initialState)) {
       if (typeof value === 'undefined') {
         initialState[key] = '';
       }
-    });
+    }
 
     reset({ ...initialState });
   }, [initialState, reset]);
@@ -198,8 +198,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
           loading ? 'opacity-50 select-none cursor-progress cursor-to-children' : ''
         }`}
         onSubmit={save}>
-        <div className="flex-shrink-0 pl-2 pr-2">
-          <div className="mb-2">
+        <div className='flex-shrink-0 pl-2 pr-2'>
+          <div className='mb-2'>
             {statusModal.open && (
               <StatusModal
                 statusType={statusModal.statusType}
@@ -213,12 +213,12 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
             )}
           </div>
           <StatusBar fields={fields.statusBarFields} />
-          <div className="mt-2">
+          <div className='mt-2'>
             <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
           </div>
         </div>
 
-        <div className="flex-grow overflow-auto p-2 space-y-2" ref={containerRef}>
+        <div className='flex-grow overflow-auto p-2 space-y-2' ref={containerRef}>
           {groups.map(([id, group]) => {
             const sectionId = String(id || '_main');
             return (
@@ -229,7 +229,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
                   sectionId={sectionId}
                   icon={getIconForGroup(group.identifier)}
                   onToggle={(isOpen: boolean) => handleAccordionChange(id, isOpen)}>
-                  <div className="grid grid-cols-3 auto-rows-auto gap-4">
+                  <div className='grid grid-cols-3 auto-rows-auto gap-4'>
                     {Object.entries(group.fields).map(([hqlName, field]) => (
                       <BaseSelector field={field} key={hqlName} formMode={mode} />
                     ))}

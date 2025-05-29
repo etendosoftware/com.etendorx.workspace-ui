@@ -1,4 +1,4 @@
-import { Inotifications } from '@workspaceui/componentlibrary/src/commons';
+import type { Inotifications } from '@workspaceui/componentlibrary/src/commons';
 import {
   Description,
   LightbulbCircle,

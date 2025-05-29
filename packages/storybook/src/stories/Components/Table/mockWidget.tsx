@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import SideIcon from '@workspaceui/componentlibrary/src/assets/icons/codesandbox.svg';
 import TabWidget from '@workspaceui/componentlibrary/src/components/Widgets/TabWidget';
-import { TranslateFunction } from '@workspaceui/mainui/hooks/types';
+import type { TranslateFunction } from '@workspaceui/mainui/hooks/types';
 
 const colors = {
   backgrounds: [
@@ -57,7 +57,7 @@ export const createWidgets = (t: TranslateFunction) => {
         <TabWidget
           title={t('grid.items.erp.text')}
           content={
-            <Typography variant="h3" fontWeight="bold">
+            <Typography variant='h3' fontWeight='bold'>
               1,245,863.00 €
             </Typography>
           }

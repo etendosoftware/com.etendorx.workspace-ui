@@ -1,5 +1,5 @@
 import { theme } from '../../../../ComponentLibrary/src/theme';
-import { CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 
 export const cardStyles: CSSProperties = {
   margin: '0.25rem',

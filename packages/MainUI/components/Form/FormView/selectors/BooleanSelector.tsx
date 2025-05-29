@@ -1,4 +1,4 @@
-import { Field } from '@workspaceui/etendohookbinder/src/api/types';
+import type { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { useController, useFormContext } from 'react-hook-form';
 import { Switch } from './components/Switch';
 
@@ -13,12 +13,5 @@ export const BooleanSelector = ({ field, isReadOnly }: { field: Field; isReadOnl
     defaultValue: false,
   });
 
-  return (
-    <Switch
-      checked={!!value}
-      onCheckedChange={onChange}
-      field={field}
-      disabled={isReadOnly}
-    />
-  );
+  return <Switch checked={!!value} onCheckedChange={onChange} field={field} disabled={isReadOnly} />;
 };

@@ -1,12 +1,12 @@
-import { useState, useContext, useCallback } from 'react';
-import { UserContext } from '../../contexts/user';
-import { ExecuteProcessDefinitionParams, ExecuteProcessParams } from './types';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { ProcessButton, ProcessButtonType, ProcessResponse } from '@/components/ProcessModal/types';
-import { useMetadataContext } from '../useMetadataContext';
-import { useParams } from 'next/navigation';
+import { type ProcessButton, ProcessButtonType, type ProcessResponse } from '@/components/ProcessModal/types';
 import { useTabContext } from '@/contexts/tab';
 import { logger } from '@/utils/logger';
+import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { useParams } from 'next/navigation';
+import { useCallback, useContext, useState } from 'react';
+import { UserContext } from '../../contexts/user';
+import { useMetadataContext } from '../useMetadataContext';
+import type { ExecuteProcessDefinitionParams, ExecuteProcessParams } from './types';
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
@@ -29,12 +29,11 @@ export function useProcessExecution() {
         });
 
         const processParams: Record<string, unknown> = {};
-        button.processInfo.parameters?.forEach(param => {
+        for (const param of button.processInfo.parameters) {
           if (params[param.id]) {
             processParams[param.id] = params[param.id];
           }
-        });
-
+        }
         const payload = {
           recordIds: [recordId],
           _buttonValue: button.buttonText,
@@ -106,7 +105,7 @@ export function useProcessExecution() {
 
           const isPostedProcess = button.id === 'Posted';
           const commandAction = 'BUTTONDocAction104';
-          const baseUrl = `http://localhost:8080/etendo/SalesOrder/Header_Edition.html`;
+          const baseUrl = 'http://localhost:8080/etendo/SalesOrder/Header_Edition.html';
           const safeWindowId = windowId || (tab?.window ? String(tab.window) : '143');
           const safeTabId = tab?.id ? String(tab.id) : '186';
           const safeRecordId = String(record.id || recordId || '');
@@ -164,11 +163,11 @@ export function useProcessExecution() {
       try {
         if (ProcessButtonType.PROCESS_ACTION in button) {
           return await executeProcessAction(button);
-        } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
-          return await executeProcessDefinition({ button, recordId, params });
-        } else {
-          throw new Error('Tipo de proceso no soportado');
         }
+        if (ProcessButtonType.PROCESS_DEFINITION in button) {
+          return await executeProcessDefinition({ button, recordId, params });
+        }
+        throw new Error('Tipo de proceso no soportado');
       } catch (error) {
         throw new Error('Tipo de proceso no soportado');
       }

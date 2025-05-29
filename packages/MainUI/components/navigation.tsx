@@ -1,26 +1,26 @@
 'use client';
 
-import { useContext, useState, useCallback, useMemo, useRef } from 'react';
-import {
-  ConfigurationModal,
-  NotificationButton,
-  NotificationModal,
-  IconButton,
-  Waterfall,
-} from '@workspaceui/componentlibrary/src/components';
-import ActivityIcon from '@workspaceui/componentlibrary/src/assets/icons/activity.svg';
-import NotificationIcon from '@workspaceui/componentlibrary/src/assets/icons/bell.svg';
-import PersonIcon from '@workspaceui/componentlibrary/src/assets/icons/user.svg';
-import AddIcon from '@workspaceui/componentlibrary/src/assets/icons/plus.svg';
-import { modalConfig, menuItems, initialPeople, sections, NOTIFICATIONS } from '../../storybook/src/mocks';
-import { Person } from '@workspaceui/componentlibrary/src/components/DragModal/DragModal.types';
-import Nav from '@workspaceui/componentlibrary/src/components/Nav/Nav';
-import { useTranslation } from '../hooks/useTranslation';
-import ProfileModal from './ProfileModal/ProfileModal';
 import { useLanguage } from '@/contexts/language';
-import { Language } from '@/contexts/types';
+import type { Language } from '@/contexts/types';
 import { UserContext } from '@/contexts/user';
 import { logger } from '@/utils/logger';
+import ActivityIcon from '@workspaceui/componentlibrary/src/assets/icons/activity.svg';
+import NotificationIcon from '@workspaceui/componentlibrary/src/assets/icons/bell.svg';
+import AddIcon from '@workspaceui/componentlibrary/src/assets/icons/plus.svg';
+import PersonIcon from '@workspaceui/componentlibrary/src/assets/icons/user.svg';
+import {
+  ConfigurationModal,
+  IconButton,
+  NotificationButton,
+  NotificationModal,
+  Waterfall,
+} from '@workspaceui/componentlibrary/src/components';
+import type { Person } from '@workspaceui/componentlibrary/src/components/DragModal/DragModal.types';
+import Nav from '@workspaceui/componentlibrary/src/components/Nav/Nav';
+import { useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { NOTIFICATIONS, initialPeople, menuItems, modalConfig, sections } from '../../storybook/src/mocks';
+import { useTranslation } from '../hooks/useTranslation';
+import ProfileModal from './ProfileModal/ProfileModal';
 
 const handleClose = () => {
   return true;
@@ -88,7 +88,7 @@ const Navigation: React.FC = () => {
       />
       <IconButton
         ref={buttonRef}
-        className="w-10 h-10"
+        className='w-10 h-10'
         tooltip={t('navigation.activityButton.tooltip')}
         disabled={true}>
         <ActivityIcon />
@@ -99,7 +99,7 @@ const Navigation: React.FC = () => {
           rect={buttonRef}
           onClose={handleClose}
           title={{
-            icon: <NotificationIcon fill="#2E365C" />,
+            icon: <NotificationIcon fill='#2E365C' />,
             label: t('navigation.notificationModal.title'),
           }}
           linkTitle={{
@@ -109,9 +109,8 @@ const Navigation: React.FC = () => {
           emptyStateImageAlt={t('navigation.notificationModal.emptyStateImageAlt')}
           emptyStateMessage={t('navigation.notificationModal.emptyStateMessage')}
           emptyStateDescription={t('navigation.notificationModal.emptyStateDescription')}
-          actionButtonLabel={t('navigation.notificationModal.actionButtonLabel')}>
-          <></>
-        </NotificationModal>
+          actionButtonLabel={t('navigation.notificationModal.actionButtonLabel')}
+        />
       </NotificationButton>
       <ProfileModal
         icon={<PersonIcon />}

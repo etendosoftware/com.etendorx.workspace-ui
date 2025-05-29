@@ -70,7 +70,7 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
         ref={buttonRef}
         tooltip={tooltipWaterfallButton}
         onClick={handleClick}
-        className="w-10 h-10"
+        className='w-10 h-10'
         disabled={true}>
         {icon}
       </IconButton>

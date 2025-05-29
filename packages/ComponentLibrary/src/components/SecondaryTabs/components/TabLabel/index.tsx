@@ -13,7 +13,7 @@ const TabLabel: React.FC<TabLabelProps & { isSelected?: boolean }> = ({ icon, te
       {isLoading ? (
         <CircularProgress size={16} sx={{ color: theme.palette.baselineColor.neutral[80] }} />
       ) : (
-        !!count && <Badge badgeContent={count} color="secondary" sx={styles.badgeStyles} />
+        !!count && <Badge badgeContent={count} color='secondary' sx={styles.badgeStyles} />
       )}
     </Box>
   );

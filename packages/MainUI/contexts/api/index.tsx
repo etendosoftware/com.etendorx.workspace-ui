@@ -62,7 +62,7 @@ export default function ApiProvider({ children, url }: React.PropsWithChildren<{
 
   if (state.error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full">
+      <div className='flex flex-col items-center justify-center h-full w-full'>
         <ErrorDisplay
           title={t('errors.networkError.title')}
           description={t('errors.networkError.description')}

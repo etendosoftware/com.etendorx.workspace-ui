@@ -1,6 +1,6 @@
-import { SxProps, Theme } from '@mui/material';
-import { ProcessButton } from '../ProcessModal/types';
-import { RefObject } from 'react';
+import type { SxProps, Theme } from '@mui/material';
+import type { ProcessButton } from '../ProcessModal/types';
+import type { RefObject } from 'react';
 
 export const IconSize = 16;
 

@@ -1,5 +1,5 @@
 import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
-import { StatusType } from '@workspaceui/componentlibrary/src/components/StatusModal/types';
+import type { StatusType } from '@workspaceui/componentlibrary/src/components/StatusModal/types';
 import type { Meta, StoryObj } from '@storybook/react';
 
 interface StatusModalStoryProps {
@@ -30,7 +30,7 @@ export default meta;
 type Story = StoryObj<StatusModalStoryProps>;
 
 const StatusModalTemplate: Story = {
-  render: args => <StatusModal {...args} />,
+  render: (args) => <StatusModal {...args} />,
 };
 
 export const SuccessStatus: Story = {

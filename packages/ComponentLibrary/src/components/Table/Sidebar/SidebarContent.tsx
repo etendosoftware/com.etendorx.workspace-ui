@@ -12,10 +12,10 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({ icon, identifier
       <Box sx={sx.headerContainer}>
         <Box sx={sx.iconContainer}>{icon}</Box>
         <Box>
-          <Typography variant="body2" sx={sx.identifier}>
+          <Typography variant='body2' sx={sx.identifier}>
             {identifier}
           </Typography>
-          <Typography variant="h5" sx={sx.title}>
+          <Typography variant='h5' sx={sx.title}>
             {title}
           </Typography>
         </Box>

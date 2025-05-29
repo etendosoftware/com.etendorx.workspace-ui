@@ -1,5 +1,5 @@
-import { MRT_ColumnDef } from 'material-react-table';
-import { Organization, OrganizationLabels } from './types';
+import type { MRT_ColumnDef } from 'material-react-table';
+import type { Organization, OrganizationLabels } from './types';
 
 export const getColumns = (labels: Partial<OrganizationLabels> = {}): MRT_ColumnDef<Organization>[] => [
   {

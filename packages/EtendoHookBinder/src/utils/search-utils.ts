@@ -1,4 +1,4 @@
-import { BaseCriteria, Column, CompositeCriteria, MRT_ColumnFiltersState } from '../api/types';
+import type { BaseCriteria, Column, CompositeCriteria, MRT_ColumnFiltersState } from '../api/types';
 
 type FormattedValue = string | number | null;
 
@@ -39,10 +39,10 @@ export class SearchUtils {
 
   private static detectValueType(value: string): keyof ColumnsByType {
     if (
-      this.FULL_DATE_PATTERN.test(value) ||
-      this.YEAR_PATTERN.test(value) ||
-      this.YEAR_MONTH_PATTERN.test(value) ||
-      this.YEAR_PARTIAL_PATTERN.test(value)
+      SearchUtils.FULL_DATE_PATTERN.test(value) ||
+      SearchUtils.YEAR_PATTERN.test(value) ||
+      SearchUtils.YEAR_MONTH_PATTERN.test(value) ||
+      SearchUtils.YEAR_PARTIAL_PATTERN.test(value)
     ) {
       return 'date';
     }
@@ -70,13 +70,13 @@ export class SearchUtils {
   public static getDateCriteria(fieldName: string, searchQuery: string): BaseCriteria[] {
     const criteria: BaseCriteria[] = [];
 
-    if (this.FULL_DATE_PATTERN.test(searchQuery)) {
+    if (SearchUtils.FULL_DATE_PATTERN.test(searchQuery)) {
       criteria.push({
         fieldName,
         operator: 'equals',
         value: searchQuery,
       });
-    } else if (this.YEAR_MONTH_PATTERN.test(searchQuery)) {
+    } else if (SearchUtils.YEAR_MONTH_PATTERN.test(searchQuery)) {
       criteria.push({
         fieldName,
         operator: 'greaterOrEqual',
@@ -87,7 +87,7 @@ export class SearchUtils {
         operator: 'lessOrEqual',
         value: `${searchQuery}-31`,
       });
-    } else if (this.YEAR_PATTERN.test(searchQuery)) {
+    } else if (SearchUtils.YEAR_PATTERN.test(searchQuery)) {
       criteria.push({
         fieldName,
         operator: 'greaterOrEqual',
@@ -98,7 +98,7 @@ export class SearchUtils {
         operator: 'lessOrEqual',
         value: `${searchQuery}-12-31`,
       });
-    } else if (this.YEAR_PARTIAL_PATTERN.test(searchQuery)) {
+    } else if (SearchUtils.YEAR_PARTIAL_PATTERN.test(searchQuery)) {
       const year = searchQuery.slice(0, -1);
       criteria.push({
         fieldName,
@@ -118,11 +118,11 @@ export class SearchUtils {
   static createSearchCriteria(columns: Column[], searchQuery: string): CompositeCriteria[] {
     if (!searchQuery || !columns.length) return [];
 
-    const queryType = this.detectValueType(searchQuery);
+    const queryType = SearchUtils.detectValueType(searchQuery);
     const compositeCriteria: CompositeCriteria[] = [];
 
     const columnsByType = columns.reduce<ColumnsByType>((acc, column) => {
-      const type = this.getColumnType(column);
+      const type = SearchUtils.getColumnType(column);
       if (!acc[type]) {
         acc[type] = [];
       }
@@ -132,9 +132,10 @@ export class SearchUtils {
 
     if (queryType === 'date' && columnsByType.date?.length) {
       const dateCriteria: BaseCriteria[] = [];
-      columnsByType.date.forEach(column => {
-        dateCriteria.push(...this.getDateCriteria(column.columnName, searchQuery));
-      });
+
+      for (const column of columnsByType.date) {
+        dateCriteria.push(...SearchUtils.getDateCriteria(column.columnName, searchQuery));
+      }
 
       if (dateCriteria.length) {
         compositeCriteria.push({
@@ -153,25 +154,25 @@ export class SearchUtils {
       value: searchQuery,
     });
 
-    REFERENCE_FIELDS.forEach(field => {
-      if (columnsByType.reference?.some(col => col.columnName === field)) {
+    for (const field of REFERENCE_FIELDS) {
+      if (columnsByType.reference?.some((col) => col.columnName === field)) {
         textSearchCriteria.push({
           fieldName: `${field}$_identifier`,
           operator: 'iContains',
           value: searchQuery,
         });
       }
-    });
+    }
 
-    STATUS_FIELDS.forEach(field => {
-      if (columns.some(col => col.columnName === field)) {
+    for (const field of STATUS_FIELDS) {
+      if (columns.some((col) => col.columnName === field)) {
         textSearchCriteria.push({
           fieldName: field,
           operator: 'iContains',
           value: searchQuery,
         });
       }
-    });
+    }
 
     if (textSearchCriteria.length) {
       compositeCriteria.push({
@@ -214,9 +215,9 @@ export class ColumnFilterUtils {
       return null;
     }
 
-    if (this.isNumericField(column)) {
-      const numValue = parseFloat(String(value).replace(',', '.'));
-      if (!isNaN(numValue)) {
+    if (ColumnFilterUtils.isNumericField(column)) {
+      const numValue = Number.parseFloat(String(value).replace(',', '.'));
+      if (!Number.isNaN(numValue)) {
         return numValue;
       }
       return null;
@@ -233,7 +234,7 @@ export class ColumnFilterUtils {
     const result: BaseCriteria[] = [];
 
     if (rangeFilter.from !== null && rangeFilter.from !== undefined) {
-      const formattedValue = this.formatValueForType(rangeFilter.from, column);
+      const formattedValue = ColumnFilterUtils.formatValueForType(rangeFilter.from, column);
       if (formattedValue !== null) {
         result.push({
           fieldName,
@@ -244,7 +245,7 @@ export class ColumnFilterUtils {
     }
 
     if (rangeFilter.to !== null && rangeFilter.to !== undefined) {
-      const formattedValue = this.formatValueForType(rangeFilter.to, column);
+      const formattedValue = ColumnFilterUtils.formatValueForType(rangeFilter.to, column);
       if (formattedValue !== null) {
         result.push({
           fieldName,
@@ -263,7 +264,7 @@ export class ColumnFilterUtils {
     const validCriteria: BaseCriteria[] = [];
 
     for (const val of values) {
-      const formattedValue = this.formatValueForType(val, column);
+      const formattedValue = ColumnFilterUtils.formatValueForType(val, column);
       if (formattedValue === null) continue;
 
       validCriteria.push({
@@ -284,7 +285,7 @@ export class ColumnFilterUtils {
   }
 
   private static handleSingleValueFilter(fieldName: string, value: unknown, column: Column): BaseCriteria[] {
-    const formattedValue = this.formatValueForType(value, column);
+    const formattedValue = ColumnFilterUtils.formatValueForType(value, column);
     if (formattedValue === null) return [];
 
     if (REFERENCE_FIELDS.includes(fieldName)) {
@@ -301,7 +302,7 @@ export class ColumnFilterUtils {
       return SearchUtils.getDateCriteria(fieldName, String(formattedValue));
     }
 
-    if (this.isNumericField(column)) {
+    if (ColumnFilterUtils.isNumericField(column)) {
       return [
         {
           fieldName,
@@ -326,7 +327,7 @@ export class ColumnFilterUtils {
     const allCriteria: BaseCriteria[] = [];
 
     for (const filter of columnFilters) {
-      const column = columns.find(col => col.id === filter.id || col.columnName === filter.id);
+      const column = columns.find((col) => col.id === filter.id || col.columnName === filter.id);
       if (!column) continue;
 
       const fieldName = column.columnName;
@@ -335,15 +336,15 @@ export class ColumnFilterUtils {
       let filterCriteria: BaseCriteria[] = [];
 
       if (typeof filter.value === 'object' && filter.value !== null && 'from' in filter.value && 'to' in filter.value) {
-        filterCriteria = this.handleRangeFilter(
+        filterCriteria = ColumnFilterUtils.handleRangeFilter(
           fieldName,
           filter.value as { from: FormattedValue; to: FormattedValue },
           column,
         );
       } else if (Array.isArray(filter.value)) {
-        filterCriteria = this.handleArrayFilter(fieldName, filter.value, column);
+        filterCriteria = ColumnFilterUtils.handleArrayFilter(fieldName, filter.value, column);
       } else {
-        filterCriteria = this.handleSingleValueFilter(fieldName, filter.value, column);
+        filterCriteria = ColumnFilterUtils.handleSingleValueFilter(fieldName, filter.value, column);
       }
 
       allCriteria.push(...filterCriteria);

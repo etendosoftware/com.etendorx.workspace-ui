@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { EntityData, FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
+import type { EntityData, FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { useUserContext } from './useUserContext';
-import { UseFormHandleSubmit } from 'react-hook-form';
+import type { UseFormHandleSubmit } from 'react-hook-form';
 import { buildFormPayload, buildQueryString } from '@/utils';
 
 export interface UseFormActionParams {

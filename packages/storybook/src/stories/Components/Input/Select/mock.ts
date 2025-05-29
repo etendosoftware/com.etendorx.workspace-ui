@@ -1,4 +1,4 @@
-import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
+import type { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
 
 export const topFilms: Option[] = [
   { id: 'film001', title: 'The Shawshank Redemption', value: '1994' },

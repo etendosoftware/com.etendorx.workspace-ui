@@ -1,15 +1,15 @@
-import { ReactNode } from 'react';
-import { Section } from './ToggleButton/types';
-import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
-import { Language } from '@workspaceui/componentlibrary/src/locales/types';
-import {
+import type { Logger } from '@/utils/logger';
+import type { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
+import type { Language } from '@workspaceui/componentlibrary/src/locales/types';
+import type {
   CurrentOrganization,
   CurrentRole,
   CurrentWarehouse,
   LoginResponse,
   SessionResponse,
 } from '@workspaceui/etendohookbinder/src/api/types';
-import { Logger } from '@/utils/logger';
+import type { ReactNode } from 'react';
+import type { Section } from './ToggleButton/types';
 
 export interface Translations {
   saveAsDefault: string;
@@ -85,7 +85,7 @@ export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps
   language: string | null;
   languages: LanguageOption[];
   languagesFlags: string;
-  changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | void>;
+  changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | undefined>;
 }
 
 export interface UserProfileProps {

@@ -6,7 +6,7 @@ import { useStyle, TEXT_LOGO } from './styles';
 import BackgroundGradient from '../../../ComponentLibrary/src/assets/images/backgroundGradient.svg?url';
 import LogoutIcon from '../../../ComponentLibrary/src/assets/icons/log-out.svg';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
-import { UserProfileProps } from './types';
+import type { UserProfileProps } from './types';
 
 const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, onSignOff }) => {
   const { styles } = useStyle();
@@ -22,11 +22,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, onSignOff }) 
           src={BackgroundGradient}
           height={window.innerHeight}
           width={window.innerWidth}
-          alt="Background Gradient"
+          alt='Background Gradient'
         />
       </div>
-      <div className="absolute top-4 right-4 z-10">
-        <IconButton onClick={handleSignOff} className="h-6 w-6 [&>svg]:w-4 [&>svg]:h-4">
+      <div className='absolute top-4 right-4 z-10'>
+        <IconButton onClick={handleSignOff} className='h-6 w-6 [&>svg]:w-4 [&>svg]:h-4'>
           <LogoutIcon />
         </IconButton>
       </div>
@@ -36,7 +36,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, onSignOff }) 
             src={photoUrl}
             height={window.innerHeight}
             width={window.innerWidth}
-            alt="Profile"
+            alt='Profile'
             style={styles.profileImageStyles}
           />
         ) : (

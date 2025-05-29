@@ -25,7 +25,7 @@ export default function Modal({
   useEffect(() => {
     if (open) {
       const handler = (e: KeyboardEvent) => {
-        if (e.key == 'Escape') {
+        if (e.key === 'Escape') {
           onClose?.();
         }
       };
@@ -39,7 +39,7 @@ export default function Modal({
   }, [onClose, open]);
 
   return createPortal(
-    <div className="fixed inset-0 z-[1000] pointer-events-none overflow-hidden">
+    <div className='fixed inset-0 z-[1000] pointer-events-none overflow-hidden'>
       <div
         className={`w-full h-full transition-all transform-gpu duration-200 ${open ? 'opacity-100 pointer-events-auto scale-y-100 scale-x-100 ease-out' : 'opacity-0 pointer-events-none scale-x-200 scale-y-150 ease-in'}`}>
         {visible ? children : null}

@@ -1,6 +1,6 @@
 import { Button, useTheme } from '@mui/material';
 import { useStyle } from './styles';
-import { ToggleSectionsProps } from './types';
+import type { ToggleSectionsProps } from './types';
 
 const ToggleSections: React.FC<ToggleSectionsProps> = ({ sections, currentSection, onToggle }) => {
   const theme = useTheme();

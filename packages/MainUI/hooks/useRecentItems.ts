@@ -1,8 +1,8 @@
-import { RecentItem } from '@workspaceui/componentlibrary/src/components/Drawer/types';
-import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import type { RecentItem } from '@workspaceui/componentlibrary/src/components/Drawer/types';
 import { useLocalStorage } from '@workspaceui/componentlibrary/src/hooks/useLocalStorage';
-import { useState, useEffect, useCallback, useRef } from 'react';
 import { findItemByIdentifier } from '@workspaceui/componentlibrary/src/utils/menuUtils';
+import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const getItemName = (menuItem: Menu, getTranslatedName?: (item: Menu) => string): string => {
   return getTranslatedName?.(menuItem) ?? menuItem._identifier ?? menuItem.name ?? '';
@@ -11,7 +11,7 @@ const getItemName = (menuItem: Menu, getTranslatedName?: (item: Menu) => string)
 const createRecentItem = (item: Menu, getTranslatedName?: (item: Menu) => string): RecentItem => ({
   id: item.id,
   name: getItemName(item, getTranslatedName),
-  windowId: item.type === 'Window' ? item.windowId! : item.id,
+  windowId: item.type === 'Window' ? (item.windowId ?? item.id) : item.id,
   type: item.type ?? 'Window',
 });
 

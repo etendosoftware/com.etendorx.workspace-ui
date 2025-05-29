@@ -1,5 +1,5 @@
 import WaterfallModal from '@workspaceui/componentlibrary/src/components/Waterfall/WaterfallModal';
-import { WaterfallModalProps } from '@workspaceui/componentlibrary/src/components/Waterfall/types';
+import type { WaterfallModalProps } from '@workspaceui/componentlibrary/src/components/Waterfall/types';
 import { initialPeople, menuItems } from '../mock';
 import AddIcon from '@workspaceui/componentlibrary/src/assets/icons/plus.svg';
 import type { Meta, StoryObj } from '@storybook/react';
@@ -22,7 +22,7 @@ export default meta;
 type Story = StoryObj<WaterfallModalProps>;
 
 export const DefaultWaterfallModal: Story = {
-  render: args => <WaterfallModal {...args} />,
+  render: (args) => <WaterfallModal {...args} />,
   args: {
     menuItems,
     initialPeople,

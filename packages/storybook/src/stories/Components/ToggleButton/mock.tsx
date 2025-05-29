@@ -2,7 +2,7 @@ import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockIcon from '@mui/icons-material/Lock';
 import HomeIcon from '@mui/icons-material/Home';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { Section } from '@workspaceui/componentlibrary/src/components/ProfileModal/ToggleButton/types';
+import type { Section } from '@workspaceui/componentlibrary/src/components/ProfileModal/ToggleButton/types';
 
 export const sectionsMock: Section[] = [
   { id: 'profile', label: 'Profile', icon: <PersonOutlineIcon /> },

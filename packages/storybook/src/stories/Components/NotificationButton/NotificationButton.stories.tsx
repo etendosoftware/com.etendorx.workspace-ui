@@ -1,8 +1,8 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import NotificationButton from '@workspaceui/componentlibrary/src/components/NotificationsButton';
 import NotificationIcon from '@workspaceui/componentlibrary/src/assets/icons/bell.svg';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Inotifications } from '@workspaceui/componentlibrary/src/commons';
+import type { Inotifications } from '@workspaceui/componentlibrary/src/commons';
 
 interface NotificationButtonProps {
   notifications: Inotifications[];
@@ -31,7 +31,7 @@ const generateMockNotifications = (count: number): Inotifications[] =>
   }));
 
 export const NotificationButtonDefault: Story = {
-  render: args => <NotificationButton {...args} />,
+  render: (args) => <NotificationButton {...args} />,
   args: {
     notifications: [],
     tooltipTitle: 'Empty Notifications',
@@ -40,7 +40,7 @@ export const NotificationButtonDefault: Story = {
 };
 
 export const NotificationButtonSome: Story = {
-  render: args => <NotificationButton {...args} />,
+  render: (args) => <NotificationButton {...args} />,
   args: {
     notifications: generateMockNotifications(5),
     tooltipTitle: 'Notifications',
@@ -49,7 +49,7 @@ export const NotificationButtonSome: Story = {
 };
 
 export const NotificationButtonMany: Story = {
-  render: args => <NotificationButton {...args} />,
+  render: (args) => <NotificationButton {...args} />,
   args: {
     notifications: generateMockNotifications(100),
     tooltipTitle: 'Many Notifications',

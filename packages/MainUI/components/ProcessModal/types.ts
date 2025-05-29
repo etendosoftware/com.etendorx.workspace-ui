@@ -1,7 +1,7 @@
-import { ProcessConfigResponse } from '@/hooks/datasource/useProcessDatasourceConfig';
+import type { ProcessConfigResponse } from '@/hooks/datasource/useProcessDatasourceConfig';
 import type { EntityData, EntityValue, ProcessParameter, Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { MRT_Row, MRT_TableInstance, MRT_TableBodyRowProps, MRT_RowData } from 'material-react-table';
-import { Field, ProcessAction } from '@workspaceui/etendohookbinder/src/api/types';
+import type { MRT_Row, MRT_TableInstance, MRT_TableBodyRowProps, MRT_RowData } from 'material-react-table';
+import type { Field, ProcessAction } from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface BaseButton extends Field {
   id: string;

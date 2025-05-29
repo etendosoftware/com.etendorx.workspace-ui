@@ -1,27 +1,27 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
-import { FormProvider, useForm } from 'react-hook-form';
 import { useTabContext } from '@/contexts/tab';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { useProcessConfig } from '@/hooks/datasource/useProcessDatasourceConfig';
+import { useSelected } from '@/hooks/useSelected';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useUserContext } from '@/hooks/useUserContext';
+import { buildPayloadByInputName } from '@/utils';
 import { executeStringFunction } from '@/utils/functions';
+import { logger } from '@/utils/logger';
+import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import type { Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
 import CheckIcon from '../../../ComponentLibrary/src/assets/icons/check-circle.svg';
 import CloseIcon from '../../../ComponentLibrary/src/assets/icons/x.svg';
+import Modal from '../Modal';
+import Loading from '../loading';
+import WindowReferenceGrid from './WindowReferenceGrid';
 import BaseSelector from './selectors/BaseSelector';
-import {
+import type {
   ProcessDefinitionModalContentProps,
   ProcessDefinitionModalProps,
   RecordValues,
   ResponseMessage,
 } from './types';
-import Modal from '../Modal';
-import Loading from '../loading';
-import { logger } from '@/utils/logger';
-import WindowReferenceGrid from './WindowReferenceGrid';
-import { buildPayloadByInputName } from '@/utils';
-import { useUserContext } from '@/hooks/useUserContext';
-import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { useProcessConfig } from '@/hooks/datasource/useProcessDatasourceConfig';
-import { useSelected } from '@/hooks/useSelected';
 
 export const FALLBACK_RESULT = {};
 const WINDOW_REFERENCE_ID = 'FF80818132D8F0F30132D9BC395D0038';
@@ -56,7 +56,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [record, tab?.fields]);
 
   const hasWindowReference = useMemo(() => {
-    return Object.values(parameters).some(param => param.reference === WINDOW_REFERENCE_ID);
+    return Object.values(parameters).some((param) => param.reference === WINDOW_REFERENCE_ID);
   }, [parameters]);
 
   const {
@@ -158,7 +158,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         buttonValue: 'DONE',
         windowId: tab.window,
         entityName: tab.entityName,
-        recordIds: selectedRecords?.map(r => r.id),
+        recordIds: selectedRecords?.map((r) => r.id),
         ...form.getValues(),
       });
 
@@ -207,9 +207,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   useEffect(() => {
     if (processConfig?.defaults) {
-      Object.entries(processConfig.defaults).forEach(([key, data]) => {
+      for (const [key, data] of Object.entries(processConfig.defaults)) {
         form.setValue(key, data.identifier);
-      });
+      }
     }
   }, [form, processConfig?.defaults]);
 
@@ -236,16 +236,16 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             tabId,
           });
 
-          setParameters(prev => {
+          setParameters((prev) => {
             const newParameters = { ...prev };
 
-            Object.entries(result).forEach(([parameterName, values]) => {
+            for (const [parameterName, values] of Object.entries(result)) {
               const newOptions = values as string[];
               newParameters[parameterName] = { ...newParameters[parameterName] };
-              newParameters[parameterName].refList = newParameters[parameterName].refList.filter(option =>
+              newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
                 newOptions.includes(option.value),
               );
-            });
+            }
 
             return newParameters;
           });
@@ -273,8 +273,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
     return (
       <div className={messageClasses}>
-        <h4 className="font-bold text-sm">{response.msgTitle}</h4>
-        <p className="text-sm" dangerouslySetInnerHTML={{ __html: response.msgText }} />
+        <h4 className='font-bold text-sm'>{response.msgTitle}</h4>
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: <explanation> */}
+        <p className='text-sm' dangerouslySetInnerHTML={{ __html: response.msgText }} />
       </div>
     );
   };
@@ -282,7 +283,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const renderParameters = () => {
     if (isSuccess) return null;
 
-    return Object.values(parameters).map(parameter => {
+    return Object.values(parameters).map((parameter) => {
       if (parameter.reference === WINDOW_REFERENCE_ID) {
         return (
           <WindowReferenceGrid
@@ -304,13 +305,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   const renderActionButton = () => {
     if (isExecuting) {
-      return <span className="animate-pulse">{t('common.loading')}...</span>;
+      return <span className='animate-pulse'>{t('common.loading')}...</span>;
     }
 
     if (isSuccess) {
       return (
-        <span className="flex items-center gap-2">
-          <CheckIcon fill="white" />
+        <span className='flex items-center gap-2'>
+          <CheckIcon fill='white' />
           {t('process.completedSuccessfully')}
         </span>
       );
@@ -318,7 +319,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
     return (
       <>
-        {CheckIcon && <CheckIcon fill="white" />}
+        {CheckIcon && <CheckIcon fill='white' />}
         {t('common.execute')}
       </>
     );
@@ -329,23 +330,24 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   return (
     <Modal open={open} onClose={handleClose}>
       <FormProvider {...form}>
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-5xl max-h-full overflow-hidden flex flex-col">
+        <div className='fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4'>
+          <div className='bg-white rounded-lg shadow-lg w-full max-w-5xl max-h-full overflow-hidden flex flex-col'>
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold">{button.name}</h3>
+            <div className='flex items-center justify-between p-4 border-b border-gray-200'>
+              <div className='flex items-center gap-2'>
+                <h3 className='text-lg font-bold'>{button.name}</h3>
               </div>
               <button
+                type='button'
                 onClick={handleClose}
-                className="p-1 rounded-full hover:bg-(--color-baseline-10)"
+                className='p-1 rounded-full hover:bg-(--color-baseline-10)'
                 disabled={isExecuting}>
                 <CloseIcon />
               </button>
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-auto p-4">
+            <div className='flex-1 overflow-auto p-4'>
               <div className={`relative ${isExecuting ? 'animate-pulse cursor-progress cursor-to-children' : ''}`}>
                 <div
                   className={`absolute transition-opacity inset-0 flex items-center pointer-events-none justify-center bg-white ${
@@ -361,17 +363,19 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             </div>
 
             {/* Footer */}
-            <div className="flex gap-4 justify-center mx-4 mb-4">
+            <div className='flex gap-4 justify-center mx-4 mb-4'>
               <button
+                type='button'
                 onClick={handleClose}
-                className="transition px-4 py-2 border border-(--color-baseline-60) text-(--color-baseline-90) rounded-full w-full
-                font-medium focus:outline-none hover:bg-(--color-transparent-neutral-10)"
+                className='transition px-4 py-2 border border-(--color-baseline-60) text-(--color-baseline-90) rounded-full w-full
+                font-medium focus:outline-none hover:bg-(--color-transparent-neutral-10)'
                 disabled={isExecuting}>
                 {t('common.close')}
               </button>
               <button
+                type='button'
                 onClick={handleExecute}
-                className="transition px-4 py-2 text-white rounded-full w-full justify-center font-medium flex items-center gap-2 bg-(--color-baseline-100) hover:bg-(--color-etendo-main)"
+                className='transition px-4 py-2 text-white rounded-full w-full justify-center font-medium flex items-center gap-2 bg-(--color-baseline-100) hover:bg-(--color-etendo-main)'
                 disabled={isActionButtonDisabled}>
                 {renderActionButton()}
               </button>

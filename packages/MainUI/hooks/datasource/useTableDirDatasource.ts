@@ -1,11 +1,11 @@
-import { useCallback, useState } from 'react';
-import { type Field, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
-import { useFormContext } from 'react-hook-form';
 import { useTabContext } from '@/contexts/tab';
-import useFormParent from '../useFormParent';
-import { FieldName } from '../types';
 import { logger } from '@/utils/logger';
+import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
+import type { Field, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { useCallback, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
+import { FieldName } from '../types';
+import useFormParent from '../useFormParent';
 
 export interface UseTableDirDatasourceParams {
   field: Field;
@@ -80,12 +80,12 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
             searchFields.push(field.selector.displayField);
           }
           if (field.selector?.extraSearchFields) {
-            searchFields.push(...field.selector.extraSearchFields.split(',').map(f => f.trim()));
+            searchFields.push(...field.selector.extraSearchFields.split(',').map((f) => f.trim()));
           }
           if (searchFields.length === 0) {
             searchFields.push('name', 'value', 'description');
           }
-          searchFields.forEach(fieldName => {
+          for (const fieldName of searchFields) {
             body.append(
               'criteria',
               JSON.stringify({
@@ -94,10 +94,10 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
                 value: search,
               }),
             );
-          });
+          }
         }
 
-        Object.entries(getValues()).forEach(([key, value]) => {
+        for (const [key, value] of Object.entries(getValues())) {
           const currentField = tab.fields[key];
           const _key = currentField?.inputName || key;
           const stringValue = String(value);
@@ -113,8 +113,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
             : value;
 
           body.set(_key, safeValue);
-          
-        });
+        }
 
         const { data } = await datasource.client.request(field.selector?.datasourceName ?? '', {
           method: 'POST',
@@ -131,21 +130,21 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           } else {
             const recordMap = new Map();
 
-            records.forEach(record => {
+            for (const record of records) {
               const recordId = record.id || JSON.stringify(record);
               recordMap.set(recordId, record);
-            });
+            }
 
-            data.response.data.forEach((record: { id: string }) => {
+            for (const record of data.response.data) {
               const recordId = record.id || JSON.stringify(record);
               recordMap.set(recordId, record);
-            });
+            }
 
             setRecords(Array.from(recordMap.values()));
           }
 
           if (!reset) {
-            setCurrentPage(prev => prev + 1);
+            setCurrentPage((prev) => prev + 1);
           }
         } else {
           throw new Error(data);

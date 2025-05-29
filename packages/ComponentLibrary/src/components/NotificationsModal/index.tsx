@@ -35,7 +35,7 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
             </Link>
           )}
           <div style={styles.titleModalButtonContainer}>
-            <IconButton className="w-5 h-5">
+            <IconButton className='w-5 h-5'>
               <MoreVert />
             </IconButton>
           </div>
@@ -50,7 +50,7 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
               <div style={styles.emptyText}>{emptyStateDescription}</div>
             </div>
             <div style={styles.actionButtonContainer}>
-              <Button style={styles.actionButton} variant="contained" startIcon={<Settings />} sx={sx.actionButton}>
+              <Button style={styles.actionButton} variant='contained' startIcon={<Settings />} sx={sx.actionButton}>
                 <div style={styles.actionButtonText}>{actionButtonLabel}</div>
               </Button>
             </div>

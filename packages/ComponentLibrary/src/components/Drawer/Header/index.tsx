@@ -12,7 +12,7 @@ const DrawerHeader = forwardRef<HTMLDivElement, DrawerHeaderProps>(({ title, log
 
   const Logo = useCallback(() => {
     if (typeof logo === 'string') {
-      return <Box component="img" src={logo} alt={`${title} Logo`} sx={sx.drawerHeaderImg} />;
+      return <Box component='img' src={logo} alt={`${title} Logo`} sx={sx.drawerHeaderImg} />;
     }
     return <Box sx={sx.drawerHeaderImg}>{logo}</Box>;
   }, [logo, sx.drawerHeaderImg, title]);
@@ -20,16 +20,16 @@ const DrawerHeader = forwardRef<HTMLDivElement, DrawerHeaderProps>(({ title, log
   return (
     <Box sx={sx.drawerHeader} ref={ref}>
       {open ? (
-        <div className="w-full">
-          <a href="/" className="flex items-center gap-1" title="Etendo">
+        <div className='w-full'>
+          <a href='/' className='flex items-center gap-1' title='Etendo'>
             <Logo />
-            <Box component="span" sx={sx.drawerHeaderTitle}>
+            <Box component='span' sx={sx.drawerHeaderTitle}>
               {title}
             </Box>
           </a>
         </div>
       ) : null}
-      <IconButton onClick={onClick} className="animated-transform w-full max-w-9 h-9" tabIndex={tabIndex}>
+      <IconButton onClick={onClick} className='animated-transform w-full max-w-9 h-9' tabIndex={tabIndex}>
         <MenuOpen />
       </IconButton>
     </Box>

@@ -1,24 +1,24 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useTab } from '@/hooks/useTab';
 import { useTranslation } from '@/hooks/useTranslation';
-import {
-  MaterialReactTable,
-  MRT_ColumnFiltersState,
-  MRT_Row,
-  MRT_RowSelectionState,
-  MRT_TopToolbarProps,
-  useMaterialReactTable,
-  MRT_TableOptions,
-} from 'material-react-table';
+import { parseColumns } from '@/utils/tableColumns';
 import type { EntityData, EntityValue } from '@workspaceui/etendohookbinder/src/api/types';
-import Loading from '../loading';
+import {
+  type MRT_ColumnFiltersState,
+  type MRT_Row,
+  type MRT_RowSelectionState,
+  type MRT_TableOptions,
+  type MRT_TopToolbarProps,
+  MaterialReactTable,
+  useMaterialReactTable,
+} from 'material-react-table';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorDisplay } from '../ErrorDisplay';
 import EmptyState from '../Table/EmptyState';
-import { parseColumns } from '@/utils/tableColumns';
-import { useTab } from '@/hooks/useTab';
+import Loading from '../loading';
 
-import { WindowReferenceGridProps } from './types';
-import { tableStyles } from './styles';
 import { useDatasource } from '@/hooks/useDatasource';
+import { tableStyles } from './styles';
+import type { WindowReferenceGridProps } from './types';
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
@@ -51,13 +51,13 @@ function WindowReferenceGrid({
     };
 
     if (processConfig?.defaults) {
-      Object.entries(processConfig.defaults).forEach(([key, value]) => {
+      for (const [key, value] of Object.entries(processConfig.defaults)) {
         options[key] = value.value;
 
         if (key === 'ad_org_id') {
           options.org = value.value;
         }
-      });
+      }
     }
 
     let criteria: Array<{ fieldName: string; operator: string; value: EntityValue }> = [];
@@ -103,7 +103,7 @@ function WindowReferenceGrid({
     fetchMore,
   } = useDatasource({
     entity: String(entityName),
-    params: datasourceOptions, 
+    params: datasourceOptions,
   });
 
   useEffect(() => {
@@ -172,16 +172,17 @@ function WindowReferenceGrid({
     (props: MRT_TopToolbarProps<EntityData>) => {
       const selectedCount = props.table.getSelectedRowModel().rows.length;
       return (
-        <div className="flex justify-between items-center px-4 py-2 bg-gray-50 border-b max-h-[2.5rem]">
-          <div className="text-base font-medium text-gray-800">{parameter.name}</div>
+        <div className='flex justify-between items-center px-4 py-2 bg-gray-50 border-b max-h-[2.5rem]'>
+          <div className='text-base font-medium text-gray-800'>{parameter.name}</div>
           {selectedCount > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
+            <div className='flex items-center gap-2'>
+              <span className='text-sm text-gray-600'>
                 {selectedCount} {t('table.selection.multiple')}
               </span>
               <button
+                type='button'
                 onClick={handleClearSelections}
-                className="px-3 py-1 text-sm cursor-pointer text-gray-700 border border-gray-300 rounded-full hover:bg-(--color-etendo-main) hover:text-(--color-baseline-0) transition-colors">
+                className='px-3 py-1 text-sm cursor-pointer text-gray-700 border border-gray-300 rounded-full hover:bg-(--color-etendo-main) hover:text-(--color-baseline-0) transition-colors'>
                 {t('common.clear')}
               </button>
             </div>
@@ -193,10 +194,11 @@ function WindowReferenceGrid({
   );
 
   const LoadMoreButton = ({ fetchMore }: { fetchMore: () => void }) => (
-    <div className="flex justify-center p-2 border-t border-gray-200">
+    <div className='flex justify-center p-2 border-t border-gray-200'>
       <button
+        type='button'
         onClick={fetchMore}
-        className="px-4 py-2 text-sm border border-gray-300 rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
+        className='px-4 py-2 text-sm border border-gray-300 rounded-full text-gray-700 hover:bg-gray-100 transition-colors'>
         {t('common.loadMore')}
       </button>
     </div>
@@ -249,7 +251,7 @@ function WindowReferenceGrid({
     renderTopToolbar,
     renderBottomToolbar: hasMoreRecords ? () => <LoadMoreButton fetchMore={fetchMore} /> : undefined,
     renderEmptyRowsFallback: () => (
-      <div className="flex justify-center items-center p-8 text-gray-500">
+      <div className='flex justify-center items-center p-8 text-gray-500'>
         <EmptyState maxWidth={MAX_WIDTH} />
       </div>
     ),
@@ -270,7 +272,7 @@ function WindowReferenceGrid({
 
   if (isLoading) {
     return (
-      <div className="p-4 flex justify-center">
+      <div className='p-4 flex justify-center'>
         <Loading />
       </div>
     );

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useStyle } from './styles';
-import { BooleanSelectorProps } from '../../Form/FormView/types';
+import type { BooleanSelectorProps } from '../../Form/FormView/types';
 
 const BooleanSelector = ({ label, checked, onChange, name, disabled, readOnly }: BooleanSelectorProps) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -43,7 +43,7 @@ const BooleanSelector = ({ label, checked, onChange, name, disabled, readOnly }:
     <div style={styles.checkboxContainer} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <label style={styles.checkboxLabel}>
         <input
-          type="checkbox"
+          type='checkbox'
           style={styles.hiddenCheckbox}
           checked={checked}
           disabled={isDisabled}

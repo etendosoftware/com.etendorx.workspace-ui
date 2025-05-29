@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearch } from '../../contexts/searchContext';
-import { useMetadataContext } from '../useMetadataContext';
-import { useDeleteRecord } from '../useDeleteRecord';
-import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { logger } from '@/utils/logger';
-import { useTranslation } from '../useTranslation';
-import { useStatusModal } from './useStatusModal';
 import { useToolbarContext } from '@/contexts/ToolbarContext';
 import { useTabContext } from '@/contexts/tab';
+import { logger } from '@/utils/logger';
+import type { Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearch } from '../../contexts/searchContext';
+import { useDeleteRecord } from '../useDeleteRecord';
+import { useMetadataContext } from '../useMetadataContext';
 import { useSelectedRecord } from '../useSelectedRecord';
 import { useSelectedRecords } from '../useSelectedRecords';
+import { useTranslation } from '../useTranslation';
+import { useStatusModal } from './useStatusModal';
 
 export const useToolbarConfig = ({
   tabId,
@@ -51,9 +51,9 @@ export const useToolbarConfig = ({
       const recordName = selectedRecord?._identifier || selectedRecord?.id || `${deletedCount} registros`;
       const entityType = tab?.title || '';
 
-      selectedIds.forEach((recordId) => {
+      for (const recordId of selectedIds) {
         removeRecord(tabId, recordId);
-      });
+      }
 
       const successMessage = `${entityType} '${String(recordName)}' ${t('status.deleteSuccess')}`;
 
@@ -89,7 +89,7 @@ export const useToolbarConfig = ({
       CANCEL: () => onBack?.(),
       NEW: () => {
         const params = new URLSearchParams(location.search);
-        params.set('recordId_' + tab?.id, 'new');
+        params.set(`recordId_${tab?.id}`, 'new');
         history.pushState(null, '', `?${params.toString()}`);
         onNew?.();
       },

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Theme, useTheme, SxProps } from '@mui/material';
+import { type Theme, useTheme, type SxProps } from '@mui/material';
 
 type StylesType = {
   sx: {

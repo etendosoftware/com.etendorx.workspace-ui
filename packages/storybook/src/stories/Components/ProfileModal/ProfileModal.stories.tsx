@@ -3,7 +3,7 @@ import profilePicture from '@workspaceui/componentlibrary/src/assets/images/prof
 import PersonIcon from '@workspaceui/componentlibrary/src/assets/icons/user.svg';
 import { sections } from './mock';
 import type { Meta, StoryObj } from '@storybook/react';
-import { ProfileModalProps } from '@workspaceui/componentlibrary/src/components/ProfileModal/types';
+import type { ProfileModalProps } from '@workspaceui/componentlibrary/src/components/ProfileModal/types';
 
 const meta: Meta<typeof ProfileModal> = {
   title: 'Components/ProfileModal',
@@ -28,7 +28,7 @@ export default meta;
 type Story = StoryObj<ProfileModalProps>;
 
 export const ProfileDefault: Story = {
-  render: args => <ProfileModal {...args} />,
+  render: (args) => <ProfileModal {...args} />,
   args: {
     section: 'profile',
     cancelButtonText: 'Cancel',
@@ -41,7 +41,7 @@ export const ProfileDefault: Story = {
     userName: 'Ayelén García',
     userEmail: 'ayelen.garcia@etendo.software',
     sectionTooltip: 'Close Session',
-    icon: <PersonIcon fill="#2E365C" />,
+    icon: <PersonIcon fill='#2E365C' />,
     sections: sections,
   },
 };

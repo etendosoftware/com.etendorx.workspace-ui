@@ -1,7 +1,7 @@
-import { Role } from '@workspaceui/etendohookbinder/src/api/types';
-import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
-import { BaseDefaultConfiguration, BaseProfileModalProps, BaseWarehouse } from '../ProfileModal/types';
-import { Logger } from '@/utils/logger';
+import type { Role } from '@workspaceui/etendohookbinder/src/api/types';
+import type { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
+import type { BaseDefaultConfiguration, BaseProfileModalProps, BaseWarehouse } from '../ProfileModal/types';
+import type { Logger } from '@/utils/logger';
 
 export interface WrapperHandledProps {
   currentRole: Role | null;

@@ -22,10 +22,10 @@ const TabsMUI = ({ tabArray }: TabsMUIProps) => {
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <TabList
             onChange={handleChange}
-            aria-label="lab API tabs example"
-            textColor="primary"
-            indicatorColor="primary"
-            variant="scrollable"
+            aria-label='lab API tabs example'
+            textColor='primary'
+            indicatorColor='primary'
+            variant='scrollable'
             scrollButtons
             allowScrollButtonsMobile>
             {tabArray.map((tab, index) => (

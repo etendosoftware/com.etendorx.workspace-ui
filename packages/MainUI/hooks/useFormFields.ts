@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
-import { Field, FieldType, Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { useTranslation } from './useTranslation';
 import { getFieldReference } from '@/utils';
+import { type Field, FieldType, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import { useMemo } from 'react';
+import { useTranslation } from './useTranslation';
 
 export default function useFormFields(tab: Tab) {
   const { t } = useTranslation();
@@ -12,7 +12,7 @@ export default function useFormFields(tab: Tab) {
     const actionFields: Record<string, Field> = {};
     const otherFields: Record<string, Field> = {};
 
-    Object.entries(tab.fields).forEach(([, field]) => {
+    for (const [, field] of Object.entries(tab.fields)) {
       const reference = getFieldReference(field.column?.reference);
       // Keep this at first because a process field will have field.display == true
       if (field.processAction || field.processDefinition || reference === FieldType.BUTTON) {
@@ -24,7 +24,7 @@ export default function useFormFields(tab: Tab) {
       } else {
         otherFields[field.hqlName] = field;
       }
-    });
+    }
 
     return { statusBarFields, formFields, actionFields, otherFields };
   }, [tab.fields]);
@@ -35,7 +35,7 @@ export default function useFormFields(tab: Tab) {
       { id: string | null; identifier: string; sequenceNumber: number; fields: Record<string, Field> }
     >;
 
-    Object.entries(fields.formFields).forEach(([fieldName, field]) => {
+    for (const [fieldName, field] of Object.entries(fields.formFields)) {
       const [id = '', identifier = ''] = [field.fieldGroup, field.fieldGroup$_identifier];
 
       if (!groups[id]) {
@@ -52,7 +52,7 @@ export default function useFormFields(tab: Tab) {
       if (groups[id].sequenceNumber > field.sequenceNumber) {
         groups[id].sequenceNumber = field.sequenceNumber;
       }
-    });
+    }
 
     return groups;
   }, [fields.formFields, t]);

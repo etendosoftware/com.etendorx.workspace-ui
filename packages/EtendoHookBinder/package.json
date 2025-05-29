@@ -12,12 +12,9 @@
     "url": "https://github.com/etendosoftware/com.etendorx.workspace-ui.git",
     "directory": "packages/EtendoHookBinder"
   },
-  "files": [
-    "dist",
-    "src"
-  ],
+  "files": ["dist", "src"],
   "scripts": {
-"lint": "biome lint src/",
+    "lint": "biome lint src/",
     "lint:fix": "biome lint --apply src/",
     "format": "biome format src/",
     "format:fix": "biome format --write src/",

@@ -1,8 +1,8 @@
-import React from 'react';
-import { ToolbarButton, IconSize } from './types';
-import { TranslateFunction } from '@/hooks/types';
+import type { OrganizedSections, ToolbarButtonMetadata } from '@/hooks/Toolbar/types';
+import type { TranslateFunction } from '@/hooks/types';
+import type React from 'react';
 import Base64Icon from './Base64Icon';
-import { ToolbarButtonMetadata, OrganizedSections } from '@/hooks/Toolbar/types';
+import { IconSize, type ToolbarButton } from './types';
 
 export const DefaultIcon = () => <span style={{ fontSize: '1rem' }}>✣</span>;
 
@@ -57,11 +57,11 @@ export const organizeButtonsBySection = (buttons: ToolbarButtonMetadata[], isFor
     return true;
   });
 
-  visibleButtons.forEach((button) => {
+  for (const button of visibleButtons) {
     if (button.section && sections[button.section]) {
       sections[button.section].push(button);
     }
-  });
+  }
 
   return {
     left: sortButtonsBySeqno(sections.left),
@@ -182,7 +182,7 @@ export const createProcessMenuButton = (
   tooltip: t('common.processes'),
   ref: buttonRef,
   disabled: !hasSelectedRecord,
-  className: `bg-(--color-warning-main) disabled:bg-(--color-warning-light) h-8 [&>svg]:w-4 [&>svg]:h-4`,
+  className: 'bg-(--color-warning-main) disabled:bg-(--color-warning-light) h-8 [&>svg]:w-4 [&>svg]:h-4',
   onClick: (event?: React.MouseEvent<HTMLElement>) => {
     if (hasSelectedRecord && event && processCount > 0) {
       onMenuOpen(event);

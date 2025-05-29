@@ -29,7 +29,7 @@ const SortableItem: React.FC<SortableItemProps> = ({ id, person, onToggle, icon 
           {React.cloneElement(icon as React.ReactElement, {
             style: styles.dragStyles,
           })}
-          <span className="person-label" style={styles.sortableItemLabel} title={person.label}>
+          <span className='person-label' style={styles.sortableItemLabel} title={person.label}>
             {person.label}
           </span>
         </div>

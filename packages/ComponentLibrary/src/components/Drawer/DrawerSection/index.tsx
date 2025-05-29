@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Box, useTheme } from '@mui/material';
-import { useStyle } from '../styles';
-import { MenuTitle } from '../MenuTitle';
-import type { DrawerSectionProps, ToggleFunctions } from '../types';
-import { findActive } from '../../../utils/drawerUtils';
+import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useItemActions } from '../../../hooks/useItemType';
 import { CustomClickAwayListener } from '../../../utils/clickAway';
-import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import { findActive } from '../../../utils/drawerUtils';
+import { MenuTitle } from '../MenuTitle';
+import { useStyle } from '../styles';
+import type { DrawerSectionProps, ToggleFunctions } from '../types';
 
 export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
   ({
@@ -44,7 +44,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     });
 
     const handleNestedToggle = useCallback((sectionId: string) => {
-      setExpandedSections(prev => {
+      setExpandedSections((prev) => {
         const newSet = new Set(prev);
         if (newSet.has(sectionId)) {
           newSet.delete(sectionId);
@@ -69,7 +69,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
       (event: React.MouseEvent<HTMLElement>) => {
         event.stopPropagation();
         if (!open) {
-          setPopperOpen(prev => !prev);
+          setPopperOpen((prev) => !prev);
         } else if (hasChildren && isExpandable) {
           const newExpandedState = !expanded;
           setLocalExpanded(newExpandedState);
@@ -139,7 +139,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     }, [open]);
 
     return (
-      <Box sx={sectionStyles} role="button" aria-expanded={expanded} onKeyDown={handleKeyDown} tabIndex={0}>
+      <Box sx={sectionStyles} aria-expanded={expanded} onKeyDown={handleKeyDown} tabIndex={0}>
         <MenuTitle
           item={item}
           onClick={handleClick}
@@ -150,9 +150,9 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
         />
         {hasChildren && open && (
           <div
-            className={`overflow-hidden transition-all duration-300 ease-in-out
+            className={`overflow-hidden transition-all duration-300 ease-in-out 
               ${shouldShowChildren ? 'max-h-[1000px] opacity-100 transform translate-y-0' : 'max-h-0 opacity-0 transform -translate-y-2'}`}>
-            {item.children?.map(subitem => (
+            {item.children?.map((subitem) => (
               <DrawerSection
                 key={subitem.id}
                 item={subitem}
@@ -181,7 +181,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
               top: popperRef.current ? popperRef.current.getBoundingClientRect().top : 'auto',
             }}>
             <CustomClickAwayListener onClickAway={handleClose}>
-              <div className="p-2 min-w-[240px]">
+              <div className='p-2 min-w-[240px]'>
                 <MenuTitle
                   item={item}
                   onClick={handleClick}
@@ -192,7 +192,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
                   popperOpen={true}
                 />
 
-                {item.children?.map(subitem => (
+                {item.children?.map((subitem) => (
                   <DrawerSection
                     key={subitem.id}
                     item={subitem}

@@ -1,11 +1,53 @@
-import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { useFormContext } from 'react-hook-form';
-import { SelectProps } from './types';
-import checkIconUrl from '../../../../../../ComponentLibrary/src/assets/icons/check-circle-filled.svg?url';
-import closeIconUrl from '../../../../../../ComponentLibrary/src/assets/icons/x.svg?url';
-import ChevronDown from '../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
-import Image from 'next/image';
 import useDebounce from '@/hooks/useDebounce';
+import Image from 'next/image';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
+import checkIconUrl from '../../../../../../ComponentLibrary/src/assets/icons/check-circle-filled.svg?url';
+import ChevronDown from '../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
+import closeIconUrl from '../../../../../../ComponentLibrary/src/assets/icons/x.svg?url';
+import type { SelectProps } from './types';
+
+const OptionItem = memo(
+  ({
+    id,
+    label,
+    index,
+    isSelected,
+    isHighlighted,
+    onOptionClick,
+    onMouseEnter,
+  }: {
+    id: string;
+    label: string;
+    index: number;
+    isSelected: boolean;
+    isHighlighted: boolean;
+    onOptionClick: (id: string, label: string) => void;
+    onMouseEnter: (index: number) => void;
+  }) => (
+    <li
+      aria-selected={isSelected}
+      onClick={() => onOptionClick(id, label)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOptionClick(id, label);
+        }
+      }}
+      onMouseEnter={() => onMouseEnter(index)}
+      className={`px-4 py-3 text-sm cursor-pointer flex items-center justify-between focus:outline-none focus:bg-baseline-10
+      ${isHighlighted ? 'bg-baseline-10' : ''}
+      ${isSelected ? 'bg-baseline-10 font-medium' : ''}
+      hover:bg-baseline-10`}>
+      <span className={`truncate mr-2 ${isSelected ? 'text-dynamic-dark' : 'text-baseline-90'}`}>{label}</span>
+      {isSelected && (
+        <Image src={checkIconUrl} alt='Selected Item' className='fade-in-left flex-shrink-0' height={16} width={16} />
+      )}
+    </li>
+  ),
+);
+
+OptionItem.displayName = 'OptionItem';
 
 function SelectCmp({
   name,
@@ -32,13 +74,14 @@ function SelectCmp({
   const debouncedSetSearchTerm = useDebounce(onSearch);
 
   const filteredOptions = useMemo(
-    () => options.filter(option => option.label.toLowerCase().includes(searchTerm.toLowerCase())),
+    () => options.filter((option) => option.label.toLowerCase().includes(searchTerm.toLowerCase())),
     [options, searchTerm],
   );
 
+  // Callbacks estables que no cambian en cada render
   const handleSelect = useCallback(
     (id: string, label: string) => {
-      const option = options.find(opt => opt.id === id);
+      const option = options.find((opt) => opt.id === id);
       setValue(`${name}_data`, option?.data);
       setValue(name, id);
       setSelectedLabel(label);
@@ -48,16 +91,27 @@ function SelectCmp({
     [name, options, setValue],
   );
 
+  const handleOptionClick = useCallback(
+    (id: string, label: string) => {
+      handleSelect(id, label);
+    },
+    [handleSelect],
+  );
+
+  const handleOptionMouseEnter = useCallback((index: number) => {
+    setHighlightedIndex(index);
+  }, []);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setHighlightedIndex(prev => (prev + 1) % filteredOptions.length);
+        setHighlightedIndex((prev) => (prev + 1) % filteredOptions.length);
       }
 
       if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setHighlightedIndex(prev => (prev <= 0 ? filteredOptions.length - 1 : prev - 1));
+        setHighlightedIndex((prev) => (prev <= 0 ? filteredOptions.length - 1 : prev - 1));
       }
 
       if (e.key === 'Enter' && highlightedIndex >= 0) {
@@ -90,7 +144,7 @@ function SelectCmp({
 
   const handleClick = useCallback(() => {
     if (!isReadOnly) {
-      setIsOpen(prev => !prev);
+      setIsOpen((prev) => !prev);
     }
   }, [isReadOnly]);
 
@@ -132,25 +186,14 @@ function SelectCmp({
       setSearchTerm(term);
 
       if (debouncedSetSearchTerm) {
-        debouncedSetSearchTerm(term)
+        debouncedSetSearchTerm(term);
       }
     },
     [debouncedSetSearchTerm],
   );
 
-  const handleOptionClick = useCallback(
-    (id: string, label: string) => {
-      handleSelect(id, label);
-    },
-    [handleSelect],
-  );
-
-  const handleOptionMouseEnter = useCallback((index: number) => {
-    setHighlightedIndex(index);
-  }, []);
-
   useEffect(() => {
-    const selectedOption = options.find(option => option.id === selectedValue);
+    const selectedOption = options.find((option) => option.id === selectedValue);
     if (!selectedOption && selectedValue) {
       setSelectedLabel(selectedValue);
     } else {
@@ -173,35 +216,23 @@ function SelectCmp({
     };
   }, [handleClickOutside]);
 
-  const RenderOptions = useCallback(() => {
+  // Renderizado optimizado de opciones
+  const renderedOptions = useMemo(() => {
     if (filteredOptions.length > 0) {
       return filteredOptions.map(({ id, label }, index) => (
-        <li
+        <OptionItem
           key={id}
-          role="option"
-          aria-selected={selectedValue === id}
-          onClick={() => handleOptionClick(id, label)}
-          onMouseEnter={() => handleOptionMouseEnter(index)}
-          className={`px-4 py-3 text-sm cursor-pointer flex items-center justify-between
-            ${highlightedIndex === index ? 'bg-baseline-10' : ''}
-            ${selectedValue === id ? 'bg-baseline-10 font-medium' : ''}
-            hover:bg-baseline-10`}>
-          <span className={`truncate mr-2 ${selectedValue === id ? 'text-dynamic-dark' : 'text-baseline-90'}`}>
-            {label}
-          </span>
-          {selectedValue === id && (
-            <Image
-              src={checkIconUrl}
-              alt="Selected Item"
-              className="fade-in-left flex-shrink-0"
-              height={16}
-              width={16}
-            />
-          )}
-        </li>
+          id={id}
+          label={label}
+          index={index}
+          isSelected={selectedValue === id}
+          isHighlighted={highlightedIndex === index}
+          onOptionClick={handleOptionClick}
+          onMouseEnter={handleOptionMouseEnter}
+        />
       ));
     }
-    return <li className="px-4 py-3 text-sm text-baseline-60">No options found</li>;
+    return <li className='px-4 py-3 text-sm text-baseline-60'>No options found</li>;
   }, [filteredOptions, highlightedIndex, selectedValue, handleOptionClick, handleOptionMouseEnter]);
 
   return (
@@ -209,62 +240,72 @@ function SelectCmp({
       ref={wrapperRef}
       className={`relative w-full font-['Inter'] ${isReadOnly ? 'pointer-events-none' : ''}`}
       onBlur={isReadOnly ? undefined : handleBlur}
-      role="textbox"
       aria-label={field.name}
       aria-readonly={isReadOnly}
       aria-required={field.isMandatory}
       aria-disabled={isReadOnly}
       aria-details={field.helpComment}
       tabIndex={-1}>
-      <input {...register(name)} type="hidden" readOnly={isReadOnly} />
+      <input {...register(name)} type='hidden' readOnly={isReadOnly} />
       <div
         onClick={handleClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className={`w-full flex items-center justify-between px-3 py-2 h-10 border-b border-baseline-10 hover:border-baseline-100
+        className={`w-full flex items-center justify-between px-3 py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light
           ${isOpen ? 'rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light' : 'border-baseline-40'} 
           ${isReadOnly ? 'bg-transparent-neutral-20 rounded-t-lg cursor-not-allowed' : 'bg-white text-baseline-90 cursor-pointer hover:border-baseline-60'}
-          transition-colors outline-none`}
-        tabIndex={0}>
+          transition-colors outline-none`}>
         <span
           className={`text-sm truncate max-w-[calc(100%-40px)] ${selectedLabel ? 'text-baseline-90 font-medium' : 'text-baseline-60'}`}>
           {selectedLabel || 'Select an option'}
         </span>
-        <div className="flex items-center flex-shrink-0 ml-2">
+        <div className='flex items-center flex-shrink-0 ml-2'>
           {selectedLabel && (isHovering || isOpen) && (
             <button
-              type="button"
+              type='button'
               onClick={handleClear}
-              className="mr-1 text-baseline-60 hover:text-baseline-80 transition-opacity opacity-100"
-              aria-label="Clear selection">
-              <Image src={closeIconUrl} alt="Clear" height={16} width={16} />
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleClear;
+                }
+              }}
+              className='mr-1 text-baseline-60 hover:text-baseline-80 transition-opacity opacity-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light rounded'
+              aria-label='Clear selection'>
+              <Image src={closeIconUrl} alt='Clear' height={16} width={16} />
             </button>
           )}
           <ChevronDown
-            fill="currentColor"
+            fill='currentColor'
             className={`w-5 h-5 text-baseline-60 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           />
         </div>
       </div>
 
       {!isReadOnly && isOpen && (
-        <div className="absolute z-10 mt-1 w-full bg-white rounded shadow-lg overflow-hidden">
-          <div className="p-2">
+        <div className='absolute z-10 mt-1 w-full bg-white rounded shadow-lg overflow-hidden'>
+          <div className='p-2'>
             <input
               ref={searchInputRef}
               value={searchTerm}
               onChange={handleSetSearchTerm}
               onKeyDown={handleKeyDown}
-              placeholder="Search..."
-              className="w-full p-2 text-sm border border-baseline-30 rounded focus:outline-none focus:border-dynamic-main focus:ring-1 focus:ring-dynamic-light"
-              aria-label="Search options"
+              placeholder='Search...'
+              className='w-full p-2 text-sm border border-baseline-30 rounded focus:outline-none focus:border-dynamic-main focus:ring-1 focus:ring-dynamic-light'
+              aria-label='Search options'
               onFocus={handleFocus}
             />
           </div>
-          <ul ref={listRef} role="listbox" className="max-h-60 overflow-y-auto" onScroll={handleScroll}>
-            <RenderOptions />
+          <ul ref={listRef} className='max-h-60 overflow-y-auto focus:outline-none' onScroll={handleScroll}>
+            {renderedOptions}
             {loading && hasMore && (
-              <li ref={loadingRef} className="px-4 py-3 text-sm text-baseline-60 text-center">
+              <li ref={loadingRef} className='px-4 py-3 text-sm text-baseline-60 text-center'>
                 Loading more options...
               </li>
             )}

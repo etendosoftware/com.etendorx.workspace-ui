@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export const Resizable = ({ children }: React.PropsWithChildren) => {
   const [isMaximized, setIsMaximized] = useState(false);
@@ -43,8 +43,8 @@ export const Resizable = ({ children }: React.PropsWithChildren) => {
     [position.x, position.y],
   );
 
-  const toggleMaximize = useCallback(() => setIsMaximized(prev => !prev), []);
-  const toggleMinimize = useCallback(() => setIsMinimized(prev => !prev), []);
+  const toggleMaximize = useCallback(() => setIsMaximized((prev) => !prev), []);
+  const toggleMinimize = useCallback(() => setIsMinimized((prev) => !prev), []);
 
   const closeWindow = useCallback(() => {
     if (windowRef.current) {
@@ -64,26 +64,32 @@ export const Resizable = ({ children }: React.PropsWithChildren) => {
   return (
     <motion.div
       ref={windowRef}
-      className={`bg-white w-full shadow-lg rounded-lg border overflow-hidden z-[2000]`}
+      className={'bg-white w-full shadow-lg rounded-lg border overflow-hidden z-[2000]'}
       style={{
         top: position.y,
         height: isMaximized ? '100%' : size.height,
       }}>
       <div
-        className="flex items-center justify-end bg-gray-800 text-white p-2 cursor-move select-none"
+        className='flex items-center justify-end bg-gray-800 text-white p-2 cursor-move select-none'
         onMouseDown={handleMouseDown}>
-        <div className="flex gap-2">
-          <button onClick={toggleMinimize}>_</button>
-          <button onClick={toggleMaximize}>[]</button>
-          <button onClick={closeWindow}>X</button>
+        <div className='flex gap-2'>
+          <button type='button' onClick={toggleMinimize}>
+            _
+          </button>
+          <button type='button' onClick={toggleMaximize}>
+            []
+          </button>
+          <button type='button' onClick={closeWindow}>
+            X
+          </button>
         </div>
       </div>
       {!isMinimized && (
-        <div className="p-4 overflow-auto" onMouseDown={e => e.stopPropagation()}>
+        <div className='p-4 overflow-auto' onMouseDown={(e) => e.stopPropagation()}>
           {children}
         </div>
       )}
-      <div className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize" onMouseDown={handleResize} />
+      <div className='absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize' onMouseDown={handleResize} />
     </motion.div>
   );
 };

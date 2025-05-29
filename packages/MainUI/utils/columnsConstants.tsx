@@ -1,4 +1,4 @@
-import { TagType } from '@workspaceui/componentlibrary/src/components/Tag/types';
+import type { TagType } from '@workspaceui/componentlibrary/src/components/Tag/types';
 import InfoIcon from '../../ComponentLibrary/src/assets/icons/info.svg';
 import CheckIcon from '../../ComponentLibrary/src/assets/icons/check-circle.svg';
 import ErrorIcon from '../../ComponentLibrary/src/assets/icons/alert-octagon.svg';

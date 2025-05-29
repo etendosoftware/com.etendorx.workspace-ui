@@ -1,5 +1,6 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { ToolbarProps } from './types';
+import type React from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import type { ToolbarProps } from './types';
 import SearchPortal from './SearchPortal';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useProcessExecution } from '../../hooks/Toolbar/useProcessExecution';
@@ -9,7 +10,12 @@ import { useToolbar } from '../../hooks/Toolbar/useToolbar';
 import ProcessMenu from './ProcessMenu';
 import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
 import ConfirmModal from '@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal';
-import { ProcessButton, ProcessButtonType, ProcessDefinitionButton, ProcessResponse } from '../ProcessModal/types';
+import {
+  type ProcessButton,
+  ProcessButtonType,
+  type ProcessDefinitionButton,
+  type ProcessResponse,
+} from '../ProcessModal/types';
 import ProcessModal from '../ProcessModal';
 import { useDatasourceContext } from '@/contexts/datasourceContext';
 import ProcessDefinitionModal from '../ProcessModal/ProcessDefinitionModal';
@@ -27,7 +33,7 @@ import {
   createProcessMenuButton,
   getButtonStyles,
 } from './buttonConfigs';
-import { ToolbarButtonMetadata } from '@/hooks/Toolbar/types';
+import type { ToolbarButtonMetadata } from '@/hooks/Toolbar/types';
 
 const BaseSection = { display: 'flex', alignItems: 'center' };
 const EmptyArray: ToolbarButtonMetadata[] = [];
@@ -225,8 +231,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
         <StatusModal
           open={activeModal.isOpen}
           statusText={`Modal para: ${activeModal.button.name}`}
-          statusType="info"
-          saveLabel="Cerrar"
+          statusType='info'
+          saveLabel='Cerrar'
           onClose={() => setActiveModal(null)}
         />
       )}

@@ -7,12 +7,12 @@ export default function NotFound() {
   const language = getLanguage();
 
   return (
-    <div className="w-full min-h-full flex items-center justify-center">
+    <div className='w-full min-h-full flex items-center justify-center'>
       <ErrorDisplay
         title={t(language, 'errors.notFound.title')}
         description={t(language, 'errors.notFound.description')}>
-        <Link href="/">
-          <Button variant="contained">{t(language, 'navigation.common.home')}</Button>
+        <Link href='/'>
+          <Button variant='contained'>{t(language, 'navigation.common.home')}</Button>
         </Link>
       </ErrorDisplay>
     </div>

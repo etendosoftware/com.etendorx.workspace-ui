@@ -30,7 +30,7 @@ const TextInputBase = (props: TextInputProps) => {
       <style>{cssString}</style>
       <TextField
         id={props.name}
-        variant="standard"
+        variant='standard'
         required
         fullWidth
         value={value}
@@ -44,15 +44,15 @@ const TextInputBase = (props: TextInputProps) => {
         InputProps={{
           name: props.name,
           startAdornment: leftIcon && (
-            <InputAdornment position="start" sx={styles.inputAdornment}>
-              <IconButton aria-label="left icon" onClick={onLeftIconClick}>
+            <InputAdornment position='start' sx={styles.inputAdornment}>
+              <IconButton aria-label='left icon' onClick={onLeftIconClick}>
                 {leftIcon}
               </IconButton>
             </InputAdornment>
           ),
           endAdornment: rightIcon && (
-            <InputAdornment position="end" sx={styles.inputAdornment}>
-              <IconButton aria-label="right-icon" onClick={onRightIconClick}>
+            <InputAdornment position='end' sx={styles.inputAdornment}>
+              <IconButton aria-label='right-icon' onClick={onRightIconClick}>
                 {rightIcon}
               </IconButton>
             </InputAdornment>

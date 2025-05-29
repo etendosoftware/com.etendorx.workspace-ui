@@ -8,8 +8,8 @@ import { login as doLogin } from '@workspaceui/etendohookbinder/src/api/authenti
 import { changeProfile as doChangeProfile } from '@workspaceui/etendohookbinder/src/api/changeProfile';
 import { getSession } from '@workspaceui/etendohookbinder/src/api/getSession';
 import { HTTP_CODES } from '@workspaceui/etendohookbinder/src/api/constants';
-import { DefaultConfiguration, IUserContext, Language, LanguageOption } from './types';
-import {
+import type { DefaultConfiguration, IUserContext, Language, LanguageOption } from './types';
+import type {
   ISession,
   ProfileInfo,
   SessionResponse,
@@ -86,7 +86,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         image: sessionResponse.user.image || '',
       };
 
-      setSession(prev => ({ ...prev, ...sessionResponse.attributes }));
+      setSession((prev) => ({ ...prev, ...sessionResponse.attributes }));
       updateProfile(currentProfileInfo);
       setUser(sessionResponse.user);
       setProfile(currentProfileInfo);

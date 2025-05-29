@@ -1,4 +1,4 @@
-import { useTheme, Theme, SxProps } from '@mui/material';
+import { useTheme, type Theme, type SxProps } from '@mui/material';
 import { useMemo } from 'react';
 
 export const useStyle = () => {

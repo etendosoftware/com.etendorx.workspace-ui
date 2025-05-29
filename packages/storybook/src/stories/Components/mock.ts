@@ -1,4 +1,4 @@
-import { Person } from '@workspaceui/componentlibrary/src/components/DragModal/DragModal.types';
+import type { Person } from '@workspaceui/componentlibrary/src/components/DragModal/DragModal.types';
 
 export const menuItems = [
   { emoji: '💼', label: 'New Job', key: 'newJob' },

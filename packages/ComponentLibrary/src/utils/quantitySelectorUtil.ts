@@ -31,7 +31,7 @@ export const validateNumber = (
     return { isValid: false, errorMessage: `Value must be at most ${maxValue}` };
   }
 
-  if (isNaN(num)) {
+  if (Number.isNaN(num)) {
     return { isValid: false, errorMessage: 'Please enter a valid number' };
   }
 

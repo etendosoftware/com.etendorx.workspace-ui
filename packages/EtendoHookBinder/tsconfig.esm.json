@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "ESNext",                 // Set module system to ESNext for ES modules
-    "outDir": "./dist/esm"              // Output ES modules to a separate subdirectory
+    "module": "ESNext",
+    "outDir": "./dist/esm"
   }
 }

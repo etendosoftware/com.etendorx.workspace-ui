@@ -1,8 +1,8 @@
-import { ProcessButton, ProcessResponse } from '@/components/ProcessModal/types';
-import { ExecuteProcessParams } from './types';
-import { BaseFieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
-import { FieldType } from '@workspaceui/etendohookbinder/src/api/types';
+import type { ProcessButton, ProcessResponse } from '@/components/ProcessModal/types';
 import { logger } from '@/utils/logger';
+import type { BaseFieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
+import type { FieldType } from '@workspaceui/etendohookbinder/src/api/types';
+import type { ExecuteProcessParams } from './types';
 
 export const useProcessButton = (
   executeProcess: (params: ExecuteProcessParams) => Promise<ProcessResponse>,
@@ -12,24 +12,24 @@ export const useProcessButton = (
     if (!recordId) {
       throw new Error('No record selected');
     }
-    
+
     const processParams =
-    Object.values(btn.processInfo?.parameters || {})?.reduce(
-        (acc, param) => ({
-          ...acc,
-          [param.id]: param.defaultValue ?? null,
-        }),
-        {},
+      Object.values(btn.processInfo?.parameters || {})?.reduce(
+        (acc, param) => {
+          acc[param.id] = param.defaultValue ?? null;
+          return acc;
+        },
+        {} as Record<string, unknown>,
       ) || {};
 
-      const recordIdField: BaseFieldDefinition<string> = {
-        value: recordId,
+    const recordIdField: BaseFieldDefinition<string> = {
+      value: recordId,
       type: 'string' as FieldType,
       label: 'Record ID',
       name: 'recordId',
       original: {} as never,
     };
-    
+
     try {
       const result = await executeProcess({
         button: btn,

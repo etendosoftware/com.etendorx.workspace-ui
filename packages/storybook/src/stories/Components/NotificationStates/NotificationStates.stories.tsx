@@ -1,9 +1,9 @@
-import React from 'react';
+import type React from 'react';
 import NotificationItemStates from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates';
 import { createNotificationStates } from './NotificationItemStates.mock';
 import { Grid, useTheme } from '@mui/material';
 import type { Meta, StoryObj } from '@storybook/react';
-import { IallNotifications } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/types';
+import type { IallNotifications } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/types';
 
 interface NotificationItemStatesProps {
   notifications: IallNotifications[];
@@ -26,7 +26,7 @@ export default meta;
 
 type Story = StoryObj<NotificationItemStatesProps>;
 
-const NotificationItemStatesTemplate: React.FC<NotificationItemStatesProps> = args => {
+const NotificationItemStatesTemplate: React.FC<NotificationItemStatesProps> = (args) => {
   const theme = useTheme();
   const notifications = createNotificationStates(theme);
 
@@ -34,23 +34,23 @@ const NotificationItemStatesTemplate: React.FC<NotificationItemStatesProps> = ar
 };
 
 export const Informatives: Story = {
-  render: () => <NotificationItemStatesTemplate type="informatives" notifications={[]} />,
+  render: () => <NotificationItemStatesTemplate type='informatives' notifications={[]} />,
 };
 
 export const WithButtons: Story = {
-  render: () => <NotificationItemStatesTemplate type="withButtons" notifications={[]} />,
+  render: () => <NotificationItemStatesTemplate type='withButtons' notifications={[]} />,
 };
 
 export const WithButtonsAndTags: Story = {
-  render: () => <NotificationItemStatesTemplate type="withButtonsAndTags" notifications={[]} />,
+  render: () => <NotificationItemStatesTemplate type='withButtonsAndTags' notifications={[]} />,
 };
 
 export const Tags: Story = {
-  render: () => <NotificationItemStatesTemplate type="tags" notifications={[]} />,
+  render: () => <NotificationItemStatesTemplate type='tags' notifications={[]} />,
 };
 
 export const Avatar: Story = {
-  render: () => <NotificationItemStatesTemplate type="avatar" notifications={[]} />,
+  render: () => <NotificationItemStatesTemplate type='avatar' notifications={[]} />,
 };
 
 const GridTemplate: React.FC = () => {
@@ -60,19 +60,19 @@ const GridTemplate: React.FC = () => {
   return (
     <Grid container spacing={1}>
       <Grid item>
-        <NotificationItemStates notifications={notifications} type="informatives" />
+        <NotificationItemStates notifications={notifications} type='informatives' />
       </Grid>
       <Grid item>
-        <NotificationItemStates notifications={notifications} type="withButtons" />
+        <NotificationItemStates notifications={notifications} type='withButtons' />
       </Grid>
       <Grid item>
-        <NotificationItemStates notifications={notifications} type="withButtonsAndTags" />
+        <NotificationItemStates notifications={notifications} type='withButtonsAndTags' />
       </Grid>
       <Grid item>
-        <NotificationItemStates notifications={notifications} type="tags" />
+        <NotificationItemStates notifications={notifications} type='tags' />
       </Grid>
       <Grid item>
-        <NotificationItemStates notifications={notifications} type="avatar" />
+        <NotificationItemStates notifications={notifications} type='avatar' />
       </Grid>
     </Grid>
   );

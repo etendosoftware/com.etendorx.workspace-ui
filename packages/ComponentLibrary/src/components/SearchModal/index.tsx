@@ -1,11 +1,11 @@
-import { useState } from 'react';
 import { Box } from '@mui/material';
+import { useState } from 'react';
 import SecondaryTabs from '../SecondaryTabs';
 import type { SearchModalProps } from '../SecondaryTabs/types';
-import { DEFAULT_MODAL_WIDTH, useStyle } from './styles';
-import { HeaderSection } from './SubComponents/HeaderSection';
 import { DefaultContent } from './SubComponents/DefaultContent';
+import { HeaderSection } from './SubComponents/HeaderSection';
 import { TabContent as TabContentComponent } from './SubComponents/TabContent';
+import { DEFAULT_MODAL_WIDTH, useStyle } from './styles';
 
 const SearchModal: React.FC<SearchModalProps> = ({
   defaultContent,
@@ -24,7 +24,8 @@ const SearchModal: React.FC<SearchModalProps> = ({
           <DefaultContent sections={defaultContent.sections} />
         </>
       );
-    } else if (variant === 'tabs' && tabsContent && tabsContent.length > 0) {
+    }
+    if (variant === 'tabs' && tabsContent && tabsContent.length > 0) {
       return (
         <>
           <SecondaryTabs content={tabsContent} selectedTab={activeTab} onChange={setActiveTab} />

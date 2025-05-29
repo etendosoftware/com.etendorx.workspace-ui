@@ -1,11 +1,5 @@
 import { useMemo } from 'react';
-import {
-  MaterialReactTable,
-  useMaterialReactTable,
-  type MRT_ColumnDef,
-} from 'material-react-table';
-
-
+import { MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
 
 //example data type
 type Person = {
@@ -17,7 +11,6 @@ type Person = {
   city: string;
   state: string;
 };
-
 
 //nested data is ok, see accessorKeys in ColumnDef below
 const data: Person[] = [

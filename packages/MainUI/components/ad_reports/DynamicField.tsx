@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { useFormContext, Controller } from 'react-hook-form';
 import { TextField, Autocomplete } from '@mui/material';
-import { ReportField } from '@workspaceui/etendohookbinder/src/hooks/types';
+import type { ReportField } from '@workspaceui/etendohookbinder/src/hooks/types';
 import DateSelector from './selectors/DateSelector';
 import DatabaseSelectSelector from './selectors/DatabaseSelect';
 import MultiSelect from './selectors/MultiSelect/MultiSelector';
@@ -61,11 +61,11 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
             <Autocomplete
               options={field.lookupConfig?.values || []}
               value={value || null}
-              getOptionLabel={option => option?.name || ''}
+              getOptionLabel={(option) => option?.name || ''}
               onChange={(_, newValue) => onChange(newValue)}
               fullWidth
-              renderInput={params => (
-                <TextField {...params} variant="standard" label={field.label} required={field.required} />
+              renderInput={(params) => (
+                <TextField {...params} variant='standard' label={field.label} required={field.required} />
               )}
             />
           )}
@@ -79,7 +79,7 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
           render={({ field: { value } }) => (
             <MultiSelect
               value={value || []}
-              onChange={selectedIds => {
+              onChange={(selectedIds) => {
                 setValue(field.name, selectedIds, { shouldDirty: true });
               }}
               title={field.label}

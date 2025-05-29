@@ -1,4 +1,4 @@
-import { Field } from '@workspaceui/etendohookbinder/src/api/types';
+import type { Field } from '@workspaceui/etendohookbinder/src/api/types';
 import { TextInput } from './components/TextInput';
 import { useFormContext } from 'react-hook-form';
 

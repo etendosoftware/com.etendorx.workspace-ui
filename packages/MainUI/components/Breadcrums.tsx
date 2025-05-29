@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
+import { useQueryParams } from '@/hooks/useQueryParams';
 import Breadcrumb from '@workspaceui/componentlibrary/src/components/Breadcrums';
 import type { BreadcrumbItem } from '@workspaceui/componentlibrary/src/components/Breadcrums/types';
-import { styles } from './styles';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import type React from 'react';
+import { useCallback, useMemo } from 'react';
 import { BREADCRUMB, ROUTE_IDS } from '../constants/breadcrumb';
-import { useTranslation } from '../hooks/useTranslation';
 import { useMetadataContext } from '../hooks/useMetadataContext';
-import { useQueryParams } from '@/hooks/useQueryParams';
+import { useTranslation } from '../hooks/useTranslation';
+import { styles } from './styles';
 
 const AppBreadcrumb: React.FC = () => {
   const { t } = useTranslation();
@@ -22,7 +23,7 @@ const AppBreadcrumb: React.FC = () => {
 
   const handleWindowClick = useCallback(
     (windowId: string) => {
-      router.push('/window?windowId=' + windowId);
+      router.push(`/window?windowId=${windowId}`);
     },
     [router],
   );

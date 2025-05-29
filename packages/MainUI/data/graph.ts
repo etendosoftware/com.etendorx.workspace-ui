@@ -1,6 +1,7 @@
-import { logger } from '@/utils/logger';
-import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+// biome-ignore lint/style/useNodejsImportProtocol: <explanation>
 import EventEmitter from 'events';
+import { logger } from '@/utils/logger';
+import type { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
 
 type GraphNode<T> = {
   value: T;
@@ -31,11 +32,11 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
     this.activeLevels = [];
 
     tabs.forEach(this.addNode);
-    tabs.forEach(tab => {
+    for (const tab of tabs) {
       if (tab.parentTabId) {
         this.addEdge(tab.parentTabId, tab.id);
       }
-    });
+    }
   }
 
   private addNode = (value: T) => {
@@ -51,7 +52,7 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
     const destNode = this.nodes.get(destinationId);
 
     if (!sourceNode || !destNode) {
-      logger.warn('Both nodes must exist before adding an edge', {sourceNode, destNode});
+      logger.warn('Both nodes must exist before adding an edge', { sourceNode, destNode });
 
       return this;
     }
@@ -82,14 +83,16 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
 
     const printNode = (node: GraphNode<T>, level: number) => {
       console.log(' '.repeat(level * 2) + node.value.name);
-      node.neighbors.forEach(child => printNode(child, level + 1));
+      for (const child of node.neighbors) {
+        printNode(child, level + 1);
+      }
     };
 
     printNode(rootNode, 0);
   };
 
   public setActiveLevels = (level: number) => {
-    const trimmed = this.activeLevels.filter(lvl => lvl < level);
+    const trimmed = this.activeLevels.filter((lvl) => lvl < level);
 
     if (trimmed[trimmed.length - 1] !== level) {
       this.activeLevels = [...trimmed, level].slice(-2);
@@ -103,7 +106,7 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
       const node = this.nodes.get(tab.id);
 
       if (node) {
-        return Array.from(node.neighbors).map(child => child.value);
+        return Array.from(node.neighbors).map((child) => child.value);
       }
     }
   };

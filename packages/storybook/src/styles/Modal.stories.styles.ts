@@ -1,6 +1,6 @@
-import { Theme } from '@emotion/react';
-import { SxProps } from '@mui/material';
-import { CSSProperties } from 'react';
+import type { Theme } from '@emotion/react';
+import type { SxProps } from '@mui/material';
+import type { CSSProperties } from 'react';
 import { theme } from '../../../ComponentLibrary/src/theme';
 
 export const sx: { [key: string]: SxProps<Theme> } = {

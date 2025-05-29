@@ -1,6 +1,6 @@
-import { useRef, useCallback, useEffect } from 'react';
-import type { ResizableTabContainerProps } from './types';
 import { useThrottle } from '@/hooks/useThrottle';
+import { useCallback, useEffect, useRef } from 'react';
+import type { ResizableTabContainerProps } from './types';
 
 const MAX_HEIGHT = 91;
 const MIN_HEIGHT = 20;
@@ -116,12 +116,16 @@ const ResizableTabContainer: React.FC<React.PropsWithChildren<ResizableTabContai
   return (
     <div
       ref={containerRef}
-      className={`fixed bottom-0 mx-1 z-50 w-fill-available transition-all transform-gpu duration-[400ms] ease-in-out rounded-t-2xl border-2 border-[rgba(0,3,13,0.1)] border-b-0 bg-neutral-50`}>
+      className={
+        'fixed bottom-0 mx-1 z-50 w-fill-available transition-all transform-gpu duration-[400ms] ease-in-out rounded-t-2xl border-2 border-[rgba(0,3,13,0.1)] border-b-0 bg-neutral-50'
+      }>
       <div
         data-resizer
-        className={`absolute top-0 left-1/2 -translate-x-1/2 w-16 h-2 mt-1 rounded-xl bg-primary-100 cursor-ns-resize opacity-100 hover:bg-primary-200`}
+        className={
+          'absolute top-0 left-1/2 -translate-x-1/2 w-16 h-2 mt-1 rounded-xl bg-primary-100 cursor-ns-resize opacity-100 hover:bg-primary-200'
+        }
       />
-      <div className="h-full overflow-auto">{children}</div>
+      <div className='h-full overflow-auto'>{children}</div>
     </div>
   );
 };

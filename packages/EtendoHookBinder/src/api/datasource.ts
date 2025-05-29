@@ -1,6 +1,6 @@
+import { Client, type Interceptor } from './client';
 import { API_DATASOURCE_SERVLET } from './constants';
-import { Client, Interceptor } from './client';
-import { DatasourceParams } from './types';
+import type { DatasourceParams } from './types';
 
 export class Datasource {
   private static instance: Datasource;
@@ -10,7 +10,7 @@ export class Datasource {
     this.client = new Client(url);
   }
 
-  public static getInstance(url: string = '') {
+  public static getInstance(url = '') {
     if (!Datasource.instance) {
       Datasource.instance = new Datasource(url);
     }
@@ -67,17 +67,17 @@ export class Datasource {
       params.set('tabId', options.tabId);
     }
 
-    Object.entries(options).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(options)) {
       if (typeof value !== 'undefined') {
         if (key === 'criteria' && Array.isArray(value)) {
-          value.forEach((criteria) => {
+          for (const criteria of value) {
             params.append(key, JSON.stringify(criteria));
-          });
+          }
         } else {
           params.append(`_${key}`, Array.isArray(value) ? value.join(',') : String(value));
         }
       }
-    });
+    }
 
     return params;
   }

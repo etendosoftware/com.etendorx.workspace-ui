@@ -1,5 +1,5 @@
-import { Section } from '@workspaceui/mainui/components/Form/FormView/types';
-import { BaseFieldDefinition, FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
+import type { Section } from '@workspaceui/mainui/components/Form/FormView/types';
+import type { BaseFieldDefinition, FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
 
 export type OrganizationField = FieldDefinition | Section;
 

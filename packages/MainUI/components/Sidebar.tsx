@@ -6,9 +6,9 @@ import { Drawer } from '@workspaceui/componentlibrary/src/components/Drawer/inde
 import EtendoLogotype from '../public/etendo.png';
 import { useTranslation } from '../hooks/useTranslation';
 import { useUserContext } from '../hooks/useUserContext';
-import { WindowParams } from '../app/types';
+import type { WindowParams } from '../app/types';
 import { RecentlyViewed } from './Drawer/RecentlyViewed';
-import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 import { useMenuTranslation } from '../hooks/useMenuTranslation';
 import { createSearchIndex, filterItems } from '@workspaceui/componentlibrary/src/utils/searchUtils';
 import { useLanguage } from '@/contexts/language';
@@ -38,7 +38,7 @@ export default function Sidebar() {
 
   const handleClick = useCallback(
     (item: Menu) => {
-      const windowId = item.windowId ?? "";
+      const windowId = item.windowId ?? '';
       const params = new URLSearchParams(location.search);
       params.append('windowId', windowId);
       if (pathname.includes('window')) {

@@ -34,8 +34,5 @@ export function useWindow(windowId: string) {
     load();
   }, [load]);
 
-  return useMemo(
-    () => ({ loading, windowData, error, loaded, load }),
-    [error, load, loaded, loading, windowData],
-  );
+  return useMemo(() => ({ loading, windowData, error, loaded, load }), [error, load, loaded, loading, windowData]);
 }

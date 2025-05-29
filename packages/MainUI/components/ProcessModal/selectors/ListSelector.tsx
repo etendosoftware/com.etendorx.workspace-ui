@@ -1,9 +1,9 @@
-import { useFormContext } from 'react-hook-form';
-import ChevronUp from '@workspaceui/componentlibrary/src/assets/icons/chevron-up.svg';
-import ChevronDown from '@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
-import { ListOption, ProcessParameter } from '@workspaceui/etendohookbinder/src/api/types';
+import ChevronDown from '@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg';
+import ChevronUp from '@workspaceui/componentlibrary/src/assets/icons/chevron-up.svg';
+import type { ListOption, ProcessParameter } from '@workspaceui/etendohookbinder/src/api/types';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 const SelectOption = ({ option, onClick }: { option: ListOption; onClick: (value: string) => void }) => {
   const handleClick = useCallback(() => {
@@ -11,7 +11,15 @@ const SelectOption = ({ option, onClick }: { option: ListOption; onClick: (value
   }, [onClick, option]);
 
   return (
-    <div onClick={handleClick} className="px-3 py-2 hover:bg-baseline-10 cursor-pointer">
+    <div
+      onClick={handleClick}
+      className='px-3 py-2 hover:bg-baseline-10 cursor-pointer'
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
+        }
+      }}>
       {option.label}
     </div>
   );
@@ -24,7 +32,7 @@ const ListSelector = ({ parameter }: { parameter: ProcessParameter }) => {
   const ref = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
 
-  const toggleOpen = useCallback(() => setOpen(prev => !prev), []);
+  const toggleOpen = useCallback(() => setOpen((prev) => !prev), []);
 
   const handleSelect = useCallback(
     (value: string) => {
@@ -42,7 +50,7 @@ const ListSelector = ({ parameter }: { parameter: ProcessParameter }) => {
   }, []);
 
   const selectedLabel = useMemo(
-    () => parameter.refList.find(opt => opt.value === selected)?.label ?? t('form.select.placeholder'),
+    () => parameter.refList.find((opt) => opt.value === selected)?.label ?? t('form.select.placeholder'),
     [parameter.refList, selected, t],
   );
 
@@ -53,19 +61,19 @@ const ListSelector = ({ parameter }: { parameter: ProcessParameter }) => {
   }, [handleClickOutside]);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className='relative' ref={ref}>
       <button
-        type="button"
+        type='button'
         onClick={toggleOpen}
-        className="w-full flex items-center justify-between px-3 py-2 h-10 border border-baseline-10 hover:border-baseline-100 rounded bg-white text-baseline-90 cursor-pointer transition-colors">
+        className='w-full flex items-center justify-between px-3 py-2 h-10 border border-baseline-10 hover:border-baseline-100 rounded bg-white text-baseline-90 cursor-pointer transition-colors'>
         <span>{selectedLabel}</span>
-        {open ? <ChevronUp fill="currentColor" /> : <ChevronDown fill="currentColor" />}
+        {open ? <ChevronUp fill='currentColor' /> : <ChevronDown fill='currentColor' />}
       </button>
 
       <div
         className={`absolute z-10 mt-1 w-full bg-white border border-baseline-20 rounded shadow-lg max-h-60 overflow-y-auto origin-top transition-all duration-200 ${open ? 'opacity-100 scale-y-100 pointer-events-auto' : 'opacity-0 scale-y-0 pointer-events-none'}`}
         style={{ transformOrigin: 'top' }}>
-        {parameter.refList.map(option => (
+        {parameter.refList.map((option) => (
           <SelectOption option={option} onClick={handleSelect} key={option.id} />
         ))}
       </div>

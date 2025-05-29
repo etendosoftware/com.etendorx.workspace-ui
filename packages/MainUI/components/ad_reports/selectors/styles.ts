@@ -1,5 +1,5 @@
 import { useTheme } from '@mui/material';
-import { CSSProperties, useMemo } from 'react';
+import { type CSSProperties, useMemo } from 'react';
 
 export const useStyle = () => {
   const theme = useTheme();

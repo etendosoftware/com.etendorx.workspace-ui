@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
 import { logger } from '@/utils/logger';
-import { EntityValue } from '@workspaceui/etendohookbinder/src/api/types';
+import type { EntityValue } from '@workspaceui/etendohookbinder/src/api/types';
 
 export interface ProcessConfigResponse {
   defaults?: Record<string, { value: string; identifier: string }>;

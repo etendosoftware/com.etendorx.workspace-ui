@@ -1,4 +1,4 @@
-import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const menuMock: Menu[] = [
   {

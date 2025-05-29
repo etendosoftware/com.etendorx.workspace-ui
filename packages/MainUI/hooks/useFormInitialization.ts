@@ -1,20 +1,20 @@
-import { useCallback, useEffect, useMemo, useReducer } from 'react';
-import {
-  FormInitializationResponse,
-  FormInitializationParams,
-  FormMode,
-  Tab,
-} from '@workspaceui/etendohookbinder/src/api/types';
-import { logger } from '@/utils/logger';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { useUserContext } from './useUserContext';
-import { ClientOptions } from '@workspaceui/etendohookbinder/src/api/client';
-import useFormParent from './useFormParent';
 import { useTabContext } from '@/contexts/tab';
+import { logger } from '@/utils/logger';
+import type { ClientOptions } from '@workspaceui/etendohookbinder/src/api/client';
+import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import {
+  type FormInitializationParams,
+  type FormInitializationResponse,
+  FormMode,
+  type Tab,
+} from '@workspaceui/etendohookbinder/src/api/types';
+import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { FieldName } from './types';
+import useFormParent from './useFormParent';
+import { useUserContext } from './useUserContext';
 
 const getRowId = (mode: FormMode, recordId?: string | null): string => {
-  return mode === FormMode.EDIT ? recordId! : 'null';
+  return mode === FormMode.EDIT ? (recordId ?? 'null') : 'null';
 };
 
 export const buildFormInitializationParams = ({
@@ -114,7 +114,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     dispatch({ type: 'FETCH_START' });
 
     try {
-      const entityKeyColumn = Object.values(tab.fields).find(field => field.column.keyColumn);
+      const entityKeyColumn = Object.values(tab.fields).find((field) => field.column.keyColumn);
 
       if (!entityKeyColumn) {
         throw new Error('Missing key column');
@@ -141,7 +141,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
         {} as Record<string, string>,
       );
 
-      setSession(prev => ({ ...prev, ...storedInSessionAttributes, ...data.sessionAttributes }));
+      setSession((prev) => ({ ...prev, ...storedInSessionAttributes, ...data.sessionAttributes }));
       dispatch({ type: 'FETCH_SUCCESS', payload: data });
     } catch (err) {
       logger.warn(err);

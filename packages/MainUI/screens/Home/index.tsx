@@ -13,18 +13,18 @@ export default function Home() {
   const dashboardWidgets = [widgets[1], widgets[2], widgets[4], widgets[5], widgets[7], widgets[8]];
 
   return (
-    <Container maxWidth="lg" sx={styles.container}>
+    <Container maxWidth='lg' sx={styles.container}>
       <Box sx={styles.headerContainer}>
-        <Typography variant="h4" component="h1" sx={styles.pageTitle} gutterBottom>
+        <Typography variant='h4' component='h1' sx={styles.pageTitle} gutterBottom>
           {t('common.etendo')} {t('breadcrumb.home')}
         </Typography>
-        <Typography variant="subtitle1" sx={styles.pageSubtitle}>
+        <Typography variant='subtitle1' sx={styles.pageSubtitle}>
           {t('table.content.currentTitle')}
         </Typography>
       </Box>
 
       <Grid container spacing={3}>
-        {dashboardWidgets.map(widget => (
+        {dashboardWidgets.map((widget) => (
           <Grid item key={widget.id} xs={12} md={widget.size === 'full' ? 12 : 6}>
             <Box
               sx={{
@@ -41,7 +41,7 @@ export default function Home() {
                     }}>
                     {widget.icon}
                   </Box>
-                  <Typography variant="h6" sx={styles.widgetTitle}>
+                  <Typography variant='h6' sx={styles.widgetTitle}>
                     {widget.title}
                   </Typography>
                 </Box>

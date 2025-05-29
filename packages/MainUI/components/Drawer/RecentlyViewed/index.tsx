@@ -1,12 +1,12 @@
-import { forwardRef, useCallback, useImperativeHandle, useEffect, useMemo } from 'react';
+import { useLanguage } from '@/contexts/language';
 import { DrawerSection } from '@workspaceui/componentlibrary/src/components/Drawer/DrawerSection';
-import { RecentlyViewedProps } from '@workspaceui/componentlibrary/src/components/Drawer/types';
+import type { RecentlyViewedProps } from '@workspaceui/componentlibrary/src/components/Drawer/types';
 import { createParentMenuItem } from '@workspaceui/componentlibrary/src/utils/menuUtils';
+import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo } from 'react';
 import { useRecentItems } from '../../../hooks/useRecentItems';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useUserContext } from '../../../hooks/useUserContext';
-import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
-import { useLanguage } from '@/contexts/language';
 
 export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, RecentlyViewedProps>(
   ({ windowId, onClick, open, items, getTranslatedName }, ref) => {
@@ -22,13 +22,13 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
       hasItems,
       addRecentItem,
       updateTranslations,
-    } = useRecentItems(items, onClick, currentRole?.id ?? "", getTranslatedName);
+    } = useRecentItems(items, onClick, currentRole?.id ?? '', getTranslatedName);
 
     useEffect(() => {
       if (currentRole?.id && items.length > 0) {
         updateTranslations(items);
       }
-    }, [language, items, currentRole?.id, updateTranslations]);
+    }, [items, currentRole?.id, updateTranslations]);
 
     const handleWindowAccess = useCallback(
       (item: Menu) => {
@@ -62,7 +62,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
         isExpanded={isExpanded}
         onToggleExpand={handleToggleExpand}
         isSearchActive={false}
-        parentId=""
+        parentId=''
         windowId={windowId}
       />
     );

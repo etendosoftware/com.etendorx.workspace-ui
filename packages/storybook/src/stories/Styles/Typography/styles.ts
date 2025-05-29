@@ -1,4 +1,4 @@
-import { theme } from "../../../../../ComponentLibrary/src/theme";
+import { theme } from '../../../../../ComponentLibrary/src/theme';
 
 export const typographyTitleStyles = {
   margin: 16,

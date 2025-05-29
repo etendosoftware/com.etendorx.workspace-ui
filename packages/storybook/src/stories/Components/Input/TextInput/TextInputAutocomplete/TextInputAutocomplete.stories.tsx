@@ -16,7 +16,7 @@ const Template = () => {
         <TextInputAutocomplete
           value={value}
           setValue={setValue}
-          placeholder="Search"
+          placeholder='Search'
           autoCompleteTexts={MOCK_AUTO_COMPLETE_TEXTS}
         />
       </Grid>
@@ -24,7 +24,7 @@ const Template = () => {
         <TextInputAutocomplete
           value={value}
           setValue={setValue}
-          placeholder="Search"
+          placeholder='Search'
           disabled
           autoCompleteTexts={MOCK_AUTO_COMPLETE_TEXTS}
         />

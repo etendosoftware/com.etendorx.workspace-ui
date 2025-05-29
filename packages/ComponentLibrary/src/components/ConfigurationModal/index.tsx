@@ -1,15 +1,15 @@
 import { Grid, Link, useTheme } from '@mui/material';
 import React, { useEffect, useState } from 'react';
+import checkIconUrl from '../../assets/icons/check-circle-filled.svg?url';
 import { BORDER_SELECT_1, BORDER_SELECT_2, COLUMN_SPACING, FIRST_MARGIN_TOP, useStyle } from './style';
 import type { IConfigurationModalProps, ISection } from './types';
-import checkIconUrl from '../../assets/icons/check-circle-filled.svg?url';
 import './style.css';
 import IconButton from '../IconButton';
 import Menu from '../Menu';
 
 const IconRenderer = ({ icon }: { icon: string | React.ReactNode }): JSX.Element => {
   if (typeof icon === 'string') {
-    return <img src={icon} alt="icon" />;
+    return <img src={icon} alt='icon' />;
   }
   if (React.isValidElement(icon)) {
     return icon;
@@ -99,7 +99,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
 
   return (
     <>
-      <IconButton onClick={handleClick} tooltip={tooltipButtonProfile} disabled={true} className="w-10 h-10">
+      <IconButton onClick={handleClick} tooltip={tooltipButtonProfile} disabled={true} className='w-10 h-10'>
         {icon}
       </IconButton>
       <Menu {...props} rect={rect} open={isOpenMenu} onClose={handleClose}>
@@ -128,7 +128,8 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
               <Grid columnSpacing={COLUMN_SPACING} container>
                 {section.items.map(({ id, label, img }, imageIndex) => (
                   <Grid item key={id}>
-                    <div
+                    <button
+                      type='button'
                       onClick={() => handleImageClick(sectionIndex, imageIndex)}
                       onMouseEnter={() => handleMouseEnter(sectionIndex, imageIndex)}
                       onMouseLeave={handleMouseLeave}
@@ -137,14 +138,15 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
                         ...styles.imgContainer,
                       }}>
                       <IconRenderer icon={img} />
-                    </div>
+                    </button>
                     <div style={styles.labelIconContainer}>
                       {isSelected(section.selectedItem, imageIndex) && (
                         <img
-                          alt="Selected Item Icon"
-                          className="fade-in-left"
+                          alt='Selected Item Icon'
+                          className='fade-in-left'
                           style={styles.labelIcon}
-                          src={checkIconUrl}></img>
+                          src={checkIconUrl}
+                        />
                       )}
                       <div style={styles.label}>{label}</div>
                     </div>

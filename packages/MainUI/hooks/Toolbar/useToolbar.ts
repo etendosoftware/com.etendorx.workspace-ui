@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { ToolbarResponse } from './types';
+import type { ToolbarResponse } from './types';
 import { logger } from '@/utils/logger';
 
 export function useToolbar(windowId: string, tabId?: string) {

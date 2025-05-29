@@ -1,5 +1,5 @@
-import { type Etendo } from '../api/metadata';
-import { Field, FieldType, Tab } from '../api/types';
+import type { Etendo } from '../api/metadata';
+import { type Field, FieldType, type Tab } from '../api/types';
 
 export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
   const tabs: Etendo.Tab[][] = [];
@@ -9,13 +9,13 @@ export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
       return tabs;
     }
 
-    windowData?.tabs.forEach(tab => {
+    for (const tab of windowData.tabs) {
       if (tabs[tab.tabLevel]) {
         tabs[tab.tabLevel].push(tab);
       } else {
         tabs[tab.tabLevel] = [tab];
       }
-    });
+    }
   } catch (e) {
     console.warn(e);
   }
@@ -47,9 +47,9 @@ export const buildFormState = (
     const auxiliaryInputValues = formState?.auxiliaryInputValues;
 
     if (auxiliaryInputValues) {
-      Object.entries(auxiliaryInputValues).forEach(([inputName, { value }]) => {
+      for (const [inputName, { value }] of Object.entries(auxiliaryInputValues)) {
         result[inputName] = value;
-      });
+      }
     }
 
     return result;
@@ -103,7 +103,6 @@ export const getFieldsByInputName = (tab?: Tab) => {
     return {};
   }
 };
-
 
 export const getFieldsByHqlName = (tab?: Tab) => {
   try {

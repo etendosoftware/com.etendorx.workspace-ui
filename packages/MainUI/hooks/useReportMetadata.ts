@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { ReportMetadata } from '@workspaceui/etendohookbinder/src/hooks/types';
 import { logger } from '@/utils/logger';
+import type { ReportMetadata } from '@workspaceui/etendohookbinder/src/hooks/types';
+import { useCallback, useEffect, useState } from 'react';
 
 export interface ReportMetadataHook {
   metadata: ReportMetadata | null;
@@ -46,7 +46,7 @@ export const useReportMetadata = (reportId?: string): ReportMetadataHook => {
         logger.warn(err);
 
         if (!controller.signal.aborted) {
-          setError('Failed to load report metadata: ' + (err as Error).message);
+          setError(`Failed to load report metadata: ${(err as Error).message}`);
         }
       } finally {
         if (!controller.signal.aborted) {

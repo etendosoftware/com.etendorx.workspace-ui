@@ -688,10 +688,13 @@ export interface ProcessBindings {
   onLoad: (
     process: ProcessDefinition,
     context: { selectedRecords: Record<string, EntityData>; tabId: string },
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   ) => Promise<any>;
   onProcess: (
     process: ProcessDefinition,
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     params: { recordIds: string[]; windowId: string; entityName: string; buttonValue: any; [param: string]: unknown },
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   ) => Promise<any>;
   metadata: Record<string, unknown>;
 }

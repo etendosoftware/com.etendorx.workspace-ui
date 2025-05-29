@@ -15,9 +15,9 @@ import Printer from '@workspaceui/componentlibrary/src/assets/icons/printer.svg'
 import Copy from '@workspaceui/componentlibrary/src/assets/icons/copy.svg';
 import Mail from '@workspaceui/componentlibrary/src/assets/icons/mail.svg';
 import LinkIcon from '@workspaceui/componentlibrary/src/assets/icons/link.svg';
-import { ToolbarSectionConfig } from './types';
+import type { ToolbarSectionConfig } from './types';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
-import { TranslateFunction } from '@workspaceui/mainui/hooks/types';
+import type { TranslateFunction } from '@workspaceui/mainui/hooks/types';
 
 const IconSize = 16;
 

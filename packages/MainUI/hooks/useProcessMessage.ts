@@ -1,7 +1,7 @@
-import { useCallback, useContext } from 'react';
-import { logger } from '@/utils/logger';
-import { useTranslation } from '@/hooks/useTranslation';
 import { ApiContext } from '@/contexts/api';
+import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
+import { useCallback, useContext } from 'react';
 import { useUserContext } from './useUserContext';
 
 export interface ProcessMessage {
@@ -25,19 +25,20 @@ export function useProcessMessage(tabId: string) {
         return 'success';
       }
 
-      if (message && message.toUpperCase().includes('ERROR')) {
+      if (message?.toUpperCase().includes('ERROR')) {
         return 'error';
       }
 
       if (normalizedType.includes('success')) {
         return 'success';
-      } else if (normalizedType.includes('error')) {
-        return 'error';
-      } else if (normalizedType.includes('warn')) {
-        return 'warning';
-      } else {
-        return 'info';
       }
+      if (normalizedType.includes('error')) {
+        return 'error';
+      }
+      if (normalizedType.includes('warn')) {
+        return 'warning';
+      }
+      return 'info';
     },
     [],
   );

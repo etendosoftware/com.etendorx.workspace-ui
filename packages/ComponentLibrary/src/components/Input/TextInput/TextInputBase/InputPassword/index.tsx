@@ -13,7 +13,7 @@ const InputPassword = (props: TextInputProps) => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
   const handleClickShowPassword = useCallback(() => {
-    setShowPassword(prev => !prev);
+    setShowPassword((prev) => !prev);
   }, []);
 
   const handleMouseDownPassword = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
@@ -30,7 +30,7 @@ const InputPassword = (props: TextInputProps) => {
       type={showPassword ? 'text' : 'password'}
       rightIcon={
         <Icon
-          aria-label="toggle password visibility"
+          aria-label='toggle password visibility'
           onClick={handleClickShowPassword}
           onMouseDown={handleMouseDownPassword}
           sx={{ color: theme.palette.baselineColor.neutral[60] }}>

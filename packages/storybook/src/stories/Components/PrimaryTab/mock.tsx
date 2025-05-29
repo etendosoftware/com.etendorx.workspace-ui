@@ -1,4 +1,4 @@
-import { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
+import type { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
 import Home from '@workspaceui/componentlibrary/src/assets/icons/home.svg';
 import Person from '@workspaceui/componentlibrary/src/assets/icons/user.svg';

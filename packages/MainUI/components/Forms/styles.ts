@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
 import { useTheme } from '@mui/material';
+import { useMemo } from 'react';
 import EtendoImg from '../../../ComponentLibrary/src/assets/images/Etendo.svg?url';
 
 export const useStyle = () => {
@@ -156,7 +156,7 @@ export const useStyle = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            background: `linear-gradient(145deg, rgba(159, 203, 209, 0.28) 0%, rgba(255,255,255,0) 100%)`,
+            background: 'linear-gradient(145deg, rgba(159, 203, 209, 0.28) 0%, rgba(255,255,255,0) 100%)',
             opacity: 0.5,
             zIndex: 1,
           },

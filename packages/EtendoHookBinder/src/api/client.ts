@@ -22,8 +22,8 @@ export class Client {
   private baseQueryParams: URLSearchParams;
   private baseUrl: string;
   private interceptor: Interceptor | null;
-  private readonly JSON_CONTENT_TYPE = 'application/json'!;
-  private readonly FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded'!;
+  private readonly JSON_CONTENT_TYPE = 'application/json';
+  private readonly FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
 
   constructor(url?: string) {
     this.baseUrl = url || '';
@@ -87,13 +87,13 @@ export class Client {
       const destination = new URL(`${this.baseUrl}${this.cleanUrl(url)}`);
       this.baseQueryParams.forEach((value, key) => destination.searchParams.append(key, value));
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
       let response: Response & { data?: any } = await fetch(destination, {
         ...options,
         body:
           typeof options.body === 'string' ||
-            options.body instanceof URLSearchParams ||
-            options.body instanceof FormData
+          options.body instanceof URLSearchParams ||
+          options.body instanceof FormData
             ? options.body
             : options.body
               ? JSON.stringify(options.body)
@@ -125,7 +125,9 @@ export class Client {
   public registerInterceptor(interceptor: Interceptor) {
     this.interceptor = interceptor;
 
-    return () => (this.interceptor = null);
+    return () => {
+      this.interceptor = null;
+    };
   }
 
   public async post(url: string, payload: ClientOptions['body'] = null, options: ClientOptions = {}) {

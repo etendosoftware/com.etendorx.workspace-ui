@@ -1,3 +1,4 @@
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export function ensureString(value: any): string {
   if (typeof value === 'string') {
     return value;

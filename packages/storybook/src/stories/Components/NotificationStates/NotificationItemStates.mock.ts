@@ -8,8 +8,8 @@ import {
   NoteAltOutlined,
   FileDownloadOutlined,
 } from '@mui/icons-material';
-import { Theme } from '@mui/material';
-import { IallNotifications } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/types';
+import type { Theme } from '@mui/material';
+import type { IallNotifications } from '@workspaceui/componentlibrary/src/components/NotificationItemAllStates/types';
 
 const getButtonStyles = (theme: Theme) => ({
   leftButton: {

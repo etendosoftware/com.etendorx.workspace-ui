@@ -1,15 +1,14 @@
 'use client';
 
-import type React from 'react';
-import { useCallback, useMemo, useEffect, useRef, useState } from 'react';
-import { useStyle } from './styles';
-import type { DrawerProps } from './types';
-import { DrawerHeader } from './Header';
-import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
-import { getAllItemTitles } from '../../utils/searchUtils';
-import { DrawerItems } from './Search';
 import { Box } from '@mui/material';
 import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { getAllItemTitles } from '../../utils/searchUtils';
+import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
+import { DrawerHeader } from './Header';
+import { DrawerItems } from './Search';
+import { useStyle } from './styles';
+import type { DrawerProps } from './types';
 
 const DRAWER_STATE_KEY = 'etendo-drawer-open';
 interface RecentlyViewedHandler {
@@ -72,7 +71,7 @@ const Drawer: React.FC<DrawerProps> = ({
 
   const allItemTitles = useMemo(() => (searchIndex ? getAllItemTitles(searchIndex) : []), [searchIndex]);
 
-  const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
+  const handleHeaderClick = useCallback(() => setOpen((prev) => !prev), []);
 
   const toggleItemExpansion = useCallback(
     (itemId: string) => {
@@ -119,13 +118,13 @@ const Drawer: React.FC<DrawerProps> = ({
           <TextInputAutocomplete
             value={searchValue}
             setValue={setSearchValue}
-            placeholder="Search"
+            placeholder='Search'
             autoCompleteTexts={allItemTitles}
             inputRef={searchInputRef}
           />
         </Box>
       )}
-      <Box sx={sx.drawerContent} tabIndex={2}>
+      <Box sx={sx.drawerContent} tabIndex={0}>
         <DrawerItems
           items={searchValue ? filteredItems : items}
           onClick={handleItemClick}

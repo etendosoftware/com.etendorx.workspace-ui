@@ -6,7 +6,6 @@ export const useScreenSizes = () => {
       clientWidth: window.document.body.clientWidth,
       clientHeight: window.document.body.clientHeight,
     };
-  } else {
-    return defaultSizes;
   }
+  return defaultSizes;
 };

@@ -16,7 +16,7 @@ const CustomExpandButton: React.FC<CustomExpandButtonProps> = ({ row }) => {
 
   if (!canExpand) {
     return (
-      <IconButton disabled className="w-4 h-4">
+      <IconButton disabled className='w-4 h-4'>
         <ChevronRightIcon />
       </IconButton>
     );
@@ -26,7 +26,7 @@ const CustomExpandButton: React.FC<CustomExpandButtonProps> = ({ row }) => {
     <IconButton
       onClick={row.getToggleExpandedHandler()}
       tooltip={isExpanded ? 'Collapse' : 'Expand'}
-      className="w-4 h-4">
+      className='w-4 h-4'>
       {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
     </IconButton>
   );

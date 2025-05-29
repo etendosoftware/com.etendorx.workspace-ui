@@ -1,5 +1,5 @@
 import { Metadata } from './metadata';
-import { DefaultConfiguration } from './types';
+import type { DefaultConfiguration } from './types';
 
 const DEFAULT_CONFIG = {
   language: '192',

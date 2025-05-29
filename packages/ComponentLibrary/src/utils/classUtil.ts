@@ -9,7 +9,7 @@ export const cleanDefaultClasses = (className: string, defaultClasses: string): 
   const userClasses = toArray(className);
   const userKeys = new Set(userClasses.map(getKey).filter(Boolean));
 
-  const cleanedDefaults = toArray(defaultClasses).filter(c => !userKeys.has(getKey(c)));
+  const cleanedDefaults = toArray(defaultClasses).filter((c) => !userKeys.has(getKey(c)));
 
   return [...cleanedDefaults, ...userClasses].join(' ');
 };

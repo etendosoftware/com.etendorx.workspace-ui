@@ -1,4 +1,4 @@
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
 import { defaultTabs, onlyIconsTabs, onlyLabelsTabs, defaultIcon } from './mock';
 

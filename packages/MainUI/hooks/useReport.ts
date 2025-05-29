@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { ReportField, ReportMetadata } from '@workspaceui/etendohookbinder/src/hooks/types';
 import { logger } from '@/utils/logger';
+import type { ReportField, ReportMetadata } from '@workspaceui/etendohookbinder/src/hooks/types';
+import { useState } from 'react';
 
 type ReportFields = {
   [K in ReportField['name']]: unknown;
@@ -15,29 +15,29 @@ interface BaseReportParams extends ReportFields {
 const processFields = (formData: URLSearchParams, data: BaseReportParams) => {
   const { metadata } = data;
 
-  metadata.sections.forEach(section => {
-    section.fields.forEach(field => {
+  for (const section of metadata.sections) {
+    for (const field of section.fields) {
       const value = data[field.name];
 
       if (field.type === 'multiselect' && Array.isArray(value)) {
-        value.forEach(val => {
+        for (const val of value) {
           if (val) {
             formData.append(field.name, val);
           }
-        });
-        return;
+          return;
+        }
       }
 
       if (value !== undefined && value !== null) {
         formData.append(field.name, value.toString());
       }
-    });
-  });
+    }
+  }
 };
 
 const setupFormData = (data: BaseReportParams, format: string): URLSearchParams => {
   const formData = new URLSearchParams();
-  const action = data.metadata.actions.find(a => a.format === format);
+  const action = data.metadata.actions.find((a) => a.format === format);
 
   formData.append('Command', action?.command || 'EDIT_HTML');
   formData.append('format', format);

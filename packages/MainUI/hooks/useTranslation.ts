@@ -1,4 +1,4 @@
-import { TranslateFunction } from './types';
+import type { TranslateFunction } from './types';
 import { useCallback } from 'react';
 import translations, { DEFAULT_LANGUAGE } from '@workspaceui/componentlibrary/src/locales';
 import { useLanguage } from '../contexts/language';
@@ -7,7 +7,7 @@ export const useTranslation = (defaultLanguage = DEFAULT_LANGUAGE) => {
   const { language } = useLanguage();
 
   const t = useCallback<TranslateFunction>(
-    key => {
+    (key) => {
       const keys = key.split('.');
       let value: unknown = translations[language ?? defaultLanguage ?? DEFAULT_LANGUAGE];
 

@@ -1,9 +1,9 @@
+import { getColumns } from '@workspaceui/storybook/src/stories/Components/Table/columns';
+import type { OrganizationField, TableProps } from '@workspaceui/storybook/src/stories/Components/Table/types';
+import { type MRT_Row, type MRT_TableOptions, MaterialReactTable, useMaterialReactTable } from 'material-react-table';
 import type React from 'react';
 import { useMemo } from 'react';
-import { MaterialReactTable, type MRT_Row, type MRT_TableOptions, useMaterialReactTable } from 'material-react-table';
-import type { TableProps, OrganizationField } from '@workspaceui/storybook/src/stories/Components/Table/types';
 import { useStyle } from './styles';
-import { getColumns } from '@workspaceui/storybook/src/stories/Components/Table/columns';
 
 type TableDataType = Record<string, unknown>;
 
@@ -17,7 +17,7 @@ const Table: React.FC<EnhancedTableProps> = ({ data = [], onRowClick, onRowDoubl
   const columns = useMemo(() => getColumns(), []);
 
   const tableData = useMemo(() => {
-    return data.map(item => {
+    return data.map((item) => {
       const flatItem: TableDataType = {};
       for (const [key, field] of Object.entries(item)) {
         if ('value' in field && typeof field !== 'function') {
@@ -51,7 +51,7 @@ const Table: React.FC<EnhancedTableProps> = ({ data = [], onRowClick, onRowDoubl
       sx: sx.tableBodyCell,
     },
     columnResizeMode: 'onChange',
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   } as MRT_TableOptions<any>);
 
   return <MaterialReactTable table={table} />;

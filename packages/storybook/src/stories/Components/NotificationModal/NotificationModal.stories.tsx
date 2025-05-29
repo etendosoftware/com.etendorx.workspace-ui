@@ -1,10 +1,10 @@
-import React from 'react';
+import type React from 'react';
 import NotificationModal from '@workspaceui/componentlibrary/src/components/NotificationsModal';
 import NotificationButton from '@workspaceui/componentlibrary/src/components/NotificationsButton';
 import { NOTIFICATIONS } from '../notifications.mock';
 import NotificationIcon from '@workspaceui/componentlibrary/src/assets/icons/bell.svg';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Inotifications } from '@workspaceui/componentlibrary/src/commons';
+import type { Inotifications } from '@workspaceui/componentlibrary/src/commons';
 
 interface NotificationModalProps {
   notifications: Inotifications[];
@@ -26,7 +26,7 @@ export default meta;
 
 type Story = StoryObj<NotificationModalProps>;
 
-const NotificationModalTemplate: React.FC<NotificationModalProps> = args => (
+const NotificationModalTemplate: React.FC<NotificationModalProps> = (args) => (
   <NotificationButton notifications={args.notifications} icon={args.icon}>
     <NotificationModal
       notifications={args.notifications}
@@ -44,10 +44,10 @@ const NotificationModalTemplate: React.FC<NotificationModalProps> = args => (
 );
 
 export const NotificationModalDefault: Story = {
-  render: args => <NotificationModalTemplate {...args} />,
+  render: (args) => <NotificationModalTemplate {...args} />,
   args: {
     notifications: NOTIFICATIONS,
-    icon: <NotificationIcon fill="#2E365C" />,
+    icon: <NotificationIcon fill='#2E365C' />,
     linkTitle: { label: 'Mark all as read', url: '/home' },
     emptyStateImageAlt: 'No Notifications',
     emptyStateMessage: 'You have no notifications',
@@ -58,10 +58,10 @@ export const NotificationModalDefault: Story = {
 };
 
 export const NotificationModalEmpty: Story = {
-  render: args => <NotificationModalTemplate {...args} />,
+  render: (args) => <NotificationModalTemplate {...args} />,
   args: {
     notifications: [],
-    icon: <NotificationIcon fill="#2E365C" />,
+    icon: <NotificationIcon fill='#2E365C' />,
     linkTitle: { label: 'Mark all as read', url: '/home' },
     emptyStateImageAlt: 'No Notifications',
     emptyStateMessage: 'You have no notifications',
