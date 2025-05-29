@@ -17,12 +17,12 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
   actionButtonLabel,
   notifications = [],
   onClose,
-  rect,
+  anchorEl,
   ...props
 }) => {
   const { styles, sx } = useStyle();
   return (
-    <Menu open {...props} onClose={onClose} rect={rect}>
+    <Menu open {...props} onClose={onClose} anchorEl={anchorEl}>
       <div style={styles.titleModalContainer}>
         <div style={styles.titleModalImageContainer}>
           {title?.icon && <div style={styles.titleModalImageRadius}>{title?.icon}</div>}

@@ -1,6 +1,5 @@
 import type { SxProps, Theme } from '@mui/material';
 import type { ProcessButton } from '../ProcessModal/types';
-import type { RefObject } from 'react';
 
 export const IconSize = 16;
 
@@ -54,7 +53,7 @@ export interface ProcessButtonProps {
 }
 
 export interface ProcessMenuProps {
-  anchorRef: RefObject<HTMLElement> | null;
+  anchorEl: HTMLElement | null;
   open: boolean;
   onClose: () => void;
   processButtons: ProcessButton[];
@@ -68,7 +67,7 @@ export interface ToolbarButton {
   icon: React.ReactNode;
   iconText?: string;
   tooltip?: string;
-  onClick: ((event?: React.MouseEvent<HTMLElement>) => void) | (() => void);
+  onClick: ((event: React.MouseEvent<HTMLButtonElement>) => void) | (() => void);
   disabled?: boolean;
   fill?: string;
   hoverFill?: string;
@@ -76,13 +75,13 @@ export interface ToolbarButton {
   width?: number;
   sx?: SxProps<Theme>;
   className?: string;
-  ref?: React.LegacyRef<HTMLButtonElement>;
+  anchorEl?: HTMLElement | null;
 }
 
 export interface ToolbarSectionConfig {
   buttons: ToolbarButton[];
   style?: React.CSSProperties;
-  toggleExpand?: (event?: React.MouseEvent<HTMLElement>) => void;
+  toggleExpand?: (event?: React.MouseEvent<HTMLButtonElement>) => void;
   className?: string;
 }
 

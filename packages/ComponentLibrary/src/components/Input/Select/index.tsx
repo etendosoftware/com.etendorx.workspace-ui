@@ -1,7 +1,8 @@
 'use client';
 
-import type React from 'react';
-import { useState } from 'react';
+import CancelIcon from '@mui/icons-material/Cancel';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
   Autocomplete,
   type AutocompleteRenderInputParams,
@@ -13,12 +14,10 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
+import type React from 'react';
+import { useState } from 'react';
 import { useStyle } from './style';
-import CancelIcon from '@mui/icons-material/Cancel';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { ISelectInput, Option } from './types';
-import Tooltip from '../../Tooltip';
 
 type OptionProps = React.HTMLAttributes<HTMLLIElement> & { key?: string };
 
@@ -65,35 +64,33 @@ const Select: React.FC<ISelectInput> = ({
   };
 
   const renderInput = (params: AutocompleteRenderInputParams) => (
-    <Tooltip title={inputValue}>
-      <TextField
-        {...params}
-        sx={{
-          ...sx.root,
-          '& .MuiInput-root': {
-            ...sx.root['& .MuiInput-root'],
-            backgroundColor: getBackgroundFocus(),
-          },
-        }}
-        InputLabelProps={{
-          style: sx.labelProps,
-          shrink: true,
-        }}
-        InputProps={{
-          ...params.InputProps,
-          name,
-          sx: sx.props,
-          startAdornment: iconLeft && <InputAdornment position='start'>{iconLeft}</InputAdornment>,
-          endAdornment: <div style={sx.buttonsContainer}>{params.InputProps.endAdornment}</div>,
-        }}
-        label={title}
-        variant='standard'
-        onChange={handleInputChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        name={name}
-      />
-    </Tooltip>
+    <TextField
+      {...params}
+      sx={{
+        ...sx.root,
+        '& .MuiInput-root': {
+          ...sx.root['& .MuiInput-root'],
+          backgroundColor: getBackgroundFocus(),
+        },
+      }}
+      InputLabelProps={{
+        style: sx.labelProps,
+        shrink: true,
+      }}
+      InputProps={{
+        ...params.InputProps,
+        name,
+        sx: sx.props,
+        startAdornment: iconLeft && <InputAdornment position='start'>{iconLeft}</InputAdornment>,
+        endAdornment: <div style={sx.buttonsContainer}>{params.InputProps.endAdornment}</div>,
+      }}
+      label={title}
+      variant='standard'
+      onChange={handleInputChange}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      name={name}
+    />
   );
 
   return (

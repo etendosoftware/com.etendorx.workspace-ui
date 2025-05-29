@@ -10,4 +10,6 @@ export interface INotificationModalProps {
   emptyStateMessage?: string;
   emptyStateDescription?: string;
   actionButtonLabel?: string;
+  anchorEl: HTMLElement | null;
+  onClose: () => void;
 }

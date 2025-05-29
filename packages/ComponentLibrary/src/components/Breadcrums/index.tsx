@@ -12,9 +12,8 @@ import type { BreadcrumbAction, BreadcrumbItem, BreadcrumbProps } from './types'
 
 const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, homeText = 'Home', separator }) => {
   const [isHomeHovered, setIsHomeHovered] = useState<boolean>(false);
-  const [isOpenMenu, setIsOpenMenu] = useState<boolean>(false);
-  const [rect, setRect] = useState<DOMRect | null>(null);
-  const [middleRect, setMiddleRect] = useState<DOMRect | null>(null);
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [middleAnchorEl, setMiddleAnchorEl] = useState<HTMLButtonElement | null>(null);
 
   const [currentActions, setCurrentActions] = useState<BreadcrumbAction[]>([]);
   const [toggleStates, setToggleStates] = useState<Record<string, boolean>>({});
@@ -29,23 +28,24 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
   const handleMouseEnter = useCallback(() => setIsHomeHovered(true), []);
   const handleMouseLeave = useCallback(() => setIsHomeHovered(false), []);
 
-  const handleActionMenuOpen = useCallback((actions: BreadcrumbAction[]) => {
-    setCurrentActions(actions);
-    setIsOpenMenu(true);
-  }, []);
+  const handleActionMenuOpen = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>, actions: BreadcrumbAction[]) => {
+      setAnchorEl(event.currentTarget);
+      setCurrentActions(actions);
+    },
+    [],
+  );
 
   const handleActionMenuClose = useCallback(() => {
-    setIsOpenMenu(false);
+    setAnchorEl(null);
   }, []);
 
   const handleMiddleMenuOpen = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    const newRect = event.currentTarget.getBoundingClientRect();
-    setRect(newRect);
-    setIsOpenMenu((prev) => !prev);
+    setMiddleAnchorEl(event.currentTarget);
   }, []);
 
   const handleMiddleMenuClose = useCallback(() => {
-    setMiddleRect(null);
+    setMiddleAnchorEl(null);
   }, []);
 
   const handleClick = useCallback(
@@ -82,21 +82,15 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
             <Typography
               noWrap
               sx={sx.lastItemTypography}
-              onClick={() => {
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                 if (item.actions && item.actions.length > 0) {
-                  handleActionMenuOpen(item.actions);
+                  handleActionMenuOpen(e, item.actions);
                 }
               }}>
               {item.label}
             </Typography>
             {item.actions && item.actions.length > 0 && (
-              <IconButton
-                onClick={() => {
-                  if (item.actions) {
-                    handleActionMenuOpen(item.actions);
-                  }
-                }}>
-                {' '}
+              <IconButton onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleActionMenuOpen(e, item.actions!)}>
                 <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
               </IconButton>
             )}
@@ -142,7 +136,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
             <IconButton onClick={handleMiddleMenuOpen}>
               <MoreHorizIcon fill={theme.palette.baselineColor.neutral[80]} />
             </IconButton>
-            <Menu rect={middleRect} open={isOpenMenu} onClose={handleMiddleMenuClose}>
+            <Menu anchorEl={middleAnchorEl} open={Boolean(middleAnchorEl)} onClose={handleMiddleMenuClose}>
               {middleItems.map((item) => (
                 <MenuItem
                   key={item.id}
@@ -163,9 +157,8 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
   }, [
     handleMiddleMenuClose,
     handleMiddleMenuOpen,
-    isOpenMenu,
     items,
-    middleRect,
+    middleAnchorEl,
     renderBreadcrumbItem,
     sx.breadcrumbItem,
     sx.menuItem,
@@ -187,7 +180,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
         </Box>
         {renderBreadcrumbItems}
       </Breadcrumbs>
-      <Menu rect={rect} open={isOpenMenu} onClose={handleActionMenuClose}>
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleActionMenuClose}>
         {currentActions.map((action) => (
           <MenuItem key={action.id} onClick={() => {}} sx={sx.menuItem}>
             <Box sx={sx.iconBox}>

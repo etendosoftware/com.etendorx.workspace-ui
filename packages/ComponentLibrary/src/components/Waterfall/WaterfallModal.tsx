@@ -1,17 +1,16 @@
 'use client';
 
-import type React from 'react';
-import { useRef, useState } from 'react';
 import { Box, Button, List, MenuItem, styled, useTheme } from '@mui/material';
-import DragModalContent from '../DragModal/DragModalContent';
-import type { Person } from '../DragModal/DragModal.types';
-import ModalDivider from '../ModalDivider';
-import { useStyle } from './styles';
+import { useCallback, useState } from 'react';
 import NavigateNext from '../../assets/icons/chevron-right.svg';
 import Edit from '../../assets/icons/edit.svg';
-import type { WaterfallModalProps } from './types';
+import type { Person } from '../DragModal/DragModal.types';
+import DragModalContent from '../DragModal/DragModalContent';
 import IconButton from '../IconButton';
 import Menu from '../Menu';
+import ModalDivider from '../ModalDivider';
+import { useStyle } from './styles';
+import type { WaterfallModalProps } from './types';
 
 const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
   menuItems,
@@ -34,17 +33,17 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
 
   const theme = useTheme();
   const { sx, styles } = useStyle();
-  const [isOpenModal, setIsOpenModal] = useState<boolean>(false);
   const [showDragModal, setShowDragModal] = useState(false);
   const [fade, setFade] = useState(false);
   const [people, setPeople] = useState<Person[]>(initialPeople);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const handleClick = () => {
-    setIsOpenModal(true);
-  };
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+
+  const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  }, []);
 
   const handleClose = () => {
-    setIsOpenModal(false);
+    setAnchorEl(null);
     setShowDragModal(false);
   };
 
@@ -66,15 +65,10 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
 
   return (
     <>
-      <IconButton
-        ref={buttonRef}
-        tooltip={tooltipWaterfallButton}
-        onClick={handleClick}
-        className='w-10 h-10'
-        disabled={true}>
+      <IconButton tooltip={tooltipWaterfallButton} onClick={handleClick} className='w-10 h-10' disabled={true}>
         {icon}
       </IconButton>
-      <Menu anchorRef={buttonRef} open={isOpenModal} onClose={handleClose}>
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
         <FadeWrapper className={fade ? 'fade-out' : ''}>
           {!showDragModal ? (
             <>

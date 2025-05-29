@@ -42,7 +42,7 @@ const Navigation: React.FC = () => {
   } = useContext(UserContext);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const { language, setLanguage, getFlag } = useLanguage();
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   const { clearUserData } = useContext(UserContext);
 
@@ -52,6 +52,9 @@ const Navigation: React.FC = () => {
 
   const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setSaveAsDefault(event.target.checked);
+  }, []);
+  const handleMenuToggle = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
   }, []);
 
   const languagesWithFlags = useMemo(() => {
@@ -87,7 +90,7 @@ const Navigation: React.FC = () => {
         tooltipButtonProfile={t('navigation.configurationModal.tooltipButtonProfile')}
       />
       <IconButton
-        ref={buttonRef}
+        onClick={handleMenuToggle}
         className='w-10 h-10'
         tooltip={t('navigation.activityButton.tooltip')}
         disabled={true}>
@@ -96,7 +99,7 @@ const Navigation: React.FC = () => {
       <NotificationButton notifications={NOTIFICATIONS} icon={<NotificationIcon />}>
         <NotificationModal
           notifications={NOTIFICATIONS}
-          rect={buttonRef}
+          anchorEl={anchorEl}
           onClose={handleClose}
           title={{
             icon: <NotificationIcon fill='#2E365C' />,

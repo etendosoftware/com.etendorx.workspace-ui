@@ -1,39 +1,39 @@
-import type React from 'react';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import type { ToolbarProps } from './types';
-import SearchPortal from './SearchPortal';
-import { useTranslation } from '../../hooks/useTranslation';
-import { useProcessExecution } from '../../hooks/Toolbar/useProcessExecution';
-import { useProcessButton } from '../../hooks/Toolbar/useProcessButton';
-import { useToolbarConfig } from '../../hooks/Toolbar/useToolbarConfig';
-import { useToolbar } from '../../hooks/Toolbar/useToolbar';
-import ProcessMenu from './ProcessMenu';
+import { useDatasourceContext } from '@/contexts/datasourceContext';
+import { useTabContext } from '@/contexts/tab';
+import type { ToolbarButtonMetadata } from '@/hooks/Toolbar/types';
+import useFormFields from '@/hooks/useFormFields';
+import { useSelected } from '@/hooks/useSelected';
+import { useSelectedRecord } from '@/hooks/useSelectedRecord';
+import { useSelectedRecords } from '@/hooks/useSelectedRecords';
+import { useUserContext } from '@/hooks/useUserContext';
 import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
 import ConfirmModal from '@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal';
+import type React from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useProcessButton } from '../../hooks/Toolbar/useProcessButton';
+import { useProcessExecution } from '../../hooks/Toolbar/useProcessExecution';
+import { useToolbar } from '../../hooks/Toolbar/useToolbar';
+import { useToolbarConfig } from '../../hooks/Toolbar/useToolbarConfig';
+import { useTranslation } from '../../hooks/useTranslation';
+import { compileExpression } from '../Form/FormView/selectors/BaseSelector';
+import ProcessModal from '../ProcessModal';
+import ProcessDefinitionModal from '../ProcessModal/ProcessDefinitionModal';
 import {
   type ProcessButton,
   ProcessButtonType,
   type ProcessDefinitionButton,
   type ProcessResponse,
 } from '../ProcessModal/types';
-import ProcessModal from '../ProcessModal';
-import { useDatasourceContext } from '@/contexts/datasourceContext';
-import ProcessDefinitionModal from '../ProcessModal/ProcessDefinitionModal';
-import { useUserContext } from '@/hooks/useUserContext';
-import { useTabContext } from '@/contexts/tab';
-import { compileExpression } from '../Form/FormView/selectors/BaseSelector';
-import { useSelectedRecord } from '@/hooks/useSelectedRecord';
-import { useSelectedRecords } from '@/hooks/useSelectedRecords';
-import { useSelected } from '@/hooks/useSelected';
+import ProcessMenu from './ProcessMenu';
+import SearchPortal from './SearchPortal';
 import TopToolbar from './TopToolbar';
-import useFormFields from '@/hooks/useFormFields';
 import {
-  organizeButtonsBySection,
   createButtonByType,
   createProcessMenuButton,
   getButtonStyles,
+  organizeButtonsBySection,
 } from './buttonConfigs';
-import type { ToolbarButtonMetadata } from '@/hooks/Toolbar/types';
+import type { ToolbarProps } from './types';
 
 const BaseSection = { display: 'flex', alignItems: 'center' };
 const EmptyArray: ToolbarButtonMetadata[] = [];
@@ -60,8 +60,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentRecord } = useTabContext();
 
-  const [openMenu, setOpenMenu] = useState<boolean>(false);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [isOpenMenu, setIsOpenMenu] = useState<boolean>(false);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   const buttons: ToolbarButtonMetadata[] = toolbar?.response.data ?? EmptyArray;
   const selectedRecord = useSelectedRecord(tab);
@@ -101,12 +101,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     }) as ProcessButton[];
   }, [actionFields, selectedItems, session]);
 
-  const handleMenuToggle = useCallback(() => {
-    setOpenMenu((prev) => !prev);
+  const handleMenuToggle = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+    setIsOpenMenu((prev) => !prev);
   }, []);
 
   const handleMenuClose = useCallback(() => {
-    setOpenMenu(false);
+    setIsOpenMenu(false);
   }, []);
 
   const handleProcessMenuClick = useCallback(
@@ -215,12 +216,12 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
 
     if (processButtons.length > 0) {
       config.rightSection.buttons.push(
-        createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, buttonRef),
+        createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, anchorEl),
       );
     }
 
     return config;
-  }, [buttons, isFormView, selectedRecord?.id, processButtons.length, handleAction, handleMenuToggle, t]);
+  }, [buttons, isFormView, selectedRecord?.id, processButtons.length, handleAction, handleMenuToggle, t, anchorEl]);
 
   if (loading) return null;
 
@@ -259,8 +260,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       )}
       {processButtons.length > 0 && (
         <ProcessMenu
-          anchorRef={buttonRef}
-          open={openMenu}
+          anchorEl={anchorEl}
+          open={isOpenMenu}
           onClose={handleMenuClose}
           processButtons={processButtons}
           onProcessClick={handleProcessMenuClick}

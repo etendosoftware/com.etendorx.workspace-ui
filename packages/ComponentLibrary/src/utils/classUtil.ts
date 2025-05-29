@@ -1,4 +1,8 @@
 export const cleanDefaultClasses = (className: string, defaultClasses: string): string => {
+  if (!className.trim()) {
+    return defaultClasses;
+  }
+
   const toArray = (s: string) => s.trim().split(/\s+/);
 
   const getKey = (cls: string): string | null => {

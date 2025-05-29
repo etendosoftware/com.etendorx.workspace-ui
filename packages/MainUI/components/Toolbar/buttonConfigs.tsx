@@ -172,18 +172,18 @@ export const getButtonStyles = (button: ToolbarButtonMetadata) => {
 export const createProcessMenuButton = (
   processCount: number,
   hasSelectedRecord: boolean,
-  onMenuOpen: (event: React.MouseEvent<HTMLElement>) => void,
+  onMenuOpen: (event: React.MouseEvent<HTMLButtonElement>) => void,
   t: TranslateFunction,
-  buttonRef: React.LegacyRef<HTMLButtonElement>,
+  anchorEl: HTMLElement | null,
 ): ToolbarButton => ({
   key: 'process-menu',
   icon: <ProcessMenuIcon />,
   iconText: t('common.processes'),
   tooltip: t('common.processes'),
-  ref: buttonRef,
+  anchorEl: anchorEl,
   disabled: !hasSelectedRecord,
   className: 'bg-(--color-warning-main) disabled:bg-(--color-warning-light) h-8 [&>svg]:w-4 [&>svg]:h-4',
-  onClick: (event?: React.MouseEvent<HTMLElement>) => {
+  onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
     if (hasSelectedRecord && event && processCount > 0) {
       onMenuOpen(event);
     }
