@@ -1,8 +1,7 @@
 import { Inotifications } from '../../commons';
 import { ReactNode } from 'react';
-import { IMenuProps } from '../Menu';
 
-export interface INotificationModalProps extends Omit<IMenuProps, 'open' | 'title'> {
+export interface INotificationModalProps {
   icon?: string;
   title?: { icon?: ReactNode | string; label?: string };
   linkTitle?: { url?: string; label?: string };
@@ -11,4 +10,6 @@ export interface INotificationModalProps extends Omit<IMenuProps, 'open' | 'titl
   emptyStateMessage?: string;
   emptyStateDescription?: string;
   actionButtonLabel?: string;
+  anchorEl: HTMLElement | null;
+  onClose: () => void;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Button, useTheme } from '@mui/material';
 import CheckCircle from '../../../ComponentLibrary/src/assets/icons/check-circle.svg';
 import UserProfile from './UserProfile';
@@ -44,8 +44,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [currentSection, setCurrentSection] = useState<string>('profile');
   const { language: initialLanguage, getFlag } = useLanguage();
   const [languagesFlags, setLanguageFlags] = useState(getFlag(initialLanguage));
-  const [isOpenMenu, setIsOpenMenu] = useState<boolean>(false);
-  const [rect, setRect] = useState<DOMRect | null>(null);
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
   const [selectedRole, setSelectedRole] = useState<Option | null>(() => {
     if (currentRole) {
@@ -141,13 +140,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   }, []);
 
   const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    const newRect = event.currentTarget.getBoundingClientRect();
-    setRect(newRect);
-    setIsOpenMenu(true);
+    setAnchorEl(event.currentTarget);
   }, []);
 
   const handleClose = useCallback(() => {
-    setIsOpenMenu(false);
+    setAnchorEl(null);
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -191,7 +188,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             language: selectedLanguage?.id,
           });
         }
-
         handleClose();
       } catch (error) {
         logger.warn('Error changing role, warehouse, or saving default configuration:', error);
@@ -255,7 +251,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       <IconButton onClick={handleClick} className="w-10 h-10">
         {icon}
       </IconButton>
-      <Menu open={isOpenMenu} rect={rect} onClose={handleClose}>
+      <Menu open={Boolean(anchorEl)} anchorEl={anchorEl} onClose={handleClose} className="rounded-xl w-88">
         <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} onSignOff={onSignOff} />
         <div style={styles.toggleSectionStyles}>
           <ToggleSection sections={sections} currentSection={currentSection} onToggle={handleToggle} />

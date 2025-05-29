@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState, useMemo, useRef } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import { Tabs, Tab, Box, MenuItem, ListItemIcon } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import { PrimaryTabsProps } from './types';
@@ -12,9 +12,9 @@ import Tooltip from '../Tooltip';
 const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, icon }) => {
   const [selectedTab, setSelectedTab] = useState(tabs[0]?.id || '');
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
-  const [isOpenMenu, setIsOpenMenu] = useState<boolean>(false);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+
   const { sx, styles } = useStyle();
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   const handleChange = useCallback(
     (event: React.SyntheticEvent, newValue: string) => {
@@ -25,12 +25,12 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
     [onChange],
   );
 
-  const handleMenuOpen = useCallback(() => {
-    setIsOpenMenu(true);
+  const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
   }, []);
 
   const handleMenuClose = useCallback(() => {
-    setIsOpenMenu(false);
+    setAnchorEl(null);
   }, []);
 
   const handleMenuItemClick = useCallback(
@@ -52,7 +52,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
 
   const buildTabs = useMemo(
     () =>
-      tabs.map(tab => {
+      tabs.map((tab) => {
         const isSelected = selectedTab === tab.id;
         const isHovered = hoveredTab === tab.id;
 
@@ -77,7 +77,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
             onMouseEnter={() => handleMouseEnter(tab.id)}
             onMouseLeave={handleMouseLeave}
             sx={sx.tab}
-            onClick={event => {
+            onClick={(event) => {
               event.preventDefault();
               handleChange(event, tab.id);
             }}
@@ -101,11 +101,9 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
           {buildTabs}
         </Tabs>
       </Box>
-      <IconButton onClick={handleMenuOpen} ref={buttonRef}>
-        {icon}
-      </IconButton>
-      <Menu anchorRef={buttonRef} open={isOpenMenu} onClose={handleMenuClose}>
-        {tabs.map(tab => {
+      <IconButton onClick={handleMenuOpen}>{icon}</IconButton>
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+        {tabs.map((tab) => {
           const isSelected = selectedTab === tab.id;
           return (
             <MenuItem

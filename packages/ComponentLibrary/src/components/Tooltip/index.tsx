@@ -40,7 +40,7 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, className, position 
     <div className="relative inline-block group">
       {children}
       <div
-        className={`absolute z-10 opacity-0 group-hover:opacity-100 transition-opacity delay-1000 duration-300 pointer-events-none ${className} ${tooltip}`}>
+        className={`absolute z-10 opacity-0 group-hover:opacity-100 transition-opacity delay-400  pointer-events-none ${className} ${tooltip}`}>
         <div className={`absolute w-2 h-2 rotate-45 ${arrow} bg-gray-900`} />
         <div className="bg-gray-900 text-white text-sm rounded px-1 py-1 shadow-md whitespace-nowrap">{title}</div>
       </div>

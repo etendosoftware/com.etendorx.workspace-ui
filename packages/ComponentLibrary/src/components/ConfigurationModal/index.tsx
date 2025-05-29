@@ -27,8 +27,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
   ...props
 }) => {
   const [sectionsState, setSectionsState] = useState<ISection[]>(sections);
-  const [isOpenMenu, setIsOpenMenu] = useState<boolean>(false);
-  const [rect, setRect] = useState<DOMRect | null>(null);
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
   const [hoveredItem, setHoveredItem] = useState<{
     sectionIndex: number;
@@ -42,13 +41,11 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
   }, [sections]);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    const newRect = event.currentTarget.getBoundingClientRect();
-    setRect(newRect);
-    setIsOpenMenu((prev) => !prev);
+    setAnchorEl(event.currentTarget);
   };
 
   const handleClose = () => {
-    setIsOpenMenu(false);
+    setAnchorEl(null);
   };
 
   const handleImageClick = (sectionIndex: number, imageIndex: number) => {
@@ -102,7 +99,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
       <IconButton onClick={handleClick} tooltip={tooltipButtonProfile} disabled={true} className="w-10 h-10">
         {icon}
       </IconButton>
-      <Menu {...props} rect={rect} open={isOpenMenu} onClose={handleClose}>
+      <Menu {...props} anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
         <div style={styles.titleModalContainer}>
           <div style={styles.titleModalImageContainer}>
             {title?.icon && (
