@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import Tooltip from '../Tooltip';
 import { cleanDefaultClasses } from '../../utils/classUtil';
 

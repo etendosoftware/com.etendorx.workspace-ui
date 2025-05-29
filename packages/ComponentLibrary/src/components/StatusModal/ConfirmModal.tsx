@@ -3,7 +3,7 @@ import { Box, Typography, useTheme } from '@mui/material';
 import { Modal } from '..';
 import SaveIcon from '../../assets/icons/trash.svg';
 import { useStyle } from '../StatusModal/styles';
-import { ConfirmModalProps } from './types';
+import type { ConfirmModalProps } from './types';
 
 const ConfirmModal = memo(
   ({

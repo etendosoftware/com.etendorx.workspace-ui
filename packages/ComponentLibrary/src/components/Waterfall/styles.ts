@@ -1,5 +1,5 @@
-import { SxProps, Theme, useTheme } from '@mui/material';
-import { CSSProperties, useMemo } from 'react';
+import { type SxProps, type Theme, useTheme } from '@mui/material';
+import { type CSSProperties, useMemo } from 'react';
 
 export const menuSyle = { paddingY: 0 };
 

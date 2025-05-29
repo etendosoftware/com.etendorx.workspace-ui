@@ -1,4 +1,4 @@
-import { StandardTextFieldProps, FormControlOwnProps } from '@mui/material';
+import type { StandardTextFieldProps, FormControlOwnProps } from '@mui/material';
 
 export interface TextInputProps extends StandardTextFieldProps {
   value: string;

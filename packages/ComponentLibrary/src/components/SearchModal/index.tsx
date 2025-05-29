@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Box } from '@mui/material';
 import SecondaryTabs from '../SecondaryTabs';
-import { SearchModalProps } from '../SecondaryTabs/types';
+import type { SearchModalProps } from '../SecondaryTabs/types';
 import { DEFAULT_MODAL_WIDTH, useStyle } from './styles';
 import { HeaderSection } from './SubComponents/HeaderSection';
 import { DefaultContent } from './SubComponents/DefaultContent';

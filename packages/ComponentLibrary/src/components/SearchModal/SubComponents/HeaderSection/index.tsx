@@ -1,8 +1,8 @@
-import React from 'react';
+import type React from 'react';
 import { Box, Typography } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { useStyle } from './styles';
-import { HeaderSectionProps } from './types';
+import type { HeaderSectionProps } from './types';
 
 export const HeaderSection: React.FC<HeaderSectionProps> = ({ title }) => {
   const { styles } = useStyle();

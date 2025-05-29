@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Theme, useTheme, SxProps } from '@mui/material';
+import { type Theme, useTheme, type SxProps } from '@mui/material';
 
 const DRAWER_WIDTH = 260;
 const DRAWER_WIDTH_CLOSED = 56;

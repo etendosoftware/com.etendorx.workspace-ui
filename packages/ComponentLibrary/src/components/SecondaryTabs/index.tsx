@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-import React, { useState, useRef, useEffect, useCallback, useMemo, ReactElement } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo, type ReactElement } from 'react';
 import { Tabs, Tab, Box, MenuItem, Typography } from '@mui/material';
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
 import TabLabel from './components/TabLabel';
 import { useStyle } from './styles';
-import { SecondaryTabsProps, TabContent } from './types';
+import type { SecondaryTabsProps, TabContent } from './types';
 import IconButton from '../IconButton';
 import Menu from '../Menu';
 

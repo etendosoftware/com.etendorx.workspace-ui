@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material';
-import { DefaultContentProps } from './types';
+import type { DefaultContentProps } from './types';
 import { useStyle } from './styles';
 
 export const DefaultContent: React.FC<DefaultContentProps> = ({ sections }) => {

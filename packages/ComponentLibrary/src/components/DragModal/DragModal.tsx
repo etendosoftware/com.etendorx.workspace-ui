@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import Modal from '../BasicModal';
 import DragModalContent from './DragModalContent';
-import { DragModalProps, Person } from './DragModal.types';
+import type { DragModalProps, Person } from './DragModal.types';
 import ModalDivider from '../ModalDivider';
 import { MODAL_WIDTH } from './styles';
 import CloseRecordIcon from '../../assets/icons/close-record.svg';

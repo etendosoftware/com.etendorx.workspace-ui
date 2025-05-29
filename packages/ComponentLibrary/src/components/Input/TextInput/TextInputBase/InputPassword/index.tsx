@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { Icon, useTheme } from '@mui/material';
 import { VisibilityOutlined, VisibilityOffOutlined } from '@mui/icons-material';
 import TextInputBase from '../TextInputBase';
-import { TextInputProps } from '../../TextInputAutocomplete/TextInputComplete.types';
+import type { TextInputProps } from '../../TextInputAutocomplete/TextInputComplete.types';
 
 const InputPassword = (props: TextInputProps) => {
   const theme = useTheme();

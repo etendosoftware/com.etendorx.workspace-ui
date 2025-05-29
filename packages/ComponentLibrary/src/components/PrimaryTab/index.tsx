@@ -3,7 +3,7 @@
 import React, { useCallback, useState, useMemo, useRef } from 'react';
 import { Tabs, Tab, Box, MenuItem, ListItemIcon } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
-import { PrimaryTabsProps } from './types';
+import type { PrimaryTabsProps } from './types';
 import { tabIndicatorProps, useStyle } from './styles';
 import IconButton from '../IconButton';
 import Menu from '../Menu';

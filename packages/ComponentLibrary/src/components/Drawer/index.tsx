@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react';
+import type React from 'react';
+import { useCallback, useMemo, useEffect, useRef, useState } from 'react';
 import { useStyle } from './styles';
-import { DrawerProps } from './types';
+import type { DrawerProps } from './types';
 import { DrawerHeader } from './Header';
 import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
 import { getAllItemTitles } from '../../utils/searchUtils';
 import { DrawerItems } from './Search';
 import { Box } from '@mui/material';
-import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 
 const DRAWER_STATE_KEY = 'etendo-drawer-open';
 interface RecentlyViewedHandler {

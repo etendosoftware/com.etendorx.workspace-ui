@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import DrawerSection from '../DrawerSection';
-import { DrawerItemsProps, ToggleFunctions } from '../types';
+import type { DrawerItemsProps, ToggleFunctions } from '../types';
 
 export const DrawerItems: React.FC<DrawerItemsProps> = React.memo(
   ({

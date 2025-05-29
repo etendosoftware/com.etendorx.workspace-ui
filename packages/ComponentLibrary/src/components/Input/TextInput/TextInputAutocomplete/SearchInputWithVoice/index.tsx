@@ -6,7 +6,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import FilterIcon from '@mui/icons-material/FilterList';
 import MicIcon from '../../../../../assets/icons/mic.svg';
 import MicOffIcon from '../../../../../assets/icons/mic-off.svg';
-import { TextInputProps } from '../TextInputComplete.types';
+import type { TextInputProps } from '../TextInputComplete.types';
 import TextInputAutoComplete from '../TextInputAutocomplete';
 import IconButton from '../../../../IconButton';
 

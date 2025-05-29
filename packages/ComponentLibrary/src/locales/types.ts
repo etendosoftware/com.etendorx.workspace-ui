@@ -1,5 +1,5 @@
-import en from './en';
-import es from './es';
+import type en from './en';
+import type es from './es';
 
 type Primitive = string;
 

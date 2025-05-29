@@ -1,4 +1,4 @@
-import { RadioButtonItemProps } from './types';
+import type { RadioButtonItemProps } from './types';
 
 const RadioButtonItem: React.FC<RadioButtonItemProps> = ({ id, title, description, isSelected, onSelect }) => {
   return (

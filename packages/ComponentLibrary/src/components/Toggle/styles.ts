@@ -1,4 +1,4 @@
-import { SxProps, Theme, useTheme } from '@mui/material';
+import { type SxProps, type Theme, useTheme } from '@mui/material';
 import { useMemo } from 'react';
 
 type StylesType = {

@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import type React from 'react';
+import { useRef, useState } from 'react';
 import { Box, Button, List, MenuItem, styled, useTheme } from '@mui/material';
 import DragModalContent from '../DragModal/DragModalContent';
-import { Person } from '../DragModal/DragModal.types';
+import type { Person } from '../DragModal/DragModal.types';
 import ModalDivider from '../ModalDivider';
 import { useStyle } from './styles';
 import NavigateNext from '../../assets/icons/chevron-right.svg';
 import Edit from '../../assets/icons/edit.svg';
-import { WaterfallModalProps } from './types';
+import type { WaterfallModalProps } from './types';
 import IconButton from '../IconButton';
 import Menu from '../Menu';
 

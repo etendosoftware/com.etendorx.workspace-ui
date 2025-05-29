@@ -4,10 +4,10 @@ export function rgbaToHex(rgba: string): string {
   }
 
   const parts = rgba.substring(rgba.indexOf('(')).split(','),
-    r = parseInt(parts[0].substring(1).trim(), 10),
-    g = parseInt(parts[1].trim(), 10),
-    b = parseInt(parts[2].trim(), 10),
-    a = parseFloat(parts[3] || '1');
+    r = Number.parseInt(parts[0].substring(1).trim(), 10),
+    g = Number.parseInt(parts[1].trim(), 10),
+    b = Number.parseInt(parts[2].trim(), 10),
+    a = Number.parseFloat(parts[3] || '1');
 
   const hex =
     '#' +

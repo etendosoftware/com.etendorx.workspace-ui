@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, KeyboardEvent, useCallback } from 'react';
+import { useState, useEffect, type KeyboardEvent, useCallback } from 'react';
 import { TextField, InputAdornment, Box, useTheme } from '@mui/material';
-import { TextInputProps } from './TextInputComplete.types';
+import type { TextInputProps } from './TextInputComplete.types';
 import { DEFAULT_CONSTANTS } from './TextInputAutocomplete.constants';
 import SuggestionBox from './SuggestionBox';
 import { useStyle } from './TextInputAutocomplete.styles';

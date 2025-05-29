@@ -13,7 +13,11 @@
   "scripts": {
     "build:cjs": "tsc --project tsconfig.cjs.json",
     "build:esm": "tsc --project tsconfig.esm.json",
-    "build": "npm run build:cjs && npm run build:esm"
+    "build": "npm run build:cjs && npm run build:esm",
+    "lint": "biome lint src/",
+    "lint:fix": "biome lint --apply src/",
+    "format": "biome format src/",
+    "format:fix": "biome format --write src/"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
@@ -40,10 +44,6 @@
     "@types/node": "^22.7.8",
     "@types/react": "18.3.1",
     "@types/react-dom": "18.3.1",
-    "@typescript-eslint/eslint-plugin": "^7.0.2",
-    "@typescript-eslint/parser": "^7.0.2",
-    "eslint": "^8.56.0",
-    "eslint-plugin-react-hooks": "^4.6.0",
     "path": "^0.12.7",
     "rimraf": "^5.0.0",
     "typescript": "^5.2.2"

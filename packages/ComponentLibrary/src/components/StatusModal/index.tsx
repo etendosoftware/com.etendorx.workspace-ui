@@ -4,7 +4,7 @@ import { Modal } from '..';
 import SaveIcon from '../../assets/icons/save.svg';
 import { statusConfig } from './states';
 import { useStyle } from './styles';
-import { StatusModalProps } from './types';
+import type { StatusModalProps } from './types';
 
 const StatusModal: React.FC<StatusModalProps> = ({
   statusText,

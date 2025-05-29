@@ -1,6 +1,6 @@
-import { Inotifications } from '../../commons';
-import { ReactNode } from 'react';
-import { IMenuProps } from '../Menu';
+import type { Inotifications } from '../../commons';
+import type { ReactNode } from 'react';
+import type { IMenuProps } from '../Menu';
 
 export interface INotificationModalProps extends Omit<IMenuProps, 'open' | 'title'> {
   icon?: string;

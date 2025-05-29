@@ -1,5 +1,5 @@
 import SidebarContent from './SidebarContent';
-import { SidebarProps } from './types';
+import type { SidebarProps } from './types';
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, selectedItem, widgets, translations }) => {
   return (

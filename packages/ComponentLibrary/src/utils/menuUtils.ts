@@ -1,6 +1,6 @@
-import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
-import { RecentItem } from '../components/Drawer/types';
-import { TranslateFunction } from '@workspaceui/mainui/hooks/types';
+import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import type { RecentItem } from '../components/Drawer/types';
+import type { TranslateFunction } from '@workspaceui/mainui/hooks/types';
 
 const RECENTLY_VIEWED_ICON = '⌛';
 

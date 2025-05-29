@@ -1,4 +1,4 @@
-import { Translations, Language } from './types';
+import type { Translations, Language } from './types';
 import es_ES from './es';
 import en_US from './en';
 

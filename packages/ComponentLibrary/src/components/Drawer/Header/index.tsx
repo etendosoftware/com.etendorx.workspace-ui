@@ -5,7 +5,7 @@ import { MenuOpen } from '@mui/icons-material';
 import { Box } from '@mui/material';
 import IconButton from '../../IconButton';
 import { useStyle } from '../styles';
-import { DrawerHeaderProps } from '../types';
+import type { DrawerHeaderProps } from '../types';
 
 const DrawerHeader = forwardRef<HTMLDivElement, DrawerHeaderProps>(({ title, logo, open, onClick, tabIndex }, ref) => {
   const { sx } = useStyle();

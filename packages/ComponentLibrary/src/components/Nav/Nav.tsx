@@ -1,6 +1,7 @@
 'use client';
 
-import React, { ReactNode, useCallback, useState } from 'react';
+import type React from 'react';
+import { type ReactNode, useCallback, useState } from 'react'
 import RightButtons from './RigthComponents/RightButtons';
 import SearchInputWithVoice from '../Input/TextInput/TextInputAutocomplete/SearchInputWithVoice';
 import { useStyle } from './Nav.styles';

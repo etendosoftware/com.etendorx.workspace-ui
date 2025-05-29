@@ -2,11 +2,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Box, useTheme } from '@mui/material';
 import { useStyle } from '../styles';
 import { MenuTitle } from '../MenuTitle';
-import { DrawerSectionProps, ToggleFunctions } from '../types';
+import type { DrawerSectionProps, ToggleFunctions } from '../types';
 import { findActive } from '../../../utils/drawerUtils';
 import { useItemActions } from '../../../hooks/useItemType';
 import { CustomClickAwayListener } from '../../../utils/clickAway';
-import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
 
 export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
   ({

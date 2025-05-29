@@ -3,7 +3,7 @@ import { Typography, Button, Box, useTheme } from '@mui/material';
 import ModalMUI from '@mui/material/Modal';
 import IconButton from '../IconButton';
 import { Container, Position } from '../enums';
-import { ModalIProps } from './types';
+import type { ModalIProps } from './types';
 import { IconSize, useStyles } from './styles';
 import CloseIcon from '../../assets/icons/x.svg';
 import MaximizeIcon from '../../assets/icons/maximize-2.svg';

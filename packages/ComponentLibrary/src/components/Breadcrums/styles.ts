@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { SxProps, Theme, useTheme } from '@mui/material';
+import { type SxProps, type Theme, useTheme } from '@mui/material';
 
 export const menuStyle = { paddingY: 0 };
 

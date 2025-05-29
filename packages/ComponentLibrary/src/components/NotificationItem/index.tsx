@@ -1,6 +1,6 @@
 import { ListItem, Typography, Button, Box } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
-import { NotificationItemProps } from './types';
+import type { NotificationItemProps } from './types';
 import Tag from '../Tag';
 import { useStyle } from './styles';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';

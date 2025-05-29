@@ -1,7 +1,7 @@
 'use client';
 import React, { useRef, useState } from 'react';
 import { Badge } from '@mui/material';
-import { ExtendedNotificationButtonProps, NotificationModalProps } from './types';
+import type { ExtendedNotificationButtonProps, NotificationModalProps } from './types';
 import { notificationMax } from './constants';
 import IconButton from '../IconButton';
 import { useStyle } from './styles';

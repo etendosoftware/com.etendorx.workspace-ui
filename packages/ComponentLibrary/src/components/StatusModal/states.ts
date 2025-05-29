@@ -1,7 +1,7 @@
 import CheckIcon from '../../assets/icons/check.svg';
 import ErrorIcon from '../../assets/icons/x-octagon.svg';
 import WarningIcon from '../../assets/icons/alert-triangle.svg';
-import { StatusConfig, StatusType } from './types';
+import type { StatusConfig, StatusType } from './types';
 import { theme } from '../../theme';
 
 export const statusConfig: Record<StatusType, StatusConfig> = {

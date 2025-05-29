@@ -1,4 +1,4 @@
-import { Section } from '../../../SecondaryTabs/types';
+import type { Section } from '../../../SecondaryTabs/types';
 
 export interface SectionContentProps {
   section: Section;

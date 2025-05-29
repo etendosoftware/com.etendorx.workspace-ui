@@ -1,4 +1,4 @@
-import { ChipProps as MuiChipProps } from '@mui/material';
+import type { ChipProps as MuiChipProps } from '@mui/material';
 
 export type TagType = 'success' | 'warning' | 'error' | 'draft' | 'primary';
 

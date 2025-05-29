@@ -6,8 +6,8 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
-  UniqueIdentifier,
+  type DragEndEvent,
+  type UniqueIdentifier,
   closestCenter,
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';

@@ -1,5 +1,5 @@
-import { UniqueIdentifier } from '@dnd-kit/core';
-import { ReactNode } from 'react';
+import type { UniqueIdentifier } from '@dnd-kit/core';
+import type { ReactNode } from 'react';
 
 export interface Person {
   id: UniqueIdentifier;

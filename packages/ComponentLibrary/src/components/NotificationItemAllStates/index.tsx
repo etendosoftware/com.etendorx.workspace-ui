@@ -1,6 +1,6 @@
 import { List } from '@mui/material';
 import NotificationItem from '../NotificationItem';
-import { NotificationItemStatesProps } from './types';
+import type { NotificationItemStatesProps } from './types';
 
 const NotificationItemStates: React.FC<NotificationItemStatesProps> = ({ notifications = [], type }) => {
   const filteredNotifications = notifications.filter(notification => notification.type === type);

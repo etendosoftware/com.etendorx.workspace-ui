@@ -16,7 +16,7 @@ export const validateNumber = (
     return { isValid: false, errorMessage: 'Please enter a valid number' };
   }
 
-  const num = parseFloat(value);
+  const num = Number.parseFloat(value);
   const roundedNum = roundNumber(num);
 
   if (roundedNum < 0) {

@@ -1,6 +1,6 @@
-import { UniqueIdentifier } from '@dnd-kit/core';
-import { Person } from '../DragModal/DragModal.types';
-import { ReactNode } from 'react';
+import type { UniqueIdentifier } from '@dnd-kit/core';
+import type { Person } from '../DragModal/DragModal.types';
+import type { ReactNode } from 'react';
 
 export interface WaterfallModalProps {
   menuItems: { emoji: string; label: string; key: string }[];

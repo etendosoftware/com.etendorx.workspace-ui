@@ -2,7 +2,7 @@ import { Box, Typography } from '@mui/material';
 import ContentGrid from './WidgetContent';
 import { useStyle } from '../styles';
 import RegisterModal from '../../RegisterModal';
-import { SidebarContentProps } from './types';
+import type { SidebarContentProps } from './types';
 
 export const SidebarContent: React.FC<SidebarContentProps> = ({ icon, identifier, title, widgets, translations }) => {
   const { sx } = useStyle();

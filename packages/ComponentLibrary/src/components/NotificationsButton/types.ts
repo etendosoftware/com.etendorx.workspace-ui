@@ -1,6 +1,6 @@
-import { Inotifications } from '../../commons';
-import { ReactElement } from 'react';
-import { IMenuProps } from '../Menu';
+import type { Inotifications } from '../../commons';
+import type { ReactElement } from 'react';
+import type { IMenuProps } from '../Menu';
 
 export interface NotificationButtonProps {
   children?: ReactElement<NotificationModalProps>;

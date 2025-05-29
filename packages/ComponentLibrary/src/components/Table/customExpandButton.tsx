@@ -1,10 +1,10 @@
-import React from 'react';
-import { MRT_Row } from 'material-react-table';
+import type React from 'react';
+import type { MRT_Row } from 'material-react-table';
 import IconButton from '../IconButton';
 import ChevronDownIcon from '../../assets/icons/chevron-down.svg';
 import ChevronUpIcon from '../../assets/icons/chevron-up.svg';
 import ChevronRightIcon from '../../assets/icons/chevron-right.svg';
-import { Organization } from '@workspaceui/storybook/src/stories/Components/Table/types';
+import type { Organization } from '@workspaceui/storybook/src/stories/Components/Table/types';
 
 interface CustomExpandButtonProps {
   row: MRT_Row<Organization>;

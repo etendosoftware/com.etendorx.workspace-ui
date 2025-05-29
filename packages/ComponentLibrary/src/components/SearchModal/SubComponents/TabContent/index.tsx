@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { SectionContent } from '../SectionContent';
 
 export const TabContent: React.FC<{ tabsContent: any[], activeTab: number }> =

@@ -1,11 +1,11 @@
-import { FC, useState, useCallback, useMemo, useRef } from 'react';
+import { type FC, useState, useCallback, useMemo, useRef } from 'react';
 import { Breadcrumbs, Link, Typography, Box, MenuItem, useTheme } from '@mui/material';
 import NavigateNextIcon from '../../assets/icons/chevron-right.svg';
 import ArrowLeftIcon from '../../assets/icons/arrow-left.svg';
 import ChevronDown from '../../assets/icons/chevron-down.svg';
 import MoreHorizIcon from '../../assets/icons/more-horizontal.svg';
 import { useStyle } from './styles';
-import { BreadcrumbProps, BreadcrumbAction, BreadcrumbItem } from './types';
+import type { BreadcrumbProps, BreadcrumbAction, BreadcrumbItem } from './types';
 import ToggleChip from '../Toggle/ToggleChip';
 import IconButton from '../IconButton';
 import Menu from '../Menu';

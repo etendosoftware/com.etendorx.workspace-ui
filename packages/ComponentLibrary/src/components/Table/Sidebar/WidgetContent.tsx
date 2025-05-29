@@ -2,7 +2,7 @@ import { Box, Grid, Typography } from '@mui/material';
 import { useStyle } from '../styles';
 import IconButton from '../../IconButton';
 import InformationIcon from '../../../assets/icons/info.svg';
-import { ContentGridProps, Widget } from '@workspaceui/storybook/src/stories/Components/Table/types';
+import type { ContentGridProps, Widget } from '@workspaceui/storybook/src/stories/Components/Table/types';
 
 const WidgetComponent: React.FC<Widget> = ({
   title,

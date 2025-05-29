@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
-import { UseItemActionsProps } from './types';
+import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import type { UseItemActionsProps } from './types';
 
 export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }: UseItemActionsProps) => {
   const handleItemClick = useCallback(

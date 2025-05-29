@@ -1,4 +1,4 @@
-import { SxProps, useTheme, Theme } from '@mui/material';
+import { type SxProps, useTheme, type Theme } from '@mui/material';
 
 type StylesType = {
   sx: Record<string, SxProps<Theme>>;

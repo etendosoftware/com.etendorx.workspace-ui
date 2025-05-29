@@ -2,7 +2,7 @@ import * as React from 'react';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import { TabContext, TabList, TabPanel } from '@mui/lab';
-import { TabContent } from '../../interfaces';
+import type { TabContent } from '../../interfaces';
 import { useTheme } from '@mui/material';
 
 interface TabsMUIProps {

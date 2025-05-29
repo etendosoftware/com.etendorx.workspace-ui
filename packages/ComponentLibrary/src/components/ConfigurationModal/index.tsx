@@ -1,7 +1,7 @@
 import { Grid, Link, useTheme } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { BORDER_SELECT_1, BORDER_SELECT_2, COLUMN_SPACING, FIRST_MARGIN_TOP, useStyle } from './style';
-import { IConfigurationModalProps, ISection } from './types';
+import type { IConfigurationModalProps, ISection } from './types';
 import checkIconUrl from '../../assets/icons/check-circle-filled.svg?url';
 import './style.css';
 import IconButton from '../IconButton';

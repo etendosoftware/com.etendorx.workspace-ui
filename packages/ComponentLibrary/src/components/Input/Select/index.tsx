@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import {
   Autocomplete,
-  AutocompleteRenderInputParams,
+  type AutocompleteRenderInputParams,
   FormHelperText,
   InputAdornment,
   Paper,
-  PaperProps,
+  type PaperProps,
   TextField,
   Typography,
   useTheme,
@@ -16,7 +17,7 @@ import { useStyle } from './style';
 import CancelIcon from '@mui/icons-material/Cancel';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { ISelectInput, Option } from './types';
+import type { ISelectInput, Option } from './types';
 import Tooltip from '../../Tooltip';
 
 type OptionProps = React.HTMLAttributes<HTMLLIElement> & { key?: string };

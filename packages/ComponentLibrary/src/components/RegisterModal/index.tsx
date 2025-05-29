@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, List, useTheme } from '@mui/material';
-import { RegisterModalProps } from './types';
+import type { RegisterModalProps } from './types';
 import { useStyle } from './styles';
 import CloseRecordIcon from '../../assets/icons/close-record.svg';
 import Modal from '../BasicModal';

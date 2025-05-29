@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material';
 import { useStyle } from './styles';
-import { TabWidgetProps } from './types';
+import type { TabWidgetProps } from './types';
 
 const TabWidget: React.FC<TabWidgetProps> = ({ title, content, noRecordText }) => {
   const { sx } = useStyle();

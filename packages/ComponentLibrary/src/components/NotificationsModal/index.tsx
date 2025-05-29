@@ -1,6 +1,6 @@
 import { List, Link, Button } from '@mui/material';
 import IconButton from '../IconButton';
-import { INotificationModalProps } from './types';
+import type { INotificationModalProps } from './types';
 import { useStyle } from './styles';
 import { Settings } from '@mui/icons-material';
 import MoreVert from '../../assets/icons/more-vertical.svg';

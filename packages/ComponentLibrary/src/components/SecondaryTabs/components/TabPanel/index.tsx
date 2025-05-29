@@ -1,6 +1,6 @@
-import React from 'react';
+import type React from 'react';
 import { Box } from '@mui/material';
-import { TabPanelProps } from './types';
+import type { TabPanelProps } from './types';
 
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }) => {
     return (

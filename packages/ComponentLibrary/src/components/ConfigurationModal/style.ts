@@ -1,5 +1,5 @@
-import { CSSProperties, useMemo } from 'react';
-import { SxProps, Theme, useTheme } from '@mui/material';
+import { type CSSProperties, useMemo } from 'react';
+import { type SxProps, type Theme, useTheme } from '@mui/material';
 
 export const menuSyle = { paddingY: 0 };
 export const COLUMN_SPACING = '0.75rem';

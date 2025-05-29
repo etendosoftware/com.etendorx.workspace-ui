@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { Section } from '../../../SecondaryTabs/types';
+import type { Section } from '../../../SecondaryTabs/types';
 import { useStyle } from './styles';
 import { ItemContent } from '../ItemContent';
 

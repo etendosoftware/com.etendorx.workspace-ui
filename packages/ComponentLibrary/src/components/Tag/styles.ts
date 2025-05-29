@@ -1,6 +1,6 @@
-import React, { CSSProperties, ReactElement, useMemo } from 'react';
-import { Theme, useTheme, SxProps } from '@mui/material';
-import { TagType } from './types';
+import React, { type CSSProperties, type ReactElement, useMemo } from 'react';
+import { type Theme, useTheme, type SxProps } from '@mui/material';
+import type { TagType } from './types';
 
 type StylesType = {
   getColor: (type: TagType) => string;
