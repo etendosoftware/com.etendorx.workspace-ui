@@ -17,7 +17,6 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { ISelectInput, Option } from './types';
-import Tooltip from '../../Tooltip';
 
 type OptionProps = React.HTMLAttributes<HTMLLIElement> & { key?: string };
 
@@ -35,7 +34,7 @@ const Select: React.FC<ISelectInput> = ({
   const [inputValue, setInputValue] = useState<string>('');
   const [focused, setFocused] = useState<boolean>(false);
 
-  const CustomPaper: React.FC<PaperProps> = paperProps => {
+  const CustomPaper: React.FC<PaperProps> = (paperProps) => {
     return <Paper {...paperProps} sx={sx.optionsContainer} />;
   };
 
@@ -64,35 +63,33 @@ const Select: React.FC<ISelectInput> = ({
   };
 
   const renderInput = (params: AutocompleteRenderInputParams) => (
-    <Tooltip title={inputValue}>
-      <TextField
-        {...params}
-        sx={{
-          ...sx.root,
-          '& .MuiInput-root': {
-            ...sx.root['& .MuiInput-root'],
-            backgroundColor: getBackgroundFocus(),
-          },
-        }}
-        InputLabelProps={{
-          style: sx.labelProps,
-          shrink: true,
-        }}
-        InputProps={{
-          ...params.InputProps,
-          name,
-          sx: sx.props,
-          startAdornment: iconLeft && <InputAdornment position="start">{iconLeft}</InputAdornment>,
-          endAdornment: <div style={sx.buttonsContainer}>{params.InputProps.endAdornment}</div>,
-        }}
-        label={title}
-        variant="standard"
-        onChange={handleInputChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        name={name}
-      />
-    </Tooltip>
+    <TextField
+      {...params}
+      sx={{
+        ...sx.root,
+        '& .MuiInput-root': {
+          ...sx.root['& .MuiInput-root'],
+          backgroundColor: getBackgroundFocus(),
+        },
+      }}
+      InputLabelProps={{
+        style: sx.labelProps,
+        shrink: true,
+      }}
+      InputProps={{
+        ...params.InputProps,
+        name,
+        sx: sx.props,
+        startAdornment: iconLeft && <InputAdornment position="start">{iconLeft}</InputAdornment>,
+        endAdornment: <div style={sx.buttonsContainer}>{params.InputProps.endAdornment}</div>,
+      }}
+      label={title}
+      variant="standard"
+      onChange={handleInputChange}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      name={name}
+    />
   );
 
   return (
@@ -101,7 +98,7 @@ const Select: React.FC<ISelectInput> = ({
         {...props}
         disabled={disabled}
         options={options}
-        getOptionLabel={option => option.title}
+        getOptionLabel={(option) => option.title}
         clearIcon={<CancelIcon style={sx.dropdownIcons} />}
         popupIcon={<ExpandMoreIcon style={sx.dropdownIcons} />}
         renderInput={renderInput}

@@ -13,6 +13,7 @@ export interface NotificationModalProps extends Omit<IMenuProps, 'open'> {
   open: boolean;
   onClose: () => void;
 }
+
 export interface ExtendedNotificationButtonProps extends NotificationButtonProps {
   icon: string | React.ReactNode;
   tooltipTitle?: string;

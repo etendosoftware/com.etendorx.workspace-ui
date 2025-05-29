@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ToolbarProps } from './types';
 import SearchPortal from './SearchPortal';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -54,8 +54,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentRecord } = useTabContext();
 
-  const [openMenu, setOpenMenu] = useState<boolean>(false);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [isOpenMenu, setIsOpenMenu] = useState<boolean>(false);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   const buttons: ToolbarButtonMetadata[] = toolbar?.response.data ?? EmptyArray;
   const selectedRecord = useSelectedRecord(tab);
@@ -95,12 +95,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     }) as ProcessButton[];
   }, [actionFields, selectedItems, session]);
 
-  const handleMenuToggle = useCallback(() => {
-    setOpenMenu((prev) => !prev);
+  const handleMenuToggle = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+    setIsOpenMenu((prev) => !prev);
   }, []);
 
   const handleMenuClose = useCallback(() => {
-    setOpenMenu(false);
+    setIsOpenMenu(false);
   }, []);
 
   const handleProcessMenuClick = useCallback(
@@ -209,12 +210,12 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
 
     if (processButtons.length > 0) {
       config.rightSection.buttons.push(
-        createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, buttonRef),
+        createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, anchorEl),
       );
     }
 
     return config;
-  }, [buttons, isFormView, selectedRecord?.id, processButtons.length, handleAction, handleMenuToggle, t]);
+  }, [buttons, isFormView, selectedRecord?.id, processButtons.length, handleAction, handleMenuToggle, t, anchorEl]);
 
   if (loading) return null;
 
@@ -253,8 +254,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       )}
       {processButtons.length > 0 && (
         <ProcessMenu
-          anchorRef={buttonRef}
-          open={openMenu}
+          anchorEl={anchorEl}
+          open={isOpenMenu}
           onClose={handleMenuClose}
           processButtons={processButtons}
           onProcessClick={handleProcessMenuClick}

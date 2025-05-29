@@ -29,10 +29,11 @@ const renderIcon = (icon: TabContent['icon'], style: React.CSSProperties | undef
 
 const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onChange }) => {
   const [visibleCount, setVisibleCount] = useState(5);
-  const [isOpenMenu, setIsOpenMenu] = useState<boolean>(false);
   const tabsRef = useRef<HTMLDivElement>(null);
   const { sx } = useStyle();
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
+
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+
   const updateVisibleCount = useCallback(() => {
     if (tabsRef.current) {
       const width = tabsRef.current.clientWidth;
@@ -57,12 +58,12 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
     [content, onChange],
   );
 
-  const handleMenu = useCallback(() => {
-    setIsOpenMenu(true);
+  const handleMenu = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
   }, []);
 
   const handleClose = () => {
-    setIsOpenMenu(false);
+    setAnchorEl(null);
   };
 
   const visibleTabs = useMemo(() => content.slice(0, visibleCount), [content, visibleCount]);
@@ -99,13 +100,13 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
         </Tabs>
         {hiddenTabs.length > 0 && (
           <Box sx={sx.rightButtonContainer}>
-            <IconButton onClick={handleMenu} ref={buttonRef}>
+            <IconButton onClick={handleMenu}>
               <KeyboardDoubleArrowRightIcon />
             </IconButton>
           </Box>
         )}
       </Box>
-      <Menu anchorRef={buttonRef} open={isOpenMenu} onClose={handleClose}>
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
         {hiddenTabs.map((tab: TabContent, index: number) => (
           <MenuItem
             key={index}
