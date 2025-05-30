@@ -87,12 +87,7 @@ export const useToolbarConfig = ({
   const actionHandlers = useMemo<Record<string, () => void>>(
     () => ({
       CANCEL: () => onBack?.(),
-      NEW: () => {
-        const params = new URLSearchParams(location.search);
-        params.set(`recordId_${tab?.id}`, "new");
-        history.pushState(null, "", `?${params.toString()}`);
-        onNew?.();
-      },
+      NEW: () => onNew?.(),
       FIND: () => setSearchOpen(true),
       TAB_CONTROL: () => {
         logger.info("Tab control clicked");
