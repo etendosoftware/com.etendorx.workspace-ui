@@ -1,4 +1,4 @@
-import { EntityData, Field } from '@workspaceui/etendohookbinder/src/api/types';
+import type { EntityData, Field } from "@workspaceui/etendohookbinder/src/api/types";
 
 export interface TextInputProps
   extends React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement> {

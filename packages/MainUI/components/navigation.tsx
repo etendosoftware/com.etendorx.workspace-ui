@@ -1,26 +1,26 @@
-'use client';
+"use client";
 
-import { useContext, useState, useCallback, useMemo } from 'react';
+import { useLanguage } from "@/contexts/language";
+import type { Language } from "@/contexts/types";
+import { UserContext } from "@/contexts/user";
+import { logger } from "@/utils/logger";
+import ActivityIcon from "@workspaceui/componentlibrary/src/assets/icons/activity.svg";
+import NotificationIcon from "@workspaceui/componentlibrary/src/assets/icons/bell.svg";
+import AddIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
+import PersonIcon from "@workspaceui/componentlibrary/src/assets/icons/user.svg";
 import {
   ConfigurationModal,
+  IconButton,
   NotificationButton,
   NotificationModal,
-  IconButton,
   Waterfall,
-} from '@workspaceui/componentlibrary/src/components';
-import ActivityIcon from '@workspaceui/componentlibrary/src/assets/icons/activity.svg';
-import NotificationIcon from '@workspaceui/componentlibrary/src/assets/icons/bell.svg';
-import PersonIcon from '@workspaceui/componentlibrary/src/assets/icons/user.svg';
-import AddIcon from '@workspaceui/componentlibrary/src/assets/icons/plus.svg';
-import { modalConfig, menuItems, initialPeople, sections, NOTIFICATIONS } from '../../storybook/src/mocks';
-import { Person } from '@workspaceui/componentlibrary/src/components/DragModal/DragModal.types';
-import Nav from '@workspaceui/componentlibrary/src/components/Nav/Nav';
-import { useTranslation } from '../hooks/useTranslation';
-import ProfileModal from './ProfileModal/ProfileModal';
-import { useLanguage } from '@/contexts/language';
-import { Language } from '@/contexts/types';
-import { UserContext } from '@/contexts/user';
-import { logger } from '@/utils/logger';
+} from "@workspaceui/componentlibrary/src/components";
+import type { Person } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
+import Nav from "@workspaceui/componentlibrary/src/components/Nav/Nav";
+import { useCallback, useContext, useMemo, useRef, useState } from "react";
+import { NOTIFICATIONS, initialPeople, menuItems, modalConfig, sections } from "../../storybook/src/mocks";
+import { useTranslation } from "../hooks/useTranslation";
+import ProfileModal from "./ProfileModal/ProfileModal";
 
 const handleClose = () => {
   return true;
@@ -72,27 +72,27 @@ const Navigation: React.FC = () => {
   }
 
   return (
-    <Nav title={t('common.notImplemented')}>
+    <Nav title={t("common.notImplemented")}>
       <Waterfall
         menuItems={menuItems}
         initialPeople={initialPeople}
-        backButtonText={t('modal.secondaryButtonLabel')}
-        activateAllText={t('navigation.waterfall.activateAll')}
-        deactivateAllText={t('navigation.waterfall.deactivateAll')}
-        tooltipWaterfallButton={t('navigation.waterfall.tooltipButton')}
-        buttonText={t('navigation.waterfall.buttons')}
-        customizeText={t('navigation.waterfall.customize')}
+        backButtonText={t("modal.secondaryButtonLabel")}
+        activateAllText={t("navigation.waterfall.activateAll")}
+        deactivateAllText={t("navigation.waterfall.deactivateAll")}
+        tooltipWaterfallButton={t("navigation.waterfall.tooltipButton")}
+        buttonText={t("navigation.waterfall.buttons")}
+        customizeText={t("navigation.waterfall.customize")}
         people={people}
         icon={<AddIcon />}
       />
       <ConfigurationModal
         {...modalConfig}
-        tooltipButtonProfile={t('navigation.configurationModal.tooltipButtonProfile')}
+        tooltipButtonProfile={t("navigation.configurationModal.tooltipButtonProfile")}
       />
       <IconButton
         onClick={handleMenuToggle}
         className="w-10 h-10"
-        tooltip={t('navigation.activityButton.tooltip')}
+        tooltip={t("navigation.activityButton.tooltip")}
         disabled={true}>
         <ActivityIcon />
       </IconButton>
@@ -103,23 +103,24 @@ const Navigation: React.FC = () => {
           onClose={handleClose}
           title={{
             icon: <NotificationIcon fill="#2E365C" />,
-            label: t('navigation.notificationModal.title'),
+            label: t("navigation.notificationModal.title"),
           }}
           linkTitle={{
-            label: t('navigation.notificationModal.markAllAsRead'),
-            url: '/home',
+            label: t("navigation.notificationModal.markAllAsRead"),
+            url: "/home",
           }}
-          emptyStateImageAlt={t('navigation.notificationModal.emptyStateImageAlt')}
-          emptyStateMessage={t('navigation.notificationModal.emptyStateMessage')}
-          emptyStateDescription={t('navigation.notificationModal.emptyStateDescription')}
-          actionButtonLabel={t('navigation.notificationModal.actionButtonLabel')}></NotificationModal>
+          emptyStateImageAlt={t("navigation.notificationModal.emptyStateImageAlt")}
+          emptyStateMessage={t("navigation.notificationModal.emptyStateMessage")}
+          emptyStateDescription={t("navigation.notificationModal.emptyStateDescription")}
+          actionButtonLabel={t("navigation.notificationModal.actionButtonLabel")}
+        />
       </NotificationButton>
       <ProfileModal
         icon={<PersonIcon />}
         sections={sections}
-        section={''}
+        section={""}
         translations={{
-          saveAsDefault: t('navigation.profile.saveAsDefault'),
+          saveAsDefault: t("navigation.profile.saveAsDefault"),
         }}
         currentRole={currentRole}
         currentWarehouse={currentWarehouse}

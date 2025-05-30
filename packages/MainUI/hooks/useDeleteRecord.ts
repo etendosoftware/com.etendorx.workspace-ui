@@ -1,8 +1,8 @@
-import { useCallback, useRef, useState } from 'react';
-import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { useUserContext } from './useUserContext';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { useTranslation } from './useTranslation';
+import { useCallback, useRef, useState } from "react";
+import type { EntityData, Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import { useUserContext } from "./useUserContext";
+import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import { useTranslation } from "./useTranslation";
 
 export interface UseDeleteRecordParams {
   tab: Tab;
@@ -23,12 +23,12 @@ export const useDeleteRecord = ({ tab, onSuccess, onError }: UseDeleteRecordPara
       const records = Array.isArray(recordOrRecords) ? recordOrRecords : [recordOrRecords];
 
       if (records.length === 0) {
-        onError?.(t('status.noRecordsError'));
+        onError?.(t("status.noRecordsError"));
         return false;
       }
 
       if (!tab || !tab.entityName) {
-        onError?.(t('status.noEntityError'));
+        onError?.(t("status.noEntityError"));
         return false;
       }
 
@@ -38,44 +38,44 @@ export const useDeleteRecord = ({ tab, onSuccess, onError }: UseDeleteRecordPara
         controller.current.abort();
         controller.current = new AbortController();
 
-        const deletePromises = records.map(record => {
+        const deletePromises = records.map((record) => {
           if (!record || !record.id) {
-            throw new Error(t('status.noIdError'));
+            throw new Error(t("status.noIdError"));
           }
 
           const queryParams = new URLSearchParams({
             windowId: String(tab.window),
             tabId: String(tab.id),
-            moduleId: String(tab.module || '0'),
-            _operationType: 'remove',
-            _noActiveFilter: 'true',
-            sendOriginalIDBack: 'true',
-            _extraProperties: '',
-            Constants_FIELDSEPARATOR: '$',
-            _className: 'OBViewDataSource',
-            Constants_IDENTIFIER: '_identifier',
-            csrfToken: userId || '',
+            moduleId: String(tab.module || "0"),
+            _operationType: "remove",
+            _noActiveFilter: "true",
+            sendOriginalIDBack: "true",
+            _extraProperties: "",
+            Constants_FIELDSEPARATOR: "$",
+            _className: "OBViewDataSource",
+            Constants_IDENTIFIER: "_identifier",
+            csrfToken: userId || "",
             id: String(record.id),
           });
 
           const url = `/${tab.entityName}?${queryParams}`;
 
           return Metadata.datasourceServletClient.request(url, {
-            method: 'DELETE',
+            method: "DELETE",
             signal: controller.current.signal,
           });
         });
 
         const responses = await Promise.allSettled(deletePromises);
 
-        const errors = responses.filter(response => response.status === 'rejected') as PromiseRejectedResult[];
+        const errors = responses.filter((response) => response.status === "rejected") as PromiseRejectedResult[];
 
         if (errors.length > 0) {
-          const errorMessages = errors.map(err =>
+          const errorMessages = errors.map((err) =>
             err.reason instanceof Error ? err.reason.message : String(err.reason),
           );
 
-          throw new Error(errorMessages.join('; '));
+          throw new Error(errorMessages.join("; "));
         }
 
         setLoading(false);
@@ -88,7 +88,7 @@ export const useDeleteRecord = ({ tab, onSuccess, onError }: UseDeleteRecordPara
       } catch (err) {
         setLoading(false);
 
-        if (err instanceof Error && err.name === 'AbortError') {
+        if (err instanceof Error && err.name === "AbortError") {
           return false;
         }
 

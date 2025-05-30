@@ -1,8 +1,8 @@
-import { ProcessButton, ProcessResponse } from '@/components/ProcessModal/types';
-import { ExecuteProcessParams } from './types';
-import { BaseFieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
-import { FieldType } from '@workspaceui/etendohookbinder/src/api/types';
-import { logger } from '@/utils/logger';
+import type { ProcessButton, ProcessResponse } from "@/components/ProcessModal/types";
+import { logger } from "@/utils/logger";
+import type { BaseFieldDefinition } from "@workspaceui/etendohookbinder/src/api/types";
+import type { FieldType } from "@workspaceui/etendohookbinder/src/api/types";
+import type { ExecuteProcessParams } from "./types";
 
 export const useProcessButton = (
   executeProcess: (params: ExecuteProcessParams) => Promise<ProcessResponse>,
@@ -10,26 +10,26 @@ export const useProcessButton = (
 ) => {
   const handleProcessClick = async (btn: ProcessButton, recordId: string | undefined): Promise<ProcessResponse> => {
     if (!recordId) {
-      throw new Error('No record selected');
+      throw new Error("No record selected");
     }
-    
+
     const processParams =
-    Object.values(btn.processInfo?.parameters || {})?.reduce(
-        (acc, param) => ({
-          ...acc,
-          [param.id]: param.defaultValue ?? null,
-        }),
-        {},
+      Object.values(btn.processInfo?.parameters || {})?.reduce(
+        (acc, param) => {
+          acc[param.id] = param.defaultValue ?? null;
+          return acc;
+        },
+        {} as Record<string, unknown>,
       ) || {};
 
-      const recordIdField: BaseFieldDefinition<string> = {
-        value: recordId,
-      type: 'string' as FieldType,
-      label: 'Record ID',
-      name: 'recordId',
+    const recordIdField: BaseFieldDefinition<string> = {
+      value: recordId,
+      type: "string" as FieldType,
+      label: "Record ID",
+      name: "recordId",
       original: {} as never,
     };
-    
+
     try {
       const result = await executeProcess({
         button: btn,
@@ -43,16 +43,16 @@ export const useProcessButton = (
 
       return result;
     } catch (error) {
-      logger.warn('Error executing process', error);
+      logger.warn("Error executing process", error);
 
-      const message = error instanceof Error ? error?.message : 'Unknown error occurred';
+      const message = error instanceof Error ? error?.message : "Unknown error occurred";
 
       return {
         responseActions: [
           {
             showMsgInProcessView: {
-              msgType: 'error',
-              msgTitle: 'Error',
+              msgType: "error",
+              msgTitle: "Error",
               msgText: message,
             },
           },

@@ -1,27 +1,27 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use client';
-import React, { useState, useRef, useEffect, useCallback, useMemo, ReactElement } from 'react';
-import { Tabs, Tab, Box, MenuItem, Typography } from '@mui/material';
-import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
-import TabLabel from './components/TabLabel';
-import { useStyle } from './styles';
-import { SecondaryTabsProps, TabContent } from './types';
-import IconButton from '../IconButton';
-import Menu from '../Menu';
+"use client";
+import React, { useState, useRef, useEffect, useCallback, useMemo, type ReactElement } from "react";
+import { Tabs, Tab, Box, MenuItem, Typography } from "@mui/material";
+import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight";
+import TabLabel from "./components/TabLabel";
+import { useStyle } from "./styles";
+import type { SecondaryTabsProps, TabContent } from "./types";
+import IconButton from "../IconButton";
+import Menu from "../Menu";
 
 const tabSize = 150;
 
-const renderIcon = (icon: TabContent['icon'], style: React.CSSProperties | undefined): ReactElement => {
+const renderIcon = (icon: TabContent["icon"], style: React.CSSProperties | undefined): ReactElement => {
   const safeStyle = style || {};
   if (React.isValidElement<{ style?: React.CSSProperties }>(icon)) {
     return React.cloneElement(icon, {
       style: { ...icon.props.style, ...safeStyle },
     });
   }
-  if (typeof icon === 'string') {
+  if (typeof icon === "string") {
     return <Typography style={safeStyle}>{icon}</Typography>;
   }
-  if (typeof icon === 'function') {
+  if (typeof icon === "function") {
     return icon({ style: safeStyle });
   }
   return <></>;
@@ -45,8 +45,8 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
 
   useEffect(() => {
     updateVisibleCount();
-    window.addEventListener('resize', updateVisibleCount);
-    return () => window.removeEventListener('resize', updateVisibleCount);
+    window.addEventListener("resize", updateVisibleCount);
+    return () => window.removeEventListener("resize", updateVisibleCount);
   }, [updateVisibleCount]);
 
   const handleChange = useCallback(

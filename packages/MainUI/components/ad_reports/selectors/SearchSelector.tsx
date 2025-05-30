@@ -1,10 +1,10 @@
-import { useCallback, useMemo, useEffect, useState } from 'react';
-import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
-import { useTheme } from '@mui/material';
-import { Option, SearchSelectorProps } from '../../Form/FormView/types';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
-import { useComboSelect } from '@/hooks/useComboSelect';
+import { useCallback, useMemo, useEffect, useState } from "react";
+import SearchOutlined from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
+import { useTheme } from "@mui/material";
+import type { Option, SearchSelectorProps } from "../../Form/FormView/types";
+import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
+import Select from "@workspaceui/componentlibrary/src/components/Input/Select";
+import { useComboSelect } from "@/hooks/useComboSelect";
 
 const getOptionLabel = (option: Option) => option.title;
 
@@ -18,9 +18,9 @@ const SearchSelector = ({ onChange, value, field, name, disabled, readOnly }: Se
   const isDisabled = disabled || readOnly;
 
   const options = useMemo(() => {
-    const valueField = (field.selector?.valueField ?? '') as string;
+    const valueField = (field.selector?.valueField ?? "") as string;
 
-    return records.map(record => ({
+    return records.map((record) => ({
       id: record[valueField] as string,
       title: (record._identifier || record.name || record.id) as string,
       value: record[valueField] as string,
@@ -29,8 +29,8 @@ const SearchSelector = ({ onChange, value, field, name, disabled, readOnly }: Se
 
   useEffect(() => {
     if (value && options.length > 0) {
-      const option = options.find(opt => {
-        if (typeof value === 'object' && 'id' in value) {
+      const option = options.find((opt) => {
+        if (typeof value === "object" && "id" in value) {
           return opt.id === value.id || opt.value === value.id;
         }
         return opt.id === String(value) || opt.value === String(value);

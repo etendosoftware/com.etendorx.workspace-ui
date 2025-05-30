@@ -1,21 +1,21 @@
 enum Container {
-  Auto = 'auto',
+  Auto = "auto",
 }
 
 enum Position {
-  Center = 'center',
-  Top = 'top',
-  Bottom = 'bottom',
-  Left = 'left',
-  Right = 'right',
+  Center = "center",
+  Top = "top",
+  Bottom = "bottom",
+  Left = "left",
+  Right = "right",
 }
 
 enum Item {
-  Role = 'Role',
-  Client = 'Client',
-  Organization = 'Organization',
-  Warehouse = 'Warehouse',
-  Language = 'Language',
+  Role = "Role",
+  Client = "Client",
+  Organization = "Organization",
+  Warehouse = "Warehouse",
+  Language = "Language",
 }
 
 export { Container, Position, Item };

@@ -1,5 +1,5 @@
-import { cleanDefaultClasses } from '../../utils/classUtil';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { cleanDefaultClasses } from "../../utils/classUtil";
 
 export interface IMenuProps {
   open: boolean;
@@ -9,7 +9,7 @@ export interface IMenuProps {
   className?: string;
 }
 
-const Menu = ({ open, onClose, anchorEl, className = '', children }: IMenuProps) => {
+const Menu = ({ open, onClose, anchorEl, className = "", children }: IMenuProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [show, setShow] = useState(open);
@@ -54,7 +54,7 @@ const Menu = ({ open, onClose, anchorEl, className = '', children }: IMenuProps)
   }, [show, calculatePosition]);
 
   const onTransitionEnd = (event: React.TransitionEvent<HTMLDivElement>) => {
-    if (event.propertyName === 'opacity' && !isVisible) {
+    if (event.propertyName === "opacity" && !isVisible) {
       setShow(false);
     }
   };
@@ -72,26 +72,26 @@ const Menu = ({ open, onClose, anchorEl, className = '', children }: IMenuProps)
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' || event.key === 'Esc') {
+      if (event.key === "Escape" || event.key === "Esc") {
         onClose();
       }
     };
 
-    window.addEventListener('mousedown', handleClickOutside);
-    window.addEventListener('resize', calculatePosition);
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("resize", calculatePosition);
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('resize', calculatePosition);
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("resize", calculatePosition);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [onClose, show, calculatePosition]);
 
   if (!show) return null;
 
   const DEFAULT_MENU_CLASSES = `fixed z-[999] bg-white shadow-xl shadow-black/40 transition-opacity duration-100 ${
-    isVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+    isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
   }`;
 
   return (

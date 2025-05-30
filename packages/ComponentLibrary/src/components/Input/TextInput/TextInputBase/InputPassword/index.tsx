@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useCallback, useState } from 'react';
-import { Icon, useTheme } from '@mui/material';
-import { VisibilityOutlined, VisibilityOffOutlined } from '@mui/icons-material';
-import TextInputBase from '../TextInputBase';
-import { TextInputProps } from '../../TextInputAutocomplete/TextInputComplete.types';
+import { useCallback, useState } from "react";
+import { Icon, useTheme } from "@mui/material";
+import { VisibilityOutlined, VisibilityOffOutlined } from "@mui/icons-material";
+import TextInputBase from "../TextInputBase";
+import type { TextInputProps } from "../../TextInputAutocomplete/TextInputComplete.types";
 
 const InputPassword = (props: TextInputProps) => {
   const theme = useTheme();
@@ -13,7 +13,7 @@ const InputPassword = (props: TextInputProps) => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
   const handleClickShowPassword = useCallback(() => {
-    setShowPassword(prev => !prev);
+    setShowPassword((prev) => !prev);
   }, []);
 
   const handleMouseDownPassword = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
@@ -27,7 +27,7 @@ const InputPassword = (props: TextInputProps) => {
       label={label}
       leftIcon={leftIcon}
       onLeftIconClick={onLeftIconClick}
-      type={showPassword ? 'text' : 'password'}
+      type={showPassword ? "text" : "password"}
       rightIcon={
         <Icon
           aria-label="toggle password visibility"

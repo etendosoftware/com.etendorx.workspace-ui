@@ -1,39 +1,36 @@
 import {
-  FieldType,
-  FormMode,
   type EntityData,
   type Field,
+  FieldType,
+  FormMode,
   type Tab,
   type WindowMetadata,
-} from '@workspaceui/etendohookbinder/src/api/types';
+} from "@workspaceui/etendohookbinder/src/api/types";
 
-export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const getFieldReference = (reference?: string): FieldType => {
   switch (reference) {
-    case '19':
-    case '95E2A8B50A254B2AAE6774B8C2F28120':
-    case '18':
+    case "19":
+    case "95E2A8B50A254B2AAE6774B8C2F28120":
+    case "18":
       return FieldType.TABLEDIR;
-    case '15':
-    case '16':
+    case "15":
+    case "16":
       return FieldType.DATE;
-    case '20':
+    case "20":
       return FieldType.BOOLEAN;
-    case '29':
+    case "29":
       return FieldType.QUANTITY;
-    case '17':
-    case '13':
+    case "17":
+    case "13":
       return FieldType.LIST;
-    case '28':
+    case "28":
       return FieldType.BUTTON;
-    case '30':
+    case "30":
       return FieldType.SELECT;
-    case 'FF80818132D8F0F30132D9BC395D0038':
+    case "FF80818132D8F0F30132D9BC395D0038":
       return FieldType.WINDOW;
-    case '12':
-    case '11':
-    case '22':
     default:
       return FieldType.TEXT;
   }
@@ -42,15 +39,15 @@ export const getFieldReference = (reference?: string): FieldType => {
 export const sanitizeValue = (value: unknown, field?: Field) => {
   const reference = getFieldReference(field?.column?.reference);
 
-  if (reference == FieldType.DATE) {
+  if (reference === FieldType.DATE) {
     return value ? String(value).split("-").toReversed().join("-") : null;
   }
 
   const stringValue = String(value);
 
   const valueMap = {
-    true: 'Y',
-    false: 'N',
+    true: "Y",
+    false: "N",
     null: null,
   } as const;
 
@@ -105,17 +102,17 @@ export const buildQueryString = ({
   mode: FormMode;
 }) =>
   new URLSearchParams({
-    windowId: String(windowMetadata?.id || ''),
+    windowId: String(windowMetadata?.id || ""),
     tabId: String(tab.id),
     moduleId: String(tab.module),
-    _operationType: mode === FormMode.NEW ? 'add' : 'update',
+    _operationType: mode === FormMode.NEW ? "add" : "update",
     _noActiveFilter: String(true),
     sendOriginalIDBack: String(true),
-    _extraProperties: '',
-    Constants_FIELDSEPARATOR: '$',
-    _className: 'OBViewDataSource',
-    Constants_IDENTIFIER: '_identifier',
-    isc_dataFormat: 'json',
+    _extraProperties: "",
+    Constants_FIELDSEPARATOR: "$",
+    _className: "OBViewDataSource",
+    Constants_IDENTIFIER: "_identifier",
+    isc_dataFormat: "json",
   });
 
 export const buildFormPayload = ({
@@ -129,9 +126,9 @@ export const buildFormPayload = ({
   mode: FormMode;
   csrfToken: string;
 }) => ({
-  dataSource: 'isc_OBViewDataSource_0',
-  operationType: mode === FormMode.NEW ? 'add' : 'update',
-  componentId: 'isc_OBViewForm_0',
+  dataSource: "isc_OBViewDataSource_0",
+  operationType: mode === FormMode.NEW ? "add" : "update",
+  componentId: "isc_OBViewForm_0",
   data: {
     accountingDate: new Date(),
     ...values,
@@ -148,7 +145,7 @@ export const buildRequestOptions = (
   signal: AbortSignal,
 ) => ({
   signal,
-  method: 'POST',
+  method: "POST",
   body: buildFormPayload({ values, oldValues: initialState, mode, csrfToken: userId }),
 });
 

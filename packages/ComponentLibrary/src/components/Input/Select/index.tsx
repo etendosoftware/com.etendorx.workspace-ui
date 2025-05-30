@@ -1,22 +1,23 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import CancelIcon from "@mui/icons-material/Cancel";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Autocomplete,
-  AutocompleteRenderInputParams,
+  type AutocompleteRenderInputParams,
   FormHelperText,
   InputAdornment,
   Paper,
-  PaperProps,
+  type PaperProps,
   TextField,
   Typography,
   useTheme,
-} from '@mui/material';
-import { useStyle } from './style';
-import CancelIcon from '@mui/icons-material/Cancel';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { ISelectInput, Option } from './types';
+} from "@mui/material";
+import type React from "react";
+import { useState } from "react";
+import { useStyle } from "./style";
+import type { ISelectInput, Option } from "./types";
 
 type OptionProps = React.HTMLAttributes<HTMLLIElement> & { key?: string };
 
@@ -31,7 +32,7 @@ const Select: React.FC<ISelectInput> = ({
 }) => {
   const { sx } = useStyle();
   const theme = useTheme();
-  const [inputValue, setInputValue] = useState<string>('');
+  const [inputValue, setInputValue] = useState<string>("");
   const [focused, setFocused] = useState<boolean>(false);
 
   const CustomPaper: React.FC<PaperProps> = (paperProps) => {
@@ -48,7 +49,7 @@ const Select: React.FC<ISelectInput> = ({
 
   const handleBlur = () => {
     setFocused(false);
-    setInputValue('');
+    setInputValue("");
   };
 
   const handleSelectionChange = (event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
@@ -57,7 +58,7 @@ const Select: React.FC<ISelectInput> = ({
 
   const getBackgroundFocus = (): string => {
     if (!focused || inputValue) {
-      return 'transparent';
+      return "transparent";
     }
     return theme.palette.baselineColor.neutral[0];
   };
@@ -67,8 +68,8 @@ const Select: React.FC<ISelectInput> = ({
       {...params}
       sx={{
         ...sx.root,
-        '& .MuiInput-root': {
-          ...sx.root['& .MuiInput-root'],
+        "& .MuiInput-root": {
+          ...sx.root["& .MuiInput-root"],
           backgroundColor: getBackgroundFocus(),
         },
       }}

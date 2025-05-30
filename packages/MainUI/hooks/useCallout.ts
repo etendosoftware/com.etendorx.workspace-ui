@@ -1,9 +1,9 @@
-import { useCallback } from 'react';
-import { Field, FormInitializationResponse } from '@workspaceui/etendohookbinder/src/api/types';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { FieldValues } from 'react-hook-form';
-import { logger } from '@/utils/logger';
-import { useTabContext } from '@/contexts/tab';
+import { useCallback } from "react";
+import type { Field, FormInitializationResponse } from "@workspaceui/etendohookbinder/src/api/types";
+import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import type { FieldValues } from "react-hook-form";
+import { logger } from "@/utils/logger";
+import { useTabContext } from "@/contexts/tab";
 
 export interface UseCalloutProps {
   field: Field;
@@ -11,12 +11,12 @@ export interface UseCalloutProps {
   rowId?: string;
 }
 
-const ACTION = 'org.openbravo.client.application.window.FormInitializationComponent';
-const MODE = 'CHANGE';
+const ACTION = "org.openbravo.client.application.window.FormInitializationComponent";
+const MODE = "CHANGE";
 
-export const useCallout = ({ field, parentId = 'null', rowId = 'null' }: UseCalloutProps) => {
+export const useCallout = ({ field, parentId = "null", rowId = "null" }: UseCalloutProps) => {
   const { tab } = useTabContext();
-  const tabId = tab?.id ?? '';
+  const tabId = tab?.id ?? "";
 
   return useCallback(
     async (payload: FieldValues) => {

@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Box, Grid, Card, CardContent, Typography, Button, TextField, useTheme } from '@mui/material';
-import Modal from '@workspaceui/componentlibrary/src/components/BasicModal';
-import CloseIcon from '@workspaceui/componentlibrary/src/assets/icons/x.svg';
-import NoteIcon from '@workspaceui/componentlibrary/src/assets/icons/note.svg';
-import PlusIcon from '@workspaceui/componentlibrary/src/assets/icons/plus-circle.svg';
-import { Note, NoteSectionProps } from '../types';
-import { noteColors, useStyle } from '../styles';
-import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
+import { useState, useEffect } from "react";
+import { Box, Grid, Card, CardContent, Typography, Button, TextField, useTheme } from "@mui/material";
+import Modal from "@workspaceui/componentlibrary/src/components/BasicModal";
+import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
+import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
+import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus-circle.svg";
+import type { Note, NoteSectionProps } from "../types";
+import { noteColors, useStyle } from "../styles";
+import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 
 const NoteSection = ({
   sectionId,
@@ -19,7 +19,7 @@ const NoteSection = ({
   const { sx } = useStyle();
   const theme = useTheme();
   const [notes, setNotes] = useState<Note[]>([]);
-  const [newNote, setNewNote] = useState('');
+  const [newNote, setNewNote] = useState("");
 
   useEffect(() => {
     const storedNotes = sessionStorage.getItem(`notes-${sectionId}`);
@@ -44,12 +44,12 @@ const NoteSection = ({
       const updatedNotes = [...notes, newNoteObj];
       setNotes(updatedNotes);
       sessionStorage.setItem(`notes-${sectionId}`, JSON.stringify(updatedNotes));
-      setNewNote('');
+      setNewNote("");
     }
   };
 
   const deleteNote = (id: string) => {
-    const updatedNotes = notes.filter(note => note.id !== id);
+    const updatedNotes = notes.filter((note) => note.id !== id);
     setNotes(updatedNotes);
     sessionStorage.setItem(`notes-${sectionId}`, JSON.stringify(updatedNotes));
   };
@@ -77,7 +77,7 @@ const NoteSection = ({
               multiline
               rows={4}
               value={newNote}
-              onChange={e => setNewNote(e.target.value)}
+              onChange={(e) => setNewNote(e.target.value)}
               placeholder={noteInputPlaceholder}
             />
             <Button onClick={addNote} variant="contained" sx={{ mt: 2 }}>
@@ -85,7 +85,7 @@ const NoteSection = ({
             </Button>
           </Modal>
         </Grid>
-        {notes.map(note => (
+        {notes.map((note) => (
           <Grid item xs={6} key={note.id}>
             <Card sx={{ ...sx.noteCard, backgroundColor: note.color }}>
               <CardContent sx={sx.noteCardContent}>

@@ -1,11 +1,11 @@
-import Label from '@/components/Label';
-import GenericSelector from './GenericSelector';
-import { ProcessParameter } from '@workspaceui/etendohookbinder/src/api/types';
-import { useMemo } from 'react';
-import { useUserContext } from '@/hooks/useUserContext';
-import { compileExpression } from '@/components/Form/FormView/selectors/BaseSelector';
-import { useForm } from 'react-hook-form';
-import { logger } from '@/utils/logger';
+import Label from "@/components/Label";
+import GenericSelector from "./GenericSelector";
+import type { ProcessParameter } from "@workspaceui/etendohookbinder/src/api/types";
+import { useMemo } from "react";
+import { useUserContext } from "@/hooks/useUserContext";
+import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
+import { useForm } from "react-hook-form";
+import { logger } from "@/utils/logger";
 
 const BaseSelector = ({ parameter }: { parameter: ProcessParameter }) => {
   const { session } = useUserContext();
@@ -18,14 +18,14 @@ const BaseSelector = ({ parameter }: { parameter: ProcessParameter }) => {
     try {
       return compiledExpr(session, getValues());
     } catch (error) {
-      logger.warn('Error executing expression:', compiledExpr, error);
+      logger.warn("Error executing expression:", compiledExpr, error);
 
       return true;
     }
   }, [getValues, parameter.readOnlyLogicExpression, session]);
 
   return (
-    <div className="flex flex-col gap-4 items-start justify-start" title={'description'}>
+    <div className="flex flex-col gap-4 items-start justify-start" title={"description"}>
       <div className="relative pr-2">
         {parameter.mandatory && (
           <span className="absolute -top-1 right-0 text-[#DC143C] font-bold" aria-required>

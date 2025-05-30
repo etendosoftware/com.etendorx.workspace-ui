@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 export interface Item {
   name: string;
@@ -22,7 +22,7 @@ export interface TabContent {
 export interface SearchModalProps {
   defaultContent?: Section[];
   tabsContent: TabContent[];
-  variant: 'default' | 'tabs';
+  variant: "default" | "tabs";
 }
 
 export interface DefaultContentProps {

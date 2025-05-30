@@ -1,12 +1,12 @@
-import { useCallback, useMemo, useState } from 'react';
-import { Dialog, DialogContent, DialogActions, Button, Box, Typography } from '@mui/material';
-import { MaterialReactTable, MRT_Row } from 'material-react-table';
-import { SelectorTableProps, MultiSelectProps, TableData, Option } from '../../../Form/FormView/types';
-import { useStyle } from '@/components/Table/styles';
-import { DEFAULT_COLUMNS, TABLE_INITIAL_STATE, DIALOG_PROPS } from './constants';
-import { SelectedItemsContainer } from './SelectedItemsContainer';
-import { SearchBar } from './SearchBar';
-import { useDatasource } from '@/hooks/useDatasource';
+import { useStyle } from "@/components/Table/styles";
+import { useDatasource } from "@/hooks/useDatasource";
+import { Box, Button, Dialog, DialogActions, DialogContent, Typography } from "@mui/material";
+import { type MRT_Row, MaterialReactTable } from "material-react-table";
+import { useCallback, useMemo, useState } from "react";
+import type { MultiSelectProps, Option, SelectorTableProps, TableData } from "../../../Form/FormView/types";
+import { SearchBar } from "./SearchBar";
+import { SelectedItemsContainer } from "./SelectedItemsContainer";
+import { DEFAULT_COLUMNS, DIALOG_PROPS, TABLE_INITIAL_STATE } from "./constants";
 
 const SelectorTable: React.FC<SelectorTableProps & { selectedIds: string[] }> = ({
   data,
@@ -23,7 +23,8 @@ const SelectorTable: React.FC<SelectorTableProps & { selectedIds: string[] }> = 
       data={data}
       enableRowSelection
       enableMultiRowSelection={false}
-      getRowId={row => String(row.id)}
+      getRowId={(row) => String(row.id)}
+      // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
       state={{ rowSelection: selectedIds.reduce((acc, id) => ({ ...acc, [id]: true }), {}) }}
       renderTopToolbarCustomActions={() => (
         <Box sx={sx.titleContainer}>
@@ -34,7 +35,7 @@ const SelectorTable: React.FC<SelectorTableProps & { selectedIds: string[] }> = 
         onClick: () => onRowClick(row),
         sx: {
           ...sx.tableBody,
-          cursor: 'pointer',
+          cursor: "pointer",
         },
       })}
       muiTablePaperProps={{
@@ -76,16 +77,16 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
     const typedRecords = records as TableData[];
 
     return typedRecords
-      .filter(record => normalizeValue(value).includes(String(record.id)))
-      .map(record => ({
+      .filter((record) => normalizeValue(value).includes(String(record.id)))
+      .map((record) => ({
         id: String(record.id),
-        title: String(record._identifier || record.name || ''),
+        title: String(record._identifier || record.name || ""),
         value: String(record.id),
       }));
   }, [value, records]);
 
   const selectedIds = useMemo(() => {
-    return selectedOptions.map(option => option.id);
+    return selectedOptions.map((option) => option.id);
   }, [selectedOptions]);
 
   const tableData = useMemo(() => {
@@ -98,22 +99,24 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
       const record = row.original;
       const option: Option = {
         id: String(record.id),
-        title: String(record._identifier || record.name || ''),
+        title: String(record._identifier || record.name || ""),
         value: String(record.id),
       };
 
-      const exists = selectedOptions.some(item => item.id === option.id);
-      const newOptions = exists ? selectedOptions.filter(item => item.id !== option.id) : [...selectedOptions, option];
+      const exists = selectedOptions.some((item) => item.id === option.id);
+      const newOptions = exists
+        ? selectedOptions.filter((item) => item.id !== option.id)
+        : [...selectedOptions, option];
 
-      onChange(newOptions.map(opt => opt.id));
+      onChange(newOptions.map((opt) => opt.id));
     },
     [onChange, selectedOptions],
   );
 
   const handleRemoveItem = useCallback(
     (id: string) => {
-      const newOptions = selectedOptions.filter(item => item.id !== id);
-      onChange(newOptions.map(opt => opt.id));
+      const newOptions = selectedOptions.filter((item) => item.id !== id);
+      onChange(newOptions.map((opt) => opt.id));
     },
     [onChange, selectedOptions],
   );
@@ -142,7 +145,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
             data={tableData}
             onRowClick={handleRowClick}
             columns={columns}
-            title={title || ''}
+            title={title || ""}
             selectedIds={selectedIds}
           />
         </DialogContent>

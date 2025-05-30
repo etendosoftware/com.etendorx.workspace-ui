@@ -1,6 +1,6 @@
-import { Field } from '@workspaceui/etendohookbinder/src/api/types';
-import { useFormContext } from 'react-hook-form';
-import { DateInput } from './components/DateInput';
+import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import { useFormContext } from "react-hook-form";
+import { DateInput } from "./components/DateInput";
 
 export const DateSelector = ({ field, isReadOnly }: { field: Field; isReadOnly?: boolean }) => {
   const { register } = useFormContext();

@@ -1,14 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
-import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
-import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
-import { ListSelectorProps } from '../../Form/FormView/types';
-import { useTheme } from '@mui/material';
+import type React from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Select from "@workspaceui/componentlibrary/src/components/Input/Select";
+import SearchOutlined from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
+import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
+import type { ListSelectorProps } from "../../Form/FormView/types";
+import { useTheme } from "@mui/material";
 
 const ListSelector: React.FC<ListSelectorProps> = ({ field, value, onChange, readOnly }) => {
   const [selectedValue, setSelectedValue] = useState<Option | null>(() => {
     if (field.refList) {
-      const option = field.refList.find(item => item.value === value);
+      const option = field.refList.find((item) => item.value === value);
 
       if (option) {
         return {
@@ -25,7 +26,7 @@ const ListSelector: React.FC<ListSelectorProps> = ({ field, value, onChange, rea
 
   const options: Option[] = useMemo(() => {
     if (field.refList) {
-      return field.refList.map(item => ({
+      return field.refList.map((item) => ({
         id: item.id,
         title: item.label,
         value: item.value,
@@ -35,7 +36,7 @@ const ListSelector: React.FC<ListSelectorProps> = ({ field, value, onChange, rea
   }, [field.refList]);
 
   useEffect(() => {
-    setSelectedValue(options.find(option => option.value === value) || null);
+    setSelectedValue(options.find((option) => option.value === value) || null);
   }, [value, options]);
 
   const handleChange = useCallback(

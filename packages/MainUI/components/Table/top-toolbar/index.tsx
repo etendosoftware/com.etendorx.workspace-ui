@@ -1,10 +1,10 @@
-import { FilterAlt, FilterAltOff } from '@mui/icons-material';
-import useStyle from './styles';
-import { Box, Button, Chip, Stack, Typography } from '@mui/material';
-import { useTranslation } from '@/hooks/useTranslation';
-import { useCallback, useMemo } from 'react';
-import { MRT_TableInstance } from 'material-react-table';
-import { EntityData } from '@workspaceui/etendohookbinder/src/api/types';
+import { FilterAlt, FilterAltOff } from "@mui/icons-material";
+import useStyle from "./styles";
+import { Box, Button, Chip, Stack, Typography } from "@mui/material";
+import { useTranslation } from "@/hooks/useTranslation";
+import { useCallback, useMemo } from "react";
+import type { MRT_TableInstance } from "material-react-table";
+import type { EntityData } from "@workspaceui/etendohookbinder/src/api/types";
 
 export default function TopToolbar({
   filterActive,
@@ -17,10 +17,10 @@ export default function TopToolbar({
 }) {
   const styles = useStyle();
   const { t } = useTranslation();
-  const label = t(filterActive ? 'table.tooltips.implicitFilterOn' : 'table.tooltips.implicitFilterOff');
+  const label = t(filterActive ? "table.tooltips.implicitFilterOn" : "table.tooltips.implicitFilterOff");
   const rowSelection = table.getState().rowSelection;
   const selectedCount = useMemo(() => Object.keys(rowSelection).length, [rowSelection]);
-  const selectionLabel = t(selectedCount === 1 ? 'table.selection.single' : 'table.selection.multiple');
+  const selectionLabel = t(selectedCount === 1 ? "table.selection.single" : "table.selection.multiple");
   const handleClearSelection = useCallback(() => table.setRowSelection({}), [table]);
 
   return (
@@ -30,7 +30,7 @@ export default function TopToolbar({
           <Stack direction="row" spacing={1} alignItems="center" pl={1}>
             <Chip label={`${selectedCount} ${selectionLabel}`} color="primary" />
             <Button size="small" onClick={handleClearSelection} variant="outlined">
-              {t('common.clear')}
+              {t("common.clear")}
             </Button>
           </Stack>
         )}

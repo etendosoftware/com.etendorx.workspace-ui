@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "CommonJS",               // Set module system to CommonJS
-    "outDir": "./dist/cjs"              // Output CommonJS files to a subdirectory
+    "module": "CommonJS",
+    "outDir": "./dist/cjs"
   }
 }

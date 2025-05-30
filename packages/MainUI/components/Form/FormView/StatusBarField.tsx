@@ -1,11 +1,11 @@
-import { formatNumber, getFieldReference } from '@/utils';
-import { Field, FieldType } from '@workspaceui/etendohookbinder/src/api/types';
-import { useMemo } from 'react';
-import { useFormContext } from 'react-hook-form';
+import { formatNumber, getFieldReference } from "@/utils";
+import { type Field, FieldType } from "@workspaceui/etendohookbinder/src/api/types";
+import { useMemo } from "react";
+import { useFormContext } from "react-hook-form";
 
 export default function StatusBarField({ field }: { field: Field }) {
   const { register, watch } = useFormContext();
-  const [value, identifier] = watch([field.hqlName, field.hqlName + '$_identifier']);
+  const [value, identifier] = watch([field.hqlName, `${field.hqlName}$_identifier`]);
   const displayValue = useMemo(() => {
     if (identifier) {
       return identifier;
@@ -17,7 +17,7 @@ export default function StatusBarField({ field }: { field: Field }) {
       case FieldType.DATE:
         return new Date(value).toLocaleDateString();
       case FieldType.BOOLEAN:
-        return value ? 'Y' : 'N';
+        return value ? "Y" : "N";
       case FieldType.NUMBER:
       case FieldType.QUANTITY:
         return formatNumber(value);

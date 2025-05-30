@@ -1,17 +1,17 @@
-import { useMemo, memo } from 'react';
-import { Box, Typography, useTheme } from '@mui/material';
-import { Modal } from '..';
-import SaveIcon from '../../assets/icons/trash.svg';
-import { useStyle } from '../StatusModal/styles';
-import { ConfirmModalProps } from './types';
+import { useMemo, memo } from "react";
+import { Box, Typography, useTheme } from "@mui/material";
+import { Modal } from "..";
+import SaveIcon from "../../assets/icons/trash.svg";
+import { useStyle } from "../StatusModal/styles";
+import type { ConfirmModalProps } from "./types";
 
 const ConfirmModal = memo(
   ({
     confirmText,
     onConfirm,
     onCancel,
-    saveLabel = 'Confirm',
-    secondaryButtonLabel = 'Cancel',
+    saveLabel = "Confirm",
+    secondaryButtonLabel = "Cancel",
     open = true,
   }: ConfirmModalProps) => {
     const theme = useTheme();
@@ -39,6 +39,6 @@ const ConfirmModal = memo(
   },
 );
 
-ConfirmModal.displayName = 'ConfirmModal';
+ConfirmModal.displayName = "ConfirmModal";
 
 export default ConfirmModal;

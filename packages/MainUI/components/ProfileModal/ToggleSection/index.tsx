@@ -1,16 +1,16 @@
-import { useMemo, useState } from 'react';
-import { Checkbox, FormControl, FormControlLabel, Grid, styled, useTheme } from '@mui/material';
-import { useStyle } from './styles';
-import OrganizationIcon from '../../../../ComponentLibrary/src/assets/icons/user.svg';
-import ClientIcon from '../../../../ComponentLibrary/src/assets/icons/github.svg';
-import WarehouseIcon from '../../../../ComponentLibrary/src/assets/icons/warehouse.svg';
-import LockOutlined from '../../../../ComponentLibrary/src/assets/icons/lock.svg';
-import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
-import { InputPassword } from '@workspaceui/componentlibrary/src/components';
-import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
-import { SelectorListProps } from '../types';
-import { Item } from '@workspaceui/componentlibrary/src/components/enums';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useTranslation } from "@/hooks/useTranslation";
+import { Checkbox, FormControl, FormControlLabel, Grid, styled, useTheme } from "@mui/material";
+import { InputPassword } from "@workspaceui/componentlibrary/src/components";
+import Select from "@workspaceui/componentlibrary/src/components/Input/Select";
+import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
+import { Item } from "@workspaceui/componentlibrary/src/components/enums";
+import { useMemo, useState } from "react";
+import ClientIcon from "../../../../ComponentLibrary/src/assets/icons/github.svg";
+import LockOutlined from "../../../../ComponentLibrary/src/assets/icons/lock.svg";
+import OrganizationIcon from "../../../../ComponentLibrary/src/assets/icons/user.svg";
+import WarehouseIcon from "../../../../ComponentLibrary/src/assets/icons/warehouse.svg";
+import type { SelectorListProps } from "../types";
+import { useStyle } from "./styles";
 
 const isOptionEqualToValue = (option: Option, value: Option) => option.id === value.id;
 
@@ -35,9 +35,9 @@ const SelectorList: React.FC<SelectorListProps> = ({
   const { t } = useTranslation();
   const { styles, defaultFill } = useStyle();
   const theme = useTheme();
-  const [password, setPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [newPasswordConfirmation, setNewPasswordConfirmation] = useState('');
+  const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirmation, setNewPasswordConfirmation] = useState("");
 
   const FlagEmoji = ({ flag }: { flag: string }) => <span style={styles.flagStyles}>{flag}</span>;
 
@@ -50,17 +50,17 @@ const SelectorList: React.FC<SelectorListProps> = ({
   };
 
   const CustomCheckbox = styled(Checkbox)(() => ({
-    '&.Mui-checked': {
+    "&.Mui-checked": {
       color: theme.palette.dynamicColor.main,
     },
   }));
 
-  const isSystem = selectedRole?.id === '0';
+  const isSystem = selectedRole?.id === "0";
 
   const clientOptions = useMemo(() => {
     if (!selectedRole || isSystem) return [];
 
-    const client = roles.find(r => r.id === selectedRole.value)?.client;
+    const client = roles.find((r) => r.id === selectedRole.value)?.client;
     return client ? [{ title: client, value: client, id: client }] : [];
   }, [roles, selectedRole, isSystem]);
 
@@ -69,10 +69,10 @@ const SelectorList: React.FC<SelectorListProps> = ({
       return [];
     }
 
-    const role = roles.find(r => r.id === selectedRole.value);
+    const role = roles.find((r) => r.id === selectedRole.value);
     if (!role) return [];
 
-    return role.organizations.map(org => ({
+    return role.organizations.map((org) => ({
       title: org.name,
       value: org.id,
       id: org.id,
@@ -81,29 +81,31 @@ const SelectorList: React.FC<SelectorListProps> = ({
 
   const warehouses = useMemo(() => {
     if (selectedRole && !isSystem) {
-      const role = roles.find(r => r.id === selectedRole.value);
-      const org = role?.organizations.find(o => o.id === selectedOrg.value);
+      const role = roles.find((r) => r.id === selectedRole.value);
+      const org = role?.organizations.find((o) => o.id === selectedOrg.value);
 
-      if (org && org.warehouses.length) {
+      if (org?.warehouses.length) {
         return org.warehouses;
-      } else {
-        const uniqueWarehousesMap = new Map();
-
-        role?.organizations.forEach(org => {
-          org.warehouses.forEach(warehouse => {
-            uniqueWarehousesMap.set(warehouse.id, warehouse);
-          });
-        });
-
-        return Array.from(uniqueWarehousesMap.values());
       }
+
+      const uniqueWarehousesMap = new Map();
+
+      if (role) {
+        for (const org of role.organizations) {
+          for (const warehouse of org.warehouses) {
+            uniqueWarehousesMap.set(warehouse.id, warehouse);
+          }
+        }
+      }
+
+      return Array.from(uniqueWarehousesMap.values());
     }
     return [];
   }, [roles, selectedRole, selectedOrg, isSystem]);
 
   const roleOptions = useMemo(
     () =>
-      roles?.map(role => ({
+      roles?.map((role) => ({
         title: role.name,
         value: role.id,
         id: role.id,
@@ -115,7 +117,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
     () =>
       isSystem
         ? []
-        : warehouses.map(warehouse => ({
+        : warehouses.map((warehouse) => ({
             title: warehouse.name,
             value: warehouse.id,
             id: warehouse.id,
@@ -135,7 +137,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
 
   return (
     <div style={styles.selectorListStyles}>
-      {section === 'profile' && (
+      {section === "profile" && (
         <>
           <FormControl fullWidth style={styles.formStyle}>
             <Select
@@ -192,11 +194,11 @@ const SelectorList: React.FC<SelectorListProps> = ({
           />
         </>
       )}
-      {section === 'password' && (
+      {section === "password" && (
         <Grid margin="0.5rem">
           <form action="#" autoComplete="off">
             <InputPassword
-              label={t('common.notImplemented')}
+              label={t("common.notImplemented")}
               value={password}
               setValue={setPassword}
               leftIcon={<LockOutlined fill={defaultFill} />}
@@ -204,7 +206,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               disabled
             />
             <InputPassword
-              label={t('common.notImplemented')}
+              label={t("common.notImplemented")}
               value={newPassword}
               setValue={setNewPassword}
               leftIcon={<LockOutlined fill={defaultFill} />}
@@ -212,7 +214,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               disabled
             />
             <InputPassword
-              label={t('common.notImplemented')}
+              label={t("common.notImplemented")}
               value={newPasswordConfirmation}
               setValue={setNewPasswordConfirmation}
               leftIcon={<LockOutlined fill={defaultFill} />}

@@ -1,4 +1,4 @@
-import { BaseCriteria, Column, CompositeCriteria, MRT_ColumnFiltersState } from '../api/types';
+import type { BaseCriteria, Column, CompositeCriteria, MRT_ColumnFiltersState } from "../api/types";
 
 type FormattedValue = string | number | null;
 
@@ -9,27 +9,27 @@ interface ColumnsByType {
 }
 
 const REFERENCE_FIELDS = [
-  'organization',
-  'transactionDocument',
-  'businessPartner',
-  'partnerAddress',
-  'currency',
-  'warehouse',
+  "organization",
+  "transactionDocument",
+  "businessPartner",
+  "partnerAddress",
+  "currency",
+  "warehouse",
 ];
 
 const EXCLUDED_NUMERIC_FIELDS = [
-  'amount',
-  'price',
-  'quantity',
-  'total',
-  'paid',
-  'percentage',
-  'outstanding',
-  'days',
-  'grandTotalAmount',
+  "amount",
+  "price",
+  "quantity",
+  "total",
+  "paid",
+  "percentage",
+  "outstanding",
+  "days",
+  "grandTotalAmount",
 ];
 
-const STATUS_FIELDS = ['documentStatus'];
+const STATUS_FIELDS = ["documentStatus"];
 
 export class SearchUtils {
   private static readonly FULL_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -39,75 +39,75 @@ export class SearchUtils {
 
   private static detectValueType(value: string): keyof ColumnsByType {
     if (
-      this.FULL_DATE_PATTERN.test(value) ||
-      this.YEAR_PATTERN.test(value) ||
-      this.YEAR_MONTH_PATTERN.test(value) ||
-      this.YEAR_PARTIAL_PATTERN.test(value)
+      SearchUtils.FULL_DATE_PATTERN.test(value) ||
+      SearchUtils.YEAR_PATTERN.test(value) ||
+      SearchUtils.YEAR_MONTH_PATTERN.test(value) ||
+      SearchUtils.YEAR_PARTIAL_PATTERN.test(value)
     ) {
-      return 'date';
+      return "date";
     }
-    return 'string';
+    return "string";
   }
 
   private static getColumnType(column: Column): keyof ColumnsByType {
     const columnName = column.columnName.toLowerCase();
 
     if (EXCLUDED_NUMERIC_FIELDS.includes(columnName)) {
-      return 'string';
+      return "string";
     }
 
     if (REFERENCE_FIELDS.includes(column.columnName)) {
-      return 'reference';
+      return "reference";
     }
 
-    if (columnName.includes('date')) {
-      return 'date';
+    if (columnName.includes("date")) {
+      return "date";
     }
 
-    return 'string';
+    return "string";
   }
 
   public static getDateCriteria(fieldName: string, searchQuery: string): BaseCriteria[] {
     const criteria: BaseCriteria[] = [];
 
-    if (this.FULL_DATE_PATTERN.test(searchQuery)) {
+    if (SearchUtils.FULL_DATE_PATTERN.test(searchQuery)) {
       criteria.push({
         fieldName,
-        operator: 'equals',
+        operator: "equals",
         value: searchQuery,
       });
-    } else if (this.YEAR_MONTH_PATTERN.test(searchQuery)) {
+    } else if (SearchUtils.YEAR_MONTH_PATTERN.test(searchQuery)) {
       criteria.push({
         fieldName,
-        operator: 'greaterOrEqual',
+        operator: "greaterOrEqual",
         value: `${searchQuery}-01`,
       });
       criteria.push({
         fieldName,
-        operator: 'lessOrEqual',
+        operator: "lessOrEqual",
         value: `${searchQuery}-31`,
       });
-    } else if (this.YEAR_PATTERN.test(searchQuery)) {
+    } else if (SearchUtils.YEAR_PATTERN.test(searchQuery)) {
       criteria.push({
         fieldName,
-        operator: 'greaterOrEqual',
+        operator: "greaterOrEqual",
         value: `${searchQuery}-01-01`,
       });
       criteria.push({
         fieldName,
-        operator: 'lessOrEqual',
+        operator: "lessOrEqual",
         value: `${searchQuery}-12-31`,
       });
-    } else if (this.YEAR_PARTIAL_PATTERN.test(searchQuery)) {
+    } else if (SearchUtils.YEAR_PARTIAL_PATTERN.test(searchQuery)) {
       const year = searchQuery.slice(0, -1);
       criteria.push({
         fieldName,
-        operator: 'greaterOrEqual',
+        operator: "greaterOrEqual",
         value: `${year}-01-01`,
       });
       criteria.push({
         fieldName,
-        operator: 'lessOrEqual',
+        operator: "lessOrEqual",
         value: `${year}-12-31`,
       });
     }
@@ -118,11 +118,11 @@ export class SearchUtils {
   static createSearchCriteria(columns: Column[], searchQuery: string): CompositeCriteria[] {
     if (!searchQuery || !columns.length) return [];
 
-    const queryType = this.detectValueType(searchQuery);
+    const queryType = SearchUtils.detectValueType(searchQuery);
     const compositeCriteria: CompositeCriteria[] = [];
 
     const columnsByType = columns.reduce<ColumnsByType>((acc, column) => {
-      const type = this.getColumnType(column);
+      const type = SearchUtils.getColumnType(column);
       if (!acc[type]) {
         acc[type] = [];
       }
@@ -130,15 +130,16 @@ export class SearchUtils {
       return acc;
     }, {});
 
-    if (queryType === 'date' && columnsByType.date?.length) {
+    if (queryType === "date" && columnsByType.date?.length) {
       const dateCriteria: BaseCriteria[] = [];
-      columnsByType.date.forEach(column => {
-        dateCriteria.push(...this.getDateCriteria(column.columnName, searchQuery));
-      });
+
+      for (const column of columnsByType.date) {
+        dateCriteria.push(...SearchUtils.getDateCriteria(column.columnName, searchQuery));
+      }
 
       if (dateCriteria.length) {
         compositeCriteria.push({
-          operator: 'or',
+          operator: "or",
           criteria: dateCriteria,
         });
       }
@@ -148,34 +149,34 @@ export class SearchUtils {
     const textSearchCriteria: BaseCriteria[] = [];
 
     textSearchCriteria.push({
-      fieldName: 'documentNo',
-      operator: 'iContains',
+      fieldName: "documentNo",
+      operator: "iContains",
       value: searchQuery,
     });
 
-    REFERENCE_FIELDS.forEach(field => {
-      if (columnsByType.reference?.some(col => col.columnName === field)) {
+    for (const field of REFERENCE_FIELDS) {
+      if (columnsByType.reference?.some((col) => col.columnName === field)) {
         textSearchCriteria.push({
           fieldName: `${field}$_identifier`,
-          operator: 'iContains',
+          operator: "iContains",
           value: searchQuery,
         });
       }
-    });
+    }
 
-    STATUS_FIELDS.forEach(field => {
-      if (columns.some(col => col.columnName === field)) {
+    for (const field of STATUS_FIELDS) {
+      if (columns.some((col) => col.columnName === field)) {
         textSearchCriteria.push({
           fieldName: field,
-          operator: 'iContains',
+          operator: "iContains",
           value: searchQuery,
         });
       }
-    });
+    }
 
     if (textSearchCriteria.length) {
       compositeCriteria.push({
-        operator: 'or',
+        operator: "or",
         criteria: textSearchCriteria,
       });
     }
@@ -186,21 +187,21 @@ export class SearchUtils {
 
 export class ColumnFilterUtils {
   static isNumericField(column: Column): boolean {
-    if (column.type && typeof column.type === 'string') {
+    if (column.type && typeof column.type === "string") {
       const lowerType = column.type.toLowerCase();
 
       if (
-        lowerType.includes('amount') ||
-        lowerType.includes('price') ||
-        lowerType.includes('quantity') ||
-        lowerType === 'number' ||
-        lowerType === 'costnumber' ||
-        lowerType === 'numeric' ||
-        lowerType === 'float' ||
-        lowerType === 'integer' ||
-        lowerType === 'decimal' ||
-        lowerType === 'long' ||
-        lowerType === 'bigdecimal'
+        lowerType.includes("amount") ||
+        lowerType.includes("price") ||
+        lowerType.includes("quantity") ||
+        lowerType === "number" ||
+        lowerType === "costnumber" ||
+        lowerType === "numeric" ||
+        lowerType === "float" ||
+        lowerType === "integer" ||
+        lowerType === "decimal" ||
+        lowerType === "long" ||
+        lowerType === "bigdecimal"
       ) {
         return true;
       }
@@ -210,13 +211,13 @@ export class ColumnFilterUtils {
   }
 
   static formatValueForType(value: unknown, column: Column): FormattedValue {
-    if (value === null || value === undefined || value === '') {
+    if (value === null || value === undefined || value === "") {
       return null;
     }
 
-    if (this.isNumericField(column)) {
-      const numValue = parseFloat(String(value).replace(',', '.'));
-      if (!isNaN(numValue)) {
+    if (ColumnFilterUtils.isNumericField(column)) {
+      const numValue = Number.parseFloat(String(value).replace(",", "."));
+      if (!Number.isNaN(numValue)) {
         return numValue;
       }
       return null;
@@ -233,22 +234,22 @@ export class ColumnFilterUtils {
     const result: BaseCriteria[] = [];
 
     if (rangeFilter.from !== null && rangeFilter.from !== undefined) {
-      const formattedValue = this.formatValueForType(rangeFilter.from, column);
+      const formattedValue = ColumnFilterUtils.formatValueForType(rangeFilter.from, column);
       if (formattedValue !== null) {
         result.push({
           fieldName,
-          operator: 'greaterOrEqual',
+          operator: "greaterOrEqual",
           value: formattedValue,
         });
       }
     }
 
     if (rangeFilter.to !== null && rangeFilter.to !== undefined) {
-      const formattedValue = this.formatValueForType(rangeFilter.to, column);
+      const formattedValue = ColumnFilterUtils.formatValueForType(rangeFilter.to, column);
       if (formattedValue !== null) {
         result.push({
           fieldName,
-          operator: 'lessOrEqual',
+          operator: "lessOrEqual",
           value: formattedValue,
         });
       }
@@ -263,12 +264,12 @@ export class ColumnFilterUtils {
     const validCriteria: BaseCriteria[] = [];
 
     for (const val of values) {
-      const formattedValue = this.formatValueForType(val, column);
+      const formattedValue = ColumnFilterUtils.formatValueForType(val, column);
       if (formattedValue === null) continue;
 
       validCriteria.push({
         fieldName,
-        operator: 'equals',
+        operator: "equals",
         value: String(formattedValue),
       });
     }
@@ -277,35 +278,35 @@ export class ColumnFilterUtils {
 
     return [
       {
-        operator: 'or',
+        operator: "or",
         criteria: validCriteria,
       } as unknown as BaseCriteria,
     ];
   }
 
   private static handleSingleValueFilter(fieldName: string, value: unknown, column: Column): BaseCriteria[] {
-    const formattedValue = this.formatValueForType(value, column);
+    const formattedValue = ColumnFilterUtils.formatValueForType(value, column);
     if (formattedValue === null) return [];
 
     if (REFERENCE_FIELDS.includes(fieldName)) {
       return [
         {
           fieldName: `${fieldName}$_identifier`,
-          operator: 'iContains',
+          operator: "iContains",
           value: String(formattedValue),
         },
       ];
     }
 
-    if (fieldName.toLowerCase().includes('date')) {
+    if (fieldName.toLowerCase().includes("date")) {
       return SearchUtils.getDateCriteria(fieldName, String(formattedValue));
     }
 
-    if (this.isNumericField(column)) {
+    if (ColumnFilterUtils.isNumericField(column)) {
       return [
         {
           fieldName,
-          operator: 'equals',
+          operator: "equals",
           value: formattedValue,
         },
       ];
@@ -314,7 +315,7 @@ export class ColumnFilterUtils {
     return [
       {
         fieldName,
-        operator: 'iContains',
+        operator: "iContains",
         value: String(formattedValue),
       },
     ];
@@ -326,7 +327,7 @@ export class ColumnFilterUtils {
     const allCriteria: BaseCriteria[] = [];
 
     for (const filter of columnFilters) {
-      const column = columns.find(col => col.id === filter.id || col.columnName === filter.id);
+      const column = columns.find((col) => col.id === filter.id || col.columnName === filter.id);
       if (!column) continue;
 
       const fieldName = column.columnName;
@@ -334,16 +335,16 @@ export class ColumnFilterUtils {
 
       let filterCriteria: BaseCriteria[] = [];
 
-      if (typeof filter.value === 'object' && filter.value !== null && 'from' in filter.value && 'to' in filter.value) {
-        filterCriteria = this.handleRangeFilter(
+      if (typeof filter.value === "object" && filter.value !== null && "from" in filter.value && "to" in filter.value) {
+        filterCriteria = ColumnFilterUtils.handleRangeFilter(
           fieldName,
           filter.value as { from: FormattedValue; to: FormattedValue },
           column,
         );
       } else if (Array.isArray(filter.value)) {
-        filterCriteria = this.handleArrayFilter(fieldName, filter.value, column);
+        filterCriteria = ColumnFilterUtils.handleArrayFilter(fieldName, filter.value, column);
       } else {
-        filterCriteria = this.handleSingleValueFilter(fieldName, filter.value, column);
+        filterCriteria = ColumnFilterUtils.handleSingleValueFilter(fieldName, filter.value, column);
       }
 
       allCriteria.push(...filterCriteria);

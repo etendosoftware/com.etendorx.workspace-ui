@@ -1,7 +1,7 @@
-import { ModalProps } from '@mui/material';
-import { ReactNode } from 'react';
+import type { ModalProps } from "@mui/material";
+import type { ReactNode } from "react";
 
-export interface ModalIProps extends Omit<ModalProps, 'children' | 'open'> {
+export interface ModalIProps extends Omit<ModalProps, "children" | "open"> {
   height?: string | number;
   width?: string | number;
   posX?: string | number;

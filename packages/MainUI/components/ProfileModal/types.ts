@@ -1,15 +1,15 @@
-import { ReactNode } from 'react';
-import { Section } from './ToggleButton/types';
-import { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
-import { Language } from '@workspaceui/componentlibrary/src/locales/types';
-import {
+import type { Logger } from "@/utils/logger";
+import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
+import type { Language } from "@workspaceui/componentlibrary/src/locales/types";
+import type {
   CurrentOrganization,
   CurrentRole,
   CurrentWarehouse,
   LoginResponse,
   SessionResponse,
-} from '@workspaceui/etendohookbinder/src/api/types';
-import { Logger } from '@/utils/logger';
+} from "@workspaceui/etendohookbinder/src/api/types";
+import type { ReactNode } from "react";
+import type { Section } from "./ToggleButton/types";
 
 export interface Translations {
   saveAsDefault: string;
@@ -78,13 +78,14 @@ export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps
   currentRole: CurrentRole | undefined;
   currentWarehouse: CurrentWarehouse | undefined;
   currentOrganization: CurrentOrganization | undefined;
-  roles: SessionResponse['roles'];
+  roles: SessionResponse["roles"];
   logger: Logger;
   onSignOff: () => void;
   onLanguageChange: (e: Language) => void;
   language: string | null;
   languages: LanguageOption[];
   languagesFlags: string;
+  // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
   changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | void>;
 }
 
@@ -100,7 +101,7 @@ export interface SelectorListProps {
   onRoleChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
   onWarehouseChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
   onOrgChange: (event: React.SyntheticEvent<Element, Event>, value: Option | null) => void;
-  roles: SessionResponse['roles'];
+  roles: SessionResponse["roles"];
   selectedRole: Option | null;
   selectedWarehouse: Option | null;
   selectedClient: Option | null;

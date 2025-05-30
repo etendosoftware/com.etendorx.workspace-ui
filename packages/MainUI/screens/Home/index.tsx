@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { Box, Grid, Typography, Container } from '@mui/material';
-import { createWidgets } from '../../../storybook/src/stories/Components/Table/mockWidget';
-import { useTranslation } from '@/hooks/useTranslation';
-import useStyles from './styles';
+import { Box, Grid, Typography, Container } from "@mui/material";
+import { createWidgets } from "../../../storybook/src/stories/Components/Table/mockWidget";
+import { useTranslation } from "@/hooks/useTranslation";
+import useStyles from "./styles";
 
 export default function Home() {
   const { t } = useTranslation();
@@ -16,16 +16,16 @@ export default function Home() {
     <Container maxWidth="lg" sx={styles.container}>
       <Box sx={styles.headerContainer}>
         <Typography variant="h4" component="h1" sx={styles.pageTitle} gutterBottom>
-          {t('common.etendo')} {t('breadcrumb.home')}
+          {t("common.etendo")} {t("breadcrumb.home")}
         </Typography>
         <Typography variant="subtitle1" sx={styles.pageSubtitle}>
-          {t('table.content.currentTitle')}
+          {t("table.content.currentTitle")}
         </Typography>
       </Box>
 
       <Grid container spacing={3}>
-        {dashboardWidgets.map(widget => (
-          <Grid item key={widget.id} xs={12} md={widget.size === 'full' ? 12 : 6}>
+        {dashboardWidgets.map((widget) => (
+          <Grid item key={widget.id} xs={12} md={widget.size === "full" ? 12 : 6}>
             <Box
               sx={{
                 ...styles.widgetContainer,
@@ -50,15 +50,15 @@ export default function Home() {
                   sx={{
                     ...styles.actionButton,
                     bgcolor: widget.iconButtonBgColor,
-                    '&:hover': {
+                    "&:hover": {
                       bgcolor: widget.iconButtonHoverBgColor,
-                      '& svg': {
+                      "& svg": {
                         fill: widget.iconButtonHoverColor,
                       },
                     },
                   }}
                   onClick={widget.iconButtonAction}
-                  title={widget.tooltip || t('table.tooltips.details')}>
+                  title={widget.tooltip || t("table.tooltips.details")}>
                   {widget.icon}
                 </Box>
               </Box>

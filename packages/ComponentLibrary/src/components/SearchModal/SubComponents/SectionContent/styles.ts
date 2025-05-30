@@ -1,5 +1,5 @@
-import { useTheme } from '@mui/material';
-import { useMemo } from 'react';
+import { useTheme } from "@mui/material";
+import { useMemo } from "react";
 
 export const useStyle = () => {
   const theme = useTheme();
@@ -8,50 +8,50 @@ export const useStyle = () => {
     () => ({
       styles: {
         sectionContent: {
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.75rem',
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.75rem",
         },
         sectionBox: (isLast: boolean) => ({
-          borderBottom: isLast ? 'none' : `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
+          borderBottom: isLast ? "none" : `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
         }),
         sectionInnerBox: {
-          padding: '0.75rem',
-          paddingBottom: '0.25rem',
+          padding: "0.75rem",
+          paddingBottom: "0.25rem",
           margin: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.75rem',
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.75rem",
         },
         contentWrapper: {
-          borderRadius: '0.75rem',
+          borderRadius: "0.75rem",
         },
         sectionTitleContainer: {
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.25rem',
-          marginBottom: '0.25rem',
-          borderBottom: '1px solid transparent',
-          '&:hover': {
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "0.25rem",
+          marginBottom: "0.25rem",
+          borderBottom: "1px solid transparent",
+          "&:hover": {
             borderBottom: `1px solid ${theme.palette.baselineColor.etendoPrimary.main}`,
-            cursor: 'pointer',
+            cursor: "pointer",
           },
         },
         sectionTitle: {
           color: theme.palette.baselineColor.etendoPrimary.main,
-          fontSize: '0.875rem',
-          lineHeight: '1.25rem',
+          fontSize: "0.875rem",
+          lineHeight: "1.25rem",
           fontWeight: 500,
         },
         arrowIcon: {
-          rotate: '320deg',
+          rotate: "320deg",
           color: theme.palette.baselineColor.etendoPrimary.main,
-          fontSize: '1rem',
+          fontSize: "1rem",
         },
         itemsContainer: {
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.25rem',
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.25rem",
         },
       },
     }),

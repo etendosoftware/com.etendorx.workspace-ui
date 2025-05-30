@@ -1,11 +1,11 @@
-import React from 'react';
-import MenuItem from '@mui/material/MenuItem';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import ToggleChip from '../Toggle/ToggleChip';
-import { useStyle } from './styles';
-import { SortableItemProps } from './DragModal.types';
-import { SxProps, Theme } from '@mui/material/styles';
+import React from "react";
+import MenuItem from "@mui/material/MenuItem";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import ToggleChip from "../Toggle/ToggleChip";
+import { useStyle } from "./styles";
+import type { SortableItemProps } from "./DragModal.types";
+import type { SxProps, Theme } from "@mui/material/styles";
 
 const SortableItem: React.FC<SortableItemProps> = ({ id, person, onToggle, icon }) => {
   const { sx, styles } = useStyle();

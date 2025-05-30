@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import Graph, { GraphEventListener } from '@/data/graph';
+import Graph, { type GraphEventListener } from "@/data/graph";
+import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface SelectedContext {
   graph: Graph<Tab>;
@@ -27,13 +27,14 @@ export const SelectedProvider = ({ children, tabs }: React.PropsWithChildren<{ t
 
       if (level === 0) {
         return [0];
-      } else if (maxLevel == level) {
-        return prev;
-      } else if (maxLevel > level) {
-        return [level - 1, level];
-      } else {
-        return [maxLevel, level];
       }
+      if (maxLevel === level) {
+        return prev;
+      }
+      if (maxLevel > level) {
+        return [level - 1, level];
+      }
+      return [maxLevel, level];
     });
   }, []);
 
@@ -47,22 +48,22 @@ export const SelectedProvider = ({ children, tabs }: React.PropsWithChildren<{ t
   );
 
   useEffect(() => {
-    const handleSelected: GraphEventListener<'selected'> = (tab) => {
+    const handleSelected: GraphEventListener<"selected"> = (tab) => {
       setActiveLevel(tab.tabLevel + 1);
     };
 
-    const handleUnselected: GraphEventListener<'unselected'> = (tab) => {
+    const handleUnselected: GraphEventListener<"unselected"> = (tab) => {
       setActiveLevel(tab.tabLevel);
     };
 
     graph //
-      .on('selected', handleSelected)
-      .on('unselected', handleUnselected);
+      .on("selected", handleSelected)
+      .on("unselected", handleUnselected);
 
     return () => {
       graph //
-        .off('selected', handleSelected)
-        .off('unselected', handleUnselected);
+        .off("selected", handleSelected)
+        .off("unselected", handleUnselected);
     };
   }, [graph, setActiveLevel]);
 

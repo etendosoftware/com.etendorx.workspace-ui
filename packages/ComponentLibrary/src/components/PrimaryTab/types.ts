@@ -4,7 +4,7 @@ export interface TabItem {
   label?: string;
   fill?: string;
   hoverFill?: string;
-  showInTab?: 'icon' | 'label' | 'both' | boolean;
+  showInTab?: "icon" | "label" | "both" | boolean;
 }
 
 export interface PrimaryTabsProps {

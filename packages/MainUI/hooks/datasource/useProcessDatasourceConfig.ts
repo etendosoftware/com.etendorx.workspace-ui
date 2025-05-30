@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { logger } from '@/utils/logger';
-import { EntityValue } from '@workspaceui/etendohookbinder/src/api/types';
+import { useCallback, useState } from "react";
+import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import { logger } from "@/utils/logger";
+import type { EntityValue } from "@workspaceui/etendohookbinder/src/api/types";
 
 export interface ProcessConfigResponse {
   defaults?: Record<string, { value: string; identifier: string }>;
@@ -37,7 +37,7 @@ export const useProcessConfig = ({ processId, windowId, tabId }: UseProcessConfi
         processId,
         windowId,
         // TODO: Remove hardcoded value and use action provided by process metadata
-        _action: 'org.openbravo.client.application.process.DefaultsProcessActionHandler',
+        _action: "org.openbravo.client.application.process.DefaultsProcessActionHandler",
       });
 
       const requestPayload = { ...payload };
@@ -57,7 +57,7 @@ export const useProcessConfig = ({ processId, windowId, tabId }: UseProcessConfi
         setConfig(processedConfig);
         return processedConfig;
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error fetching process config';
+        const errorMessage = err instanceof Error ? err.message : "Unknown error fetching process config";
 
         logger.error(`Error fetching process config for process ${processId}:`, err);
         setError(new Error(errorMessage));

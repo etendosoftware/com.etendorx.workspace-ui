@@ -1,16 +1,16 @@
-import { FC, useState, useCallback, useMemo } from 'react';
-import { Breadcrumbs, Link, Typography, Box, MenuItem, useTheme } from '@mui/material';
-import NavigateNextIcon from '../../assets/icons/chevron-right.svg';
-import ArrowLeftIcon from '../../assets/icons/arrow-left.svg';
-import ChevronDown from '../../assets/icons/chevron-down.svg';
-import MoreHorizIcon from '../../assets/icons/more-horizontal.svg';
-import { useStyle } from './styles';
-import { BreadcrumbProps, BreadcrumbAction, BreadcrumbItem } from './types';
-import ToggleChip from '../Toggle/ToggleChip';
-import IconButton from '../IconButton';
-import Menu from '../Menu';
+import { Box, Breadcrumbs, Link, MenuItem, Typography, useTheme } from "@mui/material";
+import { type FC, useCallback, useMemo, useState } from "react";
+import ArrowLeftIcon from "../../assets/icons/arrow-left.svg";
+import ChevronDown from "../../assets/icons/chevron-down.svg";
+import NavigateNextIcon from "../../assets/icons/chevron-right.svg";
+import MoreHorizIcon from "../../assets/icons/more-horizontal.svg";
+import IconButton from "../IconButton";
+import Menu from "../Menu";
+import ToggleChip from "../Toggle/ToggleChip";
+import { useStyle } from "./styles";
+import type { BreadcrumbAction, BreadcrumbItem, BreadcrumbProps } from "./types";
 
-const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, homeText = 'Home', separator }) => {
+const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, homeText = "Home", separator }) => {
   const [isHomeHovered, setIsHomeHovered] = useState<boolean>(false);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [middleAnchorEl, setMiddleAnchorEl] = useState<HTMLButtonElement | null>(null);
@@ -100,7 +100,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
             href="#"
             onClick={(e) => {
               e.preventDefault();
-              item.onClick && item.onClick();
+              item.onClick?.();
             }}
             sx={sx.link}>
             <Typography noWrap sx={sx.breadcrumbTypography}>
@@ -123,38 +123,37 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
   const renderBreadcrumbItems = useMemo(() => {
     if (items.length <= 2) {
       return items.map((item, index) => renderBreadcrumbItem(item, index === items.length - 1));
-    } else {
-      const firstItem = items[0];
-      const lastItem = items[items.length - 1];
-      const middleItems = items.slice(1, -1);
-
-      return (
-        <>
-          {renderBreadcrumbItem(firstItem, false)}
-          {middleItems.length > 0 && (
-            <Box sx={sx.breadcrumbItem}>
-              <IconButton onClick={handleMiddleMenuOpen}>
-                <MoreHorizIcon fill={theme.palette.baselineColor.neutral[80]} />
-              </IconButton>
-              <Menu anchorEl={middleAnchorEl} open={Boolean(middleAnchorEl)} onClose={handleMiddleMenuClose}>
-                {middleItems.map((item) => (
-                  <MenuItem
-                    key={item.id}
-                    onClick={() => {
-                      item.onClick && item.onClick();
-                      handleMiddleMenuClose();
-                    }}
-                    sx={sx.menuItem}>
-                    {item.label}
-                  </MenuItem>
-                ))}
-              </Menu>
-            </Box>
-          )}
-          {renderBreadcrumbItem(lastItem, true)}
-        </>
-      );
     }
+    const firstItem = items[0];
+    const lastItem = items[items.length - 1];
+    const middleItems = items.slice(1, -1);
+
+    return (
+      <>
+        {renderBreadcrumbItem(firstItem, false)}
+        {middleItems.length > 0 && (
+          <Box sx={sx.breadcrumbItem}>
+            <IconButton onClick={handleMiddleMenuOpen}>
+              <MoreHorizIcon fill={theme.palette.baselineColor.neutral[80]} />
+            </IconButton>
+            <Menu anchorEl={middleAnchorEl} open={Boolean(middleAnchorEl)} onClose={handleMiddleMenuClose}>
+              {middleItems.map((item) => (
+                <MenuItem
+                  key={item.id}
+                  onClick={() => {
+                    item.onClick?.();
+                    handleMiddleMenuClose();
+                  }}
+                  sx={sx.menuItem}>
+                  {item.label}
+                </MenuItem>
+              ))}
+            </Menu>
+          </Box>
+        )}
+        {renderBreadcrumbItem(lastItem, true)}
+      </>
+    );
   }, [
     handleMiddleMenuClose,
     handleMiddleMenuOpen,

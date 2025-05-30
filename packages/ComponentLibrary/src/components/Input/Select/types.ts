@@ -1,10 +1,10 @@
-import { AutocompleteProps } from '@mui/material';
-import { Option } from '@workspaceui/etendohookbinder/src/api/types';
+import type { AutocompleteProps } from "@mui/material";
+import type { Option } from "@workspaceui/etendohookbinder/src/api/types";
 
 export type { Option };
 
 export interface ISelectInput<T extends string = string>
-  extends Omit<AutocompleteProps<Option<T>, false, false, false>, 'renderInput'> {
+  extends Omit<AutocompleteProps<Option<T>, false, false, false>, "renderInput"> {
   title?: string;
   iconLeft?: React.ReactElement;
   options: Option<T>[];

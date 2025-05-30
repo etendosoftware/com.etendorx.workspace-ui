@@ -1,10 +1,10 @@
-import { StatusModalState, StatusType } from '@workspaceui/componentlibrary/src/components/StatusModal/types';
-import { useState, useCallback } from 'react';
+import type { StatusModalState, StatusType } from "@workspaceui/componentlibrary/src/components/StatusModal/types";
+import { useState, useCallback } from "react";
 
 const initialState: StatusModalState = {
   open: false,
-  statusType: 'info',
-  statusText: '',
+  statusType: "info",
+  statusText: "",
   isDeleteSuccess: false,
 };
 
@@ -52,7 +52,7 @@ export const useStatusModal = () => {
         isDeleteSuccess?: boolean;
       },
     ) => {
-      showStatusModal('success', statusText, options);
+      showStatusModal("success", statusText, options);
     },
     [showStatusModal],
   );
@@ -65,10 +65,10 @@ export const useStatusModal = () => {
         onAfterClose?: () => void;
       },
     ) => {
-      showStatusModal('success', statusText, {
+      showStatusModal("success", statusText, {
         ...options,
         isDeleteSuccess: true,
-        saveLabel: options?.saveLabel || 'Close',
+        saveLabel: options?.saveLabel || "Close",
       });
     },
     [showStatusModal],
@@ -84,7 +84,7 @@ export const useStatusModal = () => {
         onAfterClose?: () => void;
       },
     ) => {
-      showStatusModal('error', statusText, options);
+      showStatusModal("error", statusText, options);
     },
     [showStatusModal],
   );
@@ -99,7 +99,7 @@ export const useStatusModal = () => {
         onAfterClose?: () => void;
       },
     ) => {
-      showStatusModal('warning', statusText, options);
+      showStatusModal("warning", statusText, options);
     },
     [showStatusModal],
   );
@@ -121,7 +121,7 @@ export const useStatusModal = () => {
   }, []);
 
   const hideStatusModal = useCallback(() => {
-    setState(prev => ({ ...prev, open: false }));
+    setState((prev) => ({ ...prev, open: false }));
   }, []);
 
   return {

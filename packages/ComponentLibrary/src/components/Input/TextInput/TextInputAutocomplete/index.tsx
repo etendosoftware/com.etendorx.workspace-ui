@@ -1,1 +1,1 @@
-export { default } from './TextInputAutocomplete';
+export { default } from "./TextInputAutocomplete";

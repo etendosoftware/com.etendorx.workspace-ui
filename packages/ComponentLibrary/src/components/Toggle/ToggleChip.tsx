@@ -1,7 +1,7 @@
-import React from 'react';
-import Switch from '@mui/material/Switch';
-import { useStyle } from './styles';
-import { ToggleChipProps } from './types';
+import type React from "react";
+import Switch from "@mui/material/Switch";
+import { useStyle } from "./styles";
+import type { ToggleChipProps } from "./types";
 
 const ToggleChip: React.FC<ToggleChipProps> = ({ isActive, onToggle }) => {
   const { sx } = useStyle();

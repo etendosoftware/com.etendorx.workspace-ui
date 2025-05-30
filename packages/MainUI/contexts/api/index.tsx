@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { createContext, useCallback, useEffect, useReducer, useRef } from 'react';
-import { ErrorDisplay } from '@/components/ErrorDisplay';
-import { useTranslation } from '@/hooks/useTranslation';
-import { HEALTH_CHECK_MAX_ATTEMPTS, HEALTH_CHECK_RETRY_DELAY_MS } from '@/constants/config';
-import { initialState, stateReducer } from './state';
-import { performHealthCheck } from '../../utils/health-check';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
-import Loading from '@/components/loading';
+import { createContext, useCallback, useEffect, useReducer, useRef } from "react";
+import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { useTranslation } from "@/hooks/useTranslation";
+import { HEALTH_CHECK_MAX_ATTEMPTS, HEALTH_CHECK_RETRY_DELAY_MS } from "@/constants/config";
+import { initialState, stateReducer } from "./state";
+import { performHealthCheck } from "../../utils/health-check";
+import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import { datasource } from "@workspaceui/etendohookbinder/src/api/datasource";
+import Loading from "@/components/loading";
 
 export const ApiContext = createContext<string | null>(null);
 
@@ -21,7 +21,7 @@ export default function ApiProvider({ children, url }: React.PropsWithChildren<{
     const signal = controllerRef.current.signal;
 
     if (url && !signal.aborted) {
-      dispatch({ type: 'RESET' });
+      dispatch({ type: "RESET" });
       performHealthCheck(
         url,
         signal,
@@ -29,11 +29,11 @@ export default function ApiProvider({ children, url }: React.PropsWithChildren<{
         HEALTH_CHECK_RETRY_DELAY_MS,
         () => {
           if (signal.aborted) return;
-          dispatch({ type: 'SET_CONNECTED' });
+          dispatch({ type: "SET_CONNECTED" });
         },
         () => {
           if (signal.aborted) return;
-          dispatch({ type: 'SET_ERROR' });
+          dispatch({ type: "SET_ERROR" });
         },
       );
     }
@@ -64,8 +64,8 @@ export default function ApiProvider({ children, url }: React.PropsWithChildren<{
     return (
       <div className="flex flex-col items-center justify-center h-full w-full">
         <ErrorDisplay
-          title={t('errors.networkError.title')}
-          description={t('errors.networkError.description')}
+          title={t("errors.networkError.title")}
+          description={t("errors.networkError.description")}
           showRetry={true}
           onRetry={healthCheck}
         />

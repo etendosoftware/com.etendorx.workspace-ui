@@ -1,18 +1,18 @@
-import { useEffect, useState, useCallback } from 'react';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { CurrentRole, Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import { useEffect, useState, useCallback } from "react";
+import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import type { CurrentRole, Menu } from "@workspaceui/etendohookbinder/src/api/types";
 
 export const useMenu = (token: string | null, currentRole?: CurrentRole, language?: string | null) => {
   const [menu, setMenu] = useState<Menu[]>(Metadata.getCachedMenu());
 
   const fetchMenu = useCallback(
-    async (forceRefresh: boolean = false) => {
+    async (forceRefresh = false) => {
       if (token && currentRole) {
         try {
           const newMenu = await Metadata.getMenu(forceRefresh);
           setMenu(newMenu);
         } catch (error) {
-          console.error('Error fetching menu:', error);
+          console.error("Error fetching menu:", error);
         }
       }
     },

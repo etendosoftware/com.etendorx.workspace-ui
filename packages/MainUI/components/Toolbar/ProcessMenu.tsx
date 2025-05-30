@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useCallback } from 'react';
-import { ProcessMenuProps } from './types';
-import { ProcessButton } from '../ProcessModal/types';
-import { ProcessButtonType } from '../ProcessModal/types';
-import useDisplayLogic from '@/hooks/useDisplayLogic';
-import Menu from '@workspaceui/componentlibrary/src/components/Menu';
+import useDisplayLogic from "@/hooks/useDisplayLogic";
+import Menu from "@workspaceui/componentlibrary/src/components/Menu";
+import { useCallback } from "react";
+import type { ProcessButton } from "../ProcessModal/types";
+import { ProcessButtonType } from "../ProcessModal/types";
+import type { ProcessMenuProps } from "./types";
 
 interface ProcessMenuItemProps {
   button: ProcessButton;
@@ -27,13 +27,19 @@ const ProcessMenuItem = ({ button, onProcessClick, disabled }: ProcessMenuItemPr
   return (
     <div
       onClick={disabled ? undefined : handleClick}
-      className="p-2 hover:bg-(--color-baseline-20) transition rounded-lg cursor-pointer">
+      className="p-2 hover:bg-(--color-baseline-20) transition rounded-lg cursor-pointer"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleClick();
+        }
+      }}>
       {button.name}
     </div>
   );
 };
 
-ProcessMenuItem.displayName = 'ProcessMenuItem';
+ProcessMenuItem.displayName = "ProcessMenuItem";
 
 const ProcessDefinitionMenuItem = ({ button, onProcessClick, disabled }: ProcessMenuItemProps) => {
   const isDisplayed = useDisplayLogic(button);
@@ -49,7 +55,13 @@ const ProcessDefinitionMenuItem = ({ button, onProcessClick, disabled }: Process
   return (
     <div
       onClick={disabled ? undefined : handleClick}
-      className="p-2 hover:bg-(--color-baseline-20) transition rounded-lg cursor-pointer">
+      className="p-2 hover:bg-(--color-baseline-20) transition rounded-lg cursor-pointer"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleClick();
+        }
+      }}>
       {button.name}
     </div>
   );

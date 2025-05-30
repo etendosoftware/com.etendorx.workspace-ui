@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import React, { useCallback, useState, useMemo } from 'react';
-import { Tabs, Tab, Box, MenuItem, ListItemIcon } from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check';
-import { PrimaryTabsProps } from './types';
-import { tabIndicatorProps, useStyle } from './styles';
-import IconButton from '../IconButton';
-import Menu from '../Menu';
-import Tooltip from '../Tooltip';
+import CheckIcon from "@mui/icons-material/Check";
+import { Box, ListItemIcon, MenuItem, Tab, Tabs } from "@mui/material";
+import React, { useCallback, useState, useMemo } from "react";
+import IconButton from "../IconButton";
+import Menu from "../Menu";
+import Tooltip from "../Tooltip";
+import { tabIndicatorProps, useStyle } from "./styles";
+import type { PrimaryTabsProps } from "./types";
 
 const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, icon }) => {
-  const [selectedTab, setSelectedTab] = useState(tabs[0]?.id || '');
+  const [selectedTab, setSelectedTab] = useState(tabs[0]?.id || "");
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
@@ -56,7 +56,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
         const isSelected = selectedTab === tab.id;
         const isHovered = hoveredTab === tab.id;
 
-        const showIcon = tab.showInTab !== 'label' && tab.icon && (isSelected || tab.showInTab === 'icon');
+        const showIcon = tab.showInTab !== "label" && tab.icon && (isSelected || tab.showInTab === "icon");
 
         return (
           <Tab
@@ -67,12 +67,12 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
                 ? React.cloneElement(tab.icon as React.ReactElement, {
                     style: {
                       fill: isSelected ? tab.fill : isHovered ? tab.hoverFill : tab.fill,
-                      transition: 'fill 0.3s',
+                      transition: "fill 0.3s",
                     },
                   })
                 : undefined
             }
-            label={tab.showInTab !== 'icon' ? tab.label : undefined}
+            label={tab.showInTab !== "icon" ? tab.label : undefined}
             iconPosition="start"
             onMouseEnter={() => handleMouseEnter(tab.id)}
             onMouseLeave={handleMouseLeave}
@@ -125,7 +125,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
               {isSelected && (
                 <ListItemIcon
                   sx={{
-                    visibility: isSelected ? 'visible' : 'hidden',
+                    visibility: isSelected ? "visible" : "hidden",
                     flexShrink: 0,
                   }}>
                   <CheckIcon sx={{ color: tab.fill }} />

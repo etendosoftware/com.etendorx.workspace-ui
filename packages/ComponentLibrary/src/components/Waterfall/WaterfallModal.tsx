@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import React, { useCallback, useState } from 'react';
-import { Box, Button, List, MenuItem, styled, useTheme } from '@mui/material';
-import DragModalContent from '../DragModal/DragModalContent';
-import { Person } from '../DragModal/DragModal.types';
-import ModalDivider from '../ModalDivider';
-import { useStyle } from './styles';
-import NavigateNext from '../../assets/icons/chevron-right.svg';
-import Edit from '../../assets/icons/edit.svg';
-import { WaterfallModalProps } from './types';
-import IconButton from '../IconButton';
-import Menu from '../Menu';
+import { Box, Button, List, MenuItem, styled, useTheme } from "@mui/material";
+import { useCallback, useState } from "react";
+import NavigateNext from "../../assets/icons/chevron-right.svg";
+import Edit from "../../assets/icons/edit.svg";
+import type { Person } from "../DragModal/DragModal.types";
+import DragModalContent from "../DragModal/DragModalContent";
+import IconButton from "../IconButton";
+import Menu from "../Menu";
+import ModalDivider from "../ModalDivider";
+import { useStyle } from "./styles";
+import type { WaterfallModalProps } from "./types";
 
 const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
   menuItems,
@@ -23,10 +23,10 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
   tooltipWaterfallButton,
   icon,
 }) => {
-  const FadeWrapper = styled('div')({
-    transition: 'opacity 0.2s ease-in-out',
+  const FadeWrapper = styled("div")({
+    transition: "opacity 0.2s ease-in-out",
     opacity: 1,
-    '&.fade-out': {
+    "&.fade-out": {
       opacity: 0,
     },
   });
@@ -69,7 +69,7 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
         {icon}
       </IconButton>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
-        <FadeWrapper className={fade ? 'fade-out' : ''}>
+        <FadeWrapper className={fade ? "fade-out" : ""}>
           {!showDragModal ? (
             <>
               <List>
@@ -78,7 +78,7 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
                     key={item.key}
                     sx={{
                       ...sx.menuItemStyles,
-                      marginBottom: index !== menuItems.length - 1 ? '0.5rem' : '0',
+                      marginBottom: index !== menuItems.length - 1 ? "0.5rem" : "0",
                     }}>
                     <span style={styles.SpanStyles}>{item.emoji}</span>
                     <span>{item.label}</span>

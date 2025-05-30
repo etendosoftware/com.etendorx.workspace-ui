@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { logger } from '@/utils/logger';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import { logger } from "@/utils/logger";
 
 export function useWindow(windowId: string) {
   const [loading, setLoading] = useState(!!windowId);
@@ -34,8 +34,5 @@ export function useWindow(windowId: string) {
     load();
   }, [load]);
 
-  return useMemo(
-    () => ({ loading, windowData, error, loaded, load }),
-    [error, load, loaded, loading, windowData],
-  );
+  return useMemo(() => ({ loading, windowData, error, loaded, load }), [error, load, loaded, loading, windowData]);
 }

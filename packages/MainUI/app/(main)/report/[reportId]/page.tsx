@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useCallback } from 'react';
-import { Box, CircularProgress } from '@mui/material';
-import { useParams } from 'next/navigation';
-import DynamicReport from '../../../../components/ad_reports/DynamicReport';
-import { FieldValues } from 'react-hook-form';
-import { useApiContext } from '@/hooks/useApiContext';
-import { useReportMetadata } from '@/hooks/useReportMetadata';
-import { useReport } from '@/hooks/useReport';
+import { useCallback } from "react";
+import { Box, CircularProgress } from "@mui/material";
+import { useParams } from "next/navigation";
+import DynamicReport from "../../../../components/ad_reports/DynamicReport";
+import type { FieldValues } from "react-hook-form";
+import { useApiContext } from "@/hooks/useApiContext";
+import { useReportMetadata } from "@/hooks/useReportMetadata";
+import { useReport } from "@/hooks/useReport";
 
 export default function ReportPage() {
   const params = useParams();

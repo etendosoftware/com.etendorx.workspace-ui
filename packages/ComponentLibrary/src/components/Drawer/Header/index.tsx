@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { forwardRef, useCallback } from 'react';
-import { MenuOpen } from '@mui/icons-material';
-import { Box } from '@mui/material';
-import IconButton from '../../IconButton';
-import { useStyle } from '../styles';
-import { DrawerHeaderProps } from '../types';
+import { forwardRef, useCallback } from "react";
+import { MenuOpen } from "@mui/icons-material";
+import { Box } from "@mui/material";
+import IconButton from "../../IconButton";
+import { useStyle } from "../styles";
+import type { DrawerHeaderProps } from "../types";
 
 const DrawerHeader = forwardRef<HTMLDivElement, DrawerHeaderProps>(({ title, logo, open, onClick, tabIndex }, ref) => {
   const { sx } = useStyle();
 
   const Logo = useCallback(() => {
-    if (typeof logo === 'string') {
+    if (typeof logo === "string") {
       return <Box component="img" src={logo} alt={`${title} Logo`} sx={sx.drawerHeaderImg} />;
     }
     return <Box sx={sx.drawerHeaderImg}>{logo}</Box>;
@@ -36,7 +36,7 @@ const DrawerHeader = forwardRef<HTMLDivElement, DrawerHeaderProps>(({ title, log
   );
 });
 
-DrawerHeader.displayName = 'DrawerHeader';
+DrawerHeader.displayName = "DrawerHeader";
 
 export { DrawerHeader };
 

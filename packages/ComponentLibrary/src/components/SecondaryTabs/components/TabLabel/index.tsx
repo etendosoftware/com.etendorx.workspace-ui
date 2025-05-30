@@ -1,6 +1,6 @@
-import { Box, Badge, CircularProgress, useTheme } from '@mui/material';
-import { TabLabelProps } from './types';
-import { useStyle } from './styles';
+import { Box, Badge, CircularProgress, useTheme } from "@mui/material";
+import type { TabLabelProps } from "./types";
+import { useStyle } from "./styles";
 
 const TabLabel: React.FC<TabLabelProps & { isSelected?: boolean }> = ({ icon, text, count, isLoading }) => {
   const theme = useTheme();

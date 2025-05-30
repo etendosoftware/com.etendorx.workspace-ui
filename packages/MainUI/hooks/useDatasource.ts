@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  DatasourceOptions,
+import { logger } from "@/utils/logger";
+import { datasource } from "@workspaceui/etendohookbinder/src/api/datasource";
+import type {
   Column,
-  MRT_ColumnFiltersState,
+  DatasourceOptions,
   EntityData,
-} from '@workspaceui/etendohookbinder/src/api/types';
-import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
-import { SearchUtils, ColumnFilterUtils } from '@workspaceui/etendohookbinder/src/utils/search-utils';
-import { logger } from '@/utils/logger';
+  MRT_ColumnFiltersState,
+} from "@workspaceui/etendohookbinder/src/api/types";
+import { ColumnFilterUtils, SearchUtils } from "@workspaceui/etendohookbinder/src/utils/search-utils";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 const loadData = async (entity: string, page: number, pageSize: number, params: DatasourceOptions) => {
   const safePageSize = pageSize ?? 1000;
@@ -36,13 +36,7 @@ export type UseDatasourceOptions = {
   skip?: boolean;
 };
 
-export function useDatasource({
-  entity,
-  params = defaultParams,
-  columns,
-  searchQuery,
-  skip,
-}: UseDatasourceOptions) {
+export function useDatasource({ entity, params = defaultParams, columns, searchQuery, skip }: UseDatasourceOptions) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [records, setRecords] = useState<EntityData[]>([]);
@@ -120,11 +114,10 @@ export function useDatasource({
 
         if (!(ok && data.response.data)) {
           throw data;
-        } else {
-          setHasMoreRecords(data.response.data.length >= safePageSize);
-          setRecords((prev) => (page === 1 || searchQuery ? data.response.data : prev.concat(data.response.data)));
-          setLoaded(true);
         }
+        setHasMoreRecords(data.response.data.length >= safePageSize);
+        setRecords((prev) => (page === 1 || searchQuery ? data.response.data : prev.concat(data.response.data)));
+        setLoaded(true);
       } catch (e) {
         logger.warn(e);
 

@@ -1,7 +1,7 @@
-import React from 'react';
-import { Chip as MuiChip } from '@mui/material';
-import { useStyle } from './styles';
-import { TagProps } from './types';
+import type React from "react";
+import { Chip as MuiChip } from "@mui/material";
+import { useStyle } from "./styles";
+import type { TagProps } from "./types";
 
 const Tag: React.FC<TagProps> = ({ type, label, icon, onClick }) => {
   const styles = useStyle();

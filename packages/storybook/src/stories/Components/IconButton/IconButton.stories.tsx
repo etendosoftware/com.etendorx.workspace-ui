@@ -1,9 +1,9 @@
-import React from 'react';
+import type React from 'react';
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import NotificationIcon from '@workspaceui/componentlibrary/src/assets/icons/heart.svg';
 import type { Meta, StoryObj } from '@storybook/react';
 import { useTheme } from '@mui/material';
-import { IIconComponentProps } from '@workspaceui/componentlibrary/src/components/IconButton/types';
+import type { IIconComponentProps } from '@workspaceui/componentlibrary/src/components/IconButton/types';
 
 interface IconButtonWrapperProps {
   args: IIconComponentProps;
@@ -48,7 +48,7 @@ export default meta;
 type Story = StoryObj<typeof IconButton>;
 
 export const Default: Story = {
-  render: args => <IconButtonWrapper args={args} />,
+  render: (args) => <IconButtonWrapper args={args} />,
   args: {
     tooltip: 'Default IconButton',
     children: <NotificationIcon />,
@@ -56,7 +56,7 @@ export const Default: Story = {
 };
 
 export const CustomFill: Story = {
-  render: args => <IconButtonWrapper args={args} />,
+  render: (args) => <IconButtonWrapper args={args} />,
   args: {
     tooltip: 'Custom Fill IconButton',
     children: <NotificationIcon />,
@@ -71,7 +71,7 @@ export const CustomFill: Story = {
 };
 
 export const Disabled: Story = {
-  render: args => <IconButtonWrapper args={args} />,
+  render: (args) => <IconButtonWrapper args={args} />,
   args: {
     tooltip: 'Disabled IconButton',
     children: <NotificationIcon />,

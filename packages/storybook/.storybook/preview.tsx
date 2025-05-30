@@ -4,12 +4,12 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
 
 const LanguageProvider = React.lazy(() =>
-  import('../../MainUI/contexts/languageProvider').then(mod => ({
+  import('../../MainUI/contexts/languageProvider').then((mod) => ({
     default: mod.LanguageProvider,
   })),
 );
 
-const withThemeProvider = Story => (
+const withThemeProvider = (Story) => (
   <Suspense fallback={<div>Loading...</div>}>
     <ThemeProvider theme={theme}>
       <CssBaseline />

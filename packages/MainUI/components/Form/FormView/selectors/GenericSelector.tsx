@@ -1,14 +1,14 @@
-import { Field } from '@workspaceui/etendohookbinder/src/api/types';
-import { StringSelector } from './StringSelector';
-import { BooleanSelector } from './BooleanSelector';
-import { DateSelector } from './DateSelector';
-import { SelectSelector } from './SelectSelector';
-import { useFormContext } from 'react-hook-form';
-import { TableDirSelector } from './TableDirSelector';
-import QuantitySelector from './QuantitySelector';
-import { ListSelector } from './ListSelector';
-import { NumericSelector } from './NumericSelector';
-import { memo } from 'react';
+import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import { memo } from "react";
+import { useFormContext } from "react-hook-form";
+import { BooleanSelector } from "./BooleanSelector";
+import { DateSelector } from "./DateSelector";
+import { ListSelector } from "./ListSelector";
+import { NumericSelector } from "./NumericSelector";
+import QuantitySelector from "./QuantitySelector";
+import { SelectSelector } from "./SelectSelector";
+import { StringSelector } from "./StringSelector";
+import { TableDirSelector } from "./TableDirSelector";
 
 export type GenericSelectorProps = {
   field: Field;
@@ -21,17 +21,17 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   const { reference } = field.column;
 
   switch (reference) {
-    case '19':
-    case '95E2A8B50A254B2AAE6774B8C2F28120':
-    case '18':
+    case "19":
+    case "95E2A8B50A254B2AAE6774B8C2F28120":
+    case "18":
       return <TableDirSelector field={field} isReadOnly={isReadOnly} />;
-    case '15':
-    case '16':
+    case "15":
+    case "16":
       return <DateSelector field={field} isReadOnly={isReadOnly} />;
-    case '20':
+    case "20":
       return <BooleanSelector field={field} isReadOnly={isReadOnly} />;
-    case '29':
-    case '22':
+    case "29":
+    case "22":
       return (
         <QuantitySelector
           field={field}
@@ -43,15 +43,13 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           maxLength={field.column.length}
         />
       );
-    case '17':
-    case '13':
+    case "17":
+    case "13":
       return <ListSelector field={field} isReadOnly={isReadOnly} />;
-    case '30':
+    case "30":
       return <SelectSelector field={field} isReadOnly={isReadOnly} />;
-    case '800008':
+    case "800008":
       return <NumericSelector field={field} readOnly={isReadOnly} />;
-    case '11':
-    case '12':
     default:
       return <StringSelector field={field} readOnly={isReadOnly} />;
   }

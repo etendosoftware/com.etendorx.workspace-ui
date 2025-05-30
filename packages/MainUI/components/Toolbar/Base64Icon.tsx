@@ -1,15 +1,15 @@
-import Image from 'next/image';
-import { Base64IconProps } from './types';
+import Image from "next/image";
+import type { Base64IconProps } from "./types";
 
 const DEFAULT_PROPS = {
-  alt: 'Icon',
-  className: '',
+  alt: "Icon",
+  className: "",
   size: 16,
 };
 
 const CSS_CLASSES = {
-  base: 'icon-base64',
-  hoverPrefix: 'icon-hover-',
+  base: "icon-base64",
+  hoverPrefix: "icon-hover-",
 } as const;
 
 const Base64Icon: React.FC<Base64IconProps> = ({

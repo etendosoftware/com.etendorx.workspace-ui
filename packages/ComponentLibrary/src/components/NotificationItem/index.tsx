@@ -1,11 +1,11 @@
-import { ListItem, Typography, Button, Box } from '@mui/material';
-import ReactMarkdown from 'react-markdown';
-import { NotificationItemProps } from './types';
-import Tag from '../Tag';
-import { useStyle } from './styles';
-import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
-import CloseIcon from '../../assets/icons/x.svg';
-import IconButton from '../IconButton';
+import { ListItem, Typography, Button, Box } from "@mui/material";
+import ReactMarkdown from "react-markdown";
+import type { NotificationItemProps } from "./types";
+import Tag from "../Tag";
+import { useStyle } from "./styles";
+import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
+import CloseIcon from "../../assets/icons/x.svg";
+import IconButton from "../IconButton";
 
 const NotificationItem: React.FC<NotificationItemProps> = ({
   description,
@@ -35,7 +35,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
           {priority && tagType && <Tag type={tagType} label={priority} />}
           {ctaButtons && (
             <div style={styles.ctaButtonContainer}>
-              {ctaButtons.map(button => (
+              {ctaButtons.map((button) => (
                 <Button
                   key={button.key}
                   variant="contained"

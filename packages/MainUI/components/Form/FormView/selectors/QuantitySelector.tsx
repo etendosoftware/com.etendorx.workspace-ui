@@ -1,13 +1,14 @@
-import React, { memo, useState, useCallback, useEffect } from 'react';
-import { TextField } from '@mui/material';
-import { FieldValue, QuantityProps } from '../types';
-import { validateNumber } from '@workspaceui/componentlibrary/src/utils/quantitySelectorUtil';
-import { useFormContext } from 'react-hook-form';
+import { TextField } from "@mui/material";
+import { validateNumber } from "@workspaceui/componentlibrary/src/utils/quantitySelectorUtil";
+import type React from "react";
+import { memo, useCallback, useEffect, useState } from "react";
+import { useFormContext } from "react-hook-form";
+import type { FieldValue, QuantityProps } from "../types";
 
 const INPUT_PROPS = {
   inputProps: {
-    inputMode: 'numeric' as const,
-    pattern: '[0-9]*',
+    inputMode: "numeric" as const,
+    pattern: "[0-9]*",
   },
 };
 
@@ -24,22 +25,22 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
     );
 
     const [error, setError] = useState(false);
-    const [errorMessage, setErrorMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState("");
 
-    const minValue = min !== null && min !== undefined && min !== '' ? Number(min) : undefined;
-    const maxValue = max !== null && max !== undefined && max !== '' ? Number(max) : undefined;
+    const minValue = min !== null && min !== undefined && min !== "" ? Number(min) : undefined;
+    const maxValue = max !== null && max !== undefined && max !== "" ? Number(max) : undefined;
 
     const handleChange = useCallback(
       (event: React.ChangeEvent<HTMLInputElement>) => {
         const inputValue = event.target.value;
 
-        const sanitizedValue = inputValue.replace(/[^\d]/g, '').slice(0, Number(maxLength));
+        const sanitizedValue = inputValue.replace(/[^\d]/g, "").slice(0, Number(maxLength));
 
         setValue(sanitizedValue);
 
-        if (sanitizedValue === '') {
+        if (sanitizedValue === "") {
           setError(false);
-          setErrorMessage('');
+          setErrorMessage("");
           onChange?.(0);
           return;
         }
@@ -57,7 +58,7 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
     );
 
     const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
-      if (['e', 'E', '+', '-'].includes(event.key)) {
+      if (["e", "E", "+", "-"].includes(event.key)) {
         event.preventDefault();
       }
     }, []);
@@ -77,7 +78,7 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         error={error}
-        helperText={error ? errorMessage : ' '}
+        helperText={error ? errorMessage : " "}
         disabled={readOnly}
         InputProps={INPUT_PROPS}
         name={name}
@@ -86,13 +87,13 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
         aria-readonly={readOnly}
         aria-required={field.isMandatory}
         aria-disabled={readOnly}
-        {...(typeof minValue != 'undefined' ? { 'aria-valuemin': minValue } : {})}
-        {...(typeof maxValue != 'undefined' ? { 'aria-valuemax': maxValue } : {})}
+        {...(typeof minValue !== "undefined" ? { "aria-valuemin": minValue } : {})}
+        {...(typeof maxValue !== "undefined" ? { "aria-valuemax": maxValue } : {})}
       />
     );
   },
 );
 
-QuantitySelector.displayName = 'QuantitySelector';
+QuantitySelector.displayName = "QuantitySelector";
 
 export default QuantitySelector;

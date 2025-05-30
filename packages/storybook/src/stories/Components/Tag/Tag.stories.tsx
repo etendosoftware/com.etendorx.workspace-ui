@@ -10,19 +10,19 @@ export default {
 const Template = () => (
   <Grid container spacing={2}>
     <Grid item>
-      <Tag type="success" icon={<InfoOutlined />} label="Registered" />
+      <Tag type='success' icon={<InfoOutlined />} label='Registered' />
     </Grid>
     <Grid item>
-      <Tag type="primary" label="Registered" />
+      <Tag type='primary' label='Registered' />
     </Grid>
     <Grid item>
-      <Tag type="warning" icon={<CheckOutlined />} label="Period Closed" />
+      <Tag type='warning' icon={<CheckOutlined />} label='Period Closed' />
     </Grid>
     <Grid item>
-      <Tag type="error" icon={<Error />} label="Canceled" />
+      <Tag type='error' icon={<Error />} label='Canceled' />
     </Grid>
     <Grid item>
-      <Tag type="draft" label="In Draft" />
+      <Tag type='draft' label='In Draft' />
     </Grid>
   </Grid>
 );

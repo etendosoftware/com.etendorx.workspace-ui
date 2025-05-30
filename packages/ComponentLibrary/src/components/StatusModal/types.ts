@@ -6,7 +6,7 @@ export interface StatusConfig {
   iconBackgroundColor: string;
 }
 
-export type StatusType = 'success' | 'error' | 'warning' | 'info';
+export type StatusType = "success" | "error" | "warning" | "info";
 
 export interface StatusModalState {
   open: boolean;

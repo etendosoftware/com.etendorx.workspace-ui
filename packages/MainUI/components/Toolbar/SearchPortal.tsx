@@ -1,8 +1,9 @@
-import React, { useCallback } from 'react';
-import { Box, Portal } from '@mui/material';
-import TextInputAutocomplete from '@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete';
-import { useStyle } from './styles';
-import { SearchPortalProps } from './types';
+import type React from "react";
+import { useCallback } from "react";
+import { Box, Portal } from "@mui/material";
+import TextInputAutocomplete from "@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete";
+import { useStyle } from "./styles";
+import type { SearchPortalProps } from "./types";
 
 const SearchPortal: React.FC<SearchPortalProps> = ({
   isOpen,
@@ -16,10 +17,10 @@ const SearchPortal: React.FC<SearchPortalProps> = ({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         onClose();
-        onSearchChange('');
-      } else if (e.key === 'Enter') {
+        onSearchChange("");
+      } else if (e.key === "Enter") {
         onClose();
       }
     },

@@ -1,14 +1,14 @@
-import React, { useCallback, useState, useRef, useEffect, forwardRef, useMemo } from 'react';
-import { Typography, Button, Box, useTheme } from '@mui/material';
-import ModalMUI from '@mui/material/Modal';
-import IconButton from '../IconButton';
-import { Container, Position } from '../enums';
-import { ModalIProps } from './types';
-import { IconSize, useStyles } from './styles';
-import CloseIcon from '../../assets/icons/x.svg';
-import MaximizeIcon from '../../assets/icons/maximize-2.svg';
-import MinimizeIcon from '../../assets/icons/minimize-2.svg';
-import { calculateModalStyles } from '../../helpers/updateModal';
+import React, { useCallback, useState, useRef, useEffect, forwardRef, useMemo } from "react";
+import { Typography, Button, Box, useTheme } from "@mui/material";
+import ModalMUI from "@mui/material/Modal";
+import IconButton from "../IconButton";
+import { Container, Position } from "../enums";
+import type { ModalIProps } from "./types";
+import { IconSize, useStyles } from "./styles";
+import CloseIcon from "../../assets/icons/x.svg";
+import MaximizeIcon from "../../assets/icons/maximize-2.svg";
+import MinimizeIcon from "../../assets/icons/minimize-2.svg";
+import { calculateModalStyles } from "../../helpers/updateModal";
 
 const Modal = forwardRef<HTMLDivElement, ModalIProps>(
   (
@@ -56,7 +56,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
     }, []);
 
     const handleClose = useCallback(() => {
-      if (typeof onClose === 'function') {
+      if (typeof onClose === "function") {
         onClose();
       }
 
@@ -67,7 +67,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
     }, [onClose, externalOpen]);
 
     const handleSave = useCallback(() => {
-      if (typeof onSave === 'function') {
+      if (typeof onSave === "function") {
         onSave();
       }
       if (externalOpen === undefined) {
@@ -76,7 +76,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
     }, [onSave, externalOpen]);
 
     const handleCancel = useCallback(() => {
-      if (typeof onCancel === 'function') {
+      if (typeof onCancel === "function") {
         onCancel();
       }
       if (externalOpen === undefined) {
@@ -89,16 +89,16 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
         !backgroundGradient
           ? {}
           : {
-              '&::before': {
+              "&::before": {
                 content: '""',
-                position: 'absolute',
-                top: '-2px',
-                left: '-2px',
-                right: '-2px',
-                height: '50%',
+                position: "absolute",
+                top: "-2px",
+                left: "-2px",
+                right: "-2px",
+                height: "50%",
                 background: backgroundGradient,
-                borderTopLeftRadius: '1rem',
-                borderTopRightRadius: '1rem',
+                borderTopLeftRadius: "1rem",
+                borderTopRightRadius: "1rem",
                 zIndex: 0,
               },
             },
@@ -119,11 +119,11 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
         isFullScreen
           ? {
               flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              overflowY: 'auto',
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              overflowY: "auto",
             }
           : {},
       [isFullScreen],
@@ -220,6 +220,6 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
   },
 );
 
-Modal.displayName = 'Modal';
+Modal.displayName = "Modal";
 
 export default Modal;

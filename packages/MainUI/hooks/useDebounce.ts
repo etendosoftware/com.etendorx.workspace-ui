@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from "react";
 
 interface PromiseRef<T> {
   resolve: (value: T | PromiseLike<T>) => void;
@@ -17,11 +17,8 @@ interface PromiseRef<T> {
  * @param {DependencyList} deps - Dependencias adicionales
  * @returns {(...args: Args) => Promise<T>} - Función con debounce aplicado que devuelve una promesa
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function useDebounce<T, Args extends any[] = any[]>(
-  fn: ((...args: Args) => Promise<T> | T) | undefined,
-  delay: number = 500,
-) {
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+function useDebounce<T, Args extends any[] = any[]>(fn: ((...args: Args) => Promise<T> | T) | undefined, delay = 500) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const latestPromiseRef = useRef<PromiseRef<T> | null>(null);
 
@@ -52,8 +49,8 @@ function useDebounce<T, Args extends any[] = any[]>(
       timerRef.current = setTimeout(() => {
         if (latestPromiseRef.current === promiseRef) {
           Promise.resolve(fn(...args))
-            .then(result => promiseRef.resolve(result))
-            .catch(err => promiseRef.reject(err));
+            .then((result) => promiseRef.resolve(result))
+            .catch((err) => promiseRef.reject(err));
         }
       }, delay);
 

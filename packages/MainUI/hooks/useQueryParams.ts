@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useSearchParams } from 'next/navigation';
-import { useMemo } from 'react';
+import { useSearchParams } from "next/navigation";
+import { useMemo } from "react";
 
 /**
  * Custom React hook that retrieves URL query parameters using Next.js's `useSearchParams`,

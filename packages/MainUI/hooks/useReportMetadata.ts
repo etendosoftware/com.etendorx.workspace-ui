@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { ReportMetadata } from '@workspaceui/etendohookbinder/src/hooks/types';
-import { logger } from '@/utils/logger';
+import { logger } from "@/utils/logger";
+import type { ReportMetadata } from "@workspaceui/etendohookbinder/src/hooks/types";
+import { useCallback, useEffect, useState } from "react";
 
 export interface ReportMetadataHook {
   metadata: ReportMetadata | null;
@@ -9,8 +9,8 @@ export interface ReportMetadataHook {
 }
 
 const REPORT_ID_TO_FILE_MAP: Record<string, string> = {
-  '800261': 'sales-order',
-  '800069': 'sales-order-invoice',
+  "800261": "sales-order",
+  "800069": "sales-order-invoice",
 };
 
 export const useReportMetadata = (reportId?: string): ReportMetadataHook => {
@@ -46,7 +46,7 @@ export const useReportMetadata = (reportId?: string): ReportMetadataHook => {
         logger.warn(err);
 
         if (!controller.signal.aborted) {
-          setError('Failed to load report metadata: ' + (err as Error).message);
+          setError(`Failed to load report metadata: ${(err as Error).message}`);
         }
       } finally {
         if (!controller.signal.aborted) {

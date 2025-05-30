@@ -1,8 +1,8 @@
-import React from 'react';
-import { TextField, InputAdornment } from '@mui/material';
-import { TextInputProps } from '../TextInputAutocomplete/TextInputComplete.types';
-import { useStyle } from './TextInputBase.styles';
-import IconButton from '../../../IconButton';
+import type React from "react";
+import { TextField, InputAdornment } from "@mui/material";
+import type { TextInputProps } from "../TextInputAutocomplete/TextInputComplete.types";
+import { useStyle } from "./TextInputBase.styles";
+import IconButton from "../../../IconButton";
 const TextInputBase = (props: TextInputProps) => {
   const {
     value,

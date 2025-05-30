@@ -1,22 +1,22 @@
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useFormContext } from 'react-hook-form';
-import { Field, FormInitializationResponse, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
-import { useCallout } from '@/hooks/useCallout';
-import { logger } from '@/utils/logger';
-import { GenericSelector } from './GenericSelector';
-import { buildPayloadByInputName, parseDynamicExpression } from '@/utils';
-import Label from '../Label';
-import { useUserContext } from '@/hooks/useUserContext';
-import { useParams } from 'next/navigation';
-import { getFieldsByColumnName } from '@workspaceui/etendohookbinder/src/utils/metadata';
-import { useTabContext } from '@/contexts/tab';
-import { useDebounce } from '@/hooks/useDebounce';
+import { useTabContext } from "@/contexts/tab";
+import { useCallout } from "@/hooks/useCallout";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useUserContext } from "@/hooks/useUserContext";
+import { buildPayloadByInputName, parseDynamicExpression } from "@/utils";
+import { logger } from "@/utils/logger";
+import { type Field, type FormInitializationResponse, FormMode } from "@workspaceui/etendohookbinder/src/api/types";
+import { getFieldsByColumnName } from "@workspaceui/etendohookbinder/src/utils/metadata";
+import { useParams } from "next/navigation";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { useFormContext } from "react-hook-form";
+import Label from "../Label";
+import { GenericSelector } from "./GenericSelector";
 
 export const compileExpression = (expression: string) => {
   try {
-    return new Function('context', 'currentValues', `return ${parseDynamicExpression(expression)};`);
+    return new Function("context", "currentValues", `return ${parseDynamicExpression(expression)};`);
   } catch (error) {
-    logger.warn('Error compiling expression:', expression, error);
+    logger.warn("Error compiling expression:", expression, error);
 
     return () => true;
   }
@@ -47,7 +47,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     try {
       return compiledExpr(session, values);
     } catch (error) {
-      logger.warn('Error executing expression:', compiledExpr, error);
+      logger.warn("Error executing expression:", compiledExpr, error);
 
       return true;
     }
@@ -62,33 +62,33 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     try {
       return compiledExpr(session, values);
     } catch (error) {
-      logger.warn('Error executing expression:', compiledExpr, error);
+      logger.warn("Error executing expression:", compiledExpr, error);
 
       return true;
     }
   }, [field, formMode, session, values]);
 
   const applyColumnValues = useCallback(
-    (columnValues: FormInitializationResponse['columnValues']) => {
-      Object.entries(columnValues ?? {}).forEach(([column, { value, identifier }]) => {
+    (columnValues: FormInitializationResponse["columnValues"]) => {
+      for (const [column, { value, identifier }] of Object.entries(columnValues ?? {})) {
         const targetField = fieldsByColumnName[column];
         setValue(targetField?.hqlName ?? column, value);
 
         if (targetField && identifier) {
-          setValue(targetField.hqlName + '$_identifier', identifier);
+          setValue(`${targetField.hqlName}$_identifier`, identifier);
         }
-      });
+      }
     },
     [fieldsByColumnName, setValue],
   );
 
   const applyAuxiliaryInputValues = useCallback(
-    (auxiliaryInputValues: FormInitializationResponse['auxiliaryInputValues']) => {
-      Object.entries(auxiliaryInputValues ?? {}).forEach(([column, { value }]) => {
+    (auxiliaryInputValues: FormInitializationResponse["auxiliaryInputValues"]) => {
+      for (const [column, { value }] of Object.entries(auxiliaryInputValues ?? {})) {
         const targetField = fieldsByColumnName[column];
 
         setValue(targetField?.hqlName || column, value);
-      });
+      }
     },
     [fieldsByColumnName, setValue],
   );
@@ -99,7 +99,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     if (!tab || !field.column.callout) return;
 
     try {
-      const entityKeyColumn = tab.fields['id'].columnName;
+      const entityKeyColumn = tab.fields.id.columnName;
       const payload = buildPayloadByInputName(getValues(), fieldsByHqlName);
 
       const calloutData = {
@@ -112,8 +112,8 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         keyColumnName: entityKeyColumn,
         _entityName: tab.entityName,
         inpwindowId: tab.window,
-        inpmProductId_CURR: session['$C_Currency_ID'],
-        inpmProductId_UOM: session['#C_UOM_ID'],
+        inpmProductId_CURR: session.$C_Currency_ID,
+        inpmProductId_UOM: session["#C_UOM_ID"],
       } as Record<string, string>;
 
       if (optionData) {
@@ -128,7 +128,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         applyAuxiliaryInputValues(data.auxiliaryInputValues);
       }
     } catch (err) {
-      logger.warn('Callout execution failed:', err);
+      logger.warn("Callout execution failed:", err);
     }
   }, [
     value,
@@ -145,7 +145,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
   ]);
 
   useEffect(() => {
-    if (ready.current && previousValue.current != value) {
+    if (ready.current && previousValue.current !== value) {
       runCallout();
     } else {
       ready.current = true;
@@ -168,9 +168,8 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         </div>
       </div>
     );
-  } else {
-    return <input type="hidden" {...register(field.hqlName)} />;
   }
+  return <input type="hidden" {...register(field.hqlName)} />;
 };
 
 const BaseSelector = memo(BaseSelectorComp);

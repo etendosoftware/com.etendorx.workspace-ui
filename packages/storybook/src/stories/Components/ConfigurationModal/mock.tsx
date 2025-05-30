@@ -15,7 +15,7 @@ import SpecificToolbarTextUrl from '@workspaceui/componentlibrary/src/assets/ima
 export const modalConfig = {
   icon: <SettingIcon />,
   title: {
-    icon: <SettingIcon fill="#2E365C" />,
+    icon: <SettingIcon fill='#2E365C' />,
     label: 'Appearance',
   },
   linkTitle: { label: 'View all settings', url: '/settings' },

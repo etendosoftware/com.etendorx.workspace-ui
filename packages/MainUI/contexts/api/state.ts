@@ -4,7 +4,7 @@ export interface State {
   loading: boolean;
 }
 
-export type Action = { type: 'SET_CONNECTED' } | { type: 'SET_ERROR' } | { type: 'RESET' };
+export type Action = { type: "SET_CONNECTED" } | { type: "SET_ERROR" } | { type: "RESET" };
 
 export const initialState: State = {
   connected: false,
@@ -14,11 +14,11 @@ export const initialState: State = {
 
 export function stateReducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'SET_CONNECTED':
+    case "SET_CONNECTED":
       return { ...state, connected: true, error: false, loading: false };
-    case 'SET_ERROR':
+    case "SET_ERROR":
       return { ...state, error: true, connected: false, loading: false };
-    case 'RESET':
+    case "RESET":
       return initialState;
     default:
       return state;

@@ -1,6 +1,6 @@
-import AppBreadcrumb from './Breadcrums';
-import Navigation from './navigation';
-import Sidebar from './Sidebar';
+import AppBreadcrumb from "./Breadcrums";
+import Navigation from "./navigation";
+import Sidebar from "./Sidebar";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,9 +11,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <Navigation />
           <AppBreadcrumb />
         </div>
-        <div className="flex flex-1 max-h-auto max-w-auto overflow-hidden">
-          {children}
-        </div>
+        <div className="flex flex-1 max-h-auto max-w-auto overflow-hidden">{children}</div>
       </div>
     </div>
   );

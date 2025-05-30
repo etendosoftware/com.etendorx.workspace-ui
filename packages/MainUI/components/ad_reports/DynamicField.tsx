@@ -1,10 +1,10 @@
-import { memo } from 'react';
-import { useFormContext, Controller } from 'react-hook-form';
-import { TextField, Autocomplete } from '@mui/material';
-import { ReportField } from '@workspaceui/etendohookbinder/src/hooks/types';
-import DateSelector from './selectors/DateSelector';
-import DatabaseSelectSelector from './selectors/DatabaseSelect';
-import MultiSelect from './selectors/MultiSelect/MultiSelector';
+import { memo } from "react";
+import { useFormContext, Controller } from "react-hook-form";
+import { TextField, Autocomplete } from "@mui/material";
+import type { ReportField } from "@workspaceui/etendohookbinder/src/hooks/types";
+import DateSelector from "./selectors/DateSelector";
+import DatabaseSelectSelector from "./selectors/DatabaseSelect";
+import MultiSelect from "./selectors/MultiSelect/MultiSelector";
 
 interface DynamicFieldProps {
   field: ReportField;
@@ -14,7 +14,7 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
   const { control, setValue } = useFormContext();
 
   switch (field.type) {
-    case 'date':
+    case "date":
       return (
         <Controller
           name={field.name}
@@ -34,24 +34,24 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
           )}
         />
       );
-    case 'select':
+    case "select":
       return (
         <Controller
           name={field.name}
           control={control}
           render={({ field: { onChange, value } }) => (
             <DatabaseSelectSelector
-              value={value || ''}
+              value={value || ""}
               name={field.name}
               title={field.label}
               onChange={onChange}
               readOnly={false}
-              entity={field.entity || ''}
+              entity={field.entity || ""}
             />
           )}
         />
       );
-    case 'search':
+    case "search":
       return (
         <Controller
           name={field.name}
@@ -61,17 +61,17 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
             <Autocomplete
               options={field.lookupConfig?.values || []}
               value={value || null}
-              getOptionLabel={option => option?.name || ''}
+              getOptionLabel={(option) => option?.name || ""}
               onChange={(_, newValue) => onChange(newValue)}
               fullWidth
-              renderInput={params => (
+              renderInput={(params) => (
                 <TextField {...params} variant="standard" label={field.label} required={field.required} />
               )}
             />
           )}
         />
       );
-    case 'multiselect':
+    case "multiselect":
       return (
         <Controller
           name={field.name}
@@ -79,13 +79,13 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
           render={({ field: { value } }) => (
             <MultiSelect
               value={value || []}
-              onChange={selectedIds => {
+              onChange={(selectedIds) => {
                 setValue(field.name, selectedIds, { shouldDirty: true });
               }}
               title={field.label}
-              entity={field.entity || ''}
-              columnName={field.columnName || ''}
-              identifierField={field.identifierField || ''}
+              entity={field.entity || ""}
+              columnName={field.columnName || ""}
+              identifierField={field.identifierField || ""}
               columns={field.columns}
             />
           )}
@@ -101,7 +101,7 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
             <TextField
               fullWidth
               label={field.label}
-              value={value || ''}
+              value={value || ""}
               onChange={onChange}
               onBlur={onBlur}
               required={field.required}

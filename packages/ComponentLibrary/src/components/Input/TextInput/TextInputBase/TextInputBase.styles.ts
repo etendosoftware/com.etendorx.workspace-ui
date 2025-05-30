@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { SxProps, Theme, useTheme } from '@mui/material';
+import { useMemo } from "react";
+import { type SxProps, type Theme, useTheme } from "@mui/material";
 
 type StylesType = {
   styles: { [key: string]: React.CSSProperties };
@@ -15,31 +15,31 @@ export const useStyle = () => {
       ({
         styles: {
           inputAdornment: {
-            paddingY: '4px',
+            paddingY: "4px",
           },
           inputStyle: {
-            padding: '0.25rem 0',
-            fontSize: '14px',
+            padding: "0.25rem 0",
+            fontSize: "14px",
             color: theme.palette.baselineColor.transparentNeutral[100],
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: "Inter, sans-serif",
             fontWeight: 500,
           },
         } as { [key: string]: React.CSSProperties },
 
         sx: {
           inputBase: {
-            '& .MuiInput-underline:before': {
-              borderBottomWidth: '1px',
-              borderBottomStyle: 'solid',
+            "& .MuiInput-underline:before": {
+              borderBottomWidth: "1px",
+              borderBottomStyle: "solid",
             },
-            '& .MuiInput-underline:hover:before': {
+            "& .MuiInput-underline:hover:before": {
               borderBottomColor: theme.palette.baselineColor.neutral[80],
             },
-            '& .MuiInput-underline:after': {
+            "& .MuiInput-underline:after": {
               borderBottomColor: theme.palette.baselineColor.neutral[80],
             },
-            '& .MuiInputBase-input': {
-              fontFamily: 'Inter, sans-serif',
+            "& .MuiInputBase-input": {
+              fontFamily: "Inter, sans-serif",
               fontWeight: 500,
             },
           },

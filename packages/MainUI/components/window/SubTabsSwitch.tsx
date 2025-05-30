@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import type { TabsSwitchProps } from '@/components/window/types';
-import { TabButton } from '@/components/window/TabButton';
+import type { TabsSwitchProps } from "@/components/window/types";
+import { TabButton } from "@/components/window/TabButton";
 
 export const SubTabsSwitch = ({ tabs, current, onClick, onClose, onDoubleClick }: TabsSwitchProps) => {
   return (

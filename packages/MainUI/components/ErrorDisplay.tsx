@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { Button } from '@mui/material';
-import { useTranslation } from '../hooks/useTranslation';
-import errorImage from '../../ComponentLibrary/src/assets/images/NotificationModal/empty-state-notifications.svg?url';
-import Link from 'next/link';
-import { ErrorDisplayProps } from './types';
+import Image from "next/image";
+import { Button } from "@mui/material";
+import { useTranslation } from "../hooks/useTranslation";
+import errorImage from "../../ComponentLibrary/src/assets/images/NotificationModal/empty-state-notifications.svg?url";
+import Link from "next/link";
+import type { ErrorDisplayProps } from "./types";
 
 export function ErrorDisplay({
   title,
@@ -31,13 +31,13 @@ export function ErrorDisplay({
             variant="contained"
             onClick={onRetry}
             className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md">
-            {t('errors.internalServerError.retry')}
+            {t("errors.internalServerError.retry")}
           </Button>
         )}
         {showHomeButton && (
           <Link href="/">
             <Button variant="contained" className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-md">
-              {t('navigation.common.home')}
+              {t("navigation.common.home")}
             </Button>
           </Link>
         )}

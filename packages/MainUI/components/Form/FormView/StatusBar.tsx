@@ -1,5 +1,5 @@
-import { Field } from '@workspaceui/etendohookbinder/src/api/types';
-import StatusBarField from './StatusBarField';
+import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import StatusBarField from "./StatusBarField";
 
 export default function StatusBar({ fields }: { fields: Record<string, Field> }) {
   return (

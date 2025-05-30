@@ -1,4 +1,4 @@
-import { Organization } from './types';
+import type { Organization } from './types';
 import InfoIcon from '@workspaceui/componentlibrary/src/assets/icons/note.svg';
 import LinkIcon from '@workspaceui/componentlibrary/src/assets/icons/link.svg';
 import AttachmentIcon from '@workspaceui/componentlibrary/src/assets/icons/file.svg';

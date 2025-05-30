@@ -1,11 +1,11 @@
-import { useCallback, useState } from 'react';
-import type { Field } from '@workspaceui/etendohookbinder/src/api/types';
-import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
-import { useFormContext } from 'react-hook-form';
-import { useTabContext } from '@/contexts/tab';
-import { logger } from '@/utils/logger';
-import useFormParent from './useFormParent';
-import { FieldName } from './types';
+import { useTabContext } from "@/contexts/tab";
+import { logger } from "@/utils/logger";
+import { datasource } from "@workspaceui/etendohookbinder/src/api/datasource";
+import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import { useCallback, useState } from "react";
+import { useFormContext } from "react-hook-form";
+import { FieldName } from "./types";
+import useFormParent from "./useFormParent";
 
 export interface UseComboSelectParams {
   field: Field;
@@ -31,9 +31,9 @@ export const useComboSelect = ({ field }: UseComboSelectParams) => {
         setLoading(true);
 
         const body = new URLSearchParams({
-          _startRow: '0',
-          _endRow: '75',
-          _operationType: 'fetch',
+          _startRow: "0",
+          _endRow: "75",
+          _operationType: "fetch",
           ...field.selector,
           moduleId: field.module,
           windowId,
@@ -41,18 +41,18 @@ export const useComboSelect = ({ field }: UseComboSelectParams) => {
           inpTabId: field.tab,
           inpTableId: field.column.table,
           initiatorField: field.hqlName,
-          ...(typeof _currentValue !== 'undefined' ? { _currentValue } : {}),
+          ...(typeof _currentValue !== "undefined" ? { _currentValue } : {}),
           ...parentData,
         });
 
-        Object.entries(getValues()).forEach(([key, value]) => {
+        for (const [key, value] of Object.entries(getValues())) {
           const _key = tab.fields[key]?.inputName;
           const stringValue = String(value);
 
           const valueMap = {
-            true: 'Y',
-            false: 'N',
-            null: 'null',
+            true: "Y",
+            false: "N",
+            null: "null",
           };
 
           const safeValue = Object.prototype.hasOwnProperty.call(valueMap, stringValue)
@@ -62,10 +62,10 @@ export const useComboSelect = ({ field }: UseComboSelectParams) => {
           if (safeValue) {
             body.set(_key || key, safeValue);
           }
-        });
+        }
 
-        const { data, statusText } = await datasource.client.request(field.selector?.datasourceName ?? '', {
-          method: 'POST',
+        const { data, statusText } = await datasource.client.request(field.selector?.datasourceName ?? "", {
+          method: "POST",
           body,
         });
 

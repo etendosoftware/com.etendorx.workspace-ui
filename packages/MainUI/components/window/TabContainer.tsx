@@ -1,10 +1,10 @@
-import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
 
-const BASE_STYLES = 'flex flex-col overflow-hidden min-h-0 m-2';
-const EXPANDED_STYLES = 'flex-1';
-const COLLAPSED_STYLES = '';
-const MAIN_TAB_STYLES = '';
-const SUB_TAB_STYLES = 'bg-white items-';
+const BASE_STYLES = "flex flex-col overflow-hidden min-h-0 m-2";
+const EXPANDED_STYLES = "flex-1";
+const COLLAPSED_STYLES = "";
+const MAIN_TAB_STYLES = "";
+const SUB_TAB_STYLES = "bg-white items-";
 
 export type ContainerProps = React.PropsWithChildren<
   React.HTMLProps<HTMLDivElement> & { collapsed: boolean; current: Tab }

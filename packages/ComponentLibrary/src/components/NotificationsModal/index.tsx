@@ -1,12 +1,12 @@
-import { List, Link, Button } from '@mui/material';
-import IconButton from '../IconButton';
-import { INotificationModalProps } from './types';
-import { useStyle } from './styles';
-import { Settings } from '@mui/icons-material';
-import MoreVert from '../../assets/icons/more-vertical.svg';
-import NotificationItem from '../NotificationItem';
-import Image from '../../assets/images/NotificationModal/empty-state-notifications.svg?url';
-import Menu from '../Menu';
+import { List, Link, Button } from "@mui/material";
+import IconButton from "../IconButton";
+import type { INotificationModalProps } from "./types";
+import { useStyle } from "./styles";
+import { Settings } from "@mui/icons-material";
+import MoreVert from "../../assets/icons/more-vertical.svg";
+import NotificationItem from "../NotificationItem";
+import Image from "../../assets/images/NotificationModal/empty-state-notifications.svg?url";
+import Menu from "../Menu";
 
 const NotificationModalCustom: React.FC<INotificationModalProps> = ({
   title,

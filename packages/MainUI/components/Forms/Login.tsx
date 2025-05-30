@@ -1,16 +1,16 @@
-'use client';
-import { useCallback, useState } from 'react';
-import { Box, Button, Paper, Typography } from '@mui/material';
-import { useStyle } from './styles';
-import GridLayout from './GridLayout';
-import { LoginProps } from './types';
-import { useTranslation } from '../../hooks/useTranslation';
-import { GRID_CONSTANTS } from './constants';
-import Input from './Input';
+"use client";
+import { useCallback, useState } from "react";
+import { Box, Button, Paper, Typography } from "@mui/material";
+import { useStyle } from "./styles";
+import GridLayout from "./GridLayout";
+import type { LoginProps } from "./types";
+import { useTranslation } from "../../hooks/useTranslation";
+import { GRID_CONSTANTS } from "./constants";
+import Input from "./Input";
 
 export default function Login({ title, onSubmit, error }: LoginProps) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const { styles } = useStyle();
   const { t } = useTranslation();
 
@@ -25,7 +25,7 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
   );
 
   const handleSubmit = useCallback<React.FormEventHandler>(
-    async e => {
+    async (e) => {
       e.preventDefault();
       e.stopPropagation();
       await onSubmit(username, password);
@@ -47,13 +47,13 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
                 {GRID_CONSTANTS.ICONS.TITLE_EMOJI}
               </Typography>
               <Typography variant="body1" sx={styles.subtitle}>
-                {t('login.subtitle')}
+                {t("login.subtitle")}
               </Typography>
               <Input
                 type="text"
                 name="username"
                 id="username"
-                placeholder={t('login.fields.username.placeholder')}
+                placeholder={t("login.fields.username.placeholder")}
                 value={username}
                 onChange={handleUsernameChange}
                 autoComplete="username"
@@ -62,13 +62,13 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
                 type="password"
                 name="password"
                 id="password"
-                placeholder={t('login.fields.password.placeholder')}
+                placeholder={t("login.fields.password.placeholder")}
                 value={password}
                 onChange={handlePasswordChange}
                 autoComplete="current-password"
               />
               <Button type="submit" fullWidth variant="contained" sx={styles.button}>
-                {t('login.buttons.submit')}
+                {t("login.buttons.submit")}
               </Button>
               {error && (
                 <Typography component="div" sx={styles.error}>

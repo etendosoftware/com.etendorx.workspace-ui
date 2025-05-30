@@ -1,9 +1,9 @@
-import { createContext, useContext, useMemo } from 'react';
-import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { ToolbarProvider } from './ToolbarContext';
-import { SearchProvider } from './searchContext';
-import { useSelectedRecord } from '@/hooks/useSelectedRecord';
-import { useSelected } from '@/hooks/useSelected';
+import { createContext, useContext, useMemo } from "react";
+import type { EntityData, Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import { ToolbarProvider } from "./ToolbarContext";
+import { SearchProvider } from "./searchContext";
+import { useSelectedRecord } from "@/hooks/useSelectedRecord";
+import { useSelected } from "@/hooks/useSelected";
 
 interface TabContextI {
   tab: Tab;
@@ -43,7 +43,7 @@ export const useTabContext = () => {
   const context = useContext(TabContext);
 
   if (!context) {
-    throw new Error('useTabContext must be used within a TabContextProvider');
+    throw new Error("useTabContext must be used within a TabContextProvider");
   }
 
   return context;

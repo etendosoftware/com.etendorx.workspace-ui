@@ -1,15 +1,15 @@
 export const styles = {
   content: {
-    overflow: 'hidden',
+    overflow: "hidden",
     flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    position: 'relative',
+    display: "flex",
+    flexDirection: "column",
+    position: "relative",
   },
   breadCrum: {
-    padding: '0 0.5rem',
+    padding: "0 0.5rem",
   },
   box: {
-    margin: '0 0 0.5rem 0',
+    margin: "0 0 0.5rem 0",
   },
 };

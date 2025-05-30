@@ -1,5 +1,5 @@
-import { Inotifications } from '../../commons';
-import { ReactNode } from 'react';
+import type { ReactNode } from "react";
+import type { Inotifications } from "../../commons";
 
 export interface INotificationModalProps {
   icon?: string;

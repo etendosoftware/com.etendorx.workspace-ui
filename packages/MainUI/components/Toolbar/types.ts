@@ -1,5 +1,5 @@
-import { SxProps, Theme } from '@mui/material';
-import { ProcessButton } from '../ProcessModal/types';
+import type { SxProps, Theme } from "@mui/material";
+import type { ProcessButton } from "../ProcessModal/types";
 
 export const IconSize = 16;
 

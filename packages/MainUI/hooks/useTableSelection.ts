@@ -1,24 +1,24 @@
-import { useEffect } from 'react';
-import type { MRT_RowSelectionState } from 'material-react-table';
-import type { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { mapBy } from '@/utils/structures';
-import { useSelected } from '@/hooks/useSelected';
+import { useSelected } from "@/hooks/useSelected";
+import { mapBy } from "@/utils/structures";
+import type { EntityData, Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { MRT_RowSelectionState } from "material-react-table";
+import { useEffect } from "react";
 
 export default function useTableSelection(tab: Tab, records: EntityData[], rowSelection: MRT_RowSelectionState) {
   const { graph } = useSelected();
 
   useEffect(() => {
-    const recordsMap = mapBy(records, 'id');
+    const recordsMap = mapBy(records, "id");
     const result: EntityData[] = [];
     let last: EntityData | null | undefined;
 
-    Object.keys(rowSelection).forEach(recordId => {
+    for (const recordId of Object.keys(rowSelection)) {
       last = recordsMap[recordId];
 
       if (last) {
         result.push(last);
       }
-    });
+    }
 
     if (last) {
       graph.setSelected(tab, last);

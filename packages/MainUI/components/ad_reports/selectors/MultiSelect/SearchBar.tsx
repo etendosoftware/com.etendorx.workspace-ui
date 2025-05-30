@@ -1,10 +1,10 @@
-import { Typography, Box, useTheme } from '@mui/material';
-import CloseIcon from '@workspaceui/componentlibrary/src/assets/icons/x.svg';
-import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
-import { useStyle } from '@/components/Table/styles';
-import { ICON_BUTTON_SIZE, ADD_BUTTON_TEXT } from './constants';
-import { SearchBarProps } from './types';
-import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
+import { Typography, Box, useTheme } from "@mui/material";
+import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
+import SearchOutlined from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
+import { useStyle } from "@/components/Table/styles";
+import { ICON_BUTTON_SIZE, ADD_BUTTON_TEXT } from "./constants";
+import type { SearchBarProps } from "./types";
+import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 
 export const SearchBar: React.FC<SearchBarProps> = ({ readOnly, onClear, onOpen, hasItems }) => {
   const { sx } = useStyle();
@@ -17,9 +17,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({ readOnly, onClear, onOpen,
 
   const searchBarStyles = {
     ...sx.searchBarBase,
-    cursor: readOnly ? 'default' : 'pointer',
+    cursor: readOnly ? "default" : "pointer",
     opacity: readOnly ? 0.7 : 1,
-    '&:hover': !readOnly
+    "&:hover": !readOnly
       ? {
           backgroundColor: theme.palette.baselineColor.neutral[10],
           color: theme.palette.baselineColor.neutral[100],

@@ -1,7 +1,6 @@
-import { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import type { EntityData, Tab } from "@workspaceui/etendohookbinder/src/api/types";
 
-export interface SelectedRecord extends EntityData {
-}
+export interface SelectedRecord extends EntityData {}
 
 export type IsMainTab = boolean;
 

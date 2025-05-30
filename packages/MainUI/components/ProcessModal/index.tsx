@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback, useMemo, memo } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from '@mui/material';
-import { useStyle } from './styles';
-import { ProcessButtonType, type ProcessModalProps } from './types';
-import ProcessIframeModal from './Iframe';
+import { useEffect, useState, useCallback, useMemo, memo } from "react";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from "@mui/material";
+import { useStyle } from "./styles";
+import { ProcessButtonType, type ProcessModalProps } from "./types";
+import ProcessIframeModal from "./Iframe";
 
 const ProcessModal = memo(
   ({
@@ -20,7 +20,7 @@ const ProcessModal = memo(
   }: ProcessModalProps) => {
     const { styles } = useStyle();
     const [showIframeModal, setShowIframeModal] = useState(false);
-    const [iframeUrl, setIframeUrl] = useState('');
+    const [iframeUrl, setIframeUrl] = useState("");
     const [showConfirmDialog, setShowConfirmDialog] = useState(open);
 
     const type = useMemo(
@@ -45,7 +45,7 @@ const ProcessModal = memo(
 
     const handleCloseIframeModal = useCallback(() => {
       setShowIframeModal(false);
-      setIframeUrl('');
+      setIframeUrl("");
     }, []);
 
     const handleCombinedClose = useCallback(() => {
@@ -107,7 +107,7 @@ const ProcessModal = memo(
             isOpen={showIframeModal}
             onClose={handleCombinedClose}
             url={iframeUrl}
-            title={button?.name || ''}
+            title={button?.name || ""}
             onProcessSuccess={onProcessSuccess}
             tabId={tabId}
           />
@@ -117,6 +117,6 @@ const ProcessModal = memo(
   },
 );
 
-ProcessModal.displayName = 'ProcessModal';
+ProcessModal.displayName = "ProcessModal";
 
 export default ProcessModal;

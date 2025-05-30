@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { ToolbarResponse } from './types';
-import { logger } from '@/utils/logger';
+import { useCallback, useEffect, useState } from "react";
+import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import type { ToolbarResponse } from "./types";
+import { logger } from "@/utils/logger";
 
 export function useToolbar(windowId: string, tabId?: string) {
   const [toolbar, setToolbar] = useState<ToolbarResponse | null>(null);
@@ -16,9 +16,9 @@ export function useToolbar(windowId: string, tabId?: string) {
       setError(null);
 
       const params = new URLSearchParams();
-      params.append('_operationType', 'fetch');
-      params.append('_startRow', '0');
-      params.append('_endRow', '75');
+      params.append("_operationType", "fetch");
+      params.append("_startRow", "0");
+      params.append("_endRow", "75");
       // params.append(
       //   'criteria',
       //   JSON.stringify({
@@ -26,11 +26,11 @@ export function useToolbar(windowId: string, tabId?: string) {
       //   }),
       // );
 
-      const url = tabId ? 'etmeta_Toolbar' : `toolbar/${windowId}`;
+      const url = tabId ? "etmeta_Toolbar" : `toolbar/${windowId}`;
 
       const response = await Metadata.datasourceServletClient.post(url, params, {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          "Content-Type": "application/x-www-form-urlencoded",
         },
       });
 
@@ -38,7 +38,7 @@ export function useToolbar(windowId: string, tabId?: string) {
     } catch (error) {
       logger.warn(error);
 
-      setError(error instanceof Error ? error : new Error('Failed to fetch toolbar'));
+      setError(error instanceof Error ? error : new Error("Failed to fetch toolbar"));
     } finally {
       setLoading(false);
     }

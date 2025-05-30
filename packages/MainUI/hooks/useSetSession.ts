@@ -1,12 +1,12 @@
-import { useCallback } from 'react';
-import { logger } from '@/utils/logger';
-import { EntityData, FormInitializationResponse, Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { buildPayloadByInputName } from '@/utils';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { useUserContext } from './useUserContext';
+import { buildPayloadByInputName } from "@/utils";
+import { logger } from "@/utils/logger";
+import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import type { EntityData, FormInitializationResponse, Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import { useCallback } from "react";
+import { useUserContext } from "./useUserContext";
 
-const ACTION = 'org.openbravo.client.application.window.FormInitializationComponent';
-const MODE = 'SETSESSION';
+const ACTION = "org.openbravo.client.application.window.FormInitializationComponent";
+const MODE = "SETSESSION";
 
 export const useSetSession = () => {
   const { setSession } = useUserContext();
@@ -20,7 +20,7 @@ export const useSetSession = () => {
         MODE,
         TAB_ID: tab.id,
         ROW_ID: String(record.id),
-        PARENT_ID: 'null',
+        PARENT_ID: "null",
       });
 
       try {
@@ -33,12 +33,12 @@ export const useSetSession = () => {
 
         const data = response.data as FormInitializationResponse;
 
-        setSession(prev => {
+        setSession((prev) => {
           const result = { ...prev, ...data.sessionAttributes };
 
-          Object.entries(data.auxiliaryInputValues).forEach(([inputName, { value }]) => {
-            result[inputName] = value || '';
-          });
+          for (const [inputName, { value }] of Object.entries(data.auxiliaryInputValues)) {
+            result[inputName] = value || "";
+          }
 
           return result;
         });

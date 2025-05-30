@@ -1,35 +1,41 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { ToolbarProps } from './types';
-import SearchPortal from './SearchPortal';
-import { useTranslation } from '../../hooks/useTranslation';
-import { useProcessExecution } from '../../hooks/Toolbar/useProcessExecution';
-import { useProcessButton } from '../../hooks/Toolbar/useProcessButton';
-import { useToolbarConfig } from '../../hooks/Toolbar/useToolbarConfig';
-import { useToolbar } from '../../hooks/Toolbar/useToolbar';
-import ProcessMenu from './ProcessMenu';
-import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
-import ConfirmModal from '@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal';
-import { ProcessButton, ProcessButtonType, ProcessDefinitionButton, ProcessResponse } from '../ProcessModal/types';
-import ProcessModal from '../ProcessModal';
-import { useDatasourceContext } from '@/contexts/datasourceContext';
-import ProcessDefinitionModal from '../ProcessModal/ProcessDefinitionModal';
-import { useUserContext } from '@/hooks/useUserContext';
-import { useTabContext } from '@/contexts/tab';
-import { compileExpression } from '../Form/FormView/selectors/BaseSelector';
-import { useSelectedRecord } from '@/hooks/useSelectedRecord';
-import { useSelectedRecords } from '@/hooks/useSelectedRecords';
-import { useSelected } from '@/hooks/useSelected';
-import TopToolbar from './TopToolbar';
-import useFormFields from '@/hooks/useFormFields';
+import { useDatasourceContext } from "@/contexts/datasourceContext";
+import { useTabContext } from "@/contexts/tab";
+import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
+import useFormFields from "@/hooks/useFormFields";
+import { useSelected } from "@/hooks/useSelected";
+import { useSelectedRecord } from "@/hooks/useSelectedRecord";
+import { useSelectedRecords } from "@/hooks/useSelectedRecords";
+import { useUserContext } from "@/hooks/useUserContext";
+import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
+import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
+import type React from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useProcessButton } from "../../hooks/Toolbar/useProcessButton";
+import { useProcessExecution } from "../../hooks/Toolbar/useProcessExecution";
+import { useToolbar } from "../../hooks/Toolbar/useToolbar";
+import { useToolbarConfig } from "../../hooks/Toolbar/useToolbarConfig";
+import { useTranslation } from "../../hooks/useTranslation";
+import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
+import ProcessModal from "../ProcessModal";
+import ProcessDefinitionModal from "../ProcessModal/ProcessDefinitionModal";
 import {
-  organizeButtonsBySection,
+  type ProcessButton,
+  ProcessButtonType,
+  type ProcessDefinitionButton,
+  type ProcessResponse,
+} from "../ProcessModal/types";
+import ProcessMenu from "./ProcessMenu";
+import SearchPortal from "./SearchPortal";
+import TopToolbar from "./TopToolbar";
+import {
   createButtonByType,
   createProcessMenuButton,
   getButtonStyles,
-} from './buttonConfigs';
-import { ToolbarButtonMetadata } from '@/hooks/Toolbar/types';
+  organizeButtonsBySection,
+} from "./buttonConfigs";
+import type { ToolbarProps } from "./types";
 
-const BaseSection = { display: 'flex', alignItems: 'center' };
+const BaseSection = { display: "flex", alignItems: "center" };
 const EmptyArray: ToolbarButtonMetadata[] = [];
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false }) => {
@@ -114,7 +120,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
         setSelectedProcessDefinitionButton(button);
         setShowProcessDefinitionModal(true);
       } else {
-        throw new Error('Unknown process type');
+        throw new Error("Unknown process type");
       }
 
       setOpenModal(true);
@@ -148,9 +154,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
         responseActions: [
           {
             showMsgInProcessView: {
-              msgType: 'error',
-              msgTitle: 'Error',
-              msgText: error instanceof Error ? error?.message : 'Unknown error',
+              msgType: "error",
+              msgTitle: "Error",
+              msgText: error instanceof Error ? error?.message : "Unknown error",
             },
           },
         ],
@@ -199,11 +205,11 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       },
       centerSection: {
         buttons: createSectionButtons(organizedButtons.center),
-        style: { ...BaseSection, gap: '0.25rem' },
+        style: { ...BaseSection, gap: "0.25rem" },
       },
       rightSection: {
         buttons: createSectionButtons(organizedButtons.right),
-        style: { ...BaseSection, gap: '0.25rem' },
+        style: { ...BaseSection, gap: "0.25rem" },
       },
       isItemSelected: hasSelectedRecord,
     };
@@ -237,7 +243,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           statusText={statusModal.statusText}
           statusType={statusModal.statusType}
           errorMessage={statusModal.errorMessage}
-          saveLabel={statusModal.saveLabel || t('common.close')}
+          saveLabel={statusModal.saveLabel || t("common.close")}
           secondaryButtonLabel={statusModal.secondaryButtonLabel}
           onClose={hideStatusModal}
         />
@@ -248,8 +254,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           confirmText={confirmAction.confirmText}
           onConfirm={handleConfirm}
           onCancel={handleCancelConfirm}
-          saveLabel={confirmAction.saveLabel || t('common.confirm')}
-          secondaryButtonLabel={confirmAction.secondaryButtonLabel || t('common.cancel')}
+          saveLabel={confirmAction.saveLabel || t("common.confirm")}
+          secondaryButtonLabel={confirmAction.secondaryButtonLabel || t("common.cancel")}
         />
       )}
       {processButtons.length > 0 && (
@@ -268,7 +274,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           searchValue={searchValue}
           onSearchChange={handleSearchChange}
           onClose={() => setSearchOpen(false)}
-          placeholder={t('table.placeholders.search')}
+          placeholder={t("table.placeholders.search")}
           autoCompleteTexts={[]}
         />
       )}
@@ -280,9 +286,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
           onConfirm={handleConfirmProcess}
           isExecuting={isExecuting}
           processResponse={processResponse}
-          confirmationMessage={t('process.confirmationMessage')}
-          cancelButtonText={t('common.cancel')}
-          executeButtonText={t('common.execute')}
+          confirmationMessage={t("process.confirmationMessage")}
+          cancelButtonText={t("common.cancel")}
+          executeButtonText={t("common.execute")}
           onProcessSuccess={handleProcessSuccess}
           tabId={tab.id}
         />

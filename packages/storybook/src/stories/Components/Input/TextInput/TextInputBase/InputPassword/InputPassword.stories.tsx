@@ -13,7 +13,7 @@ const TemplatePassword = () => {
   return (
     <Grid container spacing={2}>
       <Grid item xs={12}>
-        <InputPassword leftIcon={<LockOutlined />} value={value} setValue={setValue} label="Password" />
+        <InputPassword leftIcon={<LockOutlined />} value={value} setValue={setValue} label='Password' />
       </Grid>
     </Grid>
   );

@@ -1,6 +1,6 @@
-import { useRef, useCallback, useEffect } from 'react';
-import type { ResizableTabContainerProps } from './types';
-import { useThrottle } from '@/hooks/useThrottle';
+import { useThrottle } from "@/hooks/useThrottle";
+import { useCallback, useEffect, useRef } from "react";
+import type { ResizableTabContainerProps } from "./types";
 
 const MAX_HEIGHT = 91;
 const MIN_HEIGHT = 20;
@@ -29,15 +29,15 @@ const ResizableTabContainer: React.FC<React.PropsWithChildren<ResizableTabContai
   const handleMouseDown = useCallback(
     (e: React.MouseEvent | MouseEvent) => {
       const target = e.target as HTMLElement;
-      const isResizer = target.hasAttribute('data-resizer');
-      const header = target.closest('[data-header]');
+      const isResizer = target.hasAttribute("data-resizer");
+      const header = target.closest("[data-header]");
 
       if (
-        target.tagName === 'BUTTON' ||
-        target.closest('button') ||
-        target.tagName === 'INPUT' ||
-        target.tagName === 'SELECT' ||
-        target.getAttribute('role') === 'button'
+        target.tagName === "BUTTON" ||
+        target.closest("button") ||
+        target.tagName === "INPUT" ||
+        target.tagName === "SELECT" ||
+        target.getAttribute("role") === "button"
       ) {
         return;
       }
@@ -66,48 +66,48 @@ const ResizableTabContainer: React.FC<React.PropsWithChildren<ResizableTabContai
 
       const handleMouseUp = () => {
         isResizing.current = false;
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-        document.body.style.cursor = 'default';
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+        document.body.style.cursor = "default";
       };
 
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = 'ns-resize';
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "ns-resize";
     },
     [handleHeightChange],
   );
 
   useEffect(() => {
-    const resizer = containerRef.current?.querySelector('[data-resizer]');
+    const resizer = containerRef.current?.querySelector("[data-resizer]");
     if (resizer) {
-      resizer.addEventListener('mousedown', handleMouseDown as EventListener);
+      resizer.addEventListener("mousedown", handleMouseDown as EventListener);
     }
 
     const handleHeaderEvent = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      const header = target.closest('[data-header]');
+      const header = target.closest("[data-header]");
 
       if (header) {
         if (
-          target.tagName !== 'BUTTON' &&
-          !target.closest('button') &&
-          target.tagName !== 'INPUT' &&
-          target.tagName !== 'SELECT' &&
-          target.getAttribute('role') !== 'button'
+          target.tagName !== "BUTTON" &&
+          !target.closest("button") &&
+          target.tagName !== "INPUT" &&
+          target.tagName !== "SELECT" &&
+          target.getAttribute("role") !== "button"
         ) {
           handleMouseDown(e);
         }
       }
     };
 
-    document.addEventListener('mousedown', handleHeaderEvent);
+    document.addEventListener("mousedown", handleHeaderEvent);
 
     return () => {
       if (resizer) {
-        resizer.removeEventListener('mousedown', handleMouseDown as EventListener);
+        resizer.removeEventListener("mousedown", handleMouseDown as EventListener);
       }
-      document.removeEventListener('mousedown', handleHeaderEvent);
+      document.removeEventListener("mousedown", handleHeaderEvent);
     };
   }, [handleMouseDown]);
 
@@ -116,10 +116,14 @@ const ResizableTabContainer: React.FC<React.PropsWithChildren<ResizableTabContai
   return (
     <div
       ref={containerRef}
-      className={`fixed bottom-0 mx-1 z-50 w-fill-available transition-all transform-gpu duration-[400ms] ease-in-out rounded-t-2xl border-2 border-[rgba(0,3,13,0.1)] border-b-0 bg-neutral-50`}>
+      className={
+        "fixed bottom-0 mx-1 z-50 w-fill-available transition-all transform-gpu duration-[400ms] ease-in-out rounded-t-2xl border-2 border-[rgba(0,3,13,0.1)] border-b-0 bg-neutral-50"
+      }>
       <div
         data-resizer
-        className={`absolute top-0 left-1/2 -translate-x-1/2 w-16 h-2 mt-1 rounded-xl bg-primary-100 cursor-ns-resize opacity-100 hover:bg-primary-200`}
+        className={
+          "absolute top-0 left-1/2 -translate-x-1/2 w-16 h-2 mt-1 rounded-xl bg-primary-100 cursor-ns-resize opacity-100 hover:bg-primary-200"
+        }
       />
       <div className="h-full overflow-auto">{children}</div>
     </div>

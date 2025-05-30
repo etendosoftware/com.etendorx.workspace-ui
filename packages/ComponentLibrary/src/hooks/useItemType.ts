@@ -1,11 +1,11 @@
-import { useCallback } from 'react';
-import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
-import { UseItemActionsProps } from './types';
+import { useCallback } from "react";
+import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import type { UseItemActionsProps } from "./types";
 
 export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }: UseItemActionsProps) => {
   const handleItemClick = useCallback(
     (item: Menu) => {
-      const validType = ['Window', 'Report', 'ProcessDefinition'].includes(item.type || '');
+      const validType = ["Window", "Report", "ProcessDefinition"].includes(item.type || "");
       if (!validType) {
         console.warn(`Invalid item type: ${item.type}, defaulting to Window`);
         if (item.windowId && onWindowClick) {
@@ -15,17 +15,17 @@ export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }:
       }
 
       switch (item.type) {
-        case 'Window':
+        case "Window":
           if (item.windowId && onWindowClick) {
             onWindowClick(item);
           }
           break;
-        case 'Report':
+        case "Report":
           if (item.id && onReportClick) {
             onReportClick(item);
           }
           break;
-        case 'ProcessDefinition':
+        case "ProcessDefinition":
           if (item.id && onProcessClick) {
             onProcessClick(item);
           }

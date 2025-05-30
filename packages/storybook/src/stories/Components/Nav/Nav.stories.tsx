@@ -7,7 +7,7 @@ import ConfigurationModal from '@workspaceui/componentlibrary/src/components/Con
 import { NOTIFICATIONS } from '../notifications.mock';
 import { modalConfig } from '../ConfigurationModal/mock';
 import { menuItems, initialPeople } from '../mock';
-import { NavArgs } from './types';
+import type { NavArgs } from './types';
 import ActivityIcon from '@workspaceui/componentlibrary/src/assets/icons/activity.svg';
 import profilePicture from '@workspaceui/componentlibrary/src/assets/images/profile_picture_mock.png';
 import PersonIcon from '@workspaceui/componentlibrary/src/assets/icons/user.svg';
@@ -43,7 +43,7 @@ export const DefaultNav: Story = {
           icon={<AddIcon />}
         />
         <ConfigurationModal {...modalConfig} />
-        <IconButton tooltip="Activity">
+        <IconButton tooltip='Activity'>
           <ActivityIcon />
         </IconButton>
         <NotificationButton notifications={args.notifications} icon={<NotificationIcon />}>
@@ -71,7 +71,7 @@ export const DefaultNav: Story = {
           userName={args.userName}
           userEmail={args.userEmail}
           sectionTooltip={args.sectionTooltip}
-          icon={<PersonIcon fill="#2E365C" />}
+          icon={<PersonIcon fill='#2E365C' />}
           sections={args.sections}
           onRoleChange={() => {}}
           onWarehouseChange={() => {}}
@@ -90,7 +90,7 @@ export const DefaultNav: Story = {
     open: true,
     onClose: () => console.log('Modal closed'),
     title: {
-      icon: <NotificationIcon fill="#2E365C" />,
+      icon: <NotificationIcon fill='#2E365C' />,
       label: 'Notifications',
     },
     linkTitle: { label: 'Mark all as read', url: '/home' },

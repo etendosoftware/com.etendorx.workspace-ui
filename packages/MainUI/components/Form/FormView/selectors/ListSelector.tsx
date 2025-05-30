@@ -1,12 +1,12 @@
-import { useMemo } from 'react';
-import { Field } from '@workspaceui/etendohookbinder/src/api/types';
-import Select from './components/Select';
-import { SelectProps } from './components/types';
+import { useMemo } from "react";
+import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import Select from "./components/Select";
+import type { SelectProps } from "./components/types";
 
 export const ListSelector = ({ field, isReadOnly }: { field: Field; isReadOnly: boolean }) => {
-  const options = useMemo<SelectProps['options']>(() => {
+  const options = useMemo<SelectProps["options"]>(() => {
     if (field.refList) {
-      return Array.from(field.refList).map(item => ({
+      return Array.from(field.refList).map((item) => ({
         id: item.value,
         label: item.label,
       }));

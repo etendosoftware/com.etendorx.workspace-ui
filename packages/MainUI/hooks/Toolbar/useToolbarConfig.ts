@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearch } from '../../contexts/searchContext';
-import { useMetadataContext } from '../useMetadataContext';
-import { useDeleteRecord } from '../useDeleteRecord';
-import { Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { logger } from '@/utils/logger';
-import { useTranslation } from '../useTranslation';
-import { useStatusModal } from './useStatusModal';
-import { useToolbarContext } from '@/contexts/ToolbarContext';
-import { useTabContext } from '@/contexts/tab';
-import { useSelectedRecord } from '../useSelectedRecord';
-import { useSelectedRecords } from '../useSelectedRecords';
+import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useTabContext } from "@/contexts/tab";
+import { logger } from "@/utils/logger";
+import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearch } from "../../contexts/searchContext";
+import { useDeleteRecord } from "../useDeleteRecord";
+import { useMetadataContext } from "../useMetadataContext";
+import { useSelectedRecord } from "../useSelectedRecord";
+import { useSelectedRecords } from "../useSelectedRecords";
+import { useTranslation } from "../useTranslation";
+import { useStatusModal } from "./useStatusModal";
 
 export const useToolbarConfig = ({
   tabId,
@@ -21,7 +21,7 @@ export const useToolbarConfig = ({
 }) => {
   const { setSearchQuery } = useSearch();
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
+  const [searchValue, setSearchValue] = useState("");
   const { removeRecord } = useMetadataContext();
   const {
     statusModal,
@@ -49,28 +49,28 @@ export const useToolbarConfig = ({
       if (!tabId) return;
 
       const recordName = selectedRecord?._identifier || selectedRecord?.id || `${deletedCount} registros`;
-      const entityType = tab?.title || '';
+      const entityType = tab?.title || "";
 
-      selectedIds.forEach((recordId) => {
+      for (const recordId of selectedIds) {
         removeRecord(tabId, recordId);
-      });
+      }
 
-      const successMessage = `${entityType} '${String(recordName)}' ${t('status.deleteSuccess')}`;
+      const successMessage = `${entityType} '${String(recordName)}' ${t("status.deleteSuccess")}`;
 
       showDeleteSuccessModal(successMessage, {
-        saveLabel: t('common.close'),
+        saveLabel: t("common.close"),
         onAfterClose: () => {
           setIsDeleting(false);
         },
       });
     },
     onError: (error) => {
-      logger.warn('Error deleting record(s):', error);
+      logger.warn("Error deleting record(s):", error);
 
-      showErrorModal(t('status.deleteError'), {
+      showErrorModal(t("status.deleteError"), {
         errorMessage: error,
-        saveLabel: t('common.close'),
-        secondaryButtonLabel: t('modal.secondaryButtonLabel'),
+        saveLabel: t("common.close"),
+        secondaryButtonLabel: t("modal.secondaryButtonLabel"),
         onAfterClose: () => {
           setIsDeleting(false);
         },
@@ -89,13 +89,13 @@ export const useToolbarConfig = ({
       CANCEL: () => onBack?.(),
       NEW: () => {
         const params = new URLSearchParams(location.search);
-        params.set('recordId_' + tab?.id, 'new');
-        history.pushState(null, '', `?${params.toString()}`);
+        params.set(`recordId_${tab?.id}`, "new");
+        history.pushState(null, "", `?${params.toString()}`);
         onNew?.();
       },
       FIND: () => setSearchOpen(true),
       TAB_CONTROL: () => {
-        logger.info('Tab control clicked');
+        logger.info("Tab control clicked");
       },
       FILTER: () => onFilter?.(),
       SAVE: () => onSave?.(),
@@ -106,8 +106,8 @@ export const useToolbarConfig = ({
 
             const confirmText =
               selectedIds.length === 1
-                ? `${t('status.deleteConfirmation')} ${String(selectedRecord?._identifier || selectedRecord?.id)}?`
-                : `${t('status.multipleDeleteConfirmation')} ${selectedIds.length}`;
+                ? `${t("status.deleteConfirmation")} ${String(selectedRecord?._identifier || selectedRecord?.id)}?`
+                : `${t("status.multipleDeleteConfirmation")} ${selectedIds.length}`;
 
             showConfirmModal({
               confirmText,
@@ -115,13 +115,13 @@ export const useToolbarConfig = ({
                 setIsDeleting(true);
                 deleteRecord(selectedIds.length === 1 ? recordsToDelete[0] : recordsToDelete);
               },
-              saveLabel: t('common.confirm'),
-              secondaryButtonLabel: t('common.cancel'),
+              saveLabel: t("common.confirm"),
+              secondaryButtonLabel: t("common.cancel"),
             });
           } else {
-            showErrorModal(t('status.selectRecordError'), {
-              saveLabel: t('common.close'),
-              secondaryButtonLabel: t('modal.secondaryButtonLabel'),
+            showErrorModal(t("status.selectRecordError"), {
+              saveLabel: t("common.close"),
+              secondaryButtonLabel: t("modal.secondaryButtonLabel"),
             });
           }
         }

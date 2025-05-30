@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
-import DrawerSection from '../DrawerSection';
-import { DrawerItemsProps, ToggleFunctions } from '../types';
+import React, { useRef } from "react";
+import DrawerSection from "../DrawerSection";
+import type { DrawerItemsProps, ToggleFunctions } from "../types";
 
 export const DrawerItems: React.FC<DrawerItemsProps> = React.memo(
   ({
@@ -19,7 +19,7 @@ export const DrawerItems: React.FC<DrawerItemsProps> = React.memo(
     return (
       <>
         {Array.isArray(items)
-          ? items.map(item => {
+          ? items.map((item) => {
               if (!toggleFunctions.current[item.id]) {
                 toggleFunctions.current[item.id] = () => toggleItemExpansion(item.id);
               }

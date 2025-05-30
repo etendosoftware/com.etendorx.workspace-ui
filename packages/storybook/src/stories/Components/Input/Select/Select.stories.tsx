@@ -14,13 +14,13 @@ const Template = () => (
     <Grid item xs={12}>
       <Select
         iconLeft={<SearchOutlined sx={{ width: 24, height: 24 }} />}
-        title="Películas"
+        title='Películas'
         helperText={{
           label: 'Top 15',
           icon: <CheckCircleIcon sx={{ width: 16, height: 16 }} />,
         }}
         options={topFilms}
-        getOptionLabel={option => option.title}
+        getOptionLabel={(option) => option.title}
       />
     </Grid>
   </Grid>

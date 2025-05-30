@@ -1,9 +1,9 @@
-import { Typography, Box } from '@mui/material';
-import CloseIcon from '@workspaceui/componentlibrary/src/assets/icons/x.svg';
-import { useStyle } from '@/components/Table/styles';
-import { ICON_BUTTON_SIZE } from './constants';
-import { SelectedItemProps, SelectedItemsContainerProps } from './types';
-import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
+import { Typography, Box } from "@mui/material";
+import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
+import { useStyle } from "@/components/Table/styles";
+import { ICON_BUTTON_SIZE } from "./constants";
+import type { SelectedItemProps, SelectedItemsContainerProps } from "./types";
+import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 
 export const SelectedItem: React.FC<SelectedItemProps> = ({ item, onRemove }) => {
   const { sx } = useStyle();
@@ -23,7 +23,7 @@ export const SelectedItemsContainer: React.FC<SelectedItemsContainerProps> = ({ 
 
   return (
     <Box sx={sx.selectedContainer}>
-      {items.map(item => (
+      {items.map((item) => (
         <SelectedItem key={item.id} item={item} onRemove={onRemove} />
       ))}
       {items.length === 0 && <Box sx={sx.emptyState}>No items selected</Box>}

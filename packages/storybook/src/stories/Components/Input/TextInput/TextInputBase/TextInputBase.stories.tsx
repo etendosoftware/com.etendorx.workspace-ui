@@ -19,7 +19,7 @@ const TemplateBase = () => {
           onRightIconClick={() => alert('Icon clicked')}
           value={value}
           setValue={setValue}
-          placeholder="Search"
+          placeholder='Search'
         />
       </Grid>
     </Grid>

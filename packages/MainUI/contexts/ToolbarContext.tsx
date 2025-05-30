@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from "react";
 
 type ToolbarActions = {
   save: () => void;
@@ -36,7 +36,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
     useState<ToolbarActions>(initialState);
 
   const registerActions = useCallback((newActions: Partial<ToolbarActions>) => {
-    setActions(prev => ({ ...prev, ...newActions }));
+    setActions((prev) => ({ ...prev, ...newActions }));
   }, []);
 
   const value = useMemo(

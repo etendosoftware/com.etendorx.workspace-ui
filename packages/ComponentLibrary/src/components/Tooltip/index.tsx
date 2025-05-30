@@ -1,33 +1,32 @@
 export interface TooltipProps {
   title?: string;
   children: React.ReactNode;
-  position?: 'top' | 'bottom' | 'left' | 'right';
+  position?: "top" | "bottom" | "left" | "right";
   className?: string;
 }
 
-const Tooltip: React.FC<TooltipProps> = ({ title, children, className, position = 'bottom' }) => {
+const Tooltip: React.FC<TooltipProps> = ({ title, children, className, position = "bottom" }) => {
   const getPositionClasses = () => {
     switch (position) {
-      case 'bottom':
+      case "bottom":
         return {
-          tooltip: 'top-full left-1/2 -translate-x-1/2 mt-2',
-          arrow: '-top-1 left-1/2 -translate-x-1/2 border-t-gray-900',
+          tooltip: "top-full left-1/2 -translate-x-1/2 mt-2",
+          arrow: "-top-1 left-1/2 -translate-x-1/2 border-t-gray-900",
         };
-      case 'left':
+      case "left":
         return {
-          tooltip: 'right-full top-1/2 -translate-y-1/2 mr-2',
-          arrow: 'top-1/2 -right-1 -translate-y-1/2 border-l-gray-900',
+          tooltip: "right-full top-1/2 -translate-y-1/2 mr-2",
+          arrow: "top-1/2 -right-1 -translate-y-1/2 border-l-gray-900",
         };
-      case 'right':
+      case "right":
         return {
-          tooltip: 'left-full top-1/2 -translate-y-1/2 ml-2',
-          arrow: 'top-1/2 -left-1 -translate-y-1/2 border-r-gray-900',
+          tooltip: "left-full top-1/2 -translate-y-1/2 ml-2",
+          arrow: "top-1/2 -left-1 -translate-y-1/2 border-r-gray-900",
         };
-      case 'top':
       default:
         return {
-          tooltip: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
-          arrow: '-bottom-1 left-1/2 -translate-x-1/2 border-b-gray-900',
+          tooltip: "bottom-full left-1/2 -translate-x-1/2 mb-2",
+          arrow: "-bottom-1 left-1/2 -translate-x-1/2 border-b-gray-900",
         };
     }
   };

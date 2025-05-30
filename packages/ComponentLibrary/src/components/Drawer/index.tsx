@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react';
-import { useStyle } from './styles';
-import { DrawerProps } from './types';
-import { DrawerHeader } from './Header';
-import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
-import { getAllItemTitles } from '../../utils/searchUtils';
-import { DrawerItems } from './Search';
-import { Box } from '@mui/material';
-import { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import { Box } from "@mui/material";
+import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getAllItemTitles } from "../../utils/searchUtils";
+import TextInputAutocomplete from "../Input/TextInput/TextInputAutocomplete";
+import { DrawerHeader } from "./Header";
+import { DrawerItems } from "./Search";
+import { useStyle } from "./styles";
+import type { DrawerProps } from "./types";
 
-const DRAWER_STATE_KEY = 'etendo-drawer-open';
+const DRAWER_STATE_KEY = "etendo-drawer-open";
 interface RecentlyViewedHandler {
   handleWindowAccess?: (item: Menu) => void;
 }
@@ -28,7 +28,7 @@ const Drawer: React.FC<DrawerProps> = ({
   searchContext,
 }) => {
   const [open, setOpen] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const savedState = localStorage.getItem(DRAWER_STATE_KEY);
       return savedState ? JSON.parse(savedState) : false;
     }
@@ -47,7 +47,7 @@ const Drawer: React.FC<DrawerProps> = ({
   const { searchValue, setSearchValue, filteredItems, expandedItems, setExpandedItems, searchIndex } = searchContext;
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       localStorage.setItem(DRAWER_STATE_KEY, JSON.stringify(open));
     }
   }, [open]);
@@ -61,17 +61,17 @@ const Drawer: React.FC<DrawerProps> = ({
   const drawerStyle = useMemo(
     () => ({
       ...sx.drawerPaper,
-      width: open ? '16.25rem' : '3.5rem',
-      height: '100vh',
-      maxHeight: '100vh',
-      transition: 'all 0.5s ease-in-out',
+      width: open ? "16.25rem" : "3.5rem",
+      height: "100vh",
+      maxHeight: "100vh",
+      transition: "all 0.5s ease-in-out",
     }),
     [open, sx.drawerPaper],
   );
 
   const allItemTitles = useMemo(() => (searchIndex ? getAllItemTitles(searchIndex) : []), [searchIndex]);
 
-  const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
+  const handleHeaderClick = useCallback(() => setOpen((prev) => !prev), []);
 
   const toggleItemExpansion = useCallback(
     (itemId: string) => {
@@ -114,7 +114,7 @@ const Drawer: React.FC<DrawerProps> = ({
         />
       )}
       {open && (
-        <Box sx={{ padding: '0.5rem' }}>
+        <Box sx={{ padding: "0.5rem" }}>
           <TextInputAutocomplete
             value={searchValue}
             setValue={setSearchValue}
@@ -124,7 +124,7 @@ const Drawer: React.FC<DrawerProps> = ({
           />
         </Box>
       )}
-      <Box sx={sx.drawerContent} tabIndex={2}>
+      <Box sx={sx.drawerContent} tabIndex={0}>
         <DrawerItems
           items={searchValue ? filteredItems : items}
           onClick={handleItemClick}

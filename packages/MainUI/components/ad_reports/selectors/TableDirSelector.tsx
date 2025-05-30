@@ -1,10 +1,10 @@
-import { useCallback, useMemo, useEffect, useState } from 'react';
-import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
-import { useTheme } from '@mui/material';
-import { Option, TableDirSelectorProps } from '../../Form/FormView/types';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
-import { useDatasource } from '@/hooks/useDatasource';
+import { useDatasource } from "@/hooks/useDatasource";
+import { useTheme } from "@mui/material";
+import SearchOutlined from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
+import Select from "@workspaceui/componentlibrary/src/components/Input/Select";
+import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { Option, TableDirSelectorProps } from "../../Form/FormView/types";
 
 const getOptionLabel = (option: Option) => option.title;
 
@@ -12,12 +12,12 @@ const optionEqualValue = (option: Option, value: { id: string }) => option.id ==
 
 const TableDirSelector = ({ onChange, entity, value, name, isReadOnly }: TableDirSelectorProps) => {
   const theme = useTheme();
-  const { records, loading, error, loaded } = useDatasource({entity});
+  const { records, loading, error, loaded } = useDatasource({ entity });
   const [selectedValue, setSelectedValue] = useState<Option | null>(null);
 
   const options = useMemo(
     () =>
-      records.map(record => ({
+      records.map((record) => ({
         id: record.id as string,
         title: (record._identifier || record.name || record.id) as string,
         value: record.id as string,
@@ -26,11 +26,12 @@ const TableDirSelector = ({ onChange, entity, value, name, isReadOnly }: TableDi
   );
 
   useEffect(() => {
+    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
     let option;
 
     if (value && options.length > 0) {
-      option = options.find(opt => {
-        if (typeof value === 'object' && 'id' in value) {
+      option = options.find((opt) => {
+        if (typeof value === "object" && "id" in value) {
           return opt.id === value.id || opt.value === value.id;
         }
         return opt.id === String(value) || opt.value === String(value);

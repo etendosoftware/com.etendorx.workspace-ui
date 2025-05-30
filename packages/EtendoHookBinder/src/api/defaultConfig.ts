@@ -1,13 +1,13 @@
-import { Metadata } from './metadata';
-import { DefaultConfiguration } from './types';
+import { Metadata } from "./metadata";
+import type { DefaultConfiguration } from "./types";
 
 const DEFAULT_CONFIG = {
-  language: '192',
-  role: '0',
-  client: 'System',
-  organization: '0',
-  warehouse: '0',
-  default: 'true',
+  language: "192",
+  role: "0",
+  client: "System",
+  organization: "0",
+  warehouse: "0",
+  default: "true",
 };
 
 export const setDefaultConfiguration = async (config: DefaultConfiguration): Promise<void> => {
@@ -24,7 +24,7 @@ export const setDefaultConfiguration = async (config: DefaultConfiguration): Pro
 
   try {
     const response = await client.post(
-      '?command=save&_action=org.openbravo.client.application.navigationbarcomponents.UserInfoWidgetActionHandler&stateless=true',
+      "?command=save&_action=org.openbravo.client.application.navigationbarcomponents.UserInfoWidgetActionHandler&stateless=true",
       params,
     );
 
@@ -32,13 +32,13 @@ export const setDefaultConfiguration = async (config: DefaultConfiguration): Pro
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    if (typeof response.data === 'string' && response.data.includes('throw')) {
-      throw new Error('Server returned an error in JavaScript');
+    if (typeof response.data === "string" && response.data.includes("throw")) {
+      throw new Error("Server returned an error in JavaScript");
     }
 
     return response.data;
   } catch (error) {
-    console.error('Error setting default configuration:', error);
+    console.error("Error setting default configuration:", error);
 
     throw error;
   }

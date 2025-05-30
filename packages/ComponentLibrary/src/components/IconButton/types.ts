@@ -1,6 +1,6 @@
-import { IconButtonProps } from '@mui/material';
+import type { IconButtonProps } from "@mui/material";
 
-export interface IIconComponentProps extends React.PropsWithChildren<Omit<IconButtonProps, 'children'>> {
+export interface IIconComponentProps extends React.PropsWithChildren<Omit<IconButtonProps, "children">> {
   fill?: string;
   hoverFill?: string;
   width?: number;
