@@ -1,5 +1,5 @@
-import type en from './en';
-import type es from './es';
+import type en from "./en";
+import type es from "./es";
 
 type Primitive = string;
 
@@ -11,7 +11,7 @@ export type NestedKeyOf<T> = T extends Primitive
 
 export type TranslationKeys = NestedKeyOf<typeof en | typeof es>;
 
-export type Language = 'en_US' | 'es_ES';
+export type Language = "en_US" | "es_ES";
 
 export type Translations = {
   [key in Language]: typeof en | typeof es;

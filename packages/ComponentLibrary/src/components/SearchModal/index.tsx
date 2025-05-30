@@ -1,11 +1,11 @@
-import { Box } from '@mui/material';
-import { useState } from 'react';
-import SecondaryTabs from '../SecondaryTabs';
-import type { SearchModalProps } from '../SecondaryTabs/types';
-import { DefaultContent } from './SubComponents/DefaultContent';
-import { HeaderSection } from './SubComponents/HeaderSection';
-import { TabContent as TabContentComponent } from './SubComponents/TabContent';
-import { DEFAULT_MODAL_WIDTH, useStyle } from './styles';
+import { Box } from "@mui/material";
+import { useState } from "react";
+import SecondaryTabs from "../SecondaryTabs";
+import type { SearchModalProps } from "../SecondaryTabs/types";
+import { DefaultContent } from "./SubComponents/DefaultContent";
+import { HeaderSection } from "./SubComponents/HeaderSection";
+import { TabContent as TabContentComponent } from "./SubComponents/TabContent";
+import { DEFAULT_MODAL_WIDTH, useStyle } from "./styles";
 
 const SearchModal: React.FC<SearchModalProps> = ({
   defaultContent,
@@ -17,7 +17,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
   const { sx } = useStyle();
 
   const renderContent = () => {
-    if (variant === 'default' && defaultContent) {
+    if (variant === "default" && defaultContent) {
       return (
         <>
           <HeaderSection title={defaultContent.headerTitle} />
@@ -25,7 +25,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
         </>
       );
     }
-    if (variant === 'tabs' && tabsContent && tabsContent.length > 0) {
+    if (variant === "tabs" && tabsContent && tabsContent.length > 0) {
       return (
         <>
           <SecondaryTabs content={tabsContent} selectedTab={activeTab} onChange={setActiveTab} />

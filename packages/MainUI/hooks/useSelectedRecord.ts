@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import type { Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import type { GraphEventListener } from '@/data/graph';
-import { useSelected } from './useSelected';
+import { useState, useEffect } from "react";
+import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { GraphEventListener } from "@/data/graph";
+import { useSelected } from "./useSelected";
 
 export const useSelectedRecord = (tab?: Tab) => {
   const { graph } = useSelected();
@@ -10,26 +10,26 @@ export const useSelectedRecord = (tab?: Tab) => {
   useEffect(() => {
     if (!tab) return;
 
-    const handleSelect: GraphEventListener<'selected'> = (eventTab, record) => {
+    const handleSelect: GraphEventListener<"selected"> = (eventTab, record) => {
       if (tab.id === eventTab.id) {
         setSelected(record);
       }
     };
 
-    const handleUnselect: GraphEventListener<'unselected'> = (eventTab) => {
+    const handleUnselect: GraphEventListener<"unselected"> = (eventTab) => {
       if (tab.id === eventTab.id) {
         setSelected(undefined);
       }
     };
 
     graph //
-      .addListener('selected', handleSelect)
-      .addListener('unselected', handleUnselect);
+      .addListener("selected", handleSelect)
+      .addListener("unselected", handleUnselect);
 
     return () => {
       graph //
-        .removeListener('selected', handleSelect)
-        .removeListener('unselected', handleUnselect);
+        .removeListener("selected", handleSelect)
+        .removeListener("unselected", handleUnselect);
     };
   }, [graph, tab]);
 

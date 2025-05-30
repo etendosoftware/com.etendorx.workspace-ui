@@ -1,5 +1,5 @@
-import type React from 'react';
-import { useEffect, useRef } from 'react';
+import type React from "react";
+import { useEffect, useRef } from "react";
 
 export const CustomClickAwayListener: React.FC<{
   onClickAway: () => void;
@@ -14,9 +14,9 @@ export const CustomClickAwayListener: React.FC<{
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [onClickAway]);
 

@@ -1,4 +1,4 @@
-import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
 
 type NavigateFn = (item: Menu) => void;
 
@@ -102,7 +102,7 @@ export interface RecentItem {
   id: string;
   name: string;
   windowId: string;
-  type: string | 'Window' | 'Process' | 'Report';
+  type: string | "Window" | "Process" | "Report";
 }
 
 export interface DrawerHeaderProps {

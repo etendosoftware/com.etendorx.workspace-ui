@@ -1,22 +1,22 @@
-'use client';
+"use client";
 
-import { useLanguage } from '@/contexts/language';
-import { useTranslation } from '@/hooks/useTranslation';
-import { Button, useTheme } from '@mui/material';
-import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
-import type { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
-import Menu from '@workspaceui/componentlibrary/src/components/Menu';
-import type { Language } from '@workspaceui/componentlibrary/src/locales/types';
-import type React from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import CheckCircle from '../../../ComponentLibrary/src/assets/icons/check-circle.svg';
-import ToggleSection from './ToggleButton';
-import SelectorList from './ToggleSection';
-import UserProfile from './UserProfile';
-import { useStyle } from './styles';
-import type { ProfileModalProps } from './types';
+import { useLanguage } from "@/contexts/language";
+import { useTranslation } from "@/hooks/useTranslation";
+import { Button, useTheme } from "@mui/material";
+import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
+import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
+import Menu from "@workspaceui/componentlibrary/src/components/Menu";
+import type { Language } from "@workspaceui/componentlibrary/src/locales/types";
+import type React from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import CheckCircle from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
+import ToggleSection from "./ToggleButton";
+import SelectorList from "./ToggleSection";
+import UserProfile from "./UserProfile";
+import { useStyle } from "./styles";
+import type { ProfileModalProps } from "./types";
 
-const DefaultOrg = { title: '*', value: '0', id: '0' };
+const DefaultOrg = { title: "*", value: "0", id: "0" };
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   userPhotoUrl,
@@ -42,7 +42,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const { t } = useTranslation();
   const theme = useTheme();
   const { styles, sx } = useStyle();
-  const [currentSection, setCurrentSection] = useState<string>('profile');
+  const [currentSection, setCurrentSection] = useState<string>("profile");
   const { language: initialLanguage, getFlag } = useLanguage();
   const [languagesFlags, setLanguageFlags] = useState(getFlag(initialLanguage));
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
@@ -129,7 +129,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const handleWarehouseChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
     setSelectedWarehouse(value);
     if (value) {
-      localStorage.setItem('currentWarehouse', JSON.stringify(value));
+      localStorage.setItem("currentWarehouse", JSON.stringify(value));
     }
   }, []);
 
@@ -146,7 +146,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (currentSection === 'profile') {
+    if (currentSection === "profile") {
       try {
         const params: { role?: string; organization?: string; warehouse?: string } = {};
 
@@ -167,7 +167,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             value: selectedWarehouse.value,
           };
           setSelectedWarehouse(newWarehouse);
-          localStorage.setItem('currentWarehouse', JSON.stringify(newWarehouse));
+          localStorage.setItem("currentWarehouse", JSON.stringify(newWarehouse));
         }
 
         if (Object.keys(params).length > 0) {
@@ -188,7 +188,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         }
         handleClose();
       } catch (error) {
-        logger.warn('Error changing role, warehouse, or saving default configuration:', error);
+        logger.warn("Error changing role, warehouse, or saving default configuration:", error);
       }
     }
   }, [
@@ -246,10 +246,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
   return (
     <div>
-      <IconButton onClick={handleClick} className='w-10 h-10'>
+      <IconButton onClick={handleClick} className="w-10 h-10">
         {icon}
       </IconButton>
-      <Menu open={Boolean(anchorEl)} anchorEl={anchorEl} onClose={handleClose} className='rounded-xl w-88'>
+      <Menu open={Boolean(anchorEl)} anchorEl={anchorEl} onClose={handleClose} className="rounded-xl w-88">
         <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} onSignOff={onSignOff} />
         <div style={styles.toggleSectionStyles}>
           <ToggleSection sections={sections} currentSection={currentSection} onToggle={handleToggle} />
@@ -274,14 +274,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         />
         <div style={styles.buttonContainerStyles}>
           <Button sx={sx.buttonStyles} onClick={handleClose}>
-            {t('common.cancel')}
+            {t("common.cancel")}
           </Button>
           <Button
             startIcon={<CheckCircle fill={theme.palette.baselineColor.neutral[0]} />}
             sx={sx.saveButtonStyles}
             onClick={handleSave}
             disabled={isSaveDisabled}>
-            {t('common.save')}
+            {t("common.save")}
           </Button>
         </div>
       </Menu>

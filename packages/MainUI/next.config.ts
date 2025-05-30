@@ -1,22 +1,22 @@
-import analyzer from '@next/bundle-analyzer';
-import type { NextConfig } from 'next';
+import analyzer from "@next/bundle-analyzer";
+import type { NextConfig } from "next";
 
-const DEBUG_MODE = process.env.DEBUG_MODE === 'true' || process.env.NODE_ENV === 'development';
-const ANALYZE = process.env.ANALYZE === 'true';
+const DEBUG_MODE = process.env.DEBUG_MODE === "true" || process.env.NODE_ENV === "development";
+const ANALYZE = process.env.ANALYZE === "true";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['@mui/material', '@mui/system', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+  transpilePackages: ["@mui/material", "@mui/system", "@mui/icons-material", "@emotion/react", "@emotion/styled"],
   modularizeImports: {
-    '@mui/material': {
-      transform: '@mui/material/{{member}}',
+    "@mui/material": {
+      transform: "@mui/material/{{member}}",
     },
-    '@mui/icons-material': {
-      transform: '@mui/icons-material/{{member}}',
+    "@mui/icons-material": {
+      transform: "@mui/icons-material/{{member}}",
     },
   },
   reactStrictMode: false,
   cleanDistDir: false,
-  output: 'standalone',
+  output: "standalone",
   compiler: {
     removeConsole: !DEBUG_MODE,
   },
@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
     };
 
     const fileLoaderRule = config.module.rules.find((rule: { test: { toString: () => string | string[] } }) =>
-      rule.test?.toString().includes('svg'),
+      rule.test?.toString().includes("svg"),
     );
 
     if (fileLoaderRule) {
@@ -39,9 +39,9 @@ const nextConfig: NextConfig = {
       {
         test: /\.svg$/i,
         resourceQuery: /url/,
-        type: 'asset/resource',
+        type: "asset/resource",
         generator: {
-          filename: 'static/media/[name].[hash][ext]',
+          filename: "static/media/[name].[hash][ext]",
         },
       },
       {
@@ -49,7 +49,7 @@ const nextConfig: NextConfig = {
         resourceQuery: { not: [/url/] },
         use: [
           {
-            loader: '@svgr/webpack',
+            loader: "@svgr/webpack",
             options: {
               icon: true,
             },
@@ -73,4 +73,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default analyzer({ enabled: ANALYZE, logLevel: 'info', openAnalyzer: ANALYZE })(nextConfig);
+export default analyzer({ enabled: ANALYZE, logLevel: "info", openAnalyzer: ANALYZE })(nextConfig);

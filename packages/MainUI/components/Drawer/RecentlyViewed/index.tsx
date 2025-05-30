@@ -1,12 +1,12 @@
-import { useLanguage } from '@/contexts/language';
-import { DrawerSection } from '@workspaceui/componentlibrary/src/components/Drawer/DrawerSection';
-import type { RecentlyViewedProps } from '@workspaceui/componentlibrary/src/components/Drawer/types';
-import { createParentMenuItem } from '@workspaceui/componentlibrary/src/utils/menuUtils';
-import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo } from 'react';
-import { useRecentItems } from '../../../hooks/useRecentItems';
-import { useTranslation } from '../../../hooks/useTranslation';
-import { useUserContext } from '../../../hooks/useUserContext';
+import { useLanguage } from "@/contexts/language";
+import { DrawerSection } from "@workspaceui/componentlibrary/src/components/Drawer/DrawerSection";
+import type { RecentlyViewedProps } from "@workspaceui/componentlibrary/src/components/Drawer/types";
+import { createParentMenuItem } from "@workspaceui/componentlibrary/src/utils/menuUtils";
+import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo } from "react";
+import { useRecentItems } from "../../../hooks/useRecentItems";
+import { useTranslation } from "../../../hooks/useTranslation";
+import { useUserContext } from "../../../hooks/useUserContext";
 
 export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, RecentlyViewedProps>(
   ({ windowId, onClick, open, items, getTranslatedName }, ref) => {
@@ -22,7 +22,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
       hasItems,
       addRecentItem,
       updateTranslations,
-    } = useRecentItems(items, onClick, currentRole?.id ?? '', getTranslatedName);
+    } = useRecentItems(items, onClick, currentRole?.id ?? "", getTranslatedName);
 
     useEffect(() => {
       if (currentRole?.id && items.length > 0) {
@@ -62,13 +62,13 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
         isExpanded={isExpanded}
         onToggleExpand={handleToggleExpand}
         isSearchActive={false}
-        parentId=''
+        parentId=""
         windowId={windowId}
       />
     );
   },
 );
 
-RecentlyViewed.displayName = 'RecentlyViewed';
+RecentlyViewed.displayName = "RecentlyViewed";
 
 export default RecentlyViewed;

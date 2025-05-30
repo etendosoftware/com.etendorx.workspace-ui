@@ -1,8 +1,8 @@
-import { memo } from 'react';
-import { useForm, FormProvider, type FieldValues } from 'react-hook-form';
-import { Box, Paper, Button, Grid, Typography } from '@mui/material';
-import DynamicField from './DynamicField';
-import type { ReportMetadata, ReportField } from '@workspaceui/etendohookbinder/src/hooks/types';
+import { memo } from "react";
+import { useForm, FormProvider, type FieldValues } from "react-hook-form";
+import { Box, Paper, Button, Grid, Typography } from "@mui/material";
+import DynamicField from "./DynamicField";
+import type { ReportMetadata, ReportField } from "@workspaceui/etendohookbinder/src/hooks/types";
 
 interface DynamicReportProps<T> {
   metadata: ReportMetadata;
@@ -25,7 +25,7 @@ function DynamicReport<T extends FieldValues>({ metadata, onSubmit }: DynamicRep
       <Paper sx={{ p: 2 }}>
         {metadata.sections.map((section) => (
           <Box key={section.id} sx={{ mb: 4 }}>
-            <Typography variant='h6' sx={{ mb: 2 }}>
+            <Typography variant="h6" sx={{ mb: 2 }}>
               {section.title}
             </Typography>
             <Grid container spacing={2}>
@@ -37,9 +37,9 @@ function DynamicReport<T extends FieldValues>({ metadata, onSubmit }: DynamicRep
             </Grid>
           </Box>
         ))}
-        <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+        <Box sx={{ mt: 4, display: "flex", justifyContent: "flex-end", gap: 2 }}>
           {metadata.actions.map((action) => (
-            <Button key={action.id} variant='contained' onClick={() => handleSubmit(action.format)}>
+            <Button key={action.id} variant="contained" onClick={() => handleSubmit(action.format)}>
               {action.name}
             </Button>
           ))}

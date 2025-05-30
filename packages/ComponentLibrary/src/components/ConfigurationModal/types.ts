@@ -1,4 +1,4 @@
-import type { MenuProps } from '@mui/material';
+import type { MenuProps } from "@mui/material";
 
 export interface ISection {
   name: string;
@@ -6,7 +6,7 @@ export interface ISection {
   selectedItem: number;
 }
 
-export interface IConfigurationModalProps extends Omit<MenuProps, 'open' | 'title'> {
+export interface IConfigurationModalProps extends Omit<MenuProps, "open" | "title"> {
   icon?: React.ReactNode;
   title?: { icon?: string | React.ReactNode; label?: string };
   tooltipButtonProfile?: string;

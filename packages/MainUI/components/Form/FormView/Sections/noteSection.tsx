@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Box, Grid, Card, CardContent, Typography, Button, TextField, useTheme } from '@mui/material';
-import Modal from '@workspaceui/componentlibrary/src/components/BasicModal';
-import CloseIcon from '@workspaceui/componentlibrary/src/assets/icons/x.svg';
-import NoteIcon from '@workspaceui/componentlibrary/src/assets/icons/note.svg';
-import PlusIcon from '@workspaceui/componentlibrary/src/assets/icons/plus-circle.svg';
-import type { Note, NoteSectionProps } from '../types';
-import { noteColors, useStyle } from '../styles';
-import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
+import { useState, useEffect } from "react";
+import { Box, Grid, Card, CardContent, Typography, Button, TextField, useTheme } from "@mui/material";
+import Modal from "@workspaceui/componentlibrary/src/components/BasicModal";
+import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
+import NoteIcon from "@workspaceui/componentlibrary/src/assets/icons/note.svg";
+import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus-circle.svg";
+import type { Note, NoteSectionProps } from "../types";
+import { noteColors, useStyle } from "../styles";
+import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 
 const NoteSection = ({
   sectionId,
@@ -19,7 +19,7 @@ const NoteSection = ({
   const { sx } = useStyle();
   const theme = useTheme();
   const [notes, setNotes] = useState<Note[]>([]);
-  const [newNote, setNewNote] = useState('');
+  const [newNote, setNewNote] = useState("");
 
   useEffect(() => {
     const storedNotes = sessionStorage.getItem(`notes-${sectionId}`);
@@ -44,7 +44,7 @@ const NoteSection = ({
       const updatedNotes = [...notes, newNoteObj];
       setNotes(updatedNotes);
       sessionStorage.setItem(`notes-${sectionId}`, JSON.stringify(updatedNotes));
-      setNewNote('');
+      setNewNote("");
     }
   };
 
@@ -67,7 +67,7 @@ const NoteSection = ({
                 <IconButton>
                   <PlusIcon fill={theme.palette.baselineColor.neutral[80]} />
                 </IconButton>
-                <Typography variant='body1' sx={sx.addNoteText}>
+                <Typography variant="body1" sx={sx.addNoteText}>
                   {addNoteButtonText}
                 </Typography>
               </Button>
@@ -80,7 +80,7 @@ const NoteSection = ({
               onChange={(e) => setNewNote(e.target.value)}
               placeholder={noteInputPlaceholder}
             />
-            <Button onClick={addNote} variant='contained' sx={{ mt: 2 }}>
+            <Button onClick={addNote} variant="contained" sx={{ mt: 2 }}>
               {addNoteSubmitText}
             </Button>
           </Modal>
@@ -90,16 +90,16 @@ const NoteSection = ({
             <Card sx={{ ...sx.noteCard, backgroundColor: note.color }}>
               <CardContent sx={sx.noteCardContent}>
                 <Box sx={sx.noteContentBox}>
-                  <Typography variant='body1' sx={sx.noteContentText}>
+                  <Typography variant="body1" sx={sx.noteContentText}>
                     {note.content}
                   </Typography>
                 </Box>
-                <Typography variant='body2' component='div' sx={sx.noteDate}>
+                <Typography variant="body2" component="div" sx={sx.noteDate}>
                   {new Date(note.createdAt).toDateString()}
                 </Typography>
                 <Box sx={sx.deleteButtonBox}>
                   <IconButton onClick={() => deleteNote(note.id)}>
-                    <CloseIcon fontSize='small' />
+                    <CloseIcon fontSize="small" />
                   </IconButton>
                 </Box>
               </CardContent>

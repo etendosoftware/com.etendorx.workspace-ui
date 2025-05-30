@@ -1,16 +1,16 @@
-import { useTranslation } from '@/hooks/useTranslation';
-import { Checkbox, FormControl, FormControlLabel, Grid, styled, useTheme } from '@mui/material';
-import { InputPassword } from '@workspaceui/componentlibrary/src/components';
-import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
-import type { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
-import { Item } from '@workspaceui/componentlibrary/src/components/enums';
-import { useMemo, useState } from 'react';
-import ClientIcon from '../../../../ComponentLibrary/src/assets/icons/github.svg';
-import LockOutlined from '../../../../ComponentLibrary/src/assets/icons/lock.svg';
-import OrganizationIcon from '../../../../ComponentLibrary/src/assets/icons/user.svg';
-import WarehouseIcon from '../../../../ComponentLibrary/src/assets/icons/warehouse.svg';
-import type { SelectorListProps } from '../types';
-import { useStyle } from './styles';
+import { useTranslation } from "@/hooks/useTranslation";
+import { Checkbox, FormControl, FormControlLabel, Grid, styled, useTheme } from "@mui/material";
+import { InputPassword } from "@workspaceui/componentlibrary/src/components";
+import Select from "@workspaceui/componentlibrary/src/components/Input/Select";
+import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
+import { Item } from "@workspaceui/componentlibrary/src/components/enums";
+import { useMemo, useState } from "react";
+import ClientIcon from "../../../../ComponentLibrary/src/assets/icons/github.svg";
+import LockOutlined from "../../../../ComponentLibrary/src/assets/icons/lock.svg";
+import OrganizationIcon from "../../../../ComponentLibrary/src/assets/icons/user.svg";
+import WarehouseIcon from "../../../../ComponentLibrary/src/assets/icons/warehouse.svg";
+import type { SelectorListProps } from "../types";
+import { useStyle } from "./styles";
 
 const isOptionEqualToValue = (option: Option, value: Option) => option.id === value.id;
 
@@ -35,9 +35,9 @@ const SelectorList: React.FC<SelectorListProps> = ({
   const { t } = useTranslation();
   const { styles, defaultFill } = useStyle();
   const theme = useTheme();
-  const [password, setPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [newPasswordConfirmation, setNewPasswordConfirmation] = useState('');
+  const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirmation, setNewPasswordConfirmation] = useState("");
 
   const FlagEmoji = ({ flag }: { flag: string }) => <span style={styles.flagStyles}>{flag}</span>;
 
@@ -50,12 +50,12 @@ const SelectorList: React.FC<SelectorListProps> = ({
   };
 
   const CustomCheckbox = styled(Checkbox)(() => ({
-    '&.Mui-checked': {
+    "&.Mui-checked": {
       color: theme.palette.dynamicColor.main,
     },
   }));
 
-  const isSystem = selectedRole?.id === '0';
+  const isSystem = selectedRole?.id === "0";
 
   const clientOptions = useMemo(() => {
     if (!selectedRole || isSystem) return [];
@@ -137,11 +137,11 @@ const SelectorList: React.FC<SelectorListProps> = ({
 
   return (
     <div style={styles.selectorListStyles}>
-      {section === 'profile' && (
+      {section === "profile" && (
         <>
           <FormControl fullWidth style={styles.formStyle}>
             <Select
-              id='role-select'
+              id="role-select"
               title={Item.Role}
               options={roleOptions}
               value={selectedRole}
@@ -150,7 +150,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               isOptionEqualToValue={isOptionEqualToValue}
             />
             <Select
-              id='client-select'
+              id="client-select"
               title={Item.Client}
               options={clientOptions}
               value={selectedClient}
@@ -159,7 +159,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               disabled={true}
             />
             <Select
-              id='organization-select'
+              id="organization-select"
               title={Item.Organization}
               options={organizationOptions}
               value={selectedOrg}
@@ -169,7 +169,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               disabled={!selectedClient || isSystem}
             />
             <Select
-              id='warehouse-select'
+              id="warehouse-select"
               title={Item.Warehouse}
               options={warehouseOptions}
               value={isSystem ? null : selectedWarehouse}
@@ -179,7 +179,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               isOptionEqualToValue={isOptionEqualToValue}
             />
             <Select
-              id='language-select'
+              id="language-select"
               title={Item.Language}
               options={languageOptions}
               value={selectedLanguage}
@@ -189,36 +189,36 @@ const SelectorList: React.FC<SelectorListProps> = ({
             />
           </FormControl>
           <FormControlLabel
-            control={<CustomCheckbox size='small' checked={saveAsDefault} onChange={onSaveAsDefaultChange} />}
+            control={<CustomCheckbox size="small" checked={saveAsDefault} onChange={onSaveAsDefaultChange} />}
             label={translations?.saveAsDefault}
           />
         </>
       )}
-      {section === 'password' && (
-        <Grid margin='0.5rem'>
-          <form action='#' autoComplete='off'>
+      {section === "password" && (
+        <Grid margin="0.5rem">
+          <form action="#" autoComplete="off">
             <InputPassword
-              label={t('common.notImplemented')}
+              label={t("common.notImplemented")}
               value={password}
               setValue={setPassword}
               leftIcon={<LockOutlined fill={defaultFill} />}
-              autoComplete='new-password'
+              autoComplete="new-password"
               disabled
             />
             <InputPassword
-              label={t('common.notImplemented')}
+              label={t("common.notImplemented")}
               value={newPassword}
               setValue={setNewPassword}
               leftIcon={<LockOutlined fill={defaultFill} />}
-              autoComplete='new-password'
+              autoComplete="new-password"
               disabled
             />
             <InputPassword
-              label={t('common.notImplemented')}
+              label={t("common.notImplemented")}
               value={newPasswordConfirmation}
               setValue={setNewPasswordConfirmation}
               leftIcon={<LockOutlined fill={defaultFill} />}
-              autoComplete='new-password'
+              autoComplete="new-password"
               disabled
             />
           </form>

@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Box, useTheme } from '@mui/material';
+import { useMemo } from "react";
+import { Box, useTheme } from "@mui/material";
 
 const useStyle = () => {
   const theme = useTheme();
@@ -8,12 +8,12 @@ const useStyle = () => {
     () => ({
       dottedLine: {
         backgroundImage: `radial-gradient(circle, ${theme.palette.divider} 1px, transparent 1px)`,
-        backgroundSize: '8px 8px',
-        backgroundPosition: 'right',
-        backgroundRepeat: 'repeat-y',
-        width: '8px',
-        height: '100%',
-        margin: '0 1rem',
+        backgroundSize: "8px 8px",
+        backgroundPosition: "right",
+        backgroundRepeat: "repeat-y",
+        width: "8px",
+        height: "100%",
+        margin: "0 1rem",
       },
     }),
     [theme.palette.divider],

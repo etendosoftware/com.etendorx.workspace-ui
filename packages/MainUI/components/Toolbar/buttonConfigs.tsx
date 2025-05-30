@@ -1,10 +1,10 @@
-import type { OrganizedSections, ToolbarButtonMetadata } from '@/hooks/Toolbar/types';
-import type { TranslateFunction } from '@/hooks/types';
-import type React from 'react';
-import Base64Icon from './Base64Icon';
-import { IconSize, type ToolbarButton } from './types';
+import type { OrganizedSections, ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
+import type { TranslateFunction } from "@/hooks/types";
+import type React from "react";
+import Base64Icon from "./Base64Icon";
+import { IconSize, type ToolbarButton } from "./types";
 
-export const DefaultIcon = () => <span style={{ fontSize: '1rem' }}>✣</span>;
+export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
 
 const isBase64Image = (str: string): boolean => {
   try {
@@ -20,7 +20,7 @@ const isBase64Image = (str: string): boolean => {
 export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }) => {
   if (!iconKey) return <DefaultIcon />;
 
-  if (iconKey.startsWith('data:image/')) {
+  if (iconKey.startsWith("data:image/")) {
     return <Base64Icon src={iconKey} />;
   }
 
@@ -28,11 +28,11 @@ export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }
     return <Base64Icon src={`data:image/png;base64,${iconKey}`} />;
   }
 
-  return <span style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>{iconKey}</span>;
+  return <span style={{ fontSize: "0.75rem", fontWeight: "bold" }}>{iconKey}</span>;
 };
 
 export const ProcessMenuIcon = () => {
-  return <span style={{ fontSize: '1rem' }}>⚙️</span>;
+  return <span style={{ fontSize: "1rem" }}>⚙️</span>;
 };
 
 const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMetadata[] => {
@@ -53,7 +53,7 @@ export const organizeButtonsBySection = (buttons: ToolbarButtonMetadata[], isFor
 
   const visibleButtons = buttons.filter((button) => {
     if (!button.active) return false;
-    if (isFormView && button.action === 'FIND') return false;
+    if (isFormView && button.action === "FIND") return false;
     return true;
   });
 
@@ -89,17 +89,17 @@ export const createButtonByType = (
   };
 
   const getIconTextConfig = (): Partial<ToolbarButton> => {
-    const showIconTextFor = ['NEW'];
+    const showIconTextFor = ["NEW"];
 
     if (showIconTextFor.includes(button.action)) {
       return { iconText: button.name };
     }
 
-    if (button.buttonType === 'DROPDOWN') {
+    if (button.buttonType === "DROPDOWN") {
       return { iconText: `${button.name} ▼` };
     }
 
-    if (button.buttonType === 'MODAL' && button.modalConfig?.title) {
+    if (button.buttonType === "MODAL" && button.modalConfig?.title) {
       return { iconText: button.modalConfig.title };
     }
 
@@ -108,9 +108,9 @@ export const createButtonByType = (
 
   const getDisableConfig = (): Partial<ToolbarButton> => {
     switch (button.action) {
-      case 'CANCEL':
+      case "CANCEL":
         return { disabled: !(isFormView || hasSelectedRecord) };
-      case 'DELETE':
+      case "DELETE":
         return { disabled: !hasSelectedRecord };
       default:
         return { disabled: !button.active };
@@ -119,24 +119,24 @@ export const createButtonByType = (
 
   const getClickConfig = (): Partial<ToolbarButton> => {
     switch (button.buttonType) {
-      case 'DROPDOWN':
+      case "DROPDOWN":
         return {
           onClick: (event?: React.MouseEvent<HTMLElement>) => {
-            onAction('OPEN_DROPDOWN', button, event);
+            onAction("OPEN_DROPDOWN", button, event);
           },
         };
-      case 'MODAL':
+      case "MODAL":
         return {
-          onClick: () => onAction('OPEN_MODAL', button),
+          onClick: () => onAction("OPEN_MODAL", button),
         };
-      case 'TOGGLE':
+      case "TOGGLE":
         return {
-          onClick: () => onAction('TOGGLE', button),
+          onClick: () => onAction("TOGGLE", button),
         };
-      case 'CUSTOM':
+      case "CUSTOM":
         return {
           onClick: (event?: React.MouseEvent<HTMLElement>) => {
-            onAction('CUSTOM_ACTION', button, event);
+            onAction("CUSTOM_ACTION", button, event);
           },
         };
       default:
@@ -155,14 +155,14 @@ export const createButtonByType = (
 };
 
 const BUTTON_STYLES = {
-  NEW: 'toolbar-button-new bg-(--color-baseline-100) text-(--color-baseline-0) rounded-l-full h-8 px-3',
-  SAVE: 'toolbar-button-save bg-(--color-baseline-100) text-(--color-baseline-0) h-8.5 w-8.5 ml-1',
+  NEW: "toolbar-button-new bg-(--color-baseline-100) text-(--color-baseline-0) rounded-l-full h-8 px-3",
+  SAVE: "toolbar-button-save bg-(--color-baseline-100) text-(--color-baseline-0) h-8.5 w-8.5 ml-1",
   REFRESH:
-    'toolbar-button-refresh bg-(--color-baseline-100) text-(--color-baseline-0) rounded-r-full border-l-1 border-l-[color:var(--color-baseline-0)] w-10',
-  CANCEL: 'toolbar-button-cancel',
-  DELETE: 'toolbar-button-delete',
-  FIND: 'toolbar-button-find',
-  FILTER: 'toolbar-button-filter',
+    "toolbar-button-refresh bg-(--color-baseline-100) text-(--color-baseline-0) rounded-r-full border-l-1 border-l-[color:var(--color-baseline-0)] w-10",
+  CANCEL: "toolbar-button-cancel",
+  DELETE: "toolbar-button-delete",
+  FIND: "toolbar-button-find",
+  FILTER: "toolbar-button-filter",
 } as const;
 
 export const getButtonStyles = (button: ToolbarButtonMetadata) => {
@@ -176,13 +176,13 @@ export const createProcessMenuButton = (
   t: TranslateFunction,
   anchorEl: HTMLElement | null,
 ): ToolbarButton => ({
-  key: 'process-menu',
+  key: "process-menu",
   icon: <ProcessMenuIcon />,
-  iconText: t('common.processes'),
-  tooltip: t('common.processes'),
+  iconText: t("common.processes"),
+  tooltip: t("common.processes"),
   anchorEl: anchorEl,
   disabled: !hasSelectedRecord,
-  className: 'bg-(--color-warning-main) disabled:bg-(--color-warning-light) h-8 [&>svg]:w-4 [&>svg]:h-4',
+  className: "bg-(--color-warning-main) disabled:bg-(--color-warning-light) h-8 [&>svg]:w-4 [&>svg]:h-4",
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
     if (hasSelectedRecord && event && processCount > 0) {
       onMenuOpen(event);

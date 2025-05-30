@@ -1,12 +1,12 @@
-import { Box, useTheme } from '@mui/material';
-import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useItemActions } from '../../../hooks/useItemType';
-import { CustomClickAwayListener } from '../../../utils/clickAway';
-import { findActive } from '../../../utils/drawerUtils';
-import { MenuTitle } from '../MenuTitle';
-import { useStyle } from '../styles';
-import type { DrawerSectionProps, ToggleFunctions } from '../types';
+import { Box, useTheme } from "@mui/material";
+import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useItemActions } from "../../../hooks/useItemType";
+import { CustomClickAwayListener } from "../../../utils/clickAway";
+import { findActive } from "../../../utils/drawerUtils";
+import { MenuTitle } from "../MenuTitle";
+import { useStyle } from "../styles";
+import type { DrawerSectionProps, ToggleFunctions } from "../types";
 
 export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
   ({
@@ -86,7 +86,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
 
     const handleKeyDown = useCallback(
       (event: React.KeyboardEvent) => {
-        if (event.key === 'Enter' || event.key === ' ') {
+        if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           event.stopPropagation();
           handleClick(event as unknown as React.MouseEvent<HTMLElement>);
@@ -110,7 +110,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     const sectionStyles = useMemo(
       () => ({
         ...(open ? sx.drawerSectionBox : sx.closeSection),
-        bgcolor: expanded && open ? theme.palette.dynamicColor.contrastText : 'transparent',
+        bgcolor: expanded && open ? theme.palette.dynamicColor.contrastText : "transparent",
       }),
       [expanded, open, sx.drawerSectionBox, sx.closeSection, theme],
     );
@@ -127,7 +127,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     }, [isSelected, item.children, windowId, parentId, item.id, handleNestedToggle]);
 
     useEffect(() => {
-      if (item.id === 'recently-viewed' && !isSelected && !findActive(windowId, item.children)) {
+      if (item.id === "recently-viewed" && !isSelected && !findActive(windowId, item.children)) {
         setLocalExpanded(false);
       }
     }, [item.id, isSelected, windowId, item.children]);
@@ -151,7 +151,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
         {hasChildren && open && (
           <div
             className={`overflow-hidden transition-all duration-300 ease-in-out 
-              ${shouldShowChildren ? 'max-h-[1000px] opacity-100 transform translate-y-0' : 'max-h-0 opacity-0 transform -translate-y-2'}`}>
+              ${shouldShowChildren ? "max-h-[1000px] opacity-100 transform translate-y-0" : "max-h-0 opacity-0 transform -translate-y-2"}`}>
             {item.children?.map((subitem) => (
               <DrawerSection
                 key={subitem.id}
@@ -175,13 +175,13 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
             className={`
               fixed bg-white z-50 ml-2 rounded-xl shadow-lg
               transition-all duration-1000 ease-out origin-left
-              ${popperOpen ? 'opacity-100 translate-x-0' : 'opacity-0 pointer-events-none -translate-x-2'}`}
+              ${popperOpen ? "opacity-100 translate-x-0" : "opacity-0 pointer-events-none -translate-x-2"}`}
             style={{
-              left: '3.5rem',
-              top: popperRef.current ? popperRef.current.getBoundingClientRect().top : 'auto',
+              left: "3.5rem",
+              top: popperRef.current ? popperRef.current.getBoundingClientRect().top : "auto",
             }}>
             <CustomClickAwayListener onClickAway={handleClose}>
-              <div className='p-2 min-w-[240px]'>
+              <div className="p-2 min-w-[240px]">
                 <MenuTitle
                   item={item}
                   onClick={handleClick}
@@ -216,6 +216,6 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
   },
 );
 
-DrawerSection.displayName = 'DrawerSection';
+DrawerSection.displayName = "DrawerSection";
 
 export default DrawerSection;

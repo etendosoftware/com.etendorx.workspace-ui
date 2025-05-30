@@ -1,5 +1,5 @@
-import { type SxProps, type Theme, useTheme } from '@mui/material';
-import { useMemo } from 'react';
+import { type SxProps, type Theme, useTheme } from "@mui/material";
+import { useMemo } from "react";
 
 export const useStyle = () => {
   const theme = useTheme();
@@ -10,11 +10,11 @@ export const useStyle = () => {
         rightButton: {
           background: theme.palette.baselineColor.neutral[100],
           color: theme.palette.baselineColor.neutral[0],
-          height: '2rem',
-          borderRadius: '6.25rem',
-          padding: '0.5rem 1rem',
-          '&:hover': {
-            border: 'none',
+          height: "2rem",
+          borderRadius: "6.25rem",
+          padding: "0.5rem 1rem",
+          "&:hover": {
+            border: "none",
             background: theme.palette.dynamicColor.main,
             color: theme.palette.dynamicColor.contrastText,
           },
@@ -22,12 +22,12 @@ export const useStyle = () => {
         leftButton: {
           background: theme.palette.baselineColor.neutral[10],
           color: theme.palette.baselineColor.transparentNeutral[100],
-          height: '2rem',
-          borderRadius: '6.25rem',
-          padding: '0.5rem 1rem',
+          height: "2rem",
+          borderRadius: "6.25rem",
+          padding: "0.5rem 1rem",
           border: `1px solid ${theme.palette.baselineColor.neutral[10]}`,
-          '&:hover': {
-            border: 'none',
+          "&:hover": {
+            border: "none",
             background: theme.palette.dynamicColor.main,
             color: theme.palette.dynamicColor.contrastText,
           },

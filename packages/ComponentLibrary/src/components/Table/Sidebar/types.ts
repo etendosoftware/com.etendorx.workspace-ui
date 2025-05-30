@@ -1,5 +1,5 @@
-import type { Widget } from '@workspaceui/storybook/src/stories/Components/Table/types';
-import type { Translations } from '../../RegisterModal/types';
+import type { Widget } from "@workspaceui/storybook/src/stories/Components/Table/types";
+import type { Translations } from "../../RegisterModal/types";
 
 export interface SidebarContentProps {
   icon: React.ReactNode;

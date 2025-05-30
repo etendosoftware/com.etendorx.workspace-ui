@@ -1,37 +1,37 @@
-import { useToolbarContext } from '@/contexts/ToolbarContext';
-import { useStatusModal } from '@/hooks/Toolbar/useStatusModal';
-import { useFormAction } from '@/hooks/useFormAction';
-import useFormFields from '@/hooks/useFormFields';
-import { useFormInitialState } from '@/hooks/useFormInitialState';
-import { useFormInitialization } from '@/hooks/useFormInitialization';
-import { useSelected } from '@/hooks/useSelected';
-import { useTheme } from '@mui/material';
-import InfoIcon from '@workspaceui/componentlibrary/src/assets/icons/file-text.svg';
-import FileIcon from '@workspaceui/componentlibrary/src/assets/icons/file.svg';
-import FolderIcon from '@workspaceui/componentlibrary/src/assets/icons/folder.svg';
-import Info from '@workspaceui/componentlibrary/src/assets/icons/info.svg';
-import PrimaryTabs from '@workspaceui/componentlibrary/src/components/PrimaryTab';
-import type { TabItem } from '@workspaceui/componentlibrary/src/components/PrimaryTab/types';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
-import { type EntityData, FormMode } from '@workspaceui/etendohookbinder/src/api/types';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
-import Collapsible from '../Collapsible';
-import StatusBar from './StatusBar';
-import { BaseSelector } from './selectors/BaseSelector';
-import type { FormViewProps } from './types';
+import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
+import { useFormAction } from "@/hooks/useFormAction";
+import useFormFields from "@/hooks/useFormFields";
+import { useFormInitialState } from "@/hooks/useFormInitialState";
+import { useFormInitialization } from "@/hooks/useFormInitialization";
+import { useSelected } from "@/hooks/useSelected";
+import { useTheme } from "@mui/material";
+import InfoIcon from "@workspaceui/componentlibrary/src/assets/icons/file-text.svg";
+import FileIcon from "@workspaceui/componentlibrary/src/assets/icons/file.svg";
+import FolderIcon from "@workspaceui/componentlibrary/src/assets/icons/folder.svg";
+import Info from "@workspaceui/componentlibrary/src/assets/icons/info.svg";
+import PrimaryTabs from "@workspaceui/componentlibrary/src/components/PrimaryTab";
+import type { TabItem } from "@workspaceui/componentlibrary/src/components/PrimaryTab/types";
+import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
+import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
+import { type EntityData, FormMode } from "@workspaceui/etendohookbinder/src/api/types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormProvider, useForm } from "react-hook-form";
+import Collapsible from "../Collapsible";
+import StatusBar from "./StatusBar";
+import { BaseSelector } from "./selectors/BaseSelector";
+import type { FormViewProps } from "./types";
 
 const iconMap: Record<string, React.ReactElement> = {
-  'Main Section': <FileIcon />,
-  'More Information': <InfoIcon />,
+  "Main Section": <FileIcon />,
+  "More Information": <InfoIcon />,
   Dimensions: <FolderIcon />,
 };
 
 export function FormView({ window: windowMetadata, tab, mode, recordId, setRecordId }: FormViewProps) {
   const theme = useTheme();
-  const [expandedSections, setExpandedSections] = useState<string[]>(['null']);
-  const [selectedTab, setSelectedTab] = useState<string>('');
+  const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
+  const [selectedTab, setSelectedTab] = useState<string>("");
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const { graph } = useSelected();
@@ -68,7 +68,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const tabs: TabItem[] = useMemo(() => {
     return groups.map(([id, group]) => ({
-      id: String(id || '_main'),
+      id: String(id || "_main"),
       icon: getIconForGroup(group.identifier),
       label: group.identifier,
       fill: theme.palette.baselineColor.neutral[80],
@@ -98,7 +98,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
         containerRef.current.scrollTo({
           top: Math.max(0, sectionTop - 20),
-          behavior: 'smooth',
+          behavior: "smooth",
         });
       }
     }
@@ -106,14 +106,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const handleSectionRef = useCallback(
     (sectionId: string | null) => (el: HTMLElement | null) => {
-      const id = String(sectionId || '_main');
+      const id = String(sectionId || "_main");
       sectionRefs.current[id] = el;
     },
     [],
   );
 
   const handleAccordionChange = useCallback((sectionId: string | null, isExpanded: boolean) => {
-    const id = String(sectionId || '_main');
+    const id = String(sectionId || "_main");
 
     setExpandedSections((prev) => {
       if (isExpanded) {
@@ -141,7 +141,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       }
 
       graph.setSelected(tab, data);
-      showSuccessModal('Saved');
+      showSuccessModal("Saved");
     },
     [graph, initialState, mode, refetch, reset, setRecordId, showSuccessModal, tab],
   );
@@ -175,8 +175,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     if (!initialState) return;
 
     for (const [key, value] of Object.entries(initialState)) {
-      if (typeof value === 'undefined') {
-        initialState[key] = '';
+      if (typeof value === "undefined") {
+        initialState[key] = "";
       }
     }
 
@@ -195,11 +195,11 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     <FormProvider setValue={setValue} reset={reset} {...form}>
       <form
         className={`w-full h-full max-h-full overflow-hidden flex flex-col transition duration-300  ${
-          loading ? 'opacity-50 select-none cursor-progress cursor-to-children' : ''
+          loading ? "opacity-50 select-none cursor-progress cursor-to-children" : ""
         }`}
         onSubmit={save}>
-        <div className='flex-shrink-0 pl-2 pr-2'>
-          <div className='mb-2'>
+        <div className="flex-shrink-0 pl-2 pr-2">
+          <div className="mb-2">
             {statusModal.open && (
               <StatusModal
                 statusType={statusModal.statusType}
@@ -213,14 +213,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
             )}
           </div>
           <StatusBar fields={fields.statusBarFields} />
-          <div className='mt-2'>
+          <div className="mt-2">
             <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
           </div>
         </div>
 
-        <div className='flex-grow overflow-auto p-2 space-y-2' ref={containerRef}>
+        <div className="flex-grow overflow-auto p-2 space-y-2" ref={containerRef}>
           {groups.map(([id, group]) => {
-            const sectionId = String(id || '_main');
+            const sectionId = String(id || "_main");
             return (
               <div key={sectionId} ref={handleSectionRef(id)}>
                 <Collapsible
@@ -229,7 +229,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
                   sectionId={sectionId}
                   icon={getIconForGroup(group.identifier)}
                   onToggle={(isOpen: boolean) => handleAccordionChange(id, isOpen)}>
-                  <div className='grid grid-cols-3 auto-rows-auto gap-4'>
+                  <div className="grid grid-cols-3 auto-rows-auto gap-4">
                     {Object.entries(group.fields).map(([hqlName, field]) => (
                       <BaseSelector field={field} key={hqlName} formMode={mode} />
                     ))}

@@ -1,20 +1,20 @@
-import { useTabContext } from '@/contexts/tab';
-import { logger } from '@/utils/logger';
-import type { ClientOptions } from '@workspaceui/etendohookbinder/src/api/client';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
+import { useTabContext } from "@/contexts/tab";
+import { logger } from "@/utils/logger";
+import type { ClientOptions } from "@workspaceui/etendohookbinder/src/api/client";
+import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
 import {
   type FormInitializationParams,
   type FormInitializationResponse,
   FormMode,
   type Tab,
-} from '@workspaceui/etendohookbinder/src/api/types';
-import { useCallback, useEffect, useMemo, useReducer } from 'react';
-import { FieldName } from './types';
-import useFormParent from './useFormParent';
-import { useUserContext } from './useUserContext';
+} from "@workspaceui/etendohookbinder/src/api/types";
+import { useCallback, useEffect, useMemo, useReducer } from "react";
+import { FieldName } from "./types";
+import useFormParent from "./useFormParent";
+import { useUserContext } from "./useUserContext";
 
 const getRowId = (mode: FormMode, recordId?: string | null): string => {
-  return mode === FormMode.EDIT ? (recordId ?? 'null') : 'null';
+  return mode === FormMode.EDIT ? (recordId ?? "null") : "null";
 };
 
 export const buildFormInitializationParams = ({
@@ -30,23 +30,23 @@ export const buildFormInitializationParams = ({
 }): URLSearchParams =>
   new URLSearchParams({
     MODE: mode,
-    PARENT_ID: parentId ?? 'null',
+    PARENT_ID: parentId ?? "null",
     TAB_ID: tab.id,
     ROW_ID: getRowId(mode, recordId),
-    _action: 'org.openbravo.client.application.window.FormInitializationComponent',
+    _action: "org.openbravo.client.application.window.FormInitializationComponent",
   });
 
 const fetchFormInitialization = async (
   params: URLSearchParams,
-  payload: ClientOptions['body'],
+  payload: ClientOptions["body"],
 ): Promise<FormInitializationResponse> => {
   try {
     const { data } = await Metadata.kernelClient.post(`?${params}`, payload);
 
     return data;
   } catch (error) {
-    logger.warn('Error fetching initial form data:', error);
-    throw new Error('Failed to fetch initial data');
+    logger.warn("Error fetching initial form data:", error);
+    throw new Error("Failed to fetch initial data");
   }
 };
 
@@ -68,9 +68,9 @@ type State =
     };
 
 type Action =
-  | { type: 'FETCH_START' }
-  | { type: 'FETCH_SUCCESS'; payload: FormInitializationResponse }
-  | { type: 'FETCH_ERROR'; payload: Error };
+  | { type: "FETCH_START" }
+  | { type: "FETCH_SUCCESS"; payload: FormInitializationResponse }
+  | { type: "FETCH_ERROR"; payload: Error };
 
 const initialState: State = {
   loading: true,
@@ -80,11 +80,11 @@ const initialState: State = {
 
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
-    case 'FETCH_START':
+    case "FETCH_START":
       return { loading: true, error: null, formInitialization: null };
-    case 'FETCH_SUCCESS':
+    case "FETCH_SUCCESS":
       return { loading: false, error: null, formInitialization: action.payload };
-    case 'FETCH_ERROR':
+    case "FETCH_ERROR":
       return { loading: false, error: action.payload, formInitialization: state.formInitialization };
     default:
       return state;
@@ -111,13 +111,13 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   const refetch = useCallback(async () => {
     if (!params) return;
 
-    dispatch({ type: 'FETCH_START' });
+    dispatch({ type: "FETCH_START" });
 
     try {
       const entityKeyColumn = Object.values(tab.fields).find((field) => field.column.keyColumn);
 
       if (!entityKeyColumn) {
-        throw new Error('Missing key column');
+        throw new Error("Missing key column");
       }
 
       const payload = {
@@ -134,7 +134,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       const data = await fetchFormInitialization(params, payload);
       const storedInSessionAttributes = Object.entries(data.auxiliaryInputValues).reduce(
         (acc, [key, { value }]) => {
-          acc[key] = value || '';
+          acc[key] = value || "";
 
           return acc;
         },
@@ -142,10 +142,10 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       );
 
       setSession((prev) => ({ ...prev, ...storedInSessionAttributes, ...data.sessionAttributes }));
-      dispatch({ type: 'FETCH_SUCCESS', payload: data });
+      dispatch({ type: "FETCH_SUCCESS", payload: data });
     } catch (err) {
       logger.warn(err);
-      dispatch({ type: 'FETCH_ERROR', payload: err instanceof Error ? err : new Error('Unknown error') });
+      dispatch({ type: "FETCH_ERROR", payload: err instanceof Error ? err : new Error("Unknown error") });
     }
   }, [params, parentData, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.window]);
 

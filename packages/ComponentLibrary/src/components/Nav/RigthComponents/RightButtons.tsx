@@ -1,6 +1,6 @@
-import Box from '@mui/material/Box';
-import type { ReactNode } from 'react';
-import { useStyle } from '../Nav.styles';
+import Box from "@mui/material/Box";
+import type { ReactNode } from "react";
+import { useStyle } from "../Nav.styles";
 
 interface RightButtonsProps {
   children?: ReactNode;

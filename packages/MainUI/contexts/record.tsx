@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useMemo, useCallback } from 'react';
-import { ensureString } from '@workspaceui/componentlibrary/src/helpers/ensureString';
-import translations from '@workspaceui/componentlibrary/src/locales';
-import { createContext } from 'react';
-import type { Organization } from '../../storybook/src/stories/Components/Table/types';
+import { useState, useMemo, useCallback } from "react";
+import { ensureString } from "@workspaceui/componentlibrary/src/helpers/ensureString";
+import translations from "@workspaceui/componentlibrary/src/locales";
+import { createContext } from "react";
+import type { Organization } from "../../storybook/src/stories/Components/Table/types";
 
 export interface RecordContextType {
   selectedRecord: Organization | null;
@@ -17,7 +17,7 @@ export const RecordContext = createContext({} as RecordContextType);
 export function RecordProvider({ children }: React.PropsWithChildren) {
   const [selectedRecord, setSelectedRecord] = useState<Organization | null>(null);
 
-  const getFormattedRecord: RecordContextType['getFormattedRecord'] = useCallback((record: Organization | null) => {
+  const getFormattedRecord: RecordContextType["getFormattedRecord"] = useCallback((record: Organization | null) => {
     if (!record) return null;
     return {
       identifier: ensureString(record.documentNo?.value) || translations.en_US.table.labels.noIdentifier,

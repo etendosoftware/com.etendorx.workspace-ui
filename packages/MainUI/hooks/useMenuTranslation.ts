@@ -1,13 +1,13 @@
-import type { NestedKeyOf } from '@workspaceui/componentlibrary/src/locales/types';
-import type { TranslationKeys } from './types';
-import { useTranslation } from './useTranslation';
-import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
+import type { NestedKeyOf } from "@workspaceui/componentlibrary/src/locales/types";
+import type { TranslationKeys } from "./types";
+import { useTranslation } from "./useTranslation";
+import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
 
 export const useMenuTranslation = () => {
   const { t } = useTranslation();
 
   const translateMenuItem = (item: Menu): string => {
-    if (!item.name) return item._identifier || '';
+    if (!item.name) return item._identifier || "";
 
     try {
       return item._identifier || t(item.name as NestedKeyOf<TranslationKeys>) || item.name;

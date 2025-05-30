@@ -1,5 +1,5 @@
-import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
-import type { IndexedMenu, SearchIndex } from '../components/Drawer/types';
+import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import type { IndexedMenu, SearchIndex } from "../components/Drawer/types";
 
 const index: SearchIndex = {
   byId: new Map(),
@@ -13,7 +13,7 @@ const addToPhraseIndex = (phrase: string, id: string) => {
   index.byPhrase.get(phrase)?.add(id);
 };
 
-const traverse = (items: Menu[], path: string[] = [], fullPath = '') => {
+const traverse = (items: Menu[], path: string[] = [], fullPath = "") => {
   for (const item of items) {
     const newFullPath = fullPath ? `${fullPath} > ${item.name}` : item.name;
     const indexedItem: IndexedMenu = { ...item, path, fullPath: newFullPath };
@@ -39,7 +39,7 @@ export const createSearchIndex = (items: Menu[]): SearchIndex => {
   try {
     traverse(items);
   } catch (e) {
-    console.warn('Error in createSearchIndex', e);
+    console.warn("Error in createSearchIndex", e);
   }
 
   return index;

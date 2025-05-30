@@ -1,10 +1,10 @@
-import { useContext, useState, useCallback, useMemo } from 'react';
-import { UserContext } from '../../contexts/user';
-import { logger } from '../../utils/logger';
-import type { ProfileWrapperProps } from './types';
-import type { Language } from '../../contexts/types';
-import { useLanguage } from '@/contexts/language';
-import ProfileModal from '../ProfileModal/ProfileModal';
+import { useContext, useState, useCallback, useMemo } from "react";
+import { UserContext } from "../../contexts/user";
+import { logger } from "../../utils/logger";
+import type { ProfileWrapperProps } from "./types";
+import type { Language } from "../../contexts/types";
+import { useLanguage } from "@/contexts/language";
+import ProfileModal from "../ProfileModal/ProfileModal";
 
 const ProfileWrapper = (props: ProfileWrapperProps) => {
   const {

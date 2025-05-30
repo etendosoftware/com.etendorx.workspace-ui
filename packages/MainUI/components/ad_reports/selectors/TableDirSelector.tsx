@@ -1,10 +1,10 @@
-import { useDatasource } from '@/hooks/useDatasource';
-import { useTheme } from '@mui/material';
-import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
-import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
-import Spinner from '@workspaceui/componentlibrary/src/components/Spinner';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Option, TableDirSelectorProps } from '../../Form/FormView/types';
+import { useDatasource } from "@/hooks/useDatasource";
+import { useTheme } from "@mui/material";
+import SearchOutlined from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
+import Select from "@workspaceui/componentlibrary/src/components/Input/Select";
+import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { Option, TableDirSelectorProps } from "../../Form/FormView/types";
 
 const getOptionLabel = (option: Option) => option.title;
 
@@ -31,7 +31,7 @@ const TableDirSelector = ({ onChange, entity, value, name, isReadOnly }: TableDi
 
     if (value && options.length > 0) {
       option = options.find((opt) => {
-        if (typeof value === 'object' && 'id' in value) {
+        if (typeof value === "object" && "id" in value) {
           return opt.id === value.id || opt.value === value.id;
         }
         return opt.id === String(value) || opt.value === String(value);

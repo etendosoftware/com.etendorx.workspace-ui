@@ -1,5 +1,5 @@
-import type { Etendo } from '../api/metadata';
-import { type Field, FieldType, type Tab } from '../api/types';
+import type { Etendo } from "../api/metadata";
+import { type Field, FieldType, type Tab } from "../api/types";
 
 export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
   const tabs: Etendo.Tab[][] = [];
@@ -24,7 +24,7 @@ export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
 };
 
 export const buildFormState = (
-  fields: Tab['fields'],
+  fields: Tab["fields"],
   record: Record<string, unknown>,
   formState: Record<string, Record<string, never>>,
 ) => {
@@ -36,7 +36,7 @@ export const buildFormState = (
         if (inputName?.length) {
           state[inputName] = record[field.hqlName];
         } else {
-          console.warn('Missing field input name for', JSON.stringify(field, null, 2));
+          console.warn("Missing field input name for", JSON.stringify(field, null, 2));
         }
 
         return state;

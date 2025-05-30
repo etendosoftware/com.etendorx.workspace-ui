@@ -5,27 +5,27 @@ import {
   useMaterialReactTable,
   type MRT_TableBodyRowProps,
   type MRT_TableInstance,
-} from 'material-react-table';
-import { useStyle } from './styles';
-import type { DatasourceOptions, EntityData } from '@workspaceui/etendohookbinder/src/api/types';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearch } from '../../contexts/searchContext';
-import { useDatasourceContext } from '@/contexts/datasourceContext';
-import EmptyState from './EmptyState';
-import { parseColumns } from '@/utils/tableColumns';
-import { useToolbarContext } from '@/contexts/ToolbarContext';
-import { useLanguage } from '@/contexts/language';
-import useTableSelection from '@/hooks/useTableSelection';
-import { ErrorDisplay } from '../ErrorDisplay';
-import { useTranslation } from '@/hooks/useTranslation';
-import { useTabContext } from '@/contexts/tab';
-import { useDatasource } from '@/hooks/useDatasource';
+} from "material-react-table";
+import { useStyle } from "./styles";
+import type { DatasourceOptions, EntityData } from "@workspaceui/etendohookbinder/src/api/types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearch } from "../../contexts/searchContext";
+import { useDatasourceContext } from "@/contexts/datasourceContext";
+import EmptyState from "./EmptyState";
+import { parseColumns } from "@/utils/tableColumns";
+import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useLanguage } from "@/contexts/language";
+import useTableSelection from "@/hooks/useTableSelection";
+import { ErrorDisplay } from "../ErrorDisplay";
+import { useTranslation } from "@/hooks/useTranslation";
+import { useTabContext } from "@/contexts/tab";
+import { useDatasource } from "@/hooks/useDatasource";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
   row: MRT_Row<EntityData>;
   table: MRT_TableInstance<EntityData>;
-}) => Omit<MRT_TableBodyRowProps<EntityData>, 'staticRowIndex'>;
+}) => Omit<MRT_TableBodyRowProps<EntityData>, "staticRowIndex">;
 
 const getRowId = (row: EntityData) => String(row.id);
 
@@ -39,15 +39,15 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
   const { registerActions } = useToolbarContext();
   const { tab, parentTab, parentRecord } = useTabContext();
   const tabId = tab.id;
-  const parentId = String(parentRecord?.id ?? '');
+  const parentId = String(parentRecord?.id ?? "");
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
   const query: DatasourceOptions = useMemo(() => {
-    const fieldName = tab.parentColumns[0] || 'id';
+    const fieldName = tab.parentColumns[0] || "id";
     const value = parentId;
-    const operator = 'equals';
+    const operator = "equals";
 
     const options: DatasourceOptions = {
       windowId: tab.window,
@@ -106,7 +106,7 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
       setColumnFilters((columnFilters) => {
         let newColumnFilters: MRT_ColumnFiltersState;
 
-        if (typeof updaterOrValue === 'function') {
+        if (typeof updaterOrValue === "function") {
           newColumnFilters = updaterOrValue(columnFilters);
         } else {
           newColumnFilters = updaterOrValue;
@@ -193,17 +193,17 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
     muiTableHeadCellProps: { sx: sx.tableHeadCell },
     muiTableBodyCellProps: { sx: sx.tableBodyCell },
     muiTableBodyProps: { sx: sx.tableBody },
-    layoutMode: 'semantic',
+    layoutMode: "semantic",
     enableGlobalFilter: false,
     columns,
     data: records,
     enableRowSelection: true,
     enableMultiRowSelection: true,
-    positionToolbarAlertBanner: 'none',
+    positionToolbarAlertBanner: "none",
     muiTableBodyRowProps: rowProps,
     muiTableContainerProps: {
       ref: tableContainerRef,
-      sx: { flex: 1, height: '100%', maxHeight: '100%' }, //give the table a max height
+      sx: { flex: 1, height: "100%", maxHeight: "100%" }, //give the table a max height
       onScroll: fetchMoreOnBottomReached,
     },
     enablePagination: false,
@@ -212,7 +212,7 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
     enableRowVirtualization: true,
     enableTopToolbar: false,
     enableBottomToolbar: false,
-    initialState: { density: 'compact' },
+    initialState: { density: "compact" },
     state: {
       columnFilters,
       showColumnFilters: true,
@@ -232,7 +232,7 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
 
   const clearSelection = useCallback(() => {
     table.resetRowSelection(true);
-    setRecordId('');
+    setRecordId("");
   }, [setRecordId, table]);
 
   useEffect(() => {
@@ -257,13 +257,13 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
 
   if (error) {
     return (
-      <ErrorDisplay title={t('errors.tableError.title')} description={error?.message} showRetry onRetry={refetch} />
+      <ErrorDisplay title={t("errors.tableError.title")} description={error?.message} showRetry onRetry={refetch} />
     );
   }
 
   return (
     <div
-      className={`h-full overflow-hidden rounded-3xl transition-opacity ${loading ? 'opacity-60 cursor-progress cursor-to-children' : 'opacity-100'}`}>
+      className={`h-full overflow-hidden rounded-3xl transition-opacity ${loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"}`}>
       <MaterialReactTable table={table} />
     </div>
   );

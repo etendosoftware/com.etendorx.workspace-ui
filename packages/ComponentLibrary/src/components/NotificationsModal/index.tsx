@@ -1,12 +1,12 @@
-import { List, Link, Button } from '@mui/material';
-import IconButton from '../IconButton';
-import type { INotificationModalProps } from './types';
-import { useStyle } from './styles';
-import { Settings } from '@mui/icons-material';
-import MoreVert from '../../assets/icons/more-vertical.svg';
-import NotificationItem from '../NotificationItem';
-import Image from '../../assets/images/NotificationModal/empty-state-notifications.svg?url';
-import Menu from '../Menu';
+import { List, Link, Button } from "@mui/material";
+import IconButton from "../IconButton";
+import type { INotificationModalProps } from "./types";
+import { useStyle } from "./styles";
+import { Settings } from "@mui/icons-material";
+import MoreVert from "../../assets/icons/more-vertical.svg";
+import NotificationItem from "../NotificationItem";
+import Image from "../../assets/images/NotificationModal/empty-state-notifications.svg?url";
+import Menu from "../Menu";
 
 const NotificationModalCustom: React.FC<INotificationModalProps> = ({
   title,
@@ -35,7 +35,7 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
             </Link>
           )}
           <div style={styles.titleModalButtonContainer}>
-            <IconButton className='w-5 h-5'>
+            <IconButton className="w-5 h-5">
               <MoreVert />
             </IconButton>
           </div>
@@ -50,7 +50,7 @@ const NotificationModalCustom: React.FC<INotificationModalProps> = ({
               <div style={styles.emptyText}>{emptyStateDescription}</div>
             </div>
             <div style={styles.actionButtonContainer}>
-              <Button style={styles.actionButton} variant='contained' startIcon={<Settings />} sx={sx.actionButton}>
+              <Button style={styles.actionButton} variant="contained" startIcon={<Settings />} sx={sx.actionButton}>
                 <div style={styles.actionButtonText}>{actionButtonLabel}</div>
               </Button>
             </div>

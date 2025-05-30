@@ -1,16 +1,16 @@
-import { Box, Breadcrumbs, Link, MenuItem, Typography, useTheme } from '@mui/material';
-import { type FC, useCallback, useMemo, useState } from 'react';
-import ArrowLeftIcon from '../../assets/icons/arrow-left.svg';
-import ChevronDown from '../../assets/icons/chevron-down.svg';
-import NavigateNextIcon from '../../assets/icons/chevron-right.svg';
-import MoreHorizIcon from '../../assets/icons/more-horizontal.svg';
-import IconButton from '../IconButton';
-import Menu from '../Menu';
-import ToggleChip from '../Toggle/ToggleChip';
-import { useStyle } from './styles';
-import type { BreadcrumbAction, BreadcrumbItem, BreadcrumbProps } from './types';
+import { Box, Breadcrumbs, Link, MenuItem, Typography, useTheme } from "@mui/material";
+import { type FC, useCallback, useMemo, useState } from "react";
+import ArrowLeftIcon from "../../assets/icons/arrow-left.svg";
+import ChevronDown from "../../assets/icons/chevron-down.svg";
+import NavigateNextIcon from "../../assets/icons/chevron-right.svg";
+import MoreHorizIcon from "../../assets/icons/more-horizontal.svg";
+import IconButton from "../IconButton";
+import Menu from "../Menu";
+import ToggleChip from "../Toggle/ToggleChip";
+import { useStyle } from "./styles";
+import type { BreadcrumbAction, BreadcrumbItem, BreadcrumbProps } from "./types";
 
-const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, homeText = 'Home', separator }) => {
+const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, homeText = "Home", separator }) => {
   const [isHomeHovered, setIsHomeHovered] = useState<boolean>(false);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [middleAnchorEl, setMiddleAnchorEl] = useState<HTMLButtonElement | null>(null);
@@ -66,12 +66,12 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
   const renderHomeIcon = useCallback(() => {
     if (isHomeHovered) {
       return (
-        <IconButton className='w-10 h-10 bg-(--color-baseline-0) hover:bg-(--color-baseline-0) hover:text-(--color-baseline-80)'>
+        <IconButton className="w-10 h-10 bg-(--color-baseline-0) hover:bg-(--color-baseline-0) hover:text-(--color-baseline-80)">
           <ArrowLeftIcon />
         </IconButton>
       );
     }
-    return <IconButton className='w-10 h-10 text-[1.5rem] bg-(--color-transparent-neutral-5)'>{homeIcon}</IconButton>;
+    return <IconButton className="w-10 h-10 text-[1.5rem] bg-(--color-transparent-neutral-5)">{homeIcon}</IconButton>;
   }, [homeIcon, isHomeHovered]);
 
   const renderBreadcrumbItem = useCallback(
@@ -97,7 +97,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
           </>
         ) : (
           <Link
-            href='#'
+            href="#"
             onClick={(e) => {
               e.preventDefault();
               item.onClick?.();
@@ -169,9 +169,9 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
 
   return (
     <Box sx={sx.container}>
-      <Breadcrumbs separator={activeSeparator} aria-label='breadcrumb' sx={sx.breadcrumbs}>
+      <Breadcrumbs separator={activeSeparator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
         <Box sx={sx.homeContainer}>
-          <Link href='#' onClick={handleClick} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+          <Link href="#" onClick={handleClick} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
             {renderHomeIcon()}
           </Link>
           <Typography onClick={onHomeClick} sx={sx.homeText}>

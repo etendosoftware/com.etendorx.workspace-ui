@@ -1,5 +1,5 @@
-import type { ReactElement } from 'react';
-import type { Inotifications } from '../../commons';
+import type { ReactElement } from "react";
+import type { Inotifications } from "../../commons";
 
 export interface NotificationButtonProps {
   children?: ReactElement<NotificationModalProps>;

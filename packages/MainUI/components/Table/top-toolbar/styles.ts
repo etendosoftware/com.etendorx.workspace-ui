@@ -1,5 +1,5 @@
-import { css, useTheme } from '@mui/material';
-import { useMemo } from 'react';
+import { css, useTheme } from "@mui/material";
+import { useMemo } from "react";
 
 export const useStyle = () => {
   const theme = useTheme();
@@ -7,12 +7,12 @@ export const useStyle = () => {
   return useMemo(
     () => ({
       container: css({
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
       }),
       icon: css({
-        cursor: 'pointer',
+        cursor: "pointer",
         margin: theme.spacing(1),
       }),
     }),

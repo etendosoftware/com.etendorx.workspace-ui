@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import CancelIcon from '@mui/icons-material/Cancel';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CancelIcon from "@mui/icons-material/Cancel";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Autocomplete,
   type AutocompleteRenderInputParams,
@@ -13,11 +13,11 @@ import {
   TextField,
   Typography,
   useTheme,
-} from '@mui/material';
-import type React from 'react';
-import { useState } from 'react';
-import { useStyle } from './style';
-import type { ISelectInput, Option } from './types';
+} from "@mui/material";
+import type React from "react";
+import { useState } from "react";
+import { useStyle } from "./style";
+import type { ISelectInput, Option } from "./types";
 
 type OptionProps = React.HTMLAttributes<HTMLLIElement> & { key?: string };
 
@@ -32,7 +32,7 @@ const Select: React.FC<ISelectInput> = ({
 }) => {
   const { sx } = useStyle();
   const theme = useTheme();
-  const [inputValue, setInputValue] = useState<string>('');
+  const [inputValue, setInputValue] = useState<string>("");
   const [focused, setFocused] = useState<boolean>(false);
 
   const CustomPaper: React.FC<PaperProps> = (paperProps) => {
@@ -49,7 +49,7 @@ const Select: React.FC<ISelectInput> = ({
 
   const handleBlur = () => {
     setFocused(false);
-    setInputValue('');
+    setInputValue("");
   };
 
   const handleSelectionChange = (event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
@@ -58,7 +58,7 @@ const Select: React.FC<ISelectInput> = ({
 
   const getBackgroundFocus = (): string => {
     if (!focused || inputValue) {
-      return 'transparent';
+      return "transparent";
     }
     return theme.palette.baselineColor.neutral[0];
   };
@@ -68,8 +68,8 @@ const Select: React.FC<ISelectInput> = ({
       {...params}
       sx={{
         ...sx.root,
-        '& .MuiInput-root': {
-          ...sx.root['& .MuiInput-root'],
+        "& .MuiInput-root": {
+          ...sx.root["& .MuiInput-root"],
           backgroundColor: getBackgroundFocus(),
         },
       }}
@@ -81,11 +81,11 @@ const Select: React.FC<ISelectInput> = ({
         ...params.InputProps,
         name,
         sx: sx.props,
-        startAdornment: iconLeft && <InputAdornment position='start'>{iconLeft}</InputAdornment>,
+        startAdornment: iconLeft && <InputAdornment position="start">{iconLeft}</InputAdornment>,
         endAdornment: <div style={sx.buttonsContainer}>{params.InputProps.endAdornment}</div>,
       }}
       label={title}
-      variant='standard'
+      variant="standard"
       onChange={handleInputChange}
       onFocus={handleFocus}
       onBlur={handleBlur}
@@ -119,7 +119,7 @@ const Select: React.FC<ISelectInput> = ({
               }}
               {...restProps}>
               <Typography
-                className='textOption'
+                className="textOption"
                 color={selected ? theme.palette.dynamicColor.dark : theme.palette.baselineColor.neutral[90]}
                 style={sx.optionText}>
                 {option.title}
@@ -130,7 +130,7 @@ const Select: React.FC<ISelectInput> = ({
         }}
       />
       {helperText && (
-        <FormHelperText component='div' style={sx.helperTextContainer}>
+        <FormHelperText component="div" style={sx.helperTextContainer}>
           {helperText.icon}
           {helperText.label && <span style={sx.helperText}>{helperText.label}</span>}
         </FormHelperText>

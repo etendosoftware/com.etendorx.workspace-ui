@@ -1,7 +1,7 @@
-import { Box } from '@mui/material';
-import TabIcon from '@mui/icons-material/KeyboardTab';
-import t from '../TextInputAutocomplete.translations.json';
-import { useStyle } from '../TextInputAutocomplete.styles';
+import { Box } from "@mui/material";
+import TabIcon from "@mui/icons-material/KeyboardTab";
+import t from "../TextInputAutocomplete.translations.json";
+import { useStyle } from "../TextInputAutocomplete.styles";
 
 export interface SuggestionBoxProps {
   suggestion: string;

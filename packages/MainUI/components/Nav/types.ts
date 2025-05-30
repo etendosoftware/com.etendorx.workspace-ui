@@ -1,7 +1,7 @@
-import type { Role } from '@workspaceui/etendohookbinder/src/api/types';
-import type { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
-import type { BaseDefaultConfiguration, BaseProfileModalProps, BaseWarehouse } from '../ProfileModal/types';
-import type { Logger } from '@/utils/logger';
+import type { Role } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
+import type { BaseDefaultConfiguration, BaseProfileModalProps, BaseWarehouse } from "../ProfileModal/types";
+import type { Logger } from "@/utils/logger";
 
 export interface WrapperHandledProps {
   currentRole: Role | null;
@@ -19,4 +19,4 @@ export interface WrapperHandledProps {
   onSaveAsDefaultChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export interface ProfileWrapperProps extends Omit<BaseProfileModalProps, 'userPhotoUrl' | 'userName' | 'userEmail'> {}
+export interface ProfileWrapperProps extends Omit<BaseProfileModalProps, "userPhotoUrl" | "userName" | "userEmail"> {}

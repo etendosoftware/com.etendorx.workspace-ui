@@ -1,7 +1,7 @@
-import type { Field } from '@workspaceui/etendohookbinder/src/api/types';
-import { useCallback } from 'react';
-import { useFormContext } from 'react-hook-form';
-import { TextInput } from './components/TextInput';
+import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import { useCallback } from "react";
+import { useFormContext } from "react-hook-form";
+import { TextInput } from "./components/TextInput";
 
 export const NumericSelector = ({ field, ...props }: { field: Field } & React.ComponentProps<typeof TextInput>) => {
   const { register, setValue } = useFormContext();
@@ -10,13 +10,13 @@ export const NumericSelector = ({ field, ...props }: { field: Field } & React.Co
     (event) => {
       let value = event.target.value;
 
-      value = value.replace(/[^\d.-]/g, '');
-      value = value.replace(/(?!^)-/g, '');
+      value = value.replace(/[^\d.-]/g, "");
+      value = value.replace(/(?!^)-/g, "");
 
-      const parts = value.split('.');
+      const parts = value.split(".");
 
       if (parts.length > 2) {
-        value = `${parts.shift()}.${parts.join('')}`;
+        value = `${parts.shift()}.${parts.join("")}`;
       }
 
       setValue(field.hqlName, value);
@@ -28,8 +28,8 @@ export const NumericSelector = ({ field, ...props }: { field: Field } & React.Co
     <TextInput
       {...props}
       {...register(field.hqlName)}
-      inputMode='decimal'
-      pattern='^-?\d*(\.\d+)?$'
+      inputMode="decimal"
+      pattern="^-?\d*(\.\d+)?$"
       field={field}
       onChange={handleChange}
     />

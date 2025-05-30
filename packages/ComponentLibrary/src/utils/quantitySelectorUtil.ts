@@ -13,14 +13,14 @@ export const validateNumber = (
   maxValue: number | undefined,
 ): { isValid: boolean; errorMessage: string; roundedValue?: number } => {
   if (!isValidNumber(value)) {
-    return { isValid: false, errorMessage: 'Please enter a valid number' };
+    return { isValid: false, errorMessage: "Please enter a valid number" };
   }
 
   const num = Number.parseFloat(value);
   const roundedNum = roundNumber(num);
 
   if (roundedNum < 0) {
-    return { isValid: false, errorMessage: 'Value must be non-negative' };
+    return { isValid: false, errorMessage: "Value must be non-negative" };
   }
 
   if (minValue !== undefined && roundedNum < minValue) {
@@ -32,8 +32,8 @@ export const validateNumber = (
   }
 
   if (Number.isNaN(num)) {
-    return { isValid: false, errorMessage: 'Please enter a valid number' };
+    return { isValid: false, errorMessage: "Please enter a valid number" };
   }
 
-  return { isValid: true, errorMessage: '', roundedValue: roundedNum };
+  return { isValid: true, errorMessage: "", roundedValue: roundedNum };
 };

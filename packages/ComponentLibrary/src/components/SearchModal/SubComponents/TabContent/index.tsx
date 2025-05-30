@@ -1,5 +1,5 @@
-import type React from 'react';
-import { SectionContent } from '../SectionContent';
+import type React from "react";
+import { SectionContent } from "../SectionContent";
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export const TabContent: React.FC<{ tabsContent: any[]; activeTab: number }> = ({ tabsContent, activeTab }) => {
@@ -11,7 +11,7 @@ export const TabContent: React.FC<{ tabsContent: any[]; activeTab: number }> = (
             key={index}
             section={{ title: tab.label, items: tab.items }}
             isLast={index === tabsContent.length - 2}
-            variant='tabs'
+            variant="tabs"
           />
         ))}
       </>
@@ -22,7 +22,7 @@ export const TabContent: React.FC<{ tabsContent: any[]; activeTab: number }> = (
     <SectionContent
       section={{ title: activeTabConfig.label, items: activeTabConfig.items }}
       isLast={true}
-      variant='tabs'
+      variant="tabs"
     />
   );
 };

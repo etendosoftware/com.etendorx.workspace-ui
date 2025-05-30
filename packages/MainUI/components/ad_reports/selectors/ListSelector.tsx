@@ -1,10 +1,10 @@
-import type React from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
-import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
-import type { Option } from '@workspaceui/componentlibrary/src/components/Input/Select/types';
-import type { ListSelectorProps } from '../../Form/FormView/types';
-import { useTheme } from '@mui/material';
+import type React from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Select from "@workspaceui/componentlibrary/src/components/Input/Select";
+import SearchOutlined from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
+import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
+import type { ListSelectorProps } from "../../Form/FormView/types";
+import { useTheme } from "@mui/material";
 
 const ListSelector: React.FC<ListSelectorProps> = ({ field, value, onChange, readOnly }) => {
   const [selectedValue, setSelectedValue] = useState<Option | null>(() => {

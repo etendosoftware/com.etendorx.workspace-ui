@@ -1,7 +1,7 @@
-import type { ProcessConfigResponse } from '@/hooks/datasource/useProcessDatasourceConfig';
-import type { EntityData, EntityValue, ProcessParameter, Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import type { MRT_Row, MRT_TableInstance, MRT_TableBodyRowProps, MRT_RowData } from 'material-react-table';
-import type { Field, ProcessAction } from '@workspaceui/etendohookbinder/src/api/types';
+import type { ProcessConfigResponse } from "@/hooks/datasource/useProcessDatasourceConfig";
+import type { EntityData, EntityValue, ProcessParameter, Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { MRT_Row, MRT_TableInstance, MRT_TableBodyRowProps, MRT_RowData } from "material-react-table";
+import type { Field, ProcessAction } from "@workspaceui/etendohookbinder/src/api/types";
 
 export interface BaseButton extends Field {
   id: string;
@@ -29,8 +29,8 @@ export interface ProcessActionButton extends BaseProcessButton {
 export type ProcessButton = ProcessDefinitionButton | ProcessActionButton;
 
 export enum ProcessButtonType {
-  PROCESS_DEFINITION = 'processDefinition',
-  PROCESS_ACTION = 'processAction',
+  PROCESS_DEFINITION = "processDefinition",
+  PROCESS_ACTION = "processAction",
 }
 
 export interface ProcessResponse {
@@ -85,7 +85,7 @@ export interface ProcessDefinitionModalProps {
 }
 
 export interface ProcessDefinitionModalContentProps extends ProcessDefinitionModalProps {
-  button: NonNullable<ProcessDefinitionModalProps['button']>;
+  button: NonNullable<ProcessDefinitionModalProps["button"]>;
 }
 
 export interface ProcessDeprecatedModallProps {
@@ -148,4 +148,4 @@ export type RowProps = (props: {
   isDetailPanel?: boolean;
   row: MRT_Row<EntityData>;
   table: MRT_TableInstance<EntityData>;
-}) => Omit<MRT_TableBodyRowProps<MRT_RowData>, 'staticRowIndex'>;
+}) => Omit<MRT_TableBodyRowProps<MRT_RowData>, "staticRowIndex">;

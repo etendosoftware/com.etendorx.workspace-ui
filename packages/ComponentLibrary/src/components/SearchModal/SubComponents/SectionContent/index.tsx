@@ -1,10 +1,10 @@
-import { Box, Typography } from '@mui/material';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import type { Section } from '../../../SecondaryTabs/types';
-import { useStyle } from './styles';
-import { ItemContent } from '../ItemContent';
+import { Box, Typography } from "@mui/material";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import type { Section } from "../../../SecondaryTabs/types";
+import { useStyle } from "./styles";
+import { ItemContent } from "../ItemContent";
 
-export const SectionContent: React.FC<{ section: Section; isLast: boolean; variant: 'default' | 'tabs' }> = ({
+export const SectionContent: React.FC<{ section: Section; isLast: boolean; variant: "default" | "tabs" }> = ({
   section,
   isLast,
 }) => {

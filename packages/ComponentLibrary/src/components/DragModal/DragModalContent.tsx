@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import List from '@mui/material/List';
+import { useCallback } from "react";
+import List from "@mui/material/List";
 import {
   DndContext,
   MouseSensor,
@@ -9,16 +9,16 @@ import {
   type DragEndEvent,
   type UniqueIdentifier,
   closestCenter,
-} from '@dnd-kit/core';
-import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import SortableItem from './SortableItem';
-import type { DragModalContentProps } from './DragModal.types';
-import ModalDivider from '../ModalDivider';
-import DragIndicator from '../../assets/icons/drag.svg';
-import NavigateBefore from '../../assets/icons/chevron-left.svg';
-import { useStyle } from './styles';
-import { Box, Button, Link, useTheme } from '@mui/material';
-import { restrictToParentElement, restrictToVerticalAxis } from '@dnd-kit/modifiers';
+} from "@dnd-kit/core";
+import { SortableContext, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import SortableItem from "./SortableItem";
+import type { DragModalContentProps } from "./DragModal.types";
+import ModalDivider from "../ModalDivider";
+import DragIndicator from "../../assets/icons/drag.svg";
+import NavigateBefore from "../../assets/icons/chevron-left.svg";
+import { useStyle } from "./styles";
+import { Box, Button, Link, useTheme } from "@mui/material";
+import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
 
 const DragModalContent: React.FC<DragModalContentProps> = ({
   people,

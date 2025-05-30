@@ -1,7 +1,7 @@
-import type { Field } from '@workspaceui/etendohookbinder/src/api/types';
-import Select from './components/Select';
-import { useTableDirDatasource } from '@/hooks/datasource/useTableDirDatasource';
-import { useSelectFieldOptions } from '@/hooks/useSelectFieldOptions';
+import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import Select from "./components/Select";
+import { useTableDirDatasource } from "@/hooks/datasource/useTableDirDatasource";
+import { useSelectFieldOptions } from "@/hooks/useSelectFieldOptions";
 
 export const SelectSelector = ({
   field,

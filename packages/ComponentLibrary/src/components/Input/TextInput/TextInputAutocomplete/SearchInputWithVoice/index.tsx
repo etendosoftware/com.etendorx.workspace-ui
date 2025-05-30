@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { memo, useCallback, useState } from 'react';
-import { InputAdornment, Box } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import FilterIcon from '@mui/icons-material/FilterList';
-import MicIcon from '../../../../../assets/icons/mic.svg';
-import MicOffIcon from '../../../../../assets/icons/mic-off.svg';
-import type { TextInputProps } from '../TextInputComplete.types';
-import TextInputAutoComplete from '../TextInputAutocomplete';
-import IconButton from '../../../../IconButton';
+import { memo, useCallback, useState } from "react";
+import { InputAdornment, Box } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import FilterIcon from "@mui/icons-material/FilterList";
+import MicIcon from "../../../../../assets/icons/mic.svg";
+import MicOffIcon from "../../../../../assets/icons/mic-off.svg";
+import type { TextInputProps } from "../TextInputComplete.types";
+import TextInputAutoComplete from "../TextInputAutocomplete";
+import IconButton from "../../../../IconButton";
 
 export interface SearchInputWithVoiceProps extends TextInputProps {
   onVoiceClick?: () => void;
@@ -17,7 +17,7 @@ export interface SearchInputWithVoiceProps extends TextInputProps {
 
 const StartAdornment = () => {
   return (
-    <InputAdornment position='start'>
+    <InputAdornment position="start">
       <SearchIcon />
     </InputAdornment>
   );
@@ -25,7 +25,7 @@ const StartAdornment = () => {
 
 const EndAdornment = () => {
   return (
-    <InputAdornment position='end'>
+    <InputAdornment position="end">
       <IconButton>
         <FilterIcon />
       </IconButton>
@@ -43,30 +43,30 @@ const SearchInputWithVoice = ({ onVoiceClick, disabled = false, ...props }: Sear
   }, [isRecording, onVoiceClick, disabled]);
 
   const wrapperStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.25rem',
-    cursor: disabled ? 'not-allowed' : 'default',
-    pointerEvents: disabled ? 'none' : 'auto',
-    position: 'relative',
+    display: "flex",
+    alignItems: "center",
+    gap: "0.25rem",
+    cursor: disabled ? "not-allowed" : "default",
+    pointerEvents: disabled ? "none" : "auto",
+    position: "relative",
   };
 
   const overlayStyle = disabled
     ? {
-        position: 'absolute' as const,
+        position: "absolute" as const,
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'transparent',
-        cursor: 'not-allowed',
+        backgroundColor: "transparent",
+        cursor: "not-allowed",
         zIndex: 10,
-        pointerEvents: 'auto' as const,
+        pointerEvents: "auto" as const,
       }
     : {};
 
   return (
-    <Box sx={{ position: 'relative' }}>
+    <Box sx={{ position: "relative" }}>
       <Box sx={wrapperStyle}>
         <TextInputAutoComplete
           {...props}
@@ -74,13 +74,13 @@ const SearchInputWithVoice = ({ onVoiceClick, disabled = false, ...props }: Sear
             ...props.InputProps,
             startAdornment: <StartAdornment />,
             endAdornment: <EndAdornment />,
-            style: { height: '2.5rem' },
+            style: { height: "2.5rem" },
           }}
           disabled={disabled}
         />
         <Box>
-          <IconButton onClick={handleVoiceClick} className='w-10 h-10 my-1' disabled={true}>
-            {isRecording ? <MicOffIcon className='w-8 h-8' /> : <MicIcon className='w-5 h-5' />}
+          <IconButton onClick={handleVoiceClick} className="w-10 h-10 my-1" disabled={true}>
+            {isRecording ? <MicOffIcon className="w-8 h-8" /> : <MicIcon className="w-5 h-5" />}
           </IconButton>
         </Box>
       </Box>

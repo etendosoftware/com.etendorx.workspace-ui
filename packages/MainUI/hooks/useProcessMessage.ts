@@ -1,16 +1,16 @@
-import { ApiContext } from '@/contexts/api';
-import { useTranslation } from '@/hooks/useTranslation';
-import { logger } from '@/utils/logger';
-import { useCallback, useContext } from 'react';
-import { useUserContext } from './useUserContext';
+import { ApiContext } from "@/contexts/api";
+import { useTranslation } from "@/hooks/useTranslation";
+import { logger } from "@/utils/logger";
+import { useCallback, useContext } from "react";
+import { useUserContext } from "./useUserContext";
 
 export interface ProcessMessage {
   message: string;
-  type: 'error' | 'success' | 'info' | 'warning';
+  type: "error" | "success" | "info" | "warning";
   title: string;
 }
 
-const urlMessageParam = '/meta/message';
+const urlMessageParam = "/meta/message";
 
 export function useProcessMessage(tabId: string) {
   const apiUrl = useContext(ApiContext);
@@ -18,27 +18,27 @@ export function useProcessMessage(tabId: string) {
   const { t } = useTranslation();
 
   const normalizeMessageType = useCallback(
-    (messageType: string, message: string): 'success' | 'error' | 'warning' | 'info' => {
-      const normalizedType = messageType?.toLowerCase() || 'info';
+    (messageType: string, message: string): "success" | "error" | "warning" | "info" => {
+      const normalizedType = messageType?.toLowerCase() || "info";
 
-      if (normalizedType === 'success' || messageType === 'Success') {
-        return 'success';
-      }
-
-      if (message?.toUpperCase().includes('ERROR')) {
-        return 'error';
+      if (normalizedType === "success" || messageType === "Success") {
+        return "success";
       }
 
-      if (normalizedType.includes('success')) {
-        return 'success';
+      if (message?.toUpperCase().includes("ERROR")) {
+        return "error";
       }
-      if (normalizedType.includes('error')) {
-        return 'error';
+
+      if (normalizedType.includes("success")) {
+        return "success";
       }
-      if (normalizedType.includes('warn')) {
-        return 'warning';
+      if (normalizedType.includes("error")) {
+        return "error";
       }
-      return 'info';
+      if (normalizedType.includes("warn")) {
+        return "warning";
+      }
+      return "info";
     },
     [],
   );
@@ -50,12 +50,12 @@ export function useProcessMessage(tabId: string) {
       }
 
       switch (type) {
-        case 'error':
-          return t('errors.internalServerError.title');
-        case 'success':
-          return t('process.completedSuccessfully');
+        case "error":
+          return t("errors.internalServerError.title");
+        case "success":
+          return t("process.completedSuccessfully");
         default:
-          return t('process.messageTitle');
+          return t("process.messageTitle");
       }
     },
     [t],
@@ -67,14 +67,14 @@ export function useProcessMessage(tabId: string) {
         return null;
       }
 
-      if (data.message === 'No message found') {
+      if (data.message === "No message found") {
         return null;
       }
 
-      const messageType = normalizeMessageType(data.type || 'info', data.message || '');
+      const messageType = normalizeMessageType(data.type || "info", data.message || "");
 
       return {
-        message: data.message || '',
+        message: data.message || "",
         type: messageType,
         title: getMessageTitle(data.title, messageType),
       };
@@ -83,7 +83,7 @@ export function useProcessMessage(tabId: string) {
   );
 
   const handleFetchError = useCallback((error: unknown): ProcessMessage | null => {
-    if (error instanceof DOMException && error.name === 'AbortError') {
+    if (error instanceof DOMException && error.name === "AbortError") {
       logger.warn(error);
     }
 
@@ -94,17 +94,17 @@ export function useProcessMessage(tabId: string) {
   const fetchProcessMessage = useCallback(
     async (signal?: AbortSignal): Promise<ProcessMessage | null> => {
       if (!apiUrl) {
-        logger.warn(apiUrl, 'API-URL Error');
+        logger.warn(apiUrl, "API-URL Error");
         return null;
       }
 
       try {
         const response = await fetch(`${apiUrl}${urlMessageParam}?tabId=${tabId}`, {
-          method: 'POST',
-          credentials: 'include',
+          method: "POST",
+          credentials: "include",
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           signal,
         });

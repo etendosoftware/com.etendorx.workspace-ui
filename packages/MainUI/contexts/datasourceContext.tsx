@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useCallback, useRef, type ReactNode, useMemo } from 'react';
+import { createContext, useContext, useCallback, useRef, type ReactNode, useMemo } from "react";
 
 interface DatasourceContextValue {
   registerDatasource: (tabId: string, removeRecordLocally: (recordId: string) => void) => void;
@@ -60,7 +60,7 @@ export function DatasourceProvider({ children }: { children: ReactNode }) {
 export function useDatasourceContext() {
   const context = useContext(DatasourceContext);
   if (context === undefined) {
-    throw new Error('useDatasourceContext must be used within a DatasourceProvider');
+    throw new Error("useDatasourceContext must be used within a DatasourceProvider");
   }
   return context;
 }

@@ -1,16 +1,16 @@
-'use client';
-import { Badge } from '@mui/material';
-import React, { useRef, useState } from 'react';
-import IconButton from '../IconButton';
-import { notificationMax } from './constants';
-import { useStyle } from './styles';
-import type { ExtendedNotificationButtonProps, NotificationModalProps } from './types';
+"use client";
+import { Badge } from "@mui/material";
+import React, { useRef, useState } from "react";
+import IconButton from "../IconButton";
+import { notificationMax } from "./constants";
+import { useStyle } from "./styles";
+import type { ExtendedNotificationButtonProps, NotificationModalProps } from "./types";
 
 const NotificationButton: React.FC<ExtendedNotificationButtonProps> = ({
   notifications = [],
   children,
   icon,
-  tooltipTitle = 'Notifications',
+  tooltipTitle = "Notifications",
 }) => {
   const { sx } = useStyle();
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -29,10 +29,10 @@ const NotificationButton: React.FC<ExtendedNotificationButtonProps> = ({
     <>
       <Badge
         badgeContent={notificationCount > notificationMax ? `${notificationMax}+` : notificationCount}
-        color='error'
+        color="error"
         sx={sx.badgeStyles}
-        component='div'>
-        <IconButton tooltip={tooltipTitle} onClick={handleClick} disabled={true} className='w-10 h-10'>
+        component="div">
+        <IconButton tooltip={tooltipTitle} onClick={handleClick} disabled={true} className="w-10 h-10">
           {icon}
         </IconButton>
       </Badge>

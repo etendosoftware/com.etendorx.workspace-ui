@@ -1,12 +1,12 @@
-import { useStyle } from '@/components/Table/styles';
-import { useDatasource } from '@/hooks/useDatasource';
-import { Box, Button, Dialog, DialogActions, DialogContent, Typography } from '@mui/material';
-import { type MRT_Row, MaterialReactTable } from 'material-react-table';
-import { useCallback, useMemo, useState } from 'react';
-import type { MultiSelectProps, Option, SelectorTableProps, TableData } from '../../../Form/FormView/types';
-import { SearchBar } from './SearchBar';
-import { SelectedItemsContainer } from './SelectedItemsContainer';
-import { DEFAULT_COLUMNS, DIALOG_PROPS, TABLE_INITIAL_STATE } from './constants';
+import { useStyle } from "@/components/Table/styles";
+import { useDatasource } from "@/hooks/useDatasource";
+import { Box, Button, Dialog, DialogActions, DialogContent, Typography } from "@mui/material";
+import { type MRT_Row, MaterialReactTable } from "material-react-table";
+import { useCallback, useMemo, useState } from "react";
+import type { MultiSelectProps, Option, SelectorTableProps, TableData } from "../../../Form/FormView/types";
+import { SearchBar } from "./SearchBar";
+import { SelectedItemsContainer } from "./SelectedItemsContainer";
+import { DEFAULT_COLUMNS, DIALOG_PROPS, TABLE_INITIAL_STATE } from "./constants";
 
 const SelectorTable: React.FC<SelectorTableProps & { selectedIds: string[] }> = ({
   data,
@@ -35,7 +35,7 @@ const SelectorTable: React.FC<SelectorTableProps & { selectedIds: string[] }> = 
         onClick: () => onRowClick(row),
         sx: {
           ...sx.tableBody,
-          cursor: 'pointer',
+          cursor: "pointer",
         },
       })}
       muiTablePaperProps={{
@@ -80,7 +80,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
       .filter((record) => normalizeValue(value).includes(String(record.id)))
       .map((record) => ({
         id: String(record.id),
-        title: String(record._identifier || record.name || ''),
+        title: String(record._identifier || record.name || ""),
         value: String(record.id),
       }));
   }, [value, records]);
@@ -99,7 +99,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
       const record = row.original;
       const option: Option = {
         id: String(record.id),
-        title: String(record._identifier || record.name || ''),
+        title: String(record._identifier || record.name || ""),
         value: String(record.id),
       };
 
@@ -145,7 +145,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
             data={tableData}
             onRowClick={handleRowClick}
             columns={columns}
-            title={title || ''}
+            title={title || ""}
             selectedIds={selectedIds}
           />
         </DialogContent>

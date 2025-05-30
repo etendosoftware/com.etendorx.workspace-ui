@@ -1,19 +1,19 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { Drawer } from '@workspaceui/componentlibrary/src/components/Drawer/index';
-import EtendoLogotype from '../public/etendo.png';
-import { useTranslation } from '../hooks/useTranslation';
-import { useUserContext } from '../hooks/useUserContext';
-import type { WindowParams } from '../app/types';
-import { RecentlyViewed } from './Drawer/RecentlyViewed';
-import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
-import { useMenuTranslation } from '../hooks/useMenuTranslation';
-import { createSearchIndex, filterItems } from '@workspaceui/componentlibrary/src/utils/searchUtils';
-import { useLanguage } from '@/contexts/language';
-import { useQueryParams } from '@/hooks/useQueryParams';
-import { useMenu } from '@/hooks/useMenu';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Drawer } from "@workspaceui/componentlibrary/src/components/Drawer/index";
+import EtendoLogotype from "../public/etendo.png";
+import { useTranslation } from "../hooks/useTranslation";
+import { useUserContext } from "../hooks/useUserContext";
+import type { WindowParams } from "../app/types";
+import { RecentlyViewed } from "./Drawer/RecentlyViewed";
+import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import { useMenuTranslation } from "../hooks/useMenuTranslation";
+import { createSearchIndex, filterItems } from "@workspaceui/componentlibrary/src/utils/searchUtils";
+import { useLanguage } from "@/contexts/language";
+import { useQueryParams } from "@/hooks/useQueryParams";
+import { useMenu } from "@/hooks/useMenu";
 
 export default function Sidebar() {
   const { t } = useTranslation();
@@ -26,7 +26,7 @@ export default function Sidebar() {
 
   const { windowId } = useQueryParams<WindowParams>();
 
-  const [searchValue, setSearchValue] = useState('');
+  const [searchValue, setSearchValue] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   const searchIndex = useMemo(() => createSearchIndex(menu), [menu]);
@@ -38,11 +38,11 @@ export default function Sidebar() {
 
   const handleClick = useCallback(
     (item: Menu) => {
-      const windowId = item.windowId ?? '';
+      const windowId = item.windowId ?? "";
       const params = new URLSearchParams(location.search);
-      params.append('windowId', windowId);
-      if (pathname.includes('window')) {
-        window.history.pushState(null, '', `?${params.toString()}`);
+      params.append("windowId", windowId);
+      if (pathname.includes("window")) {
+        window.history.pushState(null, "", `?${params.toString()}`);
       } else {
         router.push(`window?${params.toString()}`);
       }
@@ -67,7 +67,7 @@ export default function Sidebar() {
 
   useEffect(() => {
     if ((prevRole && prevRole?.id !== currentRole?.id) || prevLanguage !== language) {
-      setSearchValue('');
+      setSearchValue("");
     }
   }, [currentRole?.id, language, prevLanguage, prevRole]);
 
@@ -75,7 +75,7 @@ export default function Sidebar() {
     <Drawer
       windowId={windowId}
       logo={EtendoLogotype.src}
-      title={t('common.etendo')}
+      title={t("common.etendo")}
       items={menu}
       onClick={handleClick}
       onReportClick={handleClick}

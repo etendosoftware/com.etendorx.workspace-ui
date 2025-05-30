@@ -1,7 +1,7 @@
-import { useTab } from '@/hooks/useTab';
-import { useTranslation } from '@/hooks/useTranslation';
-import { parseColumns } from '@/utils/tableColumns';
-import type { EntityData, EntityValue } from '@workspaceui/etendohookbinder/src/api/types';
+import { useTab } from "@/hooks/useTab";
+import { useTranslation } from "@/hooks/useTranslation";
+import { parseColumns } from "@/utils/tableColumns";
+import type { EntityData, EntityValue } from "@workspaceui/etendohookbinder/src/api/types";
 import {
   type MRT_ColumnFiltersState,
   type MRT_Row,
@@ -10,15 +10,15 @@ import {
   type MRT_TopToolbarProps,
   MaterialReactTable,
   useMaterialReactTable,
-} from 'material-react-table';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ErrorDisplay } from '../ErrorDisplay';
-import EmptyState from '../Table/EmptyState';
-import Loading from '../loading';
+} from "material-react-table";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ErrorDisplay } from "../ErrorDisplay";
+import EmptyState from "../Table/EmptyState";
+import Loading from "../loading";
 
-import { useDatasource } from '@/hooks/useDatasource';
-import { tableStyles } from './styles';
-import type { WindowReferenceGridProps } from './types';
+import { useDatasource } from "@/hooks/useDatasource";
+import { tableStyles } from "./styles";
+import type { WindowReferenceGridProps } from "./types";
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
@@ -54,7 +54,7 @@ function WindowReferenceGrid({
       for (const [key, value] of Object.entries(processConfig.defaults)) {
         options[key] = value.value;
 
-        if (key === 'ad_org_id') {
+        if (key === "ad_org_id") {
           options.org = value.value;
         }
       }
@@ -65,15 +65,15 @@ function WindowReferenceGrid({
     if (processConfig?.filterExpressions?.grid) {
       const filterCriteria = Object.entries(processConfig.filterExpressions.grid).map(([fieldName, value]) => ({
         fieldName,
-        operator: 'equals',
-        value: value === 'true' ? true : value === 'false' ? false : value,
+        operator: "equals",
+        value: value === "true" ? true : value === "false" ? false : value,
       }));
 
       criteria = [...criteria, ...filterCriteria];
     }
 
     if (criteria.length > 0) {
-      options.orderBy = 'documentNo desc';
+      options.orderBy = "documentNo desc";
     }
 
     return options;
@@ -113,7 +113,7 @@ function WindowReferenceGrid({
 
   const handleRowSelection = useCallback(
     (updaterOrValue: MRT_RowSelectionState | ((prev: MRT_RowSelectionState) => MRT_RowSelectionState)) => {
-      const newSelection = typeof updaterOrValue === 'function' ? updaterOrValue(rowSelection) : updaterOrValue;
+      const newSelection = typeof updaterOrValue === "function" ? updaterOrValue(rowSelection) : updaterOrValue;
 
       setRowSelection(newSelection);
 
@@ -129,7 +129,7 @@ function WindowReferenceGrid({
 
   const handleColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
-      const newColumnFilters = typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
+      const newColumnFilters = typeof updaterOrValue === "function" ? updaterOrValue(columnFilters) : updaterOrValue;
 
       const normalizedNew = newColumnFilters.map((f) => ({ id: f.id, value: f.value }));
       const normalizedCurrent = columnFilters.map((f) => ({ id: f.id, value: f.value }));
@@ -172,18 +172,18 @@ function WindowReferenceGrid({
     (props: MRT_TopToolbarProps<EntityData>) => {
       const selectedCount = props.table.getSelectedRowModel().rows.length;
       return (
-        <div className='flex justify-between items-center px-4 py-2 bg-gray-50 border-b max-h-[2.5rem]'>
-          <div className='text-base font-medium text-gray-800'>{parameter.name}</div>
+        <div className="flex justify-between items-center px-4 py-2 bg-gray-50 border-b max-h-[2.5rem]">
+          <div className="text-base font-medium text-gray-800">{parameter.name}</div>
           {selectedCount > 0 && (
-            <div className='flex items-center gap-2'>
-              <span className='text-sm text-gray-600'>
-                {selectedCount} {t('table.selection.multiple')}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">
+                {selectedCount} {t("table.selection.multiple")}
               </span>
               <button
-                type='button'
+                type="button"
                 onClick={handleClearSelections}
-                className='px-3 py-1 text-sm cursor-pointer text-gray-700 border border-gray-300 rounded-full hover:bg-(--color-etendo-main) hover:text-(--color-baseline-0) transition-colors'>
-                {t('common.clear')}
+                className="px-3 py-1 text-sm cursor-pointer text-gray-700 border border-gray-300 rounded-full hover:bg-(--color-etendo-main) hover:text-(--color-baseline-0) transition-colors">
+                {t("common.clear")}
               </button>
             </div>
           )}
@@ -194,12 +194,12 @@ function WindowReferenceGrid({
   );
 
   const LoadMoreButton = ({ fetchMore }: { fetchMore: () => void }) => (
-    <div className='flex justify-center p-2 border-t border-gray-200'>
+    <div className="flex justify-center p-2 border-t border-gray-200">
       <button
-        type='button'
+        type="button"
         onClick={fetchMore}
-        className='px-4 py-2 text-sm border border-gray-300 rounded-full text-gray-700 hover:bg-gray-100 transition-colors'>
-        {t('common.loadMore')}
+        className="px-4 py-2 text-sm border border-gray-300 rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
+        {t("common.loadMore")}
       </button>
     </div>
   );
@@ -208,8 +208,8 @@ function WindowReferenceGrid({
     muiTablePaperProps: {
       className: tableStyles.paper,
       style: {
-        borderRadius: '1rem',
-        boxShadow: 'none',
+        borderRadius: "1rem",
+        boxShadow: "none",
       },
     },
     muiTableHeadCellProps: {
@@ -225,19 +225,19 @@ function WindowReferenceGrid({
       return {
         onClick: () => handleRowClick(row),
         className: rowSelection[row.id]
-          ? 'bg-blue-50 hover:bg-blue-100 cursor-pointer'
-          : 'hover:bg-gray-50 cursor-pointer',
+          ? "bg-blue-50 hover:bg-blue-100 cursor-pointer"
+          : "hover:bg-gray-50 cursor-pointer",
       };
     },
     muiTableContainerProps: {
       className: tableStyles.container,
     },
-    layoutMode: 'semantic',
+    layoutMode: "semantic",
     enableColumnResizing: true,
     enableGlobalFilter: false,
     enableRowSelection: true,
     enableMultiRowSelection: true,
-    positionToolbarAlertBanner: 'none',
+    positionToolbarAlertBanner: "none",
     enablePagination: false,
     enableStickyHeader: true,
     enableStickyFooter: true,
@@ -251,12 +251,12 @@ function WindowReferenceGrid({
     renderTopToolbar,
     renderBottomToolbar: hasMoreRecords ? () => <LoadMoreButton fetchMore={fetchMore} /> : undefined,
     renderEmptyRowsFallback: () => (
-      <div className='flex justify-center items-center p-8 text-gray-500'>
+      <div className="flex justify-center items-center p-8 text-gray-500">
         <EmptyState maxWidth={MAX_WIDTH} />
       </div>
     ),
     initialState: {
-      density: 'compact',
+      density: "compact",
     },
     state: {
       rowSelection,
@@ -272,14 +272,14 @@ function WindowReferenceGrid({
 
   if (isLoading) {
     return (
-      <div className='p-4 flex justify-center'>
+      <div className="p-4 flex justify-center">
         <Loading />
       </div>
     );
   }
 
   if (error) {
-    return <ErrorDisplay title={t('errors.missingData')} description={error?.message} showRetry onRetry={refetch} />;
+    return <ErrorDisplay title={t("errors.missingData")} description={error?.message} showRetry onRetry={refetch} />;
   }
 
   if ((fields.length === 0 && !tabLoading) || !records || records.length === 0) {
@@ -289,7 +289,7 @@ function WindowReferenceGrid({
   return (
     <div
       className={`flex flex-col w-full overflow-hidden max-h-4xl h-full transition duration-100 ${
-        datasourceLoading ? 'opacity-40 cursor-wait cursor-to-children' : 'opacity-100'
+        datasourceLoading ? "opacity-40 cursor-wait cursor-to-children" : "opacity-100"
       }`}
       ref={contentRef}>
       <MaterialReactTable table={table} />

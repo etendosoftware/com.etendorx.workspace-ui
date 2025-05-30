@@ -1,6 +1,6 @@
-import { delay } from '@/utils';
-import { logger } from '@/utils/logger';
-import { API_LOGIN_URL } from '@workspaceui/etendohookbinder/src/api/constants';
+import { delay } from "@/utils";
+import { logger } from "@/utils/logger";
+import { API_LOGIN_URL } from "@workspaceui/etendohookbinder/src/api/constants";
 
 export async function performHealthCheck(
   url: string,
@@ -13,7 +13,7 @@ export async function performHealthCheck(
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const response = await fetch(url + API_LOGIN_URL, {
-        method: 'OPTIONS',
+        method: "OPTIONS",
         signal,
         keepalive: false,
       });

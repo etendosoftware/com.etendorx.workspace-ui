@@ -1,10 +1,10 @@
-import { useCallback, useMemo } from 'react';
-import { Box, Typography, useTheme } from '@mui/material';
-import { Modal } from '..';
-import SaveIcon from '../../assets/icons/save.svg';
-import { statusConfig } from './states';
-import { useStyle } from './styles';
-import type { StatusModalProps } from './types';
+import { useCallback, useMemo } from "react";
+import { Box, Typography, useTheme } from "@mui/material";
+import { Modal } from "..";
+import SaveIcon from "../../assets/icons/save.svg";
+import { statusConfig } from "./states";
+import { useStyle } from "./styles";
+import type { StatusModalProps } from "./types";
 
 const StatusModal: React.FC<StatusModalProps> = ({
   statusText,
@@ -37,7 +37,7 @@ const StatusModal: React.FC<StatusModalProps> = ({
     }
   }, [onAfterClose]);
 
-  const secondaryLabel = isDeleteSuccess ? '' : secondaryButtonLabel;
+  const secondaryLabel = isDeleteSuccess ? "" : secondaryButtonLabel;
 
   return (
     <Modal
@@ -60,7 +60,7 @@ const StatusModal: React.FC<StatusModalProps> = ({
           }}>
           <StatusIcon fill={theme.palette.baselineColor.neutral[0]} />
         </Box>
-        {statusType === 'error' && errorMessage && <Typography sx={sx.errorMessage}>{errorMessage}</Typography>}
+        {statusType === "error" && errorMessage && <Typography sx={sx.errorMessage}>{errorMessage}</Typography>}
         <Typography sx={sx.statusText}>{statusText}</Typography>
       </Box>
     </Modal>

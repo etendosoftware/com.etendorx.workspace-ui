@@ -1,5 +1,5 @@
-import type { Menu } from '@workspaceui/etendohookbinder/src/api/types';
-import type { RecentItem } from '../components/Drawer/types';
+import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import type { RecentItem } from "../components/Drawer/types";
 
 export interface UseRecentItemsReturn {
   localRecentItems: RecentItem[];

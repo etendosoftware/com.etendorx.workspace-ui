@@ -1,6 +1,6 @@
-import { Client, type Interceptor } from './client';
-import { API_DATASOURCE_SERVLET } from './constants';
-import type { DatasourceParams } from './types';
+import { Client, type Interceptor } from "./client";
+import { API_DATASOURCE_SERVLET } from "./constants";
+import type { DatasourceParams } from "./types";
 
 export class Datasource {
   private static instance: Datasource;
@@ -10,7 +10,7 @@ export class Datasource {
     this.client = new Client(url);
   }
 
-  public static getInstance(url = '') {
+  public static getInstance(url = "") {
     if (!Datasource.instance) {
       Datasource.instance = new Datasource(url);
     }
@@ -23,7 +23,7 @@ export class Datasource {
   }
 
   public setToken(token: string) {
-    this.client.setAuthHeader(token, 'Bearer');
+    this.client.setAuthHeader(token, "Bearer");
   }
 
   public registerInterceptor(interceptor: Interceptor) {
@@ -54,27 +54,27 @@ export class Datasource {
 
   private buildParams(options: DatasourceParams) {
     const params = new URLSearchParams({
-      _noCount: 'true',
-      _operationType: 'fetch',
-      isImplicitFilterApplied: options.isImplicitFilterApplied ? 'true' : 'false',
+      _noCount: "true",
+      _operationType: "fetch",
+      isImplicitFilterApplied: options.isImplicitFilterApplied ? "true" : "false",
     });
 
     if (options.windowId) {
-      params.set('windowId', options.windowId);
+      params.set("windowId", options.windowId);
     }
 
     if (options.tabId) {
-      params.set('tabId', options.tabId);
+      params.set("tabId", options.tabId);
     }
 
     for (const [key, value] of Object.entries(options)) {
-      if (typeof value !== 'undefined') {
-        if (key === 'criteria' && Array.isArray(value)) {
+      if (typeof value !== "undefined") {
+        if (key === "criteria" && Array.isArray(value)) {
           for (const criteria of value) {
             params.append(key, JSON.stringify(criteria));
           }
         } else {
-          params.append(`_${key}`, Array.isArray(value) ? value.join(',') : String(value));
+          params.append(`_${key}`, Array.isArray(value) ? value.join(",") : String(value));
         }
       }
     }

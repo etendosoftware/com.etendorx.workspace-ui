@@ -1,23 +1,23 @@
-'use client';
+"use client";
 
-import { Box, InputAdornment, TextField, useTheme } from '@mui/material';
-import { type KeyboardEvent, useCallback, useEffect, useState } from 'react';
-import SuggestionBox from './SuggestionBox';
-import { DEFAULT_CONSTANTS } from './TextInputAutocomplete.constants';
-import { useStyle } from './TextInputAutocomplete.styles';
-import type { TextInputProps } from './TextInputComplete.types';
+import { Box, InputAdornment, TextField, useTheme } from "@mui/material";
+import { type KeyboardEvent, useCallback, useEffect, useState } from "react";
+import SuggestionBox from "./SuggestionBox";
+import { DEFAULT_CONSTANTS } from "./TextInputAutocomplete.constants";
+import { useStyle } from "./TextInputAutocomplete.styles";
+import type { TextInputProps } from "./TextInputComplete.types";
 
-import SmartButton from '../../../../assets/icons/box.svg';
-import FilterIcon from '../../../../assets/icons/filter.svg';
-import CloseIcon from '../../../../assets/icons/menu-close.svg';
-import SearchIcon from '../../../../assets/icons/search.svg';
-import IconButton from '../../../IconButton';
+import SmartButton from "../../../../assets/icons/box.svg";
+import FilterIcon from "../../../../assets/icons/filter.svg";
+import CloseIcon from "../../../../assets/icons/menu-close.svg";
+import SearchIcon from "../../../../assets/icons/search.svg";
+import IconButton from "../../../IconButton";
 
 const TextInputAutoComplete = (props: TextInputProps) => {
   const { value, setValue, autoCompleteTexts = [], rightIcon, onLeftIconClick, ...textFieldProps } = props;
 
   const [isFocused, setIsFocused] = useState<boolean>(false);
-  const [suggestion, setSuggestion] = useState<string>('');
+  const [suggestion, setSuggestion] = useState<string>("");
   const [smartIconActive, setSmartIconActive] = useState(false);
   const theme = useTheme();
   const { sx, styles, gradients } = useStyle();
@@ -35,23 +35,23 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   useEffect(() => {
     if (autoCompleteTexts && isFocused && value) {
       const match = autoCompleteTexts.find((text) => text.toLowerCase().startsWith(value.toLowerCase()));
-      setSuggestion(match && match.toLowerCase() !== value.toLowerCase() ? match : '');
+      setSuggestion(match && match.toLowerCase() !== value.toLowerCase() ? match : "");
     } else {
-      setSuggestion('');
+      setSuggestion("");
     }
   }, [value, isFocused, autoCompleteTexts]);
 
   const handleClear = useCallback(() => {
-    setValue?.('');
-    setSuggestion('');
+    setValue?.("");
+    setSuggestion("");
   }, [setValue]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLDivElement>) => {
-      if (e.key === 'Tab' && suggestion) {
+      if (e.key === "Tab" && suggestion) {
         e.preventDefault();
         setValue?.(suggestion);
-        setSuggestion('');
+        setSuggestion("");
       }
     },
     [suggestion, setValue],
@@ -68,7 +68,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   const renderStartAdornment = () => {
     return (
       <IconButton
-        className={`[&>svg]:w-4 [&>svg]:h-4 w-6 h-6 mr-2 bg-transparent hover:bg-transparent hover:text- ${value && isFocused ? 'text-(--color-dynamic-main)' : ''}`}
+        className={`[&>svg]:w-4 [&>svg]:h-4 w-6 h-6 mr-2 bg-transparent hover:bg-transparent hover:text- ${value && isFocused ? "text-(--color-dynamic-main)" : ""}`}
         onClick={onLeftIconClick}>
         <SearchIcon />
       </IconButton>
@@ -78,7 +78,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
   const renderEndAdornment = () =>
     rightIcon &&
     !props.disabled && (
-      <InputAdornment position='end'>
+      <InputAdornment position="end">
         {value && (
           <IconButton onClick={handleClear}>
             <CloseIcon />
@@ -102,28 +102,28 @@ const TextInputAutoComplete = (props: TextInputProps) => {
     ...styles.inputCommon,
     opacity: props.disabled ? 0.4 : 1,
     backgroundColor: theme.palette.baselineColor.neutral[0],
-    '& .MuiOutlinedInput-root': {
-      '& fieldset': {
-        borderColor: smartIconActive ? 'transparent' : theme.palette.baselineColor.neutral[20],
-        border: smartIconActive ? '2px solid' : undefined,
+    "& .MuiOutlinedInput-root": {
+      "& fieldset": {
+        borderColor: smartIconActive ? "transparent" : theme.palette.baselineColor.neutral[20],
+        border: smartIconActive ? "2px solid" : undefined,
         borderImage: smartIconActive ? `${gradients.linearGradient} 1` : undefined,
         background: smartIconActive ? gradients.linearGradient : undefined,
         WebkitMask: `${gradients.webkitMaskGradient}`,
-        WebkitMaskComposite: 'xor',
-        maskComposite: 'exclude',
-        transition: 'border-color 0.5s',
-        borderRadius: '6.25rem',
+        WebkitMaskComposite: "xor",
+        maskComposite: "exclude",
+        transition: "border-color 0.5s",
+        borderRadius: "6.25rem",
       },
-      '&:hover fieldset': {
+      "&:hover fieldset": {
         borderWidth: props.disabled ? undefined : 2,
         borderColor: props.disabled ? undefined : theme.palette.baselineColor.neutral[100],
       },
-      '&.Mui-focused fieldset': {
+      "&.Mui-focused fieldset": {
         borderColor: theme.palette.dynamicColor.main,
       },
-      '&.Mui-focused': {
+      "&.Mui-focused": {
         backgroundColor: value ? theme.palette.baselineColor.neutral[0] : theme.palette.dynamicColor.contrastText,
-        borderRadius: '12.25rem',
+        borderRadius: "12.25rem",
       },
     },
     ...props.sx,
@@ -135,7 +135,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
         <TextField
           placeholder={props.placeholder}
           onBlur={handleBlur}
-          variant='outlined'
+          variant="outlined"
           fullWidth
           value={value}
           onChange={handleInputChange}
@@ -146,8 +146,8 @@ const TextInputAutoComplete = (props: TextInputProps) => {
             ...textFieldProps.InputProps,
             sx: {
               ...sx.input,
-              '& .MuiOutlinedInput-input': {
-                '&::placeholder': {
+              "& .MuiOutlinedInput-input": {
+                "&::placeholder": {
                   color: theme.palette.baselineColor.transparentNeutral[70],
                   opacity: isFocused ? 0 : 1,
                   transition: `opacity ${DEFAULT_CONSTANTS.PLACEHOLDER_OPACITY_TRANSITION_DURATION}s`,

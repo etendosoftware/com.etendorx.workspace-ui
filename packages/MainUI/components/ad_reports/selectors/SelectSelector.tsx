@@ -1,9 +1,9 @@
-import { memo, useCallback, useMemo } from 'react';
-import Select from '@workspaceui/componentlibrary/src/components/Input/Select';
-import SearchOutlined from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
-import type { SelectSelectorProps } from '../../Form/FormView/types';
-import { useTheme } from '@mui/material';
-import type { Option } from '@workspaceui/etendohookbinder/src/api/types';
+import { memo, useCallback, useMemo } from "react";
+import Select from "@workspaceui/componentlibrary/src/components/Input/Select";
+import SearchOutlined from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
+import type { SelectSelectorProps } from "../../Form/FormView/types";
+import { useTheme } from "@mui/material";
+import type { Option } from "@workspaceui/etendohookbinder/src/api/types";
 
 const SelectSelector = memo(({ value, name, title, onChange, readOnly, field }: SelectSelectorProps) => {
   const theme = useTheme();
@@ -18,7 +18,7 @@ const SelectSelector = memo(({ value, name, title, onChange, readOnly, field }: 
   );
   const handleChange = useCallback(
     (_: React.SyntheticEvent<Element, Event>, newValue: Option<string> | null) => {
-      onChange(newValue?.value || '');
+      onChange(newValue?.value || "");
     },
     [onChange],
   );
@@ -38,6 +38,6 @@ const SelectSelector = memo(({ value, name, title, onChange, readOnly, field }: 
   );
 });
 
-SelectSelector.displayName = 'SelectSelector';
+SelectSelector.displayName = "SelectSelector";
 
 export default SelectSelector;

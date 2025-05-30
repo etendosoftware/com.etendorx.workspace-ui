@@ -1,13 +1,13 @@
-import { logger } from '@/utils/logger';
-import { datasource } from '@workspaceui/etendohookbinder/src/api/datasource';
+import { logger } from "@/utils/logger";
+import { datasource } from "@workspaceui/etendohookbinder/src/api/datasource";
 import type {
   Column,
   DatasourceOptions,
   EntityData,
   MRT_ColumnFiltersState,
-} from '@workspaceui/etendohookbinder/src/api/types';
-import { ColumnFilterUtils, SearchUtils } from '@workspaceui/etendohookbinder/src/utils/search-utils';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+} from "@workspaceui/etendohookbinder/src/api/types";
+import { ColumnFilterUtils, SearchUtils } from "@workspaceui/etendohookbinder/src/utils/search-utils";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 const loadData = async (entity: string, page: number, pageSize: number, params: DatasourceOptions) => {
   const safePageSize = pageSize ?? 1000;

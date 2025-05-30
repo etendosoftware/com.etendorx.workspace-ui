@@ -1,8 +1,8 @@
-import { CacheStore } from './cache';
-import { Client, type Interceptor } from './client';
-import { API_DATASOURCE_SERVLET, API_DEFAULT_CACHE_DURATION, API_KERNEL_SERVLET, API_METADATA_URL } from './constants';
-import type * as Etendo from './types';
-import type { Menu } from './types';
+import { CacheStore } from "./cache";
+import { Client, type Interceptor } from "./client";
+import { API_DATASOURCE_SERVLET, API_DEFAULT_CACHE_DURATION, API_KERNEL_SERVLET, API_METADATA_URL } from "./constants";
+import type * as Etendo from "./types";
+import type { Menu } from "./types";
 
 export type { Etendo };
 
@@ -39,7 +39,7 @@ export class Metadata {
       Metadata.datasourceServletClient,
       Metadata.loginClient,
     ]) {
-      client.setAuthHeader(token, 'Bearer');
+      client.setAuthHeader(token, "Bearer");
     }
 
     return Metadata;
@@ -65,7 +65,7 @@ export class Metadata {
     const { data, ok } = await Metadata.client.post(`window/${windowId}`);
 
     if (!ok) {
-      throw new Error('Window not found');
+      throw new Error("Window not found");
     }
 
     Metadata.cache.set(`window-${windowId}`, data);
@@ -85,7 +85,7 @@ export class Metadata {
     return Metadata._getWindow(windowId);
   }
 
-  private static async _getTab(tabId?: Etendo.Tab['id']): Promise<Etendo.Tab> {
+  private static async _getTab(tabId?: Etendo.Tab["id"]): Promise<Etendo.Tab> {
     const { data } = await Metadata.client.post(`tab/${tabId}`);
 
     Metadata.cache.set(`tab-${tabId}`, data);
@@ -93,7 +93,7 @@ export class Metadata {
     return data;
   }
 
-  public static async getTab(tabId: Etendo.Tab['id']): Promise<Etendo.Tab> {
+  public static async getTab(tabId: Etendo.Tab["id"]): Promise<Etendo.Tab> {
     const cached = Metadata.cache.get<Etendo.Tab>(`tab-${tabId}`);
 
     if (cached) {
@@ -103,7 +103,7 @@ export class Metadata {
   }
 
   private static async _getLabels(): Promise<Etendo.Labels> {
-    const { data } = await Metadata.client.request('labels');
+    const { data } = await Metadata.client.request("labels");
 
     Metadata.cache.set(`labels-${Metadata.language}`, data);
 
@@ -124,21 +124,21 @@ export class Metadata {
   }
 
   public static async getMenu(forceRefresh = false): Promise<Menu[]> {
-    const cached = Metadata.cache.get<Menu[]>('OBMenu');
-    const currentRoleId = localStorage.getItem('currentRoleId');
+    const cached = Metadata.cache.get<Menu[]>("OBMenu");
+    const currentRoleId = localStorage.getItem("currentRoleId");
 
     if (!forceRefresh && cached && cached.length && currentRoleId === Metadata.currentRoleId) {
       return cached;
     }
     try {
-      const { data } = await Metadata.client.post('menu', { role: currentRoleId });
+      const { data } = await Metadata.client.post("menu", { role: currentRoleId });
       const menu = data.menu;
-      Metadata.cache.set('OBMenu', menu);
+      Metadata.cache.set("OBMenu", menu);
       Metadata.currentRoleId = currentRoleId;
 
       return menu;
     } catch (error) {
-      console.error('Error fetching menu:', error);
+      console.error("Error fetching menu:", error);
       throw error;
     }
   }
@@ -149,7 +149,7 @@ export class Metadata {
   }
 
   public static getCachedMenu(): Menu[] {
-    return Metadata.cache.get<Menu[]>('OBMenu') ?? [];
+    return Metadata.cache.get<Menu[]>("OBMenu") ?? [];
   }
 
   public static getCachedWindow(windowId: string): Etendo.WindowMetadata {
@@ -157,7 +157,7 @@ export class Metadata {
   }
 
   public static clearMenuCache() {
-    Metadata.cache.delete('OBMenu');
+    Metadata.cache.delete("OBMenu");
     Metadata.currentRoleId = null;
   }
 
@@ -181,7 +181,7 @@ export class Metadata {
   }
 
   public static evaluateExpression(expr: string, values: Record<string, unknown>) {
-    const conditions = expr.split('||').map((c) => c.trim());
+    const conditions = expr.split("||").map((c) => c.trim());
 
     return conditions.some((condition) => {
       const matches = condition.match(/OB\.Utilities\.getValue\(currentValues,['"](.+)['"]\)\s*===\s*(.+)/);

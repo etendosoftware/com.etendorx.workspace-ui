@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { EntityData, FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
-import { Metadata } from '@workspaceui/etendohookbinder/src/api/metadata';
-import { useUserContext } from './useUserContext';
-import type { UseFormHandleSubmit } from 'react-hook-form';
-import { buildFormPayload, buildQueryString } from '@/utils';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { EntityData, FormMode, Tab, WindowMetadata } from "@workspaceui/etendohookbinder/src/api/types";
+import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import { useUserContext } from "./useUserContext";
+import type { UseFormHandleSubmit } from "react-hook-form";
+import { buildFormPayload, buildQueryString } from "@/utils";
 
 export interface UseFormActionParams {
   windowMetadata?: WindowMetadata;
@@ -37,7 +37,7 @@ export const useFormAction = ({
         const queryStringParams = buildQueryString({ mode, windowMetadata, tab });
         const body = buildFormPayload({ values, oldValues: initialState, mode, csrfToken: userId });
         const url = `${tab.entityName}?${queryStringParams}`;
-        const options = { signal: controller.current.signal, method: 'POST', body };
+        const options = { signal: controller.current.signal, method: "POST", body };
         const { ok, data } = await Metadata.datasourceServletClient.request(url, options);
 
         if (ok && data?.response?.status === 0 && !controller.current.signal.aborted) {

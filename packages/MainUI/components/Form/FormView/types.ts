@@ -1,7 +1,7 @@
-import type { Field, FormMode, Tab, WindowMetadata } from '@workspaceui/etendohookbinder/src/api/types';
-import type { FieldDefinition } from '@workspaceui/etendohookbinder/src/api/types';
-import type { ReportColumn } from '@workspaceui/etendohookbinder/src/hooks/types';
-import type { MRT_ColumnDef, MRT_Row } from 'material-react-table';
+import type { Field, FormMode, Tab, WindowMetadata } from "@workspaceui/etendohookbinder/src/api/types";
+import type { FieldDefinition } from "@workspaceui/etendohookbinder/src/api/types";
+import type { ReportColumn } from "@workspaceui/etendohookbinder/src/hooks/types";
+import type { MRT_ColumnDef, MRT_Row } from "material-react-table";
 
 export interface GridItemProps {
   xs?: number;
@@ -21,13 +21,13 @@ export interface CollapsibleProps {
 export interface Section {
   name: string;
   label: string;
-  type: 'section';
+  type: "section";
   personalizable: boolean;
   icon?: React.ReactNode;
   id: string;
   fill?: string;
   hoverFill?: string;
-  showInTab: 'icon' | 'label' | 'both';
+  showInTab: "icon" | "label" | "both";
 }
 
 export type FormData = Record<string, FieldDefinition | Section>;
@@ -41,7 +41,7 @@ export interface FormViewProps {
   setRecordId: React.Dispatch<React.SetStateAction<string>>;
 }
 
-export type FieldValue = string | number | boolean | string[] | Date | null | FieldDefinition['value'];
+export type FieldValue = string | number | boolean | string[] | Date | null | FieldDefinition["value"];
 
 export interface FieldLabelProps {
   label: string;

@@ -1,4 +1,4 @@
-export type ColumnType = 'string' | 'date' | 'numeric' | 'reference';
+export type ColumnType = "string" | "date" | "numeric" | "reference";
 
 export interface Column {
   columnName: string;
@@ -13,6 +13,6 @@ export interface SearchCriteria {
 }
 
 export interface CompositeCriteria {
-  operator: 'and' | 'or';
+  operator: "and" | "or";
   criteria: SearchCriteria[];
 }

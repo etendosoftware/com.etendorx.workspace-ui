@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from "react";
 
 interface PromiseRef<T> {
   resolve: (value: T | PromiseLike<T>) => void;

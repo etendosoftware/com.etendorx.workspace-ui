@@ -1,7 +1,7 @@
-import { type CSSProperties, useMemo } from 'react';
-import { type SxProps, type Theme, useTheme } from '@mui/material';
+import { type CSSProperties, useMemo } from "react";
+import { type SxProps, type Theme, useTheme } from "@mui/material";
 
-export const tabIndicatorProps = { style: { display: 'none' } };
+export const tabIndicatorProps = { style: { display: "none" } };
 export const menuStyle = { paddingY: 0 };
 
 export const useStyle = () => {
@@ -11,75 +11,75 @@ export const useStyle = () => {
     () => ({
       styles: {
         containerBox: {
-          display: 'inline-flex',
+          display: "inline-flex",
           background: theme.palette.baselineColor.transparentNeutral[5],
-          borderRadius: '12.5rem',
-          padding: '0.25rem',
-          alignItems: 'center',
-          width: '100%',
+          borderRadius: "12.5rem",
+          padding: "0.25rem",
+          alignItems: "center",
+          width: "100%",
         },
         tabsContainer: {
           flexGrow: 1,
-          overflowX: 'auto',
+          overflowX: "auto",
         },
         iconButtonMore: {
-          marginLeft: '0.25rem',
-          padding: '0.5rem',
+          marginLeft: "0.25rem",
+          padding: "0.5rem",
         },
       } as { [key: string]: CSSProperties },
       sx: {
         tabs: {
-          minHeight: 'unset',
-          '& .MuiTabs-scrollButtons': {
-            '&.Mui-disabled': {
+          minHeight: "unset",
+          "& .MuiTabs-scrollButtons": {
+            "&.Mui-disabled": {
               opacity: 0.3,
             },
           },
-          '& .MuiTabs-flexContainer': {
-            gap: '0.25rem',
+          "& .MuiTabs-flexContainer": {
+            gap: "0.25rem",
           },
         },
         tab: {
           minHeight: 48,
-          textTransform: 'none',
-          borderRadius: '12.5rem',
-          transition: 'background-color 0.3s, color 0.4s',
+          textTransform: "none",
+          borderRadius: "12.5rem",
+          transition: "background-color 0.3s, color 0.4s",
           color: theme.palette.baselineColor.neutral[90],
-          padding: '0.25rem 1rem',
-          marginRight: '0.25rem',
-          whiteSpace: 'nowrap',
-          '& .MuiTab-iconWrapper': {
-            marginRight: '0.5rem',
+          padding: "0.25rem 1rem",
+          marginRight: "0.25rem",
+          whiteSpace: "nowrap",
+          "& .MuiTab-iconWrapper": {
+            marginRight: "0.5rem",
           },
-          '&.Mui-selected': {
+          "&.Mui-selected": {
             background: theme.palette.baselineColor.neutral[0],
             color: theme.palette.baselineColor.neutral[90],
           },
-          '&:hover:not(.Mui-selected)': {
+          "&:hover:not(.Mui-selected)": {
             color: theme.palette.baselineColor.neutral[0],
             background: theme.palette.dynamicColor.main,
           },
         },
         menu: {
-          borderRadius: '0.75rem',
-          '& .MuiPaper-root': {
-            borderRadius: '0.75rem',
+          borderRadius: "0.75rem",
+          "& .MuiPaper-root": {
+            borderRadius: "0.75rem",
             background: theme.palette.dynamicColor.contrastText,
           },
         },
         menuItem: {
-          display: 'flex',
-          width: '15rem',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          margin: '0.5rem',
-          padding: '0.5rem',
-          borderRadius: '0.5rem',
-          '&.Mui-selected': {
+          display: "flex",
+          width: "15rem",
+          justifyContent: "space-between",
+          alignItems: "center",
+          margin: "0.5rem",
+          padding: "0.5rem",
+          borderRadius: "0.5rem",
+          "&.Mui-selected": {
             background: theme.palette.baselineColor.neutral[10],
           },
-          '&:hover': {
-            background: '',
+          "&:hover": {
+            background: "",
             color: theme.palette.baselineColor.neutral[80],
           },
         },
@@ -87,15 +87,15 @@ export const useStyle = () => {
           backgroundColor: theme.palette.dynamicColor.contrastText,
         },
         iconBox: {
-          display: 'flex',
-          alignItems: 'center',
-          maxWidth: '10rem',
-          overflow: 'hidden',
-          '& span': {
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            marginLeft: '0.5rem',
+          display: "flex",
+          alignItems: "center",
+          maxWidth: "10rem",
+          overflow: "hidden",
+          "& span": {
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            marginLeft: "0.5rem",
           },
         },
       } as { [key: string]: SxProps<Theme> },

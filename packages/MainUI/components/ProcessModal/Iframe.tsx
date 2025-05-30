@@ -1,8 +1,8 @@
-import { type ProcessMessage, useProcessMessage } from '@/hooks/useProcessMessage';
-import { useTranslation } from '@/hooks/useTranslation';
-import { logger } from '@/utils/logger';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { MessageStylesType, ProcessIframeModalProps } from './types';
+import { type ProcessMessage, useProcessMessage } from "@/hooks/useProcessMessage";
+import { useTranslation } from "@/hooks/useTranslation";
+import { logger } from "@/utils/logger";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { MessageStylesType, ProcessIframeModalProps } from "./types";
 
 const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess, tabId }: ProcessIframeModalProps) => {
   const { t } = useTranslation();
@@ -17,28 +17,28 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess, tab
     (message: ProcessMessage, clearFn: () => void) => {
       clearFn();
 
-      if (message.message?.toUpperCase().includes('ERROR')) {
+      if (message.message?.toUpperCase().includes("ERROR")) {
         setProcessMessage({
           ...message,
-          type: 'error',
-          title: message.title || t('errors.internalServerError.title'),
+          type: "error",
+          title: message.title || t("errors.internalServerError.title"),
         });
         setProcessWasSuccessful(false);
       } else {
         setProcessMessage(message);
-        setProcessWasSuccessful(message.type === 'success');
+        setProcessWasSuccessful(message.type === "success");
       }
     },
     [t],
   );
   const handlePollingError = useCallback(
     (error: unknown, clearFn: () => void) => {
-      if (error instanceof Error && !(error instanceof DOMException && error.name === 'AbortError')) {
+      if (error instanceof Error && !(error instanceof DOMException && error.name === "AbortError")) {
         logger.warn(error);
         clearFn();
         setProcessMessage({
-          type: 'error',
-          title: t('errors.internalServerError.title'),
+          type: "error",
+          title: t("errors.internalServerError.title"),
           message: String(error),
         });
       }
@@ -60,7 +60,7 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess, tab
       } catch (error) {
         if (signal.aborted) return;
         handlePollingError(error, clearFn);
-        return error instanceof Error && !(error instanceof DOMException && error.name === 'AbortError');
+        return error instanceof Error && !(error instanceof DOMException && error.name === "AbortError");
       }
       return false;
     },
@@ -127,36 +127,36 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess, tab
   }, []);
 
   const getMessageStyles = useCallback((type: string): MessageStylesType => {
-    const normalizedType = type?.toLowerCase() || '';
-    if (normalizedType.includes('error')) {
+    const normalizedType = type?.toLowerCase() || "";
+    if (normalizedType.includes("error")) {
       return {
-        bgColor: 'var(--color-error-contrast-text)',
-        borderColor: 'var(--color-error-main)',
-        textColor: 'var(--color-error-main)',
-        buttonBg: 'var(--color-error-main)',
+        bgColor: "var(--color-error-contrast-text)",
+        borderColor: "var(--color-error-main)",
+        textColor: "var(--color-error-main)",
+        buttonBg: "var(--color-error-main)",
       };
     }
     switch (normalizedType) {
-      case 'success':
+      case "success":
         return {
-          bgColor: 'var(--color-success-contrast-text)',
-          borderColor: 'var(--color-success-main)',
-          textColor: 'var(--color-success-main)',
-          buttonBg: 'var(--color-success-main)',
+          bgColor: "var(--color-success-contrast-text)",
+          borderColor: "var(--color-success-main)",
+          textColor: "var(--color-success-main)",
+          buttonBg: "var(--color-success-main)",
         };
-      case 'warning':
+      case "warning":
         return {
-          bgColor: 'var(--color-warning-contrast-text)',
-          borderColor: 'var(--color-warning-main)',
-          textColor: 'var(--color-warning-main)',
-          buttonBg: 'var(--color-warning-main)',
+          bgColor: "var(--color-warning-contrast-text)",
+          borderColor: "var(--color-warning-main)",
+          textColor: "var(--color-warning-main)",
+          buttonBg: "var(--color-warning-main)",
         };
       default:
         return {
-          bgColor: 'var(--color-etendo-light)',
-          borderColor: 'var(--color-etendo-main)',
-          textColor: 'var(--color-etendo-main)',
-          buttonBg: 'var(--color-etendo-main)',
+          bgColor: "var(--color-etendo-light)",
+          borderColor: "var(--color-etendo-main)",
+          textColor: "var(--color-etendo-main)",
+          buttonBg: "var(--color-etendo-main)",
         };
     }
   }, []);
@@ -166,10 +166,10 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess, tab
       processMessage
         ? getMessageStyles(processMessage.type)
         : {
-            bgColor: '',
-            borderColor: '',
-            textColor: '',
-            buttonBg: '',
+            bgColor: "",
+            borderColor: "",
+            textColor: "",
+            buttonBg: "",
           },
     [processMessage, getMessageStyles],
   );
@@ -177,35 +177,35 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess, tab
   if (!isOpen) return null;
 
   return (
-    <div className='fixed inset-0 z-5000 flex items-center justify-center bg-black/50'>
-      <div className='relative bg-white flex flex-col w-full max-w-3xl border-4 border-gray-300 rounded-xl h-3/6 max-h-[50vh]'>
-        <div className='flex justify-between items-center p-4 border-b border-gray-200 rounded-xl bg-[var(--color-baseline-10)]'>
-          <h2 className='text-lg font-semibold'>{title || t('common.processes')}</h2>
-          <button type='button' onClick={onClose} className='text-gray-500 hover:text-gray-700 focus:outline-none' />
+    <div className="fixed inset-0 z-5000 flex items-center justify-center bg-black/50">
+      <div className="relative bg-white flex flex-col w-full max-w-3xl border-4 border-gray-300 rounded-xl h-3/6 max-h-[50vh]">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200 rounded-xl bg-[var(--color-baseline-10)]">
+          <h2 className="text-lg font-semibold">{title || t("common.processes")}</h2>
+          <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-700 focus:outline-none" />
         </div>
-        <div className='relative flex-1 overflow-hidden'>
+        <div className="relative flex-1 overflow-hidden">
           {iframeLoading && (
-            <div className='absolute inset-0 flex items-center justify-center z-10 bg-white bg-opacity-90'>
-              <div className='text-center'>
-                <div className='inline-block w-8 h-8 border-4 border-[var(--color-etendo-main)] border-t-transparent rounded-full animate-spin' />
-                <p className='mt-2 font-medium'>{t('common.loading')}</p>
+            <div className="absolute inset-0 flex items-center justify-center z-10 bg-white bg-opacity-90">
+              <div className="text-center">
+                <div className="inline-block w-8 h-8 border-4 border-[var(--color-etendo-main)] border-t-transparent rounded-full animate-spin" />
+                <p className="mt-2 font-medium">{t("common.loading")}</p>
               </div>
             </div>
           )}
           {processMessage && (
             <div
-              className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-4/5 max-w-md rounded-lg shadow-lg overflow-hidden border'
+              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-4/5 max-w-md rounded-lg shadow-lg overflow-hidden border"
               style={{
                 borderColor: messageStyles.borderColor,
-                backgroundColor: 'white',
+                backgroundColor: "white",
               }}>
-              <div className='flex items-start gap-3 p-4' style={{ backgroundColor: messageStyles.bgColor }}>
-                <div className='flex-shrink-0' />
-                <div className='flex-1'>
-                  <h3 className='text-lg font-semibold mb-1' style={{ color: messageStyles.textColor }}>
-                    {processMessage.title || t('common.processes')}
+              <div className="flex items-start gap-3 p-4" style={{ backgroundColor: messageStyles.bgColor }}>
+                <div className="flex-shrink-0" />
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold mb-1" style={{ color: messageStyles.textColor }}>
+                    {processMessage.title || t("common.processes")}
                   </h3>
-                  {processMessage.message && <p className='text-gray-700'>{processMessage.message}</p>}
+                  {processMessage.message && <p className="text-gray-700">{processMessage.message}</p>}
                 </div>
               </div>
             </div>
@@ -213,16 +213,16 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess, tab
           <iframe
             src={url}
             onLoad={handleIframeLoad}
-            className='w-full h-full border-0'
-            title={t('common.processes')}
+            className="w-full h-full border-0"
+            title={t("common.processes")}
           />
         </div>
-        <div className='p-4 border-t border-gray-200 flex justify-end rounded-xl bg-[var(--color-baseline-10)]'>
+        <div className="p-4 border-t border-gray-200 flex justify-end rounded-xl bg-[var(--color-baseline-10)]">
           <button
-            type='button'
+            type="button"
             onClick={handleClose}
-            className='px-4 py-2 mx-auto bg-[var(--color-etendo-main)] text-white rounded font-medium focus:outline-none hover:bg-[var(--color-etendo-dark)]'>
-            {t('common.close')}
+            className="px-4 py-2 mx-auto bg-[var(--color-etendo-main)] text-white rounded font-medium focus:outline-none hover:bg-[var(--color-etendo-dark)]">
+            {t("common.close")}
           </button>
         </div>
       </div>

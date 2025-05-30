@@ -1,4 +1,4 @@
-import type { BaseCriteria, Column, CompositeCriteria, MRT_ColumnFiltersState } from '../api/types';
+import type { BaseCriteria, Column, CompositeCriteria, MRT_ColumnFiltersState } from "../api/types";
 
 type FormattedValue = string | number | null;
 
@@ -9,27 +9,27 @@ interface ColumnsByType {
 }
 
 const REFERENCE_FIELDS = [
-  'organization',
-  'transactionDocument',
-  'businessPartner',
-  'partnerAddress',
-  'currency',
-  'warehouse',
+  "organization",
+  "transactionDocument",
+  "businessPartner",
+  "partnerAddress",
+  "currency",
+  "warehouse",
 ];
 
 const EXCLUDED_NUMERIC_FIELDS = [
-  'amount',
-  'price',
-  'quantity',
-  'total',
-  'paid',
-  'percentage',
-  'outstanding',
-  'days',
-  'grandTotalAmount',
+  "amount",
+  "price",
+  "quantity",
+  "total",
+  "paid",
+  "percentage",
+  "outstanding",
+  "days",
+  "grandTotalAmount",
 ];
 
-const STATUS_FIELDS = ['documentStatus'];
+const STATUS_FIELDS = ["documentStatus"];
 
 export class SearchUtils {
   private static readonly FULL_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -44,27 +44,27 @@ export class SearchUtils {
       SearchUtils.YEAR_MONTH_PATTERN.test(value) ||
       SearchUtils.YEAR_PARTIAL_PATTERN.test(value)
     ) {
-      return 'date';
+      return "date";
     }
-    return 'string';
+    return "string";
   }
 
   private static getColumnType(column: Column): keyof ColumnsByType {
     const columnName = column.columnName.toLowerCase();
 
     if (EXCLUDED_NUMERIC_FIELDS.includes(columnName)) {
-      return 'string';
+      return "string";
     }
 
     if (REFERENCE_FIELDS.includes(column.columnName)) {
-      return 'reference';
+      return "reference";
     }
 
-    if (columnName.includes('date')) {
-      return 'date';
+    if (columnName.includes("date")) {
+      return "date";
     }
 
-    return 'string';
+    return "string";
   }
 
   public static getDateCriteria(fieldName: string, searchQuery: string): BaseCriteria[] {
@@ -73,41 +73,41 @@ export class SearchUtils {
     if (SearchUtils.FULL_DATE_PATTERN.test(searchQuery)) {
       criteria.push({
         fieldName,
-        operator: 'equals',
+        operator: "equals",
         value: searchQuery,
       });
     } else if (SearchUtils.YEAR_MONTH_PATTERN.test(searchQuery)) {
       criteria.push({
         fieldName,
-        operator: 'greaterOrEqual',
+        operator: "greaterOrEqual",
         value: `${searchQuery}-01`,
       });
       criteria.push({
         fieldName,
-        operator: 'lessOrEqual',
+        operator: "lessOrEqual",
         value: `${searchQuery}-31`,
       });
     } else if (SearchUtils.YEAR_PATTERN.test(searchQuery)) {
       criteria.push({
         fieldName,
-        operator: 'greaterOrEqual',
+        operator: "greaterOrEqual",
         value: `${searchQuery}-01-01`,
       });
       criteria.push({
         fieldName,
-        operator: 'lessOrEqual',
+        operator: "lessOrEqual",
         value: `${searchQuery}-12-31`,
       });
     } else if (SearchUtils.YEAR_PARTIAL_PATTERN.test(searchQuery)) {
       const year = searchQuery.slice(0, -1);
       criteria.push({
         fieldName,
-        operator: 'greaterOrEqual',
+        operator: "greaterOrEqual",
         value: `${year}-01-01`,
       });
       criteria.push({
         fieldName,
-        operator: 'lessOrEqual',
+        operator: "lessOrEqual",
         value: `${year}-12-31`,
       });
     }
@@ -130,7 +130,7 @@ export class SearchUtils {
       return acc;
     }, {});
 
-    if (queryType === 'date' && columnsByType.date?.length) {
+    if (queryType === "date" && columnsByType.date?.length) {
       const dateCriteria: BaseCriteria[] = [];
 
       for (const column of columnsByType.date) {
@@ -139,7 +139,7 @@ export class SearchUtils {
 
       if (dateCriteria.length) {
         compositeCriteria.push({
-          operator: 'or',
+          operator: "or",
           criteria: dateCriteria,
         });
       }
@@ -149,8 +149,8 @@ export class SearchUtils {
     const textSearchCriteria: BaseCriteria[] = [];
 
     textSearchCriteria.push({
-      fieldName: 'documentNo',
-      operator: 'iContains',
+      fieldName: "documentNo",
+      operator: "iContains",
       value: searchQuery,
     });
 
@@ -158,7 +158,7 @@ export class SearchUtils {
       if (columnsByType.reference?.some((col) => col.columnName === field)) {
         textSearchCriteria.push({
           fieldName: `${field}$_identifier`,
-          operator: 'iContains',
+          operator: "iContains",
           value: searchQuery,
         });
       }
@@ -168,7 +168,7 @@ export class SearchUtils {
       if (columns.some((col) => col.columnName === field)) {
         textSearchCriteria.push({
           fieldName: field,
-          operator: 'iContains',
+          operator: "iContains",
           value: searchQuery,
         });
       }
@@ -176,7 +176,7 @@ export class SearchUtils {
 
     if (textSearchCriteria.length) {
       compositeCriteria.push({
-        operator: 'or',
+        operator: "or",
         criteria: textSearchCriteria,
       });
     }
@@ -187,21 +187,21 @@ export class SearchUtils {
 
 export class ColumnFilterUtils {
   static isNumericField(column: Column): boolean {
-    if (column.type && typeof column.type === 'string') {
+    if (column.type && typeof column.type === "string") {
       const lowerType = column.type.toLowerCase();
 
       if (
-        lowerType.includes('amount') ||
-        lowerType.includes('price') ||
-        lowerType.includes('quantity') ||
-        lowerType === 'number' ||
-        lowerType === 'costnumber' ||
-        lowerType === 'numeric' ||
-        lowerType === 'float' ||
-        lowerType === 'integer' ||
-        lowerType === 'decimal' ||
-        lowerType === 'long' ||
-        lowerType === 'bigdecimal'
+        lowerType.includes("amount") ||
+        lowerType.includes("price") ||
+        lowerType.includes("quantity") ||
+        lowerType === "number" ||
+        lowerType === "costnumber" ||
+        lowerType === "numeric" ||
+        lowerType === "float" ||
+        lowerType === "integer" ||
+        lowerType === "decimal" ||
+        lowerType === "long" ||
+        lowerType === "bigdecimal"
       ) {
         return true;
       }
@@ -211,12 +211,12 @@ export class ColumnFilterUtils {
   }
 
   static formatValueForType(value: unknown, column: Column): FormattedValue {
-    if (value === null || value === undefined || value === '') {
+    if (value === null || value === undefined || value === "") {
       return null;
     }
 
     if (ColumnFilterUtils.isNumericField(column)) {
-      const numValue = Number.parseFloat(String(value).replace(',', '.'));
+      const numValue = Number.parseFloat(String(value).replace(",", "."));
       if (!Number.isNaN(numValue)) {
         return numValue;
       }
@@ -238,7 +238,7 @@ export class ColumnFilterUtils {
       if (formattedValue !== null) {
         result.push({
           fieldName,
-          operator: 'greaterOrEqual',
+          operator: "greaterOrEqual",
           value: formattedValue,
         });
       }
@@ -249,7 +249,7 @@ export class ColumnFilterUtils {
       if (formattedValue !== null) {
         result.push({
           fieldName,
-          operator: 'lessOrEqual',
+          operator: "lessOrEqual",
           value: formattedValue,
         });
       }
@@ -269,7 +269,7 @@ export class ColumnFilterUtils {
 
       validCriteria.push({
         fieldName,
-        operator: 'equals',
+        operator: "equals",
         value: String(formattedValue),
       });
     }
@@ -278,7 +278,7 @@ export class ColumnFilterUtils {
 
     return [
       {
-        operator: 'or',
+        operator: "or",
         criteria: validCriteria,
       } as unknown as BaseCriteria,
     ];
@@ -292,13 +292,13 @@ export class ColumnFilterUtils {
       return [
         {
           fieldName: `${fieldName}$_identifier`,
-          operator: 'iContains',
+          operator: "iContains",
           value: String(formattedValue),
         },
       ];
     }
 
-    if (fieldName.toLowerCase().includes('date')) {
+    if (fieldName.toLowerCase().includes("date")) {
       return SearchUtils.getDateCriteria(fieldName, String(formattedValue));
     }
 
@@ -306,7 +306,7 @@ export class ColumnFilterUtils {
       return [
         {
           fieldName,
-          operator: 'equals',
+          operator: "equals",
           value: formattedValue,
         },
       ];
@@ -315,7 +315,7 @@ export class ColumnFilterUtils {
     return [
       {
         fieldName,
-        operator: 'iContains',
+        operator: "iContains",
         value: String(formattedValue),
       },
     ];
@@ -335,7 +335,7 @@ export class ColumnFilterUtils {
 
       let filterCriteria: BaseCriteria[] = [];
 
-      if (typeof filter.value === 'object' && filter.value !== null && 'from' in filter.value && 'to' in filter.value) {
+      if (typeof filter.value === "object" && filter.value !== null && "from" in filter.value && "to" in filter.value) {
         filterCriteria = ColumnFilterUtils.handleRangeFilter(
           fieldName,
           filter.value as { from: FormattedValue; to: FormattedValue },

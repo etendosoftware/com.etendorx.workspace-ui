@@ -4,7 +4,7 @@ export class CacheStore {
 
   constructor(duration: number) {
     if (duration <= 0) {
-      throw new Error('Duration must be a positive number.');
+      throw new Error("Duration must be a positive number.");
     }
 
     // if (![localStorage, sessionStorage].includes(storage)) {
@@ -12,7 +12,7 @@ export class CacheStore {
     // }
 
     this.duration = duration;
-    this.storage = typeof window !== 'undefined' ? window.localStorage : undefined;
+    this.storage = typeof window !== "undefined" ? window.localStorage : undefined;
   }
 
   /**
@@ -51,7 +51,7 @@ export class CacheStore {
     try {
       this.storage?.setItem(id, JSON.stringify(this.createStoredItem(value)));
     } catch (e) {
-      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+      if (e instanceof DOMException && e.name === "QuotaExceededError") {
         this.handleStorageQuotaError();
       } else {
         this.handleError(e);
@@ -101,7 +101,7 @@ export class CacheStore {
     } catch (error) {
       this.handleError(error);
 
-      throw new Error('Failed to parse stored item.');
+      throw new Error("Failed to parse stored item.");
     }
   }
 
@@ -110,13 +110,13 @@ export class CacheStore {
    * @param error - The error that occurred.
    */
   private handleError(error: unknown): void {
-    console.warn('Error in CacheStore:', error);
+    console.warn("Error in CacheStore:", error);
   }
 
   /**
    * Handles storage quota errors when the storage limit is exceeded.
    */
   private handleStorageQuotaError(): void {
-    console.warn('Storage quota exceeded.');
+    console.warn("Storage quota exceeded.");
   }
 }

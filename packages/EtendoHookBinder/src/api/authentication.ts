@@ -1,13 +1,13 @@
-import { API_LOGIN_URL } from './constants';
-import { Metadata } from './metadata';
-import type { LoginResponse } from './types';
+import { API_LOGIN_URL } from "./constants";
+import { Metadata } from "./metadata";
+import type { LoginResponse } from "./types";
 
 export const login = async (username: string, password: string): Promise<LoginResponse> => {
   try {
     const result = await Metadata.loginClient.request(API_LOGIN_URL, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         username,
@@ -24,9 +24,9 @@ export const login = async (username: string, password: string): Promise<LoginRe
     if (data.token) {
       return data;
     }
-    throw new Error('Invalid');
+    throw new Error("Invalid");
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     throw error;
   }
 };

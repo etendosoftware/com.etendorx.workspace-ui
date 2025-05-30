@@ -1,5 +1,5 @@
-import type { CtaButton } from '../../commons';
-import type { TagType } from '../Tag/types';
+import type { CtaButton } from "../../commons";
+import type { TagType } from "../Tag/types";
 
 export interface IallNotifications {
   type: string;

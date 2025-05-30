@@ -1,9 +1,9 @@
-import { logger } from '@/utils/logger';
-import type { ReportField, ReportMetadata } from '@workspaceui/etendohookbinder/src/hooks/types';
-import { useState } from 'react';
+import { logger } from "@/utils/logger";
+import type { ReportField, ReportMetadata } from "@workspaceui/etendohookbinder/src/hooks/types";
+import { useState } from "react";
 
 type ReportFields = {
-  [K in ReportField['name']]: unknown;
+  [K in ReportField["name"]]: unknown;
 };
 
 interface BaseReportParams extends ReportFields {
@@ -19,7 +19,7 @@ const processFields = (formData: URLSearchParams, data: BaseReportParams) => {
     for (const field of section.fields) {
       const value = data[field.name];
 
-      if (field.type === 'multiselect' && Array.isArray(value)) {
+      if (field.type === "multiselect" && Array.isArray(value)) {
         for (const val of value) {
           if (val) {
             formData.append(field.name, val);
@@ -39,9 +39,9 @@ const setupFormData = (data: BaseReportParams, format: string): URLSearchParams 
   const formData = new URLSearchParams();
   const action = data.metadata.actions.find((a) => a.format === format);
 
-  formData.append('Command', action?.command || 'EDIT_HTML');
-  formData.append('format', format);
-  formData.append('reportId', data.reportId);
+  formData.append("Command", action?.command || "EDIT_HTML");
+  formData.append("format", format);
+  formData.append("reportId", data.reportId);
 
   processFields(formData, data);
 
@@ -49,7 +49,7 @@ const setupFormData = (data: BaseReportParams, format: string): URLSearchParams 
 };
 
 const openReportWindow = (html: string) => {
-  const newWindow = window.open('', '_blank', 'width=700,height=700');
+  const newWindow = window.open("", "_blank", "width=700,height=700");
   if (newWindow) {
     newWindow.document.write(html);
     newWindow.document.close();
@@ -68,16 +68,16 @@ export function useReport(url: string) {
       const formData = setupFormData(data, format);
 
       const response = await fetch(`${url}/ad_reports/${data.metadata.sourcePath}.html`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          "Content-Type": "application/x-www-form-urlencoded",
         },
         body: formData.toString(),
-        credentials: 'include',
+        credentials: "include",
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate report');
+        throw new Error("Failed to generate report");
       }
 
       const html = await response.text();
@@ -85,7 +85,7 @@ export function useReport(url: string) {
     } catch (err) {
       logger.warn(err);
 
-      setError(err instanceof Error ? err : new Error('Unknown error'));
+      setError(err instanceof Error ? err : new Error("Unknown error"));
     } finally {
       setLoading(false);
     }

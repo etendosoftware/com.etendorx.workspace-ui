@@ -1,18 +1,18 @@
-import { memo, useRef } from 'react';
-import { InputAdornment, TextField } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import CalendarIcon from '@workspaceui/componentlibrary/src/assets/icons/calendar.svg';
-import type { DateSelectorProps } from '../../Form/FormView/types';
-import { IconButton } from '@workspaceui/componentlibrary/src/components';
+import { memo, useRef } from "react";
+import { InputAdornment, TextField } from "@mui/material";
+import { styled } from "@mui/material/styles";
+import CalendarIcon from "@workspaceui/componentlibrary/src/assets/icons/calendar.svg";
+import type { DateSelectorProps } from "../../Form/FormView/types";
+import { IconButton } from "@workspaceui/componentlibrary/src/components";
 const StyledTextField = styled(TextField)(({ theme }) => ({
-  '& .MuiInputBase-root': {
+  "& .MuiInputBase-root": {
     borderRadius: theme.shape.borderRadius,
   },
-  '& .MuiInputBase-input': {
+  "& .MuiInputBase-input": {
     padding: theme.spacing(1, 0, 1, 1.5),
     margin: 0,
-    '&::-webkit-calendar-picker-indicator': {
-      display: 'none',
+    "&::-webkit-calendar-picker-indicator": {
+      display: "none",
     },
   },
 }));
@@ -26,7 +26,7 @@ const DateSelector = memo(
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = event.target.value;
       if (newValue) {
-        const [year, month, day] = newValue.split('-');
+        const [year, month, day] = newValue.split("-");
         const formattedDate = `${day}/${month}/${year}`;
         onChange({
           target: {
@@ -46,8 +46,8 @@ const DateSelector = memo(
     };
 
     const formatDateForInput = (dateString?: string) => {
-      if (!dateString) return '';
-      const [day, month, year] = dateString.split('/');
+      if (!dateString) return "";
+      const [day, month, year] = dateString.split("/");
       return `${year}-${month}-${day}`;
     };
 
@@ -56,9 +56,9 @@ const DateSelector = memo(
         fullWidth
         label={label}
         name={name}
-        type='date'
-        variant='standard'
-        margin='normal'
+        type="date"
+        variant="standard"
+        margin="normal"
         value={formatDateForInput(value)}
         onChange={handleChange}
         onBlur={onBlur}
@@ -70,8 +70,8 @@ const DateSelector = memo(
         InputLabelProps={INPUT_LABEL_PROPS}
         InputProps={{
           endAdornment: (
-            <InputAdornment position='end'>
-              <IconButton onClick={handleIconClick} disabled={readOnly} className='w-1 h-1'>
+            <InputAdornment position="end">
+              <IconButton onClick={handleIconClick} disabled={readOnly} className="w-1 h-1">
                 <CalendarIcon />
               </IconButton>
             </InputAdornment>
@@ -82,6 +82,6 @@ const DateSelector = memo(
   },
 );
 
-DateSelector.displayName = 'DateSelector';
+DateSelector.displayName = "DateSelector";
 
 export default DateSelector;

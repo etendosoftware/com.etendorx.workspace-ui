@@ -1,7 +1,7 @@
 // biome-ignore lint/style/useNodejsImportProtocol: <explanation>
-import EventEmitter from 'events';
-import { logger } from '@/utils/logger';
-import type { EntityData, Tab } from '@workspaceui/etendohookbinder/src/api/types';
+import EventEmitter from "events";
+import { logger } from "@/utils/logger";
+import type { EntityData, Tab } from "@workspaceui/etendohookbinder/src/api/types";
 
 type GraphNode<T> = {
   value: T;
@@ -52,7 +52,7 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
     const destNode = this.nodes.get(destinationId);
 
     if (!sourceNode || !destNode) {
-      logger.warn('Both nodes must exist before adding an edge', { sourceNode, destNode });
+      logger.warn("Both nodes must exist before adding an edge", { sourceNode, destNode });
 
       return this;
     }
@@ -64,7 +64,7 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
 
   public toJSON = (rootId: string) => {
     const rootNode = this.nodes.get(rootId);
-    if (!rootNode) throw new Error('Root node not found');
+    if (!rootNode) throw new Error("Root node not found");
 
     return this.buildJSON(rootNode);
   };
@@ -79,10 +79,10 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
 
   public printTree = (rootId: string) => {
     const rootNode = this.nodes.get(rootId);
-    if (!rootNode) throw new Error('Root node not found');
+    if (!rootNode) throw new Error("Root node not found");
 
     const printNode = (node: GraphNode<T>, level: number) => {
-      console.log(' '.repeat(level * 2) + node.value.name);
+      console.log(" ".repeat(level * 2) + node.value.name);
       for (const child of node.neighbors) {
         printNode(child, level + 1);
       }
@@ -131,7 +131,7 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
         node.selected = record;
         node.neighbors.forEach(this.clearSelectedNode);
 
-        this.emit('selected', tab, record);
+        this.emit("selected", tab, record);
       }
     }
   };
@@ -143,7 +143,7 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
       if (node) {
         this.clearSelectedNode(node);
 
-        this.emit('unselected', tab);
+        this.emit("unselected", tab);
       }
     }
   };
@@ -166,7 +166,7 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
         node.selectedMultiple = records;
         node.neighbors.forEach(this.clearSelectedMultipleNode);
 
-        this.emit('selectedMultiple', tab, records);
+        this.emit("selectedMultiple", tab, records);
       }
     }
   };
@@ -178,7 +178,7 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
       if (node) {
         this.clearSelectedMultipleNode(node);
 
-        this.emit('unselectedMultiple', tab);
+        this.emit("unselectedMultiple", tab);
       }
     }
   };

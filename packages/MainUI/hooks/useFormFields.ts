@@ -1,7 +1,7 @@
-import { getFieldReference } from '@/utils';
-import { type Field, FieldType, type Tab } from '@workspaceui/etendohookbinder/src/api/types';
-import { useMemo } from 'react';
-import { useTranslation } from './useTranslation';
+import { getFieldReference } from "@/utils";
+import { type Field, FieldType, type Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import { useMemo } from "react";
+import { useTranslation } from "./useTranslation";
 
 export default function useFormFields(tab: Tab) {
   const { t } = useTranslation();
@@ -36,12 +36,12 @@ export default function useFormFields(tab: Tab) {
     >;
 
     for (const [fieldName, field] of Object.entries(fields.formFields)) {
-      const [id = '', identifier = ''] = [field.fieldGroup, field.fieldGroup$_identifier];
+      const [id = "", identifier = ""] = [field.fieldGroup, field.fieldGroup$_identifier];
 
       if (!groups[id]) {
         groups[id] = {
           id: id || null,
-          identifier: identifier || t('forms.sections.main'),
+          identifier: identifier || t("forms.sections.main"),
           sequenceNumber: Number.MAX_SAFE_INTEGER,
           fields: {},
         };

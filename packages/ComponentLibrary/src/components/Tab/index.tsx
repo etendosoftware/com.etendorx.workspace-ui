@@ -1,15 +1,15 @@
-import * as React from 'react';
-import Tab from '@mui/material/Tab';
-import Box from '@mui/material/Box';
-import { TabContext, TabList, TabPanel } from '@mui/lab';
-import type { TabContent } from '../../interfaces';
-import { useTheme } from '@mui/material';
+import * as React from "react";
+import Tab from "@mui/material/Tab";
+import Box from "@mui/material/Box";
+import { TabContext, TabList, TabPanel } from "@mui/lab";
+import type { TabContent } from "../../interfaces";
+import { useTheme } from "@mui/material";
 
 interface TabsMUIProps {
   tabArray: TabContent[];
 }
 const TabsMUI = ({ tabArray }: TabsMUIProps) => {
-  const [value, setValue] = React.useState('0');
+  const [value, setValue] = React.useState("0");
   const theme = useTheme();
 
   const handleChange = (_event: React.SyntheticEvent, newValue: string) => {
@@ -17,15 +17,15 @@ const TabsMUI = ({ tabArray }: TabsMUIProps) => {
   };
 
   return (
-    <Box sx={{ width: '100%', height: '100%', backgroundColor: theme.palette.dynamicColor.contrastText }}>
+    <Box sx={{ width: "100%", height: "100%", backgroundColor: theme.palette.dynamicColor.contrastText }}>
       <TabContext value={value}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <TabList
             onChange={handleChange}
-            aria-label='lab API tabs example'
-            textColor='primary'
-            indicatorColor='primary'
-            variant='scrollable'
+            aria-label="lab API tabs example"
+            textColor="primary"
+            indicatorColor="primary"
+            variant="scrollable"
             scrollButtons
             allowScrollButtonsMobile>
             {tabArray.map((tab, index) => (
@@ -35,7 +35,7 @@ const TabsMUI = ({ tabArray }: TabsMUIProps) => {
         </Box>
 
         {tabArray.map((tab, index) => (
-          <TabPanel key={index} value={`${index}`} sx={{ height: '100%' }}>
+          <TabPanel key={index} value={`${index}`} sx={{ height: "100%" }}>
             {tab.children}
           </TabPanel>
         ))}

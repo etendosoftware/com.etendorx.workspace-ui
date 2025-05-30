@@ -1,8 +1,8 @@
-import type { Translations, Language } from './types';
-import es_ES from './es';
-import en_US from './en';
+import type { Translations, Language } from "./types";
+import es_ES from "./es";
+import en_US from "./en";
 
-const DEFAULT_LANGUAGE: Language = 'en_US';
+const DEFAULT_LANGUAGE: Language = "en_US";
 const translations: Translations = {
   es_ES,
   en_US,

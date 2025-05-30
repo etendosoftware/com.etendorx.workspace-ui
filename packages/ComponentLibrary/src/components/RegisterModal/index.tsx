@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { Button, List, useTheme } from '@mui/material';
-import type { RegisterModalProps } from './types';
-import { useStyle } from './styles';
-import CloseRecordIcon from '../../assets/icons/close-record.svg';
-import Modal from '../BasicModal';
-import { processMock } from '@workspaceui/storybook/src/stories/Components/RegisterModal/registerMock';
-import RadioButtonItem from '../RadioButton';
-import CheckIcon from '../../assets/icons/check-circle.svg';
+import { useState } from "react";
+import { Button, List, useTheme } from "@mui/material";
+import type { RegisterModalProps } from "./types";
+import { useStyle } from "./styles";
+import CloseRecordIcon from "../../assets/icons/close-record.svg";
+import Modal from "../BasicModal";
+import { processMock } from "@workspaceui/storybook/src/stories/Components/RegisterModal/registerMock";
+import RadioButtonItem from "../RadioButton";
+import CheckIcon from "../../assets/icons/check-circle.svg";
 
 const RegisterModal: React.FC<RegisterModalProps> = ({ registerText, translations }) => {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);

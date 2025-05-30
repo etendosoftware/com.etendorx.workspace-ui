@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
-const isBrowser = typeof window !== 'undefined';
+const isBrowser = typeof window !== "undefined";
 
 const getStoredValue = <T>(key: string, initialValue: T | (() => T)): T => {
   if (!isBrowser) {
-    return typeof initialValue === 'function' ? (initialValue as () => T)() : initialValue;
+    return typeof initialValue === "function" ? (initialValue as () => T)() : initialValue;
   }
 
   try {
@@ -16,7 +16,7 @@ const getStoredValue = <T>(key: string, initialValue: T | (() => T)): T => {
     console.warn(`Error reading localStorage key "${key}":`, error);
   }
 
-  return typeof initialValue === 'function' ? (initialValue as () => T)() : initialValue;
+  return typeof initialValue === "function" ? (initialValue as () => T)() : initialValue;
 };
 
 const useLocalStorage = <T>(key: string, initialValue: T | (() => T)) => {
@@ -25,7 +25,7 @@ const useLocalStorage = <T>(key: string, initialValue: T | (() => T)) => {
   const setValue = useCallback(
     (value: T | ((prevState: T) => T)) => {
       setState((prevState) => {
-        const newValue = typeof value === 'function' ? (value as (prev: T) => T)(prevState) : value;
+        const newValue = typeof value === "function" ? (value as (prev: T) => T)(prevState) : value;
 
         if (isBrowser) {
           try {

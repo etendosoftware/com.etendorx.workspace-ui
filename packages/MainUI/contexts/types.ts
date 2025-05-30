@@ -1,4 +1,4 @@
-import type { Etendo } from '@workspaceui/etendohookbinder/src/api/metadata';
+import type { Etendo } from "@workspaceui/etendohookbinder/src/api/metadata";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type {
   CurrentClient,
@@ -13,9 +13,9 @@ import type {
   SessionResponse,
   Tab,
   User,
-} from '@workspaceui/etendohookbinder/src/api/types';
+} from "@workspaceui/etendohookbinder/src/api/types";
 
-export type Language = 'en_US' | 'es_ES';
+export type Language = "en_US" | "es_ES";
 
 export interface LanguageContextType {
   language: Language | null;
@@ -44,9 +44,10 @@ export interface LanguageOption {
 export interface IUserContext {
   user: User;
   login: (username: string, password: string) => Promise<void>;
-  changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | undefined>;
+  // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
+  changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | void>;
   token: string | null;
-  roles: SessionResponse['roles'];
+  roles: SessionResponse["roles"];
   currentRole: CurrentRole | undefined;
   prevRole: CurrentRole | undefined;
   profile: ProfileInfo;

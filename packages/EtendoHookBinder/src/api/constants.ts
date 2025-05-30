@@ -9,16 +9,16 @@ const getAuthHeaderName = () => {
   if (process.env.NEXT_PUBLIC_AUTH_HEADER_NAME) {
     return process.env.NEXT_PUBLIC_AUTH_HEADER_NAME;
   }
-  return 'Authorization';
+  return "Authorization";
 };
 
-export const API_LOGIN_URL = '/meta/login';
-export const DEFAULT_LOGIN_CHARSET = 'ISO-8859-1';
-export const API_METADATA_URL = '/meta/';
+export const API_LOGIN_URL = "/meta/login";
+export const DEFAULT_LOGIN_CHARSET = "ISO-8859-1";
+export const API_METADATA_URL = "/meta/";
 export const API_DEFAULT_CACHE_DURATION = getDefaultCacheDuration();
 export const AUTH_HEADER_NAME = getAuthHeaderName();
-export const API_KERNEL_SERVLET = '/meta/forward/org.openbravo.client.kernel';
-export const API_DATASOURCE_SERVLET = '/meta/forward/org.openbravo.service.datasource/';
+export const API_KERNEL_SERVLET = "/meta/forward/org.openbravo.client.kernel";
+export const API_DATASOURCE_SERVLET = "/meta/forward/org.openbravo.service.datasource/";
 
 export enum HTTP_CODES {
   UNAUTHORIZED = 401,

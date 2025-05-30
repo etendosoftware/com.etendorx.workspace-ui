@@ -1,16 +1,16 @@
-'use client';
-import { useCallback, useState } from 'react';
-import { Box, Button, Paper, Typography } from '@mui/material';
-import { useStyle } from './styles';
-import GridLayout from './GridLayout';
-import type { LoginProps } from './types';
-import { useTranslation } from '../../hooks/useTranslation';
-import { GRID_CONSTANTS } from './constants';
-import Input from './Input';
+"use client";
+import { useCallback, useState } from "react";
+import { Box, Button, Paper, Typography } from "@mui/material";
+import { useStyle } from "./styles";
+import GridLayout from "./GridLayout";
+import type { LoginProps } from "./types";
+import { useTranslation } from "../../hooks/useTranslation";
+import { GRID_CONSTANTS } from "./constants";
+import Input from "./Input";
 
 export default function Login({ title, onSubmit, error }: LoginProps) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const { styles } = useStyle();
   const { t } = useTranslation();
 
@@ -34,44 +34,44 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
   );
 
   return (
-    <Box component='main' sx={styles.container}>
+    <Box component="main" sx={styles.container}>
       <Box sx={styles.contentWrapper}>
         <Box sx={styles.leftSection}>
           <GridLayout />
         </Box>
-        <div className='flex flex-1 items-center justify-center'>
+        <div className="flex flex-1 items-center justify-center">
           <form onSubmit={handleSubmit} noValidate>
             <Paper sx={styles.paper} elevation={0}>
-              <Typography variant='h1' sx={styles.title}>
+              <Typography variant="h1" sx={styles.title}>
                 {title}
                 {GRID_CONSTANTS.ICONS.TITLE_EMOJI}
               </Typography>
-              <Typography variant='body1' sx={styles.subtitle}>
-                {t('login.subtitle')}
+              <Typography variant="body1" sx={styles.subtitle}>
+                {t("login.subtitle")}
               </Typography>
               <Input
-                type='text'
-                name='username'
-                id='username'
-                placeholder={t('login.fields.username.placeholder')}
+                type="text"
+                name="username"
+                id="username"
+                placeholder={t("login.fields.username.placeholder")}
                 value={username}
                 onChange={handleUsernameChange}
-                autoComplete='username'
+                autoComplete="username"
               />
               <Input
-                type='password'
-                name='password'
-                id='password'
-                placeholder={t('login.fields.password.placeholder')}
+                type="password"
+                name="password"
+                id="password"
+                placeholder={t("login.fields.password.placeholder")}
                 value={password}
                 onChange={handlePasswordChange}
-                autoComplete='current-password'
+                autoComplete="current-password"
               />
-              <Button type='submit' fullWidth variant='contained' sx={styles.button}>
-                {t('login.buttons.submit')}
+              <Button type="submit" fullWidth variant="contained" sx={styles.button}>
+                {t("login.buttons.submit")}
               </Button>
               {error && (
-                <Typography component='div' sx={styles.error}>
+                <Typography component="div" sx={styles.error}>
                   {error}
                 </Typography>
               )}

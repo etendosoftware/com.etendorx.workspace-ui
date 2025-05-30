@@ -15,7 +15,7 @@ export interface BaseCriteria {
 }
 
 export interface CompositeCriteria {
-  operator: 'and' | 'or';
+  operator: "and" | "or";
   criteria: BaseCriteria[];
 }
 
@@ -33,20 +33,20 @@ export interface DatasourceParams {
   endRow?: number;
   sortBy?: string;
   criteria?: Criteria[];
-  operationType?: 'fetch' | 'add' | 'update' | 'remove';
+  operationType?: "fetch" | "add" | "update" | "remove";
   isSorting?: boolean;
   isImplicitFilterApplied?: boolean;
-  operator?: 'and' | 'or';
+  operator?: "and" | "or";
 }
 
 export interface DatasourceOptions {
   columns?: string[];
   sortBy?: string;
   criteria?: Criteria[];
-  operationType?: 'fetch' | 'add' | 'update' | 'remove';
+  operationType?: "fetch" | "add" | "update" | "remove";
   isSorting?: boolean;
   isImplicitFilterApplied?: boolean;
-  operator?: 'and' | 'or';
+  operator?: "and" | "or";
   pageSize?: number;
   headers?: Record<string, string>;
   tabId?: string;
@@ -81,7 +81,7 @@ export interface GridProps {
 export interface ReadOnlyState {
   readOnly: boolean;
   readOnlyLogicExpr?: string;
-  readOnlyReason?: 'FIELD_READONLY' | 'READONLY_LOGIC' | 'ACCESS_LEVEL';
+  readOnlyReason?: "FIELD_READONLY" | "READONLY_LOGIC" | "ACCESS_LEVEL";
 }
 export interface Field {
   hqlName: string;
@@ -158,17 +158,17 @@ export interface MappedField {
 }
 
 export enum FieldType {
-  TEXT = 'text',
-  NUMBER = 'number',
-  DATE = 'date',
-  BOOLEAN = 'boolean',
-  SELECT = 'select',
-  SEARCH = 'search',
-  TABLEDIR = 'tabledir',
-  QUANTITY = 'quantity',
-  LIST = 'list',
-  BUTTON = 'button',
-  WINDOW = 'window',
+  TEXT = "text",
+  NUMBER = "number",
+  DATE = "date",
+  BOOLEAN = "boolean",
+  SELECT = "select",
+  SEARCH = "search",
+  TABLEDIR = "tabledir",
+  QUANTITY = "quantity",
+  LIST = "list",
+  BUTTON = "button",
+  WINDOW = "window",
 }
 
 export interface MappedTab {
@@ -209,7 +209,7 @@ export interface WindowMetadataProperties {
 }
 
 export interface Tab {
-  uIPattern: 'STD' | 'SR';
+  uIPattern: "STD" | "SR";
   window: string;
   name: string;
   title: string;
@@ -262,12 +262,12 @@ export interface Menu {
 }
 
 export enum Action {
-  OBUIAPPOpenView = 'OBUIAPP_OpenView',
-  OBUIAPPProcess = 'OBUIAPP_Process',
-  P = 'P',
-  R = 'R',
-  W = 'W',
-  X = 'X',
+  OBUIAPPOpenView = "OBUIAPP_OpenView",
+  OBUIAPPProcess = "OBUIAPP_Process",
+  P = "P",
+  R = "R",
+  W = "W",
+  X = "X",
 }
 
 export interface Window {
@@ -281,9 +281,9 @@ export interface Window {
 }
 
 export enum WindowType {
-  M = 'M',
-  Q = 'Q',
-  T = 'T',
+  M = "M",
+  Q = "Q",
+  T = "T",
 }
 
 export interface LoginResponse {
@@ -657,8 +657,8 @@ export interface EntityData {
 }
 
 export enum FormMode {
-  NEW = 'NEW',
-  EDIT = 'EDIT',
+  NEW = "NEW",
+  EDIT = "EDIT",
 }
 
 export interface FormInitializationParams {

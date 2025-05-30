@@ -1,6 +1,6 @@
-import type React from 'react';
-import Tooltip from '../Tooltip';
-import { cleanDefaultClasses } from '../../utils/classUtil';
+import type React from "react";
+import Tooltip from "../Tooltip";
+import { cleanDefaultClasses } from "../../utils/classUtil";
 
 export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   disabled?: boolean;
@@ -12,7 +12,7 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
 }
 
 const IconButton = ({
-  className = '',
+  className = "",
   children,
   disabled = false,
   ariaLabel,
@@ -38,13 +38,13 @@ const IconButton = ({
   min-w-max
   [&>svg]:text-[1.5rem]
   [&>svg]:fill-current
-  ${iconText ? 'px-2 gap-2' : 'w-8 h-8'}
+  ${iconText ? "px-2 gap-2" : "w-8 h-8"}
 `;
   return (
     <Tooltip title={tooltip}>
       <button
         ref={ref}
-        type='button'
+        type="button"
         aria-label={ariaLabel}
         disabled={disabled}
         className={cleanDefaultClasses(className, DEFAULT_BUTTON_CLASSES)}
@@ -56,5 +56,5 @@ const IconButton = ({
   );
 };
 
-IconButton.displayName = 'IconButton';
+IconButton.displayName = "IconButton";
 export default IconButton;

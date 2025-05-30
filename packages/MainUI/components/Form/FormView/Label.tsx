@@ -1,10 +1,10 @@
-import { memo, useMemo } from 'react';
-import Link from 'next/link';
-import { useFormContext } from 'react-hook-form';
-import { isEntityReference } from '@workspaceui/etendohookbinder/src/utils/metadata';
-import type { Field } from '@workspaceui/etendohookbinder/src/api/types';
-import { getFieldReference } from '@/utils';
-import BaseLabel from '@/components/Label';
+import { memo, useMemo } from "react";
+import Link from "next/link";
+import { useFormContext } from "react-hook-form";
+import { isEntityReference } from "@workspaceui/etendohookbinder/src/utils/metadata";
+import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import { getFieldReference } from "@/utils";
+import BaseLabel from "@/components/Label";
 
 function LabelCmp({ field }: { field: Field }) {
   const { watch } = useFormContext();

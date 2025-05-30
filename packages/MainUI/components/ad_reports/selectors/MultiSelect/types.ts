@@ -1,4 +1,4 @@
-import type { Option } from '../../../Form/FormView/types';
+import type { Option } from "../../../Form/FormView/types";
 
 export interface SearchBarProps {
   readOnly?: boolean;
