@@ -77,12 +77,12 @@ const Menu = ({ open, onClose, anchorEl, className = "", children }: IMenuProps)
       }
     };
 
-    window.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("click", handleClickOutside);
     window.addEventListener("resize", calculatePosition);
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("click", handleClickOutside);
       window.removeEventListener("resize", calculatePosition);
       window.removeEventListener("keydown", handleKeyDown);
     };
