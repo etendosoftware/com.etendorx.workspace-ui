@@ -1,5 +1,5 @@
 import { logger } from "@/utils/logger";
-import type { ReportField, ReportMetadata } from "@workspaceui/etendohookbinder/src/hooks/types";
+import type { ReportField, ReportMetadata } from "@workspaceui/api-client/src/hooks/types";
 import { useState } from "react";
 
 type ReportFields = {

@@ -2,7 +2,7 @@ import { useLanguage } from "@/contexts/language";
 import { DrawerSection } from "@workspaceui/componentlibrary/src/components/Drawer/DrawerSection";
 import type { RecentlyViewedProps } from "@workspaceui/componentlibrary/src/components/Drawer/types";
 import { createParentMenuItem } from "@workspaceui/componentlibrary/src/utils/menuUtils";
-import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo } from "react";
 import { useRecentItems } from "../../../hooks/useRecentItems";
 import { useTranslation } from "../../../hooks/useTranslation";

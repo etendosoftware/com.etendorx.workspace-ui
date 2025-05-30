@@ -2,12 +2,12 @@
 
 import { createContext, useCallback, useEffect, useMemo, useState } from "react";
 import { logger } from "../utils/logger";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
-import { datasource } from "@workspaceui/etendohookbinder/src/api/datasource";
-import { login as doLogin } from "@workspaceui/etendohookbinder/src/api/authentication";
-import { changeProfile as doChangeProfile } from "@workspaceui/etendohookbinder/src/api/changeProfile";
-import { getSession } from "@workspaceui/etendohookbinder/src/api/getSession";
-import { HTTP_CODES } from "@workspaceui/etendohookbinder/src/api/constants";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
+import { login as doLogin } from "@workspaceui/api-client/src/api/authentication";
+import { changeProfile as doChangeProfile } from "@workspaceui/api-client/src/api/changeProfile";
+import { getSession } from "@workspaceui/api-client/src/api/getSession";
+import { HTTP_CODES } from "@workspaceui/api-client/src/api/constants";
 import type { DefaultConfiguration, IUserContext, Language, LanguageOption } from "./types";
 import type {
   ISession,
@@ -18,8 +18,8 @@ import type {
   CurrentRole,
   CurrentClient,
   CurrentOrganization,
-} from "@workspaceui/etendohookbinder/src/api/types";
-import { setDefaultConfiguration as apiSetDefaultConfiguration } from "@workspaceui/etendohookbinder/src/api/defaultConfig";
+} from "@workspaceui/api-client/src/api/types";
+import { setDefaultConfiguration as apiSetDefaultConfiguration } from "@workspaceui/api-client/src/api/defaultConfig";
 import useLocalStorage from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
 import { useLanguage } from "./language";
 import LoginScreen from "@/screens/Login";

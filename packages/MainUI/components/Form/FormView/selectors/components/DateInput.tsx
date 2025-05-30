@@ -1,5 +1,5 @@
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
-import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Field } from "@workspaceui/api-client/src/api/types";
 import { forwardRef, useCallback, useRef, useState } from "react";
 import CalendarIcon from "../../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
 

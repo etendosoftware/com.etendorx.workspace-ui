@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { EntityData, FormMode, Tab, WindowMetadata } from "@workspaceui/etendohookbinder/src/api/types";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import type { EntityData, FormMode, Tab, WindowMetadata } from "@workspaceui/api-client/src/api/types";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useUserContext } from "./useUserContext";
 import type { UseFormHandleSubmit } from "react-hook-form";
 import { buildFormPayload, buildQueryString } from "@/utils";
@@ -12,7 +12,7 @@ export interface UseFormActionParams {
   onSuccess: (data: EntityData) => void;
   onError: (data: string) => void;
   initialState?: EntityData;
-  submit: UseFormHandleSubmit<EntityData, undefined>;
+  submit: UseFormHandleSubmit<EntityData>;
 }
 
 export const useFormAction = ({

@@ -14,7 +14,7 @@ import PrimaryTabs from "@workspaceui/componentlibrary/src/components/PrimaryTab
 import type { TabItem } from "@workspaceui/componentlibrary/src/components/PrimaryTab/types";
 import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
-import { type EntityData, FormMode } from "@workspaceui/etendohookbinder/src/api/types";
+import { type EntityData, FormMode } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import Collapsible from "../Collapsible";
@@ -52,7 +52,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const initialState = useFormInitialState(formInitialization) || undefined;
 
-  const { reset, setValue, ...form } = useForm({ values: initialState as EntityData });
+  const { reset, setValue, ...form } = useForm<EntityData>({ values: initialState as EntityData });
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} />,

@@ -1,4 +1,4 @@
-import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
 import type { IndexedMenu, SearchIndex } from "../components/Drawer/types";
 
 const index: SearchIndex = {

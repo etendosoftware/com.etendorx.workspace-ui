@@ -1,13 +1,13 @@
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import type { ClientOptions } from "@workspaceui/etendohookbinder/src/api/client";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import type { ClientOptions } from "@workspaceui/api-client/src/api/client";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import {
   type FormInitializationParams,
   type FormInitializationResponse,
   FormMode,
   type Tab,
-} from "@workspaceui/etendohookbinder/src/api/types";
+} from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useReducer } from "react";
 import { FieldName } from "./types";
 import useFormParent from "./useFormParent";

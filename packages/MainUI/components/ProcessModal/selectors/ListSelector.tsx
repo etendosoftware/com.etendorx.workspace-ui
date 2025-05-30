@@ -1,7 +1,7 @@
 import { useTranslation } from "@/hooks/useTranslation";
 import ChevronDown from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
 import ChevronUp from "@workspaceui/componentlibrary/src/assets/icons/chevron-up.svg";
-import type { ListOption, ProcessParameter } from "@workspaceui/etendohookbinder/src/api/types";
+import type { ListOption, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 

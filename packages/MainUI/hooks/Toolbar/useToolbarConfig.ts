@@ -1,7 +1,7 @@
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearch } from "../../contexts/searchContext";
 import { useDeleteRecord } from "../useDeleteRecord";

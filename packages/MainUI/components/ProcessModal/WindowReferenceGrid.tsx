@@ -1,7 +1,7 @@
 import { useTab } from "@/hooks/useTab";
 import { useTranslation } from "@/hooks/useTranslation";
 import { parseColumns } from "@/utils/tableColumns";
-import type { EntityData, EntityValue } from "@workspaceui/etendohookbinder/src/api/types";
+import type { EntityData, EntityValue } from "@workspaceui/api-client/src/api/types";
 import {
   type MRT_ColumnFiltersState,
   type MRT_Row,

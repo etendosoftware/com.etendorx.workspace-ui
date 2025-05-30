@@ -1,7 +1,7 @@
 import { buildPayloadByInputName } from "@/utils";
 import { logger } from "@/utils/logger";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
-import type { EntityData, FormInitializationResponse, Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import type { EntityData, FormInitializationResponse, Tab } from "@workspaceui/api-client/src/api/types";
 import { useCallback } from "react";
 import { useUserContext } from "./useUserContext";
 

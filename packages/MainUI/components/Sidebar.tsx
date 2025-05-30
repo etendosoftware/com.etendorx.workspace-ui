@@ -8,7 +8,7 @@ import { useTranslation } from "../hooks/useTranslation";
 import { useUserContext } from "../hooks/useUserContext";
 import type { WindowParams } from "../app/types";
 import { RecentlyViewed } from "./Drawer/RecentlyViewed";
-import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { useMenuTranslation } from "../hooks/useMenuTranslation";
 import { createSearchIndex, filterItems } from "@workspaceui/componentlibrary/src/utils/searchUtils";
 import { useLanguage } from "@/contexts/language";

@@ -1,5 +1,5 @@
 import { Box, useTheme } from "@mui/material";
-import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useItemActions } from "../../../hooks/useItemType";
 import { CustomClickAwayListener } from "../../../utils/clickAway";

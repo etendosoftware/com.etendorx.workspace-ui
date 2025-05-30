@@ -1,7 +1,7 @@
 import type { ProcessButton, ProcessResponse } from "@/components/ProcessModal/types";
 import { logger } from "@/utils/logger";
-import type { BaseFieldDefinition } from "@workspaceui/etendohookbinder/src/api/types";
-import type { FieldType } from "@workspaceui/etendohookbinder/src/api/types";
+import type { BaseFieldDefinition } from "@workspaceui/api-client/src/api/types";
+import type { FieldType } from "@workspaceui/api-client/src/api/types";
 import type { ExecuteProcessParams } from "./types";
 
 export const useProcessButton = (

@@ -1,7 +1,7 @@
 import type { RecentItem } from "@workspaceui/componentlibrary/src/components/Drawer/types";
 import { useLocalStorage } from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
 import { findItemByIdentifier } from "@workspaceui/componentlibrary/src/utils/menuUtils";
-import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const getItemName = (menuItem: Menu, getTranslatedName?: (item: Menu) => string): string => {

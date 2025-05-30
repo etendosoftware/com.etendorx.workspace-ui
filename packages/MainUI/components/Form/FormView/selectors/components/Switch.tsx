@@ -1,4 +1,4 @@
-import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Field } from "@workspaceui/api-client/src/api/types";
 import { forwardRef, useCallback } from "react";
 
 interface SwitchProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {

@@ -1,7 +1,7 @@
 "use client";
 
 import Graph, { type GraphEventListener } from "@/data/graph";
-import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface SelectedContext {

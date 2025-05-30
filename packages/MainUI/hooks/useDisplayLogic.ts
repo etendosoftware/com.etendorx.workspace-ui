@@ -1,7 +1,7 @@
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { useUserContext } from "./useUserContext";
 import { useTabContext } from "@/contexts/tab";
-import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useMemo } from "react";
 
 export default function useDisplayLogic(field: Field) {

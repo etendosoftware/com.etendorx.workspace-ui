@@ -2,8 +2,8 @@
 
 import { usePrevious } from "@/hooks/usePrevious";
 import useLocalStorage from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
-import type { Labels } from "@workspaceui/etendohookbinder/src/api/types";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import type { Labels } from "@workspaceui/api-client/src/api/types";
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { getLanguageFlag } from "../utils/languageFlags";

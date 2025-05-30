@@ -4,7 +4,7 @@ import { Box, Button, Chip, Stack, Typography } from "@mui/material";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCallback, useMemo } from "react";
 import type { MRT_TableInstance } from "material-react-table";
-import type { EntityData } from "@workspaceui/etendohookbinder/src/api/types";
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
 
 export default function TopToolbar({
   filterActive,

@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo } from "react";
-import type { EntityData, Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import { ToolbarProvider } from "./ToolbarContext";
 import { SearchProvider } from "./searchContext";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";

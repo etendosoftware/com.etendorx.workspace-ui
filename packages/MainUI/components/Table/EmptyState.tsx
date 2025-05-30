@@ -1,5 +1,5 @@
 import { useTranslation } from "@/hooks/useTranslation";
-import type { EntityData } from "@workspaceui/etendohookbinder/src/api/types";
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { MRT_TableInstance } from "material-react-table";
 
 const EmptyState = ({ table, maxWidth }: { table?: MRT_TableInstance<EntityData>; maxWidth?: number }) => {

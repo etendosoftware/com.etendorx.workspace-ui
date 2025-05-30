@@ -1,7 +1,7 @@
 import { type ProcessButton, ProcessButtonType, type ProcessResponse } from "@/components/ProcessModal/types";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useParams } from "next/navigation";
 import { useCallback, useContext, useState } from "react";
 import { UserContext } from "../../contexts/user";

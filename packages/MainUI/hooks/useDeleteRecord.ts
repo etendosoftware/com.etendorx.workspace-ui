@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
-import type { EntityData, Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import { useUserContext } from "./useUserContext";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useTranslation } from "./useTranslation";
 
 export interface UseDeleteRecordParams {

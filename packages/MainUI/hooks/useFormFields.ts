@@ -1,5 +1,5 @@
 import { getFieldReference } from "@/utils";
-import { type Field, FieldType, type Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import { type Field, FieldType, type Tab } from "@workspaceui/api-client/src/api/types";
 import { useMemo } from "react";
 import { useTranslation } from "./useTranslation";
 

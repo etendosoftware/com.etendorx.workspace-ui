@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { GraphEventListener } from "@/data/graph";
 import { useSelected } from "@/hooks/useSelected";
 

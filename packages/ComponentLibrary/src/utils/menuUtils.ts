@@ -1,4 +1,4 @@
-import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
 import type { TranslateFunction } from "@workspaceui/mainui/hooks/types";
 import type { RecentItem } from "../components/Drawer/types";
 

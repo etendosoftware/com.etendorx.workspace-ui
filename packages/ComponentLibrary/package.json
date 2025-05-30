@@ -31,7 +31,7 @@
     "@mui/x-data-grid-generator": "^6.19.4",
     "@mui/x-data-grid-pro": "^6.19.4",
     "@mui/x-date-pickers": "^7.1.1",
-    "@workspaceui/etendohookbinder": "workspace:etendohookbinder",
+    "@workspaceui/api-client": "workspace:api-client",
     "@workspaceui/mainui": "workspace:mainui",
     "@workspaceui/storybook": "workspace:storybook",
     "react-hook-form": "^7.53.2",

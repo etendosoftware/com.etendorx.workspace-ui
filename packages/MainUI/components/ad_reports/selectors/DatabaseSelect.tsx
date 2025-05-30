@@ -2,7 +2,7 @@ import { useDatasource } from "@/hooks/useDatasource";
 import { useTheme } from "@mui/material";
 import SearchOutlined from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
 import Select from "@workspaceui/componentlibrary/src/components/Input/Select";
-import type { Option } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Option } from "@workspaceui/api-client/src/api/types";
 import { memo, useMemo } from "react";
 import type { DatabaseSelectSelector } from "../../Form/FormView/types";
 

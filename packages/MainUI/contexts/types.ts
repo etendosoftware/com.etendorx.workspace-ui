@@ -1,4 +1,4 @@
-import type { Etendo } from "@workspaceui/etendohookbinder/src/api/metadata";
+import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type {
   CurrentClient,
@@ -13,7 +13,7 @@ import type {
   SessionResponse,
   Tab,
   User,
-} from "@workspaceui/etendohookbinder/src/api/types";
+} from "@workspaceui/api-client/src/api/types";
 
 export type Language = "en_US" | "es_ES";
 
