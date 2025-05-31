@@ -90,6 +90,7 @@ export class Client {
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
       let response: Response & { data?: any } = await fetch(destination, {
         ...options,
+        credentials: "include",
         body:
           typeof options.body === "string" ||
           options.body instanceof URLSearchParams ||

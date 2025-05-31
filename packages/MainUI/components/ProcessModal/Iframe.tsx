@@ -77,28 +77,30 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess, tab
   }, [onClose, onProcessSuccess, processWasSuccessful]);
 
   useEffect(() => {
-    if (!isOpen || !startPolling) return;
+    return;
 
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
+    // if (!isOpen || !startPolling) return;
 
-    const timeoutId = setTimeout(() => {
-      const intervalId = setInterval(async () => {
-        const shouldStop = await pollOnce(signal, () => clearInterval(intervalId));
-        if (shouldStop) return;
-      }, 2000);
+    // abortControllerRef.current = new AbortController();
+    // const signal = abortControllerRef.current.signal;
 
-      return () => clearInterval(intervalId);
-    }, 2000);
+    // const timeoutId = setTimeout(() => {
+    //   const intervalId = setInterval(async () => {
+    //     const shouldStop = await pollOnce(signal, () => clearInterval(intervalId));
+    //     if (shouldStop) return;
+    //   }, 2000);
 
-    return () => {
-      clearTimeout(timeoutId);
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        abortControllerRef.current = null;
-      }
-    };
-  }, [isOpen, startPolling, pollOnce]);
+    //   return () => clearInterval(intervalId);
+    // }, 2000);
+
+    // return () => {
+    //   clearTimeout(timeoutId);
+    //   if (abortControllerRef.current) {
+    //     abortControllerRef.current.abort();
+    //     abortControllerRef.current = null;
+    //   }
+    // };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -117,13 +119,13 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess, tab
       }
       setIframeLoading(true);
       setProcessMessage(null);
-      setStartPolling(false);
+      // setStartPolling(false);
     }
   }, [url]);
 
   const handleIframeLoad = useCallback(() => {
     setIframeLoading(false);
-    setStartPolling(true);
+    // setStartPolling(true);
   }, []);
 
   const getMessageStyles = useCallback((type: string): MessageStylesType => {

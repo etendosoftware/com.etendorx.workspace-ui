@@ -1,7 +1,7 @@
 import type { ProcessConfigResponse } from "@/hooks/datasource/useProcessDatasourceConfig";
 import type { EntityData, EntityValue, ProcessParameter, Tab } from "@workspaceui/api-client/src/api/types";
-import type { MRT_Row, MRT_TableInstance, MRT_TableBodyRowProps, MRT_RowData } from "material-react-table";
 import type { Field, ProcessAction } from "@workspaceui/api-client/src/api/types";
+import type { MRT_Row, MRT_RowData, MRT_TableBodyRowProps, MRT_TableInstance } from "material-react-table";
 
 export interface BaseButton extends Field {
   id: string;
@@ -149,3 +149,9 @@ export type RowProps = (props: {
   row: MRT_Row<EntityData>;
   table: MRT_TableInstance<EntityData>;
 }) => Omit<MRT_TableBodyRowProps<MRT_RowData>, "staticRowIndex">;
+
+export const isProcessActionButton = (button: ProcessButton): button is ProcessActionButton =>
+  ProcessButtonType.PROCESS_ACTION in button;
+
+export const isProcessDefinitionButton = (button: ProcessButton): button is ProcessDefinitionButton =>
+  ProcessButtonType.PROCESS_DEFINITION in button;
