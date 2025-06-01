@@ -263,7 +263,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       {processButtons.length > 0 && (
         <ProcessMenu
           anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
           onClose={handleMenuClose}
           processButtons={processButtons}
           onProcessClick={handleProcessMenuClick}
