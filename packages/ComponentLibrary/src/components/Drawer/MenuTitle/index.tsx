@@ -45,7 +45,7 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
         </div>
         {open && item.children && !popperOpen && (
           <div className={`transition-transform duration-300 flex justify-center ${expanded ? "rotate-180" : ""}`}>
-            {expanded ? <ChevronDown /> : <ChevronDown />}
+            <ChevronDown />
           </div>
         )}
       </button>
