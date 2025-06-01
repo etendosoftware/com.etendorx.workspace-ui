@@ -25,13 +25,11 @@ const DrawerHeader = ({
           </a>
         </div>
       )}
-      <IconButton
-        onClick={onClick}
-        className="animated-transform w-full max-w-9 h-9"
-        tabIndex={tabIndex}
-      >
-        {open ? <MenuClose /> : <MenuOpen />}
-      </IconButton>
+      <div>
+        <IconButton onClick={onClick} className="h-9 w-9" tabIndex={tabIndex}>
+          {open ? <MenuClose /> : <MenuOpen />}
+        </IconButton>
+      </div>
     </div>
   );
 };

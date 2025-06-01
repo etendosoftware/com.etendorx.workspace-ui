@@ -134,7 +134,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     }, [open]);
 
     return (
-      <div className={sectionClasses} aria-expanded={expanded} onKeyDown={handleKeyDown} tabIndex={0}>
+      <div className={sectionClasses} aria-expanded={expanded} onKeyDown={handleKeyDown}>
         <MenuTitle
           item={item}
           onClick={handleClick}

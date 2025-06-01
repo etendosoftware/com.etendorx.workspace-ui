@@ -1,7 +1,11 @@
-import { useClickOutside, useEscapeKey, useWindowResize } from '../../hooks/useEventListeners';
-import { cleanDefaultClasses } from '../../utils/classUtil';
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import {
+  useClickOutside,
+  useEscapeKey,
+  useWindowResize,
+} from "../../hooks/useEventListeners";
+import { cleanDefaultClasses } from "../../utils/classUtil";
+import { useRef, useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 type DropdownMenuProps = {
   /** The element to which the menu will be anchored (positioned relative to) */
@@ -17,15 +21,18 @@ type DropdownMenuProps = {
 /**
  * A floating dropdown menu component that positions itself relative to an anchor element.
  * It uses a React portal to render the menu at the document body level.
+ *
  * The menu automatically calculates and updates its position on mount and when the anchor changes.
  * It closes when clicking outside or when `onClose` is triggered.
  *
  * The `className` prop allows customizing the menu styles while preserving default classes with proper merging.
- *
- * @param {DropdownMenuProps} props - Props for the Menu component.
- * @returns {JSX.Element | null} The rendered dropdown menu or null if no anchor element is provided.
  */
-const Menu: React.FC<DropdownMenuProps> = ({ anchorEl, onClose, children, className = '' }) => {
+const Menu: React.FC<DropdownMenuProps> = ({
+  anchorEl,
+  onClose,
+  children,
+  className = "",
+}) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [visible, setVisible] = useState(false);
 
@@ -40,17 +47,22 @@ const Menu: React.FC<DropdownMenuProps> = ({ anchorEl, onClose, children, classN
     let y = rect.bottom + window.scrollY;
 
     if (x + menu.offsetWidth > window.innerWidth + window.scrollX) {
-      x = Math.max(window.scrollX, rect.right - menu.offsetWidth + window.scrollX);
+      x = Math.max(
+        window.scrollX,
+        rect.right - menu.offsetWidth + window.scrollX
+      );
     }
     if (y + menu.offsetHeight > window.innerHeight + window.scrollY) {
-      y = Math.max(window.scrollY, rect.top - menu.offsetHeight + window.scrollY);
+      y = Math.max(
+        window.scrollY,
+        rect.top - menu.offsetHeight + window.scrollY
+      );
     }
     setPosition({ x, y });
   }, [anchorEl]);
 
   useEffect(() => {
     if (!anchorEl) {
-
       setVisible(false);
       return;
     }
@@ -64,7 +76,7 @@ const Menu: React.FC<DropdownMenuProps> = ({ anchorEl, onClose, children, classN
       onClose();
     }, 200);
   };
-  
+
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -77,7 +89,7 @@ const Menu: React.FC<DropdownMenuProps> = ({ anchorEl, onClose, children, classN
   useEscapeKey(handleClose);
   useWindowResize(calculatePosition);
 
-  const DEFAULT_MENU_CLASSES = ` ${visible ? 'opacity-100' : 'opacity-0'} fixed z-[999] bg-white shadow-lg shadow-(--color-transparent-neutral-30) transition-opacity duration-200 rounded-xl`;
+  const DEFAULT_MENU_CLASSES = `${visible ? "opacity-100" : "opacity-0"} fixed z-[999] bg-white shadow-lg shadow-(--color-transparent-neutral-30) transition-opacity duration-200 rounded-xl`;
 
   return (
     anchorEl &&

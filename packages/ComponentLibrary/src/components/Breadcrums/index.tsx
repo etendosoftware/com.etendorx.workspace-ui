@@ -89,11 +89,18 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
               }}>
               {item.label}
             </Typography>
-            {item.actions && item.actions.length > 0 && (
-              <IconButton onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleActionMenuOpen(e, item.actions!)}>
-                <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
-              </IconButton>
-            )}
+            {item.actions &&
+              item.actions.length > 0 &&
+              (() => {
+                const actions = item.actions;
+                return (
+                  <IconButton onClick={(e) => handleActionMenuOpen(e, actions)}>
+                    <ChevronDown
+                      fill={theme.palette.baselineColor.neutral[80]}
+                    />
+                  </IconButton>
+                );
+              })()}
           </>
         ) : (
           <Link
