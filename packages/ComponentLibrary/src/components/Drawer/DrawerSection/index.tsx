@@ -1,11 +1,9 @@
-import { Box, useTheme } from "@mui/material";
 import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useItemActions } from "../../../hooks/useItemType";
 import { CustomClickAwayListener } from "../../../utils/clickAway";
 import { findActive } from "../../../utils/drawerUtils";
 import { MenuTitle } from "../MenuTitle";
-import { useStyle } from "../styles";
 import type { DrawerSectionProps, ToggleFunctions } from "../types";
 
 export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
@@ -21,8 +19,6 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     isExpanded: externalExpanded,
     parentId,
   }) => {
-    const theme = useTheme();
-    const { sx } = useStyle();
     const isSelected = Boolean(windowId?.length && item.windowId === windowId);
     const [popperOpen, setPopperOpen] = useState(false);
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
@@ -107,14 +103,13 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
       [handleClose, onClick],
     );
 
-    const sectionStyles = useMemo(
-      () => ({
-        ...(open ? sx.drawerSectionBox : sx.closeSection),
-        bgcolor: expanded && open ? theme.palette.dynamicColor.contrastText : "transparent",
-      }),
-      [expanded, open, sx.drawerSectionBox, sx.closeSection, theme],
-    );
-
+    const sectionClasses = [
+      expanded && open ? "bg-[--color-dynamic-contrast-text]" : "bg-transparent",
+      open
+        ? "m-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        : "flex justify-center p-1",
+    ].join(" ");
+    
     const shouldShowChildren = isSearchActive || expanded;
 
     useEffect(() => {
@@ -139,7 +134,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     }, [open]);
 
     return (
-      <Box sx={sectionStyles} aria-expanded={expanded} onKeyDown={handleKeyDown} tabIndex={0}>
+      <div className={sectionClasses} aria-expanded={expanded} onKeyDown={handleKeyDown} tabIndex={0}>
         <MenuTitle
           item={item}
           onClick={handleClick}
@@ -211,7 +206,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
             </CustomClickAwayListener>
           </div>
         )}
-      </Box>
+      </div>
     );
   },
 );

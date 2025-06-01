@@ -253,7 +253,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       <IconButton onClick={handleClick} className="w-10 h-10">
         {icon}
       </IconButton>
-      <Menu open={Boolean(anchorEl)} anchorEl={anchorEl} onClose={handleClose} className="rounded-xl w-88">
+      <Menu anchorEl={anchorEl} onClose={handleClose} className="w-88">
         <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} onSignOff={onSignOff} />
         <div style={styles.toggleSectionStyles}>
           <ToggleSection sections={sections} currentSection={currentSection} onToggle={handleToggle} />

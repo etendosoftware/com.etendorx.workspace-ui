@@ -1,12 +1,11 @@
 "use client";
 
-import { ExpandLess, ExpandMore } from "@mui/icons-material";
-import React, { useRef } from "react";
+import React from "react";
+import ChevronDown from '../../../assets/icons/chevron-down.svg'
 import type { MenuTitleProps } from "../types";
 
 export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
   ({ item, onClick, selected, expanded, open, popperOpen }) => {
-    const textRef = useRef<HTMLSpanElement>(null);
 
     return (
       <button
@@ -38,7 +37,6 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
           {open && (
             <div className="relative group flex items-center py-1.5">
               <span
-                ref={textRef}
                 className="ml-2 font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-40">
                 {item.name}
               </span>
@@ -47,7 +45,7 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
         </div>
         {open && item.children && !popperOpen && (
           <div className={`transition-transform duration-300 flex justify-center ${expanded ? "rotate-180" : ""}`}>
-            {expanded ? <ExpandLess /> : <ExpandMore />}
+            {expanded ? <ChevronDown /> : <ChevronDown />}
           </div>
         )}
       </button>

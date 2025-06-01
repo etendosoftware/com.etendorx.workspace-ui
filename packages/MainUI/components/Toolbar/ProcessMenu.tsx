@@ -69,15 +69,14 @@ const ProcessDefinitionMenuItem = ({ button, onProcessClick, disabled }: Process
 
 const ProcessMenu: React.FC<ProcessMenuProps> = ({
   anchorEl,
-  open,
   onClose,
   processButtons,
   onProcessClick,
   selectedRecord,
 }) => {
   return (
-    <Menu anchorEl={anchorEl} open={open} onClose={onClose} className="rounded-xl">
-      <div className="py-4 px-2 rounded-2xl">
+    <Menu anchorEl={anchorEl} onClose={onClose} className="rounded-xl">
+      <div className="py-4 px-2">
         {processButtons.map((button: ProcessButton, index: number) =>
           ProcessButtonType.PROCESS_ACTION in button ? (
             <ProcessMenuItem

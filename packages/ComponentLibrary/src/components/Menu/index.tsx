@@ -1,19 +1,36 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { cleanDefaultClasses } from "../../utils/classUtil";
+import { useClickOutside, useEscapeKey, useWindowResize } from '../../hooks/useEventListeners';
+import { cleanDefaultClasses } from '../../utils/classUtil';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
-export interface IMenuProps {
-  open: boolean;
-  onClose: () => void;
+type DropdownMenuProps = {
+  /** The element to which the menu will be anchored (positioned relative to) */
   anchorEl: HTMLElement | null;
-  children?: React.ReactElement | React.ReactElement[];
+  /** Callback fired when the menu requests to be closed */
+  onClose: () => void;
+  /** The content of the menu */
+  children: React.ReactNode;
+  /** Optional additional CSS classes to customize the menu style */
   className?: string;
-}
+};
 
-const Menu = ({ open, onClose, anchorEl, className = "", children }: IMenuProps) => {
-  const menuRef = useRef<HTMLDivElement>(null);
+/**
+ * A floating dropdown menu component that positions itself relative to an anchor element.
+ * It uses a React portal to render the menu at the document body level.
+ * The menu automatically calculates and updates its position on mount and when the anchor changes.
+ * It closes when clicking outside or when `onClose` is triggered.
+ *
+ * The `className` prop allows customizing the menu styles while preserving default classes with proper merging.
+ *
+ * @param {DropdownMenuProps} props - Props for the Menu component.
+ * @returns {JSX.Element | null} The rendered dropdown menu or null if no anchor element is provided.
+ */
+const Menu: React.FC<DropdownMenuProps> = ({ anchorEl, onClose, children, className = '' }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [show, setShow] = useState(open);
-  const [isVisible, setIsVisible] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  const menuRef = useRef<HTMLDivElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const calculatePosition = useCallback(() => {
     if (!anchorEl || !menuRef.current) return;
@@ -32,77 +49,51 @@ const Menu = ({ open, onClose, anchorEl, className = "", children }: IMenuProps)
   }, [anchorEl]);
 
   useEffect(() => {
-    if (open) {
-      setShow(true);
-    } else {
-      setIsVisible(false);
-    }
-  }, [open]);
+    if (!anchorEl) {
 
-  useEffect(() => {
-    if (show && open) {
-      requestAnimationFrame(() => {
-        setIsVisible(true);
-      });
+      setVisible(false);
+      return;
     }
-  }, [show, open]);
+    calculatePosition();
+    setVisible(true);
+  }, [anchorEl, calculatePosition]);
 
-  useLayoutEffect(() => {
-    if (show) {
-      calculatePosition();
-    }
-  }, [show, calculatePosition]);
-
-  const onTransitionEnd = (event: React.TransitionEvent<HTMLDivElement>) => {
-    if (event.propertyName === "opacity" && !isVisible) {
-      setShow(false);
-    }
+  const handleClose = () => {
+    setVisible(false);
+    timeoutRef.current = setTimeout(() => {
+      onClose();
+    }, 200);
   };
-
+  
   useEffect(() => {
-    if (!show) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (menuRef.current && !menuRef.current.contains(target)) {
-        if (!menuRef.current.contains(document.activeElement)) {
-          onClose();
-        }
-      }
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" || event.key === "Esc") {
-        onClose();
-      }
-    };
-
-    window.addEventListener("click", handleClickOutside);
-    window.addEventListener("resize", calculatePosition);
-    window.addEventListener("keydown", handleKeyDown);
-
     return () => {
-      window.removeEventListener("click", handleClickOutside);
-      window.removeEventListener("resize", calculatePosition);
-      window.removeEventListener("keydown", handleKeyDown);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
     };
-  }, [onClose, show, calculatePosition]);
+  }, []);
 
-  if (!show) return null;
+  useClickOutside(menuRef, handleClose);
+  useEscapeKey(handleClose);
+  useWindowResize(calculatePosition);
 
-  const DEFAULT_MENU_CLASSES = `fixed z-[999] bg-white shadow-xl shadow-black/40 transition-opacity duration-100 ${
-    isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-  }`;
+  const DEFAULT_MENU_CLASSES = ` ${visible ? 'opacity-100' : 'opacity-0'} fixed z-[999] bg-white shadow-lg shadow-(--color-transparent-neutral-30) transition-opacity duration-200 rounded-xl`;
 
   return (
-    <div
-      ref={menuRef}
-      className={cleanDefaultClasses(className, DEFAULT_MENU_CLASSES)}
-      style={{ top: position.y, left: position.x }}
-      onTransitionEnd={onTransitionEnd}>
-      {children}
-    </div>
+    anchorEl &&
+    createPortal(
+      <div
+        role="menu"
+        ref={menuRef}
+        className={`${cleanDefaultClasses(DEFAULT_MENU_CLASSES, className)}`}
+        style={{ top: position.y, left: position.x }}
+      >
+        {children}
+      </div>,
+      document.body
+    )
   );
 };
 
+Menu.displayName = "Menu";
 export default Menu;

@@ -162,7 +162,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
               ...modalStyles,
               ...gradientStyles,
             }}>
-            <Box sx={sx.modalContainer}>
+            <Box className={'bg-red-100'} sx={sx.modalContainer}>
               {showHeader && (
                 <Box sx={sx.headerContainer}>
                   <Box sx={sx.titleContainer}>

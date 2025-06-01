@@ -2,10 +2,9 @@ export interface TooltipProps {
   title?: string;
   children: React.ReactNode;
   position?: "top" | "bottom" | "left" | "right";
-  className?: string;
 }
 
-const Tooltip: React.FC<TooltipProps> = ({ title, children, className, position = "bottom" }) => {
+const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom" }) => {
   const getPositionClasses = () => {
     switch (position) {
       case "bottom":
@@ -36,10 +35,11 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, className, position 
   const { tooltip, arrow } = getPositionClasses();
 
   return (
-    <div className="relative inline-block group">
+    <div className="relative group">
       {children}
       <div
-        className={`absolute z-10 opacity-0 group-hover:opacity-100 transition-opacity delay-400  pointer-events-none ${className} ${tooltip}`}>
+        role="tooltip"
+        className={`absolute z-10 opacity-0 group-hover:opacity-100 transition-opacity delay-600 duration-100 pointer-events-none ${tooltip}`}>
         <div className={`absolute w-2 h-2 rotate-45 ${arrow} bg-gray-900`} />
         <div className="bg-gray-900 text-white text-sm rounded px-1 py-1 shadow-md whitespace-nowrap">{title}</div>
       </div>

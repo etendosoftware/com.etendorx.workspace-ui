@@ -1,43 +1,36 @@
 "use client";
 
-import { forwardRef, useCallback } from "react";
-import { MenuOpen } from "@mui/icons-material";
-import { Box } from "@mui/material";
+import MenuClose from "../../../assets/icons/menu-close.svg";
+import MenuOpen from  "../../../assets/icons/menu-open.svg";
 import IconButton from "../../IconButton";
-import { useStyle } from "../styles";
 import type { DrawerHeaderProps } from "../types";
 
-const DrawerHeader = forwardRef<HTMLDivElement, DrawerHeaderProps>(({ title, logo, open, onClick, tabIndex }, ref) => {
-  const { sx } = useStyle();
-
-  const Logo = useCallback(() => {
+const DrawerHeader = ({ title, logo, open, onClick, tabIndex }: DrawerHeaderProps) => {
+  const Logo = () => {
+    const commonClasses = "w-9 h-9";
     if (typeof logo === "string") {
-      return <Box component="img" src={logo} alt={`${title} Logo`} sx={sx.drawerHeaderImg} />;
+      return <img src={logo} className={commonClasses} alt={`${title} Logo`} />;
     }
-    return <Box sx={sx.drawerHeaderImg}>{logo}</Box>;
-  }, [logo, sx.drawerHeaderImg, title]);
+    return <div className={commonClasses}>{logo}</div>;
+  };
 
   return (
-    <Box sx={sx.drawerHeader} ref={ref}>
-      {open ? (
+    <div className="h-14 flex items-center justify-end p-2 border-b border-(--color-transparent-neutral-10)">
+      {open && (
         <div className="w-full">
           <a href="/" className="flex items-center gap-1" title="Etendo">
             <Logo />
-            <Box component="span" sx={sx.drawerHeaderTitle}>
+            <span className="font-semibold text-[--color-baseline-neutral-90] text-base">
               {title}
-            </Box>
+            </span>
           </a>
         </div>
-      ) : null}
+      )}
       <IconButton onClick={onClick} className="animated-transform w-full max-w-9 h-9" tabIndex={tabIndex}>
-        <MenuOpen />
+        {open ? <MenuClose /> : <MenuOpen />}
       </IconButton>
-    </Box>
+    </div>
   );
-});
-
-DrawerHeader.displayName = "DrawerHeader";
-
-export { DrawerHeader };
+};
 
 export default DrawerHeader;
