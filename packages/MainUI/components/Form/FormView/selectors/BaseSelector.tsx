@@ -1,6 +1,6 @@
 import { useTabContext } from "@/contexts/tab";
 import { useCallout } from "@/hooks/useCallout";
-import { useDebounce } from "@/hooks/useDebounce";
+import useDebounce from "@/hooks/useDebounce";
 import { useUserContext } from "@/hooks/useUserContext";
 import { buildPayloadByInputName, parseDynamicExpression } from "@/utils";
 import { logger } from "@/utils/logger";
@@ -72,7 +72,8 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     (columnValues: FormInitializationResponse["columnValues"]) => {
       for (const [column, { value, identifier }] of Object.entries(columnValues ?? {})) {
         const targetField = fieldsByColumnName[column];
-        setValue(targetField?.hqlName ?? column, value);
+        const isDate = ["15", "16"].includes(targetField?.column?.reference);
+        setValue(targetField.hqlName, isDate ? column : value);
 
         if (targetField && identifier) {
           setValue(`${targetField.hqlName}$_identifier`, identifier);
