@@ -13,7 +13,7 @@ const DrawerHeader = ({ title, logo, open, onClick, tabIndex }: DrawerHeaderProp
         <div className="w-full">
           <a href="/" className="flex items-center gap-1" title="Etendo">
             <Logo logo={logo} title={title} />
-            <span className="font-semibold text-[--color-baseline-neutral-90] text-base">{title}</span>
+            <span className="font-semibold text-(--color-baseline-neutral-90) text-base">{title}</span>
           </a>
         </div>
       )}

@@ -162,7 +162,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
               ...modalStyles,
               ...gradientStyles,
             }}>
-            <Box className={"bg-red-100"} sx={sx.modalContainer}>
+            <Box sx={sx.modalContainer}>
               {showHeader && (
                 <Box sx={sx.headerContainer}>
                   <Box sx={sx.titleContainer}>
@@ -186,7 +186,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
                     {isFullScreen ? <MinimizeIcon /> : <MaximizeIcon />}
                   </IconButton>
                 )}
-                <IconButton aria-label="close" className="w-4 h-6" onClick={handleClose}>
+                <IconButton aria-label="close" className="w-4 h-6" onClick={handleCancel}>
                   <CloseIcon />
                 </IconButton>
               </Box>

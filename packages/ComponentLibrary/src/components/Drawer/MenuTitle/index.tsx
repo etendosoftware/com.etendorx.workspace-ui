@@ -10,7 +10,7 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
       <button
         type="button"
         onClick={onClick}
-        className={`flex items-center transition-colors duration-300 cursor-pointer w-full
+        className={`flex items-center transition-colors duration-300 cursor-pointer ${open && "w-full"}
         ${
           open
             ? `rounded-lg text-xl justify-between p-1 gap-1 ${

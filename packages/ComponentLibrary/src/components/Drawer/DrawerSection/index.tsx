@@ -104,7 +104,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     );
 
     const sectionClasses = [
-      expanded && open ? "bg-[--color-dynamic-contrast-text]" : "bg-transparent",
+      expanded && open ? "bg-(--color-dynamic-contrast-text)" : "bg-transparent",
       open ? "m-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" : "flex justify-center p-1",
     ].join(" ");
 
