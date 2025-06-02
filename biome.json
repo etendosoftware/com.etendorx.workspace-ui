@@ -23,8 +23,9 @@
         "useConst": "error"
       },
       "correctness": {
-        "useExhaustiveDependencies": "off",
-        "noUnusedImports": "error"
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error",
+        "useExhaustiveDependencies": "off"
       },
       "nursery": {
         "useSortedClasses": "off"

@@ -2,6 +2,7 @@ import { useTabContext } from "@/contexts/tab";
 import { useCallout } from "@/hooks/useCallout";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useUserContext } from "@/hooks/useUserContext";
+import { globalCalloutManager } from "@/services/callouts";
 import { buildPayloadByInputName, parseDynamicExpression } from "@/utils";
 import { logger } from "@/utils/logger";
 import { type Field, type FormInitializationResponse, FormMode } from "@workspaceui/etendohookbinder/src/api/types";
@@ -16,20 +17,18 @@ export const compileExpression = (expression: string) => {
   try {
     return new Function("context", "currentValues", `return ${parseDynamicExpression(expression)};`);
   } catch (error) {
-    logger.warn("Error compiling expression:", expression, error);
-
+    logger.error("Error compiling expression:", expression, error);
     return () => true;
   }
 };
 
 const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; formMode?: FormMode }) => {
   const { watch, getValues, setValue, register } = useFormContext();
-  const { tab, parentRecord } = useTabContext();
+  const { tab } = useTabContext();
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
   const { recordId } = useParams<{ recordId: string }>();
   const { session } = useUserContext();
-  const parentId = parentRecord?.id?.toString();
-  const executeCalloutBase = useCallout({ field, rowId: recordId, parentId });
+  const executeCalloutBase = useCallout({ field, rowId: recordId });
   const debouncedCallout = useDebounce(executeCalloutBase, 300);
   const value = watch(field.hqlName);
   const values = watch();
@@ -37,6 +36,8 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
   const ready = useRef(false);
   const fieldsByHqlName = useMemo(() => tab?.fields || {}, [tab?.fields]);
   const optionData = watch(`${field.hqlName}_data`);
+
+  const isSettingFromCallout = useRef(false);
 
   const isDisplayed = useMemo(() => {
     if (!field.displayed) return false;
@@ -48,7 +49,6 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
       return compiledExpr(session, values);
     } catch (error) {
       logger.warn("Error executing expression:", compiledExpr, error);
-
       return true;
     }
   }, [field, values, session]);
@@ -63,7 +63,6 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
       return compiledExpr(session, values);
     } catch (error) {
       logger.warn("Error executing expression:", compiledExpr, error);
-
       return true;
     }
   }, [field, formMode, session, values]);
@@ -93,9 +92,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     [fieldsByColumnName, setValue],
   );
 
-  const runCallout = useCallback(async () => {
-    previousValue.current = value;
-
+  const executeCallout = useCallback(async () => {
     if (!tab || !field.column.callout) return;
 
     try {
@@ -128,11 +125,13 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         applyAuxiliaryInputValues(data.auxiliaryInputValues);
       }
     } catch (err) {
-      logger.warn("Callout execution failed:", err);
+      logger.error("Callout execution failed:", err);
+      throw err;
     }
   }, [
     value,
     field.column.callout,
+    field.hqlName,
     tab,
     getValues,
     fieldsByHqlName,
@@ -144,6 +143,20 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     applyAuxiliaryInputValues,
   ]);
 
+  const runCallout = useCallback(async () => {
+    if (isSettingFromCallout.current) {
+      return;
+    }
+
+    if (globalCalloutManager.isCalloutRunning()) {
+      return;
+    }
+
+    previousValue.current = value;
+
+    await globalCalloutManager.executeCallout(field.hqlName, executeCallout);
+  }, [field.hqlName, value, executeCallout]);
+
   useEffect(() => {
     if (ready.current && previousValue.current !== value) {
       runCallout();
@@ -151,6 +164,12 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
       ready.current = true;
     }
   }, [runCallout, value]);
+
+  useEffect(() => {
+    return () => {
+      globalCalloutManager.clearPendingCallouts();
+    };
+  }, []);
 
   if (isDisplayed) {
     return (

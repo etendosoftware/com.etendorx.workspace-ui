@@ -18,7 +18,6 @@ export const SelectedProvider = ({ children, tabs }: React.PropsWithChildren<{ t
 
   const setActiveLevel = useCallback((level: number, expand?: boolean) => {
     setActiveLevels((prev) => {
-      console.debug({ level, expand });
       if (expand) {
         return [level];
       }
