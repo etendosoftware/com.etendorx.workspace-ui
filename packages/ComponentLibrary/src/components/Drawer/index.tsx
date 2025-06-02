@@ -55,7 +55,6 @@ const Drawer: React.FC<DrawerProps> = ({
     }
   }, [open]);
 
-
   const allItemTitles = useMemo(() => (searchIndex ? getAllItemTitles(searchIndex) : []), [searchIndex]);
 
   const handleHeaderClick = useCallback(() => setOpen((prev) => !prev), []);
@@ -88,10 +87,11 @@ const Drawer: React.FC<DrawerProps> = ({
   }, []);
 
   return (
-    <div className={`h-screen max-h-screen transition-all duration-500 ease-in-out
+    <div
+      className={`h-screen max-h-screen transition-all duration-500 ease-in-out
       bg-(--color-baseline-0) border-none
       rounded-tr-xl rounded-br-xl flex flex-col overflow-hidden pb-4
-      ${open ? 'w-[16.25rem]' : 'w-[3.5rem]'}`}>
+      ${open ? "w-[16.25rem]" : "w-[3.5rem]"}`}>
       <DrawerHeader logo={logo} title={title} open={open} onClick={handleHeaderClick} tabIndex={-1} />
       {RecentlyViewedComponent && (
         <RecentlyViewedComponent

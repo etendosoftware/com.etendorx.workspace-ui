@@ -7,10 +7,7 @@ import { useEffect } from "react";
  * @param {React.RefObject<HTMLElement>} ref - React ref object pointing to the element.
  * @param {(event: MouseEvent) => void} handler - Callback function to run on outside click.
  */
-export function useClickOutside(
-  ref: React.RefObject<HTMLElement>,
-  handler: (event: MouseEvent) => void
-) {
+export function useClickOutside(ref: React.RefObject<HTMLElement>, handler: (event: MouseEvent) => void) {
   useEffect(() => {
     const listener = (event: MouseEvent) => {
       const target = event.target as Node;

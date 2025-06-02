@@ -9,7 +9,7 @@
  * @param className - A string of user-provided CSS classes that override defaults.
  * @returns A combined string of classes with user classes taking precedence over defaults.
  */
-export const cleanDefaultClasses = (defaultClasses: string, className = ''): string => {
+export const cleanDefaultClasses = (defaultClasses: string, className = ""): string => {
   if (!className.trim()) {
     return defaultClasses;
   }

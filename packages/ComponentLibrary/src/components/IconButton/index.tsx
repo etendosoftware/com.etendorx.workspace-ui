@@ -23,11 +23,11 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
 
 /**
  * A customizable icon button component with optional tooltip and icon text.
- * 
+ *
  * It merges default styling classes with any user-provided classes using `cleanDefaultClasses`.
  * The button supports disabling and accessibility features via aria-label.
  * If `tooltip` prop is provided, the button is wrapped inside a Tooltip component.
- * 
+ *
  * @param {IconButtonProps} props - Props to configure the button
  * @returns {JSX.Element} The rendered icon button element
  */
@@ -69,8 +69,7 @@ const IconButton = ({
         aria-label={ariaLabel}
         disabled={disabled}
         className={cleanDefaultClasses(DEFAULT_BUTTON_CLASSES, className)}
-        {...rest}
-      >
+        {...rest}>
         {children}
         {iconText && <span>{iconText}</span>}
       </button>

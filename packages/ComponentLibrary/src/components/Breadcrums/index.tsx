@@ -95,9 +95,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
                 const actions = item.actions;
                 return (
                   <IconButton onClick={(e) => handleActionMenuOpen(e, actions)}>
-                    <ChevronDown
-                      fill={theme.palette.baselineColor.neutral[80]}
-                    />
+                    <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
                   </IconButton>
                 );
               })()}

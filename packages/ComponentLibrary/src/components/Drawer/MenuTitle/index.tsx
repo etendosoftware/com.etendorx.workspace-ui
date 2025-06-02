@@ -1,12 +1,11 @@
 "use client";
 
 import React from "react";
-import ChevronDown from '../../../assets/icons/chevron-down.svg'
+import ChevronDown from "../../../assets/icons/chevron-down.svg";
 import type { MenuTitleProps } from "../types";
 
 export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
   ({ item, onClick, selected, expanded, open, popperOpen }) => {
-
     return (
       <button
         type="button"
@@ -36,8 +35,7 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
           </div>
           {open && (
             <div className="relative group flex items-center py-1.5">
-              <span
-                className="ml-2 font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-40">
+              <span className="ml-2 font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-40">
                 {item.name}
               </span>
             </div>
