@@ -20,7 +20,7 @@ export const NumericSelector = ({ field, ...props }: { field: Field } & React.Co
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
 
-      if (value === "" || /^-?\d*\.?\d*$/.test(value)) {
+      if (value === "" || /^-?(?:\d+\.?\d*|\.\d+)$/.test(value)) {
         setLocalValue(value);
 
         if (props.onChange) {
