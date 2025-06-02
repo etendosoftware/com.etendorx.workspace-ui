@@ -4,11 +4,20 @@ import { useCallback, useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { TextInput } from "./components/TextInput";
 
-export const NumericSelector = ({ field, ...props }: { field: Field } & React.ComponentProps<typeof TextInput>) => {
+type NumericType = "integer" | "decimal";
+
+interface UnifiedNumericSelectorProps extends React.ComponentProps<typeof TextInput> {
+  field: Field;
+  type?: NumericType;
+}
+
+export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: UnifiedNumericSelectorProps) => {
   const { register, setValue, watch } = useFormContext();
   const formValue = watch(field.hqlName);
   const [localValue, setLocalValue] = useState(formValue === null || formValue === undefined ? "" : String(formValue));
   const [isFocused, setIsFocused] = useState(false);
+
+  const isInteger = type === "integer" || field.column.reference === "11";
 
   useEffect(() => {
     if (!isFocused) {
@@ -16,11 +25,51 @@ export const NumericSelector = ({ field, ...props }: { field: Field } & React.Co
     }
   }, [formValue, isFocused]);
 
+  const getValidationRegex = useCallback(() => {
+    if (isInteger) {
+      return /^-?\d*$/;
+    }
+    return /^-?(?:\d+\.?\d*|\.\d+)$/;
+  }, [isInteger]);
+
+  const parseValue = useCallback(
+    (value: string): number | null => {
+      if (value === "" || value === null || value === undefined) {
+        return field.isMandatory || props.required ? 0 : null;
+      }
+
+      const stringValue = String(value).trim();
+
+      if (stringValue === "" || stringValue === "-" || stringValue === ".") {
+        return field.isMandatory || props.required ? 0 : null;
+      }
+
+      const normalizedValue = stringValue.replace(",", ".");
+
+      const numericValue = isInteger ? Number.parseInt(normalizedValue, 10) : Number.parseFloat(normalizedValue);
+
+      if (Number.isNaN(numericValue)) {
+        return field.isMandatory || props.required ? 0 : null;
+      }
+
+      return numericValue;
+    },
+    [isInteger, field.isMandatory, props.required],
+  );
+
   const handleChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
+      let value = event.target.value;
 
-      if (value === "" || /^-?(?:\d+\.?\d*|\.\d+)$/.test(value)) {
+      if (isInteger) {
+        value = value.replace(/[^\d.-]/g, "");
+        value = value.replace(/(?!^)-/g, "");
+        value = value.replace(/\./g, "");
+      }
+
+      const regex = getValidationRegex();
+
+      if (value === "" || regex.test(value)) {
         setLocalValue(value);
 
         if (props.onChange) {
@@ -28,7 +77,7 @@ export const NumericSelector = ({ field, ...props }: { field: Field } & React.Co
         }
       }
     },
-    [props],
+    [isInteger, getValidationRegex, props],
   );
 
   const handleFocus = useCallback(
@@ -46,27 +95,20 @@ export const NumericSelector = ({ field, ...props }: { field: Field } & React.Co
     (event: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(false);
 
-      const value = localValue.trim();
+      const parsedValue = parseValue(localValue);
+      setValue(field.hqlName, parsedValue);
 
-      if (value === "") {
-        setValue(field.hqlName, props.required ? 0 : null);
-        setLocalValue(props.required ? "0" : "");
-        return;
-      }
-
-      const normalizedValue = value.replace(",", ".");
-
-      const numericValue = Number.parseFloat(normalizedValue);
-
-      if (!Number.isNaN(numericValue)) {
-        setValue(field.hqlName, numericValue);
+      if (parsedValue === null) {
+        setLocalValue("");
+      } else {
+        setLocalValue(String(parsedValue));
       }
 
       if (props.onBlur) {
         props.onBlur(event);
       }
     },
-    [localValue, field.hqlName, setValue, props],
+    [localValue, parseValue, field.hqlName, setValue, props],
   );
 
   const registerProps = register(field.hqlName);
@@ -81,6 +123,16 @@ export const NumericSelector = ({ field, ...props }: { field: Field } & React.Co
       onFocus={handleFocus}
       value={localValue}
       ref={registerProps.ref}
+      inputMode={isInteger ? "numeric" : "decimal"}
+      pattern={isInteger ? "^-?\\d*$" : "^-?(?:\\d+\\.?\\d*|\\.\\d+)$"}
     />
   );
 };
+
+export const NumericSelector = (props: { field: Field } & React.ComponentProps<typeof TextInput>) => (
+  <UnifiedNumericSelector {...props} type="decimal" />
+);
+
+export const IntegerSelector = (props: { field: Field } & React.ComponentProps<typeof TextInput>) => (
+  <UnifiedNumericSelector {...props} type="integer" />
+);
