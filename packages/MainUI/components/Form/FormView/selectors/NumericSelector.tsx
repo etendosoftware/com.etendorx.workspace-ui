@@ -1,68 +1,86 @@
 import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
-import { useCallback } from "react";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { TextInput } from "./components/TextInput";
 
 export const NumericSelector = ({ field, ...props }: { field: Field } & React.ComponentProps<typeof TextInput>) => {
-  const { register, setValue, getValues } = useFormContext();
+  const { register, setValue, watch } = useFormContext();
+  const formValue = watch(field.hqlName);
+  const [localValue, setLocalValue] = useState(formValue === null || formValue === undefined ? "" : String(formValue));
+  const [isFocused, setIsFocused] = useState(false);
 
-  const convertToNumber = useCallback(
-    (value: string) => {
-      if (value === "" || value === null || value === undefined) {
-        return field.isMandatory ? 0 : null;
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(formValue === null || formValue === undefined ? "" : String(formValue));
+    }
+  }, [formValue, isFocused]);
+
+  const handleChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+
+      if (value === "" || /^-?\d*\.?\d*$/.test(value)) {
+        setLocalValue(value);
+
+        if (props.onChange) {
+          props.onChange(event);
+        }
       }
-
-      if (typeof value === "number") {
-        return value;
-      }
-
-      const stringValue = String(value);
-      if (stringValue === "" || stringValue === "-" || stringValue === ".") {
-        return field.isMandatory ? 0 : null;
-      }
-
-      const numericValue =
-        field.column.reference === "11" ? Number.parseInt(stringValue, 10) : Number.parseFloat(stringValue);
-
-      const result = Number.isNaN(numericValue) ? (field.isMandatory ? 0 : null) : numericValue;
-      return result;
     },
-    [field.column.reference, field.isMandatory],
+    [props],
   );
 
-  const registration = register(field.hqlName, {
-    setValueAs: (value) => {
-      const converted = convertToNumber(value);
-      return converted;
+  const handleFocus = useCallback(
+    (event: React.FocusEvent<HTMLInputElement>) => {
+      setIsFocused(true);
+
+      if (props.onFocus) {
+        props.onFocus(event);
+      }
     },
-  });
+    [props],
+  );
 
-  const handleChange = useCallback<React.ChangeEventHandler<HTMLInputElement>>(
-    (event) => {
-      let value = event.target.value;
+  const handleBlur = useCallback(
+    (event: React.FocusEvent<HTMLInputElement>) => {
+      setIsFocused(false);
 
-      value = value.replace(/[^\d.-]/g, "");
-      value = value.replace(/(?!^)-/g, "");
+      const value = localValue.trim();
 
-      const parts = value.split(".");
-      if (parts.length > 2) {
-        value = `${parts.shift()}.${parts.join("")}`;
+      if (value === "") {
+        setValue(field.hqlName, props.required ? 0 : null);
+        setLocalValue(props.required ? "0" : "");
+        return;
       }
 
-      const numericValue = convertToNumber(value);
-      setValue(field.hqlName, numericValue, { shouldValidate: true });
+      const normalizedValue = value.replace(",", ".");
+
+      const numericValue = Number.parseFloat(normalizedValue);
+
+      if (!Number.isNaN(numericValue)) {
+        setValue(field.hqlName, numericValue);
+      }
+
+      if (props.onBlur) {
+        props.onBlur(event);
+      }
     },
-    [field.hqlName, convertToNumber, setValue, getValues],
+    [localValue, field.hqlName, setValue, props],
   );
+
+  const registerProps = register(field.hqlName);
 
   return (
     <TextInput
       {...props}
-      {...registration}
-      inputMode="decimal"
-      pattern="^-?\d*(\.\d+)?$"
       field={field}
+      name={registerProps.name}
+      onBlur={handleBlur}
       onChange={handleChange}
+      onFocus={handleFocus}
+      value={localValue}
+      ref={registerProps.ref}
     />
   );
 };

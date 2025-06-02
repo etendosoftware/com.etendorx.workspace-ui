@@ -3,6 +3,7 @@ import { memo } from "react";
 import { useFormContext } from "react-hook-form";
 import { BooleanSelector } from "./BooleanSelector";
 import { DateSelector } from "./DateSelector";
+import { IntegerSelector } from "./IntegerSelector";
 import { ListSelector } from "./ListSelector";
 import { NumericSelector } from "./NumericSelector";
 import QuantitySelector from "./QuantitySelector";
@@ -50,6 +51,8 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
       return <SelectSelector field={field} isReadOnly={isReadOnly} />;
     case "800008":
       return <NumericSelector field={field} readOnly={isReadOnly} />;
+    case "11":
+      return <IntegerSelector field={field} readOnly={isReadOnly} />;
     default:
       return <StringSelector field={field} readOnly={isReadOnly} />;
   }
