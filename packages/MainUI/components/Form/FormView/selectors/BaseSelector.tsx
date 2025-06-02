@@ -149,7 +149,6 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     }
 
     if (globalCalloutManager.isCalloutRunning()) {
-      logger.debug(`⏭️ Skipping callout for ${field.hqlName} - callout in progress`);
       return;
     }
 
