@@ -1,11 +1,7 @@
-import {
-  useClickOutside,
-  useEscapeKey,
-  useWindowResize,
-} from "../../hooks/useEventListeners";
-import { cleanDefaultClasses } from "../../utils/classUtil";
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useClickOutside, useEscapeKey, useWindowResize } from "../../hooks/useEventListeners";
+import { cleanDefaultClasses } from "../../utils/classUtil";
 
 type DropdownMenuProps = {
   /** The element to which the menu will be anchored (positioned relative to) */
@@ -27,12 +23,7 @@ type DropdownMenuProps = {
  *
  * The `className` prop allows customizing the menu styles while preserving default classes with proper merging.
  */
-const Menu: React.FC<DropdownMenuProps> = ({
-  anchorEl,
-  onClose,
-  children,
-  className = "",
-}) => {
+const Menu: React.FC<DropdownMenuProps> = ({ anchorEl, onClose, children, className = "" }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [visible, setVisible] = useState(false);
 
@@ -47,16 +38,10 @@ const Menu: React.FC<DropdownMenuProps> = ({
     let y = rect.bottom + window.scrollY;
 
     if (x + menu.offsetWidth > window.innerWidth + window.scrollX) {
-      x = Math.max(
-        window.scrollX,
-        rect.right - menu.offsetWidth + window.scrollX
-      );
+      x = Math.max(window.scrollX, rect.right - menu.offsetWidth + window.scrollX);
     }
     if (y + menu.offsetHeight > window.innerHeight + window.scrollY) {
-      y = Math.max(
-        window.scrollY,
-        rect.top - menu.offsetHeight + window.scrollY
-      );
+      y = Math.max(window.scrollY, rect.top - menu.offsetHeight + window.scrollY);
     }
     setPosition({ x, y });
   }, [anchorEl]);
@@ -98,11 +83,10 @@ const Menu: React.FC<DropdownMenuProps> = ({
         role="menu"
         ref={menuRef}
         className={`${cleanDefaultClasses(DEFAULT_MENU_CLASSES, className)}`}
-        style={{ top: position.y, left: position.x }}
-      >
+        style={{ top: position.y, left: position.x }}>
         {children}
       </div>,
-      document.body
+      document.body,
     )
   );
 };

@@ -8,7 +8,7 @@ import type { Option } from "@workspaceui/componentlibrary/src/components/Input/
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import type { Language } from "@workspaceui/componentlibrary/src/locales/types";
 import type React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import CheckCircle from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import ToggleSection from "./ToggleButton";
 import SelectorList from "./ToggleSection";
@@ -136,15 +136,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const handleToggle = useCallback((section: string) => {
     setCurrentSection(section);
   }, []);
-  
+
   const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    if(!anchorEl){
+    if (!anchorEl) {
       setAnchorEl(event.currentTarget);
     } else {
       setAnchorEl(null);
     }
   }, []);
-  
+
   const handleClose = useCallback(() => {
     setAnchorEl(null);
   }, []);
