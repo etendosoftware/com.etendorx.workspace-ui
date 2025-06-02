@@ -17,7 +17,7 @@ import {
 } from "@workspaceui/componentlibrary/src/components";
 import type { Person } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
 import Nav from "@workspaceui/componentlibrary/src/components/Nav/Nav";
-import { useCallback, useContext, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useMemo, useState } from "react";
 import { NOTIFICATIONS, initialPeople, menuItems, modalConfig, sections } from "../../storybook/src/mocks";
 import { useTranslation } from "../hooks/useTranslation";
 import ProfileModal from "./ProfileModal/ProfileModal";

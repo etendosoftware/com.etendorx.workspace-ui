@@ -8,7 +8,7 @@ import type { Option } from "@workspaceui/componentlibrary/src/components/Input/
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import type { Language } from "@workspaceui/componentlibrary/src/locales/types";
 import type React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import CheckCircle from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import ToggleSection from "./ToggleButton";
 import SelectorList from "./ToggleSection";
@@ -138,7 +138,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   }, []);
 
   const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
+    if (!anchorEl) {
+      setAnchorEl(event.currentTarget);
+    } else {
+      setAnchorEl(null);
+    }
   }, []);
 
   const handleClose = useCallback(() => {
@@ -249,7 +253,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       <IconButton onClick={handleClick} className="w-10 h-10">
         {icon}
       </IconButton>
-      <Menu open={Boolean(anchorEl)} anchorEl={anchorEl} onClose={handleClose} className="rounded-xl w-88">
+      <Menu anchorEl={anchorEl} onClose={handleClose} className="w-88">
         <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} onSignOff={onSignOff} />
         <div style={styles.toggleSectionStyles}>
           <ToggleSection sections={sections} currentSection={currentSection} onToggle={handleToggle} />

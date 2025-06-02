@@ -99,7 +99,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
       <IconButton onClick={handleClick} tooltip={tooltipButtonProfile} disabled={true} className="w-10 h-10">
         {icon}
       </IconButton>
-      <Menu {...props} anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
+      <Menu {...props} anchorEl={anchorEl} onClose={handleClose}>
         <div style={styles.titleModalContainer}>
           <div style={styles.titleModalImageContainer}>
             {title?.icon && (
