@@ -89,11 +89,16 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
               }}>
               {item.label}
             </Typography>
-            {item.actions && item.actions.length > 0 && (
-              <IconButton onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleActionMenuOpen(e, item.actions!)}>
-                <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
-              </IconButton>
-            )}
+            {item.actions &&
+              item.actions.length > 0 &&
+              (() => {
+                const actions = item.actions;
+                return (
+                  <IconButton onClick={(e) => handleActionMenuOpen(e, actions)}>
+                    <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
+                  </IconButton>
+                );
+              })()}
           </>
         ) : (
           <Link
@@ -136,7 +141,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
             <IconButton onClick={handleMiddleMenuOpen}>
               <MoreHorizIcon fill={theme.palette.baselineColor.neutral[80]} />
             </IconButton>
-            <Menu anchorEl={middleAnchorEl} open={Boolean(middleAnchorEl)} onClose={handleMiddleMenuClose}>
+            <Menu anchorEl={middleAnchorEl} onClose={handleMiddleMenuClose}>
               {middleItems.map((item) => (
                 <MenuItem
                   key={item.id}
@@ -180,7 +185,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
         </Box>
         {renderBreadcrumbItems}
       </Breadcrumbs>
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleActionMenuClose}>
+      <Menu anchorEl={anchorEl} onClose={handleActionMenuClose}>
         {currentActions.map((action) => (
           <MenuItem key={action.id} onClick={() => {}} sx={sx.menuItem}>
             <Box sx={sx.iconBox}>

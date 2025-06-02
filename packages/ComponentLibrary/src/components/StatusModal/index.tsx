@@ -1,5 +1,5 @@
-import { useCallback, useMemo } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
+import { useCallback, useMemo } from "react";
 import { Modal } from "..";
 import SaveIcon from "../../assets/icons/save.svg";
 import { statusConfig } from "./states";

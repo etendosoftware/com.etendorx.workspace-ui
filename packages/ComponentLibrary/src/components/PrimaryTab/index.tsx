@@ -102,7 +102,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
         </Tabs>
       </Box>
       <IconButton onClick={handleMenuOpen}>{icon}</IconButton>
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+      <Menu anchorEl={anchorEl} onClose={handleMenuClose}>
         {tabs.map((tab) => {
           const isSelected = selectedTab === tab.id;
           return (

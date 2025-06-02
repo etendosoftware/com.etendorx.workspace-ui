@@ -9,7 +9,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
 import type React from "react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useProcessButton } from "../../hooks/Toolbar/useProcessButton";
 import { useProcessExecution } from "../../hooks/Toolbar/useProcessExecution";
 import { useToolbar } from "../../hooks/Toolbar/useToolbar";
@@ -60,7 +60,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentRecord } = useTabContext();
 
-  const [isOpenMenu, setIsOpenMenu] = useState<boolean>(false);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   const buttons: ToolbarButtonMetadata[] = toolbar?.response.data ?? EmptyArray;
@@ -102,12 +101,15 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   }, [actionFields, selectedItems, session]);
 
   const handleMenuToggle = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-    setIsOpenMenu((prev) => !prev);
+    if (!anchorEl) {
+      setAnchorEl(event.currentTarget);
+    } else {
+      setAnchorEl(null);
+    }
   }, []);
 
   const handleMenuClose = useCallback(() => {
-    setIsOpenMenu(false);
+    setAnchorEl(null);
   }, []);
 
   const handleProcessMenuClick = useCallback(
@@ -261,7 +263,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       {processButtons.length > 0 && (
         <ProcessMenu
           anchorEl={anchorEl}
-          open={isOpenMenu}
           onClose={handleMenuClose}
           processButtons={processButtons}
           onProcessClick={handleProcessMenuClick}

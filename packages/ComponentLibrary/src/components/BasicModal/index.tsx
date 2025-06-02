@@ -186,7 +186,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
                     {isFullScreen ? <MinimizeIcon /> : <MaximizeIcon />}
                   </IconButton>
                 )}
-                <IconButton aria-label="close" className="w-4 h-6" onClick={handleClose}>
+                <IconButton aria-label="close" className="w-4 h-6" onClick={handleCancel}>
                   <CloseIcon />
                 </IconButton>
               </Box>
