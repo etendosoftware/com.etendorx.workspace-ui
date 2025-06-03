@@ -8,17 +8,22 @@ import { FormMode } from "@workspaceui/etendohookbinder/src/api/types";
 import type { TabLevelProps } from "@/components/window/types";
 import { useEffect, useState } from "react";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
+import {useSelected} from '@/hooks/useSelected';
 
 export function Tab({ tab, collapsed }: TabLevelProps) {
   const { window } = useMetadataContext();
   const [recordId, setRecordId] = useState<string>("");
   const { registerActions } = useToolbarContext();
+  const { graph } = useSelected();
 
   useEffect(() => {
     registerActions({
-      new: () => setRecordId("new"),
+      new: () => {
+        setRecordId("new");
+        graph.clearSelected(tab);
+      },
     });
-  }, [recordId, registerActions]);
+  }, [recordId, registerActions, tab]);
 
   return (
     <div
