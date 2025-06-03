@@ -46,20 +46,6 @@ export interface ProcessResponse {
   iframeUrl?: string;
 }
 
-export interface ProcessModalProps {
-  open: boolean;
-  onClose: () => void;
-  button: ProcessButton;
-  onConfirm: () => void;
-  isExecuting: boolean;
-  processResponse: ProcessResponse | null;
-  confirmationMessage: string;
-  cancelButtonText: string;
-  executeButtonText: string;
-  onProcessSuccess?: () => void;
-  tabId: string;
-}
-
 export interface MessageStylesType {
   bgColor: string;
   borderColor: string;
@@ -67,14 +53,24 @@ export interface MessageStylesType {
   buttonBg: string;
 }
 
-export interface ProcessIframeModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  url: string;
-  title?: string;
-  onProcessSuccess?: () => void;
-  tabId: string;
+export interface ProcessIframeModalClosedProps {
+  isOpen: false;
 }
+
+export interface ProcessIframeModalOpenProps {
+  isOpen: true;
+  url?: string;
+  title?: string;
+  tabId: string;
+  onProcessSuccess?: () => void;
+  onClose: () => void;
+}
+
+export type ProcessIframeModalProps = ProcessIframeModalClosedProps | ProcessIframeModalOpenProps;
+
+export const isIframeModalOpen = (props: ProcessIframeModalProps): props is ProcessIframeModalOpenProps => {
+  return props.isOpen === true;
+};
 
 export interface ProcessDefinitionModalProps {
   onClose: () => void;
