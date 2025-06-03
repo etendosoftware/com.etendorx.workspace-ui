@@ -1,8 +1,8 @@
 "use client";
 
-import Graph, { type GraphEventListener } from "@/data/graph";
+import Graph from "@/data/graph";
 import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
-import { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useMemo, useRef, useState } from "react";
 
 interface SelectedContext {
   graph: Graph<Tab>;
@@ -45,26 +45,6 @@ export const SelectedProvider = ({ children, tabs }: React.PropsWithChildren<{ t
     }),
     [activeLevels, graph, setActiveLevel],
   );
-
-  useEffect(() => {
-    const handleSelected: GraphEventListener<"selected"> = (tab) => {
-      setActiveLevel(tab.tabLevel + 1);
-    };
-
-    const handleUnselected: GraphEventListener<"unselected"> = (tab) => {
-      setActiveLevel(tab.tabLevel);
-    };
-
-    graph //
-      .on("selected", handleSelected)
-      .on("unselected", handleUnselected);
-
-    return () => {
-      graph //
-        .off("selected", handleSelected)
-        .off("unselected", handleUnselected);
-    };
-  }, [graph, setActiveLevel]);
 
   return <SelectContext.Provider value={value}>{children}</SelectContext.Provider>;
 };
