@@ -158,7 +158,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
   }, [field.hqlName, value, executeCallout]);
 
   useEffect(() => {
-    if (ready.current && previousValue.current !== value) {
+    if (ready.current) {
       runCallout();
     } else {
       ready.current = true;
