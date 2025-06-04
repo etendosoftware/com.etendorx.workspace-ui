@@ -3,8 +3,11 @@
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "quickfix.biome": "explicit",
-    "source.organizeImports.biome": "explicit"
+    "source.organizeImports.biome": "explicit",
+    "source.fixAll.eslint": "explicit"
   },
+  "eslint.validate": ["typescript", "typescriptreact"],
+  "eslint.workingDirectories": ["packages/MainUI", "packages/ComponentLibrary", "packages/EtendoHookBinder"],
   "[javascript]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
