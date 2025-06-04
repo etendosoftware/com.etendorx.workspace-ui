@@ -9,6 +9,8 @@ import {
   isIframeModalOpen,
 } from "./types";
 
+const CLOSE_MODAL_ACTION = "closeModal";
+
 const ProcessIframeOpenModal = ({
   isOpen,
   onClose,
@@ -134,6 +136,20 @@ const ProcessIframeOpenModal = ({
       // setStartPolling(false);
     }
   }, [url]);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.action === CLOSE_MODAL_ACTION) {
+        handleClose();
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, [handleClose]);
 
   const handleIframeLoad = useCallback(() => {
     setIframeLoading(false);
