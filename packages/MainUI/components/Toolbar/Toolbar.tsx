@@ -112,10 +112,12 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   }, []);
 
   const handleProcessMenuClick = useCallback(
-    (button: ProcessButton) => {
+    async (button: ProcessButton) => {
       if (!selectedRecord) return;
 
       if (ProcessButtonType.PROCESS_ACTION in button) {
+        const response = await handleProcessClick(button, String(selectedRecord.id));
+        setProcessResponse(response);
         setSelectedProcessActionButton(button);
       } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
         setSelectedProcessDefinitionButton(button);
@@ -127,7 +129,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       setOpenModal(true);
       handleMenuClose();
     },
-    [selectedRecord, handleMenuClose],
+    [selectedRecord],
   );
 
   const handleSearchChange = useCallback(
