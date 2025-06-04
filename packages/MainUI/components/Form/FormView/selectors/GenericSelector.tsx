@@ -49,7 +49,9 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
     case "30":
       return <SelectSelector field={field} isReadOnly={isReadOnly} />;
     case "800008":
-      return <NumericSelector field={field} readOnly={isReadOnly} />;
+      return <NumericSelector field={field} type="decimal" readOnly={isReadOnly} />;
+    case "11":
+      return <NumericSelector field={field} type="integer" readOnly={isReadOnly} />;
     default:
       return <StringSelector field={field} readOnly={isReadOnly} />;
   }

@@ -1,13 +1,10 @@
 "use client";
-
-import { Box } from "@mui/material";
 import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getAllItemTitles } from "../../utils/searchUtils";
 import TextInputAutocomplete from "../Input/TextInput/TextInputAutocomplete";
-import { DrawerHeader } from "./Header";
+import DrawerHeader from "./Header";
 import { DrawerItems } from "./Search";
-import { useStyle } from "./styles";
 import type { DrawerProps } from "./types";
 
 const DRAWER_STATE_KEY = "etendo-drawer-open";
@@ -35,7 +32,6 @@ const Drawer: React.FC<DrawerProps> = ({
     return false;
   });
 
-  const { sx } = useStyle();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const drawerRefs = useRef<{
@@ -57,17 +53,6 @@ const Drawer: React.FC<DrawerProps> = ({
       searchInputRef.current.focus();
     }
   }, [open]);
-
-  const drawerStyle = useMemo(
-    () => ({
-      ...sx.drawerPaper,
-      width: open ? "16.25rem" : "3.5rem",
-      height: "100vh",
-      maxHeight: "100vh",
-      transition: "all 0.5s ease-in-out",
-    }),
-    [open, sx.drawerPaper],
-  );
 
   const allItemTitles = useMemo(() => (searchIndex ? getAllItemTitles(searchIndex) : []), [searchIndex]);
 
@@ -101,7 +86,11 @@ const Drawer: React.FC<DrawerProps> = ({
   }, []);
 
   return (
-    <Box sx={drawerStyle}>
+    <div
+      className={`h-screen max-h-screen transition-all duration-500 ease-in-out
+      bg-(--color-baseline-0) border-none
+      rounded-tr-xl rounded-br-xl flex flex-col overflow-hidden pb-4
+      ${open ? "w-[16.25rem]" : "w-[3.5rem]"}`}>
       <DrawerHeader logo={logo} title={title} open={open} onClick={handleHeaderClick} tabIndex={-1} />
       {RecentlyViewedComponent && (
         <RecentlyViewedComponent
@@ -114,7 +103,7 @@ const Drawer: React.FC<DrawerProps> = ({
         />
       )}
       {open && (
-        <Box sx={{ padding: "0.5rem" }}>
+        <div className="p-2">
           <TextInputAutocomplete
             value={searchValue}
             setValue={setSearchValue}
@@ -122,9 +111,9 @@ const Drawer: React.FC<DrawerProps> = ({
             autoCompleteTexts={allItemTitles}
             inputRef={searchInputRef}
           />
-        </Box>
+        </div>
       )}
-      <Box sx={sx.drawerContent} tabIndex={0}>
+      <div className="flex-grow overflow-y-auto">
         <DrawerItems
           items={searchValue ? filteredItems : items}
           onClick={handleItemClick}
@@ -136,8 +125,8 @@ const Drawer: React.FC<DrawerProps> = ({
           searchValue={searchValue}
           windowId={windowId}
         />
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };
 

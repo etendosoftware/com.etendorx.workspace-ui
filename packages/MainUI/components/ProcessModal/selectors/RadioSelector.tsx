@@ -1,5 +1,5 @@
 import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 
 const RadioSelector = ({ parameter }: { parameter: ProcessParameter }) => {

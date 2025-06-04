@@ -26,7 +26,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, onSignOff }) 
         />
       </div>
       <div className="absolute top-4 right-4 z-10">
-        <IconButton onClick={handleSignOff} className="h-6 w-6 [&>svg]:w-4 [&>svg]:h-4">
+        <IconButton tooltip="Log out" onClick={handleSignOff} className="h-6 w-6 [&>svg]:w-4 [&>svg]:h-4">
           <LogoutIcon />
         </IconButton>
       </div>

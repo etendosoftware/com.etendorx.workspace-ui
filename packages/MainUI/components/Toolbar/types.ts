@@ -54,7 +54,6 @@ export interface ProcessButtonProps {
 
 export interface ProcessMenuProps {
   anchorEl: HTMLElement | null;
-  open: boolean;
   onClose: () => void;
   processButtons: ProcessButton[];
   onProcessClick: (button: ProcessButton) => void;

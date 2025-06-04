@@ -106,7 +106,7 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
           </Box>
         )}
       </Box>
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
+      <Menu anchorEl={anchorEl} onClose={handleClose}>
         {hiddenTabs.map((tab: TabContent, index: number) => (
           <MenuItem
             key={index}

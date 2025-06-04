@@ -70,6 +70,12 @@ export function useDatasource({ entity, params = defaultParams, columns, searchQ
     setPage(1);
   }, []);
 
+  const reinit = useCallback(() => {
+    setRecords([]);
+    setPage(1);
+    setHasMoreRecords(true);
+  }, []);
+
   const columnFilterCriteria = useMemo(() => {
     if (!columns || !activeColumnFilters.length) return [];
 
@@ -99,6 +105,7 @@ export function useDatasource({ entity, params = defaultParams, columns, searchQ
 
   const load = useCallback(() => {
     if (!entity || skip) {
+      reinit();
       setLoaded(true);
       return;
     }
@@ -135,9 +142,8 @@ export function useDatasource({ entity, params = defaultParams, columns, searchQ
   }, [entity, isImplicitFilterApplied, page, pageSize, queryParams, searchQuery, skip]);
 
   useEffect(() => {
-    setRecords([]);
+    reinit();
     setLoaded(false);
-    setPage(1);
   }, []);
 
   useEffect(() => {
@@ -145,9 +151,8 @@ export function useDatasource({ entity, params = defaultParams, columns, searchQ
   }, [load]);
 
   const refetch = useCallback(() => {
-    setRecords([]);
+    reinit();
     setLoaded(false);
-    setPage(1);
     load();
   }, [load]);
 

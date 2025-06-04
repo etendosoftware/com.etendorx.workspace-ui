@@ -68,7 +68,7 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
       <IconButton tooltip={tooltipWaterfallButton} onClick={handleClick} className="w-10 h-10" disabled={true}>
         {icon}
       </IconButton>
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
+      <Menu anchorEl={anchorEl} onClose={handleClose}>
         <FadeWrapper className={fade ? "fade-out" : ""}>
           {!showDragModal ? (
             <>
