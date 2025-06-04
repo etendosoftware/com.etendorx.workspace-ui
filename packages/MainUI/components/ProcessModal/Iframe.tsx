@@ -4,6 +4,8 @@ import { logger } from "@/utils/logger";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MessageStylesType, ProcessIframeModalProps } from "./types";
 
+const CLOSE_MODAL_ACTION = "closeModal";
+
 const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess, tabId }: ProcessIframeModalProps) => {
   const { t } = useTranslation();
   const [iframeLoading, setIframeLoading] = useState(true);
@@ -122,6 +124,20 @@ const ProcessIframeModal = ({ isOpen, onClose, url, title, onProcessSuccess, tab
       // setStartPolling(false);
     }
   }, [url]);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.action === CLOSE_MODAL_ACTION) {
+        handleClose();
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [handleClose]);
 
   const handleIframeLoad = useCallback(() => {
     setIframeLoading(false);
