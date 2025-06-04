@@ -1,7 +1,7 @@
 import { type ProcessMessage, useProcessMessage } from "@/hooks/useProcessMessage";
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   type MessageStylesType,
   type ProcessIframeModalClosedProps,
@@ -9,7 +9,9 @@ import {
   isIframeModalOpen,
 } from "./types";
 
+const FROM_IFRAME_TYPE = "fromIframe";
 const CLOSE_MODAL_ACTION = "closeModal";
+const PROCESS_ORDER_ACTION = "processOrder";
 
 const ProcessIframeOpenModal = ({
   isOpen,
@@ -127,8 +129,12 @@ const ProcessIframeOpenModal = ({
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type !== FROM_IFRAME_TYPE) return;
       if (event.data?.action === CLOSE_MODAL_ACTION) {
         handleClose();
+      }
+      if (event.data?.action === PROCESS_ORDER_ACTION) {
+        console.log("process order");
       }
     };
 
