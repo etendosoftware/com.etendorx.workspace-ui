@@ -27,6 +27,15 @@ const ProcessIframeOpenModal = ({
   const { fetchProcessMessage } = useProcessMessage(tabId);
   const [processWasSuccessful, setProcessWasSuccessful] = useState(false);
 
+  const handleClose = useCallback(() => {
+    if (processWasSuccessful && onProcessSuccess) {
+      onProcessSuccess();
+    }
+
+    setProcessWasSuccessful(false);
+    onClose();
+  }, [onClose, onProcessSuccess, processWasSuccessful]);
+
   const handleReceivedMessage = useCallback(
     (message: ProcessMessage) => {
       if (message.message?.toUpperCase().includes("ERROR")) {
@@ -58,16 +67,7 @@ const ProcessIframeOpenModal = ({
     [t],
   );
 
-  const handleClose = useCallback(() => {
-    if (processWasSuccessful && onProcessSuccess) {
-      onProcessSuccess();
-    }
-
-    setProcessWasSuccessful(false);
-    onClose();
-  }, [onClose, onProcessSuccess, processWasSuccessful]);
-
-  const pollOnce = useCallback(async () => {
+  const handleProcessMessage = useCallback(async () => {
     try {
       const message = await fetchProcessMessage();
       if (message) {
@@ -128,13 +128,13 @@ const ProcessIframeOpenModal = ({
   }, [url]);
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
+    const handleMessage = async (event: MessageEvent) => {
       if (event.data?.type !== FROM_IFRAME_TYPE) return;
       if (event.data?.action === CLOSE_MODAL_ACTION) {
         handleClose();
       }
       if (event.data?.action === PROCESS_ORDER_ACTION) {
-        console.log("process order");
+        await handleProcessMessage();
       }
     };
 
@@ -143,7 +143,7 @@ const ProcessIframeOpenModal = ({
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [handleClose]);
+  }, [handleClose, handleProcessMessage]);
 
   const messageStyles = useMemo(
     () =>
