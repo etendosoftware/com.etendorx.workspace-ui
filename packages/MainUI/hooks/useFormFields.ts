@@ -115,13 +115,13 @@ export default function useFormFields(
         auditFields.creationDate = createAuditField("creationDate", t("audit.createdDate"), "creationDate", "18");
       }
       if (tab.fields.createdBy || formValues.createdBy || formValues.createdBy$_identifier) {
-        auditFields.createdBy = createAuditField("createdBy", t("audit.createdBy"), "createdBy", "19");
+        auditFields.createdBy = createAuditField("createdBy$_identifier", t("audit.createdBy"), "createdBy", "19");
       }
       if (tab.fields.updated || formValues.updated) {
         auditFields.updated = createAuditField("updated", t("audit.updated"), "updated", "18");
       }
       if (tab.fields.updatedBy || formValues.updatedBy || formValues.updatedBy$_identifier) {
-        auditFields.updatedBy = createAuditField("updatedBy", t("audit.updatedBy"), "updatedBy", "18");
+        auditFields.updatedBy = createAuditField("updatedBy$_identifier", t("audit.updatedBy"), "updatedBy", "18");
       }
 
       return auditFields;
