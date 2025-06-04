@@ -10,7 +10,11 @@ import { TabButton } from "@/components/window/TabButton";
 import { useSelected } from "@/hooks/useSelected";
 import TabContextProvider from "@/contexts/tab";
 
-export default function Tabs({ tabs }: TabsProps) {
+interface ExtendedTabsProps extends TabsProps {
+  isTopGroup?: boolean;
+}
+
+export default function Tabs({ tabs, isTopGroup = false }: ExtendedTabsProps) {
   const { activeLevels, setActiveLevel } = useSelected();
   const [current, setCurrent] = useState(tabs[0]);
   const collapsed = !activeLevels.includes(current.tabLevel);
@@ -38,8 +42,14 @@ export default function Tabs({ tabs }: TabsProps) {
     setActiveLevel(current.tabLevel - 1);
   }, [current.tabLevel, setActiveLevel]);
 
+  const isTopExpanded = !collapsed && isTopGroup;
+
   return (
-    <TabContainer current={current} collapsed={collapsed}>
+    <TabContainer 
+      current={current} 
+      collapsed={collapsed}
+      isTopExpanded={isTopExpanded}
+    >
       {current.tabLevel === 0 ? (
         <TabButton tab={current} onClick={handleClick} onDoubleClick={handleDoubleClick} active />
       ) : (

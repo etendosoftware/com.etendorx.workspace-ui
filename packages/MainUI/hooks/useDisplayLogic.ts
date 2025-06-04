@@ -22,6 +22,7 @@ export default function useDisplayLogic(field: Field) {
     try {
       return compiledExpr(session, record);
     } catch (error) {
+      console.error(error)
       return true;
     }
   }, [field.displayLogicExpression, field.displayed, record, session, tab]);
