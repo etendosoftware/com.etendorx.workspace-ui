@@ -22,6 +22,7 @@ import StatusBar from "./StatusBar";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import type { FormViewProps } from "./types";
 import { useUserContext } from "@/hooks/useUserContext";
+import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon />,
@@ -40,9 +41,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
 
-  const { fields, groups } = useFormFields(tab);
+  const record = useSelectedRecord(tab);
 
-  console.debug(fields, groups, "TabData:", tab);
   const {
     formInitialization,
     refetch,
@@ -56,7 +56,15 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const initialState = useFormInitialState(formInitialization) || undefined;
 
-  const { reset, setValue, ...form } = useForm({ values: initialState as EntityData });
+  const availableFormData = useMemo(() => {
+    return { ...record, ...initialState };
+  }, [record, initialState]);
+
+  const { fields, groups } = useFormFields(tab, mode, false, availableFormData);
+
+  const { reset, setValue, ...form } = useForm({ values: availableFormData as EntityData });
+
+  console.debug(groups);
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
