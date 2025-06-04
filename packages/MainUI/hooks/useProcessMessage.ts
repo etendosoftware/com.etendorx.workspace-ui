@@ -91,38 +91,34 @@ export function useProcessMessage(tabId: string) {
     return null;
   }, []);
 
-  const fetchProcessMessage = useCallback(
-    async (signal?: AbortSignal): Promise<ProcessMessage | null> => {
-      if (!apiUrl) {
-        logger.warn(apiUrl, "API-URL Error");
+  const fetchProcessMessage = useCallback(async (): Promise<ProcessMessage | null> => {
+    if (!apiUrl) {
+      logger.warn(apiUrl, "API-URL Error");
+      return null;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}${urlMessageParam}?tabId=${tabId}`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        logger.warn(response.status);
         return null;
       }
 
-      try {
-        const response = await fetch(`${apiUrl}${urlMessageParam}?tabId=${tabId}`, {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          signal,
-        });
+      const data = await response.json();
 
-        if (!response.ok) {
-          logger.warn(response.status);
-          return null;
-        }
-
-        const data = await response.json();
-
-        return processResponseData(data);
-      } catch (error) {
-        return handleFetchError(error);
-      }
-    },
-    [apiUrl, tabId, token, processResponseData, handleFetchError],
-  );
+      return processResponseData(data);
+    } catch (error) {
+      return handleFetchError(error);
+    }
+  }, [apiUrl, tabId, token, processResponseData, handleFetchError]);
 
   return { fetchProcessMessage };
 }

@@ -22,15 +22,11 @@ const ProcessIframeOpenModal = ({
   const { t } = useTranslation();
   const [iframeLoading, setIframeLoading] = useState(true);
   const [processMessage, setProcessMessage] = useState<ProcessMessage | null>(null);
-  const [startPolling, setStartPolling] = useState(false);
   const { fetchProcessMessage } = useProcessMessage(tabId);
   const [processWasSuccessful, setProcessWasSuccessful] = useState(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   const handleReceivedMessage = useCallback(
-    (message: ProcessMessage, clearFn: () => void) => {
-      clearFn();
-
+    (message: ProcessMessage) => {
       if (message.message?.toUpperCase().includes("ERROR")) {
         setProcessMessage({
           ...message,
@@ -45,11 +41,11 @@ const ProcessIframeOpenModal = ({
     },
     [t],
   );
+
   const handlePollingError = useCallback(
-    (error: unknown, clearFn: () => void) => {
-      if (error instanceof Error && !(error instanceof DOMException && error.name === "AbortError")) {
+    (error: unknown) => {
+      if (error instanceof Error && !(error instanceof DOMException)) {
         logger.warn(error);
-        clearFn();
         setProcessMessage({
           type: "error",
           title: t("errors.internalServerError.title"),
@@ -58,27 +54,6 @@ const ProcessIframeOpenModal = ({
       }
     },
     [t],
-  );
-
-  const pollOnce = useCallback(
-    async (signal: AbortSignal, clearFn: () => void) => {
-      if (signal.aborted) return;
-
-      try {
-        const message = await fetchProcessMessage(signal);
-        if (signal.aborted) return;
-        if (message) {
-          handleReceivedMessage(message, clearFn);
-          return true;
-        }
-      } catch (error) {
-        if (signal.aborted) return;
-        handlePollingError(error, clearFn);
-        return error instanceof Error && !(error instanceof DOMException && error.name === "AbortError");
-      }
-      return false;
-    },
-    [fetchProcessMessage, handleReceivedMessage, handlePollingError],
   );
 
   const handleClose = useCallback(() => {
@@ -90,70 +65,22 @@ const ProcessIframeOpenModal = ({
     onClose();
   }, [onClose, onProcessSuccess, processWasSuccessful]);
 
-  useEffect(() => {
-    return;
-
-    // if (!isOpen || !startPolling) return;
-
-    // abortControllerRef.current = new AbortController();
-    // const signal = abortControllerRef.current.signal;
-
-    // const timeoutId = setTimeout(() => {
-    //   const intervalId = setInterval(async () => {
-    //     const shouldStop = await pollOnce(signal, () => clearInterval(intervalId));
-    //     if (shouldStop) return;
-    //   }, 2000);
-
-    //   return () => clearInterval(intervalId);
-    // }, 2000);
-
-    // return () => {
-    //   clearTimeout(timeoutId);
-    //   if (abortControllerRef.current) {
-    //     abortControllerRef.current.abort();
-    //     abortControllerRef.current = null;
-    //   }
-    // };
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        abortControllerRef.current = null;
+  const pollOnce = useCallback(async () => {
+    try {
+      const message = await fetchProcessMessage();
+      if (message) {
+        handleReceivedMessage(message);
+        return true;
       }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (url) {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        abortControllerRef.current = null;
-      }
-      setIframeLoading(true);
-      setProcessMessage(null);
-      // setStartPolling(false);
+    } catch (error) {
+      handlePollingError(error);
+      return error instanceof Error && !(error instanceof DOMException);
     }
-  }, [url]);
-
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data?.action === CLOSE_MODAL_ACTION) {
-        handleClose();
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-
-    return () => {
-      window.removeEventListener("message", handleMessage);
-    };
-  }, [handleClose]);
+    return false;
+  }, [fetchProcessMessage, handleReceivedMessage, handlePollingError]);
 
   const handleIframeLoad = useCallback(() => {
     setIframeLoading(false);
-    // setStartPolling(true);
   }, []);
 
   const getMessageStyles = useCallback((type: string): MessageStylesType => {
@@ -190,6 +117,27 @@ const ProcessIframeOpenModal = ({
         };
     }
   }, []);
+
+  useEffect(() => {
+    if (url) {
+      setIframeLoading(true);
+      setProcessMessage(null);
+    }
+  }, [url]);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.action === CLOSE_MODAL_ACTION) {
+        handleClose();
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, [handleClose]);
 
   const messageStyles = useMemo(
     () =>
