@@ -84,6 +84,8 @@ export class Client {
         this.setContentType(options);
       }
 
+      options.credentials = "include";
+
       const destination = new URL(`${this.baseUrl}${this.cleanUrl(url)}`);
       this.baseQueryParams.forEach((value, key) => destination.searchParams.append(key, value));
 

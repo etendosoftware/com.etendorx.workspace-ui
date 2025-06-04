@@ -64,8 +64,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const { reset, setValue, ...form } = useForm({ values: availableFormData as EntityData });
 
-  console.debug(groups);
-
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
     [theme.palette.baselineColor.neutral]
@@ -184,16 +182,16 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   );
 
   useEffect(() => {
-    if (!initialState) return;
+    if (!availableFormData) return;
 
-    for (const [key, value] of Object.entries(initialState)) {
+    for (const [key, value] of Object.entries(availableFormData)) {
       if (typeof value === "undefined") {
-        initialState[key] = "";
+        availableFormData[key] = "";
       }
     }
 
-    reset({ ...initialState });
-  }, [initialState, reset]);
+    reset({ ...availableFormData });
+  }, [availableFormData, reset]);
 
   useEffect(() => {
     registerActions({ save: save, refresh: onReset, new: onReset });
