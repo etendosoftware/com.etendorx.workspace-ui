@@ -42,7 +42,6 @@ const EmptyArray: ToolbarButtonMetadata[] = [];
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false }) => {
   const [openModal, setOpenModal] = useState(false);
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
-  const [isExecuting, setIsExecuting] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
   const [selectedProcessActionButton, setSelectedProcessActionButton] = useState<ProcessButton | null>(null);
   const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
@@ -146,30 +145,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     refetchDatasource(tab.id);
     graph.clearSelected(tab);
   }, [graph, refetchDatasource, tab]);
-
-  const handleConfirmProcess = useCallback(async () => {
-    if (!selectedProcessActionButton || !selectedRecord?.id) return;
-
-    setIsExecuting(true);
-    try {
-      const response = await handleProcessClick(selectedProcessActionButton, String(selectedRecord.id));
-      setProcessResponse(response || null);
-    } catch (error) {
-      setProcessResponse({
-        responseActions: [
-          {
-            showMsgInProcessView: {
-              msgType: "error",
-              msgTitle: "Error",
-              msgText: error instanceof Error ? error?.message : "Unknown error",
-            },
-          },
-        ],
-      });
-    } finally {
-      setIsExecuting(false);
-    }
-  }, [handleProcessClick, selectedProcessActionButton, selectedRecord?.id]);
 
   const handleCloseProcess = useCallback(() => {
     setOpenModal(false);
