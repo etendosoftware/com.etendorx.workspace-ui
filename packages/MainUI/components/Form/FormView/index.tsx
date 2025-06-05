@@ -22,6 +22,7 @@ import StatusBar from "./StatusBar";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import type { FormViewProps } from "./types";
 import { useUserContext } from "@/hooks/useUserContext";
+import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon />,
@@ -40,9 +41,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
 
-  const { fields, groups } = useFormFields(tab);
+  const record = useSelectedRecord(tab);
 
-  console.debug(fields, groups, "TabData:", tab);
   const {
     formInitialization,
     refetch,
@@ -56,7 +56,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const initialState = useFormInitialState(formInitialization) || undefined;
 
-  const { reset, setValue, ...form } = useForm({ values: initialState as EntityData });
+  const availableFormData = useMemo(() => {
+    return { ...record, ...initialState };
+  }, [record, initialState]);
+
+  const { fields, groups } = useFormFields(tab, mode, false, availableFormData);
+
+  const { reset, setValue, ...form } = useForm({ values: availableFormData as EntityData });
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
@@ -176,16 +182,16 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   );
 
   useEffect(() => {
-    if (!initialState) return;
+    if (!availableFormData) return;
 
-    for (const [key, value] of Object.entries(initialState)) {
+    for (const [key, value] of Object.entries(availableFormData)) {
       if (typeof value === "undefined") {
-        initialState[key] = "";
+        availableFormData[key] = "";
       }
     }
 
-    reset({ ...initialState });
-  }, [initialState, reset]);
+    reset({ ...availableFormData });
+  }, [availableFormData, reset]);
 
   useEffect(() => {
     registerActions({ save: save, refresh: onReset, new: onReset });
