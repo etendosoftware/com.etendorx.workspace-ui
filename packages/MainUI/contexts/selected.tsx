@@ -14,7 +14,7 @@ interface TabStates {
 interface SelectedContext {
   graph: Graph<Tab>;
   activeLevels: number[];
-  tabStates: TabStates; // ← Nuevo estado por tab
+  tabStates: TabStates;
   setActiveLevel: (level: number, expand?: boolean) => void;
   setTabRecordId: (tabId: string, recordId: string) => void;
   getTabRecordId: (tabId: string) => string;
