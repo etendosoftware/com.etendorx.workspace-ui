@@ -52,7 +52,7 @@ export default function Tabs({ tabs }: TabsProps) {
         />
       )}
       <TabContextProvider tab={current}>
-        <Tab tab={current} collapsed={collapsed} />
+        <Tab key={current.id} tab={current} collapsed={collapsed} />
       </TabContextProvider>
     </TabContainer>
   );
