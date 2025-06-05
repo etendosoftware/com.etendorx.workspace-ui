@@ -53,7 +53,7 @@ const ProcessIframeOpenModal = ({
     [t],
   );
 
-  const handlePollingError = useCallback(
+  const handleMessageError = useCallback(
     (error: unknown) => {
       if (error instanceof Error && !(error instanceof DOMException)) {
         logger.warn(error);
@@ -75,11 +75,11 @@ const ProcessIframeOpenModal = ({
         return true;
       }
     } catch (error) {
-      handlePollingError(error);
+      handleMessageError(error);
       return error instanceof Error && !(error instanceof DOMException);
     }
     return false;
-  }, [fetchProcessMessage, handleReceivedMessage, handlePollingError]);
+  }, [fetchProcessMessage, handleReceivedMessage, handleMessageError]);
 
   const handleIframeLoad = useCallback(() => {
     setIframeLoading(false);
