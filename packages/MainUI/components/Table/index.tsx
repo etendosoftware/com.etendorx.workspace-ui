@@ -20,6 +20,7 @@ import { ErrorDisplay } from "../ErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
 import { useDatasource } from "@/hooks/useDatasource";
+import { useSelected } from "@/hooks/useSelected";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -35,6 +36,7 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
   const { language } = useLanguage();
   const { t } = useTranslation();
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
+  const { graph } = useSelected();
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
   const { tab, parentTab, parentRecord } = useTabContext();
@@ -123,7 +125,7 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
         return newColumnFilters;
       });
     },
-    [updateColumnFilters],
+    [updateColumnFilters]
   );
 
   const rowProps = useCallback<RowProps>(
@@ -155,6 +157,7 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
             row.toggleSelected();
           }
 
+          graph.setSelected(tab, row.original);
           setRecordId(record.id);
         },
         sx: {
@@ -166,12 +169,12 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
         table,
       };
     },
-    [setRecordId, sx.rowSelected],
+    [graph, setRecordId, sx.rowSelected, tab]
   );
 
   const renderEmptyRowsFallback = useCallback(
     ({ table }: { table: MRT_TableInstance<EntityData> }) => <EmptyState table={table} />,
-    [],
+    []
   );
 
   const fetchMoreOnBottomReached = useCallback(
@@ -185,7 +188,7 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
         }
       }
     },
-    [fetchMore, hasMoreRecords, loading],
+    [fetchMore, hasMoreRecords, loading]
   );
 
   const table = useMaterialReactTable<EntityData>({

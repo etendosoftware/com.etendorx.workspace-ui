@@ -9,6 +9,7 @@ import QuantitySelector from "./QuantitySelector";
 import { SelectSelector } from "./SelectSelector";
 import { StringSelector } from "./StringSelector";
 import { TableDirSelector } from "./TableDirSelector";
+import DatetimeSelector from "./DatetimeSelector";
 
 export type GenericSelectorProps = {
   field: Field;
@@ -26,8 +27,9 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
     case "18":
       return <TableDirSelector field={field} isReadOnly={isReadOnly} />;
     case "15":
-    case "16":
       return <DateSelector field={field} isReadOnly={isReadOnly} />;
+    case "16":
+      return <DatetimeSelector field={field} isReadOnly={isReadOnly} />;
     case "20":
       return <BooleanSelector field={field} isReadOnly={isReadOnly} />;
     case "29":

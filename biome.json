@@ -1,7 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.8.3/schema.json",
   "organizeImports": {
-    "enabled": true
+    "enabled": false
   },
   "files": {
     "ignore": ["**/dist/**", "**/node_modules/**", "**/.next/**", "**/build/**", "**/packages/storybook/**"]
@@ -12,7 +12,6 @@
       "complexity": {
         "noStaticOnlyClass": "off"
       },
-
       "recommended": true,
       "suspicious": {
         "noExplicitAny": "warn",
@@ -45,7 +44,7 @@
     "formatter": {
       "quoteStyle": "double",
       "jsxQuoteStyle": "double",
-      "trailingCommas": "all",
+      "trailingCommas": "es5",
       "semicolons": "always",
       "arrowParentheses": "always",
       "bracketSpacing": true,

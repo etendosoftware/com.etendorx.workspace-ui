@@ -11,10 +11,10 @@ function LabelCmp({ field }: { field: Field }) {
   const value = watch(field.hqlName);
   const isReference = useMemo(() => isEntityReference(getFieldReference(field.column?.reference)), [field]);
 
-  if (value && isReference) {
+  if (field.fieldGroup !== "audit" && value && isReference) {
     return (
       // TODO: Update this link to work with the new multi-window system
-      <Link href={`/window/${field.referencedWindowId}/${field.referencedTabId}/${value}`}>
+      <Link href={`/window?windowId=${field.referencedWindowId}`}>
         <BaseLabel name={field.name} htmlFor={field.hqlName} link />
       </Link>
     );
