@@ -89,7 +89,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const processButtons = useMemo(() => {
     const buttons = Object.values(actionFields) || [];
     return buttons.filter((button) => {
-      if (!button.displayLogicExpression || !selectedItems) return true;
+      if (!button.displayed) return false;
+      if (selectedItems?.length === 0 || selectedItems?.length > 1) return false;
+      if (!button.displayLogicExpression) return true;
 
       const compiledExpr = compileExpression(button.displayLogicExpression);
       try {
