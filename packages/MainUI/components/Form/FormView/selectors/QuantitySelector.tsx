@@ -17,15 +17,15 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
     const { watch, setValue: setActualValue } = useFormContext();
     const value = watch(field.hqlName, initialValue || "");
 
-    const setValue = useCallback(
-      (v: FieldValue) => {
-        setActualValue(field.hqlName, Number(v));
-      },
-      [field.hqlName, setActualValue],
-    );
-
     const [error, setError] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+
+    const setValue = useCallback(
+      (v: FieldValue) => {
+        setActualValue(field.hqlName, v === "" || v === null ? null : Number(v));
+      },
+      [field.hqlName, setActualValue]
+    );
 
     const minValue = min !== null && min !== undefined && min !== "" ? Number(min) : undefined;
     const maxValue = max !== null && max !== undefined && max !== "" ? Number(max) : undefined;
@@ -41,7 +41,7 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
         if (sanitizedValue === "") {
           setError(false);
           setErrorMessage("");
-          onChange?.(0);
+          onChange?.(null);
           return;
         }
 
@@ -50,11 +50,11 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
         setErrorMessage(errorMessage);
 
         if (isValid && roundedValue !== undefined) {
-          onChange?.(roundedValue);
           setValue(roundedValue.toString());
+          onChange?.(roundedValue);
         }
       },
-      [maxLength, setValue, minValue, maxValue, onChange],
+      [maxLength, setValue, minValue, maxValue, onChange]
     );
 
     const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -62,6 +62,12 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
         event.preventDefault();
       }
     }, []);
+
+    const handleBlur = useCallback(() => {
+      if ((!value || value === "") && field.isMandatory) {
+        setValue(0);
+      }
+    }, [field, value]);
 
     useEffect(() => {
       setValue(initialValue);
@@ -74,6 +80,7 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
         variant="standard"
         margin="normal"
         fullWidth
+        onBlur={handleBlur}
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
@@ -91,7 +98,7 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
         {...(typeof maxValue !== "undefined" ? { "aria-valuemax": maxValue } : {})}
       />
     );
-  },
+  }
 );
 
 QuantitySelector.displayName = "QuantitySelector";
