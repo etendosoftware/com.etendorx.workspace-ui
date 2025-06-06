@@ -1,4 +1,5 @@
-import { TextField } from "@mui/material";
+import { TextField, IconButton, Box } from "@mui/material";
+import { Add as AddIcon, Remove as RemoveIcon } from "@mui/icons-material";
 import { validateNumber } from "@workspaceui/componentlibrary/src/utils/quantitySelectorUtil";
 import type React from "react";
 import { memo, useCallback, useEffect, useState } from "react";
@@ -10,6 +11,54 @@ const INPUT_PROPS = {
     inputMode: "numeric" as const,
     pattern: "[0-9]*",
   },
+  // Hide default buttons on number inputs
+  sx: {
+    "& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button": {
+      display: "none",
+    },
+    "& input[type=number]": {
+      MozAppearance: "textfield",
+    },
+  },
+  endAdornment: (
+    <Box sx={{ display: "flex", flexDirection: "row", height: "100%" }}>
+      <IconButton
+        size="small"
+        sx={{
+          width: "24px",
+          borderRadius: 0,
+          "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.04)" },
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          const input = e.currentTarget.parentElement?.parentElement?.querySelector("input");
+          if (input) {
+            input.stepUp();
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+        }}>
+        <AddIcon fontSize="small" />
+      </IconButton>
+      <IconButton
+        size="small"
+        sx={{
+          width: "24px",
+          borderRadius: 0,
+          "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.04)" },
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          const input = e.currentTarget.parentElement?.parentElement?.querySelector("input");
+          const inputValue = input?.value;
+          if (input && inputValue && Number(inputValue) > 0) {
+            input.stepDown();
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+        }}>
+        <RemoveIcon fontSize="small" />
+      </IconButton>
+    </Box>
+  ),
 };
 
 const QuantitySelector: React.FC<QuantityProps> = memo(
