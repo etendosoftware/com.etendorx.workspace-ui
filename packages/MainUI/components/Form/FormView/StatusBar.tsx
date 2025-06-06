@@ -3,12 +3,14 @@ import StatusBarField from "./StatusBarField";
 import { IconButton } from "@workspaceui/componentlibrary/src/components";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useToolbarContext } from "@/contexts/ToolbarContext";
 
 export default function StatusBar({ fields }: { fields: Record<string, Field> }) {
   const { t } = useTranslation();
+  const { onBack } = useToolbarContext();
 
   const handleCloseRecord = () => {
-    console.log("close record");
+    onBack();
   };
 
   return (
