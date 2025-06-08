@@ -14,7 +14,7 @@ interface ProcessMenuItemProps {
 }
 
 const ProcessMenuItem = ({ button, onProcessClick, disabled }: ProcessMenuItemProps) => {
-  const isDisplayed = useDisplayLogic(button);
+  const isDisplayed = useDisplayLogic({ field: button });
 
   const handleClick = useCallback(() => {
     onProcessClick(button);
@@ -42,7 +42,7 @@ const ProcessMenuItem = ({ button, onProcessClick, disabled }: ProcessMenuItemPr
 ProcessMenuItem.displayName = "ProcessMenuItem";
 
 const ProcessDefinitionMenuItem = ({ button, onProcessClick, disabled }: ProcessMenuItemProps) => {
-  const isDisplayed = useDisplayLogic(button);
+  const isDisplayed = useDisplayLogic({ field: button as ProcessButton });
 
   const handleClick = useCallback(() => {
     onProcessClick(button);
@@ -92,7 +92,7 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
               onProcessClick={onProcessClick}
               disabled={!selectedRecord}
             />
-          ),
+          )
         )}
       </div>
     </Menu>

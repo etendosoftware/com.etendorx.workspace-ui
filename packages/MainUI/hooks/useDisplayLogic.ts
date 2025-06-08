@@ -3,10 +3,20 @@ import { useUserContext } from "./useUserContext";
 import { useTabContext } from "@/contexts/tab";
 import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
 import { useMemo } from "react";
+import { useFormContext } from "react-hook-form";
+import { logger } from "@/utils/logger";
 
-export default function useDisplayLogic(field: Field) {
+interface UseDisplayLogicProps {
+  field: Field;
+  values?: Field;
+}
+
+export default function useDisplayLogic({ field, values }: UseDisplayLogicProps) {
   const { session } = useUserContext();
   const { tab, record } = useTabContext();
+
+  const formContext = useFormContext();
+  const formValues = formContext?.watch?.();
 
   const isDisplayed: boolean = useMemo(() => {
     if (!tab) {
@@ -20,12 +30,12 @@ export default function useDisplayLogic(field: Field) {
     const compiledExpr = compileExpression(field.displayLogicExpression);
 
     try {
-      return compiledExpr(session, record);
+      const currentValues = values || formValues || record;
+      return compiledExpr(session, currentValues);
     } catch (error) {
-      console.error(error)
-      return true;
+      return logger.error("Unexpected error", error);
     }
-  }, [field.displayLogicExpression, field.displayed, record, session, tab]);
+  }, [field.displayLogicExpression, field.displayed, formValues, record, session, tab, values]);
 
   return isDisplayed;
 }

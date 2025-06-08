@@ -11,6 +11,8 @@ export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve
 
 export const getFieldReference = (reference?: string): FieldType => {
   switch (reference) {
+    case "10":
+      return FieldType.DATETIME;
     case "19":
     case "95E2A8B50A254B2AAE6774B8C2F28120":
     case "18":
@@ -68,7 +70,7 @@ export const buildPayloadByInputName = (values: Record<string, unknown>, fields?
 
       return acc;
     },
-    {} as Record<string, unknown>,
+    {} as Record<string, unknown>
   );
 };
 
@@ -142,7 +144,7 @@ export const buildRequestOptions = (
   initialState: EntityData,
   mode: FormMode,
   userId: string,
-  signal: AbortSignal,
+  signal: AbortSignal
 ) => ({
   signal,
   method: "POST",

@@ -72,4 +72,5 @@ export interface IMetadataContext {
   window?: Etendo.WindowMetadata;
   refetch: () => Promise<void>;
   removeRecord: (tabId: string, recordId: string) => void;
+  emptyWindowDataName: () => void;
 }

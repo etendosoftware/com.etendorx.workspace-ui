@@ -1,0 +1,8 @@
+node_modules
+dist
+.next
+build
+packages/storybook
+*.js
+*.mjs
+*.config.*

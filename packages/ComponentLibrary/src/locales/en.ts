@@ -24,7 +24,14 @@ const en = {
   forms: {
     sections: {
       main: "Main Section",
+      audit: "Audit",
     },
+  },
+  audit: {
+    createdDate: "Creation Date",
+    createdBy: "Created By",
+    updated: "Updated",
+    updatedBy: "Updated By",
   },
   status: {
     deleteSuccess: "has been deleted successfully",
