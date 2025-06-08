@@ -60,9 +60,7 @@ export default function Tabs({ tabs, isTopGroup = false }: ExtendedTabsProps) {
       customHeight={customHeight}
     >
       {current.tabLevel === 0 ? (
-        <div className="mb-2">
           <TabButton tab={current} onClick={handleClick} onDoubleClick={handleDoubleClick} active />
-        </div>
       ) : (
         <>
         {showResizeHandle && <ResizeHandle 

@@ -27,7 +27,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   return (
     <div
-      className={`flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${collapsed ? "hidden" : "flex-1 h-full"}`}>
+      className={`flex p-1 pt-0 gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${collapsed ? "hidden" : "flex-1 h-full"}`}>
       <Toolbar windowId={window?.id || tab.window} tabId={tab.id} isFormView={!!recordId} />
       {recordId ? (
         <FormView
