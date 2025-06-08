@@ -3,6 +3,7 @@ import { useThrottle } from "../../hooks/useThrottle";
 
 interface ResizeHandleProps {
   onHeightChange: (height: number) => void;
+  onClose?: () => void;
   initialHeight?: number;
   minHeight?: number;
   maxOffsetRem?: number;
@@ -10,8 +11,9 @@ interface ResizeHandleProps {
 
 const ResizeHandle = ({ 
   onHeightChange, 
+  onClose,
   initialHeight = 50,
-  minHeight = 20,
+  minHeight = 10,
   maxOffsetRem = 9
 }: ResizeHandleProps) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -54,16 +56,21 @@ const ResizeHandle = ({
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging) return;
-    
+  
     const totalDeltaY = startY.current - e.clientY;
     const percentageDelta = (totalDeltaY / window.innerHeight) * 100;
-    
+  
     const { min, max } = calculateHeightLimits();
     const newHeight = Math.min(Math.max(startHeight.current + percentageDelta, min), max);
-    
+  
     setCurrentHeight(newHeight);
     onHeightChange(newHeight);
-  }, [isDragging, calculateHeightLimits, onHeightChange]);
+  
+    // 🚨 Ejecutar onClose si se alcanza el mínimo
+    if (newHeight <= min && onClose) {
+      onClose();
+    }
+  }, [isDragging, calculateHeightLimits, onHeightChange, onClose]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
@@ -97,33 +104,28 @@ const ResizeHandle = ({
   return (
     <div 
       className={`
-        relative h-2 cursor-ns-resize group
+        relative cursor-ns-resize group
         flex items-center justify-center
         transition-colors duration-200
+        h-1
       `}
       onMouseDown={handleMouseDown}
     >
       <div className="flex space-x-1 transition-opacity duration-200">
         <div
           data-resizer
+          onMouseDown={handleMouseDown}
           className={`
             absolute top-0 left-1/2 -translate-x-1/2 w-16 h-2 mt-1 rounded-lg
             transition-all duration-200
             ${isDragging 
               ? 'bg-blue-400 shadow-lg scale-110' 
-              : 'bg-[#B1B8D8] group-hover:bg-[#9DA8C8] group-hover:scale-105'
+              : 'bg-(--color-baseline-30) group-hover:bg-(--color-baseline-40) group-hover:scale-105'
             }
           `}
         />
       </div>
       
-      <div className="absolute inset-x-0 -inset-y-2" />
-      
-      {isDragging && (
-        <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg pointer-events-none">
-          {Math.round(currentHeight)}%
-        </div>
-      )}
     </div>
   );
 };

@@ -2,16 +2,17 @@ import { useState, useCallback } from "react";
 import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
 import ResizeHandle from "../ResizeHandle";
 
-const BASE_STYLES = "flex flex-col overflow-hidden min-h-0 m-2";
+const BASE_STYLES = "flex flex-col overflow-hidden min-h-0  m-2 mt-0";
 const COLLAPSED_STYLES = "";
 const MAIN_TAB_STYLES = "";
-const SUB_TAB_STYLES = "bg-white items-";
+const SUB_TAB_STYLES = "border border-[var(--color-transparent-neutral-10)] rounded-xl";
 
 export type ContainerProps = React.PropsWithChildren<
   React.HTMLProps<HTMLDivElement> & { 
     collapsed: boolean; 
     current: Tab;
     isTopExpanded?: boolean;
+    customHeight?: number;
   }
 >;
 
@@ -20,14 +21,9 @@ export function TabContainer({
   collapsed, 
   current, 
   isTopExpanded = false,
+  customHeight,
   ...props 
 }: ContainerProps) {
-  const [customHeight, setCustomHeight] = useState(50);
-  
-  const handleHeightChange = useCallback((height: number) => {
-    setCustomHeight(height);
-  }, []);
-  
   const getExpansionStyles = () => {
     if (collapsed) {
       return COLLAPSED_STYLES;
@@ -47,18 +43,8 @@ export function TabContainer({
     return {};
   };
 
-  const showResizeHandle = !isTopExpanded && !collapsed;
-
   return (
     <>
-      {showResizeHandle && (
-        <ResizeHandle 
-          onHeightChange={handleHeightChange}
-          initialHeight={customHeight}
-          minHeight={20}
-          maxOffsetRem={9}
-        />
-      )}
       <div
         {...props}
         className={`${BASE_STYLES} ${current.tabLevel === 0 ? MAIN_TAB_STYLES : SUB_TAB_STYLES} ${getExpansionStyles()} ${className}`}

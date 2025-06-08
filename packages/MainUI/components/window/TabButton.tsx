@@ -25,7 +25,7 @@ export const TabButton = ({ tab, onClick, active, onDoubleClick }: TabSwitchProp
         onDoubleClick={handleDoubleClick}
         title={title}
         aria-label={title}
-        className={`px-2 py-1 w-auto font-semibold hover:bg-white transition-colors appearance-none ${tab.tabLevel === 0 ? "text-xl" : active ? "bg-white" : ""}`}>
+        className={`px-2 py-1 w-auto border-b-2 font-semibold hover:bg-white transition-colors appearance-none ${tab.tabLevel === 0 ? "text-xl" : active ? "border-b-[var(--color-neutral-90)]" : "border-b-transparent"}`}>
         {title}
       </button>
     </span>

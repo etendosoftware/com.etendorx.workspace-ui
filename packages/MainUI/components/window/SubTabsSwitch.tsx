@@ -2,10 +2,13 @@
 
 import type { TabsSwitchProps } from "@/components/window/types";
 import { TabButton } from "@/components/window/TabButton";
+import { IconButton } from "@workspaceui/componentlibrary/src/components";
+import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 
-export const SubTabsSwitch = ({ tabs, current, onClick, onClose, onDoubleClick }: TabsSwitchProps) => {
+export const SubTabsSwitch = ({ tabs, current, onClick, onClose, onDoubleClick, collapsed }: TabsSwitchProps) => {
   return (
-    <div className="flex items-center justify-between bg-gray-200">
+    <>
+    <div className="flex items-center justify-between p-2">
       <div>
         {tabs.map((tab) => (
           <TabButton
@@ -17,13 +20,13 @@ export const SubTabsSwitch = ({ tabs, current, onClick, onClose, onDoubleClick }
           />
         ))}
       </div>
-      <button
-        type="button"
-        className="bg-baseline-60 text-white font-bold text-xs w-6 h-6 rounded-full shadow-lg appearance-none"
-        onClick={onClose}>
-        X
-      </button>
+        <IconButton className="bg-transparent ">
+          <ChevronDown
+          onClick={collapsed ? ()=> onClick(current): onClose}
+          className={`transition-transform duration-300 ease-in-out ${collapsed ? 'rotate-180' : 'rotate-0'}`}/>        
+        </IconButton>
     </div>
+    </>
   );
 };
 

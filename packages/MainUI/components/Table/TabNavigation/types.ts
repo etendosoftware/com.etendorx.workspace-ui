@@ -28,7 +28,3 @@ export interface TabContentProps {
   selectedRecord?: SelectedRecord;
   isMainTab?: IsMainTab;
 }
-
-export interface ResizableTabContainerProps {
-  isOpen: boolean;
-}
