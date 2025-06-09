@@ -6,24 +6,48 @@ import { useMetadataContext } from "../../hooks/useMetadataContext";
 import { FormView } from "@/components/Form/FormView";
 import { FormMode } from "@workspaceui/etendohookbinder/src/api/types";
 import type { TabLevelProps } from "@/components/window/types";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
-import {useSelected} from '@/hooks/useSelected';
+import { useSelected } from "@/hooks/useSelected";
 
 export function Tab({ tab, collapsed }: TabLevelProps) {
   const { window } = useMetadataContext();
   const [recordId, setRecordId] = useState<string>("");
   const { registerActions } = useToolbarContext();
-  const { graph } = useSelected();
+  const { graph, setTabRecordId, getTabRecordId } = useSelected();
+
+  const handleSetRecordId = useCallback<React.Dispatch<React.SetStateAction<string>>>(
+    (value) => {
+      setRecordId((prev) => {
+        const newValue = typeof value === "function" ? value(prev) : value;
+
+        setTabRecordId(tab.id, newValue);
+
+        return newValue;
+      });
+    },
+    [tab.id, setTabRecordId]
+  );
+
+  useEffect(() => {
+    const globalRecordId = getTabRecordId(tab.id);
+    if (globalRecordId !== recordId) {
+      setRecordId(globalRecordId);
+    }
+  }, [tab.id, getTabRecordId, recordId]);
 
   useEffect(() => {
     registerActions({
       new: () => {
-        setRecordId("new");
+        handleSetRecordId("new");
+        graph.clearSelected(tab);
+      },
+      back: () => {
+        handleSetRecordId("");
         graph.clearSelected(tab);
       },
     });
-  }, [recordId, registerActions, tab]);
+  }, [registerActions, tab, handleSetRecordId, graph]);
 
   return (
     <div
@@ -35,10 +59,10 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
           tab={tab}
           window={window}
           recordId={recordId}
-          setRecordId={setRecordId}
+          setRecordId={handleSetRecordId}
         />
       ) : (
-        <DynamicTable setRecordId={setRecordId} />
+        <DynamicTable setRecordId={handleSetRecordId} />
       )}
     </div>
   );
