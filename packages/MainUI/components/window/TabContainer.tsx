@@ -1,6 +1,4 @@
-import { useState, useCallback } from "react";
 import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
-import ResizeHandle from "../ResizeHandle";
 
 const BASE_STYLES = "flex flex-col overflow-hidden min-h-0  m-2 mt-0";
 const COLLAPSED_STYLES = "";
