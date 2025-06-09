@@ -39,6 +39,9 @@ const EndAdormentQuantity = () => {
   );
 };
 
+const DEFAULT_STEP = "any";
+const DEFAULT_TYPE = "decimal";
+
 const QuantitySelector: React.FC<QuantityProps> = memo(
   ({ value: initialValue, min, max, onChange, readOnly, maxLength = 100, name, field }) => {
     const { watch, setValue: setActualValue } = useFormContext();
@@ -48,8 +51,23 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
     const [errorMessage, setErrorMessage] = useState("");
 
     const setValue = useCallback(
-      (v: FieldValue) => {
-        setActualValue(field.hqlName, v === "" || v === null ? null : Number(v));
+      (value: FieldValue) => {
+        if (value === null || value === "") {
+          setActualValue(field.hqlName, null);
+          return;
+        }
+
+        const valueAsString = String(value);
+
+        if (valueAsString.endsWith(".")) {
+          setActualValue(field.hqlName, valueAsString);
+          return;
+        }
+
+        const numValue = Number.parseFloat(valueAsString);
+        if (!Number.isNaN(numValue)) {
+          setActualValue(field.hqlName, numValue);
+        }
       },
       [field.hqlName, setActualValue]
     );
@@ -60,8 +78,7 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
     const handleChange = useCallback(
       (event: React.ChangeEvent<HTMLInputElement>) => {
         const inputValue = event.target.value;
-
-        const sanitizedValue = inputValue.replace(/[^\d]/g, "").slice(0, Number(maxLength));
+        const sanitizedValue = inputValue.replace(/[^\d.]/g, "").slice(0, Number(maxLength));
 
         setValue(sanitizedValue);
 
@@ -71,30 +88,25 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
           onChange?.(null);
           return;
         }
-
-        const { isValid, errorMessage, roundedValue } = validateNumber(sanitizedValue, minValue, maxValue);
-        setError(!isValid);
-        setErrorMessage(errorMessage);
-
-        if (isValid && roundedValue !== undefined) {
-          setValue(roundedValue.toString());
-          onChange?.(roundedValue);
-        }
       },
       [maxLength, setValue, minValue, maxValue, onChange]
     );
 
     const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
-      if (["e", "E", "+", "-"].includes(event.key)) {
+      if (["e", "E", "+", "-"].concat(DEFAULT_TYPE === "decimal" ? [] : ["."]).includes(event.key)) {
         event.preventDefault();
       }
     }, []);
 
     const handleBlur = useCallback(() => {
-      if ((!value || value === "") && field.isMandatory) {
-        setValue(minValue ?? 0);
+      const defaultValue = !value || value === "" ? 0 : value;
+      if (!defaultValue && field.isMandatory) {
+        setValue(minValue ?? defaultValue);
       }
-    }, [field, value, minValue, setValue]);
+      const { isValid, errorMessage } = validateNumber(String(defaultValue), minValue, maxValue);
+      setError(!isValid);
+      setErrorMessage(errorMessage);
+    }, [field, value, setValue, minValue, maxValue]);
 
     useEffect(() => {
       setValue(initialValue);
@@ -103,7 +115,8 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
     return (
       <TextInput
         field={field}
-        type="number"
+        type={DEFAULT_TYPE}
+        step={DEFAULT_TYPE === "decimal" ? DEFAULT_STEP : undefined}
         className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         value={value}
         onChange={handleChange}
@@ -111,7 +124,7 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
         onBlur={handleBlur}
         disabled={readOnly}
         name={name}
-        endAdornment={<EndAdormentQuantity />}
+        endAdornment={DEFAULT_TYPE === "decimal" ? undefined : <EndAdormentQuantity />}
         errorText={error ? errorMessage : " "}
         role="spinbutton"
         aria-readonly={readOnly}
