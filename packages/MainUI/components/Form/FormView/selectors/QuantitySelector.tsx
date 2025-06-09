@@ -1,34 +1,17 @@
-import { TextField, IconButton, Box } from "@mui/material";
 import { Add as AddIcon, Remove as RemoveIcon } from "@mui/icons-material";
 import { validateNumber } from "@workspaceui/componentlibrary/src/utils/quantitySelectorUtil";
 import type React from "react";
 import { memo, useCallback, useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import type { FieldValue, QuantityProps } from "../types";
+import { TextInput } from "./components/TextInput";
+import { IconButton } from "@workspaceui/componentlibrary/src/components";
 
-const INPUT_PROPS = {
-  inputProps: {
-    inputMode: "numeric" as const,
-    pattern: "[0-9]*",
-  },
-  // Hide default buttons on number inputs
-  sx: {
-    "& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button": {
-      display: "none",
-    },
-    "& input[type=number]": {
-      MozAppearance: "textfield",
-    },
-  },
-  endAdornment: (
-    <Box sx={{ display: "flex", flexDirection: "row", height: "100%" }}>
+const EndAdormentQuantity = () => {
+  return (
+    <div className="flex flex-row h-full">
       <IconButton
-        size="small"
-        sx={{
-          width: "24px",
-          borderRadius: 0,
-          "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.04)" },
-        }}
+        className="w-6 rounded-0 hover:bg-[rgba(0,0,0,0.04)] hover:text-[rgba(0,0,0,0.4)]"
         onClick={(e) => {
           e.stopPropagation();
           const input = e.currentTarget.parentElement?.parentElement?.querySelector("input");
@@ -40,12 +23,7 @@ const INPUT_PROPS = {
         <AddIcon fontSize="small" />
       </IconButton>
       <IconButton
-        size="small"
-        sx={{
-          width: "24px",
-          borderRadius: 0,
-          "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.04)" },
-        }}
+        className="w-6 rounded-0 hover:bg-[rgba(0,0,0,0.04)] hover:text-[rgba(0,0,0,0.4)]"
         onClick={(e) => {
           e.stopPropagation();
           const input = e.currentTarget.parentElement?.parentElement?.querySelector("input");
@@ -57,8 +35,8 @@ const INPUT_PROPS = {
         }}>
         <RemoveIcon fontSize="small" />
       </IconButton>
-    </Box>
-  ),
+    </div>
+  );
 };
 
 const QuantitySelector: React.FC<QuantityProps> = memo(
@@ -114,34 +92,29 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
 
     const handleBlur = useCallback(() => {
       if ((!value || value === "") && field.isMandatory) {
-        setValue(0);
+        setValue(minValue ?? 0);
       }
-    }, [field, value]);
+    }, [field, value, minValue, setValue]);
 
     useEffect(() => {
       setValue(initialValue);
     }, [initialValue, setValue]);
 
     return (
-      <TextField
-        id="outlined-number"
+      <TextInput
+        field={field}
         type="number"
-        variant="standard"
-        margin="normal"
-        fullWidth
-        onBlur={handleBlur}
+        className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        error={error}
-        helperText={error ? errorMessage : " "}
+        onBlur={handleBlur}
         disabled={readOnly}
-        InputProps={INPUT_PROPS}
         name={name}
+        endAdornment={<EndAdormentQuantity />}
+        helperText={error ? errorMessage : " "}
         role="spinbutton"
-        aria-label={field.name}
         aria-readonly={readOnly}
-        aria-required={field.isMandatory}
         aria-disabled={readOnly}
         {...(typeof minValue !== "undefined" ? { "aria-valuemin": minValue } : {})}
         {...(typeof maxValue !== "undefined" ? { "aria-valuemax": maxValue } : {})}

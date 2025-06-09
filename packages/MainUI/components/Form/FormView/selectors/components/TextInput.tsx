@@ -13,6 +13,8 @@ export const TextInput = ({
   className,
   onChange,
   field,
+  endAdornment,
+  helperText,
   ...props
 }: TextInputProps) => {
   const isDisabled = disabled || readOnly;
@@ -64,7 +66,9 @@ export const TextInput = ({
             </button>
           </div>
         )}
+        {endAdornment}
       </div>
+      {helperText && <p className="text-xs text-baseline-60 mt-1">{helperText}</p>}
     </div>
   );
 };
