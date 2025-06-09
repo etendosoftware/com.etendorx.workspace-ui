@@ -47,7 +47,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
         graph.clearSelected(tab);
       },
     });
-  }, [registerActions, tab, handleSetRecordId, graph]);
+  }, [registerActions, tab, handleSetRecordId, graph, recordId]);
 
   return (
     <div
