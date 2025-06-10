@@ -151,6 +151,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       }
 
       graph.setSelected(tab, data);
+      graph.setSelectedMultiple(tab, [data]);
       showSuccessModal("Saved");
     },
     [graph, initialState, mode, refetch, reset, setRecordId, showSuccessModal, tab]
