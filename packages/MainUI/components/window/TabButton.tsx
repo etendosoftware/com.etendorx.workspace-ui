@@ -17,6 +17,12 @@ export const TabButton = ({ tab, onClick, active, onDoubleClick }: TabSwitchProp
     onDoubleClick(tab);
   }, [onDoubleClick, tab]);
 
+  const tabClass = tab.tabLevel === 0
+  ? "text-xl mb-2"
+  : active
+    ? "border-b-(--color-neutral-90)"
+    : "border-b-transparent";
+
   return (
     <span>
      <button
@@ -29,14 +35,8 @@ export const TabButton = ({ tab, onClick, active, onDoubleClick }: TabSwitchProp
         px-2 py-1 w-auto border-b-2 font-semibold
         transition-colors appearance-none
         hover:text-(--color-neutral-90) hover:border-b-(--color-neutral-90)
-        ${tab.tabLevel === 0 
-          ? "text-xl mb-2" 
-          : active 
-            ? "border-b-(--color-neutral-90)" 
-            : "border-b-transparent"
-          }`
-        }
-        >
+        ${tabClass}
+      `}>
         {title}
       </button>
     </span>

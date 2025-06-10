@@ -52,6 +52,46 @@ export default function Tabs({ tabs, isTopGroup = false }: ExtendedTabsProps) {
   const isTopExpanded = !collapsed && isTopGroup;
   const showResizeHandle = !isTopExpanded && !collapsed;
 
+  const renderTabContent = () => {
+    if (current.tabLevel === 0) {
+      return (
+        <TabButton 
+          tab={current} 
+          onClick={handleClick} 
+          onDoubleClick={handleDoubleClick} 
+          active 
+        />
+      );
+    }
+
+    const subTabsSwitch = (
+      <SubTabsSwitch
+        current={current}
+        tabs={tabs}
+        collapsed={collapsed}
+        onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
+        onClose={handleClose}
+      />
+    );
+
+    if (showResizeHandle) {
+      return (
+        <ResizeHandle 
+          initialHeight={customHeight}
+          minHeight={9}
+          maxOffsetRem={9}
+          onClose={handleClose}
+          onHeightChange={handleHeightChange}
+        >
+          {subTabsSwitch}
+        </ResizeHandle>
+      );
+    }
+
+    return subTabsSwitch;
+  };
+
   return (
     <TabContainer 
       current={current} 
@@ -59,42 +99,7 @@ export default function Tabs({ tabs, isTopGroup = false }: ExtendedTabsProps) {
       isTopExpanded={isTopExpanded}
       customHeight={customHeight}
     >
-      {current.tabLevel === 0 ? (
-        <TabButton 
-          tab={current} 
-          onClick={handleClick} 
-          onDoubleClick={handleDoubleClick} 
-          active 
-        />
-      ) : (
-        showResizeHandle ? (
-          <ResizeHandle 
-            initialHeight={customHeight}
-            minHeight={9}
-            maxOffsetRem={9}
-            onClose={handleClose}
-            onHeightChange={handleHeightChange}
-            >
-            <SubTabsSwitch
-                current={current}
-                tabs={tabs}
-                collapsed={collapsed}
-                onClick={handleClick}
-                onDoubleClick={handleDoubleClick}
-                onClose={handleClose}
-              />
-            </ResizeHandle>
-        ) : (
-          <SubTabsSwitch
-            current={current}
-            tabs={tabs}
-            collapsed={collapsed}
-            onClick={handleClick}
-            onDoubleClick={handleDoubleClick}
-            onClose={handleClose}
-          />
-        )
-      )}
+      {renderTabContent()}
       <TabContextProvider tab={current}>
         <Tab tab={current} collapsed={collapsed} />
       </TabContextProvider>

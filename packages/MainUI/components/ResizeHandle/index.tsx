@@ -108,7 +108,7 @@ const ResizeHandle = ({
           relative
           flex items-center justify-center
           transition-colors duration-200
-          h-2 bg-(--color-transparent-neutral-10)
+          bg-(--color-transparent-neutral-5)
           group-hover:cursor-ns-resize
         `}
 
@@ -117,7 +117,7 @@ const ResizeHandle = ({
           <div
             data-resizer
             className={`
-              absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1 mt-1 rounded-lg
+              absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1 mt-1 rounded-lg
               transition-all duration-200
               ${isDragging 
                 ? 'bg-blue-400 shadow-lg scale-110' 

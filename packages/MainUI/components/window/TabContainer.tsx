@@ -1,7 +1,7 @@
 import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
 
 const BASE_STYLES = "flex flex-col overflow-hidden min-h-0 m-2 mt-0 rounded-xl";
-const COLLAPSED_STYLES = "border-none";
+const COLLAPSED_STYLES = "";
 const MAIN_TAB_STYLES = "";
 const SUB_TAB_STYLES = "border border-(--color-transparent-neutral-10) ";
 
