@@ -74,7 +74,8 @@ export const createButtonByType = (
   button: ToolbarButtonMetadata,
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void,
   isFormView: boolean,
-  hasSelectedRecord: boolean
+  hasSelectedRecord: boolean,
+  hasParentRecordSelected: boolean
 ): ToolbarButton => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
@@ -112,6 +113,12 @@ export const createButtonByType = (
         return { disabled: !(isFormView || hasSelectedRecord) };
       case "DELETE":
         return { disabled: !hasSelectedRecord };
+      case "NEW":
+        return { disabled: !hasParentRecordSelected };
+      case "REFRESH":
+        return { disabled: !hasParentRecordSelected };
+      case "SAVE":
+        return { disabled: !hasParentRecordSelected };
       default:
         return { disabled: !button.active };
     }
@@ -155,10 +162,10 @@ export const createButtonByType = (
 };
 
 const BUTTON_STYLES = {
-  NEW: "toolbar-button-new bg-(--color-baseline-100) text-(--color-baseline-0) rounded-l-full h-8 px-3",
-  SAVE: "toolbar-button-save bg-(--color-baseline-100) text-(--color-baseline-0) h-8.5 w-8.5 ml-1",
+  NEW: "toolbar-button-new bg-(--color-baseline-100) text-(--color-baseline-0) disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0) rounded-l-full h-8 px-3",
+  SAVE: "toolbar-button-save bg-(--color-baseline-100) text-(--color-baseline-0) disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0) h-8.5 w-8.5 ml-1",
   REFRESH:
-    "toolbar-button-refresh bg-(--color-baseline-100) text-(--color-baseline-0) rounded-r-full border-l-1 border-l-[color:var(--color-baseline-0)] w-10",
+    "toolbar-button-refresh bg-(--color-baseline-100) text-(--color-baseline-0) disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0) rounded-r-full border-l-1 border-l-[color:var(--color-baseline-0)] w-10",
   CANCEL: "toolbar-button-cancel",
   DELETE: "toolbar-button-delete",
   FIND: "toolbar-button-find",
