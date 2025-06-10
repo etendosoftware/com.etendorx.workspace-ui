@@ -99,7 +99,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         searchFields.push(field.selector.displayField);
       }
       if (field.selector?.extraSearchFields) {
-        searchFields.push(...field.selector.extraSearchFields.split(",").map((f: string) => f.trim()));
+        searchFields.push(...field.selector.extraSearchFields.split(",").map((f) => f.trim()));
       }
       if (searchFields.length === 0) {
         searchFields.push(...TABLEDIR_SELECTOR_DEFAULTS.SEARCH_FIELDS);
@@ -132,7 +132,6 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         const endRow = reset ? initialPageSize : startRow + pageSize;
         const formValues = transformFormValues(getValues());
 
-        // Construir body base
         const baseBody = {
           _startRow: startRow.toString(),
           _endRow: endRow.toString(),
@@ -150,7 +149,6 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           ...(typeof _currentValue !== "undefined" ? { _currentValue } : {}),
         };
 
-        // Aplicar configuraciones específicas por tipo
         if (isProductField) {
           Object.assign(baseBody, {
             _noCount: "true",
