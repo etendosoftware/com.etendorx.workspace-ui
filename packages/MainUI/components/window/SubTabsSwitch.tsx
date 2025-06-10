@@ -8,7 +8,7 @@ import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down
 export const SubTabsSwitch = ({ tabs, current, onClick, onClose, onDoubleClick, collapsed }: TabsSwitchProps) => {
   return (
     <>
-    <div onDoubleClick={()=> {collapsed ? onClick(current) : onClose()}} className="flex items-center justify-between px-2 py-2  bg-(--color-transparent-neutral-5)">
+    <div onDoubleClick={()=> {collapsed ? onClick(current) : onClose()}} className="flex items-center justify-between px-2 py-2 bg-(--color-transparent-neutral-5)">
       <div >
         {tabs.map((tab) => (
           <TabButton

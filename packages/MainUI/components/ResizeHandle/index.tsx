@@ -52,8 +52,6 @@ const ResizeHandle = ({
     setIsDragging(true);
     startY.current = e.clientY;
     startHeight.current = currentHeight; 
-    document.body.style.cursor = 'ns-resize';
-    document.body.style.userSelect = 'none';
   }, [currentHeight]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
@@ -65,6 +63,8 @@ const ResizeHandle = ({
     const { min, max } = calculateHeightLimits();
     const newHeight = Math.min(Math.max(startHeight.current + percentageDelta, min), max);
   
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
     setCurrentHeight(newHeight);
     onHeightChange(newHeight);
   }, [isDragging, calculateHeightLimits, onHeightChange, onClose]);
@@ -99,9 +99,9 @@ const ResizeHandle = ({
   }, [initialHeight, calculateHeightLimits, onHeightChange]);
   
   return (
-    <div className="relative group cursor-default"     
-          onMouseDown={handleMouseDown}    
-          onDoubleClick={handleDoubleClick}
+    <div className={`relative group ${isDragging ? 'ns-resize' : 'cursor-pointer'}` }
+        onMouseDown={handleMouseDown}    
+        onDoubleClick={handleDoubleClick}
       >
       <div 
         className={`
@@ -109,7 +109,6 @@ const ResizeHandle = ({
           flex items-center justify-center
           transition-colors duration-200
           bg-(--color-transparent-neutral-5)
-          group-hover:cursor-ns-resize
         `}
 
       >
@@ -129,7 +128,7 @@ const ResizeHandle = ({
       </div>
   
       <div 
-        className="overflow-auto h-full group-hover:cursor-ns-resize"
+        className="overflow-auto h-full"
       >
         {children}
       </div>
