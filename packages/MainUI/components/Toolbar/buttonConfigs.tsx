@@ -115,6 +115,8 @@ export const createButtonByType = (
         return { disabled: !hasSelectedRecord };
       case "NEW":
         return { disabled: !hasParentRecordSelected };
+      case "REFRESH":
+        return { disabled: !hasParentRecordSelected };
       case "SAVE":
         return { disabled: !hasParentRecordSelected };
       default:
