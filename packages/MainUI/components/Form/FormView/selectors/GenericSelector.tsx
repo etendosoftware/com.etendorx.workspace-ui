@@ -10,6 +10,7 @@ import { SelectSelector } from "./SelectSelector";
 import { StringSelector } from "./StringSelector";
 import { TableDirSelector } from "./TableDirSelector";
 import DatetimeSelector from "./DatetimeSelector";
+import { ProductSelector } from "./SalesInvoiceProductSelector";
 
 export type GenericSelectorProps = {
   field: Field;
@@ -22,8 +23,9 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   const { reference } = field.column;
 
   switch (reference) {
-    case "19":
     case "95E2A8B50A254B2AAE6774B8C2F28120":
+      return <ProductSelector field={field} isReadOnly={isReadOnly} />;
+    case "19":
     case "18":
       return <TableDirSelector field={field} isReadOnly={isReadOnly} />;
     case "15":

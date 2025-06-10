@@ -100,13 +100,16 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     }) as ProcessButton[];
   }, [actionFields, selectedItems, session]);
 
-  const handleMenuToggle = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    if (!anchorEl) {
-      setAnchorEl(event.currentTarget);
-    } else {
-      setAnchorEl(null);
-    }
-  }, []);
+  const handleMenuToggle = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (!anchorEl) {
+        setAnchorEl(event.currentTarget);
+      } else {
+        setAnchorEl(null);
+      }
+    },
+    [anchorEl]
+  );
 
   const handleMenuClose = useCallback(() => {
     setAnchorEl(null);
@@ -128,7 +131,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       setOpenModal(true);
       handleMenuClose();
     },
-    [selectedRecord, handleMenuClose],
+    [selectedRecord, handleMenuClose]
   );
 
   const handleSearchChange = useCallback(
@@ -136,7 +139,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       setSearchValue(value);
       handleSearch(value);
     },
-    [handleSearch, setSearchValue],
+    [handleSearch, setSearchValue]
   );
 
   const handleProcessSuccess = useCallback(() => {
@@ -218,7 +221,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
 
     if (processButtons.length > 0) {
       config.rightSection.buttons.push(
-        createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, anchorEl),
+        createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, anchorEl)
       );
     }
 
