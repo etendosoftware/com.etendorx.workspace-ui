@@ -51,7 +51,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   return (
     <div
-      className={`flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${collapsed ? "hidden" : "flex-1 h-full"}`}>
+      className={`bg-(linear-gradient(180deg, #C6CFFF 0%, #FCFCFD 55.65%)) border-t border-t-(--color-transparent-neutral-10) flex p-2  gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${collapsed ? "hidden" : "flex-1 h-full"}`}>
       <Toolbar windowId={window?.id || tab.window} tabId={tab.id} isFormView={!!recordId} />
       {recordId ? (
         <FormView

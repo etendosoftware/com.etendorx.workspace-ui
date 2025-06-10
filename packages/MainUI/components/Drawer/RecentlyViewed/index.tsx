@@ -1,4 +1,3 @@
-import { useLanguage } from "@/contexts/language";
 import { DrawerSection } from "@workspaceui/componentlibrary/src/components/Drawer/DrawerSection";
 import type { RecentlyViewedProps } from "@workspaceui/componentlibrary/src/components/Drawer/types";
 import { createParentMenuItem } from "@workspaceui/componentlibrary/src/utils/menuUtils";
@@ -12,7 +11,6 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
   ({ windowId, onClick, open, items, getTranslatedName }, ref) => {
     const { t } = useTranslation();
     const { currentRole } = useUserContext();
-    const { language } = useLanguage();
 
     const {
       localRecentItems,

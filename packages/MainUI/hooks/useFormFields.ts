@@ -183,10 +183,7 @@ export default function useFormFields(
     if (groups.audit) {
       groups.audit.sequenceNumber = 9999;
       groups.audit.identifier = t("forms.sections.audit");
-    } else {
-      logger.error("❌ No audit group found in groups");
-    }
-
+    } 
     return groups;
   }, [fields.formFields, t]);
 
