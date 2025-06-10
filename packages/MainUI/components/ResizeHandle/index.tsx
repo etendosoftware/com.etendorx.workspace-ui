@@ -7,6 +7,7 @@ interface ResizeHandleProps {
   initialHeight?: number;
   minHeight?: number;
   maxOffsetRem?: number;
+  children?: React.ReactNode;
 }
 
 const ResizeHandle = ({ 
@@ -14,7 +15,8 @@ const ResizeHandle = ({
   onClose,
   initialHeight = 50,
   minHeight = 10,
-  maxOffsetRem = 9
+  maxOffsetRem = 9,
+  children
 }: ResizeHandleProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [currentHeight, setCurrentHeight] = useState(initialHeight);
@@ -65,11 +67,6 @@ const ResizeHandle = ({
   
     setCurrentHeight(newHeight);
     onHeightChange(newHeight);
-  
-    // 🚨 Ejecutar onClose si se alcanza el mínimo
-    if (newHeight <= min && onClose) {
-      onClose();
-    }
   }, [isDragging, calculateHeightLimits, onHeightChange, onClose]);
 
   const handleMouseUp = useCallback(() => {
@@ -77,12 +74,6 @@ const ResizeHandle = ({
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
   }, []);
-
-  useEffect(() => {
-    if (!isDragging) {
-      setCurrentHeight(initialHeight);
-    }
-  }, [initialHeight, isDragging]);
 
   useEffect(() => {
     if (isDragging) {
@@ -101,33 +92,49 @@ const ResizeHandle = ({
     return () => window.removeEventListener('resize', throttledWindowResize);
   }, [throttledWindowResize]);
 
+  const handleDoubleClick = useCallback(() => {
+      setCurrentHeight(50);
+      onHeightChange(50);
+    
+  }, [initialHeight, calculateHeightLimits, onHeightChange]);
+  
   return (
-    <div 
-      className={`
-        relative cursor-ns-resize group
-        flex items-center justify-center
-        transition-colors duration-200
-        h-1
-      `}
-      onMouseDown={handleMouseDown}
-    >
-      <div className="flex space-x-1 transition-opacity duration-200">
-        <div
-          data-resizer
-          onMouseDown={handleMouseDown}
-          className={`
-            absolute top-0 left-1/2 -translate-x-1/2 w-16 h-2 mt-1 rounded-lg
-            transition-all duration-200
-            ${isDragging 
-              ? 'bg-blue-400 shadow-lg scale-110' 
-              : 'bg-(--color-baseline-30) group-hover:bg-(--color-baseline-40) group-hover:scale-105'
-            }
-          `}
-        />
+    <div className="relative group cursor-default"     
+          onMouseDown={handleMouseDown}    
+          onDoubleClick={handleDoubleClick}
+      >
+      <div 
+        className={`
+          relative
+          flex items-center justify-center
+          transition-colors duration-200
+          h-2 bg-(--color-transparent-neutral-10)
+          group-hover:cursor-ns-resize
+        `}
+
+      >
+        <div className="flex space-x-1 transition-opacity duration-200">
+          <div
+            data-resizer
+            className={`
+              absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1 mt-1 rounded-lg
+              transition-all duration-200
+              ${isDragging 
+                ? 'bg-blue-400 shadow-lg scale-110' 
+                : 'bg-(--color-baseline-30) group-hover:bg-(--color-baseline-40) group-hover:scale-105'
+              }
+            `}
+          />
+        </div>
       </div>
-      
+  
+      <div 
+        className="overflow-auto h-full group-hover:cursor-ns-resize"
+      >
+        {children}
+      </div>
     </div>
-  );
+  );  
 };
 
 export default ResizeHandle;

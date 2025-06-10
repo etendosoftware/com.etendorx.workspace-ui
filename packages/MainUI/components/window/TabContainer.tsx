@@ -1,9 +1,9 @@
 import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
 
-const BASE_STYLES = "flex flex-col overflow-hidden min-h-0  m-2 mt-0";
-const COLLAPSED_STYLES = "";
+const BASE_STYLES = "flex flex-col overflow-hidden min-h-0 m-2 mt-0 rounded-xl";
+const COLLAPSED_STYLES = "border-none";
 const MAIN_TAB_STYLES = "";
-const SUB_TAB_STYLES = "border border-[var(--color-transparent-neutral-10)] rounded-xl";
+const SUB_TAB_STYLES = "border border-(--color-transparent-neutral-10) ";
 
 export type ContainerProps = React.PropsWithChildren<
   React.HTMLProps<HTMLDivElement> & { 
@@ -46,7 +46,7 @@ export function TabContainer({
       <div
         {...props}
         className={`${BASE_STYLES} ${current.tabLevel === 0 ? MAIN_TAB_STYLES : SUB_TAB_STYLES} ${getExpansionStyles()} ${className}`}
-        style={{ ...props.style, ...getCustomStyle() }}
+        style={{ ...props.style, ...getCustomStyle()  }}
       />
     </>
   );

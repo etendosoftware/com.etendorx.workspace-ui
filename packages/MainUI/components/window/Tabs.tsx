@@ -60,25 +60,40 @@ export default function Tabs({ tabs, isTopGroup = false }: ExtendedTabsProps) {
       customHeight={customHeight}
     >
       {current.tabLevel === 0 ? (
-          <TabButton tab={current} onClick={handleClick} onDoubleClick={handleDoubleClick} active />
-      ) : (
-        <>
-        {showResizeHandle && <ResizeHandle 
-          initialHeight={customHeight}
-          minHeight={9}
-          maxOffsetRem={9}
-          onClose={handleClose}
-          onHeightChange={handleHeightChange} />
-        }
-        <SubTabsSwitch
-          current={current}
-          tabs={tabs}
-          collapsed={collapsed}
-          onClick={handleClick}
-          onDoubleClick={handleDoubleClick}
-          onClose={handleClose}
+        <TabButton 
+          tab={current} 
+          onClick={handleClick} 
+          onDoubleClick={handleDoubleClick} 
+          active 
         />
-        </>
+      ) : (
+        showResizeHandle ? (
+          <ResizeHandle 
+            initialHeight={customHeight}
+            minHeight={9}
+            maxOffsetRem={9}
+            onClose={handleClose}
+            onHeightChange={handleHeightChange}
+            >
+            <SubTabsSwitch
+                current={current}
+                tabs={tabs}
+                collapsed={collapsed}
+                onClick={handleClick}
+                onDoubleClick={handleDoubleClick}
+                onClose={handleClose}
+              />
+            </ResizeHandle>
+        ) : (
+          <SubTabsSwitch
+            current={current}
+            tabs={tabs}
+            collapsed={collapsed}
+            onClick={handleClick}
+            onDoubleClick={handleDoubleClick}
+            onClose={handleClose}
+          />
+        )
       )}
       <TabContextProvider tab={current}>
         <Tab tab={current} collapsed={collapsed} />
