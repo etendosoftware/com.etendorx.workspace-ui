@@ -12,6 +12,7 @@ import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { useFormContext } from "react-hook-form";
 import Label from "../Label";
 import { GenericSelector } from "./GenericSelector";
+import useDisplayLogic from "@/hooks/useDisplayLogic";
 
 export const compileExpression = (expression: string) => {
   try {
@@ -39,19 +40,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
 
   const isSettingFromCallout = useRef(false);
 
-  const isDisplayed = useMemo(() => {
-    if (!field.displayed) return false;
-    if (!field.displayLogicExpression) return true;
-
-    const compiledExpr = compileExpression(field.displayLogicExpression);
-
-    try {
-      return compiledExpr(session, values);
-    } catch (error) {
-      logger.warn("Error executing expression:", compiledExpr, error);
-      return true;
-    }
-  }, [field, values, session]);
+  const isDisplayed = useDisplayLogic({ field });
 
   const isReadOnly = useMemo(() => {
     if (field.isReadOnly) return true;
@@ -78,7 +67,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         }
       }
     },
-    [fieldsByColumnName, setValue],
+    [fieldsByColumnName, setValue]
   );
 
   const applyAuxiliaryInputValues = useCallback(
@@ -89,7 +78,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         setValue(targetField?.hqlName || column, value);
       }
     },
-    [fieldsByColumnName, setValue],
+    [fieldsByColumnName, setValue]
   );
 
   const executeCallout = useCallback(async () => {
@@ -129,9 +118,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
       throw err;
     }
   }, [
-    value,
     field.column.callout,
-    field.hqlName,
     tab,
     getValues,
     fieldsByHqlName,

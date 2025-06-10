@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export type WindowId = string;
 
 export interface CachedData<T> {
@@ -169,6 +168,7 @@ export enum FieldType {
   LIST = "list",
   BUTTON = "button",
   WINDOW = "window",
+  DATETIME = "datetime",
 }
 
 export interface MappedTab {
@@ -687,13 +687,13 @@ export interface FormInitializationResponse {
 export interface ProcessBindings {
   onLoad: (
     process: ProcessDefinition,
-    context: { selectedRecords: Record<string, EntityData>; tabId: string },
+    context: { selectedRecords: Record<string, EntityData>; tabId: string }
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   ) => Promise<any>;
   onProcess: (
     process: ProcessDefinition,
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    params: { recordIds: string[]; windowId: string; entityName: string; buttonValue: any; [param: string]: unknown },
+    params: { recordIds: string[]; windowId: string; entityName: string; buttonValue: any; [param: string]: unknown }
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   ) => Promise<any>;
   metadata: Record<string, unknown>;

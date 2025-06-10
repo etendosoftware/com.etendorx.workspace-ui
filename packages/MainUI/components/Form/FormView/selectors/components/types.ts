@@ -9,6 +9,8 @@ export interface TextInputProps
   label?: string;
   setValue?: (value: string) => void;
   field: Field;
+  endAdornment?: React.ReactNode;
+  errorText?: string;
 }
 
 export interface Option {

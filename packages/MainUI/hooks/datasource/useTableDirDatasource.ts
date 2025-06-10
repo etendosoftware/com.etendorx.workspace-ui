@@ -1,38 +1,123 @@
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import { datasource } from "@workspaceui/api-client/src/api/datasource";
-import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { FieldName } from "../types";
+import { FALLBACK_RESULT } from "@/components/ProcessModal/ProcessDefinitionModal";
+import type { RecordValues } from "@/components/ProcessModal/types";
+import { buildPayloadByInputName } from "@/utils";
+import { FieldName, type UseTableDirDatasourceParams } from "../types";
 import useFormParent from "../useFormParent";
-
-export interface UseTableDirDatasourceParams {
-  field: Field;
-  tab?: Tab;
-  pageSize?: number;
-  initialPageSize?: number;
-}
+import {
+  REFERENCE_IDS,
+  PRODUCT_SELECTOR_DEFAULTS,
+  TABLEDIR_SELECTOR_DEFAULTS,
+  INVOICE_FIELD_MAPPINGS,
+  FORM_VALUE_MAPPINGS,
+} from "./constants";
 
 export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 20 }: UseTableDirDatasourceParams) => {
   const { getValues, watch } = useFormContext();
-  const { tab } = useTabContext();
+  const { tab, parentRecord } = useTabContext();
   const windowId = tab.window;
   const [records, setRecords] = useState<Record<string, string>[]>([]);
   const [loading, setLoading] = useState(false);
-  const parentData = useFormParent(FieldName.INPUT_NAME);
   const [error, setError] = useState<Error>();
   const [currentPage, setCurrentPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const value = watch(field.hqlName);
 
+  const isProductField = field.column.reference === REFERENCE_IDS.PRODUCT;
+  const parentData = useFormParent(FieldName.INPUT_NAME);
+
+  const recordValues: RecordValues = useMemo(() => {
+    if (!isProductField || !parentRecord || !tab?.fields) return FALLBACK_RESULT;
+    return buildPayloadByInputName(parentRecord, tab.fields);
+  }, [isProductField, parentRecord, tab?.fields]);
+
+  const invoiceContext: Record<string, EntityValue> = useMemo(() => {
+    if (!isProductField) return {};
+
+    const context: Record<string, EntityValue> = {};
+    for (const [sourceField, targetField] of Object.entries(INVOICE_FIELD_MAPPINGS)) {
+      const value = recordValues[sourceField];
+      if (value !== null && value !== undefined && value !== "") {
+        context[targetField] = value;
+      }
+    }
+    return context;
+  }, [isProductField, recordValues]);
+
+  const selectorId =
+    field.selector?._selectorDefinitionId ||
+    (isProductField ? PRODUCT_SELECTOR_DEFAULTS.FALLBACK_SELECTOR_ID : undefined);
+
+  const transformFormValues = useCallback(
+    (formData: Record<string, EntityValue>) => {
+      const formValues: Record<string, EntityValue> = {};
+
+      for (const [key, value] of Object.entries(formData)) {
+        const currentField = tab.fields[key];
+        const inputName = currentField?.inputName || key;
+        const stringValue = String(value);
+
+        const safeValue = Object.prototype.hasOwnProperty.call(FORM_VALUE_MAPPINGS, stringValue)
+          ? FORM_VALUE_MAPPINGS[stringValue as keyof typeof FORM_VALUE_MAPPINGS]
+          : value;
+
+        formValues[inputName] = safeValue;
+      }
+
+      return formValues;
+    },
+    [tab.fields]
+  );
+
+  const buildSearchCriteria = useCallback(
+    (search: string, isProduct: boolean) => {
+      const dummyId = new Date().getTime();
+      const baseCriteria = [
+        {
+          fieldName: "_dummy",
+          operator: "equals",
+          value: String(dummyId),
+        },
+      ];
+
+      if (isProduct) {
+        const productCriteria = PRODUCT_SELECTOR_DEFAULTS.SEARCH_FIELDS.map((fieldName) => ({
+          fieldName,
+          operator: "iContains",
+          value: search,
+        }));
+        return { dummyId, criteria: [...baseCriteria, ...productCriteria] };
+      }
+      const searchFields = [];
+      if (field.selector?.displayField) {
+        searchFields.push(field.selector.displayField);
+      }
+      if (field.selector?.extraSearchFields) {
+        searchFields.push(...field.selector.extraSearchFields.split(",").map((f) => f.trim()));
+      }
+      if (searchFields.length === 0) {
+        searchFields.push(...TABLEDIR_SELECTOR_DEFAULTS.SEARCH_FIELDS);
+      }
+
+      const tableDirCriteria = searchFields.map((fieldName) => ({
+        fieldName,
+        operator: "iContains",
+        value: search,
+      }));
+
+      return { dummyId, criteria: [...baseCriteria, ...tableDirCriteria] };
+    },
+    [field.selector]
+  );
+
   const fetch = useCallback(
     async (_currentValue: typeof value, reset = false, search = "") => {
       try {
-        if (!field || !tab) {
-          return;
-        }
+        if (!field || !tab) return;
 
         setLoading(true);
 
@@ -43,8 +128,10 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
 
         const startRow = reset ? 0 : currentPage * pageSize;
         const endRow = reset ? initialPageSize : startRow + pageSize;
+        const formValues = transformFormValues(getValues());
 
-        const body = new URLSearchParams({
+        // Construir body base
+        const baseBody = {
           _startRow: startRow.toString(),
           _endRow: endRow.toString(),
           _operationType: "fetch",
@@ -58,61 +145,39 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           initiatorField: field.hqlName,
           _constructor: "AdvancedCriteria",
           _OrExpression: "true",
-          _textMatchStyle: "substring",
           ...(typeof _currentValue !== "undefined" ? { _currentValue } : {}),
-          ...parentData,
-        });
+        };
 
-        if (search) {
-          const dummyId = new Date().getTime();
-
-          body.append(
-            "criteria",
-            JSON.stringify({
-              fieldName: "_dummy",
-              operator: "equals",
-              value: dummyId,
-            }),
-          );
-
-          const searchFields = [];
-          if (field.selector?.displayField) {
-            searchFields.push(field.selector.displayField);
-          }
-          if (field.selector?.extraSearchFields) {
-            searchFields.push(...field.selector.extraSearchFields.split(",").map((f) => f.trim()));
-          }
-          if (searchFields.length === 0) {
-            searchFields.push("name", "value", "description");
-          }
-          for (const fieldName of searchFields) {
-            body.append(
-              "criteria",
-              JSON.stringify({
-                fieldName,
-                operator: "iContains",
-                value: search,
-              }),
-            );
-          }
+        // Aplicar configuraciones específicas por tipo
+        if (isProductField) {
+          Object.assign(baseBody, {
+            _noCount: "true",
+            ...(selectorId && { _selectorDefinitionId: selectorId }),
+            ...invoiceContext,
+            ...formValues,
+          });
+        } else {
+          Object.assign(baseBody, {
+            _textMatchStyle: "substring",
+            ...parentData,
+            ...formValues,
+          });
         }
 
-        for (const [key, value] of Object.entries(getValues())) {
-          const currentField = tab.fields[key];
-          const _key = currentField?.inputName || key;
-          const stringValue = String(value);
+        const body = new URLSearchParams(baseBody);
 
-          const valueMap = {
-            true: "Y",
-            false: "N",
-            null: "null",
-          };
+        // Manejar criterios de búsqueda
+        if (search) {
+          const { dummyId, criteria } = buildSearchCriteria(search, isProductField);
 
-          const safeValue = Object.prototype.hasOwnProperty.call(valueMap, stringValue)
-            ? valueMap[stringValue as keyof typeof valueMap]
-            : value;
+          if (isProductField) {
+            body.set("criteria", JSON.stringify({ fieldName: "_dummy", operator: "equals", value: dummyId }));
+            body.set("operator", "or");
+          }
 
-          body.set(_key, safeValue);
+          for (const criterion of criteria) {
+            body.append("criteria", JSON.stringify(criterion));
+          }
         }
 
         const { data } = await datasource.client.request(field.selector?.datasourceName ?? "", {
@@ -130,11 +195,13 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           } else {
             const recordMap = new Map();
 
+            // Agregar registros existentes
             for (const record of records) {
               const recordId = record.id || JSON.stringify(record);
               recordMap.set(recordId, record);
             }
 
+            // Agregar nuevos registros
             for (const record of data.response.data) {
               const recordId = record.id || JSON.stringify(record);
               recordMap.set(recordId, record);
@@ -161,7 +228,22 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         setLoading(false);
       }
     },
-    [field, tab, currentPage, pageSize, initialPageSize, windowId, parentData, getValues, records],
+    [
+      field,
+      tab,
+      currentPage,
+      pageSize,
+      initialPageSize,
+      selectorId,
+      windowId,
+      isProductField,
+      invoiceContext,
+      parentData,
+      transformFormValues,
+      buildSearchCriteria,
+      getValues,
+      records,
+    ]
   );
 
   const search = useCallback(
@@ -169,7 +251,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
       setSearchTerm(term);
       fetch(value, true, term);
     },
-    [fetch, value],
+    [fetch, value]
   );
 
   const loadMore = useCallback(() => {
@@ -182,7 +264,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
     (reset = true) => {
       fetch(value, reset, searchTerm);
     },
-    [fetch, value, searchTerm],
+    [fetch, value, searchTerm]
   );
 
   return {

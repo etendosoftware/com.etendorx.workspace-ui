@@ -38,7 +38,7 @@ export const buildFormInitializationParams = ({
 
 const fetchFormInitialization = async (
   params: URLSearchParams,
-  payload: ClientOptions["body"],
+  payload: ClientOptions["body"]
 ): Promise<FormInitializationResponse> => {
   try {
     const { data } = await Metadata.kernelClient.post(`?${params}`, payload);
@@ -105,7 +105,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   const parentId = parent?.id?.toString();
   const params = useMemo(
     () => (tab ? buildFormInitializationParams({ tab, mode, recordId, parentId }) : null),
-    [tab, mode, recordId, parentId],
+    [tab, mode, recordId, parentId]
   );
 
   const refetch = useCallback(async () => {
@@ -138,7 +138,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
 
           return acc;
         },
-        {} as Record<string, string>,
+        {} as Record<string, string>
       );
 
       setSession((prev) => ({ ...prev, ...storedInSessionAttributes, ...data.sessionAttributes }));
@@ -150,13 +150,13 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   }, [params, parentData, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.window]);
 
   useEffect(() => {
-    if (!loaded) {
+    if (!formInitialization && !loaded && !error) {
       refetch();
     }
-  }, [loaded, refetch]);
+  }, [formInitialization, loading, error, refetch, loaded]);
 
   return useMemo(
     () => ({ error, formInitialization, loading, refetch }) as useFormInitialization,
-    [error, formInitialization, loading, refetch],
+    [error, formInitialization, loading, refetch]
   );
 }

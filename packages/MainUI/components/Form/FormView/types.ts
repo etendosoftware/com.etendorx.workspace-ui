@@ -151,7 +151,7 @@ export interface QuantityProps {
   maxLength?: string;
   min?: number | string | null;
   max?: number | string | null;
-  onChange?: (value: number) => void;
+  onChange?: (value: number | null) => void;
   name: string;
   readOnly?: boolean;
   field: Field;

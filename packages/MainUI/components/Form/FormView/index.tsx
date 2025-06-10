@@ -1,7 +1,6 @@
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import { useFormAction } from "@/hooks/useFormAction";
-import useFormFields from "@/hooks/useFormFields";
 import { useFormInitialState } from "@/hooks/useFormInitialState";
 import { useFormInitialization } from "@/hooks/useFormInitialization";
 import { useSelected } from "@/hooks/useSelected";
@@ -19,8 +18,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import Collapsible from "../Collapsible";
 import StatusBar from "./StatusBar";
-import { BaseSelector } from "./selectors/BaseSelector";
+import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import type { FormViewProps } from "./types";
+import { useUserContext } from "@/hooks/useUserContext";
+import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon />,
@@ -35,10 +36,12 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const { graph } = useSelected();
+  const { session } = useUserContext();
 
   const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
 
-  const { fields, groups } = useFormFields(tab);
+  const record = useSelectedRecord(tab);
+
   const {
     formInitialization,
     refetch,
@@ -56,14 +59,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
-    [theme.palette.baselineColor.neutral],
+    [theme.palette.baselineColor.neutral]
   );
 
   const getIconForGroup = useCallback(
     (identifier: string) => {
       return iconMap[identifier] || defaultIcon;
     },
-    [defaultIcon],
+    [defaultIcon]
   );
 
   const tabs: TabItem[] = useMemo(() => {
@@ -109,7 +112,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       const id = String(sectionId || "_main");
       sectionRefs.current[id] = el;
     },
-    [],
+    []
   );
 
   const handleAccordionChange = useCallback((sectionId: string | null, isExpanded: boolean) => {
@@ -143,14 +146,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       graph.setSelected(tab, data);
       showSuccessModal("Saved");
     },
-    [graph, initialState, mode, refetch, reset, setRecordId, showSuccessModal, tab],
+    [graph, initialState, mode, refetch, reset, setRecordId, showSuccessModal, tab]
   );
 
   const onError = useCallback(
     (data: string) => {
       showErrorModal(data);
     },
-    [showErrorModal],
+    [showErrorModal]
   );
 
   const { save, loading } = useFormAction({
@@ -168,20 +171,20 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       const id = String(sectionId);
       return expandedSections.includes(id);
     },
-    [expandedSections],
+    [expandedSections]
   );
 
   useEffect(() => {
-    if (!initialState) return;
+    if (!availableFormData) return;
 
-    for (const [key, value] of Object.entries(initialState)) {
+    for (const [key, value] of Object.entries(availableFormData)) {
       if (typeof value === "undefined") {
-        initialState[key] = "";
+        availableFormData[key] = "";
       }
     }
 
-    reset({ ...initialState });
-  }, [initialState, reset]);
+    reset({ ...availableFormData });
+  }, [availableFormData, reset]);
 
   useEffect(() => {
     registerActions({ save: save, refresh: onReset, new: onReset });
@@ -221,6 +224,24 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         <div className="flex-grow overflow-auto p-2 space-y-2" ref={containerRef}>
           {groups.map(([id, group]) => {
             const sectionId = String(id || "_main");
+
+            const hasVisibleFields = Object.values(group.fields).some((field) => {
+              if (!field.displayed) return false;
+              if (!field.displayLogicExpression) return true;
+
+              const compiledExpr = compileExpression(field.displayLogicExpression);
+              try {
+                return compiledExpr(session, form.watch());
+              } catch (error) {
+                console.warn("Error executing expression:", field.displayLogicExpression, error);
+                return true;
+              }
+            });
+
+            if (!hasVisibleFields) {
+              return null;
+            }
+
             return (
               <div key={sectionId} ref={handleSectionRef(id)}>
                 <Collapsible

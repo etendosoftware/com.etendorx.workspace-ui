@@ -56,6 +56,18 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [removeRecordFromDatasource],
   );
 
+  const emptyWindowDataName = useCallback(() => {
+    setWindowData(
+      (prevWindowData) => {
+        return {
+          ...prevWindowData,
+          name: "",
+          window$_identifier: "",
+        } as Etendo.WindowMetadata;
+      }
+    );
+  }, []);
+
   const value = useMemo<IMetadataContext>(
     () => ({
       windowId,
@@ -66,8 +78,9 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
       tabs,
       refetch: loadWindowData,
       removeRecord,
+      emptyWindowDataName,
     }),
-    [error, groupedTabs, loadWindowData, loading, removeRecord, tabs, windowData, windowId],
+    [error, groupedTabs, loadWindowData, loading, removeRecord, tabs, windowData, windowId, emptyWindowDataName],
   );
 
   return <MetadataContext.Provider value={value}>{children}</MetadataContext.Provider>;

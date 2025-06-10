@@ -8,7 +8,7 @@ export async function performHealthCheck(
   maxAttempts: number,
   delayMs: number,
   onSuccess: () => void,
-  onError: () => void,
+  onError: () => void
 ) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -16,6 +16,7 @@ export async function performHealthCheck(
         method: "OPTIONS",
         signal,
         keepalive: false,
+        credentials: "include",
       });
 
       if (response.ok && !signal.aborted) {

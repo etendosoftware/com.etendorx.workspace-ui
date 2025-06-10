@@ -177,6 +177,7 @@ export function useProcessExecution() {
         }
         throw new Error("Tipo de proceso no soportado");
       } catch (error) {
+        console.error(error);
         throw new Error("Tipo de proceso no soportado");
       }
     },
