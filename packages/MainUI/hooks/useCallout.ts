@@ -41,6 +41,6 @@ export const useCallout = ({ field, parentId = "null", rowId = "null" }: UseCall
         logger.warn(`Error executing callout for field "${field.inputName}":`, error);
       }
     },
-    [tabId, field.inputName, parentId, rowId],
+    [tabId, field.inputName, parentId, rowId]
   );
 };

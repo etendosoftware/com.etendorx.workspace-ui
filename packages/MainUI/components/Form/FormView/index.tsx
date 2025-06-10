@@ -1,6 +1,7 @@
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import { useFormAction } from "@/hooks/useFormAction";
+import useFormFields from "@/hooks/useFormFields";
 import { useFormInitialState } from "@/hooks/useFormInitialState";
 import { useFormInitialization } from "@/hooks/useFormInitialization";
 import { useSelected } from "@/hooks/useSelected";
@@ -20,8 +21,8 @@ import Collapsible from "../Collapsible";
 import StatusBar from "./StatusBar";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import type { FormViewProps } from "./types";
-import { useUserContext } from "@/hooks/useUserContext";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
+import { useUserContext } from "@/hooks/useUserContext";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon />,
@@ -55,7 +56,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const initialState = useFormInitialState(formInitialization) || undefined;
 
-  const { reset, setValue, ...form } = useForm<EntityData>({ values: initialState as EntityData });
+  const availableFormData = useMemo(() => {
+    return { ...record, ...initialState };
+  }, [record, initialState]);
+
+  const { fields, groups } = useFormFields(tab, mode, false, availableFormData);
+
+  const { reset, setValue, ...form } = useForm({ values: availableFormData as EntityData });
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
@@ -144,6 +151,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       }
 
       graph.setSelected(tab, data);
+      graph.setSelectedMultiple(tab, [data]);
       showSuccessModal("Saved");
     },
     [graph, initialState, mode, refetch, reset, setRecordId, showSuccessModal, tab]
@@ -197,11 +205,11 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   return (
     <FormProvider setValue={setValue} reset={reset} {...form}>
       <form
-        className={`w-full h-full max-h-full overflow-hidden flex flex-col transition duration-300  ${
-          loading ? "opacity-50 select-none cursor-progress cursor-to-children" : ""
+        className={`flex h-full max-h-full w-full flex-col overflow-hidden transition duration-300 ${
+          loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
         }`}
         onSubmit={save}>
-        <div className="flex-shrink-0 pl-2 pr-2">
+        <div className="flex-shrink-0 pr-2 pl-2">
           <div className="mb-2">
             {statusModal.open && (
               <StatusModal
@@ -221,7 +229,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
           </div>
         </div>
 
-        <div className="flex-grow overflow-auto p-2 space-y-2" ref={containerRef}>
+        <div className="flex-grow space-y-2 overflow-auto p-2" ref={containerRef}>
           {groups.map(([id, group]) => {
             const sectionId = String(id || "_main");
 
@@ -250,7 +258,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
                   sectionId={sectionId}
                   icon={getIconForGroup(group.identifier)}
                   onToggle={(isOpen: boolean) => handleAccordionChange(id, isOpen)}>
-                  <div className="grid grid-cols-3 auto-rows-auto gap-4">
+                  <div className="grid auto-rows-auto grid-cols-3 gap-4">
                     {Object.entries(group.fields).map(([hqlName, field]) => (
                       <BaseSelector field={field} key={hqlName} formMode={mode} />
                     ))}

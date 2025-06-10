@@ -27,7 +27,7 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
       parentTab,
       parentRecord,
     }),
-    [parentRecord, parentTab, record, tab],
+    [parentRecord, parentTab, record, tab]
   );
 
   return (

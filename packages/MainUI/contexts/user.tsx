@@ -51,7 +51,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       email: "",
       image: "",
     }),
-    [],
+    []
   );
 
   const [profile, setProfile] = useState<ProfileInfo>(() => {
@@ -108,7 +108,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       setCurrentWarehouse(sessionResponse.currentWarehouse);
       setRoles(sessionResponse.roles);
     },
-    [language, setLanguage, updateProfile],
+    [language, setLanguage, updateProfile]
   );
 
   const clearUserData = useCallback(() => {
@@ -144,7 +144,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         throw error;
       }
     },
-    [setToken, token],
+    [setToken, token]
   );
 
   const login = useCallback(
@@ -161,7 +161,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         throw e;
       }
     },
-    [setToken],
+    [setToken]
   );
 
   const value = useMemo<IUserContext>(
@@ -201,7 +201,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       session,
       user,
       prevRole,
-    ],
+    ]
   );
 
   useEffect(() => {
@@ -214,7 +214,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
           await updateSessionInfo(sessionData);
         }
       } catch (error) {
-        console.error(error)
+        console.error(error);
         clearUserData();
       } finally {
         setReady(true);

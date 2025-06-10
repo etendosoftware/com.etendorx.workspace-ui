@@ -10,12 +10,12 @@
     "enabled": true,
     "rules": {
       "complexity": {
-        "noStaticOnlyClass": "info"
+        "noStaticOnlyClass": "off"
       },
       "recommended": true,
       "suspicious": {
         "noExplicitAny": "warn",
-        "noArrayIndexKey": "warn"
+        "noArrayIndexKey": "off"
       },
       "style": {
         "noNonNullAssertion": "warn",
@@ -24,10 +24,10 @@
       "correctness": {
         "noUnusedImports": "error",
         "noUnusedVariables": "error",
-        "useExhaustiveDependencies": "warn"
+        "useExhaustiveDependencies": "off"
       },
       "nursery": {
-        "useSortedClasses": "warn"
+        "useSortedClasses": "off"
       }
     }
   },

@@ -54,7 +54,7 @@ export const useReportMetadata = (reportId?: string): ReportMetadataHook => {
         }
       }
     },
-    [reportId],
+    [reportId]
   );
 
   useEffect(() => {

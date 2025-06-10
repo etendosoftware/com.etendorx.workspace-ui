@@ -34,7 +34,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
           ref.current = node;
         }
       },
-      [ref],
+      [ref]
     );
 
     const handleFocus = useCallback(() => setIsFocused(true), []);
@@ -44,12 +44,12 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
         setIsFocused(false);
         props.onBlur?.(e);
       },
-      [props],
+      [props]
     );
 
     const getLabelClass = useCallback(
       () => `block mb-1 text-sm ${isReadOnly ? "text-baseline-60" : "text-baseline-80"}`,
-      [isReadOnly],
+      [isReadOnly]
     );
 
     const getInputClass = useCallback(() => {
@@ -109,7 +109,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
         {renderHelperText()}
       </div>
     );
-  },
+  }
 );
 
 DateInput.displayName = "DateInput";

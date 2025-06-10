@@ -22,7 +22,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
 
   const defaultSeparator = useMemo(
     () => <NavigateNextIcon fill={theme.palette.baselineColor.transparentNeutral[30]} />,
-    [theme],
+    [theme]
   );
 
   const handleMouseEnter = useCallback(() => setIsHomeHovered(true), []);
@@ -33,7 +33,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
       setAnchorEl(event.currentTarget);
       setCurrentActions(actions);
     },
-    [],
+    []
   );
 
   const handleActionMenuClose = useCallback(() => {
@@ -53,7 +53,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
       e.preventDefault();
       onHomeClick();
     },
-    [onHomeClick],
+    [onHomeClick]
   );
 
   const handleToggle = useCallback((actionId: string) => {
@@ -122,7 +122,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
       sx.lastItemTypography,
       sx.link,
       theme.palette.baselineColor.neutral,
-    ],
+    ]
   );
 
   const renderBreadcrumbItems = useMemo(() => {

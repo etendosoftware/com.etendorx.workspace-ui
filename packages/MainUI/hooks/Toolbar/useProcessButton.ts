@@ -6,7 +6,7 @@ import type { ExecuteProcessParams } from "./types";
 
 export const useProcessButton = (
   executeProcess: (params: ExecuteProcessParams) => Promise<ProcessResponse>,
-  refetch: () => Promise<void>,
+  refetch: () => Promise<void>
 ) => {
   const handleProcessClick = async (btn: ProcessButton, recordId: string | undefined): Promise<ProcessResponse> => {
     if (!recordId) {
@@ -19,7 +19,7 @@ export const useProcessButton = (
           acc[param.id] = param.defaultValue ?? null;
           return acc;
         },
-        {} as Record<string, unknown>,
+        {} as Record<string, unknown>
       ) || {};
 
     const recordIdField: BaseFieldDefinition<string> = {

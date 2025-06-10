@@ -66,7 +66,7 @@ export const useProcessConfig = ({ processId, windowId, tabId }: UseProcessConfi
         setLoading(false);
       }
     },
-    [processId, windowId, tabId],
+    [processId, windowId, tabId]
   );
 
   return {

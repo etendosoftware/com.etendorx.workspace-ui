@@ -24,7 +24,7 @@ const SearchPortal: React.FC<SearchPortalProps> = ({
         onClose();
       }
     },
-    [onClose, onSearchChange],
+    [onClose, onSearchChange]
   );
 
   const handleBlur = useCallback((): void => {

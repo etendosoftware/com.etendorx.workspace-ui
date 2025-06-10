@@ -16,7 +16,7 @@ export const useMenu = (token: string | null, currentRole?: CurrentRole, languag
         }
       }
     },
-    [token, currentRole],
+    [token, currentRole]
   );
 
   useEffect(() => {

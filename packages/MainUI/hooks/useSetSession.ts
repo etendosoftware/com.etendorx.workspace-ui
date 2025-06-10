@@ -46,6 +46,6 @@ export const useSetSession = () => {
         logger.warn(error);
       }
     },
-    [setSession],
+    [setSession]
   );
 };

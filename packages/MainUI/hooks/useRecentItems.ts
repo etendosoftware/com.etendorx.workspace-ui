@@ -18,7 +18,7 @@ const createRecentItem = (item: Menu, getTranslatedName?: (item: Menu) => string
 const updateItemsWithTranslations = (
   items: RecentItem[],
   menuItems: Menu[],
-  getTranslatedName?: (item: Menu) => string,
+  getTranslatedName?: (item: Menu) => string
 ): RecentItem[] => {
   return items.map((storedItem) => {
     const menuItem = findItemByIdentifier(menuItems, storedItem.windowId);
@@ -35,11 +35,11 @@ export function useRecentItems(
   menuItems: Menu[],
   onClick: (item: Menu) => void,
   roleId: string,
-  getTranslatedName?: (item: Menu) => string,
+  getTranslatedName?: (item: Menu) => string
 ) {
   const [localRecentItems, setLocalRecentItems] = useLocalStorage<Record<string, RecentItem[]>>(
     "recentlyViewedItems",
-    {},
+    {}
   );
   const [isExpanded, setIsExpanded] = useState(false);
   const hasManuallyToggled = useRef(false);
@@ -59,7 +59,7 @@ export function useRecentItems(
         setLocalRecentItems((prev) => ({ ...prev, [roleId]: updatedItems }));
       }
     },
-    [roleId, localRecentItems, getTranslatedName, setLocalRecentItems],
+    [roleId, localRecentItems, getTranslatedName, setLocalRecentItems]
   );
 
   const handleToggleExpand = useCallback(() => {
@@ -91,7 +91,7 @@ export function useRecentItems(
 
       return recentItem;
     },
-    [roleId, getTranslatedName, setLocalRecentItems],
+    [roleId, getTranslatedName, setLocalRecentItems]
   );
 
   const handleRecentItemClick = useCallback(
@@ -107,7 +107,7 @@ export function useRecentItems(
       addRecentItem(item);
       setIsExpanded(true);
     },
-    [addRecentItem, menuItems, onClick, roleId],
+    [addRecentItem, menuItems, onClick, roleId]
   );
 
   useEffect(() => {

@@ -40,7 +40,7 @@ export function useProcessMessage(tabId: string) {
       }
       return "info";
     },
-    [],
+    []
   );
 
   const getMessageTitle = useCallback(
@@ -58,7 +58,7 @@ export function useProcessMessage(tabId: string) {
           return t("process.messageTitle");
       }
     },
-    [t],
+    [t]
   );
 
   const processResponseData = useCallback(
@@ -79,7 +79,7 @@ export function useProcessMessage(tabId: string) {
         title: getMessageTitle(data.title, messageType),
       };
     },
-    [normalizeMessageType, getMessageTitle],
+    [normalizeMessageType, getMessageTitle]
   );
 
   const handleFetchError = useCallback((error: unknown): ProcessMessage | null => {

@@ -136,7 +136,7 @@ export const useToolbarConfig = ({
       showErrorModal,
       t,
       tab,
-    ],
+    ]
   );
 
   const handleAction = useCallback(
@@ -149,7 +149,7 @@ export const useToolbarConfig = ({
         return;
       }
     },
-    [actionHandlers, isDeleting],
+    [actionHandlers, isDeleting]
   );
 
   const handleSearch = useCallback(
@@ -157,7 +157,7 @@ export const useToolbarConfig = ({
       setSearchValue(query);
       setSearchQuery(query);
     },
-    [setSearchQuery],
+    [setSearchQuery]
   );
 
   return useMemo(
@@ -190,6 +190,6 @@ export const useToolbarConfig = ({
       hideStatusModal,
       isDeleting,
       actionHandlers,
-    ],
+    ]
   );
 };

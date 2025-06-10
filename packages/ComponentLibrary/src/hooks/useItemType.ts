@@ -34,7 +34,7 @@ export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }:
           console.warn(`Unhandled item type: ${item.type}`);
       }
     },
-    [onWindowClick, onReportClick, onProcessClick],
+    [onWindowClick, onReportClick, onProcessClick]
   );
 
   return handleItemClick;

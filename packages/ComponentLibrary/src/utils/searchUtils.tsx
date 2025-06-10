@@ -80,7 +80,7 @@ const findMatchingIdsForWords = (searchWords: string[], searchIndex: SearchIndex
     Array.from(allMatchingIds).filter((id) => {
       const item = searchIndex.byId.get(id);
       return searchWords.every((word) => item?.name.toLowerCase().includes(word));
-    }),
+    })
   );
 };
 
@@ -122,7 +122,7 @@ export const rebuildTree = (items: Menu[], matchingIds: Set<string>): Menu[] => 
 export const filterItems = (
   items: Menu[],
   searchValue: string,
-  searchIndex: SearchIndex,
+  searchIndex: SearchIndex
 ): { filteredItems: Menu[]; searchExpandedItems: Set<string> } => {
   if (!searchValue || !Array.isArray(items)) return { filteredItems: items, searchExpandedItems: new Set() };
 

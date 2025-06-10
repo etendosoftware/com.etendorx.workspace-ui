@@ -73,7 +73,7 @@ export function useProcessExecution() {
         setLoading(false);
       }
     },
-    [],
+    []
   );
 
   const executeProcessAction = useCallback(
@@ -100,15 +100,15 @@ export function useProcessExecution() {
           const docStatus = extractValue(["documentStatus", "docstatus", "docStatus", "DOCSTATUS", "DocStatus"], "DR");
           const isProcessing = extractValue(
             ["processing", "isprocessing", "isProcessing", "PROCESSING", "Processing"],
-            "N",
+            "N"
           );
           const adClientId = extractValue(
             ["adClientId", "AD_Client_ID", "aD_Client_ID", "adclientid", "AdClientId", "client"],
-            "23C59575B9CF467C9620760EB255B389",
+            "23C59575B9CF467C9620760EB255B389"
           );
           const adOrgId = extractValue(
             ["adOrgId", "AD_Org_ID", "aD_Org_ID", "adorgid", "AdOrgId", "organization"],
-            "7BABA5FF80494CAFA54DEBD22EC46F01",
+            "7BABA5FF80494CAFA54DEBD22EC46F01"
           );
 
           const isPostedProcess = button.id === "Posted";
@@ -163,7 +163,7 @@ export function useProcessExecution() {
         }
       });
     },
-    [record, recordId, tab.id, tab.window, token, windowId, API_BASE_URL],
+    [record, recordId, tab.id, tab.window, token, windowId, API_BASE_URL]
   );
 
   const executeProcess = useCallback(
@@ -181,7 +181,7 @@ export function useProcessExecution() {
         throw new Error("Tipo de proceso no soportado");
       }
     },
-    [executeProcessAction, executeProcessDefinition],
+    [executeProcessAction, executeProcessDefinition]
   );
 
   const resetIframeUrl = useCallback(() => setIframeUrl(""), []);

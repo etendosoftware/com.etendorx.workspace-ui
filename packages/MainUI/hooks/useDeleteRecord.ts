@@ -72,7 +72,7 @@ export const useDeleteRecord = ({ tab, onSuccess, onError }: UseDeleteRecordPara
 
         if (errors.length > 0) {
           const errorMessages = errors.map((err) =>
-            err.reason instanceof Error ? err.reason.message : String(err.reason),
+            err.reason instanceof Error ? err.reason.message : String(err.reason)
           );
 
           throw new Error(errorMessages.join("; "));
@@ -99,7 +99,7 @@ export const useDeleteRecord = ({ tab, onSuccess, onError }: UseDeleteRecordPara
         return false;
       }
     },
-    [tab, onError, t, userId, onSuccess],
+    [tab, onError, t, userId, onSuccess]
   );
 
   return { deleteRecord, loading };

@@ -40,7 +40,7 @@ const ListSelector = ({ parameter }: { parameter: ProcessParameter }) => {
       setValue(parameter.dBColumnName, value);
       setOpen(false);
     },
-    [parameter.dBColumnName, setValue],
+    [parameter.dBColumnName, setValue]
   );
 
   const handleClickOutside = useCallback((e: MouseEvent) => {
@@ -51,7 +51,7 @@ const ListSelector = ({ parameter }: { parameter: ProcessParameter }) => {
 
   const selectedLabel = useMemo(
     () => parameter.refList.find((opt) => opt.value === selected)?.label ?? t("form.select.placeholder"),
-    [parameter.refList, selected, t],
+    [parameter.refList, selected, t]
   );
 
   useEffect(() => {

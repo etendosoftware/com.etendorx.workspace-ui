@@ -51,7 +51,7 @@ export const useFormAction = ({
         onError?.(String(err));
       }
     },
-    [initialState, mode, onError, onSuccess, tab, userId, windowMetadata],
+    [initialState, mode, onError, onSuccess, tab, userId, windowMetadata]
   );
 
   const save = useMemo(() => submit(execute), [execute, submit]);

@@ -243,7 +243,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
               const newOptions = values as string[];
               newParameters[parameterName] = { ...newParameters[parameterName] };
               newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
-                newOptions.includes(option.value),
+                newOptions.includes(option.value)
               );
             }
 

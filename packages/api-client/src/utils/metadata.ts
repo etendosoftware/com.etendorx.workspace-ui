@@ -26,7 +26,7 @@ export const groupTabsByLevel = (windowData?: Etendo.WindowMetadata) => {
 export const buildFormState = (
   fields: Tab["fields"],
   record: Record<string, unknown>,
-  formState: Record<string, Record<string, never>>,
+  formState: Record<string, Record<string, never>>
 ) => {
   try {
     const result = Object.entries(fields).reduce(
@@ -41,7 +41,7 @@ export const buildFormState = (
 
         return state;
       },
-      {} as Record<string, unknown>,
+      {} as Record<string, unknown>
     );
 
     const auxiliaryInputValues = formState?.auxiliaryInputValues;
@@ -74,7 +74,7 @@ export const getFieldsByColumnName = (tab?: Tab) => {
 
         return acc;
       },
-      {} as Record<string, Field>,
+      {} as Record<string, Field>
     );
   } catch (e) {
     console.warn(e);
@@ -95,7 +95,7 @@ export const getFieldsByInputName = (tab?: Tab) => {
 
         return acc;
       },
-      {} as Record<string, Field>,
+      {} as Record<string, Field>
     );
   } catch (e) {
     console.warn(e);
@@ -116,7 +116,7 @@ export const getFieldsByHqlName = (tab?: Tab) => {
 
         return acc;
       },
-      {} as Record<string, Field>,
+      {} as Record<string, Field>
     );
   } catch (e) {
     console.warn(e);

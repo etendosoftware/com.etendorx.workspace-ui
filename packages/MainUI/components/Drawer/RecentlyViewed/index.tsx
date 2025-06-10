@@ -35,7 +35,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
           return;
         }
       },
-      [addRecentItem],
+      [addRecentItem]
     );
 
     useImperativeHandle(
@@ -43,7 +43,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
       () => ({
         handleWindowAccess,
       }),
-      [handleWindowAccess],
+      [handleWindowAccess]
     );
 
     const parentMenuItem = useMemo(() => createParentMenuItem(localRecentItems, t), [localRecentItems, t]);
@@ -64,7 +64,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
         windowId={windowId}
       />
     );
-  },
+  }
 );
 
 RecentlyViewed.displayName = "RecentlyViewed";

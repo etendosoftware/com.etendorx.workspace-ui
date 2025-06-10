@@ -70,7 +70,7 @@ const Drawer: React.FC<DrawerProps> = ({
         return newSet;
       });
     },
-    [setExpandedItems],
+    [setExpandedItems]
   );
 
   const handleItemClick = useCallback(
@@ -78,7 +78,7 @@ const Drawer: React.FC<DrawerProps> = ({
       drawerRefs.current.recentlyViewedHandler.handleWindowAccess?.(item);
       onClick(item);
     },
-    [onClick],
+    [onClick]
   );
 
   const setRecentlyViewedRef = useCallback((ref: RecentlyViewedHandler) => {

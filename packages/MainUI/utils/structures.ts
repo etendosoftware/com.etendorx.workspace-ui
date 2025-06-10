@@ -7,6 +7,6 @@ export const mapBy = <T = EntityData>(records: T[], key: keyof T) => {
 
       return acum;
     },
-    {} as Record<string, T>,
+    {} as Record<string, T>
   );
 };

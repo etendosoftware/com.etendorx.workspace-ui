@@ -39,7 +39,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
         />
       </button>
     );
-  },
+  }
 );
 
 Switch.displayName = "Switch";

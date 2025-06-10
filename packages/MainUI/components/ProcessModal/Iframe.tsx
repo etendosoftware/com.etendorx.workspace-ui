@@ -50,7 +50,7 @@ const ProcessIframeOpenModal = ({
         setProcessWasSuccessful(message.type === "success");
       }
     },
-    [t],
+    [t]
   );
 
   const handleMessageError = useCallback(
@@ -64,7 +64,7 @@ const ProcessIframeOpenModal = ({
         });
       }
     },
-    [t],
+    [t]
   );
 
   const handleProcessMessage = useCallback(async () => {
@@ -155,7 +155,7 @@ const ProcessIframeOpenModal = ({
             textColor: "",
             buttonBg: "",
           },
-    [processMessage, getMessageStyles],
+    [processMessage, getMessageStyles]
   );
 
   if (!isOpen) return null;

@@ -47,7 +47,7 @@ export default function Sidebar() {
         router.push(`window?${params.toString()}`);
       }
     },
-    [pathname, router],
+    [pathname, router]
   );
 
   const searchContext = useMemo(
@@ -60,7 +60,7 @@ export default function Sidebar() {
       setExpandedItems,
       searchIndex,
     }),
-    [expandedItems, filteredItems, searchExpandedItems, searchIndex, searchValue],
+    [expandedItems, filteredItems, searchExpandedItems, searchIndex, searchValue]
   );
 
   const getTranslatedName = useCallback((item: Menu) => translateMenuItem(item), [translateMenuItem]);

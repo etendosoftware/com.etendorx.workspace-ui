@@ -31,7 +31,7 @@ export function RecordProvider({ children }: React.PropsWithChildren) {
       setSelectedRecord,
       getFormattedRecord,
     }),
-    [getFormattedRecord, selectedRecord],
+    [getFormattedRecord, selectedRecord]
   );
 
   return <RecordContext.Provider value={value}>{children}</RecordContext.Provider>;

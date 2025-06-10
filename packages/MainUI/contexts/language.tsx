@@ -21,7 +21,7 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
     (lang?: Language | null) => {
       return getLanguageFlag(lang || language);
     },
-    [language],
+    [language]
   );
 
   const getLabel = useCallback((label: string) => labels[label] ?? label, [labels]);
@@ -35,7 +35,7 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
       prevLanguage,
       getLabel,
     }),
-    [language, setLanguage, getFlag, prevLanguage, getLabel],
+    [language, setLanguage, getFlag, prevLanguage, getLabel]
   );
 
   useEffect(() => {

@@ -14,6 +14,8 @@ import {
   INVOICE_FIELD_MAPPINGS,
   FORM_VALUE_MAPPINGS,
 } from "./constants";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
+import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 
 export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 20 }: UseTableDirDatasourceParams) => {
   const { getValues, watch } = useFormContext();
@@ -97,7 +99,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         searchFields.push(field.selector.displayField);
       }
       if (field.selector?.extraSearchFields) {
-        searchFields.push(...field.selector.extraSearchFields.split(",").map((f) => f.trim()));
+        searchFields.push(...field.selector.extraSearchFields.split(",").map((f: string) => f.trim()));
       }
       if (searchFields.length === 0) {
         searchFields.push(...TABLEDIR_SELECTOR_DEFAULTS.SEARCH_FIELDS);

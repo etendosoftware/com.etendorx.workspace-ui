@@ -17,7 +17,7 @@ const DBSelectSelector = memo(({ value, name, title, onChange, readOnly, entity 
         title: String(record._identifier || record.name || ""),
         value: String(record.id || ""),
       })),
-    [records],
+    [records]
   );
 
   const currentValue = useMemo(() => options.find((opt) => opt.value === value) || null, [options, value]);

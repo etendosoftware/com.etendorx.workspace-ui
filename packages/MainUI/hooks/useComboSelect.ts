@@ -80,7 +80,7 @@ export const useComboSelect = ({ field }: UseComboSelectParams) => {
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     },
-    [field, getValues, parentData, tab, windowId],
+    [field, getValues, parentData, tab, windowId]
   );
 
   return { records, loading, error, refetch: fetch };

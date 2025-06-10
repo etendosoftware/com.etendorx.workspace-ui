@@ -14,13 +14,13 @@ const SelectSelector = memo(({ value, name, title, onChange, readOnly, field }: 
         title: v.label,
         value: v.value,
       })),
-    [field.refList],
+    [field.refList]
   );
   const handleChange = useCallback(
     (_: React.SyntheticEvent<Element, Event>, newValue: Option<string> | null) => {
       onChange(newValue?.value || "");
     },
-    [onChange],
+    [onChange]
   );
   const current = useMemo(() => options.find((opt) => opt.value === value), [options, value]);
 

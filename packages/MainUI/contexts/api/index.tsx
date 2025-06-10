@@ -34,7 +34,7 @@ export default function ApiProvider({ children, url }: React.PropsWithChildren<{
         () => {
           if (signal.aborted) return;
           dispatch({ type: "SET_ERROR" });
-        },
+        }
       );
     }
   }, [url]);

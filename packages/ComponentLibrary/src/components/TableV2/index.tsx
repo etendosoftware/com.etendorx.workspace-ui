@@ -91,7 +91,7 @@ const TableV2 = () => {
         size: 150,
       },
     ],
-    [],
+    []
   );
 
   const table = useMaterialReactTable({

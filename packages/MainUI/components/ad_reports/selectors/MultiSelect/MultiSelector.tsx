@@ -110,7 +110,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
 
       onChange(newOptions.map((opt) => opt.id));
     },
-    [onChange, selectedOptions],
+    [onChange, selectedOptions]
   );
 
   const handleRemoveItem = useCallback(
@@ -118,7 +118,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
       const newOptions = selectedOptions.filter((item) => item.id !== id);
       onChange(newOptions.map((opt) => opt.id));
     },
-    [onChange, selectedOptions],
+    [onChange, selectedOptions]
   );
 
   const handleClear = useCallback(() => {
