@@ -22,8 +22,8 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   const { reference } = field.column;
 
   switch (reference) {
+    case "95E2A8B50A254B2AAE6774B8C2F28120": // Product reference to datasource
     case "19":
-    case "95E2A8B50A254B2AAE6774B8C2F28120":
     case "18":
       return <TableDirSelector field={field} isReadOnly={isReadOnly} />;
     case "15":
