@@ -35,7 +35,7 @@ import {
   organizeButtonsBySection,
 } from "./buttonConfigs";
 import type { ToolbarProps } from "./types";
-import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 
 const BaseSection = { display: "flex", alignItems: "center" };
 const EmptyArray: ToolbarButtonMetadata[] = [];
@@ -185,13 +185,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
 
     const createSectionButtons = (sectionButtons: ToolbarButtonMetadata[]) =>
       sectionButtons.map((button) => {
-        const config = createButtonByType(
-          button,
-          handleAction,
-          isFormView,
-          hasSelectedRecord,
-          hasParentRecordSelected,
-        );
+        const config = createButtonByType(button, handleAction, isFormView, hasSelectedRecord, hasParentRecordSelected);
 
         const styles = getButtonStyles(button);
         if (styles) {
