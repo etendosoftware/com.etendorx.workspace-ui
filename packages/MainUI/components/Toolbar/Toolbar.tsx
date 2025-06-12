@@ -34,6 +34,7 @@ import {
   organizeButtonsBySection,
 } from "./buttonConfigs";
 import type { ToolbarProps } from "./types";
+import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
 
 const BaseSection = { display: "flex", alignItems: "center" };
 const EmptyArray: ToolbarButtonMetadata[] = [];
@@ -58,12 +59,14 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
   const { refetchDatasource } = useDatasourceContext();
-  const { tab, parentRecord } = useTabContext();
+  const { tab, parentTab, parentRecord } = useTabContext();
+  const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   const buttons: ToolbarButtonMetadata[] = toolbar?.response.data ?? EmptyArray;
   const selectedRecord = useSelectedRecord(tab);
+  const hasParentTab = !!tab?.parentTabId;
   const parentId = parentRecord?.id?.toString();
 
   const {
@@ -106,13 +109,16 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     }) as ProcessButton[];
   }, [actionFields, selectedItems, session]);
 
-  const handleMenuToggle = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    if (!anchorEl) {
-      setAnchorEl(event.currentTarget);
-    } else {
-      setAnchorEl(null);
-    }
-  }, []);
+  const handleMenuToggle = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (!anchorEl) {
+        setAnchorEl(event.currentTarget);
+      } else {
+        setAnchorEl(null);
+      }
+    },
+    [anchorEl]
+  );
 
   const handleMenuClose = useCallback(() => {
     setAnchorEl(null);
@@ -134,7 +140,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       setOpenModal(true);
       handleMenuClose();
     },
-    [selectedRecord, handleMenuClose],
+    [selectedRecord, handleMenuClose]
   );
 
   const handleSearchChange = useCallback(
@@ -142,7 +148,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
       setSearchValue(value);
       handleSearch(value);
     },
-    [handleSearch, setSearchValue],
+    [handleSearch, setSearchValue]
   );
 
   const handleProcessSuccess = useCallback(() => {
@@ -193,10 +199,17 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   const toolbarConfig = useMemo(() => {
     const organizedButtons = organizeButtonsBySection(buttons, isFormView);
     const hasSelectedRecord = !!selectedRecord?.id;
+    const hasParentRecordSelected = !hasParentTab || selectedParentItems.length === 1;
 
     const createSectionButtons = (sectionButtons: ToolbarButtonMetadata[]) =>
       sectionButtons.map((button) => {
-        const config = createButtonByType(button, handleAction, isFormView, hasSelectedRecord);
+        const config = createButtonByType(
+          button,
+          handleAction,
+          isFormView,
+          hasSelectedRecord,
+          hasParentRecordSelected,
+        );
 
         const styles = getButtonStyles(button);
         if (styles) {
@@ -224,12 +237,23 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
 
     if (processButtons.length > 0) {
       config.rightSection.buttons.push(
-        createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, anchorEl),
+        createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, anchorEl)
       );
     }
 
     return config;
-  }, [buttons, isFormView, selectedRecord?.id, processButtons.length, handleAction, handleMenuToggle, t, anchorEl]);
+  }, [
+    buttons,
+    isFormView,
+    selectedRecord?.id,
+    processButtons.length,
+    t,
+    handleAction,
+    handleMenuToggle,
+    anchorEl,
+    hasParentTab,
+    selectedParentItems,
+  ]);
 
   if (loading) return null;
 

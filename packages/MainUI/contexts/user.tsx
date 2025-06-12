@@ -214,6 +214,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
           await updateSessionInfo(sessionData);
         }
       } catch (error) {
+        console.error(error)
         clearUserData();
       } finally {
         setReady(true);

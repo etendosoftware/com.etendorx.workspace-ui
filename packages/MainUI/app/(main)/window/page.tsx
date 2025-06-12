@@ -5,9 +5,35 @@ import Loading from "@/components/loading";
 import Tabs from "@/components/window/Tabs";
 import { SelectedProvider } from "@/contexts/selected";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
+import { useSelected } from "@/hooks/useSelected";
+
+function TabsContainer() {
+  const { groupedTabs } = useMetadataContext();
+  const { activeLevels } = useSelected();
+
+  const firstExpandedIndex = groupedTabs.findIndex((tabs) => 
+    activeLevels.includes(tabs[0].tabLevel)
+  );
+
+  return (
+    <div className="flex flex-col w-full h-full max-h-full">
+      {groupedTabs.map((tabs, index) => {
+        const isTopGroup = index === firstExpandedIndex && firstExpandedIndex !== -1;
+        
+        return (
+          <Tabs 
+            key={tabs[0].id} 
+            tabs={tabs} 
+            isTopGroup={isTopGroup}
+          />
+        );
+      })}
+    </div>
+  );
+}
 
 export default function Page() {
-  const { loading, window, error, groupedTabs } = useMetadataContext();
+  const { loading, window, error } = useMetadataContext();
 
   if (loading) {
     return <Loading />;
@@ -19,11 +45,7 @@ export default function Page() {
 
   return (
     <SelectedProvider tabs={window.tabs}>
-      <div className="flex flex-col w-full h-full max-h-full">
-        {groupedTabs.map((tabs) => {
-          return <Tabs key={tabs[0].id} tabs={tabs} />;
-        })}
-      </div>
+      <TabsContainer />
     </SelectedProvider>
   );
 }

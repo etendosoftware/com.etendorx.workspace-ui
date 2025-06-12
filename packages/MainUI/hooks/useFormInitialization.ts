@@ -108,14 +108,11 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     [tab, mode, recordId, parentId]
   );
 
-  const refetch = useCallback(async () => {
+  const fetch = useCallback(async () => {
     if (!params) return;
-
-    dispatch({ type: "FETCH_START" });
 
     try {
       const entityKeyColumn = Object.values(tab.fields).find((field) => field.column.keyColumn);
-
       if (!entityKeyColumn) {
         throw new Error("Missing key column");
       }
@@ -149,11 +146,16 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     }
   }, [params, parentData, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.window]);
 
+  const refetch = useCallback(async () => {
+    if (!params) return;
+    dispatch({ type: "FETCH_START" });
+  }, [params]);
+
   useEffect(() => {
     if (!formInitialization && !loaded && !error) {
-      refetch();
+      fetch();
     }
-  }, [formInitialization, loading, error, refetch, loaded]);
+  }, [formInitialization, error, fetch, loaded]);
 
   return useMemo(
     () => ({ error, formInitialization, loading, refetch }) as useFormInitialization,
