@@ -6,33 +6,28 @@ import Tabs from "@/components/window/Tabs";
 import { SelectedProvider } from "@/contexts/selected";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useSelected } from "@/hooks/useSelected";
+import { useWindowTabMetadata } from "@/hooks/useWindowTabMetadata";
 
 function TabsContainer() {
   const { groupedTabs } = useMetadataContext();
   const { activeLevels } = useSelected();
 
-  const firstExpandedIndex = groupedTabs.findIndex((tabs) => 
-    activeLevels.includes(tabs[0].tabLevel)
-  );
+  useWindowTabMetadata();
+
+  const firstExpandedIndex = groupedTabs.findIndex((tabs) => activeLevels.includes(tabs[0].tabLevel));
 
   return (
     <div className="flex flex-col w-full h-full max-h-full">
       {groupedTabs.map((tabs, index) => {
         const isTopGroup = index === firstExpandedIndex && firstExpandedIndex !== -1;
-        
-        return (
-          <Tabs 
-            key={tabs[0].id} 
-            tabs={tabs} 
-            isTopGroup={isTopGroup}
-          />
-        );
+
+        return <Tabs key={tabs[0].id} tabs={tabs} isTopGroup={isTopGroup} />;
       })}
     </div>
   );
 }
 
-export default function Page() {
+export default function WindowPage() {
   const { loading, window, error } = useMetadataContext();
 
   if (loading) {

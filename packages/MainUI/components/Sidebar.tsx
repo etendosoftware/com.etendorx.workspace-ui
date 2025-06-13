@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import {} from "next/navigation";
 import { Drawer } from "@workspaceui/componentlibrary/src/components/Drawer/index";
 import EtendoLogotype from "../public/etendo.png";
 import { useTranslation } from "../hooks/useTranslation";
@@ -14,6 +14,7 @@ import { createSearchIndex, filterItems } from "@workspaceui/componentlibrary/sr
 import { useLanguage } from "@/contexts/language";
 import { useQueryParams } from "@/hooks/useQueryParams";
 import { useMenu } from "@/hooks/useMenu";
+import { useNavigationTabs } from "@/contexts/navigationTabs";
 
 export default function Sidebar() {
   const { t } = useTranslation();
@@ -21,8 +22,7 @@ export default function Sidebar() {
   const { language, prevLanguage } = useLanguage();
   const { translateMenuItem } = useMenuTranslation();
   const menu = useMenu(token, currentRole || undefined, language);
-  const router = useRouter();
-  const pathname = usePathname();
+  const { navigateFromMenu } = useNavigationTabs();
 
   const { windowId } = useQueryParams<WindowParams>();
 
@@ -38,16 +38,9 @@ export default function Sidebar() {
 
   const handleClick = useCallback(
     (item: Menu) => {
-      const windowId = item.windowId ?? "";
-      const params = new URLSearchParams(location.search);
-      params.set("windowId", windowId);
-      if (pathname.includes("window")) {
-        window.history.pushState(null, "", `?${params.toString()}`);
-      } else {
-        router.push(`window?${params.toString()}`);
-      }
+      navigateFromMenu(item);
     },
-    [pathname, router],
+    [navigateFromMenu]
   );
 
   const searchContext = useMemo(
@@ -60,7 +53,7 @@ export default function Sidebar() {
       setExpandedItems,
       searchIndex,
     }),
-    [expandedItems, filteredItems, searchExpandedItems, searchIndex, searchValue],
+    [expandedItems, filteredItems, searchExpandedItems, searchIndex, searchValue]
   );
 
   const getTranslatedName = useCallback((item: Menu) => translateMenuItem(item), [translateMenuItem]);

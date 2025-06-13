@@ -8,6 +8,8 @@ import UserProvider from "@/contexts/user";
 import { DatasourceProvider } from "@/contexts/datasourceContext";
 import MetadataProvider from "@/contexts/metadata";
 import Layout from "@/components/layout";
+import { NavigationTabsProvider } from "@/contexts/navigationTabs";
+import { NavigationTabsKeyboardShortcuts } from "@/components/NavigationTabs/navigationTabsKeyboardShorcuts";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -38,7 +40,10 @@ export default function RootLayout({
               <UserProvider>
                 <DatasourceProvider>
                   <MetadataProvider>
-                    <Layout>{children}</Layout>
+                    <NavigationTabsProvider>
+                      <Layout>{children}</Layout>
+                      <NavigationTabsKeyboardShortcuts />
+                    </NavigationTabsProvider>
                   </MetadataProvider>
                 </DatasourceProvider>
               </UserProvider>
