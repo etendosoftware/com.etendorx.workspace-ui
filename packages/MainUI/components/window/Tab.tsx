@@ -6,17 +6,20 @@ import { useMetadataContext } from "../../hooks/useMetadataContext";
 import { FormView } from "@/components/Form/FormView";
 import { FormMode } from "@workspaceui/etendohookbinder/src/api/types";
 import type { TabLevelProps } from "@/components/window/types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
 import { useTabContext } from "@/contexts/tab";
+import { useSelectedRecords } from "@/hooks/useSelectedRecords";
+import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
 
 export function Tab({ collapsed }: TabLevelProps) {
   const { window } = useMetadataContext();
   const [recordId, setRecordId] = useState<string>("");
   const { registerActions } = useToolbarContext();
   const { graph, setTabRecordId, getTabRecordId } = useSelected();
-  const { tab } = useTabContext();
+  const { tab, parentTab } = useTabContext();
+  const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const handleSetRecordId = useCallback<React.Dispatch<React.SetStateAction<string>>>(
     (value) => {
@@ -37,6 +40,14 @@ export function Tab({ collapsed }: TabLevelProps) {
       setRecordId(globalRecordId);
     }
   }, [tab.id, getTabRecordId, recordId]);
+
+  useEffect(() => {
+    if (!tab?.parentTabId) return;
+    const hasParentRecordSelected = selectedParentItems.length === 1;
+    if (!hasParentRecordSelected) {
+      handleSetRecordId("");
+    }
+  }, [tab?.parentTabId, selectedParentItems.length, handleSetRecordId]);
 
   useEffect(() => {
     registerActions({
