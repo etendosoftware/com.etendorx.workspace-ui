@@ -1,4 +1,4 @@
-import type { Field, FormMode, Tab, WindowMetadata } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Field, FormMode, WindowMetadata } from "@workspaceui/etendohookbinder/src/api/types";
 import type { FieldDefinition } from "@workspaceui/etendohookbinder/src/api/types";
 import type { ReportColumn } from "@workspaceui/etendohookbinder/src/hooks/types";
 import type { MRT_ColumnDef, MRT_Row } from "material-react-table";
@@ -34,7 +34,6 @@ export type FormData = Record<string, FieldDefinition | Section>;
 
 export interface FormViewProps {
   window?: WindowMetadata;
-  tab: Tab;
   mode: FormMode;
   recordId?: string;
   onSave?: (saveFn: () => void) => void;

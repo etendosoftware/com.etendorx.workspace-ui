@@ -23,6 +23,7 @@ import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import type { FormViewProps } from "./types";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
+import { useTabContext } from "@/contexts/tab";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon />,
@@ -30,7 +31,7 @@ const iconMap: Record<string, React.ReactElement> = {
   Dimensions: <FolderIcon />,
 };
 
-export function FormView({ window: windowMetadata, tab, mode, recordId, setRecordId }: FormViewProps) {
+export function FormView({ window: windowMetadata, mode, recordId, setRecordId }: FormViewProps) {
   const theme = useTheme();
   const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
   const [selectedTab, setSelectedTab] = useState<string>("");
@@ -38,6 +39,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const containerRef = useRef<HTMLDivElement>(null);
   const { graph } = useSelected();
   const { session } = useUserContext();
+  const { tab } = useTabContext();
 
   const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
 
