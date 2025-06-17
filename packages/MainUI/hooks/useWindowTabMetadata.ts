@@ -6,35 +6,44 @@ import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { NavigationTabsUtils } from "@/utils/navigationTabsUtils";
 
 /**
- * Hook para actualizar metadatos de tabs basado en la ventana actual
+ * Hook to update metadata
  */
 export function useWindowTabMetadata() {
-  const { updateTabTitle, activeTabId, getTabById, updateTabMetadata } = useNavigationTabs();
+  const { updateTabTitle, getActiveTab, updateTabMetadata } = useNavigationTabs();
   const { window, loading } = useMetadataContext();
 
   useEffect(() => {
     if (window && !loading) {
-      const activeTab = getTabById(activeTabId);
+      const activeTab = getActiveTab();
+
+      console.log("useWindowTabMetadata - Effect triggered:", {
+        hasWindow: !!window,
+        hasActiveTab: !!activeTab,
+        activeTabType: activeTab?.type,
+        activeTabWindowId: activeTab?.windowId,
+        windowId: window.id,
+        windowName: window.name || window.window$_identifier,
+      });
 
       if (activeTab && activeTab.type === "window" && activeTab.windowId === window.id) {
-        // Actualizar título con información más inteligente
         const windowName = window.window$_identifier || window.name;
 
-        if (windowName && (activeTab.title === "Loading..." || activeTab.title !== windowName)) {
+        if (windowName && activeTab.title === "Loading...") {
           const smartTitle = NavigationTabsUtils.generateSmartTitle(
             windowName,
             activeTab.recordId,
             window.tabs[0]?.entityName
           );
 
-          updateTabTitle(activeTabId, smartTitle);
+          console.log("useWindowTabMetadata - Updating title to:", smartTitle);
 
-          updateTabMetadata(activeTabId, {
-            ...activeTab.metadata,
+          updateTabTitle(activeTab.id, smartTitle);
+
+          updateTabMetadata(activeTab.id, {
             entityName: window.tabs[0]?.entityName,
           });
         }
       }
     }
-  }, [window, loading, activeTabId, getTabById, updateTabTitle, updateTabMetadata]);
+  }, [window, loading, getActiveTab, updateTabTitle, updateTabMetadata]);
 }

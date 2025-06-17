@@ -9,12 +9,14 @@ import type { TabLevelProps } from "@/components/window/types";
 import { useCallback, useEffect, useState } from "react";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
+import { useWindowStateMemorization } from "@/hooks/navigation/useWindowStateMemorization";
 
 export function Tab({ tab, collapsed }: TabLevelProps) {
   const { window } = useMetadataContext();
   const [recordId, setRecordId] = useState<string>("");
   const { registerActions } = useToolbarContext();
   const { graph, setTabRecordId, getTabRecordId } = useSelected();
+  const { memoizeRecordSelection, memoizeFormData, memoizeTableState } = useWindowStateMemorization();
 
   const handleSetRecordId = useCallback<React.Dispatch<React.SetStateAction<string>>>(
     (value) => {
@@ -23,10 +25,31 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
         setTabRecordId(tab.id, newValue);
 
+        // Memoizar la selección del record
+        memoizeRecordSelection(newValue);
+
         return newValue;
       });
     },
-    [tab.id, setTabRecordId]
+    [tab.id, setTabRecordId, memoizeRecordSelection]
+  );
+
+  const handleFormDataChange = useCallback(
+    (formData: Record<string, any>) => {
+      memoizeFormData(formData);
+    },
+    [memoizeFormData]
+  );
+
+  const handleTableStateChange = useCallback(
+    (tableState: {
+      page?: number;
+      sortBy?: string;
+      filters?: Record<string, any>;
+    }) => {
+      memoizeTableState(tableState);
+    },
+    [memoizeTableState]
   );
 
   useEffect(() => {
@@ -60,9 +83,10 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
           window={window}
           recordId={recordId}
           setRecordId={handleSetRecordId}
+          onFormDataChange={handleFormDataChange}
         />
       ) : (
-        <DynamicTable setRecordId={handleSetRecordId} />
+        <DynamicTable setRecordId={handleSetRecordId} onTableStateChange={handleTableStateChange} />
       )}
     </div>
   );

@@ -30,7 +30,16 @@ type RowProps = (props: {
 
 const getRowId = (row: EntityData) => String(row.id);
 
-const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetStateAction<string>> }) => {
+interface DynamicTableProps {
+  setRecordId: React.Dispatch<React.SetStateAction<string>>;
+  onTableStateChange?: (state: {
+    page?: number;
+    sortBy?: string;
+    filters?: Record<string, any>;
+  }) => void;
+}
+
+const DynamicTable = ({ setRecordId, onTableStateChange }: DynamicTableProps) => {
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
@@ -43,6 +52,10 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
   const tabId = tab.id;
   const parentId = String(parentRecord?.id ?? "");
   const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string>("");
+  const [filters, setFilters] = useState<Record<string, any>>({});
 
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 

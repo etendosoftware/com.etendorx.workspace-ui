@@ -4,15 +4,25 @@ import { ErrorDisplay } from "@/components/ErrorDisplay";
 import Loading from "@/components/loading";
 import Tabs from "@/components/window/Tabs";
 import { SelectedProvider } from "@/contexts/selected";
+import { useWindowStateMemorization } from "@/hooks/navigation/useWindowStateMemorization";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useSelected } from "@/hooks/useSelected";
 import { useWindowTabMetadata } from "@/hooks/useWindowTabMetadata";
+import { useEffect } from "react";
 
 function TabsContainer() {
   const { groupedTabs } = useMetadataContext();
   const { activeLevels } = useSelected();
+  const { restoreTabState } = useWindowStateMemorization();
 
   useWindowTabMetadata();
+
+  useEffect(() => {
+    const restoredState = restoreTabState();
+    if (restoredState) {
+      console.log("Estado restaurado para la ventana:", restoredState);
+    }
+  }, [restoreTabState]);
 
   const firstExpandedIndex = groupedTabs.findIndex((tabs) => activeLevels.includes(tabs[0].tabLevel));
 

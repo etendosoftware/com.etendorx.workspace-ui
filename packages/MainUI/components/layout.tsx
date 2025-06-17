@@ -22,7 +22,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <div className="flex flex-1 flex-col max-w-auto max-h-auto overflow-hidden">
         <div className="w-full p-1">
-          {/* Agregar NavigationTabs aquí, antes de Navigation */}
           <NavigationTabs />
           <Navigation />
           <AppBreadcrumb />

@@ -1,15 +1,14 @@
-// packages/MainUI/components/NavigationTabs/index.tsx
 "use client";
 
 import { useCallback, useRef, useState, useEffect } from "react";
 import { useNavigationTabs } from "@/contexts/navigationTabs";
-import { NavigationTabItem } from "./navigationTabItem";
 import ChevronLeftIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-left.svg";
 import ChevronRightIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-right.svg";
 import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
+import NavigationTabItem from "./navigationTabItem";
 
 export function NavigationTabs() {
-  const { tabs, switchToTab, closeTab } = useNavigationTabs();
+  const { tabs, switchToTab, closeTab, isReady } = useNavigationTabs();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftScroll, setShowLeftScroll] = useState(false);
   const [showRightScroll, setShowRightScroll] = useState(false);
@@ -39,6 +38,8 @@ export function NavigationTabs() {
 
   const handleTabSelect = useCallback(
     (tabId: string) => {
+      if (!isReady) return;
+
       switchToTab(tabId);
 
       setTimeout(() => {
@@ -63,49 +64,31 @@ export function NavigationTabs() {
         }
       }, 100);
     },
-    [switchToTab]
+    [switchToTab, isReady]
   );
 
   const handleTabClose = useCallback(
     (tabId: string) => {
+      if (!isReady) return;
       closeTab(tabId);
     },
-    [closeTab]
+    [closeTab, isReady]
   );
 
   const handleNewTab = useCallback(() => {
+    if (!isReady) return;
+
     const homeTab = tabs.find((tab) => tab.type === "home");
     if (homeTab) {
       switchToTab(homeTab.id);
     }
-  }, [tabs, switchToTab]);
+  }, [tabs, switchToTab, isReady]);
 
   useEffect(() => {
     checkScrollButtons();
   }, [tabs, checkScrollButtons]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (document.activeElement?.getAttribute("role") === "tab") {
-        if (event.key === "ArrowLeft") {
-          event.preventDefault();
-          const currentIndex = tabs.findIndex((tab) => tab.isActive);
-          const prevIndex = currentIndex > 0 ? currentIndex - 1 : tabs.length - 1;
-          switchToTab(tabs[prevIndex].id);
-        } else if (event.key === "ArrowRight") {
-          event.preventDefault();
-          const currentIndex = tabs.findIndex((tab) => tab.isActive);
-          const nextIndex = currentIndex < tabs.length - 1 ? currentIndex + 1 : 0;
-          switchToTab(tabs[nextIndex].id);
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [tabs, switchToTab]);
-
-  if (tabs.length <= 1) {
+  if (!isReady || tabs.length <= 1) {
     return null;
   }
 
@@ -147,7 +130,6 @@ export function NavigationTabs() {
           <ChevronRightIcon className="w-4 h-4 text-gray-600" />
         </button>
       )}
-
       <button
         type="button"
         onClick={handleNewTab}
@@ -160,5 +142,4 @@ export function NavigationTabs() {
   );
 }
 
-export { NavigationTabItem } from "./navigationTabItem";
 export default NavigationTabs;

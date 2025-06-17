@@ -1,4 +1,3 @@
-// packages/MainUI/components/NavigationTabs/NavigationTabItem.tsx
 "use client";
 
 import { useCallback, useState } from "react";
@@ -97,8 +96,6 @@ export function NavigationTabItem({ tab, onSelect, onClose, isDragging }: Naviga
           <X size={12} className="text-gray-500" />
         </button>
       )}
-
-      {/* Indicador de tab activa */}
       {tab.isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" aria-hidden="true" />}
     </div>
   );

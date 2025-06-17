@@ -21,7 +21,7 @@ export function NavigationTabsKeyboardShortcuts() {
 
       if ((event.ctrlKey || event.metaKey) && event.key === "w") {
         const activeTab = tabs.find((tab) => tab.id === activeTabId);
-        if (activeTab && activeTab.canClose) {
+        if (activeTab?.canClose) {
           event.preventDefault();
           closeTab(activeTabId);
         }
