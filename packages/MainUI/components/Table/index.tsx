@@ -40,10 +40,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
   const { language } = useLanguage();
   const { t } = useTranslation();
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
-  const { graph } = useSelected(); // ✅ Volver al original
+  const { graph } = useSelected();
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
-  const { tab, parentTab, parentRecord } = useTabContext(); // ✅ TabContext ahora lee desde URL
+  const { tab, parentTab, parentRecord } = useTabContext();
   const tabId = tab.id;
   const parentId = String(parentRecord?.id ?? "");
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -175,7 +175,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     [onRecordSelection, tabId]
   );
 
-  // ✅ MANEJO DE CLICKS simplificado
+  // ✅ MANEJO DE CLICKS corregido para sincronizar con URL
   const rowProps = useCallback<RowProps>(
     ({ row, table }) => {
       const record = row.original as Record<string, never>;
@@ -190,23 +190,48 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
           }
           row.toggleSelected();
 
-          // ✅ La selección se manejará por useTableSelection automáticamente
+          // ✅ IMPORTANTE: Notificar la selección inmediatamente
+          // useTableSelection manejará la lógica, pero necesitamos forzar el callback
+          setTimeout(() => {
+            const newSelection = table.getState().rowSelection;
+            const selectedIds = Object.keys(newSelection).filter((id) => newSelection[id]);
+
+            if (selectedIds.length > 0 && onRecordSelection) {
+              console.log(
+                `[DynamicTable ${tabId}] Triggering selection callback for:`,
+                selectedIds[selectedIds.length - 1]
+              );
+              onRecordSelection(selectedIds[selectedIds.length - 1]);
+            } else if (selectedIds.length === 0 && onRecordSelection) {
+              console.log(`[DynamicTable ${tabId}] Triggering clear selection callback`);
+              onRecordSelection("");
+            }
+          }, 0);
         },
         onDoubleClick: (event) => {
           console.log(`[DynamicTable ${tabId}] Row double-clicked:`, record.id);
 
           event.stopPropagation();
 
+          // ✅ Asegurar que el registro esté seleccionado
           if (!isSelected) {
             table.setRowSelection({ [record.id]: true });
+
+            // ✅ Notificar selección antes de ir al formulario
+            if (onRecordSelection) {
+              onRecordSelection(record.id);
+            }
           }
 
-          // ✅ Establecer en el gráfico para compatibilidad
-          graph.setSelected(tab, row.original);
+          // ✅ Pequeño delay para que la selección se procese antes del formulario
+          setTimeout(() => {
+            // ✅ Establecer en el gráfico para compatibilidad
+            graph.setSelected(tab, row.original);
 
-          // ✅ Ir al formulario
-          console.log(`[DynamicTable ${tabId}] Opening form for:`, record.id);
-          setRecordId(record.id);
+            // ✅ Ir al formulario
+            console.log(`[DynamicTable ${tabId}] Opening form for:`, record.id);
+            setRecordId(record.id);
+          }, 10);
         },
         sx: {
           ...(isSelected && {
@@ -217,7 +242,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
         table,
       };
     },
-    [graph, setRecordId, sx.rowSelected, tab, tabId]
+    [graph, setRecordId, sx.rowSelected, tab, tabId, onRecordSelection]
   );
 
   const renderEmptyRowsFallback = useCallback(
@@ -282,6 +307,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
   // ✅ Usar useTableSelection con callback
   useTableSelection(tab, records, table.getState().rowSelection, handleTableSelectionChange);
 
+  // ✅ ACCIONES DE TOOLBAR ESPECÍFICAS PARA TABLA
   const clearSelection = useCallback(() => {
     console.log(`[DynamicTable ${tabId}] Clearing selection`);
     table.resetRowSelection(true);
@@ -300,11 +326,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     };
   }, [tabId, removeRecordLocally, registerDatasource, unregisterDatasource, registerRefetchFunction, refetch]);
 
+  // ✅ REGISTRAR ACCIONES ESPECÍFICAS DE TABLA (refresh, filter, back)
   useEffect(() => {
     registerActions({
       refresh: refetch,
       filter: toggleImplicitFilters,
-      back: clearSelection,
+      back: clearSelection, // ✅ NOTA: "back" en tabla significa "limpiar selección"
     });
   }, [clearSelection, refetch, registerActions, toggleImplicitFilters]);
 

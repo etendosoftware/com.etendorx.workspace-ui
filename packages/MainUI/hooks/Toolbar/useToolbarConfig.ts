@@ -6,10 +6,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearch } from "../../contexts/searchContext";
 import { useDeleteRecord } from "../useDeleteRecord";
 import { useMetadataContext } from "../useMetadataContext";
-import { useSelectedRecord } from "../useSelectedRecord";
-import { useSelectedRecords } from "../useSelectedRecords";
 import { useTranslation } from "../useTranslation";
 import { useStatusModal } from "./useStatusModal";
+import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { useSelected } from "@/hooks/useSelected";
 
 export const useToolbarConfig = ({
   tabId,
@@ -39,9 +39,53 @@ export const useToolbarConfig = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { tab } = useTabContext();
-  const selectedRecord = useSelectedRecord(tab);
-  const selectedMultiple = useSelectedRecords(tab);
-  const selectedIds = useMemo(() => selectedMultiple?.map((r) => String(r.id)) ?? [], [selectedMultiple]);
+  const { activeWindow, getSelectedRecord } = useMultiWindowURL();
+  const { graph } = useSelected();
+
+  // ✅ OBTENER DATOS DESDE URL EN LUGAR DE HOOKS ANTIGUOS
+  const selectedRecordId = useMemo(() => {
+    if (!activeWindow?.windowId || !tab) return null;
+    return getSelectedRecord(activeWindow.windowId, tab.id);
+  }, [activeWindow?.windowId, tab, getSelectedRecord]);
+
+  // ✅ OBTENER REGISTRO ACTUAL DESDE GRAPH (para compatibilidad con delete)
+  const selectedRecord = useMemo(() => {
+    if (!selectedRecordId || !tab) return null;
+
+    // Intentar obtener del graph primero
+    const graphRecord = graph.getSelected(tab);
+    if (graphRecord) return graphRecord;
+
+    // Fallback: crear objeto mínimo con ID
+    return { id: selectedRecordId };
+  }, [selectedRecordId, tab, graph]);
+
+  // ✅ OBTENER REGISTROS MÚLTIPLES DESDE GRAPH
+  const selectedMultiple = useMemo(() => {
+    if (!tab) return [];
+    return graph.getSelectedMultiple(tab) || [];
+  }, [tab, graph]);
+
+  const selectedIds = useMemo(() => {
+    // Si hay selección múltiple, usar esa
+    if (selectedMultiple.length > 0) {
+      return selectedMultiple.map((r) => String(r.id));
+    }
+
+    // Si hay una selección única, usar esa
+    if (selectedRecordId) {
+      return [selectedRecordId];
+    }
+
+    return [];
+  }, [selectedMultiple, selectedRecordId]);
+
+  console.log(`[useToolbarConfig ${tabId}] Selection state:`, {
+    selectedRecordId,
+    selectedMultipleCount: selectedMultiple.length,
+    selectedIds,
+    hasRecord: !!selectedRecord,
+  });
 
   const { deleteRecord, loading: deleteLoading } = useDeleteRecord({
     tab: tab as Tab,
@@ -61,6 +105,15 @@ export const useToolbarConfig = ({
         saveLabel: t("common.close"),
         onAfterClose: () => {
           setIsDeleting(false);
+
+          // ✅ LIMPIAR SELECCIÓN DESPUÉS DE DELETE
+          if (activeWindow?.windowId && tab) {
+            // Limpiar tanto URL como graph
+            const { clearSelectedRecord } = useMultiWindowURL();
+            clearSelectedRecord(activeWindow.windowId, tab.id);
+            graph.clearSelected(tab);
+            graph.clearSelectedMultiple(tab);
+          }
         },
       });
     },
@@ -86,18 +139,43 @@ export const useToolbarConfig = ({
 
   const actionHandlers = useMemo<Record<string, () => void>>(
     () => ({
-      CANCEL: () => onBack?.(),
-      NEW: () => onNew?.(),
-      FIND: () => setSearchOpen(true),
+      CANCEL: () => {
+        console.log(`[useToolbarConfig ${tabId}] CANCEL action triggered`);
+        onBack?.();
+      },
+      NEW: () => {
+        console.log(`[useToolbarConfig ${tabId}] NEW action triggered`);
+        onNew?.();
+      },
+      FIND: () => {
+        console.log(`[useToolbarConfig ${tabId}] FIND action triggered`);
+        setSearchOpen(true);
+      },
       TAB_CONTROL: () => {
         logger.info("Tab control clicked");
       },
-      FILTER: () => onFilter?.(),
-      SAVE: () => onSave?.(),
+      FILTER: () => {
+        console.log(`[useToolbarConfig ${tabId}] FILTER action triggered`);
+        onFilter?.();
+      },
+      SAVE: () => {
+        console.log(`[useToolbarConfig ${tabId}] SAVE action triggered`);
+        onSave?.();
+      },
       DELETE: () => {
+        console.log(`[useToolbarConfig ${tabId}] DELETE action triggered`, {
+          selectedIdsCount: selectedIds.length,
+          selectedIds,
+        });
+
         if (tab) {
           if (selectedIds.length > 0) {
-            const recordsToDelete = selectedIds.map((id) => tab.records?.[id] || { id });
+            // ✅ CREAR OBJETOS DE REGISTRO PARA DELETE
+            const recordsToDelete = selectedIds.map((id) => {
+              // Intentar obtener del graph o crear objeto mínimo
+              const existingRecord = selectedMultiple.find((r) => String(r.id) === id);
+              return existingRecord || { id };
+            });
 
             const confirmText =
               selectedIds.length === 1
@@ -107,6 +185,7 @@ export const useToolbarConfig = ({
             showConfirmModal({
               confirmText,
               onConfirm: () => {
+                console.log(`[useToolbarConfig ${tabId}] Confirming delete for:`, recordsToDelete);
                 setIsDeleting(true);
                 deleteRecord(selectedIds.length === 1 ? recordsToDelete[0] : recordsToDelete);
               },
@@ -114,6 +193,7 @@ export const useToolbarConfig = ({
               secondaryButtonLabel: t("common.cancel"),
             });
           } else {
+            console.log(`[useToolbarConfig ${tabId}] No records selected for delete`);
             showErrorModal(t("status.selectRecordError"), {
               saveLabel: t("common.close"),
               secondaryButtonLabel: t("modal.secondaryButtonLabel"),
@@ -121,7 +201,10 @@ export const useToolbarConfig = ({
           }
         }
       },
-      REFRESH: () => onRefresh?.(),
+      REFRESH: () => {
+        console.log(`[useToolbarConfig ${tabId}] REFRESH action triggered`);
+        onRefresh?.();
+      },
     }),
     [
       deleteRecord,
@@ -132,32 +215,41 @@ export const useToolbarConfig = ({
       onSave,
       selectedIds,
       selectedRecord,
+      selectedMultiple,
       showConfirmModal,
       showErrorModal,
       t,
       tab,
-    ],
+      tabId,
+    ]
   );
 
   const handleAction = useCallback(
     (action: string) => {
-      if (isDeleting) return;
+      if (isDeleting) {
+        console.log(`[useToolbarConfig ${tabId}] Ignoring action ${action} - currently deleting`);
+        return;
+      }
 
+      console.log(`[useToolbarConfig ${tabId}] Handling action: ${action}`);
       const handler = actionHandlers[action];
       if (handler) {
         handler();
         return;
       }
+
+      console.warn(`[useToolbarConfig ${tabId}] No handler found for action: ${action}`);
     },
-    [actionHandlers, isDeleting],
+    [actionHandlers, isDeleting, tabId]
   );
 
   const handleSearch = useCallback(
     (query: string) => {
+      console.log(`[useToolbarConfig ${tabId}] Search query: ${query}`);
       setSearchValue(query);
       setSearchQuery(query);
     },
-    [setSearchQuery],
+    [setSearchQuery, tabId]
   );
 
   return useMemo(
@@ -176,6 +268,11 @@ export const useToolbarConfig = ({
       hideStatusModal,
       isDeleting,
       actionHandlers,
+      // ✅ EXPONER DATOS DE SELECCIÓN PARA DEBUGGING
+      selectedRecord,
+      selectedMultiple,
+      selectedIds,
+      selectedRecordId,
     }),
     [
       handleAction,
@@ -190,6 +287,10 @@ export const useToolbarConfig = ({
       hideStatusModal,
       isDeleting,
       actionHandlers,
-    ],
+      selectedRecord,
+      selectedMultiple,
+      selectedIds,
+      selectedRecordId,
+    ]
   );
 };

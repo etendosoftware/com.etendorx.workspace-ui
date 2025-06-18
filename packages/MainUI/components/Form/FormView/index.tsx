@@ -22,7 +22,7 @@ import StatusBar from "./StatusBar";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import type { FormViewProps } from "./types";
 import { useUserContext } from "@/hooks/useUserContext";
-import { useSelectedRecord } from "@/hooks/useSelectedRecord";
+import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon />,
@@ -38,10 +38,41 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const containerRef = useRef<HTMLDivElement>(null);
   const { graph } = useSelected();
   const { session } = useUserContext();
+  const { activeWindow, getSelectedRecord, clearTabFormState, setSelectedRecord } = useMultiWindowURL();
 
   const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
 
-  const record = useSelectedRecord(tab);
+  // ✅ OBTENER RECORD DESDE URL + GRAPH HÍBRIDO
+  const record = useMemo(() => {
+    const windowId = activeWindow?.windowId;
+    if (!windowId) return null;
+
+    // Si estamos en modo NEW, no hay record
+    if (recordId === "new") return null;
+
+    // Intentar primero desde URL
+    const selectedRecordId = getSelectedRecord(windowId, tab.id);
+    if (selectedRecordId && selectedRecordId === recordId) {
+      // Intentar obtener datos completos del graph
+      const graphRecord = graph.getSelected(tab);
+      if (graphRecord && String(graphRecord.id) === recordId) {
+        console.log(`[FormView ${tab.id}] Using record from graph:`, graphRecord.id);
+        return graphRecord;
+      }
+
+      // Fallback: crear objeto mínimo con ID
+      console.log(`[FormView ${tab.id}] Using minimal record from URL:`, selectedRecordId);
+      return { id: selectedRecordId } as EntityData;
+    }
+
+    // Si recordId no coincide con selección actual, podría ser navegación directa
+    if (recordId && recordId !== "new") {
+      console.log(`[FormView ${tab.id}] Using recordId directly:`, recordId);
+      return { id: recordId } as EntityData;
+    }
+
+    return null;
+  }, [activeWindow?.windowId, getSelectedRecord, tab, recordId, graph]);
 
   const {
     formInitialization,
@@ -57,8 +88,15 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const initialState = useFormInitialState(formInitialization) || undefined;
 
   const availableFormData = useMemo(() => {
+    console.log(`[FormView ${tab.id}] Building form data:`, {
+      recordId,
+      mode,
+      hasRecord: !!record,
+      hasInitialState: !!initialState,
+    });
+
     return { ...record, ...initialState };
-  }, [record, initialState]);
+  }, [record, initialState, recordId, mode, tab.id]);
 
   const { fields, groups } = useFormFields(tab, mode, false, availableFormData);
 
@@ -137,31 +175,45 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     }
   }, []);
 
+  // ✅ ACCIONES ACTUALIZADAS PARA URL
   const onReset = useCallback(async () => {
-    refetch();
-  }, [refetch]);
+    console.log(`[FormView ${tab.id}] REFRESH action triggered`);
+    await refetch();
+  }, [refetch, tab.id]);
 
   const onSuccess = useCallback(
     async (data: EntityData) => {
+      console.log(`[FormView ${tab.id}] SAVE SUCCESS:`, { mode, savedData: data.id });
+
       if (mode === FormMode.EDIT) {
         reset({ ...initialState, ...data });
       } else {
+        // ✅ En modo NEW, actualizar recordId y refrescar
         setRecordId(String(data.id));
-        refetch();
+        await refetch();
       }
 
+      // ✅ Actualizar graph para compatibilidad
       graph.setSelected(tab, data);
       graph.setSelectedMultiple(tab, [data]);
+
+      // ✅ TAMBIÉN actualizar URL si es necesario
+      const windowId = activeWindow?.windowId;
+      if (windowId) {
+        setSelectedRecord(windowId, tab.id, String(data.id));
+      }
+
       showSuccessModal("Saved");
     },
-    [graph, initialState, mode, refetch, reset, setRecordId, showSuccessModal, tab]
+    [graph, initialState, mode, refetch, reset, setRecordId, showSuccessModal, tab, activeWindow?.windowId]
   );
 
   const onError = useCallback(
     (data: string) => {
+      console.log(`[FormView ${tab.id}] SAVE ERROR:`, data);
       showErrorModal(data);
     },
-    [showErrorModal]
+    [showErrorModal, tab.id]
   );
 
   const { save, loading } = useFormAction({
@@ -182,25 +234,64 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     [expandedSections]
   );
 
+  // ✅ ACTUALIZAR FORM DATA CUANDO CAMBIE
   useEffect(() => {
     if (!availableFormData) return;
 
-    for (const [key, value] of Object.entries(availableFormData)) {
+    const processedData = { ...availableFormData };
+    for (const [key, value] of Object.entries(processedData)) {
       if (typeof value === "undefined") {
-        availableFormData[key] = "";
+        processedData[key] = "";
       }
     }
 
-    reset({ ...availableFormData });
-  }, [availableFormData, reset]);
+    console.log(`[FormView ${tab.id}] Resetting form with data:`, Object.keys(processedData));
+    reset(processedData);
+  }, [availableFormData, reset, tab.id]);
+
+  // ✅ REGISTRAR ACCIONES ESPECÍFICAS DEL FORMULARIO
+  const handleSave = useCallback(async () => {
+    console.log(`[FormView ${tab.id}] Form SAVE action triggered`);
+    await save();
+  }, [save, tab.id]);
+
+  const handleBack = useCallback(() => {
+    console.log(`[FormView ${tab.id}] Form BACK action triggered`);
+
+    const windowId = activeWindow?.windowId;
+    if (windowId) {
+      // ✅ Limpiar estado de formulario y volver a tabla
+      clearTabFormState(windowId, tab.id);
+    }
+  }, [activeWindow?.windowId, clearTabFormState, tab.id]);
+
+  const handleNew = useCallback(() => {
+    console.log(`[FormView ${tab.id}] Form NEW action triggered`);
+    setRecordId("new");
+  }, [setRecordId, tab.id]);
 
   useEffect(() => {
-    registerActions({ save: save, refresh: onReset, new: onReset });
-  }, [onReset, registerActions, save]);
+    const actions = {
+      save: handleSave,
+      refresh: onReset,
+      back: handleBack,
+      new: handleNew,
+    };
+
+    console.log(`[FormView ${tab.id}] Registering form actions:`, Object.keys(actions));
+    registerActions(actions);
+  }, [registerActions, handleSave, onReset, handleBack, handleNew, tab.id]);
 
   if (loading || loadingFormInitialization) {
     return <Spinner />;
   }
+
+  console.log(`[FormView ${tab.id}] Rendering form:`, {
+    mode,
+    recordId,
+    hasAvailableData: !!availableFormData,
+    groupsCount: groups.length,
+  });
 
   return (
     <FormProvider setValue={setValue} reset={reset} {...form}>
@@ -208,7 +299,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         className={`w-full h-full max-h-full overflow-hidden flex flex-col transition duration-300  ${
           loading ? "opacity-50 select-none cursor-progress cursor-to-children" : ""
         }`}
-        onSubmit={save}>
+        onSubmit={handleSave}>
         <div className="flex-shrink-0 pl-2 pr-2">
           <div className="mb-2">
             {statusModal.open && (
