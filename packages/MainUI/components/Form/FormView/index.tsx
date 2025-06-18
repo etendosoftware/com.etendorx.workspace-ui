@@ -30,14 +30,7 @@ const iconMap: Record<string, React.ReactElement> = {
   Dimensions: <FolderIcon />,
 };
 
-export function FormView({
-  window: windowMetadata,
-  tab,
-  mode,
-  recordId,
-  setRecordId,
-  onFormDataChange,
-}: FormViewProps) {
+export function FormView({ window: windowMetadata, tab, mode, recordId, setRecordId }: FormViewProps) {
   const theme = useTheme();
   const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
   const [selectedTab, setSelectedTab] = useState<string>("");
@@ -45,7 +38,6 @@ export function FormView({
   const containerRef = useRef<HTMLDivElement>(null);
   const { graph } = useSelected();
   const { session } = useUserContext();
-  const [formData, setFormData] = useState<Record<string, any>>({});
 
   const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
 
@@ -104,22 +96,6 @@ export function FormView({
       return prev;
     });
   }, []);
-
-  const handleFormChange = useCallback(
-    (data: Record<string, any>) => {
-      setFormData(data);
-      onFormDataChange?.(data);
-    },
-    [onFormDataChange]
-  );
-
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-      handleFormChange(value);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [form, handleFormChange]);
 
   useEffect(() => {
     if (selectedTab && containerRef.current) {
@@ -232,7 +208,6 @@ export function FormView({
         className={`w-full h-full max-h-full overflow-hidden flex flex-col transition duration-300  ${
           loading ? "opacity-50 select-none cursor-progress cursor-to-children" : ""
         }`}
-        onChange={() => handleFormChange(form.getValues())}
         onSubmit={save}>
         <div className="flex-shrink-0 pl-2 pr-2">
           <div className="mb-2">

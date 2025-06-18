@@ -29,33 +29,32 @@ type RowProps = (props: {
 }) => Omit<MRT_TableBodyRowProps<EntityData>, "staticRowIndex">;
 
 const getRowId = (row: EntityData) => String(row.id);
-
 interface DynamicTableProps {
   setRecordId: React.Dispatch<React.SetStateAction<string>>;
-  onTableStateChange?: (state: {
-    page?: number;
-    sortBy?: string;
-    filters?: Record<string, any>;
-  }) => void;
+  onRecordSelection?: (recordId: string) => void;
 }
 
-const DynamicTable = ({ setRecordId, onTableStateChange }: DynamicTableProps) => {
+const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => {
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
   const { t } = useTranslation();
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
-  const { graph } = useSelected();
+  const { graph } = useSelected(); // ✅ Volver al original
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
-  const { tab, parentTab, parentRecord } = useTabContext();
+  const { tab, parentTab, parentRecord } = useTabContext(); // ✅ TabContext ahora lee desde URL
   const tabId = tab.id;
   const parentId = String(parentRecord?.id ?? "");
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState<string>("");
-  const [filters, setFilters] = useState<Record<string, any>>({});
+  console.log(`[DynamicTable ${tabId}] TabContext values:`, {
+    tabId,
+    parentTabId: parentTab?.id,
+    parentRecordId: parentRecord?.id,
+    parentId,
+    hasParentRecord: !!parentRecord,
+  });
 
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
@@ -75,7 +74,8 @@ const DynamicTable = ({ setRecordId, onTableStateChange }: DynamicTableProps) =>
       options.language = language;
     }
 
-    if (value) {
+    // ✅ Solo agregar criteria si hay parentId válido
+    if (value && value !== "" && value !== "undefined") {
       options.criteria = [
         {
           fieldName,
@@ -83,6 +83,15 @@ const DynamicTable = ({ setRecordId, onTableStateChange }: DynamicTableProps) =>
           operator,
         },
       ];
+
+      console.log(`[DynamicTable ${tabId}] Query with criteria:`, {
+        fieldName,
+        value,
+        operator,
+        parentRecordId: parentRecord?.id,
+      });
+    } else {
+      console.log(`[DynamicTable ${tabId}] Query without criteria - no parent selected`);
     }
 
     return options;
@@ -94,6 +103,7 @@ const DynamicTable = ({ setRecordId, onTableStateChange }: DynamicTableProps) =>
     tab.parentColumns,
     tab.sQLWhereClause?.length,
     tab.window,
+    parentRecord?.id,
   ]);
 
   const {
@@ -111,8 +121,20 @@ const DynamicTable = ({ setRecordId, onTableStateChange }: DynamicTableProps) =>
     params: query,
     columns,
     searchQuery,
-    skip: !!parentTab && !parentRecord,
+    skip: !!parentTab && !parentRecord, // ✅ Skip si necesita parent pero no lo tiene
   });
+
+  // ✅ Log para debugging
+  useEffect(() => {
+    console.log(`[DynamicTable ${tabId}] Datasource result:`, {
+      recordsCount: records.length,
+      loading,
+      error: error?.message,
+      hasParentRecord: !!parentRecord,
+      parentId,
+      skipping: !!parentTab && !parentRecord,
+    });
+  }, [records.length, loading, error, parentRecord, parentId, parentTab, tabId]);
 
   const handleColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
@@ -141,36 +163,49 @@ const DynamicTable = ({ setRecordId, onTableStateChange }: DynamicTableProps) =>
     [updateColumnFilters]
   );
 
+  // ✅ CALLBACK simplificado para selección
+  const handleTableSelectionChange = useCallback(
+    (recordId: string) => {
+      console.log(`[DynamicTable ${tabId}] Table selection changed: ${recordId}`);
+
+      if (onRecordSelection) {
+        onRecordSelection(recordId);
+      }
+    },
+    [onRecordSelection, tabId]
+  );
+
+  // ✅ MANEJO DE CLICKS simplificado
   const rowProps = useCallback<RowProps>(
     ({ row, table }) => {
       const record = row.original as Record<string, never>;
       const isSelected = row.getIsSelected();
-      let clickTimeout: NodeJS.Timeout | null = null;
 
       return {
         onClick: (event) => {
-          if (clickTimeout) return;
+          console.log(`[DynamicTable ${tabId}] Row clicked:`, record.id);
 
-          clickTimeout = setTimeout(() => {
-            if (!event.ctrlKey) {
-              table.setRowSelection({});
-            }
-
-            row.toggleSelected();
-            clickTimeout = null;
-          }, 100);
-        },
-        onDoubleClick: () => {
-          if (clickTimeout) {
-            clearTimeout(clickTimeout);
-            clickTimeout = null;
+          if (!event.ctrlKey) {
+            table.setRowSelection({});
           }
+          row.toggleSelected();
+
+          // ✅ La selección se manejará por useTableSelection automáticamente
+        },
+        onDoubleClick: (event) => {
+          console.log(`[DynamicTable ${tabId}] Row double-clicked:`, record.id);
+
+          event.stopPropagation();
 
           if (!isSelected) {
-            row.toggleSelected();
+            table.setRowSelection({ [record.id]: true });
           }
 
+          // ✅ Establecer en el gráfico para compatibilidad
           graph.setSelected(tab, row.original);
+
+          // ✅ Ir al formulario
+          console.log(`[DynamicTable ${tabId}] Opening form for:`, record.id);
           setRecordId(record.id);
         },
         sx: {
@@ -182,7 +217,7 @@ const DynamicTable = ({ setRecordId, onTableStateChange }: DynamicTableProps) =>
         table,
       };
     },
-    [graph, setRecordId, sx.rowSelected, tab]
+    [graph, setRecordId, sx.rowSelected, tab, tabId]
   );
 
   const renderEmptyRowsFallback = useCallback(
@@ -219,7 +254,7 @@ const DynamicTable = ({ setRecordId, onTableStateChange }: DynamicTableProps) =>
     muiTableBodyRowProps: rowProps,
     muiTableContainerProps: {
       ref: tableContainerRef,
-      sx: { flex: 1, height: "100%", maxHeight: "100%" }, //give the table a max height
+      sx: { flex: 1, height: "100%", maxHeight: "100%" },
       onScroll: fetchMoreOnBottomReached,
     },
     enablePagination: false,
@@ -244,12 +279,14 @@ const DynamicTable = ({ setRecordId, onTableStateChange }: DynamicTableProps) =>
     renderEmptyRowsFallback,
   });
 
-  useTableSelection(tab, records, table.getState().rowSelection);
+  // ✅ Usar useTableSelection con callback
+  useTableSelection(tab, records, table.getState().rowSelection, handleTableSelectionChange);
 
   const clearSelection = useCallback(() => {
+    console.log(`[DynamicTable ${tabId}] Clearing selection`);
     table.resetRowSelection(true);
     setRecordId("");
-  }, [setRecordId, table]);
+  }, [setRecordId, table, tabId]);
 
   useEffect(() => {
     if (removeRecordLocally) {
@@ -277,9 +314,25 @@ const DynamicTable = ({ setRecordId, onTableStateChange }: DynamicTableProps) =>
     );
   }
 
+  // ✅ Mostrar mensaje informativo si es subtab sin parent
+  if (parentTab && !parentRecord) {
+    return (
+      <div className="h-full flex items-center justify-center text-gray-500">
+        <div className="text-center">
+          <div className="text-lg mb-2">No parent record selected</div>
+          <div className="text-sm">Select a record in the parent tab to view related data</div>
+        </div>
+      </div>
+    );
+  }
+
+  console.log(`[DynamicTable ${tabId}] Rendering with ${records.length} records`);
+
   return (
     <div
-      className={`h-full overflow-hidden rounded-3xl transition-opacity ${loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"}`}>
+      className={`h-full overflow-hidden rounded-3xl transition-opacity ${
+        loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
+      }`}>
       <MaterialReactTable table={table} />
     </div>
   );

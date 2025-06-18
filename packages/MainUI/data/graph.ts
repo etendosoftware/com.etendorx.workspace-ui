@@ -22,7 +22,7 @@ export type GraphEventListener<K extends keyof GraphEvents> = (...args: GraphEve
 export type GraphEventNames = keyof GraphEvents;
 
 export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
-  private nodes: Map<string, GraphNode<T>>;
+  public nodes: Map<string, GraphNode<T>>;
   private activeLevels: number[];
 
   public constructor(tabs: T[]) {

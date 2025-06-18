@@ -25,9 +25,20 @@ export function useQueryParams<T extends Record<string, string | string[] | unde
   return useMemo<T>(() => {
     const entries = Array.from(searchParams.entries());
     const result: Record<string, string> = {};
+
     for (const [key, value] of entries) {
       result[key] = value;
     }
+
+    if (!result.windowId) {
+      for (const [key, value] of entries) {
+        if (key.startsWith("w_") && value === "active") {
+          result.windowId = key.slice(2);
+          break;
+        }
+      }
+    }
+
     return result as T;
   }, [searchParams]);
 }

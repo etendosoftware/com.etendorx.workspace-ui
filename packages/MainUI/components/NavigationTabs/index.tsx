@@ -1,145 +1,94 @@
 "use client";
 
-import { useCallback, useRef, useState, useEffect } from "react";
-import { useNavigationTabs } from "@/contexts/navigationTabs";
-import ChevronLeftIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-left.svg";
-import ChevronRightIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-right.svg";
-import PlusIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
-import NavigationTabItem from "./navigationTabItem";
+import X from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
+import { useMetadataContext } from "@/hooks/useMetadataContext";
+import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 
-export function NavigationTabs() {
-  const { tabs, switchToTab, closeTab, isReady } = useNavigationTabs();
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [showLeftScroll, setShowLeftScroll] = useState(false);
-  const [showRightScroll, setShowRightScroll] = useState(false);
+interface WindowTabProps {
+  windowId: string;
+  title: string;
+  isActive: boolean;
+  onActivate: () => void;
+  onClose: () => void;
+  canClose?: boolean;
+}
 
-  const checkScrollButtons = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const { scrollLeft, scrollWidth, clientWidth } = container;
-    setShowLeftScroll(scrollLeft > 0);
-    setShowRightScroll(scrollLeft < scrollWidth - clientWidth - 1);
-  }, []);
-
-  const scrollLeft = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    container.scrollBy({ left: -200, behavior: "smooth" });
-  }, []);
-
-  const scrollRight = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    container.scrollBy({ left: 200, behavior: "smooth" });
-  }, []);
-
-  const handleTabSelect = useCallback(
-    (tabId: string) => {
-      if (!isReady) return;
-
-      switchToTab(tabId);
-
-      setTimeout(() => {
-        const container = scrollContainerRef.current;
-        const activeTab = container?.querySelector('[aria-selected="true"]') as HTMLElement;
-
-        if (container && activeTab) {
-          const containerRect = container.getBoundingClientRect();
-          const tabRect = activeTab.getBoundingClientRect();
-
-          if (tabRect.left < containerRect.left) {
-            container.scrollBy({
-              left: tabRect.left - containerRect.left - 20,
-              behavior: "smooth",
-            });
-          } else if (tabRect.right > containerRect.right) {
-            container.scrollBy({
-              left: tabRect.right - containerRect.right + 20,
-              behavior: "smooth",
-            });
-          }
-        }
-      }, 100);
-    },
-    [switchToTab, isReady]
-  );
-
-  const handleTabClose = useCallback(
-    (tabId: string) => {
-      if (!isReady) return;
-      closeTab(tabId);
-    },
-    [closeTab, isReady]
-  );
-
-  const handleNewTab = useCallback(() => {
-    if (!isReady) return;
-
-    const homeTab = tabs.find((tab) => tab.type === "home");
-    if (homeTab) {
-      switchToTab(homeTab.id);
-    }
-  }, [tabs, switchToTab, isReady]);
-
-  useEffect(() => {
-    checkScrollButtons();
-  }, [tabs, checkScrollButtons]);
-
-  if (!isReady || tabs.length <= 1) {
-    return null;
-  }
-
+function WindowTab({ windowId, title, isActive, onActivate, onClose, canClose = true }: WindowTabProps) {
   return (
     <div
-      className="bg-gray-100 border-b border-gray-200 flex items-center"
-      role="tablist"
-      aria-label="Tabs de navegación">
-      {showLeftScroll && (
+      className={`
+        flex items-center gap-2 px-4 py-2 border-r border-gray-200 cursor-pointer
+        min-w-[120px] max-w-[200px] relative group
+        ${isActive ? "bg-white border-b-white" : "bg-gray-100 hover:bg-gray-50 border-b-gray-200"}
+      `}
+      onClick={onActivate}
+      style={{
+        borderTopLeftRadius: "8px",
+        borderTopRightRadius: "8px",
+      }}>
+      <div className="w-4 h-4 flex-shrink-0">🏠</div>
+      <span
+        className={`
+          flex-1 truncate text-sm
+          ${isActive ? "text-gray-900" : "text-gray-600"}
+        `}
+        title={title}>
+        {title}
+      </span>
+      {canClose && (
         <button
           type="button"
-          onClick={scrollLeft}
-          className="p-2 hover:bg-gray-200 transition-colors flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          title="Scroll hacia la izquierda"
-          aria-label="Scroll hacia la izquierda">
-          <ChevronLeftIcon className="w-4 h-4 text-gray-600" />
+          className={`
+            w-4 h-4 flex-shrink-0 rounded-full flex items-center justify-center
+            hover:bg-gray-200 transition-colors
+            ${isActive ? "opacity-70 hover:opacity-100" : "opacity-50 hover:opacity-70"}
+          `}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          title="Cerrar ventana">
+          <X className="w-3 h-3" />
         </button>
       )}
-      <div
-        ref={scrollContainerRef}
-        className="flex overflow-x-auto scrollbar-hide flex-1"
-        onScroll={checkScrollButtons}
-        style={{
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
-          WebkitOverflowScrolling: "touch",
-        }}>
-        {tabs.map((tab) => (
-          <NavigationTabItem key={tab.id} tab={tab} onSelect={handleTabSelect} onClose={handleTabClose} />
-        ))}
-      </div>
-      {showRightScroll && (
-        <button
-          type="button"
-          onClick={scrollRight}
-          className="p-2 hover:bg-gray-200 transition-colors flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          title="Scroll hacia la derecha"
-          aria-label="Scroll hacia la derecha">
-          <ChevronRightIcon className="w-4 h-4 text-gray-600" />
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={handleNewTab}
-        className="p-2 hover:bg-gray-200 transition-colors flex-shrink-0 border-l border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        title="Ir a inicio"
-        aria-label="Ir a inicio">
-        <PlusIcon className="w-4 h-4 text-gray-600" />
-      </button>
     </div>
   );
 }
 
-export default NavigationTabs;
+interface WindowTabsProps {
+  className?: string;
+}
+
+export function WindowTabs({ className = "" }: WindowTabsProps) {
+  const { windows, setActiveWindow, closeWindow } = useMultiWindowURL();
+  const { getWindowTitle } = useMetadataContext();
+
+  if (windows.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className={`flex bg-gray-200 border-b border-gray-300 max-w-1/2${className}`}>
+      {windows.map((window) => {
+        const title = window.title || getWindowTitle?.(window.windowId) || `Window ${window.windowId}`;
+
+        return (
+          <WindowTab
+            key={window.windowId}
+            windowId={window.windowId}
+            title={title}
+            isActive={window.isActive}
+            onActivate={() => setActiveWindow(window.windowId)}
+            onClose={() => closeWindow(window.windowId)}
+            canClose={windows.length > 1} // No permitir cerrar si es la última
+          />
+        );
+      })}
+
+      {/* Espacio para futuras funcionalidades (nuevo tab, etc.) */}
+      <div className="flex-1 bg-gray-200" />
+    </div>
+  );
+}
+
+export default WindowTabs;

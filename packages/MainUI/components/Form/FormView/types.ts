@@ -39,7 +39,6 @@ export interface FormViewProps {
   recordId?: string;
   onSave?: (saveFn: () => void) => void;
   setRecordId: React.Dispatch<React.SetStateAction<string>>;
-  onFormDataChange?: (formData: Record<string, any>) => void;
 }
 
 export type FieldValue = string | number | boolean | string[] | Date | null | FieldDefinition["value"];

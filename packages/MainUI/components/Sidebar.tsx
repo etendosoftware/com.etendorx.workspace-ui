@@ -1,20 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {} from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Drawer } from "@workspaceui/componentlibrary/src/components/Drawer/index";
 import EtendoLogotype from "../public/etendo.png";
 import { useTranslation } from "../hooks/useTranslation";
 import { useUserContext } from "../hooks/useUserContext";
-import type { WindowParams } from "../app/types";
 import { RecentlyViewed } from "./Drawer/RecentlyViewed";
 import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
 import { useMenuTranslation } from "../hooks/useMenuTranslation";
 import { createSearchIndex, filterItems } from "@workspaceui/componentlibrary/src/utils/searchUtils";
 import { useLanguage } from "@/contexts/language";
-import { useQueryParams } from "@/hooks/useQueryParams";
+import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useMenu } from "@/hooks/useMenu";
-import { useNavigationTabs } from "@/contexts/navigationTabs";
 
 export default function Sidebar() {
   const { t } = useTranslation();
@@ -22,9 +20,11 @@ export default function Sidebar() {
   const { language, prevLanguage } = useLanguage();
   const { translateMenuItem } = useMenuTranslation();
   const menu = useMenu(token, currentRole || undefined, language);
-  const { navigateFromMenu } = useNavigationTabs();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  const { windowId } = useQueryParams<WindowParams>();
+  // ✅ Usar el nuevo hook para múltiples ventanas
+  const { activeWindow, openWindow } = useMultiWindowURL();
 
   const [searchValue, setSearchValue] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -32,15 +32,33 @@ export default function Sidebar() {
   const searchIndex = useMemo(() => createSearchIndex(menu), [menu]);
   const { filteredItems, searchExpandedItems } = useMemo(() => {
     const result = filterItems(menu, searchValue, searchIndex);
-
     return result;
   }, [menu, searchValue, searchIndex]);
 
+  // ✅ Actualizar handleClick para usar la nueva API
   const handleClick = useCallback(
     (item: Menu) => {
-      navigateFromMenu(item);
+      const windowId = item.windowId ?? "";
+
+      if (!windowId) {
+        console.warn("Menu item without windowId:", item);
+        return;
+      }
+
+      // ✅ Usar openWindow en lugar de manipular URL manualmente
+      if (pathname.includes("window")) {
+        // Ya estamos en la página de ventanas, solo abrir/activar la ventana
+        openWindow(windowId, item.name);
+      } else {
+        // Navegar a la página de ventanas y abrir la ventana
+        router.push("/window");
+        // Usar setTimeout para asegurar que la navegación ocurra primero
+        setTimeout(() => {
+          openWindow(windowId, item.name);
+        }, 0);
+      }
     },
-    [navigateFromMenu]
+    [pathname, router, openWindow]
   );
 
   const searchContext = useMemo(
@@ -64,9 +82,12 @@ export default function Sidebar() {
     }
   }, [currentRole?.id, language, prevLanguage, prevRole]);
 
+  // ✅ Pasar windowId del activeWindow para compatibilidad con Drawer
+  const currentWindowId = activeWindow?.windowId;
+
   return (
     <Drawer
-      windowId={windowId}
+      windowId={currentWindowId} // ✅ Usar windowId de la ventana activa
       logo={EtendoLogotype.src}
       title={t("common.etendo")}
       items={menu}

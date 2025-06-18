@@ -2,7 +2,7 @@
 
 import Graph from "@/data/graph";
 import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
-import { createContext, useCallback, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useMemo, useState } from "react";
 
 interface TabStates {
   [tabId: string]: {
@@ -19,14 +19,47 @@ interface SelectedContext {
   setTabRecordId: (tabId: string, recordId: string) => void;
   getTabRecordId: (tabId: string) => string;
   clearTabRecord: (tabId: string) => void;
+  clearAllStates: () => void; // ✅ NUEVO: Para limpiar al cambiar de ventana
 }
 
 export const SelectContext = createContext<SelectedContext>({} as SelectedContext);
 
-export const SelectedProvider = ({ children, tabs }: React.PropsWithChildren<{ tabs: Tab[] }>) => {
+const windowGraphCache = new Map<string, Graph<Tab>>();
+
+export const SelectedProvider = ({
+  children,
+  tabs,
+  windowId, // ✅ NUEVO: Recibir windowId como prop
+}: React.PropsWithChildren<{
+  tabs: Tab[];
+  windowId: string;
+}>) => {
   const [activeLevels, setActiveLevels] = useState<number[]>([0]);
   const [tabStates, setTabStates] = useState<TabStates>({});
-  const graph = useRef(new Graph<Tab>(tabs)).current;
+
+  // ✅ OBTENER O CREAR graph específico para esta ventana
+  const graph = useMemo(() => {
+    if (!windowGraphCache.has(windowId)) {
+      console.log(`[SelectedProvider] Creating new graph for window: ${windowId}`);
+      windowGraphCache.set(windowId, new Graph<Tab>(tabs));
+    } else {
+      console.log(`[SelectedProvider] Reusing existing graph for window: ${windowId}`);
+    }
+    return windowGraphCache.get(windowId)!;
+  }, [windowId, tabs]);
+
+  // ✅ LIMPIAR estados cuando cambia de ventana
+  const clearAllStates = useCallback(() => {
+    console.log(`[SelectedProvider] Clearing all states for window: ${windowId}`);
+    setTabStates({});
+    setActiveLevels([0]);
+
+    // ✅ También limpiar todas las selecciones del graph
+    for (const tab of tabs) {
+      graph.clearSelected(tab);
+      graph.clearSelectedMultiple(tab);
+    }
+  }, [windowId, tabs, graph]);
 
   const setTabRecordId = useCallback((tabId: string, recordId: string) => {
     setTabStates((prev) => ({
@@ -99,8 +132,9 @@ export const SelectedProvider = ({ children, tabs }: React.PropsWithChildren<{ t
       setTabRecordId,
       getTabRecordId,
       clearTabRecord,
+      clearAllStates,
     }),
-    [activeLevels, graph, setActiveLevel, tabStates, setTabRecordId, getTabRecordId, clearTabRecord]
+    [activeLevels, graph, setActiveLevel, tabStates, setTabRecordId, getTabRecordId, clearTabRecord, clearAllStates]
   );
 
   return <SelectContext.Provider value={value}>{children}</SelectContext.Provider>;
