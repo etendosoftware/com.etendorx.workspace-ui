@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useCallback } from "react";
 
 type LoadingContextType = {
   isLoading: boolean;
@@ -17,8 +17,13 @@ export default function LoadingProvider({
 }) {
   const [isLoading, setIsLoading] = useState(false);
 
-  const showLoading = () => setIsLoading(true);
-  const hideLoading = () => setIsLoading(false);
+  const showLoading = useCallback(() => {
+    setIsLoading(true);
+  }, []);
+
+  const hideLoading = useCallback(() => {
+    setIsLoading(false);
+  }, []);
 
   return (
     <LoadingContext.Provider value={{ isLoading, showLoading, hideLoading }}>
