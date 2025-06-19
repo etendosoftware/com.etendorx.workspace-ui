@@ -5,7 +5,7 @@ export default function Loading({
   customIconProps,
 }: {
   customStyle?: string;
-  customIconProps?: any;
+  customIconProps?: React.ComponentProps<typeof CircularProgress>;
 }) {
   return (
     <div

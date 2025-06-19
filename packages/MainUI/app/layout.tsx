@@ -9,7 +9,6 @@ import UserProvider from "@/contexts/user";
 import { DatasourceProvider } from "@/contexts/datasourceContext";
 import MetadataProvider from "@/contexts/metadata";
 import Layout from "@/components/layout";
-import Loading from "@/components/loading";
 
 const inter = Inter({
   subsets: ["latin"],

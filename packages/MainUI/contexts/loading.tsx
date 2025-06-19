@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useMemo } from "react";
 
 type LoadingContextType = {
   isLoading: boolean;
@@ -25,8 +25,13 @@ export default function LoadingProvider({
     setIsLoading(false);
   }, []);
 
+  const value = useMemo<LoadingContextType>(
+    () => ({ isLoading, showLoading, hideLoading }),
+    [isLoading, showLoading, hideLoading],
+  );
+
   return (
-    <LoadingContext.Provider value={{ isLoading, showLoading, hideLoading }}>
+    <LoadingContext.Provider value={value}>
       {children}
     </LoadingContext.Provider>
   );
