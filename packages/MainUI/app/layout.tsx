@@ -4,10 +4,12 @@ import ApiProviderWrapper from "@/contexts/api/wrapper";
 import "./styles/global.css";
 import ThemeProvider from "@workspaceui/componentlibrary/src/components/ThemeProvider";
 import LanguageProvider from "@/contexts/language";
+import LoadingProvider from "@/contexts/loading";
 import UserProvider from "@/contexts/user";
 import { DatasourceProvider } from "@/contexts/datasourceContext";
 import MetadataProvider from "@/contexts/metadata";
 import Layout from "@/components/layout";
+import Loading from "@/components/loading";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -38,7 +40,9 @@ export default function RootLayout({
               <UserProvider>
                 <DatasourceProvider>
                   <MetadataProvider>
-                    <Layout>{children}</Layout>
+                    <LoadingProvider>
+                      <Layout>{children}</Layout>
+                    </LoadingProvider>
                   </MetadataProvider>
                 </DatasourceProvider>
               </UserProvider>
