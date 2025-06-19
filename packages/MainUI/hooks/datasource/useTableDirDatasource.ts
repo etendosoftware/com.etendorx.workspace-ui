@@ -31,54 +31,54 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
   const isProductField = field.column.reference === REFERENCE_IDS.PRODUCT;
   const parentData = useFormParent(FieldName.INPUT_NAME);
 
-
   const invoiceContext: Record<string, EntityValue> = useMemo(() => {
-    if (!parentRecord || !tab?.fields) {
+    if (!isProductField && !parentRecord && !tab?.fields) {
       return FALLBACK_RESULT;
     }
-  
+
     const recordValues = buildPayloadByInputName(parentRecord, tab.fields);
     const context: Record<string, EntityValue> = {};
-  
+
     for (const [sourceField, targetField] of Object.entries(INVOICE_FIELD_MAPPINGS)) {
+      if (!recordValues) {
+        return [];
+      }
       const value = recordValues[sourceField];
       if (value !== null && value !== undefined && value !== "") {
         context[targetField] = value as EntityValue;
       }
     }
-  
+
     return context;
   }, [isProductField, parentRecord, tab?.fields]);
 
   const selectorId =
     field.selector?._selectorDefinitionId ||
     (isProductField ? PRODUCT_SELECTOR_DEFAULTS.FALLBACK_SELECTOR_ID : undefined);
-    const transformFormValues = useCallback(
-      (formData: Record<string, EntityValue>) => {
-        const formValues: Record<string, EntityValue> = {};
-    
-        for (const [key, value] of Object.entries(formData)) {
-          const currentField = tab.fields[key];
-          const inputName = currentField?.inputName || key;
-          const stringValue = String(value);
-    
-          const isISODate = /^\d{4}-\d{2}-\d{2}$/.test(stringValue);
-    
-          const formattedValue = isISODate
-            ? stringValue.split('-').reverse().join('-')
-            : stringValue;
-    
-          const safeValue = Object.prototype.hasOwnProperty.call(FORM_VALUE_MAPPINGS, formattedValue)
-            ? FORM_VALUE_MAPPINGS[formattedValue as keyof typeof FORM_VALUE_MAPPINGS]
-            : formattedValue;
-    
-          formValues[inputName] = safeValue;
-        }
-    
-        return formValues;
-      },
-      [tab.fields]
-    );
+  const transformFormValues = useCallback(
+    (formData: Record<string, EntityValue>) => {
+      const formValues: Record<string, EntityValue> = {};
+
+      for (const [key, value] of Object.entries(formData)) {
+        const currentField = tab.fields[key];
+        const inputName = currentField?.inputName || key;
+        const stringValue = String(value);
+
+        const isISODate = /^\d{4}-\d{2}-\d{2}$/.test(stringValue);
+
+        const formattedValue = isISODate ? stringValue.split("-").reverse().join("-") : stringValue;
+
+        const safeValue = Object.prototype.hasOwnProperty.call(FORM_VALUE_MAPPINGS, formattedValue)
+          ? FORM_VALUE_MAPPINGS[formattedValue as keyof typeof FORM_VALUE_MAPPINGS]
+          : formattedValue;
+
+        formValues[inputName] = safeValue;
+      }
+
+      return formValues;
+    },
+    [tab.fields]
+  );
 
   const buildSearchCriteria = useCallback(
     (search: string, isProduct: boolean) => {
@@ -122,7 +122,6 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
   );
 
   const fetch = useCallback(
-    
     async (_currentValue: typeof value, reset = false, search = "") => {
       try {
         if (!field || !tab) return;
@@ -154,7 +153,6 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           _OrExpression: "true",
           ...(typeof _currentValue !== "undefined" ? { _currentValue } : {}),
         };
-
         if (isProductField) {
           Object.assign(baseBody, {
             _noCount: "true",
@@ -166,6 +164,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           Object.assign(baseBody, {
             _textMatchStyle: "substring",
             ...parentData,
+            ...invoiceValue,
             ...formValues,
           });
         }
@@ -204,7 +203,6 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
               const recordId = record.id || JSON.stringify(record);
               recordMap.set(recordId, record);
             }
-
             for (const record of data.response.data) {
               const recordId = record.id || JSON.stringify(record);
               recordMap.set(recordId, record);
