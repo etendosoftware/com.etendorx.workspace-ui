@@ -10,7 +10,7 @@ export default function GlobalLoading() {
 
   return (
     <Loading
-      customStyle="h-screen w-screen absolute z-100 bg-black/25"
+      className="h-screen w-screen absolute z-100 bg-black/25"
       customIconProps={{
         size: 60,
         thickness: 4,

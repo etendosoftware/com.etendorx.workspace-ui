@@ -1,15 +1,15 @@
 import { CircularProgress } from "@mui/material";
 
 export default function Loading({
-  customStyle,
+  className,
   customIconProps,
 }: {
-  customStyle?: string;
+  className?: string;
   customIconProps?: React.ComponentProps<typeof CircularProgress>;
 }) {
   return (
     <div
-      className={`h-full mx-auto flex flex-col items-center justify-center ${customStyle}`}
+      className={`h-full mx-auto flex flex-col items-center justify-center ${className}`}
     >
       <CircularProgress {...customIconProps} />
     </div>
