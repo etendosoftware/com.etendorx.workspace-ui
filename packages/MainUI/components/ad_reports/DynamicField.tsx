@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { TextField, Autocomplete } from "@mui/material";
-import type { ReportField } from "@workspaceui/etendohookbinder/src/hooks/types";
+import type { ReportField } from "@workspaceui/api-client/src/hooks/types";
 import DateSelector from "./selectors/DateSelector";
 import DatabaseSelectSelector from "./selectors/DatabaseSelect";
 import MultiSelect from "./selectors/MultiSelect/MultiSelector";

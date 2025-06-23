@@ -1,7 +1,7 @@
 // biome-ignore lint/style/useNodejsImportProtocol: <explanation>
 import EventEmitter from "events";
 import { logger } from "@/utils/logger";
-import type { EntityData, Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 
 type GraphNode<T> = {
   value: T;

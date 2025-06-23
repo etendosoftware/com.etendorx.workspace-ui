@@ -1,16 +1,17 @@
 {
-  "name": "@workspaceui/etendohookbinder",
+  "name": "@workspaceui/api-client",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "types": "dist/esm/index.d.ts",
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.js",
+  "packageManager": "pnpm@9.15.2",
   "sideEffects": false,
   "repository": {
     "type": "git",
     "url": "https://github.com/etendosoftware/com.etendorx.workspace-ui.git",
-    "directory": "packages/EtendoHookBinder"
+    "directory": "packages/api-client"
   },
   "files": ["dist", "src"],
   "scripts": {
@@ -20,7 +21,7 @@
     "format:fix": "biome format --write src/",
     "build:cjs": "tsc --project tsconfig.cjs.json",
     "build:esm": "tsc --project tsconfig.esm.json",
-    "build": "npm run build:cjs && npm run build:esm",
+    "build": "pnpm run build:cjs && pnpm run build:esm",
     "test": "jest"
   },
   "devDependencies": {

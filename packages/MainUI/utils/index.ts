@@ -5,7 +5,7 @@ import {
   FormMode,
   type Tab,
   type WindowMetadata,
-} from "@workspaceui/etendohookbinder/src/api/types";
+} from "@workspaceui/api-client/src/api/types";
 
 export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

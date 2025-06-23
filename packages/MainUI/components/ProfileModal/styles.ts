@@ -166,6 +166,6 @@ export const useStyle = () => {
         },
       } as { [key: string]: SxProps<Theme> },
     }),
-    [theme],
+    [theme]
   );
 };

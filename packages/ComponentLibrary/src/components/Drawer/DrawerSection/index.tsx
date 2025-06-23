@@ -1,4 +1,4 @@
-import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useItemActions } from "../../../hooks/useItemType";
 import { CustomClickAwayListener } from "../../../utils/clickAway";
@@ -58,7 +58,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
         }
         return toggleFunctions.current[sectionId];
       },
-      [handleNestedToggle],
+      [handleNestedToggle]
     );
 
     const handleClick = useCallback(
@@ -77,7 +77,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
           handleItemClick(item);
         }
       },
-      [open, hasChildren, isExpandable, expanded, parentId, onToggleExpand, handleNestedToggle, item, handleItemClick],
+      [open, hasChildren, isExpandable, expanded, parentId, onToggleExpand, handleNestedToggle, item, handleItemClick]
     );
 
     const handleKeyDown = useCallback(
@@ -88,7 +88,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
           handleClick(event as unknown as React.MouseEvent<HTMLElement>);
         }
       },
-      [handleClick],
+      [handleClick]
     );
 
     const handleClose = useCallback(() => {
@@ -100,7 +100,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
         onClick(item);
         handleClose();
       },
-      [handleClose, onClick],
+      [handleClose, onClick]
     );
 
     const sectionClasses = [
@@ -206,7 +206,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
         )}
       </div>
     );
-  },
+  }
 );
 
 DrawerSection.displayName = "DrawerSection";

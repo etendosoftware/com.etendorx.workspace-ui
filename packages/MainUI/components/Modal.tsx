@@ -45,6 +45,6 @@ export default function Modal({
         {visible ? children : null}
       </div>
     </div>,
-    document.body,
+    document.body
   );
 }

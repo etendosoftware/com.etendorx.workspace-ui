@@ -16,7 +16,7 @@ export const useStyle = () => {
         margin: theme.spacing(1),
       }),
     }),
-    [theme],
+    [theme]
   );
 };
 

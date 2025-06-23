@@ -75,7 +75,7 @@ export const createButtonByType = (
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void,
   isFormView: boolean,
   hasSelectedRecord: boolean,
-  hasParentRecordSelected: boolean,
+  hasParentRecordSelected: boolean
 ): ToolbarButton => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
@@ -181,7 +181,7 @@ export const createProcessMenuButton = (
   hasSelectedRecord: boolean,
   onMenuOpen: (event: React.MouseEvent<HTMLButtonElement>) => void,
   t: TranslateFunction,
-  anchorEl: HTMLElement | null,
+  anchorEl: HTMLElement | null
 ): ToolbarButton => ({
   key: "process-menu",
   icon: <ProcessMenuIcon />,

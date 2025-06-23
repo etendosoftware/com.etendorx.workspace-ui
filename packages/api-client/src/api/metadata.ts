@@ -176,7 +176,7 @@ export class Metadata {
 
         return cols;
       },
-      {} as Record<string, Etendo.Column[]>,
+      {} as Record<string, Etendo.Column[]>
     );
   }
 

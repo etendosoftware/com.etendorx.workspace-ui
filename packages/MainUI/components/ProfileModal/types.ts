@@ -7,7 +7,7 @@ import type {
   CurrentWarehouse,
   LoginResponse,
   SessionResponse,
-} from "@workspaceui/etendohookbinder/src/api/types";
+} from "@workspaceui/api-client/src/api/types";
 import type { ReactNode } from "react";
 import type { Section } from "./ToggleButton/types";
 

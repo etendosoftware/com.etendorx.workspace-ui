@@ -16,7 +16,7 @@ const useStyle = () => {
         margin: "0 1rem",
       },
     }),
-    [theme.palette.divider],
+    [theme.palette.divider]
   );
 };
 

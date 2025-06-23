@@ -19,7 +19,7 @@ const ConfirmModal = memo(
 
     const backgroundGradient = useMemo(
       () => `linear-gradient(to bottom, ${theme.palette.specificColor.warning.light}, rgba(255, 255, 255, 0))`,
-      [theme.palette.specificColor.warning.light],
+      [theme.palette.specificColor.warning.light]
     );
     return (
       <Modal
@@ -36,7 +36,7 @@ const ConfirmModal = memo(
         </Box>
       </Modal>
     );
-  },
+  }
 );
 
 ConfirmModal.displayName = "ConfirmModal";

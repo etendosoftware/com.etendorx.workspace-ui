@@ -3,7 +3,7 @@ import { DEFAULT_LANGUAGE, translations, type Language } from "@workspaceui/comp
 export const t = (
   language: Language,
   key: string,
-  value: unknown = translations[language] ?? translations[DEFAULT_LANGUAGE],
+  value: unknown = translations[language] ?? translations[DEFAULT_LANGUAGE]
 ): string => {
   if (!language) {
     language = DEFAULT_LANGUAGE;

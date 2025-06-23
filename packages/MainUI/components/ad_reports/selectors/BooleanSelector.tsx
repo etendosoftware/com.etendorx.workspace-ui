@@ -10,7 +10,7 @@ const BooleanSelector = ({ label, checked, onChange, name, disabled, readOnly }:
     (e: React.ChangeEvent<HTMLInputElement>) => {
       onChange(name, e.currentTarget.checked);
     },
-    [name, onChange],
+    [name, onChange]
   );
 
   const handleMouseEnter = useCallback(() => {

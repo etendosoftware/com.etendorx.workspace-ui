@@ -1,7 +1,5 @@
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import { datasource } from "@workspaceui/etendohookbinder/src/api/datasource";
-import type { EntityValue } from "@workspaceui/etendohookbinder/src/api/types";
 import { useCallback, useMemo, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { FALLBACK_RESULT } from "@/components/ProcessModal/ProcessDefinitionModal";
@@ -16,6 +14,8 @@ import {
   INVOICE_FIELD_MAPPINGS,
   FORM_VALUE_MAPPINGS,
 } from "./constants";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
+import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 
 export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 20 }: UseTableDirDatasourceParams) => {
   const { getValues, watch } = useFormContext();
@@ -132,7 +132,6 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         const endRow = reset ? initialPageSize : startRow + pageSize;
         const formValues = transformFormValues(getValues());
 
-        // Construir body base
         const baseBody = {
           _startRow: startRow.toString(),
           _endRow: endRow.toString(),
@@ -150,7 +149,6 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           ...(typeof _currentValue !== "undefined" ? { _currentValue } : {}),
         };
 
-        // Aplicar configuraciones específicas por tipo
         if (isProductField) {
           Object.assign(baseBody, {
             _noCount: "true",
