@@ -11,6 +11,8 @@ import OrganizationIcon from "../../../../ComponentLibrary/src/assets/icons/user
 import WarehouseIcon from "../../../../ComponentLibrary/src/assets/icons/warehouse.svg";
 import type { SelectorListProps } from "../types";
 import { useStyle } from "./styles";
+import { useLanguage } from "@/contexts/language";
+import { Language } from "@/contexts/types";
 
 const isOptionEqualToValue = (option: Option, value: Option) => option.id === value.id;
 
@@ -35,6 +37,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
   const { t } = useTranslation();
   const { styles, defaultFill } = useStyle();
   const theme = useTheme();
+  const { getFlag } = useLanguage();
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newPasswordConfirmation, setNewPasswordConfirmation] = useState("");
@@ -128,11 +131,12 @@ const SelectorList: React.FC<SelectorListProps> = ({
   const languageOptions = useMemo(
     () =>
       languages?.map((lang: { name: string; language: string; id: string }) => ({
+        id: lang.id,
         title: lang.name,
         value: lang.language,
-        id: lang.id,
+        iconLeft: getFlag(lang.language as Language),
       })),
-    [languages]
+    [languages, getFlag],
   );
 
   return (
