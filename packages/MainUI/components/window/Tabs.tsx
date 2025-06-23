@@ -87,7 +87,7 @@ export default function Tabs({ tabs, isTopGroup = false }: ExtendedTabsProps) {
     <TabContainer current={current} collapsed={collapsed} isTopExpanded={isTopExpanded} customHeight={customHeight}>
       {renderTabContent()}
       <TabContextProvider tab={current}>
-        <Tab collapsed={collapsed} />
+        <Tab tab={current} collapsed={collapsed} />{" "}
       </TabContextProvider>
     </TabContainer>
   );

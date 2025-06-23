@@ -653,7 +653,7 @@ type EntityKey = string;
 export type EntityValue = string | number | boolean | symbol | null;
 
 export interface EntityData {
-  [key: EntityKey]: EntityValue | undefined | null;
+  [key: EntityKey]: EntityValue;
 }
 
 export enum FormMode {
