@@ -7,14 +7,10 @@ export const useMenu = (token: string | null, currentRole?: CurrentRole, languag
   const [menu, setMenu] = useState<Menu[]>(Metadata.getCachedMenu());
   const { showLoading, hideLoading } = useLoading();
   const isFetchingRef = useRef(false);
-  const prevRoleRef = useRef<CurrentRole | undefined>(undefined);
-  const prevLanguageRef = useRef<string | null | undefined>(undefined);
 
   const fetchMenu = useCallback(
     async (forceRefresh = false) => {
       isFetchingRef.current = true;
-      prevRoleRef.current = currentRole;
-      prevLanguageRef.current = language;
 
       showLoading();
 
@@ -28,15 +24,14 @@ export const useMenu = (token: string | null, currentRole?: CurrentRole, languag
         hideLoading();
       }
     },
-    [currentRole, language, showLoading, hideLoading]
+    [showLoading, hideLoading]
   );
 
   useEffect(() => {
     if (
       token &&
       currentRole &&
-      !isFetchingRef.current &&
-      (currentRole.id !== prevRoleRef.current?.id || language !== prevLanguageRef.current)
+      !isFetchingRef.current 
     ) {
       fetchMenu(true);
     }
