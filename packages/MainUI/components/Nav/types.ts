@@ -1,4 +1,4 @@
-import type { Role } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Role } from "@workspaceui/api-client/src/api/types";
 import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
 import type { BaseDefaultConfiguration, BaseProfileModalProps, BaseWarehouse } from "../ProfileModal/types";
 import type { Logger } from "@/utils/logger";

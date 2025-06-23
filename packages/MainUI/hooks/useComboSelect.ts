@@ -1,7 +1,7 @@
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import { datasource } from "@workspaceui/etendohookbinder/src/api/datasource";
-import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
+import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { FieldName } from "./types";
@@ -80,7 +80,7 @@ export const useComboSelect = ({ field }: UseComboSelectParams) => {
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     },
-    [field, getValues, parentData, tab, windowId],
+    [field, getValues, parentData, tab, windowId]
   );
 
   return { records, loading, error, refetch: fetch };

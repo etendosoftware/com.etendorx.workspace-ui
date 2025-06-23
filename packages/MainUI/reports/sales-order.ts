@@ -1,4 +1,4 @@
-import type { ReportMetadata } from "@workspaceui/etendohookbinder/src/hooks/types";
+import type { ReportMetadata } from "@workspaceui/api-client/src/hooks/types";
 
 export const SALES_ORDER_REPORT_META: ReportMetadata = {
   id: "800261",

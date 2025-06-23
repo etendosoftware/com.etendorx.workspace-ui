@@ -1,7 +1,7 @@
 import type { NestedKeyOf } from "@workspaceui/componentlibrary/src/locales/types";
 import type { TranslationKeys } from "./types";
 import { useTranslation } from "./useTranslation";
-import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
 
 export const useMenuTranslation = () => {
   const { t } = useTranslation();

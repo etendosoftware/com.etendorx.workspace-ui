@@ -65,6 +65,6 @@ export const useStyle = () => {
         }),
       },
     }),
-    [theme],
+    [theme]
   );
 };

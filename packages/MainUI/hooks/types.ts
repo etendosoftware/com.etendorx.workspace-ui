@@ -1,4 +1,4 @@
-import type { Field, Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
 import type { TranslationKeys, Translations, NestedKeyOf } from "../../ComponentLibrary/src/locales/types";
 
 export type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(key: K) => string;

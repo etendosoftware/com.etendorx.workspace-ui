@@ -110,7 +110,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
         value: role.id,
         id: role.id,
       })),
-    [roles],
+    [roles]
   );
 
   const warehouseOptions = useMemo(
@@ -122,7 +122,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
             value: warehouse.id,
             id: warehouse.id,
           })),
-    [isSystem, warehouses],
+    [isSystem, warehouses]
   );
 
   const languageOptions = useMemo(
@@ -132,7 +132,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
         value: lang.language,
         id: lang.id,
       })),
-    [languages],
+    [languages]
   );
 
   return (

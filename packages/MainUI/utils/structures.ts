@@ -1,4 +1,4 @@
-import type { EntityData } from "@workspaceui/etendohookbinder/src/api/types";
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
 
 export const mapBy = <T = EntityData>(records: T[], key: keyof T) => {
   return records.reduce(
@@ -7,6 +7,6 @@ export const mapBy = <T = EntityData>(records: T[], key: keyof T) => {
 
       return acum;
     },
-    {} as Record<string, T>,
+    {} as Record<string, T>
   );
 };

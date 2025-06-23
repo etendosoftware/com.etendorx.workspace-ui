@@ -16,12 +16,12 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
 
   const handleUsernameChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.currentTarget.value),
-    [],
+    []
   );
 
   const handlePasswordChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.currentTarget.value),
-    [],
+    []
   );
 
   const handleSubmit = useCallback<React.FormEventHandler>(
@@ -30,7 +30,7 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
       e.stopPropagation();
       await onSubmit(username, password);
     },
-    [onSubmit, password, username],
+    [onSubmit, password, username]
   );
 
   return (

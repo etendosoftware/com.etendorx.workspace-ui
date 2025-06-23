@@ -2,7 +2,7 @@ import { useCallback, useRef } from "react";
 
 export function useThrottle<T extends (...args: never[]) => unknown>(
   func: T,
-  delay: number,
+  delay: number
 ): (...args: Parameters<T>) => void {
   const lastCall = useRef(0);
 
@@ -14,6 +14,6 @@ export function useThrottle<T extends (...args: never[]) => unknown>(
         func(...args);
       }
     },
-    [delay, func],
+    [delay, func]
   );
 }

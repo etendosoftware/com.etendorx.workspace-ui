@@ -1,5 +1,5 @@
 import type { AutocompleteProps } from "@mui/material";
-import type { Option } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Option } from "@workspaceui/api-client/src/api/types";
 
 export type { Option };
 

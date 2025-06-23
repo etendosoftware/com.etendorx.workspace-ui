@@ -1,6 +1,6 @@
 import { useTabContext } from "@/contexts/tab";
-import type { EntityData } from "@workspaceui/etendohookbinder/src/api/types";
-import { getFieldsByInputName } from "@workspaceui/etendohookbinder/src/utils/metadata";
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import { getFieldsByInputName } from "@workspaceui/api-client/src/utils/metadata";
 import { useMemo } from "react";
 import { FieldName } from "./types";
 

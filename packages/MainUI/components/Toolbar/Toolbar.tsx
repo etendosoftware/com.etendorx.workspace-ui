@@ -6,6 +6,7 @@ import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useUserContext } from "@/hooks/useUserContext";
+import { EMPTY_ARRAY } from "@/utils/defaults";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
 import type React from "react";
@@ -16,7 +17,7 @@ import { useToolbar } from "../../hooks/Toolbar/useToolbar";
 import { useToolbarConfig } from "../../hooks/Toolbar/useToolbarConfig";
 import { useTranslation } from "../../hooks/useTranslation";
 import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
-import ProcessModal from "../ProcessModal";
+import ProcessIframeModal from "../ProcessModal/Iframe";
 import ProcessDefinitionModal from "../ProcessModal/ProcessDefinitionModal";
 import {
   type ProcessButton,
@@ -34,15 +35,14 @@ import {
   organizeButtonsBySection,
 } from "./buttonConfigs";
 import type { ToolbarProps } from "./types";
-import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 
 const BaseSection = { display: "flex", alignItems: "center" };
 const EmptyArray: ToolbarButtonMetadata[] = [];
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
-  const [openModal, setOpenModal] = useState(false);
+  const [openIframeModal, setOpenIframeModal] = useState(false);
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
-  const [isExecuting, setIsExecuting] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
   const [selectedProcessActionButton, setSelectedProcessActionButton] = useState<ProcessButton | null>(null);
   const [selectedProcessDefinitionButton, setSelectedProcessDefinitionButton] =
@@ -125,11 +125,14 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   }, []);
 
   const handleProcessMenuClick = useCallback(
-    (button: ProcessButton) => {
+    async (button: ProcessButton) => {
       if (!selectedRecord) return;
 
       if (ProcessButtonType.PROCESS_ACTION in button) {
+        const response = await handleProcessClick(button, String(selectedRecord.id));
+        setProcessResponse(response);
         setSelectedProcessActionButton(button);
+        setOpenIframeModal(true);
       } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
         setSelectedProcessDefinitionButton(button);
         setShowProcessDefinitionModal(true);
@@ -137,10 +140,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         throw new Error("Unknown process type");
       }
 
-      setOpenModal(true);
       handleMenuClose();
     },
-    [selectedRecord, handleMenuClose]
+    [handleMenuClose, handleProcessClick, selectedRecord]
   );
 
   const handleSearchChange = useCallback(
@@ -156,32 +158,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     graph.clearSelected(tab);
   }, [graph, refetchDatasource, tab]);
 
-  const handleConfirmProcess = useCallback(async () => {
-    if (!selectedProcessActionButton || !selectedRecord?.id) return;
-
-    setIsExecuting(true);
-    try {
-      const response = await handleProcessClick(selectedProcessActionButton, String(selectedRecord.id));
-      setProcessResponse(response || null);
-    } catch (error) {
-      setProcessResponse({
-        responseActions: [
-          {
-            showMsgInProcessView: {
-              msgType: "error",
-              msgTitle: "Error",
-              msgText: error instanceof Error ? error?.message : "Unknown error",
-            },
-          },
-        ],
-      });
-    } finally {
-      setIsExecuting(false);
-    }
-  }, [handleProcessClick, selectedProcessActionButton, selectedRecord?.id]);
-
   const handleCloseProcess = useCallback(() => {
-    setOpenModal(false);
+    setOpenIframeModal(false);
     setProcessResponse(null);
     setSelectedProcessActionButton(null);
   }, []);
@@ -196,6 +174,10 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     refetchDatasource(tab.id);
   }, [graph, refetchDatasource, tab]);
 
+  const handleCloseSearch = useCallback(() => setSearchOpen(false), [setSearchOpen]);
+
+  const handleCloseStatusModal = useCallback(() => setActiveModal(null), []);
+
   const toolbarConfig = useMemo(() => {
     const organizedButtons = organizeButtonsBySection(buttons, isFormView);
     const hasSelectedRecord = !!selectedRecord?.id;
@@ -203,13 +185,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
     const createSectionButtons = (sectionButtons: ToolbarButtonMetadata[]) =>
       sectionButtons.map((button) => {
-        const config = createButtonByType(
-          button,
-          handleAction,
-          isFormView,
-          hasSelectedRecord,
-          hasParentRecordSelected,
-        );
+        const config = createButtonByType(button, handleAction, isFormView, hasSelectedRecord, hasParentRecordSelected);
 
         const styles = getButtonStyles(button);
         if (styles) {
@@ -266,7 +242,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           statusText={`Modal para: ${activeModal.button.name}`}
           statusType="info"
           saveLabel="Cerrar"
-          onClose={() => setActiveModal(null)}
+          onClose={handleCloseStatusModal}
         />
       )}
       {statusModal.open && (
@@ -304,26 +280,19 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           isOpen={searchOpen}
           searchValue={searchValue}
           onSearchChange={handleSearchChange}
-          onClose={() => setSearchOpen(false)}
+          onClose={handleCloseSearch}
           placeholder={t("table.placeholders.search")}
-          autoCompleteTexts={[]}
+          autoCompleteTexts={EMPTY_ARRAY}
         />
       )}
-      {selectedProcessActionButton && (
-        <ProcessModal
-          open={openModal}
-          onClose={handleCloseProcess}
-          button={selectedProcessActionButton}
-          onConfirm={handleConfirmProcess}
-          isExecuting={isExecuting}
-          processResponse={processResponse}
-          confirmationMessage={t("process.confirmationMessage")}
-          cancelButtonText={t("common.cancel")}
-          executeButtonText={t("common.execute")}
-          onProcessSuccess={handleProcessSuccess}
-          tabId={tab.id}
-        />
-      )}
+      <ProcessIframeModal
+        isOpen={openIframeModal}
+        onClose={handleCloseProcess}
+        url={processResponse?.iframeUrl}
+        title={selectedProcessActionButton?.name}
+        onProcessSuccess={handleProcessSuccess}
+        tabId={tab.id}
+      />
       <ProcessDefinitionModal
         open={showProcessDefinitionModal}
         onClose={handleCloseProcessDefinitionModal}

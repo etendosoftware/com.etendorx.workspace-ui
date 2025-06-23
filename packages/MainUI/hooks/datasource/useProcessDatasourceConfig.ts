@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { logger } from "@/utils/logger";
-import type { EntityValue } from "@workspaceui/etendohookbinder/src/api/types";
+import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 
 export interface ProcessConfigResponse {
   defaults?: Record<string, { value: string; identifier: string }>;
@@ -66,7 +66,7 @@ export const useProcessConfig = ({ processId, windowId, tabId }: UseProcessConfi
         setLoading(false);
       }
     },
-    [processId, windowId, tabId],
+    [processId, windowId, tabId]
   );
 
   return {

@@ -1,4 +1,4 @@
-import type { BaseFieldDefinition } from "@workspaceui/etendohookbinder/src/api/types";
+import type { BaseFieldDefinition } from "@workspaceui/api-client/src/api/types";
 import type { ProcessActionButton, ProcessButton, ProcessDefinitionButton } from "@/components/ProcessModal/types";
 
 export type ButtonType = "ACTION" | "DROPDOWN" | "MODAL" | "TOGGLE" | "CUSTOM";
