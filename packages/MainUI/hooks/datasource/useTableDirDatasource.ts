@@ -2,8 +2,6 @@ import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
 import { useCallback, useMemo, useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { FALLBACK_RESULT } from "@/components/ProcessModal/ProcessDefinitionModal";
-import type { RecordValues } from "@/components/ProcessModal/types";
 import { buildPayloadByInputName } from "@/utils";
 import { FieldName, type UseTableDirDatasourceParams } from "../types";
 import useFormParent from "../useFormParent";
@@ -16,6 +14,7 @@ import {
 } from "./constants";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
+import { FALLBACK_RESULT } from "@/components/ProcessModal/ProcessDefinitionModal";
 
 export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 20 }: UseTableDirDatasourceParams) => {
   const { getValues, watch } = useFormContext();
@@ -32,28 +31,30 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
   const isProductField = field.column.reference === REFERENCE_IDS.PRODUCT;
   const parentData = useFormParent(FieldName.INPUT_NAME);
 
-  const recordValues: RecordValues = useMemo(() => {
-    if (!isProductField || !parentRecord || !tab?.fields) return FALLBACK_RESULT;
-    return buildPayloadByInputName(parentRecord, tab.fields);
-  }, [isProductField, parentRecord, tab?.fields]);
-
   const invoiceContext: Record<string, EntityValue> = useMemo(() => {
-    if (!isProductField) return {};
+    if (!isProductField && !parentRecord && !tab?.fields) {
+      return FALLBACK_RESULT;
+    }
 
+    const recordValues = buildPayloadByInputName(parentRecord, tab.fields);
     const context: Record<string, EntityValue> = {};
+
     for (const [sourceField, targetField] of Object.entries(INVOICE_FIELD_MAPPINGS)) {
+      if (!recordValues) {
+        return [];
+      }
       const value = recordValues[sourceField];
       if (value !== null && value !== undefined && value !== "") {
-        context[targetField] = value;
+        context[targetField] = value as EntityValue;
       }
     }
+
     return context;
-  }, [isProductField, recordValues]);
+  }, [isProductField, parentRecord, tab?.fields]);
 
   const selectorId =
     field.selector?._selectorDefinitionId ||
     (isProductField ? PRODUCT_SELECTOR_DEFAULTS.FALLBACK_SELECTOR_ID : undefined);
-
   const transformFormValues = useCallback(
     (formData: Record<string, EntityValue>) => {
       const formValues: Record<string, EntityValue> = {};
@@ -63,9 +64,13 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         const inputName = currentField?.inputName || key;
         const stringValue = String(value);
 
-        const safeValue = Object.prototype.hasOwnProperty.call(FORM_VALUE_MAPPINGS, stringValue)
-          ? FORM_VALUE_MAPPINGS[stringValue as keyof typeof FORM_VALUE_MAPPINGS]
-          : value;
+        const isISODate = /^\d{4}-\d{2}-\d{2}$/.test(stringValue);
+
+        const formattedValue = isISODate ? stringValue.split("-").reverse().join("-") : stringValue;
+
+        const safeValue = Object.prototype.hasOwnProperty.call(FORM_VALUE_MAPPINGS, formattedValue)
+          ? FORM_VALUE_MAPPINGS[formattedValue as keyof typeof FORM_VALUE_MAPPINGS]
+          : formattedValue;
 
         formValues[inputName] = safeValue;
       }
@@ -131,7 +136,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         const startRow = reset ? 0 : currentPage * pageSize;
         const endRow = reset ? initialPageSize : startRow + pageSize;
         const formValues = transformFormValues(getValues());
-
+        const invoiceValue = transformFormValues(invoiceContext);
         const baseBody = {
           _startRow: startRow.toString(),
           _endRow: endRow.toString(),
@@ -148,25 +153,24 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           _OrExpression: "true",
           ...(typeof _currentValue !== "undefined" ? { _currentValue } : {}),
         };
-
         if (isProductField) {
           Object.assign(baseBody, {
             _noCount: "true",
             ...(selectorId && { _selectorDefinitionId: selectorId }),
-            ...invoiceContext,
+            ...invoiceValue,
             ...formValues,
           });
         } else {
           Object.assign(baseBody, {
             _textMatchStyle: "substring",
             ...parentData,
+            ...invoiceValue,
             ...formValues,
           });
         }
 
         const body = new URLSearchParams(baseBody);
 
-        // Manejar criterios de búsqueda
         if (search) {
           const { dummyId, criteria } = buildSearchCriteria(search, isProductField);
 
@@ -195,13 +199,10 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           } else {
             const recordMap = new Map();
 
-            // Agregar registros existentes
             for (const record of records) {
               const recordId = record.id || JSON.stringify(record);
               recordMap.set(recordId, record);
             }
-
-            // Agregar nuevos registros
             for (const record of data.response.data) {
               const recordId = record.id || JSON.stringify(record);
               recordMap.set(recordId, record);

@@ -11,7 +11,7 @@ import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
 import { useTabContext } from "@/contexts/tab";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
-import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 
 export function Tab({ collapsed }: TabLevelProps) {
   const { window } = useMetadataContext();
@@ -19,7 +19,7 @@ export function Tab({ collapsed }: TabLevelProps) {
   const { registerActions } = useToolbarContext();
   const { graph, setTabRecordId, getTabRecordId } = useSelected();
   const { tab, parentTab } = useTabContext();
-  const selectedParentItems = useSelectedRecords(parentTab as Tab);
+  const selectedParentItems = useSelectedRecords(parentTab as TabType);
 
   const handleSetRecordId = useCallback<React.Dispatch<React.SetStateAction<string>>>(
     (value) => {
