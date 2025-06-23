@@ -55,7 +55,7 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
       onChange(newValue);
       content[newValue].onClick();
     },
-    [content, onChange],
+    [content, onChange]
   );
 
   const handleMenu = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
@@ -89,7 +89,7 @@ const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onC
         sx={sx.tab}
       />
     ),
-    [sx.iconContainer, sx.menuItemIcon, sx.tab],
+    [sx.iconContainer, sx.menuItemIcon, sx.tab]
   );
 
   return (

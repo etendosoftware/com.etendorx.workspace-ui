@@ -1,5 +1,5 @@
+import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useFormContext } from "react-hook-form";
-import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
 
 function formatDateForInput(value: string) {
   const date = new Date(value);

@@ -29,7 +29,7 @@ export const useStatusModal = () => {
         secondaryButtonLabel?: string;
         onAfterClose?: () => void;
         isDeleteSuccess?: boolean;
-      },
+      }
     ) => {
       setState({
         open: true,
@@ -39,7 +39,7 @@ export const useStatusModal = () => {
         ...options,
       });
     },
-    [],
+    []
   );
 
   const showSuccessModal = useCallback(
@@ -50,11 +50,11 @@ export const useStatusModal = () => {
         secondaryButtonLabel?: string;
         onAfterClose?: () => void;
         isDeleteSuccess?: boolean;
-      },
+      }
     ) => {
       showStatusModal("success", statusText, options);
     },
-    [showStatusModal],
+    [showStatusModal]
   );
 
   const showDeleteSuccessModal = useCallback(
@@ -63,7 +63,7 @@ export const useStatusModal = () => {
       options?: {
         saveLabel?: string;
         onAfterClose?: () => void;
-      },
+      }
     ) => {
       showStatusModal("success", statusText, {
         ...options,
@@ -71,7 +71,7 @@ export const useStatusModal = () => {
         saveLabel: options?.saveLabel || "Close",
       });
     },
-    [showStatusModal],
+    [showStatusModal]
   );
 
   const showErrorModal = useCallback(
@@ -82,11 +82,11 @@ export const useStatusModal = () => {
         saveLabel?: string;
         secondaryButtonLabel?: string;
         onAfterClose?: () => void;
-      },
+      }
     ) => {
       showStatusModal("error", statusText, options);
     },
-    [showStatusModal],
+    [showStatusModal]
   );
 
   const showWarningModal = useCallback(
@@ -97,11 +97,11 @@ export const useStatusModal = () => {
         saveLabel?: string;
         secondaryButtonLabel?: string;
         onAfterClose?: () => void;
-      },
+      }
     ) => {
       showStatusModal("warning", statusText, options);
     },
-    [showStatusModal],
+    [showStatusModal]
   );
 
   const showConfirmModal = useCallback((options: ConfirmOptions) => {

@@ -22,7 +22,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
       setSelectedTab(newValue);
       onChange?.(newValue);
     },
-    [onChange],
+    [onChange]
   );
 
   const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
@@ -39,7 +39,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
       onChange?.(id);
       handleMenuClose();
     },
-    [handleMenuClose, onChange],
+    [handleMenuClose, onChange]
   );
 
   const handleMouseEnter = useCallback((id: string) => {
@@ -84,7 +84,7 @@ const PrimaryTabs: React.FC<PrimaryTabsProps> = React.memo(({ tabs, onChange, ic
           />
         );
       }),
-    [tabs, selectedTab, hoveredTab, handleMouseLeave, sx.tab, handleMouseEnter, handleChange],
+    [tabs, selectedTab, hoveredTab, handleMouseLeave, sx.tab, handleMouseEnter, handleChange]
   );
 
   return (

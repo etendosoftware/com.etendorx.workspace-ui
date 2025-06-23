@@ -4,7 +4,7 @@ import useDisplayLogic from "@/hooks/useDisplayLogic";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import { useCallback } from "react";
 import type { ProcessButton } from "../ProcessModal/types";
-import { ProcessButtonType } from "../ProcessModal/types";
+import { isProcessActionButton } from "../ProcessModal/types";
 import type { ProcessMenuProps } from "./types";
 
 interface ProcessMenuItemProps {
@@ -27,7 +27,7 @@ const ProcessMenuItem = ({ button, onProcessClick, disabled }: ProcessMenuItemPr
   return (
     <div
       onClick={disabled ? undefined : handleClick}
-      className="p-2 hover:bg-(--color-baseline-20) transition rounded-lg cursor-pointer"
+      className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -55,7 +55,7 @@ const ProcessDefinitionMenuItem = ({ button, onProcessClick, disabled }: Process
   return (
     <div
       onClick={disabled ? undefined : handleClick}
-      className="p-2 hover:bg-(--color-baseline-20) transition rounded-lg cursor-pointer"
+      className="cursor-pointer rounded-lg p-2 transition hover:bg-(--color-baseline-20)"
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -76,9 +76,9 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
 }) => {
   return (
     <Menu anchorEl={anchorEl} onClose={onClose} className="rounded-xl">
-      <div className="py-4 px-2">
+      <div className="rounded-2xl px-2 py-4">
         {processButtons.map((button: ProcessButton, index: number) =>
-          ProcessButtonType.PROCESS_ACTION in button ? (
+          isProcessActionButton(button) ? (
             <ProcessMenuItem
               key={`${button.id}-${index}`}
               button={button}

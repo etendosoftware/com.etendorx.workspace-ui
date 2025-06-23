@@ -56,7 +56,7 @@ function useDebounce<T, Args extends any[] = any[]>(fn: ((...args: Args) => Prom
 
       return promise;
     },
-    [fn, delay],
+    [fn, delay]
   );
 }
 

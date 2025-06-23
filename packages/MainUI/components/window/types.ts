@@ -1,10 +1,10 @@
-import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 
 export type TabsProps = { tabs: Tab[] };
 export type TabsSwitchProps = {
   current: Tab;
   tabs: Tab[];
-  collapsed?:boolean;
+  collapsed?: boolean;
   onClick: (tab: Tab) => void;
   onDoubleClick: (tab: Tab) => void;
   onClose: () => void;
@@ -15,4 +15,4 @@ export type TabSwitchProps = {
   onClick: (tab: Tab) => void;
   onDoubleClick: (tab: Tab) => void;
 };
-export type TabLevelProps = { tab: Tab; collapsed?: boolean };
+export type TabLevelProps = { collapsed?: boolean };

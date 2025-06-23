@@ -229,7 +229,7 @@ export class ColumnFilterUtils {
   private static handleRangeFilter(
     fieldName: string,
     rangeFilter: { from: FormattedValue; to: FormattedValue },
-    column: Column,
+    column: Column
   ): BaseCriteria[] {
     const result: BaseCriteria[] = [];
 
@@ -339,7 +339,7 @@ export class ColumnFilterUtils {
         filterCriteria = ColumnFilterUtils.handleRangeFilter(
           fieldName,
           filter.value as { from: FormattedValue; to: FormattedValue },
-          column,
+          column
         );
       } else if (Array.isArray(filter.value)) {
         filterCriteria = ColumnFilterUtils.handleArrayFilter(fieldName, filter.value, column);

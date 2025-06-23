@@ -6,8 +6,8 @@ import { useUserContext } from "@/hooks/useUserContext";
 import { buildPayloadByInputName } from "@/utils";
 import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
-import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
@@ -243,7 +243,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
               const newOptions = values as string[];
               newParameters[parameterName] = { ...newParameters[parameterName] };
               newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
-                newOptions.includes(option.value),
+                newOptions.includes(option.value)
               );
             }
 

@@ -54,7 +54,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
         setSuggestion("");
       }
     },
-    [suggestion, setValue],
+    [suggestion, setValue]
   );
 
   const handleInputChange = useCallback(
@@ -62,7 +62,7 @@ const TextInputAutoComplete = (props: TextInputProps) => {
       setValue?.(e.target.value);
       onChange?.(e);
     },
-    [setValue, onChange],
+    [setValue, onChange]
   );
 
   const renderStartAdornment = () => {

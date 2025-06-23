@@ -2,8 +2,8 @@
 
 import { usePrevious } from "@/hooks/usePrevious";
 import useLocalStorage from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
-import type { Labels } from "@workspaceui/etendohookbinder/src/api/types";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import type { Labels } from "@workspaceui/api-client/src/api/types";
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { getLanguageFlag } from "../utils/languageFlags";
@@ -21,7 +21,7 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
     (lang?: Language | null) => {
       return getLanguageFlag(lang || language);
     },
-    [language],
+    [language]
   );
 
   const getLabel = useCallback((label: string) => labels[label] ?? label, [labels]);
@@ -35,7 +35,7 @@ export default function LanguageProvider({ children }: React.PropsWithChildren) 
       prevLanguage,
       getLabel,
     }),
-    [language, setLanguage, getFlag, prevLanguage, getLabel],
+    [language, setLanguage, getFlag, prevLanguage, getLabel]
   );
 
   useEffect(() => {

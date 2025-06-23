@@ -1,5 +1,5 @@
 import type { SelectProps } from "@/components/Form/FormView/selectors/components/types";
-import type { EntityData, Field } from "@workspaceui/etendohookbinder/src/api/types";
+import type { EntityData, Field } from "@workspaceui/api-client/src/api/types";
 import { useMemo } from "react";
 import { useFormContext } from "react-hook-form";
 

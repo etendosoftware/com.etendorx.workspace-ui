@@ -8,7 +8,7 @@ import { useTranslation } from "../hooks/useTranslation";
 import { useUserContext } from "../hooks/useUserContext";
 import type { WindowParams } from "../app/types";
 import { RecentlyViewed } from "./Drawer/RecentlyViewed";
-import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { useMenuTranslation } from "../hooks/useMenuTranslation";
 import { createSearchIndex, filterItems } from "@workspaceui/componentlibrary/src/utils/searchUtils";
 import { useLanguage } from "@/contexts/language";
@@ -47,7 +47,7 @@ export default function Sidebar() {
         router.push(`window?${params.toString()}`);
       }
     },
-    [pathname, router],
+    [pathname, router]
   );
 
   const searchContext = useMemo(
@@ -60,7 +60,7 @@ export default function Sidebar() {
       setExpandedItems,
       searchIndex,
     }),
-    [expandedItems, filteredItems, searchExpandedItems, searchIndex, searchValue],
+    [expandedItems, filteredItems, searchExpandedItems, searchIndex, searchValue]
   );
 
   const getTranslatedName = useCallback((item: Menu) => translateMenuItem(item), [translateMenuItem]);

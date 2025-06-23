@@ -22,7 +22,6 @@ export interface SearchPortalProps {
 
 export interface ToolbarProps {
   windowId: string;
-  tabId?: string;
   onSearch?: (value: string) => void;
   isFormView?: boolean;
 }

@@ -1,5 +1,5 @@
 import { formatNumber, getFieldReference } from "@/utils";
-import { type Field, FieldType } from "@workspaceui/etendohookbinder/src/api/types";
+import { type Field, FieldType } from "@workspaceui/api-client/src/api/types";
 import { useMemo } from "react";
 import { useFormContext } from "react-hook-form";
 

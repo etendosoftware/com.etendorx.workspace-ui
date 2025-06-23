@@ -43,7 +43,7 @@ export const DrawerItems: React.FC<DrawerItemsProps> = React.memo(
           : null}
       </>
     );
-  },
+  }
 );
 
 export default DrawerItems;

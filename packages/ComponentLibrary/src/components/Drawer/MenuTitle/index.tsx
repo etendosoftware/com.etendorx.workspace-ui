@@ -48,7 +48,7 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
         )}
       </button>
     );
-  },
+  }
 );
 
 MenuTitle.displayName = "MenuTitle";

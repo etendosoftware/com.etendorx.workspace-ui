@@ -17,9 +17,12 @@ import {
 import type React from "react";
 import { useState } from "react";
 import { useStyle } from "./style";
-import type { ISelectInput, Option } from "./types";
+import type { ISelectInput, Option as BaseOption } from "./types";
 
 type OptionProps = React.HTMLAttributes<HTMLLIElement> & { key?: string };
+type Option<T extends string = string> = BaseOption<T> & {
+  iconLeft?: React.ReactNode;
+}
 
 const Select: React.FC<ISelectInput> = ({
   title,
@@ -93,6 +96,30 @@ const Select: React.FC<ISelectInput> = ({
     />
   );
 
+  const renderOption = (params: OptionProps, option: Option<string>, { selected }: { selected: boolean }) => {
+    const { key, ...otherParams } = params;
+    return (
+      <li
+        key={option.value + params.key}
+        style={{
+          ...sx.optionContainer,
+          backgroundColor: selected ? theme.palette.baselineColor.neutral[0] : undefined,
+        }}
+        {...otherParams}
+      >
+        {option?.iconLeft && <div style={{marginRight: "0.5rem"}}>{option.iconLeft}</div>}
+        <Typography
+          className="textOption"
+          color={selected ? theme.palette.dynamicColor.dark : theme.palette.baselineColor.neutral[90]}
+          style={sx.optionText}
+        >
+          {option.title}
+        </Typography>
+        {selected && <CheckCircleIcon style={sx.checkIcon} />}
+      </li>
+    );
+  };
+
   return (
     <>
       <Autocomplete
@@ -109,25 +136,7 @@ const Select: React.FC<ISelectInput> = ({
           sx: sx.listBox,
         }}
         onChange={handleSelectionChange}
-        renderOption={({ key, ...restProps }: OptionProps, option, { selected }) => {
-          return (
-            <li
-              key={option.value + key}
-              style={{
-                ...sx.optionContainer,
-                backgroundColor: selected ? theme.palette.baselineColor.neutral[0] : undefined,
-              }}
-              {...restProps}>
-              <Typography
-                className="textOption"
-                color={selected ? theme.palette.dynamicColor.dark : theme.palette.baselineColor.neutral[90]}
-                style={sx.optionText}>
-                {option.title}
-              </Typography>
-              {selected && <CheckCircleIcon style={sx.checkIcon} />}
-            </li>
-          );
-        }}
+        renderOption={renderOption}
       />
       {helperText && (
         <FormHelperText component="div" style={sx.helperTextContainer}>

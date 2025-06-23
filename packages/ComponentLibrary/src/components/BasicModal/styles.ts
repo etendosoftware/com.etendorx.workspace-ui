@@ -124,6 +124,6 @@ export const useStyles = () => {
         },
       } as { [key: string]: SxProps<Theme> },
     }),
-    [theme],
+    [theme]
   );
 };

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Field } from "@workspaceui/api-client/src/api/types";
 import Select from "./components/Select";
 import type { SelectProps } from "./components/types";
 
