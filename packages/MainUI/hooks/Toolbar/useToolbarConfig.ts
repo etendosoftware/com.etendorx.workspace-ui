@@ -1,7 +1,7 @@
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Tab, EntityData } from "@workspaceui/etendohookbinder/src/api/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearch } from "../../contexts/searchContext";
 import { useDeleteRecord } from "../useDeleteRecord";
@@ -10,6 +10,8 @@ import { useTranslation } from "../useTranslation";
 import { useStatusModal } from "./useStatusModal";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useSelected } from "@/hooks/useSelected";
+import { useSelectedRecords } from "@/hooks/useSelectedRecords";
+import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 
 export const useToolbarConfig = ({
   tabId,
@@ -42,24 +44,13 @@ export const useToolbarConfig = ({
   const { activeWindow, getSelectedRecord, clearSelectedRecord } = useMultiWindowURL();
   const { graph } = useSelected();
 
+  const selectedMultiple = useSelectedRecords(tab);
+  const selectedRecord = useSelectedRecord(tab);
+
   const selectedRecordId = useMemo(() => {
     if (!activeWindow?.windowId || !tab) return null;
     return getSelectedRecord(activeWindow.windowId, tab.id);
   }, [activeWindow?.windowId, tab, getSelectedRecord]);
-
-  const selectedRecord = useMemo(() => {
-    if (!selectedRecordId || !tab) return null;
-
-    const graphRecord = graph.getSelected(tab);
-    if (graphRecord) return graphRecord;
-
-    return { id: selectedRecordId };
-  }, [selectedRecordId, tab, graph]);
-
-  const selectedMultiple = useMemo(() => {
-    if (!tab) return [];
-    return graph.getSelectedMultiple(tab) || [];
-  }, [tab, graph]);
 
   const selectedIds = useMemo(() => {
     if (selectedMultiple.length > 0) {
@@ -78,14 +69,25 @@ export const useToolbarConfig = ({
     onSuccess: (deletedCount) => {
       if (!tabId) return;
 
-      const recordName = selectedRecord?._identifier || selectedRecord?.id || `${deletedCount} registros`;
+      let recordName = "";
+      if (selectedMultiple.length > 1) {
+        recordName = `${selectedMultiple.length} ${t("common.records")}`;
+      } else if (selectedMultiple.length === 1) {
+        const record = selectedMultiple[0];
+        recordName = String(record._identifier || record.id || `${t("common.record")}`);
+      } else if (selectedRecord) {
+        recordName = String(selectedRecord._identifier || selectedRecord.id || `${t("common.records")}`);
+      } else {
+        recordName = `${deletedCount} ${t("common.records")}`;
+      }
+
       const entityType = tab?.title || "";
 
       for (const recordId of selectedIds) {
         removeRecord(tabId, recordId);
       }
 
-      const successMessage = `${entityType} '${String(recordName)}' ${t("status.deleteSuccess")}`;
+      const successMessage = `${entityType} '${recordName}' ${t("status.deleteSuccess")}`;
 
       showDeleteSuccessModal(successMessage, {
         saveLabel: t("common.close"),
@@ -141,35 +143,36 @@ export const useToolbarConfig = ({
         onSave?.();
       },
       DELETE: () => {
-        console.log(`[useToolbarConfig ${tabId}] DELETE action triggered`, {
-          selectedIdsCount: selectedIds.length,
-          selectedIds,
-        });
-
         if (tab) {
           if (selectedIds.length > 0) {
-            const recordsToDelete = selectedIds.map((id) => {
-              const existingRecord = selectedMultiple.find((r) => String(r.id) === id);
-              return existingRecord || { id };
-            });
+            let recordsToDelete: EntityData[] | EntityData;
 
-            const confirmText =
-              selectedIds.length === 1
-                ? `${t("status.deleteConfirmation")} ${String(selectedRecord?._identifier || selectedRecord?.id)}?`
-                : `${t("status.multipleDeleteConfirmation")} ${selectedIds.length}`;
+            if (selectedMultiple.length > 0) {
+              recordsToDelete = selectedMultiple;
+            } else {
+              recordsToDelete = selectedIds.map((id) => ({ id }) as EntityData);
+            }
+            let confirmText: string;
+            if (selectedIds.length === 1) {
+              const recordToDelete = Array.isArray(recordsToDelete) ? recordsToDelete[0] : recordsToDelete;
+              const identifier = String(recordToDelete._identifier || recordToDelete.id);
+              confirmText = `${t("status.deleteConfirmation")} ${identifier}?`;
+            } else {
+              confirmText = `${t("status.multipleDeleteConfirmation")} ${selectedIds.length} ${t("common.records")}?`;
+            }
 
             showConfirmModal({
               confirmText,
               onConfirm: () => {
-                console.log(`[useToolbarConfig ${tabId}] Confirming delete for:`, recordsToDelete);
                 setIsDeleting(true);
-                deleteRecord(selectedIds.length === 1 ? recordsToDelete[0] : recordsToDelete);
+                deleteRecord(
+                  selectedIds.length === 1 && Array.isArray(recordsToDelete) ? recordsToDelete[0] : recordsToDelete
+                );
               },
               saveLabel: t("common.confirm"),
               secondaryButtonLabel: t("common.cancel"),
             });
           } else {
-            console.log(`[useToolbarConfig ${tabId}] No records selected for delete`);
             showErrorModal(t("status.selectRecordError"), {
               saveLabel: t("common.close"),
               secondaryButtonLabel: t("modal.secondaryButtonLabel"),
@@ -189,13 +192,11 @@ export const useToolbarConfig = ({
       onRefresh,
       onSave,
       selectedIds,
-      selectedRecord,
       selectedMultiple,
       showConfirmModal,
       showErrorModal,
       t,
       tab,
-      tabId,
     ]
   );
 

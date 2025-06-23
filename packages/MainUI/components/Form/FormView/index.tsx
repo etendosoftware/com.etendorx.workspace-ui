@@ -79,15 +79,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const initialState = useFormInitialState(formInitialization) || undefined;
 
   const availableFormData = useMemo(() => {
-    console.log(`[FormView ${tab.id}] Building form data:`, {
-      recordId,
-      mode,
-      hasRecord: !!record,
-      hasInitialState: !!initialState,
-    });
-
     return { ...record, ...initialState };
-  }, [record, initialState, recordId, mode, tab.id]);
+  }, [record, initialState]);
 
   const { fields, groups } = useFormFields(tab, mode, false, availableFormData);
 
@@ -205,10 +198,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const onError = useCallback(
     (data: string) => {
-      console.log(`[FormView ${tab.id}] SAVE ERROR:`, data);
       showErrorModal(data);
     },
-    [showErrorModal, tab.id]
+    [showErrorModal]
   );
 
   const { save, loading } = useFormAction({

@@ -82,7 +82,6 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
     if (!rootNode) throw new Error("Root node not found");
 
     const printNode = (node: GraphNode<T>, level: number) => {
-      console.log(" ".repeat(level * 2) + node.value.name);
       for (const child of node.neighbors) {
         printNode(child, level + 1);
       }

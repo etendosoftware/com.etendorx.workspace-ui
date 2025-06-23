@@ -28,15 +28,9 @@ export function useMultiWindowURL() {
     const windowStates: WindowState[] = [];
     let active: WindowState | undefined;
 
-    // Detectar si estamos en la ruta home - considerar que si hay parámetros de ventana, no estamos realmente en home
     const currentPath = typeof window !== "undefined" ? window.location.pathname : "/";
     const hasWindowParams = Array.from(searchParams.entries()).some(([key]) => key.startsWith("w_"));
     const isHome = currentPath === "/" && !hasWindowParams;
-
-    console.log("[useMultiWindowURL] Current path:", currentPath);
-    console.log("[useMultiWindowURL] Has window params:", hasWindowParams);
-    console.log("[useMultiWindowURL] Is home:", isHome);
-    console.log("[useMultiWindowURL] Search params:", Array.from(searchParams.entries()));
 
     const windowIds = new Set<string>();
     for (const [key] of searchParams.entries()) {
@@ -45,11 +39,8 @@ export function useMultiWindowURL() {
       }
     }
 
-    console.log("[useMultiWindowURL] Found window IDs:", Array.from(windowIds));
-
     for (const windowId of windowIds) {
       const isActive = searchParams.get(`w_${windowId}`) === "active";
-      console.log(`[useMultiWindowURL] Window ${windowId} active status:`, isActive);
 
       const formRecordId = searchParams.get(`r_${windowId}`) || undefined;
       const formMode = (searchParams.get(`fm_${windowId}`) as "new" | "edit" | "view") || undefined;
@@ -109,17 +100,10 @@ export function useMultiWindowURL() {
 
       if (isActive) {
         active = windowState;
-        console.log("[useMultiWindowURL] Setting active window:", windowState);
       }
     }
 
     windowStates.sort((a, b) => a.windowId.localeCompare(b.windowId));
-
-    console.log("[useMultiWindowURL] Final state:", {
-      windows: windowStates,
-      activeWindow: active,
-      isHomeRoute: isHome,
-    });
 
     return {
       windows: windowStates,
@@ -164,7 +148,6 @@ export function useMultiWindowURL() {
       }
     }
 
-    // Si preserveCurrentPath es true y estamos en home, mantener la ruta "/"
     if (preserveCurrentPath && window.location.pathname === "/") {
       return `/?${params.toString()}`;
     }
@@ -181,14 +164,11 @@ export function useMultiWindowURL() {
   );
 
   const navigateToHome = useCallback(() => {
-    // Mantener las ventanas pero desactivar todas y navegar a home
     const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
 
     if (updatedWindows.length === 0) {
-      // Si no hay ventanas, simplemente ir a home
       router.push("/");
     } else {
-      // Si hay ventanas, mantenerlas en la URL pero ir a home
       const url = `/?${buildURL(updatedWindows).split("?")[1]}`;
       router.push(url);
     }

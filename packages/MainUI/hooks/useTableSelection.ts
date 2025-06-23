@@ -13,7 +13,7 @@ export default function useTableSelection(
 ) {
   const { graph } = useSelected();
   const { activeWindow, clearSelectedRecord } = useMultiWindowURL();
-  const previousSelectionRef = useRef<string | number>("");
+  const previousSelectionRef = useRef<string[]>([]);
 
   const windowId = activeWindow?.windowId;
   const currentWindowId = tab.window;
@@ -27,21 +27,22 @@ export default function useTableSelection(
 
     const recordsMap = mapBy(records, "id");
     const selectedIds = Object.keys(rowSelection).filter((id) => rowSelection[id]);
-    const result: EntityData[] = [];
+    const selectedRecords: EntityData[] = [];
     let lastSelected: EntityData | null = null;
 
     for (const recordId of selectedIds) {
       const record = recordsMap[recordId];
       if (record) {
-        result.push(record);
+        selectedRecords.push(record);
         lastSelected = record;
       }
     }
 
-    const currentSelectionId = lastSelected?.id ? String(lastSelected.id) : "";
+    const currentSelectionIds = selectedRecords.map((r) => String(r.id)).sort();
+    const previousSelectionIds = previousSelectionRef.current.sort();
 
-    if (currentSelectionId !== String(previousSelectionRef.current)) {
-      previousSelectionRef.current = currentSelectionId;
+    if (JSON.stringify(currentSelectionIds) !== JSON.stringify(previousSelectionIds)) {
+      previousSelectionRef.current = currentSelectionIds;
 
       if (windowId) {
         const children = graph.getChildren(tab);
@@ -60,16 +61,18 @@ export default function useTableSelection(
         if (onSelectionChange) {
           onSelectionChange(String(lastSelected.id));
         }
-      } else if (graph.getSelected(tab)) {
-        graph.clearSelected(tab);
+      } else {
+        if (graph.getSelected(tab)) {
+          graph.clearSelected(tab);
+        }
 
         if (onSelectionChange) {
           onSelectionChange("");
         }
       }
 
-      if (result.length > 0) {
-        graph.setSelectedMultiple(tab, result);
+      if (selectedRecords.length > 0) {
+        graph.setSelectedMultiple(tab, selectedRecords);
       } else {
         graph.clearSelectedMultiple(tab);
       }

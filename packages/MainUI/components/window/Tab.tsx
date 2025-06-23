@@ -65,10 +65,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       if (windowId) {
         if (recordId) {
           setSelectedRecord(windowId, tab.id, recordId);
-
-          setTimeout(() => {
-            graph.setSelected(tab, { id: recordId });
-          }, 0);
         } else {
           clearSelectedRecord(windowId, tab.id);
 
@@ -139,14 +135,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       graph.removeListener("unselected", handleDeselection);
     };
   }, [graph, tab, handleClearChildren, windowId, getTabFormState]);
-
-  useEffect(() => {
-    if (selectedRecordId && !tabFormState && windowId) {
-      setTimeout(() => {
-        graph.setSelected(tab, { id: selectedRecordId });
-      }, 0);
-    }
-  }, [selectedRecordId, tabFormState, windowId, graph, tab]);
 
   const shouldShowForm = currentMode === "form" && !!currentRecordId;
   const formMode = currentFormMode === "new" ? FormMode.NEW : FormMode.EDIT;

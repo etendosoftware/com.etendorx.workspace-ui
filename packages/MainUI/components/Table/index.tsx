@@ -48,14 +48,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
   const parentId = String(parentRecord?.id ?? "");
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  console.log(`[DynamicTable ${tabId}] TabContext values:`, {
-    tabId,
-    parentTabId: parentTab?.id,
-    parentRecordId: parentRecord?.id,
-    parentId,
-    hasParentRecord: !!parentRecord,
-  });
-
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
   const query: DatasourceOptions = useMemo(() => {
@@ -141,13 +133,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
 
   const handleTableSelectionChange = useCallback(
     (recordId: string) => {
-      console.log(`[DynamicTable ${tabId}] Table selection changed: ${recordId}`);
-
       if (onRecordSelection) {
         onRecordSelection(recordId);
       }
     },
-    [onRecordSelection, tabId]
+    [onRecordSelection]
   );
 
   const rowProps = useCallback<RowProps>(
@@ -157,8 +147,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
 
       return {
         onClick: (event) => {
-          console.log(`[DynamicTable ${tabId}] Row clicked:`, record.id);
-
           if (!event.ctrlKey) {
             table.setRowSelection({});
           }
@@ -197,7 +185,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
         table,
       };
     },
-    [graph, setRecordId, sx.rowSelected, tab, tabId, onRecordSelection]
+    [graph, setRecordId, sx.rowSelected, tab, onRecordSelection]
   );
 
   const renderEmptyRowsFallback = useCallback(
@@ -261,10 +249,24 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
 
   useTableSelection(tab, records, table.getState().rowSelection, handleTableSelectionChange);
 
-  const clearSelection = useCallback(() => {
-    table.resetRowSelection(true);
-    setRecordId("");
-  }, [setRecordId, table]);
+  useEffect(() => {
+    const handleGraphClear = () => {
+      const currentSelection = table.getState().rowSelection;
+      const hasTableSelection = Object.keys(currentSelection).some((id) => currentSelection[id]);
+
+      if (hasTableSelection) {
+        table.resetRowSelection(true);
+      }
+    };
+
+    graph.addListener("unselected", handleGraphClear);
+    graph.addListener("unselectedMultiple", handleGraphClear);
+
+    return () => {
+      graph.removeListener("unselected", handleGraphClear);
+      graph.removeListener("unselectedMultiple", handleGraphClear);
+    };
+  }, [graph, table, tabId]);
 
   useEffect(() => {
     if (removeRecordLocally) {
@@ -282,9 +284,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     registerActions({
       refresh: refetch,
       filter: toggleImplicitFilters,
-      back: clearSelection,
     });
-  }, [clearSelection, refetch, registerActions, toggleImplicitFilters]);
+  }, [refetch, registerActions, toggleImplicitFilters]);
 
   if (error) {
     return (
@@ -292,13 +293,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     );
   }
 
-  // TODO Translations
   if (parentTab && !parentRecord) {
     return (
       <div className="h-full flex items-center justify-center text-gray-500">
         <div className="text-center">
-          <div className="text-lg mb-2">No parent record selected</div>
-          <div className="text-sm">Select a record in the parent tab to view related data</div>
+          <div className="text-lg mb-2">{t("errors.selectionError.tittle")}</div>
+          <div className="text-sm">{t("errors.selectionError.description")}</div>
         </div>
       </div>
     );
