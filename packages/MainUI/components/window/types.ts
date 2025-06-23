@@ -15,4 +15,4 @@ export type TabSwitchProps = {
   onClick: (tab: Tab) => void;
   onDoubleClick: (tab: Tab) => void;
 };
-export type TabLevelProps = { tab: Tab; collapsed?: boolean };
+export type TabLevelProps = { collapsed?: boolean };

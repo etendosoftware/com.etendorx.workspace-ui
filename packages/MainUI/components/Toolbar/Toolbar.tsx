@@ -40,7 +40,7 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 const BaseSection = { display: "flex", alignItems: "center" };
 const EmptyArray: ToolbarButtonMetadata[] = [];
 
-const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false }) => {
+const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
@@ -53,13 +53,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     isOpen: boolean;
   } | null>(null);
 
+  const { refetchDatasource } = useDatasourceContext();
+  const { tab, parentTab, parentRecord } = useTabContext();
   const { session } = useUserContext();
-  const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
+  const { toolbar, loading, refetch } = useToolbar(windowId, tab?.id);
   const { graph } = useSelected();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
-  const { refetchDatasource } = useDatasourceContext();
-  const { tab, parentTab, parentRecord } = useTabContext();
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -81,7 +81,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     handleConfirm,
     handleCancelConfirm,
     hideStatusModal,
-  } = useToolbarConfig({ windowId, tabId, parentId, isFormView });
+  } = useToolbarConfig({ windowId, tabId: tab?.id, parentId, isFormView });
 
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
   const selectedItems = useSelectedRecords(tab);
