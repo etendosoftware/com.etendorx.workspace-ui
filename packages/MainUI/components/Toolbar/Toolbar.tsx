@@ -40,8 +40,8 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 const BaseSection = { display: "flex", alignItems: "center" };
 const EmptyArray: ToolbarButtonMetadata[] = [];
 
-const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = false }) => {
-  const [openModal, setOpenModal] = useState(false);
+const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
+  const [openIframeModal, setOpenIframeModal] = useState(false);
   const [showProcessDefinitionModal, setShowProcessDefinitionModal] = useState(false);
   const [processResponse, setProcessResponse] = useState<ProcessResponse | null>(null);
   const [selectedProcessActionButton, setSelectedProcessActionButton] = useState<ProcessButton | null>(null);
@@ -53,13 +53,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     isOpen: boolean;
   } | null>(null);
 
+  const { refetchDatasource } = useDatasourceContext();
+  const { tab, parentTab, parentRecord } = useTabContext();
   const { session } = useUserContext();
-  const { toolbar, loading, refetch } = useToolbar(windowId, tabId);
+  const { toolbar, loading, refetch } = useToolbar(windowId, tab?.id);
   const { graph } = useSelected();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
-  const { refetchDatasource } = useDatasourceContext();
-  const { tab, parentTab, parentRecord } = useTabContext();
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -81,7 +81,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
     handleConfirm,
     handleCancelConfirm,
     hideStatusModal,
-  } = useToolbarConfig({ windowId, tabId, parentId, isFormView });
+  } = useToolbarConfig({ windowId, tabId: tab?.id, parentId, isFormView });
 
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
   const selectedItems = useSelectedRecords(tab);
@@ -132,6 +132,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
         const response = await handleProcessClick(button, String(selectedRecord.id));
         setProcessResponse(response);
         setSelectedProcessActionButton(button);
+        setOpenIframeModal(true);
       } else if (ProcessButtonType.PROCESS_DEFINITION in button) {
         setSelectedProcessDefinitionButton(button);
         setShowProcessDefinitionModal(true);
@@ -139,7 +140,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
         throw new Error("Unknown process type");
       }
 
-      setOpenModal(true);
       handleMenuClose();
     },
     [handleMenuClose, handleProcessClick, selectedRecord]
@@ -159,7 +159,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
   }, [graph, refetchDatasource, tab]);
 
   const handleCloseProcess = useCallback(() => {
-    setOpenModal(false);
+    setOpenIframeModal(false);
     setProcessResponse(null);
     setSelectedProcessActionButton(null);
   }, []);
@@ -286,7 +286,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, tabId, isFormView = fals
         />
       )}
       <ProcessIframeModal
-        isOpen={openModal}
+        isOpen={openIframeModal}
         onClose={handleCloseProcess}
         url={processResponse?.iframeUrl}
         title={selectedProcessActionButton?.name}

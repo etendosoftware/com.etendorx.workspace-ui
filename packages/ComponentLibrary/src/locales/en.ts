@@ -28,6 +28,9 @@ const en = {
       main: "Main Section",
       audit: "Audit",
     },
+    statusBar: {
+      closeRecord: "Close Record",
+    },
   },
   audit: {
     createdDate: "Creation Date",

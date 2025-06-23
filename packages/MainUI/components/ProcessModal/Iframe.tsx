@@ -38,6 +38,7 @@ const ProcessIframeOpenModal = ({
 
   const handleReceivedMessage = useCallback(
     (message: ProcessMessage) => {
+      if (message?.type === "info") return;
       if (message.message?.toUpperCase().includes("ERROR")) {
         setProcessMessage({
           ...message,

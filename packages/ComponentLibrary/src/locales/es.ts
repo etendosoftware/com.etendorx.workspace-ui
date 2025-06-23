@@ -28,6 +28,9 @@ const es = {
       main: "Sección Principal",
       audit: "Auditoría",
     },
+    statusBar: {
+      closeRecord: "Cerrar registro",
+    },
   },
   audit: {
     createdDate: "Fecha de creación",

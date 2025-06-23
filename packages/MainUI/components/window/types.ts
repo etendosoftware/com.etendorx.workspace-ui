@@ -19,4 +19,4 @@ export type TabSwitchProps = {
   onClose?: (e: React.MouseEvent) => void;
   canClose?: boolean;
 };
-export type TabLevelProps = { tab: Tab; collapsed?: boolean };
+export type TabLevelProps = { collapsed?: boolean };
