@@ -17,7 +17,6 @@ export default function useTableSelection(
 
   const windowId = activeWindow?.windowId;
   const currentWindowId = tab.window;
-
   const isCorrectWindow = windowId === currentWindowId;
 
   useEffect(() => {
@@ -55,16 +54,14 @@ export default function useTableSelection(
         }
       }
 
-      if (lastSelected && lastSelected.id != null) {
+      if (lastSelected) {
         graph.setSelected(tab, lastSelected);
 
         if (onSelectionChange) {
           onSelectionChange(String(lastSelected.id));
         }
-      } else {
-        if (graph.getSelected(tab)) {
-          graph.clearSelected(tab);
-        }
+      } else if (graph.getSelected(tab)) {
+        graph.clearSelected(tab);
 
         if (onSelectionChange) {
           onSelectionChange("");

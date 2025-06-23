@@ -48,6 +48,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
   const parentId = String(parentRecord?.id ?? "");
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
+  const clickTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
   const query: DatasourceOptions = useMemo(() => {
@@ -144,38 +146,51 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     ({ row, table }) => {
       const record = row.original as Record<string, never>;
       const isSelected = row.getIsSelected();
+      const rowId = String(record.id);
 
       return {
         onClick: (event) => {
-          if (!event.ctrlKey) {
-            table.setRowSelection({});
+          const existingTimeout = clickTimeoutsRef.current.get(rowId);
+          if (existingTimeout) {
+            clearTimeout(existingTimeout);
+            clickTimeoutsRef.current.delete(rowId);
           }
-          row.toggleSelected();
-          setTimeout(() => {
-            const newSelection = table.getState().rowSelection;
-            const selectedIds = Object.keys(newSelection).filter((id) => newSelection[id]);
 
-            if (selectedIds.length > 0 && onRecordSelection) {
-              onRecordSelection(selectedIds[selectedIds.length - 1]);
-            } else if (selectedIds.length === 0 && onRecordSelection) {
-              onRecordSelection("");
+          const timeout = setTimeout(() => {
+            if (!event.ctrlKey) {
+              table.setRowSelection({});
             }
-          }, 0);
+            row.toggleSelected();
+            clickTimeoutsRef.current.delete(rowId);
+          }, 250);
+
+          clickTimeoutsRef.current.set(rowId, timeout);
         },
+
         onDoubleClick: (event) => {
           event.stopPropagation();
-          if (!isSelected) {
-            table.setRowSelection({ [record.id]: true });
-            if (onRecordSelection) {
-              onRecordSelection(record.id);
-            }
-          }
-          setTimeout(() => {
-            graph.setSelected(tab, row.original);
 
-            setRecordId(record.id);
-          }, 10);
+          const timeout = clickTimeoutsRef.current.get(rowId);
+          if (timeout) {
+            clearTimeout(timeout);
+            clickTimeoutsRef.current.delete(rowId);
+          }
+
+          const parent = graph.getParent(tab);
+          const parentSelection = parent ? graph.getSelected(parent) : undefined;
+
+          if (!isSelected) {
+            row.toggleSelected();
+          }
+
+          graph.setSelected(tab, row.original);
+
+          if (parent && parentSelection) {
+            setTimeout(() => graph.setSelected(parent, parentSelection), 10);
+          }
+          setRecordId(record.id);
         },
+
         sx: {
           ...(isSelected && {
             ...sx.rowSelected,
@@ -185,7 +200,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
         table,
       };
     },
-    [graph, setRecordId, sx.rowSelected, tab, onRecordSelection]
+    [graph, setRecordId, sx.rowSelected, tab]
   );
 
   const renderEmptyRowsFallback = useCallback(
@@ -250,12 +265,14 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
   useTableSelection(tab, records, table.getState().rowSelection, handleTableSelectionChange);
 
   useEffect(() => {
-    const handleGraphClear = () => {
-      const currentSelection = table.getState().rowSelection;
-      const hasTableSelection = Object.keys(currentSelection).some((id) => currentSelection[id]);
+    const handleGraphClear = (eventTab: typeof tab) => {
+      if (eventTab.id === tab.id) {
+        const currentSelection = table.getState().rowSelection;
+        const hasTableSelection = Object.keys(currentSelection).some((id) => currentSelection[id]);
 
-      if (hasTableSelection) {
-        table.resetRowSelection(true);
+        if (hasTableSelection) {
+          table.resetRowSelection(true);
+        }
       }
     };
 
