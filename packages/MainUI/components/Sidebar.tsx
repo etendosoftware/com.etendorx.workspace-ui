@@ -23,8 +23,7 @@ export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // ✅ Usar el nuevo hook para múltiples ventanas
-  const { activeWindow, openWindow } = useMultiWindowURL();
+  const { activeWindow, openWindow, buildURL } = useMultiWindowURL();
 
   const [searchValue, setSearchValue] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -35,7 +34,6 @@ export default function Sidebar() {
     return result;
   }, [menu, searchValue, searchIndex]);
 
-  // ✅ Actualizar handleClick para usar la nueva API
   const handleClick = useCallback(
     (item: Menu) => {
       const windowId = item.windowId ?? "";
@@ -45,20 +43,25 @@ export default function Sidebar() {
         return;
       }
 
-      // ✅ Usar openWindow en lugar de manipular URL manualmente
-      if (pathname.includes("window")) {
-        // Ya estamos en la página de ventanas, solo abrir/activar la ventana
+      const isInWindowRoute = pathname.includes("window");
+
+      if (isInWindowRoute) {
         openWindow(windowId, item.name);
       } else {
-        // Navegar a la página de ventanas y abrir la ventana
-        router.push("/window");
-        // Usar setTimeout para asegurar que la navegación ocurra primero
-        setTimeout(() => {
-          openWindow(windowId, item.name);
-        }, 0);
+        const newWindow = {
+          windowId,
+          isActive: true,
+          title: item.name,
+          selectedRecords: {},
+          tabFormStates: {},
+        };
+
+        const targetURL = buildURL([newWindow]);
+
+        router.push(targetURL);
       }
     },
-    [pathname, router, openWindow]
+    [pathname, router, openWindow, buildURL]
   );
 
   const searchContext = useMemo(
@@ -82,12 +85,11 @@ export default function Sidebar() {
     }
   }, [currentRole?.id, language, prevLanguage, prevRole]);
 
-  // ✅ Pasar windowId del activeWindow para compatibilidad con Drawer
   const currentWindowId = activeWindow?.windowId;
 
   return (
     <Drawer
-      windowId={currentWindowId} // ✅ Usar windowId de la ventana activa
+      windowId={currentWindowId}
       logo={EtendoLogotype.src}
       title={t("common.etendo")}
       items={menu}

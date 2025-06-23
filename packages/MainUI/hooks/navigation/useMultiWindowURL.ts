@@ -6,12 +6,9 @@ import { useCallback, useMemo } from "react";
 export interface WindowState {
   windowId: string;
   isActive: boolean;
-  // ✅ CAMBIO: Estado de formulario global para la ventana
   formRecordId?: string;
   formMode?: "new" | "edit" | "view";
-  // ✅ CAMBIO: Estados de selección por tab (independientes)
   selectedRecords: Record<string, string>; // tabId -> recordId
-  // ✅ CAMBIO: Estados de formulario por tab (independientes)
   tabFormStates: Record<
     string,
     {
@@ -27,11 +24,20 @@ export function useMultiWindowURL() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const { windows, activeWindow } = useMemo(() => {
+  const { windows, activeWindow, isHomeRoute } = useMemo(() => {
     const windowStates: WindowState[] = [];
     let active: WindowState | undefined;
 
-    // ✅ Identificar todas las ventanas
+    // Detectar si estamos en la ruta home - considerar que si hay parámetros de ventana, no estamos realmente en home
+    const currentPath = typeof window !== "undefined" ? window.location.pathname : "/";
+    const hasWindowParams = Array.from(searchParams.entries()).some(([key]) => key.startsWith("w_"));
+    const isHome = currentPath === "/" && !hasWindowParams;
+
+    console.log("[useMultiWindowURL] Current path:", currentPath);
+    console.log("[useMultiWindowURL] Has window params:", hasWindowParams);
+    console.log("[useMultiWindowURL] Is home:", isHome);
+    console.log("[useMultiWindowURL] Search params:", Array.from(searchParams.entries()));
+
     const windowIds = new Set<string>();
     for (const [key] of searchParams.entries()) {
       if (key.startsWith("w_")) {
@@ -39,18 +45,17 @@ export function useMultiWindowURL() {
       }
     }
 
-    // ✅ Para cada ventana, construir su estado completo
-    windowIds.forEach((windowId) => {
-      const isActive = searchParams.get(`w_${windowId}`) === "active";
+    console.log("[useMultiWindowURL] Found window IDs:", Array.from(windowIds));
 
-      // ✅ Estado global de formulario de ventana (OBSOLETO - mantener para compatibilidad)
+    for (const windowId of windowIds) {
+      const isActive = searchParams.get(`w_${windowId}`) === "active";
+      console.log(`[useMultiWindowURL] Window ${windowId} active status:`, isActive);
+
       const formRecordId = searchParams.get(`r_${windowId}`) || undefined;
       const formMode = (searchParams.get(`fm_${windowId}`) as "new" | "edit" | "view") || undefined;
 
-      // ✅ Estados de selección por tab
       const selectedRecords: Record<string, string> = {};
 
-      // ✅ Estados de formulario por tab (NUEVO)
       const tabFormStates: Record<
         string,
         {
@@ -60,15 +65,12 @@ export function useMultiWindowURL() {
         }
       > = {};
 
-      // ✅ Recopilar todos los estados específicos de tabs
       for (const [key, value] of searchParams.entries()) {
-        // Estados de selección: s_windowId_tabId
         if (key.startsWith(`s_${windowId}_`) && value) {
           const tabId = key.slice(`s_${windowId}_`.length);
           selectedRecords[tabId] = value;
         }
 
-        // ✅ NUEVO: Estados de formulario por tab: tf_windowId_tabId
         if (key.startsWith(`tf_${windowId}_`) && value) {
           const tabId = key.slice(`tf_${windowId}_`.length);
           tabFormStates[tabId] = {
@@ -77,7 +79,6 @@ export function useMultiWindowURL() {
           };
         }
 
-        // ✅ NUEVO: Modo de tab: tm_windowId_tabId
         if (key.startsWith(`tm_${windowId}_`) && value) {
           const tabId = key.slice(`tm_${windowId}_`.length);
           tabFormStates[tabId] = {
@@ -86,7 +87,6 @@ export function useMultiWindowURL() {
           };
         }
 
-        // ✅ NUEVO: Modo de formulario de tab: tfm_windowId_tabId
         if (key.startsWith(`tfm_${windowId}_`) && value) {
           const tabId = key.slice(`tfm_${windowId}_`.length);
           tabFormStates[tabId] = {
@@ -99,33 +99,44 @@ export function useMultiWindowURL() {
       const windowState: WindowState = {
         windowId,
         isActive,
-        formRecordId, // Mantener para compatibilidad
-        formMode, // Mantener para compatibilidad
+        formRecordId,
+        formMode,
         selectedRecords,
-        tabFormStates, // ✅ NUEVO
+        tabFormStates,
       };
 
       windowStates.push(windowState);
 
       if (isActive) {
         active = windowState;
+        console.log("[useMultiWindowURL] Setting active window:", windowState);
       }
-    });
+    }
 
     windowStates.sort((a, b) => a.windowId.localeCompare(b.windowId));
-    return { windows: windowStates, activeWindow: active };
+
+    console.log("[useMultiWindowURL] Final state:", {
+      windows: windowStates,
+      activeWindow: active,
+      isHomeRoute: isHome,
+    });
+
+    return {
+      windows: windowStates,
+      activeWindow: active,
+      isHomeRoute: isHome,
+    };
   }, [searchParams]);
 
-  const buildURL = useCallback((newWindows: WindowState[]) => {
+  const buildURL = useCallback((newWindows: WindowState[], preserveCurrentPath?: boolean) => {
     const params = new URLSearchParams();
 
-    newWindows.forEach((window) => {
+    for (const window of newWindows) {
       const { windowId, isActive, formRecordId, formMode, selectedRecords, tabFormStates } = window;
 
-      // Estado básico de ventana
+      // basic state
       params.set(`w_${windowId}`, isActive ? "active" : "inactive");
 
-      // ✅ Estado global de formulario (mantener para compatibilidad)
       if (formRecordId) {
         params.set(`r_${windowId}`, formRecordId);
       }
@@ -133,15 +144,14 @@ export function useMultiWindowURL() {
         params.set(`fm_${windowId}`, formMode);
       }
 
-      // ✅ Estados de selección por tab
-      Object.entries(selectedRecords).forEach(([tabId, selectedRecordId]) => {
+      // selected state
+      for (const [tabId, selectedRecordId] of Object.entries(selectedRecords)) {
         if (selectedRecordId) {
           params.set(`s_${windowId}_${tabId}`, selectedRecordId);
         }
-      });
+      }
 
-      // ✅ NUEVO: Estados de formulario por tab
-      Object.entries(tabFormStates).forEach(([tabId, tabState]) => {
+      for (const [tabId, tabState] of Object.entries(tabFormStates)) {
         if (tabState.recordId) {
           params.set(`tf_${windowId}_${tabId}`, tabState.recordId);
         }
@@ -151,20 +161,38 @@ export function useMultiWindowURL() {
         if (tabState.formMode) {
           params.set(`tfm_${windowId}_${tabId}`, tabState.formMode);
         }
-      });
-    });
+      }
+    }
+
+    // Si preserveCurrentPath es true y estamos en home, mantener la ruta "/"
+    if (preserveCurrentPath && window.location.pathname === "/") {
+      return `/?${params.toString()}`;
+    }
 
     return `/window?${params.toString()}`;
   }, []);
 
   const navigate = useCallback(
-    (newWindows: WindowState[]) => {
-      const url = buildURL(newWindows);
-      console.log("Navigating to:", url);
+    (newWindows: WindowState[], preserveCurrentPath?: boolean) => {
+      const url = buildURL(newWindows, preserveCurrentPath);
       router.replace(url);
     },
     [router, buildURL]
   );
+
+  const navigateToHome = useCallback(() => {
+    // Mantener las ventanas pero desactivar todas y navegar a home
+    const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
+
+    if (updatedWindows.length === 0) {
+      // Si no hay ventanas, simplemente ir a home
+      router.push("/");
+    } else {
+      // Si hay ventanas, mantenerlas en la URL pero ir a home
+      const url = `/?${buildURL(updatedWindows).split("?")[1]}`;
+      router.push(url);
+    }
+  }, [windows, buildURL, router]);
 
   const openWindow = useCallback(
     (windowId: string, title?: string) => {
@@ -180,7 +208,7 @@ export function useMultiWindowURL() {
           isActive: true,
           title,
           selectedRecords: {},
-          tabFormStates: {}, // ✅ NUEVO
+          tabFormStates: {},
         });
       }
 
@@ -219,11 +247,8 @@ export function useMultiWindowURL() {
     [windows, navigate]
   );
 
-  // ✅ FUNCIONES PARA MANEJO DE SELECCIÓN (sin cambios)
   const setSelectedRecord = useCallback(
     (windowId: string, tabId: string, recordId: string) => {
-      console.log(`Setting selected record: window=${windowId}, tab=${tabId}, record=${recordId}`);
-
       const updatedWindows = windows.map((w) => {
         if (w.windowId === windowId) {
           return {
@@ -244,8 +269,6 @@ export function useMultiWindowURL() {
 
   const clearSelectedRecord = useCallback(
     (windowId: string, tabId: string) => {
-      console.log(`Clearing selected record: window=${windowId}, tab=${tabId}`);
-
       const updatedWindows = windows.map((w) => {
         if (w.windowId === windowId) {
           const newSelectedRecords = { ...w.selectedRecords };
@@ -272,7 +295,6 @@ export function useMultiWindowURL() {
     [windows]
   );
 
-  // ✅ NUEVAS FUNCIONES PARA MANEJO DE FORMULARIO POR TAB
   const setTabFormState = useCallback(
     (
       windowId: string,
@@ -281,8 +303,6 @@ export function useMultiWindowURL() {
       mode: "table" | "form" = "form",
       formMode?: "new" | "edit" | "view"
     ) => {
-      console.log(`Setting tab form state: window=${windowId}, tab=${tabId}, record=${recordId}, mode=${mode}`);
-
       const updatedWindows = windows.map((w) => {
         if (w.windowId === windowId) {
           const currentTabState = w.tabFormStates[tabId] || {};
@@ -310,8 +330,6 @@ export function useMultiWindowURL() {
 
   const clearTabFormState = useCallback(
     (windowId: string, tabId: string) => {
-      console.log(`Clearing tab form state: window=${windowId}, tab=${tabId}`);
-
       const updatedWindows = windows.map((w) => {
         if (w.windowId === windowId) {
           const newTabFormStates = { ...w.tabFormStates };
@@ -338,15 +356,12 @@ export function useMultiWindowURL() {
     [windows]
   );
 
-  // ✅ FUNCIONES LEGACY PARA COMPATIBILIDAD (ahora usan el tab principal)
   const setRecord = useCallback(
     (windowId: string, recordId: string, tabId?: string) => {
-      // Si no se especifica tabId, usar el primer tab o comportamiento legacy
       if (tabId) {
         const formMode = recordId === "new" ? "new" : "edit";
         setTabFormState(windowId, tabId, recordId, "form", formMode);
       } else {
-        // Comportamiento legacy para compatibilidad
         const updatedWindows = windows.map((w) => {
           if (w.windowId === windowId) {
             return {
@@ -368,13 +383,10 @@ export function useMultiWindowURL() {
       if (tabId) {
         clearTabFormState(windowId, tabId);
       } else {
-        // Comportamiento legacy
         const updatedWindows = windows.map((w) => {
           if (w.windowId === windowId) {
-            const updated = { ...w };
-            delete updated.formMode;
-            delete updated.formRecordId;
-            return updated;
+            const { formMode, formRecordId, ...rest } = w;
+            return rest;
           }
           return w;
         });
@@ -387,21 +399,21 @@ export function useMultiWindowURL() {
   return {
     windows,
     activeWindow,
+    isHomeRoute,
     openWindow,
     closeWindow,
     setActiveWindow,
+    navigateToHome,
+    buildURL,
 
-    // ✅ Funciones de selección (sin cambios)
     setSelectedRecord,
     clearSelectedRecord,
     getSelectedRecord,
 
-    // ✅ NUEVAS funciones específicas por tab
     setTabFormState,
     clearTabFormState,
     getTabFormState,
 
-    // ✅ Funciones legacy (mantenidas para compatibilidad)
     setRecord,
     clearRecord,
   };

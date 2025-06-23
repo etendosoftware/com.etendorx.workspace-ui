@@ -13,18 +13,15 @@ export default function useTableSelection(
 ) {
   const { graph } = useSelected();
   const { activeWindow, clearSelectedRecord } = useMultiWindowURL();
-  const previousSelectionRef = useRef<string>("");
+  const previousSelectionRef = useRef<string | number>("");
 
   const windowId = activeWindow?.windowId;
-  const currentWindowId = tab.window; // ✅ WindowId del tab
+  const currentWindowId = tab.window;
 
-  // ✅ VALIDACIÓN: Solo procesar si estamos en la ventana correcta
   const isCorrectWindow = windowId === currentWindowId;
 
   useEffect(() => {
-    // ✅ No procesar si no es la ventana correcta
     if (!isCorrectWindow) {
-      console.log(`[useTableSelection ${tab.id}] Skipping - wrong window: ${windowId} !== ${currentWindowId}`);
       return;
     }
 
@@ -33,7 +30,6 @@ export default function useTableSelection(
     const result: EntityData[] = [];
     let lastSelected: EntityData | null = null;
 
-    // ✅ Obtener registros seleccionados
     for (const recordId of selectedIds) {
       const record = recordsMap[recordId];
       if (record) {
@@ -42,45 +38,29 @@ export default function useTableSelection(
       }
     }
 
-    const currentSelectionId = lastSelected?.id || "";
+    const currentSelectionId = lastSelected?.id ? String(lastSelected.id) : "";
 
-    // ✅ Solo actualizar si realmente cambió la selección
-    if (currentSelectionId !== previousSelectionRef.current) {
-      console.log(
-        `[useTableSelection ${tab.id}] Selection changed: ${previousSelectionRef.current} -> ${currentSelectionId} (window: ${currentWindowId})`
-      );
-
+    if (currentSelectionId !== String(previousSelectionRef.current)) {
       previousSelectionRef.current = currentSelectionId;
 
-      // ✅ CRÍTICO: Limpiar selections de tabs hijos ANTES de establecer nueva selección
       if (windowId) {
         const children = graph.getChildren(tab);
         if (children && children.length > 0) {
-          console.log(
-            `[useTableSelection ${tab.id}] Clearing ${children.length} children selections (window: ${currentWindowId})`
-          );
-          children.forEach((child) => {
-            // ✅ VALIDACIÓN: Solo limpiar hijos de la misma ventana
+          for (const child of children) {
             if (child.window === currentWindowId) {
               clearSelectedRecord(windowId, child.id);
             }
-          });
+          }
         }
       }
 
-      // ✅ Actualizar graph para el tab específico
-      if (lastSelected) {
+      if (lastSelected && lastSelected.id != null) {
         graph.setSelected(tab, lastSelected);
 
-        // ✅ Notificar callback si existe
         if (onSelectionChange) {
-          console.log(
-            `[useTableSelection ${tab.id}] Notifying selection: ${lastSelected.id} (window: ${currentWindowId})`
-          );
-          onSelectionChange(lastSelected.id);
+          onSelectionChange(String(lastSelected.id));
         }
       } else if (graph.getSelected(tab)) {
-        console.log(`[useTableSelection ${tab.id}] Clearing selection (window: ${currentWindowId})`);
         graph.clearSelected(tab);
 
         if (onSelectionChange) {
@@ -88,7 +68,6 @@ export default function useTableSelection(
         }
       }
 
-      // ✅ Actualizar selección múltiple
       if (result.length > 0) {
         graph.setSelectedMultiple(tab, result);
       } else {

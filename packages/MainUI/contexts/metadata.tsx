@@ -14,10 +14,23 @@ export const MetadataContext = createContext({} as IMetadataContext);
 export default function MetadataProvider({ children }: React.PropsWithChildren) {
   const [windowsData, setWindowsData] = useState<Record<string, Etendo.WindowMetadata>>({});
   const [loadingWindows, setLoadingWindows] = useState<Record<string, boolean>>({});
-  const [errors, setErrors] = useState<Record<string, Error>>({});
+  const [errors, setErrors] = useState<Record<string, Error | undefined>>({});
 
   const { activeWindow } = useMultiWindowURL();
   const { removeRecordFromDatasource } = useDatasourceContext();
+
+  const currentWindowId = activeWindow?.windowId;
+  const currentWindow = currentWindowId ? windowsData[currentWindowId] : undefined;
+  const currentLoading = currentWindowId ? loadingWindows[currentWindowId] || false : false;
+  const currentError = currentWindowId ? errors[currentWindowId] : undefined;
+
+  const currentGroupedTabs = useMemo(() => {
+    return currentWindow ? groupTabsByLevel(currentWindow) : [];
+  }, [currentWindow]);
+
+  const currentTabs = useMemo(() => {
+    return currentWindow?.tabs ? mapBy(currentWindow.tabs, "id") : {};
+  }, [currentWindow?.tabs]);
 
   const loadWindowData = useCallback(
     async (windowId: string): Promise<Etendo.WindowMetadata> => {
@@ -50,7 +63,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [windowsData]
   );
 
-  // Función para obtener metadata de una ventana
   const getWindowMetadata = useCallback(
     (windowId: string) => {
       return windowsData[windowId];
@@ -58,7 +70,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [windowsData]
   );
 
-  // Función para obtener título de ventana
   const getWindowTitle = useCallback(
     (windowId: string) => {
       const windowData = windowsData[windowId];
@@ -67,7 +78,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [windowsData]
   );
 
-  // Función para verificar si una ventana está cargando
   const isWindowLoading = useCallback(
     (windowId: string) => {
       return loadingWindows[windowId] || false;
@@ -75,7 +85,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [loadingWindows]
   );
 
-  // Función para obtener error de una ventana
   const getWindowError = useCallback(
     (windowId: string) => {
       return errors[windowId];
@@ -83,11 +92,10 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     [errors]
   );
 
-  // Auto-cargar ventana activa si no está cargada
   useEffect(() => {
     if (activeWindow?.windowId && !windowsData[activeWindow.windowId] && !loadingWindows[activeWindow.windowId]) {
       loadWindowData(activeWindow.windowId).catch(() => {
-        // Error ya manejado en loadWindowData
+        // Error handled in load
       });
     }
   }, [activeWindow?.windowId, windowsData, loadingWindows, loadWindowData]);
@@ -98,13 +106,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
     },
     [removeRecordFromDatasource]
   );
-
-  const currentWindowId = activeWindow?.windowId;
-  const currentWindow = currentWindowId ? windowsData[currentWindowId] : undefined;
-  const currentLoading = currentWindowId ? loadingWindows[currentWindowId] || false : false;
-  const currentError = currentWindowId ? errors[currentWindowId] : undefined;
-  const currentGroupedTabs = currentWindow ? groupTabsByLevel(currentWindow) : [];
-  const currentTabs = currentWindow?.tabs ? mapBy(currentWindow.tabs, "id") : {};
 
   const emptyWindowDataName = useCallback(() => {
     if (!currentWindowId) return;
@@ -121,13 +122,11 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
 
   const refetchCurrentWindow = useCallback(() => {
     if (currentWindowId) {
-      // Limpiar datos existentes
       setWindowsData((prev) => {
         const { [currentWindowId]: _, ...rest } = prev;
         return rest;
       });
 
-      // Recargar
       return loadWindowData(currentWindowId);
     }
     return Promise.resolve({} as Etendo.WindowMetadata);
@@ -135,7 +134,6 @@ export default function MetadataProvider({ children }: React.PropsWithChildren) 
 
   const value = useMemo<IMetadataContext>(
     () => ({
-      // API original para compatibilidad (basada en ventana activa)
       windowId: currentWindowId,
       window: currentWindow,
       loading: currentLoading,

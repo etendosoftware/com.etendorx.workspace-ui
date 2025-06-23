@@ -11,9 +11,11 @@ import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useSelected } from "@/hooks/useSelected";
 import { useQueryParams } from "@/hooks/useQueryParams";
 import { groupTabsByLevel } from "@workspaceui/etendohookbinder/src/utils/metadata";
+import AppBreadcrumb from "@/components/Breadcrums";
+import Home from "@/screens/Home";
 
 function TabsContainer() {
-  const { activeLevels, clearAllStates } = useSelected(); // ✅ Agregar clearAllStates
+  const { activeLevels, clearAllStates } = useSelected();
   const { activeWindow } = useMultiWindowURL();
   const { getWindowMetadata } = useMetadataContext();
 
@@ -21,10 +23,8 @@ function TabsContainer() {
     return activeWindow ? getWindowMetadata(activeWindow.windowId) : undefined;
   }, [activeWindow, getWindowMetadata]);
 
-  // ✅ CRÍTICO: Limpiar estados cuando cambia la ventana activa
   useEffect(() => {
     if (activeWindow?.windowId) {
-      console.log(`[TabsContainer] Window changed to: ${activeWindow.windowId}, clearing states`);
       clearAllStates();
     }
   }, [activeWindow?.windowId, clearAllStates]);
@@ -73,35 +73,34 @@ function WindowContentWithProvider({ windowId }: { windowId: string }) {
 
 export default function Page() {
   const { loading, error } = useMetadataContext();
-  const { windows, activeWindow, openWindow } = useMultiWindowURL();
+  const { windows, activeWindow, openWindow, isHomeRoute } = useMultiWindowURL();
   const { windowId } = useQueryParams<{ windowId?: string }>();
 
   useEffect(() => {
     if (windowId && windows.length === 0) {
-      console.log("Migrating legacy URL to new format");
       openWindow(windowId);
     }
   }, [windowId, windows.length, openWindow]);
 
-  if (loading) return <Loading />;
-  if (error) return <ErrorDisplay title={error?.message ?? "Something went wrong"} />;
-
-  if (!activeWindow) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-600">No window selected</h2>
-          <p className="text-gray-500 mt-2">Select a window from the menu to continue</p>
-        </div>
-      </div>
-    );
+  if (loading) {
+    return <Loading />;
   }
 
+  if (error) {
+    return <ErrorDisplay title={error?.message ?? "Something went wrong"} />;
+  }
+
+  const shouldShowTabs = windows.length > 0;
+  const shouldShowBreadcrumb = activeWindow && !isHomeRoute;
+
   return (
-    <div className="flex flex-col h-full">
-      <WindowTabs />
+    <div className="flex flex-col w-full h-full max-h-full">
+      {shouldShowTabs && <WindowTabs />}
+
+      {shouldShowBreadcrumb && <AppBreadcrumb />}
+
       <div className="flex-1 overflow-hidden">
-        <WindowContentWithProvider windowId={activeWindow.windowId} />
+        {isHomeRoute || !activeWindow ? <Home /> : <WindowContentWithProvider windowId={activeWindow.windowId} />}
       </div>
     </div>
   );

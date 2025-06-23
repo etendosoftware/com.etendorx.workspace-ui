@@ -1,8 +1,9 @@
 "use client";
-
-import X from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
+import HomeIcon from "@workspaceui/componentlibrary/src/assets/icons/home.svg";
+import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 
 interface WindowTabProps {
   windowId: string;
@@ -11,82 +12,89 @@ interface WindowTabProps {
   onActivate: () => void;
   onClose: () => void;
   canClose?: boolean;
+  icon?: React.ReactNode;
 }
 
-function WindowTab({ windowId, title, isActive, onActivate, onClose, canClose = true }: WindowTabProps) {
+function WindowTab({ title, isActive, onActivate, onClose, canClose = true }: WindowTabProps) {
   return (
-    <div
+    <button
+      type="button"
       className={`
-        flex items-center gap-2 px-4 py-2 border-r border-gray-200 cursor-pointer
-        min-w-[120px] max-w-[200px] relative group
-        ${isActive ? "bg-white border-b-white" : "bg-gray-100 hover:bg-gray-50 border-b-gray-200"}
+        flex gap-2 px-2 py-2 cursor-pointer mx-1
+        min-w-[140px] max-w-[220px] relative group
+        transition-all duration-200
+        ${
+          isActive
+            ? "bg-white text-(--color-baseline-90) border-b-2 border-(--color-dynamic-main)"
+            : " text-gray-700 hover:bg-gray-200 border-b-2 border-transparent hover:border-gray-300"
+        }
       `}
-      onClick={onActivate}
       style={{
-        borderTopLeftRadius: "8px",
-        borderTopRightRadius: "8px",
-      }}>
-      <div className="w-4 h-4 flex-shrink-0">🏠</div>
-      <span
-        className={`
-          flex-1 truncate text-sm
-          ${isActive ? "text-gray-900" : "text-gray-600"}
-        `}
-        title={title}>
+        borderTopLeftRadius: "12px",
+        borderTopRightRadius: "12px",
+      }}
+      onClick={onActivate}>
+      {/* <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">{icon}</div> */}
+      <span className="flex-1 truncate text-sm font-medium" title={title}>
         {title}
       </span>
       {canClose && (
         <button
           type="button"
           className={`
-            w-4 h-4 flex-shrink-0 rounded-full flex items-center justify-center
-            hover:bg-gray-200 transition-colors
-            ${isActive ? "opacity-70 hover:opacity-100" : "opacity-50 hover:opacity-70"}
+            w-5 h-5 flex-shrink-0 rounded-full flex items-center justify-center transition-opacity duration-200
+            hover:bg-gray-300 hover:text-gray-800
           `}
           onClick={(e) => {
             e.stopPropagation();
             onClose();
           }}
           title="Cerrar ventana">
-          <X className="w-3 h-3" />
+          <CloseIcon />
         </button>
       )}
-    </div>
+    </button>
   );
 }
 
-interface WindowTabsProps {
-  className?: string;
-}
-
-export function WindowTabs({ className = "" }: WindowTabsProps) {
-  const { windows, setActiveWindow, closeWindow } = useMultiWindowURL();
+export function WindowTabs() {
+  const { windows, setActiveWindow, closeWindow, isHomeRoute, navigateToHome } = useMultiWindowURL();
   const { getWindowTitle } = useMetadataContext();
 
-  if (windows.length === 0) {
-    return null;
-  }
+  const handleGoHome = () => {
+    navigateToHome();
+  };
 
   return (
-    <div className={`flex bg-gray-200 border-b border-gray-300 max-w-1/2${className}`}>
-      {windows.map((window) => {
-        const title = window.title || getWindowTitle?.(window.windowId) || `Window ${window.windowId}`;
-
-        return (
-          <WindowTab
-            key={window.windowId}
-            windowId={window.windowId}
-            title={title}
-            isActive={window.isActive}
-            onActivate={() => setActiveWindow(window.windowId)}
-            onClose={() => closeWindow(window.windowId)}
-            canClose={windows.length > 1} // No permitir cerrar si es la última
-          />
-        );
-      })}
-
-      {/* Espacio para futuras funcionalidades (nuevo tab, etc.) */}
-      <div className="flex-1 bg-gray-200" />
+    <div className={"flex items-center bg-(--color-transparent-neutral-5) rounded-full p-0 gap-1 mx-1"}>
+      <div className="px-1 flex">
+        <IconButton onClick={handleGoHome} className={isHomeRoute ? "bg-(--color-dynamic-main) text-white" : ""}>
+          {" "}
+          <HomeIcon />
+        </IconButton>
+      </div>
+      <div className="flex">
+        {windows.map((window) => {
+          const title = window.title || getWindowTitle?.(window.windowId) || `Window ${window.windowId}`;
+          const isActive = window.isActive;
+          const canClose = windows.length > 1;
+          return (
+            <WindowTab
+              key={window.windowId}
+              windowId={window.windowId}
+              title={title}
+              isActive={isActive}
+              onActivate={() => {
+                setActiveWindow(window.windowId);
+              }}
+              onClose={() => {
+                closeWindow(window.windowId);
+              }}
+              canClose={canClose}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }

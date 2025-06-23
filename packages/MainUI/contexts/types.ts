@@ -77,5 +77,5 @@ export interface IMetadataContext {
   getWindowError: (windowId: string) => Error | undefined;
   windowsData: Record<string, Etendo.WindowMetadata>;
   loadingWindows: Record<string, boolean>;
-  errors: Record<string, Error>;
+  errors: Record<string, Error | undefined>;
 }
