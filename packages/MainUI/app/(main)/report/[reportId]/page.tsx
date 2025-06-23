@@ -28,7 +28,7 @@ export default function ReportPage() {
       };
       await generateReport(format, reportData);
     },
-    [generateReport, metadata, reportId],
+    [generateReport, metadata, reportId]
   );
 
   if (loading) {

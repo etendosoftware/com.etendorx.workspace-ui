@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { logger } from "@/utils/logger";
 
 export function useWindow(windowId: string) {

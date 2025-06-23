@@ -42,7 +42,7 @@ const useLocalStorage = <T>(key: string, initialValue: T | (() => T)) => {
         return newValue;
       });
     },
-    [key],
+    [key]
   );
 
   useEffect(() => {

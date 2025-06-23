@@ -1,4 +1,4 @@
-import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Field } from "@workspaceui/api-client/src/api/types";
 import Select from "./components/Select";
 import { useSelectFieldOptions } from "@/hooks/useSelectFieldOptions";
 import { useTableDirDatasource } from "@/hooks/datasource/useTableDirDatasource";

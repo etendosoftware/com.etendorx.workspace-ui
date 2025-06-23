@@ -1,6 +1,6 @@
 import { logger } from "@/utils/logger";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
-import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export function useTab(tabId?: string) {

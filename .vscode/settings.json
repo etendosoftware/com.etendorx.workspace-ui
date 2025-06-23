@@ -7,7 +7,7 @@
     "source.fixAll.eslint": "explicit"
   },
   "eslint.validate": ["typescript", "typescriptreact"],
-  "eslint.workingDirectories": ["packages/MainUI", "packages/ComponentLibrary", "packages/EtendoHookBinder"],
+  "eslint.workingDirectories": ["packages/MainUI", "packages/ComponentLibrary", "packages/api-client"],
   "[javascript]": {
     "editor.defaultFormatter": "biomejs.biome"
   },

@@ -25,7 +25,7 @@ export const setDefaultConfiguration = async (config: DefaultConfiguration): Pro
   try {
     const response = await client.post(
       "?command=save&_action=org.openbravo.client.application.navigationbarcomponents.UserInfoWidgetActionHandler&stateless=true",
-      params,
+      params
     );
 
     if (!response.ok) {

@@ -1,7 +1,7 @@
 import { useTab } from "@/hooks/useTab";
 import { useTranslation } from "@/hooks/useTranslation";
 import { parseColumns } from "@/utils/tableColumns";
-import type { EntityData, EntityValue } from "@workspaceui/etendohookbinder/src/api/types";
+import type { EntityData, EntityValue } from "@workspaceui/api-client/src/api/types";
 import {
   type MRT_ColumnFiltersState,
   type MRT_Row,
@@ -124,7 +124,7 @@ function WindowReferenceGrid({
 
       onSelectionChange(selectedItems);
     },
-    [records, onSelectionChange, rowSelection],
+    [records, onSelectionChange, rowSelection]
   );
 
   const handleColumnFiltersChange = useCallback(
@@ -142,7 +142,7 @@ function WindowReferenceGrid({
         updateColumnFilters(newColumnFilters);
       }
     },
-    [columnFilters, updateColumnFilters],
+    [columnFilters, updateColumnFilters]
   );
 
   const handleClearSelections = useCallback(() => {
@@ -165,7 +165,7 @@ function WindowReferenceGrid({
         return newSelection;
       });
     },
-    [records, onSelectionChange],
+    [records, onSelectionChange]
   );
 
   const renderTopToolbar = useCallback(
@@ -190,7 +190,7 @@ function WindowReferenceGrid({
         </div>
       );
     },
-    [parameter.name, t, handleClearSelections],
+    [parameter.name, t, handleClearSelections]
   );
 
   const LoadMoreButton = ({ fetchMore }: { fetchMore: () => void }) => (

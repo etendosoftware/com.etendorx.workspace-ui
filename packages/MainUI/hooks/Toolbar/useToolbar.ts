@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { ToolbarResponse } from "./types";
 import { logger } from "@/utils/logger";
 

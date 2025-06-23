@@ -1,7 +1,7 @@
 import type { ProcessConfigResponse } from "@/hooks/datasource/useProcessDatasourceConfig";
-import type { EntityData, EntityValue, ProcessParameter, Tab } from "@workspaceui/etendohookbinder/src/api/types";
-import type { MRT_Row, MRT_TableInstance, MRT_TableBodyRowProps, MRT_RowData } from "material-react-table";
-import type { Field, ProcessAction } from "@workspaceui/etendohookbinder/src/api/types";
+import type { EntityData, EntityValue, ProcessParameter, Tab } from "@workspaceui/api-client/src/api/types";
+import type { Field, ProcessAction } from "@workspaceui/api-client/src/api/types";
+import type { MRT_Row, MRT_RowData, MRT_TableBodyRowProps, MRT_TableInstance } from "material-react-table";
 
 export interface BaseButton extends Field {
   id: string;
@@ -46,20 +46,6 @@ export interface ProcessResponse {
   iframeUrl?: string;
 }
 
-export interface ProcessModalProps {
-  open: boolean;
-  onClose: () => void;
-  button: ProcessButton;
-  onConfirm: () => void;
-  isExecuting: boolean;
-  processResponse: ProcessResponse | null;
-  confirmationMessage: string;
-  cancelButtonText: string;
-  executeButtonText: string;
-  onProcessSuccess?: () => void;
-  tabId: string;
-}
-
 export interface MessageStylesType {
   bgColor: string;
   borderColor: string;
@@ -67,14 +53,24 @@ export interface MessageStylesType {
   buttonBg: string;
 }
 
-export interface ProcessIframeModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  url: string;
-  title?: string;
-  onProcessSuccess?: () => void;
-  tabId: string;
+export interface ProcessIframeModalClosedProps {
+  isOpen: false;
 }
+
+export interface ProcessIframeModalOpenProps {
+  isOpen: true;
+  url?: string;
+  title?: string;
+  tabId: string;
+  onProcessSuccess?: () => void;
+  onClose: () => void;
+}
+
+export type ProcessIframeModalProps = ProcessIframeModalClosedProps | ProcessIframeModalOpenProps;
+
+export const isIframeModalOpen = (props: ProcessIframeModalProps): props is ProcessIframeModalOpenProps => {
+  return props.isOpen === true;
+};
 
 export interface ProcessDefinitionModalProps {
   onClose: () => void;
@@ -149,3 +145,9 @@ export type RowProps = (props: {
   row: MRT_Row<EntityData>;
   table: MRT_TableInstance<EntityData>;
 }) => Omit<MRT_TableBodyRowProps<MRT_RowData>, "staticRowIndex">;
+
+export const isProcessActionButton = (button: ProcessButton): button is ProcessActionButton =>
+  ProcessButtonType.PROCESS_ACTION in button;
+
+export const isProcessDefinitionButton = (button: ProcessButton): button is ProcessDefinitionButton =>
+  ProcessButtonType.PROCESS_DEFINITION in button;

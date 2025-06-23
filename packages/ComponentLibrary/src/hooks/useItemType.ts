@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
 import type { UseItemActionsProps } from "./types";
 
 export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }: UseItemActionsProps) => {
@@ -34,7 +34,7 @@ export const useItemActions = ({ onWindowClick, onReportClick, onProcessClick }:
           console.warn(`Unhandled item type: ${item.type}`);
       }
     },
-    [onWindowClick, onReportClick, onProcessClick],
+    [onWindowClick, onReportClick, onProcessClick]
   );
 
   return handleItemClick;

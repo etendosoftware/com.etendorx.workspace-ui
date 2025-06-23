@@ -1,7 +1,7 @@
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearch } from "../../contexts/searchContext";
 import { useDeleteRecord } from "../useDeleteRecord";
@@ -136,7 +136,7 @@ export const useToolbarConfig = ({
       showErrorModal,
       t,
       tab,
-    ],
+    ]
   );
 
   const handleAction = useCallback(
@@ -149,7 +149,7 @@ export const useToolbarConfig = ({
         return;
       }
     },
-    [actionHandlers, isDeleting],
+    [actionHandlers, isDeleting]
   );
 
   const handleSearch = useCallback(
@@ -157,7 +157,7 @@ export const useToolbarConfig = ({
       setSearchValue(query);
       setSearchQuery(query);
     },
-    [setSearchQuery],
+    [setSearchQuery]
   );
 
   return useMemo(
@@ -190,6 +190,6 @@ export const useToolbarConfig = ({
       hideStatusModal,
       isDeleting,
       actionHandlers,
-    ],
+    ]
   );
 };

@@ -31,7 +31,7 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
 }) => {
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { distance: 5 } })
   );
   const theme = useTheme();
   const { styles, sx } = useStyle();
@@ -47,7 +47,7 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
         });
       }
     },
-    [setPeople],
+    [setPeople]
   );
 
   const handleToggleAll = useCallback(() => {
@@ -58,10 +58,10 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
   const handleToggle = useCallback(
     (id: UniqueIdentifier) => {
       setPeople((prev) =>
-        prev.map((person) => (person.id === id ? { ...person, isActive: !person.isActive } : person)),
+        prev.map((person) => (person.id === id ? { ...person, isActive: !person.isActive } : person))
       );
     },
-    [setPeople],
+    [setPeople]
   );
   return (
     <>

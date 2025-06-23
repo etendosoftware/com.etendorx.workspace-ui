@@ -28,7 +28,7 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId, onToggle
     if (!contentRef.current) return;
 
     const focusableElements = contentRef.current.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
 
     for (const el of focusableElements) {
@@ -53,7 +53,7 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId, onToggle
         e.preventDefault();
       }
     },
-    [handleToggle],
+    [handleToggle]
   );
 
   return (

@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
-import type { EntityData, Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import { useUserContext } from "./useUserContext";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useTranslation } from "./useTranslation";
 
 export interface UseDeleteRecordParams {
@@ -72,7 +72,7 @@ export const useDeleteRecord = ({ tab, onSuccess, onError }: UseDeleteRecordPara
 
         if (errors.length > 0) {
           const errorMessages = errors.map((err) =>
-            err.reason instanceof Error ? err.reason.message : String(err.reason),
+            err.reason instanceof Error ? err.reason.message : String(err.reason)
           );
 
           throw new Error(errorMessages.join("; "));
@@ -99,7 +99,7 @@ export const useDeleteRecord = ({ tab, onSuccess, onError }: UseDeleteRecordPara
         return false;
       }
     },
-    [tab, onError, t, userId, onSuccess],
+    [tab, onError, t, userId, onSuccess]
   );
 
   return { deleteRecord, loading };

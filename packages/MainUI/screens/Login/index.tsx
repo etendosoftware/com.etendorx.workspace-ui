@@ -17,7 +17,7 @@ export default function LoginScreen() {
         setError(e instanceof Error ? e.message : String(e));
       }
     },
-    [login],
+    [login]
   );
 
   return <Login title="Etendo" onSubmit={handleLogin} error={error} />;

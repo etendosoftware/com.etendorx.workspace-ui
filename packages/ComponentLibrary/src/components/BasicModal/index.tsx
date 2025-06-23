@@ -34,7 +34,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
       isFullScreenEnabled = false,
       open: externalOpen,
     },
-    ref,
+    ref
   ) => {
     const [internalOpen, setInternalOpen] = useState<boolean>(false);
     const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
@@ -102,7 +102,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
                 zIndex: 0,
               },
             },
-      [backgroundGradient],
+      [backgroundGradient]
     );
 
     const toggleFullScreen = useCallback(() => {
@@ -111,7 +111,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
 
     const modalStyles = useMemo(
       () => (isFullScreen ? sx.fullScreenStyles : calculateModalStyles({ height, width, posX, posY })),
-      [isFullScreen, sx.fullScreenStyles, height, width, posX, posY],
+      [isFullScreen, sx.fullScreenStyles, height, width, posX, posY]
     );
 
     const contentStyles = useMemo(
@@ -126,7 +126,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
               overflowY: "auto",
             }
           : {},
-      [isFullScreen],
+      [isFullScreen]
     );
 
     const renderTrigger = useCallback(() => {
@@ -182,11 +182,11 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
               {descriptionText && <Typography sx={sx.descriptionText}>{descriptionText}</Typography>}
               <Box sx={sx.actionButtons}>
                 {isFullScreenEnabled && (
-                  <IconButton aria-label="fullscreen" className="w-4 h-4" onClick={toggleFullScreen}>
+                  <IconButton aria-label="fullscreen" className="h-4 w-4" onClick={toggleFullScreen}>
                     {isFullScreen ? <MinimizeIcon /> : <MaximizeIcon />}
                   </IconButton>
                 )}
-                <IconButton aria-label="close" className="w-4 h-6" onClick={handleCancel}>
+                <IconButton aria-label="close" className="h-6 w-4" onClick={handleCancel}>
                   <CloseIcon />
                 </IconButton>
               </Box>
@@ -217,7 +217,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
         </ModalMUI>
       </>
     );
-  },
+  }
 );
 
 Modal.displayName = "Modal";

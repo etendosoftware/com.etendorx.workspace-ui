@@ -1,12 +1,12 @@
 import type { ProcessButton, ProcessResponse } from "@/components/ProcessModal/types";
 import { logger } from "@/utils/logger";
-import type { BaseFieldDefinition } from "@workspaceui/etendohookbinder/src/api/types";
-import type { FieldType } from "@workspaceui/etendohookbinder/src/api/types";
+import type { BaseFieldDefinition } from "@workspaceui/api-client/src/api/types";
+import type { FieldType } from "@workspaceui/api-client/src/api/types";
 import type { ExecuteProcessParams } from "./types";
 
 export const useProcessButton = (
   executeProcess: (params: ExecuteProcessParams) => Promise<ProcessResponse>,
-  refetch: () => Promise<void>,
+  refetch: () => Promise<void>
 ) => {
   const handleProcessClick = async (btn: ProcessButton, recordId: string | undefined): Promise<ProcessResponse> => {
     if (!recordId) {
@@ -19,7 +19,7 @@ export const useProcessButton = (
           acc[param.id] = param.defaultValue ?? null;
           return acc;
         },
-        {} as Record<string, unknown>,
+        {} as Record<string, unknown>
       ) || {};
 
     const recordIdField: BaseFieldDefinition<string> = {

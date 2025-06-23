@@ -5,7 +5,7 @@ import AttachmentIcon from '@workspaceui/componentlibrary/src/assets/icons/file.
 import InformationIcon from '@workspaceui/componentlibrary/src/assets/icons/info.svg';
 import NoteIcon from '@workspaceui/componentlibrary/src/assets/icons/note.svg';
 import { theme } from '@workspaceui/componentlibrary/src/theme';
-import { FieldType } from '@workspaceui/etendohookbinder/src/api/types';
+import { FieldType } from '@workspaceui/api-client/src/api/types';
 
 export const mockOrganizations: Organization[] = [
   {
