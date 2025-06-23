@@ -50,7 +50,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const windowReferenceTab = parameters.grid?.window?.tabs?.[0] as Tab;
   const windowId = tab?.window || "";
 
-  const recordValues: RecordValues = useMemo(() => {
+  const recordValues: RecordValues | null = useMemo(() => {
     if (!record || !tab?.fields) return FALLBACK_RESULT;
     return buildPayloadByInputName(record, tab.fields);
   }, [record, tab?.fields]);
@@ -94,7 +94,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       });
 
       const payload = {
-        C_Order_ID: recordValues.inpcOrderId,
+        C_Order_ID: recordValues?.inpcOrderId,
         inpcOrderId: tabId,
         _buttonValue: "DONE",
         _params: {
@@ -140,7 +140,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     } finally {
       setIsExecuting(false);
     }
-  }, [tab, processId, javaClassName, recordValues.inpcOrderId, tabId, gridSelection, entityName, t, onSuccess]);
+  }, [tab, processId, javaClassName, recordValues?.inpcOrderId, tabId, gridSelection, entityName, t, onSuccess]);
 
   const handleExecute = useCallback(async () => {
     if (hasWindowReference) {
@@ -243,7 +243,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
               const newOptions = values as string[];
               newParameters[parameterName] = { ...newParameters[parameterName] };
               newParameters[parameterName].refList = newParameters[parameterName].refList.filter((option) =>
-                newOptions.includes(option.value),
+                newOptions.includes(option.value)
               );
             }
 

@@ -60,7 +60,9 @@ export const sanitizeValue = (value: unknown, field?: Field) => {
   return safeValue;
 };
 
-export const buildPayloadByInputName = (values: Record<string, unknown>, fields?: Record<string, Field>) => {
+export const buildPayloadByInputName = (values?: Record<string, unknown> | null, fields?: Record<string, Field>) => {
+  if (!values) return null;
+
   return Object.entries(values).reduce(
     (acc, [key, value]) => {
       const field = fields?.[key];

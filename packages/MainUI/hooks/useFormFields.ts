@@ -10,7 +10,6 @@ import {
 import { useMemo } from "react";
 import { useFormContext } from "react-hook-form";
 import { useTranslation } from "./useTranslation";
-import { logger } from "@/utils/logger";
 
 const createAuditField = (fieldName: string, label: string, columnName: string, reference: string): Field =>
   ({
@@ -183,7 +182,7 @@ export default function useFormFields(
     if (groups.audit) {
       groups.audit.sequenceNumber = 9999;
       groups.audit.identifier = t("forms.sections.audit");
-    } 
+    }
     return groups;
   }, [fields.formFields, t]);
 
