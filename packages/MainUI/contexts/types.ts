@@ -1,4 +1,4 @@
-import type { Etendo } from "@workspaceui/etendohookbinder/src/api/metadata";
+import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import type {
   CurrentClient,
   CurrentOrganization,
