@@ -1,4 +1,4 @@
-import type { Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
 
 export type TabsProps = { tabs: Tab[] };
 export type TabsSwitchProps = {

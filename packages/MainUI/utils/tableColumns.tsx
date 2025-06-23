@@ -1,7 +1,7 @@
 import type { TranslateFunction } from "@/hooks/types";
 import { getFieldReference } from "@/utils";
 import Tag from "@workspaceui/componentlibrary/src/components/Tag";
-import { type Column, type Field, FieldType } from "@workspaceui/etendohookbinder/src/api/types";
+import { type Column, type Field, FieldType } from "@workspaceui/api-client/src/api/types";
 import { DEFAULT_STATUS_CONFIG, statusConfig, yesNoConfig } from "./columnsConstants";
 
 export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[] => {

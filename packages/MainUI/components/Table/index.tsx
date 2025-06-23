@@ -7,7 +7,7 @@ import {
   type MRT_TableInstance,
 } from "material-react-table";
 import { useStyle } from "./styles";
-import type { DatasourceOptions, EntityData } from "@workspaceui/etendohookbinder/src/api/types";
+import type { DatasourceOptions, EntityData } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearch } from "../../contexts/searchContext";
 import { useDatasourceContext } from "@/contexts/datasourceContext";

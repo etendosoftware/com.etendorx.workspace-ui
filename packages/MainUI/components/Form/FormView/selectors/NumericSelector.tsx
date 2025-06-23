@@ -1,4 +1,4 @@
-import type { Field } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Field } from "@workspaceui/api-client/src/api/types";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
@@ -54,7 +54,7 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
 
       return numericValue;
     },
-    [isInteger, field.isMandatory, props.required],
+    [isInteger, field.isMandatory, props.required]
   );
 
   const handleChange = useCallback(
@@ -77,7 +77,7 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
         }
       }
     },
-    [isInteger, getValidationRegex, props],
+    [isInteger, getValidationRegex, props]
   );
 
   const handleFocus = useCallback(
@@ -88,7 +88,7 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
         props.onFocus(event);
       }
     },
-    [props],
+    [props]
   );
 
   const handleBlur = useCallback(
@@ -108,7 +108,7 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
         props.onBlur(event);
       }
     },
-    [localValue, parseValue, field.hqlName, setValue, props],
+    [localValue, parseValue, field.hqlName, setValue, props]
   );
 
   const registerProps = register(field.hqlName);

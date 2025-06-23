@@ -44,7 +44,7 @@ const OptionItem = memo(
         <Image src={checkIconUrl} alt="Selected Item" className="fade-in-left flex-shrink-0" height={16} width={16} />
       )}
     </li>
-  ),
+  )
 );
 
 OptionItem.displayName = "OptionItem";
@@ -75,7 +75,7 @@ function SelectCmp({
 
   const filteredOptions = useMemo(
     () => options.filter((option) => option.label.toLowerCase().includes(searchTerm.toLowerCase())),
-    [options, searchTerm],
+    [options, searchTerm]
   );
 
   // Callbacks estables que no cambian en cada render
@@ -88,14 +88,14 @@ function SelectCmp({
       setIsOpen(false);
       setHighlightedIndex(-1);
     },
-    [name, options, setValue],
+    [name, options, setValue]
   );
 
   const handleOptionClick = useCallback(
     (id: string, label: string) => {
       handleSelect(id, label);
     },
-    [handleSelect],
+    [handleSelect]
   );
 
   const handleOptionMouseEnter = useCallback((index: number) => {
@@ -126,7 +126,7 @@ function SelectCmp({
         setHighlightedIndex(-1);
       }
     },
-    [filteredOptions, highlightedIndex, handleSelect],
+    [filteredOptions, highlightedIndex, handleSelect]
   );
 
   const handleBlur = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
@@ -154,7 +154,7 @@ function SelectCmp({
       setValue(name, "");
       setSelectedLabel("");
     },
-    [name, setValue],
+    [name, setValue]
   );
 
   const handleMouseEnter = useCallback(() => {
@@ -189,7 +189,7 @@ function SelectCmp({
         debouncedSetSearchTerm(term);
       }
     },
-    [debouncedSetSearchTerm],
+    [debouncedSetSearchTerm]
   );
 
   useEffect(() => {

@@ -46,7 +46,7 @@ const ListSelector: React.FC<ListSelectorProps> = ({ field, value, onChange, rea
         onChange(newValue.value);
       }
     },
-    [onChange],
+    [onChange]
   );
 
   const isOptionEqualToValue = useCallback((option: Option, value: Option) => option.value === value.value, []);

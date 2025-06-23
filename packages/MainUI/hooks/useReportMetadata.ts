@@ -1,5 +1,5 @@
 import { logger } from "@/utils/logger";
-import type { ReportMetadata } from "@workspaceui/etendohookbinder/src/hooks/types";
+import type { ReportMetadata } from "@workspaceui/api-client/src/hooks/types";
 import { useCallback, useEffect, useState } from "react";
 
 export interface ReportMetadataHook {
@@ -54,7 +54,7 @@ export const useReportMetadata = (reportId?: string): ReportMetadataHook => {
         }
       }
     },
-    [reportId],
+    [reportId]
   );
 
   useEffect(() => {

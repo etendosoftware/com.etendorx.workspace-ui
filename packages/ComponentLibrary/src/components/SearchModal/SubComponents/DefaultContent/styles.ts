@@ -69,6 +69,6 @@ export const useStyle = () => {
         },
       } as { [key: string]: CSSProperties },
     }),
-    [theme],
+    [theme]
   );
 };

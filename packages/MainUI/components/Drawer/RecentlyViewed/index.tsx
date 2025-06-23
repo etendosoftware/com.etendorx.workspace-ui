@@ -1,7 +1,7 @@
 import { DrawerSection } from "@workspaceui/componentlibrary/src/components/Drawer/DrawerSection";
 import type { RecentlyViewedProps } from "@workspaceui/componentlibrary/src/components/Drawer/types";
 import { createParentMenuItem } from "@workspaceui/componentlibrary/src/utils/menuUtils";
-import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo } from "react";
 import { useRecentItems } from "../../../hooks/useRecentItems";
 import { useTranslation } from "../../../hooks/useTranslation";
@@ -35,7 +35,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
           return;
         }
       },
-      [addRecentItem],
+      [addRecentItem]
     );
 
     useImperativeHandle(
@@ -43,7 +43,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
       () => ({
         handleWindowAccess,
       }),
-      [handleWindowAccess],
+      [handleWindowAccess]
     );
 
     const parentMenuItem = useMemo(() => createParentMenuItem(localRecentItems, t), [localRecentItems, t]);
@@ -64,7 +64,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
         windowId={windowId}
       />
     );
-  },
+  }
 );
 
 RecentlyViewed.displayName = "RecentlyViewed";

@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
     };
 
     const fileLoaderRule = config.module.rules.find((rule: { test: { toString: () => string | string[] } }) =>
-      rule.test?.toString().includes("svg"),
+      rule.test?.toString().includes("svg")
     );
 
     if (fileLoaderRule) {
@@ -55,7 +55,7 @@ const nextConfig: NextConfig = {
             },
           },
         ],
-      },
+      }
     );
 
     if (config.optimization?.minimizer) {

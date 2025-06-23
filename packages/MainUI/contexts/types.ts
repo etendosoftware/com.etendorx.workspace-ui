@@ -11,7 +11,7 @@ import type {
   SessionResponse,
   Tab,
   User,
-} from "@workspaceui/etendohookbinder/src/api/types";
+} from "@workspaceui/api-client/src/api/types";
 
 export type Language = "en_US" | "es_ES";
 

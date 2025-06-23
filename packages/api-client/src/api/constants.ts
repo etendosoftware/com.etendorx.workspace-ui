@@ -17,8 +17,9 @@ export const DEFAULT_LOGIN_CHARSET = "ISO-8859-1";
 export const API_METADATA_URL = "/meta/";
 export const API_DEFAULT_CACHE_DURATION = getDefaultCacheDuration();
 export const AUTH_HEADER_NAME = getAuthHeaderName();
-export const API_KERNEL_SERVLET = "/meta/forward/org.openbravo.client.kernel";
-export const API_DATASOURCE_SERVLET = "/meta/forward/org.openbravo.service.datasource/";
+export const API_FORWARD_PATH = `${API_METADATA_URL}forward`; //"/meta/forward";
+export const API_KERNEL_SERVLET = `${API_FORWARD_PATH}/org.openbravo.client.kernel`;
+export const API_DATASOURCE_SERVLET = `${API_FORWARD_PATH}/org.openbravo.service.datasource/`;
 
 export enum HTTP_CODES {
   UNAUTHORIZED = 401,

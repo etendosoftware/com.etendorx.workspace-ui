@@ -14,7 +14,7 @@ import PrimaryTabs from "@workspaceui/componentlibrary/src/components/PrimaryTab
 import type { TabItem } from "@workspaceui/componentlibrary/src/components/PrimaryTab/types";
 import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
-import { type EntityData, FormMode } from "@workspaceui/etendohookbinder/src/api/types";
+import { type EntityData, FormMode } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import Collapsible from "../Collapsible";
@@ -267,8 +267,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   return (
     <FormProvider setValue={setValue} reset={reset} {...form}>
       <form
-        className={`w-full h-full max-h-full overflow-hidden flex flex-col transition duration-300  ${
-          loading ? "opacity-50 select-none cursor-progress cursor-to-children" : ""
+        className={`flex h-full max-h-full w-full flex-col overflow-hidden transition duration-300 ${
+          loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
         }`}
         onSubmit={handleSave}>
         <div className="flex-shrink-0 pl-2 pr-2">
@@ -291,7 +291,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
           </div>
         </div>
 
-        <div className="flex-grow overflow-auto p-2 space-y-2" ref={containerRef}>
+        <div className="flex-grow space-y-2 overflow-auto p-2" ref={containerRef}>
           {groups.map(([id, group]) => {
             const sectionId = String(id || "_main");
 
@@ -320,7 +320,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
                   sectionId={sectionId}
                   icon={getIconForGroup(group.identifier)}
                   onToggle={(isOpen: boolean) => handleAccordionChange(id, isOpen)}>
-                  <div className="grid grid-cols-3 auto-rows-auto gap-4">
+                  <div className="grid auto-rows-auto grid-cols-3 gap-4">
                     {Object.entries(group.fields).map(([hqlName, field]) => (
                       <BaseSelector field={field} key={hqlName} formMode={mode} />
                     ))}

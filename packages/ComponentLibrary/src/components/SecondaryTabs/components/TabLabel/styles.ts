@@ -51,6 +51,6 @@ export const useStyle = (): StylesType => {
         },
       },
     }),
-    [theme],
+    [theme]
   );
 };

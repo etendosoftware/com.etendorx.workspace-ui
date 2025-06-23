@@ -1,8 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useEffect, useMemo, useState } from "react";
-import { type Etendo, Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
-import { groupTabsByLevel } from "@workspaceui/etendohookbinder/src/utils/metadata";
+import { type Etendo, Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
 import type { IMetadataContext } from "./types";
 import { useDatasourceContext } from "./datasourceContext";
 import { mapBy } from "@/utils/structures";

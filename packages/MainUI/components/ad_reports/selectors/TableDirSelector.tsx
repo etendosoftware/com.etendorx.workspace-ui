@@ -22,7 +22,7 @@ const TableDirSelector = ({ onChange, entity, value, name, isReadOnly }: TableDi
         title: (record._identifier || record.name || record.id) as string,
         value: record.id as string,
       })),
-    [records],
+    [records]
   );
 
   useEffect(() => {
@@ -48,7 +48,7 @@ const TableDirSelector = ({ onChange, entity, value, name, isReadOnly }: TableDi
         onChange(newValue.id);
       }
     },
-    [onChange],
+    [onChange]
   );
 
   if (loading || !loaded) return <Spinner />;

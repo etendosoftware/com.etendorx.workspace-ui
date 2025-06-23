@@ -41,7 +41,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
 
   const value = useMemo(
     () => ({ onSave, onRefresh, onNew, onBack, onFilter, registerActions }),
-    [onNew, onRefresh, onSave, onBack, onFilter, registerActions],
+    [onNew, onRefresh, onSave, onBack, onFilter, registerActions]
   );
 
   return <ToolbarContext.Provider value={value}>{children}</ToolbarContext.Provider>;

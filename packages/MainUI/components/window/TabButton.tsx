@@ -62,16 +62,11 @@ export const TabButton = ({
           title={title}
           aria-label={title}
           className={baseClass}>
-          {/* ✅ Icono para ventanas */}
           {showIcon && <div className="w-4 h-4 flex-shrink-0">🏠</div>}
-
-          {/* ✅ Título truncado */}
           <span className="flex-1 truncate text-sm" title={title}>
             {title}
           </span>
         </button>
-
-        {/* ✅ Botón de cerrar */}
         {canClose && onClose && (
           <button
             type="button"

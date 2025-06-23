@@ -52,7 +52,7 @@ const SearchSelector = ({ onChange, value, field, name, disabled, readOnly }: Se
         onChange(newValue.id);
       }
     },
-    [onChange],
+    [onChange]
   );
 
   if (loading) return <Spinner />;

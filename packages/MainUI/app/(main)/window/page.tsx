@@ -10,7 +10,7 @@ import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useSelected } from "@/hooks/useSelected";
 import { useQueryParams } from "@/hooks/useQueryParams";
-import { groupTabsByLevel } from "@workspaceui/etendohookbinder/src/utils/metadata";
+import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
 import AppBreadcrumb from "@/components/Breadcrums";
 import Home from "@/screens/Home";
 

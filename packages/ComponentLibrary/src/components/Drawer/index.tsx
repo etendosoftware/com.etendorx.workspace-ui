@@ -1,6 +1,5 @@
 "use client";
-
-import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getAllItemTitles } from "../../utils/searchUtils";
 import TextInputAutocomplete from "../Input/TextInput/TextInputAutocomplete";
@@ -71,7 +70,7 @@ const Drawer: React.FC<DrawerProps> = ({
         return newSet;
       });
     },
-    [setExpandedItems],
+    [setExpandedItems]
   );
 
   const handleItemClick = useCallback(
@@ -79,7 +78,7 @@ const Drawer: React.FC<DrawerProps> = ({
       drawerRefs.current.recentlyViewedHandler.handleWindowAccess?.(item);
       onClick(item);
     },
-    [onClick],
+    [onClick]
   );
 
   const setRecentlyViewedRef = useCallback((ref: RecentlyViewedHandler) => {

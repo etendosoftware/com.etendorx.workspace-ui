@@ -62,7 +62,7 @@ const useStyles = () => {
         justifyContent: "center",
       },
     }),
-    [],
+    []
   );
 };
 
