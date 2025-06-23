@@ -19,6 +19,9 @@ import { useMemo } from "react";
  *
  * const { userId, filter } = useQueryParams<Params>();
  */
+
+const WINDOW_PREFIX = "w_";
+
 export function useQueryParams<T extends Record<string, string | string[] | undefined>>(): T {
   const searchParams = useSearchParams();
 
@@ -32,8 +35,8 @@ export function useQueryParams<T extends Record<string, string | string[] | unde
 
     if (!result.windowId) {
       for (const [key, value] of entries) {
-        if (key.startsWith("w_") && value === "active") {
-          result.windowId = key.slice(2);
+        if (key.startsWith(WINDOW_PREFIX) && value === "active") {
+          result.windowId = key.slice(WINDOW_PREFIX.length);
           break;
         }
       }

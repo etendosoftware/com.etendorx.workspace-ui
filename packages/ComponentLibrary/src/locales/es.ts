@@ -90,7 +90,7 @@ const es = {
       description: "Hubo un error procesando la información del formulario",
     },
     selectionError: {
-      tittle: "No hay registro superior seleccionado.",
+      title: "No hay registro superior seleccionado.",
       description: "Selecciona un registro en la pestaña principal para ver la información relacionada.",
     },
   },

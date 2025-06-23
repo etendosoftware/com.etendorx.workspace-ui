@@ -24,11 +24,11 @@ export const TabButton = ({
   }, [tab.tabLevel, tab.name, tab.title, window?.name, isWindow]);
 
   const handleClick = useCallback(() => {
-    return onClick(tab);
+    onClick(tab);
   }, [onClick, tab]);
 
   const handleDoubleClick = useCallback(() => {
-    return onDoubleClick(tab);
+    onDoubleClick(tab);
   }, [onDoubleClick, tab]);
 
   const handleClose = useCallback(

@@ -17,14 +17,14 @@ export default function useTableSelection(
 
   const windowId = activeWindow?.windowId;
   const currentWindowId = tab.window;
-  const isCorrectWindow = windowId === currentWindowId;
 
   useEffect(() => {
+    const isCorrectWindow = windowId === currentWindowId;
     if (!isCorrectWindow) {
       return;
     }
 
-    const recordsMap = mapBy(records, "id");
+    const recordsMap = mapBy(records ?? [], "id");
     const selectedIds = Object.keys(rowSelection).filter((id) => rowSelection[id]);
     const selectedRecords: EntityData[] = [];
     let lastSelected: EntityData | null = null;
@@ -38,7 +38,7 @@ export default function useTableSelection(
     }
 
     const currentSelectionIds = selectedRecords.map((r) => String(r.id)).sort();
-    const previousSelectionIds = previousSelectionRef.current.sort();
+    const previousSelectionIds = [...previousSelectionRef.current].sort();
 
     if (JSON.stringify(currentSelectionIds) !== JSON.stringify(previousSelectionIds)) {
       previousSelectionRef.current = currentSelectionIds;
@@ -74,15 +74,5 @@ export default function useTableSelection(
         graph.clearSelectedMultiple(tab);
       }
     }
-  }, [
-    graph,
-    records,
-    rowSelection,
-    tab,
-    onSelectionChange,
-    windowId,
-    clearSelectedRecord,
-    isCorrectWindow,
-    currentWindowId,
-  ]);
+  }, [graph, records, rowSelection, tab, onSelectionChange, windowId, clearSelectedRecord, currentWindowId]);
 }

@@ -48,7 +48,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
   const parentId = String(parentRecord?.id ?? "");
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  const clickTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
 
@@ -68,7 +68,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
       options.language = language;
     }
 
-    if (value && value !== "" && value !== "undefined") {
+    if (value && value !== "" && value !== undefined) {
       options.criteria = [
         {
           fieldName,
@@ -314,7 +314,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     return (
       <div className="h-full flex items-center justify-center text-gray-500">
         <div className="text-center">
-          <div className="text-lg mb-2">{t("errors.selectionError.tittle")}</div>
+          <div className="text-lg mb-2">{t("errors.selectionError.title")}</div>
           <div className="text-sm">{t("errors.selectionError.description")}</div>
         </div>
       </div>

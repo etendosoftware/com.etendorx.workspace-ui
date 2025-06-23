@@ -14,7 +14,7 @@ import PrimaryTabs from "@workspaceui/componentlibrary/src/components/PrimaryTab
 import type { TabItem } from "@workspaceui/componentlibrary/src/components/PrimaryTab/types";
 import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
-import { type EntityData, FormMode } from "@workspaceui/api-client/src/api/types";
+import { type EntityData, type EntityValue, FormMode } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import Collapsible from "../Collapsible";
@@ -28,6 +28,19 @@ const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon />,
   "More Information": <InfoIcon />,
   Dimensions: <FolderIcon />,
+};
+
+const processFormData = (data: Record<string, EntityValue>): Record<string, EntityValue> => {
+  const processedData = { ...data };
+
+  for (const key of Object.keys(processedData)) {
+    const value = processedData[key];
+    if (typeof value === "undefined") {
+      processedData[key] = "";
+    }
+  }
+
+  return processedData;
 };
 
 export function FormView({ window: windowMetadata, tab, mode, recordId, setRecordId }: FormViewProps) {
@@ -169,7 +182,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         reset({ ...initialState, ...data });
       } else {
         setRecordId(String(data.id));
-        await refetch();
       }
 
       graph.setSelected(tab, data);
@@ -182,18 +194,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
       showSuccessModal("Saved");
     },
-    [
-      mode,
-      graph,
-      tab,
-      activeWindow?.windowId,
-      showSuccessModal,
-      reset,
-      initialState,
-      setRecordId,
-      refetch,
-      setSelectedRecord,
-    ]
+    [mode, graph, tab, activeWindow?.windowId, showSuccessModal, reset, initialState, setRecordId, setSelectedRecord]
   );
 
   const onError = useCallback(
@@ -222,15 +223,15 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   );
 
   useEffect(() => {
+    if (recordId && recordId !== "new" && mode === FormMode.NEW) {
+      refetch();
+    }
+  }, [recordId, refetch, mode]);
+
+  useEffect(() => {
     if (!availableFormData) return;
 
-    const processedData = { ...availableFormData };
-    for (const [key, value] of Object.entries(processedData)) {
-      if (typeof value === "undefined") {
-        processedData[key] = "";
-      }
-    }
-
+    const processedData = processFormData(availableFormData);
     reset(processedData);
   }, [availableFormData, reset, tab.id]);
 

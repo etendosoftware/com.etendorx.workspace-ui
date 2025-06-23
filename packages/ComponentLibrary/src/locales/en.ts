@@ -90,7 +90,7 @@ const en = {
       description: "There was an error processing the form data",
     },
     selectionError: {
-      tittle: "No parent record selected",
+      title: "No parent record selected",
       description: "Select a record in the parent tab to view related data",
     },
   },
