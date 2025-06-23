@@ -145,6 +145,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     async (data: EntityData) => {
       if (mode === FormMode.EDIT) {
         reset({ ...initialState, ...data });
+        refetch();
       } else {
         setRecordId(String(data.id));
         refetch();
