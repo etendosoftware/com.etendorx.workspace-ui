@@ -5,7 +5,7 @@ import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 export const useRedirect = () => {
   const router = useRouter();
   const pathname = usePathname();
-  const { openWindow, buildURL } = useMultiWindowURL();
+  const { openWindow, buildURL, getNextOrder, windows } = useMultiWindowURL();
 
   const handleAction = useCallback(
     (windowId: string | undefined) => {
@@ -22,6 +22,7 @@ export const useRedirect = () => {
         const newWindow = {
           windowId,
           isActive: true,
+          order: getNextOrder(windows),
           title: "",
           selectedRecords: {},
           tabFormStates: {},
@@ -32,7 +33,7 @@ export const useRedirect = () => {
         router.push(targetURL);
       }
     },
-    [router, pathname, buildURL, openWindow]
+    [router, pathname, windows, buildURL, openWindow, getNextOrder]
   );
 
   const handleClickRedirect = useCallback(
