@@ -9,13 +9,14 @@ interface WindowTabProps {
   windowId: string;
   title: string;
   isActive: boolean;
+  order: number;
   onActivate: () => void;
   onClose: () => void;
   canClose?: boolean;
   icon?: React.ReactNode;
 }
 
-function WindowTab({ title, isActive, onActivate, onClose, canClose = true }: WindowTabProps) {
+function WindowTab({ title, isActive, order, onActivate, onClose, canClose = true }: WindowTabProps) {
   return (
     <button
       type="button"
@@ -33,8 +34,8 @@ function WindowTab({ title, isActive, onActivate, onClose, canClose = true }: Wi
         borderTopLeftRadius: "12px",
         borderTopRightRadius: "12px",
       }}
-      onClick={onActivate}>
-      {/* <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">{icon}</div> */}
+      onClick={onActivate}
+      title={`${title} (Window ${order})`}>
       <span className="flex-1 truncate text-sm font-medium" title={title}>
         {title}
       </span>
@@ -65,16 +66,17 @@ export function WindowTabs() {
     navigateToHome();
   };
 
+  const sortedWindows = windows;
+
   return (
     <div className={"flex items-center bg-(--color-transparent-neutral-5) rounded-full p-0 gap-1 mx-1"}>
       <div className="px-1 flex">
         <IconButton onClick={handleGoHome} className={isHomeRoute ? "bg-(--color-dynamic-main) text-white" : ""}>
-          {" "}
           <HomeIcon />
         </IconButton>
       </div>
       <div className="flex">
-        {windows.map((window) => {
+        {sortedWindows.map((window) => {
           const title = window.title || getWindowTitle?.(window.windowId) || `Window ${window.windowId}`;
           const isActive = window.isActive;
           const canClose = windows.length > 1;
@@ -84,6 +86,7 @@ export function WindowTabs() {
               windowId={window.windowId}
               title={title}
               isActive={isActive}
+              order={window.order}
               onActivate={() => {
                 setActiveWindow(window.windowId);
               }}
