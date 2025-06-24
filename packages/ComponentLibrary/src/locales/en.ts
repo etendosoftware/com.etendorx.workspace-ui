@@ -20,6 +20,8 @@ const en = {
     trueText: "Yes",
     falseText: "No",
     noDataAvailable: "No data available",
+    record: "record",
+    records: "records",
   },
   forms: {
     sections: {
@@ -40,7 +42,7 @@ const en = {
     deleteSuccess: "has been deleted successfully",
     deleteError: "Error deleting record",
     deleteConfirmation: "Are you sure you want to delete",
-    multipleDeleteConfirmation: "Are you sure you want to delete the selected records?",
+    multipleDeleteConfirmation: "Are you sure you want to delete the selected",
     selectRecordError: "Please select a record first",
     saveSuccess: "{{entityType}} has been saved successfully",
     saveError: "Error saving record",
@@ -86,6 +88,10 @@ const en = {
     adaptingData: {
       title: "Error Processing Data",
       description: "There was an error processing the form data",
+    },
+    selectionError: {
+      title: "No parent record selected",
+      description: "Select a record in the parent tab to view related data",
     },
   },
   modal: {

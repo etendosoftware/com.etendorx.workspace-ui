@@ -139,7 +139,7 @@ export function useDatasource({ entity, params = defaultParams, columns, searchQ
     };
 
     f();
-  }, [entity, isImplicitFilterApplied, page, pageSize, queryParams, searchQuery, skip]);
+  }, [entity, isImplicitFilterApplied, page, pageSize, queryParams, reinit, searchQuery, skip]);
 
   useEffect(() => {
     reinit();

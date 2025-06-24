@@ -14,5 +14,10 @@ export type TabSwitchProps = {
   active: boolean;
   onClick: (tab: Tab) => void;
   onDoubleClick: (tab: Tab) => void;
+  isWindow?: boolean;
+  showIcon?: boolean;
+  onClose?: (e: React.MouseEvent) => void;
+  canClose?: boolean;
 };
-export type TabLevelProps = { collapsed?: boolean };
+
+export type TabLevelProps = { tab: Tab; collapsed?: boolean };

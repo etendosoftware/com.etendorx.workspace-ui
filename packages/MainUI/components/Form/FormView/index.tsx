@@ -21,9 +21,8 @@ import Collapsible from "../Collapsible";
 import StatusBar from "./StatusBar";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import type { FormViewProps } from "./types";
-import { useSelectedRecord } from "@/hooks/useSelectedRecord";
-import { useTabContext } from "@/contexts/tab";
 import { useUserContext } from "@/hooks/useUserContext";
+import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon />,
@@ -31,7 +30,20 @@ const iconMap: Record<string, React.ReactElement> = {
   Dimensions: <FolderIcon />,
 };
 
-export function FormView({ window: windowMetadata, mode, recordId, setRecordId }: FormViewProps) {
+const processFormData = (data: Record<string, EntityValue>): Record<string, EntityValue> => {
+  const processedData = { ...data };
+
+  for (const key of Object.keys(processedData)) {
+    const value = processedData[key];
+    if (typeof value === "undefined") {
+      processedData[key] = "";
+    }
+  }
+
+  return processedData;
+};
+
+export function FormView({ window: windowMetadata, tab, mode, recordId, setRecordId }: FormViewProps) {
   const theme = useTheme();
   const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
   const [selectedTab, setSelectedTab] = useState<string>("");
@@ -39,11 +51,32 @@ export function FormView({ window: windowMetadata, mode, recordId, setRecordId }
   const containerRef = useRef<HTMLDivElement>(null);
   const { graph } = useSelected();
   const { session } = useUserContext();
-  const { tab } = useTabContext();
+  const { activeWindow, getSelectedRecord, clearTabFormState, setSelectedRecord } = useMultiWindowURL();
 
   const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
 
-  const record = useSelectedRecord(tab);
+  const record = useMemo(() => {
+    const windowId = activeWindow?.windowId;
+    if (!windowId) return null;
+
+    if (recordId === "new") return null;
+
+    const selectedRecordId = getSelectedRecord(windowId, tab.id);
+    if (selectedRecordId && selectedRecordId === recordId) {
+      const graphRecord = graph.getSelected(tab);
+      if (graphRecord && String(graphRecord.id) === recordId) {
+        return graphRecord;
+      }
+
+      return { id: selectedRecordId } as EntityData;
+    }
+
+    if (recordId && recordId !== "new") {
+      return { id: recordId } as EntityData;
+    }
+
+    return null;
+  }, [activeWindow?.windowId, getSelectedRecord, tab, recordId, graph]);
 
   const {
     formInitialization,
@@ -58,8 +91,8 @@ export function FormView({ window: windowMetadata, mode, recordId, setRecordId }
 
   const initialState = useFormInitialState(formInitialization) || undefined;
 
-  const availableFormData: { [x: string]: EntityValue } = useMemo(() => {
-    return { ...record, ...initialState } as { [x: string]: EntityValue };
+  const availableFormData = useMemo(() => {
+    return { ...record, ...initialState };
   }, [record, initialState]);
 
   const { fields, groups } = useFormFields(tab, mode, false, availableFormData);
@@ -140,24 +173,28 @@ export function FormView({ window: windowMetadata, mode, recordId, setRecordId }
   }, []);
 
   const onReset = useCallback(async () => {
-    refetch();
+    await refetch();
   }, [refetch]);
 
   const onSuccess = useCallback(
     async (data: EntityData) => {
       if (mode === FormMode.EDIT) {
         reset({ ...initialState, ...data });
-        refetch();
       } else {
         setRecordId(String(data.id));
-        refetch();
       }
 
       graph.setSelected(tab, data);
       graph.setSelectedMultiple(tab, [data]);
+
+      const windowId = activeWindow?.windowId;
+      if (windowId) {
+        setSelectedRecord(windowId, tab.id, String(data.id));
+      }
+
       showSuccessModal("Saved");
     },
-    [graph, initialState, mode, refetch, reset, setRecordId, showSuccessModal, tab]
+    [mode, graph, tab, activeWindow?.windowId, showSuccessModal, reset, initialState, setRecordId, setSelectedRecord]
   );
 
   const onError = useCallback(
@@ -186,20 +223,43 @@ export function FormView({ window: windowMetadata, mode, recordId, setRecordId }
   );
 
   useEffect(() => {
-    if (!availableFormData) return;
-
-    for (const [key, value] of Object.entries(availableFormData)) {
-      if (typeof value === "undefined") {
-        availableFormData[key] = "";
-      }
+    if (recordId && recordId !== "new" && mode === FormMode.NEW) {
+      refetch();
     }
-
-    reset({ ...availableFormData });
-  }, [availableFormData, reset]);
+  }, [recordId, refetch, mode]);
 
   useEffect(() => {
-    registerActions({ save: save, refresh: onReset, new: onReset });
-  }, [onReset, registerActions, save]);
+    if (!availableFormData) return;
+
+    const processedData = processFormData(availableFormData);
+    reset(processedData);
+  }, [availableFormData, reset, tab.id]);
+
+  const handleSave = useCallback(async () => {
+    await save();
+  }, [save]);
+
+  const handleBack = useCallback(() => {
+    const windowId = activeWindow?.windowId;
+    if (windowId) {
+      clearTabFormState(windowId, tab.id);
+    }
+  }, [activeWindow?.windowId, clearTabFormState, tab.id]);
+
+  const handleNew = useCallback(() => {
+    setRecordId("new");
+  }, [setRecordId]);
+
+  useEffect(() => {
+    const actions = {
+      save: handleSave,
+      refresh: onReset,
+      back: handleBack,
+      new: handleNew,
+    };
+
+    registerActions(actions);
+  }, [registerActions, handleSave, onReset, handleBack, handleNew, tab.id]);
 
   if (loading || loadingFormInitialization) {
     return <Spinner />;
@@ -211,8 +271,8 @@ export function FormView({ window: windowMetadata, mode, recordId, setRecordId }
         className={`flex h-full max-h-full w-full flex-col overflow-hidden transition duration-300 ${
           loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
         }`}
-        onSubmit={save}>
-        <div className="flex-shrink-0 pr-2 pl-2">
+        onSubmit={handleSave}>
+        <div className="flex-shrink-0 pl-2 pr-2">
           <div className="mb-2">
             {statusModal.open && (
               <StatusModal

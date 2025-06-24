@@ -2,7 +2,7 @@
 
 import Graph from "@/data/graph";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
-import { createContext, useCallback, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useMemo, useState } from "react";
 
 interface TabStates {
   [tabId: string]: {
@@ -19,14 +19,44 @@ interface SelectedContext {
   setTabRecordId: (tabId: string, recordId: string) => void;
   getTabRecordId: (tabId: string) => string;
   clearTabRecord: (tabId: string) => void;
+  clearAllStates: () => void;
 }
 
 export const SelectContext = createContext<SelectedContext>({} as SelectedContext);
 
-export const SelectedProvider = ({ children, tabs }: React.PropsWithChildren<{ tabs: Tab[] }>) => {
+const windowGraphCache = new Map<string, Graph<Tab>>();
+
+export const SelectedProvider = ({
+  children,
+  tabs,
+  windowId,
+}: React.PropsWithChildren<{
+  tabs: Tab[];
+  windowId: string;
+}>) => {
   const [activeLevels, setActiveLevels] = useState<number[]>([0]);
   const [tabStates, setTabStates] = useState<TabStates>({});
-  const graph = useRef(new Graph<Tab>(tabs)).current;
+
+  const graph = useMemo(() => {
+    if (!windowGraphCache.has(windowId)) {
+      windowGraphCache.set(windowId, new Graph<Tab>(tabs));
+    }
+    const cachedGraph = windowGraphCache.get(windowId);
+    if (!cachedGraph) {
+      throw new Error(`Failed to retrieve graph for window id: ${windowId}`);
+    }
+    return cachedGraph;
+  }, [windowId, tabs]);
+
+  const clearAllStates = useCallback(() => {
+    setTabStates({});
+    setActiveLevels([0]);
+
+    for (const tab of tabs) {
+      graph.clearSelected(tab);
+      graph.clearSelectedMultiple(tab);
+    }
+  }, [tabs, graph]);
 
   const setTabRecordId = useCallback((tabId: string, recordId: string) => {
     setTabStates((prev) => ({
@@ -99,8 +129,9 @@ export const SelectedProvider = ({ children, tabs }: React.PropsWithChildren<{ t
       setTabRecordId,
       getTabRecordId,
       clearTabRecord,
+      clearAllStates,
     }),
-    [activeLevels, graph, setActiveLevel, tabStates, setTabRecordId, getTabRecordId, clearTabRecord]
+    [activeLevels, graph, setActiveLevel, tabStates, setTabRecordId, getTabRecordId, clearTabRecord, clearAllStates]
   );
 
   return <SelectContext.Provider value={value}>{children}</SelectContext.Provider>;
