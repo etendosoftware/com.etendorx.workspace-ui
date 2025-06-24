@@ -3,22 +3,123 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 
+export type FormMode = "new" | "edit" | "view";
+export type TabMode = "table" | "form";
+
 export interface WindowState {
   windowId: string;
   isActive: boolean;
   formRecordId?: string;
-  formMode?: "new" | "edit" | "view";
+  formMode?: FormMode;
   selectedRecords: Record<string, string>; // tabId -> recordId
   tabFormStates: Record<
     string,
     {
       recordId?: string;
-      mode?: "table" | "form";
-      formMode?: "new" | "edit" | "view";
+      mode?: TabMode;
+      formMode?: FormMode;
     }
   >;
   title?: string;
 }
+
+const extractWindowIds = (searchParams: URLSearchParams): Set<string> => {
+  const windowIds = new Set<string>();
+  for (const [key] of searchParams.entries()) {
+    if (key.startsWith("w_")) {
+      windowIds.add(key.slice(2));
+    }
+  }
+  return windowIds;
+};
+
+const processTabParameters = (
+  searchParams: URLSearchParams,
+  windowId: string
+): {
+  selectedRecords: Record<string, string>;
+  tabFormStates: Record<string, { recordId?: string; mode?: TabMode; formMode?: FormMode }>;
+} => {
+  const selectedRecords: Record<string, string> = {};
+  const tabFormStates: Record<string, { recordId?: string; mode?: TabMode; formMode?: FormMode }> = {};
+
+  for (const [key, value] of searchParams.entries()) {
+    if (!value) continue;
+
+    const processTabParameter = (prefix: string, processor: (tabId: string, value: string) => void) => {
+      if (key.startsWith(prefix)) {
+        const tabId = key.slice(prefix.length);
+        processor(tabId, value);
+      }
+    };
+
+    processTabParameter(`s_${windowId}_`, (tabId, value) => {
+      selectedRecords[tabId] = value;
+    });
+
+    processTabParameter(`tf_${windowId}_`, (tabId, value) => {
+      tabFormStates[tabId] = { ...tabFormStates[tabId], recordId: value };
+    });
+
+    processTabParameter(`tm_${windowId}_`, (tabId, value) => {
+      tabFormStates[tabId] = { ...tabFormStates[tabId], mode: value as TabMode };
+    });
+
+    processTabParameter(`tfm_${windowId}_`, (tabId, value) => {
+      tabFormStates[tabId] = { ...tabFormStates[tabId], formMode: value as FormMode };
+    });
+  }
+
+  return { selectedRecords, tabFormStates };
+};
+
+const createWindowState = (windowId: string, searchParams: URLSearchParams): WindowState => {
+  const isActive = searchParams.get(`w_${windowId}`) === "active";
+  const formRecordId = searchParams.get(`r_${windowId}`) || undefined;
+  const formMode = (searchParams.get(`fm_${windowId}`) as FormMode) || undefined;
+
+  const { selectedRecords, tabFormStates } = processTabParameters(searchParams, windowId);
+
+  return {
+    windowId,
+    isActive,
+    formRecordId,
+    formMode,
+    selectedRecords,
+    tabFormStates,
+  };
+};
+
+const setWindowParameters = (params: URLSearchParams, window: WindowState): void => {
+  const { windowId, isActive, formRecordId, formMode, selectedRecords, tabFormStates } = window;
+
+  params.set(`w_${windowId}`, isActive ? "active" : "inactive");
+
+  if (formRecordId) {
+    params.set(`r_${windowId}`, formRecordId);
+  }
+  if (formMode) {
+    params.set(`fm_${windowId}`, formMode);
+  }
+
+  for (const [tabId, selectedRecordId] of Object.entries(selectedRecords)) {
+    if (selectedRecordId) {
+      params.set(`s_${windowId}_${tabId}`, selectedRecordId);
+    }
+  }
+
+  for (const [tabId, tabState] of Object.entries(tabFormStates)) {
+    if (tabState.recordId) {
+      params.set(`tf_${windowId}_${tabId}`, tabState.recordId);
+    }
+    if (tabState.mode && tabState.mode !== "table") {
+      params.set(`tm_${windowId}_${tabId}`, tabState.mode);
+    }
+    if (tabState.formMode) {
+      params.set(`tfm_${windowId}_${tabId}`, tabState.formMode);
+    }
+  }
+};
 
 export function useMultiWindowURL() {
   const router = useRouter();
@@ -32,73 +133,13 @@ export function useMultiWindowURL() {
     const hasWindowParams = Array.from(searchParams.entries()).some(([key]) => key.startsWith("w_"));
     const isHome = currentPath === "/" && !hasWindowParams;
 
-    const windowIds = new Set<string>();
-    for (const [key] of searchParams.entries()) {
-      if (key.startsWith("w_")) {
-        windowIds.add(key.slice(2));
-      }
-    }
+    const windowIds = extractWindowIds(searchParams);
 
     for (const windowId of windowIds) {
-      const isActive = searchParams.get(`w_${windowId}`) === "active";
-
-      const formRecordId = searchParams.get(`r_${windowId}`) || undefined;
-      const formMode = (searchParams.get(`fm_${windowId}`) as "new" | "edit" | "view") || undefined;
-
-      const selectedRecords: Record<string, string> = {};
-
-      const tabFormStates: Record<
-        string,
-        {
-          recordId?: string;
-          mode?: "table" | "form";
-          formMode?: "new" | "edit" | "view";
-        }
-      > = {};
-
-      for (const [key, value] of searchParams.entries()) {
-        if (key.startsWith(`s_${windowId}_`) && value) {
-          const tabId = key.slice(`s_${windowId}_`.length);
-          selectedRecords[tabId] = value;
-        }
-
-        if (key.startsWith(`tf_${windowId}_`) && value) {
-          const tabId = key.slice(`tf_${windowId}_`.length);
-          tabFormStates[tabId] = {
-            ...tabFormStates[tabId],
-            recordId: value,
-          };
-        }
-
-        if (key.startsWith(`tm_${windowId}_`) && value) {
-          const tabId = key.slice(`tm_${windowId}_`.length);
-          tabFormStates[tabId] = {
-            ...tabFormStates[tabId],
-            mode: value as "table" | "form",
-          };
-        }
-
-        if (key.startsWith(`tfm_${windowId}_`) && value) {
-          const tabId = key.slice(`tfm_${windowId}_`.length);
-          tabFormStates[tabId] = {
-            ...tabFormStates[tabId],
-            formMode: value as "new" | "edit" | "view",
-          };
-        }
-      }
-
-      const windowState: WindowState = {
-        windowId,
-        isActive,
-        formRecordId,
-        formMode,
-        selectedRecords,
-        tabFormStates,
-      };
-
+      const windowState = createWindowState(windowId, searchParams);
       windowStates.push(windowState);
 
-      if (isActive) {
+      if (windowState.isActive) {
         active = windowState;
       }
     }
@@ -116,36 +157,7 @@ export function useMultiWindowURL() {
     const params = new URLSearchParams();
 
     for (const window of newWindows) {
-      const { windowId, isActive, formRecordId, formMode, selectedRecords, tabFormStates } = window;
-
-      // basic state
-      params.set(`w_${windowId}`, isActive ? "active" : "inactive");
-
-      if (formRecordId) {
-        params.set(`r_${windowId}`, formRecordId);
-      }
-      if (formMode) {
-        params.set(`fm_${windowId}`, formMode);
-      }
-
-      // selected state
-      for (const [tabId, selectedRecordId] of Object.entries(selectedRecords)) {
-        if (selectedRecordId) {
-          params.set(`s_${windowId}_${tabId}`, selectedRecordId);
-        }
-      }
-
-      for (const [tabId, tabState] of Object.entries(tabFormStates)) {
-        if (tabState.recordId) {
-          params.set(`tf_${windowId}_${tabId}`, tabState.recordId);
-        }
-        if (tabState.mode && tabState.mode !== "table") {
-          params.set(`tm_${windowId}_${tabId}`, tabState.mode);
-        }
-        if (tabState.formMode) {
-          params.set(`tfm_${windowId}_${tabId}`, tabState.formMode);
-        }
-      }
+      setWindowParameters(params, window);
     }
 
     if (preserveCurrentPath && window.location.pathname === "/") {
@@ -276,13 +288,7 @@ export function useMultiWindowURL() {
   );
 
   const setTabFormState = useCallback(
-    (
-      windowId: string,
-      tabId: string,
-      recordId: string,
-      mode: "table" | "form" = "form",
-      formMode?: "new" | "edit" | "view"
-    ) => {
+    (windowId: string, tabId: string, recordId: string, mode: TabMode = "form", formMode?: FormMode) => {
       const updatedWindows = windows.map((w) => {
         if (w.windowId === windowId) {
           const currentTabState = w.tabFormStates[tabId] || {};
@@ -339,7 +345,7 @@ export function useMultiWindowURL() {
   const setRecord = useCallback(
     (windowId: string, recordId: string, tabId?: string) => {
       if (tabId) {
-        const formMode = recordId === "new" ? "new" : "edit";
+        const formMode: FormMode = recordId === "new" ? "new" : "edit";
         setTabFormState(windowId, tabId, recordId, "form", formMode);
       } else {
         const updatedWindows = windows.map((w) => {
