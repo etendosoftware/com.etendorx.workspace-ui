@@ -6,17 +6,40 @@ import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
 import { getFieldReference } from "@/utils";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 
 export const useColumns = (tab: Tab) => {
   const router = useRouter();
+  const pathname = usePathname();
+  const { openWindow, buildURL } = useMultiWindowURL();
 
   const handleAction = useCallback(
     (windowId: string | undefined) => {
-      if (!windowId) return;
-      router.push(`/window?windowId=${windowId}`);
+      if (!windowId) {
+        console.warn("No windowId found");
+        return;
+      }
+
+      const isInWindowRoute = pathname.includes("window");
+
+      if (isInWindowRoute) {
+        openWindow(windowId);
+      } else {
+        const newWindow = {
+          windowId,
+          isActive: true,
+          title: "",
+          selectedRecords: {},
+          tabFormStates: {},
+        };
+
+        const targetURL = buildURL([newWindow]);
+
+        router.push(targetURL);
+      }
     },
-    [router]
+    [router, pathname, buildURL, openWindow]
   );
 
   const handleClick = useCallback(
