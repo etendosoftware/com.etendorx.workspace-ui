@@ -1,22 +1,26 @@
 import { memo, useMemo } from "react";
-import Link from "next/link";
 import { useFormContext } from "react-hook-form";
 import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { getFieldReference } from "@/utils";
 import BaseLabel from "@/components/Label";
+import { useRedirect } from "@/hooks/navigation/useRedirect";
 
 function LabelCmp({ field }: { field: Field }) {
   const { watch } = useFormContext();
   const value = watch(field.hqlName);
   const isReference = useMemo(() => isEntityReference(getFieldReference(field.column?.reference)), [field]);
+  const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
 
   if (field.fieldGroup !== "audit" && value && isReference) {
     return (
-      // TODO: Update this link to work with the new multi-window system
-      <Link href={`/window?windowId=${field.referencedWindowId}`}>
-        <BaseLabel name={field.name} htmlFor={field.hqlName} link />
-      </Link>
+      <BaseLabel
+        name={field.name}
+        htmlFor={field.hqlName}
+        handleOnClick={(e) => handleClickRedirect(e, field.referencedWindowId)}
+        handleKeyDown={(e) => handleKeyDownRedirect(e, field.referencedWindowId)}
+        link
+      />
     );
   }
 
