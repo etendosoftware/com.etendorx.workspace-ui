@@ -20,6 +20,8 @@ export const TabButton = ({ tab, onClick, active, onDoubleClick }: TabSwitchProp
   const tabClass =
     tab.tabLevel === 0 ? "text-xl mb-2" : active ? "border-b-(--color-neutral-90)" : "border-b-transparent";
 
+  if (!title) return null;
+
   return (
     <span>
       <button
