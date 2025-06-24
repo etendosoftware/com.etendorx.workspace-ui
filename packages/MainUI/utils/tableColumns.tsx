@@ -26,9 +26,11 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
           _identifier: column.name,
           column: {
             _identifier: columnType,
+            reference: column.column?.reference,
           },
           name: column.name,
           type: columnType,
+          referencedWindowId: column.referencedWindowId,
           accessorFn: (v: Record<string, unknown>) => {
             const reference = getFieldReference(column.column?.reference);
 
