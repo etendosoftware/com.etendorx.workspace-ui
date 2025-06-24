@@ -37,7 +37,10 @@ export const useColumns = (tab: Tab) => {
           ...column,
           Cell: ({ cell }: { cell: MRT_Cell<EntityData, unknown> }) => {
             return (
-              <span className="cursor-pointer underline text-blue-500" onClick={handleClick} onKeyDown={handleKeyDown}>
+              <span
+                className="cursor-pointer underline text-blue-500 hover:text-blue-600 hover:scale-105 transition-transform duration-200 ease-in-out"
+                onClick={handleClick}
+                onKeyDown={handleKeyDown}>
                 {cell.getValue<string>()}
               </span>
             );
