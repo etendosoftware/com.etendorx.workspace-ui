@@ -84,6 +84,8 @@ export const TabButton = ({
     );
   }
 
+  if (!title) return null;
+
   return (
     <span>
       <button
