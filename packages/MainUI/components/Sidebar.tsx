@@ -50,6 +50,7 @@ export default function Sidebar() {
       } else {
         const newWindow = {
           windowId,
+          window_identifier: item.name,
           isActive: true,
           order: getNextOrder(windows),
           title: item.name,
