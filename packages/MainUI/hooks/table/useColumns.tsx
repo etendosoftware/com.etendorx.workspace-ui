@@ -26,7 +26,7 @@ export const useColumns = (tab: Tab) => {
                 type="button"
                 tabIndex={0}
                 aria-label="Navigate to referenced window"
-                className="bg-transparent border-none p-0 underline text-blue-500 hover:text-blue-600 hover:scale-105 transition-transform duration-200 ease-in-out text-left"
+                className="bg-transparent border-none p-0 text-(--color-dynamic-main) hover:underline text-left"
                 onClick={(e) => handleClickRedirect(e, windowId)}
                 onKeyDown={(e) => handleKeyDownRedirect(e, windowId)}>
                 {cell.getValue<string>()}
