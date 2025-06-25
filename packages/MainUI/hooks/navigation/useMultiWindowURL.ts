@@ -10,6 +10,7 @@ export interface WindowState {
   windowId: string;
   isActive: boolean;
   order: number;
+  window_identifier: string;
   formRecordId?: string;
   formMode?: FormMode;
   selectedRecords: Record<string, string>; // tabId -> recordId
@@ -79,6 +80,8 @@ const createWindowState = (windowId: string, searchParams: URLSearchParams): Win
   const formRecordId = searchParams.get(`r_${windowId}`) || undefined;
   const formMode = (searchParams.get(`fm_${windowId}`) as FormMode) || undefined;
   const order = Number.parseInt(searchParams.get(`o_${windowId}`) || "1", 10);
+  const window_identifier = searchParams.get(`wi_${windowId}`) || windowId;
+  const title = searchParams.get(`t_${windowId}`) || undefined;
 
   const { selectedRecords, tabFormStates } = processTabParameters(searchParams, windowId);
 
@@ -86,24 +89,40 @@ const createWindowState = (windowId: string, searchParams: URLSearchParams): Win
     windowId,
     isActive,
     order,
+    window_identifier,
     formRecordId,
     formMode,
     selectedRecords,
     tabFormStates,
+    title,
   };
 };
 
 const setWindowParameters = (params: URLSearchParams, window: WindowState): void => {
-  const { windowId, isActive, order, formRecordId, formMode, selectedRecords, tabFormStates } = window;
+  const {
+    windowId,
+    isActive,
+    order,
+    window_identifier,
+    formRecordId,
+    formMode,
+    selectedRecords,
+    tabFormStates,
+    title,
+  } = window;
 
   params.set(`w_${windowId}`, isActive ? "active" : "inactive");
   params.set(`o_${windowId}`, (order ?? 1).toString());
+  params.set(`wi_${windowId}`, window_identifier);
 
   if (formRecordId) {
     params.set(`r_${windowId}`, formRecordId);
   }
   if (formMode) {
     params.set(`fm_${windowId}`, formMode);
+  }
+  if (title) {
+    params.set(`t_${windowId}`, title);
   }
 
   for (const [tabId, selectedRecordId] of Object.entries(selectedRecords)) {
@@ -206,19 +225,26 @@ export function useMultiWindowURL() {
   }, [windows, buildURL, router]);
 
   const openWindow = useCallback(
-    (windowId: string, title?: string) => {
+    (windowId: string, title?: string, window_identifier?: string) => {
       const updatedWindows = windows.map((w) => ({ ...w, isActive: false }));
 
       const existingIndex = updatedWindows.findIndex((w) => w.windowId === windowId);
 
       if (existingIndex >= 0) {
         updatedWindows[existingIndex].isActive = true;
+        if (title) {
+          updatedWindows[existingIndex].title = title;
+        }
+        if (window_identifier) {
+          updatedWindows[existingIndex].window_identifier = window_identifier;
+        }
       } else {
         const nextOrder = getNextOrder(updatedWindows);
         updatedWindows.push({
           windowId,
           isActive: true,
           order: nextOrder,
+          window_identifier: window_identifier || windowId,
           title,
           selectedRecords: {},
           tabFormStates: {},
@@ -256,6 +282,23 @@ export function useMultiWindowURL() {
         ...w,
         isActive: w.windowId === windowId,
       }));
+
+      navigate(updatedWindows);
+    },
+    [windows, navigate]
+  );
+
+  const updateWindowTitle = useCallback(
+    (windowId: string, title: string) => {
+      const updatedWindows = windows.map((w) => {
+        if (w.windowId === windowId) {
+          return {
+            ...w,
+            title,
+          };
+        }
+        return w;
+      });
 
       navigate(updatedWindows);
     },
@@ -429,6 +472,7 @@ export function useMultiWindowURL() {
     setActiveWindow,
     navigateToHome,
     buildURL,
+    updateWindowTitle,
 
     setSelectedRecord,
     clearSelectedRecord,
@@ -442,5 +486,6 @@ export function useMultiWindowURL() {
     clearRecord,
 
     reorderWindows,
+    getNextOrder,
   };
 }
