@@ -17,8 +17,8 @@ function LabelCmp({ field }: { field: Field }) {
       <BaseLabel
         name={`${field.name} ⤴️`}
         htmlFor={field.hqlName}
-        handleOnClick={(e) => handleClickRedirect(e, field.referencedWindowId)}
-        handleKeyDown={(e) => handleKeyDownRedirect(e, field.referencedWindowId)}
+        onClick={(e) => handleClickRedirect(e, field.referencedWindowId)}
+        onKeyDown={(e) => handleKeyDownRedirect(e, field.referencedWindowId)}
         link
       />
     );
