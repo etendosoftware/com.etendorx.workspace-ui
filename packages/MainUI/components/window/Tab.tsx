@@ -83,7 +83,6 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       setTimeout(() => {
         graph.clearSelected(tab);
       }, 100);
-    } else {
     }
   }, [windowId, tab, setTabFormState, graph]);
 
