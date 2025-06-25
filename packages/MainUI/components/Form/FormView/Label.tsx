@@ -15,7 +15,7 @@ function LabelCmp({ field }: { field: Field }) {
   if (field.fieldGroup !== "audit" && value && isReference) {
     return (
       <BaseLabel
-        name={field.name}
+        name={`${field.name} ⤴️`}
         htmlFor={field.hqlName}
         handleOnClick={(e) => handleClickRedirect(e, field.referencedWindowId)}
         handleKeyDown={(e) => handleKeyDownRedirect(e, field.referencedWindowId)}
