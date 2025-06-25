@@ -23,7 +23,7 @@ export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const { activeWindow, openWindow, buildURL, windows } = useMultiWindowURL();
+  const { activeWindow, openWindow, buildURL, getNextOrder, windows } = useMultiWindowURL();
 
   const [searchValue, setSearchValue] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -33,11 +33,6 @@ export default function Sidebar() {
     const result = filterItems(menu, searchValue, searchIndex);
     return result;
   }, [menu, searchValue, searchIndex]);
-
-  const getNextOrder = useCallback(() => {
-    if (windows.length === 0) return 1;
-    return Math.max(...windows.map((w) => w.order || 1)) + 1;
-  }, [windows]);
 
   const handleClick = useCallback(
     (item: Menu) => {
@@ -56,7 +51,7 @@ export default function Sidebar() {
         const newWindow = {
           windowId,
           isActive: true,
-          order: getNextOrder(),
+          order: getNextOrder(windows),
           title: item.name,
           selectedRecords: {},
           tabFormStates: {},
@@ -67,7 +62,7 @@ export default function Sidebar() {
         router.push(targetURL);
       }
     },
-    [pathname, router, openWindow, buildURL, getNextOrder]
+    [pathname, router, windows, openWindow, buildURL, getNextOrder]
   );
 
   const searchContext = useMemo(

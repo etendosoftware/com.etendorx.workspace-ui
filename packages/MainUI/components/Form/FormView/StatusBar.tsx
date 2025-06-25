@@ -15,8 +15,8 @@ export default function StatusBar({ fields }: { fields: Record<string, Field> })
   };
 
   return (
-    <div className="h-min flex gap-4 items-center justify-between bg-gray-100/50 shadow text-sm px-4 py-3 rounded-xl">
-      <div>
+    <div className="h-min flex items-center justify-between bg-gray-100/50 shadow px-4 py-3 rounded-xl">
+      <div className="flex gap-4 text-sm">
         {Object.entries(fields).map(([key, field]) => (
           <StatusBarField key={key} field={field} />
         ))}

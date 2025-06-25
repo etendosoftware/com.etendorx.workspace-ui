@@ -12,7 +12,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearch } from "../../contexts/searchContext";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import EmptyState from "./EmptyState";
-import { parseColumns } from "@/utils/tableColumns";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useLanguage } from "@/contexts/language";
 import useTableSelection from "@/hooks/useTableSelection";
@@ -21,6 +20,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
 import { useDatasource } from "@/hooks/useDatasource";
 import { useSelected } from "@/hooks/useSelected";
+import { useColumns } from "@/hooks/table/useColumns";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -50,7 +50,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
 
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-  const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
+  const columns = useColumns(tab);
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || "id";

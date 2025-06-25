@@ -442,5 +442,6 @@ export function useMultiWindowURL() {
     clearRecord,
 
     reorderWindows,
+    getNextOrder,
   };
 }

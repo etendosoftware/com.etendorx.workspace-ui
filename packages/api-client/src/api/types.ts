@@ -145,6 +145,8 @@ export interface Column {
   reference?: string;
   _identifier: string;
   displayType?: string;
+  column?: Record<string, string>;
+  referencedWindowId?: string;
   [key: string]: unknown;
 }
 
