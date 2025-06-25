@@ -18,6 +18,7 @@ export const useColumns = (tab: Tab) => {
 
       if (isReference) {
         const windowId = column.referencedWindowId;
+        const windowIdentifier = column._identifier;
         return {
           ...column,
           Cell: ({ cell }: { cell: MRT_Cell<EntityData, unknown> }) => {
@@ -27,8 +28,8 @@ export const useColumns = (tab: Tab) => {
                 tabIndex={0}
                 aria-label="Navigate to referenced window"
                 className="bg-transparent border-none p-0 text-(--color-dynamic-main) hover:underline text-left"
-                onClick={(e) => handleClickRedirect(e, windowId)}
-                onKeyDown={(e) => handleKeyDownRedirect(e, windowId)}>
+                onClick={(e) => handleClickRedirect(e, windowId, windowIdentifier)}
+                onKeyDown={(e) => handleKeyDownRedirect(e, windowId, windowIdentifier)}>
                 {cell.getValue<string>()}
               </button>
             );

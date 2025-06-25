@@ -8,7 +8,7 @@ export const useRedirect = () => {
   const { openWindow, buildURL, getNextOrder, windows } = useMultiWindowURL();
 
   const handleAction = useCallback(
-    (windowId: string | undefined) => {
+    (windowId: string | undefined, windowIdentifier: string | undefined) => {
       if (!windowId) {
         console.warn("No windowId found");
         return;
@@ -21,9 +21,10 @@ export const useRedirect = () => {
       } else {
         const newWindow = {
           windowId,
+          window_identifier: windowIdentifier || windowId,
           isActive: true,
           order: getNextOrder(windows),
-          title: "",
+          title: windowIdentifier || windowId,
           selectedRecords: {},
           tabFormStates: {},
         };
@@ -37,20 +38,20 @@ export const useRedirect = () => {
   );
 
   const handleClickRedirect = useCallback(
-    (e: React.MouseEvent, windowId: string | undefined) => {
+    (e: React.MouseEvent, windowId: string | undefined, windowIdentifier: string | undefined) => {
       e.stopPropagation();
       e.preventDefault();
-      handleAction(windowId);
+      handleAction(windowId, windowIdentifier);
     },
     [handleAction]
   );
 
   const handleKeyDownRedirect = useCallback(
-    (e: React.KeyboardEvent, windowId: string | undefined) => {
+    (e: React.KeyboardEvent, windowId: string | undefined, windowIdentifier: string | undefined) => {
       e.stopPropagation();
       e.preventDefault();
       if (e.key === "Enter" || e.key === " ") {
-        handleAction(windowId);
+        handleAction(windowId, windowIdentifier);
       }
     },
     [handleAction]
