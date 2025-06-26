@@ -4,12 +4,14 @@ import { ToolbarProvider } from "./ToolbarContext";
 import { SearchProvider } from "./searchContext";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelected } from "@/hooks/useSelected";
+import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 
 interface TabContextI {
   tab: Tab;
   record?: EntityData | null;
   parentTab?: Tab | null;
   parentRecord?: EntityData | null;
+  parentRecords?: EntityData[] | null;
 }
 
 const TabContext = createContext<TabContextI>({} as TabContextI);
@@ -19,6 +21,7 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
   const record = useSelectedRecord(tab);
   const parentTab = graph.getParent(tab);
   const parentRecord = useSelectedRecord(parentTab);
+  const parentRecords = useSelectedRecords(parentTab);
 
   const value = useMemo(
     () => ({
@@ -26,8 +29,9 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
       record,
       parentTab,
       parentRecord,
+      parentRecords,
     }),
-    [parentRecord, parentTab, record, tab]
+    [parentRecord, parentTab, parentRecords, record, tab]
   );
 
   return (
