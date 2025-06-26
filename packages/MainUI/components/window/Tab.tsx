@@ -80,11 +80,8 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const handleNew = useCallback(() => {
     if (windowId) {
       setTabFormState(windowId, tab.id, "new", "form", "new");
-      setTimeout(() => {
-        graph.clearSelected(tab);
-      }, 100);
     }
-  }, [windowId, tab, setTabFormState, graph]);
+  }, [windowId, tab, setTabFormState]);
 
   const handleBack = useCallback(() => {
     if (windowId) {
