@@ -301,6 +301,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     registerActions({
       refresh: refetch,
       filter: toggleImplicitFilters,
+      save: async () => {},
     });
   }, [refetch, registerActions, toggleImplicitFilters]);
 
