@@ -11,6 +11,7 @@ export default function StatusBar({ fields }: { fields: Record<string, Field> })
 
   const handleCloseRecord = async () => {
     await onSave();
+    // Delay navigation to ensure UI updates complete before redirecting
     setTimeout(() => {
       onBack();
     }, 100);
