@@ -223,7 +223,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   );
 
   useEffect(() => {
-    if (recordId && recordId !== "new" && mode === FormMode.NEW) {
+    if (recordId) {
       refetch();
     }
   }, [recordId, refetch, mode]);
