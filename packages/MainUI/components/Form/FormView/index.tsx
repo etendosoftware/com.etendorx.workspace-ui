@@ -244,7 +244,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     if (windowId) {
       clearTabFormState(windowId, tab.id);
     }
-  }, [activeWindow?.windowId, clearTabFormState, tab.id]);
+    graph.clear(tab);
+    graph.clearSelected(tab);
+  }, [activeWindow?.windowId, clearTabFormState, graph, tab]);
 
   const handleNew = useCallback(() => {
     setRecordId("new");
