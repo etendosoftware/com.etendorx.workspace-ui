@@ -11,7 +11,9 @@ export default function StatusBar({ fields }: { fields: Record<string, Field> })
 
   const handleCloseRecord = async () => {
     await onSave();
-    onBack();
+    setTimeout(() => {
+      onBack();
+    }, 100);
   };
 
   return (
