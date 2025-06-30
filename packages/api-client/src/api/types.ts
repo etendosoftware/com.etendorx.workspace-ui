@@ -145,6 +145,8 @@ export interface Column {
   reference?: string;
   _identifier: string;
   displayType?: string;
+  column?: Record<string, string>;
+  referencedWindowId?: string;
   [key: string]: unknown;
 }
 
@@ -653,7 +655,7 @@ type EntityKey = string;
 export type EntityValue = string | number | boolean | symbol | null;
 
 export interface EntityData {
-  [key: EntityKey]: EntityValue | undefined | null;
+  [key: EntityKey]: EntityValue;
 }
 
 export enum FormMode {

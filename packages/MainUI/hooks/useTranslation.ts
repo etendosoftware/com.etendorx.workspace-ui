@@ -24,7 +24,7 @@ export const useTranslation = (defaultLanguage = DEFAULT_LANGUAGE) => {
 
       return value;
     },
-    [language, defaultLanguage],
+    [language, defaultLanguage]
   );
 
   return { t };

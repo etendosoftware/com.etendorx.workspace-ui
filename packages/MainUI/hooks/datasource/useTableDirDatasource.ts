@@ -1,7 +1,5 @@
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import { datasource } from "@workspaceui/etendohookbinder/src/api/datasource";
-import type { EntityValue } from "@workspaceui/etendohookbinder/src/api/types";
 import { useCallback, useMemo, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { buildPayloadByInputName } from "@/utils";
@@ -14,6 +12,8 @@ import {
   INVOICE_FIELD_MAPPINGS,
   FORM_VALUE_MAPPINGS,
 } from "./constants";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
+import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 import { FALLBACK_RESULT } from "@/components/ProcessModal/ProcessDefinitionModal";
 
 export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 20 }: UseTableDirDatasourceParams) => {

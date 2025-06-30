@@ -1,6 +1,6 @@
 import { useTabContext } from "@/contexts/tab";
-import type { EntityData, FormInitializationResponse } from "@workspaceui/etendohookbinder/src/api/types";
-import { getFieldsByColumnName } from "@workspaceui/etendohookbinder/src/utils/metadata";
+import type { EntityData, FormInitializationResponse } from "@workspaceui/api-client/src/api/types";
+import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import { useMemo } from "react";
 import { FieldName } from "./types";
 import useFormParent from "./useFormParent";

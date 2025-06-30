@@ -86,7 +86,7 @@ const Menu: React.FC<DropdownMenuProps> = ({ anchorEl, onClose, children, classN
         style={{ top: position.y, left: position.x }}>
         {children}
       </div>,
-      document.body,
+      document.body
     )
   );
 };

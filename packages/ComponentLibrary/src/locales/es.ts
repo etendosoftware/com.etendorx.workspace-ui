@@ -20,11 +20,16 @@ const es = {
     trueText: "Si",
     falseText: "No",
     noDataAvailable: "No hay información disponible",
+    record: "registro",
+    records: "registros",
   },
   forms: {
     sections: {
       main: "Sección Principal",
       audit: "Auditoría",
+    },
+    statusBar: {
+      closeRecord: "Cerrar registro",
     },
   },
   audit: {
@@ -83,6 +88,10 @@ const es = {
     adaptingData: {
       title: "Error procesando la información",
       description: "Hubo un error procesando la información del formulario",
+    },
+    selectionError: {
+      title: "No hay registro superior seleccionado.",
+      description: "Selecciona un registro en la pestaña principal para ver la información relacionada.",
     },
   },
   modal: {

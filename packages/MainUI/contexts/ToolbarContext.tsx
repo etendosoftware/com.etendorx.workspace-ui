@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useCallback, useMemo } from "react";
 
 type ToolbarActions = {
-  save: () => void;
+  save: () => Promise<void>;
   refresh: () => void;
   new: () => void;
   back: () => void;
@@ -11,7 +11,7 @@ type ToolbarActions = {
 };
 
 type ToolbarContextType = {
-  onSave: () => void;
+  onSave: () => Promise<void>;
   onRefresh: () => void;
   onNew: () => void;
   onBack: () => void;
@@ -20,7 +20,7 @@ type ToolbarContextType = {
 };
 
 const initialState: ToolbarActions = {
-  save: () => {},
+  save: async () => {},
   refresh: () => {},
   new: () => {},
   back: () => {},
@@ -41,7 +41,7 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
 
   const value = useMemo(
     () => ({ onSave, onRefresh, onNew, onBack, onFilter, registerActions }),
-    [onNew, onRefresh, onSave, onBack, onFilter, registerActions],
+    [onNew, onRefresh, onSave, onBack, onFilter, registerActions]
   );
 
   return <ToolbarContext.Provider value={value}>{children}</ToolbarContext.Provider>;

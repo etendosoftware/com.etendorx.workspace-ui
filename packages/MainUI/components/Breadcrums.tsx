@@ -25,7 +25,7 @@ const AppBreadcrumb: React.FC = () => {
     (windowId: string) => {
       router.push(`/window?windowId=${windowId}`);
     },
-    [router],
+    [router]
   );
 
   const breadcrumbItems = useMemo(() => {

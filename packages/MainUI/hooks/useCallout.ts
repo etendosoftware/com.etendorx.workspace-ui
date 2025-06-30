@@ -1,6 +1,6 @@
 import { useCallback } from "react";
-import type { Field, FormInitializationResponse } from "@workspaceui/etendohookbinder/src/api/types";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import type { Field, FormInitializationResponse } from "@workspaceui/api-client/src/api/types";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { FieldValues } from "react-hook-form";
 import { logger } from "@/utils/logger";
 import { useTabContext } from "@/contexts/tab";
@@ -41,6 +41,6 @@ export const useCallout = ({ field, parentId = "null", rowId = "null" }: UseCall
         logger.warn(`Error executing callout for field "${field.inputName}":`, error);
       }
     },
-    [tabId, field.inputName, parentId, rowId],
+    [tabId, field.inputName, parentId, rowId]
   );
 };

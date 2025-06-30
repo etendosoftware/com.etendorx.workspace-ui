@@ -23,7 +23,7 @@ const StatusModal: React.FC<StatusModalProps> = ({
 
   const backgroundGradient = useMemo(
     () => `linear-gradient(to bottom, ${gradientColor}, rgba(255, 255, 255, 0))`,
-    [gradientColor],
+    [gradientColor]
   );
   const handleClose = useCallback(() => {
     if (onClose) {

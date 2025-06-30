@@ -51,7 +51,7 @@ export function DatasourceProvider({ children }: { children: ReactNode }) {
       registerRefetchFunction,
       refetchDatasource,
     }),
-    [registerDatasource, unregisterDatasource, removeRecordFromDatasource, registerRefetchFunction, refetchDatasource],
+    [registerDatasource, unregisterDatasource, removeRecordFromDatasource, registerRefetchFunction, refetchDatasource]
   );
 
   return <DatasourceContext.Provider value={value}>{children}</DatasourceContext.Provider>;

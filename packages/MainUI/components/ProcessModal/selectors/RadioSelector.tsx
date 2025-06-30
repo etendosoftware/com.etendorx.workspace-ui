@@ -1,4 +1,4 @@
-import type { ProcessParameter } from "@workspaceui/etendohookbinder/src/api/types";
+import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 

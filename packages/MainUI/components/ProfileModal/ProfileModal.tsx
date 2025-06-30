@@ -245,7 +245,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         setLanguageFlags(getFlag(value.value as Language));
       }
     },
-    [getFlag],
+    [getFlag]
   );
 
   return (

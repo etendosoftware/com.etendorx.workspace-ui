@@ -1,6 +1,6 @@
 import Label from "@/components/Label";
 import GenericSelector from "./GenericSelector";
-import type { ProcessParameter } from "@workspaceui/etendohookbinder/src/api/types";
+import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { useMemo } from "react";
 import { useUserContext } from "@/hooks/useUserContext";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";

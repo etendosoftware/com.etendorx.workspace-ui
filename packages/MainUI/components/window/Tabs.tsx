@@ -1,12 +1,11 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { Tab as TabType } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
 import { SubTabsSwitch } from "@/components/window/SubTabsSwitch";
 import { Tab } from "@/components/window/Tab";
-import { TabButton } from "@/components/window/TabButton";
 import { useSelected } from "@/hooks/useSelected";
 import TabContextProvider from "@/contexts/tab";
 import ResizeHandle from "../ResizeHandle";
@@ -28,7 +27,7 @@ export default function Tabs({ tabs, isTopGroup = false }: ExtendedTabsProps) {
       setCurrent(tab);
       setActiveLevel(tab.tabLevel);
     },
-    [setActiveLevel],
+    [setActiveLevel]
   );
 
   const handleDoubleClick = useCallback(
@@ -38,13 +37,13 @@ export default function Tabs({ tabs, isTopGroup = false }: ExtendedTabsProps) {
       setExpanded(newExpand);
       setActiveLevel(tab.tabLevel, newExpand);
     },
-    [expand, setActiveLevel],
+    [expand, setActiveLevel]
   );
 
   const handleHeightChange = useCallback((height: number) => {
     setCustomHeight(height);
   }, []);
-  
+
   const handleClose = useCallback(() => {
     setActiveLevel(current.tabLevel - 1);
   }, [current.tabLevel, setActiveLevel]);
@@ -54,14 +53,7 @@ export default function Tabs({ tabs, isTopGroup = false }: ExtendedTabsProps) {
 
   const renderTabContent = () => {
     if (current.tabLevel === 0) {
-      return (
-        <TabButton 
-          tab={current} 
-          onClick={handleClick} 
-          onDoubleClick={handleDoubleClick} 
-          active 
-        />
-      );
+      return null;
     }
 
     const subTabsSwitch = (
@@ -77,13 +69,12 @@ export default function Tabs({ tabs, isTopGroup = false }: ExtendedTabsProps) {
 
     if (showResizeHandle) {
       return (
-        <ResizeHandle 
+        <ResizeHandle
           initialHeight={customHeight}
           minHeight={9}
           maxOffsetRem={9}
           onClose={handleClose}
-          onHeightChange={handleHeightChange}
-        >
+          onHeightChange={handleHeightChange}>
           {subTabsSwitch}
         </ResizeHandle>
       );
@@ -93,15 +84,10 @@ export default function Tabs({ tabs, isTopGroup = false }: ExtendedTabsProps) {
   };
 
   return (
-    <TabContainer 
-      current={current} 
-      collapsed={collapsed}
-      isTopExpanded={isTopExpanded}
-      customHeight={customHeight}
-    >
+    <TabContainer current={current} collapsed={collapsed} isTopExpanded={isTopExpanded} customHeight={customHeight}>
       {renderTabContent()}
       <TabContextProvider tab={current}>
-        <Tab tab={current} collapsed={collapsed} />
+        <Tab tab={current} collapsed={collapsed} />{" "}
       </TabContextProvider>
     </TabContainer>
   );

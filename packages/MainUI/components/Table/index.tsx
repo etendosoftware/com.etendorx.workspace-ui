@@ -7,12 +7,11 @@ import {
   type MRT_TableInstance,
 } from "material-react-table";
 import { useStyle } from "./styles";
-import type { DatasourceOptions, EntityData } from "@workspaceui/etendohookbinder/src/api/types";
+import type { DatasourceOptions, EntityData } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearch } from "../../contexts/searchContext";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import EmptyState from "./EmptyState";
-import { parseColumns } from "@/utils/tableColumns";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useLanguage } from "@/contexts/language";
 import useTableSelection from "@/hooks/useTableSelection";
@@ -21,6 +20,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
 import { useDatasource } from "@/hooks/useDatasource";
 import { useSelected } from "@/hooks/useSelected";
+import { useColumns } from "@/hooks/table/useColumns";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -29,8 +29,12 @@ type RowProps = (props: {
 }) => Omit<MRT_TableBodyRowProps<EntityData>, "staticRowIndex">;
 
 const getRowId = (row: EntityData) => String(row.id);
+interface DynamicTableProps {
+  setRecordId: React.Dispatch<React.SetStateAction<string>>;
+  onRecordSelection?: (recordId: string) => void;
+}
 
-const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetStateAction<string>> }) => {
+const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => {
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
@@ -39,12 +43,14 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
   const { graph } = useSelected();
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
-  const { tab, parentTab, parentRecord } = useTabContext();
+  const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
   const tabId = tab.id;
   const parentId = String(parentRecord?.id ?? "");
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  const columns = useMemo(() => parseColumns(Object.values(tab.fields)), [tab.fields]);
+  const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  const columns = useColumns(tab);
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || "id";
@@ -62,7 +68,7 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
       options.language = language;
     }
 
-    if (value) {
+    if (value && value !== "" && value !== undefined) {
       options.criteria = [
         {
           fieldName,
@@ -71,16 +77,15 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
         },
       ];
     }
-
     return options;
   }, [
-    language,
-    parentId,
-    tab.hqlfilterclause?.length,
-    tab.id,
     tab.parentColumns,
-    tab.sQLWhereClause?.length,
     tab.window,
+    tab.id,
+    tab.hqlfilterclause?.length,
+    tab.sQLWhereClause?.length,
+    parentId,
+    language,
   ]);
 
   const {
@@ -98,7 +103,7 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
     params: query,
     columns,
     searchQuery,
-    skip: !!parentTab && !parentRecord,
+    skip: parentTab ? Boolean(!parentRecord || (parentRecords && parentRecords.length !== 1)) : false,
   });
 
   const handleColumnFiltersChange = useCallback(
@@ -128,38 +133,64 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
     [updateColumnFilters]
   );
 
+  const handleTableSelectionChange = useCallback(
+    (recordId: string) => {
+      if (onRecordSelection) {
+        onRecordSelection(recordId);
+      }
+    },
+    [onRecordSelection]
+  );
+
   const rowProps = useCallback<RowProps>(
     ({ row, table }) => {
       const record = row.original as Record<string, never>;
       const isSelected = row.getIsSelected();
-      let clickTimeout: NodeJS.Timeout | null = null;
+      const rowId = String(record.id);
 
       return {
         onClick: (event) => {
-          if (clickTimeout) return;
+          const existingTimeout = clickTimeoutsRef.current.get(rowId);
+          if (existingTimeout) {
+            clearTimeout(existingTimeout);
+            clickTimeoutsRef.current.delete(rowId);
+          }
 
-          clickTimeout = setTimeout(() => {
+          const timeout = setTimeout(() => {
             if (!event.ctrlKey) {
               table.setRowSelection({});
             }
-
             row.toggleSelected();
-            clickTimeout = null;
-          }, 100);
+            clickTimeoutsRef.current.delete(rowId);
+          }, 250);
+
+          clickTimeoutsRef.current.set(rowId, timeout);
         },
-        onDoubleClick: () => {
-          if (clickTimeout) {
-            clearTimeout(clickTimeout);
-            clickTimeout = null;
+
+        onDoubleClick: (event) => {
+          event.stopPropagation();
+
+          const timeout = clickTimeoutsRef.current.get(rowId);
+          if (timeout) {
+            clearTimeout(timeout);
+            clickTimeoutsRef.current.delete(rowId);
           }
+
+          const parent = graph.getParent(tab);
+          const parentSelection = parent ? graph.getSelected(parent) : undefined;
 
           if (!isSelected) {
             row.toggleSelected();
           }
 
           graph.setSelected(tab, row.original);
+
+          if (parent && parentSelection) {
+            setTimeout(() => graph.setSelected(parent, parentSelection), 10);
+          }
           setRecordId(record.id);
         },
+
         sx: {
           ...(isSelected && {
             ...sx.rowSelected,
@@ -206,7 +237,7 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
     muiTableBodyRowProps: rowProps,
     muiTableContainerProps: {
       ref: tableContainerRef,
-      sx: { flex: 1, height: "100%", maxHeight: "100%" }, //give the table a max height
+      sx: { flex: 1, height: "100%", maxHeight: "100%" },
       onScroll: fetchMoreOnBottomReached,
     },
     enablePagination: false,
@@ -231,12 +262,28 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
     renderEmptyRowsFallback,
   });
 
-  useTableSelection(tab, records, table.getState().rowSelection);
+  useTableSelection(tab, records, table.getState().rowSelection, handleTableSelectionChange);
 
-  const clearSelection = useCallback(() => {
-    table.resetRowSelection(true);
-    setRecordId("");
-  }, [setRecordId, table]);
+  useEffect(() => {
+    const handleGraphClear = (eventTab: typeof tab) => {
+      if (eventTab.id === tab.id) {
+        const currentSelection = table.getState().rowSelection;
+        const hasTableSelection = Object.keys(currentSelection).some((id) => currentSelection[id]);
+
+        if (hasTableSelection) {
+          table.resetRowSelection(true);
+        }
+      }
+    };
+
+    graph.addListener("unselected", handleGraphClear);
+    graph.addListener("unselectedMultiple", handleGraphClear);
+
+    return () => {
+      graph.removeListener("unselected", handleGraphClear);
+      graph.removeListener("unselectedMultiple", handleGraphClear);
+    };
+  }, [graph, table, tabId]);
 
   useEffect(() => {
     if (removeRecordLocally) {
@@ -254,9 +301,9 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
     registerActions({
       refresh: refetch,
       filter: toggleImplicitFilters,
-      back: clearSelection,
+      save: async () => {},
     });
-  }, [clearSelection, refetch, registerActions, toggleImplicitFilters]);
+  }, [refetch, registerActions, toggleImplicitFilters]);
 
   if (error) {
     return (
@@ -264,9 +311,22 @@ const DynamicTable = ({ setRecordId }: { setRecordId: React.Dispatch<React.SetSt
     );
   }
 
+  if (parentTab && !parentRecord) {
+    return (
+      <div className="h-full flex items-center justify-center text-gray-500">
+        <div className="text-center">
+          <div className="text-lg mb-2">{t("errors.selectionError.title")}</div>
+          <div className="text-sm">{t("errors.selectionError.description")}</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`h-full overflow-hidden rounded-3xl transition-opacity ${loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"}`}>
+      className={`h-full overflow-hidden rounded-3xl transition-opacity ${
+        loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
+      }`}>
       <MaterialReactTable table={table} />
     </div>
   );

@@ -1,12 +1,5 @@
-// useFormFields.ts - Implementación corregida
 import { getFieldReference } from "@/utils";
-import {
-  type Field,
-  FieldType,
-  type Tab,
-  FormMode,
-  type EntityValue,
-} from "@workspaceui/etendohookbinder/src/api/types";
+import { type EntityValue, type Field, FieldType, FormMode, type Tab } from "@workspaceui/api-client/src/api/types";
 import { useMemo } from "react";
 import { useFormContext } from "react-hook-form";
 import { useTranslation } from "./useTranslation";

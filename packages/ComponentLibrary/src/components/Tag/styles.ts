@@ -69,7 +69,7 @@ export const useStyle = (): StylesType => {
         }),
       },
     }),
-    [theme],
+    [theme]
   );
 
   const getColoredIcon = (icon: ReactElement, type: TagType): ReactElement => {

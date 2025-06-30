@@ -79,7 +79,7 @@ const DateSelector = memo(
         }}
       />
     );
-  },
+  }
 );
 
 DateSelector.displayName = "DateSelector";

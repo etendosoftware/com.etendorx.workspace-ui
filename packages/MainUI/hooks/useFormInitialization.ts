@@ -1,14 +1,14 @@
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import type { ClientOptions } from "@workspaceui/etendohookbinder/src/api/client";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import type { ClientOptions } from "@workspaceui/api-client/src/api/client";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import {
   type FormInitializationParams,
   type FormInitializationResponse,
   FormMode,
   type Tab,
-} from "@workspaceui/etendohookbinder/src/api/types";
-import { useCallback, useEffect, useMemo, useReducer } from "react";
+} from "@workspaceui/api-client/src/api/types";
+import { useCallback, useMemo, useReducer } from "react";
 import { FieldName } from "./types";
 import useFormParent from "./useFormParent";
 import { useUserContext } from "./useUserContext";
@@ -99,7 +99,6 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   const { setSession } = useUserContext();
   const { parentRecord: parent } = useTabContext();
   const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
-  const loaded = !!state.formInitialization;
   const { error, formInitialization, loading } = state;
   const parentData = useFormParent(FieldName.HQL_NAME);
   const parentId = parent?.id?.toString();
@@ -149,13 +148,8 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   const refetch = useCallback(async () => {
     if (!params) return;
     dispatch({ type: "FETCH_START" });
-  }, [params]);
-
-  useEffect(() => {
-    if (!formInitialization && !loaded && !error) {
-      fetch();
-    }
-  }, [formInitialization, error, fetch, loaded]);
+    await fetch();
+  }, [params, fetch]);
 
   return useMemo(
     () => ({ error, formInitialization, loading, refetch }) as useFormInitialization,

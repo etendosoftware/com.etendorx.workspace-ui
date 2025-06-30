@@ -15,7 +15,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@workspaceui/etendohookbinder': path.resolve(__dirname, '../EtendoHookBinder'),
+      '@workspaceui/api-client': path.resolve(__dirname, '../api-client'),
       '@workspaceui/componentlibrary': path.resolve(__dirname, '../ComponentLibrary'),
     },
   },

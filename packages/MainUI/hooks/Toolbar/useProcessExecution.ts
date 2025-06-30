@@ -1,10 +1,17 @@
-import { type ProcessButton, ProcessButtonType, type ProcessResponse } from "@/components/ProcessModal/types";
+import {
+  type ProcessActionButton,
+  type ProcessResponse,
+  isProcessActionButton,
+  isProcessDefinitionButton,
+} from "@/components/ProcessModal/types";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import { Metadata } from "@workspaceui/etendohookbinder/src/api/metadata";
+import { API_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useParams } from "next/navigation";
 import { useCallback, useContext, useState } from "react";
 import { UserContext } from "../../contexts/user";
+import { useApiContext } from "../useApiContext";
 import { useMetadataContext } from "../useMetadataContext";
 import type { ExecuteProcessDefinitionParams, ExecuteProcessParams } from "./types";
 
@@ -12,6 +19,7 @@ export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [iframeUrl, setIframeUrl] = useState("");
+  const API_BASE_URL = useApiContext();
 
   const { token } = useContext(UserContext);
   const { windowId } = useMetadataContext();
@@ -65,11 +73,11 @@ export function useProcessExecution() {
         setLoading(false);
       }
     },
-    [],
+    []
   );
 
   const executeProcessAction = useCallback(
-    async (button: ProcessButton): Promise<ProcessResponse> => {
+    async (button: ProcessActionButton): Promise<ProcessResponse> => {
       return new Promise((resolve, reject) => {
         try {
           setLoading(true);
@@ -92,20 +100,20 @@ export function useProcessExecution() {
           const docStatus = extractValue(["documentStatus", "docstatus", "docStatus", "DOCSTATUS", "DocStatus"], "DR");
           const isProcessing = extractValue(
             ["processing", "isprocessing", "isProcessing", "PROCESSING", "Processing"],
-            "N",
+            "N"
           );
           const adClientId = extractValue(
             ["adClientId", "AD_Client_ID", "aD_Client_ID", "adclientid", "AdClientId", "client"],
-            "23C59575B9CF467C9620760EB255B389",
+            "23C59575B9CF467C9620760EB255B389"
           );
           const adOrgId = extractValue(
             ["adOrgId", "AD_Org_ID", "aD_Org_ID", "adorgid", "AdOrgId", "organization"],
-            "7BABA5FF80494CAFA54DEBD22EC46F01",
+            "7BABA5FF80494CAFA54DEBD22EC46F01"
           );
 
           const isPostedProcess = button.id === "Posted";
           const commandAction = "BUTTONDocAction104";
-          const baseUrl = "http://localhost:8080/etendo/SalesOrder/Header_Edition.html";
+          const baseUrl = `${API_BASE_URL}${API_FORWARD_PATH}${button.processAction.manualURL}`; //"http://localhost:8080/etendo/SalesOrder/Header_Edition.html";
           const safeWindowId = windowId || (tab?.window ? String(tab.window) : "143");
           const safeTabId = tab?.id ? String(tab.id) : "186";
           const safeRecordId = String(record.id || recordId || "");
@@ -155,16 +163,16 @@ export function useProcessExecution() {
         }
       });
     },
-    [record, recordId, tab.id, tab.window, token, windowId],
+    [record, recordId, tab.id, tab.window, token, windowId, API_BASE_URL]
   );
 
   const executeProcess = useCallback(
     async ({ button, recordId, params = {} }: ExecuteProcessParams): Promise<ProcessResponse> => {
       try {
-        if (ProcessButtonType.PROCESS_ACTION in button) {
+        if (isProcessActionButton(button)) {
           return await executeProcessAction(button);
         }
-        if (ProcessButtonType.PROCESS_DEFINITION in button) {
+        if (isProcessDefinitionButton(button)) {
           return await executeProcessDefinition({ button, recordId, params });
         }
         throw new Error("Tipo de proceso no soportado");
@@ -173,7 +181,7 @@ export function useProcessExecution() {
         throw new Error("Tipo de proceso no soportado");
       }
     },
-    [executeProcessAction, executeProcessDefinition],
+    [executeProcessAction, executeProcessDefinition]
   );
 
   const resetIframeUrl = useCallback(() => setIframeUrl(""), []);

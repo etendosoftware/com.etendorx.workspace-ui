@@ -6,13 +6,12 @@ import { Drawer } from "@workspaceui/componentlibrary/src/components/Drawer/inde
 import EtendoLogotype from "../public/etendo.png";
 import { useTranslation } from "../hooks/useTranslation";
 import { useUserContext } from "../hooks/useUserContext";
-import type { WindowParams } from "../app/types";
 import { RecentlyViewed } from "./Drawer/RecentlyViewed";
-import type { Menu } from "@workspaceui/etendohookbinder/src/api/types";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
 import { useMenuTranslation } from "../hooks/useMenuTranslation";
 import { createSearchIndex, filterItems } from "@workspaceui/componentlibrary/src/utils/searchUtils";
 import { useLanguage } from "@/contexts/language";
-import { useQueryParams } from "@/hooks/useQueryParams";
+import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useMenu } from "@/hooks/useMenu";
 
 export default function Sidebar() {
@@ -24,7 +23,7 @@ export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const { windowId } = useQueryParams<WindowParams>();
+  const { activeWindow, openWindow, buildURL, getNextOrder, windows } = useMultiWindowURL();
 
   const [searchValue, setSearchValue] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -32,22 +31,39 @@ export default function Sidebar() {
   const searchIndex = useMemo(() => createSearchIndex(menu), [menu]);
   const { filteredItems, searchExpandedItems } = useMemo(() => {
     const result = filterItems(menu, searchValue, searchIndex);
-
     return result;
   }, [menu, searchValue, searchIndex]);
 
   const handleClick = useCallback(
     (item: Menu) => {
       const windowId = item.windowId ?? "";
-      const params = new URLSearchParams(location.search);
-      params.set("windowId", windowId);
-      if (pathname.includes("window")) {
-        window.history.pushState(null, "", `?${params.toString()}`);
+
+      if (!windowId) {
+        console.warn("Menu item without windowId:", item);
+        return;
+      }
+
+      const isInWindowRoute = pathname.includes("window");
+
+      if (isInWindowRoute) {
+        openWindow(windowId, item.name);
       } else {
-        router.push(`window?${params.toString()}`);
+        const newWindow = {
+          windowId,
+          window_identifier: item.name,
+          isActive: true,
+          order: getNextOrder(windows),
+          title: item.name,
+          selectedRecords: {},
+          tabFormStates: {},
+        };
+
+        const targetURL = buildURL([newWindow]);
+
+        router.push(targetURL);
       }
     },
-    [pathname, router],
+    [pathname, router, windows, openWindow, buildURL, getNextOrder]
   );
 
   const searchContext = useMemo(
@@ -60,7 +76,7 @@ export default function Sidebar() {
       setExpandedItems,
       searchIndex,
     }),
-    [expandedItems, filteredItems, searchExpandedItems, searchIndex, searchValue],
+    [expandedItems, filteredItems, searchExpandedItems, searchIndex, searchValue]
   );
 
   const getTranslatedName = useCallback((item: Menu) => translateMenuItem(item), [translateMenuItem]);
@@ -71,9 +87,11 @@ export default function Sidebar() {
     }
   }, [currentRole?.id, language, prevLanguage, prevRole]);
 
+  const currentWindowId = activeWindow?.windowId;
+
   return (
     <Drawer
-      windowId={windowId}
+      windowId={currentWindowId}
       logo={EtendoLogotype.src}
       title={t("common.etendo")}
       items={menu}

@@ -97,7 +97,7 @@ export const useStyle = () => {
           },
         },
       }) satisfies Record<string, SxProps<Theme>>,
-    [theme],
+    [theme]
   );
 };
 

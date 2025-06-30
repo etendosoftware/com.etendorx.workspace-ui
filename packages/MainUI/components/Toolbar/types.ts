@@ -26,7 +26,6 @@ export interface ToolbarProps {
   onSearch?: (value: string) => void;
   isFormView?: boolean;
 }
-
 export interface ProcessResponse {
   success: boolean;
   message?: string;

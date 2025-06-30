@@ -1,11 +1,9 @@
-import type { Etendo } from "@workspaceui/etendohookbinder/src/api/metadata";
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { Etendo } from "@workspaceui/api-client/src/api/metadata";
 import type {
   CurrentClient,
   CurrentOrganization,
   CurrentRole,
   CurrentWarehouse,
-  Field,
   ISession,
   Labels,
   LoginResponse,
@@ -13,7 +11,7 @@ import type {
   SessionResponse,
   Tab,
   User,
-} from "@workspaceui/etendohookbinder/src/api/types";
+} from "@workspaceui/api-client/src/api/types";
 
 export type Language = "en_US" | "es_ES";
 
@@ -63,14 +61,21 @@ export interface IUserContext {
 }
 
 export interface IMetadataContext {
-  windowId: string;
+  windowId?: string;
+  window?: Etendo.WindowMetadata;
   loading: boolean;
-  error: Error | undefined;
+  error?: Error;
   groupedTabs: Etendo.Tab[][];
   tabs: Record<string, Tab>;
-  columns?: Record<string, Field>;
-  window?: Etendo.WindowMetadata;
-  refetch: () => Promise<void>;
+  refetch: () => Promise<Etendo.WindowMetadata>;
   removeRecord: (tabId: string, recordId: string) => void;
   emptyWindowDataName: () => void;
+  loadWindowData: (windowId: string) => Promise<Etendo.WindowMetadata>;
+  getWindowMetadata: (windowId: string) => Etendo.WindowMetadata | undefined;
+  getWindowTitle: (windowId: string) => string;
+  isWindowLoading: (windowId: string) => boolean;
+  getWindowError: (windowId: string) => Error | undefined;
+  windowsData: Record<string, Etendo.WindowMetadata>;
+  loadingWindows: Record<string, boolean>;
+  errors: Record<string, Error | undefined>;
 }

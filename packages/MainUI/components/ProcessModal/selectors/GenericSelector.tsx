@@ -1,5 +1,5 @@
 import { getFieldReference } from "@/utils";
-import { FieldType, type ProcessParameter } from "@workspaceui/etendohookbinder/src/api/types";
+import { FieldType, type ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { useFormContext } from "react-hook-form";
 import RadioSelector from "./RadioSelector";
 

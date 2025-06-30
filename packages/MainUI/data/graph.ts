@@ -1,7 +1,7 @@
 // biome-ignore lint/style/useNodejsImportProtocol: <explanation>
 import EventEmitter from "events";
 import { logger } from "@/utils/logger";
-import type { EntityData, Tab } from "@workspaceui/etendohookbinder/src/api/types";
+import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 
 type GraphNode<T> = {
   value: T;
@@ -22,7 +22,7 @@ export type GraphEventListener<K extends keyof GraphEvents> = (...args: GraphEve
 export type GraphEventNames = keyof GraphEvents;
 
 export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
-  private nodes: Map<string, GraphNode<T>>;
+  public nodes: Map<string, GraphNode<T>>;
   private activeLevels: number[];
 
   public constructor(tabs: T[]) {
@@ -82,7 +82,6 @@ export class Graph<T extends Tab> extends EventEmitter<GraphEvents> {
     if (!rootNode) throw new Error("Root node not found");
 
     const printNode = (node: GraphNode<T>, level: number) => {
-      console.log(" ".repeat(level * 2) + node.value.name);
       for (const child of node.neighbors) {
         printNode(child, level + 1);
       }
