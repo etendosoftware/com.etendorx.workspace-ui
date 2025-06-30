@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
+import { WINDOW_PREFIX } from "@/utils/url/constants";
 
 export type FormMode = "new" | "edit" | "view";
 export type TabMode = "table" | "form";
@@ -28,7 +29,7 @@ export interface WindowState {
 const extractWindowIds = (searchParams: URLSearchParams): Set<string> => {
   const windowIds = new Set<string>();
   for (const [key] of searchParams.entries()) {
-    if (key.startsWith("w_")) {
+    if (key.startsWith(WINDOW_PREFIX)) {
       windowIds.add(key.slice(2));
     }
   }
@@ -76,7 +77,7 @@ const processTabParameters = (
 };
 
 const createWindowState = (windowId: string, searchParams: URLSearchParams): WindowState => {
-  const isActive = searchParams.get(`w_${windowId}`) === "active";
+  const isActive = searchParams.get(`${WINDOW_PREFIX}${windowId}`) === "active";
   const formRecordId = searchParams.get(`r_${windowId}`) || undefined;
   const formMode = (searchParams.get(`fm_${windowId}`) as FormMode) || undefined;
   const order = Number.parseInt(searchParams.get(`o_${windowId}`) || "1", 10);
@@ -111,7 +112,7 @@ const setWindowParameters = (params: URLSearchParams, window: WindowState): void
     title,
   } = window;
 
-  params.set(`w_${windowId}`, isActive ? "active" : "inactive");
+  params.set(`${WINDOW_PREFIX}${windowId}`, isActive ? "active" : "inactive");
   params.set(`o_${windowId}`, (order ?? 1).toString());
   params.set(`wi_${windowId}`, window_identifier);
 
@@ -168,7 +169,7 @@ export function useMultiWindowURL() {
     let active: WindowState | undefined;
 
     const currentPath = typeof window !== "undefined" ? window.location.pathname : "/";
-    const hasWindowParams = Array.from(searchParams.entries()).some(([key]) => key.startsWith("w_"));
+    const hasWindowParams = Array.from(searchParams.entries()).some(([key]) => key.startsWith(WINDOW_PREFIX));
     const isHome = currentPath === "/" && !hasWindowParams;
 
     const windowIds = extractWindowIds(searchParams);
