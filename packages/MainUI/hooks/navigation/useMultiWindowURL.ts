@@ -2,7 +2,18 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
-import { WINDOW_PREFIX } from "@/utils/url/constants";
+import {
+  WINDOW_PREFIX,
+  ORDER_PREFIX,
+  WINDOW_IDENTIFIER_PREFIX,
+  FORM_RECORD_ID_PREFIX,
+  FORM_MODE_PREFIX,
+  TITLE_PREFIX,
+  SELECTED_RECORD_PREFIX,
+  TAB_FORM_RECORD_ID_PREFIX,
+  TAB_MODE_PREFIX,
+  TAB_FORM_MODE_PREFIX,
+} from "@/utils/url/constants";
 
 export type FormMode = "new" | "edit" | "view";
 export type TabMode = "table" | "form";
@@ -56,19 +67,19 @@ const processTabParameters = (
       }
     };
 
-    processTabParameter(`s_${windowId}_`, (tabId, value) => {
+    processTabParameter(`${SELECTED_RECORD_PREFIX}${windowId}_`, (tabId, value) => {
       selectedRecords[tabId] = value;
     });
 
-    processTabParameter(`tf_${windowId}_`, (tabId, value) => {
+    processTabParameter(`${TAB_FORM_RECORD_ID_PREFIX}${windowId}_`, (tabId, value) => {
       tabFormStates[tabId] = { ...tabFormStates[tabId], recordId: value };
     });
 
-    processTabParameter(`tm_${windowId}_`, (tabId, value) => {
+    processTabParameter(`${TAB_MODE_PREFIX}${windowId}_`, (tabId, value) => {
       tabFormStates[tabId] = { ...tabFormStates[tabId], mode: value as TabMode };
     });
 
-    processTabParameter(`tfm_${windowId}_`, (tabId, value) => {
+    processTabParameter(`${TAB_FORM_MODE_PREFIX}${windowId}_`, (tabId, value) => {
       tabFormStates[tabId] = { ...tabFormStates[tabId], formMode: value as FormMode };
     });
   }
@@ -78,11 +89,11 @@ const processTabParameters = (
 
 const createWindowState = (windowId: string, searchParams: URLSearchParams): WindowState => {
   const isActive = searchParams.get(`${WINDOW_PREFIX}${windowId}`) === "active";
-  const formRecordId = searchParams.get(`r_${windowId}`) || undefined;
-  const formMode = (searchParams.get(`fm_${windowId}`) as FormMode) || undefined;
-  const order = Number.parseInt(searchParams.get(`o_${windowId}`) || "1", 10);
-  const window_identifier = searchParams.get(`wi_${windowId}`) || windowId;
-  const title = searchParams.get(`t_${windowId}`) || undefined;
+  const formRecordId = searchParams.get(`${FORM_RECORD_ID_PREFIX}${windowId}`) || undefined;
+  const formMode = (searchParams.get(`${FORM_MODE_PREFIX}${windowId}`) as FormMode) || undefined;
+  const order = Number.parseInt(searchParams.get(`${ORDER_PREFIX}${windowId}`) || "1", 10);
+  const window_identifier = searchParams.get(`${WINDOW_IDENTIFIER_PREFIX}${windowId}`) || windowId;
+  const title = searchParams.get(`${TITLE_PREFIX}${windowId}`) || undefined;
 
   const { selectedRecords, tabFormStates } = processTabParameters(searchParams, windowId);
 
@@ -113,34 +124,34 @@ const setWindowParameters = (params: URLSearchParams, window: WindowState): void
   } = window;
 
   params.set(`${WINDOW_PREFIX}${windowId}`, isActive ? "active" : "inactive");
-  params.set(`o_${windowId}`, (order ?? 1).toString());
-  params.set(`wi_${windowId}`, window_identifier);
+  params.set(`${ORDER_PREFIX}${windowId}`, (order ?? 1).toString());
+  params.set(`${WINDOW_IDENTIFIER_PREFIX}${windowId}`, window_identifier);
 
   if (formRecordId) {
-    params.set(`r_${windowId}`, formRecordId);
+    params.set(`${FORM_RECORD_ID_PREFIX}${windowId}`, formRecordId);
   }
   if (formMode) {
-    params.set(`fm_${windowId}`, formMode);
+    params.set(`${FORM_MODE_PREFIX}${windowId}`, formMode);
   }
   if (title) {
-    params.set(`t_${windowId}`, title);
+    params.set(`${TITLE_PREFIX}${windowId}`, title);
   }
 
   for (const [tabId, selectedRecordId] of Object.entries(selectedRecords)) {
     if (selectedRecordId) {
-      params.set(`s_${windowId}_${tabId}`, selectedRecordId);
+      params.set(`${SELECTED_RECORD_PREFIX}${windowId}_${tabId}`, selectedRecordId);
     }
   }
 
   for (const [tabId, tabState] of Object.entries(tabFormStates)) {
     if (tabState.recordId) {
-      params.set(`tf_${windowId}_${tabId}`, tabState.recordId);
+      params.set(`${TAB_FORM_RECORD_ID_PREFIX}${windowId}_${tabId}`, tabState.recordId);
     }
     if (tabState.mode && tabState.mode !== "table") {
-      params.set(`tm_${windowId}_${tabId}`, tabState.mode);
+      params.set(`${TAB_MODE_PREFIX}${windowId}_${tabId}`, tabState.mode);
     }
     if (tabState.formMode) {
-      params.set(`tfm_${windowId}_${tabId}`, tabState.formMode);
+      params.set(`${TAB_FORM_MODE_PREFIX}${windowId}_${tabId}`, tabState.formMode);
     }
   }
 };
