@@ -17,7 +17,7 @@ const AppBreadcrumb: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
   const { window } = useMetadataContext();
-  const { windowId, recordId } = useQueryParams<{ windowId: string; recordId: string }>();
+  const { windowId } = useQueryParams<{ windowId: string }>();
   const { navigateToHome } = useMultiWindowURL();
 
   const isNewRecord = useCallback(() => pathname.includes("/NewRecord"), [pathname]);
@@ -45,15 +45,10 @@ const AppBreadcrumb: React.FC = () => {
         id: ROUTE_IDS.NEW_RECORD,
         label: t("breadcrumb.newRecord"),
       });
-    } else if (recordId) {
-      items.push({
-        id: recordId,
-        label: String(recordId),
-      });
     }
 
     return items;
-  }, [windowId, window, isNewRecord, recordId, t, handleWindowClick]);
+  }, [windowId, window, isNewRecord, t, handleWindowClick]);
 
   const handleHomeClick = useCallback(() => {
     navigateToHome();
