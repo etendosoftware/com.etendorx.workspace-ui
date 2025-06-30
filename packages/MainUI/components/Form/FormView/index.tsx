@@ -47,6 +47,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const theme = useTheme();
   const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
   const [selectedTab, setSelectedTab] = useState<string>("");
+  const [isSucessfullEdit, setIsSucessfullEdit] = useState(false);
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const { graph } = useSelected();
@@ -193,6 +194,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       }
 
       showSuccessModal("Saved");
+      setIsSucessfullEdit(true);
     },
     [mode, graph, tab, activeWindow?.windowId, showSuccessModal, reset, initialState, setRecordId, setSelectedRecord]
   );
@@ -223,10 +225,15 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   );
 
   useEffect(() => {
-    if (recordId) {
+    if (recordId || isSucessfullEdit) {
       refetch();
+      setIsSucessfullEdit(false);
     }
-  }, [recordId, refetch, mode]);
+
+    return () => {
+      setIsSucessfullEdit(false);
+    };
+  }, [recordId, isSucessfullEdit, refetch, mode]);
 
   useEffect(() => {
     if (!availableFormData) return;
@@ -263,9 +270,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     registerActions(actions);
   }, [registerActions, handleSave, onReset, handleBack, handleNew, tab.id]);
 
-  if (loading || loadingFormInitialization) {
-    return <Spinner />;
-  }
+  const isLoading = loading || loadingFormInitialization;
 
   return (
     <FormProvider setValue={setValue} reset={reset} {...form}>
@@ -293,46 +298,49 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
             <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
           </div>
         </div>
+        {isLoading ? (
+          <Spinner />
+        ) : (
+          <div className="flex-grow space-y-2 overflow-auto p-2" ref={containerRef}>
+            {groups.map(([id, group]) => {
+              const sectionId = String(id || "_main");
 
-        <div className="flex-grow space-y-2 overflow-auto p-2" ref={containerRef}>
-          {groups.map(([id, group]) => {
-            const sectionId = String(id || "_main");
+              const hasVisibleFields = Object.values(group.fields).some((field) => {
+                if (!field.displayed) return false;
+                if (!field.displayLogicExpression) return true;
 
-            const hasVisibleFields = Object.values(group.fields).some((field) => {
-              if (!field.displayed) return false;
-              if (!field.displayLogicExpression) return true;
+                const compiledExpr = compileExpression(field.displayLogicExpression);
+                try {
+                  return compiledExpr(session, form.watch());
+                } catch (error) {
+                  console.warn("Error executing expression:", field.displayLogicExpression, error);
+                  return true;
+                }
+              });
 
-              const compiledExpr = compileExpression(field.displayLogicExpression);
-              try {
-                return compiledExpr(session, form.watch());
-              } catch (error) {
-                console.warn("Error executing expression:", field.displayLogicExpression, error);
-                return true;
+              if (!hasVisibleFields) {
+                return null;
               }
-            });
 
-            if (!hasVisibleFields) {
-              return null;
-            }
-
-            return (
-              <div key={sectionId} ref={handleSectionRef(id)}>
-                <Collapsible
-                  title={group.identifier}
-                  isExpanded={isSectionExpanded(id)}
-                  sectionId={sectionId}
-                  icon={getIconForGroup(group.identifier)}
-                  onToggle={(isOpen: boolean) => handleAccordionChange(id, isOpen)}>
-                  <div className="grid auto-rows-auto grid-cols-3 gap-4">
-                    {Object.entries(group.fields).map(([hqlName, field]) => (
-                      <BaseSelector field={field} key={hqlName} formMode={mode} />
-                    ))}
-                  </div>
-                </Collapsible>
-              </div>
-            );
-          })}
-        </div>
+              return (
+                <div key={sectionId} ref={handleSectionRef(id)}>
+                  <Collapsible
+                    title={group.identifier}
+                    isExpanded={isSectionExpanded(id)}
+                    sectionId={sectionId}
+                    icon={getIconForGroup(group.identifier)}
+                    onToggle={(isOpen: boolean) => handleAccordionChange(id, isOpen)}>
+                    <div className="grid auto-rows-auto grid-cols-3 gap-4">
+                      {Object.entries(group.fields).map(([hqlName, field]) => (
+                        <BaseSelector field={field} key={hqlName} formMode={mode} />
+                      ))}
+                    </div>
+                  </Collapsible>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </form>
     </FormProvider>
   );

@@ -4,18 +4,31 @@ import { IconButton } from "@workspaceui/componentlibrary/src/components";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
+import { useEffect, useState } from "react";
 
 export default function StatusBar({ fields }: { fields: Record<string, Field> }) {
+  const [isSaved, setIsSaved] = useState(false);
   const { t } = useTranslation();
   const { onBack, onSave } = useToolbarContext();
 
   const handleCloseRecord = async () => {
-    await onSave();
-    // Delay navigation to ensure UI updates complete before redirecting
-    setTimeout(() => {
-      onBack();
-    }, 100);
+    try {
+      await onSave();
+      setIsSaved(true);
+    } catch (error) {
+      console.error("Error saving record", error);
+    }
   };
+
+  useEffect(() => {
+    if (isSaved) {
+      onBack();
+    }
+
+    return () => {
+      setIsSaved(false);
+    };
+  }, [isSaved, onBack]);
 
   return (
     <div className="h-min flex items-center justify-between bg-gray-100/50 shadow px-4 py-3 rounded-xl">
