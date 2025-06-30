@@ -43,7 +43,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
   const { graph } = useSelected();
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
-  const { tab, parentTab, parentRecord } = useTabContext();
+  const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
   const tabId = tab.id;
   const parentId = String(parentRecord?.id ?? "");
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -103,7 +103,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     params: query,
     columns,
     searchQuery,
-    skip: !!parentTab && !parentRecord,
+    skip: parentTab ? Boolean(!parentRecord || (parentRecords && parentRecords.length !== 1)) : false,
   });
 
   const handleColumnFiltersChange = useCallback(
@@ -301,6 +301,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     registerActions({
       refresh: refetch,
       filter: toggleImplicitFilters,
+      save: async () => {},
     });
   }, [refetch, registerActions, toggleImplicitFilters]);
 

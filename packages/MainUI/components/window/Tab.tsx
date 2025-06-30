@@ -132,6 +132,12 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     };
   }, [graph, tab, handleClearChildren, windowId, getTabFormState]);
 
+  useEffect(() => {
+    if (currentRecordId === "new") {
+      graph.clearSelected(tab);
+    }
+  }, [currentRecordId, graph, tab]);
+
   const shouldShowForm = currentMode === "form" && !!currentRecordId;
   const formMode = currentFormMode === "new" ? FormMode.NEW : FormMode.EDIT;
 
