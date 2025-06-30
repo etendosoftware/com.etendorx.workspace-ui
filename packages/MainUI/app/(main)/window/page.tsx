@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import Loading from "@/components/loading";
-import { WindowTabs } from "@/components/NavigationTabs";
+import WindowTabs from "@/components/NavigationTabs/WindowTabs";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useQueryParams } from "@/hooks/useQueryParams";
