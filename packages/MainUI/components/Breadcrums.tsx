@@ -10,14 +10,15 @@ import { BREADCRUMB, ROUTE_IDS } from "../constants/breadcrumb";
 import { useMetadataContext } from "../hooks/useMetadataContext";
 import { useTranslation } from "../hooks/useTranslation";
 import { styles } from "./styles";
+import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 
 const AppBreadcrumb: React.FC = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
-  const navigate = router.push;
-  const { window, emptyWindowDataName } = useMetadataContext();
+  const { window } = useMetadataContext();
   const { windowId, recordId } = useQueryParams<{ windowId: string; recordId: string }>();
+  const { navigateToHome } = useMultiWindowURL();
 
   const isNewRecord = useCallback(() => pathname.includes("/NewRecord"), [pathname]);
 
@@ -55,9 +56,8 @@ const AppBreadcrumb: React.FC = () => {
   }, [windowId, window, isNewRecord, recordId, t, handleWindowClick]);
 
   const handleHomeClick = useCallback(() => {
-    navigate("/");
-    emptyWindowDataName();
-  }, [navigate, emptyWindowDataName]);
+    navigateToHome();
+  }, [navigateToHome]);
 
   return (
     <div style={styles.breadCrum}>
