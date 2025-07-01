@@ -41,16 +41,17 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
       {isFirst && (
         <Box sx={sx.iconContainer}>
           <Button
+            aria-label="Go back"
             sx={sx.iconButton}
             onClick={handleClick}
             onMouseEnter={handleMouseEnterOnIcon}
             onMouseLeave={handleMouseLeaveOnIcon}>
             {isIconHovered ? (
-              <IconButton className="w-10 h-10 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-baseline-0) hover:text-(--color-baseline-80)">
+              <IconButton className="w-10 h-10 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-baseline-0) hover:text-(--color-baseline-80)" aria-label="Go back">
                 <ArrowLeftIcon />
               </IconButton>
             ) : (
-              <IconButton className="w-10 h-10 text-[1.5rem] bg-(--color-transparent-neutral-5)">📁</IconButton>
+              <IconButton className="w-10 h-10 text-[1.5rem] bg-(--color-transparent-neutral-5)" aria-label="Go back">📁</IconButton>
             )}
           </Button>
         </Box>
@@ -84,7 +85,9 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
           onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
             e.preventDefault();
             item.onClick?.();
-          }}>
+          }}
+          aria-label="Go back"
+          aria-current="page">
           <Typography noWrap sx={sx.breadcrumbTypography}>
             {item.label}
           </Typography>
