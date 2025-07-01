@@ -26,16 +26,19 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { navigateToHome, clearTabFormState, getTabFormState } = useMultiWindowURL();
   const { graph } = useSelected();
 
+  const allTabsFormatted = useMemo(() => allTabs.flat(), [allTabs]);
+  const currentTab = useMemo(() => allTabsFormatted.find((tab) => tab.window === windowId), [allTabsFormatted, windowId]);
+  
   const isNewRecord = useCallback(() => pathname.includes("/NewRecord"), [pathname]);
 
   const handleWindowClick = useCallback(
     (windowId: string) => {
       const allTabsFormatted = allTabs.flat();
       const currentTab = allTabsFormatted.find((tab) => tab.window === windowId);
-      if (windowId && currentTab?.id) {
+      if (windowId && currentTab && currentTab.id) {
         clearTabFormState(windowId, currentTab.id);
       }
-      if (currentTab) {
+      if (currentTab && graph) {
         graph.clear(currentTab);
         graph.clearSelected(currentTab);
       }
@@ -61,8 +64,6 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
       });
     }
 
-    const allTabsFormatted = allTabs.flat();
-    const currentTab = allTabsFormatted.find((tab) => tab.window === windowId);
     if (currentTab) {
       const tabFormState = windowId ? getTabFormState(windowId, currentTab.id) : undefined;
       const currentRecordId = tabFormState?.recordId || "";
@@ -76,7 +77,7 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
     }
 
     return items;
-  }, [windowId, window, allTabs, isNewRecord, t, handleWindowClick, getTabFormState]);
+  }, [windowId, window, currentTab, isNewRecord, t, handleWindowClick, getTabFormState]);
 
   const handleHomeClick = useCallback(() => {
     navigateToHome();
@@ -84,7 +85,7 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
 
   return (
     <div style={styles.breadCrum}>
-      <Breadcrumb onHomeClick={handleHomeClick} items={breadcrumbItems} />
+      <Breadcrumb onHomeClick={handleHomeClick} items={breadcrumbItems || []} />
     </div>
   );
 };
