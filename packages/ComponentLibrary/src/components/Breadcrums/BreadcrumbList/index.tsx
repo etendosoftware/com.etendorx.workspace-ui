@@ -7,7 +7,7 @@ import { useStyle } from "../styles";
 import type { BreadcrumbListProps } from "../types";
 import BreadcrumbItem from "../BreadcrumbItem/index.tsx";
 
-const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen }) => {
+const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, handleHomeNavigation }) => {
   const [middleAnchorEl, setMiddleAnchorEl] = useState<HTMLButtonElement | null>(null);
   const theme = useTheme();
   const { sx } = useStyle();
@@ -31,13 +31,19 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen }
         item={item}
         isLast={index === items.length - 1}
         handleActionMenuOpen={handleActionMenuOpen}
+        handleHomeNavigation={handleHomeNavigation}
       />
     ));
   }
 
   return (
     <>
-      <BreadcrumbItem item={firstItem} isLast={false} handleActionMenuOpen={handleActionMenuOpen} />
+      <BreadcrumbItem
+        item={firstItem}
+        isLast={false}
+        handleActionMenuOpen={handleActionMenuOpen}
+        handleHomeNavigation={handleHomeNavigation}
+      />
       {middleItems.length > 0 && (
         <Box sx={sx.breadcrumbItem}>
           <IconButton onClick={handleMiddleMenuOpen}>
@@ -58,7 +64,12 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen }
           </Menu>
         </Box>
       )}
-      <BreadcrumbItem item={lastItem} isLast={true} handleActionMenuOpen={handleActionMenuOpen} />
+      <BreadcrumbItem
+        item={lastItem}
+        isLast={true}
+        handleActionMenuOpen={handleActionMenuOpen}
+        handleHomeNavigation={handleHomeNavigation}
+      />
     </>
   );
 };

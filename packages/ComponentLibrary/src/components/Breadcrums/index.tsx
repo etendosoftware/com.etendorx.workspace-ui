@@ -7,7 +7,7 @@ import { useStyle } from "./styles";
 import type { BreadcrumbAction, BreadcrumbProps } from "./types";
 import BreadcrumbList from "./BreadcrumbList/index.tsx";
 
-const Breadcrumb: FC<BreadcrumbProps> = ({ items, separator }) => {
+const Breadcrumb: FC<BreadcrumbProps> = ({ items, separator, onHomeClick }) => {
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
   const [currentActions, setCurrentActions] = useState<BreadcrumbAction[]>([]);
@@ -32,14 +32,6 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, separator }) => {
     setAnchorEl(null);
   }, []);
 
-  // const handleClick = useCallback(
-  //   (e: { preventDefault: () => void }) => {
-  //     e.preventDefault();
-  //     onHomeClick();
-  //   },
-  //   [onHomeClick]
-  // );
-
   const handleToggle = useCallback((actionId: string) => {
     setToggleStates((prevStates) => ({
       ...prevStates,
@@ -52,7 +44,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, separator }) => {
   return (
     <Box sx={sx.container}>
       <Breadcrumbs separator={activeSeparator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
-        <BreadcrumbList items={items} handleActionMenuOpen={handleActionMenuOpen} />
+        <BreadcrumbList items={items} handleActionMenuOpen={handleActionMenuOpen} handleHomeNavigation={onHomeClick} />
       </Breadcrumbs>
       <Menu anchorEl={anchorEl} onClose={handleActionMenuClose}>
         {currentActions.map((action) => (

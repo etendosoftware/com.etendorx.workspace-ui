@@ -7,7 +7,7 @@ import { useStyle } from "../styles";
 import type { BreadcrumbItemProps } from "../types";
 import { useState, useCallback } from "react";
 
-const BreadcrumbItem: FC<BreadcrumbItemProps> = ({ item, isLast, handleActionMenuOpen }) => {
+const BreadcrumbItem: FC<BreadcrumbItemProps> = ({ item, isLast, handleActionMenuOpen, handleHomeNavigation }) => {
   const [isIconHovered, setIsIconHovered] = useState<boolean>(false);
   const theme = useTheme();
   const { sx } = useStyle();
@@ -15,14 +15,22 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({ item, isLast, handleActionMen
   const handleMouseEnterOnIcon = useCallback(() => setIsIconHovered(true), []);
   const handleMouseLeaveOnIcon = useCallback(() => setIsIconHovered(false), []);
 
-  const handleClick = useCallback(() => {
-    console.log("handleClick");
-  }, []);
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      handleHomeNavigation();
+    },
+    [handleHomeNavigation]
+  );
 
   return (
     <Box key={item.id} sx={sx.breadcrumbItem}>
       <Box sx={sx.iconContainer}>
-        <Button onClick={handleClick} onMouseEnter={handleMouseEnterOnIcon} onMouseLeave={handleMouseLeaveOnIcon}>
+        <Button
+          sx={sx.iconButton}
+          onClick={handleClick}
+          onMouseEnter={handleMouseEnterOnIcon}
+          onMouseLeave={handleMouseLeaveOnIcon}>
           {isIconHovered ? (
             <IconButton className="w-10 h-10 bg-(--color-baseline-0) hover:bg-(--color-baseline-0) hover:text-(--color-baseline-80)">
               <ArrowLeftIcon />
@@ -58,7 +66,7 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({ item, isLast, handleActionMen
       ) : (
         <Link
           href="#"
-          onClick={(e) => {
+          onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
             e.preventDefault();
             item.onClick?.();
           }}

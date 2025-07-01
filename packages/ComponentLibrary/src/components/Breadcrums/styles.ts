@@ -32,7 +32,7 @@ export const useStyle = () => {
         },
         breadcrumbItem: {
           height: "3rem",
-          padding: "0 1rem",
+          padding: "0 1rem 0 0",
           borderRadius: "6.5rem",
           maxWidth: "100%",
           display: "inline-flex",
@@ -55,6 +55,14 @@ export const useStyle = () => {
         iconContainer: {
           display: "flex",
           alignItems: "center",
+        },
+        iconButton: {
+          padding: 0,
+          minWidth: "auto",
+          "&:hover": {
+            backgroundColor: "transparent",
+            border: "none",
+          },
         },
         actionButton: {
           marginLeft: "0.5rem",

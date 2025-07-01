@@ -22,10 +22,12 @@ export interface BreadcrumbProps {
 export interface BreadcrumbListProps {
   items: BreadcrumbItem[];
   handleActionMenuOpen: (event: React.MouseEvent<HTMLButtonElement>, actions: BreadcrumbAction[]) => void;
+  handleHomeNavigation: () => void;
 }
 
 export interface BreadcrumbItemProps {
   item: BreadcrumbItem;
   isLast: boolean;
   handleActionMenuOpen: (event: React.MouseEvent<HTMLButtonElement>, actions: BreadcrumbAction[]) => void;
+  handleHomeNavigation: () => void;
 }
