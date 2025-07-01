@@ -9,8 +9,8 @@ import { useState, useCallback } from "react";
 
 const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
   item,
-  isFirst,
-  isLast,
+  position,
+  breadcrumbsSize,
   handleActionMenuOpen,
   handleHomeNavigation,
 }) => {
@@ -18,15 +18,22 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
   const theme = useTheme();
   const { sx } = useStyle();
 
+  const isFirst = position === 0;
+  const isLast = position === breadcrumbsSize - 1;
+
   const handleMouseEnterOnIcon = useCallback(() => setIsIconHovered(true), []);
   const handleMouseLeaveOnIcon = useCallback(() => setIsIconHovered(false), []);
 
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
+      if (breadcrumbsSize > 1 && item?.onClick) {
+        item.onClick();
+        return;
+      }
       handleHomeNavigation();
     },
-    [handleHomeNavigation]
+    [handleHomeNavigation, breadcrumbsSize, item]
   );
 
   return (

@@ -31,8 +31,8 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, 
           <BreadcrumbItem
             key={item.id}
             item={item}
-            isFirst={index === 0}
-            isLast={index === items.length - 1}
+            position={index}
+            breadcrumbsSize={items.length}
             handleActionMenuOpen={handleActionMenuOpen}
             handleHomeNavigation={handleHomeNavigation}
           />
@@ -45,8 +45,8 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, 
     <Breadcrumbs separator={separator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
       <BreadcrumbItem
         item={firstItem}
-        isFirst={true}
-        isLast={false}
+        position={0}
+        breadcrumbsSize={items.length}
         handleActionMenuOpen={handleActionMenuOpen}
         handleHomeNavigation={handleHomeNavigation}
       />
@@ -72,8 +72,8 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, 
       )}
       <BreadcrumbItem
         item={lastItem}
-        isFirst={false}
-        isLast={true}
+        position={items.length - 1}
+        breadcrumbsSize={items.length}
         handleActionMenuOpen={handleActionMenuOpen}
         handleHomeNavigation={handleHomeNavigation}
       />

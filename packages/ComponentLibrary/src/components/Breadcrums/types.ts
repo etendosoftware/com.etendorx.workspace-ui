@@ -28,8 +28,8 @@ export interface BreadcrumbListProps {
 
 export interface BreadcrumbItemProps {
   item: BreadcrumbItem;
-  isFirst: boolean;
-  isLast: boolean;
+  breadcrumbsSize: number;
+  position: number;
   handleActionMenuOpen: (event: React.MouseEvent<HTMLButtonElement>, actions: BreadcrumbAction[]) => void;
   handleHomeNavigation: () => void;
 }
