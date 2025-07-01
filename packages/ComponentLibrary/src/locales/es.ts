@@ -221,6 +221,9 @@ const es = {
       placeholder: "Seleccione una opción",
     },
   },
+  primaryTabs: {
+    closeWindow: "Cerrar ventana",
+  },
 };
 
 export default es;

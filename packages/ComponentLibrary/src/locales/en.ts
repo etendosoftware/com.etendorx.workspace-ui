@@ -217,6 +217,9 @@ const en = {
       placeholder: "Select an option",
     },
   },
+  primaryTabs: {
+    closeWindow: "Close window",
+  },
 };
 
 export default en;
