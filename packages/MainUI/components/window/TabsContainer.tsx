@@ -34,7 +34,7 @@ export default function TabsContainer() {
 
   return (
     <div className="flex flex-col w-full h-full max-h-full">
-      <AppBreadcrumb />
+      <AppBreadcrumb allTabs={groupedTabs} />
       {groupedTabs.map((tabs, index) => {
         const isTopGroup = index === firstExpandedIndex && firstExpandedIndex !== -1;
 
