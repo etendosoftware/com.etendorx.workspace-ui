@@ -1,4 +1,4 @@
-import { Box, Button, Link, Typography, useTheme } from "@mui/material";
+import { Box, Button, Typography, useTheme } from "@mui/material";
 import type { FC } from "react";
 import ChevronDown from "../../../assets/icons/chevron-down.svg";
 import ArrowLeftIcon from "../../../assets/icons/arrow-left.svg";
@@ -7,7 +7,13 @@ import { useStyle } from "../styles";
 import type { BreadcrumbItemProps } from "../types";
 import { useState, useCallback } from "react";
 
-const BreadcrumbItem: FC<BreadcrumbItemProps> = ({ item, isLast, handleActionMenuOpen, handleHomeNavigation }) => {
+const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
+  item,
+  isFirst,
+  isLast,
+  handleActionMenuOpen,
+  handleHomeNavigation,
+}) => {
   const [isIconHovered, setIsIconHovered] = useState<boolean>(false);
   const theme = useTheme();
   const { sx } = useStyle();
@@ -25,21 +31,23 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({ item, isLast, handleActionMen
 
   return (
     <Box key={item.id} sx={sx.breadcrumbItem}>
-      <Box sx={sx.iconContainer}>
-        <Button
-          sx={sx.iconButton}
-          onClick={handleClick}
-          onMouseEnter={handleMouseEnterOnIcon}
-          onMouseLeave={handleMouseLeaveOnIcon}>
-          {isIconHovered ? (
-            <IconButton className="w-10 h-10 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-baseline-0) hover:text-(--color-baseline-80)">
-              <ArrowLeftIcon />
-            </IconButton>
-          ) : (
-            <IconButton className="w-10 h-10 text-[1.5rem] bg-(--color-transparent-neutral-5)">📁</IconButton>
-          )}
-        </Button>
-      </Box>
+      {isFirst && (
+        <Box sx={sx.iconContainer}>
+          <Button
+            sx={sx.iconButton}
+            onClick={handleClick}
+            onMouseEnter={handleMouseEnterOnIcon}
+            onMouseLeave={handleMouseLeaveOnIcon}>
+            {isIconHovered ? (
+              <IconButton className="w-10 h-10 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-baseline-0) hover:text-(--color-baseline-80)">
+                <ArrowLeftIcon />
+              </IconButton>
+            ) : (
+              <IconButton className="w-10 h-10 text-[1.5rem] bg-(--color-transparent-neutral-5)">📁</IconButton>
+            )}
+          </Button>
+        </Box>
+      )}
       {isLast ? (
         <>
           <Typography
@@ -64,17 +72,16 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({ item, isLast, handleActionMen
             })()}
         </>
       ) : (
-        <Link
-          href="#"
-          onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
+        <Button
+          sx={sx.textButton}
+          onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
             e.preventDefault();
             item.onClick?.();
-          }}
-          sx={sx.link}>
+          }}>
           <Typography noWrap sx={sx.breadcrumbTypography}>
             {item.label}
           </Typography>
-        </Link>
+        </Button>
       )}
     </Box>
   );

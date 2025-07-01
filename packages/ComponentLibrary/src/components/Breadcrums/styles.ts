@@ -44,13 +44,15 @@ export const useStyle = () => {
           cursor: "pointer",
           color: theme.palette.baselineColor.neutral[100],
         },
-        link: {
+        textButton: {
           textDecoration: "none",
           color: "inherit",
-          display: "flex",
-          alignItems: "center",
-          height: "100%",
-          width: "100%",
+          padding: 0,
+          minWidth: "auto",
+          "&:hover": {
+            backgroundColor: "transparent",
+            border: "none",
+          },
         },
         iconContainer: {
           display: "flex",

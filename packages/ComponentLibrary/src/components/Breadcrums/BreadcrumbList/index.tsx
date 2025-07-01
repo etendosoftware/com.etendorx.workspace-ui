@@ -29,6 +29,7 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, 
       <BreadcrumbItem
         key={item.id}
         item={item}
+        isFirst={index === 0}
         isLast={index === items.length - 1}
         handleActionMenuOpen={handleActionMenuOpen}
         handleHomeNavigation={handleHomeNavigation}
@@ -40,6 +41,7 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, 
     <>
       <BreadcrumbItem
         item={firstItem}
+        isFirst={true}
         isLast={false}
         handleActionMenuOpen={handleActionMenuOpen}
         handleHomeNavigation={handleHomeNavigation}
@@ -66,6 +68,7 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, 
       )}
       <BreadcrumbItem
         item={lastItem}
+        isFirst={false}
         isLast={true}
         handleActionMenuOpen={handleActionMenuOpen}
         handleHomeNavigation={handleHomeNavigation}
