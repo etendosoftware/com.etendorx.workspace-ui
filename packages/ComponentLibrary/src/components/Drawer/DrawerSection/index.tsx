@@ -25,6 +25,8 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     const toggleFunctions = useRef<ToggleFunctions>({});
     const popperRef = useRef<HTMLDivElement>(null);
 
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     const [localExpanded, setLocalExpanded] = useState(isSelected || findActive(windowId, item.children));
 
     const expanded = Boolean(externalExpanded || localExpanded);
@@ -61,20 +63,61 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
       [handleNestedToggle]
     );
 
+    const handleMouseEnter = useCallback(() => {
+      if (!open && hasChildren) {
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+        }
+
+        hoverTimeoutRef.current = setTimeout(() => {
+          setPopperOpen(true);
+        }, 600);
+      }
+    }, [open, hasChildren]);
+
+    const handleMouseLeave = useCallback(() => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = null;
+      }
+
+      hoverTimeoutRef.current = setTimeout(() => {
+        setPopperOpen(false);
+      }, 300);
+    }, []);
+
+    const handlePopperMouseEnter = useCallback(() => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = null;
+      }
+    }, []);
+
+    const handlePopperMouseLeave = useCallback(() => {
+      hoverTimeoutRef.current = setTimeout(() => {
+        setPopperOpen(false);
+      }, 100);
+    }, []);
+
     const handleClick = useCallback(
       (event: React.MouseEvent<HTMLElement>) => {
         event.stopPropagation();
-        if (!open) {
-          setPopperOpen((prev) => !prev);
-        } else if (hasChildren && isExpandable) {
-          const newExpandedState = !expanded;
-          setLocalExpanded(newExpandedState);
-          if (parentId) {
-            handleNestedToggle(item.id);
+
+        if (open) {
+          if (hasChildren && isExpandable) {
+            const newExpandedState = !expanded;
+            setLocalExpanded(newExpandedState);
+            if (parentId) {
+              handleNestedToggle(item.id);
+            }
+            onToggleExpand();
+          } else {
+            handleItemClick(item);
           }
-          onToggleExpand();
         } else {
-          handleItemClick(item);
+          if (!hasChildren) {
+            handleItemClick(item);
+          }
         }
       },
       [open, hasChildren, isExpandable, expanded, parentId, onToggleExpand, handleNestedToggle, item, handleItemClick]
@@ -131,8 +174,21 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
       }
     }, [open]);
 
+    useEffect(() => {
+      return () => {
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+        }
+      };
+    }, []);
+
     return (
-      <div className={sectionClasses} aria-expanded={expanded} onKeyDown={handleKeyDown}>
+      <div
+        className={sectionClasses}
+        aria-expanded={expanded}
+        onKeyDown={handleKeyDown}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}>
         <MenuTitle
           item={item}
           onClick={handleClick}
@@ -144,7 +200,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
         {hasChildren && open && (
           <div
             className={`overflow-hidden transition-all duration-300 ease-in-out 
-              ${shouldShowChildren ? "max-h-[1000px] opacity-100 transform translate-y-0" : "max-h-0 opacity-0 transform -translate-y-2"}`}>
+              ${shouldShowChildren ? "opacity-100 transform translate-y-0" : "max-h-0 opacity-0 transform -translate-y-2"}`}>
             {item.children?.map((subitem) => (
               <DrawerSection
                 key={subitem.id}
@@ -168,11 +224,14 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
             className={`
               fixed bg-white z-50 ml-2 rounded-xl shadow-lg
               transition-all duration-1000 ease-out origin-left
+              max-h-[20rem] overflow-y-auto hide-scrollbar
               ${popperOpen ? "opacity-100 translate-x-0" : "opacity-0 pointer-events-none -translate-x-2"}`}
             style={{
               left: "3.5rem",
               top: popperRef.current ? popperRef.current.getBoundingClientRect().top : "auto",
-            }}>
+            }}
+            onMouseEnter={handlePopperMouseEnter}
+            onMouseLeave={handlePopperMouseLeave}>
             <CustomClickAwayListener onClickAway={handleClose}>
               <div className="p-2 min-w-[240px]">
                 <MenuTitle
