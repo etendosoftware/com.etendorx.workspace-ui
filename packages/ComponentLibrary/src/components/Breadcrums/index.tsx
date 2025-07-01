@@ -1,19 +1,17 @@
 import { Box, Breadcrumbs, Link, MenuItem, Typography, useTheme } from "@mui/material";
 import { type FC, useCallback, useMemo, useState } from "react";
 import ArrowLeftIcon from "../../assets/icons/arrow-left.svg";
-import ChevronDown from "../../assets/icons/chevron-down.svg";
 import NavigateNextIcon from "../../assets/icons/chevron-right.svg";
-import MoreHorizIcon from "../../assets/icons/more-horizontal.svg";
 import IconButton from "../IconButton";
 import Menu from "../Menu";
 import ToggleChip from "../Toggle/ToggleChip";
 import { useStyle } from "./styles";
-import type { BreadcrumbAction, BreadcrumbItem, BreadcrumbProps } from "./types";
+import type { BreadcrumbAction, BreadcrumbProps } from "./types";
+import BreadcrumbList from "./BreadcrumbList/index.tsx";
 
 const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, homeText = "Home", separator }) => {
   const [isHomeHovered, setIsHomeHovered] = useState<boolean>(false);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-  const [middleAnchorEl, setMiddleAnchorEl] = useState<HTMLButtonElement | null>(null);
 
   const [currentActions, setCurrentActions] = useState<BreadcrumbAction[]>([]);
   const [toggleStates, setToggleStates] = useState<Record<string, boolean>>({});
@@ -38,14 +36,6 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
 
   const handleActionMenuClose = useCallback(() => {
     setAnchorEl(null);
-  }, []);
-
-  const handleMiddleMenuOpen = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    setMiddleAnchorEl(event.currentTarget);
-  }, []);
-
-  const handleMiddleMenuClose = useCallback(() => {
-    setMiddleAnchorEl(null);
   }, []);
 
   const handleClick = useCallback(
@@ -74,102 +64,6 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
     return <IconButton className="w-10 h-10 text-[1.5rem] bg-(--color-transparent-neutral-5)">{homeIcon}</IconButton>;
   }, [homeIcon, isHomeHovered]);
 
-  const renderBreadcrumbItem = useCallback(
-    (item: BreadcrumbItem, isLast: boolean) => (
-      <Box key={item.id} sx={sx.breadcrumbItem}>
-        {isLast ? (
-          <>
-            <Typography
-              noWrap
-              sx={sx.lastItemTypography}
-              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                if (item.actions && item.actions.length > 0) {
-                  handleActionMenuOpen(e, item.actions);
-                }
-              }}>
-              {item.label}
-            </Typography>
-            {item.actions &&
-              item.actions.length > 0 &&
-              (() => {
-                const actions = item.actions;
-                return (
-                  <IconButton onClick={(e) => handleActionMenuOpen(e, actions)}>
-                    <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />
-                  </IconButton>
-                );
-              })()}
-          </>
-        ) : (
-          <Link
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              item.onClick?.();
-            }}
-            sx={sx.link}>
-            <Typography noWrap sx={sx.breadcrumbTypography}>
-              {item.label}
-            </Typography>
-          </Link>
-        )}
-      </Box>
-    ),
-    [
-      handleActionMenuOpen,
-      sx.breadcrumbItem,
-      sx.breadcrumbTypography,
-      sx.lastItemTypography,
-      sx.link,
-      theme.palette.baselineColor.neutral,
-    ]
-  );
-
-  const renderBreadcrumbItems = useMemo(() => {
-    if (items.length <= 2) {
-      return items.map((item, index) => renderBreadcrumbItem(item, index === items.length - 1));
-    }
-    const firstItem = items[0];
-    const lastItem = items[items.length - 1];
-    const middleItems = items.slice(1, -1);
-
-    return (
-      <>
-        {renderBreadcrumbItem(firstItem, false)}
-        {middleItems.length > 0 && (
-          <Box sx={sx.breadcrumbItem}>
-            <IconButton onClick={handleMiddleMenuOpen}>
-              <MoreHorizIcon fill={theme.palette.baselineColor.neutral[80]} />
-            </IconButton>
-            <Menu anchorEl={middleAnchorEl} onClose={handleMiddleMenuClose}>
-              {middleItems.map((item) => (
-                <MenuItem
-                  key={item.id}
-                  onClick={() => {
-                    item.onClick?.();
-                    handleMiddleMenuClose();
-                  }}
-                  sx={sx.menuItem}>
-                  {item.label}
-                </MenuItem>
-              ))}
-            </Menu>
-          </Box>
-        )}
-        {renderBreadcrumbItem(lastItem, true)}
-      </>
-    );
-  }, [
-    handleMiddleMenuClose,
-    handleMiddleMenuOpen,
-    items,
-    middleAnchorEl,
-    renderBreadcrumbItem,
-    sx.breadcrumbItem,
-    sx.menuItem,
-    theme.palette.baselineColor.neutral,
-  ]);
-
   const activeSeparator = separator ?? defaultSeparator;
 
   return (
@@ -183,7 +77,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, onHomeClick, homeIcon = null, 
             {homeText}
           </Typography>
         </Box>
-        {renderBreadcrumbItems}
+        <BreadcrumbList items={items} handleActionMenuOpen={handleActionMenuOpen} />
       </Breadcrumbs>
       <Menu anchorEl={anchorEl} onClose={handleActionMenuClose}>
         {currentActions.map((action) => (
