@@ -6,7 +6,7 @@ import type { BreadcrumbItem } from "@workspaceui/componentlibrary/src/component
 import { usePathname, useRouter } from "next/navigation";
 import type React from "react";
 import { useCallback, useMemo } from "react";
-import { BREADCRUMB, ROUTE_IDS } from "../constants/breadcrumb";
+import { ROUTE_IDS } from "../constants/breadcrumb";
 import { useMetadataContext } from "../hooks/useMetadataContext";
 import { useTranslation } from "../hooks/useTranslation";
 import { styles } from "./styles";
@@ -56,12 +56,7 @@ const AppBreadcrumb: React.FC = () => {
 
   return (
     <div style={styles.breadCrum}>
-      <Breadcrumb
-        items={breadcrumbItems}
-        onHomeClick={handleHomeClick}
-        homeText={t("breadcrumb.home")}
-        homeIcon={BREADCRUMB.HOME.ICON}
-      />
+      <Breadcrumb onHomeClick={handleHomeClick} items={breadcrumbItems} />
     </div>
   );
 };
