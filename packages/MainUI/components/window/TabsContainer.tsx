@@ -7,6 +7,7 @@ import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useSelected } from "@/hooks/useSelected";
 import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
 import { useTranslation } from "@/hooks/useTranslation";
+import AppBreadcrumb from "@/components/Breadcrums";
 
 export default function TabsContainer() {
   const { activeLevels, clearAllStates } = useSelected();
@@ -33,6 +34,7 @@ export default function TabsContainer() {
 
   return (
     <div className="flex flex-col w-full h-full max-h-full">
+      <AppBreadcrumb />
       {groupedTabs.map((tabs, index) => {
         const isTopGroup = index === firstExpandedIndex && firstExpandedIndex !== -1;
 
