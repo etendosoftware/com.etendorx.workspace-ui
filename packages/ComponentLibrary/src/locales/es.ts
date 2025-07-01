@@ -11,6 +11,7 @@ const es = {
     edit: "Editar",
     loading: "Cargando...",
     loadingFormData: "Cargando información del formulario...",
+    loadingWindowContent: "Cargando contenido de la ventana...",
     retry: "Reintentar",
     processes: "Procesos disponibles",
     clear: "Limpiar Seleccion",
@@ -92,6 +93,10 @@ const es = {
     selectionError: {
       title: "No hay registro superior seleccionado.",
       description: "Selecciona un registro en la pestaña principal para ver la información relacionada.",
+    },
+    windowNotFound: {
+      title: "Ventana no encontrada",
+      description: "La ventana solicitada no fue encontrada",
     },
   },
   modal: {
