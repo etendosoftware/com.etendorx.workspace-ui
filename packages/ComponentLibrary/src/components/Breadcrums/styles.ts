@@ -41,7 +41,6 @@ export const useStyle = () => {
         lastItemTypography: {
           fontSize: "1.375rem",
           fontWeight: "600",
-          cursor: "pointer",
           color: theme.palette.baselineColor.neutral[100],
         },
         textButton: {

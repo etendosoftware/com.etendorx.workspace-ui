@@ -23,7 +23,7 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const pathname = usePathname();
   const { window } = useMetadataContext();
   const { windowId } = useQueryParams<{ windowId: string }>();
-  const { navigateToHome, clearTabFormState } = useMultiWindowURL();
+  const { navigateToHome, clearTabFormState, getTabFormState } = useMultiWindowURL();
   const { graph } = useSelected();
 
   const isNewRecord = useCallback(() => pathname.includes("/NewRecord"), [pathname]);
@@ -61,8 +61,22 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
       });
     }
 
+    const allTabsFormatted = allTabs.flat();
+    const currentTab = allTabsFormatted.find((tab) => tab.window === windowId);
+    if (currentTab) {
+      const tabFormState = windowId ? getTabFormState(windowId, currentTab.id) : undefined;
+      const currentRecordId = tabFormState?.recordId || "";
+
+      if (currentRecordId) {
+        items.push({
+          id: currentRecordId.toString(),
+          label: currentRecordId.toString(),
+        });
+      }
+    }
+
     return items;
-  }, [windowId, window, isNewRecord, t, handleWindowClick]);
+  }, [windowId, window, allTabs, isNewRecord, t, handleWindowClick, getTabFormState]);
 
   const handleHomeClick = useCallback(() => {
     navigateToHome();
