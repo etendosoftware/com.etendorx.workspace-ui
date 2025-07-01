@@ -23,6 +23,7 @@ export interface BreadcrumbListProps {
   items: BreadcrumbItem[];
   handleActionMenuOpen: (event: React.MouseEvent<HTMLButtonElement>, actions: BreadcrumbAction[]) => void;
   handleHomeNavigation: () => void;
+  separator?: React.ReactNode;
 }
 
 export interface BreadcrumbItemProps {

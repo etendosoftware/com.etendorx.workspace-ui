@@ -1,4 +1,4 @@
-import { Box, MenuItem, useTheme } from "@mui/material";
+import { Box, Breadcrumbs, MenuItem, useTheme } from "@mui/material";
 import { type FC, useCallback, useMemo, useState } from "react";
 import MoreHorizIcon from "../../../assets/icons/more-horizontal.svg";
 import IconButton from "../../IconButton";
@@ -7,7 +7,7 @@ import { useStyle } from "../styles";
 import type { BreadcrumbListProps } from "../types";
 import BreadcrumbItem from "../BreadcrumbItem/index.tsx";
 
-const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, handleHomeNavigation }) => {
+const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, handleHomeNavigation, separator }) => {
   const [middleAnchorEl, setMiddleAnchorEl] = useState<HTMLButtonElement | null>(null);
   const theme = useTheme();
   const { sx } = useStyle();
@@ -25,20 +25,24 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, 
   const middleItems = useMemo(() => items.slice(1, -1), [items]);
 
   if (items.length <= 2) {
-    return items.map((item, index) => (
-      <BreadcrumbItem
-        key={item.id}
-        item={item}
-        isFirst={index === 0}
-        isLast={index === items.length - 1}
-        handleActionMenuOpen={handleActionMenuOpen}
-        handleHomeNavigation={handleHomeNavigation}
-      />
-    ));
+    return (
+      <Breadcrumbs separator={separator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
+        {items.map((item, index) => (
+          <BreadcrumbItem
+            key={item.id}
+            item={item}
+            isFirst={index === 0}
+            isLast={index === items.length - 1}
+            handleActionMenuOpen={handleActionMenuOpen}
+            handleHomeNavigation={handleHomeNavigation}
+          />
+        ))}
+      </Breadcrumbs>
+    );
   }
 
   return (
-    <>
+    <Breadcrumbs separator={separator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
       <BreadcrumbItem
         item={firstItem}
         isFirst={true}
@@ -73,7 +77,7 @@ const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, 
         handleActionMenuOpen={handleActionMenuOpen}
         handleHomeNavigation={handleHomeNavigation}
       />
-    </>
+    </Breadcrumbs>
   );
 };
 

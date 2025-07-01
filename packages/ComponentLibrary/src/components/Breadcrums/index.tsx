@@ -1,4 +1,4 @@
-import { Box, Breadcrumbs, MenuItem, useTheme } from "@mui/material";
+import { Box, MenuItem, useTheme } from "@mui/material";
 import { type FC, useCallback, useMemo, useState } from "react";
 import NavigateNextIcon from "../../assets/icons/chevron-right.svg";
 import Menu from "../Menu";
@@ -43,9 +43,12 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, separator, onHomeClick }) => {
 
   return (
     <Box sx={sx.container}>
-      <Breadcrumbs separator={activeSeparator} aria-label="breadcrumb" sx={sx.breadcrumbs}>
-        <BreadcrumbList items={items} handleActionMenuOpen={handleActionMenuOpen} handleHomeNavigation={onHomeClick} />
-      </Breadcrumbs>
+      <BreadcrumbList
+        items={items}
+        handleActionMenuOpen={handleActionMenuOpen}
+        handleHomeNavigation={onHomeClick}
+        separator={activeSeparator}
+      />
       <Menu anchorEl={anchorEl} onClose={handleActionMenuClose}>
         {currentActions.map((action) => (
           <MenuItem key={action.id} onClick={() => {}} sx={sx.menuItem}>
