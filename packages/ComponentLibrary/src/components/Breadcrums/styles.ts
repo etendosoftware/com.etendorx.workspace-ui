@@ -33,10 +33,10 @@ export const useStyle = () => {
         breadcrumbItem: {
           height: "3rem",
           padding: "0 1rem 0 0",
-          borderRadius: "6.5rem",
           maxWidth: "100%",
           display: "inline-flex",
           alignItems: "center",
+          gap: "0.5rem",
         },
         lastItemTypography: {
           fontSize: "1.375rem",

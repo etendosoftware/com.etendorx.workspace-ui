@@ -32,7 +32,7 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({ item, isLast, handleActionMen
           onMouseEnter={handleMouseEnterOnIcon}
           onMouseLeave={handleMouseLeaveOnIcon}>
           {isIconHovered ? (
-            <IconButton className="w-10 h-10 bg-(--color-baseline-0) hover:bg-(--color-baseline-0) hover:text-(--color-baseline-80)">
+            <IconButton className="w-10 h-10 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-baseline-0) hover:text-(--color-baseline-80)">
               <ArrowLeftIcon />
             </IconButton>
           ) : (
