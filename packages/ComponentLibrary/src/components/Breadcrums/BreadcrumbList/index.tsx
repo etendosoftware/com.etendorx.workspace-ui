@@ -5,7 +5,7 @@ import IconButton from "../../IconButton";
 import Menu from "../../Menu";
 import { useStyle } from "../styles";
 import type { BreadcrumbListProps } from "../types";
-import BreadcrumbItem from "../BreadcrumbItem/index.tsx";
+import BreadcrumbItem from "../BreadcrumbItem/index";
 
 const BreadcrumbList: FC<BreadcrumbListProps> = ({ items, handleActionMenuOpen, handleHomeNavigation, separator }) => {
   const [middleAnchorEl, setMiddleAnchorEl] = useState<HTMLButtonElement | null>(null);

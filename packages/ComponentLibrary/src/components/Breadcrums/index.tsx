@@ -5,7 +5,7 @@ import Menu from "../Menu";
 import ToggleChip from "../Toggle/ToggleChip";
 import { useStyle } from "./styles";
 import type { BreadcrumbAction, BreadcrumbProps } from "./types";
-import BreadcrumbList from "./BreadcrumbList/index.tsx";
+import BreadcrumbList from "./BreadcrumbList/index";
 
 const Breadcrumb: FC<BreadcrumbProps> = ({ items, separator, onHomeClick }) => {
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
