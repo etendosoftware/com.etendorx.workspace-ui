@@ -11,10 +11,11 @@ import WindowTab from "@/components/NavigationTabs/WindowTab";
 import MenuTabs from "@/components/NavigationTabs/MenuTabs";
 
 const DEFAULT_SCROLL_AMOUNT = 200;
+const DEFAULT_BUTTON_ICON_SIZE = 50;
 const DRAWER_STATE_KEY = "etendo-drawer-open";
 
 export default function WindowTabs() {
-  const { windows, setActiveWindow, closeWindow, isHomeRoute, navigateToHome } = useMultiWindowURL();
+  const { windows, activeWindow, setActiveWindow, closeWindow, isHomeRoute, navigateToHome } = useMultiWindowURL();
   const { getWindowTitle } = useMetadataContext();
   const containerRef = useRef<HTMLDivElement>(null);
   const windowsContainerRef = useRef<HTMLDivElement>(null);
@@ -34,12 +35,7 @@ export default function WindowTabs() {
 
     if (hasHorizontalScroll) {
       setShowLeftScrollButton(true);
-      setShowRightScrollButton(true);
       setShowRightMenuButton(true);
-      container.scrollTo({
-        left: container.scrollWidth,
-        behavior: "smooth",
-      });
     } else {
       setShowLeftScrollButton(false);
       setShowRightScrollButton(false);
@@ -79,7 +75,16 @@ export default function WindowTabs() {
     return () => {
       resizeObserver.disconnect();
     };
-  }, [windows, isDrawerOpen, updateScrollButtons]);
+  }, [activeWindow, isDrawerOpen, updateScrollButtons]);
+
+  useEffect(() => {
+    const currentWindowContainer = windowsContainerRef.current;
+    if (!currentWindowContainer || !showLeftScrollButton || showRightScrollButton || !showRightMenuButton) return;
+    currentWindowContainer.scrollTo({
+      left: currentWindowContainer.scrollWidth,
+      behavior: "smooth",
+    });
+  }, [showLeftScrollButton, showRightScrollButton, showRightMenuButton]);
 
   const handleScrollLeft = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -107,7 +112,7 @@ export default function WindowTabs() {
         behavior: "smooth",
       });
       const newScrollRight = container.scrollLeft + DEFAULT_SCROLL_AMOUNT;
-      const isAtEnd = newScrollRight + container.clientWidth >= container.scrollWidth - 1;
+      const isAtEnd = newScrollRight + container.clientWidth >= container.scrollWidth - DEFAULT_BUTTON_ICON_SIZE;
       if (isAtEnd) {
         setShowRightScrollButton(false);
       }
