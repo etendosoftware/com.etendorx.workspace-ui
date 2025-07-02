@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { useCallback, useState } from "react";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
@@ -9,129 +9,22 @@ import ChevronLeftIcon from "@workspaceui/componentlibrary/src/assets/icons/chev
 import ChevronsRightIcon from "@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg";
 import WindowTab from "@/components/NavigationTabs/WindowTab";
 import MenuTabs from "@/components/NavigationTabs/MenuTabs";
-
-const DEFAULT_SCROLL_AMOUNT = 200;
-const DEFAULT_BUTTON_ICON_SIZE = 50;
-const DRAWER_STATE_KEY = "etendo-drawer-open";
+import { useTabs } from "@/contexts/tabs";
 
 export default function WindowTabs() {
-  const { windows, activeWindow, setActiveWindow, closeWindow, isHomeRoute, navigateToHome } = useMultiWindowURL();
+  const { windows, setActiveWindow, closeWindow, isHomeRoute, navigateToHome } = useMultiWindowURL();
   const { getWindowTitle } = useMetadataContext();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const windowsContainerRef = useRef<HTMLDivElement>(null);
-  const tabRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const [showLeftScrollButton, setShowLeftScrollButton] = useState(false);
-  const [showRightScrollButton, setShowRightScrollButton] = useState(false);
-  const [showRightMenuButton, setShowRightMenuButton] = useState(false);
+  const {
+    containerRef,
+    windowsContainerRef,
+    tabRefs,
+    showLeftScrollButton,
+    showRightScrollButton,
+    showRightMenuButton,
+    handleScrollLeft,
+    handleScrollRight,
+  } = useTabs();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-
-  const isDrawerOpen = useMemo(() => {
-    if (typeof window === "undefined") return false;
-    const saved = localStorage.getItem(DRAWER_STATE_KEY);
-    return saved ? JSON.parse(saved) : false;
-  }, []);
-
-  const updateScrollButtons = useCallback((container: HTMLDivElement) => {
-    const hasHorizontalScroll = container.scrollWidth > container.clientWidth;
-
-    if (hasHorizontalScroll) {
-      setShowLeftScrollButton(true);
-      setShowRightMenuButton(true);
-    } else {
-      setShowLeftScrollButton(false);
-      setShowRightScrollButton(false);
-      setShowRightMenuButton(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    const windowsContainer = windowsContainerRef.current;
-    if (!container || !windowsContainer) return;
-
-    let lastWidth = container.clientWidth;
-    let timeoutId: NodeJS.Timeout;
-    const DEBOUNCE_DELAY = 200;
-
-    const handleResize = () => {
-      const currentWidth = container.clientWidth;
-      const isDrawerWidthChange = currentWidth !== lastWidth;
-      if (isDrawerWidthChange) {
-        lastWidth = currentWidth;
-        updateScrollButtons(windowsContainer);
-      }
-    };
-
-    const debouncedResize = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(handleResize, DEBOUNCE_DELAY);
-    };
-
-    const resizeObserver = new ResizeObserver(debouncedResize);
-
-    resizeObserver.observe(windowsContainer);
-
-    updateScrollButtons(windowsContainer);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, [activeWindow, isDrawerOpen, updateScrollButtons]);
-
-  useEffect(() => {
-    const currentWindowContainer = windowsContainerRef.current;
-    if (!currentWindowContainer || !showLeftScrollButton || showRightScrollButton || !showRightMenuButton) return;
-    currentWindowContainer.scrollTo({
-      left: currentWindowContainer.scrollWidth,
-      behavior: "smooth",
-    });
-  }, [showLeftScrollButton, showRightScrollButton, showRightMenuButton]);
-
-  useEffect(() => {
-    if (!activeWindow) return;
-    const tabElement = tabRefs.current[activeWindow.windowId];
-    if (tabElement) {
-      tabElement.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
-    }
-  }, [activeWindow]);
-
-  const handleScrollLeft = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    const container = windowsContainerRef.current;
-    if (container) {
-      container.scrollBy({
-        left: -DEFAULT_SCROLL_AMOUNT,
-        behavior: "smooth",
-      });
-      const newScrollLeft = container.scrollLeft - DEFAULT_SCROLL_AMOUNT;
-      const isAtStart = newScrollLeft <= 0;
-      if (isAtStart) {
-        setShowLeftScrollButton(false);
-      }
-      setShowRightScrollButton(true);
-    }
-  }, []);
-
-  const handleScrollRight = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    const container = windowsContainerRef.current;
-    if (container) {
-      container.scrollBy({
-        left: DEFAULT_SCROLL_AMOUNT,
-        behavior: "smooth",
-      });
-      const newScrollRight = container.scrollLeft + DEFAULT_SCROLL_AMOUNT;
-      const isAtEnd = newScrollRight + container.clientWidth >= container.scrollWidth - DEFAULT_BUTTON_ICON_SIZE;
-      if (isAtEnd) {
-        setShowRightScrollButton(false);
-      }
-      setShowLeftScrollButton(true);
-    }
-  }, []);
 
   const handleTabMenuOpen = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
