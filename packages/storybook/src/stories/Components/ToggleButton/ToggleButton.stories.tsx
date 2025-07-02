@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import ToggleButton from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleButton';
+import type React from 'react';
+import { useState } from 'react';
+import ToggleButton from '@workspaceui/componentlibrary/src/components/ProfileModal/ToggleButton';
 import { sectionsMock, sectionsMock3, sectionsMock4 } from './mock';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Section } from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleButton/types';
+import type { Section } from '@workspaceui/componentlibrary/src/components/ProfileModal/ToggleButton/types';
 
 interface ToggleButtonProps {
   sections: Section[];
@@ -24,7 +25,7 @@ export default meta;
 
 type Story = StoryObj<ToggleButtonProps>;
 
-const ToggleButtonTemplate: React.FC<ToggleButtonProps> = args => {
+const ToggleButtonTemplate: React.FC<ToggleButtonProps> = (args) => {
   const [currentSection, setCurrentSection] = useState(args.currentSection);
 
   const handleToggle = (section: string) => {
@@ -32,17 +33,11 @@ const ToggleButtonTemplate: React.FC<ToggleButtonProps> = args => {
     args.onToggle(section);
   };
 
-  return (
-    <ToggleButton
-      {...args}
-      currentSection={currentSection}
-      onToggle={handleToggle}
-    />
-  );
+  return <ToggleButton {...args} currentSection={currentSection} onToggle={handleToggle} />;
 };
 
 export const Default: Story = {
-  render: args => <ToggleButtonTemplate {...args} />,
+  render: (args) => <ToggleButtonTemplate {...args} />,
   args: {
     sections: sectionsMock,
     currentSection: 'profile',
@@ -51,7 +46,7 @@ export const Default: Story = {
 };
 
 export const TripleButton: Story = {
-  render: args => <ToggleButtonTemplate {...args} />,
+  render: (args) => <ToggleButtonTemplate {...args} />,
   args: {
     sections: sectionsMock3,
     currentSection: 'profile',
@@ -60,7 +55,7 @@ export const TripleButton: Story = {
 };
 
 export const QuadButton: Story = {
-  render: args => <ToggleButtonTemplate {...args} />,
+  render: (args) => <ToggleButtonTemplate {...args} />,
   args: {
     sections: sectionsMock4,
     currentSection: 'profile',

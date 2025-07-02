@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import type React from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Grid } from '@mui/material';
-import ToggleChip from '../../../../../ComponentLibrary/src/components/Toggle/ToggleChip';
+import ToggleChip from '@workspaceui/componentlibrary/src/components/Toggle/ToggleChip';
 import type { Meta, StoryObj } from '@storybook/react';
 
 interface ToggleChipProps {
@@ -21,7 +22,7 @@ export default meta;
 
 type Story = StoryObj<ToggleChipProps>;
 
-const ToggleChipTemplate: React.FC<ToggleChipProps> = args => {
+const ToggleChipTemplate: React.FC<ToggleChipProps> = (args) => {
   const [isActive, setIsActive] = useState(args.isActive);
 
   const handleToggle = () => {
@@ -43,7 +44,7 @@ const ToggleChipTemplate: React.FC<ToggleChipProps> = args => {
 };
 
 export const Variants: Story = {
-  render: args => <ToggleChipTemplate {...args} />,
+  render: (args) => <ToggleChipTemplate {...args} />,
   args: {
     isActive: false,
     onToggle: () => console.log('Toggled'),

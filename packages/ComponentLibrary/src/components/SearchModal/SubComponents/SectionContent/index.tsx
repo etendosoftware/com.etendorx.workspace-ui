@@ -1,14 +1,16 @@
-// SectionContent/index.tsx
+import { Box, Typography } from "@mui/material";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import type { Section } from "../../../SecondaryTabs/types";
+import { useStyle } from "./styles";
+import { ItemContent } from "../ItemContent";
 
-import React from 'react';
-import { Box, Typography } from '@mui/material';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { Section } from '../../types';
-import { styles } from './styles';
-import { ItemContent } from '../ItemContent';
+export const SectionContent: React.FC<{ section: Section; isLast: boolean; variant: "default" | "tabs" }> = ({
+  section,
+  isLast,
+}) => {
+  const { styles } = useStyle();
 
-export const SectionContent: React.FC<{ section: Section, isLast: boolean, variant: 'default' | 'tabs' }> =
-  ({ section, isLast }) => (
+  return (
     <Box sx={styles.sectionContent}>
       <Box sx={styles.sectionBox(isLast)}>
         <Box sx={styles.sectionInnerBox}>
@@ -29,3 +31,4 @@ export const SectionContent: React.FC<{ section: Section, isLast: boolean, varia
       </Box>
     </Box>
   );
+};

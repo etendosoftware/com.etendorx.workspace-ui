@@ -1,5 +1,5 @@
-import { SxProps, Theme } from '@mui/material';
-import { TagType } from './components/Tag/types';
+import type { SxProps, Theme } from "@mui/material";
+import type { TagType } from "./components/Tag/types";
 
 export interface CtaButton {
   key: string;

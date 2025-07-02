@@ -1,11 +1,13 @@
-import StatusModal from '../../../../../ComponentLibrary/src/components/StatusModal';
-import { StatusType } from '../../../../../ComponentLibrary/src/components/StatusModal/types';
+import StatusModal from '@workspaceui/componentlibrary/src/components/StatusModal';
+import type { StatusType } from '@workspaceui/componentlibrary/src/components/StatusModal/types';
 import type { Meta, StoryObj } from '@storybook/react';
 
 interface StatusModalStoryProps {
   statusText: string;
   statusType: StatusType;
   errorMessage?: string;
+  saveLabel: string;
+  secondaryButtonLabel: string;
 }
 
 const meta: Meta<typeof StatusModal> = {
@@ -17,6 +19,8 @@ const meta: Meta<typeof StatusModal> = {
       control: 'select',
       options: ['success', 'error', 'warning'],
     },
+    saveLabel: { control: 'text' },
+    secondaryButtonLabel: { control: 'text' },
     errorMessage: { control: 'text' },
   },
 };
@@ -26,7 +30,7 @@ export default meta;
 type Story = StoryObj<StatusModalStoryProps>;
 
 const StatusModalTemplate: Story = {
-  render: args => <StatusModal {...args} />,
+  render: (args) => <StatusModal {...args} />,
 };
 
 export const SuccessStatus: Story = {
@@ -34,6 +38,8 @@ export const SuccessStatus: Story = {
   args: {
     statusText: 'Operation completed successfully',
     statusType: 'success',
+    saveLabel: 'Save',
+    secondaryButtonLabel: 'Cancel',
   },
 };
 
@@ -59,8 +65,7 @@ export const CustomErrorMessage: Story = {
   args: {
     statusText: 'Custom Error',
     statusType: 'error',
-    errorMessage:
-      'This is a custom error message that can be quite long and detailed if needed.',
+    errorMessage: 'This is a custom error message that can be quite long and detailed if needed.',
   },
 };
 

@@ -1,16 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import type React from 'react';
+import { useState, useEffect } from 'react';
 import { TABS_CONFIG } from './mock';
-import SecondaryTabs from '../../../../../ComponentLibrary/src/components/SecondaryTabs';
+import SecondaryTabs from '@workspaceui/componentlibrary/src/components/SecondaryTabs';
 import type { Meta, StoryObj } from '@storybook/react';
-
-type TabContent = {
-  icon: React.ReactElement | string;
-  label: string;
-  numberOfItems: number;
-  isLoading?: boolean;
-  onClick: () => void;
-  content: React.ReactElement;
-};
+import type { TabContent } from '@workspaceui/componentlibrary/src/components/SecondaryTabs/types';
 
 const meta: Meta<typeof SecondaryTabs> = {
   title: 'Components/SecondaryTabs',
@@ -19,6 +12,8 @@ const meta: Meta<typeof SecondaryTabs> = {
 
 export default meta;
 
+const noop = () => {};
+
 type Story = StoryObj<typeof SecondaryTabs>;
 
 const SecondaryTabsTemplate: React.FC = () => {
@@ -26,7 +21,7 @@ const SecondaryTabsTemplate: React.FC = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const updatedTabs = tabsContent.map(tab => ({
+      const updatedTabs = tabsContent.map((tab) => ({
         ...tab,
         isLoading: false,
       }));
@@ -35,7 +30,7 @@ const SecondaryTabsTemplate: React.FC = () => {
     return () => clearTimeout(timer);
   }, [tabsContent]);
 
-  return <SecondaryTabs tabsContent={tabsContent} />;
+  return <SecondaryTabs content={tabsContent} selectedTab={0} onChange={noop} />;
 };
 
 export const Default: Story = {

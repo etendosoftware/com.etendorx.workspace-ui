@@ -1,5 +1,5 @@
-import { Meta, StoryObj } from '@storybook/react';
-import Breadcrumb from '../../../../../ComponentLibrary/src/components/Breadcrums';
+import type { Meta, StoryObj } from '@storybook/react';
+import Breadcrumb from '@workspaceui/componentlibrary/src/components/Breadcrums';
 import { mockDefaultActions, mockDefaultArgs } from './mock';
 
 const meta: Meta<typeof Breadcrumb> = {

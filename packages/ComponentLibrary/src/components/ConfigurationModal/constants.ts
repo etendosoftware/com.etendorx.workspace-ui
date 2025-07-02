@@ -1,1 +1,1 @@
-export const ALT = 'img-';
+export const ALT = "img-";

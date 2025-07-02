@@ -1,33 +1,57 @@
-import React from 'react';
-import { Box, Typography } from '@mui/material';
-import { Modal, theme } from '..';
-import SaveIcon from '../../assets/icons/save.svg';
-import { useTranslation } from '../../../../MainUI/src/hooks/useTranslation';
-import { statusConfig } from './states';
-import { sx } from './styles';
-import { StatusModalProps } from './types';
+import { Box, Typography, useTheme } from "@mui/material";
+import { useCallback, useMemo } from "react";
+import { Modal } from "..";
+import SaveIcon from "../../assets/icons/save.svg";
+import { statusConfig } from "./states";
+import { useStyle } from "./styles";
+import type { StatusModalProps } from "./types";
 
 const StatusModal: React.FC<StatusModalProps> = ({
   statusText,
   statusType,
   errorMessage,
+  saveLabel,
+  secondaryButtonLabel,
+  onClose,
+  onAfterClose,
+  isDeleteSuccess,
+  open = true,
 }) => {
-  const { t } = useTranslation();
-  const {
-    gradientColor,
-    iconBackgroundColor,
-    icon: StatusIcon,
-  } = statusConfig[statusType];
+  const { gradientColor, iconBackgroundColor, icon: StatusIcon } = statusConfig[statusType];
+  const theme = useTheme();
+  const { sx } = useStyle();
 
-  const backgroundGradient = `linear-gradient(to bottom, ${gradientColor}, rgba(255, 255, 255, 0))`;
+  const backgroundGradient = useMemo(
+    () => `linear-gradient(to bottom, ${gradientColor}, rgba(255, 255, 255, 0))`,
+    [gradientColor]
+  );
+  const handleClose = useCallback(() => {
+    if (onClose) {
+      onClose();
+    }
+  }, [onClose]);
+
+  const handleAfterClose = useCallback(() => {
+    if (onAfterClose) {
+      onAfterClose();
+    }
+  }, [onAfterClose]);
+
+  const secondaryLabel = isDeleteSuccess ? "" : secondaryButtonLabel;
 
   return (
     <Modal
+      open={open}
       showHeader={false}
-      saveButtonLabel={t('common.save')}
-      secondaryButtonLabel={t('common.cancel')}
-      SaveIcon={SaveIcon}
-      backgroundGradient={backgroundGradient}>
+      saveButtonLabel={!isDeleteSuccess ? saveLabel : undefined}
+      secondaryButtonLabel={secondaryLabel}
+      SaveIcon={!isDeleteSuccess ? SaveIcon : undefined}
+      backgroundGradient={backgroundGradient}
+      onSave={handleClose}
+      onAfterClose={handleAfterClose}
+      onCancel={handleClose}
+      onClose={handleClose}
+      buttons={isDeleteSuccess ? null : undefined}>
       <Box sx={sx.statusModalContainer}>
         <Box
           sx={{
@@ -36,9 +60,7 @@ const StatusModal: React.FC<StatusModalProps> = ({
           }}>
           <StatusIcon fill={theme.palette.baselineColor.neutral[0]} />
         </Box>
-        {statusType === 'error' && errorMessage && (
-          <Typography sx={sx.errorMessage}>{errorMessage}</Typography>
-        )}
+        {statusType === "error" && errorMessage && <Typography sx={sx.errorMessage}>{errorMessage}</Typography>}
         <Typography sx={sx.statusText}>{statusText}</Typography>
       </Box>
     </Modal>

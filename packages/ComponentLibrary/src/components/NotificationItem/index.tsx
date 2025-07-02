@@ -1,10 +1,11 @@
-import { ListItem, Typography, IconButton, Button, Box } from '@mui/material';
-import ReactMarkdown from 'react-markdown';
-import { NotificationItemProps } from './types';
-import Tag from '../Tag';
-import { styles, sx } from './styles';
-import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
-import CloseIcon from '../../assets/icons/x.svg';
+import { ListItem, Typography, Button, Box } from "@mui/material";
+import ReactMarkdown from "react-markdown";
+import type { NotificationItemProps } from "./types";
+import Tag from "../Tag";
+import { useStyle } from "./styles";
+import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
+import CloseIcon from "../../assets/icons/x.svg";
+import IconButton from "../IconButton";
 
 const NotificationItem: React.FC<NotificationItemProps> = ({
   description,
@@ -14,6 +15,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   icon: IconComponent,
   ctaButtons,
 }) => {
+  const { styles, sx } = useStyle();
   const markdownComponents = {
     a: ({ ...props }) => <a style={styles.anchorStyles} {...props} />,
     p: ({ ...props }) => <div {...props} />,
@@ -22,20 +24,18 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   return (
     <ListItem component="div" sx={sx.listItem}>
       <Box sx={sx.notificationBox}>
-        <IconButton sx={sx.closeIconButton}>
+        <IconButton>
           <CloseIcon className="closeIcon" />
         </IconButton>
         <div style={styles.iconContainerStyles}>
           <IconComponent />
         </div>
         <div style={styles.textContainerStyles} className="textContainer">
-          <ReactMarkdown components={markdownComponents}>
-            {description}
-          </ReactMarkdown>
+          <ReactMarkdown components={markdownComponents}>{description}</ReactMarkdown>
           {priority && tagType && <Tag type={tagType} label={priority} />}
           {ctaButtons && (
             <div style={styles.ctaButtonContainer}>
-              {ctaButtons.map(button => (
+              {ctaButtons.map((button) => (
                 <Button
                   key={button.key}
                   variant="contained"
@@ -49,10 +49,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
           )}
           <div style={styles.dateContainer}>
             <CalendarTodayOutlinedIcon style={styles.dateStyles} />
-            <Typography
-              variant="body2"
-              color="textSecondary"
-              style={styles.dateStyles}>
+            <Typography variant="body2" color="textSecondary" style={styles.dateStyles}>
               {date}
             </Typography>
           </div>

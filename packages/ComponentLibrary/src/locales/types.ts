@@ -1,76 +1,18 @@
-export type TranslationKeys = {
-  common: {
-    etendo: string;
-    cancel: string;
-    confirm: string;
-    register: string;
-    save: string;
-    edit: string;
-  };
-  modal: {
-    secondaryButtonLabel: string;
-  };
-  registerModal: {
-    descriptionText: string;
-  };
-  table: {
-    tooltips: {
-      search: string;
-      views: string;
-      filter: string;
-      columns: string;
-      openSidebar: string;
-      closeSidebar: string;
-      details: string;
-      refresh: string;
-    };
-    placeholders: {
-      search: string;
-    };
-    labels: {
-      noIdentifier: string;
-      noTitle: string;
-      noType: string;
-      noRecord: string;
-    };
-    content: {
-      currentTitle: string;
-    };
-  };
-  navigation: {
-    waterfall: {
-      activateAll: string;
-      deactivateAll: string;
-      tooltipButton: string;
-      buttons: string;
-      customize: string;
-    };
-    configurationModal: {
-      tooltipButtonProfile: string;
-    };
-    activityButton: {
-      tooltip: string;
-    };
-    notificationModal: {
-      title: string;
-      markAllAsRead: string;
-      emptyStateImageAlt: string;
-      emptyStateMessage: string;
-      emptyStateDescription: string;
-      actionButtonLabel: string;
-    };
-    profile: {
-      tooltipButtonProfile: string;
-      passwordLabel: string;
-      newPasswordLabel: string;
-      confirmPasswordLabel: string;
-      signOffTooltip: string;
-    };
-  };
-};
+import type en from "./en";
+import type es from "./es";
 
-export type Language = 'es' | 'en';
+type Primitive = string;
+
+export type NestedKeyOf<T> = T extends Primitive
+  ? T
+  : {
+      [K in keyof T & (string | number)]: T[K] extends Primitive ? K : K | `${K}.${NestedKeyOf<T[K]>}`;
+    }[keyof T & (string | number)];
+
+export type TranslationKeys = NestedKeyOf<typeof en | typeof es>;
+
+export type Language = "en_US" | "es_ES";
 
 export type Translations = {
-  [key in Language]: TranslationKeys;
+  [key in Language]: typeof en | typeof es;
 };

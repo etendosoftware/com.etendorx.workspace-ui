@@ -1,93 +1,81 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import {
-  Tooltip,
-  IconButton as MUIIconButton,
-  Box,
-  Typography,
-} from '@mui/material';
-import { theme } from '../../theme';
-import { defaultStyles } from './styles';
-import { IIconComponentProps } from './types';
+import type React from "react";
+import Tooltip from "../Tooltip";
+import { cleanDefaultClasses } from "../../utils/classUtil";
 
-interface ExtendedIconButtonProps extends IIconComponentProps {
+/**
+ * Props for the IconButton component.
+ * Extends all native button attributes with additional optional props.
+ */
+export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** Whether the button is disabled */
+  disabled?: boolean;
+  /** Accessibility label for screen readers */
+  ariaLabel?: string;
+  /** Text to display in a tooltip on hover */
+  tooltip?: string;
+  /** Additional CSS classes to customize styling */
+  className?: string;
+  /** Optional text to show alongside the icon */
   iconText?: string;
+  /** Ref forwarded to the underlying button element */
+  ref?: React.LegacyRef<HTMLButtonElement>;
 }
 
-const IconButton: React.FC<ExtendedIconButtonProps> = ({
-  fill = theme.palette.baselineColor.neutral[80],
-  hoverFill = theme.palette.baselineColor.neutral[0],
-  width = 24,
-  height = 24,
-  tooltip,
-  sx,
+/**
+ * A customizable icon button component with optional tooltip and icon text.
+ *
+ * It merges default styling classes with any user-provided classes using `cleanDefaultClasses`.
+ * The button supports disabling and accessibility features via aria-label.
+ * If `tooltip` prop is provided, the button is wrapped inside a Tooltip component.
+ *
+ * @param {IconButtonProps} props - Props to configure the button
+ * @returns {JSX.Element} The rendered icon button element
+ */
+const IconButton = ({
+  className = "",
   children,
-  disabled,
-  isHovered = false,
+  disabled = false,
+  ariaLabel,
+  tooltip,
   iconText,
-  ...props
-}) => {
-  const [iconFill, setIconFill] = useState<string>(fill);
-
-  useEffect(() => {
-    setIconFill(isHovered ? hoverFill : fill);
-  }, [isHovered, hoverFill, fill]);
-
-  const handleMouseEnter = useCallback(() => {
-    if (!disabled) {
-      setIconFill(hoverFill);
-    }
-  }, [disabled, hoverFill]);
-
-  const handleMouseLeave = useCallback(() => {
-    if (!disabled) {
-      setIconFill(fill);
-    }
-  }, [disabled, fill]);
-
-  const combinedStyles = {
-    ...defaultStyles.defaultContainer,
-    ...sx,
-  };
-
-  const clonedIcon = React.isValidElement(children)
-    ? React.cloneElement(children as React.ReactElement, {
-        style: {
-          fill: disabled ? theme.palette.action.disabled : iconFill,
-          width,
-          height,
-        },
-      })
-    : null;
-
-  const button = (
-    <MUIIconButton
-      sx={combinedStyles}
-      {...props}
-      disabled={disabled}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}>
-      <Box sx={defaultStyles.buttonContainer}>
-        {clonedIcon}
-        {iconText && (
-          <Typography sx={defaultStyles.iconText}>{iconText}</Typography>
-        )}
-      </Box>
-    </MUIIconButton>
-  );
-
-  if (disabled) {
-    return (
-      <Tooltip title={tooltip} arrow>
-        <span>{button}</span>
-      </Tooltip>
-    );
-  }
+  ref,
+  ...rest
+}: IconButtonProps) => {
+  const DEFAULT_BUTTON_CLASSES = `
+    transition
+    duration-400
+    disabled:bg-transparent
+    disabled:text-(--color-transparent-neutral-30)
+    rounded-full
+    text-(--color-baseline-80)
+    hover:text-(--color-baseline-0)
+    bg-(--color-baseline-0)
+    hover:bg-(--color-dynamic-main)
+    inline-flex
+    items-center
+    justify-center
+    text-[0.825rem]
+    min-w-max
+    [&>svg]:text-[1.5rem]
+    [&>svg]:fill-current
+    ${iconText ? "px-2 gap-2" : "w-8 h-8"}
+  `;
 
   return (
-    <Tooltip title={tooltip} arrow>
-      {button}
+    <Tooltip title={tooltip}>
+      <button
+        ref={ref}
+        type="button"
+        aria-label={ariaLabel}
+        disabled={disabled}
+        className={cleanDefaultClasses(DEFAULT_BUTTON_CLASSES, className)}
+        {...rest}>
+        {children}
+        {iconText && <span>{iconText}</span>}
+      </button>
     </Tooltip>
   );
 };
 
+IconButton.displayName = "IconButton";
 export default IconButton;

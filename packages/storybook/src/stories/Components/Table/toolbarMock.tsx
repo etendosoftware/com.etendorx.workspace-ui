@@ -1,33 +1,22 @@
-import PlusIcon from '../../../../../ComponentLibrary/src/assets/icons/plus.svg';
-import RefreshIcon from '../../../../../ComponentLibrary/src/assets/icons/refresh-cw.svg';
-import SearchIcon from '../../../../../ComponentLibrary/src/assets/icons/search.svg';
-import FilterIcon from '../../../../../ComponentLibrary/src/assets/icons/filter.svg';
-import ColumnsIcon from '../../../../../ComponentLibrary/src/assets/icons/columns.svg';
-import ChevronDownIcon from '../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg';
-import SidebarIcon from '../../../../../ComponentLibrary/src/assets/icons/sidebar.svg';
-import LowerFlapIcon from '../../../../../ComponentLibrary/src/assets/icons/lower-flap.svg';
-import Excel from '../../../../../ComponentLibrary/src/assets/icons/ilustration/excel.svg';
-import Copilot from '../../../../../ComponentLibrary/src/assets/icons/sparks.svg';
-import Print from '../../../../../ComponentLibrary/src/assets/icons/color-picker.svg';
-import Trash from '../../../../../ComponentLibrary/src/assets/icons/trash-2.svg';
-import Printer from '../../../../../ComponentLibrary/src/assets/icons/printer.svg';
-import Copy from '../../../../../ComponentLibrary/src/assets/icons/copy.svg';
-import Mail from '../../../../../ComponentLibrary/src/assets/icons/mail.svg';
-import LinkIcon from '../../../../../ComponentLibrary/src/assets/icons/link.svg';
-import { ToolbarSectionConfig } from '../../../../../storybook/src/stories/Components/Table/types';
-import { theme } from '../../../../../ComponentLibrary/src/theme';
-
-import { TranslationKeys } from '../../../../../ComponentLibrary/src/locales/types';
-
-type NestedKeyOf<ObjectType extends object> = {
-  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
-    ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}`
-    : `${Key}`;
-}[keyof ObjectType & (string | number)];
-
-type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(
-  key: K,
-) => string;
+import PlusIcon from '@workspaceui/componentlibrary/src/assets/icons/plus.svg';
+import RefreshIcon from '@workspaceui/componentlibrary/src/assets/icons/refresh-cw.svg';
+import SearchIcon from '@workspaceui/componentlibrary/src/assets/icons/search.svg';
+import FilterIcon from '@workspaceui/componentlibrary/src/assets/icons/filter.svg';
+import ColumnsIcon from '@workspaceui/componentlibrary/src/assets/icons/columns.svg';
+import ChevronDownIcon from '@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg';
+import SidebarIcon from '@workspaceui/componentlibrary/src/assets/icons/sidebar.svg';
+import LowerFlapIcon from '@workspaceui/componentlibrary/src/assets/icons/lower-flap.svg';
+import Excel from '@workspaceui/componentlibrary/src/assets/icons/ilustration/excel.svg';
+import Copilot from '@workspaceui/componentlibrary/src/assets/icons/sparks.svg';
+import Print from '@workspaceui/componentlibrary/src/assets/icons/color-picker.svg';
+import Trash from '@workspaceui/componentlibrary/src/assets/icons/trash-2.svg';
+import Printer from '@workspaceui/componentlibrary/src/assets/icons/printer.svg';
+import Copy from '@workspaceui/componentlibrary/src/assets/icons/copy.svg';
+import Mail from '@workspaceui/componentlibrary/src/assets/icons/mail.svg';
+import LinkIcon from '@workspaceui/componentlibrary/src/assets/icons/link.svg';
+import type { ToolbarSectionConfig } from './types';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
+import type { TranslateFunction } from '@workspaceui/mainui/hooks/types';
 
 const IconSize = 16;
 
@@ -213,21 +202,15 @@ export const createToolbarConfig = (
         tooltip: t('table.tooltips.columns'),
         onClick: () => {},
         height: IconSize,
-        width: 16,
+        width: IconSize,
       },
       {
         key: 'sidebar',
         icon: <SidebarIcon />,
-        tooltip: isSidebarOpen
-          ? t('table.tooltips.closeSidebar')
-          : t('table.tooltips.openSidebar'),
+        tooltip: isSidebarOpen ? t('table.tooltips.closeSidebar') : t('table.tooltips.openSidebar'),
         onClick: toggleSidebar,
-        fill: isSidebarOpen
-          ? theme.palette.baselineColor.neutral[0]
-          : theme.palette.baselineColor.neutral[80],
-        hoverFill: isSidebarOpen
-          ? theme.palette.baselineColor.neutral[20]
-          : theme.palette.baselineColor.neutral[0],
+        fill: isSidebarOpen ? theme.palette.baselineColor.neutral[0] : theme.palette.baselineColor.neutral[80],
+        hoverFill: isSidebarOpen ? theme.palette.baselineColor.neutral[20] : theme.palette.baselineColor.neutral[0],
         sx: isSidebarOpen
           ? {
               backgroundColor: theme.palette.dynamicColor.main,
@@ -244,12 +227,8 @@ export const createToolbarConfig = (
         icon: <LowerFlapIcon />,
         tooltip: t('table.tooltips.details'),
         onClick: toggleDropdown,
-        fill: isDropdownOpen
-          ? theme.palette.baselineColor.neutral[0]
-          : theme.palette.baselineColor.neutral[80],
-        hoverFill: isDropdownOpen
-          ? theme.palette.baselineColor.neutral[20]
-          : theme.palette.baselineColor.neutral[0],
+        fill: isDropdownOpen ? theme.palette.baselineColor.neutral[0] : theme.palette.baselineColor.neutral[80],
+        hoverFill: isDropdownOpen ? theme.palette.baselineColor.neutral[20] : theme.palette.baselineColor.neutral[0],
         sx: isDropdownOpen
           ? {
               backgroundColor: theme.palette.dynamicColor.main,

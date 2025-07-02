@@ -1,0 +1,52 @@
+name: Docker Build and Publish
+
+on:
+  push:
+    branches:
+      - "develop"
+      - "main"
+  pull_request:
+    types:
+      - "opened"
+      - "synchronize"
+      - "reopened"
+    branches:
+      - "develop"
+      - "main"
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      # Get branch name
+      - name: Get branch name
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            BRANCH_NAME=$(echo "${{ github.head_ref }}" | tr '/' '-')
+          elif [ "${{ github.ref_name }}" == "develop" ] && [ "${{ github.event_name }}" == "push" ]; then
+            BRANCH_NAME="latest"
+          else
+            BRANCH_NAME=$(echo "${{ github.ref_name }}" | tr '/' '-')
+          fi
+
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - name: Build and Push Docker image (Multi-platform)
+        run: |
+          docker buildx build \
+            --platform=linux/amd64,linux/arm64 \
+            --push \
+            -t etendo/etendo_ui:${{ env.BRANCH_NAME }} .

@@ -1,7 +1,7 @@
-import { ReactElement } from 'react';
-import { Inotifications } from '../../../../../ComponentLibrary/src/commons';
-import { Section } from '../../../../../ComponentLibrary/src/components/ProfileModal/ToggleButton/types';
-import { WaterfallModalProps } from '../../../../../ComponentLibrary/src/components/Waterfall/WaterfallModal.types';
+import type { ReactElement } from 'react';
+import type { Inotifications } from '@workspaceui/componentlibrary/src/commons';
+import type { Section } from '@workspaceui/componentlibrary/src/components/ProfileModal/ToggleButton/types';
+import type { WaterfallModalProps } from '@workspaceui/componentlibrary/src/components/Waterfall/types';
 
 export interface NavArgs extends WaterfallModalProps {
   cancelButtonText: string;
@@ -30,6 +30,6 @@ export interface NavArgs extends WaterfallModalProps {
   userPhotoUrl: string;
   userName: string;
   userEmail: string;
-  sestionTooltip: string;
+  sectionTooltip: string;
   sections: Section[];
 }

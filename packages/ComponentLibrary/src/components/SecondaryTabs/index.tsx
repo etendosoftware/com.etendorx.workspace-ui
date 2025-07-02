@@ -1,140 +1,127 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  Tabs,
-  Tab,
-  Box,
-  IconButton,
-  Menu,
-  MenuItem,
-  Typography,
-} from '@mui/material';
-import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+import React, { useState, useRef, useEffect, useCallback, useMemo, type ReactElement } from "react";
+import { Tabs, Tab, Box, MenuItem, Typography } from "@mui/material";
+import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight";
+import TabLabel from "./components/TabLabel";
+import { useStyle } from "./styles";
+import type { SecondaryTabsProps, TabContent } from "./types";
+import IconButton from "../IconButton";
+import Menu from "../Menu";
 
-import TabLabel from './components/TabLabel';
+const tabSize = 150;
 
-import {
-  containerStyles,
-  menuItemStyles,
-  menuPaperProps,
-  tabsContainerStyles,
-  tabStyles,
-  iconContainerStyles,
-  iconStyles,
-  menuItemRootStyles,
-  menuItemIconStyles,
-  menuItemTypographyStyles,
-  rightButtonStyles,
-  rightButtonContainerStyles,
-} from './styles';
+const renderIcon = (icon: TabContent["icon"], style: React.CSSProperties | undefined): ReactElement => {
+  const safeStyle = style || {};
+  if (React.isValidElement<{ style?: React.CSSProperties }>(icon)) {
+    return React.cloneElement(icon, {
+      style: { ...icon.props.style, ...safeStyle },
+    });
+  }
+  if (typeof icon === "string") {
+    return <Typography style={safeStyle}>{icon}</Typography>;
+  }
+  if (typeof icon === "function") {
+    return icon({ style: safeStyle });
+  }
+  return <></>;
+};
 
-const SecondaryTabs: React.FC<any> = ({
-  tabsContent,
-  selectedTab = 0,
-  onChange,
-}) => {
+const SecondaryTabs: React.FC<SecondaryTabsProps> = ({ content, selectedTab, onChange }) => {
   const [visibleCount, setVisibleCount] = useState(5);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
   const tabsRef = useRef<HTMLDivElement>(null);
+  const { sx } = useStyle();
 
-  useEffect(() => {
-    const updateVisibleCount = () => {
-      const width = tabsRef.current?.clientWidth || 0;
-      const tabWidth = 150;
-      const newVisibleCount = Math.floor((width - 40) / tabWidth);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+
+  const updateVisibleCount = useCallback(() => {
+    if (tabsRef.current) {
+      const width = tabsRef.current.clientWidth;
+      const tabWidth = tabSize;
+      const newVisibleCount = Math.max(1, Math.floor((width - 40) / tabWidth));
       setVisibleCount(newVisibleCount);
-    };
-
-    window.addEventListener('resize', updateVisibleCount);
-    updateVisibleCount();
-
-    return () => {
-      window.removeEventListener('resize', updateVisibleCount);
-    };
+    }
   }, []);
 
-  const handleChange = (event: React.ChangeEvent<{}>, newValue: number) => {
-    event.preventDefault();
-    onChange(newValue);
-  };
+  useEffect(() => {
+    updateVisibleCount();
+    window.addEventListener("resize", updateVisibleCount);
+    return () => window.removeEventListener("resize", updateVisibleCount);
+  }, [updateVisibleCount]);
 
-  const handleMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleChange = useCallback(
+    (event: React.SyntheticEvent, newValue: number) => {
+      event.preventDefault();
+      onChange(newValue);
+      content[newValue].onClick();
+    },
+    [content, onChange]
+  );
+
+  const handleMenu = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
-  };
+  }, []);
 
   const handleClose = () => {
     setAnchorEl(null);
   };
 
+  const visibleTabs = useMemo(() => content.slice(0, visibleCount), [content, visibleCount]);
+  const hiddenTabs = useMemo(() => content.slice(visibleCount), [content, visibleCount]);
+
+  const renderTab = useCallback(
+    (tab: TabContent, index: number) => (
+      <Tab
+        key={index}
+        label={
+          <TabLabel
+            icon={
+              <Box component="span" sx={sx.iconContainer}>
+                {renderIcon(tab.icon, sx.menuItemIcon)}
+              </Box>
+            }
+            text={tab.label}
+            isLoading={tab.isLoading}
+            count={tab.numberOfItems}
+          />
+        }
+        iconPosition="start"
+        sx={sx.tab}
+      />
+    ),
+    [sx.iconContainer, sx.menuItemIcon, sx.tab]
+  );
+
   return (
-    <Box sx={containerStyles}>
-      <Box ref={tabsRef} sx={tabsContainerStyles}>
-        <Tabs
-          value={selectedTab}
-          onChange={handleChange}
-          variant="scrollable"
-          scrollButtons="auto">
-          {tabsContent.slice(0, visibleCount).map((tab: any, index: number) => (
-            <Tab
-              key={index}
-              label={
-                <TabLabel
-                  icon={
-                    <Box component="span" sx={iconContainerStyles}>
-                      <Box component="span" sx={iconStyles}>
-                        {typeof tab.icon === 'string'
-                          ? tab.icon
-                          : React.cloneElement(tab?.icon, {
-                              sx: menuItemIconStyles,
-                            })}
-                      </Box>
-                    </Box>
-                  }
-                  text={tab.label}
-                  isLoading={tab.isLoading}
-                  count={tab.numberOfItems}
-                />
-              }
-              iconPosition="start"
-              sx={tabStyles(tab.numberOfItems, tab.isLoading)}
-            />
-          ))}
+    <Box sx={sx.container}>
+      <Box ref={tabsRef} sx={sx.tabsContainer}>
+        <Tabs value={selectedTab} onChange={handleChange} variant="scrollable" scrollButtons="auto">
+          {visibleTabs.map(renderTab)}
         </Tabs>
-        {tabsContent.length > visibleCount && (
-          <Box sx={rightButtonContainerStyles}>
-            <IconButton onClick={handleMenu} sx={rightButtonStyles(open)}>
+        {hiddenTabs.length > 0 && (
+          <Box sx={sx.rightButtonContainer}>
+            <IconButton onClick={handleMenu}>
               <KeyboardDoubleArrowRightIcon />
             </IconButton>
           </Box>
         )}
       </Box>
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        PaperProps={{ sx: menuPaperProps }}
-        slotProps={{ root: { sx: menuItemRootStyles } }}>
-        {tabsContent.slice(visibleCount).map((tab: any, index: number) => (
+      <Menu anchorEl={anchorEl} onClose={handleClose}>
+        {hiddenTabs.map((tab: TabContent, index: number) => (
           <MenuItem
             key={index}
             onClick={() => {
               onChange(index + visibleCount);
+              tab.onClick();
               handleClose();
             }}
-            sx={menuItemStyles}>
-            {typeof tab.icon === 'string' ? (
-              <Typography style={menuItemTypographyStyles}>
-                {tab.icon}
-              </Typography>
-            ) : (
-              React.cloneElement(tab.icon, {
-                style: menuItemTypographyStyles,
-              })
-            )}
+            sx={sx.menuItem}>
+            {renderIcon(tab.icon, sx.menuItemTypography)}
             {tab.label}
           </MenuItem>
         ))}
       </Menu>
+      {content[selectedTab].content}
     </Box>
   );
 };

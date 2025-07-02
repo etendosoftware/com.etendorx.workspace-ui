@@ -1,49 +1,56 @@
-import { useRef, useState, useEffect } from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import { ExpandLess, ExpandMore } from '@mui/icons-material';
-import { styles } from '../styles';
-import { Tooltip } from '@mui/material';
-import { MenuTitleProps } from '../types';
+"use client";
 
-export default function MenuTitle({ item, onClick, selected, expanded, open }: MenuTitleProps) {
-  const textRef = useRef<HTMLSpanElement>(null);
-  const [isTextTruncated, setIsTextTruncated] = useState(false);
+import React from "react";
+import ChevronDown from "../../../assets/icons/chevron-down.svg";
+import type { MenuTitleProps } from "../types";
 
-  useEffect(() => {
-    const checkTextTruncation = () => {
-      if (textRef.current) {
-        setIsTextTruncated(textRef.current.scrollWidth > textRef.current.clientWidth);
-      }
-    };
-
-    checkTextTruncation();
-    window.addEventListener('resize', checkTextTruncation);
-    return () => window.removeEventListener('resize', checkTextTruncation);
-  }, [item.name]);
-
-  return (
-    <Box
-      onClick={onClick}
-      sx={{
-        ...styles.listItemButton,
-        ...styles.listItemContentText,
-        ...(selected ? styles.listItemButtonSelected : undefined),
-        ...(open ? undefined : styles.iconsClosed),
-      }}>
-      <div style={styles.listItemInnerContentText}>
-        <Typography sx={styles.listItemText}>
-          {item.icon ? <span>{item.icon}</span> : null}
+export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
+  ({ item, onClick, selected, expanded, open, popperOpen }) => {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`flex items-center transition-colors duration-300 cursor-pointer ${open && "w-full"}
+        ${
+          open
+            ? `rounded-lg text-xl justify-between p-1 gap-1 ${
+                selected
+                  ? "bg-dynamic-main text-neutral-50 hover:bg-neutral-90"
+                  : "text-neutral-90 hover:bg-dynamic-main hover:text-neutral-50 hover:text-neutral-0"
+              }`
+            : "hover:bg-dynamic-main rounded-full justify-center items-center w-9 h-9 p-0"
+        }
+      `}>
+        <div className={`flex items-center ${open ? "overflow-hidden" : ""}`}>
+          <div className={`${open ? "w-8" : "w-full h-full"} flex justify-center items-center`}>
+            {item.icon || (
+              <span className="text-base">
+                {item.type === "Report"
+                  ? "📊"
+                  : item.type === "ProcessDefinition" || item.type === "ProcessManual"
+                    ? "⚙️"
+                    : "📁"}
+              </span>
+            )}
+          </div>
           {open && (
-            <Tooltip title={item.name} arrow disableHoverListener={!isTextTruncated}>
-              <span ref={textRef} style={styles.tooltipTruncation}>
+            <div className="relative group flex items-center py-1.5">
+              <span className="ml-2 font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-40">
                 {item.name}
               </span>
-            </Tooltip>
+            </div>
           )}
-        </Typography>
-      </div>
-      {open && item.children && (expanded ? <ExpandLess /> : <ExpandMore />)}
-    </Box>
-  );
-}
+        </div>
+        {open && item.children && !popperOpen && (
+          <div className={`transition-transform duration-300 flex justify-center ${expanded ? "rotate-180" : ""}`}>
+            <ChevronDown />
+          </div>
+        )}
+      </button>
+    );
+  }
+);
+
+MenuTitle.displayName = "MenuTitle";
+
+export default MenuTitle;

@@ -1,15 +1,12 @@
-import React from 'react';
-import Switch from '@mui/material/Switch';
-import { styled, Theme } from '@mui/material/styles';
-import switchStyles from './Toggle.styles';
-import { ToggleChipProps } from './types';
+import type React from "react";
+import Switch from "@mui/material/Switch";
+import { useStyle } from "./styles";
+import type { ToggleChipProps } from "./types";
 
-const StyledSwitch = styled(Switch)(({ theme }: { theme: Theme }) =>
-  switchStyles(theme),
-);
+const ToggleChip: React.FC<ToggleChipProps> = ({ isActive, onToggle }) => {
+  const { sx } = useStyle();
 
-const ToggleChip: React.FC<ToggleChipProps> = ({ isActive, onToggle }) => (
-  <StyledSwitch checked={isActive} onChange={onToggle} />
-);
+  return <Switch checked={isActive} onChange={onToggle} sx={sx.switch} />;
+};
 
 export default ToggleChip;

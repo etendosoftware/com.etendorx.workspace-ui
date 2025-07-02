@@ -1,4 +1,4 @@
-import Divider from '@mui/material/Divider';
+import Divider from "@mui/material/Divider";
 
 const ModalDivider = () => <Divider />;
 

@@ -1,45 +1,29 @@
-import { forwardRef } from 'react';
-import { MenuOpen } from '@mui/icons-material';
-import { IconButton } from '../..';
-import { styles } from '../styles';
+"use client";
 
-const openSx = {
-  transform: 'rotate(0deg)',
-};
+import MenuClose from "../../../assets/icons/menu-close.svg";
+import MenuOpen from "../../../assets/icons/menu-open.svg";
+import IconButton from "../../IconButton";
+import Logo from "../../Logo";
+import type { DrawerHeaderProps } from "../types";
 
-const closedSx = {
-  transform: 'rotate(180deg)',
-};
-
-const DrawerHeader = forwardRef<
-  HTMLDivElement,
-  {
-    title: string;
-    logo: string;
-    open?: boolean;
-    onClick: () => unknown;
-    tabIndex?: number;
-  }
->(({ title, logo, open, onClick, tabIndex }, ref) => {
+const DrawerHeader = ({ title, logo, open, onClick, tabIndex }: DrawerHeaderProps) => {
   return (
-    <div style={styles.drawerHeader} ref={ref}>
-      {open ? (
-        <div style={styles.drawerHeaderImgBox}>
-          <img src={logo} alt={`${title} Logo`} style={styles.drawerHeaderImg} />
-          <span style={styles.drawerHeaderTitle}>{title}</span>
+    <div className="h-14 flex items-center justify-end p-2 border-b border-(--color-transparent-neutral-10)">
+      {open && (
+        <div className="w-full">
+          <a href="/" className="flex items-center gap-1" title="Etendo">
+            <Logo logo={logo} title={title} />
+            <span className="font-semibold text-(--color-baseline-neutral-90) text-base">{title}</span>
+          </a>
         </div>
-      ) : null}
-      <IconButton
-        onClick={onClick}
-        sx={open ? openSx : closedSx}
-        className="animated-transform"
-        height={20}
-        width={20}
-        tabIndex={tabIndex}>
-        <MenuOpen />
-      </IconButton>
+      )}
+      <div>
+        <IconButton onClick={onClick} className="h-9 w-9" tabIndex={tabIndex}>
+          {open ? <MenuClose /> : <MenuOpen />}
+        </IconButton>
+      </div>
     </div>
   );
-});
+};
 
 export default DrawerHeader;

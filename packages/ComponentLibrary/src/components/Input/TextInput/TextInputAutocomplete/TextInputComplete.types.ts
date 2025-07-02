@@ -1,4 +1,4 @@
-import { StandardTextFieldProps } from '@mui/material';
+import type { StandardTextFieldProps, FormControlOwnProps } from "@mui/material";
 
 export interface TextInputProps extends StandardTextFieldProps {
   value: string;
@@ -11,4 +11,7 @@ export interface TextInputProps extends StandardTextFieldProps {
   onLeftIconClick?: () => void;
   onRightIconClick?: () => void;
   placeholder?: string | undefined;
+  margin?: FormControlOwnProps["margin"];
+  disabled?: boolean;
+  readOnly?: boolean;
 }

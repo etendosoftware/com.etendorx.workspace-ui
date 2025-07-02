@@ -1,28 +1,28 @@
-import React, { useState } from 'react';
+"use client";
+
+import CancelIcon from "@mui/icons-material/Cancel";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Autocomplete,
-  AutocompleteRenderInputParams,
+  type AutocompleteRenderInputParams,
   FormHelperText,
   InputAdornment,
   Paper,
-  PaperProps,
+  type PaperProps,
   TextField,
-  Tooltip,
   Typography,
-} from '@mui/material';
-import { PRIMARY_CONTRAST, styles } from './style';
-import CancelIcon from '@mui/icons-material/Cancel';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { ISelectInput, Option } from './types';
-import './style.css';
-import { theme } from '../../../theme';
-
-const CustomPaper: React.FC<PaperProps> = props => {
-  return <Paper {...props} sx={styles.optionsContainer} />;
-};
+  useTheme,
+} from "@mui/material";
+import type React from "react";
+import { useState } from "react";
+import { useStyle } from "./style";
+import type { ISelectInput, Option as BaseOption } from "./types";
 
 type OptionProps = React.HTMLAttributes<HTMLLIElement> & { key?: string };
+type Option<T extends string = string> = BaseOption<T> & {
+  iconLeft?: React.ReactNode;
+}
 
 const Select: React.FC<ISelectInput> = ({
   title,
@@ -30,10 +30,17 @@ const Select: React.FC<ISelectInput> = ({
   options = [],
   disabled = false,
   helperText,
+  name,
   ...props
 }) => {
-  const [inputValue, setInputValue] = useState<string>('');
+  const { sx } = useStyle();
+  const theme = useTheme();
+  const [inputValue, setInputValue] = useState<string>("");
   const [focused, setFocused] = useState<boolean>(false);
+
+  const CustomPaper: React.FC<PaperProps> = (paperProps) => {
+    return <Paper {...paperProps} sx={sx.optionsContainer} />;
+  };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(event.target.value);
@@ -45,58 +52,73 @@ const Select: React.FC<ISelectInput> = ({
 
   const handleBlur = () => {
     setFocused(false);
-    setInputValue('');
+    setInputValue("");
   };
 
-  const handleSelectionChange = (
-    event: React.SyntheticEvent<Element, Event>,
-    value: Option | null,
-  ) => {
+  const handleSelectionChange = (event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
     props.onChange?.(event, value);
   };
 
   const getBackgroundFocus = (): string => {
     if (!focused || inputValue) {
-      return 'transparent';
+      return "transparent";
     }
-    return PRIMARY_CONTRAST;
+    return theme.palette.baselineColor.neutral[0];
   };
 
   const renderInput = (params: AutocompleteRenderInputParams) => (
-    <Tooltip title={inputValue} arrow>
-      <TextField
-        {...params}
-        sx={{
-          ...styles.root,
-          '& .MuiInput-root': {
-            ...styles.root['& .MuiInput-root'],
-            backgroundColor: getBackgroundFocus(),
-          },
-        }}
-        InputLabelProps={{
-          style: styles.labelProps,
-          shrink: true,
-        }}
-        InputProps={{
-          ...params.InputProps,
-          sx: styles.props,
-          startAdornment: iconLeft && (
-            <InputAdornment position="start">{iconLeft}</InputAdornment>
-          ),
-          endAdornment: (
-            <div style={styles.buttonsContainer}>
-              {params.InputProps.endAdornment}
-            </div>
-          ),
-        }}
-        label={title}
-        variant="standard"
-        onChange={handleInputChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-      />
-    </Tooltip>
+    <TextField
+      {...params}
+      sx={{
+        ...sx.root,
+        "& .MuiInput-root": {
+          ...sx.root["& .MuiInput-root"],
+          backgroundColor: getBackgroundFocus(),
+        },
+      }}
+      InputLabelProps={{
+        style: sx.labelProps,
+        shrink: true,
+      }}
+      InputProps={{
+        ...params.InputProps,
+        name,
+        sx: sx.props,
+        startAdornment: iconLeft && <InputAdornment position="start">{iconLeft}</InputAdornment>,
+        endAdornment: <div style={sx.buttonsContainer}>{params.InputProps.endAdornment}</div>,
+      }}
+      label={title}
+      variant="standard"
+      onChange={handleInputChange}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      name={name}
+    />
   );
+
+  const renderOption = (params: OptionProps, option: Option<string>, { selected }: { selected: boolean }) => {
+    const { key, ...otherParams } = params;
+    return (
+      <li
+        key={option.value + params.key}
+        style={{
+          ...sx.optionContainer,
+          backgroundColor: selected ? theme.palette.baselineColor.neutral[0] : undefined,
+        }}
+        {...otherParams}
+      >
+        {option?.iconLeft && <div style={{marginRight: "0.5rem"}}>{option.iconLeft}</div>}
+        <Typography
+          className="textOption"
+          color={selected ? theme.palette.dynamicColor.dark : theme.palette.baselineColor.neutral[90]}
+          style={sx.optionText}
+        >
+          {option.title}
+        </Typography>
+        {selected && <CheckCircleIcon style={sx.checkIcon} />}
+      </li>
+    );
+  };
 
   return (
     <>
@@ -104,47 +126,22 @@ const Select: React.FC<ISelectInput> = ({
         {...props}
         disabled={disabled}
         options={options}
-        getOptionLabel={option => option.title}
-        clearIcon={<CancelIcon style={styles.dropdownIcons} />}
-        popupIcon={<ExpandMoreIcon style={styles.dropdownIcons} />}
+        getOptionLabel={(option) => option.title}
+        clearIcon={<CancelIcon style={sx.dropdownIcons} />}
+        popupIcon={<ExpandMoreIcon style={sx.dropdownIcons} />}
         renderInput={renderInput}
-        sx={styles.autocomplete}
+        sx={sx.autocomplete}
         PaperComponent={CustomPaper}
         ListboxProps={{
-          sx: styles.listBox,
+          sx: sx.listBox,
         }}
         onChange={handleSelectionChange}
-        renderOption={(props: OptionProps, option, { selected }) => {
-          const { key, ...otherProps } = props;
-          return (
-            <li
-              key={key}
-              style={{
-                ...styles.optionContainer,
-                backgroundColor: selected ? PRIMARY_CONTRAST : undefined,
-              }}
-              {...otherProps}>
-              <Typography
-                className="textOption"
-                color={
-                  selected
-                    ? theme.palette.dynamicColor.dark
-                    : theme.palette.baselineColor.neutral[90]
-                }
-                style={styles.optionText}>
-                {option.title}
-              </Typography>
-              {selected && <CheckCircleIcon style={styles.checkIcon} />}
-            </li>
-          );
-        }}
+        renderOption={renderOption}
       />
       {helperText && (
-        <FormHelperText component="div" style={styles.helperTextContainer}>
+        <FormHelperText component="div" style={sx.helperTextContainer}>
           {helperText.icon}
-          {helperText.label && (
-            <span style={styles.helperText}>{helperText.label}</span>
-          )}
+          {helperText.label && <span style={sx.helperText}>{helperText.label}</span>}
         </FormHelperText>
       )}
     </>

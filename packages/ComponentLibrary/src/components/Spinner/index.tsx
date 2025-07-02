@@ -1,7 +1,5 @@
-import Box from '@mui/material/Box';
-import CircularProgress, {
-  type CircularProgressProps,
-} from '@mui/material/CircularProgress';
+import Box from "@mui/material/Box";
+import CircularProgress, { type CircularProgressProps } from "@mui/material/CircularProgress";
 
 export default function Spinner(props: CircularProgressProps) {
   return (

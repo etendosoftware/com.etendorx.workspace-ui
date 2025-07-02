@@ -1,36 +1,35 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
     "skipLibCheck": true,
-    "types": ["vite-plugin-svgr/client"],
-
-    /* Bundler mode */
-    "moduleResolution": "bundler",
+    "preserveSymlinks": true,
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
     "baseUrl": ".",
+    "composite": true,
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+
+    "target": "ES5",
+    "module": "ESNext",
+    "declaration": true,
+    "declarationDir": "./dist/types",
+    "outDir": "./dist",
+    "downlevelIteration": true,
     "paths": {
-      "@workspaceui/storybook": ["../storybook/src"],
-      "@workspaceui/storybook/*": ["../storybook/src/*"],
-      "@workspaceui/componentlibrary/*": ["../ComponentLibrary/src/*"],
-      "@workspaceui/componentlibrary": ["../ComponentLibrary/src"],
-      "@workspaceui/etendohookbinder/*": ["../EtendoHookBinder/src/*"],
-      "@workspaceui/etendohookbinder": ["../EtendoHookBinder/src"]
+      "@/*": ["./*"]
     }
   },
-  "include": ["src", "svg.d.ts"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": ["src"],
+  "exclude": ["node_modules"]
 }

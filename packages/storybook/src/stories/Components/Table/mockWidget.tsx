@@ -1,19 +1,7 @@
-import { Box } from '@mui/material';
-import { Organization, Widget } from './types';
-import SideIcon from '../../../../../ComponentLibrary/src/assets/icons/codesandbox.svg';
-import TabWidget from '../../../../../ComponentLibrary/src/components/Widgets/TabWidget';
-import { RecordContextType } from '../../../../../MainUI/src/contexts/record';
-import { TranslationKeys } from '../../../../../ComponentLibrary/src/locales/types';
-
-type NestedKeyOf<ObjectType extends object> = {
-  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
-    ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}`
-    : `${Key}`;
-}[keyof ObjectType & (string | number)];
-
-type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(
-  key: K,
-) => string;
+import { Box, Typography } from '@mui/material';
+import SideIcon from '@workspaceui/componentlibrary/src/assets/icons/codesandbox.svg';
+import TabWidget from '@workspaceui/componentlibrary/src/components/Widgets/TabWidget';
+import type { TranslateFunction } from '@workspaceui/mainui/hooks/types';
 
 const colors = {
   backgrounds: [
@@ -27,7 +15,7 @@ const colors = {
     '#334e68',
     '#243b53',
     '#102a43',
-    '#000000',
+    '#243b45',
   ],
   text: [
     '#102a43',
@@ -61,30 +49,25 @@ const getContrastColor = (bgColor: string) => {
   return index >= 5 ? colors.text[9] : colors.text[0];
 };
 
-export const createWidgets = (
-  selectedRecord: Organization | null,
-  setSelectedRecord: RecordContextType['setSelectedRecord'],
-  t: TranslateFunction,
-) => {
-  const widgets: Widget[] = [
+export const createWidgets = (t: TranslateFunction) => {
+  const widgets = [
     {
       id: '1',
       children: (
         <TabWidget
-          onSave={() => {}}
-          onCancel={() => {}}
-          editButtonLabel={t('common.edit')}
-          cancelButtonLabel={t('common.cancel')}
-          saveButtonLabel={t('common.save')}
+          title={t('grid.items.erp.text')}
+          content={
+            <Typography variant='h3' fontWeight='bold'>
+              1,245,863.00 €
+            </Typography>
+          }
           noRecordText={t('table.labels.noRecord')}
-          selectedRecord={selectedRecord}
-          setSelectedRecord={setSelectedRecord}
         />
       ),
       icon: <SideIcon fill={colors.text[0]} />,
       iconButtonAction: () => {},
-      tooltip: 'More information',
-      title: 'Total Revenue',
+      tooltip: t('table.tooltips.details'),
+      title: t('grid.items.erp.text'),
       color: getContrastColor(colors.backgrounds[1]),
       bgcolor: colors.backgrounds[1],
       iconBgColor: colors.accents[2],
@@ -96,11 +79,12 @@ export const createWidgets = (
     },
     {
       id: '2',
-      children: <Box>💰 754,320.50</Box>,
+      children: <Box>💰 754,320.50 €</Box>,
       size: 'half',
-      title: 'Profit',
+      title: t('grid.items.tailored.text'),
       icon: <SideIcon fill={colors.text[9]} />,
       iconButtonAction: () => {},
+      tooltip: t('table.tooltips.details'),
       color: colors.text[10],
       bgcolor: colors.backgrounds[10],
       iconBgColor: colors.accents[7],
@@ -113,9 +97,10 @@ export const createWidgets = (
       id: '3',
       children: <Box>📊 25.7%</Box>,
       size: 'half',
-      title: 'Growth Rate',
+      title: t('grid.items.adaptable.text'),
       icon: <SideIcon fill={getContrastColor(colors.backgrounds[5])} />,
       iconButtonAction: () => {},
+      tooltip: t('table.tooltips.details'),
       color: getContrastColor(colors.backgrounds[5]),
       bgcolor: colors.backgrounds[5],
       iconBgColor: colors.accents[4],
@@ -128,9 +113,10 @@ export const createWidgets = (
       id: '4',
       children: <Box>👥 12,453</Box>,
       size: 'full',
-      title: 'Active Users',
+      title: t('breadcrumb.newRecord'),
       icon: <SideIcon fill={getContrastColor(colors.backgrounds[7])} />,
       iconButtonAction: () => {},
+      tooltip: t('table.tooltips.details'),
       color: getContrastColor(colors.backgrounds[7]),
       bgcolor: colors.backgrounds[7],
       iconBgColor: colors.accents[5],
@@ -143,9 +129,10 @@ export const createWidgets = (
       id: '5',
       children: <Box>📈 89.3%</Box>,
       size: 'half',
-      title: 'Customer Satisfaction',
+      title: t('drawer.recentlyViewed'),
       icon: <SideIcon fill={getContrastColor(colors.backgrounds[2])} />,
       iconButtonAction: () => {},
+      tooltip: t('table.tooltips.details'),
       color: getContrastColor(colors.backgrounds[2]),
       bgcolor: colors.backgrounds[2],
       iconBgColor: colors.accents[1],
@@ -158,9 +145,10 @@ export const createWidgets = (
       id: '6',
       children: <Box>🏆 Top 10%</Box>,
       size: 'half',
-      title: 'Market Position',
+      title: t('process.messageTitle'),
       icon: <SideIcon fill={getContrastColor(colors.backgrounds[4])} />,
       iconButtonAction: () => {},
+      tooltip: t('table.tooltips.details'),
       color: getContrastColor(colors.backgrounds[4]),
       bgcolor: colors.backgrounds[4],
       iconBgColor: colors.accents[2],
@@ -171,11 +159,12 @@ export const createWidgets = (
     },
     {
       id: '7',
-      children: <Box>🏆 Top 10%</Box>,
+      children: <Box>📦 1,245</Box>,
       size: 'half',
-      title: 'Market Position',
+      title: t('navigation.activityButton.tooltip'),
       icon: <SideIcon fill={getContrastColor(colors.backgrounds[4])} />,
       iconButtonAction: () => {},
+      tooltip: t('table.tooltips.details'),
       color: getContrastColor(colors.backgrounds[4]),
       bgcolor: colors.backgrounds[4],
       iconBgColor: colors.accents[2],
@@ -186,11 +175,12 @@ export const createWidgets = (
     },
     {
       id: '8',
-      children: <Box>🏆 Top 10%</Box>,
+      children: <Box>🔄 87.5%</Box>,
       size: 'half',
-      title: 'Market Position',
+      title: t('process.completedSuccessfully'),
       icon: <SideIcon fill={getContrastColor(colors.backgrounds[4])} />,
       iconButtonAction: () => {},
+      tooltip: t('table.tooltips.details'),
       color: getContrastColor(colors.backgrounds[4]),
       bgcolor: colors.backgrounds[4],
       iconBgColor: colors.accents[2],
@@ -201,11 +191,12 @@ export const createWidgets = (
     },
     {
       id: '9',
-      children: <Box>🏆 Top 10%</Box>,
+      children: <Box>⏱️ 98.2%</Box>,
       size: 'half',
-      title: 'Market Position',
+      title: t('navigation.waterfall.tooltipButton'),
       icon: <SideIcon fill={getContrastColor(colors.backgrounds[4])} />,
       iconButtonAction: () => {},
+      tooltip: t('table.tooltips.details'),
       color: getContrastColor(colors.backgrounds[4]),
       bgcolor: colors.backgrounds[4],
       iconBgColor: colors.accents[2],

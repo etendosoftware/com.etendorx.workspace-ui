@@ -1,26 +1,14 @@
-import { Grid, Link, Menu } from '@mui/material';
-import React, { useEffect, useState } from 'react';
-import {
-  BORDER_SELECT_1,
-  BORDER_SELECT_2,
-  COLUMN_SPACING,
-  FIRST_MARGIN_TOP,
-  menuSyle,
-  styles,
-  sx,
-} from './style';
-import { IConfigurationModalProps, ISection } from './types';
-import checkIconUrl from '../../assets/icons/check-circle-filled.svg?url';
-import './style.css';
-import { theme } from '../../theme';
-import IconButton from '../IconButton';
+import { Grid, Link, useTheme } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import checkIconUrl from "../../assets/icons/check-circle-filled.svg?url";
+import { BORDER_SELECT_1, BORDER_SELECT_2, COLUMN_SPACING, FIRST_MARGIN_TOP, useStyle } from "./style";
+import type { IConfigurationModalProps, ISection } from "./types";
+import "./style.css";
+import IconButton from "../IconButton";
+import Menu from "../Menu";
 
-const IconRenderer = ({
-  icon,
-}: {
-  icon: string | React.ReactNode;
-}): JSX.Element => {
-  if (typeof icon === 'string') {
+const IconRenderer = ({ icon }: { icon: string | React.ReactNode }): JSX.Element => {
+  if (typeof icon === "string") {
     return <img src={icon} alt="icon" />;
   }
   if (React.isValidElement(icon)) {
@@ -31,20 +19,22 @@ const IconRenderer = ({
 
 const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
   icon,
-  tooltipButtonProfile = '',
+  tooltipButtonProfile = "",
   title,
   linkTitle,
   sections = [],
-  open,
   onChangeSelect,
   ...props
 }) => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [sectionsState, setSectionsState] = useState<ISection[]>(sections);
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+
   const [hoveredItem, setHoveredItem] = useState<{
     sectionIndex: number;
     imageIndex: number;
   } | null>(null);
+  const theme = useTheme();
+  const { styles, sx } = useStyle();
 
   useEffect(() => {
     setSectionsState(sections);
@@ -58,15 +48,8 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
     setAnchorEl(null);
   };
 
-  const handleOpen = (): boolean => {
-    if (open !== undefined) {
-      return open;
-    }
-    return Boolean(anchorEl);
-  };
-
   const handleImageClick = (sectionIndex: number, imageIndex: number) => {
-    setSectionsState(prevSections => {
+    setSectionsState((prevSections) => {
       const newSections = [...prevSections];
       newSections[sectionIndex] = {
         ...newSections[sectionIndex],
@@ -89,11 +72,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
     setHoveredItem(null);
   };
 
-  const addBorder = (
-    selectedImageIndex: number,
-    imageIndex: number,
-    sectionIndex: number,
-  ) => {
+  const addBorder = (selectedImageIndex: number, imageIndex: number, sectionIndex: number) => {
     if (isSelected(selectedImageIndex, imageIndex)) {
       return BORDER_SELECT_2 + theme.palette.dynamicColor.main;
     }
@@ -103,19 +82,12 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
     return BORDER_SELECT_1 + theme.palette.baselineColor.neutral[30];
   };
 
-  const isSelected = (
-    selectedImageIndex: number,
-    imageIndex: number,
-  ): boolean => {
+  const isSelected = (selectedImageIndex: number, imageIndex: number): boolean => {
     return selectedImageIndex === imageIndex;
   };
 
   const isHovered = (sectionIndex: number, imageIndex: number): boolean => {
-    return (
-      hoveredItem !== null &&
-      hoveredItem.sectionIndex === sectionIndex &&
-      hoveredItem.imageIndex === imageIndex
-    );
+    return hoveredItem !== null && hoveredItem.sectionIndex === sectionIndex && hoveredItem.imageIndex === imageIndex;
   };
 
   const removeFirstMargin = (index: number): number | string => {
@@ -124,22 +96,10 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
 
   return (
     <>
-      <IconButton
-        onClick={handleClick}
-        style={styles.iconButtonStyles}
-        sx={sx.hoverStyles}
-        tooltip={tooltipButtonProfile}>
+      <IconButton onClick={handleClick} tooltip={tooltipButtonProfile} disabled={true} className="w-10 h-10">
         {icon}
       </IconButton>
-      <Menu
-        {...props}
-        anchorEl={anchorEl}
-        open={handleOpen()}
-        onClose={handleClose}
-        slotProps={{
-          paper: { sx: styles.paperStyleMenu },
-        }}
-        MenuListProps={{ sx: menuSyle }}>
+      <Menu {...props} anchorEl={anchorEl} onClose={handleClose}>
         <div style={styles.titleModalContainer}>
           <div style={styles.titleModalImageContainer}>
             {title?.icon && (
@@ -165,29 +125,25 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
               <Grid columnSpacing={COLUMN_SPACING} container>
                 {section.items.map(({ id, label, img }, imageIndex) => (
                   <Grid item key={id}>
-                    <div
+                    <button
+                      type="button"
                       onClick={() => handleImageClick(sectionIndex, imageIndex)}
-                      onMouseEnter={() =>
-                        handleMouseEnter(sectionIndex, imageIndex)
-                      }
+                      onMouseEnter={() => handleMouseEnter(sectionIndex, imageIndex)}
                       onMouseLeave={handleMouseLeave}
                       style={{
-                        border: addBorder(
-                          section.selectedItem,
-                          imageIndex,
-                          sectionIndex,
-                        ),
+                        border: addBorder(section.selectedItem, imageIndex, sectionIndex),
                         ...styles.imgContainer,
                       }}>
                       <IconRenderer icon={img} />
-                    </div>
+                    </button>
                     <div style={styles.labelIconContainer}>
                       {isSelected(section.selectedItem, imageIndex) && (
                         <img
                           alt="Selected Item Icon"
                           className="fade-in-left"
                           style={styles.labelIcon}
-                          src={checkIconUrl}></img>
+                          src={checkIconUrl}
+                        />
                       )}
                       <div style={styles.label}>{label}</div>
                     </div>

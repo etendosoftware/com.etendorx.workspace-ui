@@ -1,4 +1,4 @@
-import { MenuProps } from '@mui/material';
+import type { MenuProps } from "@mui/material";
 
 export interface ISection {
   name: string;
@@ -6,17 +6,12 @@ export interface ISection {
   selectedItem: number;
 }
 
-export interface IConfigurationModalProps
-  extends Omit<MenuProps, 'open' | 'title'> {
-  icon: string | React.ReactNode;
+export interface IConfigurationModalProps extends Omit<MenuProps, "open" | "title"> {
+  icon?: React.ReactNode;
   title?: { icon?: string | React.ReactNode; label?: string };
   tooltipButtonProfile?: string;
   linkTitle?: { url?: string; label?: string };
   sections?: ISection[];
   open?: boolean;
-  onChangeSelect?: (
-    id: string,
-    sectionIndex: number,
-    imageIndex: number,
-  ) => void;
+  onChangeSelect?: (id: string, sectionIndex: number, imageIndex: number) => void;
 }

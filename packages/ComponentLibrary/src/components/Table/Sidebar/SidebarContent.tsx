@@ -1,17 +1,11 @@
-import { Box, Typography } from '@mui/material';
-import { SidebarContentProps } from '../../../../../storybook/src/stories/Components/Table/types';
-import ContentGrid from './WidgetContent';
-import { sx } from '../styles';
-import RegisterModal from '../../RegisterModal';
-import { useTranslation } from '../../../../../MainUI/src/hooks/useTranslation';
+import { Box, Typography } from "@mui/material";
+import ContentGrid from "./WidgetContent";
+import { useStyle } from "../styles";
+import RegisterModal from "../../RegisterModal";
+import type { SidebarContentProps } from "./types";
 
-export const SidebarContent: React.FC<SidebarContentProps> = ({
-  icon,
-  identifier,
-  title,
-  widgets,
-}) => {
-  const { t } = useTranslation();
+export const SidebarContent: React.FC<SidebarContentProps> = ({ icon, identifier, title, widgets, translations }) => {
+  const { sx } = useStyle();
 
   return (
     <Box sx={sx.sidebarContainer}>
@@ -27,7 +21,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
         </Box>
       </Box>
       <Box ml={2.5}>
-        <RegisterModal registerText={t('common.register')} />
+        <RegisterModal registerText={translations.register} translations={translations} />
       </Box>
       <ContentGrid widgets={widgets} />
     </Box>

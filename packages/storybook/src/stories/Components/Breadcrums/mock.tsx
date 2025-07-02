@@ -1,13 +1,10 @@
-import {
-  BreadcrumbProps,
-  BreadcrumbAction,
-} from '../../../../../ComponentLibrary/src/components/Breadcrums/types';
-import HomeIcon from '../../../../../ComponentLibrary/src/assets/icons/home.svg';
-import FavoriteIcon from '../../../../../ComponentLibrary/src/assets/icons/star.svg';
-import ContentCopyIcon from '../../../../../ComponentLibrary/src/assets/icons/copy.svg';
-import HelpIcon from '../../../../../ComponentLibrary/src/assets/icons/help-circle.svg';
-import SettingsIcon from '../../../../../ComponentLibrary/src/assets/icons/settings.svg';
-import { theme } from '../../../../../ComponentLibrary/src/theme';
+import type { BreadcrumbProps, BreadcrumbAction } from '@workspaceui/componentlibrary/src/components/Breadcrums/types';
+import HomeIcon from '@workspaceui/componentlibrary/src/assets/icons/home.svg';
+import FavoriteIcon from '@workspaceui/componentlibrary/src/assets/icons/star.svg';
+import ContentCopyIcon from '@workspaceui/componentlibrary/src/assets/icons/copy.svg';
+import HelpIcon from '@workspaceui/componentlibrary/src/assets/icons/help-circle.svg';
+import SettingsIcon from '@workspaceui/componentlibrary/src/assets/icons/settings.svg';
+import { theme } from '@workspaceui/componentlibrary/src/theme';
 
 export const mockDefaultActions: BreadcrumbAction[] = [
   {

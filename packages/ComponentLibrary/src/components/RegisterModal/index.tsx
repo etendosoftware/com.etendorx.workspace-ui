@@ -1,20 +1,18 @@
-import { useState } from 'react';
-import { Button, List } from '@mui/material';
-import { RegisterModalProps } from './types';
-import { theme } from '../../theme';
-import { sx } from './styles';
-import CloseRecordIcon from '../../assets/icons/close-record.svg';
-import Modal from '../BasicModal';
-import { processMock } from '../../../../storybook/src/stories/Components/RegisterModal/registerMock';
-import RadioButtonItem from '../RadioButton';
-import CheckIcon from '../../assets/icons/check-circle.svg';
-import { useTranslation } from '../../../../MainUI/src/hooks/useTranslation';
+import { useState } from "react";
+import { Button, List, useTheme } from "@mui/material";
+import type { RegisterModalProps } from "./types";
+import { useStyle } from "./styles";
+import CloseRecordIcon from "../../assets/icons/close-record.svg";
+import Modal from "../BasicModal";
+import { processMock } from "@workspaceui/storybook/src/stories/Components/RegisterModal/registerMock";
+import RadioButtonItem from "../RadioButton";
+import CheckIcon from "../../assets/icons/check-circle.svg";
 
-const RegisterModal: React.FC<RegisterModalProps> = ({ registerText }) => {
-  const { t } = useTranslation();
+const RegisterModal: React.FC<RegisterModalProps> = ({ registerText, translations }) => {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isHovering, setIsHovering] = useState(false);
-
+  const theme = useTheme();
+  const { sx } = useStyle();
   const handleMouseEnter = () => setIsHovering(true);
   const handleMouseLeave = () => setIsHovering(false);
 
@@ -24,10 +22,10 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ registerText }) => {
 
   return (
     <Modal
-      tittleHeader={t('common.register')}
-      descriptionText={t('registerModal.descriptionText')}
-      saveButtonLabel={t('common.save')}
-      secondaryButtonLabel={t('common.cancel')}
+      tittleHeader={translations.register}
+      descriptionText={translations.descriptionText}
+      saveButtonLabel={translations.save}
+      secondaryButtonLabel={translations.cancel}
       SaveIcon={CheckIcon}
       HeaderIcon={CloseRecordIcon}
       showHeader
@@ -39,18 +37,14 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ registerText }) => {
           onMouseLeave={handleMouseLeave}
           startIcon={
             <CloseRecordIcon
-              fill={
-                isHovering
-                  ? theme.palette.baselineColor.neutral[0]
-                  : theme.palette.baselineColor.neutral[80]
-              }
+              fill={isHovering ? theme.palette.baselineColor.neutral[0] : theme.palette.baselineColor.neutral[80]}
             />
           }>
           {registerText}
         </Button>
       }>
       <List sx={sx.itemList}>
-        {processMock.map(item => (
+        {processMock.map((item) => (
           <RadioButtonItem
             key={item.id}
             id={item.id}

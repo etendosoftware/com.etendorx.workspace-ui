@@ -1,9 +1,8 @@
-import React from 'react';
-import { TextField, InputAdornment, IconButton } from '@mui/material';
-import { TextInputProps } from '../TextInputAutocomplete/TextInputComplete.types';
-import { inputBaseStyles } from './TextInputBase.styles';
-import { theme } from '../../../../theme';
-
+import type React from "react";
+import { TextField, InputAdornment } from "@mui/material";
+import type { TextInputProps } from "../TextInputAutocomplete/TextInputComplete.types";
+import { useStyle } from "./TextInputBase.styles";
+import IconButton from "../../../IconButton";
 const TextInputBase = (props: TextInputProps) => {
   const {
     value,
@@ -14,8 +13,13 @@ const TextInputBase = (props: TextInputProps) => {
     onLeftIconClick,
     onRightIconClick,
     type,
+    disabled,
+    readOnly,
     ...otherProps
   } = props;
+  const { styles, sx, cssString } = useStyle();
+
+  const isDisabled = disabled || readOnly;
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue?.(event.target.value);
@@ -23,48 +27,39 @@ const TextInputBase = (props: TextInputProps) => {
 
   return (
     <>
-      <style>{inputBaseStyles.cssStyles}</style>
+      <style>{cssString}</style>
       <TextField
-        id="input-base"
+        id={props.name}
         variant="standard"
         required
         fullWidth
         value={value}
         onChange={handleChange}
+        disabled={isDisabled}
         InputLabelProps={{
-          htmlFor: 'input-base',
-          id: 'input-base-label',
+          htmlFor: props.name,
         }}
         label={label}
         type={type}
         InputProps={{
+          name: props.name,
           startAdornment: leftIcon && (
-            <InputAdornment
-              position="start"
-              sx={inputBaseStyles.inputAdornment}>
-              <IconButton
-                aria-label="left icon"
-                onClick={onLeftIconClick}
-                size="small"
-                sx={{ color: theme.palette.baselineColor.neutral[60] }}>
+            <InputAdornment position="start" sx={styles.inputAdornment}>
+              <IconButton aria-label="left icon" onClick={onLeftIconClick}>
                 {leftIcon}
               </IconButton>
             </InputAdornment>
           ),
           endAdornment: rightIcon && (
-            <InputAdornment position="end" sx={inputBaseStyles.inputAdornment}>
-              <IconButton
-                aria-label="right-icon"
-                onClick={onRightIconClick}
-                size="small"
-                sx={{ color: theme.palette.baselineColor.neutral[60] }}>
+            <InputAdornment position="end" sx={styles.inputAdornment}>
+              <IconButton aria-label="right-icon" onClick={onRightIconClick}>
                 {rightIcon}
               </IconButton>
             </InputAdornment>
           ),
-          style: inputBaseStyles.inputStyle,
+          style: styles.inputStyle,
         }}
-        sx={inputBaseStyles.inputBase}
+        sx={sx.inputBase}
         placeholder={props.placeholder}
         {...otherProps}
       />

@@ -1,20 +1,52 @@
-import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
-import { Box } from '..';
-import { styles } from './styles';
-import { DrawerProps } from './types';
-import DrawerHeader from './Header';
-import TextInputAutocomplete from '../Input/TextInput/TextInputAutocomplete';
-import { createSearchIndex, filterItems, getAllItemTitles } from '../../utils/searchUtils';
-import DrawerItems from './Search';
+"use client";
+import type { Menu } from "@workspaceui/api-client/src/api/types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getAllItemTitles } from "../../utils/searchUtils";
+import TextInputAutocomplete from "../Input/TextInput/TextInputAutocomplete";
+import DrawerHeader from "./Header";
+import { DrawerItems } from "./Search";
+import type { DrawerProps } from "./types";
 
-const Drawer: React.FC<DrawerProps> = ({ items = [], logo, title, onClick }) => {
-  const [open, setOpen] = useState<boolean>(true);
-  const [searchValue, setSearchValue] = useState<string>('');
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+const DRAWER_STATE_KEY = "etendo-drawer-open";
+interface RecentlyViewedHandler {
+  handleWindowAccess?: (item: Menu) => void;
+}
 
-  const handleHeaderClick = useCallback(() => setOpen(prev => !prev), []);
+const Drawer: React.FC<DrawerProps> = ({
+  windowId,
+  items = [],
+  logo,
+  title,
+  onClick,
+  onReportClick,
+  onProcessClick,
+  RecentlyViewedComponent,
+  getTranslatedName,
+  searchContext,
+}) => {
+  const [open, setOpen] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const savedState = localStorage.getItem(DRAWER_STATE_KEY);
+      return savedState ? JSON.parse(savedState) : false;
+    }
+    return false;
+  });
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const drawerRefs = useRef<{
+    recentlyViewedHandler: RecentlyViewedHandler;
+  }>({
+    recentlyViewedHandler: {},
+  });
+
+  const { searchValue, setSearchValue, filteredItems, expandedItems, setExpandedItems, searchIndex } = searchContext;
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(DRAWER_STATE_KEY, JSON.stringify(open));
+    }
+  }, [open]);
 
   useEffect(() => {
     if (open && searchInputRef.current) {
@@ -22,78 +54,82 @@ const Drawer: React.FC<DrawerProps> = ({ items = [], logo, title, onClick }) => 
     }
   }, [open]);
 
-  const drawerStyle = useMemo(
-    () => ({
-      ...styles.drawerPaper,
-      width: open ? '16.25rem' : '3.5rem',
-      height: '100vh',
-      transition: 'width 0.5s ease-in-out',
-      display: 'flex',
-    }),
-    [open],
-  );
+  const allItemTitles = useMemo(() => (searchIndex ? getAllItemTitles(searchIndex) : []), [searchIndex]);
 
-  const searchIndex = useMemo(() => createSearchIndex(items), [items]);
+  const handleHeaderClick = useCallback(() => setOpen((prev) => !prev), []);
 
-  const { filteredItems, searchExpandedItems } = useMemo(
-    () => filterItems(items, searchValue, searchIndex),
-    [items, searchValue, searchIndex],
-  );
-
-  const allItemTitles = useMemo(() => getAllItemTitles(searchIndex), [searchIndex]);
-
-  const handleSearch = useCallback(
-    (value: string) => {
-      setSearchValue(value);
-      if (value) {
-        setExpandedItems(prev => new Set([...prev, ...searchExpandedItems]));
-      } else {
-        setExpandedItems(new Set());
-      }
+  const toggleItemExpansion = useCallback(
+    (itemId: string) => {
+      setExpandedItems((prev: Set<string>) => {
+        const newSet = new Set(prev);
+        if (newSet.has(itemId)) {
+          newSet.delete(itemId);
+        } else {
+          newSet.add(itemId);
+        }
+        return newSet;
+      });
     },
-    [searchExpandedItems],
+    [setExpandedItems]
   );
 
-  const toggleItemExpansion = useCallback((itemId: string) => {
-    setExpandedItems(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
-      } else {
-        newSet.add(itemId);
-      }
-      return newSet;
-    });
+  const handleItemClick = useCallback(
+    (item: Menu) => {
+      drawerRefs.current.recentlyViewedHandler.handleWindowAccess?.(item);
+      onClick(item);
+    },
+    [onClick]
+  );
+
+  const setRecentlyViewedRef = useCallback((ref: RecentlyViewedHandler) => {
+    drawerRefs.current.recentlyViewedHandler = ref;
   }, []);
 
   return (
-    <div style={drawerStyle}>
+    <div
+      className={`h-screen max-h-screen transition-all duration-500 ease-in-out
+      bg-(--color-baseline-0) border-none
+      rounded-tr-xl rounded-br-xl flex flex-col overflow-hidden pb-4
+      ${open ? "w-[16.25rem]" : "w-[3.5rem]"}`}>
       <DrawerHeader logo={logo} title={title} open={open} onClick={handleHeaderClick} tabIndex={-1} />
+      {RecentlyViewedComponent && (
+        <RecentlyViewedComponent
+          onClick={handleItemClick}
+          open={open}
+          items={items}
+          windowId={windowId}
+          getTranslatedName={getTranslatedName}
+          ref={setRecentlyViewedRef}
+        />
+      )}
       {open && (
-        <Box sx={{ padding: '0.5rem' }}>
+        <div className="p-2">
           <TextInputAutocomplete
             value={searchValue}
-            setValue={handleSearch}
+            setValue={setSearchValue}
             placeholder="Search"
             autoCompleteTexts={allItemTitles}
             inputRef={searchInputRef}
           />
-        </Box>
+        </div>
       )}
-      <Box sx={styles.drawerContent} tabIndex={2}>
-        {Array.isArray(filteredItems) ? (
-          <DrawerItems
-            items={filteredItems}
-            onClick={onClick}
-            open={open}
-            expandedItems={expandedItems}
-            toggleItemExpansion={toggleItemExpansion}
-            searchValue={searchValue}
-          />
-        ) : null}
-      </Box>
+      <div className="flex-grow overflow-y-auto">
+        <DrawerItems
+          items={searchValue ? filteredItems : items}
+          onClick={handleItemClick}
+          onReportClick={onReportClick}
+          onProcessClick={onProcessClick}
+          open={open}
+          expandedItems={expandedItems}
+          toggleItemExpansion={toggleItemExpansion}
+          searchValue={searchValue}
+          windowId={windowId}
+        />
+      </div>
     </div>
   );
 };
+
+export { Drawer };
 
 export default Drawer;

@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
-import { Box } from '@mui/material';
-import SecondaryTabs from '../SecondaryTabs';
-
-import { SearchModalProps } from './types';
-import { DEFAULT_MODAL_WIDTH, styles } from './styles';
-
-import { HeaderSection } from './SubComponents/HeaderSection';
-import { DefaultContent } from './SubComponents/DefaultContent';
-import { TabContent } from './SubComponents/TabContent';
+import { Box } from "@mui/material";
+import { useState } from "react";
+import SecondaryTabs from "../SecondaryTabs";
+import type { SearchModalProps } from "../SecondaryTabs/types";
+import { DefaultContent } from "./SubComponents/DefaultContent";
+import { HeaderSection } from "./SubComponents/HeaderSection";
+import { TabContent as TabContentComponent } from "./SubComponents/TabContent";
+import { DEFAULT_MODAL_WIDTH, useStyle } from "./styles";
 
 const SearchModal: React.FC<SearchModalProps> = ({
   defaultContent,
@@ -16,24 +14,22 @@ const SearchModal: React.FC<SearchModalProps> = ({
   modalWidth = DEFAULT_MODAL_WIDTH,
 }) => {
   const [activeTab, setActiveTab] = useState(0);
+  const { sx } = useStyle();
 
   const renderContent = () => {
-    if (variant === 'default' && defaultContent) {
+    if (variant === "default" && defaultContent) {
       return (
         <>
           <HeaderSection title={defaultContent.headerTitle} />
           <DefaultContent sections={defaultContent.sections} />
         </>
       );
-    } else if (variant === 'tabs' && tabsContent && tabsContent.length > 0) {
+    }
+    if (variant === "tabs" && tabsContent && tabsContent.length > 0) {
       return (
         <>
-          <SecondaryTabs
-            tabsContent={tabsContent}
-            selectedTab={activeTab}
-            onChange={setActiveTab}
-          />
-          <TabContent tabsContent={tabsContent} activeTab={activeTab} />
+          <SecondaryTabs content={tabsContent} selectedTab={activeTab} onChange={setActiveTab} />
+          <TabContentComponent tabsContent={tabsContent} activeTab={activeTab} />
         </>
       );
     }
@@ -41,8 +37,8 @@ const SearchModal: React.FC<SearchModalProps> = ({
   };
 
   return (
-    <Box sx={[styles.container, { width: modalWidth }]}>
-      <Box sx={styles.content(variant)}>{renderContent()}</Box>
+    <Box sx={[sx.container, { width: modalWidth }]}>
+      <Box sx={sx.content(variant)}>{renderContent()}</Box>
     </Box>
   );
 };
