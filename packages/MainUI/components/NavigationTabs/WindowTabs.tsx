@@ -1,4 +1,5 @@
 "use client";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
@@ -7,7 +8,7 @@ import ChevronRightIcon from "@workspaceui/componentlibrary/src/assets/icons/che
 import ChevronLeftIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-left.svg";
 import ChevronsRightIcon from "@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg";
 import WindowTab from "@/components/NavigationTabs/WindowTab";
-import { useCallback, useEffect, useRef, useState } from "react";
+import MenuTabs from "@/components/NavigationTabs/MenuTabs";
 
 const DEFAULT_SCROLL_AMOUNT = 200;
 
@@ -19,6 +20,7 @@ export default function WindowTabs() {
   const [showLeftScrollButton, setShowLeftScrollButton] = useState(false);
   const [showRightScrollButton, setShowRightScrollButton] = useState(false);
   const [showRightMenuButton, setShowRightMenuButton] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     const container = windowContainerRef.current;
@@ -74,6 +76,17 @@ export default function WindowTabs() {
       }
       setShowLeftScrollButton(true);
     }
+  }, []);
+
+  const handleTabMenuOpen = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      setAnchorEl(event.currentTarget);
+    },
+    []
+  );
+
+  const handleTabMenuClose = useCallback(() => {
+    setAnchorEl(null);
   }, []);
 
   const handleGoHome = () => {
@@ -137,12 +150,13 @@ export default function WindowTabs() {
       )}
       {showRightMenuButton && (
         <IconButton
-          onClick={() => {}}
+          onClick={handleTabMenuOpen}
           className="bg-white w-auto h-full rounded-full p-2 text-sm"
         >
           <ChevronsRightIcon />
         </IconButton>
       )}
+      <MenuTabs anchorEl={anchorEl} onClose={handleTabMenuClose} />
     </div>
   );
 }
