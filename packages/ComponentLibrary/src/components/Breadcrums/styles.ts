@@ -21,18 +21,6 @@ export const useStyle = () => {
           flexGrow: 1,
           overflow: "hidden",
         },
-        homeLink: {
-          width: "2.5rem",
-          height: "2.5rem",
-          padding: "0 1rem",
-          borderRadius: "6.5rem",
-          maxWidth: "18.75rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "1.375rem",
-          textDecoration: "none",
-        },
         breadcrumbTypography: {
           fontSize: "1.375rem",
           fontWeight: "600",
@@ -44,48 +32,37 @@ export const useStyle = () => {
         },
         breadcrumbItem: {
           height: "3rem",
-          padding: "0 1rem",
-          borderRadius: "6.5rem",
+          padding: "0",
           maxWidth: "100%",
           display: "inline-flex",
           alignItems: "center",
+          gap: "0.5rem",
         },
         lastItemTypography: {
           fontSize: "1.375rem",
           fontWeight: "600",
-          cursor: "pointer",
           color: theme.palette.baselineColor.neutral[100],
         },
-        link: {
+        textButton: {
           textDecoration: "none",
           color: "inherit",
-          display: "flex",
-          alignItems: "center",
-          height: "100%",
-          width: "100%",
-        },
-        homeContainer: {
-          display: "flex",
-          alignItems: "center",
-        },
-        homeIconString: {
-          backgroundColor: theme.palette.baselineColor.transparentNeutral[5],
-          width: "2.5rem",
-          height: "2.5rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: "1.25rem",
-          padding: "1rem",
-        },
-        homeText: {
-          fontSize: "1.375rem",
-          fontWeight: "600",
-          margin: "0 0.5rem",
-          cursor: "pointer",
-          color: theme.palette.baselineColor.neutral[100],
+          padding: 0,
+          minWidth: "auto",
           "&:hover": {
-            textDecoration: "underline",
+            backgroundColor: "transparent",
+            border: "none",
+          },
+        },
+        iconContainer: {
+          display: "flex",
+          alignItems: "center",
+        },
+        iconButton: {
+          padding: 0,
+          minWidth: "auto",
+          "&:hover": {
+            backgroundColor: "transparent",
+            border: "none",
           },
         },
         actionButton: {
@@ -125,14 +102,6 @@ export const useStyle = () => {
         },
         toggleContainer: {
           marginLeft: "1rem",
-        },
-        homeIconHovered: {
-          "&:hover": {
-            background: theme.palette.baselineColor.neutral[0],
-          },
-        },
-        homeIconComponent: {
-          background: theme.palette.baselineColor.transparentNeutral[5],
         },
       } as { [key: string]: SxProps<Theme> },
     }),

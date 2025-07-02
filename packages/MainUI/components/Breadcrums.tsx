@@ -1,32 +1,49 @@
 "use client";
 
+import { useCallback, useMemo } from "react";
 import { useQueryParams } from "@/hooks/useQueryParams";
 import Breadcrumb from "@workspaceui/componentlibrary/src/components/Breadcrums";
 import type { BreadcrumbItem } from "@workspaceui/componentlibrary/src/components/Breadcrums/types";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import type React from "react";
-import { useCallback, useMemo } from "react";
-import { BREADCRUMB, ROUTE_IDS } from "../constants/breadcrumb";
+import { ROUTE_IDS } from "../constants/breadcrumb";
 import { useMetadataContext } from "../hooks/useMetadataContext";
 import { useTranslation } from "../hooks/useTranslation";
 import { styles } from "./styles";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
+import { useSelected } from "@/hooks/useSelected";
 
-const AppBreadcrumb: React.FC = () => {
+interface BreadcrumbProps {
+  allTabs: Tab[][];
+}
+
+const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { t } = useTranslation();
-  const router = useRouter();
   const pathname = usePathname();
   const { window } = useMetadataContext();
   const { windowId } = useQueryParams<{ windowId: string }>();
-  const { navigateToHome } = useMultiWindowURL();
+  const { navigateToHome, clearTabFormState, getTabFormState } = useMultiWindowURL();
+  const { graph } = useSelected();
 
+  const allTabsFormatted = useMemo(() => allTabs.flat(), [allTabs]);
+  const currentTab = useMemo(() => allTabsFormatted.find((tab) => tab.window === windowId), [allTabsFormatted, windowId]);
+  
   const isNewRecord = useCallback(() => pathname.includes("/NewRecord"), [pathname]);
 
   const handleWindowClick = useCallback(
     (windowId: string) => {
-      router.push(`/window?windowId=${windowId}`);
+      const allTabsFormatted = allTabs.flat();
+      const currentTab = allTabsFormatted.find((tab) => tab.window === windowId);
+      if (windowId && currentTab && currentTab.id) {
+        clearTabFormState(windowId, currentTab.id);
+      }
+      if (currentTab && graph) {
+        graph.clear(currentTab);
+        graph.clearSelected(currentTab);
+      }
     },
-    [router]
+    [clearTabFormState, allTabs, graph]
   );
 
   const breadcrumbItems = useMemo(() => {
@@ -47,8 +64,20 @@ const AppBreadcrumb: React.FC = () => {
       });
     }
 
+    if (currentTab) {
+      const tabFormState = windowId ? getTabFormState(windowId, currentTab.id) : undefined;
+      const currentRecordId = tabFormState?.recordId || "";
+
+      if (currentRecordId) {
+        items.push({
+          id: currentRecordId.toString(),
+          label: currentRecordId.toString(),
+        });
+      }
+    }
+
     return items;
-  }, [windowId, window, isNewRecord, t, handleWindowClick]);
+  }, [windowId, window, currentTab, isNewRecord, t, handleWindowClick, getTabFormState]);
 
   const handleHomeClick = useCallback(() => {
     navigateToHome();
@@ -56,12 +85,7 @@ const AppBreadcrumb: React.FC = () => {
 
   return (
     <div style={styles.breadCrum}>
-      <Breadcrumb
-        items={breadcrumbItems}
-        onHomeClick={handleHomeClick}
-        homeText={t("breadcrumb.home")}
-        homeIcon={BREADCRUMB.HOME.ICON}
-      />
+      <Breadcrumb onHomeClick={handleHomeClick} items={breadcrumbItems || []} />
     </div>
   );
 };

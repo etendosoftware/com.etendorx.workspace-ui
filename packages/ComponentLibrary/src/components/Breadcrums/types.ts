@@ -16,7 +16,20 @@ export interface BreadcrumbItem {
 export interface BreadcrumbProps {
   items: BreadcrumbItem[];
   onHomeClick: () => void;
-  homeIcon?: string | React.ReactNode;
-  homeText?: string;
   separator?: React.ReactNode;
+}
+
+export interface BreadcrumbListProps {
+  items: BreadcrumbItem[];
+  handleActionMenuOpen: (event: React.MouseEvent<HTMLButtonElement>, actions: BreadcrumbAction[]) => void;
+  handleHomeNavigation: () => void;
+  separator?: React.ReactNode;
+}
+
+export interface BreadcrumbItemProps {
+  item: BreadcrumbItem;
+  breadcrumbsSize: number;
+  position: number;
+  handleActionMenuOpen: (event: React.MouseEvent<HTMLButtonElement>, actions: BreadcrumbAction[]) => void;
+  handleHomeNavigation: () => void;
 }
