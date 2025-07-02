@@ -3,8 +3,10 @@ import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import HomeIcon from "@workspaceui/componentlibrary/src/assets/icons/home.svg";
+import ChevronRightIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-right.svg";
+import ChevronLeftIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-left.svg";
 import WindowTab from "@/components/NavigationTabs/WindowTab";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export default function WindowTabs() {
   const { windows, setActiveWindow, closeWindow, isHomeRoute, navigateToHome } =
@@ -30,12 +32,41 @@ export default function WindowTabs() {
     }
   }, [windows]);
 
+  const handleScroll = useCallback(
+    (e: React.MouseEvent, side: "left" | "right") => {
+      e.stopPropagation();
+      const container = windowContainerRef.current;
+      if (container) {
+        const isAtStart = container.scrollLeft === 0;
+        const isAtEnd =
+          container.scrollLeft + container.clientWidth >=
+          container.scrollWidth - 1;
+
+        if (side === "left" && isAtStart) {
+          console.log("Already at the leftmost position");
+          return;
+        }
+
+        if (side === "right" && isAtEnd) {
+          console.log("Already at the rightmost position");
+          return;
+        }
+
+        container.scrollBy({
+          left: side === "left" ? -200 : 200,
+          behavior: "smooth",
+        });
+      }
+    },
+    []
+  );
+
   const handleGoHome = () => {
     navigateToHome();
   };
 
   return (
-    <div className="flex items-center bg-(--color-transparent-neutral-5) rounded-full p-0 gap-1 mx-1 px-1">
+    <div className="flex items-center bg-(--color-transparent-neutral-5) rounded-full oveflow-hidden p-0 gap-1 mx-1 px-1">
       <div className="px-1 flex">
         <IconButton
           onClick={handleGoHome}
@@ -44,6 +75,14 @@ export default function WindowTabs() {
           <HomeIcon />
         </IconButton>
       </div>
+      {showScrollButton && (
+        <IconButton
+          onClick={(e) => handleScroll(e, "left")}
+          className="bg-transparent w-auto h-full rounded-full p-2 text-sm"
+        >
+          <ChevronLeftIcon />
+        </IconButton>
+      )}
       <div
         ref={windowContainerRef}
         className="w-full flex items-center overflow-x-auto overflow-y-hidden scroll-smooth no-scrollbar"
@@ -73,6 +112,14 @@ export default function WindowTabs() {
           );
         })}
       </div>
+      {showScrollButton && (
+        <IconButton
+          onClick={(e) => handleScroll(e, "right")}
+          className="bg-transparent w-auto h-full rounded-full p-2 text-sm"
+        >
+          <ChevronRightIcon />
+        </IconButton>
+      )}
     </div>
   );
 }
