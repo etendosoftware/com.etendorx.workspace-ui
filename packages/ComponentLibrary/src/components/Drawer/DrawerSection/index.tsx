@@ -20,6 +20,9 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     parentId,
   }) => {
     const isSelected = Boolean(windowId?.length && item.windowId === windowId);
+    const hasActiveChild = !isSelected && Boolean(windowId?.length && findActive(windowId, item.children));
+    const isParentActive = isSelected || hasActiveChild;
+
     const [popperOpen, setPopperOpen] = useState(false);
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const toggleFunctions = useRef<ToggleFunctions>({});
@@ -149,6 +152,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     const sectionClasses = [
       expanded && open ? "bg-(--color-dynamic-contrast-text)" : "bg-transparent",
       open ? "m-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" : "flex justify-center p-1",
+      !open && hasActiveChild ? "bg-dynamic-main rounded-full" : "",
     ].join(" ");
 
     const shouldShowChildren = isSearchActive || expanded;
@@ -192,7 +196,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
         <MenuTitle
           item={item}
           onClick={handleClick}
-          selected={isSelected}
+          selected={isParentActive}
           expanded={shouldShowChildren}
           open={open}
           isExpandable={isExpandable && !isSearchActive}
@@ -222,8 +226,8 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
           <div
             ref={popperRef}
             className={`
-              fixed bg-white z-50 ml-2 rounded-xl shadow-lg
-              transition-all duration-1000 ease-out origin-left
+              fixed bg-neutral-50 z-50 ml-2 rounded-xl shadow-2xl
+              transition-all duration-1000 ease-out origin-left border border-transparent-neutral-20
               max-h-[20rem] overflow-y-auto hide-scrollbar
               ${popperOpen ? "opacity-100 translate-x-0" : "opacity-0 pointer-events-none -translate-x-2"}`}
             style={{
@@ -237,13 +241,12 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
                 <MenuTitle
                   item={item}
                   onClick={handleClick}
-                  selected={isSelected}
+                  selected={isParentActive}
                   expanded={shouldShowChildren}
                   open={true}
                   isExpandable={isExpandable && !isSearchActive}
                   popperOpen={true}
                 />
-
                 {item.children?.map((subitem) => (
                   <DrawerSection
                     key={subitem.id}
