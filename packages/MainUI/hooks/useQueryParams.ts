@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
+import { WINDOW_PREFIX } from "@/utils/url/constants";
 
 /**
  * Custom React hook that retrieves URL query parameters using Next.js's `useSearchParams`,
@@ -19,8 +20,6 @@ import { useMemo } from "react";
  *
  * const { userId, filter } = useQueryParams<Params>();
  */
-
-const WINDOW_PREFIX = "w_";
 
 export function useQueryParams<T extends Record<string, string | string[] | undefined>>(): T {
   const searchParams = useSearchParams();

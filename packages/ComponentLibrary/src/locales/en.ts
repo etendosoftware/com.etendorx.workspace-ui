@@ -11,6 +11,7 @@ const en = {
     edit: "Edit",
     loading: "Loading...",
     loadingFormData: "Loading form data...",
+    loadingWindowContent: "Loading window content...",
     retry: "Retry",
     processes: "Available Process",
     clear: "Clear Selection",
@@ -92,6 +93,10 @@ const en = {
     selectionError: {
       title: "No parent record selected",
       description: "Select a record in the parent tab to view related data",
+    },
+    windowNotFound: {
+      title: "Window Not Found",
+      description: "The requested window could not be found",
     },
   },
   modal: {
