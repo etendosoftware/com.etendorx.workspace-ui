@@ -89,6 +89,13 @@ export default function WindowTabs() {
     setAnchorEl(null);
   }, []);
 
+  const handleSelectWindow = useCallback(
+    (windowId: string) => {
+      setActiveWindow(windowId);
+    },
+    [setActiveWindow]
+  );
+
   const handleGoHome = () => {
     navigateToHome();
   };
@@ -126,7 +133,7 @@ export default function WindowTabs() {
                 title={title}
                 isActive={isActive}
                 onActivate={() => {
-                  setActiveWindow(window.windowId);
+                  handleSelectWindow(window.windowId);
                 }}
                 onClose={() => {
                   closeWindow(window.windowId);
@@ -156,7 +163,11 @@ export default function WindowTabs() {
           <ChevronsRightIcon />
         </IconButton>
       )}
-      <MenuTabs anchorEl={anchorEl} onClose={handleTabMenuClose} />
+      <MenuTabs
+        anchorEl={anchorEl}
+        onClose={handleTabMenuClose}
+        onSelect={handleSelectWindow}
+      />
     </div>
   );
 }
