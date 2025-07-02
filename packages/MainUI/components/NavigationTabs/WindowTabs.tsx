@@ -5,6 +5,7 @@ import IconButton from "@workspaceui/componentlibrary/src/components/IconButton"
 import HomeIcon from "@workspaceui/componentlibrary/src/assets/icons/home.svg";
 import ChevronRightIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-right.svg";
 import ChevronLeftIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-left.svg";
+import ChevronsRightIcon from "@workspaceui/componentlibrary/src/assets/icons/chevrons-right.svg";
 import WindowTab from "@/components/NavigationTabs/WindowTab";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -15,8 +16,9 @@ export default function WindowTabs() {
     useMultiWindowURL();
   const { getWindowTitle } = useMetadataContext();
   const windowContainerRef = useRef<HTMLDivElement>(null);
-  const [showLeftButton, setShowLeftButton] = useState(false);
-  const [showRightButton, setShowRightButton] = useState(false);
+  const [showLeftScrollButton, setShowLeftScrollButton] = useState(false);
+  const [showRightScrollButton, setShowRightScrollButton] = useState(false);
+  const [showRightMenuButton, setShowRightMenuButton] = useState(false);
 
   useEffect(() => {
     const container = windowContainerRef.current;
@@ -24,15 +26,17 @@ export default function WindowTabs() {
       const hasHorizontalScroll = container.scrollWidth > container.clientWidth;
 
       if (hasHorizontalScroll) {
-        setShowLeftButton(true);
-        setShowRightButton(true);
+        setShowLeftScrollButton(true);
+        setShowRightScrollButton(true);
+        setShowRightMenuButton(true);
         container.scrollTo({
           left: container.scrollWidth,
           behavior: "smooth",
         });
       } else {
-        setShowLeftButton(false);
-        setShowRightButton(false);
+        setShowLeftScrollButton(false);
+        setShowRightScrollButton(false);
+        setShowRightMenuButton(false);
       }
     }
   }, [windows]);
@@ -48,9 +52,9 @@ export default function WindowTabs() {
       const newScrollLeft = container.scrollLeft - DEFAULT_SCROLL_AMOUNT;
       const isAtStart = newScrollLeft <= 0;
       if (isAtStart) {
-        setShowLeftButton(false);
+        setShowLeftScrollButton(false);
       }
-      setShowRightButton(true);
+      setShowRightScrollButton(true);
     }
   }, []);
 
@@ -66,9 +70,9 @@ export default function WindowTabs() {
       const isAtEnd =
         newScrollRight + container.clientWidth >= container.scrollWidth - 1;
       if (isAtEnd) {
-        setShowRightButton(false);
+        setShowRightScrollButton(false);
       }
-      setShowLeftButton(true);
+      setShowLeftScrollButton(true);
     }
   }, []);
 
@@ -86,7 +90,7 @@ export default function WindowTabs() {
           <HomeIcon />
         </IconButton>
       </div>
-      {showLeftButton && (
+      {showLeftScrollButton && (
         <IconButton
           onClick={handleScrollLeft}
           className="bg-transparent w-auto h-full rounded-full p-2 text-sm"
@@ -123,12 +127,20 @@ export default function WindowTabs() {
           );
         })}
       </div>
-      {showRightButton && (
+      {showRightScrollButton && (
         <IconButton
           onClick={handleScrollRight}
           className="bg-transparent w-auto h-full rounded-full p-2 text-sm"
         >
           <ChevronRightIcon />
+        </IconButton>
+      )}
+      {showRightMenuButton && (
+        <IconButton
+          onClick={() => {}}
+          className="bg-white w-auto h-full rounded-full p-2 text-sm"
+        >
+          <ChevronsRightIcon />
         </IconButton>
       )}
     </div>
