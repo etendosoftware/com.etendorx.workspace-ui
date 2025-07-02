@@ -8,12 +8,15 @@ import ChevronLeftIcon from "@workspaceui/componentlibrary/src/assets/icons/chev
 import WindowTab from "@/components/NavigationTabs/WindowTab";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+const DEFAULT_SCROLL_AMOUNT = 200;
+
 export default function WindowTabs() {
   const { windows, setActiveWindow, closeWindow, isHomeRoute, navigateToHome } =
     useMultiWindowURL();
   const { getWindowTitle } = useMetadataContext();
   const windowContainerRef = useRef<HTMLDivElement>(null);
-  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [showLeftButton, setShowLeftButton] = useState(false);
+  const [showRightButton, setShowRightButton] = useState(false);
 
   useEffect(() => {
     const container = windowContainerRef.current;
@@ -21,45 +24,53 @@ export default function WindowTabs() {
       const hasHorizontalScroll = container.scrollWidth > container.clientWidth;
 
       if (hasHorizontalScroll) {
-        setShowScrollButton(true);
+        setShowLeftButton(true);
+        setShowRightButton(true);
         container.scrollTo({
           left: container.scrollWidth,
           behavior: "smooth",
         });
       } else {
-        setShowScrollButton(false);
+        setShowLeftButton(false);
+        setShowRightButton(false);
       }
     }
   }, [windows]);
 
-  const handleScroll = useCallback(
-    (e: React.MouseEvent, side: "left" | "right") => {
-      e.stopPropagation();
-      const container = windowContainerRef.current;
-      if (container) {
-        const isAtStart = container.scrollLeft === 0;
-        const isAtEnd =
-          container.scrollLeft + container.clientWidth >=
-          container.scrollWidth - 1;
-
-        if (side === "left" && isAtStart) {
-          console.log("Already at the leftmost position");
-          return;
-        }
-
-        if (side === "right" && isAtEnd) {
-          console.log("Already at the rightmost position");
-          return;
-        }
-
-        container.scrollBy({
-          left: side === "left" ? -200 : 200,
-          behavior: "smooth",
-        });
+  const handleScrollLeft = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const container = windowContainerRef.current;
+    if (container) {
+      container.scrollBy({
+        left: -DEFAULT_SCROLL_AMOUNT,
+        behavior: "smooth",
+      });
+      const newScrollLeft = container.scrollLeft - DEFAULT_SCROLL_AMOUNT;
+      const isAtStart = newScrollLeft <= 0;
+      if (isAtStart) {
+        setShowLeftButton(false);
       }
-    },
-    []
-  );
+      setShowRightButton(true);
+    }
+  }, []);
+
+  const handleScrollRight = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const container = windowContainerRef.current;
+    if (container) {
+      container.scrollBy({
+        left: DEFAULT_SCROLL_AMOUNT,
+        behavior: "smooth",
+      });
+      const newScrollRight = container.scrollLeft + DEFAULT_SCROLL_AMOUNT;
+      const isAtEnd =
+        newScrollRight + container.clientWidth >= container.scrollWidth - 1;
+      if (isAtEnd) {
+        setShowRightButton(false);
+      }
+      setShowLeftButton(true);
+    }
+  }, []);
 
   const handleGoHome = () => {
     navigateToHome();
@@ -75,9 +86,9 @@ export default function WindowTabs() {
           <HomeIcon />
         </IconButton>
       </div>
-      {showScrollButton && (
+      {showLeftButton && (
         <IconButton
-          onClick={(e) => handleScroll(e, "left")}
+          onClick={handleScrollLeft}
           className="bg-transparent w-auto h-full rounded-full p-2 text-sm"
         >
           <ChevronLeftIcon />
@@ -112,9 +123,9 @@ export default function WindowTabs() {
           );
         })}
       </div>
-      {showScrollButton && (
+      {showRightButton && (
         <IconButton
-          onClick={(e) => handleScroll(e, "right")}
+          onClick={handleScrollRight}
           className="bg-transparent w-auto h-full rounded-full p-2 text-sm"
         >
           <ChevronRightIcon />
