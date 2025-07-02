@@ -113,7 +113,7 @@ const Drawer: React.FC<DrawerProps> = ({
           />
         </div>
       )}
-      <div className="flex-grow overflow-y-auto">
+      <div className="flex-grow overflow-y-auto hide-scrollbar">
         <DrawerItems
           items={searchValue ? filteredItems : items}
           onClick={handleItemClick}

@@ -20,10 +20,15 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     parentId,
   }) => {
     const isSelected = Boolean(windowId?.length && item.windowId === windowId);
+    const hasActiveChild = !isSelected && Boolean(windowId?.length && findActive(windowId, item.children));
+    const isParentActive = isSelected || hasActiveChild;
+
     const [popperOpen, setPopperOpen] = useState(false);
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const toggleFunctions = useRef<ToggleFunctions>({});
     const popperRef = useRef<HTMLDivElement>(null);
+
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const [localExpanded, setLocalExpanded] = useState(isSelected || findActive(windowId, item.children));
 
@@ -61,20 +66,61 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
       [handleNestedToggle]
     );
 
+    const handleMouseEnter = useCallback(() => {
+      if (!open && hasChildren) {
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+        }
+
+        hoverTimeoutRef.current = setTimeout(() => {
+          setPopperOpen(true);
+        }, 600);
+      }
+    }, [open, hasChildren]);
+
+    const handleMouseLeave = useCallback(() => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = null;
+      }
+
+      hoverTimeoutRef.current = setTimeout(() => {
+        setPopperOpen(false);
+      }, 300);
+    }, []);
+
+    const handlePopperMouseEnter = useCallback(() => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = null;
+      }
+    }, []);
+
+    const handlePopperMouseLeave = useCallback(() => {
+      hoverTimeoutRef.current = setTimeout(() => {
+        setPopperOpen(false);
+      }, 100);
+    }, []);
+
     const handleClick = useCallback(
       (event: React.MouseEvent<HTMLElement>) => {
         event.stopPropagation();
-        if (!open) {
-          setPopperOpen((prev) => !prev);
-        } else if (hasChildren && isExpandable) {
-          const newExpandedState = !expanded;
-          setLocalExpanded(newExpandedState);
-          if (parentId) {
-            handleNestedToggle(item.id);
+
+        if (open) {
+          if (hasChildren && isExpandable) {
+            const newExpandedState = !expanded;
+            setLocalExpanded(newExpandedState);
+            if (parentId) {
+              handleNestedToggle(item.id);
+            }
+            onToggleExpand();
+          } else {
+            handleItemClick(item);
           }
-          onToggleExpand();
         } else {
-          handleItemClick(item);
+          if (!hasChildren) {
+            handleItemClick(item);
+          }
         }
       },
       [open, hasChildren, isExpandable, expanded, parentId, onToggleExpand, handleNestedToggle, item, handleItemClick]
@@ -106,6 +152,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     const sectionClasses = [
       expanded && open ? "bg-(--color-dynamic-contrast-text)" : "bg-transparent",
       open ? "m-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" : "flex justify-center p-1",
+      !open && hasActiveChild ? "bg-dynamic-main rounded-full" : "",
     ].join(" ");
 
     const shouldShowChildren = isSearchActive || expanded;
@@ -131,12 +178,25 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
       }
     }, [open]);
 
+    useEffect(() => {
+      return () => {
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+        }
+      };
+    }, []);
+
     return (
-      <div className={sectionClasses} aria-expanded={expanded} onKeyDown={handleKeyDown}>
+      <div
+        className={sectionClasses}
+        aria-expanded={expanded}
+        onKeyDown={handleKeyDown}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}>
         <MenuTitle
           item={item}
           onClick={handleClick}
-          selected={isSelected}
+          selected={isParentActive}
           expanded={shouldShowChildren}
           open={open}
           isExpandable={isExpandable && !isSearchActive}
@@ -144,7 +204,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
         {hasChildren && open && (
           <div
             className={`overflow-hidden transition-all duration-300 ease-in-out 
-              ${shouldShowChildren ? "max-h-[1000px] opacity-100 transform translate-y-0" : "max-h-0 opacity-0 transform -translate-y-2"}`}>
+              ${shouldShowChildren ? "opacity-100 transform translate-y-0" : "max-h-0 opacity-0 transform -translate-y-2"}`}>
             {item.children?.map((subitem) => (
               <DrawerSection
                 key={subitem.id}
@@ -166,25 +226,27 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
           <div
             ref={popperRef}
             className={`
-              fixed bg-white z-50 ml-2 rounded-xl shadow-lg
-              transition-all duration-1000 ease-out origin-left
+              fixed bg-neutral-50 z-50 ml-2 rounded-xl shadow-2xl
+              transition-all duration-1000 ease-out origin-left border border-transparent-neutral-20
+              max-h-[20rem] overflow-y-auto hide-scrollbar
               ${popperOpen ? "opacity-100 translate-x-0" : "opacity-0 pointer-events-none -translate-x-2"}`}
             style={{
               left: "3.5rem",
               top: popperRef.current ? popperRef.current.getBoundingClientRect().top : "auto",
-            }}>
+            }}
+            onMouseEnter={handlePopperMouseEnter}
+            onMouseLeave={handlePopperMouseLeave}>
             <CustomClickAwayListener onClickAway={handleClose}>
               <div className="p-2 min-w-[240px]">
                 <MenuTitle
                   item={item}
                   onClick={handleClick}
-                  selected={isSelected}
+                  selected={isParentActive}
                   expanded={shouldShowChildren}
                   open={true}
                   isExpandable={isExpandable && !isSearchActive}
                   popperOpen={true}
                 />
-
                 {item.children?.map((subitem) => (
                   <DrawerSection
                     key={subitem.id}

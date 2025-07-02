@@ -1,5 +1,4 @@
 "use client";
-
 import React from "react";
 import ChevronDown from "../../../assets/icons/chevron-down.svg";
 import type { MenuTitleProps } from "../types";
@@ -16,9 +15,9 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
             ? `rounded-lg text-xl justify-between p-1 gap-1 ${
                 selected
                   ? "bg-dynamic-main text-neutral-50 hover:bg-neutral-90"
-                  : "text-neutral-90 hover:bg-dynamic-main hover:text-neutral-50 hover:text-neutral-0"
+                  : "text-neutral-90 hover:bg-dynamic-contrast-text hover:text-dynamic-main hover:text-neutral-0"
               }`
-            : "hover:bg-dynamic-main rounded-full justify-center items-center w-9 h-9 p-0"
+            : `${selected ? "bg-dynamic-main text-white" : "hover:bg-dynamic-main"} rounded-full justify-center items-center w-9 h-9 p-0`
         }
       `}>
         <div className={`flex items-center ${open ? "overflow-hidden" : ""}`}>
@@ -52,5 +51,4 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
 );
 
 MenuTitle.displayName = "MenuTitle";
-
 export default MenuTitle;
