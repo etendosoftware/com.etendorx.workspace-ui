@@ -5,21 +5,26 @@ interface WindowTabProps {
   windowId: string;
   title: string;
   isActive: boolean;
-  order: number;
   onActivate: () => void;
   onClose: () => void;
   canClose?: boolean;
   icon?: React.ReactNode;
 }
 
-export default function WindowTab({ title, isActive, order, onActivate, onClose, canClose = true }: WindowTabProps) {
+export default function WindowTab({
+  title,
+  isActive,
+  onActivate,
+  onClose,
+  canClose = true,
+}: WindowTabProps) {
   const { t } = useTranslation();
 
   return (
     <button
       type="button"
       className={`
-        flex gap-2 px-2 py-2 cursor-pointer mx-1
+        flex gap-2 px-2 py-2 cursor-pointer
         min-w-[140px] max-w-[220px] relative group
         transition-all duration-200
         ${
@@ -32,7 +37,8 @@ export default function WindowTab({ title, isActive, order, onActivate, onClose,
         borderTopLeftRadius: "12px",
         borderTopRightRadius: "12px",
       }}
-      onClick={onActivate}>
+      onClick={onActivate}
+    >
       <span className="flex-1 truncate text-sm font-medium" title={title}>
         {title}
       </span>
@@ -47,7 +53,8 @@ export default function WindowTab({ title, isActive, order, onActivate, onClose,
             e.stopPropagation();
             onClose();
           }}
-          title={t("primaryTabs.closeWindow")}>
+          title={t("primaryTabs.closeWindow")}
+        >
           <CloseIcon />
         </button>
       )}
