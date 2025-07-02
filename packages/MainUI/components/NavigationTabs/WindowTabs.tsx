@@ -19,6 +19,7 @@ export default function WindowTabs() {
   const { getWindowTitle } = useMetadataContext();
   const containerRef = useRef<HTMLDivElement>(null);
   const windowsContainerRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [showLeftScrollButton, setShowLeftScrollButton] = useState(false);
   const [showRightScrollButton, setShowRightScrollButton] = useState(false);
   const [showRightMenuButton, setShowRightMenuButton] = useState(false);
@@ -85,6 +86,18 @@ export default function WindowTabs() {
       behavior: "smooth",
     });
   }, [showLeftScrollButton, showRightScrollButton, showRightMenuButton]);
+
+  useEffect(() => {
+    if (!activeWindow) return;
+    const tabElement = tabRefs.current[activeWindow.windowId];
+    if (tabElement) {
+      tabElement.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
+    }
+  }, [activeWindow]);
 
   const handleScrollLeft = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -161,7 +174,12 @@ export default function WindowTabs() {
           const isActive = window.isActive;
           const canClose = windows.length > 1;
           return (
-            <div key={window.windowId} className="flex items-center">
+            <div
+              key={window.windowId}
+              className="flex items-center"
+              ref={(el) => {
+                tabRefs.current[window.windowId] = el;
+              }}>
               <WindowTab
                 windowId={window.windowId}
                 title={title}
