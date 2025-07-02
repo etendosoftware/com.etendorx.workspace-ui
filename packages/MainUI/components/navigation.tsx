@@ -4,13 +4,13 @@ import { useLanguage } from "@/contexts/language";
 import type { Language } from "@/contexts/types";
 import { UserContext } from "@/contexts/user";
 import { logger } from "@/utils/logger";
-import ActivityIcon from "@workspaceui/componentlibrary/src/assets/icons/activity.svg";
 import NotificationIcon from "@workspaceui/componentlibrary/src/assets/icons/bell.svg";
 import AddIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
 import PersonIcon from "@workspaceui/componentlibrary/src/assets/icons/user.svg";
 import {
   ConfigurationModal,
-  IconButton,
+  CopilotButton,
+  CopilotPopup,
   NotificationButton,
   NotificationModal,
   Waterfall,
@@ -44,6 +44,9 @@ const Navigation: React.FC = () => {
   const { language, setLanguage, getFlag } = useLanguage();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
+  const [copilotOpen, setCopilotOpen] = useState(false);
+  const [copilotExpanded, setCopilotExpanded] = useState(false);
+
   const { clearUserData } = useContext(UserContext);
 
   const handleSignOff = useCallback(() => {
@@ -53,9 +56,22 @@ const Navigation: React.FC = () => {
   const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setSaveAsDefault(event.target.checked);
   }, []);
+
   const handleMenuToggle = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
   }, []);
+
+  const handleCopilotOpen = useCallback(() => {
+    setCopilotOpen(true);
+  }, []);
+
+  const handleCopilotClose = useCallback(() => {
+    setCopilotOpen(false);
+  }, []);
+
+  const handleCopilotToggleExpanded = useCallback(() => {
+    setCopilotExpanded(!copilotExpanded);
+  }, [copilotExpanded]);
 
   const languagesWithFlags = useMemo(() => {
     return languages.map((lang) => ({
@@ -72,75 +88,79 @@ const Navigation: React.FC = () => {
   }
 
   return (
-    <Nav title={t("common.notImplemented")}>
-      <Waterfall
-        menuItems={menuItems}
-        initialPeople={initialPeople}
-        backButtonText={t("modal.secondaryButtonLabel")}
-        activateAllText={t("navigation.waterfall.activateAll")}
-        deactivateAllText={t("navigation.waterfall.deactivateAll")}
-        tooltipWaterfallButton={t("navigation.waterfall.tooltipButton")}
-        buttonText={t("navigation.waterfall.buttons")}
-        customizeText={t("navigation.waterfall.customize")}
-        people={people}
-        icon={<AddIcon />}
-      />
-      <ConfigurationModal
-        {...modalConfig}
-        tooltipButtonProfile={t("navigation.configurationModal.tooltipButtonProfile")}
-      />
-      <IconButton
-        onClick={handleMenuToggle}
-        className="w-10 h-10"
-        tooltip={t("navigation.activityButton.tooltip")}
-        disabled={true}>
-        <ActivityIcon />
-      </IconButton>
-      <NotificationButton notifications={NOTIFICATIONS} icon={<NotificationIcon />}>
-        <NotificationModal
-          notifications={NOTIFICATIONS}
-          anchorEl={anchorEl}
-          onClose={handleClose}
-          title={{
-            icon: <NotificationIcon fill="#2E365C" />,
-            label: t("navigation.notificationModal.title"),
-          }}
-          linkTitle={{
-            label: t("navigation.notificationModal.markAllAsRead"),
-            url: "/home",
-          }}
-          emptyStateImageAlt={t("navigation.notificationModal.emptyStateImageAlt")}
-          emptyStateMessage={t("navigation.notificationModal.emptyStateMessage")}
-          emptyStateDescription={t("navigation.notificationModal.emptyStateDescription")}
-          actionButtonLabel={t("navigation.notificationModal.actionButtonLabel")}
+    <>
+      <Nav title={t("common.notImplemented")}>
+        <Waterfall
+          menuItems={menuItems}
+          initialPeople={initialPeople}
+          backButtonText={t("modal.secondaryButtonLabel")}
+          activateAllText={t("navigation.waterfall.activateAll")}
+          deactivateAllText={t("navigation.waterfall.deactivateAll")}
+          tooltipWaterfallButton={t("navigation.waterfall.tooltipButton")}
+          buttonText={t("navigation.waterfall.buttons")}
+          customizeText={t("navigation.waterfall.customize")}
+          people={people}
+          icon={<AddIcon />}
         />
-      </NotificationButton>
-      <ProfileModal
-        icon={<PersonIcon />}
-        sections={sections}
-        section={""}
-        translations={{
-          saveAsDefault: t("navigation.profile.saveAsDefault"),
-        }}
-        currentRole={currentRole}
-        currentWarehouse={currentWarehouse}
-        currentOrganization={currentOrganization}
-        roles={roles}
-        saveAsDefault={saveAsDefault}
-        onSaveAsDefaultChange={handleSaveAsDefaultChange}
-        onLanguageChange={setLanguage}
-        language={language}
-        languagesFlags={flagString}
-        changeProfile={changeProfile}
-        onSetDefaultConfiguration={setDefaultConfiguration}
-        logger={logger}
-        onSignOff={handleSignOff}
-        languages={languagesWithFlags}
-        userName={profile.name}
-        userEmail={profile.email}
-        userPhotoUrl={profile.image}
+        <ConfigurationModal
+          {...modalConfig}
+          tooltipButtonProfile={t("navigation.configurationModal.tooltipButtonProfile")}
+        />
+        <CopilotButton onClick={handleCopilotOpen} tooltip="Copilot" />
+        <NotificationButton notifications={NOTIFICATIONS} icon={<NotificationIcon />}>
+          <NotificationModal
+            notifications={NOTIFICATIONS}
+            anchorEl={anchorEl}
+            onClose={handleClose}
+            title={{
+              icon: <NotificationIcon fill="#2E365C" />,
+              label: t("navigation.notificationModal.title"),
+            }}
+            linkTitle={{
+              label: t("navigation.notificationModal.markAllAsRead"),
+              url: "/home",
+            }}
+            emptyStateImageAlt={t("navigation.notificationModal.emptyStateImageAlt")}
+            emptyStateMessage={t("navigation.notificationModal.emptyStateMessage")}
+            emptyStateDescription={t("navigation.notificationModal.emptyStateDescription")}
+            actionButtonLabel={t("navigation.notificationModal.actionButtonLabel")}
+          />
+        </NotificationButton>
+        <ProfileModal
+          icon={<PersonIcon />}
+          sections={sections}
+          section={""}
+          translations={{
+            saveAsDefault: t("navigation.profile.saveAsDefault"),
+          }}
+          currentRole={currentRole}
+          currentWarehouse={currentWarehouse}
+          currentOrganization={currentOrganization}
+          roles={roles}
+          saveAsDefault={saveAsDefault}
+          onSaveAsDefaultChange={handleSaveAsDefaultChange}
+          onLanguageChange={setLanguage}
+          language={language}
+          languagesFlags={flagString}
+          changeProfile={changeProfile}
+          onSetDefaultConfiguration={setDefaultConfiguration}
+          logger={logger}
+          onSignOff={handleSignOff}
+          languages={languagesWithFlags}
+          userName={profile.name}
+          userEmail={profile.email}
+          userPhotoUrl={profile.image}
+        />
+      </Nav>
+      <CopilotPopup
+        open={copilotOpen}
+        onClose={handleCopilotClose}
+        assistants={[]} // TODO: Cargar desde API
+        labels={{}} // TODO: Cargar desde API
+        isExpanded={copilotExpanded}
+        onToggleExpanded={handleCopilotToggleExpanded}
       />
-    </Nav>
+    </>
   );
 };
 
