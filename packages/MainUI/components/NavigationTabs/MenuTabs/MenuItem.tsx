@@ -9,12 +9,7 @@ interface MenuItemProps {
   onSelect: (windowId: string) => void;
 }
 
-export default function MenuItem({
-  windowId,
-  title,
-  isActive,
-  onSelect,
-}: MenuItemProps) {
+export default function MenuItem({ windowId, title, isActive, onSelect }: MenuItemProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   const showSelected = isActive || isHovered;
@@ -35,12 +30,11 @@ export default function MenuItem({
       onClick={() => onSelect(windowId)}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-    >
-      <div
-        className={`flex items-center gap-2 ${showSelected ? "text-[#004ACA]" : ""}`}
-      >
-        {showSelected ? "📂" : "📁"}
-        {title}
+      title={title}>
+      <div className={`flex items-center gap-2 overflow-hidden w-10/12 ${showSelected ? "text-[#004ACA]" : ""}`}>
+        <span className="truncate">
+          {showSelected ? "📂" : "📁"} {title}
+        </span>
       </div>
       {isActive && <CheckIcon fill="#004ACA" />}
     </button>
