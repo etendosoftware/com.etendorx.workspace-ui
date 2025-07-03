@@ -16,7 +16,6 @@ type TabsContextType = {
 
 const DEFAULT_SCROLL_AMOUNT = 200;
 const DEFAULT_BUTTON_ICON_SIZE = 50;
-const DRAWER_STATE_KEY = "etendo-drawer-open";
 const DEFAULT_DEBOUNCE_DELAY = 200;
 
 const checkIfAtStart = (scrollLeft: number) => {
@@ -43,12 +42,6 @@ export default function TabsProvider({
   const [showRightScrollButton, setShowRightScrollButton] = useState(false);
   const [showRightMenuButton, setShowRightMenuButton] = useState(false);
 
-  const isDrawerOpen = useMemo(() => {
-    if (typeof window === "undefined") return false;
-    const saved = localStorage.getItem(DRAWER_STATE_KEY);
-    return saved ? JSON.parse(saved) : false;
-  }, []);
-
   const updateScrollButtons = useCallback((clientWidth: number, scrollWidth: number, scrollLeft: number) => {
     const hasHorizontalScroll = scrollWidth > clientWidth;
     if (!hasHorizontalScroll) {
@@ -57,12 +50,22 @@ export default function TabsProvider({
       setShowRightMenuButton(false);
       return;
     }
+
     const isAtStart = checkIfAtStart(scrollLeft);
     const isAtEnd = checkIfAtEnd(scrollLeft, clientWidth, scrollWidth);
+
     setShowLeftScrollButton(!isAtStart);
     setShowRightScrollButton(!isAtEnd);
     setShowRightMenuButton(true);
   }, []);
+
+  const updateScrollState = useCallback(() => {
+    const container = windowsContainerRef.current;
+    if (!container) return;
+
+    const { clientWidth, scrollWidth, scrollLeft } = container;
+    updateScrollButtons(clientWidth, scrollWidth, scrollLeft);
+  }, [updateScrollButtons]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -79,73 +82,72 @@ export default function TabsProvider({
         const isDrawerWidthChange = currentWidth !== lastWidth;
         if (isDrawerWidthChange) {
           lastWidth = currentWidth;
-          updateScrollButtons(windowsContainer.clientWidth, windowsContainer.scrollWidth, windowsContainer.scrollLeft);
+          updateScrollState();
         }
       }, DEFAULT_DEBOUNCE_DELAY);
     };
 
     const resizeObserver = new ResizeObserver(debouncedResize);
-
     resizeObserver.observe(windowsContainer);
 
-    updateScrollButtons(windowsContainer.clientWidth, windowsContainer.scrollWidth, windowsContainer.scrollLeft);
+    updateScrollState();
 
     return () => {
       resizeObserver.disconnect();
+      clearTimeout(timeoutId);
     };
-  }, [activeWindow, isDrawerOpen, updateScrollButtons]);
+  }, [updateScrollState]);
+
+  useEffect(() => {
+    const container = windowsContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { clientWidth, scrollWidth, scrollLeft } = container;
+      updateScrollButtons(clientWidth, scrollWidth, scrollLeft);
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [updateScrollButtons]);
 
   useEffect(() => {
     if (!activeWindow) return;
+
     const tabElement = tabRefs.current[activeWindow.windowId];
-    const windowsContainer = windowsContainerRef.current;
-    if (tabElement && windowsContainer) {
-      const newClientWidth = windowsContainer?.clientWidth + tabElement.offsetWidth;
-      const newScrollWidth = windowsContainer?.scrollWidth + tabElement.offsetWidth;
-      const newScrollLeft = windowsContainer?.scrollLeft + tabElement.offsetWidth;
-      updateScrollButtons(newClientWidth, newScrollWidth, newScrollLeft);
-      setTimeout(() => {
-        tabElement.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-          inline: "center",
-        });
-      }, 500);
+    const container = windowsContainerRef.current;
+
+    if (tabElement && container) {
+      updateScrollState();
+
+      tabElement.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
     }
-  }, [activeWindow, updateScrollButtons]);
+  }, [activeWindow, updateScrollState]);
 
   const handleScrollLeft = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    const windowsContainer = windowsContainerRef.current;
-    if (windowsContainer) {
-      windowsContainer.scrollBy({
-        left: -DEFAULT_SCROLL_AMOUNT,
-        behavior: "smooth",
-      });
-      const newScrollLeft = windowsContainer.scrollLeft - DEFAULT_SCROLL_AMOUNT;
-      const isAtStart = checkIfAtStart(newScrollLeft);
-      if (isAtStart) {
-        setShowLeftScrollButton(false);
-      }
-      setShowRightScrollButton(true);
-    }
+    const container = windowsContainerRef.current;
+    if (!container) return;
+
+    container.scrollBy({
+      left: -DEFAULT_SCROLL_AMOUNT,
+      behavior: "smooth",
+    });
   }, []);
 
   const handleScrollRight = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    const windowsContainer = windowsContainerRef.current;
-    if (windowsContainer) {
-      windowsContainer.scrollBy({
-        left: DEFAULT_SCROLL_AMOUNT,
-        behavior: "smooth",
-      });
-      const newScrollRight = windowsContainer.scrollLeft + DEFAULT_SCROLL_AMOUNT;
-      const isAtEnd = checkIfAtEnd(newScrollRight, windowsContainer.clientWidth, windowsContainer.scrollWidth);
-      if (isAtEnd) {
-        setShowRightScrollButton(false);
-      }
-      setShowLeftScrollButton(true);
-    }
+    const container = windowsContainerRef.current;
+    if (!container) return;
+
+    container.scrollBy({
+      left: DEFAULT_SCROLL_AMOUNT,
+      behavior: "smooth",
+    });
   }, []);
 
   const value = useMemo<TabsContextType>(
