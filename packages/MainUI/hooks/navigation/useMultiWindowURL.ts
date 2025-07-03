@@ -13,10 +13,12 @@ import {
   TAB_FORM_RECORD_ID_PREFIX,
   TAB_MODE_PREFIX,
   TAB_FORM_MODE_PREFIX,
+  NEW_RECORD_ID,
+  FORM_MODES,
+  TAB_MODES,
+  type FormMode,
+  type TabMode,
 } from "@/utils/url/constants";
-
-export type FormMode = "new" | "edit" | "view";
-export type TabMode = "table" | "form";
 
 export interface WindowState {
   windowId: string;
@@ -147,7 +149,7 @@ const setWindowParameters = (params: URLSearchParams, window: WindowState): void
     if (tabState.recordId) {
       params.set(`${TAB_FORM_RECORD_ID_PREFIX}${windowId}_${tabId}`, tabState.recordId);
     }
-    if (tabState.mode && tabState.mode !== "table") {
+    if (tabState.mode && tabState.mode !== TAB_MODES.TABLE) {
       params.set(`${TAB_MODE_PREFIX}${windowId}_${tabId}`, tabState.mode);
     }
     if (tabState.formMode) {
@@ -366,7 +368,7 @@ export function useMultiWindowURL() {
   );
 
   const setTabFormState = useCallback(
-    (windowId: string, tabId: string, recordId: string, mode: TabMode = "form", formMode?: FormMode) => {
+    (windowId: string, tabId: string, recordId: string, mode: TabMode = TAB_MODES.FORM, formMode?: FormMode) => {
       const updatedWindows = windows.map((w) => {
         if (w.windowId === windowId) {
           const currentTabState = w.tabFormStates[tabId] || {};
@@ -379,7 +381,7 @@ export function useMultiWindowURL() {
                 ...currentTabState,
                 recordId,
                 mode,
-                formMode: formMode || (recordId === "new" ? "new" : "edit"),
+                formMode: formMode || (recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT),
               },
             },
           };
@@ -423,15 +425,15 @@ export function useMultiWindowURL() {
   const setRecord = useCallback(
     (windowId: string, recordId: string, tabId?: string) => {
       if (tabId) {
-        const formMode: FormMode = recordId === "new" ? "new" : "edit";
-        setTabFormState(windowId, tabId, recordId, "form", formMode);
+        const formMode: FormMode = recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT;
+        setTabFormState(windowId, tabId, recordId, TAB_MODES.FORM, formMode);
       } else {
         const updatedWindows = windows.map((w) => {
           if (w.windowId === windowId) {
             return {
               ...w,
               formRecordId: recordId,
-              formMode: recordId === "new" ? ("new" as const) : ("edit" as const),
+              formMode: recordId === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT,
             };
           }
           return w;

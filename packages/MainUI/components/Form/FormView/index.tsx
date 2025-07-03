@@ -23,6 +23,7 @@ import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import type { FormViewProps } from "./types";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { NEW_RECORD_ID } from "@/utils/url/constants";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon />,
@@ -60,7 +61,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     const windowId = activeWindow?.windowId;
     if (!windowId) return null;
 
-    if (recordId === "new") return null;
+    if (recordId === NEW_RECORD_ID) return null;
 
     const selectedRecordId = getSelectedRecord(windowId, tab.id);
     if (selectedRecordId && selectedRecordId === recordId) {
@@ -72,7 +73,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       return { id: selectedRecordId } as EntityData;
     }
 
-    if (recordId && recordId !== "new") {
+    if (recordId && recordId !== NEW_RECORD_ID) {
       return { id: recordId } as EntityData;
     }
 
@@ -256,7 +257,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   }, [activeWindow?.windowId, clearTabFormState, graph, tab]);
 
   const handleNew = useCallback(() => {
-    setRecordId("new");
+    setRecordId(NEW_RECORD_ID);
   }, [setRecordId]);
 
   useEffect(() => {

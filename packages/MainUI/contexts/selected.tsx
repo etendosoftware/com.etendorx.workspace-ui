@@ -3,11 +3,12 @@
 import Graph from "@/data/graph";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { createContext, useCallback, useMemo, useState } from "react";
+import { type TabMode, TAB_MODES } from "@/utils/url/constants";
 
 interface TabStates {
   [tabId: string]: {
     recordId: string;
-    mode: "table" | "form";
+    mode: TabMode;
   };
 }
 
@@ -63,7 +64,7 @@ export const SelectedProvider = ({
       ...prev,
       [tabId]: {
         recordId,
-        mode: recordId ? "form" : "table",
+        mode: recordId ? TAB_MODES.FORM : TAB_MODES.TABLE,
       },
     }));
   }, []);
