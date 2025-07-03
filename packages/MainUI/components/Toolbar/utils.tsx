@@ -1,7 +1,7 @@
 import type { OrganizedSections, ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import type { TranslateFunction } from "@/hooks/types";
 import type React from "react";
-import Base64Icon from "./Base64Icon";
+import Base64Icon from "@workspaceui/componentlibrary/src/components/Base64Icon";
 import { IconSize, type ToolbarButton } from "./types";
 
 const isBase64Image = (str: string): boolean => {
