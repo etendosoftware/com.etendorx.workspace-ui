@@ -49,20 +49,16 @@ export default function TabsProvider({
     return saved ? JSON.parse(saved) : false;
   }, []);
 
-  const updateScrollButtons = useCallback((windowsContainer: HTMLDivElement) => {
-    const hasHorizontalScroll = windowsContainer.scrollWidth > windowsContainer.clientWidth;
+  const updateScrollButtons = useCallback((clientWidth: number, scrollWidth: number, scrollLeft: number) => {
+    const hasHorizontalScroll = scrollWidth > clientWidth;
     if (!hasHorizontalScroll) {
       setShowLeftScrollButton(false);
       setShowRightScrollButton(false);
       setShowRightMenuButton(false);
       return;
     }
-    const isAtStart = checkIfAtStart(windowsContainer.scrollLeft);
-    const isAtEnd = checkIfAtEnd(
-      windowsContainer.scrollLeft,
-      windowsContainer.clientWidth,
-      windowsContainer.scrollWidth
-    );
+    const isAtStart = checkIfAtStart(scrollLeft);
+    const isAtEnd = checkIfAtEnd(scrollLeft, clientWidth, scrollWidth);
     setShowLeftScrollButton(!isAtStart);
     setShowRightScrollButton(!isAtEnd);
     setShowRightMenuButton(true);
@@ -83,7 +79,7 @@ export default function TabsProvider({
         const isDrawerWidthChange = currentWidth !== lastWidth;
         if (isDrawerWidthChange) {
           lastWidth = currentWidth;
-          updateScrollButtons(windowsContainer);
+          updateScrollButtons(windowsContainer.clientWidth, windowsContainer.scrollWidth, windowsContainer.scrollLeft);
         }
       }, DEFAULT_DEBOUNCE_DELAY);
     };
@@ -92,7 +88,7 @@ export default function TabsProvider({
 
     resizeObserver.observe(windowsContainer);
 
-    updateScrollButtons(windowsContainer);
+    updateScrollButtons(windowsContainer.clientWidth, windowsContainer.scrollWidth, windowsContainer.scrollLeft);
 
     return () => {
       resizeObserver.disconnect();
@@ -102,30 +98,21 @@ export default function TabsProvider({
   useEffect(() => {
     if (!activeWindow) return;
     const tabElement = tabRefs.current[activeWindow.windowId];
-    if (tabElement) {
-      tabElement.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
-    }
-  }, [activeWindow]);
-
-  useEffect(() => {
     const windowsContainer = windowsContainerRef.current;
-    if (!windowsContainer) return;
-
-    const handleScrollEnd = () => {
-      updateScrollButtons(windowsContainer);
-    };
-
-    // TODO: the scrollend is not work on safari
-    windowsContainer.addEventListener("scrollend", handleScrollEnd);
-
-    return () => {
-      windowsContainer.removeEventListener("scrollend", handleScrollEnd);
-    };
-  }, [updateScrollButtons]);
+    if (tabElement && windowsContainer) {
+      const newClientWidth = windowsContainer?.clientWidth + tabElement.offsetWidth;
+      const newScrollWidth = windowsContainer?.scrollWidth + tabElement.offsetWidth;
+      const newScrollLeft = windowsContainer?.scrollLeft + tabElement.offsetWidth;
+      updateScrollButtons(newClientWidth, newScrollWidth, newScrollLeft);
+      setTimeout(() => {
+        tabElement.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
+      }, 500);
+    }
+  }, [activeWindow, updateScrollButtons]);
 
   const handleScrollLeft = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
