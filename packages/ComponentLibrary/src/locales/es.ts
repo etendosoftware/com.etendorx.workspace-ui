@@ -223,6 +223,7 @@ const es = {
   },
   primaryTabs: {
     closeWindow: "Cerrar ventana",
+    showTabs: "Mostrar pestañas",
   },
 };
 

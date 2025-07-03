@@ -10,10 +10,13 @@ import ChevronsRightIcon from "@workspaceui/componentlibrary/src/assets/icons/ch
 import WindowTab from "@/components/NavigationTabs/WindowTab";
 import MenuTabs from "@/components/NavigationTabs/MenuTabs";
 import { useTabs } from "@/contexts/tabs";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function WindowTabs() {
   const { windows, setActiveWindow, closeWindow, isHomeRoute, navigateToHome } = useMultiWindowURL();
   const { getWindowTitle } = useMetadataContext();
+  const { t } = useTranslation();
+
   const {
     containerRef,
     windowsContainerRef,
@@ -96,7 +99,11 @@ export default function WindowTabs() {
         </IconButton>
       )}
       {showRightMenuButton && (
-        <IconButton onClick={handleTabMenuOpen} className="bg-white w-auto h-full rounded-full p-2 text-sm">
+        <IconButton
+          onClick={handleTabMenuOpen}
+          className="bg-white w-auto h-full rounded-full p-2 text-sm"
+          tooltip={t("primaryTabs.showTabs")}
+          tooltipPosition="left">
           <ChevronsRightIcon />
         </IconButton>
       )}

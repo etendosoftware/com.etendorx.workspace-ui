@@ -218,7 +218,8 @@ const en = {
     },
   },
   primaryTabs: {
-    closeWindow: "Close window",
+    closeWindow: "Close Window",
+    showTabs: "Show Tabs",
   },
 };
 
