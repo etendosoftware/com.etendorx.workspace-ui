@@ -50,7 +50,7 @@ export default function WindowTabs() {
 
   return (
     <div
-      className="flex items-center bg-(--color-transparent-neutral-5) rounded-full oveflow-hidden p-0 gap-1 mx-1 px-1"
+      className="flex items-center bg-(--color-transparent-neutral-5) rounded-full overflow-hidden p-0 gap-1 mx-1 px-1"
       ref={containerRef}>
       <div className="px-1 flex">
         <IconButton onClick={handleGoHome} className={isHomeRoute ? "bg-(--color-dynamic-main) text-white" : ""}>
