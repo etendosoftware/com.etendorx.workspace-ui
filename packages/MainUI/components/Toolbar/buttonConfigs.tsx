@@ -4,8 +4,6 @@ import type React from "react";
 import Base64Icon from "./Base64Icon";
 import { IconSize, type ToolbarButton } from "./types";
 
-export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
-
 const isBase64Image = (str: string): boolean => {
   try {
     const base64Regex = /^[A-Za-z0-9+/]+=*$/;
@@ -16,6 +14,19 @@ const isBase64Image = (str: string): boolean => {
     return false;
   }
 };
+
+const BUTTON_STYLES = {
+  NEW: "toolbar-button-new bg-(--color-baseline-100) text-(--color-baseline-0) disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0) rounded-l-full h-8 px-3",
+  SAVE: "toolbar-button-save bg-(--color-baseline-100) text-(--color-baseline-0) disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0) h-8.5 w-8.5 ml-1",
+  REFRESH:
+    "toolbar-button-refresh bg-(--color-baseline-100) text-(--color-baseline-0) disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0) rounded-r-full border-l-1 border-l-[color:var(--color-baseline-0)] w-10",
+  CANCEL: "toolbar-button-cancel",
+  DELETE: "toolbar-button-delete",
+  FIND: "toolbar-button-find",
+  FILTER: "toolbar-button-filter",
+} as const;
+
+export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
 
 export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }) => {
   if (!iconKey) return <DefaultIcon />;
@@ -160,17 +171,6 @@ export const createButtonByType = (
     ...getClickConfig(),
   };
 };
-
-const BUTTON_STYLES = {
-  NEW: "toolbar-button-new bg-(--color-baseline-100) text-(--color-baseline-0) disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0) rounded-l-full h-8 px-3",
-  SAVE: "toolbar-button-save bg-(--color-baseline-100) text-(--color-baseline-0) disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0) h-8.5 w-8.5 ml-1",
-  REFRESH:
-    "toolbar-button-refresh bg-(--color-baseline-100) text-(--color-baseline-0) disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0) rounded-r-full border-l-1 border-l-[color:var(--color-baseline-0)] w-10",
-  CANCEL: "toolbar-button-cancel",
-  DELETE: "toolbar-button-delete",
-  FIND: "toolbar-button-find",
-  FILTER: "toolbar-button-filter",
-} as const;
 
 export const getButtonStyles = (button: ToolbarButtonMetadata) => {
   return BUTTON_STYLES[button.action as keyof typeof BUTTON_STYLES];

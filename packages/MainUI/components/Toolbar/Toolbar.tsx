@@ -25,7 +25,7 @@ import {
   type ProcessDefinitionButton,
   type ProcessResponse,
 } from "../ProcessModal/types";
-import ProcessMenu from "./ProcessMenu";
+import ProcessMenu from "./Menus/ProcessMenu";
 import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar";
 import {
