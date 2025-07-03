@@ -20,13 +20,11 @@ const DRAWER_STATE_KEY = "etendo-drawer-open";
 const DEFAULT_DEBOUNCE_DELAY = 200;
 
 const checkIfAtStart = (scrollLeft: number) => {
-  const newScrollLeft = scrollLeft - DEFAULT_SCROLL_AMOUNT;
-  return newScrollLeft <= 0;
+  return scrollLeft <= 0;
 };
 
-const checkIfAtEnd = (scrollLeft: number, clientWidth: number, scrollWidth: number) => {
-  const newScrollRight = scrollLeft + DEFAULT_SCROLL_AMOUNT;
-  return newScrollRight + clientWidth >= scrollWidth - DEFAULT_BUTTON_ICON_SIZE;
+const checkIfAtEnd = (scrollRight: number, clientWidth: number, scrollWidth: number) => {
+  return scrollRight + clientWidth >= scrollWidth - DEFAULT_BUTTON_ICON_SIZE;
 };
 
 const TabsContext = createContext<TabsContextType | undefined>(undefined);
@@ -53,9 +51,16 @@ export default function TabsProvider({
 
   const updateScrollButtons = useCallback((windowsContainer: HTMLDivElement) => {
     const hasHorizontalScroll = windowsContainer.scrollWidth > windowsContainer.clientWidth;
-    setShowLeftScrollButton(hasHorizontalScroll);
-    setShowRightScrollButton(hasHorizontalScroll);
     setShowRightMenuButton(hasHorizontalScroll);
+    if (!hasHorizontalScroll) return;
+    const isAtStart = checkIfAtStart(windowsContainer.scrollLeft);
+    const isAtEnd = checkIfAtEnd(
+      windowsContainer.scrollLeft,
+      windowsContainer.clientWidth,
+      windowsContainer.scrollWidth
+    );
+    setShowLeftScrollButton(!isAtStart);
+    setShowRightScrollButton(!isAtEnd);
   }, []);
 
   useEffect(() => {
@@ -101,6 +106,29 @@ export default function TabsProvider({
     }
   }, [activeWindow]);
 
+  useEffect(() => {
+    const windowsContainer = windowsContainerRef.current;
+    if (!windowsContainer) return;
+
+    const handleScrollEnd = () => {
+      const isAtStart = checkIfAtStart(windowsContainer.scrollLeft);
+      const isAtEnd = checkIfAtEnd(
+        windowsContainer.scrollLeft,
+        windowsContainer.clientWidth,
+        windowsContainer.scrollWidth
+      );
+      setShowLeftScrollButton(!isAtStart);
+      setShowRightScrollButton(!isAtEnd);
+    };
+
+    // TODO: the scrollend is not work on safari
+    windowsContainer.addEventListener("scrollend", handleScrollEnd);
+
+    return () => {
+      windowsContainer.removeEventListener("scrollend", handleScrollEnd);
+    };
+  }, []);
+
   const handleScrollLeft = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     const windowsContainer = windowsContainerRef.current;
@@ -109,11 +137,6 @@ export default function TabsProvider({
         left: -DEFAULT_SCROLL_AMOUNT,
         behavior: "smooth",
       });
-      const isAtStart = checkIfAtStart(windowsContainer.scrollLeft);
-      if (isAtStart) {
-        setShowLeftScrollButton(false);
-      }
-      setShowRightScrollButton(true);
     }
   }, []);
 
@@ -125,15 +148,6 @@ export default function TabsProvider({
         left: DEFAULT_SCROLL_AMOUNT,
         behavior: "smooth",
       });
-      const isAtEnd = checkIfAtEnd(
-        windowsContainer.scrollLeft,
-        windowsContainer.clientWidth,
-        windowsContainer.scrollWidth
-      );
-      if (isAtEnd) {
-        setShowRightScrollButton(false);
-      }
-      setShowLeftScrollButton(true);
     }
   }, []);
 
