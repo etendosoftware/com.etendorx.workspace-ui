@@ -85,7 +85,7 @@ export default function WindowTabs() {
                 }}
                 canClose={canClose}
               />
-              {index < windows.length - 1 && !isActive && <div className="h-5 w-0.5 bg-[#00030D1A] mx-1" />}
+              {index < windows.length - 1 && <div className="h-5 w-0.5 bg-[#00030D1A] mx-1" />}
             </div>
           );
         })}
