@@ -87,7 +87,7 @@ export default function TabsProvider({
     return () => {
       resizeObserver.disconnect();
     };
-  }, [activeWindow, isDrawerOpen, updateScrollButtons]);
+  }, [isDrawerOpen, updateScrollButtons]);
 
   useEffect(() => {
     if (!activeWindow) return;
