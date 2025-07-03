@@ -19,6 +19,16 @@ const DEFAULT_BUTTON_ICON_SIZE = 50;
 const DRAWER_STATE_KEY = "etendo-drawer-open";
 const DEFAULT_DEBOUNCE_DELAY = 200;
 
+const checkIfAtStart = (scrollLeft: number) => {
+  const newScrollLeft = scrollLeft - DEFAULT_SCROLL_AMOUNT;
+  return newScrollLeft <= 0;
+};
+
+const checkIfAtEnd = (scrollLeft: number, clientWidth: number, scrollWidth: number) => {
+  const newScrollRight = scrollLeft + DEFAULT_SCROLL_AMOUNT;
+  return newScrollRight + clientWidth >= scrollWidth - DEFAULT_BUTTON_ICON_SIZE;
+};
+
 const TabsContext = createContext<TabsContextType | undefined>(undefined);
 
 export default function TabsProvider({
@@ -99,8 +109,7 @@ export default function TabsProvider({
         left: -DEFAULT_SCROLL_AMOUNT,
         behavior: "smooth",
       });
-      const newScrollLeft = windowsContainer.scrollLeft - DEFAULT_SCROLL_AMOUNT;
-      const isAtStart = newScrollLeft <= 0;
+      const isAtStart = checkIfAtStart(windowsContainer.scrollLeft);
       if (isAtStart) {
         setShowLeftScrollButton(false);
       }
@@ -116,9 +125,11 @@ export default function TabsProvider({
         left: DEFAULT_SCROLL_AMOUNT,
         behavior: "smooth",
       });
-      const newScrollRight = windowsContainer.scrollLeft + DEFAULT_SCROLL_AMOUNT;
-      const isAtEnd =
-        newScrollRight + windowsContainer.clientWidth >= windowsContainer.scrollWidth - DEFAULT_BUTTON_ICON_SIZE;
+      const isAtEnd = checkIfAtEnd(
+        windowsContainer.scrollLeft,
+        windowsContainer.clientWidth,
+        windowsContainer.scrollWidth
+      );
       if (isAtEnd) {
         setShowRightScrollButton(false);
       }
