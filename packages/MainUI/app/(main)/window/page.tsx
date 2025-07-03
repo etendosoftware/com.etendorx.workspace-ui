@@ -10,6 +10,7 @@ import AppBreadcrumb from "@/components/Breadcrums";
 import Home from "@/screens/Home";
 import { useTranslation } from "@/hooks/useTranslation";
 import Window from "@/components/window/Window";
+import TabsProvider from "@/contexts/tabs";
 
 export default function Page() {
   const { loading, error } = useMetadataContext();
@@ -36,7 +37,11 @@ export default function Page() {
 
   return (
     <div className="flex flex-col w-full h-full max-h-full">
-      {shouldShowTabs && <WindowTabs />}
+      {shouldShowTabs && (
+        <TabsProvider>
+          <WindowTabs />
+        </TabsProvider>
+      )}
 
       {shouldShowBreadcrumb && <AppBreadcrumb />}
 

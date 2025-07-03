@@ -217,6 +217,10 @@ const en = {
       placeholder: "Select an option",
     },
   },
+  primaryTabs: {
+    closeWindow: "Close Window",
+    showTabs: "Show Tabs",
+  },
 };
 
 export default en;
