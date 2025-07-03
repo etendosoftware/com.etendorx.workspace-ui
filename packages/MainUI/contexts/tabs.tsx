@@ -41,8 +41,8 @@ export default function TabsProvider({
     return saved ? JSON.parse(saved) : false;
   }, []);
 
-  const updateScrollButtons = useCallback((container: HTMLDivElement) => {
-    const hasHorizontalScroll = container.scrollWidth > container.clientWidth;
+  const updateScrollButtons = useCallback((windowsContainer: HTMLDivElement) => {
+    const hasHorizontalScroll = windowsContainer.scrollWidth > windowsContainer.clientWidth;
     setShowLeftScrollButton(hasHorizontalScroll);
     setShowRightScrollButton(hasHorizontalScroll);
     setShowRightMenuButton(hasHorizontalScroll);
@@ -93,13 +93,13 @@ export default function TabsProvider({
 
   const handleScrollLeft = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    const container = windowsContainerRef.current;
-    if (container) {
-      container.scrollBy({
+    const windowsContainer = windowsContainerRef.current;
+    if (windowsContainer) {
+      windowsContainer.scrollBy({
         left: -DEFAULT_SCROLL_AMOUNT,
         behavior: "smooth",
       });
-      const newScrollLeft = container.scrollLeft - DEFAULT_SCROLL_AMOUNT;
+      const newScrollLeft = windowsContainer.scrollLeft - DEFAULT_SCROLL_AMOUNT;
       const isAtStart = newScrollLeft <= 0;
       if (isAtStart) {
         setShowLeftScrollButton(false);
@@ -110,14 +110,15 @@ export default function TabsProvider({
 
   const handleScrollRight = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    const container = windowsContainerRef.current;
-    if (container) {
-      container.scrollBy({
+    const windowsContainer = windowsContainerRef.current;
+    if (windowsContainer) {
+      windowsContainer.scrollBy({
         left: DEFAULT_SCROLL_AMOUNT,
         behavior: "smooth",
       });
-      const newScrollRight = container.scrollLeft + DEFAULT_SCROLL_AMOUNT;
-      const isAtEnd = newScrollRight + container.clientWidth >= container.scrollWidth - DEFAULT_BUTTON_ICON_SIZE;
+      const newScrollRight = windowsContainer.scrollLeft + DEFAULT_SCROLL_AMOUNT;
+      const isAtEnd =
+        newScrollRight + windowsContainer.clientWidth >= windowsContainer.scrollWidth - DEFAULT_BUTTON_ICON_SIZE;
       if (isAtEnd) {
         setShowRightScrollButton(false);
       }
