@@ -51,8 +51,12 @@ export default function TabsProvider({
 
   const updateScrollButtons = useCallback((windowsContainer: HTMLDivElement) => {
     const hasHorizontalScroll = windowsContainer.scrollWidth > windowsContainer.clientWidth;
-    setShowRightMenuButton(hasHorizontalScroll);
-    if (!hasHorizontalScroll) return;
+    if (!hasHorizontalScroll) {
+      setShowLeftScrollButton(false);
+      setShowRightScrollButton(false);
+      setShowRightMenuButton(false);
+      return;
+    }
     const isAtStart = checkIfAtStart(windowsContainer.scrollLeft);
     const isAtEnd = checkIfAtEnd(
       windowsContainer.scrollLeft,
@@ -61,6 +65,7 @@ export default function TabsProvider({
     );
     setShowLeftScrollButton(!isAtStart);
     setShowRightScrollButton(!isAtEnd);
+    setShowRightMenuButton(true);
   }, []);
 
   useEffect(() => {
@@ -92,7 +97,7 @@ export default function TabsProvider({
     return () => {
       resizeObserver.disconnect();
     };
-  }, [isDrawerOpen, updateScrollButtons]);
+  }, [activeWindow, isDrawerOpen, updateScrollButtons]);
 
   useEffect(() => {
     if (!activeWindow) return;
@@ -111,14 +116,7 @@ export default function TabsProvider({
     if (!windowsContainer) return;
 
     const handleScrollEnd = () => {
-      const isAtStart = checkIfAtStart(windowsContainer.scrollLeft);
-      const isAtEnd = checkIfAtEnd(
-        windowsContainer.scrollLeft,
-        windowsContainer.clientWidth,
-        windowsContainer.scrollWidth
-      );
-      setShowLeftScrollButton(!isAtStart);
-      setShowRightScrollButton(!isAtEnd);
+      updateScrollButtons(windowsContainer);
     };
 
     // TODO: the scrollend is not work on safari
@@ -127,7 +125,7 @@ export default function TabsProvider({
     return () => {
       windowsContainer.removeEventListener("scrollend", handleScrollEnd);
     };
-  }, []);
+  }, [updateScrollButtons]);
 
   const handleScrollLeft = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -137,6 +135,12 @@ export default function TabsProvider({
         left: -DEFAULT_SCROLL_AMOUNT,
         behavior: "smooth",
       });
+      const newScrollLeft = windowsContainer.scrollLeft - DEFAULT_SCROLL_AMOUNT;
+      const isAtStart = checkIfAtStart(newScrollLeft);
+      if (isAtStart) {
+        setShowLeftScrollButton(false);
+      }
+      setShowRightScrollButton(true);
     }
   }, []);
 
@@ -148,6 +152,12 @@ export default function TabsProvider({
         left: DEFAULT_SCROLL_AMOUNT,
         behavior: "smooth",
       });
+      const newScrollRight = windowsContainer.scrollLeft + DEFAULT_SCROLL_AMOUNT;
+      const isAtEnd = checkIfAtEnd(newScrollRight, windowsContainer.clientWidth, windowsContainer.scrollWidth);
+      if (isAtEnd) {
+        setShowRightScrollButton(false);
+      }
+      setShowLeftScrollButton(true);
     }
   }, []);
 
