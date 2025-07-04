@@ -180,7 +180,13 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
     const createSectionButtons = (sectionButtons: ToolbarButtonMetadata[]) =>
       sectionButtons.map((button) => {
-        const config = createButtonByType(button, handleAction, isFormView, hasSelectedRecord, hasParentRecordSelected);
+        const config = createButtonByType({
+          button,
+          onAction: handleAction,
+          isFormView,
+          hasSelectedRecord,
+          hasParentRecordSelected,
+        });
 
         const styles = getButtonStyles(button);
         if (styles) {

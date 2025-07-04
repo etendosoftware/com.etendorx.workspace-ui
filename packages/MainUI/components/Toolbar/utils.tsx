@@ -81,13 +81,19 @@ export const organizeButtonsBySection = (buttons: ToolbarButtonMetadata[], isFor
   };
 };
 
-export const createButtonByType = (
-  button: ToolbarButtonMetadata,
-  onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void,
-  isFormView: boolean,
-  hasSelectedRecord: boolean,
-  hasParentRecordSelected: boolean
-): ToolbarButton => {
+export const createButtonByType = ({
+  button,
+  onAction,
+  isFormView,
+  hasSelectedRecord,
+  hasParentRecordSelected,
+}: {
+  button: ToolbarButtonMetadata;
+  onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
+  isFormView: boolean;
+  hasSelectedRecord: boolean;
+  hasParentRecordSelected: boolean;
+}): ToolbarButton => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
   const baseConfig: ToolbarButton = {
@@ -129,7 +135,7 @@ export const createButtonByType = (
       case "REFRESH":
         return { disabled: !hasParentRecordSelected };
       case "SAVE":
-        return { disabled: !hasParentRecordSelected };
+        return { disabled: !isFormView || !hasParentRecordSelected };
       default:
         return { disabled: !button.active };
     }

@@ -16,7 +16,7 @@ import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import { type EntityData, type EntityValue, FormMode } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
 import Collapsible from "../Collapsible";
 import StatusBar from "./StatusBar";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
@@ -24,6 +24,8 @@ import type { FormViewProps } from "./types";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
+import { globalCalloutManager } from "@/services/callouts";
+import { isEmptyObject } from "@/utils/commons";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon />,
@@ -49,6 +51,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
   const [selectedTab, setSelectedTab] = useState<string>("");
   const [isSucessfullEdit, setIsSucessfullEdit] = useState(false);
+  const [hasFormChanges, setHasFormChanges] = useState(false);
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const { graph } = useSelected();
@@ -99,7 +102,37 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const { fields, groups } = useFormFields(tab, mode, false, availableFormData);
 
-  const { reset, setValue, ...form } = useForm({ values: availableFormData as EntityData });
+  const formMethods = useForm({ values: availableFormData as EntityData });
+  const { reset, setValue, control, ...form } = formMethods;
+
+  const formValues = useWatch({
+    control,
+    defaultValue: availableFormData,
+  });
+
+  const initialValuesWithCalloutsRef = useRef({});
+
+  useEffect(() => {
+    const hasCalloutFinished = globalCalloutManager.arePendingCalloutsEmpty();
+    const { id, ...formValuesWithoutId } = formValues;
+    if (
+      hasCalloutFinished &&
+      !isEmptyObject(formValuesWithoutId) &&
+      isEmptyObject(initialValuesWithCalloutsRef.current)
+    ) {
+      initialValuesWithCalloutsRef.current = formValues;
+    }
+  }, [formValues]);
+
+  useEffect(() => {
+    if (
+      !isEmptyObject(initialValuesWithCalloutsRef.current) &&
+      JSON.stringify(formValues) !== JSON.stringify(initialValuesWithCalloutsRef.current) &&
+      !hasFormChanges
+    ) {
+      setHasFormChanges(true);
+    }
+  }, [formValues, hasFormChanges]);
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
@@ -274,7 +307,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const isLoading = loading || loadingFormInitialization;
 
   return (
-    <FormProvider setValue={setValue} reset={reset} {...form}>
+    <FormProvider setValue={setValue} reset={reset} control={control} {...form}>
       <form
         className={`flex h-full max-h-full w-full flex-col overflow-hidden transition duration-300 ${
           loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
