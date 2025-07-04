@@ -178,14 +178,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         buttons: createSectionButtons(organizedButtons.right),
         style: { ...BaseSection, gap: "0.25rem" },
       },
+      processButton: createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, anchorEl),
       isItemSelected: hasSelectedRecord,
     };
-
-    if (processButtons.length > 0) {
-      config.rightSection.buttons.push(
-        createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, anchorEl)
-      );
-    }
 
     return config;
   }, [
