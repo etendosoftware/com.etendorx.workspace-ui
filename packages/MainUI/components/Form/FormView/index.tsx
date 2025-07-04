@@ -48,17 +48,43 @@ const processFormData = (data: Record<string, EntityValue>): Record<string, Enti
 
 export function FormView({ window: windowMetadata, tab, mode, recordId, setRecordId }: FormViewProps) {
   const theme = useTheme();
+
   const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
   const [selectedTab, setSelectedTab] = useState<string>("");
   const [isSucessfullEdit, setIsSucessfullEdit] = useState(false);
   const [hasFormChanges, setHasFormChanges] = useState(false);
+
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
+  const initialValuesWithCalloutsRef = useRef({});
+
   const { graph } = useSelected();
   const { session } = useUserContext();
   const { activeWindow, getSelectedRecord, clearTabFormState, setSelectedRecord } = useMultiWindowURL();
-
   const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
+  const { registerActions } = useToolbarContext();
+  const {
+    formInitialization,
+    refetch,
+    loading: loadingFormInitialization,
+  } = useFormInitialization({
+    tab,
+    mode: mode,
+    recordId,
+  });
+  const initialState = useFormInitialState(formInitialization) || undefined;
+
+  const defaultIcon = useMemo(
+    () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
+    [theme.palette.baselineColor.neutral]
+  );
+
+  const getIconForGroup = useCallback(
+    (identifier: string) => {
+      return iconMap[identifier] || defaultIcon;
+    },
+    [defaultIcon]
+  );
 
   const record = useMemo(() => {
     const windowId = activeWindow?.windowId;
@@ -83,19 +109,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     return null;
   }, [activeWindow?.windowId, getSelectedRecord, tab, recordId, graph]);
 
-  const {
-    formInitialization,
-    refetch,
-    loading: loadingFormInitialization,
-  } = useFormInitialization({
-    tab,
-    mode: mode,
-    recordId,
-  });
-  const { registerActions } = useToolbarContext();
-
-  const initialState = useFormInitialState(formInitialization) || undefined;
-
   const availableFormData = useMemo(() => {
     return { ...record, ...initialState };
   }, [record, initialState]);
@@ -105,12 +118,21 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const formMethods = useForm({ values: availableFormData as EntityData });
   const { reset, setValue, control, ...form } = formMethods;
 
+  const tabs: TabItem[] = useMemo(() => {
+    return groups.map(([id, group]) => ({
+      id: String(id || "_main"),
+      icon: getIconForGroup(group.identifier),
+      label: group.identifier,
+      fill: theme.palette.baselineColor.neutral[80],
+      hoverFill: theme.palette.baselineColor.neutral[0],
+      showInTab: true,
+    }));
+  }, [groups, getIconForGroup, theme.palette.baselineColor.neutral]);
+
   const formValues = useWatch({
     control,
     defaultValue: availableFormData,
   });
-
-  const initialValuesWithCalloutsRef = useRef({});
 
   useEffect(() => {
     const hasCalloutFinished = globalCalloutManager.arePendingCalloutsEmpty();
@@ -134,39 +156,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     }
   }, [formValues, hasFormChanges]);
 
-  const defaultIcon = useMemo(
-    () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
-    [theme.palette.baselineColor.neutral]
-  );
-
-  const getIconForGroup = useCallback(
-    (identifier: string) => {
-      return iconMap[identifier] || defaultIcon;
-    },
-    [defaultIcon]
-  );
-
-  const tabs: TabItem[] = useMemo(() => {
-    return groups.map(([id, group]) => ({
-      id: String(id || "_main"),
-      icon: getIconForGroup(group.identifier),
-      label: group.identifier,
-      fill: theme.palette.baselineColor.neutral[80],
-      hoverFill: theme.palette.baselineColor.neutral[0],
-      showInTab: true,
-    }));
-  }, [groups, getIconForGroup, theme.palette.baselineColor.neutral]);
-
-  const handleTabChange = useCallback((newTabId: string) => {
-    setSelectedTab(newTabId);
-    setExpandedSections((prev) => {
-      if (!prev.includes(newTabId)) {
-        return [...prev, newTabId];
-      }
-      return prev;
-    });
-  }, []);
-
   useEffect(() => {
     if (selectedTab && containerRef.current) {
       const sectionElement = sectionRefs.current[selectedTab];
@@ -183,6 +172,34 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       }
     }
   }, [selectedTab, expandedSections]);
+
+  useEffect(() => {
+    if (recordId || isSucessfullEdit) {
+      refetch();
+      setIsSucessfullEdit(false);
+    }
+
+    return () => {
+      setIsSucessfullEdit(false);
+    };
+  }, [recordId, isSucessfullEdit, refetch, mode]);
+
+  useEffect(() => {
+    if (!availableFormData) return;
+
+    const processedData = processFormData(availableFormData);
+    reset(processedData);
+  }, [availableFormData, reset, tab.id]);
+
+  const handleTabChange = useCallback((newTabId: string) => {
+    setSelectedTab(newTabId);
+    setExpandedSections((prev) => {
+      if (!prev.includes(newTabId)) {
+        return [...prev, newTabId];
+      }
+      return prev;
+    });
+  }, []);
 
   const handleSectionRef = useCallback(
     (sectionId: string | null) => (el: HTMLElement | null) => {
@@ -206,10 +223,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       setSelectedTab(id);
     }
   }, []);
-
-  const onReset = useCallback(async () => {
-    await refetch();
-  }, [refetch]);
 
   const onSuccess = useCallback(
     async (data: EntityData) => {
@@ -258,27 +271,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     [expandedSections]
   );
 
-  useEffect(() => {
-    if (recordId || isSucessfullEdit) {
-      refetch();
-      setIsSucessfullEdit(false);
-    }
-
-    return () => {
-      setIsSucessfullEdit(false);
-    };
-  }, [recordId, isSucessfullEdit, refetch, mode]);
-
-  useEffect(() => {
-    if (!availableFormData) return;
-
-    const processedData = processFormData(availableFormData);
-    reset(processedData);
-  }, [availableFormData, reset, tab.id]);
-
+  // NOTE: toolbar actions
   const handleSave = useCallback(async () => {
     await save();
   }, [save]);
+
+  const onReset = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   const handleBack = useCallback(() => {
     const windowId = activeWindow?.windowId;
