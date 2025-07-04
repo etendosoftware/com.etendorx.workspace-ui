@@ -16,10 +16,10 @@ const isBase64Image = (str: string): boolean => {
 };
 
 const BUTTON_STYLES = {
-  NEW: "toolbar-button-new bg-(--color-baseline-100) text-(--color-baseline-0) disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0) rounded-l-full h-8 px-3",
-  SAVE: "toolbar-button-save bg-(--color-baseline-100) text-(--color-baseline-0) disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0) h-8.5 w-8.5 ml-1",
+  NEW: "toolbar-button-new bg-(--color-baseline-100) text-(--color-baseline-0) rounded-l-full h-8 px-3 disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0)",
+  SAVE: "toolbar-button-save bg-(--color-baseline-100) text-(--color-baseline-0) h-8.5 w-8.5 ml-1 disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0)",
   REFRESH:
-    "toolbar-button-refresh bg-(--color-baseline-100) text-(--color-baseline-0) disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0) rounded-r-full border-l-1 border-l-[color:var(--color-baseline-0)] w-10",
+    "toolbar-button-refresh bg-(--color-baseline-100) text-(--color-baseline-0) rounded-r-full border-l-1 border-l-[color:var(--color-baseline-0)] w-10 disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0)",
   CANCEL: "toolbar-button-cancel",
   DELETE: "toolbar-button-delete",
   FIND: "toolbar-button-find",
@@ -128,18 +128,30 @@ export const createButtonByType = ({
 
   const getDisableConfig = (): Partial<ToolbarButton> => {
     switch (button.action) {
-      case "CANCEL":
-        return { disabled: !(isFormView || hasSelectedRecord) };
-      case "DELETE":
-        return { disabled: !hasSelectedRecord };
-      case "NEW":
-        return { disabled: !hasParentRecordSelected };
-      case "REFRESH":
-        return { disabled: !hasParentRecordSelected };
-      case "SAVE":
-        return { disabled: !isFormView || !hasFormChanges || !hasParentRecordSelected };
-      default:
-        return { disabled: !button.active };
+      case "CANCEL": {
+        const isDisabledCancel = !(isFormView || hasSelectedRecord);
+        return { disabled: isDisabledCancel, tooltip: isDisabledCancel ? "" : button.name };
+      }
+      case "DELETE": {
+        const isDisabledDelete = !hasSelectedRecord;
+        return { disabled: isDisabledDelete, tooltip: isDisabledDelete ? "" : button.name };
+      }
+      case "NEW": {
+        const isDisabledNew = !hasParentRecordSelected;
+        return { disabled: isDisabledNew, tooltip: isDisabledNew ? "" : button.name };
+      }
+      case "REFRESH": {
+        const isDisabledRefresh = !hasParentRecordSelected;
+        return { disabled: isDisabledRefresh, tooltip: isDisabledRefresh ? "" : button.name };
+      }
+      case "SAVE": {
+        const isDisabledSave = !isFormView || !hasFormChanges || !hasParentRecordSelected;
+        return { disabled: isDisabledSave, tooltip: isDisabledSave ? "" : button.name };
+      }
+      default: {
+        const isDisabledDefault = !button.active;
+        return { disabled: isDisabledDefault, tooltip: isDisabledDefault ? "" : button.name };
+      }
     }
   };
 
