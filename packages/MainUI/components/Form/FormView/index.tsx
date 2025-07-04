@@ -26,6 +26,7 @@ import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { globalCalloutManager } from "@/services/callouts";
 import { isEmptyObject } from "@/utils/commons";
+import { useTabContext } from "@/contexts/tab";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon />,
@@ -52,7 +53,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
   const [selectedTab, setSelectedTab] = useState<string>("");
   const [isSucessfullEdit, setIsSucessfullEdit] = useState(false);
-  const [hasFormChanges, setHasFormChanges] = useState(false);
 
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
@@ -63,6 +63,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const { activeWindow, getSelectedRecord, clearTabFormState, setSelectedRecord } = useMultiWindowURL();
   const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
   const { registerActions } = useToolbarContext();
+  const { markFormAsChanged, resetFormChanges } = useTabContext();
   const {
     formInitialization,
     refetch,
@@ -149,12 +150,16 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   useEffect(() => {
     if (
       !isEmptyObject(initialValuesWithCalloutsRef.current) &&
-      JSON.stringify(formValues) !== JSON.stringify(initialValuesWithCalloutsRef.current) &&
-      !hasFormChanges
+      JSON.stringify(formValues) !== JSON.stringify(initialValuesWithCalloutsRef.current)
     ) {
-      setHasFormChanges(true);
+      markFormAsChanged();
+      initialValuesWithCalloutsRef.current = formValues;
     }
-  }, [formValues, hasFormChanges]);
+
+    return () => {
+      resetFormChanges();
+    };
+  }, [formValues, markFormAsChanged, resetFormChanges]);
 
   useEffect(() => {
     if (selectedTab && containerRef.current) {

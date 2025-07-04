@@ -49,7 +49,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   } | null>(null);
 
   const { refetchDatasource } = useDatasourceContext();
-  const { tab, parentTab, parentRecord } = useTabContext();
+  const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
   const { session } = useUserContext();
   const { toolbar, loading, refetch } = useToolbar(windowId, tab?.id);
   const { graph } = useSelected();
@@ -184,6 +184,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           button,
           onAction: handleAction,
           isFormView,
+          hasFormChanges,
           hasSelectedRecord,
           hasParentRecordSelected,
         });
@@ -230,6 +231,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     anchorEl,
     hasParentTab,
     selectedParentItems,
+    hasFormChanges,
   ]);
 
   if (loading) return null;

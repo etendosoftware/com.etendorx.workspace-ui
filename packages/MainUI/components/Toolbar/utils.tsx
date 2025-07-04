@@ -85,12 +85,14 @@ export const createButtonByType = ({
   button,
   onAction,
   isFormView,
+  hasFormChanges,
   hasSelectedRecord,
   hasParentRecordSelected,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
   isFormView: boolean;
+  hasFormChanges: boolean;
   hasSelectedRecord: boolean;
   hasParentRecordSelected: boolean;
 }): ToolbarButton => {
@@ -135,7 +137,7 @@ export const createButtonByType = ({
       case "REFRESH":
         return { disabled: !hasParentRecordSelected };
       case "SAVE":
-        return { disabled: !isFormView || !hasParentRecordSelected };
+        return { disabled: !isFormView || !hasFormChanges || !hasParentRecordSelected };
       default:
         return { disabled: !button.active };
     }
