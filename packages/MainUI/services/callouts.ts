@@ -66,6 +66,10 @@ class GlobalCalloutManager {
     this.pendingCallouts.clear();
     this.calloutQueue.length = 0;
   }
+
+  arePendingCalloutsEmpty(): boolean {
+    return this.calloutQueue.length === 0 && this.pendingCallouts.size === 0;
+  }
 }
 
 export const globalCalloutManager = new GlobalCalloutManager();
