@@ -37,6 +37,27 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
 
   const [displayValue, setDisplayValue] = useState<string>("");
 
+  useEffect(() => {
+    const existingIdentifier = watch(`${field.hqlName}$_identifier`);
+
+    if (existingIdentifier && !displayValue) {
+      setDisplayValue(existingIdentifier);
+    }
+
+    if (value?.id && !locationData.id) {
+      setLocationData({
+        id: value.id || "",
+        address1: value.address1 || "",
+        address2: value.address2 || "",
+        postal: value.postal || "",
+        city: value.city || "",
+        countryId: value.country || "",
+        regionId: value.region || "",
+        _identifier: value._identifier || "",
+      });
+    }
+  }, [field.hqlName, watch, displayValue, locationData.id, value]);
+
   const {
     records: countryRecords,
     loading: loadingCountries,
@@ -101,7 +122,31 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
 
   const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
-  }, []);
+    const existingData = watch(`${field.hqlName}`);
+    if (existingData?.id) {
+      setLocationData({
+        id: existingData.id || "",
+        address1: existingData.address1 || "",
+        address2: existingData.address2 || "",
+        postal: existingData.postal || "",
+        city: existingData.city || "",
+        countryId: existingData.country || "",
+        regionId: existingData.region || "",
+        _identifier: existingData._identifier || "",
+      });
+    } else {
+      setLocationData({
+        id: "",
+        address1: "",
+        address2: "",
+        postal: "",
+        city: "",
+        countryId: "",
+        regionId: "",
+        _identifier: "",
+      });
+    }
+  }, [field.hqlName, watch]);
 
   const handleCountryChange = useCallback((_event: React.SyntheticEvent, newValue: CountryOption | null) => {
     setLocationData((prev) => ({
@@ -205,7 +250,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
 
       <Modal
         open={isModalOpen}
-        onClose={handleCloseModal}
+        onCancel={handleCloseModal}
         tittleHeader={t("location.selector.modalTitle")}
         descriptionText={t("location.selector.modalDescription")}
         HeaderIcon={LocationIcon}

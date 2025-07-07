@@ -12,7 +12,7 @@ function LabelCmp({ field }: { field: Field }) {
   const isReference = useMemo(() => isEntityReference(getFieldReference(field.column?.reference)), [field]);
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
 
-  if (field.fieldGroup !== "audit" && value && isReference) {
+  if (field.fieldGroup !== "audit" && value && isReference && field.column.referenceSearchKey$_identifier !== "Location") {
     return (
       <BaseLabel
         name={`${field.name} ⤴️`}

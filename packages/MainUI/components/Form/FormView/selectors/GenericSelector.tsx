@@ -22,8 +22,6 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   const value = watch(field.hqlName);
   const { reference } = field.column;
 
-  console.debug('field"', field);
-
   switch (reference) {
     case "95E2A8B50A254B2AAE6774B8C2F28120": // Product reference to datasource
     case "19":
