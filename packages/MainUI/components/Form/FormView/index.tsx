@@ -279,11 +279,15 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   // NOTE: toolbar actions
   const handleSave = useCallback(async () => {
     await save();
-  }, [save]);
+    resetFormChanges();
+    initialValuesWithCalloutsRef.current = {};
+  }, [save, resetFormChanges]);
 
   const onReset = useCallback(async () => {
     await refetch();
-  }, [refetch]);
+    resetFormChanges();
+    initialValuesWithCalloutsRef.current = {};
+  }, [refetch, resetFormChanges]);
 
   const handleBack = useCallback(() => {
     const windowId = activeWindow?.windowId;
@@ -292,11 +296,15 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     }
     graph.clear(tab);
     graph.clearSelected(tab);
-  }, [activeWindow?.windowId, clearTabFormState, graph, tab]);
+    resetFormChanges();
+    initialValuesWithCalloutsRef.current = {};
+  }, [activeWindow?.windowId, clearTabFormState, graph, tab, resetFormChanges]);
 
   const handleNew = useCallback(() => {
     setRecordId(NEW_RECORD_ID);
-  }, [setRecordId]);
+    resetFormChanges();
+    initialValuesWithCalloutsRef.current = {};
+  }, [setRecordId, resetFormChanges]);
 
   useEffect(() => {
     const actions = {

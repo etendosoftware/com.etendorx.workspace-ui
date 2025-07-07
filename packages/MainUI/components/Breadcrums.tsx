@@ -13,6 +13,7 @@ import { styles } from "./styles";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useSelected } from "@/hooks/useSelected";
+import { NEW_RECORD_ID } from "@/utils/url/constants";
 
 interface BreadcrumbProps {
   allTabs: Tab[][];
@@ -27,8 +28,11 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { graph } = useSelected();
 
   const allTabsFormatted = useMemo(() => allTabs.flat(), [allTabs]);
-  const currentTab = useMemo(() => allTabsFormatted.find((tab) => tab.window === windowId), [allTabsFormatted, windowId]);
-  
+  const currentTab = useMemo(
+    () => allTabsFormatted.find((tab) => tab.window === windowId),
+    [allTabsFormatted, windowId]
+  );
+
   const isNewRecord = useCallback(() => pathname.includes("/NewRecord"), [pathname]);
 
   const handleWindowClick = useCallback(
@@ -68,7 +72,7 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
       const tabFormState = windowId ? getTabFormState(windowId, currentTab.id) : undefined;
       const currentRecordId = tabFormState?.recordId || "";
 
-      if (currentRecordId) {
+      if (currentRecordId && currentRecordId !== NEW_RECORD_ID) {
         items.push({
           id: currentRecordId.toString(),
           label: currentRecordId.toString(),
