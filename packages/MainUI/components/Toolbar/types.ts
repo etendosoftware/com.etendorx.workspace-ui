@@ -90,10 +90,3 @@ export interface TopToolbarProps {
   rightSection: ToolbarSectionConfig;
   processButton: ToolbarButton;
 }
-
-export interface Base64IconProps {
-  src: string;
-  alt?: string;
-  className?: string;
-  size?: number;
-}

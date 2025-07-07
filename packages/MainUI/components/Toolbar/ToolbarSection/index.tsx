@@ -1,4 +1,4 @@
-import type { ToolbarSectionConfig } from "./types";
+import type { ToolbarSectionConfig } from "../types";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 
 const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, className = "", processButton }) => {

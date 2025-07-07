@@ -221,6 +221,10 @@ const es = {
       placeholder: "Seleccione una opción",
     },
   },
+  primaryTabs: {
+    closeWindow: "Cerrar ventana",
+    showTabs: "Mostrar pestañas",
+  },
 };
 
 export default es;

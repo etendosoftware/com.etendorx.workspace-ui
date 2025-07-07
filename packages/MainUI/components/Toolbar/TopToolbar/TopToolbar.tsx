@@ -1,5 +1,5 @@
-import type { TopToolbarProps } from "./types";
-import ToolbarSection from "./ToolbarSection";
+import type { TopToolbarProps } from "../types";
+import ToolbarSection from "../ToolbarSection";
 
 export const TopToolbar = ({ leftSection, centerSection, rightSection, processButton }: TopToolbarProps) => {
   return (
