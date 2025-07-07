@@ -1,39 +1,9 @@
 import { Client } from "./client";
-
-export interface CreateLocationRequest {
-  address1: string;
-  address2?: string;
-  postal?: string;
-  city: string;
-  countryId: string;
-  regionId?: string;
-}
-
-export interface LocationResponse {
-  id: string;
-  _identifier: string;
-  address1: string;
-  address2?: string;
-  postal?: string;
-  city: string;
-  countryId: string;
-  regionId?: string;
-}
-
-export interface LocationApiResponse {
-  success: boolean;
-  data: LocationResponse;
-}
-
-export interface LocationErrorResponse {
-  success: false;
-  error: string;
-  status: number;
-}
+import type { CreateLocationRequest, LocationResponse, LocationApiResponse, LocationErrorResponse } from "./types";
 
 export class LocationClient extends Client {
   /**
-   * Crea una nueva dirección
+   * Create a new address
    */
   public async createLocation(locationData: CreateLocationRequest): Promise<LocationResponse> {
     try {
@@ -51,7 +21,7 @@ export class LocationClient extends Client {
   }
 
   /**
-   * Obtiene el identifier de una dirección existente
+   * Get an identifier of an existent location
    */
   public async getLocationIdentifier(locationId: string): Promise<string> {
     try {

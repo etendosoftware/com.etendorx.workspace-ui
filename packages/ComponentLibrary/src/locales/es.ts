@@ -221,6 +221,51 @@ const es = {
       placeholder: "Seleccione una opción",
     },
   },
+  location: {
+    selector: {
+      placeholder: "Seleccionar ubicación...",
+      modalTitle: "Nueva Ubicación",
+      modalDescription: "Ingrese los detalles de la ubicación",
+      buttons: {
+        cancel: "Cancelar",
+        save: "Guardar",
+        creating: "Creando...",
+      },
+    },
+    fields: {
+      address1: {
+        label: "Dirección Línea 1",
+        placeholder: "Ingrese la dirección línea 1",
+      },
+      address2: {
+        label: "Dirección Línea 2",
+        placeholder: "Ingrese la dirección línea 2",
+      },
+      postal: {
+        label: "Código Postal",
+        placeholder: "Ingrese el código postal",
+      },
+      city: {
+        label: "Ciudad",
+        placeholder: "Ingrese la ciudad",
+      },
+      country: {
+        label: "País",
+        placeholder: "Seleccione un país",
+      },
+      region: {
+        label: "Región",
+        placeholder: "Seleccione una región",
+        selectCountryFirst: "Seleccione un país primero",
+      },
+    },
+    errors: {
+      loadingCountries: "Error cargando países",
+      loadingRegions: "Error cargando regiones",
+      creating: "Error creando ubicación",
+      requiredFields: "Por favor complete todos los campos requeridos correctamente.",
+    },
+  },
 };
 
 export default es;

@@ -1,7 +1,7 @@
 // packages/MainUI/hooks/useLocation.ts
 import { useCallback, useState } from "react";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import type { CreateLocationRequest, LocationResponse } from "@workspaceui/api-client/src/api/location";
+import type { CreateLocationRequest, LocationResponse } from "@workspaceui/api-client/src/api/types";
 
 export interface UseLocationResult {
   createLocation: (locationData: CreateLocationRequest) => Promise<LocationResponse>;

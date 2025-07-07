@@ -6,44 +6,22 @@ import Select from "@workspaceui/componentlibrary/src/components/Input/Select";
 import SearchOutlined from "@workspaceui/componentlibrary/src/assets/icons/search.svg";
 import LocationIcon from "@workspaceui/componentlibrary/src/assets/icons/map-pin.svg";
 import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
-import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
+import Button from "@mui/material/Button";
 import type { LocationSelectorProps } from "../types";
 import { TextInput } from "./components/TextInput";
 import { useDatasource } from "@/hooks/useDatasource";
 import { useLocation } from "@/hooks/useLocation";
+import { useTranslation } from "@/hooks/useTranslation";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
-import Button from "@mui/material/Button";
-
-interface LocationData {
-  id: string;
-  address1: string;
-  address2: string;
-  postal: string;
-  city: string;
-  countryId: string;
-  regionId: string;
-  _identifier: string;
-}
-
-interface CountryOption extends Option {
-  id: string;
-  title: string;
-  value: string;
-}
-
-interface RegionOption extends Option {
-  id: string;
-  title: string;
-  value: string;
-}
+import type { LocationData, CountryOption, RegionOption } from "./LocationSelector/types";
 
 const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }) => {
   const { watch, setValue } = useFormContext();
+  const { t } = useTranslation();
   const value = watch(field.hqlName);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Hook personalizado para manejar la creación de direcciones
   const { createLocation, loading: locationLoading, error: locationError } = useLocation();
 
   const [locationData, setLocationData] = useState<LocationData>({
@@ -59,7 +37,6 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
 
   const [displayValue, setDisplayValue] = useState<string>("");
 
-  // Cargar países usando el hook existente
   const {
     records: countryRecords,
     loading: loadingCountries,
@@ -82,7 +59,6 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
     }
   }, [locationData.countryId, shouldLoadRegions]);
 
-  // Cargar regiones usando el hook existente
   const {
     records: regionRecords,
     loading: loadingRegions,
@@ -165,7 +141,6 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
     if (!isFormValid || locationLoading) return;
 
     try {
-      // Crear la dirección usando el hook personalizado
       const createdLocation = await createLocation({
         address1: locationData.address1,
         address2: locationData.address2,
@@ -175,12 +150,10 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
         regionId: locationData.regionId || undefined,
       });
 
-      // Usar el ID y identifier devueltos por el backend
       const locationId = createdLocation.id;
       const locationIdentifier = createdLocation._identifier;
 
       if (locationId) {
-        // Establecer el valor del campo con el ID de la ubicación creada
         setValue(field.hqlName, locationId);
         setValue(`${field.hqlName}$_identifier`, locationIdentifier);
         setValue(`${field.hqlName}_data`, {
@@ -199,12 +172,10 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
         setIsModalOpen(false);
       }
     } catch (error) {
-      console.error("Error creating location:", error);
-      // El error ya está manejado por el hook useLocation
+      console.error(t("location.errors.creating"), error);
     }
-  }, [isFormValid, locationLoading, locationData, createLocation, setValue, field.hqlName]);
+  }, [isFormValid, locationLoading, locationData, createLocation, setValue, field.hqlName, t]);
 
-  // Mostrar errores combinados
   const combinedError = locationError || countryError || regionError;
 
   return (
@@ -225,7 +196,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
           <div className="flex items-center gap-2">
             <SearchOutlined fill="#6B7280" className="w-4 h-4" />
             <span className={`text-sm ${displayValue ? "text-gray-900" : "text-gray-500"}`}>
-              {displayValue || "Select location..."}
+              {displayValue || t("location.selector.placeholder")}
             </span>
           </div>
           {!isReadOnly && <LocationIcon fill="#9CA3AF" className="w-4 h-4" />}
@@ -235,23 +206,23 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
       <Modal
         open={isModalOpen}
         onClose={handleCloseModal}
-        tittleHeader="New Location"
-        descriptionText="Enter location details"
+        tittleHeader={t("location.selector.modalTitle")}
+        descriptionText={t("location.selector.modalDescription")}
         HeaderIcon={LocationIcon}
         showHeader
         buttons={
           <div className="flex gap-2">
             <Button variant="outlined" onClick={handleCloseModal} disabled={locationLoading}>
-              Cancel
+              {t("location.selector.buttons.cancel")}
             </Button>
             <Button variant="contained" onClick={handleSaveLocation} disabled={!isFormValid || locationLoading}>
               {locationLoading ? (
                 <div className="flex items-center gap-2">
                   <Spinner />
-                  <span>Creating...</span>
+                  <span>{t("location.selector.buttons.creating")}</span>
                 </div>
               ) : (
-                "Save"
+                t("location.selector.buttons.save")
               )}
             </Button>
           </div>
@@ -265,13 +236,12 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
 
           {!isFormValid && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-              <p className="text-sm text-yellow-600">Please fill in all required fields correctly.</p>
+              <p className="text-sm text-yellow-600">{t("location.errors.requiredFields")}</p>
             </div>
           )}
 
-          {/* Address Line 1 */}
           <TextInput
-            label="Address Line 1"
+            label={t("location.fields.address1.label")}
             field={{
               ...field,
               isMandatory: true,
@@ -280,14 +250,13 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
             }}
             value={locationData.address1}
             onChange={(e) => handleInputChange("address1", e.target.value)}
-            placeholder="Enter address line 1"
+            placeholder={t("location.fields.address1.placeholder")}
             maxLength={60}
             className="w-full"
           />
 
-          {/* Address Line 2 */}
           <TextInput
-            label="Address Line 2"
+            label={t("location.fields.address2.label")}
             field={{
               ...field,
               isMandatory: false,
@@ -296,15 +265,14 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
             }}
             value={locationData.address2}
             onChange={(e) => handleInputChange("address2", e.target.value)}
-            placeholder="Enter address line 2"
+            placeholder={t("location.fields.address2.placeholder")}
             maxLength={60}
             className="w-full"
           />
 
-          {/* Postal Code and City */}
           <div className="grid grid-cols-2 gap-4">
             <TextInput
-              label="Postal Code"
+              label={t("location.fields.postal.label")}
               field={{
                 ...field,
                 isMandatory: false,
@@ -313,12 +281,12 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
               }}
               value={locationData.postal}
               onChange={(e) => handleInputChange("postal", e.target.value)}
-              placeholder="Enter postal code"
+              placeholder={t("location.fields.postal.placeholder")}
               maxLength={10}
               className="w-full"
             />
             <TextInput
-              label="City"
+              label={t("location.fields.city.label")}
               field={{
                 ...field,
                 isMandatory: true,
@@ -327,23 +295,22 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
               }}
               value={locationData.city}
               onChange={(e) => handleInputChange("city", e.target.value)}
-              placeholder="Enter city"
+              placeholder={t("location.fields.city.placeholder")}
               maxLength={60}
               className="w-full"
             />
           </div>
 
-          {/* Country */}
           <div>
             <label htmlFor="country-select" className="block text-sm font-medium text-gray-700 mb-1">
-              Country *
+              {t("location.fields.country.label")} *
             </label>
             {loadingCountries ? (
               <div className="flex items-center justify-center p-4">
                 <Spinner />
               </div>
             ) : countryError ? (
-              <div className="text-red-500 text-sm">Error loading countries</div>
+              <div className="text-red-500 text-sm">{t("location.errors.loadingCountries")}</div>
             ) : (
               <Select
                 options={countries}
@@ -355,19 +322,20 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
             )}
           </div>
 
-          {/* Region */}
           <div>
             <label htmlFor="region-select" className="block text-sm font-medium text-gray-700 mb-1">
-              Region
+              {t("location.fields.region.label")}
             </label>
             {!locationData.countryId ? (
-              <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">Select a country first</div>
+              <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
+                {t("location.fields.region.selectCountryFirst")}
+              </div>
             ) : loadingRegions ? (
               <div className="flex items-center justify-center p-4">
                 <Spinner />
               </div>
             ) : regionError ? (
-              <div className="text-red-500 text-sm">Error loading regions</div>
+              <div className="text-red-500 text-sm">{t("location.errors.loadingRegions")}</div>
             ) : (
               <Select
                 options={regions}

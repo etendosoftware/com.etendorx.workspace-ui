@@ -743,3 +743,34 @@ export interface ProcessDefinition extends Record<string, unknown> {
 export interface Labels {
   [key: string]: string;
 }
+
+export interface CreateLocationRequest {
+  address1: string;
+  address2?: string;
+  postal?: string;
+  city: string;
+  countryId: string;
+  regionId?: string;
+}
+
+export interface LocationResponse {
+  id: string;
+  _identifier: string;
+  address1: string;
+  address2?: string;
+  postal?: string;
+  city: string;
+  countryId: string;
+  regionId?: string;
+}
+
+export interface LocationApiResponse {
+  success: boolean;
+  data: LocationResponse;
+}
+
+export interface LocationErrorResponse {
+  success: false;
+  error: string;
+  status: number;
+}

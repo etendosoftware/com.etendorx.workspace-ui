@@ -217,6 +217,51 @@ const en = {
       placeholder: "Select an option",
     },
   },
+  location: {
+    selector: {
+      placeholder: "Select location...",
+      modalTitle: "New Location",
+      modalDescription: "Enter location details",
+      buttons: {
+        cancel: "Cancel",
+        save: "Save",
+        creating: "Creating...",
+      },
+    },
+    fields: {
+      address1: {
+        label: "Address Line 1",
+        placeholder: "Enter address line 1",
+      },
+      address2: {
+        label: "Address Line 2", 
+        placeholder: "Enter address line 2",
+      },
+      postal: {
+        label: "Postal Code",
+        placeholder: "Enter postal code",
+      },
+      city: {
+        label: "City",
+        placeholder: "Enter city",
+      },
+      country: {
+        label: "Country",
+        placeholder: "Select a country",
+      },
+      region: {
+        label: "Region",
+        placeholder: "Select a region",
+        selectCountryFirst: "Select a country first",
+      },
+    },
+    errors: {
+      loadingCountries: "Error loading countries",
+      loadingRegions: "Error loading regions",
+      creating: "Error creating location",
+      requiredFields: "Please fill in all required fields correctly.",
+    },
+  },
 };
 
 export default en;
