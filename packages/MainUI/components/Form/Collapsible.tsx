@@ -60,8 +60,9 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId, onToggle
     <div
       id={`section-${sectionId}`}
       className={`bg-white rounded-xl border border-gray-200 mb-4 ${isExpanded ? "overflow-visible" : "overflow-hidden"}`}>
-      <button
-        type="button"
+      <div
+        // biome-ignore lint/a11y/useSemanticElements: <explanation>
+        role="button"
         tabIndex={0}
         aria-expanded={isExpanded}
         aria-controls={`section-content-${sectionId}`}
@@ -76,7 +77,7 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId, onToggle
         <div>
           <IconButton>{isExpanded ? <ChevronUp /> : <ChevronDown />}</IconButton>
         </div>
-      </button>
+      </div>
       <div
         id={`section-content-${sectionId}`}
         ref={contentRef}

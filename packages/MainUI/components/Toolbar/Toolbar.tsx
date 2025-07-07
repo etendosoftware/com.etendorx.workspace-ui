@@ -25,15 +25,10 @@ import {
   type ProcessDefinitionButton,
   type ProcessResponse,
 } from "../ProcessModal/types";
-import ProcessMenu from "./ProcessMenu";
+import ProcessMenu from "./Menus/ProcessMenu";
 import SearchPortal from "./SearchPortal";
-import TopToolbar from "./TopToolbar";
-import {
-  createButtonByType,
-  createProcessMenuButton,
-  getButtonStyles,
-  organizeButtonsBySection,
-} from "./buttonConfigs";
+import TopToolbar from "./TopToolbar/TopToolbar";
+import { createButtonByType, createProcessMenuButton, getButtonStyles, organizeButtonsBySection } from "./utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 
@@ -54,7 +49,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   } | null>(null);
 
   const { refetchDatasource } = useDatasourceContext();
-  const { tab, parentTab, parentRecord } = useTabContext();
+  const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
   const { session } = useUserContext();
   const { toolbar, loading, refetch } = useToolbar(windowId, tab?.id);
   const { graph } = useSelected();
@@ -185,7 +180,14 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
     const createSectionButtons = (sectionButtons: ToolbarButtonMetadata[]) =>
       sectionButtons.map((button) => {
-        const config = createButtonByType(button, handleAction, isFormView, hasSelectedRecord, hasParentRecordSelected);
+        const config = createButtonByType({
+          button,
+          onAction: handleAction,
+          isFormView,
+          hasFormChanges,
+          hasSelectedRecord,
+          hasParentRecordSelected,
+        });
 
         const styles = getButtonStyles(button);
         if (styles) {
@@ -229,6 +231,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     anchorEl,
     hasParentTab,
     selectedParentItems,
+    hasFormChanges,
   ]);
 
   if (loading) return null;

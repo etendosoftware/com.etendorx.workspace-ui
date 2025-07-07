@@ -3,9 +3,9 @@
 import useDisplayLogic from "@/hooks/useDisplayLogic";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import { useCallback } from "react";
-import type { ProcessButton } from "../ProcessModal/types";
-import { isProcessActionButton } from "../ProcessModal/types";
-import type { ProcessMenuProps } from "./types";
+import type { ProcessButton } from "../../ProcessModal/types";
+import { isProcessActionButton } from "../../ProcessModal/types";
+import type { ProcessMenuProps } from "../types";
 
 interface ProcessMenuItemProps {
   button: ProcessButton;
