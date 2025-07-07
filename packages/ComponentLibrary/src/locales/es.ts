@@ -265,10 +265,10 @@ const es = {
       creating: "Error creando ubicación",
       requiredFields: "Por favor complete todos los campos requeridos correctamente.",
     },
-    primaryTabs: {
-      closeWindow: "Cerrar ventana",
-      showTabs: "Mostrar pestañas",
-    },
+  },
+  primaryTabs: {
+    closeWindow: "Cerrar ventana",
+    showTabs: "Mostrar pestañas",
   },
 };
 

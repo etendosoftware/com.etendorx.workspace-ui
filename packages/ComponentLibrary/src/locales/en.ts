@@ -261,10 +261,10 @@ const en = {
       creating: "Error creating location",
       requiredFields: "Please fill in all required fields correctly.",
     },
-    primaryTabs: {
-      closeWindow: "Close Window",
-      showTabs: "Show Tabs",
-    },
+  },
+  primaryTabs: {
+    closeWindow: "Close Window",
+    showTabs: "Show Tabs",
   },
 };
 

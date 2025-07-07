@@ -751,6 +751,7 @@ export interface CreateLocationRequest {
   city: string;
   countryId: string;
   regionId?: string;
+  [key: string]: unknown;
 }
 
 export interface LocationResponse {

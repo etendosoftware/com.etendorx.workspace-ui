@@ -7,10 +7,12 @@ export class LocationClient extends Client {
    */
   public async createLocation(locationData: CreateLocationRequest): Promise<LocationResponse> {
     try {
-      const { data } = await this.post<LocationApiResponse>("/location/create", locationData);
+      const response = await this.post("/location/create", locationData);
+      const data = response.data as LocationApiResponse;
 
       if (!data.success) {
-        throw new Error((data as LocationErrorResponse).error || "Error creating location");
+        const errorData = data as unknown as LocationErrorResponse;
+        throw new Error(errorData.error || "Error creating location");
       }
 
       return data.data;
@@ -25,7 +27,8 @@ export class LocationClient extends Client {
    */
   public async getLocationIdentifier(locationId: string): Promise<string> {
     try {
-      const { data } = await this.post<{ identifier: string }>("/location/identifier", { locationId });
+      const response = await this.post("/location/identifier", { locationId });
+      const data = response.data as { identifier: string };
       return data.identifier;
     } catch (error) {
       console.error("Error getting location identifier:", error);
