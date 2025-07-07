@@ -1,11 +1,9 @@
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useTabContext } from "@/contexts/tab";
 import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
-import useFormFields from "@/hooks/useFormFields";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
-import { useUserContext } from "@/hooks/useUserContext";
 import { EMPTY_ARRAY } from "@/utils/defaults";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
@@ -16,7 +14,6 @@ import { useProcessExecution } from "../../hooks/Toolbar/useProcessExecution";
 import { useToolbar } from "../../hooks/Toolbar/useToolbar";
 import { useToolbarConfig } from "../../hooks/Toolbar/useToolbarConfig";
 import { useTranslation } from "../../hooks/useTranslation";
-import { compileExpression } from "../Form/FormView/selectors/BaseSelector";
 import ProcessIframeModal from "../ProcessModal/Iframe";
 import ProcessDefinitionModal from "../ProcessModal/ProcessDefinitionModal";
 import {
@@ -33,7 +30,6 @@ import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 
 const BaseSection = { display: "flex", alignItems: "center" };
-const EmptyArray: ToolbarButtonMetadata[] = [];
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
@@ -50,8 +46,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
-  const { session } = useUserContext();
-  const { toolbar, loading, refetch } = useToolbar(windowId, tab?.id);
+  const { buttons, processButtons, loading, refetch } = useToolbar(windowId, tab?.id);
   const { graph } = useSelected();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
@@ -59,7 +54,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
-  const buttons: ToolbarButtonMetadata[] = toolbar?.response.data ?? EmptyArray;
   const selectedRecord = useSelectedRecord(tab);
   const hasParentTab = !!tab?.parentTabId;
   const parentId = parentRecord?.id?.toString();
@@ -79,30 +73,6 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   } = useToolbarConfig({ windowId, tabId: tab?.id, parentId, isFormView });
 
   const { handleProcessClick } = useProcessButton(executeProcess, refetch);
-  const selectedItems = useSelectedRecords(tab);
-  const {
-    fields: { actionFields },
-  } = useFormFields(tab);
-
-  const processButtons = useMemo(() => {
-    const buttons = Object.values(actionFields) || [];
-    return buttons.filter((button) => {
-      if (!button.displayed) return false;
-      if (selectedItems?.length === 0) return false;
-      if (selectedItems?.length > 1 && !button?.processDefinition?.isMultiRecord) return false;
-      if (!button.displayLogicExpression) return true;
-
-      const compiledExpr = compileExpression(button.displayLogicExpression);
-      try {
-        const checkRecord = (record: Record<string, unknown>) => compiledExpr(session, record);
-        return button?.processDefinition?.isMultiRecord
-          ? selectedItems.every(checkRecord)
-          : selectedItems.some(checkRecord);
-      } catch {
-        return true;
-      }
-    }) as ProcessButton[];
-  }, [actionFields, selectedItems, session]);
 
   const handleMenuToggle = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -210,14 +180,9 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         buttons: createSectionButtons(organizedButtons.right),
         style: { ...BaseSection, gap: "0.25rem" },
       },
+      processButton: createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, anchorEl),
       isItemSelected: hasSelectedRecord,
     };
-
-    if (processButtons.length > 0) {
-      config.rightSection.buttons.push(
-        createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, anchorEl)
-      );
-    }
 
     return config;
   }, [
