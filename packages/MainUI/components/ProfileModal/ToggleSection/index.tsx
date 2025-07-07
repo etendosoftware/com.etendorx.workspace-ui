@@ -12,7 +12,7 @@ import WarehouseIcon from "../../../../ComponentLibrary/src/assets/icons/warehou
 import type { SelectorListProps } from "../types";
 import { useStyle } from "./styles";
 import { useLanguage } from "@/contexts/language";
-import { Language } from "@/contexts/types";
+import type { Language } from "@/contexts/types";
 
 const isOptionEqualToValue = (option: Option, value: Option) => option.id === value.id;
 
@@ -136,7 +136,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
         value: lang.language,
         iconLeft: getFlag(lang.language as Language),
       })),
-    [languages, getFlag],
+    [languages, getFlag]
   );
 
   return (

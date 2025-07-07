@@ -10,6 +10,7 @@ import { SelectSelector } from "./SelectSelector";
 import { StringSelector } from "./StringSelector";
 import { TableDirSelector } from "./TableDirSelector";
 import DatetimeSelector from "./DatetimeSelector";
+import LocationSelector from "./LocationSelector";
 
 export type GenericSelectorProps = {
   field: Field;
@@ -20,6 +21,8 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   const { watch } = useFormContext();
   const value = watch(field.hqlName);
   const { reference } = field.column;
+
+  console.debug('field"', field);
 
   switch (reference) {
     case "95E2A8B50A254B2AAE6774B8C2F28120": // Product reference to datasource
@@ -49,6 +52,9 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
     case "13":
       return <ListSelector field={field} isReadOnly={isReadOnly} />;
     case "30":
+      if (field.column.referenceSearchKey === "21" || field.column.referenceSearchKey$_identifier === "Location") {
+        return <LocationSelector field={field} isReadOnly={isReadOnly} />;
+      }
       return <SelectSelector field={field} isReadOnly={isReadOnly} />;
     case "800008":
       return <NumericSelector field={field} type="decimal" readOnly={isReadOnly} />;
