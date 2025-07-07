@@ -81,10 +81,12 @@ export interface ToolbarSectionConfig {
   style?: React.CSSProperties;
   toggleExpand?: (event?: React.MouseEvent<HTMLButtonElement>) => void;
   className?: string;
+  processButton?: ToolbarButton;
 }
 
 export interface TopToolbarProps {
   leftSection: ToolbarSectionConfig;
   centerSection: ToolbarSectionConfig;
   rightSection: ToolbarSectionConfig;
+  processButton: ToolbarButton;
 }
