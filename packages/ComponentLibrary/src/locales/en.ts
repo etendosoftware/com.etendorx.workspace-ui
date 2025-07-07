@@ -234,7 +234,7 @@ const en = {
         placeholder: "Enter address line 1",
       },
       address2: {
-        label: "Address Line 2", 
+        label: "Address Line 2",
         placeholder: "Enter address line 2",
       },
       postal: {
@@ -260,6 +260,10 @@ const en = {
       loadingRegions: "Error loading regions",
       creating: "Error creating location",
       requiredFields: "Please fill in all required fields correctly.",
+    },
+    primaryTabs: {
+      closeWindow: "Close Window",
+      showTabs: "Show Tabs",
     },
   },
 };

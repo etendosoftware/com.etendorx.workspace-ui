@@ -13,6 +13,8 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
   ariaLabel?: string;
   /** Text to display in a tooltip on hover */
   tooltip?: string;
+  /** Position of the tooltip */
+  tooltipPosition?: "top" | "bottom" | "left" | "right";
   /** Additional CSS classes to customize styling */
   className?: string;
   /** Optional text to show alongside the icon */
@@ -37,6 +39,7 @@ const IconButton = ({
   disabled = false,
   ariaLabel,
   tooltip,
+  tooltipPosition,
   iconText,
   ref,
   ...rest
@@ -62,7 +65,7 @@ const IconButton = ({
   `;
 
   return (
-    <Tooltip title={tooltip}>
+    <Tooltip title={tooltip} position={tooltipPosition}>
       <button
         ref={ref}
         type="button"

@@ -1,5 +1,4 @@
 import type { BreadcrumbProps, BreadcrumbAction } from '@workspaceui/componentlibrary/src/components/Breadcrums/types';
-import HomeIcon from '@workspaceui/componentlibrary/src/assets/icons/home.svg';
 import FavoriteIcon from '@workspaceui/componentlibrary/src/assets/icons/star.svg';
 import ContentCopyIcon from '@workspaceui/componentlibrary/src/assets/icons/copy.svg';
 import HelpIcon from '@workspaceui/componentlibrary/src/assets/icons/help-circle.svg';
@@ -34,8 +33,6 @@ export const mockDefaultActions: BreadcrumbAction[] = [
 ];
 
 export const mockDefaultArgs: BreadcrumbProps = {
-  homeIcon: <HomeIcon fill={theme.palette.baselineColor.neutral[80]} />,
-  homeText: 'Dashboard',
   onHomeClick: () => console.log('Home clicked'),
   items: [
     { id: '1', label: 'Super long item text name' },

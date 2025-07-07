@@ -101,6 +101,15 @@
   opacity: 1;
 }
 
+.toolbar-button-new:disabled,
+.toolbar-button-save:disabled,
+.toolbar-button-refresh:disabled,
+.toolbar-button-cancel:disabled,
+.toolbar-button-delete:disabled {
+  cursor: default;
+  pointer-events: none;
+}
+
 .toolbar-button-new:disabled .icon-base64,
 .toolbar-button-save:disabled .icon-base64,
 .toolbar-button-refresh:disabled .icon-base64,
@@ -235,4 +244,13 @@ select:-webkit-autofill:focus {
 button {
   @apply appearance-none;
   cursor: pointer;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
