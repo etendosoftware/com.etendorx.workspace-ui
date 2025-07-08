@@ -36,13 +36,12 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
     <Box key={item.id} sx={sx.breadcrumbItem}>
       {isFirst && (
         <Box sx={sx.iconContainer}>
-          <Button aria-label="Go back" sx={sx.iconButton} onClick={handleClick}>
-            <IconButton
-              className="w-8 h-8 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-transparent-neutral-5) hover:text-(--color-baseline-80)"
-              aria-label="Go back">
-              <ArrowLeftIcon />
-            </IconButton>
-          </Button>
+          <IconButton
+            onClick={handleClick}
+            className="w-8 h-8 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-transparent-neutral-5) hover:text-(--color-baseline-80)"
+            aria-label="Go back">
+            <ArrowLeftIcon />
+          </IconButton>
         </Box>
       )}
       {isLast ? (
