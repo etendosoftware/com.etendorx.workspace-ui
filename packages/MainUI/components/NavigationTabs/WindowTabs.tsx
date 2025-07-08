@@ -13,7 +13,7 @@ import { useTabs } from "@/contexts/tabs";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function WindowTabs() {
-  const { windows, setActiveWindow, closeWindow, isHomeRoute, navigateToHome } = useMultiWindowURL();
+  const { windows, setActiveWindow, closeWindow, navigateToHome } = useMultiWindowURL();
   const { getWindowTitle } = useMetadataContext();
   const { t } = useTranslation();
 
@@ -53,7 +53,9 @@ export default function WindowTabs() {
       className="flex items-center bg-(--color-transparent-neutral-5) rounded-full overflow-hidden p-0 gap-1 mx-1 px-1"
       ref={containerRef}>
       <div className="px-1 flex">
-        <IconButton onClick={handleGoHome} className={isHomeRoute ? "bg-(--color-dynamic-main) text-white" : ""}>
+        <IconButton
+          onClick={handleGoHome}
+          className="w-8 h-8 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-transparent-neutral-5) hover:text-(--color-baseline-80)">
           <HomeIcon />
         </IconButton>
       </div>
