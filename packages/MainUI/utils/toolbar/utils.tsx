@@ -62,14 +62,20 @@ const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMeta
   });
 };
 
+const isVisibleButton = (button: ToolbarButtonMetadata, isFormView: boolean) => {
+  if (!button.active) return false;
+
+  const isFindButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FIND;
+  const isSaveButtonInNonFormView = !isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE;
+  const isCreateButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW;
+
+  return !isFindButtonInFormView && !isSaveButtonInNonFormView && !isCreateButtonInFormView;
+};
+
 export const organizeButtonsBySection = (buttons: ToolbarButtonMetadata[], isFormView: boolean): OrganizedSections => {
   const sections: OrganizedSections = { left: [], center: [], right: [] };
 
-  const visibleButtons = buttons.filter((button) => {
-    if (!button.active) return false;
-    if (isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FIND) return false;
-    return true;
-  });
+  const visibleButtons = buttons.filter((button) => isVisibleButton(button, isFormView));
 
   for (const button of visibleButtons) {
     if (button.section && sections[button.section]) {
