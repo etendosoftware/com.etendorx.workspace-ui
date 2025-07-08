@@ -175,7 +175,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     const config = {
       leftSection: {
         buttons: createSectionButtons(organizedButtons.left),
-        style: BaseSection,
+        style: { ...BaseSection, gap: "0.25rem" },
       },
       centerSection: {
         buttons: createSectionButtons(organizedButtons.center),

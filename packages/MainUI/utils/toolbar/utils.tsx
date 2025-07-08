@@ -18,11 +18,10 @@ const isBase64Image = (str: string): boolean => {
 
 const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.NEW]:
-    "toolbar-button-new bg-(--color-baseline-100) text-(--color-baseline-0) rounded-l-full h-8 px-3 disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0)",
+    "toolbar-button-new bg-(--color-baseline-100) text-(--color-baseline-0) h-8 w-8 px-3 disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0)",
   [TOOLBAR_BUTTONS_ACTIONS.SAVE]:
-    "toolbar-button-save bg-(--color-baseline-100) text-(--color-baseline-0) h-8.5 w-8.5 ml-1 disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0)",
-  [TOOLBAR_BUTTONS_ACTIONS.REFRESH]:
-    "toolbar-button-refresh bg-(--color-baseline-100) text-(--color-baseline-0) rounded-r-full border-l-1 border-l-[color:var(--color-baseline-0)] w-10 disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0)",
+    "toolbar-button-save bg-(--color-baseline-100) text-(--color-baseline-0) h-8 w-8 px-3 disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0)",
+  [TOOLBAR_BUTTONS_ACTIONS.REFRESH]: "toolbar-button-refresh",
   [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: "toolbar-button-cancel",
   [TOOLBAR_BUTTONS_ACTIONS.DELETE]: "toolbar-button-delete",
   [TOOLBAR_BUTTONS_ACTIONS.FIND]: "toolbar-button-find",
@@ -68,8 +67,11 @@ const isVisibleButton = (button: ToolbarButtonMetadata, isFormView: boolean) => 
   const isFindButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FIND;
   const isSaveButtonInNonFormView = !isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE;
   const isCreateButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW;
+  const isFilterButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER;
 
-  return !isFindButtonInFormView && !isSaveButtonInNonFormView && !isCreateButtonInFormView;
+  return (
+    !isFindButtonInFormView && !isSaveButtonInNonFormView && !isCreateButtonInFormView && !isFilterButtonInFormView
+  );
 };
 
 export const organizeButtonsBySection = (buttons: ToolbarButtonMetadata[], isFormView: boolean): OrganizedSections => {
@@ -118,7 +120,7 @@ export const createButtonByType = ({
   };
 
   const getIconTextConfig = (): Partial<ToolbarButton> => {
-    const showIconTextFor = [TOOLBAR_BUTTONS_ACTIONS.NEW];
+    const showIconTextFor = [TOOLBAR_BUTTONS_ACTIONS.NEW, TOOLBAR_BUTTONS_ACTIONS.SAVE];
 
     if (showIconTextFor.includes(button.action)) {
       return { iconText: button.name };
