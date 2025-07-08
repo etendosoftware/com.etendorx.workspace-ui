@@ -184,3 +184,8 @@ export interface SelectorTableProps {
   columns: MRT_ColumnDef<TableData>[];
   title: string;
 }
+
+export interface LocationSelectorProps {
+  field: Field;
+  isReadOnly: boolean;
+}
