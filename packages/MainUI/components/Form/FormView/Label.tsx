@@ -5,6 +5,7 @@ import type { Field } from "@workspaceui/api-client/src/api/types";
 import { getFieldReference } from "@/utils";
 import BaseLabel from "@/components/Label";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
+import { CUSTOM_SELECTORS_IDENTIFIERS } from "@/utils/form/constants";
 
 function LabelCmp({ field }: { field: Field }) {
   const { watch } = useFormContext();
@@ -12,7 +13,12 @@ function LabelCmp({ field }: { field: Field }) {
   const isReference = useMemo(() => isEntityReference(getFieldReference(field.column?.reference)), [field]);
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
 
-  if (field.fieldGroup !== "audit" && value && isReference && field.column.referenceSearchKey$_identifier !== "Location") {
+  if (
+    field.fieldGroup !== "audit" &&
+    value &&
+    isReference &&
+    field.column.referenceSearchKey$_identifier !== CUSTOM_SELECTORS_IDENTIFIERS.LOCATION
+  ) {
     return (
       <BaseLabel
         name={`${field.name} ⤴️`}

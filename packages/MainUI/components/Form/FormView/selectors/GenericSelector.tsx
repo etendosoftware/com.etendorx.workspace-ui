@@ -1,5 +1,6 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { memo } from "react";
+import { CUSTOM_SELECTORS_IDENTIFIERS } from "@/utils/form/constants";
 import { useFormContext } from "react-hook-form";
 import { BooleanSelector } from "./BooleanSelector";
 import { DateSelector } from "./DateSelector";
@@ -50,7 +51,10 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
     case "13":
       return <ListSelector field={field} isReadOnly={isReadOnly} />;
     case "30":
-      if (field.column.referenceSearchKey === "21" || field.column.referenceSearchKey$_identifier === "Location") {
+      if (
+        field.column.referenceSearchKey === "21" ||
+        field.column.referenceSearchKey$_identifier === CUSTOM_SELECTORS_IDENTIFIERS.LOCATION
+      ) {
         return <LocationSelector field={field} isReadOnly={isReadOnly} />;
       }
       return <SelectSelector field={field} isReadOnly={isReadOnly} />;
