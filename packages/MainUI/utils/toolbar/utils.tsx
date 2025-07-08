@@ -3,7 +3,7 @@ import type { TranslateFunction } from "@/hooks/types";
 import type React from "react";
 import Base64Icon from "@workspaceui/componentlibrary/src/components/Base64Icon";
 import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
-import { TOOLBAR_BUTTONS_ACTIONS } from "@/utils/toolbar/constants";
+import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
 
 const isBase64Image = (str: string): boolean => {
   try {
@@ -118,11 +118,11 @@ export const createButtonByType = ({
       return { iconText: button.name };
     }
 
-    if (button.buttonType === "DROPDOWN") {
+    if (button.buttonType === TOOLBAR_BUTTONS_TYPES.DROPDOWN) {
       return { iconText: `${button.name} ▼` };
     }
 
-    if (button.buttonType === "MODAL" && button.modalConfig?.title) {
+    if (button.buttonType === TOOLBAR_BUTTONS_TYPES.MODAL && button.modalConfig?.title) {
       return { iconText: button.modalConfig.title };
     }
 
@@ -160,21 +160,21 @@ export const createButtonByType = ({
 
   const getClickConfig = (): Partial<ToolbarButton> => {
     switch (button.buttonType) {
-      case "DROPDOWN":
+      case TOOLBAR_BUTTONS_TYPES.DROPDOWN:
         return {
           onClick: (event?: React.MouseEvent<HTMLElement>) => {
             onAction("OPEN_DROPDOWN", button, event);
           },
         };
-      case "MODAL":
+      case TOOLBAR_BUTTONS_TYPES.MODAL:
         return {
           onClick: () => onAction("OPEN_MODAL", button),
         };
-      case "TOGGLE":
+      case TOOLBAR_BUTTONS_TYPES.TOGGLE:
         return {
           onClick: () => onAction("TOGGLE", button),
         };
-      case "CUSTOM":
+      case TOOLBAR_BUTTONS_TYPES.CUSTOM:
         return {
           onClick: (event?: React.MouseEvent<HTMLElement>) => {
             onAction("CUSTOM_ACTION", button, event);
