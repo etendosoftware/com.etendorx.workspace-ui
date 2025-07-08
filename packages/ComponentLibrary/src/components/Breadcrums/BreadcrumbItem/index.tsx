@@ -5,7 +5,7 @@ import ArrowLeftIcon from "../../../assets/icons/arrow-left.svg";
 import IconButton from "../../IconButton";
 import { useStyle } from "../styles";
 import type { BreadcrumbItemProps } from "../types";
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 
 const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
   item,
@@ -14,15 +14,11 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
   handleActionMenuOpen,
   handleHomeNavigation,
 }) => {
-  const [isIconHovered, setIsIconHovered] = useState<boolean>(false);
   const theme = useTheme();
   const { sx } = useStyle();
 
   const isFirst = position === 0;
   const isLast = position === breadcrumbsSize - 1;
-
-  const handleMouseEnterOnIcon = useCallback(() => setIsIconHovered(true), []);
-  const handleMouseLeaveOnIcon = useCallback(() => setIsIconHovered(false), []);
 
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -40,19 +36,12 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
     <Box key={item.id} sx={sx.breadcrumbItem}>
       {isFirst && (
         <Box sx={sx.iconContainer}>
-          <Button
-            aria-label="Go back"
-            sx={sx.iconButton}
-            onClick={handleClick}
-            onMouseEnter={handleMouseEnterOnIcon}
-            onMouseLeave={handleMouseLeaveOnIcon}>
-            {isIconHovered ? (
-              <IconButton className="w-10 h-10 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-baseline-0) hover:text-(--color-baseline-80)" aria-label="Go back">
-                <ArrowLeftIcon />
-              </IconButton>
-            ) : (
-              <IconButton className="w-10 h-10 text-[1.5rem] bg-(--color-transparent-neutral-5)" aria-label="Go back">📁</IconButton>
-            )}
+          <Button aria-label="Go back" sx={sx.iconButton} onClick={handleClick}>
+            <IconButton
+              className="w-8 h-8 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-transparent-neutral-5) hover:text-(--color-baseline-80)"
+              aria-label="Go back">
+              <ArrowLeftIcon />
+            </IconButton>
           </Button>
         </Box>
       )}
