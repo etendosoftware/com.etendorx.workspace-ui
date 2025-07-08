@@ -1,0 +1,9 @@
+export const TOOLBAR_BUTTONS_ACTIONS = {
+  NEW: "NEW",
+  SAVE: "SAVE",
+  REFRESH: "REFRESH",
+  CANCEL: "CANCEL",
+  DELETE: "DELETE",
+  FIND: "FIND",
+  FILTER: "FILTER",
+};

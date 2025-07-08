@@ -25,7 +25,12 @@ import {
 import ProcessMenu from "./Menus/ProcessMenu";
 import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar/TopToolbar";
-import { createButtonByType, createProcessMenuButton, getButtonStyles, organizeButtonsBySection } from "./utils";
+import {
+  createButtonByType,
+  createProcessMenuButton,
+  getButtonStyles,
+  organizeButtonsBySection,
+} from "@/utils/toolbar/utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 
