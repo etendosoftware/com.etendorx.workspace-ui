@@ -302,29 +302,27 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   return (
     <FormProvider setValue={handleSetValue} reset={reset} formState={formState} {...form}>
       <form
-        className={`flex h-full max-h-full w-full flex-col overflow-hidden transition duration-300 ${
+        className={`flex h-full max-h-full w-full flex-col gap-2 overflow-hidden transition duration-300 ${
           loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
         }`}
         onSubmit={handleSave}>
-        <div className="flex flex-col gap-2">
-          {statusModal.open && (
-            <StatusModal
-              statusType={statusModal.statusType}
-              statusText={statusModal.statusText}
-              errorMessage={statusModal.errorMessage}
-              saveLabel={statusModal.saveLabel}
-              secondaryButtonLabel={statusModal.secondaryButtonLabel}
-              onClose={hideStatusModal}
-              isDeleteSuccess={statusModal.isDeleteSuccess}
-            />
-          )}
-          <StatusBar fields={fields.statusBarFields} />
-          <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
-        </div>
+        {statusModal.open && (
+          <StatusModal
+            statusType={statusModal.statusType}
+            statusText={statusModal.statusText}
+            errorMessage={statusModal.errorMessage}
+            saveLabel={statusModal.saveLabel}
+            secondaryButtonLabel={statusModal.secondaryButtonLabel}
+            onClose={hideStatusModal}
+            isDeleteSuccess={statusModal.isDeleteSuccess}
+          />
+        )}
+        <StatusBar fields={fields.statusBarFields} />
+        <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
         {isLoading ? (
           <Spinner />
         ) : (
-          <div className="flex-grow space-y-2 overflow-auto p-2" ref={containerRef}>
+          <div className="flex-grow space-y-2 overflow-auto" ref={containerRef}>
             {groups.map(([id, group]) => {
               const sectionId = String(id || "_main");
 
