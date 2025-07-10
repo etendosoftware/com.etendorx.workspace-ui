@@ -1,6 +1,6 @@
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 
-const BASE_STYLES = "flex flex-col overflow-hidden min-h-0 m-2 mt-0 rounded-xl";
+const BASE_STYLES = "flex flex-col overflow-hidden min-h-0 m-0 mb-2 rounded-xl";
 const COLLAPSED_STYLES = "cursor-pointer";
 const MAIN_TAB_STYLES = "";
 const SUB_TAB_STYLES = "border border-(--color-transparent-neutral-10) ";
@@ -15,7 +15,7 @@ export type ContainerProps = React.PropsWithChildren<
 >;
 
 export function TabContainer({
-  className,
+  className = "",
   collapsed,
   current,
   isTopExpanded = false,
@@ -42,13 +42,11 @@ export function TabContainer({
   };
 
   return (
-    <>
-      <div
-        {...props}
-        className={`${BASE_STYLES} ${current.tabLevel === 0 ? MAIN_TAB_STYLES : SUB_TAB_STYLES} ${getExpansionStyles()} ${className}`}
-        style={{ ...props.style, ...getCustomStyle() }}
-      />
-    </>
+    <div
+      {...props}
+      className={`${BASE_STYLES} ${current.tabLevel === 0 ? MAIN_TAB_STYLES : SUB_TAB_STYLES} ${getExpansionStyles()} ${className}`}
+      style={{ ...props.style, ...getCustomStyle() }}
+    />
   );
 }
 
