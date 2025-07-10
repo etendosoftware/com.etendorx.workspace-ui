@@ -41,9 +41,7 @@ export default function Page() {
         </TabsProvider>
       )}
 
-      <div className="flex-1 overflow-hidden">
-        {isHomeRoute || !activeWindow ? <Home /> : <Window windowId={activeWindow.windowId} />}
-      </div>
+      {isHomeRoute || !activeWindow ? <Home /> : <Window windowId={activeWindow.windowId} />}
     </div>
   );
 }
