@@ -1,6 +1,6 @@
 import type React from "react";
 import { Dialog, DialogContent, DialogTitle, IconButton as MuiIconButton } from "@mui/material";
-import type { IAssistant, ILabels } from "@workspaceui/api-client/src/api/copilot";
+import type { IAssistant, ILabels, IMessage } from "@workspaceui/api-client/src/api/copilot";
 import { Close as CloseIcon, Minimize, Maximize } from "@mui/icons-material";
 import ChatInterface from "./ChatInterface";
 
@@ -11,6 +11,12 @@ export interface CopilotPopupProps {
   labels: ILabels;
   isExpanded?: boolean;
   onToggleExpanded?: () => void;
+  messages: IMessage[];
+  selectedAssistant: IAssistant | null;
+  isLoading: boolean;
+  onSelectAssistant: (assistant: IAssistant) => void;
+  onSendMessage: (message: string, files?: File[]) => void;
+  onResetConversation: () => void;
 }
 
 const CopilotPopup: React.FC<CopilotPopupProps> = ({
@@ -20,6 +26,12 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
   labels,
   isExpanded = false,
   onToggleExpanded,
+  messages,
+  selectedAssistant,
+  isLoading,
+  onSelectAssistant,
+  onSendMessage,
+  onResetConversation,
 }) => {
   return (
     <Dialog
@@ -57,7 +69,17 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
       </DialogTitle>
 
       <DialogContent sx={{ p: 0, display: "flex", flexDirection: "column", height: "100%" }}>
-        <ChatInterface assistants={assistants} labels={labels} isExpanded={isExpanded} />
+        <ChatInterface
+          assistants={assistants}
+          labels={labels}
+          isExpanded={isExpanded}
+          messages={messages}
+          selectedAssistant={selectedAssistant}
+          isLoading={isLoading}
+          onSelectAssistant={onSelectAssistant}
+          onSendMessage={onSendMessage}
+          onResetConversation={onResetConversation}
+        />
       </DialogContent>
     </Dialog>
   );

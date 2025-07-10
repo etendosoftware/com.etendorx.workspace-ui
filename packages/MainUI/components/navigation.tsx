@@ -23,6 +23,7 @@ import { useTranslation } from "../hooks/useTranslation";
 import ProfileModal from "./ProfileModal/ProfileModal";
 import { useAssistants } from "@/hooks/useAssistants";
 import { useCopilotLabels } from "@/hooks/useCopilotLabels";
+import { useCopilot } from "@/hooks/useCopilot";
 
 const handleClose = () => {
   return true;
@@ -44,13 +45,13 @@ const Navigation: React.FC = () => {
   } = useContext(UserContext);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const { language, setLanguage, getFlag } = useLanguage();
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [anchorEl] = useState<HTMLElement | null>(null);
 
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [copilotExpanded, setCopilotExpanded] = useState(false);
 
-  const { assistants, loading: assistantsLoading, getAssistants } = useAssistants();
-  const { labels, areLabelsLoaded, getLabels } = useCopilotLabels();
+  const { assistants, getAssistants } = useAssistants();
+  const { labels, getLabels } = useCopilotLabels();
 
   const { clearUserData } = useContext(UserContext);
 
@@ -60,10 +61,6 @@ const Navigation: React.FC = () => {
 
   const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setSaveAsDefault(event.target.checked);
-  }, []);
-
-  const handleMenuToggle = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
   }, []);
 
   const handleCopilotOpen = useCallback(() => {
@@ -88,10 +85,13 @@ const Navigation: React.FC = () => {
 
   const flagString = getFlag(language);
 
+  const { messages, selectedAssistant, isLoading, handleSendMessage, handleSelectAssistant, handleResetConversation } =
+    useCopilot();
+
   useEffect(() => {
     getLabels();
     getAssistants();
-  }, []);
+  }, [getLabels, getAssistants]);
 
   if (!currentRole) {
     return null;
@@ -169,6 +169,13 @@ const Navigation: React.FC = () => {
         labels={labels}
         isExpanded={copilotExpanded}
         onToggleExpanded={handleCopilotToggleExpanded}
+        // ← Props de la lógica de chat
+        messages={messages}
+        selectedAssistant={selectedAssistant}
+        isLoading={isLoading}
+        onSelectAssistant={handleSelectAssistant}
+        onSendMessage={handleSendMessage}
+        onResetConversation={handleResetConversation}
       />
     </>
   );

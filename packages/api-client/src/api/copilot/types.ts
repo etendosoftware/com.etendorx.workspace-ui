@@ -67,8 +67,8 @@ export interface CopilotUploadConfig {
   method: string;
   headers?: Record<string, string>;
   onProgress?: (progress: number) => void;
-  onSuccess?: (response: any) => void;
-  onError?: (error: any) => void;
+  onSuccess?: (response: Record<string, unknown>) => void;
+  onError?: (error: Error | Record<string, unknown>) => void;
 }
 
 /**
@@ -84,7 +84,7 @@ export interface CopilotResponse {
   };
   error?: string;
   success?: boolean;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 /**
@@ -145,8 +145,8 @@ export interface CopilotErrorResponse {
  * Upload response structure
  */
 export interface CopilotUploadResponse {
-  [key: string]: string;
-  success?: boolean;
+  [key: string]: string | undefined;
+  success?: string;
   error?: string;
 }
 

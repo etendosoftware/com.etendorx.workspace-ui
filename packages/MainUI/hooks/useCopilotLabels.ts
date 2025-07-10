@@ -1,6 +1,6 @@
-import { type ILabels, CopilotClient } from "@workspaceui/api-client/src/api/copilot";
-import { useState } from "react";
-import { useUserContext } from "./useUserContext";
+import type { ILabels } from "@workspaceui/api-client/src/api/copilot";
+import { useState, useCallback } from "react";
+import { useCopilotClient } from "./useCopilotClient";
 
 export const useCopilotLabels = () => {
   const [labels, setLabels] = useState<ILabels>({});
@@ -8,29 +8,36 @@ export const useCopilotLabels = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const token = useUserContext();
+  const copilotClient = useCopilotClient();
 
-  const getLabels = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      CopilotClient.setBaseUrl();
-      CopilotClient.setToken(token);
+  const getLabels = useCallback(
+    async (retryCount = 0) => {
+      setLoading(true);
+      setError(null);
 
-      const data = await CopilotClient.getLabels();
-      console.log("Labels response:", data);
+      try {
+        const data = await copilotClient.getLabels();
+        console.log("Labels response:", data);
 
-      if (data) {
-        setLabels(data);
-        setAreLabelsLoaded(true);
+        if (data) {
+          setLabels(data);
+          setAreLabelsLoaded(true);
+        }
+      } catch (err) {
+        if (retryCount < 2) {
+          console.log(`Retrying labels fetch (${retryCount + 1}/2)...`);
+          setTimeout(() => getLabels(retryCount + 1), 1000);
+          return;
+        }
+
+        setError(err instanceof Error ? err.message : "Failed to load labels");
+        console.error("Error loading Copilot labels:", err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load labels");
-      console.error("Error loading Copilot labels:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [copilotClient]
+  );
 
   return {
     labels,

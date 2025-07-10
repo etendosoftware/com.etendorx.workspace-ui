@@ -1,11 +1,21 @@
-import { Client, type Interceptor } from "../client";
+import { Client, type Interceptor, type ClientOptions } from "../client";
 import { COPILOT_ENDPOINTS, COPILOT_METHODS } from "./constants";
 import type { IAssistant, ILabels, CopilotQuestionParams, CopilotUploadResponse } from "./types";
+
+export class CopilotUnauthorizedError extends Error {
+  public response: Response;
+
+  constructor(message: string, response: Response) {
+    super(`Copilot: ${message}`);
+    this.response = response;
+  }
+}
 
 export class CopilotClient {
   public static client = new Client();
   private static isProduction = process.env.NODE_ENV === "production";
   private static currentBaseUrl = "";
+  private static isInitialized = false;
 
   /**
    * Initializes the CopilotClient with base URL
@@ -40,6 +50,32 @@ export class CopilotClient {
   }
 
   /**
+   * Generic request method - consistent with Client class
+   */
+  private static async request(endpoint: string, options: ClientOptions = {}) {
+    if (!CopilotClient.isInitialized) {
+      CopilotClient.setBaseUrl();
+      CopilotClient.isInitialized = true;
+    }
+
+    try {
+      const response = await CopilotClient.client.request(endpoint, options);
+      
+      if (!response.ok && response.status === 401) {
+        throw new CopilotUnauthorizedError("Unauthorized access to Copilot service", response);
+      }
+
+      return response;
+    } catch (error) {
+      if (error instanceof CopilotUnauthorizedError) {
+        throw error;
+      }
+      console.error(`CopilotClient request failed for ${endpoint}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Sets language header for all requests
    * Follows the pattern from Metadata class
    */
@@ -62,7 +98,7 @@ export class CopilotClient {
    */
   public static async getLabels(): Promise<ILabels> {
     try {
-      const { data, ok } = await CopilotClient.client.request(COPILOT_ENDPOINTS.GET_LABELS, {
+      const { data, ok } = await CopilotClient.request(COPILOT_ENDPOINTS.GET_LABELS, {
         method: COPILOT_METHODS.GET,
       });
 
@@ -92,15 +128,13 @@ export class CopilotClient {
    */
   public static async getAssistants(): Promise<IAssistant[]> {
     try {
-      const { data, ok } = await CopilotClient.client.request(COPILOT_ENDPOINTS.GET_ASSISTANTS, {
+      const { data, ok } = await CopilotClient.request(COPILOT_ENDPOINTS.GET_ASSISTANTS, {
         method: COPILOT_METHODS.GET,
       });
 
       if (!ok) {
         throw new Error("Failed to fetch assistants");
       }
-
-      console.log("CopilotClient.getAssistants raw data:", data, "Type:", typeof data);
 
       if (typeof data === "string") {
         try {
@@ -128,7 +162,7 @@ export class CopilotClient {
       const formData = new FormData();
       formData.append("file", file);
 
-      const { data, ok } = await CopilotClient.client.request(COPILOT_ENDPOINTS.UPLOAD_FILE, {
+      const { data, ok } = await CopilotClient.request(COPILOT_ENDPOINTS.UPLOAD_FILE, {
         method: COPILOT_METHODS.POST,
         body: formData,
       });
@@ -156,7 +190,7 @@ export class CopilotClient {
         formData.append("file", file);
       }
 
-      const { data, ok } = await CopilotClient.client.request(COPILOT_ENDPOINTS.UPLOAD_FILE, {
+      const { data, ok } = await CopilotClient.request(COPILOT_ENDPOINTS.UPLOAD_FILE, {
         method: COPILOT_METHODS.POST,
         body: formData,
       });
@@ -176,10 +210,11 @@ export class CopilotClient {
    * Caches a question for large payloads
    * Follows the pattern from similar caching methods in the project
    */
-  public static async cacheQuestion(question: string): Promise<any> {
+  public static async cacheQuestion(question: string): Promise<Record<string, unknown>> {
     try {
-      const { data, ok } = await CopilotClient.client.post(COPILOT_ENDPOINTS.CACHE_QUESTION, {
-        question,
+      const { data, ok } = await CopilotClient.request(COPILOT_ENDPOINTS.CACHE_QUESTION, {
+        method: COPILOT_METHODS.POST,
+        body: { question },
       });
 
       if (!ok) {
@@ -197,12 +232,12 @@ export class CopilotClient {
    * Sends a regular question to the copilot service
    * For non-streaming responses
    */
-  public static async sendQuestion(params: CopilotQuestionParams): Promise<any> {
+  public static async sendQuestion(params: CopilotQuestionParams): Promise<Record<string, unknown>> {
     try {
-      const { data, ok } = await CopilotClient.client.post(
-        COPILOT_ENDPOINTS.SEND_QUESTION,
-        params as unknown as Record<string, unknown>
-      );
+      const { data, ok } = await CopilotClient.request(COPILOT_ENDPOINTS.SEND_QUESTION, {
+        method: COPILOT_METHODS.POST,
+        body: params as unknown as Record<string, unknown>,
+      });
 
       if (!ok) {
         throw new Error("Failed to send question");
@@ -220,6 +255,10 @@ export class CopilotClient {
    * Uses the stored base URL for consistency
    */
   public static buildSSEUrl(params: CopilotQuestionParams): string {
+    if (!CopilotClient.currentBaseUrl) {
+      CopilotClient.setBaseUrl();
+    }
+
     const queryParams = Object.keys(params)
       .filter((key) => params[key as keyof CopilotQuestionParams] !== undefined)
       .map((key) => {
@@ -228,7 +267,17 @@ export class CopilotClient {
       })
       .join("&");
 
-    return `${CopilotClient.currentBaseUrl}${COPILOT_ENDPOINTS.SEND_AQUESTION}?${queryParams}`;
+    const baseUrl = CopilotClient.currentBaseUrl.endsWith("/")
+      ? CopilotClient.currentBaseUrl
+      : `${CopilotClient.currentBaseUrl}/`;
+
+    const endpoint = COPILOT_ENDPOINTS.SEND_AQUESTION.startsWith("/")
+      ? COPILOT_ENDPOINTS.SEND_AQUESTION.slice(1)
+      : COPILOT_ENDPOINTS.SEND_AQUESTION;
+
+    const fullUrl = `${baseUrl}${endpoint}?${queryParams}`;
+
+    return fullUrl;
   }
 
   /**
@@ -240,7 +289,15 @@ export class CopilotClient {
 
     if (!CopilotClient.isProduction) {
       headers.Authorization = `Basic ${btoa("admin:admin")}`;
+      headers.Accept = "text/event-stream";
+    } else {
+      const authHeader = CopilotClient.client.getAuthHeader();
+      if (authHeader) {
+        headers.Authorization = authHeader;
+      }
+      headers.Accept = "text/event-stream";
     }
+
     return headers;
   }
 

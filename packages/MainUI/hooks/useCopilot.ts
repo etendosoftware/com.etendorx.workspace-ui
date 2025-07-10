@@ -1,214 +1,234 @@
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useCallback, useMemo, useReducer } from "react";
 import { useSSEConnection } from "./useSSEConnection";
-import { type IMessage, MESSAGE_ROLES, type IAssistant, CopilotClient } from "@workspaceui/api-client/src/api/copilot";
-import { formatTimeNewDate } from "@/utils";
+import type { IMessage, IAssistant, CopilotQuestionParams } from "@workspaceui/api-client/src/api/copilot";
+import { formatTimeNewDate, getMessageType } from "@/utils";
+import { useCopilotClient } from "./useCopilotClient";
+
+interface CopilotState {
+  messages: IMessage[];
+  selectedAssistant: IAssistant | null;
+  conversationId: string | null;
+  isLoading: boolean;
+  files: File[] | null;
+  fileIds: string[] | null;
+  contextValue: Record<string, unknown> | null;
+  contextTitle: string | null;
+}
+
+type CopilotAction =
+  | { type: "SET_MESSAGES"; messages: IMessage[] }
+  | { type: "ADD_MESSAGE"; message: IMessage }
+  | { type: "SET_SELECTED_ASSISTANT"; assistant: IAssistant | null }
+  | { type: "SET_CONVERSATION_ID"; conversationId: string | null }
+  | { type: "SET_LOADING"; isLoading: boolean }
+  | { type: "SET_FILES"; files: File[] | null }
+  | { type: "SET_FILE_IDS"; fileIds: string[] | null }
+  | { type: "SET_CONTEXT_VALUE"; contextValue: Record<string, unknown> | null }
+  | { type: "SET_CONTEXT_TITLE"; contextTitle: string | null }
+  | { type: "RESET_CONVERSATION" };
+
+const initialState: CopilotState = {
+  messages: [],
+  selectedAssistant: null,
+  conversationId: null,
+  isLoading: false,
+  files: null,
+  fileIds: null,
+  contextValue: null,
+  contextTitle: null,
+};
+
+function copilotReducer(state: CopilotState, action: CopilotAction): CopilotState {
+  switch (action.type) {
+    case "SET_MESSAGES":
+      return { ...state, messages: action.messages };
+    case "ADD_MESSAGE": {
+      const lastMessage = state.messages[state.messages.length - 1];
+      if (lastMessage && lastMessage.text === action.message.text && lastMessage.sender === action.message.sender) {
+        return state;
+      }
+      return { ...state, messages: [...state.messages, action.message] };
+    }
+    case "SET_SELECTED_ASSISTANT":
+      return { ...state, selectedAssistant: action.assistant };
+    case "SET_CONVERSATION_ID":
+      return { ...state, conversationId: action.conversationId };
+    case "SET_LOADING":
+      return { ...state, isLoading: action.isLoading };
+    case "SET_FILES":
+      return { ...state, files: action.files };
+    case "SET_FILE_IDS":
+      return { ...state, fileIds: action.fileIds };
+    case "SET_CONTEXT_VALUE":
+      return { ...state, contextValue: action.contextValue };
+    case "SET_CONTEXT_TITLE":
+      return { ...state, contextTitle: action.contextTitle };
+    case "RESET_CONVERSATION":
+      return {
+        ...initialState,
+        selectedAssistant: null,
+      };
+    default:
+      return state;
+  }
+}
 
 export const useCopilot = () => {
-  const [messages, setMessages] = useState<IMessage[]>([]);
-  const [inputValue, setInputValue] = useState<string>("");
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [isBotLoading, setIsBotLoading] = useState<boolean>(false);
-  const [files, setFiles] = useState<File[] | null>(null);
-  const [fileIds, setFileIds] = useState<string[] | null>(null);
+  const [state, dispatch] = useReducer(copilotReducer, initialState);
+  const copilotClient = useCopilotClient();
 
-  const [contextValue, setContextValue] = useState(null);
-  const [contextTitle, setContextTitle] = useState<string | null>(null);
+  const addMessage = useCallback((sender: string, text: string) => {
+    const newMessage: IMessage = {
+      text,
+      sender,
+      timestamp: formatTimeNewDate(new Date()),
+    };
 
-  const messagesEndRef = useRef<any>(null);
+    dispatch({ type: "ADD_MESSAGE", message: newMessage });
+  }, []);
+
+  const handleSSEMessage = useCallback((data: Record<string, unknown>) => {
+    const answer = data?.answer as { conversation_id?: string; response?: string; role?: string };
+    if (answer?.conversation_id) {
+      dispatch({ type: "SET_CONVERSATION_ID", conversationId: answer.conversation_id });
+    }
+
+    if (answer?.response) {
+      if (answer.role !== "debug") {
+        addMessage("bot", answer.response);
+      }
+    }
+  }, [addMessage]);
+
+  const handleSSEError = useCallback((error: string) => {
+    console.error("SSE Error:", error);
+    
+    // Only stop loading if it's a final connection error (not a retry)
+    if (error.includes("Connection error occurred")) {
+      dispatch({ type: "SET_LOADING", isLoading: false });
+      addMessage("error", `Error: ${error}`);
+    }
+  }, [addMessage]);
+
+  const handleSSEComplete = useCallback(() => {
+    dispatch({ type: "SET_LOADING", isLoading: false });
+  }, []);
 
   const { startSSEConnection, closeConnection } = useSSEConnection({
     onMessage: handleSSEMessage,
     onError: handleSSEError,
-    onComplete: () => setIsBotLoading(false),
+    onComplete: handleSSEComplete,
   });
 
-  const urlParams = useMemo(() => {
-    if (typeof window !== "undefined") {
-      return new URLSearchParams(window.location.search);
-    }
-    return new URLSearchParams();
-  }, []);
-
-  function handleSSEMessage(data: any) {
-    const answer = data?.answer;
-    if (answer?.conversation_id) {
-      setConversationId(answer.conversation_id);
-    }
-    if (answer?.response) {
-      if (answer.role === "debug") {
-        console.log("Debug message", answer.response);
-      } else {
-        handleNewMessage(answer.role || MESSAGE_ROLES.BOT, answer);
-      }
-    }
-  }
-
-  function handleSSEError(error: string) {
-    setIsBotLoading(false);
-    showErrorMessage(error);
-  }
-
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
-
-  const handleNewMessage = useCallback(
-    async (role: string, message: IMessage) => {
-      const currentContextTitle = contextTitle;
-      let text = message.response ?? message.text;
-
-      if (role === MESSAGE_ROLES.WAIT) {
-        text = `⏳ ${text}`;
-      }
-      if (role === MESSAGE_ROLES.TOOL) {
-        text = `🛠️ ${text}`;
-      }
-      if (role === MESSAGE_ROLES.NODE) {
-        text = `🤖 ${text}`;
-      }
-
-      setMessages((prevMessages) => {
-        const newMessage: IMessage = {
-          message_id: message.message_id,
-          text,
-          sender: role,
-          timestamp: formatTimeNewDate(new Date()),
-          files: files ? files.map((file) => ({ name: file.name })) : undefined,
-          context: currentContextTitle || undefined,
-        };
-
-        const lastMessage = prevMessages[prevMessages.length - 1];
-        if (
-          lastMessage &&
-          (lastMessage.sender === MESSAGE_ROLES.TOOL ||
-            lastMessage.sender === MESSAGE_ROLES.NODE ||
-            lastMessage.sender === MESSAGE_ROLES.WAIT) &&
-          (role === lastMessage.sender || role === MESSAGE_ROLES.BOT || lastMessage.sender === MESSAGE_ROLES.WAIT)
-        ) {
-          return [...prevMessages.slice(0, -1), newMessage];
-        }
-        return [...prevMessages, newMessage];
-      });
-
-      if (role === MESSAGE_ROLES.USER && currentContextTitle) {
-        setContextTitle(null);
-        setContextValue(null);
-      }
-
-      if (role === MESSAGE_ROLES.USER) {
-        await handleNewMessage(MESSAGE_ROLES.WAIT, {
-          text: "Processing...",
-          sender: MESSAGE_ROLES.WAIT,
-          timestamp: formatTimeNewDate(new Date()),
-        });
-      }
-
-      scrollToBottom();
-    },
-    [contextTitle, files, scrollToBottom]
-  );
-
-  const showErrorMessage = useCallback(
-    async (errorMessage: string) => {
-      await handleNewMessage(MESSAGE_ROLES.BOT, {
-        text: errorMessage,
-        sender: MESSAGE_ROLES.ERROR,
-        timestamp: formatTimeNewDate(new Date()),
-      });
-      scrollToBottom();
-    },
-    [handleNewMessage, scrollToBottom]
-  );
+  const finalQuestion = useMemo(() => {
+    if (!state.contextValue) return null;
+    return (message: string) => {
+      const contextValueString = JSON.stringify(state.contextValue, null, 2);
+      return `<Context>${contextValueString}</Context>\n<Question>${message}</Question>`;
+    };
+  }, [state.contextValue]);
 
   const handleSendMessage = useCallback(
-    async (selectedAssistant: IAssistant | null) => {
-      if (isBotLoading || !inputValue.trim()) return;
-
-      setIsBotLoading(true);
-      setFiles(null);
-      setFileIds(null);
-
-      const originalQuestion = inputValue.trim();
-      setInputValue("");
-
-      let finalQuestion = originalQuestion;
-      if (contextValue) {
-        const contextValueString = JSON.stringify(contextValue, null, 2);
-        finalQuestion = `<Context>${contextValueString}</Context>\n<Question>${originalQuestion}</Question>`;
+    async (message: string) => {
+      if (state.isLoading || !message.trim() || !state.selectedAssistant) {
+        return;
       }
 
-      const userMessage: IMessage = {
-        text: originalQuestion,
-        sender: MESSAGE_ROLES.USER,
-        timestamp: formatTimeNewDate(new Date()),
+      dispatch({ type: "SET_LOADING", isLoading: true });
+      addMessage("user", message);
+
+      const questionText = finalQuestion ? finalQuestion(message) : message;
+
+      const requestParams: Record<string, unknown> = {
+        question: questionText,
+        app_id: state.selectedAssistant.app_id,
       };
 
-      await handleNewMessage(MESSAGE_ROLES.USER, userMessage);
-
-      const requestParams: any = {
-        question: finalQuestion,
-        app_id: selectedAssistant?.app_id,
-      };
-
-      if (conversationId) {
-        requestParams.conversation_id = conversationId;
+      if (state.conversationId) {
+        requestParams.conversation_id = state.conversationId;
       }
 
-      if (fileIds) {
-        requestParams.file = fileIds;
+      if (state.fileIds) {
+        requestParams.file = state.fileIds;
       }
 
-      if (encodeURIComponent(finalQuestion).length > 7000) {
-        try {
-          await CopilotClient.cacheQuestion(finalQuestion);
-          requestParams.question = undefined;
-        } catch (error) {
-          console.error("Error caching question:", error);
-        }
+      try {
+        const processedParams = await copilotClient.handleLargeQuestion(requestParams as CopilotQuestionParams);
+        await startSSEConnection(processedParams);
+      } catch (error) {
+        console.error("Error sending message:", error);
+        dispatch({ type: "SET_LOADING", isLoading: false });
+        addMessage("error", "Error enviando mensaje");
       }
-
-      startSSEConnection(requestParams);
     },
-    [isBotLoading, inputValue, contextValue, conversationId, fileIds, handleNewMessage, startSSEConnection]
+    [
+      state.isLoading,
+      state.selectedAssistant,
+      state.conversationId,
+      state.fileIds,
+      finalQuestion,
+      addMessage,
+      startSSEConnection,
+      copilotClient,
+    ]
   );
+
+  const handleSelectAssistant = useCallback(
+    (assistant: IAssistant) => {
+      dispatch({ type: "SET_SELECTED_ASSISTANT", assistant });
+      dispatch({ type: "SET_MESSAGES", messages: [] });
+      dispatch({ type: "SET_CONVERSATION_ID", conversationId: null });
+      closeConnection();
+    },
+    [closeConnection]
+  );
+
+  const handleResetConversation = useCallback(() => {
+    dispatch({ type: "RESET_CONVERSATION" });
+    closeConnection();
+  }, [closeConnection]);
 
   const handleFileUpload = useCallback(
     async (uploadedFiles: File[]) => {
       try {
-        const uploadPromises = uploadedFiles.map((file) => CopilotClient.uploadFile(file));
-        const uploadResults = await Promise.all(uploadPromises);
+        const uploadResults = await Promise.all(uploadedFiles.map((file) => copilotClient.uploadFile(file)));
         const ids = uploadResults.flatMap((result) => Object.values(result));
-        setFileIds(ids as string[]);
-        setFiles(uploadedFiles);
+        dispatch({ type: "SET_FILE_IDS", fileIds: ids as string[] });
+        dispatch({ type: "SET_FILES", files: uploadedFiles });
       } catch (error) {
         console.error("Error uploading files:", error);
-        showErrorMessage("Error uploading files");
+        addMessage("error", "Error subiendo archivos");
       }
     },
-    [showErrorMessage]
+    [addMessage, copilotClient]
   );
 
-  const resetConversation = useCallback(() => {
-    setMessages([]);
-    setConversationId(null);
-    closeConnection();
-  }, [closeConnection]);
+  const getMessageDisplayType = useCallback((sender: string) => {
+    return getMessageType(sender);
+  }, []);
+
+  const setContextTitle = useCallback((title: string | null) => {
+    dispatch({ type: "SET_CONTEXT_TITLE", contextTitle: title });
+  }, []);
+
+  const setContextValue = useCallback((value: Record<string, unknown> | null) => {
+    dispatch({ type: "SET_CONTEXT_VALUE", contextValue: value });
+  }, []);
 
   return {
-    messages,
-    inputValue,
-    isBotLoading,
-    files,
-    contextTitle,
-    messagesEndRef,
+    messages: state.messages,
+    selectedAssistant: state.selectedAssistant,
+    isLoading: state.isLoading,
+    files: state.files,
+    contextTitle: state.contextTitle,
 
-    setInputValue,
     setContextTitle,
     setContextValue,
 
     handleSendMessage,
+    handleSelectAssistant,
+    handleResetConversation,
     handleFileUpload,
-    resetConversation,
-    scrollToBottom,
+    getMessageDisplayType,
   };
 };

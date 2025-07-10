@@ -1,5 +1,8 @@
+// packages/ComponentLibrary/src/components/Copilot/MessageInput/index.tsx
+
+import type React from "react";
 import { useState } from "react";
-import { Box, TextField, IconButton as MuiIconButton } from "@mui/material";
+import { Box, TextField, IconButton as MuiIconButton, InputAdornment } from "@mui/material";
 import { Send, AttachFile, Mic } from "@mui/icons-material";
 
 interface MessageInputProps {
@@ -16,7 +19,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const [message, setMessage] = useState("");
 
   const handleSend = () => {
-    if (message.trim()) {
+    if (message.trim() && !disabled) {
       onSendMessage(message.trim());
       setMessage("");
     }
@@ -30,30 +33,40 @@ const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   return (
-    <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
-      <Box sx={{ display: "flex", alignItems: "flex-end", gap: 1 }}>
-        <TextField
-          fullWidth
-          multiline
-          maxRows={4}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder={placeholder}
-          disabled={disabled}
-          variant="outlined"
-          size="small"
-        />
-        <MuiIconButton size="small" disabled>
-          <AttachFile />
-        </MuiIconButton>
-        <MuiIconButton onClick={handleSend} disabled={disabled || !message.trim()}>
-          <Send />
-        </MuiIconButton>
-        <MuiIconButton size="small" disabled>
-          <Mic />
-        </MuiIconButton>
-      </Box>
+    <Box
+      sx={{
+        p: 2,
+        borderTop: 1,
+        borderColor: "divider",
+        backgroundColor: "background.paper",
+      }}>
+      <TextField
+        fullWidth
+        multiline
+        maxRows={4}
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        onKeyPress={handleKeyPress}
+        placeholder={placeholder}
+        disabled={disabled}
+        variant="outlined"
+        size="small"
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <MuiIconButton size="small" disabled>
+                <AttachFile />
+              </MuiIconButton>
+              <MuiIconButton onClick={handleSend} disabled={disabled || !message.trim()} color="primary">
+                <Send />
+              </MuiIconButton>
+              <MuiIconButton size="small" disabled>
+                <Mic />
+              </MuiIconButton>
+            </InputAdornment>
+          ),
+        }}
+      />
     </Box>
   );
 };
