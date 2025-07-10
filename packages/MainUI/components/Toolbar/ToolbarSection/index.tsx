@@ -2,12 +2,14 @@ import type { ToolbarSectionConfig } from "../types";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 
 const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, className = "", processButton }) => {
+  if (!buttons.length) return null;
+
   return (
     <div style={style} className={className}>
       {buttons.map(({ key, icon, iconText, tooltip, onClick, disabled, className }) => (
         <IconButton
           key={key}
-          tooltip={tooltip}
+          tooltip={iconText ? "" : tooltip}
           onClick={onClick}
           disabled={disabled}
           className={className}
@@ -19,7 +21,6 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
         <div className="ml-auto">
           <IconButton
             key={processButton.key}
-            tooltip={processButton.tooltip}
             onClick={processButton.onClick}
             disabled={processButton.disabled}
             className={processButton.className}

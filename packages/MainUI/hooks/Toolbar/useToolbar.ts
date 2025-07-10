@@ -77,7 +77,7 @@ export function useToolbar(windowId: string, tabId?: string) {
     }
   }, [windowId, tabId]);
 
-  const buttons: ToolbarButtonMetadata[] = useMemo(() => toolbar?.response.data ?? [], [toolbar]);
+  const buttons: ToolbarButtonMetadata[] = useMemo(() => toolbar?.response?.data ?? [], [toolbar]);
 
   useEffect(() => {
     if (windowId) {

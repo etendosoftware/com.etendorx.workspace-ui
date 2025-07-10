@@ -2,7 +2,8 @@ import type { OrganizedSections, ToolbarButtonMetadata } from "@/hooks/Toolbar/t
 import type { TranslateFunction } from "@/hooks/types";
 import type React from "react";
 import Base64Icon from "@workspaceui/componentlibrary/src/components/Base64Icon";
-import { IconSize, type ToolbarButton } from "./types";
+import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
+import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
 
 const isBase64Image = (str: string): boolean => {
   try {
@@ -16,14 +17,15 @@ const isBase64Image = (str: string): boolean => {
 };
 
 const BUTTON_STYLES = {
-  NEW: "toolbar-button-new bg-(--color-baseline-100) text-(--color-baseline-0) rounded-l-full h-8 px-3 disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0)",
-  SAVE: "toolbar-button-save bg-(--color-baseline-100) text-(--color-baseline-0) h-8.5 w-8.5 ml-1 disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0)",
-  REFRESH:
-    "toolbar-button-refresh bg-(--color-baseline-100) text-(--color-baseline-0) rounded-r-full border-l-1 border-l-[color:var(--color-baseline-0)] w-10 disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0)",
-  CANCEL: "toolbar-button-cancel",
-  DELETE: "toolbar-button-delete",
-  FIND: "toolbar-button-find",
-  FILTER: "toolbar-button-filter",
+  [TOOLBAR_BUTTONS_ACTIONS.NEW]:
+    "toolbar-button-new bg-(--color-baseline-100) text-(--color-baseline-0) h-8 w-8 px-3 disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0)",
+  [TOOLBAR_BUTTONS_ACTIONS.SAVE]:
+    "toolbar-button-save bg-(--color-baseline-100) text-(--color-baseline-0) h-8 w-8 px-3 disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0)",
+  [TOOLBAR_BUTTONS_ACTIONS.REFRESH]: "toolbar-button-refresh",
+  [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: "toolbar-button-cancel",
+  [TOOLBAR_BUTTONS_ACTIONS.DELETE]: "toolbar-button-delete",
+  [TOOLBAR_BUTTONS_ACTIONS.FIND]: "toolbar-button-find",
+  [TOOLBAR_BUTTONS_ACTIONS.FILTER]: "toolbar-button-filter",
 } as const;
 
 export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
@@ -59,14 +61,23 @@ const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMeta
   });
 };
 
+const isVisibleButton = (button: ToolbarButtonMetadata, isFormView: boolean) => {
+  if (!button.active) return false;
+
+  const isFindButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FIND;
+  const isSaveButtonInNonFormView = !isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE;
+  const isCreateButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW;
+  const isFilterButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER;
+
+  return (
+    !isFindButtonInFormView && !isSaveButtonInNonFormView && !isCreateButtonInFormView && !isFilterButtonInFormView
+  );
+};
+
 export const organizeButtonsBySection = (buttons: ToolbarButtonMetadata[], isFormView: boolean): OrganizedSections => {
   const sections: OrganizedSections = { left: [], center: [], right: [] };
 
-  const visibleButtons = buttons.filter((button) => {
-    if (!button.active) return false;
-    if (isFormView && button.action === "FIND") return false;
-    return true;
-  });
+  const visibleButtons = buttons.filter((button) => isVisibleButton(button, isFormView));
 
   for (const button of visibleButtons) {
     if (button.section && sections[button.section]) {
@@ -109,17 +120,17 @@ export const createButtonByType = ({
   };
 
   const getIconTextConfig = (): Partial<ToolbarButton> => {
-    const showIconTextFor = ["NEW"];
+    const showIconTextFor = [TOOLBAR_BUTTONS_ACTIONS.NEW, TOOLBAR_BUTTONS_ACTIONS.SAVE];
 
     if (showIconTextFor.includes(button.action)) {
       return { iconText: button.name };
     }
 
-    if (button.buttonType === "DROPDOWN") {
+    if (button.buttonType === TOOLBAR_BUTTONS_TYPES.DROPDOWN) {
       return { iconText: `${button.name} ▼` };
     }
 
-    if (button.buttonType === "MODAL" && button.modalConfig?.title) {
+    if (button.buttonType === TOOLBAR_BUTTONS_TYPES.MODAL && button.modalConfig?.title) {
       return { iconText: button.modalConfig.title };
     }
 
@@ -128,23 +139,23 @@ export const createButtonByType = ({
 
   const getDisableConfig = (): Partial<ToolbarButton> => {
     switch (button.action) {
-      case "CANCEL": {
+      case TOOLBAR_BUTTONS_ACTIONS.CANCEL: {
         const isDisabledCancel = !(isFormView || hasSelectedRecord);
         return { disabled: isDisabledCancel, tooltip: isDisabledCancel ? "" : button.name };
       }
-      case "DELETE": {
+      case TOOLBAR_BUTTONS_ACTIONS.DELETE: {
         const isDisabledDelete = !hasSelectedRecord;
         return { disabled: isDisabledDelete, tooltip: isDisabledDelete ? "" : button.name };
       }
-      case "NEW": {
+      case TOOLBAR_BUTTONS_ACTIONS.NEW: {
         const isDisabledNew = !hasParentRecordSelected;
         return { disabled: isDisabledNew, tooltip: isDisabledNew ? "" : button.name };
       }
-      case "REFRESH": {
+      case TOOLBAR_BUTTONS_ACTIONS.REFRESH: {
         const isDisabledRefresh = !hasParentRecordSelected;
         return { disabled: isDisabledRefresh, tooltip: isDisabledRefresh ? "" : button.name };
       }
-      case "SAVE": {
+      case TOOLBAR_BUTTONS_ACTIONS.SAVE: {
         const isDisabledSave = !isFormView || !hasFormChanges || !hasParentRecordSelected;
         return { disabled: isDisabledSave, tooltip: isDisabledSave ? "" : button.name };
       }
@@ -157,21 +168,21 @@ export const createButtonByType = ({
 
   const getClickConfig = (): Partial<ToolbarButton> => {
     switch (button.buttonType) {
-      case "DROPDOWN":
+      case TOOLBAR_BUTTONS_TYPES.DROPDOWN:
         return {
           onClick: (event?: React.MouseEvent<HTMLElement>) => {
             onAction("OPEN_DROPDOWN", button, event);
           },
         };
-      case "MODAL":
+      case TOOLBAR_BUTTONS_TYPES.MODAL:
         return {
           onClick: () => onAction("OPEN_MODAL", button),
         };
-      case "TOGGLE":
+      case TOOLBAR_BUTTONS_TYPES.TOGGLE:
         return {
           onClick: () => onAction("TOGGLE", button),
         };
-      case "CUSTOM":
+      case TOOLBAR_BUTTONS_TYPES.CUSTOM:
         return {
           onClick: (event?: React.MouseEvent<HTMLElement>) => {
             onAction("CUSTOM_ACTION", button, event);
