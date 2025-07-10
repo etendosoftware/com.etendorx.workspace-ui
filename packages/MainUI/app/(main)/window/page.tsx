@@ -34,7 +34,7 @@ export default function Page() {
   const shouldShowTabs = windows.length > 0;
 
   return (
-    <div className="flex flex-col w-full h-full max-h-full">
+    <div className="flex flex-col gap-2 w-full h-full max-h-full p-1 pb-0">
       {shouldShowTabs && (
         <TabsProvider>
           <WindowTabs />

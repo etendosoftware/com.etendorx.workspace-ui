@@ -50,9 +50,9 @@ export default function WindowTabs() {
 
   return (
     <div
-      className="flex items-center bg-(--color-transparent-neutral-5) rounded-full overflow-hidden p-0 gap-1 mx-1 px-1"
+      className="flex items-center bg-(--color-transparent-neutral-5) rounded-full overflow-hidden p-0 pl-0.5 h-9 min-h-9"
       ref={containerRef}>
-      <div className="px-1 flex">
+      <div className="flex items-center h-8">
         <IconButton onClick={handleGoHome} className={isHomeRoute ? "bg-(--color-dynamic-main) text-white" : ""}>
           <HomeIcon />
         </IconButton>
@@ -63,7 +63,7 @@ export default function WindowTabs() {
         </IconButton>
       )}
       <div
-        className="w-full flex items-center overflow-x-auto overflow-y-hidden scroll-smooth no-scrollbar"
+        className="w-full flex items-center px-2 overflow-x-auto overflow-y-hidden scroll-smooth no-scrollbar h-9 min-h-9"
         ref={windowsContainerRef}>
         {windows.map((window, index) => {
           const title = window.title || getWindowTitle?.(window.windowId);
