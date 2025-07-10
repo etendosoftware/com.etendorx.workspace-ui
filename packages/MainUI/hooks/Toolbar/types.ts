@@ -1,7 +1,8 @@
 import type { BaseFieldDefinition } from "@workspaceui/api-client/src/api/types";
 import type { ProcessActionButton, ProcessButton, ProcessDefinitionButton } from "@/components/ProcessModal/types";
+import type { TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
 
-export type ButtonType = "ACTION" | "DROPDOWN" | "MODAL" | "TOGGLE" | "CUSTOM";
+export type ButtonType = keyof typeof TOOLBAR_BUTTONS_TYPES;
 export type ButtonSection = "left" | "center" | "right";
 
 export interface ToolbarButtonMetadata {
