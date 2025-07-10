@@ -60,10 +60,10 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     (columnValues: FormInitializationResponse["columnValues"]) => {
       for (const [column, { value, identifier }] of Object.entries(columnValues ?? {})) {
         const targetField = fieldsByColumnName[column];
-        setValue(targetField?.hqlName ?? column, value);
+        setValue(targetField?.hqlName ?? column, value, { shouldDirty: false });
 
         if (targetField && identifier) {
-          setValue(`${targetField.hqlName}$_identifier`, identifier);
+          setValue(`${targetField.hqlName}$_identifier`, identifier, { shouldDirty: false });
         }
       }
     },
@@ -74,8 +74,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     (auxiliaryInputValues: FormInitializationResponse["auxiliaryInputValues"]) => {
       for (const [column, { value }] of Object.entries(auxiliaryInputValues ?? {})) {
         const targetField = fieldsByColumnName[column];
-
-        setValue(targetField?.hqlName || column, value);
+        setValue(targetField?.hqlName || column, value, { shouldDirty: false });
       }
     },
     [fieldsByColumnName, setValue]
