@@ -306,24 +306,20 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
           loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
         }`}
         onSubmit={handleSave}>
-        <div className="flex-shrink-0 pl-2 pr-2">
-          <div className="mb-2">
-            {statusModal.open && (
-              <StatusModal
-                statusType={statusModal.statusType}
-                statusText={statusModal.statusText}
-                errorMessage={statusModal.errorMessage}
-                saveLabel={statusModal.saveLabel}
-                secondaryButtonLabel={statusModal.secondaryButtonLabel}
-                onClose={hideStatusModal}
-                isDeleteSuccess={statusModal.isDeleteSuccess}
-              />
-            )}
-          </div>
+        <div className="flex flex-col gap-2">
+          {statusModal.open && (
+            <StatusModal
+              statusType={statusModal.statusType}
+              statusText={statusModal.statusText}
+              errorMessage={statusModal.errorMessage}
+              saveLabel={statusModal.saveLabel}
+              secondaryButtonLabel={statusModal.secondaryButtonLabel}
+              onClose={hideStatusModal}
+              isDeleteSuccess={statusModal.isDeleteSuccess}
+            />
+          )}
           <StatusBar fields={fields.statusBarFields} />
-          <div className="mt-2">
-            <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
-          </div>
+          <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
         </div>
         {isLoading ? (
           <Spinner />
