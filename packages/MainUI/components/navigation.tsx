@@ -17,10 +17,12 @@ import {
 } from "@workspaceui/componentlibrary/src/components";
 import type { Person } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
 import Nav from "@workspaceui/componentlibrary/src/components/Nav/Nav";
-import { useCallback, useContext, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { NOTIFICATIONS, initialPeople, menuItems, modalConfig, sections } from "../../storybook/src/mocks";
 import { useTranslation } from "../hooks/useTranslation";
 import ProfileModal from "./ProfileModal/ProfileModal";
+import { useAssistants } from "@/hooks/useAssistants";
+import { useCopilotLabels } from "@/hooks/useCopilotLabels";
 
 const handleClose = () => {
   return true;
@@ -46,6 +48,9 @@ const Navigation: React.FC = () => {
 
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [copilotExpanded, setCopilotExpanded] = useState(false);
+
+  const { assistants, loading: assistantsLoading, getAssistants } = useAssistants();
+  const { labels, areLabelsLoaded, getLabels } = useCopilotLabels();
 
   const { clearUserData } = useContext(UserContext);
 
@@ -82,6 +87,11 @@ const Navigation: React.FC = () => {
   }, [languages, getFlag]);
 
   const flagString = getFlag(language);
+
+  useEffect(() => {
+    getLabels();
+    getAssistants();
+  }, []);
 
   if (!currentRole) {
     return null;
@@ -155,8 +165,8 @@ const Navigation: React.FC = () => {
       <CopilotPopup
         open={copilotOpen}
         onClose={handleCopilotClose}
-        assistants={[]} // TODO: Cargar desde API
-        labels={{}} // TODO: Cargar desde API
+        assistants={assistants}
+        labels={labels}
         isExpanded={copilotExpanded}
         onToggleExpanded={handleCopilotToggleExpanded}
       />

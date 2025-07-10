@@ -14,8 +14,15 @@ export const COPILOT_METHODS = {
   POST: "POST",
 } as const;
 
+/**
+ * Base path for copilot API endpoints
+ * This will be appended to the forwarder servlet path
+ */
 export const COPILOT_BASE_PATH = "/copilot/";
 
+/**
+ * Message roles for copilot interactions
+ */
 export const MESSAGE_ROLES = {
   USER: "user",
   BOT: "bot",
@@ -24,3 +31,37 @@ export const MESSAGE_ROLES = {
   NODE: "node",
   WAIT: "wait",
 } as const;
+
+/**
+ * SSE connection configuration
+ */
+export const SSE_CONFIG = {
+  HEARTBEAT_TIMEOUT: 12000000,
+  RETRY_INTERVAL: 1000,
+} as const;
+
+/**
+ * File upload configuration
+ */
+export const UPLOAD_CONFIG = {
+  MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
+  ALLOWED_TYPES: [
+    "text/plain",
+    "text/csv",
+    "application/json",
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ],
+} as const;
+
+/**
+ * Question caching threshold
+ */
+export const CACHE_THRESHOLD = 7000;
+
+/**
+ * Environment detection
+ */
+export const isDevelopment = () => process.env.NODE_ENV === "development";
+export const isProduction = () => process.env.NODE_ENV === "production";

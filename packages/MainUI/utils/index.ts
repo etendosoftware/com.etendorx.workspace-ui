@@ -154,3 +154,40 @@ export const buildRequestOptions = (
 });
 
 export const formatNumber = (value: number) => new Intl.NumberFormat(navigator.language).format(value);
+
+export const formatTime = (dateString: string): string => {
+  const date = new Date(dateString);
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const hoursStr = hours < 10 ? `0${hours}` : hours.toString();
+  const minutesStr = minutes < 10 ? `0${minutes}` : minutes.toString();
+
+  return `${hoursStr}:${minutesStr}`;
+};
+
+export const formatTimeNewDate = (date: Date): string => {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const hoursStr = hours < 10 ? `0${hours}` : hours;
+  const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
+  return `${hoursStr}:${minutesStr}`;
+};
+
+export const getMessageType = (sender: string) => {
+  if (sender === "error") {
+    return "error";
+  }
+  if (sender === "user") {
+    return "right-user";
+  }
+  return "left-user";
+};
+
+// Replace %s in the label with the provided value
+// Reemplaza %s en el label por el valor proporcionado, solo si es posible
+export const formatLabel = (label: string, count?: number): string | undefined => {
+  if (label.includes("%s") && count !== undefined) {
+    return label.replace("%s", String(count));
+  }
+  return undefined;
+};
