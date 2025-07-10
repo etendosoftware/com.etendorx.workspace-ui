@@ -322,7 +322,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         {isLoading ? (
           <Spinner />
         ) : (
-          <div className="flex-grow space-y-2 overflow-auto" ref={containerRef}>
+          <div className="flex flex-col gap-2 flex-grow overflow-auto" ref={containerRef}>
             {groups.map(([id, group]) => {
               const sectionId = String(id || "_main");
 
@@ -351,7 +351,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
                     sectionId={sectionId}
                     icon={getIconForGroup(group.identifier)}
                     onToggle={(isOpen: boolean) => handleAccordionChange(id, isOpen)}>
-                    <div className="grid auto-rows-auto grid-cols-3 gap-4">
+                    <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2">
                       {Object.entries(group.fields).map(([hqlName, field]) => (
                         <BaseSelector field={field} key={hqlName} formMode={mode} />
                       ))}

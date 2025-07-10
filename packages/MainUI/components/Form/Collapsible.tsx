@@ -7,7 +7,7 @@ import IconButton from "@workspaceui/componentlibrary/src/components/IconButton"
 import React, { type CSSProperties, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CollapsibleProps } from "./FormView/types";
 
-function CollapsibleCmp({ title, icon, children, isExpanded, sectionId, onToggle }: CollapsibleProps) {
+function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onToggle }: CollapsibleProps) {
   const contentRef = useRef<React.ElementRef<"div">>(null);
   const [maxHeight, setMaxHeight] = useState<CSSProperties["maxHeight"]>("100%");
   const style = useMemo(() => ({ maxHeight: isExpanded ? maxHeight : 0 }), [isExpanded, maxHeight]);
@@ -59,14 +59,14 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId, onToggle
   return (
     <div
       id={`section-${sectionId}`}
-      className={`bg-white rounded-xl border border-gray-200 mb-4 ${isExpanded ? "overflow-visible" : "overflow-hidden"}`}>
+      className={`flex flex-col gap-3 bg-white rounded-xl border border-gray-200 ${isExpanded ? "overflow-visible" : "overflow-hidden"}`}>
       <div
         // biome-ignore lint/a11y/useSemanticElements: <explanation>
         role="button"
         tabIndex={0}
         aria-expanded={isExpanded}
         aria-controls={`section-content-${sectionId}`}
-        className={`w-full h-10 flex justify-between text-(--color-baseline-90) hover:text-(--color-dynamic-main)
+        className={`w-full h-12 flex justify-between text-(--color-baseline-90) hover:text-(--color-dynamic-main)
           items-center p-4 cursor-pointer transition-colors hover:bg-(--color-dynamic-contrast-text) bg-gray-50 ${isExpanded ? "rounded-xl" : ""}`}
         onClick={handleToggle}
         onKeyDown={handleKeyDown}>
@@ -78,19 +78,18 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId, onToggle
           <IconButton>{isExpanded ? <ChevronUp /> : <ChevronDown />}</IconButton>
         </div>
       </div>
-      <div
-        id={`section-content-${sectionId}`}
-        ref={contentRef}
-        className={`transition-all duration-300 ease-in-out ${isExpanded ? "" : "pointer-events-none"}`}
-        style={{
-          ...style,
-          visibility: isExpanded ? "visible" : "hidden",
-        }}
-        aria-hidden={!isExpanded}>
-        <div className="p-4">
-          {React.isValidElement(children) && children.type === "div" ? children : <div>{children}</div>}
+      {isExpanded && (
+        <div
+          id={`section-content-${sectionId}`}
+          ref={contentRef}
+          className="transition-all duration-300 ease-in-out pointer-events-none"
+          style={style}
+          aria-hidden={!isExpanded}>
+          <div className="px-3">
+            {React.isValidElement(children) && children.type === "div" ? children : <div>{children}</div>}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
