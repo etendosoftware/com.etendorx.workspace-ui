@@ -1,16 +1,16 @@
 import SettingIcon from '@workspaceui/componentlibrary/src/assets/icons/settings.svg';
-import ThemeLightUrl from '@workspaceui/componentlibrary/src/assets/images/ConfigurationModal/theme-light.svg?url';
-import ThemeDarkUrl from '@workspaceui/componentlibrary/src/assets/images/ConfigurationModal/theme-dark.svg?url';
-import ThemeAutomaticUrl from '@workspaceui/componentlibrary/src/assets/images/ConfigurationModal/theme-automatic.svg?url';
-import DensityCompactUrl from '@workspaceui/componentlibrary/src/assets/images/ConfigurationModal/density-compact.svg?url';
-import DensityStandardUrl from '@workspaceui/componentlibrary/src/assets/images/ConfigurationModal/density-standard.svg?url';
-import DensityComfortableUrl from '@workspaceui/componentlibrary/src/assets/images/ConfigurationModal/density-comfortable.svg?url';
-import CommonToolbarIconUrl from '@workspaceui/componentlibrary/src/assets/images/ConfigurationModal/common-toolbar-buttons-icon.svg?url';
-import CommonToolbarTextUrl from '@workspaceui/componentlibrary/src/assets/images/ConfigurationModal/common-toolbar-buttons-text.svg?url';
-import CommonToolbarIconTextUrl from '@workspaceui/componentlibrary/src/assets/images/ConfigurationModal/common-toolbar-buttons-icon-and-text.svg?url';
-import SpecificToolbarIconUrl from '@workspaceui/componentlibrary/src/assets/images/ConfigurationModal/specific-toolbar buttons-icon.svg?url';
-import SpecificToolbarIconTextUrl from '@workspaceui/componentlibrary/src/assets/images/ConfigurationModal/specific-toolbar buttons-icon-and-text.svg?url';
-import SpecificToolbarTextUrl from '@workspaceui/componentlibrary/src/assets/images/ConfigurationModal/specific-toolbar buttons-text.svg?url';
+import {
+  SECTION_THEME_ID,
+  SECTION_TABLE_DENSITY_ID,
+  SECTION_COMMON_TOOLBAR_BUTTONS_ID,
+  SECTION_SPECIFIC_TOOLBAR_BUTTONS_ID,
+  SECTION_DENSITY_ID,
+  DENSITY_ITEMS,
+  THEME_ITEMS,
+  TABLE_DENSITY_ITEMS,
+  COMMON_TOOLBAR_BUTTONS_ITEMS,
+  SPECIFIC_TOOLBAR_BUTTONS_ITEMS,
+} from "@workspaceui/componentlibrary/src/components/ConfigurationModal/constants";
 
 export const modalConfig = {
   icon: <SettingIcon />,
@@ -21,40 +21,39 @@ export const modalConfig = {
   linkTitle: { label: 'View all settings', url: '/settings' },
   sections: [
     {
+      id: SECTION_THEME_ID,
       name: 'Theme',
-      items: [
-        { img: ThemeLightUrl, id: '0', label: 'Light' },
-        { img: ThemeDarkUrl, id: '1', label: 'Dark' },
-        { img: ThemeAutomaticUrl, id: '2', label: 'Automatic' },
-      ],
+      items: THEME_ITEMS,
       selectedItem: 0,
+      isDisabled: true,
     },
     {
+      id: SECTION_TABLE_DENSITY_ID,
       name: 'Table Density',
-      items: [
-        { img: DensityCompactUrl, id: '3', label: 'Compact' },
-        { img: DensityStandardUrl, id: '4', label: 'Standard' },
-        { img: DensityComfortableUrl, id: '5', label: 'Comfortable' },
-      ],
+      items: TABLE_DENSITY_ITEMS,
       selectedItem: 0,
+      isDisabled: true,
     },
     {
+      id: SECTION_COMMON_TOOLBAR_BUTTONS_ID,
       name: 'Common Toolbar Buttons',
-      items: [
-        { img: CommonToolbarIconUrl, id: '6', label: 'Icon' },
-        { img: CommonToolbarTextUrl, id: '7', label: 'Text' },
-        { img: CommonToolbarIconTextUrl, id: '8', label: 'Icon and Text' },
-      ],
+      items: COMMON_TOOLBAR_BUTTONS_ITEMS,
       selectedItem: 0,
+      isDisabled: true,
     },
     {
+      id: SECTION_SPECIFIC_TOOLBAR_BUTTONS_ID,
       name: 'Specific Toolbar Buttons',
-      items: [
-        { img: SpecificToolbarIconUrl, id: '9', label: 'Icon' },
-        { img: SpecificToolbarIconTextUrl, id: '10', label: 'Text' },
-        { img: SpecificToolbarTextUrl, id: '11', label: 'Icon and Text' },
-      ],
+      items: SPECIFIC_TOOLBAR_BUTTONS_ITEMS,
       selectedItem: 0,
+      isDisabled: true,
+    },
+    {
+      id: SECTION_DENSITY_ID,
+      name: 'Density',
+      items: DENSITY_ITEMS,
+      selectedItem: 0,
+      isDisabled: false,
     },
   ],
   onChangeSelect: console.log,
