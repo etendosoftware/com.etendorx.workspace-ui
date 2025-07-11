@@ -15,6 +15,8 @@ import SecondaryTabsMUI from "./SecondaryTabs";
 import NotificationItemStates from "./NotificationItemAllStates";
 import DrawerMUI from "./Drawer";
 import IconButtonCustom from "./IconButton";
+import CopilotButtonCustom from "./Copilot/CopilotButton";
+import CopilotPopupCustom from "./Copilot/CopilotPopup";
 
 const Modal = ModalCustom;
 const TextInput = TextInputMUI;
@@ -33,6 +35,8 @@ const SecondaryTabs = SecondaryTabsMUI;
 const NotificationStates = NotificationItemStates;
 const Drawer = DrawerMUI;
 const IconButton = IconButtonCustom;
+const CopilotButton = CopilotButtonCustom;
+const CopilotPopup = CopilotPopupCustom;
 
 export {
   Modal,
@@ -52,4 +56,6 @@ export {
   NotificationStates,
   Drawer,
   IconButton,
+  CopilotButton,
+  CopilotPopup,
 };
