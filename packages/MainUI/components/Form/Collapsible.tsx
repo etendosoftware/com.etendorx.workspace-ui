@@ -82,7 +82,7 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
         <div
           id={`section-content-${sectionId}`}
           ref={contentRef}
-          className="transition-all duration-300 ease-in-out pointer-events-none"
+          className="transition-all duration-300 ease-in-out"
           style={style}
           aria-hidden={!isExpanded}>
           <div className="px-3">
