@@ -3,7 +3,7 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 const BASE_STYLES = "flex flex-col overflow-hidden min-h-0 m-0 mb-2 rounded-xl";
 const COLLAPSED_STYLES = "cursor-pointer";
 const MAIN_TAB_STYLES = "";
-const SUB_TAB_STYLES = "border border-(--color-transparent-neutral-10) ";
+const SUB_TAB_STYLES = "border border-(--color-transparent-neutral-10) flex flex-col gap-2";
 
 export type ContainerProps = React.PropsWithChildren<
   React.HTMLProps<HTMLDivElement> & {
