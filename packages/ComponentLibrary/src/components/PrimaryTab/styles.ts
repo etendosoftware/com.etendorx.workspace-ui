@@ -22,7 +22,8 @@ export const useStyle = () => {
         tabsContainer: {
           flexGrow: 1,
           maxHeight: "3rem",
-          paddingX: "0.25rem",
+          paddingLeft: "0.25rem",
+          paddingRight: "0.25rem",
           overflowX: "auto",
         },
         iconButtonMore: {

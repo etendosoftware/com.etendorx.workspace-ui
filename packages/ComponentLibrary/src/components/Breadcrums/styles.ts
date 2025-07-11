@@ -14,19 +14,15 @@ export const useStyle = () => {
           maxWidth: "100%",
           overflow: "hidden",
           height: "2rem",
-          maxHeight: "2rem",
         },
         breadcrumbs: {
           flexGrow: 1,
           overflow: "hidden",
           height: "2rem",
-          maxHeight: "2rem",
           "& .MuiBreadcrumbs-ol": {
             height: "2rem",
-            maxHeight: "2rem",
             "& .MuiBreadcrumbs-li": {
               height: "2rem",
-              maxHeight: "2rem",
             },
           },
         },

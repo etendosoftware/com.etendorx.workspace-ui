@@ -159,7 +159,10 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
 
   if (isDisplayed) {
     return (
-      <div className="h-12 grid grid-cols-3 auto-rows-auto gap-4 items-center" title={field.helpComment}>
+      <div
+        className="h-12 grid grid-cols-3 auto-rows-auto gap-4 items-center"
+        title={field.helpComment || ""}
+        aria-describedby={field.helpComment ? `${field.name}-help` : ""}>
         <div className="relative">
           {field.isMandatory && (
             <span className="absolute -top-4 right-0 text-[#DC143C] text-xs font-bold" aria-required>
