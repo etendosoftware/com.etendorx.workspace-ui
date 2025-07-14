@@ -17,6 +17,7 @@ import DrawerMUI from "./Drawer";
 import IconButtonCustom from "./IconButton";
 import CopilotButtonCustom from "./Copilot/CopilotButton";
 import CopilotPopupCustom from "./Copilot/CopilotPopup";
+import RadioGridCustom from "./RadioGrid";
 
 const Modal = ModalCustom;
 const TextInput = TextInputMUI;
@@ -37,6 +38,7 @@ const Drawer = DrawerMUI;
 const IconButton = IconButtonCustom;
 const CopilotButton = CopilotButtonCustom;
 const CopilotPopup = CopilotPopupCustom;
+const RadioGrid = RadioGridCustom;
 
 export {
   Modal,
@@ -58,4 +60,5 @@ export {
   IconButton,
   CopilotButton,
   CopilotPopup,
+  RadioGrid,
 };

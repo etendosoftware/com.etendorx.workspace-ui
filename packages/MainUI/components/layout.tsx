@@ -12,9 +12,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <div className="w-full p-1">
           <Navigation />
         </div>
-        <div className="flex flex-1 max-h-auto max-w-auto overflow-hidden">
-          {children}
-        </div>
+        <div className="flex flex-1 max-h-auto max-w-auto overflow-hidden">{children}</div>
       </div>
     </div>
   );

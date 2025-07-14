@@ -1,6 +1,5 @@
 import type React from "react";
 import { useState, useEffect } from "react";
-import { Box } from "@mui/material";
 import AssistantSelector from "../AssistantSelector";
 import type { IAssistant, ILabels, IMessage } from "@workspaceui/api-client/src/api/copilot";
 import MessageList from "../MessageComponents/MessageList";
@@ -73,39 +72,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <div className="flex flex-col h-full">
       {/* Header with selected assistant */}
-      <Box
-        sx={{
-          p: 2,
-          borderBottom: 1,
-          borderColor: "divider",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <span style={{ fontSize: "1.5rem" }}>🤖</span>
-          <strong>{selectedAssistant?.name}</strong>
-        </Box>
-        <Box>
+      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">🤖</span>
+          <strong className="text-lg">{selectedAssistant?.name}</strong>
+        </div>
+        <div>
           <button
+            type="button"
             onClick={handleBackToAssistants}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "inherit",
-            }}>
+            className="bg-transparent border-none cursor-pointer text-blue-600 hover:text-blue-800">
             ← Cambiar asistente
           </button>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
       {/* Messages Area */}
-      <Box sx={{ flex: 1, overflow: "hidden" }}>
+      <div className="flex-1 overflow-hidden">
         <MessageList messages={messages} labels={labels} isExpanded={isExpanded} isLoading={isLoading} />
-      </Box>
+      </div>
 
       {/* Input Area */}
       <MessageInput
@@ -113,7 +100,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         placeholder={labels.ETCOP_Message_Placeholder || "Conversa con Copilot..."}
         disabled={isLoading}
       />
-    </Box>
+    </div>
   );
 };
 

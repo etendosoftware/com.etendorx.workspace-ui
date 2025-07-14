@@ -60,7 +60,7 @@ export class CopilotClient {
 
     try {
       const response = await CopilotClient.client.request(endpoint, options);
-      
+
       if (!response.ok && response.status === 401) {
         throw new CopilotUnauthorizedError("Unauthorized access to Copilot service", response);
       }
