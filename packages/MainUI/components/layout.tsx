@@ -5,7 +5,7 @@ import GlobalLoading from "./Layout/GlobalLoading";
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex w-full h-full relative overflow-hidden" id="layout">
+    <div className="flex w-full h-full relative overflow-hidden">
       <GlobalLoading />
       <Sidebar />
       <div className="flex flex-1 flex-col max-w-auto max-h-auto overflow-hidden">
