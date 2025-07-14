@@ -30,7 +30,7 @@ const ConfigurationSection: React.FC = () => {
         const selectedItemsIndex = items.findIndex((item) => item.id === density);
         return {
           ...section,
-          selectedItem: selectedItemsIndex,
+          selectedItem: selectedItemsIndex === -1 ? 1 : selectedItemsIndex,
         };
       }
       return section;
