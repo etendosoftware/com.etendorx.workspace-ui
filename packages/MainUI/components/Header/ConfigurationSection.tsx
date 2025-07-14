@@ -4,9 +4,7 @@ import { modalConfig } from "../../../storybook/src/mocks";
 import { useTranslation } from "../../hooks/useTranslation";
 import type { OptionSelectedProps } from "@workspaceui/componentlibrary/src/components/ConfigurationModal/types";
 import {
-  SECTION_DENSITY_TRANSFORM_SCALE_ID,
-  SECTION_DENSITY_ZOOM_ID,
-  SECTION_DENSITY_FONT_SIZE_ID,
+  SECTION_DENSITY_ID,
   COMPACT_DENSITY_ID,
   STANDARD_DENSITY_ID,
   COMFORTABLE_DENSITY_ID,
@@ -16,63 +14,20 @@ const ConfigurationSection: React.FC = () => {
   const { t } = useTranslation();
 
   const handleSelectOption = (optionSelected: OptionSelectedProps) => {
-    const { sectionId } = optionSelected;
-    const { id: optionSelectedId } = optionSelected;
-    const layoutElement = document.getElementById("layout");
-    if (sectionId === SECTION_DENSITY_TRANSFORM_SCALE_ID) {
+    const { sectionId, id: optionSelectedId } = optionSelected;
+    if (sectionId === SECTION_DENSITY_ID) {
+      const DENSITY_STYLES_OPTIONS = ["compact-view", "standard-view", "comfortable-view"];
+      const rootElement = document.documentElement;
+      rootElement.classList.remove(...DENSITY_STYLES_OPTIONS);
       switch (optionSelectedId) {
         case COMPACT_DENSITY_ID:
-          layoutElement?.classList.remove("standard-view-transform-scale");
-          layoutElement?.classList.remove("comfortable-view-transform-scale");
-          layoutElement?.classList.add("compact-view-transform-scale");
+          rootElement.classList.add("compact-view");
           break;
         case STANDARD_DENSITY_ID:
-          layoutElement?.classList.remove("compact-view-transform-scale");
-          layoutElement?.classList.remove("comfortable-view-transform-scale");
-          layoutElement?.classList.add("standard-view-transform-scale");
+          rootElement.classList.add("standard-view");
           break;
         case COMFORTABLE_DENSITY_ID:
-          layoutElement?.classList.remove("compact-view-transform-scale");
-          layoutElement?.classList.remove("standard-view-transform-scale");
-          layoutElement?.classList.add("comfortable-view-transform-scale");
-          break;
-      }
-    }
-    if (sectionId === SECTION_DENSITY_ZOOM_ID) {
-      switch (optionSelectedId) {
-        case COMPACT_DENSITY_ID:
-          layoutElement?.classList.remove("standard-view-zoom");
-          layoutElement?.classList.remove("comfortable-view-zoom");
-          layoutElement?.classList.add("compact-view-zoom");
-          break;
-        case STANDARD_DENSITY_ID:
-          layoutElement?.classList.remove("compact-view-zoom");
-          layoutElement?.classList.remove("comfortable-view-zoom");
-          layoutElement?.classList.add("standard-view-zoom");
-          break;
-        case COMFORTABLE_DENSITY_ID:
-          layoutElement?.classList.remove("compact-view-zoom");
-          layoutElement?.classList.remove("standard-view-zoom");
-          layoutElement?.classList.add("comfortable-view-zoom");
-          break;
-      }
-    }
-    if (sectionId === SECTION_DENSITY_FONT_SIZE_ID) {
-      switch (optionSelectedId) {
-        case COMPACT_DENSITY_ID:
-          layoutElement?.classList.remove("standard-view-font-size");
-          layoutElement?.classList.remove("comfortable-view-font-size");
-          layoutElement?.classList.add("compact-view-font-size");
-          break;
-        case STANDARD_DENSITY_ID:
-          layoutElement?.classList.remove("compact-view-font-size");
-          layoutElement?.classList.remove("comfortable-view-font-size");
-          layoutElement?.classList.add("standard-view-font-size");
-          break;
-        case COMFORTABLE_DENSITY_ID:
-          layoutElement?.classList.remove("compact-view-font-size");
-          layoutElement?.classList.remove("standard-view-font-size");
-          layoutElement?.classList.add("comfortable-view-font-size");
+          rootElement.classList.add("comfortable-view");
           break;
       }
     }

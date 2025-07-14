@@ -63,6 +63,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
       const currentSection = sectionsState[sectionIndex];
       const selectedItem = currentSection.items[imageIndex];
       onChangeSelect({ id: selectedItem.id, sectionId: currentSection.id, sectionIndex, imageIndex });
+      handleClose();
     }
   };
 

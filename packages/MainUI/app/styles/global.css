@@ -135,10 +135,12 @@ body {
 }
 
 :root {
+  --font-size-base: 16px;
   font-family: "Inter", sans-serif;
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
+  font-size: var(--font-size-base);
 
   --background-gradient: linear-gradient(180deg, #c6d3ff 30%, #f5f6fa 100%);
   line-height: 1.5;
@@ -147,6 +149,18 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html.compact-view {
+  --font-size-base: 20px;
+}
+
+html.standard-view {
+  --font-size-base: 16px;
+}
+
+html.comfortable-view {
+  --font-size-base: 12px;
 }
 
 h1 {
@@ -161,120 +175,6 @@ body {
   width: 100%;
   min-height: 100%;
   max-width: 100%;
-}
-
-/* Transform property to scale */
-#layout.compact-view-transform-scale {
-  -webkit-transform: scale(1.1);
-  -moz-transform: scale(1.1);
-  -o-transform: scale(1.1);
-  -ms-transform: scale(1.1);
-  transform: scale(1.1);
-
-  -webkit-transform-origin: top left;
-  -moz-transform-origin: top left;
-  -o-transform-origin: top left;
-  -ms-transform-origin: top left;
-  transform-origin: top left;
-
-  position: fixed;
-  top: 0;
-  left: 0;
-
-  overflow: hidden;
-  backface-visibility: hidden;
-  -webkit-font-smoothing: antialiased;
-}
-
-#layout.standard-view-transform-scale {
-  -webkit-transform: scale(1);
-  -moz-transform: scale(1);
-  -o-transform: scale(1);
-  -ms-transform: scale(1);
-  transform: scale(1);
-
-  -webkit-transform-origin: top left;
-  -moz-transform-origin: top left;
-  -o-transform-origin: top left;
-  -ms-transform-origin: top left;
-  transform-origin: top left;
-
-  width: 100vw;
-  height: 100vh;
-
-  position: fixed;
-  top: 0;
-  left: 0;
-
-  overflow: hidden;
-  backface-visibility: hidden;
-  -webkit-font-smoothing: antialiased;
-}
-
-#layout.comfortable-view-transform-scale {
-  -webkit-transform: scale(0.8);
-  -moz-transform: scale(0.8);
-  -o-transform: scale(0.8);
-  -ms-transform: scale(0.8);
-  transform: scale(0.8);
-
-  -webkit-transform-origin: top left;
-  -moz-transform-origin: top left;
-  -o-transform-origin: top left;
-  -ms-transform-origin: top left;
-  transform-origin: top left;
-
-  width: 125vw; /* 1 / 0.8 = 1.25 */
-  height: 125vh;
-
-  position: fixed;
-  top: 0;
-  left: 0;
-
-  overflow: hidden;
-  backface-visibility: hidden;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Zoom property to scale */
-#layout.compact-view-zoom {
-  zoom: 1.1;
-
-  overflow: hidden;
-
-  backface-visibility: hidden;
-  -webkit-font-smoothing: antialiased;
-}
-
-#layout.standard-view-zoom {
-  zoom: 1;
-
-  overflow: hidden;
-
-  backface-visibility: hidden;
-  -webkit-font-smoothing: antialiased;
-}
-
-#layout.comfortable-view-zoom {
-  zoom: 0.8;
-
-  overflow: hidden;
-
-  backface-visibility: hidden;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Font Size property to scale */
-#layout.compact-view-font-size {
-  font-size: 120%;
-}
-
-#layout.standard-view-font-size {
-  font-size: 100%;
-}
-
-#layout.comfortable-view-font-size {
-  font-size: 80%;
 }
 
 @media (prefers-reduced-motion: reduce) {
