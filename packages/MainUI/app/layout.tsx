@@ -31,7 +31,7 @@ export default function RootLayout({
     (function() {
       try {
         const className = localStorage.getItem("${DENSITY_KEY}");
-        if (className) document.documentElement.classList.add(className);
+        if (className) document.documentElement.classList.add(JSON.parse(className));
       } catch(e) {}
     })();
   `;

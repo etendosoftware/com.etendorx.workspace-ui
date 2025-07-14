@@ -41,9 +41,9 @@ export const SPECIFIC_TOOLBAR_BUTTONS_ITEMS = [
   { img: SpecificToolbarTextUrl, id: "specific-text", label: "Text" },
 ];
 
-export const COMPACT_DENSITY_ID = "compact";
-export const STANDARD_DENSITY_ID = "standard";
-export const COMFORTABLE_DENSITY_ID = "comfortable";
+export const COMPACT_DENSITY_ID = "compact-view";
+export const STANDARD_DENSITY_ID = "standard-view";
+export const COMFORTABLE_DENSITY_ID = "comfortable-view";
 
 export const DENSITY_ITEMS = [
   { img: DensityCompactUrl, id: COMPACT_DENSITY_ID, label: "Compact" },

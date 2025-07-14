@@ -1,8 +1,12 @@
 "use client";
+import { useState, useEffect } from "react";
 import { ConfigurationModal } from "@workspaceui/componentlibrary/src/components";
 import { modalConfig } from "../../../storybook/src/mocks";
 import { useTranslation } from "../../hooks/useTranslation";
-import type { OptionSelectedProps } from "@workspaceui/componentlibrary/src/components/ConfigurationModal/types";
+import type {
+  OptionSelectedProps,
+  ISection,
+} from "@workspaceui/componentlibrary/src/components/ConfigurationModal/types";
 import {
   SECTION_DENSITY_ID,
   COMPACT_DENSITY_ID,
@@ -16,7 +20,23 @@ const DENSITY_STYLES_OPTIONS = { compact: "compact-view", standard: "standard-vi
 
 const ConfigurationSection: React.FC = () => {
   const { t } = useTranslation();
-  const [_, setDensity] = useLocalStorage(DENSITY_KEY, STANDARD_DENSITY_ID);
+  const [density, setDensity] = useLocalStorage(DENSITY_KEY, "");
+  const [sections, setSections] = useState<ISection[]>([]);
+
+  useEffect(() => {
+    const initializedSections = modalConfig.sections.map((section) => {
+      if (section.id === SECTION_DENSITY_ID) {
+        const items = section.items;
+        const selectedItemsIndex = items.findIndex((item) => item.id === density);
+        return {
+          ...section,
+          selectedItem: selectedItemsIndex,
+        };
+      }
+      return section;
+    });
+    setSections(initializedSections);
+  }, [density]);
 
   const handleSelectOption = (optionSelected: OptionSelectedProps) => {
     const { sectionId, id: optionSelectedId } = optionSelected;
@@ -43,6 +63,7 @@ const ConfigurationSection: React.FC = () => {
   return (
     <ConfigurationModal
       {...modalConfig}
+      sections={sections}
       tooltipButtonProfile={t("navigation.configurationModal.tooltipButtonProfile")}
       onChangeSelect={handleSelectOption}
     />
