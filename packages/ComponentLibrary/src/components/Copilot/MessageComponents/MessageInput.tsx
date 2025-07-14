@@ -55,10 +55,13 @@ const MessageInput: React.FC<MessageInputProps> = ({
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
-              <IconButton disabled>
+              <IconButton disabled className="[&>svg]:text-[1.25rem]">
                 <AttachFile />
               </IconButton>
-              <IconButton onClick={handleSend} disabled={disabled || !message.trim()}>
+              <IconButton
+                className="[&>svg]:text-[1.25rem] pr-0.5"
+                onClick={handleSend}
+                disabled={disabled || !message.trim()}>
                 <Send />
               </IconButton>
             </InputAdornment>

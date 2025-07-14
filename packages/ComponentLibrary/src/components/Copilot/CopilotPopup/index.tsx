@@ -34,10 +34,9 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed z-500 right-2 bottom-2">
       <div
-        className={`bg-white rounded-lg shadow-xl ${isExpanded ? "w-full max-w-4xl h-[80vh]" : "w-full max-w-md h-[600px]"} max-h-[90vh] flex flex-col`}>
-        {/* Dialog Header */}
+        className={`bg-gradient-to-br from-purple-100 via-blue-50 to-green-50 rounded-lg border-2 border-gray-200 shadow-xl ${isExpanded ? "w-full max-w-4xl h-[80vh]" : "w-full max-w-md h-[600px]"} max-h-[90vh] flex flex-col`}>
         <div className="flex justify-between items-center p-4 pb-2 border-b border-gray-200">
           <span className="text-lg font-semibold">Perfil Copilot</span>
           <div className="flex gap-1">

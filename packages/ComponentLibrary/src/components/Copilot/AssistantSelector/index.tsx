@@ -1,6 +1,7 @@
 import SparksIcon from "../../../assets/icons/sparks.svg";
 import type { IAssistant, ILabels } from "@workspaceui/api-client/src/api/copilot";
 import RadioGrid, { type RadioGridOption } from "../../RadioGrid";
+import { IconButton } from "../..";
 
 interface AssistantSelectorProps {
   assistants: IAssistant[];
@@ -52,29 +53,35 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({ assistants, selec
 
   return (
     <div className="p-6">
-      <div className="text-center mb-6">
-        <h5 className="text-xl font-medium mb-2">
+      <div className="mb-6 bg-white rounded-b-xl rounded-tr-xl p-2 border-1 border-(--color-transparent-neutral-10) shadow-xl">
+        <h5 className="text-sm font-medium mb-2">
           ¡Hola! ✨🚀 Selecciona el perfil que más se ajuste a tu tarea y comencemos. 💪
         </h5>
       </div>
 
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
-          <SparksIcon />
-          <h6 className="text-lg font-semibold">Perfiles</h6>
+      <div className="mb-6 bg-(--color-baseline-10) rounded-xl border-1 border-(--color-transparent-neutral-10) shadow-xl">
+        <div className="flex justify-between items-center bg-white p-3 pr-4 rounded-t-xl">
+          <div className="flex items-center gap-2">
+            <IconButton className="">
+              <SparksIcon />
+            </IconButton>
+            <h6 className="text-lg font-semibold">Perfiles</h6>
+          </div>
+          <button type="button" className="text-blue-600 hover:text-blue-800 bg-transparent border-none cursor-pointer">
+            Conoce más sobre Copilot →
+          </button>
         </div>
-        <button type="button" className="text-blue-600 hover:text-blue-800 bg-transparent border-none cursor-pointer">
-          Conoce más sobre Copilot →
-        </button>
-      </div>
 
-      <RadioGrid
-        options={radioOptions}
-        selectedValue={selectedAssistant?.app_id || null}
-        onSelect={handleSelect}
-        columns={3}
-        name="assistant-selector"
-      />
+        <div className="p-2">
+          <RadioGrid
+            options={radioOptions}
+            selectedValue={selectedAssistant?.app_id || null}
+            onSelect={handleSelect}
+            columns={1}
+            name="assistant-selector"
+          />
+        </div>
+      </div>
     </div>
   );
 };
