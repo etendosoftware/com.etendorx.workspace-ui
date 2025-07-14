@@ -267,6 +267,7 @@ const es = {
     },
   },
   primaryTabs: {
+    dashboard: "Panel",
     closeWindow: "Cerrar ventana",
     showTabs: "Mostrar pestañas",
   },
