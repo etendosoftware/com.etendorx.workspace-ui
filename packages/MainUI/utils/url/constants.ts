@@ -11,6 +11,10 @@ export const TAB_FORM_RECORD_ID_PREFIX = "tf_";
 export const TAB_MODE_PREFIX = "tm_";
 export const TAB_FORM_MODE_PREFIX = "tfm_";
 
+// Tab states
+export const TAB_ACTIVE = "active";
+export const TAB_INACTIVE = "inactive";
+
 export const NEW_RECORD_ID = "new";
 
 export const FORM_MODES = {
