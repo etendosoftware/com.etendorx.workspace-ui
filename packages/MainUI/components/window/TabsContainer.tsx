@@ -33,13 +33,15 @@ export default function TabsContainer() {
   const firstExpandedIndex = groupedTabs.findIndex((tabs) => activeLevels.includes(tabs[0].tabLevel));
 
   return (
-    <div className="flex flex-col w-full h-full max-h-full">
+    <>
       <AppBreadcrumb allTabs={groupedTabs} />
-      {groupedTabs.map((tabs, index) => {
-        const isTopGroup = index === firstExpandedIndex && firstExpandedIndex !== -1;
+      <div className="flex flex-col w-full h-full max-h-full">
+        {groupedTabs.map((tabs, index) => {
+          const isTopGroup = index === firstExpandedIndex && firstExpandedIndex !== -1;
 
-        return <Tabs key={tabs[0].id} tabs={tabs} isTopGroup={isTopGroup} />;
-      })}
-    </div>
+          return <Tabs key={tabs[0].id} tabs={tabs} isTopGroup={isTopGroup} />;
+        })}
+      </div>
+    </>
   );
 }

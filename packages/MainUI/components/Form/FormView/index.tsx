@@ -302,33 +302,27 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   return (
     <FormProvider setValue={handleSetValue} reset={reset} formState={formState} {...form}>
       <form
-        className={`flex h-full max-h-full w-full flex-col overflow-hidden transition duration-300 ${
+        className={`flex h-full max-h-full w-full flex-col gap-2 overflow-hidden transition duration-300 ${
           loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
         }`}
         onSubmit={handleSave}>
-        <div className="flex-shrink-0 pl-2 pr-2">
-          <div className="mb-2">
-            {statusModal.open && (
-              <StatusModal
-                statusType={statusModal.statusType}
-                statusText={statusModal.statusText}
-                errorMessage={statusModal.errorMessage}
-                saveLabel={statusModal.saveLabel}
-                secondaryButtonLabel={statusModal.secondaryButtonLabel}
-                onClose={hideStatusModal}
-                isDeleteSuccess={statusModal.isDeleteSuccess}
-              />
-            )}
-          </div>
-          <StatusBar fields={fields.statusBarFields} />
-          <div className="mt-2">
-            <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
-          </div>
-        </div>
+        {statusModal.open && (
+          <StatusModal
+            statusType={statusModal.statusType}
+            statusText={statusModal.statusText}
+            errorMessage={statusModal.errorMessage}
+            saveLabel={statusModal.saveLabel}
+            secondaryButtonLabel={statusModal.secondaryButtonLabel}
+            onClose={hideStatusModal}
+            isDeleteSuccess={statusModal.isDeleteSuccess}
+          />
+        )}
+        <StatusBar fields={fields.statusBarFields} />
+        <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
         {isLoading ? (
           <Spinner />
         ) : (
-          <div className="flex-grow space-y-2 overflow-auto p-2" ref={containerRef}>
+          <div className="flex flex-col gap-2 flex-grow overflow-auto" ref={containerRef}>
             {groups.map(([id, group]) => {
               const sectionId = String(id || "_main");
 
@@ -357,7 +351,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
                     sectionId={sectionId}
                     icon={getIconForGroup(group.identifier)}
                     onToggle={(isOpen: boolean) => handleAccordionChange(id, isOpen)}>
-                    <div className="grid auto-rows-auto grid-cols-3 gap-4">
+                    <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2">
                       {Object.entries(group.fields).map(([hqlName, field]) => (
                         <BaseSelector field={field} key={hqlName} formMode={mode} />
                       ))}

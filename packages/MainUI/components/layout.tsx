@@ -9,12 +9,10 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       <GlobalLoading />
       <Sidebar />
       <div className="flex flex-1 flex-col max-w-auto max-h-auto overflow-hidden">
-        <div className="w-full p-1">
+        <div className="w-full h-14 min-h-14 p-1">
           <Navigation />
         </div>
-        <div className="flex flex-1 max-h-auto max-w-auto overflow-hidden">
-          {children}
-        </div>
+        <div className="flex flex-1 max-h-auto max-w-auto overflow-hidden">{children}</div>
       </div>
     </div>
   );

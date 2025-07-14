@@ -78,9 +78,17 @@ const SearchInputWithVoice = ({ onVoiceClick, disabled = false, ...props }: Sear
           }}
           disabled={disabled}
         />
-        <Box>
-          <IconButton onClick={handleVoiceClick} className="w-10 h-10 my-1" disabled={true}>
-            {isRecording ? <MicOffIcon className="w-8 h-8" /> : <MicIcon className="w-5 h-5" />}
+        <Box
+          sx={{
+            width: "2.5rem",
+            height: "2.5rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "6.25rem",
+          }}>
+          <IconButton onClick={handleVoiceClick} className="w-10 h-10" disabled={true}>
+            {isRecording ? <MicOffIcon className="w-6 h-6" /> : <MicIcon className="w-6 h-6" />}
           </IconButton>
         </Box>
       </Box>

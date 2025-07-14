@@ -10,16 +10,21 @@ export const useStyle = () => {
       sx: {
         container: {
           display: "flex",
+          minWidth: "4.75rem",
           maxWidth: "100%",
           overflow: "hidden",
-          minWidth: "4.75rem",
-          paddingRight: "2rem",
-          height: "3rem",
-          background: "",
+          height: "2rem",
         },
         breadcrumbs: {
           flexGrow: 1,
           overflow: "hidden",
+          height: "2rem",
+          "& .MuiBreadcrumbs-ol": {
+            height: "2rem",
+            "& .MuiBreadcrumbs-li": {
+              height: "2rem",
+            },
+          },
         },
         breadcrumbTypography: {
           fontSize: "1.375rem",
@@ -31,7 +36,7 @@ export const useStyle = () => {
           },
         },
         breadcrumbItem: {
-          height: "3rem",
+          height: "2rem",
           padding: "0",
           maxWidth: "100%",
           display: "inline-flex",
@@ -39,6 +44,10 @@ export const useStyle = () => {
           gap: "0.5rem",
         },
         lastItemTypography: {
+          height: "2rem",
+          display: "flex",
+          alignItems: "center",
+          padding: "0.25rem 0",
           fontSize: "1.375rem",
           fontWeight: "600",
           color: theme.palette.baselineColor.neutral[100],
