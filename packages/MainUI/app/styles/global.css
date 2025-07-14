@@ -235,6 +235,33 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  #layout {
+    -webkit-transform: scale(1);
+    -moz-transform: scale(1);
+    -o-transform: scale(1);
+    -ms-transform: scale(1);
+    transform: scale(1);
+
+    -webkit-transform-origin: top left;
+    -moz-transform-origin: top left;
+    -o-transform-origin: top left;
+    -ms-transform-origin: top left;
+    transform-origin: top left;
+
+    width: 100vw;
+    height: 100vh;
+
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    overflow: hidden;
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
 .w-fill-available {
   width: -webkit-fill-available;
   width: -moz-available;
