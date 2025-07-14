@@ -73,6 +73,7 @@ const Navigation: React.FC = () => {
 
   return (
     <Nav title={t("common.notImplemented")}>
+      <ConfigurationSection />
       <Waterfall
         menuItems={menuItems}
         initialPeople={initialPeople}
@@ -85,7 +86,6 @@ const Navigation: React.FC = () => {
         people={people}
         icon={<AddIcon />}
       />
-      <ConfigurationSection />
       <IconButton
         onClick={handleMenuToggle}
         className="w-10 h-10"
