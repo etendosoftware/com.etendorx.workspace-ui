@@ -15,7 +15,9 @@ export const SECTION_THEME_ID = "theme";
 export const SECTION_TABLE_DENSITY_ID = "tableDensity";
 export const SECTION_COMMON_TOOLBAR_BUTTONS_ID = "commonToolbarButtons";
 export const SECTION_SPECIFIC_TOOLBAR_BUTTONS_ID = "specificToolbarButtons";
-export const SECTION_DENSITY_ID = "density";
+export const SECTION_DENSITY_TRANSFORM_SCALE_ID = "density-transform-scale";
+export const SECTION_DENSITY_ZOOM_ID = "density-zoom";
+export const SECTION_DENSITY_FONT_SIZE_ID = "density-font-size";
 
 export const THEME_ITEMS = [
   { img: ThemeLightUrl, id: "light", label: "Light" },
