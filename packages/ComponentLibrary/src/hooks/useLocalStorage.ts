@@ -32,7 +32,8 @@ const useLocalStorage = <T>(key: string, initialValue: T | (() => T)) => {
             if (newValue === undefined) {
               window.localStorage.removeItem(key);
             } else {
-              window.localStorage.setItem(key, JSON.stringify(newValue));
+              const isString = typeof newValue === "string";
+              window.localStorage.setItem(key, isString ? newValue : JSON.stringify(newValue));
             }
           } catch (error) {
             console.warn(`Error setting localStorage key "${key}":`, error);
