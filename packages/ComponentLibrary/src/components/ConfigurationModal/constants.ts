@@ -1,15 +1,15 @@
-import ThemeLightUrl from "../..//assets/images/ConfigurationModal/theme-light.svg?url";
-import ThemeDarkUrl from "../..//assets/images/ConfigurationModal/theme-dark.svg?url";
-import ThemeAutomaticUrl from "../..//assets/images/ConfigurationModal/theme-automatic.svg?url";
-import DensityCompactUrl from "../..//assets/images/ConfigurationModal/density-compact.svg?url";
-import DensityStandardUrl from "../..//assets/images/ConfigurationModal/density-standard.svg?url";
-import DensityComfortableUrl from "../..//assets/images/ConfigurationModal/density-comfortable.svg?url";
-import CommonToolbarIconUrl from "../..//assets/images/ConfigurationModal/common-toolbar-buttons-icon.svg?url";
-import CommonToolbarTextUrl from "../..//assets/images/ConfigurationModal/common-toolbar-buttons-text.svg?url";
-import CommonToolbarIconTextUrl from "../..//assets/images/ConfigurationModal/common-toolbar-buttons-icon-and-text.svg?url";
-import SpecificToolbarIconUrl from "../..//assets/images/ConfigurationModal/specific-toolbar buttons-icon.svg?url";
-import SpecificToolbarIconTextUrl from "../..//assets/images/ConfigurationModal/specific-toolbar buttons-icon-and-text.svg?url";
-import SpecificToolbarTextUrl from "../..//assets/images/ConfigurationModal/specific-toolbar buttons-text.svg?url";
+import ThemeLightUrl from "../../assets/images/ConfigurationModal/theme-light.svg?url";
+import ThemeDarkUrl from "../../assets/images/ConfigurationModal/theme-dark.svg?url";
+import ThemeAutomaticUrl from "../../assets/images/ConfigurationModal/theme-automatic.svg?url";
+import DensityCompactUrl from "../../assets/images/ConfigurationModal/density-compact.svg?url";
+import DensityStandardUrl from "../../assets/images/ConfigurationModal/density-standard.svg?url";
+import DensityComfortableUrl from "../../assets/images/ConfigurationModal/density-comfortable.svg?url";
+import CommonToolbarIconUrl from "../../assets/images/ConfigurationModal/common-toolbar-buttons-icon.svg?url";
+import CommonToolbarTextUrl from "../../assets/images/ConfigurationModal/common-toolbar-buttons-text.svg?url";
+import CommonToolbarIconTextUrl from "../../assets/images/ConfigurationModal/common-toolbar-buttons-icon-and-text.svg?url";
+import SpecificToolbarIconUrl from "../../assets/images/ConfigurationModal/specific-toolbar buttons-icon.svg?url";
+import SpecificToolbarIconTextUrl from "../../assets/images/ConfigurationModal/specific-toolbar buttons-icon-and-text.svg?url";
+import SpecificToolbarTextUrl from "../../assets/images/ConfigurationModal/specific-toolbar buttons-text.svg?url";
 
 export const SECTION_THEME_ID = "theme";
 export const SECTION_TABLE_DENSITY_ID = "tableDensity";

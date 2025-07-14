@@ -61,6 +61,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
 
     if (onChangeSelect) {
       const currentSection = sectionsState[sectionIndex];
+      if (!currentSection || !currentSection.items[imageIndex]) return;
       const selectedItem = currentSection.items[imageIndex];
       onChangeSelect({ id: selectedItem.id, sectionId: currentSection.id, sectionIndex, imageIndex });
       handleClose();
@@ -99,7 +100,11 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
 
   return (
     <>
-      <IconButton onClick={handleClick} tooltip={tooltipButtonProfile} disabled={false} className="w-10 h-10">
+      <IconButton
+        onClick={handleClick}
+        tooltip={tooltipButtonProfile}
+        aria-label={tooltipButtonProfile}
+        className="w-10 h-10">
         {icon}
       </IconButton>
       <Menu {...props} anchorEl={anchorEl} onClose={handleClose}>
