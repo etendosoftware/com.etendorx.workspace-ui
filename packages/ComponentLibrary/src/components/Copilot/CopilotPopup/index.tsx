@@ -21,6 +21,7 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
   onSelectAssistant,
   onSendMessage,
   onResetConversation,
+  showDescription,
   translations,
 }) => {
   if (!open) return null;
@@ -30,9 +31,16 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
     onResetConversation();
   };
 
+  const truncateAssistantName = (name: string, maxLength = 20) => {
+    if (name.length <= maxLength) return name;
+    return `${name.substring(0, maxLength)}...`;
+  };
+
   const getHeaderText = () => {
     if (selectedAssistant) {
-      return `${translations.copilotProfile}: ${selectedAssistant.name}`;
+      // Solo truncar cuando está contraído, mostrar nombre completo cuando está expandido
+      const assistantName = isExpanded ? selectedAssistant.name : truncateAssistantName(selectedAssistant.name);
+      return `${translations.copilotProfile}: ${assistantName}`;
     }
     return translations.copilotProfile;
   };
@@ -42,13 +50,15 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
   return (
     <div className={`fixed z-500 ${isExpanded ? "inset-4" : "right-2 bottom-2"}`}>
       <div
-        className={`bg-gradient-to-br from-purple-100 via-blue-50 to-green-50 rounded-lg border-2 border-gray-200 shadow-xl ${isExpanded ? "w-full h-full" : "w-[26.25rem] h-[600px] max-h-[90vh]"} flex flex-col`}>
-        <div className="flex justify-between items-center p-4 pb-2 border-b border-gray-200">
+        className={`bg-gradient-to-br from-purple-100 via-blue-50 to-green-50 rounded-lg border-2 border-(--color-transparent-neutral-20) shadow-xl ${isExpanded ? "w-full h-full" : "w-[26.25rem] h-[600px] max-h-[90vh]"} flex flex-col`}>
+        <div className="flex justify-between items-center p-4 pb-2 border-b border-(--color-transparent-neutral-20)">
           <div className="flex-1 pr-2 min-w-0">
             <button
               type="button"
               onClick={isHeaderClickable ? handleHeaderClick : undefined}
-              className={`text-lg group font-semibold text-(--color-transparent-neutral-70) flex items-center gap-2 border-1 border-(--color-transparent-neutral-20) px-3 py-1 rounded-full min-w-0 max-w-76 ${
+              className={`text-lg group font-semibold text-(--color-transparent-neutral-70) flex items-center gap-2 border-1 border-(--color-transparent-neutral-20) px-3 py-1 rounded-full min-w-0 ${
+                isExpanded ? "max-w-none" : "max-w-76"
+              } ${
                 isHeaderClickable
                   ? "cursor-pointer hover:text-(--color-dynamic-main) transition-colors"
                   : "cursor-default"
@@ -96,6 +106,7 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
             onSelectAssistant={onSelectAssistant}
             onSendMessage={onSendMessage}
             onResetConversation={onResetConversation}
+            showDescription={showDescription}
             translations={{
               assistantSelector: translations.assistantSelector,
               messageInput: translations.messageInput,

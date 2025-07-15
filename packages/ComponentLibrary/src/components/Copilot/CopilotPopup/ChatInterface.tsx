@@ -13,6 +13,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   isLoading,
   onSelectAssistant,
   onSendMessage,
+  showDescription = true,
   translations,
 }) => {
   let parsedAssistants: IAssistant[] = [];
@@ -40,6 +41,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         onSelectAssistant={handleSelectAssistant}
         labels={labels}
         isExpanded={isExpanded}
+        showDescription={showDescription}
         translations={translations.assistantSelector}
       />
     );

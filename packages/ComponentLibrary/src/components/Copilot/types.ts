@@ -6,6 +6,7 @@ export interface AssistantSelectorProps {
   onSelectAssistant: (assistant: IAssistant) => void;
   labels: ILabels;
   isExpanded?: boolean;
+  showDescription?: boolean;
   translations: {
     errorInvalidData: string;
     errorNoAssistantsAvailable: string;
@@ -34,6 +35,7 @@ export interface ChatInterfaceProps {
   onSelectAssistant: (assistant: IAssistant | null) => void;
   onSendMessage: (message: string, files?: File[]) => void;
   onResetConversation: () => void;
+  showDescription?: boolean;
   translations: {
     assistantSelector: AssistantSelectorProps["translations"];
     messageInput: MessageInputProps["translations"];
@@ -54,6 +56,7 @@ export interface CopilotPopupProps {
   onSelectAssistant: (assistant: IAssistant | null) => void;
   onSendMessage: (message: string, files?: File[]) => void;
   onResetConversation: () => void;
+  showDescription?: boolean;
   translations: {
     copilotProfile: string;
     backToSelection: string;

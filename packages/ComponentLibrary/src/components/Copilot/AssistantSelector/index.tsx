@@ -9,6 +9,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({
   selectedAssistant,
   onSelectAssistant,
   isExpanded = false,
+  showDescription,
   translations,
 }) => {
   const [filterText, setFilterText] = useState("");
@@ -26,19 +27,6 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({
     );
   }
 
-  const getAssistantIcon = (assistantId: string) => {
-    switch (assistantId) {
-      case "D250A40AB629492AA2F751374D6B9359":
-        return "😊";
-      case "purchase":
-        return "📊";
-      case "DB8362448FE54881B86331D9BF1D806A":
-        return "🛒";
-      default:
-        return "🤖";
-    }
-  };
-
   const filteredAssistants = assistants.filter(
     (assistant) =>
       assistant.name.toLowerCase().includes(filterText.toLowerCase()) ||
@@ -48,8 +36,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({
   const radioOptions: RadioGridOption[] = filteredAssistants.map((assistant) => ({
     value: assistant.app_id,
     label: assistant.name,
-    description: assistant.description || translations.defaultDescription,
-    icon: <span className="text-2xl">{getAssistantIcon(assistant.app_id)}</span>,
+    description: showDescription ? assistant.description || translations.defaultDescription : undefined,
   }));
 
   const handleSelect = (value: string) => {
@@ -83,7 +70,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({
           </div>
         </div>
 
-        <div className="p-2 overflow-y-auto max-h-90">
+        <div className={`p-2 overflow-y-auto ${isExpanded ? "max-h-[calc(100vh-20rem)]" : "max-h-90"}`}>
           <RadioGrid
             options={radioOptions}
             selectedValue={selectedAssistant?.app_id || null}
