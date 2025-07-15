@@ -68,7 +68,7 @@ export default function WindowTabs() {
         </IconButton>
       )}
       <div
-        className="w-full flex items-center px-2 overflow-x-auto overflow-y-hidden scroll-smooth no-scrollbar h-9 min-h-9"
+        className="w-full flex items-center px-2 overflow-x-auto overflow-y-hidden scroll-smooth no-scrollbar h-9"
         ref={windowsContainerRef}>
         {windows.map((window, index) => {
           const title = window.title || getWindowTitle?.(window.windowId);
@@ -77,7 +77,7 @@ export default function WindowTabs() {
           return (
             <div
               key={window.windowId}
-              className="flex items-center"
+              className="flex items-center h-9"
               ref={(el) => {
                 tabRefs.current[window.windowId] = el;
               }}>
