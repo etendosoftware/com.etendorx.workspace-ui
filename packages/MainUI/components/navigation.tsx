@@ -188,6 +188,7 @@ const Navigation: React.FC = () => {
             welcomeMessage: t("copilot.assistantSelector.welcomeMessage"),
             profilesTitle: t("copilot.assistantSelector.profilesTitle"),
             learnMoreText: t("copilot.assistantSelector.learnMoreText"),
+            filterPlaceholder: t("copilot.assistantSelector.filterPlaceholder"),
           },
           messageInput: {
             placeholder: t("copilot.messageInput.placeholder"),

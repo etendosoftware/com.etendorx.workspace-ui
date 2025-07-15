@@ -230,6 +230,7 @@ const en = {
       welcomeMessage: "Hello! ✨🚀 Select the profile that best fits your task and let's begin. 💪",
       profilesTitle: "Profiles",
       learnMoreText: "Learn more about Copilot →",
+      filterPlaceholder: "Filter profiles...",
     },
     messageInput: {
       placeholder: "Chat with Copilot...",

@@ -48,12 +48,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-hidden">
-        <MessageList messages={messages} labels={labels} isExpanded={isExpanded} isLoading={isLoading} translations={translations.messageList} />
+        <MessageList
+          messages={messages}
+          labels={labels}
+          isExpanded={isExpanded}
+          isLoading={isLoading}
+          translations={translations.messageList}
+        />
       </div>
 
       <MessageInput
         onSendMessage={onSendMessage}
-        placeholder={translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder || "Conversa con Copilot..."}
+        placeholder={
+          translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder || "Conversa con Copilot..."
+        }
         disabled={isLoading}
         translations={translations.messageInput}
       />

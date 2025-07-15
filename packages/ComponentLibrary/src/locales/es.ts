@@ -234,6 +234,7 @@ const es = {
       welcomeMessage: "¡Hola! ✨🚀 Selecciona el perfil que más se ajuste a tu tarea y comencemos. 💪",
       profilesTitle: "Perfiles",
       learnMoreText: "Conoce más sobre Copilot →",
+      filterPlaceholder: "Filtrar perfiles...",
     },
     messageInput: {
       placeholder: "Conversa con Copilot...",

@@ -13,6 +13,7 @@ export interface AssistantSelectorProps {
     welcomeMessage: string;
     profilesTitle: string;
     learnMoreText: string;
+    filterPlaceholder: string;
   };
 }
 
