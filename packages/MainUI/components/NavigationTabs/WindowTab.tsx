@@ -19,7 +19,7 @@ export default function WindowTab({ title, isActive, onActivate, onClose, canClo
     <button
       type="button"
       className={`
-        h-9 flex gap-2 items-center px-1.5 py-1.5 cursor-pointer
+        h-9 flex gap-2 items-center justify-center px-1.5 py-1.5 cursor-pointer
         min-w-[140px] max-w-[220px] relative group
         transition-all duration-200 text-(--color-baseline-90) 
         ${
@@ -33,7 +33,7 @@ export default function WindowTab({ title, isActive, onActivate, onClose, canClo
         borderTopRightRadius: "12px",
       }}
       onClick={onActivate}>
-      <div className="h-full flex items-center gap-1">
+      <div className="h-full flex items-center flex-1 truncate gap-1">
         <FolderIcon className="fill-black" />
         <span className="flex-1 truncate text-sm font-medium" title={title}>
           {title}
