@@ -8,7 +8,7 @@ import type { DrawerHeaderProps } from "../types";
 
 const DrawerHeader = ({ title, logo, open, onClick, tabIndex }: DrawerHeaderProps) => {
   return (
-    <div className="h-14 flex items-center justify-end p-2 border-b border-(--color-transparent-neutral-10)">
+    <div className="h-14 min-h-14 flex items-center justify-end p-2 border-b border-(--color-transparent-neutral-10)">
       {open && (
         <div className="w-full">
           <a href="/" className="flex items-center gap-1" title="Etendo">

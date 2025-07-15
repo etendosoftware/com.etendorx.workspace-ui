@@ -16,7 +16,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ items, separator, onHomeClick }) => {
   const { sx } = useStyle();
 
   const defaultSeparator = useMemo(
-    () => <NavigateNextIcon fill={theme.palette.baselineColor.transparentNeutral[30]} />,
+    () => <NavigateNextIcon width="20" height="20" fill={theme.palette.baselineColor.transparentNeutral[30]} />,
     [theme]
   );
 

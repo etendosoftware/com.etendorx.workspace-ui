@@ -11,15 +11,19 @@ export const useStyle = () => {
     () => ({
       styles: {
         containerBox: {
-          display: "inline-flex",
-          background: theme.palette.baselineColor.transparentNeutral[5],
-          borderRadius: "12.5rem",
-          padding: "0.25rem",
-          alignItems: "center",
           width: "100%",
+          height: "3rem",
+          display: "flex",
+          background: theme.palette.baselineColor.transparentNeutral[5],
+          borderRadius: "6.25rem",
+          alignItems: "center",
+          justifyContent: "space-between",
         },
         tabsContainer: {
           flexGrow: 1,
+          maxHeight: "3rem",
+          paddingLeft: "0.25rem",
+          paddingRight: "0.25rem",
           overflowX: "auto",
         },
         iconButtonMore: {
@@ -29,24 +33,34 @@ export const useStyle = () => {
       } as { [key: string]: CSSProperties },
       sx: {
         tabs: {
-          minHeight: "unset",
+          minHeight: "3rem",
+          maxHeight: "3rem",
           "& .MuiTabs-scrollButtons": {
             "&.Mui-disabled": {
               opacity: 0.3,
             },
           },
+          "& .MuiTabs-scroller": {
+            display: "flex",
+          },
           "& .MuiTabs-flexContainer": {
             gap: "0.25rem",
+            height: "100%",
+            maxHeight: "2.5rem",
+            alignSelf: "center",
+          },
+          "& .MuiTab-root": {
+            maxHeight: "2.5rem",
+            minHeight: "2.5rem",
           },
         },
         tab: {
-          minHeight: 48,
+          maxHeight: "2.5rem",
           textTransform: "none",
           borderRadius: "12.5rem",
           transition: "background-color 0.3s, color 0.4s",
           color: theme.palette.baselineColor.neutral[90],
           padding: "0.25rem 1rem",
-          marginRight: "0.25rem",
           whiteSpace: "nowrap",
           "& .MuiTab-iconWrapper": {
             marginRight: "0.5rem",

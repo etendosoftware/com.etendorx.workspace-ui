@@ -31,7 +31,7 @@ export default function StatusBar({ fields }: { fields: Record<string, Field> })
   }, [isSaved, onBack]);
 
   return (
-    <div className="h-min flex items-center justify-between bg-gray-100/50 shadow px-4 py-3 rounded-xl">
+    <div className="h-10 flex items-center justify-between bg-gray-100/50 shadow px-3 py-2 rounded-xl">
       <div className="flex gap-4 text-sm">
         {Object.entries(fields).map(([key, field]) => (
           <StatusBarField key={key} field={field} />

@@ -9,7 +9,6 @@ import type React from "react";
 import { ROUTE_IDS } from "../constants/breadcrumb";
 import { useMetadataContext } from "../hooks/useMetadataContext";
 import { useTranslation } from "../hooks/useTranslation";
-import { styles } from "./styles";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useSelected } from "@/hooks/useSelected";
@@ -88,7 +87,7 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   }, [navigateToHome]);
 
   return (
-    <div style={styles.breadCrum}>
+    <div className="w-full h-8">
       <Breadcrumb onHomeClick={handleHomeClick} items={breadcrumbItems || []} />
     </div>
   );

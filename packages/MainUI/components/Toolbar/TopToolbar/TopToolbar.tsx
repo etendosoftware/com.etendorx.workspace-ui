@@ -4,7 +4,7 @@ import ToolbarSection from "../ToolbarSection";
 export const TopToolbar = ({ leftSection, centerSection, rightSection, processButton }: TopToolbarProps) => {
   const isCenterSectionsDisabled = centerSection.buttons.every((button) => button.disabled) && processButton.disabled;
   return (
-    <div className="flex justify-between items-center gap-2">
+    <div className="h-10 flex justify-between items-center gap-1">
       <ToolbarSection {...leftSection} className="bg-white rounded-4xl p-1" />
       <ToolbarSection
         {...centerSection}
