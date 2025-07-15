@@ -64,6 +64,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         selectedAssistant={selectedAssistant}
         onSelectAssistant={handleSelectAssistant}
         labels={labels}
+        isExpanded={isExpanded}
       />
     );
   }

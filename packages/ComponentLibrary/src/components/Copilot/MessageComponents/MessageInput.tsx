@@ -1,6 +1,6 @@
 import type React from "react";
 import { useCallback, useState } from "react";
-import { Box, InputAdornment } from "@mui/material";
+import { InputAdornment } from "@mui/material";
 import Send from "../../../assets/icons/send.svg";
 import AttachFile from "../../../assets/icons/paperclip.svg";
 import IconButton from "../../IconButton";
@@ -35,19 +35,12 @@ const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   return (
-    <Box
-      sx={{
-        p: 2,
-        borderTop: 1,
-        borderColor: "divider",
-        backgroundColor: "background.paper",
-      }}>
+    <div className="px-2 pb-1">
       <SearchInputWithVoice
         value={message}
         setValue={setMessage}
         placeholder={placeholder}
         disabled={disabled}
-        multiline
         maxRows={4}
         onKeyDown={handleKeyPress}
         rightIcon={true}
@@ -68,7 +61,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           ),
         }}
       />
-    </Box>
+    </div>
   );
 };
 

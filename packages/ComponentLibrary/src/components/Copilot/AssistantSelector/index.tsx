@@ -8,9 +8,15 @@ interface AssistantSelectorProps {
   selectedAssistant: IAssistant | null;
   onSelectAssistant: (assistant: IAssistant) => void;
   labels: ILabels;
+  isExpanded?: boolean;
 }
 
-const AssistantSelector: React.FC<AssistantSelectorProps> = ({ assistants, selectedAssistant, onSelectAssistant }) => {
+const AssistantSelector: React.FC<AssistantSelectorProps> = ({
+  assistants,
+  selectedAssistant,
+  onSelectAssistant,
+  isExpanded = false,
+}) => {
   if (!assistants || !Array.isArray(assistants) || assistants.length === 0) {
     console.error("AssistantSelector: Invalid assistants data:", assistants);
     return (
@@ -26,12 +32,12 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({ assistants, selec
 
   const getAssistantIcon = (assistantId: string) => {
     switch (assistantId) {
-      case "bastian":
+      case "D250A40AB629492AA2F751374D6B9359":
         return "😊";
       case "purchase":
-        return "🛒";
-      case "sql":
         return "📊";
+      case "DB8362448FE54881B86331D9BF1D806A":
+        return "🛒";
       default:
         return "🤖";
     }
@@ -59,7 +65,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({ assistants, selec
         </h5>
       </div>
 
-      <div className="mb-6 bg-(--color-baseline-10) rounded-xl border-1 border-(--color-transparent-neutral-10) shadow-xl">
+      <div className="bg-(--color-baseline-10) rounded-xl border-1 border-(--color-transparent-neutral-10) shadow-xl">
         <div className="flex justify-between items-center bg-white p-3 pr-4 rounded-t-xl">
           <div className="flex items-center gap-2">
             <IconButton className="">
@@ -72,12 +78,12 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({ assistants, selec
           </button>
         </div>
 
-        <div className="p-2">
+        <div className="p-2 overflow-y-auto max-h-90">
           <RadioGrid
             options={radioOptions}
             selectedValue={selectedAssistant?.app_id || null}
             onSelect={handleSelect}
-            columns={1}
+            columns={isExpanded ? 3 : 1}
             name="assistant-selector"
           />
         </div>

@@ -1,6 +1,10 @@
 import type React from "react";
 import type { IAssistant, ILabels, IMessage } from "@workspaceui/api-client/src/api/copilot";
 import ChatInterface from "./ChatInterface";
+import IconButton from "../../IconButton";
+import XIcon from "../../../assets/icons/x.svg";
+import MaximizeIcon from "../../../assets/icons/maximize-2.svg";
+import MinimizeIcon from "../../../assets/icons/minimize-2.svg";
 
 export interface CopilotPopupProps {
   open: boolean;
@@ -34,41 +38,26 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
   if (!open) return null;
 
   return (
-    <div className="fixed z-500 right-2 bottom-2">
+    <div className={`fixed z-500 ${isExpanded ? "inset-4" : "right-2 bottom-2"}`}>
       <div
-        className={`bg-gradient-to-br from-purple-100 via-blue-50 to-green-50 rounded-lg border-2 border-gray-200 shadow-xl ${isExpanded ? "w-full max-w-4xl h-[80vh]" : "w-full max-w-md h-[600px]"} max-h-[90vh] flex flex-col`}>
+        className={`bg-gradient-to-br from-purple-100 via-blue-50 to-green-50 rounded-lg border-2 border-gray-200 shadow-xl ${isExpanded ? "w-full h-full" : "w-[26.25rem] h-[600px] max-h-[90vh]"} flex flex-col`}>
         <div className="flex justify-between items-center p-4 pb-2 border-b border-gray-200">
           <span className="text-lg font-semibold">Perfil Copilot</span>
           <div className="flex gap-1">
             {onToggleExpanded && (
-              <button
-                type="button"
+              <IconButton
                 onClick={onToggleExpanded}
-                className="p-1 hover:bg-gray-100 rounded"
-                aria-label={isExpanded ? "Minimizar" : "Maximizar"}>
-                {isExpanded ? (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-label="Minimizar">
-                    <title>Minimizar</title>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-label="Maximizar">
-                    <title>Maximizar</title>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                  </svg>
-                )}
-              </button>
+                aria-label={isExpanded ? "Minimizar" : "Maximizar"}
+                className="[&>svg]:text-[1.25rem]">
+                {isExpanded ? <MinimizeIcon /> : <MaximizeIcon />}
+              </IconButton>
             )}
-            <button type="button" onClick={onClose} className="p-1 hover:bg-gray-100 rounded" aria-label="Cerrar">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-label="Cerrar">
-                <title>Cerrar</title>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <IconButton onClick={onClose} aria-label="Cerrar" className="[&>svg]:text-[1.25rem]">
+              <XIcon />
+            </IconButton>
           </div>
         </div>
 
-        {/* Dialog Content */}
         <div className="p-0 flex flex-col flex-1 overflow-hidden">
           <ChatInterface
             assistants={assistants}
