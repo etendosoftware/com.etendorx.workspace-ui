@@ -1,15 +1,7 @@
 import SparksIcon from "../../../assets/icons/sparks.svg";
-import type { IAssistant, ILabels } from "@workspaceui/api-client/src/api/copilot";
 import RadioGrid, { type RadioGridOption } from "../../RadioGrid";
 import { IconButton } from "../..";
-
-interface AssistantSelectorProps {
-  assistants: IAssistant[];
-  selectedAssistant: IAssistant | null;
-  onSelectAssistant: (assistant: IAssistant) => void;
-  labels: ILabels;
-  isExpanded?: boolean;
-}
+import type { AssistantSelectorProps } from "../types";
 
 const AssistantSelector: React.FC<AssistantSelectorProps> = ({
   assistants,

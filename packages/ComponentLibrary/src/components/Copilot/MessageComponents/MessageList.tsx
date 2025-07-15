@@ -1,13 +1,5 @@
-import type React from "react";
 import { useEffect, useRef } from "react";
-import type { IMessage, ILabels } from "@workspaceui/api-client/src/api/copilot";
-
-interface MessageListProps {
-  messages: IMessage[];
-  labels: ILabels;
-  isExpanded?: boolean;
-  isLoading?: boolean;
-}
+import type { MessageListProps } from "../types";
 
 const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading = false }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);

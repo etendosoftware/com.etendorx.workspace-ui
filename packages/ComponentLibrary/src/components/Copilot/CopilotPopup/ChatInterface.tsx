@@ -1,21 +1,8 @@
-import type React from "react";
-import { useState, useEffect } from "react";
 import AssistantSelector from "../AssistantSelector";
-import type { IAssistant, ILabels, IMessage } from "@workspaceui/api-client/src/api/copilot";
+import type { IAssistant } from "@workspaceui/api-client/src/api/copilot";
 import MessageList from "../MessageComponents/MessageList";
 import MessageInput from "../MessageComponents/MessageInput";
-
-interface ChatInterfaceProps {
-  assistants: IAssistant[];
-  labels: ILabels;
-  isExpanded?: boolean;
-  messages: IMessage[];
-  selectedAssistant: IAssistant | null;
-  isLoading: boolean;
-  onSelectAssistant: (assistant: IAssistant) => void;
-  onSendMessage: (message: string, files?: File[]) => void;
-  onResetConversation: () => void;
-}
+import type { ChatInterfaceProps } from "../types";
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   assistants,
@@ -26,7 +13,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   isLoading,
   onSelectAssistant,
   onSendMessage,
-  onResetConversation,
 }) => {
   let parsedAssistants: IAssistant[] = [];
   if (typeof assistants === "string") {
@@ -39,22 +25,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     parsedAssistants = assistants;
   }
 
-  const [showAssistantSelector, setShowAssistantSelector] = useState(true);
-
-  useEffect(() => {
-    if (selectedAssistant) {
-      setShowAssistantSelector(false);
-    }
-  }, [selectedAssistant]);
+  const showAssistantSelector = !selectedAssistant;
 
   const handleSelectAssistant = (assistant: IAssistant) => {
     onSelectAssistant(assistant);
-    setShowAssistantSelector(false);
-  };
-
-  const handleBackToAssistants = () => {
-    setShowAssistantSelector(true);
-    onResetConversation();
   };
 
   if (showAssistantSelector) {
@@ -71,21 +45,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🤖</span>
-          <strong className="text-lg">{selectedAssistant?.name}</strong>
-        </div>
-        <div>
-          <button
-            type="button"
-            onClick={handleBackToAssistants}
-            className="bg-transparent border-none cursor-pointer text-blue-600 hover:text-blue-800">
-            ← Cambiar asistente
-          </button>
-        </div>
-      </div>
-
       <div className="flex-1 overflow-hidden">
         <MessageList messages={messages} labels={labels} isExpanded={isExpanded} isLoading={isLoading} />
       </div>
