@@ -38,7 +38,6 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
 
   const getHeaderText = () => {
     if (selectedAssistant) {
-      // Solo truncar cuando está contraído, mostrar nombre completo cuando está expandido
       const assistantName = isExpanded ? selectedAssistant.name : truncateAssistantName(selectedAssistant.name);
       return `${translations.copilotProfile}: ${assistantName}`;
     }

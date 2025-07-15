@@ -107,7 +107,6 @@ export const useCopilot = () => {
     (error: string) => {
       console.error("SSE Error:", error);
 
-      // Only stop loading if it's a final connection error (not a retry)
       if (error.includes("Connection error occurred")) {
         dispatch({ type: "SET_LOADING", isLoading: false });
         addMessage("error", `Error: ${error}`);

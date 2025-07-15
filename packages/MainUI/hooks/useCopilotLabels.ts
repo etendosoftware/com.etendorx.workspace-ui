@@ -17,7 +17,6 @@ export const useCopilotLabels = () => {
 
       try {
         const data = await copilotClient.getLabels();
-        console.log("Labels response:", data);
 
         if (data) {
           setLabels(data);
@@ -25,7 +24,6 @@ export const useCopilotLabels = () => {
         }
       } catch (err) {
         if (retryCount < 2) {
-          console.log(`Retrying labels fetch (${retryCount + 1}/2)...`);
           setTimeout(() => getLabels(retryCount + 1), 1000);
           return;
         }
