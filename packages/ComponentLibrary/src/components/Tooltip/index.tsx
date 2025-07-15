@@ -2,9 +2,10 @@ export interface TooltipProps {
   title?: string;
   children: React.ReactNode;
   position?: "top" | "bottom" | "left" | "right";
+  containerClassName?: string;
 }
 
-const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom" }) => {
+const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom", containerClassName }) => {
   const getPositionClasses = () => {
     switch (position) {
       case "bottom":
@@ -35,7 +36,7 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom" 
   const { tooltip, arrow } = getPositionClasses();
 
   return (
-    <div className="relative group">
+    <div className={`relative group ${containerClassName}`}>
       {children}
       <div
         role="tooltip"

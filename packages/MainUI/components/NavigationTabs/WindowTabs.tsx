@@ -65,8 +65,8 @@ export default function WindowTabs() {
       {showLeftScrollButton && (
         <IconButton
           onClick={handleScrollLeft}
-          className="bg-transparent w-auto h-full rounded-full p-2 text-sm hover:bg-[#00030D0D] hover:text-(--color-baseline-80)">
-          <ChevronLeftIcon />
+          className="max-h-7 bg-transparent w-auto h-full rounded-full p-2 text-sm hover:bg-[#00030D0D] hover:text-(--color-baseline-80)">
+          <ChevronLeftIcon className="h-[1rem] w-[1rem]" />
         </IconButton>
       )}
       <div
@@ -109,17 +109,18 @@ export default function WindowTabs() {
       {showRightScrollButton && (
         <IconButton
           onClick={handleScrollRight}
-          className="bg-transparent w-auto h-full rounded-full p-2 text-sm hover:bg-[#00030D0D] hover:text-(--color-baseline-80)">
-          <ChevronRightIcon />
+          className="max-h-7 bg-transparent w-auto h-full rounded-full p-2 text-sm hover:bg-[#00030D0D] hover:text-(--color-baseline-80)">
+          <ChevronRightIcon className="h-[1rem] w-[1rem]" />
         </IconButton>
       )}
       {showRightMenuButton && (
         <IconButton
           onClick={handleTabMenuOpen}
-          className="bg-white w-auto h-full rounded-full p-2 text-sm"
+          containerClassName="h-8 w-8 flex justify-center items-center"
+          className="h-8 w-8 bg-white rounded-full p-1.5 text-sm"
           tooltip={t("primaryTabs.showTabs")}
           tooltipPosition="left">
-          <ChevronsRightIcon />
+          <ChevronsRightIcon className="h-[1.125rem] w-[1.125rem]" />
         </IconButton>
       )}
       <MenuTabs anchorEl={anchorEl} onClose={handleTabMenuClose} onSelect={handleSelectWindow} />
