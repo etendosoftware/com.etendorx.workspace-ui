@@ -63,7 +63,9 @@ export default function WindowTabs() {
         </IconButton>
       </div>
       {showLeftScrollButton && (
-        <IconButton onClick={handleScrollLeft} className="bg-transparent w-auto h-full rounded-full p-2 text-sm">
+        <IconButton
+          onClick={handleScrollLeft}
+          className="bg-transparent w-auto h-full rounded-full p-2 text-sm hover:bg-[#00030D0D] hover:text-(--color-baseline-80)">
           <ChevronLeftIcon />
         </IconButton>
       )}
@@ -74,6 +76,10 @@ export default function WindowTabs() {
           const title = window.title || getWindowTitle?.(window.windowId);
           const isActive = window.isActive;
           const canClose = windows.length > 1;
+
+          const activeIndex = windows.findIndex((w) => w.isActive);
+          const showSeparator = index !== activeIndex - 1 && index !== activeIndex;
+
           return (
             <div
               key={window.windowId}
@@ -93,13 +99,17 @@ export default function WindowTabs() {
                 }}
                 canClose={canClose}
               />
-              {index < windows.length - 1 && <div className="h-4 w-0.5 bg-(--color-baseline-100) opacity-10 mx-0.5" />}
+              {showSeparator && index < windows.length - 1 && (
+                <div className="h-4 w-0.5 bg-(--color-baseline-100) opacity-10 mx-0.5" />
+              )}
             </div>
           );
         })}
       </div>
       {showRightScrollButton && (
-        <IconButton onClick={handleScrollRight} className="bg-transparent w-auto h-full rounded-full p-2 text-sm">
+        <IconButton
+          onClick={handleScrollRight}
+          className="bg-transparent w-auto h-full rounded-full p-2 text-sm hover:bg-[#00030D0D] hover:text-(--color-baseline-80)">
           <ChevronRightIcon />
         </IconButton>
       )}
