@@ -8,6 +8,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({
   selectedAssistant,
   onSelectAssistant,
   isExpanded = false,
+  translations,
 }) => {
   if (!assistants || !Array.isArray(assistants) || assistants.length === 0) {
     console.error("AssistantSelector: Invalid assistants data:", assistants);
@@ -15,8 +16,8 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({
       <div className="p-6 text-center">
         <h6 className="text-lg font-medium text-gray-600">
           {!assistants || !Array.isArray(assistants)
-            ? "Error: Datos de asistentes inválidos"
-            : "No hay asistentes disponibles"}
+            ? translations.errorInvalidData
+            : translations.errorNoAssistantsAvailable}
         </h6>
       </div>
     );
@@ -38,7 +39,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({
   const radioOptions: RadioGridOption[] = assistants.map((assistant) => ({
     value: assistant.app_id,
     label: assistant.name,
-    description: assistant.description || "Asistente de Etendo Copilot",
+    description: assistant.description || translations.defaultDescription,
     icon: <span className="text-2xl">{getAssistantIcon(assistant.app_id)}</span>,
   }));
 
@@ -53,7 +54,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({
     <div className="p-6">
       <div className="mb-6 bg-white rounded-b-xl rounded-tr-xl p-2 border-1 border-(--color-transparent-neutral-10) shadow-xl">
         <h5 className="text-sm font-medium mb-2">
-          ¡Hola! ✨🚀 Selecciona el perfil que más se ajuste a tu tarea y comencemos. 💪
+          {translations.welcomeMessage}
         </h5>
       </div>
 
@@ -63,10 +64,10 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = ({
             <IconButton className="">
               <SparksIcon />
             </IconButton>
-            <h6 className="text-lg font-semibold">Perfiles</h6>
+            <h6 className="text-lg font-semibold">{translations.profilesTitle}</h6>
           </div>
           <button type="button" className="text-blue-600 hover:text-blue-800 bg-transparent border-none cursor-pointer">
-            Conoce más sobre Copilot →
+            {translations.learnMoreText}
           </button>
         </div>
 

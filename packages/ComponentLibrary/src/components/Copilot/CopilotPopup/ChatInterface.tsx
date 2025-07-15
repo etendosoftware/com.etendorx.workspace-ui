@@ -13,6 +13,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   isLoading,
   onSelectAssistant,
   onSendMessage,
+  translations,
 }) => {
   let parsedAssistants: IAssistant[] = [];
   if (typeof assistants === "string") {
@@ -39,6 +40,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         onSelectAssistant={handleSelectAssistant}
         labels={labels}
         isExpanded={isExpanded}
+        translations={translations.assistantSelector}
       />
     );
   }
@@ -46,13 +48,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-hidden">
-        <MessageList messages={messages} labels={labels} isExpanded={isExpanded} isLoading={isLoading} />
+        <MessageList messages={messages} labels={labels} isExpanded={isExpanded} isLoading={isLoading} translations={translations.messageList} />
       </div>
 
       <MessageInput
         onSendMessage={onSendMessage}
-        placeholder={labels.ETCOP_Message_Placeholder || "Conversa con Copilot..."}
+        placeholder={translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder || "Conversa con Copilot..."}
         disabled={isLoading}
+        translations={translations.messageInput}
       />
     </div>
   );

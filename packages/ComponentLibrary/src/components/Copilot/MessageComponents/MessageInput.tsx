@@ -10,6 +10,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   onSendMessage,
   placeholder = "Conversa con Copilot...",
   disabled = false,
+  translations,
 }) => {
   const [message, setMessage] = useState("");
   const handleVoiceClick = useCallback(() => alert("Voice activated"), []);
@@ -33,7 +34,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
       <SearchInputWithVoice
         value={message}
         setValue={setMessage}
-        placeholder={placeholder}
+        placeholder={translations?.placeholder || placeholder}
         disabled={disabled}
         maxRows={4}
         onKeyDown={handleKeyPress}

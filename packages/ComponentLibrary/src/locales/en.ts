@@ -217,6 +217,28 @@ const en = {
       placeholder: "Select an option",
     },
   },
+  copilot: {
+    copilotProfile: "Copilot Profile",
+    backToSelection: "Back to assistant selection",
+    minimize: "Minimize",
+    maximize: "Maximize",
+    close: "Close",
+    assistantSelector: {
+      errorInvalidData: "Error: Invalid assistant data",
+      errorNoAssistantsAvailable: "No assistants available",
+      defaultDescription: "Etendo Copilot Assistant",
+      welcomeMessage: "Hello! ✨🚀 Select the profile that best fits your task and let's begin. 💪",
+      profilesTitle: "Profiles",
+      learnMoreText: "Learn more about Copilot →",
+    },
+    messageInput: {
+      placeholder: "Chat with Copilot...",
+    },
+    messageList: {
+      welcomeMessage: "Hello! How can I help you today?",
+      typing: "Typing...",
+    },
+  },
 };
 
 export default en;

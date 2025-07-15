@@ -180,7 +180,7 @@ export const useCopilot = () => {
   );
 
   const handleSelectAssistant = useCallback(
-    (assistant: IAssistant) => {
+    (assistant: IAssistant | null) => {
       dispatch({ type: "SET_SELECTED_ASSISTANT", assistant });
       dispatch({ type: "SET_MESSAGES", messages: [] });
       dispatch({ type: "SET_CONVERSATION_ID", conversationId: null });

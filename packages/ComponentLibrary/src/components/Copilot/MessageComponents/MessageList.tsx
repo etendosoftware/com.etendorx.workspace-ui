@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { MessageListProps } from "../types";
 
-const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading = false }) => {
+const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading = false, translations }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -12,7 +12,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
     return (
       <div className="p-6 text-center">
         <h6 className="text-lg font-medium text-(--color-baseline-90)">
-          {labels.ETCOP_Welcome_Message || "¡Hola! ¿En qué puedo ayudarte hoy?"}
+          {translations?.welcomeMessage || labels.ETCOP_Welcome_Message || "¡Hola! ¿En qué puedo ayudarte hoy?"}
         </h6>
       </div>
     );
@@ -38,7 +38,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
         <div className="flex justify-start mb-2">
           <div className="flex items-center gap-2 p-4 rounded-lg bg-(--color-baseline-0)">
             <div className="spinner-gradient" />
-            <span className="text-sm">Escribiendo...</span>
+            <span className="text-sm">{translations?.typing || "Escribiendo..."}</span>
           </div>
         </div>
       )}

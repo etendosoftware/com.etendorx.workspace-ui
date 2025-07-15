@@ -6,6 +6,14 @@ export interface AssistantSelectorProps {
   onSelectAssistant: (assistant: IAssistant) => void;
   labels: ILabels;
   isExpanded?: boolean;
+  translations: {
+    errorInvalidData: string;
+    errorNoAssistantsAvailable: string;
+    defaultDescription: string;
+    welcomeMessage: string;
+    profilesTitle: string;
+    learnMoreText: string;
+  };
 }
 
 export interface CopilotButtonProps {
@@ -22,9 +30,14 @@ export interface ChatInterfaceProps {
   messages: IMessage[];
   selectedAssistant: IAssistant | null;
   isLoading: boolean;
-  onSelectAssistant: (assistant: IAssistant) => void;
+  onSelectAssistant: (assistant: IAssistant | null) => void;
   onSendMessage: (message: string, files?: File[]) => void;
   onResetConversation: () => void;
+  translations: {
+    assistantSelector: AssistantSelectorProps["translations"];
+    messageInput: MessageInputProps["translations"];
+    messageList: MessageListProps["translations"];
+  };
 }
 
 export interface CopilotPopupProps {
@@ -40,12 +53,25 @@ export interface CopilotPopupProps {
   onSelectAssistant: (assistant: IAssistant | null) => void;
   onSendMessage: (message: string, files?: File[]) => void;
   onResetConversation: () => void;
+  translations: {
+    copilotProfile: string;
+    backToSelection: string;
+    minimize: string;
+    maximize: string;
+    close: string;
+    assistantSelector: AssistantSelectorProps["translations"];
+    messageInput: MessageInputProps["translations"];
+    messageList: MessageListProps["translations"];
+  };
 }
 
 export interface MessageInputProps {
   onSendMessage: (message: string, files?: File[]) => void;
   placeholder?: string;
   disabled?: boolean;
+  translations?: {
+    placeholder: string;
+  };
 }
 
 export interface MessageListProps {
@@ -53,4 +79,8 @@ export interface MessageListProps {
   labels: ILabels;
   isExpanded?: boolean;
   isLoading?: boolean;
+  translations?: {
+    welcomeMessage: string;
+    typing: string;
+  };
 }
