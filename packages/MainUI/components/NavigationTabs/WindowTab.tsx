@@ -21,11 +21,11 @@ export default function WindowTab({ title, isActive, onActivate, onClose, canClo
       className={`
         h-9 flex gap-2 items-center px-1.5 py-1.5 cursor-pointer
         min-w-[140px] max-w-[220px] relative group
-        transition-all duration-200 
+        transition-all duration-200 text-(--color-baseline-90) 
         ${
           isActive
-            ? "bg-white text-(--color-baseline-90) border-b-2 border-(--color-dynamic-main)"
-            : " text-gray-700 hover:bg-gray-200"
+            ? "bg-(--color-baseline-0) border-b-2 border-(--color-dynamic-main)"
+            : "hover:bg-(--color-baseline-0)"
         }
       `}
       style={{
@@ -44,7 +44,7 @@ export default function WindowTab({ title, isActive, onActivate, onClose, canClo
           type="button"
           className={`
             w-5 h-5 flex-shrink-0 rounded-full transition-opacity duration-200
-            hover:bg-gray-300 hover:text-gray-800
+            hover:bg-gray-300 hover:text-gray-800 flex items-center justify-center
           `}
           onClick={(e) => {
             e.stopPropagation();
