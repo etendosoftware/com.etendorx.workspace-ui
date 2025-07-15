@@ -38,9 +38,9 @@ const BreadcrumbItem: FC<BreadcrumbItemProps> = ({
         <Box sx={sx.iconContainer}>
           <IconButton
             onClick={handleClick}
-            className="w-8 h-8 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-transparent-neutral-5) hover:text-(--color-baseline-80)"
+            className="w-8 h-8 bg-transparent hover:bg-[#00030D0D] hover:text-(--color-baseline-80)"
             aria-label="Go back">
-            <ArrowLeftIcon />
+            <ArrowLeftIcon className="h-[1.125rem] w-[1.125rem]" />
           </IconButton>
         </Box>
       )}
