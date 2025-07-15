@@ -183,11 +183,10 @@ export function useMultiWindowURL() {
     const windowStates: WindowState[] = [];
     let active: WindowState | undefined;
 
-    const currentPath = typeof window !== "undefined" ? window.location.pathname : "/";
     const hasWindowActiveParams = Array.from(searchParams.entries()).some(
       ([key, value]) => key.startsWith(WINDOW_PREFIX) && value === TAB_ACTIVE
     );
-    const isHome = currentPath === "/" && !hasWindowActiveParams;
+    const isHome = !hasWindowActiveParams;
 
     const windowIds = extractWindowIds(searchParams);
 
