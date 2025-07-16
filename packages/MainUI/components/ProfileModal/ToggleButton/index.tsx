@@ -1,9 +1,7 @@
-import { Button, useTheme } from "@mui/material";
 import { useStyle } from "./styles";
 import type { ToggleSectionsProps } from "./types";
-
+import Button from "../../../../ComponentLibrary/src/components/Button/Button";
 const ToggleSections: React.FC<ToggleSectionsProps> = ({ sections, currentSection, onToggle }) => {
-  const theme = useTheme();
   const { styles } = useStyle();
 
   return (
@@ -13,10 +11,8 @@ const ToggleSections: React.FC<ToggleSectionsProps> = ({ sections, currentSectio
         return (
           <Button
             key={id}
-            style={{
-              ...styles.toggleButtonStyles,
-              backgroundColor: isActive ? theme.palette.baselineColor.neutral[0] : "",
-            }}
+            variant={"outlined"}
+            className={`${isActive && "bg-white"} cursor-pointer flex-[1_0_0] border-0`}
             onClick={() => onToggle(id)}
             startIcon={isActive ? icon : null}>
             {label}

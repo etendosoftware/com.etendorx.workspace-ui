@@ -2,7 +2,7 @@
 
 import { useLanguage } from "@/contexts/language";
 import { useTranslation } from "@/hooks/useTranslation";
-import { Button, useTheme } from "@mui/material";
+import { useTheme } from "@mui/material";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
@@ -15,6 +15,7 @@ import SelectorList from "./ToggleSection";
 import UserProfile from "./UserProfile";
 import { useStyle } from "./styles";
 import type { ProfileModalProps } from "./types";
+import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 
 const DefaultOrg = { title: "*", value: "0", id: "0" };
 
@@ -253,7 +254,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       <IconButton onClick={handleClick} className="w-10 h-10">
         {icon}
       </IconButton>
-      <Menu anchorEl={anchorEl} onClose={handleClose} className="w-88">
+      <Menu anchorEl={anchorEl} onClose={handleClose} className="w-[20.75rem]">
         <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} onSignOff={onSignOff} />
         <div style={styles.toggleSectionStyles}>
           <ToggleSection sections={sections} currentSection={currentSection} onToggle={handleToggle} />
@@ -277,12 +278,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           languagesFlags={languagesFlags}
         />
         <div style={styles.buttonContainerStyles}>
-          <Button sx={sx.buttonStyles} onClick={handleClose}>
+          <Button className="flex-[1_0_0]" variant="outlined" onClick={handleClose}>
             {t("common.cancel")}
           </Button>
           <Button
+            className="flex-[1_0_0]"
+            variant="filled"
+            active={true}
             startIcon={<CheckCircle fill={theme.palette.baselineColor.neutral[0]} />}
-            sx={sx.saveButtonStyles}
             onClick={handleSave}
             disabled={isSaveDisabled}>
             {t("common.save")}
