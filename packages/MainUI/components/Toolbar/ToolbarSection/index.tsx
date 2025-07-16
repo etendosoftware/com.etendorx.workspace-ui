@@ -25,7 +25,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
         return (
           <IconButton
             key={key}
-            tooltip={iconText ? "" : tooltip}
+            tooltip={tooltip}
             onClick={onClick}
             disabled={disabled}
             className={className}
