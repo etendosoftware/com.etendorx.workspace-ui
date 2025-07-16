@@ -59,7 +59,6 @@ export interface ProcessMenuProps {
   selectedRecord: unknown | undefined;
 }
 
-// Adaptador para convertir ToolbarButtonMetadata a ToolbarButton para TopToolbar
 export interface ToolbarButton {
   key: string;
   icon: React.ReactNode;
