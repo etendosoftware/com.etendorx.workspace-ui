@@ -64,7 +64,7 @@ export interface IconButtonWithTextProps extends React.ButtonHTMLAttributes<HTML
  * @returns {JSX.Element} The rendered button element
  */
 const IconButtonWithText = ({
-  buttonType,
+  buttonType = FILLED_BUTTON_TYPE,
   text,
   icon,
   disabled = false,
@@ -83,6 +83,9 @@ const IconButtonWithText = ({
     justify-center
     text-[0.825rem]
     min-w-max
+    pl-3
+    pr-5
+    gap-1
     [&>svg]:text-[1.5rem]
     [&>svg]:fill-current
   `;
