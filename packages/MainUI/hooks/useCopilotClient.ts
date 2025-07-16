@@ -14,19 +14,22 @@ export const useCopilotClient = () => {
     initializeClient();
   }, [initializeClient]);
 
-  const client = useMemo(() => ({
-    getAssistants: CopilotClient.getAssistants,
-    getLabels: CopilotClient.getLabels,
-    uploadFile: CopilotClient.uploadFile,
-    uploadFiles: CopilotClient.uploadFiles,
-    cacheQuestion: CopilotClient.cacheQuestion,
-    sendQuestion: CopilotClient.sendQuestion,
-    buildSSEUrl: CopilotClient.buildSSEUrl,
-    getSSEHeaders: CopilotClient.getSSEHeaders,
-    shouldCacheQuestion: CopilotClient.shouldCacheQuestion,
-    handleLargeQuestion: CopilotClient.handleLargeQuestion,
-    reinitialize: initializeClient,
-  }), [initializeClient]);
+  const client = useMemo(
+    () => ({
+      getAssistants: CopilotClient.getAssistants,
+      getLabels: CopilotClient.getLabels,
+      uploadFile: CopilotClient.uploadFile,
+      uploadFiles: CopilotClient.uploadFiles,
+      cacheQuestion: CopilotClient.cacheQuestion,
+      sendQuestion: CopilotClient.sendQuestion,
+      buildSSEUrl: CopilotClient.buildSSEUrl,
+      getSSEHeaders: CopilotClient.getSSEHeaders,
+      shouldCacheQuestion: CopilotClient.shouldCacheQuestion,
+      handleLargeQuestion: CopilotClient.handleLargeQuestion,
+      reinitialize: initializeClient,
+    }),
+    [initializeClient]
+  );
 
   return client;
 };

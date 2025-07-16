@@ -27,7 +27,7 @@ export class CopilotClient {
     if (url) {
       copilotUrl = url;
     } else if (CopilotClient.isProduction) {
-      copilotUrl = "../../copilot/";
+      copilotUrl = process.env.NEXT_PUBLIC_COPILOT_URL || "/etendo/copilot/";
     } else {
       copilotUrl = "http://localhost:8080/etendo/copilot/";
     }
@@ -60,7 +60,7 @@ export class CopilotClient {
 
     try {
       const response = await CopilotClient.client.request(endpoint, options);
-      
+
       if (!response.ok && response.status === 401) {
         throw new CopilotUnauthorizedError("Unauthorized access to Copilot service", response);
       }

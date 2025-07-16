@@ -169,13 +169,35 @@ const Navigation: React.FC = () => {
         labels={labels}
         isExpanded={copilotExpanded}
         onToggleExpanded={handleCopilotToggleExpanded}
-        // ← Props de la lógica de chat
         messages={messages}
         selectedAssistant={selectedAssistant}
         isLoading={isLoading}
         onSelectAssistant={handleSelectAssistant}
         onSendMessage={handleSendMessage}
         onResetConversation={handleResetConversation}
+        translations={{
+          copilotProfile: t("copilot.copilotProfile"),
+          backToSelection: t("copilot.backToSelection"),
+          minimize: t("copilot.minimize"),
+          maximize: t("copilot.maximize"),
+          close: t("copilot.close"),
+          assistantSelector: {
+            errorInvalidData: t("copilot.assistantSelector.errorInvalidData"),
+            errorNoAssistantsAvailable: t("copilot.assistantSelector.errorNoAssistantsAvailable"),
+            defaultDescription: t("copilot.assistantSelector.defaultDescription"),
+            welcomeMessage: t("copilot.assistantSelector.welcomeMessage"),
+            profilesTitle: t("copilot.assistantSelector.profilesTitle"),
+            learnMoreText: t("copilot.assistantSelector.learnMoreText"),
+            filterPlaceholder: t("copilot.assistantSelector.filterPlaceholder"),
+          },
+          messageInput: {
+            placeholder: t("copilot.messageInput.placeholder"),
+          },
+          messageList: {
+            welcomeMessage: t("copilot.messageList.welcomeMessage"),
+            typing: t("copilot.messageList.typing"),
+          },
+        }}
       />
     </>
   );

@@ -1,23 +1,8 @@
-import type React from "react";
-import { useState, useEffect } from "react";
-import { Box } from "@mui/material";
 import AssistantSelector from "../AssistantSelector";
-import type { IAssistant, ILabels, IMessage } from "@workspaceui/api-client/src/api/copilot";
+import type { IAssistant } from "@workspaceui/api-client/src/api/copilot";
 import MessageList from "../MessageComponents/MessageList";
 import MessageInput from "../MessageComponents/MessageInput";
-
-interface ChatInterfaceProps {
-  assistants: IAssistant[];
-  labels: ILabels;
-  isExpanded?: boolean;
-  // ← Props para la lógica de negocio
-  messages: IMessage[];
-  selectedAssistant: IAssistant | null;
-  isLoading: boolean;
-  onSelectAssistant: (assistant: IAssistant) => void;
-  onSendMessage: (message: string, files?: File[]) => void;
-  onResetConversation: () => void;
-}
+import type { ChatInterfaceProps } from "../types";
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   assistants,
@@ -28,9 +13,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   isLoading,
   onSelectAssistant,
   onSendMessage,
-  onResetConversation,
+  showDescription = true,
+  translations,
 }) => {
-  // Parse assistants si vienen como string
   let parsedAssistants: IAssistant[] = [];
   if (typeof assistants === "string") {
     try {
@@ -42,23 +27,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     parsedAssistants = assistants;
   }
 
-  const [showAssistantSelector, setShowAssistantSelector] = useState(true);
-
-  // Mostrar chat si hay asistente seleccionado
-  useEffect(() => {
-    if (selectedAssistant) {
-      setShowAssistantSelector(false);
-    }
-  }, [selectedAssistant]);
+  const showAssistantSelector = !selectedAssistant;
 
   const handleSelectAssistant = (assistant: IAssistant) => {
     onSelectAssistant(assistant);
-    setShowAssistantSelector(false);
-  };
-
-  const handleBackToAssistants = () => {
-    setShowAssistantSelector(true);
-    onResetConversation();
   };
 
   if (showAssistantSelector) {
@@ -68,52 +40,32 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         selectedAssistant={selectedAssistant}
         onSelectAssistant={handleSelectAssistant}
         labels={labels}
+        isExpanded={isExpanded}
+        showDescription={showDescription}
+        translations={translations.assistantSelector}
       />
     );
   }
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Header with selected assistant */}
-      <Box
-        sx={{
-          p: 2,
-          borderBottom: 1,
-          borderColor: "divider",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <span style={{ fontSize: "1.5rem" }}>🤖</span>
-          <strong>{selectedAssistant?.name}</strong>
-        </Box>
-        <Box>
-          <button
-            onClick={handleBackToAssistants}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "inherit",
-            }}>
-            ← Cambiar asistente
-          </button>
-        </Box>
-      </Box>
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-hidden">
+        <MessageList
+          messages={messages}
+          labels={labels}
+          isExpanded={isExpanded}
+          isLoading={isLoading}
+          translations={translations.messageList}
+        />
+      </div>
 
-      {/* Messages Area */}
-      <Box sx={{ flex: 1, overflow: "hidden" }}>
-        <MessageList messages={messages} labels={labels} isExpanded={isExpanded} isLoading={isLoading} />
-      </Box>
-
-      {/* Input Area */}
       <MessageInput
         onSendMessage={onSendMessage}
-        placeholder={labels.ETCOP_Message_Placeholder || "Conversa con Copilot..."}
+        placeholder={translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder}
         disabled={isLoading}
+        translations={translations.messageInput}
       />
-    </Box>
+    </div>
   );
 };
 

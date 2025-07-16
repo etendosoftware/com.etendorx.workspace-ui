@@ -1,16 +1,7 @@
-import type React from "react";
 import { useEffect, useRef } from "react";
-import { Box, Typography, CircularProgress } from "@mui/material";
-import type { IMessage, ILabels } from "@workspaceui/api-client/src/api/copilot";
+import type { MessageListProps } from "../types";
 
-interface MessageListProps {
-  messages: IMessage[];
-  labels: ILabels;
-  isExpanded?: boolean;
-  isLoading?: boolean;
-}
-
-const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading = false }) => {
+const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading = false, translations }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -19,70 +10,41 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
 
   if (messages.length === 0) {
     return (
-      <Box sx={{ p: 3, textAlign: "center" }}>
-        <Typography variant="h6" color="text.secondary">
-          {labels.ETCOP_Welcome_Message || "¡Hola! ¿En qué puedo ayudarte hoy?"}
-        </Typography>
-      </Box>
+      <div className="p-6 text-center">
+        <h6 className="text-lg font-medium text-(--color-baseline-90)">
+          {translations?.welcomeMessage || labels.ETCOP_Welcome_Message || "¡Hola! ¿En qué puedo ayudarte hoy?"}
+        </h6>
+      </div>
     );
   }
 
   return (
-    <Box
-      sx={{
-        p: 2,
-        height: "100%",
-        overflowY: "auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-      }}>
+    <div className="p-4 h-full overflow-y-auto flex flex-col gap-4">
       {messages.map((message, index) => (
-        <Box
-          key={index}
-          sx={{
-            display: "flex",
-            justifyContent: message.sender === "user" ? "flex-end" : "flex-start",
-            mb: 1,
-          }}>
-          <Box
-            sx={{
-              maxWidth: "70%",
-              p: 2,
-              borderRadius: 2,
-              backgroundColor: message.sender === "user" ? "primary.main" : "grey.100",
-              color: message.sender === "user" ? "white" : "text.primary",
-            }}>
-            <Typography variant="body1" sx={{ mb: 0.5 }}>
-              {message.text}
-            </Typography>
-            <Typography variant="caption" sx={{ opacity: 0.7 }}>
-              {message.timestamp}
-            </Typography>
-          </Box>
-        </Box>
+        <div key={index} className={`flex mb-2 ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
+          <div
+            className={`max-w-[70%] p-4 rounded-xl ${
+              message.sender === "user"
+                ? "bg-(--color-transparent-neutral-5) text-(--color-baseline-90) font-medium  rounded-tr-none"
+                : "bg-(--color-baseline-0) text-(--color-baseline-90) rounded-tl-none font-medium border-1 border-(--color-transparent-neutral-10) hover:border-(--color-baseline-100) transition-all duration-300"
+            }`}>
+            <p className="text-sm mb-1">{message.text}</p>
+            <span className="text-xs opacity-70">{message.timestamp}</span>
+          </div>
+        </div>
       ))}
 
-      {/* Loading indicator */}
       {isLoading && (
-        <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 1 }}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              p: 2,
-              borderRadius: 2,
-              backgroundColor: "grey.100",
-            }}>
-            <CircularProgress size={16} />
-            <Typography variant="body2">Escribiendo...</Typography>
-          </Box>
-        </Box>
+        <div className="flex justify-start mb-2">
+          <div className="flex items-center gap-2 p-4 rounded-lg bg-(--color-baseline-0)">
+            <div className="spinner-gradient" />
+            <span className="text-sm">{translations?.typing || "Escribiendo..."}</span>
+          </div>
+        </div>
       )}
 
       <div ref={messagesEndRef} />
-    </Box>
+    </div>
   );
 };
 

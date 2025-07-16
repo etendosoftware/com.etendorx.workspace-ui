@@ -221,6 +221,29 @@ const es = {
       placeholder: "Seleccione una opción",
     },
   },
+  copilot: {
+    copilotProfile: "Perfil Copilot",
+    backToSelection: "Volver a selección de asistentes",
+    minimize: "Minimizar",
+    maximize: "Maximizar",
+    close: "Cerrar",
+    assistantSelector: {
+      errorInvalidData: "Error: Datos de asistentes inválidos",
+      errorNoAssistantsAvailable: "No hay asistentes disponibles",
+      defaultDescription: "Asistente de Etendo Copilot",
+      welcomeMessage: "¡Hola! ✨🚀 Selecciona el perfil que más se ajuste a tu tarea y comencemos. 💪",
+      profilesTitle: "Perfiles",
+      learnMoreText: "Conoce más sobre Copilot →",
+      filterPlaceholder: "Filtrar perfiles...",
+    },
+    messageInput: {
+      placeholder: "Conversa con Copilot...",
+    },
+    messageList: {
+      welcomeMessage: "¡Hola! ¿En qué puedo ayudarte hoy?",
+      typing: "Escribiendo...",
+    },
+  },
 };
 
 export default es;

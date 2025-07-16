@@ -1,22 +1,19 @@
-// packages/ComponentLibrary/src/components/Copilot/MessageInput/index.tsx
-
-import type React from "react";
-import { useState } from "react";
-import { Box, TextField, IconButton as MuiIconButton, InputAdornment } from "@mui/material";
-import { Send, AttachFile, Mic } from "@mui/icons-material";
-
-interface MessageInputProps {
-  onSendMessage: (message: string, files?: File[]) => void;
-  placeholder?: string;
-  disabled?: boolean;
-}
+import { useCallback, useState } from "react";
+import { InputAdornment } from "@mui/material";
+import Send from "../../../assets/icons/send.svg";
+import AttachFile from "../../../assets/icons/paperclip.svg";
+import IconButton from "../../IconButton";
+import { SearchInputWithVoice } from "../..";
+import type { MessageInputProps } from "../types";
 
 const MessageInput: React.FC<MessageInputProps> = ({
   onSendMessage,
   placeholder = "Conversa con Copilot...",
   disabled = false,
+  translations,
 }) => {
   const [message, setMessage] = useState("");
+  const handleVoiceClick = useCallback(() => alert("Voice activated"), []);
 
   const handleSend = () => {
     if (message.trim() && !disabled) {
@@ -33,41 +30,33 @@ const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   return (
-    <Box
-      sx={{
-        p: 2,
-        borderTop: 1,
-        borderColor: "divider",
-        backgroundColor: "background.paper",
-      }}>
-      <TextField
-        fullWidth
-        multiline
-        maxRows={4}
+    <div className="px-2 pb-1">
+      <SearchInputWithVoice
         value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        onKeyPress={handleKeyPress}
-        placeholder={placeholder}
+        setValue={setMessage}
+        placeholder={translations?.placeholder || placeholder}
         disabled={disabled}
-        variant="outlined"
-        size="small"
+        maxRows={4}
+        onKeyDown={handleKeyPress}
+        rightIcon={true}
+        onVoiceClick={handleVoiceClick}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
-              <MuiIconButton size="small" disabled>
+              <IconButton disabled className="[&>svg]:text-[1.25rem]">
                 <AttachFile />
-              </MuiIconButton>
-              <MuiIconButton onClick={handleSend} disabled={disabled || !message.trim()} color="primary">
+              </IconButton>
+              <IconButton
+                className="[&>svg]:text-[1.25rem] pr-0.5"
+                onClick={handleSend}
+                disabled={disabled || !message.trim()}>
                 <Send />
-              </MuiIconButton>
-              <MuiIconButton size="small" disabled>
-                <Mic />
-              </MuiIconButton>
+              </IconButton>
             </InputAdornment>
           ),
         }}
       />
-    </Box>
+    </div>
   );
 };
 

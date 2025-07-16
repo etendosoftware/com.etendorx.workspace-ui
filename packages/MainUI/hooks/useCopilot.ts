@@ -87,28 +87,33 @@ export const useCopilot = () => {
     dispatch({ type: "ADD_MESSAGE", message: newMessage });
   }, []);
 
-  const handleSSEMessage = useCallback((data: Record<string, unknown>) => {
-    const answer = data?.answer as { conversation_id?: string; response?: string; role?: string };
-    if (answer?.conversation_id) {
-      dispatch({ type: "SET_CONVERSATION_ID", conversationId: answer.conversation_id });
-    }
-
-    if (answer?.response) {
-      if (answer.role !== "debug") {
-        addMessage("bot", answer.response);
+  const handleSSEMessage = useCallback(
+    (data: Record<string, unknown>) => {
+      const answer = data?.answer as { conversation_id?: string; response?: string; role?: string };
+      if (answer?.conversation_id) {
+        dispatch({ type: "SET_CONVERSATION_ID", conversationId: answer.conversation_id });
       }
-    }
-  }, [addMessage]);
 
-  const handleSSEError = useCallback((error: string) => {
-    console.error("SSE Error:", error);
-    
-    // Only stop loading if it's a final connection error (not a retry)
-    if (error.includes("Connection error occurred")) {
-      dispatch({ type: "SET_LOADING", isLoading: false });
-      addMessage("error", `Error: ${error}`);
-    }
-  }, [addMessage]);
+      if (answer?.response) {
+        if (answer.role !== "debug") {
+          addMessage("bot", answer.response);
+        }
+      }
+    },
+    [addMessage]
+  );
+
+  const handleSSEError = useCallback(
+    (error: string) => {
+      console.error("SSE Error:", error);
+
+      if (error.includes("Connection error occurred")) {
+        dispatch({ type: "SET_LOADING", isLoading: false });
+        addMessage("error", `Error: ${error}`);
+      }
+    },
+    [addMessage]
+  );
 
   const handleSSEComplete = useCallback(() => {
     dispatch({ type: "SET_LOADING", isLoading: false });
@@ -174,7 +179,7 @@ export const useCopilot = () => {
   );
 
   const handleSelectAssistant = useCallback(
-    (assistant: IAssistant) => {
+    (assistant: IAssistant | null) => {
       dispatch({ type: "SET_SELECTED_ASSISTANT", assistant });
       dispatch({ type: "SET_MESSAGES", messages: [] });
       dispatch({ type: "SET_CONVERSATION_ID", conversationId: null });

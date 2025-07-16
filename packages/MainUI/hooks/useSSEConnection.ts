@@ -67,7 +67,6 @@ export const useSSEConnection = ({ onMessage, onError, onComplete }: UseSSEConne
               console.error("SSE connection closed without receiving messages:", err);
               if (retryCount < maxReconnectAttempts) {
                 const delay = 2 ** retryCount * 1000;
-                console.log(`Reconnecting SSE in ${delay}ms (attempt ${retryCount + 1}/${maxReconnectAttempts})...`);
                 setTimeout(() => {
                   setReconnectAttempts(retryCount + 1);
                   startSSEConnection(params, retryCount + 1);
@@ -81,7 +80,6 @@ export const useSSEConnection = ({ onMessage, onError, onComplete }: UseSSEConne
 
             if (retryCount < maxReconnectAttempts && shouldReconnectRef.current && !hasReceivedMessageRef.current) {
               const delay = 2 ** retryCount * 1000;
-              console.log(`Reconnecting SSE in ${delay}ms (attempt ${retryCount + 1}/${maxReconnectAttempts})...`);
               setTimeout(() => {
                 setReconnectAttempts(retryCount + 1);
                 startSSEConnection(params, retryCount + 1);
@@ -123,7 +121,6 @@ export const useSSEConnection = ({ onMessage, onError, onComplete }: UseSSEConne
 
         if (retryCount < maxReconnectAttempts && !hasReceivedMessageRef.current) {
           const delay = 2 ** retryCount * 1000;
-          console.log(`Retrying SSE connection in ${delay}ms (attempt ${retryCount + 1}/${maxReconnectAttempts})...`);
           setTimeout(() => {
             startSSEConnection(params, retryCount + 1);
           }, delay);

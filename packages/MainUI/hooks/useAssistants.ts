@@ -17,7 +17,6 @@ export const useAssistants = () => {
 
       try {
         const data = await copilotClient.getAssistants();
-        console.log("Assistants loaded:", data);
 
         setAssistants(data);
 
@@ -29,7 +28,6 @@ export const useAssistants = () => {
         }
       } catch (err) {
         if (retryCount < 2) {
-          console.log(`Retrying assistants fetch (${retryCount + 1}/2)...`);
           setTimeout(() => getAssistants(retryCount + 1), 1000);
           return;
         }

@@ -8,9 +8,7 @@ export default function Loading({
   customIconProps?: React.ComponentProps<typeof CircularProgress>;
 }) {
   return (
-    <div
-      className={`h-full mx-auto flex flex-col items-center justify-center ${className}`}
-    >
+    <div className={`h-full mx-auto flex flex-col items-center justify-center ${className}`}>
       <CircularProgress {...customIconProps} />
     </div>
   );

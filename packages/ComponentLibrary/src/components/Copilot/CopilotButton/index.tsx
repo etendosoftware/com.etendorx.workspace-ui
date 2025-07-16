@@ -1,12 +1,6 @@
 import IconButton from "../../IconButton";
 import SparksIcon from "../../../assets/icons/sparks.svg";
-
-export interface CopilotButtonProps {
-  onClick: () => void;
-  tooltip?: string;
-  disabled?: boolean;
-  className?: string;
-}
+import type { CopilotButtonProps } from "../types";
 
 const CopilotButton: React.FC<CopilotButtonProps> = ({
   onClick,
