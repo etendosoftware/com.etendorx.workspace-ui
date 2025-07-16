@@ -21,6 +21,8 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
   iconText?: string;
   /** Ref forwarded to the underlying button element */
   ref?: React.LegacyRef<HTMLButtonElement>;
+  /** Additional CSS classes to customize the container */
+  containerClassName?: string;
 }
 
 /**
@@ -42,6 +44,7 @@ const IconButton = ({
   tooltipPosition,
   iconText,
   ref,
+  containerClassName,
   ...rest
 }: IconButtonProps) => {
   const DEFAULT_BUTTON_CLASSES = `
@@ -51,8 +54,8 @@ const IconButton = ({
     disabled:text-(--color-transparent-neutral-30)
     rounded-full
     text-(--color-baseline-80)
-    hover:text-(--color-baseline-0)
     bg-(--color-baseline-0)
+    hover:text-(--color-baseline-0)
     hover:bg-(--color-dynamic-main)
     inline-flex
     items-center
@@ -65,7 +68,7 @@ const IconButton = ({
   `;
 
   return (
-    <Tooltip title={tooltip} position={tooltipPosition}>
+    <Tooltip title={tooltip} position={tooltipPosition} containerClassName={containerClassName}>
       <button
         ref={ref}
         type="button"
