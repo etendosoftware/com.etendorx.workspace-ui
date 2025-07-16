@@ -36,7 +36,7 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom",
   const { tooltip, arrow } = getPositionClasses();
 
   return (
-    <div className={`relative group ${containerClassName}`}>
+    <div className={`relative group ${containerClassName ? containerClassName : ""}`}>
       {children}
       <div
         role="tooltip"
