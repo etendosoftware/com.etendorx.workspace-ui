@@ -65,7 +65,7 @@ export default function WindowTabs() {
       {showLeftScrollButton && (
         <IconButton
           onClick={handleScrollLeft}
-          className="max-h-7 bg-transparent w-auto h-full rounded-full p-2 text-sm hover:bg-[#00030D0D] hover:text-(--color-baseline-80)">
+          className="max-h-7 bg-transparent w-auto h-full rounded-full p-2 text-sm hover:bg-[var(--color-transparent-neutral-5)] hover:text-(--color-baseline-80)">
           <ChevronLeftIcon className="h-[1rem] w-[1rem]" />
         </IconButton>
       )}
@@ -109,7 +109,7 @@ export default function WindowTabs() {
       {showRightScrollButton && (
         <IconButton
           onClick={handleScrollRight}
-          className="max-h-7 bg-transparent w-auto h-full rounded-full p-2 text-sm hover:bg-[#00030D0D] hover:text-(--color-baseline-80)">
+          className="max-h-7 bg-transparent w-auto h-full rounded-full p-2 text-sm hover:bg-[var(--color-transparent-neutral-5)] hover:text-(--color-baseline-80)">
           <ChevronRightIcon className="h-[1rem] w-[1rem]" />
         </IconButton>
       )}
