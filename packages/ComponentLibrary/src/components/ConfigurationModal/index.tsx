@@ -37,7 +37,8 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
   const { styles, sx } = useStyle();
 
   useEffect(() => {
-    setSectionsState(sections);
+    const availableSections = sections.filter((section) => !section.isDisabled);
+    setSectionsState(availableSections);
   }, [sections]);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -59,8 +60,11 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
     });
 
     if (onChangeSelect) {
-      const selectedItem = sectionsState[sectionIndex].items[imageIndex];
-      onChangeSelect(selectedItem.id, sectionIndex, imageIndex);
+      const currentSection = sectionsState[sectionIndex];
+      if (!currentSection || !currentSection.items[imageIndex]) return;
+      const selectedItem = currentSection.items[imageIndex];
+      onChangeSelect({ id: selectedItem.id, sectionId: currentSection.id, sectionIndex, imageIndex });
+      handleClose();
     }
   };
 
@@ -96,7 +100,11 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
 
   return (
     <>
-      <IconButton onClick={handleClick} tooltip={tooltipButtonProfile} disabled={true} className="w-10 h-10">
+      <IconButton
+        onClick={handleClick}
+        tooltip={tooltipButtonProfile}
+        aria-label={tooltipButtonProfile}
+        className="w-10 h-10">
         {icon}
       </IconButton>
       <Menu {...props} anchorEl={anchorEl} onClose={handleClose}>
@@ -109,7 +117,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
             )}
             <div style={styles.titleModal}>{title?.label}</div>
           </div>
-          <Link sx={sx.linkStyles} href={linkTitle?.url}>
+          <Link sx={{ ...sx.linkStyles, visibility: "hidden" }} href={linkTitle?.url}>
             {linkTitle?.label}
           </Link>
         </div>

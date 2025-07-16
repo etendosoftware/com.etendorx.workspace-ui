@@ -263,6 +263,7 @@ const en = {
     },
   },
   primaryTabs: {
+    dashboard: "Dashboard",
     closeWindow: "Close Window",
     showTabs: "Show Tabs",
   },

@@ -9,7 +9,6 @@ import NotificationIcon from "@workspaceui/componentlibrary/src/assets/icons/bel
 import AddIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
 import PersonIcon from "@workspaceui/componentlibrary/src/assets/icons/user.svg";
 import {
-  ConfigurationModal,
   IconButton,
   NotificationButton,
   NotificationModal,
@@ -18,9 +17,10 @@ import {
 import type { Person } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
 import Nav from "@workspaceui/componentlibrary/src/components/Nav/Nav";
 import { useCallback, useContext, useMemo, useState } from "react";
-import { NOTIFICATIONS, initialPeople, menuItems, modalConfig, sections } from "../../storybook/src/mocks";
+import { NOTIFICATIONS, initialPeople, menuItems, sections } from "../../storybook/src/mocks";
 import { useTranslation } from "../hooks/useTranslation";
 import ProfileModal from "./ProfileModal/ProfileModal";
+import ConfigurationSection from "@/components/Header/ConfigurationSection";
 
 const handleClose = () => {
   return true;
@@ -41,8 +41,8 @@ const Navigation: React.FC = () => {
     languages,
   } = useContext(UserContext);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
-  const { language, setLanguage, getFlag } = useLanguage();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const { language, setLanguage, getFlag } = useLanguage();
 
   const { clearUserData } = useContext(UserContext);
 
@@ -85,10 +85,7 @@ const Navigation: React.FC = () => {
         people={people}
         icon={<AddIcon />}
       />
-      <ConfigurationModal
-        {...modalConfig}
-        tooltipButtonProfile={t("navigation.configurationModal.tooltipButtonProfile")}
-      />
+      <ConfigurationSection />
       <IconButton
         onClick={handleMenuToggle}
         className="w-10 h-10"
