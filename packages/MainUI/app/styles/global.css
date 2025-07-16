@@ -135,10 +135,12 @@ body {
 }
 
 :root {
+  --font-size-base: 16px;
   font-family: "Inter", sans-serif;
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
+  font-size: var(--font-size-base);
 
   --background-gradient: linear-gradient(180deg, #c6d3ff 30%, #f5f6fa 100%);
   line-height: 1.5;
@@ -147,6 +149,18 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html.compact-view {
+  --font-size-base: 20px;
+}
+
+html.standard-view {
+  --font-size-base: 16px;
+}
+
+html.comfortable-view {
+  --font-size-base: 12px;
 }
 
 h1 {
