@@ -93,10 +93,6 @@
   opacity: 1;
 }
 
-.toolbar-button-refresh {
-  border: 1px solid #00030d33;
-}
-
 .toolbar-button-cancel:hover .icon-base64,
 .toolbar-button-delete:hover .icon-base64,
 .toolbar-button-refresh:hover .icon-base64,
