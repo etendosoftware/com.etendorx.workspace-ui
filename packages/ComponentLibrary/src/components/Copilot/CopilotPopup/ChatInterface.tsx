@@ -61,9 +61,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       <MessageInput
         onSendMessage={onSendMessage}
-        placeholder={
-          translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder || "Conversa con Copilot..."
-        }
+        placeholder={translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder}
         disabled={isLoading}
         translations={translations.messageInput}
       />
