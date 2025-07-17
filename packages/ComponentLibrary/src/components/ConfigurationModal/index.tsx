@@ -1,15 +1,17 @@
-import { Grid, Link, useTheme } from "@mui/material";
+import { Link } from "@mui/material";
 import React, { useEffect, useState } from "react";
-import checkIconUrl from "../../assets/icons/check-circle-filled.svg?url";
-import { BORDER_SELECT_1, BORDER_SELECT_2, COLUMN_SPACING, FIRST_MARGIN_TOP, useStyle } from "./style";
+import RadioButtonIcon from "../../assets/icons/radio-button.svg";
+import CircleIcon from "../../assets/icons/circle.svg";
 import type { IConfigurationModalProps, ISection } from "./types";
 import "./style.css";
 import IconButton from "../IconButton";
 import Menu from "../Menu";
 
-const IconRenderer = ({ icon }: { icon: string | React.ReactNode }): JSX.Element => {
+export const COLUMN_SPACING = "0.75rem";
+
+const IconRenderer = ({ icon, imageStyles }: { icon: string | React.ReactNode; imageStyles?: string }): JSX.Element => {
   if (typeof icon === "string") {
-    return <img src={icon} alt="icon" />;
+    return <img src={icon} alt="icon" className={imageStyles} />;
   }
   if (React.isValidElement(icon)) {
     return icon;
@@ -28,13 +30,6 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
 }) => {
   const [sectionsState, setSectionsState] = useState<ISection[]>(sections);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-
-  const [hoveredItem, setHoveredItem] = useState<{
-    sectionIndex: number;
-    imageIndex: number;
-  } | null>(null);
-  const theme = useTheme();
-  const { styles, sx } = useStyle();
 
   useEffect(() => {
     const availableSections = sections.filter((section) => !section.isDisabled);
@@ -68,34 +63,8 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
     }
   };
 
-  const handleMouseEnter = (sectionIndex: number, imageIndex: number) => {
-    setHoveredItem({ sectionIndex, imageIndex });
-  };
-
-  const handleMouseLeave = () => {
-    setHoveredItem(null);
-  };
-
-  const addBorder = (selectedImageIndex: number, imageIndex: number, sectionIndex: number) => {
-    if (isSelected(selectedImageIndex, imageIndex)) {
-      return BORDER_SELECT_2 + theme.palette.dynamicColor.main;
-    }
-    if (isHovered(sectionIndex, imageIndex)) {
-      return BORDER_SELECT_2 + theme.palette.baselineColor.neutral[90];
-    }
-    return BORDER_SELECT_1 + theme.palette.baselineColor.neutral[30];
-  };
-
   const isSelected = (selectedImageIndex: number, imageIndex: number): boolean => {
     return selectedImageIndex === imageIndex;
-  };
-
-  const isHovered = (sectionIndex: number, imageIndex: number): boolean => {
-    return hoveredItem !== null && hoveredItem.sectionIndex === sectionIndex && hoveredItem.imageIndex === imageIndex;
-  };
-
-  const removeFirstMargin = (index: number): number | string => {
-    return index === 0 ? 0 : FIRST_MARGIN_TOP;
   };
 
   return (
@@ -108,56 +77,44 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
         {icon}
       </IconButton>
       <Menu {...props} anchorEl={anchorEl} onClose={handleClose}>
-        <div style={styles.titleModalContainer}>
-          <div style={styles.titleModalImageContainer}>
+        <div className="h-14 p-3 flex flex-row items-center justify-between bg-[var(--color-baseline-0)] border-b border-[var(--color-baseline-10)]">
+          <div className="flex flex-row items-center gap-4">
             {title?.icon && (
-              <div style={styles.titleModalImageRadius}>
+              <div className="w-8 h-8 flex items-center justify-center bg-[var(--color-dynamic-contrast-text)] rounded-full">
                 <IconRenderer icon={title.icon} />
               </div>
             )}
-            <div style={styles.titleModal}>{title?.label}</div>
+            <div className="text-base font-semibold text-[var(--color-baseline-90)]">{title?.label}</div>
           </div>
-          <Link sx={{ ...sx.linkStyles, visibility: "hidden" }} href={linkTitle?.url}>
+          <Link sx={{ visibility: "hidden" }} href={linkTitle?.url}>
             {linkTitle?.label}
           </Link>
         </div>
-        <div style={styles.listContainer}>
+        <div className="p-3 gap-3 bg-[var(--color-baseline-10)]">
           {sectionsState.map((section, sectionIndex) => (
             <div
               key={sectionIndex}
-              style={{
-                ...styles.gridSectionContainer,
-                marginTop: removeFirstMargin(sectionIndex),
-              }}>
-              <div style={styles.title}>{section.name}</div>
-              <Grid columnSpacing={COLUMN_SPACING} container>
+              className="py-3 px-4 flex flex-col gap-3 bg-[var(--color-baseline-0)] border border-[var(--color-transparent-neutral-10)] rounded-xl">
+              <div className="text-sm font-medium text-[var(--color-baseline-90)]">{section.name}</div>
+              <div className="w-full h-full flex flex-row gap-3">
                 {section.items.map(({ id, label, img }, imageIndex) => (
-                  <Grid item key={id}>
-                    <button
-                      type="button"
-                      onClick={() => handleImageClick(sectionIndex, imageIndex)}
-                      onMouseEnter={() => handleMouseEnter(sectionIndex, imageIndex)}
-                      onMouseLeave={handleMouseLeave}
-                      style={{
-                        border: addBorder(section.selectedItem, imageIndex, sectionIndex),
-                        ...styles.imgContainer,
-                      }}>
-                      <IconRenderer icon={img} />
-                    </button>
-                    <div style={styles.labelIconContainer}>
-                      {isSelected(section.selectedItem, imageIndex) && (
-                        <img
-                          alt="Selected Item Icon"
-                          className="fade-in-left"
-                          style={styles.labelIcon}
-                          src={checkIconUrl}
-                        />
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => handleImageClick(sectionIndex, imageIndex)}
+                    className={`relative p-3 pt-12 flex flex-col gap-2 bg-[var(--color-baseline-0)] box-border border-2 ${isSelected(section.selectedItem, imageIndex) ? "border-[var(--color-etendo-main)]" : "border-[var(--color-transparent-neutral-10)]"} rounded-xl overflow-hidden hover:border-[var(--color-baseline-90)] transition-colors duration-250 ease-in-out`}>
+                    <div className="absolute top-0 left-0 h-12 w-12 flex items-center justify-center">
+                      {isSelected(section.selectedItem, imageIndex) ? (
+                        <RadioButtonIcon width={24} height={24} fill="var(--color-dynamic-main)" />
+                      ) : (
+                        <CircleIcon width={24} height={24} fill="var(--color-baseline-70)" />
                       )}
-                      <div style={styles.label}>{label}</div>
                     </div>
-                  </Grid>
+                    <IconRenderer icon={img} imageStyles="rounded-xl border border-[var(--color-baseline-30)]" />
+                    <span className="text-sm font-medium text-[var(--color-baseline-100)] text-left">{label}</span>
+                  </button>
                 ))}
-              </Grid>
+              </div>
             </div>
           ))}
         </div>
