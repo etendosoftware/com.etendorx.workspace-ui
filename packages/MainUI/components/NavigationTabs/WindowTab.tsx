@@ -33,7 +33,7 @@ export default function WindowTab({ title, isActive, onActivate, onClose, canClo
         borderTopRightRadius: "12px",
       }}
       onClick={onActivate}>
-      <div className="h-full flex items-center flex-1 truncate gap-1">
+      <div className="h-full flex items-center flex-1 truncate gap-2">
         <FolderIcon className="fill-black" />
         <span className="flex-1 truncate text-sm font-medium" title={title}>
           {title}

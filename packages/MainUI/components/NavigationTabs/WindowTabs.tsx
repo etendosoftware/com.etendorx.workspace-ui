@@ -50,7 +50,7 @@ export default function WindowTabs() {
 
   return (
     <div
-      className="flex items-center bg-(--color-transparent-neutral-5) rounded-full overflow-hidden p-0 pl-0.5 h-9 min-h-9"
+      className="flex items-center bg-(--color-transparent-neutral-5) rounded-full overflow-hidden p-0 px-0.5 h-9 min-h-9"
       ref={containerRef}>
       <div className="flex items-center h-8">
         <IconButton
