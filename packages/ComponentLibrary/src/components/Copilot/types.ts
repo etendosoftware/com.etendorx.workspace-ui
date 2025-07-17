@@ -36,7 +36,10 @@ export interface ChatInterfaceProps {
   onSendMessage: (message: string, files?: File[]) => void;
   onResetConversation: () => void;
   showDescription?: boolean;
+  contextItems?: ContextItem[];
+  onRemoveContext?: (id: string) => void;
   translations: {
+    selectedRegisters: string;
     assistantSelector: AssistantSelectorProps["translations"];
     messageInput: MessageInputProps["translations"];
     messageList: MessageListProps["translations"];
@@ -57,12 +60,17 @@ export interface CopilotPopupProps {
   onSendMessage: (message: string, files?: File[]) => void;
   onResetConversation: () => void;
   showDescription?: boolean;
+  hasContextPending?: boolean;
+  contextItems?: ContextItem[];
+  onRemoveContext?: (id: string) => void;
   translations: {
     copilotProfile: string;
     backToSelection: string;
     minimize: string;
     maximize: string;
     close: string;
+    contextText: string;
+    selectedRegisters: string;
     assistantSelector: AssistantSelectorProps["translations"];
     messageInput: MessageInputProps["translations"];
     messageList: MessageListProps["translations"];
@@ -73,8 +81,11 @@ export interface MessageInputProps {
   onSendMessage: (message: string, files?: File[]) => void;
   placeholder?: string;
   disabled?: boolean;
+  contextItems?: ContextItem[];
+  onRemoveContext?: (id: string) => void;
   translations?: {
     placeholder: string;
+    selectedRegisters?: string;
   };
 }
 
@@ -84,7 +95,24 @@ export interface MessageListProps {
   isExpanded?: boolean;
   isLoading?: boolean;
   translations?: {
+    contextRecords: string;
     welcomeMessage: string;
     typing: string;
+  };
+}
+
+export interface ContextItem {
+  id: string;
+  label: string;
+  contextString: string;
+  recordId?: string;
+}
+
+export interface ContextPreviewProps {
+  contextItems: ContextItem[];
+  onRemoveContext: (id: string) => void;
+  showRemoveButton?: boolean;
+  translations?: {
+    selectedRegisters: string;
   };
 }

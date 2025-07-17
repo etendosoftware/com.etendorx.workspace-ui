@@ -62,3 +62,7 @@ export {
   CopilotPopup,
   RadioGrid,
 };
+
+// Export Copilot constants from api-client
+export { MESSAGE_ROLES, CONTEXT_CONSTANTS } from "@workspaceui/api-client/src/api/copilot";
+export type { MessageRole } from "@workspaceui/api-client/src/api/copilot";

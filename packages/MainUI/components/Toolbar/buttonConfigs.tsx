@@ -112,13 +112,13 @@ export const createButtonByType = (
       case "CANCEL":
         return { disabled: !(isFormView || hasSelectedRecord) };
       case "DELETE":
+      case "COPILOT":
         return { disabled: !hasSelectedRecord };
       case "NEW":
-        return { disabled: !hasParentRecordSelected };
       case "REFRESH":
-        return { disabled: !hasParentRecordSelected };
       case "SAVE":
         return { disabled: !hasParentRecordSelected };
+
       default:
         return { disabled: !button.active };
     }
@@ -170,6 +170,7 @@ const BUTTON_STYLES = {
   DELETE: "toolbar-button-delete",
   FIND: "toolbar-button-find",
   FILTER: "toolbar-button-filter",
+  COPILOT: "toolbar-button-copilot",
 } as const;
 
 export const getButtonStyles = (button: ToolbarButtonMetadata) => {

@@ -49,6 +49,8 @@ const Navigation: React.FC = () => {
 
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [copilotExpanded, setCopilotExpanded] = useState(false);
+  const [pendingContextString, setPendingContextString] = useState<string | null>(null);
+  const [pendingContextItems, setPendingContextItems] = useState<any[]>([]);
 
   const { assistants, getAssistants } = useAssistants();
   const { labels, getLabels } = useCopilotLabels();
@@ -67,8 +69,16 @@ const Navigation: React.FC = () => {
     setCopilotOpen(true);
   }, []);
 
+  const handleCopilotOpenWithContext = useCallback((contextString: string, contextItems: any[]) => {
+    setPendingContextString(contextString);
+    setPendingContextItems(contextItems);
+    setCopilotOpen(true);
+  }, []);
+
   const handleCopilotClose = useCallback(() => {
     setCopilotOpen(false);
+    setPendingContextString(null);
+    setPendingContextItems([]);
   }, []);
 
   const handleCopilotToggleExpanded = useCallback(() => {
@@ -88,10 +98,61 @@ const Navigation: React.FC = () => {
   const { messages, selectedAssistant, isLoading, handleSendMessage, handleSelectAssistant, handleResetConversation } =
     useCopilot();
 
+  const handleCopilotSendMessage = useCallback(
+    (message: string, _files?: File[]) => {
+      if (pendingContextString) {
+        const messageWithContext = `${pendingContextString}\n\n${message}`;
+        handleSendMessage(messageWithContext);
+        setPendingContextString(null);
+        setPendingContextItems([]);
+      } else {
+        handleSendMessage(message);
+      }
+    },
+    [pendingContextString, handleSendMessage]
+  );
+
+  const handleRemoveContext = useCallback(
+    (contextId: string) => {
+      setPendingContextItems((items) => {
+        const newItems = items.filter((item) => item.id !== contextId);
+        
+        // Actualizar el context string basado en los items restantes
+        if (newItems.length === 0) {
+          setPendingContextString(null);
+        } else {
+          const recordsData = newItems.map((item) => item.contextString);
+          const newContextString = `<Context> (${newItems.length} registro${newItems.length > 1 ? "s" : ""}):\n\n${recordsData.join("\n\n---\n\n")}</Context>`;
+          setPendingContextString(newContextString);
+        }
+        
+        return newItems;
+      });
+    },
+    []
+  );
+
   useEffect(() => {
     getLabels();
     getAssistants();
   }, [getLabels, getAssistants]);
+
+  useEffect(() => {
+    const handleCopilotWithContext = (event: CustomEvent) => {
+      const { contextString, contextItems, hasContext } = event.detail;
+      if (hasContext) {
+        handleCopilotOpenWithContext(contextString, contextItems);
+      } else {
+        handleCopilotOpen();
+      }
+    };
+
+    window.addEventListener("openCopilotWithContext", handleCopilotWithContext as EventListener);
+
+    return () => {
+      window.removeEventListener("openCopilotWithContext", handleCopilotWithContext as EventListener);
+    };
+  }, [handleCopilotOpen, handleCopilotOpenWithContext]);
 
   if (!currentRole) {
     return null;
@@ -173,14 +234,19 @@ const Navigation: React.FC = () => {
         selectedAssistant={selectedAssistant}
         isLoading={isLoading}
         onSelectAssistant={handleSelectAssistant}
-        onSendMessage={handleSendMessage}
+        onSendMessage={handleCopilotSendMessage}
         onResetConversation={handleResetConversation}
+        hasContextPending={!!pendingContextString}
+        contextItems={pendingContextItems}
+        onRemoveContext={handleRemoveContext}
         translations={{
           copilotProfile: t("copilot.copilotProfile"),
           backToSelection: t("copilot.backToSelection"),
           minimize: t("copilot.minimize"),
           maximize: t("copilot.maximize"),
           close: t("copilot.close"),
+          contextText: t("copilot.contextText"),
+          selectedRegisters: t("copilot.contextPreview.selectedRegisters"),
           assistantSelector: {
             errorInvalidData: t("copilot.assistantSelector.errorInvalidData"),
             errorNoAssistantsAvailable: t("copilot.assistantSelector.errorNoAssistantsAvailable"),
@@ -194,6 +260,7 @@ const Navigation: React.FC = () => {
             placeholder: t("copilot.messageInput.placeholder"),
           },
           messageList: {
+            contextRecords: t("copilot.messageList.contextRecords"),
             welcomeMessage: t("copilot.messageList.welcomeMessage"),
             typing: t("copilot.messageList.typing"),
           },
