@@ -105,9 +105,9 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
                     className={`relative p-3 pt-12 flex flex-col gap-2 bg-[var(--color-baseline-0)] box-border border-2 ${isSelected(section.selectedItem, imageIndex) ? "border-[var(--color-etendo-main)]" : "border-[var(--color-transparent-neutral-10)]"} rounded-xl overflow-hidden hover:border-[var(--color-baseline-90)] transition-colors duration-250 ease-in-out`}>
                     <div className="absolute top-0 left-0 h-12 w-12 flex items-center justify-center">
                       {isSelected(section.selectedItem, imageIndex) ? (
-                        <RadioButtonIcon width={24} height={24} fill="var(--color-dynamic-main)" />
+                        <RadioButtonIcon width="1.5rem" height="1.5rem" fill="var(--color-dynamic-main)" />
                       ) : (
-                        <CircleIcon width={24} height={24} fill="var(--color-baseline-70)" />
+                        <CircleIcon width="1.5rem" height="1.5rem" fill="var(--color-baseline-70)" />
                       )}
                     </div>
                     <IconRenderer icon={img} imageStyles="rounded-xl border border-[var(--color-baseline-30)]" />

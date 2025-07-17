@@ -23,8 +23,8 @@ export const useStyle = () => {
       },
       iconSearchStyles: {
         color: theme.palette.dynamicColor.main,
-        height: 20,
-        width: 20,
+        height: "1.25rem",
+        width: "1.25rem",
       },
       headerTitle: {
         fontSize: "1rem",
