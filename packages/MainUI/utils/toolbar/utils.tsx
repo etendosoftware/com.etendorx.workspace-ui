@@ -1,10 +1,9 @@
 import type { OrganizedSections, ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import type { TranslateFunction } from "@/hooks/types";
 import type React from "react";
-import Base64Icon from "./Base64Icon";
-import { IconSize, type ToolbarButton } from "./types";
-
-export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
+import Base64Icon from "@workspaceui/componentlibrary/src/components/Base64Icon";
+import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
+import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
 
 const isBase64Image = (str: string): boolean => {
   try {
@@ -16,6 +15,22 @@ const isBase64Image = (str: string): boolean => {
     return false;
   }
 };
+
+const BUTTON_STYLES = {
+  [TOOLBAR_BUTTONS_ACTIONS.NEW]:
+    "toolbar-button-new bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 py-1 disabled:bg-[var(--color-transparent-neutral-20)] disabled:text-[var(--color-baseline-0)]",
+  [TOOLBAR_BUTTONS_ACTIONS.SAVE]:
+    "toolbar-button-save bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 py-1 disabled:bg-[var(--color-transparent-neutral-20)] disabled:text-[var(--color-baseline-0)]",
+  [TOOLBAR_BUTTONS_ACTIONS.REFRESH]:
+    "toolbar-button-refresh border-1 border-[var(--color-transparent-neutral-20)] h-8 w-8 hover:border-none hover:bg-[var(--color-etendo-dark)] hover:text-[var(--color-baseline-80)]",
+  [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: "toolbar-button-cancel",
+  [TOOLBAR_BUTTONS_ACTIONS.DELETE]: "toolbar-button-delete",
+  [TOOLBAR_BUTTONS_ACTIONS.FIND]: "toolbar-button-find",
+  [TOOLBAR_BUTTONS_ACTIONS.FILTER]: "toolbar-button-filter",
+  [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: "toolbar-button-copilot",
+} as const;
+
+export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
 
 export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }) => {
   if (!iconKey) return <DefaultIcon />;
@@ -48,14 +63,23 @@ const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMeta
   });
 };
 
+const isVisibleButton = (button: ToolbarButtonMetadata, isFormView: boolean) => {
+  if (!button.active) return false;
+
+  const isFindButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FIND;
+  const isSaveButtonInNonFormView = !isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE;
+  const isCreateButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW;
+  const isFilterButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER;
+
+  return (
+    !isFindButtonInFormView && !isSaveButtonInNonFormView && !isCreateButtonInFormView && !isFilterButtonInFormView
+  );
+};
+
 export const organizeButtonsBySection = (buttons: ToolbarButtonMetadata[], isFormView: boolean): OrganizedSections => {
   const sections: OrganizedSections = { left: [], center: [], right: [] };
 
-  const visibleButtons = buttons.filter((button) => {
-    if (!button.active) return false;
-    if (isFormView && button.action === "FIND") return false;
-    return true;
-  });
+  const visibleButtons = buttons.filter((button) => isVisibleButton(button, isFormView));
 
   for (const button of visibleButtons) {
     if (button.section && sections[button.section]) {
@@ -70,13 +94,21 @@ export const organizeButtonsBySection = (buttons: ToolbarButtonMetadata[], isFor
   };
 };
 
-export const createButtonByType = (
-  button: ToolbarButtonMetadata,
-  onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void,
-  isFormView: boolean,
-  hasSelectedRecord: boolean,
-  hasParentRecordSelected: boolean
-): ToolbarButton => {
+export const createButtonByType = ({
+  button,
+  onAction,
+  isFormView,
+  hasFormChanges,
+  hasSelectedRecord,
+  hasParentRecordSelected,
+}: {
+  button: ToolbarButtonMetadata;
+  onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
+  isFormView: boolean;
+  hasFormChanges: boolean;
+  hasSelectedRecord: boolean;
+  hasParentRecordSelected: boolean;
+}): ToolbarButton => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
   const baseConfig: ToolbarButton = {
@@ -90,17 +122,17 @@ export const createButtonByType = (
   };
 
   const getIconTextConfig = (): Partial<ToolbarButton> => {
-    const showIconTextFor = ["NEW"];
+    const showIconTextFor = [TOOLBAR_BUTTONS_ACTIONS.NEW, TOOLBAR_BUTTONS_ACTIONS.SAVE];
 
     if (showIconTextFor.includes(button.action)) {
       return { iconText: button.name };
     }
 
-    if (button.buttonType === "DROPDOWN") {
+    if (button.buttonType === TOOLBAR_BUTTONS_TYPES.DROPDOWN) {
       return { iconText: `${button.name} ▼` };
     }
 
-    if (button.buttonType === "MODAL" && button.modalConfig?.title) {
+    if (button.buttonType === TOOLBAR_BUTTONS_TYPES.MODAL && button.modalConfig?.title) {
       return { iconText: button.modalConfig.title };
     }
 
@@ -109,38 +141,51 @@ export const createButtonByType = (
 
   const getDisableConfig = (): Partial<ToolbarButton> => {
     switch (button.action) {
-      case "CANCEL":
-        return { disabled: !(isFormView || hasSelectedRecord) };
-      case "DELETE":
-      case "COPILOT":
-        return { disabled: !hasSelectedRecord };
-      case "NEW":
-      case "REFRESH":
-      case "SAVE":
-        return { disabled: !hasParentRecordSelected };
-
-      default:
-        return { disabled: !button.active };
+      case TOOLBAR_BUTTONS_ACTIONS.CANCEL: {
+        const isDisabledCancel = !(isFormView || hasSelectedRecord);
+        return { disabled: isDisabledCancel, tooltip: isDisabledCancel ? "" : button.name };
+      }
+      case TOOLBAR_BUTTONS_ACTIONS.DELETE:
+      case TOOLBAR_BUTTONS_ACTIONS.COPILOT: {
+        const isDisabledDelete = !hasSelectedRecord;
+        return { disabled: isDisabledDelete, tooltip: isDisabledDelete ? "" : button.name };
+      }
+      case TOOLBAR_BUTTONS_ACTIONS.NEW: {
+        const isDisabledNew = !hasParentRecordSelected;
+        return { disabled: isDisabledNew, tooltip: isDisabledNew ? "" : button.name };
+      }
+      case TOOLBAR_BUTTONS_ACTIONS.REFRESH: {
+        const isDisabledRefresh = !hasParentRecordSelected;
+        return { disabled: isDisabledRefresh, tooltip: isDisabledRefresh ? "" : button.name };
+      }
+      case TOOLBAR_BUTTONS_ACTIONS.SAVE: {
+        const isDisabledSave = !isFormView || !hasFormChanges || !hasParentRecordSelected;
+        return { disabled: isDisabledSave, tooltip: isDisabledSave ? "" : button.name };
+      }
+      default: {
+        const isDisabledDefault = !button.active;
+        return { disabled: isDisabledDefault, tooltip: isDisabledDefault ? "" : button.name };
+      }
     }
   };
 
   const getClickConfig = (): Partial<ToolbarButton> => {
     switch (button.buttonType) {
-      case "DROPDOWN":
+      case TOOLBAR_BUTTONS_TYPES.DROPDOWN:
         return {
           onClick: (event?: React.MouseEvent<HTMLElement>) => {
             onAction("OPEN_DROPDOWN", button, event);
           },
         };
-      case "MODAL":
+      case TOOLBAR_BUTTONS_TYPES.MODAL:
         return {
           onClick: () => onAction("OPEN_MODAL", button),
         };
-      case "TOGGLE":
+      case TOOLBAR_BUTTONS_TYPES.TOGGLE:
         return {
           onClick: () => onAction("TOGGLE", button),
         };
-      case "CUSTOM":
+      case TOOLBAR_BUTTONS_TYPES.CUSTOM:
         return {
           onClick: (event?: React.MouseEvent<HTMLElement>) => {
             onAction("CUSTOM_ACTION", button, event);
@@ -160,18 +205,6 @@ export const createButtonByType = (
     ...getClickConfig(),
   };
 };
-
-const BUTTON_STYLES = {
-  NEW: "toolbar-button-new bg-(--color-baseline-100) text-(--color-baseline-0) disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0) rounded-l-full h-8 px-3",
-  SAVE: "toolbar-button-save bg-(--color-baseline-100) text-(--color-baseline-0) disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0) h-8.5 w-8.5 ml-1",
-  REFRESH:
-    "toolbar-button-refresh bg-(--color-baseline-100) text-(--color-baseline-0) disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0) rounded-r-full border-l-1 border-l-[color:var(--color-baseline-0)] w-10",
-  CANCEL: "toolbar-button-cancel",
-  DELETE: "toolbar-button-delete",
-  FIND: "toolbar-button-find",
-  FILTER: "toolbar-button-filter",
-  COPILOT: "toolbar-button-copilot",
-} as const;
 
 export const getButtonStyles = (button: ToolbarButtonMetadata) => {
   return BUTTON_STYLES[button.action as keyof typeof BUTTON_STYLES];

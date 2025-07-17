@@ -83,24 +83,34 @@
 }
 
 .toolbar-button-new .icon-base64,
-.toolbar-button-save .icon-base64,
-.toolbar-button-refresh .icon-base64 {
+.toolbar-button-save .icon-base64 {
   filter: brightness(1000%);
 }
 
 .toolbar-button-cancel .icon-base64,
 .toolbar-button-delete .icon-base64,
-.toolbar-button-copilot .icon-base64 {
+.toolbar-button-copilot .icon-base64,
+.toolbar-button-refresh .icon-base64 {
   opacity: 1;
 }
 
 .toolbar-button-cancel:hover .icon-base64,
 .toolbar-button-delete:hover .icon-base64,
+.toolbar-button-refresh:hover .icon-base64,
 .toolbar-button-filter:hover .icon-base64,
 .toolbar-button-find:hover .icon-base64,
 .toolbar-button-copilot:hover .icon-base64 {
   filter: brightness(1000%);
   opacity: 1;
+}
+
+.toolbar-button-new:disabled,
+.toolbar-button-save:disabled,
+.toolbar-button-refresh:disabled,
+.toolbar-button-cancel:disabled,
+.toolbar-button-delete:disabled {
+  cursor: default;
+  pointer-events: none;
 }
 
 .toolbar-button-new:disabled .icon-base64,
@@ -124,10 +134,12 @@ body {
 }
 
 :root {
+  --font-size-base: 16px;
   font-family: "Inter", sans-serif;
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
+  font-size: var(--font-size-base);
 
   --background-gradient: linear-gradient(180deg, #c6d3ff 30%, #f5f6fa 100%);
   line-height: 1.5;
@@ -136,6 +148,18 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html.compact-view {
+  --font-size-base: 20px;
+}
+
+html.standard-view {
+  --font-size-base: 16px;
+}
+
+html.comfortable-view {
+  --font-size-base: 12px;
 }
 
 h1 {
@@ -213,6 +237,14 @@ select:-webkit-autofill:focus {
   }
 }
 
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .cursor-not-allowed-child {
   @apply cursor-not-allowed;
 
@@ -270,4 +302,12 @@ button {
 ::-moz-selection {
   background-color: var(--color-etendo-main);
   color: var(--color-etendo-contrast-text);
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

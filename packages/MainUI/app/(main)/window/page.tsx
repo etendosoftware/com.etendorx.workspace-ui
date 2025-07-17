@@ -6,10 +6,10 @@ import WindowTabs from "@/components/NavigationTabs/WindowTabs";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useQueryParams } from "@/hooks/useQueryParams";
-import AppBreadcrumb from "@/components/Breadcrums";
 import Home from "@/screens/Home";
 import { useTranslation } from "@/hooks/useTranslation";
 import Window from "@/components/window/Window";
+import TabsProvider from "@/contexts/tabs";
 
 export default function Page() {
   const { loading, error } = useMetadataContext();
@@ -32,17 +32,16 @@ export default function Page() {
   }
 
   const shouldShowTabs = windows.length > 0;
-  const shouldShowBreadcrumb = activeWindow && !isHomeRoute;
 
   return (
-    <div className="flex flex-col w-full h-full max-h-full">
-      {shouldShowTabs && <WindowTabs />}
+    <div className="flex flex-col gap-2 w-full h-full max-h-full p-1 pb-0">
+      {shouldShowTabs && (
+        <TabsProvider>
+          <WindowTabs />
+        </TabsProvider>
+      )}
 
-      {shouldShowBreadcrumb && <AppBreadcrumb />}
-
-      <div className="flex-1 overflow-hidden">
-        {isHomeRoute || !activeWindow ? <Home /> : <Window windowId={activeWindow.windowId} />}
-      </div>
+      {isHomeRoute || !activeWindow ? <Home /> : <Window windowId={activeWindow.windowId} />}
     </div>
   );
 }

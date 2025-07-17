@@ -16,13 +16,15 @@ import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import { type EntityData, type EntityValue, FormMode } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FormProvider, useForm } from "react-hook-form";
+import { FormProvider, type SetValueConfig, useForm } from "react-hook-form";
 import Collapsible from "../Collapsible";
 import StatusBar from "./StatusBar";
 import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
 import type { FormViewProps } from "./types";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { NEW_RECORD_ID } from "@/utils/url/constants";
+import { useTabContext } from "@/contexts/tab";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon />,
@@ -45,40 +47,20 @@ const processFormData = (data: Record<string, EntityValue>): Record<string, Enti
 
 export function FormView({ window: windowMetadata, tab, mode, recordId, setRecordId }: FormViewProps) {
   const theme = useTheme();
+
   const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
   const [selectedTab, setSelectedTab] = useState<string>("");
   const [isSucessfullEdit, setIsSucessfullEdit] = useState(false);
+
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
+
   const { graph } = useSelected();
   const { session } = useUserContext();
   const { activeWindow, getSelectedRecord, clearTabFormState, setSelectedRecord } = useMultiWindowURL();
-
   const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
-
-  const record = useMemo(() => {
-    const windowId = activeWindow?.windowId;
-    if (!windowId) return null;
-
-    if (recordId === "new") return null;
-
-    const selectedRecordId = getSelectedRecord(windowId, tab.id);
-    if (selectedRecordId && selectedRecordId === recordId) {
-      const graphRecord = graph.getSelected(tab);
-      if (graphRecord && String(graphRecord.id) === recordId) {
-        return graphRecord;
-      }
-
-      return { id: selectedRecordId } as EntityData;
-    }
-
-    if (recordId && recordId !== "new") {
-      return { id: recordId } as EntityData;
-    }
-
-    return null;
-  }, [activeWindow?.windowId, getSelectedRecord, tab, recordId, graph]);
-
+  const { registerActions } = useToolbarContext();
+  const { markFormAsChanged, resetFormChanges } = useTabContext();
   const {
     formInitialization,
     refetch,
@@ -88,17 +70,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     mode: mode,
     recordId,
   });
-  const { registerActions } = useToolbarContext();
-
   const initialState = useFormInitialState(formInitialization) || undefined;
-
-  const availableFormData = useMemo(() => {
-    return { ...record, ...initialState };
-  }, [record, initialState]);
-
-  const { fields, groups } = useFormFields(tab, mode, false, availableFormData);
-
-  const { reset, setValue, ...form } = useForm({ values: availableFormData as EntityData });
 
   const defaultIcon = useMemo(
     () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
@@ -112,6 +84,38 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     [defaultIcon]
   );
 
+  const record = useMemo(() => {
+    const windowId = activeWindow?.windowId;
+    if (!windowId) return null;
+
+    if (recordId === NEW_RECORD_ID) return null;
+
+    const selectedRecordId = getSelectedRecord(windowId, tab.id);
+    if (selectedRecordId && selectedRecordId === recordId) {
+      const graphRecord = graph.getSelected(tab);
+      if (graphRecord && String(graphRecord.id) === recordId) {
+        return graphRecord;
+      }
+
+      return { id: selectedRecordId } as EntityData;
+    }
+
+    if (recordId && recordId !== NEW_RECORD_ID) {
+      return { id: recordId } as EntityData;
+    }
+
+    return null;
+  }, [activeWindow?.windowId, getSelectedRecord, tab, recordId, graph]);
+
+  const availableFormData = useMemo(() => {
+    return { ...record, ...initialState };
+  }, [record, initialState]);
+
+  const { fields, groups } = useFormFields(tab, mode, false, availableFormData);
+
+  const formMethods = useForm({ values: availableFormData as EntityData });
+  const { reset, setValue, formState, ...form } = formMethods;
+
   const tabs: TabItem[] = useMemo(() => {
     return groups.map(([id, group]) => ({
       id: String(id || "_main"),
@@ -123,15 +127,15 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     }));
   }, [groups, getIconForGroup, theme.palette.baselineColor.neutral]);
 
-  const handleTabChange = useCallback((newTabId: string) => {
-    setSelectedTab(newTabId);
-    setExpandedSections((prev) => {
-      if (!prev.includes(newTabId)) {
-        return [...prev, newTabId];
-      }
-      return prev;
-    });
-  }, []);
+  useEffect(() => {
+    if (formState.isDirty) {
+      markFormAsChanged();
+    }
+
+    return () => {
+      resetFormChanges();
+    };
+  }, [formState.isDirty, markFormAsChanged, resetFormChanges]);
 
   useEffect(() => {
     if (selectedTab && containerRef.current) {
@@ -149,6 +153,42 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       }
     }
   }, [selectedTab, expandedSections]);
+
+  useEffect(() => {
+    if (recordId || isSucessfullEdit) {
+      refetch();
+      setIsSucessfullEdit(false);
+    }
+
+    return () => {
+      setIsSucessfullEdit(false);
+    };
+  }, [recordId, isSucessfullEdit, refetch, mode]);
+
+  useEffect(() => {
+    if (!availableFormData) return;
+
+    const processedData = processFormData(availableFormData);
+    reset(processedData);
+  }, [availableFormData, reset, tab.id]);
+
+  const handleSetValue = useCallback(
+    (name: string, value: EntityValue, options?: SetValueConfig) => {
+      const { shouldDirty = true, ...rest } = options || {};
+      setValue(name, value, { shouldDirty, ...rest });
+    },
+    [setValue]
+  );
+
+  const handleTabChange = useCallback((newTabId: string) => {
+    setSelectedTab(newTabId);
+    setExpandedSections((prev) => {
+      if (!prev.includes(newTabId)) {
+        return [...prev, newTabId];
+      }
+      return prev;
+    });
+  }, []);
 
   const handleSectionRef = useCallback(
     (sectionId: string | null) => (el: HTMLElement | null) => {
@@ -172,10 +212,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       setSelectedTab(id);
     }
   }, []);
-
-  const onReset = useCallback(async () => {
-    await refetch();
-  }, [refetch]);
 
   const onSuccess = useCallback(
     async (data: EntityData) => {
@@ -224,27 +260,16 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     [expandedSections]
   );
 
-  useEffect(() => {
-    if (recordId || isSucessfullEdit) {
-      refetch();
-      setIsSucessfullEdit(false);
-    }
-
-    return () => {
-      setIsSucessfullEdit(false);
-    };
-  }, [recordId, isSucessfullEdit, refetch, mode]);
-
-  useEffect(() => {
-    if (!availableFormData) return;
-
-    const processedData = processFormData(availableFormData);
-    reset(processedData);
-  }, [availableFormData, reset, tab.id]);
-
+  // NOTE: toolbar actions
   const handleSave = useCallback(async () => {
     await save();
-  }, [save]);
+    resetFormChanges();
+  }, [save, resetFormChanges]);
+
+  const onReset = useCallback(async () => {
+    await refetch();
+    resetFormChanges();
+  }, [refetch, resetFormChanges]);
 
   const handleBack = useCallback(() => {
     const windowId = activeWindow?.windowId;
@@ -253,11 +278,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     }
     graph.clear(tab);
     graph.clearSelected(tab);
-  }, [activeWindow?.windowId, clearTabFormState, graph, tab]);
+    resetFormChanges();
+  }, [activeWindow?.windowId, clearTabFormState, graph, tab, resetFormChanges]);
 
   const handleNew = useCallback(() => {
-    setRecordId("new");
-  }, [setRecordId]);
+    setRecordId(NEW_RECORD_ID);
+    resetFormChanges();
+  }, [setRecordId, resetFormChanges]);
 
   useEffect(() => {
     const actions = {
@@ -273,35 +300,29 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const isLoading = loading || loadingFormInitialization;
 
   return (
-    <FormProvider setValue={setValue} reset={reset} {...form}>
+    <FormProvider setValue={handleSetValue} reset={reset} formState={formState} {...form}>
       <form
-        className={`flex h-full max-h-full w-full flex-col overflow-hidden transition duration-300 ${
+        className={`flex h-full max-h-full w-full flex-col gap-2 overflow-hidden transition duration-300 ${
           loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
         }`}
         onSubmit={handleSave}>
-        <div className="flex-shrink-0 pl-2 pr-2">
-          <div className="mb-2">
-            {statusModal.open && (
-              <StatusModal
-                statusType={statusModal.statusType}
-                statusText={statusModal.statusText}
-                errorMessage={statusModal.errorMessage}
-                saveLabel={statusModal.saveLabel}
-                secondaryButtonLabel={statusModal.secondaryButtonLabel}
-                onClose={hideStatusModal}
-                isDeleteSuccess={statusModal.isDeleteSuccess}
-              />
-            )}
-          </div>
-          <StatusBar fields={fields.statusBarFields} />
-          <div className="mt-2">
-            <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
-          </div>
-        </div>
+        {statusModal.open && (
+          <StatusModal
+            statusType={statusModal.statusType}
+            statusText={statusModal.statusText}
+            errorMessage={statusModal.errorMessage}
+            saveLabel={statusModal.saveLabel}
+            secondaryButtonLabel={statusModal.secondaryButtonLabel}
+            onClose={hideStatusModal}
+            isDeleteSuccess={statusModal.isDeleteSuccess}
+          />
+        )}
+        <StatusBar fields={fields.statusBarFields} />
+        <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
         {isLoading ? (
           <Spinner />
         ) : (
-          <div className="flex-grow space-y-2 overflow-auto p-2" ref={containerRef}>
+          <div className="flex flex-col gap-2 flex-grow overflow-auto" ref={containerRef}>
             {groups.map(([id, group]) => {
               const sectionId = String(id || "_main");
 
@@ -330,7 +351,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
                     sectionId={sectionId}
                     icon={getIconForGroup(group.identifier)}
                     onToggle={(isOpen: boolean) => handleAccordionChange(id, isOpen)}>
-                    <div className="grid auto-rows-auto grid-cols-3 gap-4">
+                    <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2">
                       {Object.entries(group.fields).map(([hqlName, field]) => (
                         <BaseSelector field={field} key={hqlName} formMode={mode} />
                       ))}

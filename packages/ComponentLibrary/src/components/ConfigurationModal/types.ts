@@ -1,9 +1,24 @@
 import type { MenuProps } from "@mui/material";
 
+export interface SectionItem {
+  id: string;
+  img: string | React.ReactNode;
+  label?: string;
+}
+
 export interface ISection {
+  id: string;
   name: string;
-  items: { id: string; img: string | React.ReactNode; label?: string }[];
+  items: SectionItem[];
   selectedItem: number;
+  isDisabled?: boolean;
+}
+
+export interface OptionSelectedProps {
+  id: string;
+  sectionId: string;
+  sectionIndex: number;
+  imageIndex: number;
 }
 
 export interface IConfigurationModalProps extends Omit<MenuProps, "open" | "title"> {
@@ -13,5 +28,5 @@ export interface IConfigurationModalProps extends Omit<MenuProps, "open" | "titl
   linkTitle?: { url?: string; label?: string };
   sections?: ISection[];
   open?: boolean;
-  onChangeSelect?: (id: string, sectionIndex: number, imageIndex: number) => void;
+  onChangeSelect?: (optionSelected: OptionSelectedProps) => void;
 }

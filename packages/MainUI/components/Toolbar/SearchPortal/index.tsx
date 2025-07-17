@@ -3,7 +3,7 @@ import { useCallback } from "react";
 import { Box, Portal } from "@mui/material";
 import TextInputAutocomplete from "@workspaceui/componentlibrary/src/components/Input/TextInput/TextInputAutocomplete";
 import { useStyle } from "./styles";
-import type { SearchPortalProps } from "./types";
+import type { SearchPortalProps } from "../types";
 
 const SearchPortal: React.FC<SearchPortalProps> = ({
   isOpen,

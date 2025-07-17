@@ -10,3 +10,23 @@ export const SELECTED_RECORD_PREFIX = "s_";
 export const TAB_FORM_RECORD_ID_PREFIX = "tf_";
 export const TAB_MODE_PREFIX = "tm_";
 export const TAB_FORM_MODE_PREFIX = "tfm_";
+
+// Tab states
+export const TAB_ACTIVE = "active";
+export const TAB_INACTIVE = "inactive";
+
+export const NEW_RECORD_ID = "new";
+
+export const FORM_MODES = {
+  NEW: "new",
+  EDIT: "edit",
+  VIEW: "view",
+} as const;
+
+export const TAB_MODES = {
+  TABLE: "table",
+  FORM: "form",
+} as const;
+
+export type FormMode = (typeof FORM_MODES)[keyof typeof FORM_MODES];
+export type TabMode = (typeof TAB_MODES)[keyof typeof TAB_MODES];

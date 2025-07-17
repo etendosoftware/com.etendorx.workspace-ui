@@ -12,10 +12,11 @@ interface UnifiedNumericSelectorProps extends React.ComponentProps<typeof TextIn
 }
 
 export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: UnifiedNumericSelectorProps) => {
-  const { register, setValue, watch } = useFormContext();
+  const { register, setValue, watch, formState } = useFormContext();
   const formValue = watch(field.hqlName);
   const [localValue, setLocalValue] = useState(formValue === null || formValue === undefined ? "" : String(formValue));
   const [isFocused, setIsFocused] = useState(false);
+  const isDirty = formState.isDirty;
 
   const isInteger = type === "integer" || field.column.reference === "11";
 
@@ -75,9 +76,13 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
         if (props.onChange) {
           props.onChange(event);
         }
+        if (!isDirty) {
+          const parsedValue = parseValue(value);
+          setValue(field.hqlName, parsedValue);
+        }
       }
     },
-    [isInteger, getValidationRegex, props]
+    [isInteger, getValidationRegex, props, isDirty, field.hqlName, parseValue, setValue]
   );
 
   const handleFocus = useCallback(

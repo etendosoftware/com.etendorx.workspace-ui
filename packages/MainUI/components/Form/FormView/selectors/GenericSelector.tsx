@@ -1,5 +1,6 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { memo } from "react";
+import { CUSTOM_SELECTORS_IDENTIFIERS } from "@/utils/form/constants";
 import { useFormContext } from "react-hook-form";
 import { BooleanSelector } from "./BooleanSelector";
 import { DateSelector } from "./DateSelector";
@@ -10,6 +11,7 @@ import { SelectSelector } from "./SelectSelector";
 import { StringSelector } from "./StringSelector";
 import { TableDirSelector } from "./TableDirSelector";
 import DatetimeSelector from "./DatetimeSelector";
+import LocationSelector from "./LocationSelector";
 
 export type GenericSelectorProps = {
   field: Field;
@@ -49,6 +51,12 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
     case "13":
       return <ListSelector field={field} isReadOnly={isReadOnly} />;
     case "30":
+      if (
+        field.column.referenceSearchKey === "21" ||
+        field.column.referenceSearchKey$_identifier === CUSTOM_SELECTORS_IDENTIFIERS.LOCATION
+      ) {
+        return <LocationSelector field={field} isReadOnly={isReadOnly} />;
+      }
       return <SelectSelector field={field} isReadOnly={isReadOnly} />;
     case "800008":
       return <NumericSelector field={field} type="decimal" readOnly={isReadOnly} />;

@@ -60,10 +60,10 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     (columnValues: FormInitializationResponse["columnValues"]) => {
       for (const [column, { value, identifier }] of Object.entries(columnValues ?? {})) {
         const targetField = fieldsByColumnName[column];
-        setValue(targetField?.hqlName ?? column, value);
+        setValue(targetField?.hqlName ?? column, value, { shouldDirty: false });
 
         if (targetField && identifier) {
-          setValue(`${targetField.hqlName}$_identifier`, identifier);
+          setValue(`${targetField.hqlName}$_identifier`, identifier, { shouldDirty: false });
         }
       }
     },
@@ -74,8 +74,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     (auxiliaryInputValues: FormInitializationResponse["auxiliaryInputValues"]) => {
       for (const [column, { value }] of Object.entries(auxiliaryInputValues ?? {})) {
         const targetField = fieldsByColumnName[column];
-
-        setValue(targetField?.hqlName || column, value);
+        setValue(targetField?.hqlName || column, value, { shouldDirty: false });
       }
     },
     [fieldsByColumnName, setValue]
@@ -160,10 +159,13 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
 
   if (isDisplayed) {
     return (
-      <div className="grid grid-cols-3 auto-rows-auto gap-4 items-center" title={field.helpComment}>
+      <div
+        className="h-12 grid grid-cols-3 auto-rows-auto gap-4 items-center"
+        title={field.helpComment || ""}
+        aria-describedby={field.helpComment ? `${field.name}-help` : ""}>
         <div className="relative">
           {field.isMandatory && (
-            <span className="absolute -top-4 right-0 text-[#DC143C] font-bold" aria-required>
+            <span className="absolute -top-4 right-0 text-[#DC143C] text-xs font-bold" aria-required>
               *
             </span>
           )}

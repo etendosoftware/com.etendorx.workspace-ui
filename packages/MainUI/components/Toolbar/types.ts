@@ -59,7 +59,6 @@ export interface ProcessMenuProps {
   selectedRecord: unknown | undefined;
 }
 
-// Adaptador para convertir ToolbarButtonMetadata a ToolbarButton para TopToolbar
 export interface ToolbarButton {
   key: string;
   icon: React.ReactNode;
@@ -81,17 +80,12 @@ export interface ToolbarSectionConfig {
   style?: React.CSSProperties;
   toggleExpand?: (event?: React.MouseEvent<HTMLButtonElement>) => void;
   className?: string;
+  processButton?: ToolbarButton;
 }
 
 export interface TopToolbarProps {
   leftSection: ToolbarSectionConfig;
   centerSection: ToolbarSectionConfig;
   rightSection: ToolbarSectionConfig;
-}
-
-export interface Base64IconProps {
-  src: string;
-  alt?: string;
-  className?: string;
-  size?: number;
+  processButton: ToolbarButton;
 }

@@ -8,7 +8,6 @@ import NotificationIcon from "@workspaceui/componentlibrary/src/assets/icons/bel
 import AddIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
 import PersonIcon from "@workspaceui/componentlibrary/src/assets/icons/user.svg";
 import {
-  ConfigurationModal,
   CopilotButton,
   CopilotPopup,
   NotificationButton,
@@ -18,13 +17,14 @@ import {
 import type { Person } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
 import Nav from "@workspaceui/componentlibrary/src/components/Nav/Nav";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { NOTIFICATIONS, initialPeople, menuItems, modalConfig, sections } from "../../storybook/src/mocks";
+import { NOTIFICATIONS, initialPeople, menuItems, sections } from "../../storybook/src/mocks";
 import { useTranslation } from "../hooks/useTranslation";
 import ProfileModal from "./ProfileModal/ProfileModal";
 import { useAssistants } from "@/hooks/useAssistants";
 import { useCopilotLabels } from "@/hooks/useCopilotLabels";
 import { useCopilot } from "@/hooks/useCopilot";
 import { buildContextString } from "@/utils/contextUtils";
+import ConfigurationSection from "./Header/ConfigurationSection";
 
 const handleClose = () => {
   return true;
@@ -175,10 +175,7 @@ const Navigation: React.FC = () => {
           people={people}
           icon={<AddIcon />}
         />
-        <ConfigurationModal
-          {...modalConfig}
-          tooltipButtonProfile={t("navigation.configurationModal.tooltipButtonProfile")}
-        />
+        <ConfigurationSection />
         <CopilotButton onClick={handleCopilotOpen} tooltip="Copilot" />
         <NotificationButton notifications={NOTIFICATIONS} icon={<NotificationIcon />}>
           <NotificationModal

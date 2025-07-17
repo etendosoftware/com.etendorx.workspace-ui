@@ -12,14 +12,14 @@ export const useStyle = () => {
           justifyContent: "space-between",
           alignItems: "center",
           width: "100%",
-          padding: "0 0.25rem",
+          height: "100%",
         },
         LeftItems: {
           width: "22.75rem",
-          padding: "0 0.25rem",
+          height: "100%",
+          padding: "0.25rem",
           borderRadius: "6.25rem",
           background: `var(--Neutral-0, ${theme.palette.baselineColor.transparentNeutral[5]})`,
-          marginBottom: "0.25rem",
         },
         RightItems: {
           height: "3rem",
