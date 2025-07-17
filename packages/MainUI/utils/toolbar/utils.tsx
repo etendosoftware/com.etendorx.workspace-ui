@@ -27,6 +27,7 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.DELETE]: "toolbar-button-delete",
   [TOOLBAR_BUTTONS_ACTIONS.FIND]: "toolbar-button-find",
   [TOOLBAR_BUTTONS_ACTIONS.FILTER]: "toolbar-button-filter",
+  [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: "toolbar-button-copilot",
 } as const;
 
 export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
@@ -144,7 +145,8 @@ export const createButtonByType = ({
         const isDisabledCancel = !(isFormView || hasSelectedRecord);
         return { disabled: isDisabledCancel, tooltip: isDisabledCancel ? "" : button.name };
       }
-      case TOOLBAR_BUTTONS_ACTIONS.DELETE: {
+      case TOOLBAR_BUTTONS_ACTIONS.DELETE:
+      case TOOLBAR_BUTTONS_ACTIONS.COPILOT: {
         const isDisabledDelete = !hasSelectedRecord;
         return { disabled: isDisabledDelete, tooltip: isDisabledDelete ? "" : button.name };
       }

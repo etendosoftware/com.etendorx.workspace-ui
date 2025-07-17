@@ -92,16 +92,6 @@ const Drawer: React.FC<DrawerProps> = ({
       rounded-tr-xl rounded-br-xl flex flex-col overflow-hidden pb-4
       ${open ? "w-[16.25rem]" : "w-[3.5rem]"}`}>
       <DrawerHeader logo={logo} title={title} open={open} onClick={handleHeaderClick} tabIndex={-1} />
-      {RecentlyViewedComponent && (
-        <RecentlyViewedComponent
-          onClick={handleItemClick}
-          open={open}
-          items={items}
-          windowId={windowId}
-          getTranslatedName={getTranslatedName}
-          ref={setRecentlyViewedRef}
-        />
-      )}
       {open && (
         <div className="p-2">
           <TextInputAutocomplete
@@ -113,7 +103,17 @@ const Drawer: React.FC<DrawerProps> = ({
           />
         </div>
       )}
-      <div className="flex-grow overflow-y-auto hide-scrollbar">
+      {RecentlyViewedComponent && (
+        <RecentlyViewedComponent
+          onClick={handleItemClick}
+          open={open}
+          items={items}
+          windowId={windowId}
+          getTranslatedName={getTranslatedName}
+          ref={setRecentlyViewedRef}
+        />
+      )}
+      <div className="flex-grow overflow-y-auto">
         <DrawerItems
           items={searchValue ? filteredItems : items}
           onClick={handleItemClick}

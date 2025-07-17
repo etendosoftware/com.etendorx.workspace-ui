@@ -32,6 +32,10 @@ export class Client {
     this.baseQueryParams = new URLSearchParams();
   }
 
+  public getAuthHeader(): string | undefined {
+    return (this.baseHeaders as Record<string, string>)[AUTH_HEADER_NAME];
+  }
+
   public setBaseUrl(url: string) {
     this.baseUrl = url;
   }
