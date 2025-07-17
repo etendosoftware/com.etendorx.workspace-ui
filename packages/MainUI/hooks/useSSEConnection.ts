@@ -19,8 +19,6 @@ export const useSSEConnection = ({ onMessage, onError, onComplete }: UseSSEConne
 
   const startSSEConnection = useCallback(
     async (params: CopilotQuestionParams, retryCount = 0) => {
-      let intervalId: NodeJS.Timeout | null = null;
-
       try {
         if (eventSourceRef.current) {
           eventSourceRef.current.close();
@@ -53,18 +51,12 @@ export const useSSEConnection = ({ onMessage, onError, onComplete }: UseSSEConne
             onMessage(data);
           } catch (err) {
             console.error("Error parsing SSE message:", err, "Raw data:", event.data);
-            if (intervalId) {
-              clearInterval(intervalId);
-            }
             onError("Error parsing server response");
           }
         };
 
         eventSource.onerror = (err) => {
           setIsConnected(false);
-          if (intervalId) {
-            clearInterval(intervalId);
-          }
 
           if (eventSource.readyState === EventSourcePolyfill.CLOSED) {
             if (hasReceivedMessageRef.current && !isCompletedRef.current) {
@@ -107,7 +99,7 @@ export const useSSEConnection = ({ onMessage, onError, onComplete }: UseSSEConne
           setReconnectAttempts(0);
         };
 
-        intervalId = setInterval(() => {
+        const intervalId = setInterval(() => {
           if (eventSource.readyState === EventSourcePolyfill.CLOSED) {
             setIsConnected(false);
             if (hasReceivedMessageRef.current && !isCompletedRef.current) {
@@ -115,25 +107,17 @@ export const useSSEConnection = ({ onMessage, onError, onComplete }: UseSSEConne
               shouldReconnectRef.current = false;
               onComplete();
             }
-            if (intervalId) {
-              clearInterval(intervalId);
-            }
+            clearInterval(intervalId);
           }
         }, 1000);
 
         return () => {
-          if (intervalId) {
-            clearInterval(intervalId);
-          }
+          clearInterval(intervalId);
           eventSource.close();
         };
       } catch (error) {
         console.error("Error starting SSE connection:", error);
         setIsConnected(false);
-        
-        if (intervalId) {
-          clearInterval(intervalId);
-        }
 
         if (retryCount < maxReconnectAttempts && !hasReceivedMessageRef.current) {
           const delay = 2 ** retryCount * 1000;
