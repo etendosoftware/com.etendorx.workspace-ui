@@ -20,9 +20,9 @@ const isBase64Image = (str: string): boolean => {
 
 const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.NEW]:
-    "toolbar-button-new bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 py-1 pl-3 pr-5 disabled:bg-[var(--color-transparent-neutral-20)] disabled:text-[var(--color-baseline-0)]",
+    "toolbar-button-new bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 py-1 pl-3 pr-5 disabled:bg-[var(--color-baseline-100)] disabled:opacity-20 disabled:text-[var(--color-baseline-0)]",
   [TOOLBAR_BUTTONS_ACTIONS.SAVE]:
-    "toolbar-button-save bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 py-1 pl-3 pr-5 disabled:bg-[var(--color-transparent-neutral-20)] disabled:text-[var(--color-baseline-0)]",
+    "toolbar-button-save bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 py-1 pl-3 pr-5 disabled:bg-[var(--color-baseline-100)] disabled:opacity-20 disabled:text-[var(--color-baseline-0)]",
   [TOOLBAR_BUTTONS_ACTIONS.REFRESH]:
     "toolbar-button-refresh border-1 border-[var(--color-transparent-neutral-20)] h-8 w-8 hover:border-none hover:bg-[var(--color-etendo-dark)] hover:text-[var(--color-baseline-80)]",
   [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: "toolbar-button-cancel",

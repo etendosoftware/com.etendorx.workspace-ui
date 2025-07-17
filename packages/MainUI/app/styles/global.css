@@ -111,8 +111,6 @@
   pointer-events: none;
 }
 
-.toolbar-button-new:disabled .icon-base64,
-.toolbar-button-save:disabled .icon-base64,
 .toolbar-button-refresh:disabled .icon-base64,
 .toolbar-button-cancel:disabled .icon-base64,
 .toolbar-button-delete:disabled .icon-base64 {
