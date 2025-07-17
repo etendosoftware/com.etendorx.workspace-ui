@@ -9,14 +9,14 @@ import type {
 } from "@workspaceui/componentlibrary/src/components/ConfigurationModal/types";
 import {
   SECTION_DENSITY_ID,
-  COMPACT_DENSITY_ID,
-  STANDARD_DENSITY_ID,
-  COMFORTABLE_DENSITY_ID,
+  SMALL_INTERFACE_SCALE_ID,
+  DEFAULT_INTERFACE_SCALE_ID,
+  LARGE_INTERFACE_SCALE_ID,
 } from "@workspaceui/componentlibrary/src/components/ConfigurationModal/constants";
 import { useLocalStorage } from "@workspaceui/componentlibrary/src/hooks/useLocalStorage";
 import { DENSITY_KEY } from "@/utils/accessibility/constants";
 
-const DENSITY_STYLES_OPTIONS = { compact: "compact-view", standard: "standard-view", comfortable: "comfortable-view" };
+const DENSITY_STYLES_OPTIONS = { small: "small-scale", default: "default-scale", large: "large-scale" };
 
 const ConfigurationSection: React.FC = () => {
   const { t } = useTranslation();
@@ -45,14 +45,14 @@ const ConfigurationSection: React.FC = () => {
       rootElement.classList.remove(...Object.values(DENSITY_STYLES_OPTIONS));
       let newStyle = "";
       switch (optionSelectedId) {
-        case COMPACT_DENSITY_ID:
-          newStyle = DENSITY_STYLES_OPTIONS.compact;
+        case SMALL_INTERFACE_SCALE_ID:
+          newStyle = DENSITY_STYLES_OPTIONS.small;
           break;
-        case STANDARD_DENSITY_ID:
-          newStyle = DENSITY_STYLES_OPTIONS.standard;
+        case DEFAULT_INTERFACE_SCALE_ID:
+          newStyle = DENSITY_STYLES_OPTIONS.default;
           break;
-        case COMFORTABLE_DENSITY_ID:
-          newStyle = DENSITY_STYLES_OPTIONS.comfortable;
+        case LARGE_INTERFACE_SCALE_ID:
+          newStyle = DENSITY_STYLES_OPTIONS.large;
           break;
       }
       rootElement.classList.add(newStyle);
