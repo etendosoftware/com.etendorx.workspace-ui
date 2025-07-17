@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo, useCallback } from "react";
 import ContextPreview from "../ContextPreview";
 import { MESSAGE_ROLES, CONTEXT_CONSTANTS } from "@workspaceui/api-client/src/api/copilot";
 import type { MessageListProps } from "../types";
@@ -10,20 +10,26 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const hasContextInMessage = (text: string) => {
+  const hasContextInMessage = useCallback((text: string) => {
     return text.startsWith(CONTEXT_CONSTANTS.TAG_START);
-  };
+  }, []);
 
-  const getMessageWithoutContext = (text: string) => {
-    const contextRegex = new RegExp(`^${CONTEXT_CONSTANTS.TAG_START}[\\s\\S]*?${CONTEXT_CONSTANTS.TAG_END}\\s*`);
+  const contextRegex = useMemo(() => {
+    return new RegExp(`^${CONTEXT_CONSTANTS.TAG_START}[\\s\\S]*?${CONTEXT_CONSTANTS.TAG_END}\\s*`);
+  }, []);
+
+  const contextCountRegex = useMemo(() => {
+    return new RegExp(`${CONTEXT_CONSTANTS.TAG_START} \\((\\d+) ${translations?.contextRecords || ""}`);
+  }, [translations?.contextRecords]);
+
+  const getMessageWithoutContext = useCallback((text: string) => {
     return text.replace(contextRegex, "").trim();
-  };
+  }, [contextRegex]);
 
-  const getContextCountFromMessage = (text: string) => {
-    const contextRegex = new RegExp(`${CONTEXT_CONSTANTS.TAG_START} \\((\\d+) ${translations?.contextRecords || ""}`);
-    const match = text.match(contextRegex);
+  const getContextCountFromMessage = useCallback((text: string) => {
+    const match = text.match(contextCountRegex);
     return match ? Number.parseInt(match[1]) : 0;
-  };
+  }, [contextCountRegex]);
 
   if (messages.length === 0) {
     return (

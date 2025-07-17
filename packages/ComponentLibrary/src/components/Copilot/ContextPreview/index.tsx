@@ -1,4 +1,5 @@
 import type React from "react";
+import { useCallback } from "react";
 import TrashIcon from "../../../assets/icons/trash-2.svg";
 import LinkIcon from "../../../assets/icons/link.svg";
 import { IconButton } from "../..";
@@ -11,6 +12,12 @@ const ContextPreview: React.FC<ContextPreviewProps> = ({
   showRemoveButton = true,
   translations,
 }) => {
+  const handleRemoveAll = useCallback(() => {
+    for (const item of contextItems) {
+      onRemoveContext(item.id);
+    }
+  }, [contextItems, onRemoveContext]);
+
   if (!contextItems || contextItems.length === 0) {
     return null;
   }
@@ -26,11 +33,7 @@ const ContextPreview: React.FC<ContextPreviewProps> = ({
           {showRemoveButton && (
             <IconButton
               type="button"
-              onClick={() => {
-                for (const item of contextItems) {
-                  onRemoveContext(item.id);
-                }
-              }}
+              onClick={handleRemoveAll}
               className="[&>svg]:text-[1rem] hover:text-(--color-dynamic-main) hover:bg-blue-100 rounded-full w-4 h-4">
               <TrashIcon />
             </IconButton>
