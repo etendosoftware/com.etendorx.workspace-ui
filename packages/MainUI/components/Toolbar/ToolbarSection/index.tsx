@@ -1,7 +1,10 @@
 import type { ToolbarSectionConfig } from "../types";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import IconButtonWithText from "@workspaceui/componentlibrary/src/components/IconButtonWithText";
-import { FILLED_BUTTON_TYPE } from "@workspaceui/componentlibrary/src/components/IconButtonWithText/constants";
+import {
+  FILLED_BUTTON_TYPE,
+  OUTLINED_BUTTON_TYPE,
+} from "@workspaceui/componentlibrary/src/components/IconButtonWithText/constants";
 
 const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, className = "", processButton }) => {
   if (!buttons.length) return null;
@@ -14,7 +17,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
             <IconButtonWithText
               key={key}
               buttonType={FILLED_BUTTON_TYPE}
-              icon={icon}
+              leftIcon={icon}
               text={iconText}
               onClick={onClick}
               disabled={disabled}
@@ -37,12 +40,13 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
       {processButton && !processButton.disabled && (
         <div className="ml-auto">
           <IconButtonWithText
-            buttonType={FILLED_BUTTON_TYPE}
-            icon={processButton.icon}
-            text={processButton.iconText || ""}
+            buttonType={OUTLINED_BUTTON_TYPE}
+            leftIcon={processButton.leftIcon}
+            rightIcon={processButton.rightIcon}
+            text={processButton.text}
             onClick={processButton.onClick}
             disabled={processButton.disabled}
-            customContainerStyles={processButton.className}
+            customContainerStyles={processButton.customContainerStyles}
           />
         </div>
       )}

@@ -16,9 +16,10 @@ const OUTLINED_DEFAULT_STYLES = `
   bg-[var(--color-transparent-neutral-0)]
   hover:bg-[var(--color-etendo-dark)]
   hover:border-none
+  hover:text-[var(--color-baseline-0)]
   disabled:bg-[var(--color-transparent-neutral-10)]
-  opacity: 0.3;
-  text-(--color-baseline-80)
+  disabled:opacity-30
+  text-[var(--color-baseline-80)]
 `;
 
 const getCurrentStyles = (buttonType: ButtonType) => {
@@ -41,8 +42,10 @@ export interface IconButtonWithTextProps extends React.ButtonHTMLAttributes<HTML
   buttonType: ButtonType;
   /** Text to show inside the button */
   text: string;
-  /** Icon to show inside the button */
-  icon: React.ReactNode;
+  /** Icon to show inside at the left of the button */
+  leftIcon?: React.ReactNode;
+  /** Icon to show inside at the right of the button */
+  rightIcon?: React.ReactNode;
   /** Whether the button is disabled */
   disabled?: boolean;
   /** Accessibility label for screen readers */
@@ -67,7 +70,8 @@ export interface IconButtonWithTextProps extends React.ButtonHTMLAttributes<HTML
 const IconButtonWithText = ({
   buttonType = FILLED_BUTTON_TYPE,
   text,
-  icon,
+  leftIcon,
+  rightIcon,
   disabled = false,
   ariaLabel,
   customContainerStyles,
@@ -84,8 +88,6 @@ const IconButtonWithText = ({
     justify-center
     text-[0.825rem]
     min-w-max
-    pl-3
-    pr-5
     gap-1
     [&>svg]:text-[1.5rem]
     [&>svg]:fill-current
@@ -101,8 +103,9 @@ const IconButtonWithText = ({
       disabled={disabled}
       className={cleanDefaultClasses(currentDefaultStyles, customContainerStyles)}
       {...rest}>
-      {icon}
+      {leftIcon}
       <span className={customTextStyles}>{text}</span>
+      {rightIcon}
     </button>
   );
 };

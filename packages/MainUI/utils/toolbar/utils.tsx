@@ -2,8 +2,10 @@ import type { OrganizedSections, ToolbarButtonMetadata } from "@/hooks/Toolbar/t
 import type { TranslateFunction } from "@/hooks/types";
 import type React from "react";
 import Base64Icon from "@workspaceui/componentlibrary/src/components/Base64Icon";
-import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
+import { IconSize, type ToolbarButton, type ProcessAvailableButton } from "@/components/Toolbar/types";
 import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
+import ProcessIcon from "@workspaceui/componentlibrary/src/assets/icons/close-record.svg";
+import ChevronDownIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
 
 const isBase64Image = (str: string): boolean => {
   try {
@@ -18,9 +20,9 @@ const isBase64Image = (str: string): boolean => {
 
 const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.NEW]:
-    "toolbar-button-new bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 py-1 disabled:bg-[var(--color-transparent-neutral-20)] disabled:text-[var(--color-baseline-0)]",
+    "toolbar-button-new bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 py-1 pl-3 pr-5 disabled:bg-[var(--color-transparent-neutral-20)] disabled:text-[var(--color-baseline-0)]",
   [TOOLBAR_BUTTONS_ACTIONS.SAVE]:
-    "toolbar-button-save bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 py-1 disabled:bg-[var(--color-transparent-neutral-20)] disabled:text-[var(--color-baseline-0)]",
+    "toolbar-button-save bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 py-1 pl-3 pr-5 disabled:bg-[var(--color-transparent-neutral-20)] disabled:text-[var(--color-baseline-0)]",
   [TOOLBAR_BUTTONS_ACTIONS.REFRESH]:
     "toolbar-button-refresh border-1 border-[var(--color-transparent-neutral-20)] h-8 w-8 hover:border-none hover:bg-[var(--color-etendo-dark)] hover:text-[var(--color-baseline-80)]",
   [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: "toolbar-button-cancel",
@@ -43,10 +45,6 @@ export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }
   }
 
   return <span style={{ fontSize: "0.75rem", fontWeight: "bold" }}>{iconKey}</span>;
-};
-
-export const ProcessMenuIcon = () => {
-  return <span style={{ fontSize: "1rem" }}>⚙️</span>;
 };
 
 const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMetadata[] => {
@@ -214,14 +212,14 @@ export const createProcessMenuButton = (
   onMenuOpen: (event: React.MouseEvent<HTMLButtonElement>) => void,
   t: TranslateFunction,
   anchorEl: HTMLElement | null
-): ToolbarButton => ({
+): ProcessAvailableButton => ({
   key: "process-menu",
-  icon: <ProcessMenuIcon />,
-  iconText: t("common.processes"),
-  tooltip: t("common.processes"),
+  leftIcon: <ProcessIcon width="1rem" height="1rem" />,
+  rightIcon: <ChevronDownIcon width="1rem" height="1rem" />,
+  text: t("common.processes"),
   anchorEl: anchorEl,
   disabled: !hasSelectedRecord,
-  className: "bg-(--color-warning-main) disabled:bg-(--color-warning-light) h-8 [&>svg]:w-4 [&>svg]:h-4",
+  customContainerStyles: `${anchorEl ? "bg-[var(--color-etendo-dark)] border-none !text-[var(--color-baseline-0)]" : "bg-[var(--color-transparent-neutral-0)]"} disabled:bg-[var(--color-baseline-0)] disabled:opacity-20 h-8 py-1 px-4`,
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
     if (hasSelectedRecord && event && processCount > 0) {
       onMenuOpen(event);
