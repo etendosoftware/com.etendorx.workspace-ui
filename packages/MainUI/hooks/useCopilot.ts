@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useReducer } from "react";
 import { useSSEConnection } from "./useSSEConnection";
 import type { IMessage, IAssistant, CopilotQuestionParams } from "@workspaceui/api-client/src/api/copilot";
-import { formatTimeNewDate, getMessageType } from "@/utils";
+import { formatTime, getMessageType } from "@/utils";
 import { useCopilotClient } from "./useCopilotClient";
 
 interface CopilotState {
@@ -81,7 +81,7 @@ export const useCopilot = () => {
     const newMessage: IMessage = {
       text,
       sender,
-      timestamp: formatTimeNewDate(new Date()),
+      timestamp: formatTime(new Date()),
     };
 
     dispatch({ type: "ADD_MESSAGE", message: newMessage });

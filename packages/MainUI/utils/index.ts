@@ -155,21 +155,13 @@ export const buildRequestOptions = (
 
 export const formatNumber = (value: number) => new Intl.NumberFormat(navigator.language).format(value);
 
-export const formatTime = (dateString: string): string => {
-  const date = new Date(dateString);
+export const formatTime = (input: string | Date): string => {
+  const date = typeof input === "string" ? new Date(input) : input;
   const hours = date.getHours();
   const minutes = date.getMinutes();
   const hoursStr = hours < 10 ? `0${hours}` : hours.toString();
   const minutesStr = minutes < 10 ? `0${minutes}` : minutes.toString();
 
-  return `${hoursStr}:${minutesStr}`;
-};
-
-export const formatTimeNewDate = (date: Date): string => {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  const hoursStr = hours < 10 ? `0${hours}` : hours;
-  const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
   return `${hoursStr}:${minutesStr}`;
 };
 
