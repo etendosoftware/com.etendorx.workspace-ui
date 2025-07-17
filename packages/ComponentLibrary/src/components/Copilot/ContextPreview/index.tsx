@@ -31,7 +31,7 @@ const ContextPreview: React.FC<ContextPreviewProps> = ({
                   onRemoveContext(item.id);
                 }
               }}
-              className="[&>svg]:text-[1rem] hover:text-(--color-dynamic-main) hover:bg-blue-100 rounded-full w-4 h-4)">
+              className="[&>svg]:text-[1rem] hover:text-(--color-dynamic-main) hover:bg-blue-100 rounded-full w-4 h-4">
               <TrashIcon />
             </IconButton>
           )}
@@ -52,7 +52,7 @@ const ContextPreview: React.FC<ContextPreviewProps> = ({
             <IconButton
               type="button"
               onClick={() => onRemoveContext(item.id)}
-              className="[&>svg]:text-[1rem] hover:text-(--color-dynamic-main) hover:bg-blue-100 rounded-full w-4 h-4)">
+              className="[&>svg]:text-[1rem] hover:text-(--color-dynamic-main) hover:bg-blue-100 rounded-full w-4 h-4">
               <TrashIcon />
             </IconButton>
           )}

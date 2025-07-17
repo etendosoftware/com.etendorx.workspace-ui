@@ -2,12 +2,14 @@ import { useMemo } from "react";
 import { useTabContext } from "@/contexts/tab";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { buildPayloadByInputName } from "@/utils";
-import { CONTEXT_CONSTANTS } from "@workspaceui/api-client/src/api/copilot";
+import { buildContextString } from "@/utils/contextUtils";
 import type { RecordContextData } from "./types";
+import { useTranslation } from "./useTranslation";
 
 export const useRecordContext = (): RecordContextData => {
   const { tab } = useTabContext();
   const selectedRecords = useSelectedRecords(tab);
+  const { t } = useTranslation();
 
   const contextItems = useMemo(() => {
     if (!selectedRecords || selectedRecords.length === 0) {
@@ -30,13 +32,11 @@ export const useRecordContext = (): RecordContextData => {
   }, [selectedRecords, tab.fields, tab.id, tab.title, tab.name]);
 
   const contextString = useMemo(() => {
-    if (contextItems.length === 0) {
-      return "";
-    }
-
-    const recordsData = contextItems.map((item) => item.contextString);
-    return `${CONTEXT_CONSTANTS.TAG_START} (${contextItems.length} registro${contextItems.length > 1 ? "s" : ""}):\n\n${recordsData.join("\n\n---\n\n")}${CONTEXT_CONSTANTS.TAG_END}`;
-  }, [contextItems]);
+    return buildContextString({
+      contextItems,
+      registersText: t("copilot.contextPreview.selectedRegisters"),
+    });
+  }, [contextItems, t]);
 
   return {
     selectedRecords,

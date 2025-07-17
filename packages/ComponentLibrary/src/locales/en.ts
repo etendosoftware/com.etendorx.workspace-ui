@@ -1,4 +1,5 @@
 const en = {
+  plural_suffix: "s",
   common: {
     etendo: "Etendo",
     cancel: "Cancel",
@@ -242,7 +243,7 @@ const en = {
       typing: "Typing...",
     },
     contextPreview: {
-      selectedRegisters: " Attached registers",
+      selectedRegisters: " Attached register",
     },
   },
 };

@@ -24,6 +24,7 @@ import ProfileModal from "./ProfileModal/ProfileModal";
 import { useAssistants } from "@/hooks/useAssistants";
 import { useCopilotLabels } from "@/hooks/useCopilotLabels";
 import { useCopilot } from "@/hooks/useCopilot";
+import { buildContextString } from "@/utils/contextUtils";
 
 const handleClose = () => {
   return true;
@@ -116,20 +117,21 @@ const Navigation: React.FC = () => {
     (contextId: string) => {
       setPendingContextItems((items) => {
         const newItems = items.filter((item) => item.id !== contextId);
-        
-        // Actualizar el context string basado en los items restantes
+
         if (newItems.length === 0) {
           setPendingContextString(null);
         } else {
-          const recordsData = newItems.map((item) => item.contextString);
-          const newContextString = `<Context> (${newItems.length} registro${newItems.length > 1 ? "s" : ""}):\n\n${recordsData.join("\n\n---\n\n")}</Context>`;
+          const newContextString = buildContextString({
+            contextItems: newItems,
+            registersText: t("copilot.contextPreview.selectedRegisters"),
+          });
           setPendingContextString(newContextString);
         }
-        
+
         return newItems;
       });
     },
-    []
+    [t]
   );
 
   useEffect(() => {

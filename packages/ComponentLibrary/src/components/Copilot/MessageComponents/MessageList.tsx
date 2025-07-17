@@ -20,7 +20,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
   };
 
   const getContextCountFromMessage = (text: string) => {
-    const contextRegex = new RegExp(`${CONTEXT_CONSTANTS.TAG_START} \\((\\d+) registro[s]?\\):`);
+    const contextRegex = new RegExp(`${CONTEXT_CONSTANTS.TAG_START} \\((\\d+) ${translations?.contextRecords || ""}`);
     const match = text.match(contextRegex);
     return match ? Number.parseInt(match[1]) : 0;
   };
@@ -43,7 +43,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
         const contextCount = messageHasContext ? getContextCountFromMessage(message.text) : 0;
 
         return (
-          <div key={index} className={`flex mb-2 ${message.sender === MESSAGE_ROLES.USER ? "justify-end" : "justify-start"}`}>
+          <div
+            key={index}
+            className={`flex mb-2 ${message.sender === MESSAGE_ROLES.USER ? "justify-end" : "justify-start"}`}>
             <div
               className={`max-w-[70%] p-4 rounded-xl ${
                 message.sender === MESSAGE_ROLES.USER
