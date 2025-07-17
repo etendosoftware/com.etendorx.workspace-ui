@@ -227,6 +227,7 @@ const es = {
     minimize: "Minimizar",
     maximize: "Maximizar",
     close: "Cerrar",
+    contextText: "Contexto",
     assistantSelector: {
       errorInvalidData: "Error: Datos de asistentes inválidos",
       errorNoAssistantsAvailable: "No hay asistentes disponibles",
@@ -240,8 +241,12 @@ const es = {
       placeholder: "Conversa con Copilot...",
     },
     messageList: {
+      contextRecords: "Contexto seleccionado",
       welcomeMessage: "¡Hola! ¿En qué puedo ayudarte hoy?",
       typing: "Escribiendo...",
+    },
+    contextPreview: {
+      selectedRegisters: " Registros adjuntados",
     },
   },
 };

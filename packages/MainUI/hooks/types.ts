@@ -1,4 +1,4 @@
-import type { Field, Tab } from "@workspaceui/api-client/src/api/types";
+import type { EntityData, Field, Tab } from "@workspaceui/api-client/src/api/types";
 import type { TranslationKeys, Translations, NestedKeyOf } from "../../ComponentLibrary/src/locales/types";
 
 export type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(key: K) => string;
@@ -16,4 +16,18 @@ export interface UseTableDirDatasourceParams {
   tab?: Tab;
   pageSize?: number;
   initialPageSize?: number;
+}
+
+export interface ContextItem {
+  id: string;
+  label: string;
+  contextString: string;
+  recordId: string;
+}
+
+export interface RecordContextData {
+  selectedRecords: EntityData[];
+  hasSelectedRecords: boolean;
+  contextString: string;
+  contextItems: ContextItem[];
 }

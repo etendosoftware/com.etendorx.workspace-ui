@@ -12,6 +12,7 @@ import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
+import { useRecordContext } from "@/hooks/useRecordContext";
 
 export const useToolbarConfig = ({
   tabId,
@@ -46,6 +47,7 @@ export const useToolbarConfig = ({
 
   const selectedMultiple = useSelectedRecords(tab);
   const selectedRecord = useSelectedRecord(tab);
+  const { contextString, hasSelectedRecords, contextItems } = useRecordContext();
 
   const selectedRecordId = useMemo(() => {
     if (!activeWindow?.windowId || !tab) return null;
@@ -183,6 +185,16 @@ export const useToolbarConfig = ({
       REFRESH: () => {
         onRefresh?.();
       },
+      COPILOT: () => {
+        const customEvent = new CustomEvent("openCopilotWithContext", {
+          detail: {
+            contextString: hasSelectedRecords ? contextString : null,
+            contextItems: hasSelectedRecords ? contextItems : [],
+            hasContext: hasSelectedRecords,
+          },
+        });
+        window.dispatchEvent(customEvent);
+      },
     }),
     [
       deleteRecord,
@@ -197,6 +209,9 @@ export const useToolbarConfig = ({
       showErrorModal,
       t,
       tab,
+      contextString,
+      contextItems,
+      hasSelectedRecords,
     ]
   );
 

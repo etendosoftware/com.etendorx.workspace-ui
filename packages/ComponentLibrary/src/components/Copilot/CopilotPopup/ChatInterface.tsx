@@ -14,6 +14,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onSelectAssistant,
   onSendMessage,
   showDescription = true,
+  contextItems = [],
+  onRemoveContext,
   translations,
 }) => {
   let parsedAssistants: IAssistant[] = [];
@@ -63,7 +65,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         onSendMessage={onSendMessage}
         placeholder={translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder}
         disabled={isLoading}
-        translations={translations.messageInput}
+        contextItems={contextItems}
+        onRemoveContext={onRemoveContext}
+        translations={{
+          placeholder: translations.messageInput?.placeholder || labels.ETCOP_Message_Placeholder,
+          selectedRegisters: translations.selectedRegisters,
+        }}
       />
     </div>
   );

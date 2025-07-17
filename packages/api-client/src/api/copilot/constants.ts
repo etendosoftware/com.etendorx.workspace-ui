@@ -26,10 +26,20 @@ export const COPILOT_BASE_PATH = "/copilot/";
 export const MESSAGE_ROLES = {
   USER: "user",
   BOT: "bot",
+  ASSISTANT: "assistant",
   ERROR: "error",
   TOOL: "tool",
   NODE: "node",
   WAIT: "wait",
+} as const;
+
+/**
+ * Context-related constants
+ */
+export const CONTEXT_CONSTANTS = {
+  TAG_START: '<Context>',
+  TAG_END: '</Context>',
+  MAX_ITEMS_DISPLAY: 10,
 } as const;
 
 /**
@@ -59,6 +69,11 @@ export const UPLOAD_CONFIG = {
  * Question caching threshold
  */
 export const CACHE_THRESHOLD = 7000;
+
+/**
+ * Type definitions for the constants
+ */
+export type MessageRole = typeof MESSAGE_ROLES[keyof typeof MESSAGE_ROLES];
 
 /**
  * Environment detection

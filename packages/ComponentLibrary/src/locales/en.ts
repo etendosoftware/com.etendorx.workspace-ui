@@ -1,4 +1,5 @@
 const en = {
+  plural_suffix: "s",
   common: {
     etendo: "Etendo",
     cancel: "Cancel",
@@ -223,6 +224,7 @@ const en = {
     minimize: "Minimize",
     maximize: "Maximize",
     close: "Close",
+    contextText: "Context",
     assistantSelector: {
       errorInvalidData: "Error: Invalid assistant data",
       errorNoAssistantsAvailable: "No assistants available",
@@ -236,8 +238,12 @@ const en = {
       placeholder: "Chat with Copilot...",
     },
     messageList: {
+      contextRecords: "Selected Context",
       welcomeMessage: "Hello! How can I help you today?",
       typing: "Typing...",
+    },
+    contextPreview: {
+      selectedRegisters: " Attached register",
     },
   },
 };

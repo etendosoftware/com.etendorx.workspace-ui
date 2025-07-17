@@ -22,6 +22,9 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
   onSendMessage,
   onResetConversation,
   showDescription,
+  hasContextPending = false,
+  contextItems = [],
+  onRemoveContext,
   translations,
 }) => {
   if (!open) return null;
@@ -57,7 +60,8 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
               onClick={isHeaderClickable ? handleHeaderClick : undefined}
               className={`text-lg group font-semibold text-(--color-transparent-neutral-70) flex items-center gap-2 border-1 border-(--color-transparent-neutral-20) px-3 py-1 rounded-full min-w-0 ${
                 isExpanded ? "max-w-none" : "max-w-76"
-              } ${
+              } 
+              ${
                 isHeaderClickable
                   ? "cursor-pointer hover:text-(--color-dynamic-main) transition-colors"
                   : "cursor-default"
@@ -66,16 +70,27 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
               aria-label={isHeaderClickable ? translations.backToSelection : undefined}
               title={getHeaderText()}>
               <div className="flex-shrink-0">
-                {isHeaderClickable && (
+                {isHeaderClickable ? (
                   <BackIcon
                     fill="var(--color-transparent-neutral-70)"
                     className="group-hover:fill-(--color-dynamic-main) transition-colors"
                   />
+                ) : (
+                  <SparksIcon
+                    fill={hasContextPending ? "var(--color-dynamic-main)" : "var(--color-transparent-neutral-70)"}
+                  />
                 )}
-                {!isHeaderClickable && <SparksIcon fill="var(--color-transparent-neutral-70)" />}
               </div>
-
-              <span className="truncate min-w-0 text-left">{getHeaderText()}</span>
+              <p className="truncate min-w-0 text-left">
+                {getHeaderText()}
+                {hasContextPending && !isHeaderClickable ? (
+                  <span className="bg-blue-100 text-(--color-dynamic-main) py-1 px-2 rounded-full ml-2">
+                    {translations.contextText}
+                  </span>
+                ) : (
+                  ""
+                )}
+              </p>
             </button>
           </div>
 
@@ -106,7 +121,10 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
             onSendMessage={onSendMessage}
             onResetConversation={onResetConversation}
             showDescription={showDescription}
+            contextItems={contextItems}
+            onRemoveContext={onRemoveContext}
             translations={{
+              selectedRegisters: translations.selectedRegisters,
               assistantSelector: translations.assistantSelector,
               messageInput: translations.messageInput,
               messageList: translations.messageList,
