@@ -8,6 +8,7 @@ const FILLED_DEFAULT_STYLES = `
   hover:bg-[var(--color-dynamic-main)]
   disabled:bg-[var(--color-transparent-neutral-20)]
   text-[var(--color-baseline-0)]
+  font-medium
 `;
 
 const OUTLINED_DEFAULT_STYLES = `
