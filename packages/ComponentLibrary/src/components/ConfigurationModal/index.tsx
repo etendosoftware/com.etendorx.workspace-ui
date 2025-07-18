@@ -7,8 +7,6 @@ import "./style.css";
 import IconButton from "../IconButton";
 import Menu from "../Menu";
 
-export const COLUMN_SPACING = "0.75rem";
-
 const IconRenderer = ({ icon, imageStyles }: { icon: string | React.ReactNode; imageStyles?: string }): JSX.Element => {
   if (typeof icon === "string") {
     return <img src={icon} alt="icon" className={imageStyles} />;
@@ -110,7 +108,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
                         <CircleIcon width="1.5rem" height="1.5rem" fill="var(--color-baseline-70)" />
                       )}
                     </div>
-                    <IconRenderer icon={img} imageStyles="rounded-xl border border-[var(--color-baseline-30)]" />
+                    <IconRenderer icon={img} />
                     <span className="text-sm font-medium text-[var(--color-baseline-100)] text-left">{label}</span>
                   </button>
                 ))}

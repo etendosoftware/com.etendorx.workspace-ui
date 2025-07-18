@@ -32,7 +32,7 @@ const Base64Icon: React.FC<Base64IconProps> = ({
       alt={alt}
       width={size}
       height={size}
-      className={`w-${size / 4} h-${size / 4} ${combinedClasses}`}
+      className={`w-${Math.round(size / 4)} h-${Math.round(size / 4)} ${combinedClasses}`}
     />
   );
 };
