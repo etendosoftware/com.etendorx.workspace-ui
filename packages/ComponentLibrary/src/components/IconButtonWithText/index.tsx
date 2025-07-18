@@ -19,7 +19,7 @@ const OUTLINED_DEFAULT_STYLES = `
   hover:text-[var(--color-baseline-0)]
   disabled:bg-[var(--color-transparent-neutral-10)]
   disabled:opacity-30
-  text-[var(--color-baseline-80)]
+  text-[var(--color-baseline-70)]
 `;
 
 const getCurrentStyles = (buttonType: ButtonType) => {
