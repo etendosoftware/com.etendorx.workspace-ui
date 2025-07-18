@@ -33,10 +33,10 @@ export default function MenuItem({ windowId, title, isActive, onSelect }: MenuIt
       onMouseLeave={handleMouseLeave}
       title={title}>
       <div className={`flex items-center gap-2 overflow-hidden w-10/12 ${showSelected ? "text-[#004ACA]" : ""}`}>
-        <span className="truncate flex items-center gap-2">
+        <div className="truncate flex items-center gap-2">
           <FolderIcon className="fill-black" />
           <span className="truncate">{title}</span>
-        </span>
+        </div>
       </div>
       {isActive && <CheckIcon fill="#004ACA" />}
     </button>
