@@ -70,7 +70,7 @@ export default function WindowTabs() {
         </IconButton>
       )}
       <div
-        className="w-full flex items-center px-2 overflow-x-auto overflow-y-hidden scroll-smooth no-scrollbar h-9"
+        className="w-full flex items-center px-2 overflow-x-auto overflow-y-hidden scroll-smooth hide-scrollbar h-9"
         ref={windowsContainerRef}>
         {windows.map((window, index) => {
           const title = window.title || getWindowTitle?.(window.windowId);
