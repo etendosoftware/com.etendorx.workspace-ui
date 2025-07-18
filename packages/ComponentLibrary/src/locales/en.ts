@@ -1,4 +1,5 @@
 const en = {
+  plural_suffix: "s",
   common: {
     etendo: "Etendo",
     cancel: "Cancel",
@@ -215,6 +216,34 @@ const en = {
   form: {
     select: {
       placeholder: "Select an option",
+    },
+  },
+  copilot: {
+    copilotProfile: "Copilot Profile",
+    backToSelection: "Back to assistant selection",
+    minimize: "Minimize",
+    maximize: "Maximize",
+    close: "Close",
+    contextText: "Context",
+    assistantSelector: {
+      errorInvalidData: "Error: Invalid assistant data",
+      errorNoAssistantsAvailable: "No assistants available",
+      defaultDescription: "Etendo Copilot Assistant",
+      welcomeMessage: "Hello! ✨🚀 Select the profile that best fits your task and let's begin. 💪",
+      profilesTitle: "Profiles",
+      learnMoreText: "Learn more about Copilot →",
+      filterPlaceholder: "Filter profiles...",
+    },
+    messageInput: {
+      placeholder: "Chat with Copilot...",
+    },
+    messageList: {
+      contextRecords: "Selected Context",
+      welcomeMessage: "Hello! How can I help you today?",
+      typing: "Typing...",
+    },
+    contextPreview: {
+      selectedRegisters: " Attached register",
     },
   },
   location: {

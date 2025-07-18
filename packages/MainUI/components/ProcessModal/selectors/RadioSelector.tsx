@@ -1,4 +1,6 @@
 import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
+import { RadioGrid } from "@workspaceui/componentlibrary/src/components";
+import type { RadioGridOption } from "@workspaceui/componentlibrary/src/components/RadioGrid";
 import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 
@@ -16,40 +18,22 @@ const RadioSelector = ({ parameter }: { parameter: ProcessParameter }) => {
     setValue(parameter.dBColumnName, value);
   };
 
+  const radioOptions: RadioGridOption[] = parameter.refList.map((option) => ({
+    value: option.value,
+    label: option.label,
+    description: option.value !== option.label ? option.value : undefined,
+  }));
+
   return (
-    <div className="grid grid-flow-col gap-4">
-      {parameter.refList.map((option) => (
-        <div
-          key={option.value}
-          className={`rounded-lg flex flex-col cursor-pointer min-w-[180px] ${
-            selectedOption === option.value
-              ? "bg-(--color-transparent-neutral-5) border border-(--color-etendo-main) hover:bg-(--color-transparent-neutral-10)"
-              : "bg-(--color-baseline-10) border border-(--color-baseline-30) hover:bg-(--color-transparent-neutral-5)"
-          }`}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              handleSelect(option.value);
-            }
-          }}
-          onClick={() => handleSelect(option.value)}>
-          <div className="flex items-start p-4">
-            <div
-              className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 mr-3 ${
-                selectedOption === option.value ? "border-(--color-etendo-main)" : "border-gray-400"
-              }`}>
-              {selectedOption === option.value && <div className="w-3 h-3 rounded-full bg-(--color-etendo-main)" />}
-            </div>
-            <div className="w-full">
-              <h4
-                className={`font-bold text-base ${selectedOption === option.value ? "text-(--color-etendo-main)" : "text-gray-800"}`}>
-                {option.label}
-              </h4>
-              {option.value !== option.label && <p className="text-xs text-gray-500 mt-1">{option.value}</p>}
-            </div>
-          </div>
-        </div>
-      ))}
+    <div>
+      <RadioGrid
+        options={radioOptions}
+        selectedValue={selectedOption || null}
+        onSelect={handleSelect}
+        columns={parameter.refList.length <= 2 ? (parameter.refList.length as 1 | 2) : 3}
+        name={parameter.dBColumnName}
+        className="grid-flow-col"
+      />
       <input
         type="hidden"
         {...register(parameter.dBColumnName, {

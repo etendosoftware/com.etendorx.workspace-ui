@@ -154,3 +154,30 @@ export const buildRequestOptions = (
 });
 
 export const formatNumber = (value: number) => new Intl.NumberFormat(navigator.language).format(value);
+
+export const formatTime = (input: string | Date): string => {
+  const date = typeof input === "string" ? new Date(input) : input;
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const hoursStr = hours < 10 ? `0${hours}` : hours.toString();
+  const minutesStr = minutes < 10 ? `0${minutes}` : minutes.toString();
+
+  return `${hoursStr}:${minutesStr}`;
+};
+
+export const getMessageType = (sender: string) => {
+  if (sender === "error") {
+    return "error";
+  }
+  if (sender === "user") {
+    return "right-user";
+  }
+  return "left-user";
+};
+
+export const formatLabel = (label: string, count?: number): string | undefined => {
+  if (label.includes("%s") && count !== undefined) {
+    return label.replace("%s", String(count));
+  }
+  return undefined;
+};
