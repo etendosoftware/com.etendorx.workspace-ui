@@ -5,7 +5,7 @@ import {
   SECTION_COMMON_TOOLBAR_BUTTONS_ID,
   SECTION_SPECIFIC_TOOLBAR_BUTTONS_ID,
   SECTION_DENSITY_ID,
-  DENSITY_ITEMS,
+  INTERFACE_SCALE_ITEMS,
   THEME_ITEMS,
   TABLE_DENSITY_ITEMS,
   COMMON_TOOLBAR_BUTTONS_ITEMS,
@@ -15,8 +15,8 @@ import {
 export const modalConfig = {
   icon: <SettingIcon />,
   title: {
-    icon: <SettingIcon fill='#2E365C' />,
-    label: 'Appearance',
+    icon: <SettingIcon fill='var(--color-dynamic-main)' />,
+    label: 'Quick Setup',
   },
   linkTitle: { label: 'View all settings', url: '/settings' },
   sections: [
@@ -50,8 +50,8 @@ export const modalConfig = {
     },
     {
       id: SECTION_DENSITY_ID,
-      name: "Density",
-      items: DENSITY_ITEMS,
+      name: "Interface scale",
+      items: INTERFACE_SCALE_ITEMS,
       selectedItem: 1,
       isDisabled: false,
     },

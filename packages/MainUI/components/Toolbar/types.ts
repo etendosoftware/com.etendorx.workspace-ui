@@ -1,7 +1,7 @@
 import type { SxProps, Theme } from "@mui/material";
 import type { ProcessButton } from "../ProcessModal/types";
 
-export const IconSize = 16;
+export const IconSize = "1rem";
 
 export interface Position {
   top: string;
@@ -71,8 +71,8 @@ export interface ToolbarButton extends BasicToolbarButton {
   tooltip?: string;
   fill?: string;
   hoverFill?: string;
-  height?: number;
-  width?: number;
+  height?: number | string;
+  width?: number | string;
   sx?: SxProps<Theme>;
   className?: string;
   anchorEl?: HTMLElement | null;

@@ -1,7 +1,7 @@
 import { type CSSProperties, useMemo } from "react";
 import { type SxProps, type Theme, useTheme } from "@mui/material";
 
-const FONT_SIZE_14 = 14;
+const FONT_SIZE_14 = "0,875rem";
 const WIDTH_FULL = "100%";
 
 type StylesType = {

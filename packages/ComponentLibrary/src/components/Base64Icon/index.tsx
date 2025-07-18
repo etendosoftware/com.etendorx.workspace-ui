@@ -26,7 +26,15 @@ const Base64Icon: React.FC<Base64IconProps> = ({
 }) => {
   const combinedClasses = `${CSS_CLASSES.base} ${className}`.trim();
 
-  return <Image src={src} alt={alt} width={size} height={size} className={combinedClasses} />;
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={size}
+      height={size}
+      className={`w-${size / 4} h-${size / 4} ${combinedClasses}`}
+    />
+  );
 };
 
 export default Base64Icon;
