@@ -7,8 +7,6 @@ import "./style.css";
 import IconButton from "../IconButton";
 import Menu from "../Menu";
 
-export const COLUMN_SPACING = "0.75rem";
-
 const IconRenderer = ({ icon, imageStyles }: { icon: string | React.ReactNode; imageStyles?: string }): JSX.Element => {
   if (typeof icon === "string") {
     return <img src={icon} alt="icon" className={imageStyles} />;
