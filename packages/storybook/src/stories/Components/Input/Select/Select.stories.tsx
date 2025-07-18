@@ -17,7 +17,7 @@ const Template = () => (
         title='Películas'
         helperText={{
           label: 'Top 15',
-          icon: <CheckCircleIcon sx={{ width: 16, height: 16 }} />,
+          icon: <CheckCircleIcon sx={{ width: "1rem", height: "1rem" }} />,
         }}
         options={topFilms}
         getOptionLabel={(option) => option.title}

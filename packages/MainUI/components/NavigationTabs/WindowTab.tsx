@@ -19,9 +19,8 @@ export default function WindowTab({ title, isActive, onActivate, onClose, canClo
     <button
       type="button"
       className={`
-        h-9 flex gap-2 items-center justify-center px-1.5 py-1.5 cursor-pointer
-        min-w-[140px] max-w-[220px] relative group
-        transition-all duration-200 text-(--color-baseline-90) 
+        h-9 flex gap-2 items-center justify-center p-2 cursor-pointer max-w-[220px] 
+        relative group transition-all duration-200 text-(--color-baseline-90) 
         ${
           isActive
             ? "bg-(--color-baseline-0) border-b-2 border-(--color-dynamic-main)"

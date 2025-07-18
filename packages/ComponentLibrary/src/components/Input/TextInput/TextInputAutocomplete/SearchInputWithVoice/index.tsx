@@ -72,8 +72,8 @@ const SearchInputWithVoice = ({ onVoiceClick, disabled = false, ...props }: Sear
           {...props}
           InputProps={{
             ...props.InputProps,
-            startAdornment: <StartAdornment />,
-            endAdornment: <EndAdornment />,
+            startAdornment: props.InputProps?.startAdornment || <StartAdornment />,
+            endAdornment: props.InputProps?.endAdornment || <EndAdornment />,
             style: { height: "2.5rem" },
           }}
           disabled={disabled}

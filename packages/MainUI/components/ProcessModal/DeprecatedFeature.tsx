@@ -26,7 +26,7 @@ const DeprecatedFeatureModal = ({ isOpen, onClose, title, message }: ProcessDepr
         </div>
         <div className="p-6">
           <div className="flex items-center justify-center mb-4">
-            <WarningIcon fill="red" width={32} height={32} />
+            <WarningIcon fill="red" width="2rem" height="2rem" />
           </div>
           <p className="text-center text-lg font-medium mb-4">{message || t("common.notImplemented")}</p>
         </div>

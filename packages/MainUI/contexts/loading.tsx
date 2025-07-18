@@ -27,14 +27,10 @@ export default function LoadingProvider({
 
   const value = useMemo<LoadingContextType>(
     () => ({ isLoading, showLoading, hideLoading }),
-    [isLoading, showLoading, hideLoading],
+    [isLoading, showLoading, hideLoading]
   );
 
-  return (
-    <LoadingContext.Provider value={value}>
-      {children}
-    </LoadingContext.Provider>
-  );
+  return <LoadingContext.Provider value={value}>{children}</LoadingContext.Provider>;
 }
 
 export const useLoading = (): LoadingContextType => {

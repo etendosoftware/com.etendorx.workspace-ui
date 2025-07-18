@@ -6,6 +6,7 @@ export const TOOLBAR_BUTTONS_ACTIONS = {
   DELETE: "DELETE",
   FIND: "FIND",
   FILTER: "FILTER",
+  COPILOT: "COPILOT",
 };
 
 export const TOOLBAR_BUTTONS_TYPES = {

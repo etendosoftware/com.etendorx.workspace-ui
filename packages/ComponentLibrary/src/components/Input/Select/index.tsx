@@ -22,7 +22,7 @@ import type { ISelectInput, Option as BaseOption } from "./types";
 type OptionProps = React.HTMLAttributes<HTMLLIElement> & { key?: string };
 type Option<T extends string = string> = BaseOption<T> & {
   iconLeft?: React.ReactNode;
-}
+};
 
 const Select: React.FC<ISelectInput> = ({
   title,
@@ -105,14 +105,12 @@ const Select: React.FC<ISelectInput> = ({
           ...sx.optionContainer,
           backgroundColor: selected ? theme.palette.baselineColor.neutral[0] : undefined,
         }}
-        {...otherParams}
-      >
-        {option?.iconLeft && <div style={{marginRight: "0.5rem"}}>{option.iconLeft}</div>}
+        {...otherParams}>
+        {option?.iconLeft && <div style={{ marginRight: "0.5rem" }}>{option.iconLeft}</div>}
         <Typography
           className="textOption"
           color={selected ? theme.palette.dynamicColor.dark : theme.palette.baselineColor.neutral[90]}
-          style={sx.optionText}
-        >
+          style={sx.optionText}>
           {option.title}
         </Typography>
         {selected && <CheckCircleIcon style={sx.checkIcon} />}

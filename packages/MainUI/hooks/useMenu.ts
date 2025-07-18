@@ -24,10 +24,7 @@ export const useMenu = (token: string | null, currentRole?: CurrentRole, languag
   );
 
   useEffect(() => {
-    if (
-      token &&
-      currentRole 
-    ) {
+    if (token && currentRole) {
       fetchMenu(true);
     }
   }, [token, currentRole, fetchMenu, language]);

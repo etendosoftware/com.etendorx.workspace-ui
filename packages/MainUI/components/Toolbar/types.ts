@@ -1,7 +1,7 @@
 import type { SxProps, Theme } from "@mui/material";
 import type { ProcessButton } from "../ProcessModal/types";
 
-export const IconSize = 16;
+export const IconSize = "1rem";
 
 export interface Position {
   top: string;
@@ -59,19 +59,31 @@ export interface ProcessMenuProps {
   selectedRecord: unknown | undefined;
 }
 
-export interface ToolbarButton {
+export interface BasicToolbarButton {
   key: string;
+  onClick: ((event: React.MouseEvent<HTMLButtonElement>) => void) | (() => void);
+  disabled?: boolean;
+}
+
+export interface ToolbarButton extends BasicToolbarButton {
   icon: React.ReactNode;
   iconText?: string;
   tooltip?: string;
-  onClick: ((event: React.MouseEvent<HTMLButtonElement>) => void) | (() => void);
-  disabled?: boolean;
   fill?: string;
   hoverFill?: string;
-  height?: number;
-  width?: number;
+  height?: number | string;
+  width?: number | string;
   sx?: SxProps<Theme>;
   className?: string;
+  anchorEl?: HTMLElement | null;
+}
+
+export interface ProcessAvailableButton extends BasicToolbarButton {
+  leftIcon: React.ReactNode;
+  rightIcon: React.ReactNode;
+  text: string;
+  customContainerStyles?: string;
+  customTextStyles?: string;
   anchorEl?: HTMLElement | null;
 }
 
@@ -80,12 +92,12 @@ export interface ToolbarSectionConfig {
   style?: React.CSSProperties;
   toggleExpand?: (event?: React.MouseEvent<HTMLButtonElement>) => void;
   className?: string;
-  processButton?: ToolbarButton;
+  processButton?: ProcessAvailableButton;
 }
 
 export interface TopToolbarProps {
   leftSection: ToolbarSectionConfig;
   centerSection: ToolbarSectionConfig;
   rightSection: ToolbarSectionConfig;
-  processButton: ToolbarButton;
+  processButton: ProcessAvailableButton;
 }

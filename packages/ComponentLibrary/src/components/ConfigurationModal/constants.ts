@@ -10,6 +10,9 @@ import CommonToolbarIconTextUrl from "../../assets/images/ConfigurationModal/com
 import SpecificToolbarIconUrl from "../../assets/images/ConfigurationModal/specific-toolbar buttons-icon.svg?url";
 import SpecificToolbarIconTextUrl from "../../assets/images/ConfigurationModal/specific-toolbar buttons-icon-and-text.svg?url";
 import SpecificToolbarTextUrl from "../../assets/images/ConfigurationModal/specific-toolbar buttons-text.svg?url";
+import InterfaceScaleSmallUrl from "../../assets/images/ConfigurationModal/interface-scale-small.svg?url";
+import InterfaceScaleDefaultUrl from "../../assets/images/ConfigurationModal/interface-scale-default.svg?url";
+import InterfaceScaleLargeUrl from "../../assets/images/ConfigurationModal/interface-scale-large.svg?url";
 
 export const SECTION_THEME_ID = "theme";
 export const SECTION_TABLE_DENSITY_ID = "tableDensity";
@@ -41,12 +44,12 @@ export const SPECIFIC_TOOLBAR_BUTTONS_ITEMS = [
   { img: SpecificToolbarTextUrl, id: "specific-text", label: "Text" },
 ];
 
-export const COMPACT_DENSITY_ID = "compact-view";
-export const STANDARD_DENSITY_ID = "standard-view";
-export const COMFORTABLE_DENSITY_ID = "comfortable-view";
+export const SMALL_INTERFACE_SCALE_ID = "small-scale";
+export const DEFAULT_INTERFACE_SCALE_ID = "default-scale";
+export const LARGE_INTERFACE_SCALE_ID = "large-scale";
 
-export const DENSITY_ITEMS = [
-  { img: DensityCompactUrl, id: COMPACT_DENSITY_ID, label: "Compact" },
-  { img: DensityStandardUrl, id: STANDARD_DENSITY_ID, label: "Standard" },
-  { img: DensityComfortableUrl, id: COMFORTABLE_DENSITY_ID, label: "Comfortable" },
+export const INTERFACE_SCALE_ITEMS = [
+  { img: InterfaceScaleSmallUrl, id: SMALL_INTERFACE_SCALE_ID, label: "Small" },
+  { img: InterfaceScaleDefaultUrl, id: DEFAULT_INTERFACE_SCALE_ID, label: "Default" },
+  { img: InterfaceScaleLargeUrl, id: LARGE_INTERFACE_SCALE_ID, label: "Large" },
 ];
