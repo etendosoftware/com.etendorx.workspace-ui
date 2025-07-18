@@ -1,11 +1,8 @@
 import type { OrganizedSections, ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
-import type { TranslateFunction } from "@/hooks/types";
 import type React from "react";
 import Base64Icon from "@workspaceui/componentlibrary/src/components/Base64Icon";
-import { IconSize, type ToolbarButton, type ProcessAvailableButton } from "@/components/Toolbar/types";
+import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
 import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
-import ProcessIcon from "@workspaceui/componentlibrary/src/assets/icons/close-record.svg";
-import ChevronDownIcon from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
 
 const isBase64Image = (str: string): boolean => {
   try {
@@ -205,24 +202,3 @@ export const createButtonByType = ({
 export const getButtonStyles = (button: ToolbarButtonMetadata) => {
   return BUTTON_STYLES[button.action as keyof typeof BUTTON_STYLES];
 };
-
-export const createProcessMenuButton = (
-  processCount: number,
-  hasSelectedRecord: boolean,
-  onMenuOpen: (event: React.MouseEvent<HTMLButtonElement>) => void,
-  t: TranslateFunction,
-  anchorEl: HTMLElement | null
-): ProcessAvailableButton => ({
-  key: "process-menu",
-  leftIcon: <ProcessIcon width="1rem" height="1rem" />,
-  rightIcon: <ChevronDownIcon width="1rem" height="1rem" />,
-  text: t("common.processes"),
-  anchorEl: anchorEl,
-  disabled: !hasSelectedRecord,
-  customContainerStyles: `${anchorEl ? "bg-[var(--color-etendo-dark)] border-none !text-[var(--color-baseline-0)]" : "bg-[var(--color-transparent-neutral-0)]"} disabled:bg-[var(--color-baseline-0)] disabled:opacity-20 h-8 py-1 px-4`,
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
-    if (hasSelectedRecord && event && processCount > 0) {
-      onMenuOpen(event);
-    }
-  },
-});
