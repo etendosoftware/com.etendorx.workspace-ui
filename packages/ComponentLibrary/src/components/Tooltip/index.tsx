@@ -1,3 +1,8 @@
+import { useRef, useState, useEffect } from "react";
+import ReactDOM from "react-dom";
+
+const DEFAULT_MARGIN = 8;
+
 export interface TooltipProps {
   title?: string;
   children: React.ReactNode;
@@ -6,44 +11,89 @@ export interface TooltipProps {
 }
 
 const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom", containerClassName }) => {
-  const getPositionClasses = () => {
+  const [visible, setVisible] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!visible || !wrapperRef.current || !tooltipRef.current) return;
+
+    const triggerRect = wrapperRef.current.getBoundingClientRect();
+    const tooltipRect = tooltipRef.current.getBoundingClientRect();
+
+    let top = 0;
+    let left = 0;
+
     switch (position) {
+      case "top":
+        top = triggerRect.top - tooltipRect.height - DEFAULT_MARGIN;
+        left = triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2;
+        break;
       case "bottom":
-        return {
-          tooltip: "top-full left-1/2 -translate-x-1/2 mt-2",
-          arrow: "-top-1 left-1/2 -translate-x-1/2 border-t-gray-900",
-        };
+        top = triggerRect.bottom + DEFAULT_MARGIN;
+        left = triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2;
+        break;
       case "left":
-        return {
-          tooltip: "right-full top-1/2 -translate-y-1/2 mr-2",
-          arrow: "top-1/2 -right-1 -translate-y-1/2 border-l-gray-900",
-        };
+        top = triggerRect.top + triggerRect.height / 2 - tooltipRect.height / 2;
+        left = triggerRect.left - tooltipRect.width - DEFAULT_MARGIN;
+        break;
       case "right":
-        return {
-          tooltip: "left-full top-1/2 -translate-y-1/2 ml-2",
-          arrow: "top-1/2 -left-1 -translate-y-1/2 border-r-gray-900",
-        };
-      default:
-        return {
-          tooltip: "bottom-full left-1/2 -translate-x-1/2 mb-2",
-          arrow: "-bottom-1 left-1/2 -translate-x-1/2 border-b-gray-900",
-        };
+        top = triggerRect.top + triggerRect.height / 2 - tooltipRect.height / 2;
+        left = triggerRect.right + DEFAULT_MARGIN;
+        break;
+    }
+
+    setCoords({ top, left });
+  }, [visible, position]);
+
+  const showTooltip = () => setVisible(true);
+  const hideTooltip = () => setVisible(false);
+
+  const getArrowStyles = () => {
+    const base = "absolute w-2 h-2 rotate-45 bg-gray-900";
+
+    switch (position) {
+      case "top":
+        return `${base} bottom-[-4px] left-1/2 -translate-x-1/2`;
+      case "bottom":
+        return `${base} top-[-4px] left-1/2 -translate-x-1/2`;
+      case "left":
+        return `${base} right-[-4px] top-1/2 -translate-y-1/2`;
+      case "right":
+        return `${base} left-[-4px] top-1/2 -translate-y-1/2`;
     }
   };
 
   if (!title) return <>{children}</>;
 
-  const { tooltip, arrow } = getPositionClasses();
-
   return (
-    <div className={`relative group ${containerClassName ? containerClassName : ""}`}>
+    <div
+      ref={wrapperRef}
+      className={`inline-block relative ${containerClassName ?? ""}`}
+      onMouseEnter={showTooltip}
+      onMouseLeave={hideTooltip}>
       {children}
-      <div
-        role="tooltip"
-        className={`absolute z-10 opacity-0 group-hover:opacity-100 transition-opacity delay-600 duration-100 pointer-events-none ${tooltip}`}>
-        <div className={`absolute w-2 h-2 rotate-45 ${arrow} bg-gray-900`} />
-        <div className="bg-gray-900 text-white text-sm rounded px-1 py-1 shadow-md whitespace-nowrap">{title}</div>
-      </div>
+      {visible &&
+        ReactDOM.createPortal(
+          <div
+            ref={tooltipRef}
+            role="tooltip"
+            style={{
+              top: coords.top,
+              left: coords.left,
+            }}
+            className="fixed z-50 transition-opacity delay-600 duration-100 pointer-events-none">
+            <div className="relative">
+              <div className={getArrowStyles()} />
+              <div className="bg-gray-900 text-white text-sm rounded px-2 py-1 shadow-md whitespace-nowrap">
+                {title}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
