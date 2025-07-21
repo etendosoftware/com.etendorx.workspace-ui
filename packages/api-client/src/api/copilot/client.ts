@@ -1,5 +1,5 @@
 import { Client, type Interceptor, type ClientOptions } from "../client";
-import { COPILOT_ENDPOINTS, COPILOT_METHODS, isProduction } from "./constants";
+import { COPILOT_ENDPOINTS, COPILOT_METHODS, isProduction, COPILOT_BASE_PATH } from "./constants";
 import type { IAssistant, ILabels, CopilotQuestionParams, CopilotUploadResponse } from "./types";
 
 export class CopilotUnauthorizedError extends Error {
@@ -16,27 +16,27 @@ export class CopilotClient {
   private static currentBaseUrl = "";
   private static isInitialized = false;
 
-
   /**
    * Initializes the CopilotClient with base URL
    * Follows the pattern from Metadata class
    */
-  public static setBaseUrl(url?: string) {
+  public static setBaseUrl(etendoUrl?: string) {
     let copilotUrl: string;
 
-    if (url) {
-      copilotUrl = url;
+    if (etendoUrl) {
+      copilotUrl = `${etendoUrl.replace(/\/$/, "")}${COPILOT_BASE_PATH}`;
     } else if (isProduction()) {
-      copilotUrl = process.env.NEXT_PUBLIC_COPILOT_URL || "/etendo/copilot/";
+      const classicUrl = process.env.ETENDO_CLASSIC_URL || "";
+      copilotUrl = `${classicUrl.replace(/\/$/, "")}${COPILOT_BASE_PATH}`;
     } else {
-      copilotUrl = "http://localhost:8080/etendo/copilot/";
+      copilotUrl = `http://localhost:8080/etendo${COPILOT_BASE_PATH}`;
     }
 
     console.log("CopilotClient.setBaseUrl:", {
       isProduction: isProduction(),
-      envVar: process.env.NEXT_PUBLIC_COPILOT_URL,
+      etendoClassicUrl: process.env.ETENDO_CLASSIC_URL,
       finalUrl: copilotUrl,
-      providedUrl: url
+      providedUrl: etendoUrl,
     });
 
     CopilotClient.currentBaseUrl = copilotUrl;
@@ -137,7 +137,7 @@ export class CopilotClient {
     console.log("CopilotClient.getAssistants: Starting request", {
       baseUrl: CopilotClient.currentBaseUrl,
       endpoint: COPILOT_ENDPOINTS.GET_ASSISTANTS,
-      fullUrl: `${CopilotClient.currentBaseUrl}${COPILOT_ENDPOINTS.GET_ASSISTANTS}`
+      fullUrl: `${CopilotClient.currentBaseUrl}${COPILOT_ENDPOINTS.GET_ASSISTANTS}`,
     });
 
     try {
