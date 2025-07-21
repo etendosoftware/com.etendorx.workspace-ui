@@ -56,8 +56,7 @@ export default function WindowTabs() {
         <IconButton
           onClick={handleGoHome}
           className={`w-8 h-8 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-etendo-main) hover:text-(--color-etendo-contrast-text) ${isHomeRoute ? "bg-(--color-etendo-main) text-(--color-etendo-contrast-text)" : ""}`}
-          title={t("primaryTabs.dashboard")}
-          tooltipPosition="bottom"
+          tooltip={t("primaryTabs.dashboard")}
           aria-label={t("primaryTabs.dashboard")}>
           <HomeIcon className="h-[1.125rem] w-[1.125rem]" />
         </IconButton>
