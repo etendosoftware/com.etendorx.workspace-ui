@@ -13,7 +13,7 @@ export interface TooltipProps {
 
 const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom", containerClassName }) => {
   const [visible, setVisible] = useState(false);
-  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -95,10 +95,11 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom",
             ref={tooltipRef}
             role="tooltip"
             style={{
-              top: coords.top,
-              left: coords.left,
+              top: coords?.top,
+              left: coords?.left,
+              visibility: coords?.top && coords?.left ? "visible" : "hidden",
             }}
-            className="fixed z-[1000] transition-opacity delay-600 duration-100 pointer-events-none">
+            className="fixed z-[1000] opacity-100 transition-opacity duration-100 pointer-events-none">
             <div className="relative">
               <div className={getArrowStyles()} />
               <div className="bg-gray-900 text-white text-sm rounded px-2 py-1 shadow-md whitespace-nowrap">
