@@ -38,3 +38,53 @@ export async function performHealthCheck(
     }
   }
 }
+
+export async function performCopilotHealthCheck(baseUrl: string, token: string, signal?: AbortSignal) {
+  const assistantsUrl = `${baseUrl}assistants`;
+
+  logger.info("Copilot Health Check:", {
+    baseUrl,
+    assistantsUrl,
+    hasToken: !!token,
+    tokenLength: token?.length || 0,
+  });
+
+  try {
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    if (process.env.NODE_ENV === "production") {
+      headers.Authorization = `Bearer ${token}`;
+    } else {
+      headers.Authorization = `Basic ${btoa("admin:admin")}`;
+    }
+
+    const response = await fetch(assistantsUrl, {
+      method: "GET",
+      headers,
+      signal,
+      credentials: "include",
+    });
+
+    logger.info("Copilot Health Check Response:", {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      url: response.url,
+      headers: Object.fromEntries(response.headers.entries()),
+    });
+
+    if (response.ok) {
+      const data = await response.text();
+      logger.info("Copilot Health Check Data:", data.substring(0, 200));
+      return { success: true, data, status: response.status };
+    }
+    const errorText = await response.text();
+    logger.error("Copilot Health Check Failed:", errorText.substring(0, 200));
+    return { success: false, error: errorText, status: response.status };
+  } catch (error) {
+    logger.error("Copilot Health Check Error:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+  }
+}

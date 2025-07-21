@@ -1,6 +1,7 @@
 import type { IAssistant } from "@workspaceui/api-client/src/api/copilot";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useCopilotClient } from "./useCopilotClient";
+import { logger } from "@/utils/logger";
 
 export const useAssistants = () => {
   const [selectedOption, setSelectedOption] = useState<IAssistant | null>(null);
@@ -12,10 +13,16 @@ export const useAssistants = () => {
 
   const getAssistants = useCallback(
     async (retryCount = 0) => {
+      if (!copilotClient.isReady) {
+        logger.log("CopilotClient not ready yet, skipping getAssistants");
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
       try {
+        logger.log("Fetching assistants...");
         const data = await copilotClient.getAssistants();
 
         setAssistants(data);
@@ -40,6 +47,13 @@ export const useAssistants = () => {
     },
     [copilotClient]
   );
+
+  // Auto-fetch assistants when client is ready
+  useEffect(() => {
+    if (copilotClient.isReady) {
+      getAssistants();
+    }
+  }, [copilotClient.isReady, getAssistants]);
 
   const handleOptionSelected = (value: IAssistant | null) => {
     setSelectedOption(value);
