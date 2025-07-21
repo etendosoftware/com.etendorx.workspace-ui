@@ -71,7 +71,7 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom",
   return (
     <div
       ref={wrapperRef}
-      className={`inline-block relative ${containerClassName ?? ""}`}
+      className={`relative group ${containerClassName ?? ""}`}
       onMouseEnter={showTooltip}
       onMouseLeave={hideTooltip}>
       {children}
@@ -84,7 +84,7 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom",
               top: coords.top,
               left: coords.left,
             }}
-            className="fixed z-50 transition-opacity delay-600 duration-100 pointer-events-none">
+            className="fixed z-[1000] transition-opacity delay-600 duration-100 pointer-events-none">
             <div className="relative">
               <div className={getArrowStyles()} />
               <div className="bg-gray-900 text-white text-sm rounded px-2 py-1 shadow-md whitespace-nowrap">
