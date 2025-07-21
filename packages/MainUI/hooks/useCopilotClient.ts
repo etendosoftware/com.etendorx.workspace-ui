@@ -6,8 +6,14 @@ export const useCopilotClient = () => {
   const token = useUserContext();
 
   const initializeClient = useCallback(() => {
+    if (!token?.token) {
+      console.log("CopilotClient: Token not available yet, skipping initialization");
+      return;
+    }
+    
+    console.log("CopilotClient: Initializing with token");
     CopilotClient.setBaseUrl();
-    CopilotClient.setToken(token?.token || "");
+    CopilotClient.setToken(token.token);
   }, [token]);
 
   useEffect(() => {
@@ -27,8 +33,9 @@ export const useCopilotClient = () => {
       shouldCacheQuestion: CopilotClient.shouldCacheQuestion,
       handleLargeQuestion: CopilotClient.handleLargeQuestion,
       reinitialize: initializeClient,
+      isReady: !!token?.token,
     }),
-    [initializeClient]
+    [initializeClient, token?.token]
   );
 
   return client;
