@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 
 const DEFAULT_MARGIN = 8;
+const SHOW_DELAY = 600;
 
 export interface TooltipProps {
   title?: string;
@@ -16,6 +17,7 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom",
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const showTimer = useRef<number | null>(null);
 
   useEffect(() => {
     if (!visible || !wrapperRef.current || !tooltipRef.current) return;
@@ -48,8 +50,20 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom",
     setCoords({ top, left });
   }, [visible, position]);
 
-  const showTooltip = () => setVisible(true);
-  const hideTooltip = () => setVisible(false);
+  const showTooltip = () => {
+    if (showTimer.current) clearTimeout(showTimer.current);
+    showTimer.current = window.setTimeout(() => {
+      setVisible(true);
+    }, SHOW_DELAY);
+  };
+
+  const hideTooltip = () => {
+    if (showTimer.current) {
+      clearTimeout(showTimer.current);
+      showTimer.current = null;
+    }
+    setVisible(false);
+  };
 
   const getArrowStyles = () => {
     const base = "absolute w-2 h-2 rotate-45 bg-gray-900";
