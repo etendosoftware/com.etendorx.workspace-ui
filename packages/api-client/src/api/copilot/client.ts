@@ -20,20 +20,11 @@ export class CopilotClient {
    * Initializes the CopilotClient with base URL
    * Follows the pattern from Metadata class
    */
-  public static setBaseUrl(etendoUrl?: string) {
-    let copilotUrl: string;
-
-    if (etendoUrl) {
-      copilotUrl = `${etendoUrl.replace(/\/$/, "")}${COPILOT_BASE_PATH}`;
-    } else if (isProduction()) {
-      const classicUrl = process.env.NEXT_PUBLIC_ETENDO_CLASSIC_URL || "";
-      copilotUrl = `${classicUrl.replace(/\/$/, "")}${COPILOT_BASE_PATH}`;
-    } else {
-      copilotUrl = `http://localhost:8080/etendo${COPILOT_BASE_PATH}`;
-    }
-
+  public static setBaseUrl(etendoUrl: string) {
+    const copilotUrl = `${etendoUrl.replace(/\/$/, "")}${COPILOT_BASE_PATH}`;
     CopilotClient.currentBaseUrl = copilotUrl;
     CopilotClient.client.setBaseUrl(copilotUrl);
+    CopilotClient.isInitialized = true;
   }
 
   /**
@@ -54,8 +45,7 @@ export class CopilotClient {
    */
   private static async request(endpoint: string, options: ClientOptions = {}) {
     if (!CopilotClient.isInitialized) {
-      CopilotClient.setBaseUrl();
-      CopilotClient.isInitialized = true;
+      throw new Error("CopilotClient must be initialized with setBaseUrl() before making requests");
     }
 
     try {
@@ -256,7 +246,7 @@ export class CopilotClient {
    */
   public static buildSSEUrl(params: CopilotQuestionParams): string {
     if (!CopilotClient.currentBaseUrl) {
-      CopilotClient.setBaseUrl();
+      throw new Error("CopilotClient must be initialized with setBaseUrl() before building SSE URLs");
     }
 
     const queryParams = Object.keys(params)
@@ -349,8 +339,6 @@ export class CopilotClient {
   }) {
     if (config?.baseUrl) {
       CopilotClient.setBaseUrl(config.baseUrl);
-    } else {
-      CopilotClient.setBaseUrl();
     }
 
     if (config?.token) {
