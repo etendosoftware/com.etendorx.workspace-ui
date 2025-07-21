@@ -40,12 +40,10 @@ export async function performHealthCheck(
 }
 
 export async function performCopilotHealthCheck(baseUrl: string, token: string, signal?: AbortSignal) {
-  const copilotUrl = baseUrl.startsWith("http") ? baseUrl : `${window.location.origin}${baseUrl}`;
-  const assistantsUrl = `${copilotUrl}assistants`;
+  const assistantsUrl = `${baseUrl}assistants`;
 
   logger.info("Copilot Health Check:", {
     baseUrl,
-    copilotUrl,
     assistantsUrl,
     hasToken: !!token,
     tokenLength: token?.length || 0,

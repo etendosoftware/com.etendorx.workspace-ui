@@ -32,13 +32,6 @@ export class CopilotClient {
       copilotUrl = `http://localhost:8080/etendo${COPILOT_BASE_PATH}`;
     }
 
-    console.log("CopilotClient.setBaseUrl:", {
-      isProduction: isProduction(),
-      etendoClassicUrl: process.env.ETENDO_CLASSIC_URL,
-      finalUrl: copilotUrl,
-      providedUrl: etendoUrl,
-    });
-
     CopilotClient.currentBaseUrl = copilotUrl;
     CopilotClient.client.setBaseUrl(copilotUrl);
   }
