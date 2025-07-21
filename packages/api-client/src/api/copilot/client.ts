@@ -127,18 +127,10 @@ export class CopilotClient {
    * Includes robust response parsing and error handling
    */
   public static async getAssistants(): Promise<IAssistant[]> {
-    console.log("CopilotClient.getAssistants: Starting request", {
-      baseUrl: CopilotClient.currentBaseUrl,
-      endpoint: COPILOT_ENDPOINTS.GET_ASSISTANTS,
-      fullUrl: `${CopilotClient.currentBaseUrl}${COPILOT_ENDPOINTS.GET_ASSISTANTS}`,
-    });
-
     try {
       const { data, ok } = await CopilotClient.request(COPILOT_ENDPOINTS.GET_ASSISTANTS, {
         method: COPILOT_METHODS.GET,
       });
-
-      console.log("CopilotClient.getAssistants: Response received", { ok, data });
 
       if (!ok) {
         throw new Error("Failed to fetch assistants");
