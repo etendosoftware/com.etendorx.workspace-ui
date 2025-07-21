@@ -26,7 +26,7 @@ export class CopilotClient {
     if (etendoUrl) {
       copilotUrl = `${etendoUrl.replace(/\/$/, "")}${COPILOT_BASE_PATH}`;
     } else if (isProduction()) {
-      const classicUrl = process.env.ETENDO_CLASSIC_URL || "";
+      const classicUrl = process.env.NEXT_PUBLIC_ETENDO_CLASSIC_URL || "";
       copilotUrl = `${classicUrl.replace(/\/$/, "")}${COPILOT_BASE_PATH}`;
     } else {
       copilotUrl = `http://localhost:8080/etendo${COPILOT_BASE_PATH}`;
