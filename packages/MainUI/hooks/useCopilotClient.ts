@@ -1,14 +1,27 @@
 import { useEffect, useCallback, useMemo } from "react";
 import { CopilotClient } from "@workspaceui/api-client/src/api/copilot";
 import { useUserContext } from "./useUserContext";
+import { useApiContext } from "./useApiContext";
+import { performCopilotHealthCheck } from "@/utils/health-check";
+import { logger } from "@/utils/logger";
 
 export const useCopilotClient = () => {
   const token = useUserContext();
+  const apiUrl = useApiContext();
 
-  const initializeClient = useCallback(() => {
-    CopilotClient.setBaseUrl();
-    CopilotClient.setToken(token?.token || "");
-  }, [token]);
+  const initializeClient = useCallback(async () => {
+    if (!token?.token || !apiUrl) {
+      logger.log("CopilotClient: Token or API URL not available yet, skipping initialization");
+      return;
+    }
+
+    logger.log("CopilotClient: Initializing with token and API URL:", apiUrl);
+    CopilotClient.setBaseUrl(apiUrl);
+    CopilotClient.setToken(token.token);
+
+    const copilotUrl = CopilotClient.getCurrentBaseUrl();
+    await performCopilotHealthCheck(copilotUrl, token.token);
+  }, [token, apiUrl]);
 
   useEffect(() => {
     initializeClient();
@@ -27,8 +40,9 @@ export const useCopilotClient = () => {
       shouldCacheQuestion: CopilotClient.shouldCacheQuestion,
       handleLargeQuestion: CopilotClient.handleLargeQuestion,
       reinitialize: initializeClient,
+      isReady: !!token?.token,
     }),
-    [initializeClient]
+    [initializeClient, token?.token]
   );
 
   return client;

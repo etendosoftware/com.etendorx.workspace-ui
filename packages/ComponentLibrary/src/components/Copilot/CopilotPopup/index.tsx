@@ -52,7 +52,7 @@ const CopilotPopup: React.FC<CopilotPopupProps> = ({
   return (
     <div className={`fixed z-500 ${isExpanded ? "inset-4" : "right-2 bottom-2"}`}>
       <div
-        className={`bg-gradient-to-br from-purple-100 via-blue-50 to-green-50 rounded-lg border-1 border-(--color-transparent-neutral-20) shadow-xl ${isExpanded ? "w-full h-full" : "w-[26.25rem] h-[600px] max-h-[90vh]"} flex flex-col`}>
+        className={`bg-gradient-to-br from-purple-100 via-blue-50 to-green-50 rounded-lg border-1  border-(--color-transparent-neutral-20) shadow-xl ${isExpanded ? "w-full h-full" : "w-[26.25rem] h-[600px] max-h-[90vh]"} flex flex-col`}>
         <div className="flex justify-between items-center p-4 pb-2 border-b border-(--color-transparent-neutral-20)">
           <div className="flex-1 pr-2 min-w-0">
             <button

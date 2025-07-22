@@ -1,5 +1,5 @@
 import { Client, type Interceptor, type ClientOptions } from "../client";
-import { COPILOT_ENDPOINTS, COPILOT_METHODS, isProduction } from "./constants";
+import { COPILOT_ENDPOINTS, COPILOT_METHODS, isProduction, COPILOT_BASE_PATH } from "./constants";
 import type { IAssistant, ILabels, CopilotQuestionParams, CopilotUploadResponse } from "./types";
 
 export class CopilotUnauthorizedError extends Error {
@@ -16,24 +16,15 @@ export class CopilotClient {
   private static currentBaseUrl = "";
   private static isInitialized = false;
 
-
   /**
    * Initializes the CopilotClient with base URL
    * Follows the pattern from Metadata class
    */
-  public static setBaseUrl(url?: string) {
-    let copilotUrl: string;
-
-    if (url) {
-      copilotUrl = url;
-    } else if (isProduction()) {
-      copilotUrl = process.env.NEXT_PUBLIC_COPILOT_URL || "/etendo/copilot/";
-    } else {
-      copilotUrl = "http://localhost:8080/etendo/copilot/";
-    }
-
+  public static setBaseUrl(etendoUrl: string) {
+    const copilotUrl = `${etendoUrl.replace(/\/$/, "")}${COPILOT_BASE_PATH}`;
     CopilotClient.currentBaseUrl = copilotUrl;
     CopilotClient.client.setBaseUrl(copilotUrl);
+    CopilotClient.isInitialized = true;
   }
 
   /**
@@ -54,8 +45,7 @@ export class CopilotClient {
    */
   private static async request(endpoint: string, options: ClientOptions = {}) {
     if (!CopilotClient.isInitialized) {
-      CopilotClient.setBaseUrl();
-      CopilotClient.isInitialized = true;
+      throw new Error("CopilotClient must be initialized with setBaseUrl() before making requests");
     }
 
     try {
@@ -256,7 +246,7 @@ export class CopilotClient {
    */
   public static buildSSEUrl(params: CopilotQuestionParams): string {
     if (!CopilotClient.currentBaseUrl) {
-      CopilotClient.setBaseUrl();
+      throw new Error("CopilotClient must be initialized with setBaseUrl() before building SSE URLs");
     }
 
     const queryParams = Object.keys(params)
@@ -349,8 +339,6 @@ export class CopilotClient {
   }) {
     if (config?.baseUrl) {
       CopilotClient.setBaseUrl(config.baseUrl);
-    } else {
-      CopilotClient.setBaseUrl();
     }
 
     if (config?.token) {
