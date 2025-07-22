@@ -4,10 +4,11 @@ import type { TranslateFunction } from "@/hooks/types";
 import type { ProcessAvailableButton } from "@/components/Toolbar/types";
 
 const getProcessButtonStyles = (anchorEl: HTMLElement | null): string => {
-  const baseClasses = "disabled:bg-[var(--color-baseline-0)] disabled:opacity-20 h-8 py-1 px-4";
+  const baseClasses =
+    "hover:bg-[var(--color-dynamic-main)] hover:text-[var(--color-dynamic-contrast-text)] disabled:bg-[var(--color-baseline-70)] disabled:opacity-20 h-8 py-1 px-4";
 
   const conditionalClasses = anchorEl
-    ? "bg-[var(--color-etendo-dark)] border-none !text-[var(--color-baseline-0)]"
+    ? "!bg-[var(--color-dynamic-main)] !border-none !text-[var(--color-dynamic-contrast-text)]"
     : "bg-[var(--color-transparent-neutral-0)]";
 
   return `${conditionalClasses} ${baseClasses}`;

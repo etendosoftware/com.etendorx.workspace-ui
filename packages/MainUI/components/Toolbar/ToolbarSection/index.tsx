@@ -38,7 +38,8 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
         );
       })}
       {processButton && !processButton.disabled && (
-        <div className="ml-auto">
+        <div className="h-full flex items-center">
+          <div className="h-5 w-0.5 bg-[var(--color-transparent-neutral-20)] mx-0.5" />
           <IconButtonWithText
             buttonType={OUTLINED_BUTTON_TYPE}
             leftIcon={processButton.leftIcon}
