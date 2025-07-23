@@ -122,18 +122,16 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
         <button
           type="button"
           onClick={toggleExpanded}
-          className={`flex items-center transition-colors duration-300 cursor-pointer w-full
-            ${open ? "rounded-lg" : "p-2.5 rounded-full"}
+          className={`flex transition-colors duration-300 cursor-pointer w-full
+            ${open ? "rounded-lg" : "p-2.5 rounded-full justify-center"}
              text-xl justify-between p-1 gap-1 hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(18%)_sepia(40%)_saturate(7101%)_hue-rotate(215deg)_brightness(91%)_contrast(102%)] ${"text-neutral-90 hover:bg-dynamic-contrast-text hover:text-dynamic-main hover:text-neutral-0"}`}>
-          <div className={"flex items-center overflow-hidden"}>
-            <div className={"w-8 flex justify-center items-center"}>
-              <span className="text-base">
-                <img
-                  alt="img"
-                  src={`data:image/svg+xml;base64,${CLOCK_B64}`}
-                  className="filter-[brightness(0)_saturate(100%)_invert(9%)_sepia(100%)_saturate(3080%)_hue-rotate(212deg)_brightness(97%)_contrast(101%)] w-5 h-5"
-                />
-              </span>
+          <div className={`flex items-center ${open ? "overflow-hidden" : ""}`}>
+            <div className={`${open ? "w-8" : "w-full h-full"} flex justify-center items-center`}>
+              <img
+                alt="img"
+                src={`data:image/svg+xml;base64,${CLOCK_B64}`}
+                className="filter-[brightness(0)_saturate(100%)_invert(9%)_sepia(100%)_saturate(3080%)_hue-rotate(212deg)_brightness(97%)_contrast(101%)] w-5 h-5"
+              />
             </div>
             {open && (
               <div className="relative group flex items-center py-1.5">
