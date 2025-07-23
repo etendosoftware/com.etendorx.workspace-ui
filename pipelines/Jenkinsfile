@@ -161,7 +161,7 @@ spec:
               """
               sh """
                 cd ${REPOSITORY_NAME}
-                node pipelines/utils/merge-coverage.js
+                node pipelines/utils/merge-coverage.cjs
               """
               echo "-------------------------- Tests Succesful --------------------------"
               currentBuild.result = SUCCESS
@@ -227,7 +227,7 @@ spec:
         sh "./pipelines/utils/repo-update-scripts/build-update-github.sh ${REPOSITORY_NAME} ${COMMIT_FAILED_STATUS} \"Failed Tests\" ${ACCESS_TOKEN} ${GIT_COMMIT} ${BUILD_URL} \"${CONTEXT_BUILD}\""
       }
       mail to: EMAIL_ADDRESS,
-      subject: "🚨 Failed Tests of '${REPOSITORY_NAME}' on '${GIT_BRANCH}' branch",
+      subject: "🚨 Failed Tests of '${REPOSITORY_NAME}' - ${currentBuild.fullDisplayName}",
       mimeType: "text/html",
       body: """
         <html>
@@ -259,7 +259,7 @@ spec:
         sh "./pipelines/utils/repo-update-scripts/build-update-github.sh ${REPOSITORY_NAME} ${COMMIT_FAILED_STATUS} \"Build Failed\" ${ACCESS_TOKEN} ${GIT_COMMIT} ${BUILD_URL} \"${CONTEXT_BUILD}\""
       }
       mail to: EMAIL_ADDRESS,
-      subject: "🚫 ${env.ERROR_MESSAGE} in '${REPOSITORY_NAME}' on '${GIT_BRANCH}' branch - ${currentBuild.fullDisplayName}",
+      subject: "🚫 ${env.ERROR_MESSAGE} in '${REPOSITORY_NAME}' - ${currentBuild.fullDisplayName}",
       mimeType: "text/html",
       body:  """
         <html>
