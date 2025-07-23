@@ -8,7 +8,7 @@ import { SubTabsSwitch } from "@/components/window/SubTabsSwitch";
 import { Tab } from "@/components/window/Tab";
 import { useSelected } from "@/hooks/useSelected";
 import TabContextProvider from "@/contexts/tab";
-import ResizeHandle from "../ResizeHandle";
+import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHandle";
 
 interface ExtendedTabsProps extends TabsProps {
   isTopGroup?: boolean;
@@ -69,12 +69,7 @@ export default function Tabs({ tabs, isTopGroup = false }: ExtendedTabsProps) {
 
     if (showResizeHandle) {
       return (
-        <ResizeHandle
-          initialHeight={customHeight}
-          minHeight={9}
-          maxOffsetRem={9}
-          onClose={handleClose}
-          onHeightChange={handleHeightChange}>
+        <ResizeHandle initialHeight={customHeight} minHeight={9} maxOffsetRem={9} onHeightChange={handleHeightChange}>
           {subTabsSwitch}
         </ResizeHandle>
       );

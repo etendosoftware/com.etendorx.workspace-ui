@@ -150,8 +150,8 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     );
 
     const sectionClasses = [
-      expanded && open ? "bg-(--color-dynamic-contrast-text)" : "bg-transparent",
-      open ? "m-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" : "flex justify-center p-1",
+      expanded && open ? "bg-(--color-baseline-10)" : "bg-transparent",
+      open ? "m-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" : "flex justify-center",
       !open && hasActiveChild ? "bg-dynamic-main rounded-full" : "",
     ].join(" ");
 
@@ -196,9 +196,10 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
         <MenuTitle
           item={item}
           onClick={handleClick}
-          selected={isParentActive}
+          selected={isSelected}
           expanded={shouldShowChildren}
           open={open}
+          isParentActive={isParentActive}
           isExpandable={isExpandable && !isSearchActive}
         />
         {hasChildren && open && (
@@ -226,10 +227,10 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
           <div
             ref={popperRef}
             className={`
-              fixed bg-neutral-50 z-50 ml-2 rounded-xl shadow-2xl
+              fixed bg-neutral-50 z-50 rounded-xl shadow-2xl
               transition-all duration-1000 ease-out origin-left border border-transparent-neutral-20
               max-h-[20rem] overflow-y-auto hide-scrollbar
-              ${popperOpen ? "opacity-100 translate-x-0" : "opacity-0 pointer-events-none -translate-x-2"}`}
+              ${popperOpen ? "opacity-100 translate-x-1" : "opacity-0 pointer-events-none -translate-x-2"}`}
             style={{
               left: "3.5rem",
               top: popperRef.current ? popperRef.current.getBoundingClientRect().top : "auto",
@@ -238,15 +239,11 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
             onMouseLeave={handlePopperMouseLeave}>
             <CustomClickAwayListener onClickAway={handleClose}>
               <div className="p-2 min-w-[240px]">
-                <MenuTitle
-                  item={item}
-                  onClick={handleClick}
-                  selected={isParentActive}
-                  expanded={shouldShowChildren}
-                  open={true}
-                  isExpandable={isExpandable && !isSearchActive}
-                  popperOpen={true}
-                />
+                <div
+                  className="border-b border-transparent-neutral-5 h-14 flex items-center px-4 bg-neutral-50 
+                font-inter font-semibold text-[14px] leading-[20px] tracking-[0.15px] text-baseline-80">
+                  {item.name}
+                </div>
                 {item.children?.map((subitem) => (
                   <DrawerSection
                     key={subitem.id}
