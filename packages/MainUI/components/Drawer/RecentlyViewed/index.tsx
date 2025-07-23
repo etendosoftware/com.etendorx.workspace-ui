@@ -109,7 +109,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
 
     const item = {
       id: "recently-viewed",
-      name: t("Recently Viewed"),
+      name: t("drawer.recentlyViewed"),
       type: "Folder",
       children: [],
     };
