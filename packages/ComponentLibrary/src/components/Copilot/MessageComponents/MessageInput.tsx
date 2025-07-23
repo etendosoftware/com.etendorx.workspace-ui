@@ -16,7 +16,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   translations,
 }) => {
   const [message, setMessage] = useState("");
-  
+
   const handleVoiceClick = useCallback(() => alert("Voice activated"), []);
 
   const handleSend = useCallback(() => {
@@ -26,12 +26,15 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   }, [message, disabled, onSendMessage]);
 
-  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  }, [handleSend]);
+  const handleKeyPress = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    },
+    [handleSend]
+  );
 
   return (
     <div className="px-2 pb-1">

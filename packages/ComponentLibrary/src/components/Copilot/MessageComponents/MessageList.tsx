@@ -22,14 +22,20 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
     return new RegExp(`${CONTEXT_CONSTANTS.TAG_START} \\((\\d+) ${translations?.contextRecords || ""}`);
   }, [translations?.contextRecords]);
 
-  const getMessageWithoutContext = useCallback((text: string) => {
-    return text.replace(contextRegex, "").trim();
-  }, [contextRegex]);
+  const getMessageWithoutContext = useCallback(
+    (text: string) => {
+      return text.replace(contextRegex, "").trim();
+    },
+    [contextRegex]
+  );
 
-  const getContextCountFromMessage = useCallback((text: string) => {
-    const match = text.match(contextCountRegex);
-    return match ? Number.parseInt(match[1]) : 0;
-  }, [contextCountRegex]);
+  const getContextCountFromMessage = useCallback(
+    (text: string) => {
+      const match = text.match(contextCountRegex);
+      return match ? Number.parseInt(match[1]) : 0;
+    },
+    [contextCountRegex]
+  );
 
   if (messages.length === 0) {
     return (
