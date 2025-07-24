@@ -8,6 +8,8 @@ import {
   DEFAULT_IS_PROCESSING,
   DEFAULT_AD_CLIENT_ID,
   DEFAULT_AD_ORG_ID,
+  REQUIRED_PARAMS_KEYS,
+  DEFAULT_REQUIRED_PARAMS_KEYS,
 } from "@/utils/processes/manual/constants";
 import data from "@/utils/processes/manual/data.json";
 
@@ -54,29 +56,29 @@ export const getParams = ({
 
   const params = new URLSearchParams();
 
-  params.append("IsPopUpCall", "1");
-  params.append("Command", commandAction);
-  params.append("inpcOrderId", recordId);
-  params.append("inpKey", recordId);
-  params.append("inpwindowId", windowId);
-  params.append("inpTabId", tabId);
-  params.append("inpadClientId", adClientId);
-  params.append("inpadOrgId", adOrgId);
-  params.append("inpkeyColumnId", processActionData.inpkeyColumnId);
-  params.append("keyColumnName", processActionData.keyColumnName);
+  params.append(REQUIRED_PARAMS_KEYS.isPopUpCall, DEFAULT_REQUIRED_PARAMS_KEYS.isPopUpCall);
+  params.append(REQUIRED_PARAMS_KEYS.command, commandAction);
+  params.append(REQUIRED_PARAMS_KEYS.inpcOrderId, recordId);
+  params.append(REQUIRED_PARAMS_KEYS.inpKey, recordId);
+  params.append(REQUIRED_PARAMS_KEYS.inpwindowId, windowId);
+  params.append(REQUIRED_PARAMS_KEYS.inpTabId, tabId);
+  params.append(REQUIRED_PARAMS_KEYS.inpadClientId, adClientId);
+  params.append(REQUIRED_PARAMS_KEYS.inpadOrgId, adOrgId);
+  params.append(REQUIRED_PARAMS_KEYS.inpkeyColumnId, processActionData.inpkeyColumnId);
+  params.append(REQUIRED_PARAMS_KEYS.keyColumnName, processActionData.keyColumnName);
 
   if (isPostedProcess) {
-    params.append("inpdocstatus", docStatus);
-    params.append("inpprocessing", isProcessing);
-    params.append("inpdocaction", "P");
+    params.append(REQUIRED_PARAMS_KEYS.inpdocstatus, docStatus);
+    params.append(REQUIRED_PARAMS_KEYS.inpprocessing, isProcessing);
+    params.append(REQUIRED_PARAMS_KEYS.inpdocaction, DEFAULT_REQUIRED_PARAMS_KEYS.inpodcStatusPosted);
   } else {
-    params.append("inpdocstatus", docStatus);
-    params.append("inpprocessing", isProcessing);
-    params.append("inpdocaction", "CO");
+    params.append(REQUIRED_PARAMS_KEYS.inpdocstatus, docStatus);
+    params.append(REQUIRED_PARAMS_KEYS.inpprocessing, isProcessing);
+    params.append(REQUIRED_PARAMS_KEYS.inpdocaction, DEFAULT_REQUIRED_PARAMS_KEYS.inpdocStatus);
   }
 
   if (token) {
-    params.append("token", token);
+    params.append(REQUIRED_PARAMS_KEYS.token, token);
   }
 
   return params;
