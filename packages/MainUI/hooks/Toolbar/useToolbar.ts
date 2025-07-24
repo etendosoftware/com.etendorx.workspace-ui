@@ -30,6 +30,7 @@ export function useToolbar(windowId: string, tabId?: string) {
       if (!button.displayLogicExpression) return true;
 
       const compiledExpr = compileExpression(button.displayLogicExpression);
+
       try {
         const checkRecord = (record: Record<string, unknown>) => compiledExpr(session, record);
         return button?.processDefinition?.isMultiRecord
