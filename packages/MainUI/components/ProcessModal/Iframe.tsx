@@ -195,6 +195,13 @@ const ProcessIframeOpenModal = ({
               </div>
             </div>
           )}
+          {!iframeLoading && !url && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-90">
+              <div className="text-center">
+                <p className="text-2xl font-medium">{t("common.noDataAvailable")}</p>
+              </div>
+            </div>
+          )}
           <iframe
             src={url}
             onLoad={handleIframeLoad}

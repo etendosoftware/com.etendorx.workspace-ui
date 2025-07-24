@@ -86,7 +86,6 @@ export function useProcessExecution() {
           setError(null);
 
           if (!record || !tab.id || !tab.window || !button.id) {
-            // TODO: manage the error
             throw new Error("Record or Tab or Button not found");
           }
 
@@ -96,12 +95,10 @@ export function useProcessExecution() {
           const safeRecordId = String(record.id || recordId || "");
 
           if (!safeWindowId || !safeTabId || !safeRecordId || !currentButtonId) {
-            // TODO: manage the error
             throw new Error("Window ID, Tab ID, Record ID or Button ID not found");
           }
 
           if (!(currentButtonId in data)) {
-            // TODO: manage the error
             throw new Error("Button ID not found in data");
           }
 
