@@ -1,0 +1,14 @@
+{
+  "8B59A07EB4C2475AE040007F010031CA": {
+    "url": "/SalesInvoice/Header_Edition.html",
+    "command": "BUTTONDocAction111",
+    "inpkeyColumnId": "C_Invoice_ID",
+    "keyColumnName": "C_Invoice_ID"
+  },
+  "1083": {
+    "url": "/SalesOrder/Header_Edition.html",
+    "command": "BUTTONDocAction104",
+    "inpkeyColumnId": "C_Order_ID",
+    "keyColumnName": "C_Order_ID"
+  }
+}
