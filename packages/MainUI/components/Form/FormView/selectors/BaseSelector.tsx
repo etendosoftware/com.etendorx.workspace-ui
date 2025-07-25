@@ -13,6 +13,7 @@ import { useFormContext } from "react-hook-form";
 import Label from "../Label";
 import { GenericSelector } from "./GenericSelector";
 import useDisplayLogic from "@/hooks/useDisplayLogic";
+import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 
 export const compileExpression = (expression: string) => {
   try {
@@ -25,6 +26,7 @@ export const compileExpression = (expression: string) => {
 
 const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; formMode?: FormMode }) => {
   const { watch, getValues, setValue, register } = useFormContext();
+  const { isFormInitializing } = useFormInitializationContext();
   const { tab } = useTabContext();
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
   const { recordId } = useParams<{ recordId: string }>();
@@ -60,10 +62,18 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     (columnValues: FormInitializationResponse["columnValues"]) => {
       for (const [column, { value, identifier }] of Object.entries(columnValues ?? {})) {
         const targetField = fieldsByColumnName[column];
-        setValue(targetField?.hqlName ?? column, value, { shouldDirty: false });
+        const hqlName = targetField?.hqlName ?? column;
+
+        setValue(hqlName, value, { shouldDirty: false });
 
         if (targetField && identifier) {
-          setValue(`${targetField.hqlName}$_identifier`, identifier, { shouldDirty: false });
+          setValue(`${hqlName}$_identifier`, identifier, { shouldDirty: false });
+
+          if (value && identifier && String(value) !== identifier) {
+            logger.debug(`Field ${hqlName}: value=${value}, identifier=${identifier}`);
+          }
+        } else if (targetField && !identifier && value) {
+          setValue(`${hqlName}$_identifier`, "", { shouldDirty: false });
         }
       }
     },
@@ -134,6 +144,10 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
       return;
     }
 
+    if (isFormInitializing) {
+      return;
+    }
+
     if (globalCalloutManager.isCalloutRunning()) {
       return;
     }
@@ -141,7 +155,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     previousValue.current = value;
 
     await globalCalloutManager.executeCallout(field.hqlName, executeCallout);
-  }, [field.hqlName, value, executeCallout]);
+  }, [field.hqlName, value, executeCallout, isFormInitializing]);
 
   useEffect(() => {
     if (ready.current) {
