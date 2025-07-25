@@ -9,7 +9,6 @@ import {
   isIframeModalOpen,
 } from "./types";
 
-const FROM_IFRAME_TYPE = "fromIframe";
 const CLOSE_MODAL_ACTION = "closeModal";
 const PROCESS_ORDER_ACTION = "processOrder";
 
@@ -130,7 +129,6 @@ const ProcessIframeOpenModal = ({
 
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
-      if (event.data?.type !== FROM_IFRAME_TYPE) return;
       if (event.data?.action === CLOSE_MODAL_ACTION) {
         handleClose();
       }
