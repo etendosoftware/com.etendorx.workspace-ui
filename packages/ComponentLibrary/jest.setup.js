@@ -14,8 +14,3 @@ jest.mock("@mui/material/styles", () => ({
     },
   }),
 }));
-
-// jest.mock("@workspaceui/componentlibrary/src/hooks/useLocalStorage", () => ({
-//   __esModule: true,
-//   default: (key, initialValue) => [initialValue, jest.fn()],
-// }));
