@@ -163,7 +163,7 @@ const ProcessIframeOpenModal = ({
     <div className="fixed inset-0 z-5000 flex items-center justify-center bg-black/50">
       <div className="relative flex h-3/6 max-h-[50vh] w-full max-w-3xl flex-col rounded-xl border-4 border-gray-300 bg-white">
         <div className="flex items-center justify-between rounded-xl border-gray-200 border-b bg-[var(--color-baseline-10)] p-4">
-          <h2 className="font-semibold text-lg">{title || t("common.processes")} 13123</h2>
+          <h2 className="font-semibold text-lg">{title || t("common.processes")}</h2>
         </div>
         <div className="relative flex-1 overflow-hidden">
           {iframeLoading && (
