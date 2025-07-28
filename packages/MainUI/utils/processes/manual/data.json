@@ -16,5 +16,11 @@
     "command": "DEFAULT",
     "inpkeyColumnId": "M_InOut_ID",
     "keyColumnName": "M_InOut_ID"
+  },
+  "3663": {
+    "url": "/SalesInvoice/Header_Edition.html",
+    "command": "BUTTONPosted",
+    "inpkeyColumnId": "C_Invoice_ID",
+    "keyColumnName": "C_Invoice_ID"
   }
 }
