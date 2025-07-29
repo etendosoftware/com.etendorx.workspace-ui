@@ -2,7 +2,7 @@ import type { TranslateFunction } from "@/hooks/types";
 import { getFieldReference } from "@/utils";
 import Tag from "@workspaceui/componentlibrary/src/components/Tag";
 import { type Column, type Field, FieldType } from "@workspaceui/api-client/src/api/types";
-import { DEFAULT_STATUS_CONFIG, statusConfig, yesNoConfig } from "./columnsConstants";
+import { DEFAULT_STATUS_CONFIG, IDENTIFIER_KEY, statusConfig, yesNoConfig } from "./columnsConstants";
 
 export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[] => {
   const result: Column[] = [];
@@ -47,7 +47,7 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
               const codeValue = v[column.hqlName];
 
               if (codeValue === null || codeValue === undefined) {
-                return v[`${column.hqlName}$_identifier`] ?? "";
+                return v[`${column.hqlName}$${IDENTIFIER_KEY}`] ?? "";
               }
 
               const refItem = column.refList.find((item) => item.value === codeValue);
@@ -58,8 +58,15 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
                 return <Tag type={config.type} icon={config.icon} label={refItem.label} />;
               }
             }
+            const columnHqlName = column.hqlName;
+            const columnNameKey = column.columnName;
+            const columnIdentifier = `${columnHqlName}$${IDENTIFIER_KEY}`;
+            const columnHqlIdentifierValue = v[columnIdentifier];
+            const columnHqlNameValue = v[columnHqlName];
+            const columnNameValue = v[columnNameKey];
 
-            return v[`${column.hqlName}$_identifier`] ?? v[column.hqlName];
+            const value = columnHqlIdentifierValue ?? columnHqlNameValue ?? columnNameValue;
+            return value;
           },
         });
       }

@@ -52,3 +52,5 @@ export const yesNoConfig = {
     icon: <ErrorIcon fill={defaultColor} />,
   },
 };
+
+export const IDENTIFIER_KEY = "_identifier";
