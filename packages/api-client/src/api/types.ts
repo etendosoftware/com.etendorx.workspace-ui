@@ -228,6 +228,7 @@ export interface Tab {
   sQLWhereClause: string;
   module: string;
   parentTabId?: string;
+  table$_identifier?: string;
 }
 
 export interface WindowMetadata {
