@@ -12,6 +12,8 @@ type DropdownMenuProps = {
   children: React.ReactNode;
   /** Optional additional CSS classes to customize the menu style */
   className?: string;
+  offsetX?: number;
+  offsetY?: number;
 };
 
 /**
@@ -23,7 +25,7 @@ type DropdownMenuProps = {
  *
  * The `className` prop allows customizing the menu styles while preserving default classes with proper merging.
  */
-const Menu: React.FC<DropdownMenuProps> = ({ anchorEl, onClose, children, className = "" }) => {
+const Menu: React.FC<DropdownMenuProps> = ({ anchorEl, onClose, children, className = "", offsetX, offsetY }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [visible, setVisible] = useState(false);
 
@@ -34,8 +36,9 @@ const Menu: React.FC<DropdownMenuProps> = ({ anchorEl, onClose, children, classN
     if (!anchorEl || !menuRef.current) return;
     const rect = anchorEl.getBoundingClientRect();
     const menu = menuRef.current;
-    let x = rect.left + window.scrollX;
-    let y = rect.bottom + window.scrollY;
+
+    let x = rect.left + window.scrollX + (offsetX ?? 0);
+    let y = rect.bottom + window.scrollY + (offsetY ?? 0);
 
     if (x + menu.offsetWidth > window.innerWidth + window.scrollX) {
       x = Math.max(window.scrollX, rect.right - menu.offsetWidth + window.scrollX);
@@ -44,7 +47,7 @@ const Menu: React.FC<DropdownMenuProps> = ({ anchorEl, onClose, children, classN
       y = Math.max(window.scrollY, rect.top - menu.offsetHeight + window.scrollY);
     }
     setPosition({ x, y });
-  }, [anchorEl]);
+  }, [anchorEl, offsetX, offsetY]);
 
   useEffect(() => {
     if (!anchorEl) {
