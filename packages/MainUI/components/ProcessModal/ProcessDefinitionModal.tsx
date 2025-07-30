@@ -22,7 +22,7 @@ import type {
   RecordValues,
   ResponseMessage,
 } from "./types";
-import { DEFAULT_PROCESS_DEFINITION_IDS } from "@/utils/processes/definition/constants";
+import processDefinitionData from "@/utils/processes/definition/data.json";
 
 export const FALLBACK_RESULT = {};
 const WINDOW_REFERENCE_ID = "FF80818132D8F0F30132D9BC395D0038";
@@ -95,7 +95,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         _action: javaClassName,
       });
 
-      const currentAttrs = DEFAULT_PROCESS_DEFINITION_IDS[processId as keyof typeof DEFAULT_PROCESS_DEFINITION_IDS];
+      const currentAttrs = processDefinitionData[processId as keyof typeof processDefinitionData];
       const currentRecordValue = recordValues?.[currentAttrs.inpPrimaryKeyColumnId];
 
       const payload = {
@@ -145,7 +145,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     } finally {
       setIsExecuting(false);
     }
-  }, [tab, processId, javaClassName, recordValues?.inpcOrderId, tabId, gridSelection, entityName, t, onSuccess]);
+  }, [tab, processId, javaClassName, recordValues, gridSelection, entityName, t, onSuccess]);
 
   const handleExecute = useCallback(async () => {
     if (hasWindowReference) {

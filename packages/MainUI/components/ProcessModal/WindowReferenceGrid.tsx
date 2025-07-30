@@ -15,10 +15,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ErrorDisplay } from "../ErrorDisplay";
 import EmptyState from "../Table/EmptyState";
 import Loading from "../loading";
-
 import { useDatasource } from "@/hooks/useDatasource";
 import { tableStyles } from "./styles";
 import type { WindowReferenceGridProps } from "./types";
+import processDefinitionData from "@/utils/processes/definition/data.json";
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
@@ -45,7 +45,13 @@ function WindowReferenceGrid({
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
 
   const datasourceOptions = useMemo(() => {
+    const processId = processConfig?.processId;
+    const currentOptionData = processDefinitionData[processId as keyof typeof processDefinitionData];
+    const dynamicOptions = currentOptionData?.dynamicOptions;
+    const staticOptions = currentOptionData?.staticOptions;
+
     const options: Record<string, EntityValue> = {
+      ...staticOptions,
       tabId: parameter.tab || tabId,
       pageSize: PAGE_SIZE,
     };
@@ -54,8 +60,9 @@ function WindowReferenceGrid({
       for (const [key, value] of Object.entries(processConfig.defaults)) {
         options[key] = value.value;
 
-        if (key === "ad_org_id") {
-          options.org = value.value;
+        if (dynamicOptions && key in dynamicOptions) {
+          const dynamicKey = dynamicOptions[key as keyof typeof dynamicOptions];
+          options[dynamicKey] = value.value;
         }
       }
     }
@@ -246,7 +253,7 @@ function WindowReferenceGrid({
     enableColumnActions: true,
     manualFiltering: true,
     columns,
-    data: records || [],
+    data: records,
     getRowId: (row) => String(row.id),
     renderTopToolbar,
     renderBottomToolbar: hasMoreRecords ? () => <LoadMoreButton fetchMore={fetchMore} /> : undefined,
