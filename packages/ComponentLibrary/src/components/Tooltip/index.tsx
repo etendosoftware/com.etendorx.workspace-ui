@@ -50,6 +50,14 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom",
     setCoords({ top, left });
   }, [visible, position]);
 
+  useEffect(() => {
+    return () => {
+      if (showTimer.current) {
+        clearTimeout(showTimer.current);
+      }
+    };
+  }, []);
+
   const showTooltip = () => {
     if (showTimer.current) clearTimeout(showTimer.current);
     showTimer.current = window.setTimeout(() => {
