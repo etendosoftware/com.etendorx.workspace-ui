@@ -1,4 +1,5 @@
 import { buildFormPayload, buildQueryString } from "@/utils";
+import { shouldRemoveIdFields } from "@/utils/form/entityConfig";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { EntityData, FormMode, Tab, WindowMetadata } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -35,7 +36,29 @@ export const useFormAction = ({
         setLoading(true);
 
         const queryStringParams = buildQueryString({ mode, windowMetadata, tab });
-        const body = buildFormPayload({ values, oldValues: initialState, mode, csrfToken: userId });
+
+        const shouldRemoveId = shouldRemoveIdFields(tab.entityName, mode);
+
+        let processedValues = { ...values };
+        let processedInitialState = { ...initialState };
+
+        if (shouldRemoveId) {
+          const { id, id$_identifier: idIdentifier, ...valuesWithoutId } = processedValues;
+          processedValues = valuesWithoutId as EntityData;
+
+          if (processedInitialState) {
+            const { id: initialId, id$_identifier: initialIdIdentifier, ...initialWithoutId } = processedInitialState;
+            processedInitialState = initialWithoutId as EntityData;
+          }
+        }
+
+        const body = buildFormPayload({
+          values: processedValues,
+          oldValues: processedInitialState,
+          mode,
+          csrfToken: userId,
+        });
+
         const url = `${tab.entityName}?${queryStringParams}`;
         const options = { signal: controller.current.signal, method: "POST", body };
         const { ok, data } = await Metadata.datasourceServletClient.request(url, options);
