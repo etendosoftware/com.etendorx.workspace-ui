@@ -22,7 +22,7 @@ import type {
   RecordValues,
   ResponseMessage,
 } from "./types";
-import processDefinitionData from "@/utils/processes/definition/data.json";
+import { PROCESS_DEFINITION_DATA } from "@/utils/processes/definition/constants";
 
 export const FALLBACK_RESULT = {};
 const WINDOW_REFERENCE_ID = "FF80818132D8F0F30132D9BC395D0038";
@@ -95,7 +95,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         _action: javaClassName,
       });
 
-      const currentAttrs = processDefinitionData[processId as keyof typeof processDefinitionData];
+      const currentAttrs = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
       const currentRecordValue = recordValues?.[currentAttrs.inpPrimaryKeyColumnId];
 
       const payload = {
@@ -301,6 +301,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             processConfig={processConfig}
             processConfigLoading={processConfigLoading}
             processConfigError={processConfigError}
+            recordValues={recordValues}
           />
         );
       }

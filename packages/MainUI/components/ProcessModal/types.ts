@@ -138,6 +138,7 @@ export interface WindowReferenceGridProps {
   processConfig?: ProcessConfigResponse | null;
   processConfigLoading: boolean;
   processConfigError: Error | null;
+  recordValues: RecordValues | null;
 }
 
 export type RowProps = (props: {

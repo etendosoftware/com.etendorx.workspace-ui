@@ -18,7 +18,7 @@ import Loading from "../loading";
 import { useDatasource } from "@/hooks/useDatasource";
 import { tableStyles } from "./styles";
 import type { WindowReferenceGridProps } from "./types";
-import processDefinitionData from "@/utils/processes/definition/data.json";
+import { PROCESS_DEFINITION_DATA, CREATE_LINES_FROM_ORDER_PROCESS_ID } from "@/utils/processes/definition/constants";
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
@@ -36,6 +36,7 @@ function WindowReferenceGrid({
   processConfig,
   processConfigLoading,
   processConfigError,
+  recordValues,
 }: WindowReferenceGridProps) {
   const { t } = useTranslation();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -46,8 +47,9 @@ function WindowReferenceGrid({
 
   const datasourceOptions = useMemo(() => {
     const processId = processConfig?.processId;
-    const currentOptionData = processDefinitionData[processId as keyof typeof processDefinitionData];
-    const dynamicOptions = currentOptionData?.dynamicOptions;
+    const currentOptionData = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+    const defaultKeys = currentOptionData?.defaultKeys;
+    const dynamicKeys = currentOptionData?.dynamicKeys;
     const staticOptions = currentOptionData?.staticOptions;
 
     const options: Record<string, EntityValue> = {
@@ -56,13 +58,24 @@ function WindowReferenceGrid({
       pageSize: PAGE_SIZE,
     };
 
+    if (processId === CREATE_LINES_FROM_ORDER_PROCESS_ID && dynamicKeys) {
+      const { invoiceClient, invoiceBusinessPartner, invoicePriceList, invoiceCurrency } = dynamicKeys as Record<
+        string,
+        string
+      >;
+      options[invoiceClient] = recordValues?.inpadClientId || "";
+      options[invoiceBusinessPartner] = recordValues?.inpcBpartnerId || "";
+      options[invoicePriceList] = recordValues?.inpmPricelistId || "";
+      options[invoiceCurrency] = recordValues?.inpcCurrencyId || "";
+    }
+
     if (processConfig?.defaults) {
       for (const [key, value] of Object.entries(processConfig.defaults)) {
         options[key] = value.value;
 
-        if (dynamicOptions && key in dynamicOptions) {
-          const dynamicKey = dynamicOptions[key as keyof typeof dynamicOptions];
-          options[dynamicKey] = value.value;
+        if (defaultKeys && key in defaultKeys) {
+          const defaultKey = defaultKeys[key as keyof typeof defaultKeys];
+          options[defaultKey] = value.value;
         }
       }
     }
@@ -84,7 +97,7 @@ function WindowReferenceGrid({
     }
 
     return options;
-  }, [tabId, parameter.tab, processConfig]);
+  }, [tabId, parameter.tab, processConfig, recordValues]);
 
   const fields = useMemo(() => {
     if (windowReferenceTab?.fields) {
