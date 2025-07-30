@@ -32,9 +32,10 @@ const getRowId = (row: EntityData) => String(row.id);
 interface DynamicTableProps {
   setRecordId: React.Dispatch<React.SetStateAction<string>>;
   onRecordSelection?: (recordId: string) => void;
+  isTreeMode?: boolean;
 }
 
-const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => {
+const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: DynamicTableProps) => {
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
@@ -99,7 +100,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     loading,
     hasMoreRecords,
   } = useDatasource({
-    entity: tab.entityName,
+    entity: "90034CAE96E847D78FBEF6D38CB1930D",
     params: query,
     columns,
     searchQuery,
@@ -246,6 +247,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     enableRowVirtualization: true,
     enableTopToolbar: false,
     enableBottomToolbar: false,
+    enableExpanding: isTreeMode,
     initialState: { density: "compact" },
     state: {
       columnFilters,
@@ -283,7 +285,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
       graph.removeListener("unselected", handleGraphClear);
       graph.removeListener("unselectedMultiple", handleGraphClear);
     };
-  }, [graph, table, tabId]);
+  }, [graph, table, tabId, tab.id]);
 
   useEffect(() => {
     if (removeRecordLocally) {

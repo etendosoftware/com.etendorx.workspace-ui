@@ -67,6 +67,10 @@ export class Datasource {
       params.set("tabId", options.tabId);
     }
 
+    if (options.tabId) {
+      params.set("parentId", options.parentId);
+    }
+
     for (const [key, value] of Object.entries(options)) {
       if (typeof value !== "undefined") {
         if (key === "criteria" && Array.isArray(value)) {

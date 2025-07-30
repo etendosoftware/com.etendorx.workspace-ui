@@ -19,6 +19,9 @@ const loadData = async (entity: string, page: number, pageSize: number, params: 
     startRow,
     endRow,
     pageSize: safePageSize,
+    parentId: -1,
+    tabId: 143,
+    referencedTableId: 155,
   };
 
   return datasource.get(entity, processedParams);
