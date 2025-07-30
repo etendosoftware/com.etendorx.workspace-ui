@@ -25,8 +25,8 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom",
     const triggerRect = wrapperRef.current.getBoundingClientRect();
     const tooltipRect = tooltipRef.current.getBoundingClientRect();
 
-    let top = 0;
-    let left = 0;
+    let top: number | null = null;
+    let left: number | null = null;
 
     switch (position) {
       case "top":
@@ -105,7 +105,7 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom",
             style={{
               top: coords?.top,
               left: coords?.left,
-              visibility: coords?.top && coords?.left ? "visible" : "hidden",
+              visibility: coords?.top != null && coords?.left != null ? "visible" : "hidden",
             }}
             className="fixed z-[1000] opacity-100 transition-opacity duration-100 pointer-events-none">
             <div className="relative">
