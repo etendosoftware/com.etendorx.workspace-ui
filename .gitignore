@@ -12,3 +12,15 @@
 tsconfig.tsbuildinfo
 docker/tomcat/etendo.war
 docker/db/backup.sql
+
+# Testing
+coverage/
+**/coverage/
+jest-html-reporters-attach/
+.nyc_output/
+
+# Jest files
+junit.xml
+
+# Claude Code
+.claude/
