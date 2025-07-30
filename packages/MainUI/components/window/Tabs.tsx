@@ -15,7 +15,7 @@ interface ExtendedTabsProps extends TabsProps {
   onTabChange?: (tab: TabType) => void;
 }
 
-function TabsComponent({ tabs, isTopGroup = false, onTabChange }: ExtendedTabsProps) {
+export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }: ExtendedTabsProps) {
   const { activeLevels, setActiveLevel } = useSelected();
   const [current, setCurrent] = useState(tabs[0]);
   const collapsed = !activeLevels.includes(current.tabLevel);
@@ -98,8 +98,4 @@ function TabsComponent({ tabs, isTopGroup = false, onTabChange }: ExtendedTabsPr
       </TabContextProvider>
     </TabContainer>
   );
-}
-
-export default function Tabs({ tabs, isTopGroup = false, onTabChange }: ExtendedTabsProps) {
-  return <TabsComponent tabs={tabs} isTopGroup={isTopGroup} onTabChange={onTabChange} />;
 }

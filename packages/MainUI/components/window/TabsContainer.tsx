@@ -120,10 +120,6 @@ export default function TabsContainer() {
       const parentLevel = currentLevel - 1;
       const activeParentTab = getActiveTabForLevel(parentLevel);
 
-      if (!activeParentTab || !activeLevels.includes(parentLevel)) {
-        return [];
-      }
-
       const filtered = tabGroup.filter((tab) => {
         const shouldShow = shouldShowTab(tab as TabWithParentInfo, activeParentTab);
         return shouldShow;
@@ -131,15 +127,15 @@ export default function TabsContainer() {
 
       return filtered;
     });
-  }, [groupedTabs, activeLevels, getActiveTabForLevel]);
-
-  const firstExpandedIndex = useMemo(() => {
-    return filteredGroupedTabs.findIndex((tabs) => tabs.length > 0 && activeLevels.includes(tabs[0].tabLevel));
-  }, [filteredGroupedTabs, activeLevels]);
+  }, [groupedTabs, getActiveTabForLevel]);
 
   if (!windowData) {
     return <div>{t("common.loadingWindowContent")}</div>;
   }
+
+  const firstExpandedIndex = filteredGroupedTabs.findIndex(
+    (tabs) => tabs.length > 0 && activeLevels.includes(tabs[0].tabLevel)
+  );
 
   return (
     <>
