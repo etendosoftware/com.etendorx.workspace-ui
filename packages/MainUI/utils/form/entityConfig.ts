@@ -39,6 +39,45 @@ export const ENTITY_CONFIGURATIONS: EntityConfig[] = [
     entityName: "UOM",
     removeIdOnCreate: true,
   },
+  {
+    entityName: "ADUser",
+    customBehaviors: {
+      EDIT: {
+        addFields: {
+          inppassword: "***",
+          _gridVisibleProperties: [
+            "id",
+            "name",
+            "username",
+            "firstName",
+            "lastName",
+            "password",
+            "description",
+            "active",
+            "businessPartner",
+            "partnerAddress",
+            "email",
+            "locked",
+            "position",
+            "birthday",
+            "phone",
+            "alternativePhone",
+            "fax",
+            "emailServerUsername",
+            "emailServerPassword",
+            "supervisor",
+            "defaultRole",
+            "smfswsDefaultWsRole",
+            "defaultLanguage",
+            "defaultClient",
+            "defaultOrganization",
+            "defaultWarehouse",
+            "etasEnableMultSession",
+          ],
+        },
+      },
+    },
+  },
   // Add more entity configurations here as needed
 ];
 

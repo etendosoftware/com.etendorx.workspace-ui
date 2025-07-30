@@ -9,6 +9,7 @@ import { NumericSelector } from "./NumericSelector";
 import QuantitySelector from "./QuantitySelector";
 import { SelectSelector } from "./SelectSelector";
 import { StringSelector } from "./StringSelector";
+import { PasswordSelector } from "./PasswordSelector";
 import { TableDirSelector } from "./TableDirSelector";
 import DatetimeSelector from "./DatetimeSelector";
 import LocationSelector from "./LocationSelector";
@@ -24,6 +25,8 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   const { reference } = field.column;
 
   switch (reference) {
+    case "C5C21C28B39E4683A91779F16C112E40":
+      return <PasswordSelector field={field} readOnly={isReadOnly} />;
     case "95E2A8B50A254B2AAE6774B8C2F28120": // Product reference to datasource
     case "19":
     case "18":
