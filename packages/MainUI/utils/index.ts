@@ -182,3 +182,5 @@ export const formatLabel = (label: string, count?: number): string | undefined =
   }
   return undefined;
 };
+
+export { shouldShowTab, type TabWithParentInfo } from "./tabUtils";

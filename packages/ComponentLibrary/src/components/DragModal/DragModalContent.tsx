@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import List from "@mui/material/List";
 import {
   DndContext,
@@ -21,14 +21,17 @@ import { Box, Button, Link, useTheme } from "@mui/material";
 import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
 
 const DragModalContent: React.FC<DragModalContentProps> = ({
-  people,
-  setPeople,
+  items,
+  setItems,
   onBack,
   backButtonText,
   activateAllText,
   deactivateAllText,
   buttonText,
 }) => {
+  const currentItems = useMemo(() => items ?? [], [items]);
+  const setCurrentItems = useMemo(() => setItems ?? (() => {}), [setItems]);
+
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { distance: 5 } })
@@ -40,28 +43,26 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
     (event: DragEndEvent) => {
       const { active, over } = event;
       if (over && active.id !== over.id) {
-        setPeople((items) => {
+        setCurrentItems((items) => {
           const oldIndex = items.findIndex((item) => item.id === active.id);
           const newIndex = items.findIndex((item) => item.id === over.id);
           return arrayMove(items, oldIndex, newIndex);
         });
       }
     },
-    [setPeople]
+    [setCurrentItems]
   );
 
   const handleToggleAll = useCallback(() => {
-    const allActivated = people.every((person) => person.isActive);
-    setPeople((prev) => prev.map((person) => ({ ...person, isActive: !allActivated })));
-  }, [people, setPeople]);
+    const allActivated = currentItems.every((item) => item.isActive);
+    setCurrentItems((prev) => prev.map((item) => ({ ...item, isActive: !allActivated })));
+  }, [currentItems, setCurrentItems]);
 
   const handleToggle = useCallback(
     (id: UniqueIdentifier) => {
-      setPeople((prev) =>
-        prev.map((person) => (person.id === id ? { ...person, isActive: !person.isActive } : person))
-      );
+      setCurrentItems((prev) => prev.map((item) => (item.id === id ? { ...item, isActive: !item.isActive } : item)));
     },
-    [setPeople]
+    [setCurrentItems]
   );
   return (
     <>
@@ -80,7 +81,7 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
       <div style={styles.containerStyles}>
         <p>{buttonText}</p>
         <Link sx={sx.linkStyles} onClick={handleToggleAll}>
-          {people.every((person) => person.isActive) ? deactivateAllText : activateAllText}
+          {currentItems.every((item) => item.isActive) ? deactivateAllText : activateAllText}
         </Link>
       </div>
       <div>
@@ -89,16 +90,16 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
           collisionDetection={closestCenter}
           modifiers={[restrictToParentElement, restrictToVerticalAxis]}
           onDragEnd={handleDragEnd}>
-          <SortableContext items={people.map((person) => person.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={currentItems.map((item) => item.id)} strategy={verticalListSortingStrategy}>
             <List>
-              {people.map((person) => (
+              {currentItems.map((item) => (
                 <SortableItem
-                  key={person.id}
-                  id={person.id}
-                  person={person}
+                  key={item.id}
+                  id={item.id}
+                  item={item}
                   icon={<DragIndicator fill={theme.palette.baselineColor.neutral[60]} />}
-                  onToggle={() => handleToggle(person.id)}
-                  isActive={person.isActive}
+                  onToggle={() => handleToggle(item.id)}
+                  isActive={item.isActive}
                 />
               ))}
             </List>

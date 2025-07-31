@@ -53,10 +53,11 @@ export default function TabsProvider({
 
     const isAtStart = checkIfAtStart(scrollLeft);
     const isAtEnd = checkIfAtEnd(scrollLeft, clientWidth, scrollWidth);
+    const showMenuButton = !isAtStart || !isAtEnd;
 
     setShowLeftScrollButton(!isAtStart);
     setShowRightScrollButton(!isAtEnd);
-    setShowRightMenuButton(true);
+    setShowRightMenuButton(showMenuButton);
   }, []);
 
   const updateScrollState = useCallback(() => {
@@ -118,15 +119,13 @@ export default function TabsProvider({
     const container = windowsContainerRef.current;
 
     if (tabElement && container) {
-      updateScrollState();
-
       tabElement.scrollIntoView({
         behavior: "smooth",
         block: "nearest",
         inline: "center",
       });
     }
-  }, [activeWindow, updateScrollState]);
+  }, [activeWindow]);
 
   const handleScrollLeft = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();

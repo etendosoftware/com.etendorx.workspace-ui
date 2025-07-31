@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
@@ -8,18 +8,25 @@ import { SubTabsSwitch } from "@/components/window/SubTabsSwitch";
 import { Tab } from "@/components/window/Tab";
 import { useSelected } from "@/hooks/useSelected";
 import TabContextProvider from "@/contexts/tab";
-import ResizeHandle from "../ResizeHandle";
+import ResizeHandle from "@workspaceui/componentlibrary/src/components/ResizeHandle";
 
 interface ExtendedTabsProps extends TabsProps {
   isTopGroup?: boolean;
+  onTabChange?: (tab: TabType) => void;
 }
 
-export default function Tabs({ tabs, isTopGroup = false }: ExtendedTabsProps) {
+export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }: ExtendedTabsProps) {
   const { activeLevels, setActiveLevel } = useSelected();
   const [current, setCurrent] = useState(tabs[0]);
   const collapsed = !activeLevels.includes(current.tabLevel);
   const [expand, setExpanded] = useState(false);
   const [customHeight, setCustomHeight] = useState(50);
+
+  useEffect(() => {
+    if (onTabChange && current) {
+      onTabChange(current);
+    }
+  }, [current, onTabChange]);
 
   const handleClick = useCallback(
     (tab: TabType) => {
@@ -69,12 +76,7 @@ export default function Tabs({ tabs, isTopGroup = false }: ExtendedTabsProps) {
 
     if (showResizeHandle) {
       return (
-        <ResizeHandle
-          initialHeight={customHeight}
-          minHeight={9}
-          maxOffsetRem={9}
-          onClose={handleClose}
-          onHeightChange={handleHeightChange}>
+        <ResizeHandle initialHeight={customHeight} minHeight={9} maxOffsetRem={9} onHeightChange={handleHeightChange}>
           {subTabsSwitch}
         </ResizeHandle>
       );
@@ -87,7 +89,7 @@ export default function Tabs({ tabs, isTopGroup = false }: ExtendedTabsProps) {
     <TabContainer current={current} collapsed={collapsed} isTopExpanded={isTopExpanded} customHeight={customHeight}>
       {renderTabContent()}
       <TabContextProvider tab={current}>
-        <Tab tab={current} collapsed={collapsed} />{" "}
+        <Tab tab={current} collapsed={collapsed} />
       </TabContextProvider>
     </TabContainer>
   );

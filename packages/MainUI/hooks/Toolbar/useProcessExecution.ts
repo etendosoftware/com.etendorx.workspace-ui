@@ -6,7 +6,6 @@ import {
 } from "@/components/ProcessModal/types";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import { PROCESS_REFERENCE_CODES } from "@/utils/form/constants";
 import { API_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useParams } from "next/navigation";
@@ -15,6 +14,8 @@ import { UserContext } from "../../contexts/user";
 import { useApiContext } from "../useApiContext";
 import { useMetadataContext } from "../useMetadataContext";
 import type { ExecuteProcessDefinitionParams, ExecuteProcessParams } from "./types";
+import { getParams } from "@/utils/processes/manual/utils";
+import data from "@/utils/processes/manual/data.json";
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
@@ -84,67 +85,36 @@ export function useProcessExecution() {
           setLoading(true);
           setError(null);
 
-          if (!record) {
-            throw new Error("No se ha cargado el registro correctamente");
+          if (!record || !tab.id || !tab.window || !button.id) {
+            throw new Error("Record or Tab or Button not found");
           }
 
-          const extractValue = (keys: string[], defaultValue: string): string => {
-            for (const key of keys) {
-              const value = record[key];
-              if (value !== undefined && value !== null && value !== "") {
-                return String(value);
-              }
-            }
-            return defaultValue;
-          };
-
-          const docStatus = extractValue(["documentStatus", "docstatus", "docStatus", "DOCSTATUS", "DocStatus"], "DR");
-          const isProcessing = extractValue(
-            ["processing", "isprocessing", "isProcessing", "PROCESSING", "Processing"],
-            "N"
-          );
-          const adClientId = extractValue(
-            ["adClientId", "AD_Client_ID", "aD_Client_ID", "adclientid", "AdClientId", "client"],
-            PROCESS_REFERENCE_CODES.CLIENT
-          );
-          const adOrgId = extractValue(
-            ["adOrgId", "AD_Org_ID", "aD_Org_ID", "adorgid", "AdOrgId", "organization"],
-            PROCESS_REFERENCE_CODES.PROCESS
-          );
-
-          const isPostedProcess = button.id === "Posted";
-          const commandAction = "BUTTONDocAction104";
-          const baseUrl = `${API_BASE_URL}${API_FORWARD_PATH}${button.processAction.manualURL}`; //"http://localhost:8080/etendo/SalesOrder/Header_Edition.html";
-          const safeWindowId = windowId || (tab?.window ? String(tab.window) : "143");
-          const safeTabId = tab?.id ? String(tab.id) : "186";
+          const currentButtonId = button.id;
+          const safeWindowId = windowId || (tab.window ? String(tab.window) : "");
+          const safeTabId = tab.id ? String(tab.id) : "";
           const safeRecordId = String(record.id || recordId || "");
 
-          const params = new URLSearchParams();
-          params.append("IsPopUpCall", "1");
-          params.append("Command", commandAction);
-          params.append("inpcOrderId", safeRecordId);
-          params.append("inpKey", safeRecordId);
-
-          if (isPostedProcess) {
-            params.append("inpdocstatus", docStatus);
-            params.append("inpprocessing", isProcessing);
-            params.append("inpdocaction", "P");
-          } else {
-            params.append("inpdocstatus", docStatus);
-            params.append("inpprocessing", isProcessing);
-            params.append("inpdocaction", "CO");
+          if (!safeWindowId || !safeTabId || !safeRecordId || !currentButtonId) {
+            throw new Error("Window ID, Tab ID, Record ID or Button ID not found");
           }
 
-          params.append("inpwindowId", safeWindowId);
-          params.append("inpTabId", safeTabId);
-          params.append("inpadClientId", adClientId);
-          params.append("inpadOrgId", adOrgId);
-          params.append("inpkeyColumnId", "C_Order_ID");
-          params.append("keyColumnName", "C_Order_ID");
-
-          if (token) {
-            params.append("token", token);
+          if (!(currentButtonId in data)) {
+            throw new Error("Button ID not found in data");
           }
+
+          const processAction = data[currentButtonId as keyof typeof data];
+          const baseUrl = `${API_BASE_URL}${API_FORWARD_PATH}${processAction.url}`;
+          const isPostedProcess = currentButtonId === "Posted";
+
+          const params = getParams({
+            currentButtonId,
+            record,
+            recordId: safeRecordId,
+            windowId: safeWindowId,
+            tabId: safeTabId,
+            token,
+            isPostedProcess,
+          });
 
           const completeUrl = `${baseUrl}?${params.toString()}`;
           setIframeUrl(completeUrl);

@@ -1,15 +1,14 @@
 import type { UniqueIdentifier } from "@dnd-kit/core";
-import type { Person } from "../DragModal/DragModal.types";
+import type { ToggleableItem, Item } from "../DragModal/DragModal.types";
 import type { ReactNode } from "react";
 
-export interface WaterfallModalProps {
+export interface WaterfallModalProps<T extends ToggleableItem = Item> {
   menuItems: { emoji: string; label: string; key: string }[];
-  people: Person[];
-  initialPeople: Person[];
+  items: T[];
+  setItems: React.Dispatch<React.SetStateAction<T[]>>;
   onBack?: () => void;
   onToggleAll?: () => void;
   onToggle?: (id: UniqueIdentifier) => void;
-  setPeople?: (people: Person[]) => void;
   backButtonText?: string;
   activateAllText?: string;
   deactivateAllText?: string;

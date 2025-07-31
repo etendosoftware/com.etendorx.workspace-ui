@@ -13,6 +13,7 @@ import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useRecordContext } from "@/hooks/useRecordContext";
+import type { ToolbarButtonMetadata } from "./types";
 
 export const useToolbarConfig = ({
   tabId,
@@ -37,7 +38,7 @@ export const useToolbarConfig = ({
     hideStatusModal,
   } = useStatusModal();
   const { t } = useTranslation();
-  const { onRefresh, onSave, onNew, onBack, onFilter } = useToolbarContext();
+  const { onRefresh, onSave, onNew, onBack, onFilter, onColumnFilters } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -124,7 +125,7 @@ export const useToolbarConfig = ({
     }
   }, [statusModal.open, isDeleting]);
 
-  const actionHandlers = useMemo<Record<string, () => void>>(
+  const actionHandlers = useMemo<Record<string, (event?: React.MouseEvent<HTMLElement>) => void>>(
     () => ({
       CANCEL: () => {
         onBack?.();
@@ -195,6 +196,10 @@ export const useToolbarConfig = ({
         });
         window.dispatchEvent(customEvent);
       },
+      COLUMN_FILTERS: (event?: React.MouseEvent<HTMLElement>) => {
+        const buttonElement = event?.currentTarget as HTMLElement;
+        onColumnFilters?.(buttonElement);
+      },
     }),
     [
       deleteRecord,
@@ -203,6 +208,7 @@ export const useToolbarConfig = ({
       onNew,
       onRefresh,
       onSave,
+      onColumnFilters,
       selectedIds,
       selectedMultiple,
       showConfirmModal,
@@ -216,14 +222,14 @@ export const useToolbarConfig = ({
   );
 
   const handleAction = useCallback(
-    (action: string) => {
+    (action: string, _button?: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => {
       if (isDeleting) {
         return;
       }
 
       const handler = actionHandlers[action];
       if (handler) {
-        handler();
+        handler(event);
         return;
       }
 

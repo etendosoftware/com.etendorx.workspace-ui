@@ -27,6 +27,7 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.FIND]: "toolbar-button-find",
   [TOOLBAR_BUTTONS_ACTIONS.FILTER]: "toolbar-button-filter",
   [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: "toolbar-button-copilot",
+  [TOOLBAR_BUTTONS_ACTIONS.COLUMN_FILTERS]: "toolbar-button-column-filters",
 } as const;
 
 export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
@@ -188,7 +189,7 @@ export const createButtonByType = ({
         };
       default:
         return {
-          onClick: () => onAction(button.action, button),
+          onClick: (event?: React.MouseEvent<HTMLElement>) => onAction(button.action, button, event),
         };
     }
   };
