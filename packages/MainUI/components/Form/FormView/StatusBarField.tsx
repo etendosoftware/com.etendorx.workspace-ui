@@ -1,30 +1,10 @@
-import { formatNumber, getFieldReference } from "@/utils";
-import { type Field, FieldType } from "@workspaceui/api-client/src/api/types";
-import { useMemo } from "react";
+import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useFormContext } from "react-hook-form";
+import { useFieldValue } from "@/hooks/useFieldValue";
 
 export default function StatusBarField({ field }: { field: Field }) {
-  const { register, watch } = useFormContext();
-  const [value, identifier] = watch([field.hqlName, `${field.hqlName}$_identifier`]);
-  const displayValue = useMemo(() => {
-    if (identifier) {
-      return identifier;
-    }
-
-    const reference = getFieldReference(field.column?.reference);
-
-    switch (reference) {
-      case FieldType.DATE:
-        return new Date(value).toLocaleDateString();
-      case FieldType.BOOLEAN:
-        return value ? "Y" : "N";
-      case FieldType.NUMBER:
-      case FieldType.QUANTITY:
-        return formatNumber(value);
-      default:
-        return value;
-    }
-  }, [field, identifier, value]);
+  const { register } = useFormContext();
+  const { displayValue } = useFieldValue(field);
 
   return (
     <div className="inline-flex gap-1">

@@ -5,11 +5,13 @@ import {
   useMaterialReactTable,
   type MRT_TableBodyRowProps,
   type MRT_TableInstance,
+  type MRT_VisibilityState,
 } from "material-react-table";
 import { useStyle } from "./styles";
 import type { DatasourceOptions, EntityData } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearch } from "../../contexts/searchContext";
+import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import EmptyState from "./EmptyState";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
@@ -40,7 +42,24 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
   const { language } = useLanguage();
   const { t } = useTranslation();
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<MRT_VisibilityState>({});
+  const [columnMenuAnchor, setColumnMenuAnchor] = useState<HTMLElement | null>(null);
   const { graph } = useSelected();
+
+  const toggleColumnsDropdown = useCallback(
+    (buttonRef?: HTMLElement | null) => {
+      if (columnMenuAnchor) {
+        setColumnMenuAnchor(null);
+      } else {
+        setColumnMenuAnchor(buttonRef || null);
+      }
+    },
+    [columnMenuAnchor]
+  );
+
+  const handleCloseColumnMenu = useCallback(() => {
+    setColumnMenuAnchor(null);
+  }, []);
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
@@ -246,13 +265,16 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     enableRowVirtualization: true,
     enableTopToolbar: false,
     enableBottomToolbar: false,
+    enableHiding: true,
     initialState: { density: "compact" },
     state: {
       columnFilters,
+      columnVisibility,
       showColumnFilters: true,
       showProgressBars: loading,
     },
     onColumnFiltersChange: handleColumnFiltersChange,
+    onColumnVisibilityChange: setColumnVisibility,
     getRowId,
     enableColumnFilters: true,
     enableSorting: true,
@@ -302,8 +324,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
       refresh: refetch,
       filter: toggleImplicitFilters,
       save: async () => {},
+      columnFilters: toggleColumnsDropdown,
     });
-  }, [refetch, registerActions, toggleImplicitFilters]);
+  }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown]);
 
   if (error) {
     return (
@@ -328,6 +351,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
         loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
       }`}>
       <MaterialReactTable table={table} />
+
+      <ColumnVisibilityMenu anchorEl={columnMenuAnchor} onClose={handleCloseColumnMenu} table={table} />
     </div>
   );
 };

@@ -87,6 +87,7 @@ const IconButtonWithText = ({
     items-center
     justify-center
     text-[0.825rem]
+    font-medium
     min-w-max
     gap-1
     [&>svg]:text-[1.5rem]

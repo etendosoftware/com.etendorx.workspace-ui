@@ -6,6 +6,7 @@ import {
   type Tab,
   type WindowMetadata,
 } from "@workspaceui/api-client/src/api/types";
+import { FIELD_REFERENCE_CODES } from "./form/constants";
 
 export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -13,25 +14,25 @@ export const getFieldReference = (reference?: string): FieldType => {
   switch (reference) {
     case "10":
       return FieldType.DATETIME;
-    case "19":
-    case "95E2A8B50A254B2AAE6774B8C2F28120":
-    case "18":
+    case FIELD_REFERENCE_CODES.TABLE_DIR_19:
+    case FIELD_REFERENCE_CODES.PRODUCT:
+    case FIELD_REFERENCE_CODES.TABLE_DIR_18:
       return FieldType.TABLEDIR;
-    case "15":
-    case "16":
+    case FIELD_REFERENCE_CODES.DATE:
+    case FIELD_REFERENCE_CODES.DATETIME:
       return FieldType.DATE;
-    case "20":
+    case FIELD_REFERENCE_CODES.BOOLEAN:
       return FieldType.BOOLEAN;
-    case "29":
+    case FIELD_REFERENCE_CODES.QUANTITY_29:
       return FieldType.QUANTITY;
-    case "17":
-    case "13":
+    case FIELD_REFERENCE_CODES.LIST_17:
+    case FIELD_REFERENCE_CODES.LIST_13:
       return FieldType.LIST;
     case "28":
       return FieldType.BUTTON;
-    case "30":
+    case FIELD_REFERENCE_CODES.SELECT_30:
       return FieldType.SELECT;
-    case "FF80818132D8F0F30132D9BC395D0038":
+    case FIELD_REFERENCE_CODES.WINDOW:
       return FieldType.WINDOW;
     default:
       return FieldType.TEXT;
@@ -181,3 +182,5 @@ export const formatLabel = (label: string, count?: number): string | undefined =
   }
   return undefined;
 };
+
+export { shouldShowTab, type TabWithParentInfo } from "./tabUtils";

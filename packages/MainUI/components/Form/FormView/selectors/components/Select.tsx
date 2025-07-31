@@ -62,6 +62,7 @@ function SelectCmp({
 }: SelectProps) {
   const { register, setValue, watch } = useFormContext();
   const selectedValue = watch(name);
+  const currentIdentifier = watch(`${name}$_identifier`);
   const [selectedLabel, setSelectedLabel] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -78,7 +79,6 @@ function SelectCmp({
     [options, searchTerm]
   );
 
-  // Callbacks estables que no cambian en cada render
   const handleSelect = useCallback(
     (id: string, label: string) => {
       const option = options.find((opt) => opt.id === id);
@@ -195,11 +195,11 @@ function SelectCmp({
   useEffect(() => {
     const selectedOption = options.find((option) => option.id === selectedValue);
     if (!selectedOption && selectedValue) {
-      setSelectedLabel(selectedValue);
+      setSelectedLabel(currentIdentifier || selectedValue);
     } else {
       setSelectedLabel(selectedOption?.label ?? "");
     }
-  }, [selectedValue, options]);
+  }, [selectedValue, options, currentIdentifier]);
 
   useEffect(() => {
     if (isOpen) {
@@ -216,7 +216,6 @@ function SelectCmp({
     };
   }, [handleClickOutside]);
 
-  // Renderizado optimizado de opciones
   const renderedOptions = useMemo(() => {
     if (filteredOptions.length > 0) {
       return filteredOptions.map(({ id, label }, index) => (

@@ -18,9 +18,10 @@ export default {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
     "^@workspaceui/api-client(.*)$": "<rootDir>/../api-client/src$1",
+    "\\.svg$": "<rootDir>/__mocks__/svgMock.js",
     "^@workspaceui/componentlibrary(.*)$": "<rootDir>/../ComponentLibrary/src$1",
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",
-    "\\.(gif|ttf|eot|svg|png|jpg|jpeg)$": "<rootDir>/__mocks__/fileMock.js",
+    "\\.(gif|ttf|eot|png|jpg|jpeg)$": "<rootDir>/__mocks__/fileMock.js",
   },
 
   transform: {

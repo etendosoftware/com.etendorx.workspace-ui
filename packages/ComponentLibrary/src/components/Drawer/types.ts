@@ -39,6 +39,7 @@ export interface MenuTitleProps {
   open?: boolean;
   isExpandable?: boolean;
   popperOpen?: boolean;
+  isParentActive?: boolean;
 }
 
 export interface DrawerSectionProps extends React.PropsWithChildren {

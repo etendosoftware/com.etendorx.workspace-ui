@@ -74,9 +74,13 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
         className="w-10 h-10">
         {icon}
       </IconButton>
-      <Menu {...props} anchorEl={anchorEl} onClose={handleClose}>
+      <Menu
+        {...props}
+        anchorEl={anchorEl}
+        onClose={handleClose}
+        className="bg-[var(--color-baseline-10)] radius-xl overflow-hidden border border-[var(--color-transparent-neutral-10)] shadow-md shadow-[var(--color-transparent-neutral-10)]">
         <div className="h-14 p-3 flex flex-row items-center justify-between bg-[var(--color-baseline-0)] border-b border-[var(--color-baseline-10)]">
-          <div className="flex flex-row items-center gap-4">
+          <div className="flex flex-row items-center gap-1">
             {title?.icon && (
               <div className="w-8 h-8 flex items-center justify-center bg-[var(--color-dynamic-contrast-text)] rounded-full">
                 <IconRenderer icon={title.icon} />
@@ -88,7 +92,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
             {linkTitle?.label}
           </Link>
         </div>
-        <div className="p-3 gap-3 bg-[var(--color-baseline-10)]">
+        <div className="p-2 gap-2 bg-[var(--color-baseline-10)]">
           {sectionsState.map((section, sectionIndex) => (
             <div
               key={sectionIndex}
@@ -100,7 +104,7 @@ const ConfigurationModal: React.FC<IConfigurationModalProps> = ({
                     key={id}
                     type="button"
                     onClick={() => handleImageClick(sectionIndex, imageIndex)}
-                    className={`relative p-3 pt-12 flex flex-col gap-2 bg-[var(--color-baseline-0)] box-border border-2 ${isSelected(section.selectedItem, imageIndex) ? "border-[var(--color-etendo-main)]" : "border-[var(--color-transparent-neutral-10)]"} rounded-xl overflow-hidden hover:border-[var(--color-baseline-90)] transition-colors duration-250 ease-in-out`}>
+                    className={`relative p-3 pt-12 flex flex-col gap-2 bg-[var(--color-baseline-0)] rounded-xl overflow-hidden hover:border-[var(--color-baseline-90)] transition-colors duration-250 ease-in-out box-border ${isSelected(section.selectedItem, imageIndex) ? "bg-[var(--color-dynamic-contrast-text)] border-2 border-[var(--color-etendo-main)]" : "border border-[var(--color-transparent-neutral-10)]"}`}>
                     <div className="absolute top-0 left-0 h-12 w-12 flex items-center justify-center">
                       {isSelected(section.selectedItem, imageIndex) ? (
                         <RadioButtonIcon width="1.5rem" height="1.5rem" fill="var(--color-dynamic-main)" />

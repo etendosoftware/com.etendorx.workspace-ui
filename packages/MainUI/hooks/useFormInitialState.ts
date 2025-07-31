@@ -29,6 +29,8 @@ export const useFormInitialState = (formInitialization?: FormInitializationRespo
 
       if (identifier) {
         acc[`${newKey}$_identifier`] = identifier;
+      } else if (value !== null && value !== undefined && value !== "") {
+        acc[`${newKey}$_identifier`] = "";
       }
     }
 

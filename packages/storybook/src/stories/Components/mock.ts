@@ -1,4 +1,4 @@
-import type { Person } from '@workspaceui/componentlibrary/src/components/DragModal/DragModal.types';
+import type { Item } from '@workspaceui/componentlibrary/src/components/DragModal/DragModal.types';
 
 export const menuItems = [
   { emoji: '💼', label: 'New Job', key: 'newJob' },
@@ -8,7 +8,7 @@ export const menuItems = [
   { emoji: '📊', label: 'New Accounting Sheet', key: 'newAccountingSheet' },
 ];
 
-export const initialPeople: Person[] = [
+export const initialPeople: Item[] = [
   { id: '1', label: 'Work', isActive: true },
   { id: '2', label: 'Sales Order', isActive: false },
   { id: '3', label: 'Sales Invoice', isActive: true },
