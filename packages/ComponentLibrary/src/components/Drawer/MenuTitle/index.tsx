@@ -2,10 +2,25 @@
 import React from "react";
 import ChevronDown from "../../../assets/icons/chevron-down.svg";
 import type { MenuTitleProps } from "../types";
-import { PROCESS_B64, REPORT_B64, SUMMARY_B64 } from "./constants";
+import { DEFAULT_B64, PROCESS_B64, REPORT_B64, SUMMARY_B64 } from "./constants";
 
 export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
   ({ item, onClick, selected, expanded, open, popperOpen, isParentActive }) => {
+    const getIconSrc = () => {
+      if (item.icon) return `data:image/svg+xml;base64,${item.icon}`;
+      switch (item.type) {
+        case "Report":
+          return `data:image/svg+xml;base64,${REPORT_B64}`;
+        case "ProcessDefinition":
+        case "ProcessManual":
+          return `data:image/svg+xml;base64,${PROCESS_B64}`;
+        case "Summary":
+          return `data:image/svg+xml;base64,${SUMMARY_B64}`;
+        default:
+          return `data:image/svg+xml;base64,${DEFAULT_B64}`;
+      }
+    };
+
     return (
       <button
         type="button"
@@ -33,31 +48,11 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
               />
             ) : (
               <span className="text-base">
-                {item.type === "Report" ? (
-                  <img
-                    alt="report"
-                    src={`data:image/svg+xml;base64,${REPORT_B64}`}
-                    className="filter-[brightness(0)_saturate(100%)_invert(9%)_sepia(100%)_saturate(3080%)_hue-rotate(212deg)_brightness(97%)_contrast(101%)] w-5 h-5"
-                  />
-                ) : item.type === "ProcessDefinition" || item.type === "ProcessManual" ? (
-                  <img
-                    alt="setting"
-                    src={`data:image/svg+xml;base64, ${PROCESS_B64}`}
-                    className="filter-[brightness(0)_saturate(100%)_invert(9%)_sepia(100%)_saturate(3080%)_hue-rotate(212deg)_brightness(97%)_contrast(101%)] w-5 h-5"
-                  />
-                ) : item.type === "Summary" ? (
-                  <img
-                    alt="summary"
-                    src={`data:image/svg+xml;base64, ${SUMMARY_B64}`}
-                    className="filter-[brightness(0)_saturate(100%)_invert(9%)_sepia(100%)_saturate(3080%)_hue-rotate(212deg)_brightness(97%)_contrast(101%)] w-5 h-5"
-                  />
-                ) : (
-                  <img
-                    alt="img"
-                    src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik01IDRDNC40NDc3MiA0IDQgNC40NDc3MiA0IDVWOEgyMFY1QzIwIDQuNDQ3NzEgMTkuNTUyMyA0IDE5IDRINVpNMjIgNUMyMiAzLjM0MzE1IDIwLjY1NjkgMiAxOSAySDVDMy4zNDMxNSAyIDIgMy4zNDMxNSAyIDVWMTlDMiAyMC42NTY5IDMuMzQzMTUgMjIgNSAyMkgxOUMyMC42NTY5IDIyIDIyIDIwLjY1NjkgMjIgMTlWNVpNMjAgMTBIMTBWMjBIMTlDMTkuNTUyMyAyMCAyMCAxOS41NTIzIDIwIDE5VjEwWk04IDIwVjEwSDRWMTlDNCAxOS41NTIzIDQuNDQ3NzEgMjAgNSAyMEg4WiIgZmlsbD0iIzAwMDMwRCIvPgo8L3N2Zz4K"
-                    className="filter-[brightness(0)_saturate(100%)_invert(9%)_sepia(100%)_saturate(3080%)_hue-rotate(212deg)_brightness(97%)_contrast(101%)] w-5 h-5"
-                  />
-                )}
+                <img
+                  alt={item.type || "icon"}
+                  src={getIconSrc()}
+                  className="filter-[brightness(0)_saturate(100%)_invert(9%)_sepia(100%)_saturate(3080%)_hue-rotate(212deg)_brightness(97%)_contrast(101%)] w-5 h-5"
+                />
               </span>
             )}
           </div>

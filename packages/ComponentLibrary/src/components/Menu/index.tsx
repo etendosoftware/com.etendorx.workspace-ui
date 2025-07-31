@@ -67,6 +67,47 @@ const Menu: React.FC<DropdownMenuProps> = ({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const mutationObserverRef = useRef<MutationObserver | null>(null);
 
+  const adjustHorizontalPosition = (anchorRect: DOMRect, menuWidth: number, offsetX = 0) => {
+    let x = anchorRect.left + offsetX;
+    if (x + menuWidth > window.innerWidth) {
+      x = anchorRect.right - menuWidth - offsetX;
+      if (x < 0) x = 8;
+    }
+    return Math.max(8, Math.min(x, window.innerWidth - menuWidth - 8));
+  };
+
+  const adjustVerticalPosition = (
+    anchorRect: DOMRect,
+    menuHeight: number,
+    menuElement: HTMLDivElement,
+    offsetY = 0
+  ) => {
+    const spaceBelow = window.innerHeight - anchorRect.bottom;
+    const spaceAbove = anchorRect.top;
+    let y = anchorRect.bottom + offsetY;
+
+    const setMaxHeight = (maxHeight: number) => {
+      menuElement.style.maxHeight = `${maxHeight}px`;
+      menuElement.style.overflowY = "auto";
+    };
+
+    if (menuHeight > spaceBelow) {
+      if (spaceAbove > spaceBelow && menuHeight <= spaceAbove) {
+        y = anchorRect.top - menuHeight - offsetY;
+      } else if (spaceBelow > spaceAbove) {
+        y = anchorRect.bottom + offsetY;
+        const maxHeight = spaceBelow - 16;
+        if (menuHeight > maxHeight) setMaxHeight(maxHeight);
+      } else {
+        y = 8;
+        const maxHeight = spaceAbove - 16;
+        if (menuHeight > maxHeight) setMaxHeight(maxHeight);
+      }
+    }
+
+    return Math.max(8, Math.min(y, window.innerHeight - Math.min(menuHeight, window.innerHeight - 16) - 8));
+  };
+
   const calculatePosition = useCallback(() => {
     if (!anchorEl || !menuRef.current) return;
 
@@ -76,50 +117,8 @@ const Menu: React.FC<DropdownMenuProps> = ({
     menuElement.style.maxHeight = "";
     menuElement.style.overflowY = "";
 
-    const menuWidth = menuElement.offsetWidth;
-    const menuHeight = menuElement.offsetHeight;
-
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    let x = anchorRect.left + (offsetX ?? 0);
-    let y = anchorRect.bottom + (offsetY ?? 0);
-
-    if (x + menuWidth > viewportWidth) {
-      x = anchorRect.right - menuWidth - (offsetX ?? 0);
-
-      if (x < 0) {
-        x = 8;
-      }
-    }
-
-    const spaceBelow = viewportHeight - anchorRect.bottom;
-    const spaceAbove = anchorRect.top;
-
-    if (menuHeight > spaceBelow) {
-      if (spaceAbove > spaceBelow && menuHeight <= spaceAbove) {
-        y = anchorRect.top - menuHeight - (offsetY ?? 0);
-      } else {
-        if (spaceBelow > spaceAbove) {
-          y = anchorRect.bottom + (offsetY ?? 0);
-          const maxHeight = spaceBelow - 16;
-          if (menuHeight > maxHeight) {
-            menuElement.style.maxHeight = `${maxHeight}px`;
-            menuElement.style.overflowY = "auto";
-          }
-        } else {
-          const maxHeight = spaceAbove - 16;
-          y = 8;
-          if (menuHeight > maxHeight) {
-            menuElement.style.maxHeight = `${maxHeight}px`;
-            menuElement.style.overflowY = "auto";
-          }
-        }
-      }
-    }
-
-    x = Math.max(8, Math.min(x, viewportWidth - menuWidth - 8));
-    y = Math.max(8, Math.min(y, viewportHeight - Math.min(menuHeight, viewportHeight - 16) - 8));
+    const x = adjustHorizontalPosition(anchorRect, menuElement.offsetWidth, offsetX);
+    const y = adjustVerticalPosition(anchorRect, menuElement.offsetHeight, menuElement, offsetY);
 
     setPosition({ x, y });
   }, [anchorEl, offsetX, offsetY]);

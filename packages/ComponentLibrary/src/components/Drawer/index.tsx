@@ -13,6 +13,10 @@ interface RecentlyViewedHandler {
   handleWindowAccess?: (item: Menu) => void;
 }
 
+const DRAWER_OPEN_WIDTH = 16.25;
+const DRAWER_CLOSED_WIDTH = 3.5;
+const DRAWER_MAX_WIDTH = 50;
+
 const Drawer: React.FC<DrawerProps> = ({
   windowId,
   items = [],
@@ -32,7 +36,7 @@ const Drawer: React.FC<DrawerProps> = ({
     }
     return false;
   });
-  const [drawerWidth, setDrawerWidth] = useState<number>(16.25);
+  const [drawerWidth, setDrawerWidth] = useState<number>(DRAWER_OPEN_WIDTH);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -45,7 +49,7 @@ const Drawer: React.FC<DrawerProps> = ({
   const { searchValue, setSearchValue, filteredItems, expandedItems, setExpandedItems, searchIndex } = searchContext;
 
   useEffect(() => {
-    setDrawerWidth(open ? 16.25 : 3.5);
+    setDrawerWidth(open ? DRAWER_OPEN_WIDTH : DRAWER_CLOSED_WIDTH);
     if (typeof window !== "undefined") {
       localStorage.setItem(DRAWER_STATE_KEY, JSON.stringify(open));
     }
@@ -91,8 +95,8 @@ const Drawer: React.FC<DrawerProps> = ({
     <ResizeHandle
       initialWidth={drawerWidth}
       onWidthChange={setDrawerWidth}
-      minWidth={open ? 16.25 : 3.5}
-      maxWidth={open ? 50 : 3.5}
+      minWidth={open ? DRAWER_OPEN_WIDTH : DRAWER_CLOSED_WIDTH}
+      maxWidth={open ? DRAWER_MAX_WIDTH : DRAWER_CLOSED_WIDTH}
       maxOffsetRem={9}
       hideHandle
       direction="horizontal">

@@ -188,12 +188,10 @@ const ResizeHandle = ({
   const getOverflowClass = () => {
     return isVertical ? "overflow-auto h-full" : "overflow-auto w-full";
   };
+  const cursorClass = !isDragging ? (isVertical ? "cursor-ns-resize" : "cursor-ew-resize") : "";
 
   return (
-    <div
-      className={`relative group ${!isDragging ? (isVertical ? "cursor-ns-resize" : "cursor-ew-resize") : ""}`}
-      onMouseDown={handleMouseDown}
-      onDoubleClick={handleDoubleClick}>
+    <div className={`relative group ${cursorClass}`} onMouseDown={handleMouseDown} onDoubleClick={handleDoubleClick}>
       <div
         className={`
           relative
