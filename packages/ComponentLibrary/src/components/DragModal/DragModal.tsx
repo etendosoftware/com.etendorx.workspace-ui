@@ -15,14 +15,14 @@ const DragModal: React.FC<DragModalProps> = ({
   buttonText,
   backButtonText,
 }) => {
-  const [people, setPeople] = useState<Item[]>(initialItems);
+  const [items, setItems] = useState<Item[]>(initialItems);
 
   return (
     <Modal width={MODAL_WIDTH} HeaderIcon={CloseRecordIcon}>
       <ModalDivider />
       <DragModalContent
-        items={people}
-        setItems={setPeople}
+        items={items}
+        setItems={setItems}
         onBack={onClose}
         activateAllText={activateAllText}
         deactivateAllText={deactivateAllText}
