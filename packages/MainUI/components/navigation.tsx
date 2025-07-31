@@ -14,10 +14,10 @@ import {
   NotificationModal,
   Waterfall,
 } from "@workspaceui/componentlibrary/src/components";
-import type { Person } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
+import type { Item } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
 import Nav from "@workspaceui/componentlibrary/src/components/Nav/Nav";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { NOTIFICATIONS, initialPeople, menuItems, sections } from "../../storybook/src/mocks";
+import { NOTIFICATIONS, menuItems, sections } from "../../storybook/src/mocks";
 import { useTranslation } from "../hooks/useTranslation";
 import ProfileModal from "./ProfileModal/ProfileModal";
 import { useAssistants } from "@/hooks/useAssistants";
@@ -30,7 +30,7 @@ const handleClose = () => {
   return true;
 };
 
-const people: Person[] = [];
+const item: Item[] = [];
 
 const Navigation: React.FC = () => {
   const { t } = useTranslation();
@@ -165,15 +165,15 @@ const Navigation: React.FC = () => {
       <Nav title={t("common.notImplemented")}>
         <Waterfall
           menuItems={menuItems}
-          initialPeople={initialPeople}
           backButtonText={t("modal.secondaryButtonLabel")}
           activateAllText={t("navigation.waterfall.activateAll")}
           deactivateAllText={t("navigation.waterfall.deactivateAll")}
           tooltipWaterfallButton={t("navigation.waterfall.tooltipButton")}
           buttonText={t("navigation.waterfall.buttons")}
           customizeText={t("navigation.waterfall.customize")}
-          people={people}
+          items={item}
           icon={<AddIcon />}
+          setItems={() => {}}
         />
         <ConfigurationSection />
         <CopilotButton onClick={handleCopilotOpen} tooltip="Copilot" />
