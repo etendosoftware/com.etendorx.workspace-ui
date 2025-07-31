@@ -93,9 +93,12 @@ export function useProcessExecution() {
           const safeWindowId = windowId || (tab.window ? String(tab.window) : "");
           const safeTabId = tab.id ? String(tab.id) : "";
           const safeRecordId = String(record.id || recordId || "");
+          const safeTableId = tab.table ? String(tab.table) : "";
 
-          if (!safeWindowId || !safeTabId || !safeRecordId || !currentButtonId) {
-            throw new Error("Window ID, Tab ID, Record ID or Button ID not found");
+          const requiredData = [safeWindowId, safeTabId, safeRecordId, currentButtonId, safeTableId];
+
+          if (!requiredData.every((value) => value)) {
+            throw new Error("Required data not found");
           }
 
           if (!(currentButtonId in data)) {
@@ -112,6 +115,7 @@ export function useProcessExecution() {
             recordId: safeRecordId,
             windowId: safeWindowId,
             tabId: safeTabId,
+            tableId: safeTableId,
             token,
             isPostedProcess,
           });
