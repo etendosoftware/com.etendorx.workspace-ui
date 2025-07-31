@@ -5,5 +5,5 @@ import { useFormContext } from "react-hook-form";
 export const StringSelector = (props: { field: Field } & React.ComponentProps<typeof TextInput>) => {
   const { register } = useFormContext();
 
-  return <TextInput {...props} {...register(props.field.hqlName)} />;
+  return <TextInput {...props} {...register(props.field.hqlName)} maxLength={Number(props.field.column.length)} />;
 };
