@@ -6,6 +6,7 @@ import {
 } from "@/components/ProcessModal/types";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
+import { PROCESS_REFERENCE_CODES } from "@/utils/form/constants";
 import { API_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useParams } from "next/navigation";
@@ -104,11 +105,11 @@ export function useProcessExecution() {
           );
           const adClientId = extractValue(
             ["adClientId", "AD_Client_ID", "aD_Client_ID", "adclientid", "AdClientId", "client"],
-            "23C59575B9CF467C9620760EB255B389"
+            PROCESS_REFERENCE_CODES.CLIENT
           );
           const adOrgId = extractValue(
             ["adOrgId", "AD_Org_ID", "aD_Org_ID", "adorgid", "AdOrgId", "organization"],
-            "7BABA5FF80494CAFA54DEBD22EC46F01"
+            PROCESS_REFERENCE_CODES.PROCESS
           );
 
           const isPostedProcess = button.id === "Posted";

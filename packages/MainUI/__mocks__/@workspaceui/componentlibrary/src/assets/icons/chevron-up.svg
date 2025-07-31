@@ -1,0 +1,4 @@
+const React = require("react");
+module.exports = function MockChevronUp() {
+  return React.createElement("div", { "data-testid": "chevron-up" }, "ChevronUp");
+};

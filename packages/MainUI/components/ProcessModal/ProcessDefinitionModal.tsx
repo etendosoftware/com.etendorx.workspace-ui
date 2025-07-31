@@ -6,6 +6,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import { buildPayloadByInputName } from "@/utils";
 import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -24,7 +25,7 @@ import type {
 } from "./types";
 
 export const FALLBACK_RESULT = {};
-const WINDOW_REFERENCE_ID = "FF80818132D8F0F30132D9BC395D0038";
+const WINDOW_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW;
 
 function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();

@@ -1,5 +1,6 @@
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
+import { getFieldsToAdd } from "@/utils/form/entityConfig";
 import type { ClientOptions } from "@workspaceui/api-client/src/api/client";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import {
@@ -116,6 +117,8 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
         throw new Error("Missing key column");
       }
 
+      const additionalFields = getFieldsToAdd(tab.entityName, mode);
+
       const payload = {
         ...parentData,
         inpKeyName: entityKeyColumn.inputName,
@@ -125,6 +128,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
         keyColumnName: entityKeyColumn.columnName,
         _entityName: tab.entityName,
         inpwindowId: tab.window,
+        ...additionalFields,
       };
 
       const data = await fetchFormInitialization(params, payload);
