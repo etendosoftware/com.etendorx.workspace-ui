@@ -8,7 +8,6 @@ import type { SortableItemProps } from "./DragModal.types";
 import type { SxProps, Theme } from "@mui/material/styles";
 
 const SortableItem: React.FC<SortableItemProps> = ({ id, person, item, onToggle, icon }) => {
-  // Use generic item if available, otherwise fall back to legacy person
   const currentItem = item || person;
   const { sx, styles } = useStyle();
 
@@ -31,11 +30,11 @@ const SortableItem: React.FC<SortableItemProps> = ({ id, person, item, onToggle,
           {React.cloneElement(icon as React.ReactElement, {
             style: styles.dragStyles,
           })}
-          <span className="person-label" style={styles.sortableItemLabel} title={currentItem.label}>
-            {currentItem.label}
+          <span className="person-label" style={styles.sortableItemLabel} title={currentItem?.label}>
+            {currentItem?.label}
           </span>
         </div>
-        <ToggleChip isActive={currentItem.isActive} onToggle={onToggle} />
+        <ToggleChip isActive={currentItem?.isActive} onToggle={onToggle} />
       </div>
     </MenuItem>
   );

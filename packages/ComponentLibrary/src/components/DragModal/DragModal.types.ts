@@ -36,8 +36,6 @@ export interface DragModalProps<T extends ToggleableItem = Item> {
 export interface DragModalContentProps<T extends ToggleableItem = Item> {
   items?: T[];
   setItems?: React.Dispatch<React.SetStateAction<T[]>>;
-  people?: T[];
-  setPeople?: React.Dispatch<React.SetStateAction<T[]>>;
   onBack?: () => void;
   backButtonText?: string;
   activateAllText?: string;

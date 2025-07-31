@@ -5,11 +5,10 @@ import type { ReactNode } from "react";
 export interface WaterfallModalProps<T extends ToggleableItem = Item> {
   menuItems: { emoji: string; label: string; key: string }[];
   items: T[];
-  initialItems: T[];
+  setItems: React.Dispatch<React.SetStateAction<T[]>>;
   onBack?: () => void;
   onToggleAll?: () => void;
   onToggle?: (id: UniqueIdentifier) => void;
-  setItems?: (items: T[]) => void;
   backButtonText?: string;
   activateAllText?: string;
   deactivateAllText?: string;

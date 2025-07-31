@@ -21,8 +21,6 @@ import { Box, Button, Link, useTheme } from "@mui/material";
 import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
 
 const DragModalContent: React.FC<DragModalContentProps> = ({
-  people,
-  setPeople,
   items,
   setItems,
   onBack,
@@ -31,9 +29,8 @@ const DragModalContent: React.FC<DragModalContentProps> = ({
   deactivateAllText,
   buttonText,
 }) => {
-  // Use useMemo to prevent dependency changes on every render
-  const currentItems = useMemo(() => items || people || [], [items, people]);
-  const setCurrentItems = useMemo(() => setItems || setPeople || (() => {}), [setItems, setPeople]);
+  const currentItems = useMemo(() => items ?? [], [items]);
+  const setCurrentItems = useMemo(() => setItems ?? (() => {}), [setItems]);
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),

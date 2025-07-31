@@ -27,7 +27,7 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.FIND]: "toolbar-button-find",
   [TOOLBAR_BUTTONS_ACTIONS.FILTER]: "toolbar-button-filter",
   [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: "toolbar-button-copilot",
-  [TOOLBAR_BUTTONS_ACTIONS.COLUMN_FILTERS]: "toolbar-button-columnFilter",
+  [TOOLBAR_BUTTONS_ACTIONS.COLUMN_FILTERS]: "toolbar-button-column-filters",
 } as const;
 
 export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;

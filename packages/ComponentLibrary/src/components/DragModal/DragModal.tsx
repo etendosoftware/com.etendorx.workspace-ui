@@ -21,8 +21,8 @@ const DragModal: React.FC<DragModalProps> = ({
     <Modal width={MODAL_WIDTH} HeaderIcon={CloseRecordIcon}>
       <ModalDivider />
       <DragModalContent
-        people={people}
-        setPeople={setPeople}
+        items={people}
+        setItems={setPeople}
         onBack={onClose}
         activateAllText={activateAllText}
         deactivateAllText={deactivateAllText}

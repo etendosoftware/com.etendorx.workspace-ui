@@ -4,7 +4,6 @@ import { Box, Button, List, MenuItem, styled, useTheme } from "@mui/material";
 import { useCallback, useState } from "react";
 import NavigateNext from "../../assets/icons/chevron-right.svg";
 import Edit from "../../assets/icons/edit.svg";
-import type { Item } from "../DragModal/DragModal.types";
 import DragModalContent from "../DragModal/DragModalContent";
 import IconButton from "../IconButton";
 import Menu from "../Menu";
@@ -15,6 +14,7 @@ import type { WaterfallModalProps } from "./types";
 const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
   menuItems,
   items,
+  setItems,
   backButtonText,
   activateAllText,
   deactivateAllText,
@@ -35,7 +35,6 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
   const { sx, styles } = useStyle();
   const [showDragModal, setShowDragModal] = useState(false);
   const [fade, setFade] = useState(false);
-  const [people, setPeople] = useState<Item[]>(items);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
@@ -100,8 +99,8 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
             </>
           ) : (
             <DragModalContent
-              people={people}
-              setPeople={setPeople}
+              items={items}
+              setItems={setItems}
               onBack={handleBack}
               backButtonText={backButtonText}
               activateAllText={activateAllText}
