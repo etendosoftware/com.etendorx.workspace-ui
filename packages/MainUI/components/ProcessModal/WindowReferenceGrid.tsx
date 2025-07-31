@@ -15,10 +15,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ErrorDisplay } from "../ErrorDisplay";
 import EmptyState from "../Table/EmptyState";
 import Loading from "../loading";
-
 import { useDatasource } from "@/hooks/useDatasource";
 import { tableStyles } from "./styles";
 import type { WindowReferenceGridProps } from "./types";
+import { PROCESS_DEFINITION_DATA, CREATE_LINES_FROM_ORDER_PROCESS_ID } from "@/utils/processes/definition/constants";
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
@@ -36,6 +36,7 @@ function WindowReferenceGrid({
   processConfig,
   processConfigLoading,
   processConfigError,
+  recordValues,
 }: WindowReferenceGridProps) {
   const { t } = useTranslation();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -45,17 +46,36 @@ function WindowReferenceGrid({
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
 
   const datasourceOptions = useMemo(() => {
+    const processId = processConfig?.processId;
+    const currentOptionData = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+    const defaultKeys = currentOptionData?.defaultKeys;
+    const dynamicKeys = currentOptionData?.dynamicKeys;
+    const staticOptions = currentOptionData?.staticOptions;
+
     const options: Record<string, EntityValue> = {
+      ...staticOptions,
       tabId: parameter.tab || tabId,
       pageSize: PAGE_SIZE,
     };
+
+    if (processId === CREATE_LINES_FROM_ORDER_PROCESS_ID && dynamicKeys) {
+      const { invoiceClient, invoiceBusinessPartner, invoicePriceList, invoiceCurrency } = dynamicKeys as Record<
+        string,
+        string
+      >;
+      options[invoiceClient] = recordValues?.inpadClientId || "";
+      options[invoiceBusinessPartner] = recordValues?.inpcBpartnerId || "";
+      options[invoicePriceList] = recordValues?.inpmPricelistId || "";
+      options[invoiceCurrency] = recordValues?.inpcCurrencyId || "";
+    }
 
     if (processConfig?.defaults) {
       for (const [key, value] of Object.entries(processConfig.defaults)) {
         options[key] = value.value;
 
-        if (key === "ad_org_id") {
-          options.org = value.value;
+        if (defaultKeys && key in defaultKeys) {
+          const defaultKey = defaultKeys[key as keyof typeof defaultKeys];
+          options[defaultKey] = value.value;
         }
       }
     }
@@ -77,7 +97,7 @@ function WindowReferenceGrid({
     }
 
     return options;
-  }, [tabId, parameter.tab, processConfig]);
+  }, [tabId, parameter.tab, processConfig, recordValues]);
 
   const fields = useMemo(() => {
     if (windowReferenceTab?.fields) {
@@ -246,7 +266,7 @@ function WindowReferenceGrid({
     enableColumnActions: true,
     manualFiltering: true,
     columns,
-    data: records || [],
+    data: records,
     getRowId: (row) => String(row.id),
     renderTopToolbar,
     renderBottomToolbar: hasMoreRecords ? () => <LoadMoreButton fetchMore={fetchMore} /> : undefined,

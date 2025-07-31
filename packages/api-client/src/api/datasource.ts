@@ -1,6 +1,7 @@
 import { Client, type Interceptor } from "./client";
 import { API_DATASOURCE_SERVLET } from "./constants";
 import type { DatasourceParams } from "./types";
+import { isWrappedWithAt } from "../utils/datasource/utils";
 
 export class Datasource {
   private static instance: Datasource;
@@ -74,7 +75,9 @@ export class Datasource {
             params.append(key, JSON.stringify(criteria));
           }
         } else {
-          params.append(`_${key}`, Array.isArray(value) ? value.join(",") : String(value));
+          const formattedKey = isWrappedWithAt(key) ? key : `_${key}`;
+          const formattedValue = Array.isArray(value) ? value.join(",") : String(value);
+          params.append(formattedKey, formattedValue);
         }
       }
     }

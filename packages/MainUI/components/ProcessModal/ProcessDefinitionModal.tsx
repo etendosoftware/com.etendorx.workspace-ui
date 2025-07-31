@@ -23,6 +23,7 @@ import type {
   RecordValues,
   ResponseMessage,
 } from "./types";
+import { PROCESS_DEFINITION_DATA } from "@/utils/processes/definition/constants";
 
 export const FALLBACK_RESULT = {};
 const WINDOW_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW;
@@ -45,11 +46,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const [loading, setLoading] = useState(true);
   const [gridSelection, setGridSelection] = useState<unknown[]>([]);
 
-  const tabId = tab?.id || "";
-  const entityName = tab?.entityName || "";
   const selectedRecords = graph.getSelectedMultiple(tab);
+
   const windowReferenceTab = parameters.grid?.window?.tabs?.[0] as Tab;
+  const entityName = windowReferenceTab?.entityName || "";
   const windowId = tab?.window || "";
+  const tabId = windowReferenceTab?.id || "";
 
   const recordValues: RecordValues | null = useMemo(() => {
     if (!record || !tab?.fields) return FALLBACK_RESULT;
@@ -82,7 +84,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [button.processDefinition.parameters, isExecuting, onClose]);
 
   const handleWindowReferenceExecute = useCallback(async () => {
-    if (!tab) return;
+    if (!tab || !processId) return;
 
     setIsExecuting(true);
     setIsSuccess(false);
@@ -94,9 +96,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         _action: javaClassName,
       });
 
+      const currentAttrs = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+      const currentRecordValue = recordValues?.[currentAttrs.inpPrimaryKeyColumnId];
+
       const payload = {
-        C_Order_ID: recordValues?.inpcOrderId,
-        inpcOrderId: tabId,
+        [currentAttrs.inpColumnId]: currentRecordValue,
+        [currentAttrs.inpPrimaryKeyColumnId]: currentRecordValue,
         _buttonValue: "DONE",
         _params: {
           grid: {
@@ -141,7 +146,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     } finally {
       setIsExecuting(false);
     }
-  }, [tab, processId, javaClassName, recordValues?.inpcOrderId, tabId, gridSelection, entityName, t, onSuccess]);
+  }, [tab, processId, javaClassName, recordValues, gridSelection, entityName, t, onSuccess]);
 
   const handleExecute = useCallback(async () => {
     if (hasWindowReference) {
@@ -297,6 +302,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             processConfig={processConfig}
             processConfigLoading={processConfigLoading}
             processConfigError={processConfigError}
+            recordValues={recordValues}
           />
         );
       }

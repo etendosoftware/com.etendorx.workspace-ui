@@ -4,6 +4,7 @@ import { logger } from "@/utils/logger";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 
 export interface ProcessConfigResponse {
+  processId: string;
   defaults?: Record<string, { value: string; identifier: string }>;
   filterExpressions?: Record<string, Record<string, string>>;
   refreshParent?: boolean;
@@ -49,6 +50,7 @@ export const useProcessConfig = ({ processId, windowId, tabId }: UseProcessConfi
         const { data } = await Metadata.kernelClient.post(`?${params}`, requestPayload);
 
         const processedConfig: ProcessConfigResponse = {
+          processId,
           defaults: data?.defaults || {},
           filterExpressions: data?.filterExpressions || {},
           refreshParent: !!data?.refreshParent,
