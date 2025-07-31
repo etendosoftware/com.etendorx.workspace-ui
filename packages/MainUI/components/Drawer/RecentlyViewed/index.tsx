@@ -1,26 +1,51 @@
-import { DrawerSection } from "@workspaceui/componentlibrary/src/components/Drawer/DrawerSection";
 import type { RecentlyViewedProps } from "@workspaceui/componentlibrary/src/components/Drawer/types";
-import { createParentMenuItem } from "@workspaceui/componentlibrary/src/utils/menuUtils";
 import type { Menu } from "@workspaceui/api-client/src/api/types";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from "react";
 import { useRecentItems } from "../../../hooks/useRecentItems";
 import { useTranslation } from "../../../hooks/useTranslation";
 import { useUserContext } from "../../../hooks/useUserContext";
+import clsx from "clsx";
+import ChevronDown from "../../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
+import DrawerSection from "@workspaceui/componentlibrary/src/components/Drawer/DrawerSection";
+import { CLOCK_B64 } from "@workspaceui/componentlibrary/src/components/Drawer/MenuTitle/constants";
+import MenuLibrary from "../../../../ComponentLibrary/src/components/Menu";
 
 export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => void }, RecentlyViewedProps>(
-  ({ windowId, onClick, open, items, getTranslatedName }, ref) => {
+  ({ onClick, items, getTranslatedName, open, windowId }, ref) => {
+    const [expanded, setExpanded] = useState<boolean>(false);
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+
     const { t } = useTranslation();
     const { currentRole } = useUserContext();
 
-    const {
-      localRecentItems,
-      isExpanded,
-      handleRecentItemClick,
-      handleToggleExpand,
-      hasItems,
-      addRecentItem,
-      updateTranslations,
-    } = useRecentItems(items, onClick, currentRole?.id ?? "", getTranslatedName);
+    const handleCloseMenu = useCallback(() => {
+      setAnchorEl(null);
+    }, []);
+
+    const handleClickAndClose = useCallback(
+      (item: Menu) => {
+        onClick(item);
+        handleCloseMenu();
+      },
+      [handleCloseMenu, onClick]
+    );
+
+    const handleClick = useCallback(
+      (event: React.MouseEvent<HTMLElement>) => {
+        if (!open) {
+          return setAnchorEl(event.currentTarget);
+        }
+        setExpanded((prev) => !prev);
+      },
+      [open]
+    );
+
+    const { localRecentItems, handleRecentItemClick, addRecentItem, updateTranslations } = useRecentItems(
+      items,
+      onClick,
+      currentRole?.id ?? "",
+      getTranslatedName
+    );
 
     useEffect(() => {
       if (currentRole?.id && items.length > 0) {
@@ -32,7 +57,6 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
       (item: Menu) => {
         if (item.id && item.type) {
           addRecentItem(item);
-          return;
         }
       },
       [addRecentItem]
@@ -46,27 +70,96 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
       [handleWindowAccess]
     );
 
-    const parentMenuItem = useMemo(() => createParentMenuItem(localRecentItems, t), [localRecentItems, t]);
+    if (!currentRole?.id || localRecentItems.length === 0) return null;
 
-    if (!currentRole?.id) return null;
+    const item = {
+      id: "recently-viewed",
+      name: t("drawer.recentlyViewed"),
+      type: "Folder",
+      children: [],
+    };
 
     return (
-      <DrawerSection
-        item={parentMenuItem}
-        onClick={handleRecentItemClick}
-        open={open}
-        hasChildren={hasItems}
-        isExpandable={hasItems}
-        isExpanded={isExpanded}
-        onToggleExpand={handleToggleExpand}
-        isSearchActive={false}
-        parentId=""
-        windowId={windowId}
-      />
+      <div className="p-2">
+        <button
+          type="button"
+          onClick={handleClick}
+          className={`flex transition-colors duration-300 cursor-pointer w-full items-center
+            ${open ? "rounded-lg" : "p-2.5 rounded-full justify-center"}
+             text-xl justify-between p-1 gap-1 hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(18%)_sepia(40%)_saturate(7101%)_hue-rotate(215deg)_brightness(91%)_contrast(102%)] ${"text-neutral-90 hover:bg-dynamic-contrast-text hover:text-dynamic-main hover:text-neutral-0"}`}>
+          <div className={`flex items-center ${open ? "overflow-hidden" : ""}`}>
+            <div className={`${open ? "w-8" : "w-full h-full"} flex justify-center items-center`}>
+              <img
+                alt="img"
+                src={`data:image/svg+xml;base64,${CLOCK_B64}`}
+                className="filter-[brightness(0)_saturate(100%)_invert(9%)_sepia(100%)_saturate(3080%)_hue-rotate(212deg)_brightness(97%)_contrast(101%)] w-5 h-5"
+              />
+            </div>
+            {open && (
+              <div className="relative group flex items-center py-1.5">
+                <span className="ml-2 font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-40">
+                  {item.name}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {open && item.children && (
+            <div className={`transition-transform duration-300 flex justify-center ${expanded ? "rotate-180" : ""}`}>
+              <ChevronDown />
+            </div>
+          )}
+        </button>
+
+        {expanded && open && (
+          <div className="pt-2 pl-4 flex flex-wrap gap-2 w-full">
+            {localRecentItems.map((recentItem) => (
+              <button
+                key={recentItem.id}
+                type="button"
+                onClick={() => handleRecentItemClick(recentItem)}
+                className={clsx(
+                  "rounded-full px-4 py-1 text-sm font-medium border",
+                  "bg-[#00030D0D] text-gray-800 border-gray-300 hover:bg-gray-200 transition"
+                )}>
+                {recentItem.name}
+              </button>
+            ))}
+          </div>
+        )}
+        {!open && (
+          <MenuLibrary
+            className="max-h-80 w-full max-w-60  overflow-y-scroll overflow-hidden hide-scrollbar"
+            anchorEl={anchorEl}
+            offsetX={52}
+            offsetY={-40}
+            onClose={handleCloseMenu}>
+            <div
+              className="border-b border-transparent-neutral-5 h-13 flex items-center px-6 bg-neutral-50 
+                font-inter font-semibold text-[14px] leading-[20px] tracking-[0.15px] text-baseline-80">
+              {item.name}
+            </div>
+            {localRecentItems?.map((subitem) => (
+              <DrawerSection
+                key={subitem.id}
+                item={subitem}
+                onClick={handleClickAndClose}
+                open={true}
+                isSearchActive={false}
+                onToggleExpand={() => {}}
+                hasChildren={false}
+                isExpandable={false}
+                isExpanded={false}
+                parentId={subitem.id}
+                windowId={windowId}
+              />
+            ))}
+          </MenuLibrary>
+        )}
+      </div>
     );
   }
 );
 
 RecentlyViewed.displayName = "RecentlyViewed";
-
 export default RecentlyViewed;

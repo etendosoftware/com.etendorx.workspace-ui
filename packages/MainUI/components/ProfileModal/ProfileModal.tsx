@@ -137,13 +137,16 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     setCurrentSection(section);
   }, []);
 
-  const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    if (!anchorEl) {
-      setAnchorEl(event.currentTarget);
-    } else {
-      setAnchorEl(null);
-    }
-  }, []);
+  const handleClick = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (!anchorEl) {
+        setAnchorEl(event.currentTarget);
+      } else {
+        setAnchorEl(null);
+      }
+    },
+    [anchorEl]
+  );
 
   const handleClose = useCallback(() => {
     setAnchorEl(null);
