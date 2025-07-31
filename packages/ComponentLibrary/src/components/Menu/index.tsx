@@ -4,16 +4,42 @@ import { useClickOutside, useEscapeKey, useWindowResize } from "../../hooks/useE
 import { cleanDefaultClasses } from "../../utils/classUtil";
 
 type DropdownMenuProps = {
-  /** The element to which the menu will be anchored (positioned relative to) */
+  /**
+   * The element to which the menu will be anchored (positioned relative to).
+   * If `null`, the menu will not be displayed.
+   */
   anchorEl: HTMLElement | null;
-  /** Callback fired when the menu requests to be closed */
+  /**
+   * Callback fired when the menu requests to be closed.
+   * Typically triggered by clicking outside or pressing the Escape key.
+   */
   onClose: () => void;
-  /** The content of the menu */
+  /**
+   * The content of the menu to render inside the dropdown.
+   */
   children: React.ReactNode;
-  /** Optional additional CSS classes to customize the menu style */
+  /**
+   * Optional additional CSS classes to customize the menu style.
+   * Merged with default classes via `cleanDefaultClasses`.
+   */
   className?: string;
+  /**
+   * Horizontal offset (in pixels) applied to the menu's calculated X position.
+   * Useful for fine-tuning alignment when the anchor element and menu don't visually align.
+   * @default 0
+   */
   offsetX?: number;
+  /**
+   * Vertical offset (in pixels) applied to the menu's calculated Y position.
+   * Useful for creating spacing or shifting the menu up/down relative to the anchor.
+   * @default 0
+   */
   offsetY?: number;
+  /**
+   * Ref to expose a function allowing manual recalculation of the menu position.
+   * Can be used when the content or layout changes dynamically.
+   */
+  menuRef?: React.MutableRefObject<{ recalculatePosition: () => void } | null>;
 };
 
 /**
@@ -25,27 +51,76 @@ type DropdownMenuProps = {
  *
  * The `className` prop allows customizing the menu styles while preserving default classes with proper merging.
  */
-const Menu: React.FC<DropdownMenuProps> = ({ anchorEl, onClose, children, className = "", offsetX, offsetY }) => {
+const Menu: React.FC<DropdownMenuProps> = ({
+  anchorEl,
+  onClose,
+  children,
+  className = "",
+  offsetX,
+  offsetY,
+  menuRef: externalMenuRef,
+}) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [visible, setVisible] = useState(false);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const mutationObserverRef = useRef<MutationObserver | null>(null);
 
   const calculatePosition = useCallback(() => {
     if (!anchorEl || !menuRef.current) return;
-    const rect = anchorEl.getBoundingClientRect();
-    const menu = menuRef.current;
 
-    let x = rect.left + window.scrollX + (offsetX ?? 0);
-    let y = rect.bottom + window.scrollY + (offsetY ?? 0);
+    const anchorRect = anchorEl.getBoundingClientRect();
+    const menuElement = menuRef.current;
 
-    if (x + menu.offsetWidth > window.innerWidth + window.scrollX) {
-      x = Math.max(window.scrollX, rect.right - menu.offsetWidth + window.scrollX);
+    menuElement.style.maxHeight = "";
+    menuElement.style.overflowY = "";
+
+    const menuWidth = menuElement.offsetWidth;
+    const menuHeight = menuElement.offsetHeight;
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let x = anchorRect.left + (offsetX ?? 0);
+    let y = anchorRect.bottom + (offsetY ?? 0);
+
+    if (x + menuWidth > viewportWidth) {
+      x = anchorRect.right - menuWidth - (offsetX ?? 0);
+
+      if (x < 0) {
+        x = 8;
+      }
     }
-    if (y + menu.offsetHeight > window.innerHeight + window.scrollY) {
-      y = Math.max(window.scrollY, rect.top - menu.offsetHeight + window.scrollY);
+
+    const spaceBelow = viewportHeight - anchorRect.bottom;
+    const spaceAbove = anchorRect.top;
+
+    if (menuHeight > spaceBelow) {
+      if (spaceAbove > spaceBelow && menuHeight <= spaceAbove) {
+        y = anchorRect.top - menuHeight - (offsetY ?? 0);
+      } else {
+        if (spaceBelow > spaceAbove) {
+          y = anchorRect.bottom + (offsetY ?? 0);
+          const maxHeight = spaceBelow - 16;
+          if (menuHeight > maxHeight) {
+            menuElement.style.maxHeight = `${maxHeight}px`;
+            menuElement.style.overflowY = "auto";
+          }
+        } else {
+          const maxHeight = spaceAbove - 16;
+          y = 8;
+          if (menuHeight > maxHeight) {
+            menuElement.style.maxHeight = `${maxHeight}px`;
+            menuElement.style.overflowY = "auto";
+          }
+        }
+      }
     }
+
+    x = Math.max(8, Math.min(x, viewportWidth - menuWidth - 8));
+    y = Math.max(8, Math.min(y, viewportHeight - Math.min(menuHeight, viewportHeight - 16) - 8));
+
     setPosition({ x, y });
   }, [anchorEl, offsetX, offsetY]);
 
@@ -54,9 +129,62 @@ const Menu: React.FC<DropdownMenuProps> = ({ anchorEl, onClose, children, classN
       setVisible(false);
       return;
     }
-    calculatePosition();
-    setVisible(true);
+
+    const timer = setTimeout(() => {
+      calculatePosition();
+      setVisible(true);
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [anchorEl, calculatePosition]);
+
+  useEffect(() => {
+    if (externalMenuRef) {
+      externalMenuRef.current = {
+        recalculatePosition: calculatePosition,
+      };
+    }
+  }, [calculatePosition, externalMenuRef]);
+
+  useEffect(() => {
+    if (!menuRef.current || !visible) return;
+
+    mutationObserverRef.current = new MutationObserver((mutations) => {
+      let shouldRecalculate = false;
+
+      for (const mutation of mutations) {
+        if (
+          mutation.type === "attributes" &&
+          (mutation.attributeName === "class" || mutation.attributeName === "style")
+        ) {
+          shouldRecalculate = true;
+        }
+
+        if (mutation.type === "childList") {
+          shouldRecalculate = true;
+        }
+      }
+
+      if (shouldRecalculate) {
+        requestAnimationFrame(() => {
+          calculatePosition();
+        });
+      }
+    });
+
+    mutationObserverRef.current.observe(menuRef.current, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "style"],
+    });
+
+    return () => {
+      if (mutationObserverRef.current) {
+        mutationObserverRef.current.disconnect();
+      }
+    };
+  }, [visible, calculatePosition]);
 
   const handleClose = () => {
     setVisible(false);
@@ -86,7 +214,11 @@ const Menu: React.FC<DropdownMenuProps> = ({ anchorEl, onClose, children, classN
         role="menu"
         ref={menuRef}
         className={`${cleanDefaultClasses(DEFAULT_MENU_CLASSES, className)}`}
-        style={{ top: position.y, left: position.x }}>
+        style={{
+          top: position.y,
+          left: position.x,
+          visibility: visible ? "visible" : "hidden",
+        }}>
         {children}
       </div>,
       document.body

@@ -4,7 +4,7 @@ import { useItemActions } from "../../../hooks/useItemType";
 import { findActive } from "../../../utils/drawerUtils";
 import { MenuTitle } from "../MenuTitle";
 import type { DrawerSectionProps, ToggleFunctions } from "../types";
-import MenuD from "../../Menu";
+import MenuLibrary from "../../Menu";
 
 export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
   ({
@@ -25,6 +25,8 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const toggleFunctions = useRef<ToggleFunctions>({});
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+
+    const menuControlRef = useRef<{ recalculatePosition: () => void } | null>(null);
 
     const [localExpanded, setLocalExpanded] = useState(isSelected || findActive(windowId, item.children));
 
@@ -48,6 +50,13 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
         } else {
           newSet.add(sectionId);
         }
+
+        setTimeout(() => {
+          if (menuControlRef.current) {
+            menuControlRef.current.recalculatePosition();
+          }
+        }, 100);
+
         return newSet;
       });
     }, []);
@@ -99,7 +108,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     );
 
     const sectionClasses = [
-      expanded && open ? "bg-(--color-baseline-10)" : "bg-transparent",
+      expanded && open ? "bg-(--color-baseline-10)" : "bg-transparent ",
       open ? "m-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" : "flex justify-center",
       !open && hasActiveChild ? "bg-dynamic-main rounded-full" : "",
     ].join(" ");
@@ -120,11 +129,6 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
         setLocalExpanded(false);
       }
     }, [item.id, isSelected, windowId, item.children]);
-
-    const handleOpenMenu = useCallback((event: React.MouseEvent<HTMLElement>) => {
-      console.log({ event });
-      setAnchorEl(event.currentTarget);
-    }, []);
 
     const handleCloseMenu = useCallback(() => {
       setAnchorEl(null);
@@ -151,8 +155,8 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
         />
         {hasChildren && open && (
           <div
-            className={`transition-all duration-300 ease-in-out 
-              ${shouldShowChildren ? "opacity-100 transform translate-y-0" : "max-h-0 opacity-0 transform -translate-y-2"}`}>
+            className={`transition-all duration-300 ease-in-out h-auto 
+              ${shouldShowChildren ? "opacity-100" : "max-h-0 overflow-hidden"}`}>
             {item.children?.map((subitem) => (
               <DrawerSection
                 key={subitem.id}
@@ -171,30 +175,34 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
           </div>
         )}
         {!open && (
-          <MenuD className="h-auto max-h-100" anchorEl={anchorEl} offsetX={60} offsetY={-40} onClose={handleCloseMenu}>
-            <div className="min-w-[240px] overflow-scroll hide-scrollbar">
-              <div
-                className=" border-b border-transparent-neutral-5 flex items-center px-4 bg-neutral-50 
+          <MenuLibrary
+            className="max-h-76 w-full max-w-60 overflow-y-scroll overflow-hidden hide-scrollbar"
+            anchorEl={anchorEl}
+            offsetX={52}
+            offsetY={-40}
+            onClose={handleCloseMenu}
+            menuRef={menuControlRef}>
+            <div
+              className="h-13 border-b border-transparent-neutral-5 flex items-center px-4 bg-neutral-50 
                 font-inter font-semibold text-[14px] leading-[20px] tracking-[0.15px] text-baseline-80">
-                {item.name}
-              </div>
-              {item.children?.map((subitem) => (
-                <DrawerSection
-                  key={subitem.id}
-                  item={subitem}
-                  onClick={handleClickAndClose}
-                  open={true}
-                  isSearchActive={isSearchActive}
-                  onToggleExpand={getToggleFunction(subitem.id)}
-                  hasChildren={Boolean(subitem.children?.length)}
-                  isExpandable={isExpandable && !isSearchActive}
-                  isExpanded={expandedSections.has(subitem.id)}
-                  parentId={item.id}
-                  windowId={windowId}
-                />
-              ))}
+              {item.name}
             </div>
-          </MenuD>
+            {item.children?.map((subitem) => (
+              <DrawerSection
+                key={subitem.id}
+                item={subitem}
+                onClick={handleClickAndClose}
+                open={true}
+                isSearchActive={isSearchActive}
+                onToggleExpand={getToggleFunction(subitem.id)}
+                hasChildren={Boolean(subitem.children?.length)}
+                isExpandable={isExpandable && !isSearchActive}
+                isExpanded={expandedSections.has(subitem.id)}
+                parentId={item.id}
+                windowId={windowId}
+              />
+            ))}
+          </MenuLibrary>
         )}
       </div>
     );
