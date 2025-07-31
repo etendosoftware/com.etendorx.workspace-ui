@@ -1,22 +1,29 @@
 import type { UniqueIdentifier } from "@dnd-kit/core";
 import type { ReactNode } from "react";
 
-export interface Person {
+export interface ToggleableItem {
   id: UniqueIdentifier;
   label: string;
   isActive: boolean;
 }
 
-export interface SortableItemProps {
+export interface Item extends ToggleableItem {}
+
+export interface SortableItemProps<T extends ToggleableItem = Item> {
   id: UniqueIdentifier;
-  person: Person;
+  item?: T;
+  person?: T;
   icon: React.ReactNode;
   isActive: boolean;
   onToggle: () => void;
 }
 
-export interface DragModalProps {
-  initialPeople: Person[];
+export interface SortableItemPropsLegacy extends SortableItemProps<Item> {
+  person: Item;
+}
+
+export interface DragModalProps<T extends ToggleableItem = Item> {
+  initialItems: T[];
   onBack?: () => void;
   onClose: () => void;
   backButtonText?: string;
@@ -26,9 +33,11 @@ export interface DragModalProps {
   icon?: string | ReactNode;
 }
 
-export interface DragModalContentProps {
-  people: Person[];
-  setPeople: React.Dispatch<React.SetStateAction<Person[]>>;
+export interface DragModalContentProps<T extends ToggleableItem = Item> {
+  items?: T[];
+  setItems?: React.Dispatch<React.SetStateAction<T[]>>;
+  people?: T[];
+  setPeople?: React.Dispatch<React.SetStateAction<T[]>>;
   onBack?: () => void;
   backButtonText?: string;
   activateAllText?: string;
