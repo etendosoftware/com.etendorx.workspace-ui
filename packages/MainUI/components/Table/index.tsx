@@ -36,6 +36,8 @@ interface DynamicTableProps {
 }
 
 const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: DynamicTableProps) => {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
@@ -247,7 +249,19 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     enableRowVirtualization: true,
     enableTopToolbar: false,
     enableBottomToolbar: false,
-    enableExpanding: isTreeMode,
+    enableExpanding: true,
+    onExpandedChange: (newExpanded) => {
+      // Detectar qué fila se expandió o colapsó
+      const prevExpanded = expanded;
+      setExpanded(newExpanded);
+      const prevKeys = Object.keys(prevExpanded).filter((k) => prevExpanded[k]);
+      const newKeys = Object.keys(newExpanded).filter((k) => newExpanded[k]);
+      const expandedRowIds = newKeys.filter((k) => !prevKeys.includes(k));
+      const collapsedRowIds = prevKeys.filter((k) => !newKeys.includes(k));
+
+      expandedRowIds.forEach((id) => console.log("Se expandió la fila con id:", id));
+      collapsedRowIds.forEach((id) => console.log("Se colapsó la fila con id:", id));
+    },
     initialState: { density: "compact" },
     state: {
       columnFilters,
