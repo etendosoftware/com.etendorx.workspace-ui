@@ -22,6 +22,7 @@ export const REQUIRED_PARAMS_KEYS = {
   command: "Command",
   inpcOrderId: "inpcOrderId",
   inpKey: "inpKey",
+  inpwindowId: "inpwindowId",
   inpWindowId: "inpWindowId",
   inpTabId: "inpTabId",
   inpTableId: "inpTableId",

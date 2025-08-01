@@ -62,6 +62,7 @@ export const getParams = ({
   params.append(REQUIRED_PARAMS_KEYS.inpcOrderId, recordId);
   params.append(REQUIRED_PARAMS_KEYS.inpKey, recordId);
   params.append(REQUIRED_PARAMS_KEYS.inpWindowId, windowId);
+  params.append(REQUIRED_PARAMS_KEYS.inpwindowId, windowId);
   params.append(REQUIRED_PARAMS_KEYS.inpTabId, tabId);
   params.append(REQUIRED_PARAMS_KEYS.inpTableId, tableId);
   params.append(REQUIRED_PARAMS_KEYS.inpcBpartnerId, businessPartnerId);
