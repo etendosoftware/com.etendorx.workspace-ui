@@ -127,7 +127,7 @@ const Drawer: React.FC<DrawerProps> = ({
             ref={setRecentlyViewedRef}
           />
         )}
-        <div className={`flex-grow overflow-y-auto hide-scrollbar ${!open && "flex flex-col gap-2"}`}>
+        <div className={`flex-grow overflow-y-auto ${!open && "flex flex-col gap-2"}`}>
           <DrawerItems
             items={searchValue ? filteredItems : items}
             onClick={handleItemClick}

@@ -57,8 +57,8 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
             )}
           </div>
           {open && (
-            <div className="relative group flex items-center py-1.5">
-              <span className="ml-2 font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-40">
+            <div className="relative group flex items-center py-1.5 flex-1 min-w-0">
+              <span className="ml-2 font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis flex-1 min-w-0">
                 {item.name}
               </span>
             </div>
