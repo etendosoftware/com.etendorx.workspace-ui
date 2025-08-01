@@ -22,5 +22,11 @@
     "command": "BUTTONPosted",
     "inpkeyColumnId": "C_Invoice_ID",
     "keyColumnName": "C_Invoice_ID"
+  },
+  "4242": {
+    "url": "/ad_actionButton/CreateFrom.html",
+    "command": "FIND_PO",
+    "inpkeyColumnId": "M_InOut_ID",
+    "keyColumnName": "M_InOut_ID"
   }
 }
