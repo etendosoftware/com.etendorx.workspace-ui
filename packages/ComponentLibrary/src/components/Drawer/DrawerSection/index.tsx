@@ -25,6 +25,7 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const toggleFunctions = useRef<ToggleFunctions>({});
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const menuControlRef = useRef<{ recalculatePosition: () => void } | null>(null);
 
@@ -71,37 +72,63 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
       [handleNestedToggle]
     );
 
-    const handleClick = useCallback(
-      (event: React.MouseEvent<HTMLElement>) => {
-        if (open) {
-          if (hasChildren && isExpandable) {
-            const newExpandedState = !expanded;
-            setLocalExpanded(newExpandedState);
-            if (parentId) {
-              handleNestedToggle(item.id);
-            }
-
-            onToggleExpand();
-          } else {
-            handleItemClick(item);
+    const handleClick = useCallback(() => {
+      if (open) {
+        if (hasChildren && isExpandable) {
+          const newExpandedState = !expanded;
+          setLocalExpanded(newExpandedState);
+          if (parentId) {
+            handleNestedToggle(item.id);
           }
+
+          onToggleExpand();
         } else {
-          setAnchorEl(event.currentTarget);
+          handleItemClick(item);
+        }
+      } else {
+        if (!hasChildren) {
+          handleItemClick(item);
+        }
+      }
+    }, [
+      open,
+      hasChildren,
+      isExpandable,
+      expanded,
+      parentId,
+      onToggleExpand,
+      handleNestedToggle,
+      item,
+      handleItemClick,
+    ]);
 
-          if (!hasChildren) {
-            handleItemClick(item);
+    const handleMouseEnter = useCallback(
+      (event: React.MouseEvent<HTMLElement>) => {
+        if (!open && hasChildren) {
+          if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+            hoverTimeoutRef.current = null;
           }
+          setAnchorEl(event.currentTarget);
         }
       },
-      [open, hasChildren, isExpandable, expanded, parentId, onToggleExpand, handleNestedToggle, item, handleItemClick]
+      [open, hasChildren]
     );
+
+    const handleMouseLeave = useCallback(() => {
+      if (!open) {
+        hoverTimeoutRef.current = setTimeout(() => {
+          setAnchorEl(null);
+        }, 150);
+      }
+    }, [open]);
 
     const handleKeyDown = useCallback(
       (event: React.KeyboardEvent) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           event.stopPropagation();
-          handleClick(event as unknown as React.MouseEvent<HTMLElement>);
+          handleClick();
         }
       },
       [handleClick]
@@ -130,6 +157,14 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
       }
     }, [item.id, isSelected, windowId, item.children]);
 
+    useEffect(() => {
+      return () => {
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+        }
+      };
+    }, []);
+
     const handleCloseMenu = useCallback(() => {
       setAnchorEl(null);
     }, []);
@@ -143,7 +178,12 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     );
 
     return (
-      <div className={sectionClasses} aria-expanded={expanded} onKeyDown={handleKeyDown}>
+      <div
+        className={sectionClasses}
+        aria-expanded={expanded}
+        onKeyDown={handleKeyDown}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}>
         <MenuTitle
           item={item}
           onClick={handleClick}
@@ -174,35 +214,44 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
             ))}
           </div>
         )}
-        {!open && (
-          <MenuLibrary
-            className="max-h-76 w-full max-w-60 overflow-y-scroll overflow-hidden hide-scrollbar"
-            anchorEl={anchorEl}
-            offsetX={52}
-            offsetY={-40}
-            onClose={handleCloseMenu}
-            menuRef={menuControlRef}>
-            <div
-              className="h-13 border-b border-transparent-neutral-5 flex items-center px-4 bg-neutral-50 
-                font-inter font-semibold text-[14px] leading-[20px] tracking-[0.15px] text-baseline-80">
-              {item.name}
-            </div>
-            {item.children?.map((subitem) => (
-              <DrawerSection
-                key={subitem.id}
-                item={subitem}
-                onClick={handleClickAndClose}
-                open={true}
-                isSearchActive={isSearchActive}
-                onToggleExpand={getToggleFunction(subitem.id)}
-                hasChildren={Boolean(subitem.children?.length)}
-                isExpandable={isExpandable && !isSearchActive}
-                isExpanded={expandedSections.has(subitem.id)}
-                parentId={item.id}
-                windowId={windowId}
-              />
-            ))}
-          </MenuLibrary>
+        {!open && anchorEl && (
+          <div
+            onMouseEnter={() => {
+              if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+                hoverTimeoutRef.current = null;
+              }
+            }}
+            onMouseLeave={handleMouseLeave}>
+            <MenuLibrary
+              className="max-h-76 w-full max-w-60 overflow-y-scroll overflow-hidden"
+              anchorEl={anchorEl}
+              offsetX={52}
+              offsetY={-40}
+              onClose={handleCloseMenu}
+              menuRef={menuControlRef}>
+              <div
+                className="h-13 border-b border-transparent-neutral-5 flex items-center px-4 bg-neutral-50 
+                  font-inter font-semibold text-[14px] leading-[20px] tracking-[0.15px] text-baseline-80">
+                {item.name}
+              </div>
+              {item.children?.map((subitem) => (
+                <DrawerSection
+                  key={subitem.id}
+                  item={subitem}
+                  onClick={handleClickAndClose}
+                  open={true}
+                  isSearchActive={isSearchActive}
+                  onToggleExpand={getToggleFunction(subitem.id)}
+                  hasChildren={Boolean(subitem.children?.length)}
+                  isExpandable={isExpandable && !isSearchActive}
+                  isExpanded={expandedSections.has(subitem.id)}
+                  parentId={item.id}
+                  windowId={windowId}
+                />
+              ))}
+            </MenuLibrary>
+          </div>
         )}
       </div>
     );

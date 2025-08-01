@@ -96,13 +96,30 @@ const ResizeHandle = ({
       onWidthChange,
       isVertical,
     ]),
-    250
+    50
   );
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      const target = e.target as HTMLElement;
+
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "BUTTON" ||
+        target.tagName === "TEXTAREA" ||
+        target.closest("input") ||
+        target.closest("button") ||
+        target.closest("textarea") ||
+        target.closest('[role="button"]') ||
+        target.closest("[tabindex]")
+      ) {
+        return;
+      }
+
       e.preventDefault();
       setIsDragging(true);
+      limitsRef.current = null;
+
       if (isVertical) {
         startY.current = e.clientY;
         startHeight.current = currentHeight;
@@ -114,6 +131,8 @@ const ResizeHandle = ({
     [currentHeight, currentWidth, isVertical]
   );
 
+  const limitsRef = useRef<{ min: number; max: number } | null>(null);
+
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       if (!isDragging) return;
@@ -121,7 +140,12 @@ const ResizeHandle = ({
       if (isVertical && onHeightChange) {
         const totalDeltaY = startY.current - e.clientY;
         const percentageDelta = (totalDeltaY / window.innerHeight) * 100;
-        const { min, max } = calculateHeightLimits();
+
+        if (!limitsRef.current) {
+          limitsRef.current = calculateHeightLimits();
+        }
+        const { min, max } = limitsRef.current;
+
         const newHeight = Math.min(Math.max(startHeight.current + percentageDelta, min), max);
 
         document.body.style.cursor = "ns-resize";
@@ -131,7 +155,12 @@ const ResizeHandle = ({
       } else if (!isVertical && onWidthChange) {
         const totalDeltaX = e.clientX - startX.current;
         const percentageDelta = (totalDeltaX / window.innerWidth) * 100;
-        const { min, max } = calculateWidthLimits();
+
+        if (!limitsRef.current) {
+          limitsRef.current = calculateWidthLimits();
+        }
+        const { min, max } = limitsRef.current;
+
         const newWidth = Math.min(Math.max(startWidth.current + percentageDelta, min), max);
 
         document.body.style.cursor = "ew-resize";
@@ -145,6 +174,7 @@ const ResizeHandle = ({
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
+    limitsRef.current = null;
     document.body.style.cursor = "";
     document.body.style.userSelect = "";
   }, []);
