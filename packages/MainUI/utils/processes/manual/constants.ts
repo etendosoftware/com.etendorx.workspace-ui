@@ -15,14 +15,14 @@ export const DEFAULT_AD_CLIENT_ID_KEYS = [
   "client",
 ];
 export const DEFAULT_AD_ORG_ID_KEYS = ["adOrgId", "AD_Org_ID", "aD_Org_ID", "adorgid", "AdOrgId", "organization"];
-export const DEFAULT_BUSINESS_PARTNER_ID_KEYS = ["businessPartner"];
+export const DEFAULT_BUSINESS_PARTNER_ID_KEYS = ["businessPartner", "cBpartnerId", "CBPartnerId", "c_bpartner_id"];
 
 export const REQUIRED_PARAMS_KEYS = {
   isPopUpCall: "IsPopUpCall",
   command: "Command",
   inpcOrderId: "inpcOrderId",
   inpKey: "inpKey",
-  inpwindowId: "inpWindowId",
+  inpWindowId: "inpWindowId",
   inpTabId: "inpTabId",
   inpTableId: "inpTableId",
   inpcBpartnerId: "inpcBpartnerId",

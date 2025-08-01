@@ -32,7 +32,7 @@ export const getAdOrgId = (record: Record<string, unknown>) => {
   return extractValue(record, DEFAULT_AD_ORG_ID_KEYS, DEFAULT_AD_ORG_ID);
 };
 
-export const getBussinessPartnerId = (record: Record<string, unknown>) => {
+export const getBusinessPartnerId = (record: Record<string, unknown>) => {
   return extractValue(record, DEFAULT_BUSINESS_PARTNER_ID_KEYS, DEFAULT_BUSINESS_PARTNER_ID);
 };
 
@@ -53,7 +53,7 @@ export const getParams = ({
   const isProcessing = getProcessing(record);
   const adClientId = getAdClientId(record);
   const adOrgId = getAdOrgId(record);
-  const businessPartnerId = getBussinessPartnerId(record);
+  const businessPartnerId = getBusinessPartnerId(record);
 
   const params = new URLSearchParams();
 
@@ -61,7 +61,7 @@ export const getParams = ({
   params.append(REQUIRED_PARAMS_KEYS.command, commandAction);
   params.append(REQUIRED_PARAMS_KEYS.inpcOrderId, recordId);
   params.append(REQUIRED_PARAMS_KEYS.inpKey, recordId);
-  params.append(REQUIRED_PARAMS_KEYS.inpwindowId, windowId);
+  params.append(REQUIRED_PARAMS_KEYS.inpWindowId, windowId);
   params.append(REQUIRED_PARAMS_KEYS.inpTabId, tabId);
   params.append(REQUIRED_PARAMS_KEYS.inpTableId, tableId);
   params.append(REQUIRED_PARAMS_KEYS.inpcBpartnerId, businessPartnerId);
