@@ -53,12 +53,11 @@ const Button = ({
   size = "small",
   startIcon,
   disabled = false,
-  active = false,
   className = "",
   children,
   ...rest
 }: ButtonProps) => {
-  const classes = getButtonClasses({ variant, size, disabled, active });
+  const classes = getButtonClasses({ variant, size, disabled });
 
   return (
     <button type="button" disabled={disabled} className={cleanDefaultClasses(classes, className)} {...rest}>
