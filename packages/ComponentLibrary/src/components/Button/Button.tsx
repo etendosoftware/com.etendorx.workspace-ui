@@ -10,19 +10,16 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   size?: ButtonSize;
   startIcon?: React.ReactNode;
   className?: string;
-  active?: boolean;
 }
 
 const getButtonClasses = ({
   variant,
   size,
   disabled,
-  active,
 }: {
   variant: ButtonVariant;
   size: ButtonSize;
   disabled?: boolean;
-  active?: boolean;
 }) => {
   const base = `
     inline-flex items-center justify-center font-medium rounded-full
@@ -31,28 +28,24 @@ const getButtonClasses = ({
 
   const sizeClass = size === "small" ? "py-3 text-sm" : "h-10 px-4 text-base";
 
-  const styles: Record<ButtonVariant, (args: { disabled?: boolean; active?: boolean }) => string> = {
-    filled: ({ disabled, active }) =>
+  const styles: Record<ButtonVariant, (args: { disabled?: boolean }) => string> = {
+    filled: ({ disabled }) =>
       clsx(
         "text-white",
         disabled
-          ? "bg-blue-300 cursor-not-allowed opacity-6 hover:bg-(--color-dynamic-main)"
-          : active
-            ? "bg-black hover:bg-blue-700"
-            : "bg-blue-600 hover:bg-blue-700"
+          ? "bg-(--color-transparent-neutral-100) opacity-20 cursor-not-allowed"
+          : "bg-(--color-baseline-100) hover:bg-(--color-dynamic-main)"
       ),
-    outlined: ({ disabled, active }) =>
+    outlined: ({ disabled }) =>
       clsx(
         "border",
         disabled
           ? "border-gray-200 text-gray-400 cursor-not-allowed opacity-60"
-          : active
-            ? "bg-blue-600 text-white border-blue-600"
-            : "border-black text-[--color-transparent-neutral-70] hover:bg-blue-50"
+          : "bg-blue-600 text-white border-blue-600"
       ),
   };
 
-  return clsx(base, sizeClass, styles[variant]({ disabled, active }));
+  return clsx(base, sizeClass, styles[variant]({ disabled }));
 };
 
 const Button = ({
