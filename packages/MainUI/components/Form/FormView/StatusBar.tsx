@@ -13,7 +13,7 @@ export default function StatusBar({ fields }: { fields: Record<string, Field> })
 
   const handleCloseRecord = async () => {
     try {
-      await onSave();
+      await onSave(false);
       setIsSaved(true);
     } catch (error) {
       console.error("Error saving record", error);

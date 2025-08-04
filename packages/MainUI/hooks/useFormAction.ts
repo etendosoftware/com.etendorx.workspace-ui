@@ -2,7 +2,7 @@ import { buildFormPayload, buildQueryString } from "@/utils";
 import { shouldRemoveIdFields } from "@/utils/form/entityConfig";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { EntityData, FormMode, Tab, WindowMetadata } from "@workspaceui/api-client/src/api/types";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { UseFormHandleSubmit } from "react-hook-form";
 import { useUserContext } from "./useUserContext";
 
@@ -10,7 +10,7 @@ export interface UseFormActionParams {
   windowMetadata?: WindowMetadata;
   tab: Tab;
   mode: FormMode;
-  onSuccess: (data: EntityData) => void;
+  onSuccess: (data: EntityData, showModal: boolean) => void;
   onError: (data: string) => void;
   initialState?: EntityData;
   submit: UseFormHandleSubmit<EntityData>;
@@ -31,7 +31,7 @@ export const useFormAction = ({
   const userId = user?.id;
 
   const execute = useCallback(
-    async (values: EntityData) => {
+    async (values: EntityData, showModal: boolean) => {
       try {
         setLoading(true);
 
@@ -65,7 +65,7 @@ export const useFormAction = ({
 
         if (ok && data?.response?.status === 0 && !controller.current.signal.aborted) {
           setLoading(false);
-          onSuccess?.(data.response.data[0]);
+          onSuccess?.(data.response.data[0], showModal);
         } else {
           throw new Error(data.response.error?.message);
         }
@@ -77,7 +77,7 @@ export const useFormAction = ({
     [initialState, mode, onError, onSuccess, tab, userId, windowMetadata]
   );
 
-  const save = useMemo(() => submit(execute), [execute, submit]);
+  const save = useCallback((showModal: boolean) => submit((values) => execute(values, showModal))(), [execute, submit]);
 
   useEffect(() => {
     const _controller = controller.current;

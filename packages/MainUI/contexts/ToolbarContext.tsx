@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useCallback, useMemo } from "react";
 
 type ToolbarActions = {
-  save: () => Promise<void>;
+  save: (showModal: boolean) => Promise<void>;
   refresh: () => void;
   new: () => void;
   back: () => void;
@@ -12,7 +12,7 @@ type ToolbarActions = {
 };
 
 type ToolbarContextType = {
-  onSave: () => Promise<void>;
+  onSave: (showModal: boolean) => Promise<void>;
   onRefresh: () => void;
   onNew: () => void;
   onBack: () => void;
