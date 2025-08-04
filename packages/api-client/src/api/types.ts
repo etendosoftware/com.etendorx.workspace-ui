@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 export type WindowId = string;
 
 export interface CachedData<T> {
@@ -228,6 +245,7 @@ export interface Tab {
   sQLWhereClause: string;
   module: string;
   parentTabId?: string;
+  table$_identifier?: string;
 }
 
 export interface WindowMetadata {
@@ -742,4 +760,36 @@ export interface ProcessDefinition extends Record<string, unknown> {
 
 export interface Labels {
   [key: string]: string;
+}
+
+export interface CreateLocationRequest {
+  address1: string;
+  address2?: string;
+  postal?: string;
+  city: string;
+  countryId: string;
+  regionId?: string;
+  [key: string]: unknown;
+}
+
+export interface LocationResponse {
+  id: string;
+  _identifier: string;
+  address1: string;
+  address2?: string;
+  postal?: string;
+  city: string;
+  countryId: string;
+  regionId?: string;
+}
+
+export interface LocationApiResponse {
+  success: boolean;
+  data: LocationResponse;
+}
+
+export interface LocationErrorResponse {
+  success: false;
+  error: string;
+  status: number;
 }

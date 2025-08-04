@@ -1,32 +1,53 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 "use client";
 
 import { useLanguage } from "@/contexts/language";
 import type { Language } from "@/contexts/types";
 import { UserContext } from "@/contexts/user";
 import { logger } from "@/utils/logger";
-import ActivityIcon from "@workspaceui/componentlibrary/src/assets/icons/activity.svg";
 import NotificationIcon from "@workspaceui/componentlibrary/src/assets/icons/bell.svg";
 import AddIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
 import PersonIcon from "@workspaceui/componentlibrary/src/assets/icons/user.svg";
 import {
-  ConfigurationModal,
-  IconButton,
+  CopilotButton,
+  CopilotPopup,
   NotificationButton,
   NotificationModal,
   Waterfall,
 } from "@workspaceui/componentlibrary/src/components";
-import type { Person } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
+import type { Item } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
 import Nav from "@workspaceui/componentlibrary/src/components/Nav/Nav";
-import { useCallback, useContext, useMemo, useState } from "react";
-import { NOTIFICATIONS, initialPeople, menuItems, modalConfig, sections } from "../../storybook/src/mocks";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { NOTIFICATIONS, menuItems, sections } from "../../storybook/src/mocks";
 import { useTranslation } from "../hooks/useTranslation";
 import ProfileModal from "./ProfileModal/ProfileModal";
+import { useAssistants } from "@/hooks/useAssistants";
+import { useCopilotLabels } from "@/hooks/useCopilotLabels";
+import { useCopilot } from "@/hooks/useCopilot";
+import { buildContextString } from "@/utils/contextUtils";
+import ConfigurationSection from "./Header/ConfigurationSection";
 
 const handleClose = () => {
   return true;
 };
 
-const people: Person[] = [];
+const item: Item[] = [];
 
 const Navigation: React.FC = () => {
   const { t } = useTranslation();
@@ -42,7 +63,15 @@ const Navigation: React.FC = () => {
   } = useContext(UserContext);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const { language, setLanguage, getFlag } = useLanguage();
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [anchorEl] = useState<HTMLElement | null>(null);
+
+  const [copilotOpen, setCopilotOpen] = useState(false);
+  const [copilotExpanded, setCopilotExpanded] = useState(false);
+  const [pendingContextString, setPendingContextString] = useState<string | null>(null);
+  const [pendingContextItems, setPendingContextItems] = useState<any[]>([]);
+
+  const { assistants, getAssistants } = useAssistants();
+  const { labels, getLabels } = useCopilotLabels();
 
   const { clearUserData } = useContext(UserContext);
 
@@ -53,9 +82,26 @@ const Navigation: React.FC = () => {
   const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setSaveAsDefault(event.target.checked);
   }, []);
-  const handleMenuToggle = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
+
+  const handleCopilotOpen = useCallback(() => {
+    setCopilotOpen(true);
   }, []);
+
+  const handleCopilotOpenWithContext = useCallback((contextString: string, contextItems: any[]) => {
+    setPendingContextString(contextString);
+    setPendingContextItems(contextItems);
+    setCopilotOpen(true);
+  }, []);
+
+  const handleCopilotClose = useCallback(() => {
+    setCopilotOpen(false);
+    setPendingContextString(null);
+    setPendingContextItems([]);
+  }, []);
+
+  const handleCopilotToggleExpanded = useCallback(() => {
+    setCopilotExpanded(!copilotExpanded);
+  }, [copilotExpanded]);
 
   const languagesWithFlags = useMemo(() => {
     return languages.map((lang) => ({
@@ -67,80 +113,176 @@ const Navigation: React.FC = () => {
 
   const flagString = getFlag(language);
 
+  const { messages, selectedAssistant, isLoading, handleSendMessage, handleSelectAssistant, handleResetConversation } =
+    useCopilot();
+
+  const handleCopilotSendMessage = useCallback(
+    (message: string, _files?: File[]) => {
+      if (pendingContextString) {
+        const messageWithContext = `${pendingContextString}\n\n${message}`;
+        handleSendMessage(messageWithContext);
+        setPendingContextString(null);
+        setPendingContextItems([]);
+      } else {
+        handleSendMessage(message);
+      }
+    },
+    [pendingContextString, handleSendMessage]
+  );
+
+  const handleRemoveContext = useCallback(
+    (contextId: string) => {
+      setPendingContextItems((items) => {
+        const newItems = items.filter((item) => item.id !== contextId);
+
+        if (newItems.length === 0) {
+          setPendingContextString(null);
+        } else {
+          const newContextString = buildContextString({
+            contextItems: newItems,
+            registersText: t("copilot.contextPreview.selectedRegisters"),
+          });
+          setPendingContextString(newContextString);
+        }
+
+        return newItems;
+      });
+    },
+    [t]
+  );
+
+  useEffect(() => {
+    getLabels();
+    getAssistants();
+  }, [getLabels, getAssistants]);
+
+  useEffect(() => {
+    const handleCopilotWithContext = (event: CustomEvent) => {
+      const { contextString, contextItems, hasContext } = event.detail;
+      if (hasContext) {
+        handleCopilotOpenWithContext(contextString, contextItems);
+      } else {
+        handleCopilotOpen();
+      }
+    };
+
+    window.addEventListener("openCopilotWithContext", handleCopilotWithContext as EventListener);
+
+    return () => {
+      window.removeEventListener("openCopilotWithContext", handleCopilotWithContext as EventListener);
+    };
+  }, [handleCopilotOpen, handleCopilotOpenWithContext]);
+
   if (!currentRole) {
     return null;
   }
 
   return (
-    <Nav title={t("common.notImplemented")}>
-      <Waterfall
-        menuItems={menuItems}
-        initialPeople={initialPeople}
-        backButtonText={t("modal.secondaryButtonLabel")}
-        activateAllText={t("navigation.waterfall.activateAll")}
-        deactivateAllText={t("navigation.waterfall.deactivateAll")}
-        tooltipWaterfallButton={t("navigation.waterfall.tooltipButton")}
-        buttonText={t("navigation.waterfall.buttons")}
-        customizeText={t("navigation.waterfall.customize")}
-        people={people}
-        icon={<AddIcon />}
-      />
-      <ConfigurationModal
-        {...modalConfig}
-        tooltipButtonProfile={t("navigation.configurationModal.tooltipButtonProfile")}
-      />
-      <IconButton
-        onClick={handleMenuToggle}
-        className="w-10 h-10"
-        tooltip={t("navigation.activityButton.tooltip")}
-        disabled={true}>
-        <ActivityIcon />
-      </IconButton>
-      <NotificationButton notifications={NOTIFICATIONS} icon={<NotificationIcon />}>
-        <NotificationModal
-          notifications={NOTIFICATIONS}
-          anchorEl={anchorEl}
-          onClose={handleClose}
-          title={{
-            icon: <NotificationIcon fill="#2E365C" />,
-            label: t("navigation.notificationModal.title"),
-          }}
-          linkTitle={{
-            label: t("navigation.notificationModal.markAllAsRead"),
-            url: "/home",
-          }}
-          emptyStateImageAlt={t("navigation.notificationModal.emptyStateImageAlt")}
-          emptyStateMessage={t("navigation.notificationModal.emptyStateMessage")}
-          emptyStateDescription={t("navigation.notificationModal.emptyStateDescription")}
-          actionButtonLabel={t("navigation.notificationModal.actionButtonLabel")}
+    <>
+      <Nav title={t("common.notImplemented")}>
+        <Waterfall
+          menuItems={menuItems}
+          backButtonText={t("modal.secondaryButtonLabel")}
+          activateAllText={t("navigation.waterfall.activateAll")}
+          deactivateAllText={t("navigation.waterfall.deactivateAll")}
+          tooltipWaterfallButton={t("navigation.waterfall.tooltipButton")}
+          buttonText={t("navigation.waterfall.buttons")}
+          customizeText={t("navigation.waterfall.customize")}
+          items={item}
+          icon={<AddIcon />}
+          setItems={() => {}}
         />
-      </NotificationButton>
-      <ProfileModal
-        icon={<PersonIcon />}
-        sections={sections}
-        section={""}
+        <ConfigurationSection />
+        <CopilotButton onClick={handleCopilotOpen} tooltip="Copilot" />
+        <NotificationButton notifications={NOTIFICATIONS} icon={<NotificationIcon />}>
+          <NotificationModal
+            notifications={NOTIFICATIONS}
+            anchorEl={anchorEl}
+            onClose={handleClose}
+            title={{
+              icon: <NotificationIcon fill="#2E365C" />,
+              label: t("navigation.notificationModal.title"),
+            }}
+            linkTitle={{
+              label: t("navigation.notificationModal.markAllAsRead"),
+              url: "/home",
+            }}
+            emptyStateImageAlt={t("navigation.notificationModal.emptyStateImageAlt")}
+            emptyStateMessage={t("navigation.notificationModal.emptyStateMessage")}
+            emptyStateDescription={t("navigation.notificationModal.emptyStateDescription")}
+            actionButtonLabel={t("navigation.notificationModal.actionButtonLabel")}
+          />
+        </NotificationButton>
+        <ProfileModal
+          icon={<PersonIcon />}
+          sections={sections}
+          section={""}
+          translations={{
+            saveAsDefault: t("navigation.profile.saveAsDefault"),
+          }}
+          currentRole={currentRole}
+          currentWarehouse={currentWarehouse}
+          currentOrganization={currentOrganization}
+          roles={roles}
+          saveAsDefault={saveAsDefault}
+          onSaveAsDefaultChange={handleSaveAsDefaultChange}
+          onLanguageChange={setLanguage}
+          language={language}
+          languagesFlags={flagString}
+          changeProfile={changeProfile}
+          onSetDefaultConfiguration={setDefaultConfiguration}
+          logger={logger}
+          onSignOff={handleSignOff}
+          languages={languagesWithFlags}
+          userName={profile.name}
+          userEmail={profile.email}
+          userPhotoUrl={profile.image}
+        />
+      </Nav>
+      <CopilotPopup
+        open={copilotOpen}
+        onClose={handleCopilotClose}
+        assistants={assistants}
+        labels={labels}
+        isExpanded={copilotExpanded}
+        onToggleExpanded={handleCopilotToggleExpanded}
+        messages={messages}
+        selectedAssistant={selectedAssistant}
+        isLoading={isLoading}
+        onSelectAssistant={handleSelectAssistant}
+        onSendMessage={handleCopilotSendMessage}
+        onResetConversation={handleResetConversation}
+        hasContextPending={!!pendingContextString}
+        contextItems={pendingContextItems}
+        onRemoveContext={handleRemoveContext}
         translations={{
-          saveAsDefault: t("navigation.profile.saveAsDefault"),
+          copilotProfile: t("copilot.copilotProfile"),
+          backToSelection: t("copilot.backToSelection"),
+          minimize: t("copilot.minimize"),
+          maximize: t("copilot.maximize"),
+          close: t("copilot.close"),
+          contextText: t("copilot.contextText"),
+          selectedRegisters: t("copilot.contextPreview.selectedRegisters"),
+          assistantSelector: {
+            errorInvalidData: t("copilot.assistantSelector.errorInvalidData"),
+            errorNoAssistantsAvailable: t("copilot.assistantSelector.errorNoAssistantsAvailable"),
+            defaultDescription: t("copilot.assistantSelector.defaultDescription"),
+            welcomeMessage: t("copilot.assistantSelector.welcomeMessage"),
+            profilesTitle: t("copilot.assistantSelector.profilesTitle"),
+            learnMoreText: t("copilot.assistantSelector.learnMoreText"),
+            filterPlaceholder: t("copilot.assistantSelector.filterPlaceholder"),
+          },
+          messageInput: {
+            placeholder: t("copilot.messageInput.placeholder"),
+          },
+          messageList: {
+            contextRecords: t("copilot.messageList.contextRecords"),
+            welcomeMessage: t("copilot.messageList.welcomeMessage"),
+            typing: t("copilot.messageList.typing"),
+          },
         }}
-        currentRole={currentRole}
-        currentWarehouse={currentWarehouse}
-        currentOrganization={currentOrganization}
-        roles={roles}
-        saveAsDefault={saveAsDefault}
-        onSaveAsDefaultChange={handleSaveAsDefaultChange}
-        onLanguageChange={setLanguage}
-        language={language}
-        languagesFlags={flagString}
-        changeProfile={changeProfile}
-        onSetDefaultConfiguration={setDefaultConfiguration}
-        logger={logger}
-        onSignOff={handleSignOff}
-        languages={languagesWithFlags}
-        userName={profile.name}
-        userEmail={profile.email}
-        userPhotoUrl={profile.image}
       />
-    </Nav>
+    </>
   );
 };
 

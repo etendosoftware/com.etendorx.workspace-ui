@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 const es = {
   common: {
     etendo: "Etendo",
@@ -220,6 +237,84 @@ const es = {
     select: {
       placeholder: "Seleccione una opción",
     },
+  },
+  copilot: {
+    copilotProfile: "Perfil Copilot",
+    backToSelection: "Volver a selección de asistentes",
+    minimize: "Minimizar",
+    maximize: "Maximizar",
+    close: "Cerrar",
+    contextText: "Contexto",
+    assistantSelector: {
+      errorInvalidData: "Error: Datos de asistentes inválidos",
+      errorNoAssistantsAvailable: "No hay asistentes disponibles",
+      defaultDescription: "Asistente de Etendo Copilot",
+      welcomeMessage: "¡Hola! ✨🚀 Selecciona el perfil que más se ajuste a tu tarea y comencemos. 💪",
+      profilesTitle: "Perfiles",
+      learnMoreText: "Conoce más sobre Copilot →",
+      filterPlaceholder: "Filtrar perfiles...",
+    },
+    messageInput: {
+      placeholder: "Conversa con Copilot...",
+    },
+    messageList: {
+      contextRecords: "Contexto seleccionado",
+      welcomeMessage: "¡Hola! ¿En qué puedo ayudarte hoy?",
+      typing: "Escribiendo...",
+    },
+    contextPreview: {
+      selectedRegisters: " Registros adjuntados",
+    },
+  },
+  location: {
+    selector: {
+      placeholder: "Seleccionar ubicación...",
+      modalTitle: "Nueva Ubicación",
+      modalDescription: "Ingrese los detalles de la ubicación",
+      buttons: {
+        cancel: "Cancelar",
+        save: "Guardar",
+        creating: "Creando...",
+      },
+    },
+    fields: {
+      address1: {
+        label: "Dirección Línea 1",
+        placeholder: "Ingrese la dirección línea 1",
+      },
+      address2: {
+        label: "Dirección Línea 2",
+        placeholder: "Ingrese la dirección línea 2",
+      },
+      postal: {
+        label: "Código Postal",
+        placeholder: "Ingrese el código postal",
+      },
+      city: {
+        label: "Ciudad",
+        placeholder: "Ingrese la ciudad",
+      },
+      country: {
+        label: "País",
+        placeholder: "Seleccione un país",
+      },
+      region: {
+        label: "Región",
+        placeholder: "Seleccione una región",
+        selectCountryFirst: "Seleccione un país primero",
+      },
+    },
+    errors: {
+      loadingCountries: "Error cargando países",
+      loadingRegions: "Error cargando regiones",
+      creating: "Error creando ubicación",
+      requiredFields: "Por favor complete todos los campos requeridos correctamente.",
+    },
+  },
+  primaryTabs: {
+    dashboard: "Panel",
+    closeWindow: "Cerrar ventana",
+    showTabs: "Mostrar pestañas",
   },
 };
 

@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 "use client";
 
 import { Toolbar } from "../Toolbar/Toolbar";
@@ -10,6 +27,7 @@ import { useCallback, useEffect } from "react";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { NEW_RECORD_ID, FORM_MODES, TAB_MODES } from "@/utils/url/constants";
 
 export function Tab({ tab, collapsed }: TabLevelProps) {
   const { window } = useMetadataContext();
@@ -30,7 +48,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   const tabFormState = windowId ? getTabFormState(windowId, tab.id) : undefined;
   const selectedRecordId = windowId ? getSelectedRecord(windowId, tab.id) : undefined;
 
-  const currentMode = tabFormState?.mode || "table";
+  const currentMode = tabFormState?.mode || TAB_MODES.TABLE;
   const currentRecordId = tabFormState?.recordId || "";
   const currentFormMode = tabFormState?.formMode;
 
@@ -39,18 +57,18 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       const newValue = typeof value === "function" ? value(currentRecordId) : value;
 
       if (newValue && windowId) {
-        const formMode = newValue === "new" ? "new" : "edit";
+        const formMode = newValue === NEW_RECORD_ID ? FORM_MODES.NEW : FORM_MODES.EDIT;
 
-        if (newValue === "new") {
-          setTabFormState(windowId, tab.id, newValue, "form", formMode);
+        if (newValue === NEW_RECORD_ID) {
+          setTabFormState(windowId, tab.id, newValue, TAB_MODES.FORM, formMode);
         } else {
           if (selectedRecordId !== newValue) {
             setSelectedRecord(windowId, tab.id, newValue);
             setTimeout(() => {
-              setTabFormState(windowId, tab.id, newValue, "form", formMode);
+              setTabFormState(windowId, tab.id, newValue, TAB_MODES.FORM, formMode);
             }, 50);
           } else {
-            setTabFormState(windowId, tab.id, newValue, "form", formMode);
+            setTabFormState(windowId, tab.id, newValue, TAB_MODES.FORM, formMode);
           }
         }
       } else if (windowId) {
@@ -79,7 +97,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
   const handleNew = useCallback(() => {
     if (windowId) {
-      setTabFormState(windowId, tab.id, "new", "form", "new");
+      setTabFormState(windowId, tab.id, NEW_RECORD_ID, TAB_MODES.FORM, FORM_MODES.NEW);
     }
   }, [windowId, tab, setTabFormState]);
 
@@ -117,7 +135,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       if (eventTab.id === tab.id) {
         if (windowId) {
           const currentTabState = getTabFormState(windowId, tab.id);
-          const isInFormMode = currentTabState?.mode === "form";
+          const isInFormMode = currentTabState?.mode === TAB_MODES.FORM;
           if (!isInFormMode) {
             handleClearChildren();
           }
@@ -133,17 +151,17 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   }, [graph, tab, handleClearChildren, windowId, getTabFormState]);
 
   useEffect(() => {
-    if (currentRecordId === "new") {
+    if (currentRecordId === NEW_RECORD_ID) {
       graph.clearSelected(tab);
     }
   }, [currentRecordId, graph, tab]);
 
-  const shouldShowForm = currentMode === "form" && !!currentRecordId;
-  const formMode = currentFormMode === "new" ? FormMode.NEW : FormMode.EDIT;
+  const shouldShowForm = currentMode === TAB_MODES.FORM && !!currentRecordId;
+  const formMode = currentFormMode === FORM_MODES.NEW ? FormMode.NEW : FormMode.EDIT;
 
   return (
     <div
-      className={`bg-(linear-gradient(180deg, #C6CFFF 0%, #FCFCFD 55.65%)) flex  gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${
+      className={`bg-(linear-gradient(180deg, #C6CFFF 0%, #FCFCFD 55.65%)) flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${
         collapsed ? "hidden" : "flex-1 h-full"
       }`}>
       <Toolbar windowId={window?.id || tab.window} tabId={tab.id} isFormView={shouldShowForm} />

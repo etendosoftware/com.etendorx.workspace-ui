@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
@@ -12,6 +29,8 @@ import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
+import { useRecordContext } from "@/hooks/useRecordContext";
+import type { ToolbarButtonMetadata } from "./types";
 
 export const useToolbarConfig = ({
   tabId,
@@ -36,7 +55,7 @@ export const useToolbarConfig = ({
     hideStatusModal,
   } = useStatusModal();
   const { t } = useTranslation();
-  const { onRefresh, onSave, onNew, onBack, onFilter } = useToolbarContext();
+  const { onRefresh, onSave, onNew, onBack, onFilter, onColumnFilters } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -46,6 +65,7 @@ export const useToolbarConfig = ({
 
   const selectedMultiple = useSelectedRecords(tab);
   const selectedRecord = useSelectedRecord(tab);
+  const { contextString, hasSelectedRecords, contextItems } = useRecordContext();
 
   const selectedRecordId = useMemo(() => {
     if (!activeWindow?.windowId || !tab) return null;
@@ -122,7 +142,7 @@ export const useToolbarConfig = ({
     }
   }, [statusModal.open, isDeleting]);
 
-  const actionHandlers = useMemo<Record<string, () => void>>(
+  const actionHandlers = useMemo<Record<string, (event?: React.MouseEvent<HTMLElement>) => void>>(
     () => ({
       CANCEL: () => {
         onBack?.();
@@ -183,6 +203,20 @@ export const useToolbarConfig = ({
       REFRESH: () => {
         onRefresh?.();
       },
+      COPILOT: () => {
+        const customEvent = new CustomEvent("openCopilotWithContext", {
+          detail: {
+            contextString: hasSelectedRecords ? contextString : null,
+            contextItems: hasSelectedRecords ? contextItems : [],
+            hasContext: hasSelectedRecords,
+          },
+        });
+        window.dispatchEvent(customEvent);
+      },
+      COLUMN_FILTERS: (event?: React.MouseEvent<HTMLElement>) => {
+        const buttonElement = event?.currentTarget as HTMLElement;
+        onColumnFilters?.(buttonElement);
+      },
     }),
     [
       deleteRecord,
@@ -191,24 +225,28 @@ export const useToolbarConfig = ({
       onNew,
       onRefresh,
       onSave,
+      onColumnFilters,
       selectedIds,
       selectedMultiple,
       showConfirmModal,
       showErrorModal,
       t,
       tab,
+      contextString,
+      contextItems,
+      hasSelectedRecords,
     ]
   );
 
   const handleAction = useCallback(
-    (action: string) => {
+    (action: string, _button?: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => {
       if (isDeleting) {
         return;
       }
 
       const handler = actionHandlers[action];
       if (handler) {
-        handler();
+        handler(event);
         return;
       }
 

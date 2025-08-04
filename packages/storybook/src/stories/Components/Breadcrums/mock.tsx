@@ -1,5 +1,21 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import type { BreadcrumbProps, BreadcrumbAction } from '@workspaceui/componentlibrary/src/components/Breadcrums/types';
-import HomeIcon from '@workspaceui/componentlibrary/src/assets/icons/home.svg';
 import FavoriteIcon from '@workspaceui/componentlibrary/src/assets/icons/star.svg';
 import ContentCopyIcon from '@workspaceui/componentlibrary/src/assets/icons/copy.svg';
 import HelpIcon from '@workspaceui/componentlibrary/src/assets/icons/help-circle.svg';
@@ -34,8 +50,6 @@ export const mockDefaultActions: BreadcrumbAction[] = [
 ];
 
 export const mockDefaultArgs: BreadcrumbProps = {
-  homeIcon: <HomeIcon fill={theme.palette.baselineColor.neutral[80]} />,
-  homeText: 'Dashboard',
   onHomeClick: () => console.log('Home clicked'),
   items: [
     { id: '1', label: 'Super long item text name' },

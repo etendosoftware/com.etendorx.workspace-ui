@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import { useTabContext } from "@/contexts/tab";
 import { useProcessConfig } from "@/hooks/datasource/useProcessDatasourceConfig";
 import { useSelected } from "@/hooks/useSelected";
@@ -6,6 +23,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import { buildPayloadByInputName } from "@/utils";
 import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -22,9 +40,10 @@ import type {
   RecordValues,
   ResponseMessage,
 } from "./types";
+import { PROCESS_DEFINITION_DATA } from "@/utils/processes/definition/constants";
 
 export const FALLBACK_RESULT = {};
-const WINDOW_REFERENCE_ID = "FF80818132D8F0F30132D9BC395D0038";
+const WINDOW_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW;
 
 function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
@@ -44,11 +63,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const [loading, setLoading] = useState(true);
   const [gridSelection, setGridSelection] = useState<unknown[]>([]);
 
-  const tabId = tab?.id || "";
-  const entityName = tab?.entityName || "";
   const selectedRecords = graph.getSelectedMultiple(tab);
+
   const windowReferenceTab = parameters.grid?.window?.tabs?.[0] as Tab;
+  const entityName = windowReferenceTab?.entityName || "";
   const windowId = tab?.window || "";
+  const tabId = windowReferenceTab?.id || "";
 
   const recordValues: RecordValues | null = useMemo(() => {
     if (!record || !tab?.fields) return FALLBACK_RESULT;
@@ -81,7 +101,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [button.processDefinition.parameters, isExecuting, onClose]);
 
   const handleWindowReferenceExecute = useCallback(async () => {
-    if (!tab) return;
+    if (!tab || !processId) return;
 
     setIsExecuting(true);
     setIsSuccess(false);
@@ -93,9 +113,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         _action: javaClassName,
       });
 
+      const currentAttrs = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+      const currentRecordValue = recordValues?.[currentAttrs.inpPrimaryKeyColumnId];
+
       const payload = {
-        C_Order_ID: recordValues?.inpcOrderId,
-        inpcOrderId: tabId,
+        [currentAttrs.inpColumnId]: currentRecordValue,
+        [currentAttrs.inpPrimaryKeyColumnId]: currentRecordValue,
         _buttonValue: "DONE",
         _params: {
           grid: {
@@ -140,7 +163,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     } finally {
       setIsExecuting(false);
     }
-  }, [tab, processId, javaClassName, recordValues?.inpcOrderId, tabId, gridSelection, entityName, t, onSuccess]);
+  }, [tab, processId, javaClassName, recordValues, gridSelection, entityName, t, onSuccess]);
 
   const handleExecute = useCallback(async () => {
     if (hasWindowReference) {
@@ -296,6 +319,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             processConfig={processConfig}
             processConfigLoading={processConfigLoading}
             processConfigError={processConfigError}
+            recordValues={recordValues}
           />
         );
       }

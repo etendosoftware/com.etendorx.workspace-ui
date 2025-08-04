@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
@@ -12,10 +29,11 @@ interface UnifiedNumericSelectorProps extends React.ComponentProps<typeof TextIn
 }
 
 export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: UnifiedNumericSelectorProps) => {
-  const { register, setValue, watch } = useFormContext();
+  const { register, setValue, watch, formState } = useFormContext();
   const formValue = watch(field.hqlName);
   const [localValue, setLocalValue] = useState(formValue === null || formValue === undefined ? "" : String(formValue));
   const [isFocused, setIsFocused] = useState(false);
+  const isDirty = formState.isDirty;
 
   const isInteger = type === "integer" || field.column.reference === "11";
 
@@ -75,9 +93,13 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
         if (props.onChange) {
           props.onChange(event);
         }
+        if (!isDirty) {
+          const parsedValue = parseValue(value);
+          setValue(field.hqlName, parsedValue);
+        }
       }
     },
-    [isInteger, getValidationRegex, props]
+    [isInteger, getValidationRegex, props, isDirty, field.hqlName, parseValue, setValue]
   );
 
   const handleFocus = useCallback(

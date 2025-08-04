@@ -1,4 +1,21 @@
-import { createContext, useContext, useMemo } from "react";
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import { ToolbarProvider } from "./ToolbarContext";
 import { SearchProvider } from "./searchContext";
@@ -12,16 +29,23 @@ interface TabContextI {
   parentTab?: Tab | null;
   parentRecord?: EntityData | null;
   parentRecords?: EntityData[] | null;
+  hasFormChanges: boolean;
+  markFormAsChanged: () => void;
+  resetFormChanges: () => void;
 }
 
 const TabContext = createContext<TabContextI>({} as TabContextI);
 
 export default function TabContextProvider({ tab, children }: React.PropsWithChildren<{ tab: Tab }>) {
+  const [hasFormChanges, setHasFormChanges] = useState(false);
   const { graph } = useSelected();
   const record = useSelectedRecord(tab);
   const parentTab = graph.getParent(tab);
   const parentRecord = useSelectedRecord(parentTab);
   const parentRecords = useSelectedRecords(parentTab);
+
+  const markFormAsChanged = useCallback(() => setHasFormChanges(true), []);
+  const resetFormChanges = useCallback(() => setHasFormChanges(false), []);
 
   const value = useMemo(
     () => ({
@@ -30,8 +54,11 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
       parentTab,
       parentRecord,
       parentRecords,
+      hasFormChanges,
+      markFormAsChanged,
+      resetFormChanges,
     }),
-    [parentRecord, parentTab, parentRecords, record, tab]
+    [parentRecord, parentTab, parentRecords, record, tab, hasFormChanges, markFormAsChanged, resetFormChanges]
   );
 
   return (

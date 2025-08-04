@@ -1,6 +1,24 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import { CacheStore } from "./cache";
 import { Client, type Interceptor } from "./client";
 import { API_DATASOURCE_SERVLET, API_DEFAULT_CACHE_DURATION, API_KERNEL_SERVLET, API_METADATA_URL } from "./constants";
+import { LocationClient } from "./location";
 import type * as Etendo from "./types";
 import type { Menu } from "./types";
 
@@ -14,12 +32,14 @@ export class Metadata {
   private static currentRoleId: string | null = null;
   public static loginClient = new Client();
   private static language: string | null = null;
+  public static locationClient = new LocationClient();
 
   public static setBaseUrl(url: string) {
     Metadata.client.setBaseUrl(url + API_METADATA_URL);
     Metadata.kernelClient.setBaseUrl(url + API_KERNEL_SERVLET);
     Metadata.datasourceServletClient.setBaseUrl(url + API_DATASOURCE_SERVLET);
     Metadata.loginClient.setBaseUrl(`${url}/`);
+    Metadata.locationClient.setBaseUrl(url + API_METADATA_URL);
   }
 
   public static setLanguage(value: string) {
@@ -38,6 +58,7 @@ export class Metadata {
       Metadata.kernelClient,
       Metadata.datasourceServletClient,
       Metadata.loginClient,
+      Metadata.locationClient,
     ]) {
       client.setAuthHeader(token, "Bearer");
     }
@@ -49,11 +70,13 @@ export class Metadata {
     const listener1 = Metadata.client.registerInterceptor(interceptor);
     const listener2 = Metadata.kernelClient.registerInterceptor(interceptor);
     const listener3 = Metadata.datasourceServletClient.registerInterceptor(interceptor);
+    const listener4 = Metadata.locationClient.registerInterceptor(interceptor);
 
     return () => {
       listener1();
       listener2();
       listener3();
+      listener4();
     };
   }
 

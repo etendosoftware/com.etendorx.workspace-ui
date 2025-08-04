@@ -1,5 +1,23 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { memo } from "react";
+import { CUSTOM_SELECTORS_IDENTIFIERS, FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { useFormContext } from "react-hook-form";
 import { BooleanSelector } from "./BooleanSelector";
 import { DateSelector } from "./DateSelector";
@@ -8,8 +26,10 @@ import { NumericSelector } from "./NumericSelector";
 import QuantitySelector from "./QuantitySelector";
 import { SelectSelector } from "./SelectSelector";
 import { StringSelector } from "./StringSelector";
+import { PasswordSelector } from "./PasswordSelector";
 import { TableDirSelector } from "./TableDirSelector";
 import DatetimeSelector from "./DatetimeSelector";
+import LocationSelector from "./LocationSelector";
 
 export type GenericSelectorProps = {
   field: Field;
@@ -22,18 +42,20 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   const { reference } = field.column;
 
   switch (reference) {
-    case "95E2A8B50A254B2AAE6774B8C2F28120": // Product reference to datasource
-    case "19":
-    case "18":
+    case FIELD_REFERENCE_CODES.PASSWORD:
+      return <PasswordSelector field={field} readOnly={isReadOnly} />;
+    case FIELD_REFERENCE_CODES.PRODUCT: // Product reference to datasource
+    case FIELD_REFERENCE_CODES.TABLE_DIR_19:
+    case FIELD_REFERENCE_CODES.TABLE_DIR_18:
       return <TableDirSelector field={field} isReadOnly={isReadOnly} />;
-    case "15":
+    case FIELD_REFERENCE_CODES.DATE:
       return <DateSelector field={field} isReadOnly={isReadOnly} />;
-    case "16":
+    case FIELD_REFERENCE_CODES.DATETIME:
       return <DatetimeSelector field={field} isReadOnly={isReadOnly} />;
-    case "20":
+    case FIELD_REFERENCE_CODES.BOOLEAN:
       return <BooleanSelector field={field} isReadOnly={isReadOnly} />;
-    case "29":
-    case "22":
+    case FIELD_REFERENCE_CODES.QUANTITY_29:
+    case FIELD_REFERENCE_CODES.QUANTITY_22:
       return (
         <QuantitySelector
           field={field}
@@ -45,14 +67,20 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
           maxLength={field.column.length}
         />
       );
-    case "17":
-    case "13":
+    case FIELD_REFERENCE_CODES.LIST_17:
+    case FIELD_REFERENCE_CODES.LIST_13:
       return <ListSelector field={field} isReadOnly={isReadOnly} />;
-    case "30":
+    case FIELD_REFERENCE_CODES.SELECT_30:
+      if (
+        field.column.referenceSearchKey === FIELD_REFERENCE_CODES.LOCATION_21 ||
+        field.column.referenceSearchKey$_identifier === CUSTOM_SELECTORS_IDENTIFIERS.LOCATION
+      ) {
+        return <LocationSelector field={field} isReadOnly={isReadOnly} />;
+      }
       return <SelectSelector field={field} isReadOnly={isReadOnly} />;
-    case "800008":
+    case FIELD_REFERENCE_CODES.DECIMAL:
       return <NumericSelector field={field} type="decimal" readOnly={isReadOnly} />;
-    case "11":
+    case FIELD_REFERENCE_CODES.INTEGER:
       return <NumericSelector field={field} type="integer" readOnly={isReadOnly} />;
     default:
       return <StringSelector field={field} readOnly={isReadOnly} />;

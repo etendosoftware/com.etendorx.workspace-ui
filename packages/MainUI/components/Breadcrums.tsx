@@ -1,32 +1,69 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 "use client";
 
+import { useCallback, useMemo } from "react";
 import { useQueryParams } from "@/hooks/useQueryParams";
 import Breadcrumb from "@workspaceui/componentlibrary/src/components/Breadcrums";
 import type { BreadcrumbItem } from "@workspaceui/componentlibrary/src/components/Breadcrums/types";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import type React from "react";
-import { useCallback, useMemo } from "react";
-import { BREADCRUMB, ROUTE_IDS } from "../constants/breadcrumb";
+import { ROUTE_IDS } from "../constants/breadcrumb";
 import { useMetadataContext } from "../hooks/useMetadataContext";
 import { useTranslation } from "../hooks/useTranslation";
-import { styles } from "./styles";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import type { Tab } from "@workspaceui/api-client/src/api/types";
+import { useSelected } from "@/hooks/useSelected";
+import { NEW_RECORD_ID } from "@/utils/url/constants";
 
-const AppBreadcrumb: React.FC = () => {
+interface BreadcrumbProps {
+  allTabs: Tab[][];
+}
+
+const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
   const { t } = useTranslation();
-  const router = useRouter();
   const pathname = usePathname();
   const { window } = useMetadataContext();
   const { windowId } = useQueryParams<{ windowId: string }>();
-  const { navigateToHome } = useMultiWindowURL();
+  const { navigateToHome, clearTabFormState, getTabFormState } = useMultiWindowURL();
+  const { graph } = useSelected();
+
+  const allTabsFormatted = useMemo(() => allTabs.flat(), [allTabs]);
+  const currentTab = useMemo(
+    () => allTabsFormatted.find((tab) => tab.window === windowId),
+    [allTabsFormatted, windowId]
+  );
 
   const isNewRecord = useCallback(() => pathname.includes("/NewRecord"), [pathname]);
 
   const handleWindowClick = useCallback(
     (windowId: string) => {
-      router.push(`/window?windowId=${windowId}`);
+      const allTabsFormatted = allTabs.flat();
+      const currentTab = allTabsFormatted.find((tab) => tab.window === windowId);
+      if (windowId && currentTab && currentTab.id) {
+        clearTabFormState(windowId, currentTab.id);
+      }
+      if (currentTab && graph) {
+        graph.clear(currentTab);
+        graph.clearSelected(currentTab);
+      }
     },
-    [router]
+    [clearTabFormState, allTabs, graph]
   );
 
   const breadcrumbItems = useMemo(() => {
@@ -47,21 +84,28 @@ const AppBreadcrumb: React.FC = () => {
       });
     }
 
+    if (currentTab) {
+      const tabFormState = windowId ? getTabFormState(windowId, currentTab.id) : undefined;
+      const currentRecordId = tabFormState?.recordId || "";
+
+      if (currentRecordId && currentRecordId !== NEW_RECORD_ID) {
+        items.push({
+          id: currentRecordId.toString(),
+          label: currentRecordId.toString(),
+        });
+      }
+    }
+
     return items;
-  }, [windowId, window, isNewRecord, t, handleWindowClick]);
+  }, [windowId, window, currentTab, isNewRecord, t, handleWindowClick, getTabFormState]);
 
   const handleHomeClick = useCallback(() => {
     navigateToHome();
   }, [navigateToHome]);
 
   return (
-    <div style={styles.breadCrum}>
-      <Breadcrumb
-        items={breadcrumbItems}
-        onHomeClick={handleHomeClick}
-        homeText={t("breadcrumb.home")}
-        homeIcon={BREADCRUMB.HOME.ICON}
-      />
+    <div className="w-full h-8">
+      <Breadcrumb onHomeClick={handleHomeClick} items={breadcrumbItems || []} />
     </div>
   );
 };

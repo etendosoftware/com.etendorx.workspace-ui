@@ -4,7 +4,20 @@
     "enabled": false
   },
   "files": {
-    "ignore": ["**/dist/**", "**/node_modules/**", "**/.next/**", "**/build/**", "**/packages/storybook/**"]
+    "ignore": [
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/.next/**",
+      "**/build/**",
+      "**/packages/storybook/**",
+      "**/coverage/**",
+      "jest.config.js",
+      "jest.setup.js",
+      "**/jest.config.js",
+      "**/jest.setup.js",
+      "**/jest.polyfills.js",
+      "**/__mocks__/**"
+    ]
   },
   "linter": {
     "enabled": true,
@@ -76,6 +89,15 @@
             "noDefaultExport": "off"
           }
         }
+      }
+    },
+    {
+      "include": ["**/jest.*.js", "**/jest.config.js", "**/jest.setup.js"],
+      "linter": {
+        "enabled": false
+      },
+      "formatter": {
+        "enabled": false
       }
     }
   ]

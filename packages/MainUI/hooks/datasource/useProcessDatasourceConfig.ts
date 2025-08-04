@@ -1,9 +1,27 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import { useCallback, useState } from "react";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { logger } from "@/utils/logger";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 
 export interface ProcessConfigResponse {
+  processId: string;
   defaults?: Record<string, { value: string; identifier: string }>;
   filterExpressions?: Record<string, Record<string, string>>;
   refreshParent?: boolean;
@@ -49,6 +67,7 @@ export const useProcessConfig = ({ processId, windowId, tabId }: UseProcessConfi
         const { data } = await Metadata.kernelClient.post(`?${params}`, requestPayload);
 
         const processedConfig: ProcessConfigResponse = {
+          processId,
           defaults: data?.defaults || {},
           filterExpressions: data?.filterExpressions || {},
           refreshParent: !!data?.refreshParent,

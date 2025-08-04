@@ -1,10 +1,27 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import type { Menu } from "@workspaceui/api-client/src/api/types";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useItemActions } from "../../../hooks/useItemType";
-import { CustomClickAwayListener } from "../../../utils/clickAway";
 import { findActive } from "../../../utils/drawerUtils";
 import { MenuTitle } from "../MenuTitle";
 import type { DrawerSectionProps, ToggleFunctions } from "../types";
+import MenuLibrary from "../../Menu";
 
 export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
   ({
@@ -20,10 +37,14 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     parentId,
   }) => {
     const isSelected = Boolean(windowId?.length && item.windowId === windowId);
-    const [popperOpen, setPopperOpen] = useState(false);
+    const hasActiveChild = !isSelected && Boolean(windowId?.length && findActive(windowId, item.children));
+    const isParentActive = isSelected || hasActiveChild;
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const toggleFunctions = useRef<ToggleFunctions>({});
-    const popperRef = useRef<HTMLDivElement>(null);
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const menuControlRef = useRef<{ recalculatePosition: () => void } | null>(null);
 
     const [localExpanded, setLocalExpanded] = useState(isSelected || findActive(windowId, item.children));
 
@@ -47,6 +68,13 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
         } else {
           newSet.add(sectionId);
         }
+
+        setTimeout(() => {
+          if (menuControlRef.current) {
+            menuControlRef.current.recalculatePosition();
+          }
+        }, 100);
+
         return newSet;
       });
     }, []);
@@ -61,51 +89,72 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
       [handleNestedToggle]
     );
 
-    const handleClick = useCallback(
-      (event: React.MouseEvent<HTMLElement>) => {
-        event.stopPropagation();
-        if (!open) {
-          setPopperOpen((prev) => !prev);
-        } else if (hasChildren && isExpandable) {
+    const handleClick = useCallback(() => {
+      if (open) {
+        if (hasChildren && isExpandable) {
           const newExpandedState = !expanded;
           setLocalExpanded(newExpandedState);
           if (parentId) {
             handleNestedToggle(item.id);
           }
+
           onToggleExpand();
         } else {
           handleItemClick(item);
         }
+      } else {
+        if (!hasChildren) {
+          handleItemClick(item);
+        }
+      }
+    }, [
+      open,
+      hasChildren,
+      isExpandable,
+      expanded,
+      parentId,
+      onToggleExpand,
+      handleNestedToggle,
+      item,
+      handleItemClick,
+    ]);
+
+    const handleMouseEnter = useCallback(
+      (event: React.MouseEvent<HTMLElement>) => {
+        if (!open && hasChildren) {
+          if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+            hoverTimeoutRef.current = null;
+          }
+          setAnchorEl(event.currentTarget);
+        }
       },
-      [open, hasChildren, isExpandable, expanded, parentId, onToggleExpand, handleNestedToggle, item, handleItemClick]
+      [open, hasChildren]
     );
+
+    const handleMouseLeave = useCallback(() => {
+      if (!open) {
+        hoverTimeoutRef.current = setTimeout(() => {
+          setAnchorEl(null);
+        }, 150);
+      }
+    }, [open]);
 
     const handleKeyDown = useCallback(
       (event: React.KeyboardEvent) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           event.stopPropagation();
-          handleClick(event as unknown as React.MouseEvent<HTMLElement>);
+          handleClick();
         }
       },
       [handleClick]
     );
 
-    const handleClose = useCallback(() => {
-      setPopperOpen(false);
-    }, []);
-
-    const handleClickAndClose = useCallback(
-      (item: Menu) => {
-        onClick(item);
-        handleClose();
-      },
-      [handleClose, onClick]
-    );
-
     const sectionClasses = [
-      expanded && open ? "bg-(--color-dynamic-contrast-text)" : "bg-transparent",
-      open ? "m-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" : "flex justify-center p-1",
+      expanded && open ? "bg-(--color-baseline-10)" : "bg-transparent ",
+      open ? "m-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" : "flex justify-center",
+      !open && hasActiveChild ? "bg-dynamic-main rounded-full" : "",
     ].join(" ");
 
     const shouldShowChildren = isSearchActive || expanded;
@@ -126,25 +175,45 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     }, [item.id, isSelected, windowId, item.children]);
 
     useEffect(() => {
-      if (open) {
-        setPopperOpen(false);
-      }
-    }, [open]);
+      return () => {
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+        }
+      };
+    }, []);
+
+    const handleCloseMenu = useCallback(() => {
+      setAnchorEl(null);
+    }, []);
+
+    const handleClickAndClose = useCallback(
+      (item: Menu) => {
+        onClick(item);
+        handleCloseMenu();
+      },
+      [handleCloseMenu, onClick]
+    );
 
     return (
-      <div className={sectionClasses} aria-expanded={expanded} onKeyDown={handleKeyDown}>
+      <div
+        className={sectionClasses}
+        aria-expanded={expanded}
+        onKeyDown={handleKeyDown}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}>
         <MenuTitle
           item={item}
           onClick={handleClick}
           selected={isSelected}
           expanded={shouldShowChildren}
           open={open}
+          isParentActive={isParentActive}
           isExpandable={isExpandable && !isSearchActive}
         />
         {hasChildren && open && (
           <div
-            className={`overflow-hidden transition-all duration-300 ease-in-out 
-              ${shouldShowChildren ? "max-h-[1000px] opacity-100 transform translate-y-0" : "max-h-0 opacity-0 transform -translate-y-2"}`}>
+            className={`transition-all duration-300 ease-in-out h-auto 
+              ${shouldShowChildren ? "opacity-100" : "max-h-0 overflow-hidden"}`}>
             {item.children?.map((subitem) => (
               <DrawerSection
                 key={subitem.id}
@@ -162,46 +231,43 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
             ))}
           </div>
         )}
-        {!open && popperOpen && (
+        {!open && anchorEl && (
           <div
-            ref={popperRef}
-            className={`
-              fixed bg-white z-50 ml-2 rounded-xl shadow-lg
-              transition-all duration-1000 ease-out origin-left
-              ${popperOpen ? "opacity-100 translate-x-0" : "opacity-0 pointer-events-none -translate-x-2"}`}
-            style={{
-              left: "3.5rem",
-              top: popperRef.current ? popperRef.current.getBoundingClientRect().top : "auto",
-            }}>
-            <CustomClickAwayListener onClickAway={handleClose}>
-              <div className="p-2 min-w-[240px]">
-                <MenuTitle
-                  item={item}
-                  onClick={handleClick}
-                  selected={isSelected}
-                  expanded={shouldShowChildren}
-                  open={true}
-                  isExpandable={isExpandable && !isSearchActive}
-                  popperOpen={true}
-                />
-
-                {item.children?.map((subitem) => (
-                  <DrawerSection
-                    key={subitem.id}
-                    item={subitem}
-                    onClick={handleClickAndClose}
-                    open={true}
-                    isSearchActive={isSearchActive}
-                    onToggleExpand={getToggleFunction(subitem.id)}
-                    hasChildren={Boolean(subitem.children?.length)}
-                    isExpandable={isExpandable && !isSearchActive}
-                    isExpanded={expandedSections.has(subitem.id)}
-                    parentId={item.id}
-                    windowId={windowId}
-                  />
-                ))}
+            onMouseEnter={() => {
+              if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+                hoverTimeoutRef.current = null;
+              }
+            }}
+            onMouseLeave={handleMouseLeave}>
+            <MenuLibrary
+              className="max-h-76 w-full max-w-60 overflow-y-scroll overflow-hidden"
+              anchorEl={anchorEl}
+              offsetX={52}
+              offsetY={-40}
+              onClose={handleCloseMenu}
+              menuRef={menuControlRef}>
+              <div
+                className="h-13 border-b border-transparent-neutral-5 flex items-center px-4 bg-neutral-50 
+                  font-inter font-semibold text-[14px] leading-[20px] tracking-[0.15px] text-baseline-80">
+                {item.name}
               </div>
-            </CustomClickAwayListener>
+              {item.children?.map((subitem) => (
+                <DrawerSection
+                  key={subitem.id}
+                  item={subitem}
+                  onClick={handleClickAndClose}
+                  open={true}
+                  isSearchActive={isSearchActive}
+                  onToggleExpand={getToggleFunction(subitem.id)}
+                  hasChildren={Boolean(subitem.children?.length)}
+                  isExpandable={isExpandable && !isSearchActive}
+                  isExpanded={expandedSections.has(subitem.id)}
+                  parentId={item.id}
+                  windowId={windowId}
+                />
+              ))}
+            </MenuLibrary>
           </div>
         )}
       </div>

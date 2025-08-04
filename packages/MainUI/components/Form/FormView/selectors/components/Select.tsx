@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import useDebounce from "@/hooks/useDebounce";
 import Image from "next/image";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -62,6 +79,7 @@ function SelectCmp({
 }: SelectProps) {
   const { register, setValue, watch } = useFormContext();
   const selectedValue = watch(name);
+  const currentIdentifier = watch(`${name}$_identifier`);
   const [selectedLabel, setSelectedLabel] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -78,7 +96,6 @@ function SelectCmp({
     [options, searchTerm]
   );
 
-  // Callbacks estables que no cambian en cada render
   const handleSelect = useCallback(
     (id: string, label: string) => {
       const option = options.find((opt) => opt.id === id);
@@ -195,11 +212,11 @@ function SelectCmp({
   useEffect(() => {
     const selectedOption = options.find((option) => option.id === selectedValue);
     if (!selectedOption && selectedValue) {
-      setSelectedLabel(selectedValue);
+      setSelectedLabel(currentIdentifier || selectedValue);
     } else {
       setSelectedLabel(selectedOption?.label ?? "");
     }
-  }, [selectedValue, options]);
+  }, [selectedValue, options, currentIdentifier]);
 
   useEffect(() => {
     if (isOpen) {
@@ -216,7 +233,6 @@ function SelectCmp({
     };
   }, [handleClickOutside]);
 
-  // Renderizado optimizado de opciones
   const renderedOptions = useMemo(() => {
     if (filteredOptions.length > 0) {
       return filteredOptions.map(({ id, label }, index) => (

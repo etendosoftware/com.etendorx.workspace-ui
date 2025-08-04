@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import { useMemo } from "react";
 import { type SxProps, type Theme, useTheme } from "@mui/material";
 
@@ -10,28 +27,21 @@ export const useStyle = () => {
       sx: {
         container: {
           display: "flex",
+          minWidth: "4.75rem",
           maxWidth: "100%",
           overflow: "hidden",
-          minWidth: "4.75rem",
-          paddingRight: "2rem",
-          height: "3rem",
-          background: "",
+          height: "2rem",
         },
         breadcrumbs: {
           flexGrow: 1,
           overflow: "hidden",
-        },
-        homeLink: {
-          width: "2.5rem",
-          height: "2.5rem",
-          padding: "0 1rem",
-          borderRadius: "6.5rem",
-          maxWidth: "18.75rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "1.375rem",
-          textDecoration: "none",
+          height: "2rem",
+          "& .MuiBreadcrumbs-ol": {
+            height: "2rem",
+            "& .MuiBreadcrumbs-li": {
+              height: "2rem",
+            },
+          },
         },
         breadcrumbTypography: {
           fontSize: "1.375rem",
@@ -43,49 +53,42 @@ export const useStyle = () => {
           },
         },
         breadcrumbItem: {
-          height: "3rem",
-          padding: "0 1rem",
-          borderRadius: "6.5rem",
+          height: "2rem",
+          padding: "0",
           maxWidth: "100%",
           display: "inline-flex",
           alignItems: "center",
+          gap: "0.5rem",
         },
         lastItemTypography: {
+          height: "2rem",
+          display: "flex",
+          alignItems: "center",
+          padding: "0.25rem 0",
           fontSize: "1.375rem",
           fontWeight: "600",
-          cursor: "pointer",
           color: theme.palette.baselineColor.neutral[100],
         },
-        link: {
+        textButton: {
           textDecoration: "none",
           color: "inherit",
-          display: "flex",
-          alignItems: "center",
-          height: "100%",
-          width: "100%",
-        },
-        homeContainer: {
-          display: "flex",
-          alignItems: "center",
-        },
-        homeIconString: {
-          backgroundColor: theme.palette.baselineColor.transparentNeutral[5],
-          width: "2.5rem",
-          height: "2.5rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: "1.25rem",
-          padding: "1rem",
-        },
-        homeText: {
-          fontSize: "1.375rem",
-          fontWeight: "600",
-          margin: "0 0.5rem",
-          cursor: "pointer",
-          color: theme.palette.baselineColor.neutral[100],
+          padding: 0,
+          minWidth: "auto",
           "&:hover": {
-            textDecoration: "underline",
+            backgroundColor: "transparent",
+            border: "none",
+          },
+        },
+        iconContainer: {
+          display: "flex",
+          alignItems: "center",
+        },
+        iconButton: {
+          padding: 0,
+          minWidth: "auto",
+          "&:hover": {
+            backgroundColor: "transparent",
+            border: "none",
           },
         },
         actionButton: {
@@ -125,14 +128,6 @@ export const useStyle = () => {
         },
         toggleContainer: {
           marginLeft: "1rem",
-        },
-        homeIconHovered: {
-          "&:hover": {
-            background: theme.palette.baselineColor.neutral[0],
-          },
-        },
-        homeIconComponent: {
-          background: theme.palette.baselineColor.transparentNeutral[5],
         },
       } as { [key: string]: SxProps<Theme> },
     }),

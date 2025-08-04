@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 "use client";
 
 import MenuClose from "../../../assets/icons/menu-close.svg";
@@ -8,7 +25,7 @@ import type { DrawerHeaderProps } from "../types";
 
 const DrawerHeader = ({ title, logo, open, onClick, tabIndex }: DrawerHeaderProps) => {
   return (
-    <div className="h-14 flex items-center justify-end p-2 border-b border-(--color-transparent-neutral-10)">
+    <div className="h-14 min-h-14 flex items-center justify-end p-2 border-b border-(--color-transparent-neutral-10)">
       {open && (
         <div className="w-full">
           <a href="/" className="flex items-center gap-1" title="Etendo">

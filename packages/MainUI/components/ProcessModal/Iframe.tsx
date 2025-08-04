@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import { type ProcessMessage, useProcessMessage } from "@/hooks/useProcessMessage";
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
@@ -9,7 +26,6 @@ import {
   isIframeModalOpen,
 } from "./types";
 
-const FROM_IFRAME_TYPE = "fromIframe";
 const CLOSE_MODAL_ACTION = "closeModal";
 const PROCESS_ORDER_ACTION = "processOrder";
 
@@ -130,7 +146,6 @@ const ProcessIframeOpenModal = ({
 
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
-      if (event.data?.type !== FROM_IFRAME_TYPE) return;
       if (event.data?.action === CLOSE_MODAL_ACTION) {
         handleClose();
       }
@@ -163,10 +178,10 @@ const ProcessIframeOpenModal = ({
 
   return (
     <div className="fixed inset-0 z-5000 flex items-center justify-center bg-black/50">
-      <div className="relative flex h-3/6 max-h-[50vh] w-full max-w-3xl flex-col rounded-xl border-4 border-gray-300 bg-white">
+      {/* NOTE: sizes inherited from the modal for manual processes from the previous UI */}
+      <div className="relative flex h-[625px] w-[900px] flex-col rounded-xl border-4 border-gray-300 bg-white">
         <div className="flex items-center justify-between rounded-xl border-gray-200 border-b bg-[var(--color-baseline-10)] p-4">
           <h2 className="font-semibold text-lg">{title || t("common.processes")}</h2>
-          <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-700 focus:outline-none" />
         </div>
         <div className="relative flex-1 overflow-hidden">
           {iframeLoading && (
@@ -195,6 +210,13 @@ const ProcessIframeOpenModal = ({
               </div>
             </div>
           )}
+          {!iframeLoading && !url && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-90">
+              <div className="text-center">
+                <p className="text-2xl font-medium">{t("common.noDataAvailable")}</p>
+              </div>
+            </div>
+          )}
           <iframe
             src={url}
             onLoad={handleIframeLoad}
@@ -204,6 +226,7 @@ const ProcessIframeOpenModal = ({
         </div>
         <div className="flex justify-end rounded-xl border-gray-200 border-t bg-[var(--color-baseline-10)] p-4">
           <button
+            data-testid="close-button"
             type="button"
             onClick={handleClose}
             className="mx-auto rounded bg-[var(--color-etendo-main)] px-4 py-2 font-medium text-white hover:bg-[var(--color-etendo-dark)] focus:outline-none">

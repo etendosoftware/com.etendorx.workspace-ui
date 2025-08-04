@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 "use client";
 import { useEffect } from "react";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
@@ -6,10 +23,10 @@ import WindowTabs from "@/components/NavigationTabs/WindowTabs";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useQueryParams } from "@/hooks/useQueryParams";
-import AppBreadcrumb from "@/components/Breadcrums";
 import Home from "@/screens/Home";
 import { useTranslation } from "@/hooks/useTranslation";
 import Window from "@/components/window/Window";
+import TabsProvider from "@/contexts/tabs";
 
 export default function Page() {
   const { loading, error } = useMetadataContext();
@@ -32,17 +49,16 @@ export default function Page() {
   }
 
   const shouldShowTabs = windows.length > 0;
-  const shouldShowBreadcrumb = activeWindow && !isHomeRoute;
 
   return (
-    <div className="flex flex-col w-full h-full max-h-full">
-      {shouldShowTabs && <WindowTabs />}
+    <div className="flex flex-col gap-2 w-full h-full max-h-full p-1 pb-0">
+      {shouldShowTabs && (
+        <TabsProvider>
+          <WindowTabs />
+        </TabsProvider>
+      )}
 
-      {shouldShowBreadcrumb && <AppBreadcrumb />}
-
-      <div className="flex-1 overflow-hidden">
-        {isHomeRoute || !activeWindow ? <Home /> : <Window windowId={activeWindow.windowId} />}
-      </div>
+      {isHomeRoute || !activeWindow ? <Home /> : <Window windowId={activeWindow.windowId} />}
     </div>
   );
 }

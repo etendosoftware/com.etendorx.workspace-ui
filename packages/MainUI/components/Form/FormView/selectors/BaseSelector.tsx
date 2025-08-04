@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import { useTabContext } from "@/contexts/tab";
 import { useCallout } from "@/hooks/useCallout";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -13,6 +30,8 @@ import { useFormContext } from "react-hook-form";
 import Label from "../Label";
 import { GenericSelector } from "./GenericSelector";
 import useDisplayLogic from "@/hooks/useDisplayLogic";
+import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
+import useFormParent from "@/hooks/useFormParent";
 
 export const compileExpression = (expression: string) => {
   try {
@@ -25,11 +44,25 @@ export const compileExpression = (expression: string) => {
 
 const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; formMode?: FormMode }) => {
   const { watch, getValues, setValue, register } = useFormContext();
+  const { isFormInitializing } = useFormInitializationContext();
   const { tab } = useTabContext();
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
   const { recordId } = useParams<{ recordId: string }>();
   const { session } = useUserContext();
-  const executeCalloutBase = useCallout({ field, rowId: recordId });
+  const parentData = useFormParent();
+
+  const getParentId = useCallback(() => {
+    const parentIds = Object.values(parentData)
+      .filter((value) => value && value !== "null" && value !== null)
+      .map((value) => String(value));
+    return parentIds.length > 0 ? parentIds[0] : "null";
+  }, [parentData]);
+
+  const executeCalloutBase = useCallout({
+    field,
+    rowId: recordId,
+    parentId: getParentId(),
+  });
   const debouncedCallout = useDebounce(executeCalloutBase, 300);
   const value = watch(field.hqlName);
   const values = watch();
@@ -60,10 +93,18 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     (columnValues: FormInitializationResponse["columnValues"]) => {
       for (const [column, { value, identifier }] of Object.entries(columnValues ?? {})) {
         const targetField = fieldsByColumnName[column];
-        setValue(targetField?.hqlName ?? column, value);
+        const hqlName = targetField?.hqlName ?? column;
+
+        setValue(hqlName, value, { shouldDirty: false });
 
         if (targetField && identifier) {
-          setValue(`${targetField.hqlName}$_identifier`, identifier);
+          setValue(`${hqlName}$_identifier`, identifier, { shouldDirty: false });
+
+          if (value && String(value) !== identifier) {
+            logger.debug(`Field ${hqlName}: value=${value}, identifier=${identifier}`);
+          }
+        } else if (targetField && !identifier && value) {
+          setValue(`${hqlName}$_identifier`, "", { shouldDirty: false });
         }
       }
     },
@@ -74,8 +115,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     (auxiliaryInputValues: FormInitializationResponse["auxiliaryInputValues"]) => {
       for (const [column, { value }] of Object.entries(auxiliaryInputValues ?? {})) {
         const targetField = fieldsByColumnName[column];
-
-        setValue(targetField?.hqlName || column, value);
+        setValue(targetField?.hqlName || column, value, { shouldDirty: false });
       }
     },
     [fieldsByColumnName, setValue]
@@ -98,13 +138,15 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         keyColumnName: entityKeyColumn,
         _entityName: tab.entityName,
         inpwindowId: tab.window,
-        inpmProductId_CURR: session.$C_Currency_ID,
-        inpmProductId_UOM: session["#C_UOM_ID"],
       } as Record<string, string>;
 
-      if (optionData) {
-        calloutData.inpmProductId_PSTD = String(optionData.netListPrice);
-        calloutData.inpmProductId_PLIST = String(optionData.netListPrice);
+      //TODO: This will imply the evaluation of out fiels inside the fieldBuilder an it's implementation in metadata module
+      if (field.inputName === "inpmProductId" && optionData) {
+        calloutData.inpmProductId_CURR = optionData.currency || session.$C_Currency_ID;
+        calloutData.inpmProductId_UOM = optionData.uOM || session["#C_UOM_ID"];
+        calloutData.inpmProductId_PSTD = String(optionData.standardPrice || optionData.netListPrice || 0);
+        calloutData.inpmProductId_PLIST = String(optionData.netListPrice || 0);
+        calloutData.inpmProductId_PLIM = String(optionData.priceLimit || 0);
       }
 
       const data = await debouncedCallout(calloutData);
@@ -119,6 +161,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     }
   }, [
     field.column.callout,
+    field.inputName,
     tab,
     getValues,
     fieldsByHqlName,
@@ -135,6 +178,10 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
       return;
     }
 
+    if (isFormInitializing) {
+      return;
+    }
+
     if (globalCalloutManager.isCalloutRunning()) {
       return;
     }
@@ -142,7 +189,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     previousValue.current = value;
 
     await globalCalloutManager.executeCallout(field.hqlName, executeCallout);
-  }, [field.hqlName, value, executeCallout]);
+  }, [field.hqlName, value, executeCallout, isFormInitializing]);
 
   useEffect(() => {
     if (ready.current) {
@@ -160,10 +207,13 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
 
   if (isDisplayed) {
     return (
-      <div className="grid grid-cols-3 auto-rows-auto gap-4 items-center" title={field.helpComment}>
+      <div
+        className="h-12 grid grid-cols-3 auto-rows-auto gap-4 items-center"
+        title={field.helpComment || ""}
+        aria-describedby={field.helpComment ? `${field.name}-help` : ""}>
         <div className="relative">
           {field.isMandatory && (
-            <span className="absolute -top-4 right-0 text-[#DC143C] font-bold" aria-required>
+            <span className="absolute -top-4 right-0 text-[#DC143C] text-xs font-bold" aria-required>
               *
             </span>
           )}
