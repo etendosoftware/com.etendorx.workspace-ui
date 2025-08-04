@@ -14,16 +14,18 @@ interface UseProcessConfigProps {
   processId: string;
   windowId: string;
   tabId: string;
+  javaClassName?: string;
 }
 
 /**
- * Hook to obtain the configuration based on DefaultsProcessActionHandler
+ * Hook to obtain the configuration for process execution
  * @param processId - ID of the process
  * @param windowId - ID of the window
  * @param tabId - ID of the tab
+ * @param javaClassName - Java class name for the process action (optional, defaults to DefaultsProcessActionHandler)
  * @returns Object with functions to handle the configuration of the process
  */
-export const useProcessConfig = ({ processId, windowId, tabId }: UseProcessConfigProps) => {
+export const useProcessConfig = ({ processId, windowId, tabId, javaClassName }: UseProcessConfigProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [config, setConfig] = useState<ProcessConfigResponse | null>(null);
@@ -37,8 +39,7 @@ export const useProcessConfig = ({ processId, windowId, tabId }: UseProcessConfi
       const params = new URLSearchParams({
         processId,
         windowId,
-        // TODO: Remove hardcoded value and use action provided by process metadata
-        _action: "org.openbravo.client.application.process.DefaultsProcessActionHandler",
+        _action: javaClassName || "org.openbravo.client.application.process.DefaultsProcessActionHandler",
       });
 
       const requestPayload = { ...payload };
@@ -68,7 +69,7 @@ export const useProcessConfig = ({ processId, windowId, tabId }: UseProcessConfi
         setLoading(false);
       }
     },
-    [processId, windowId, tabId]
+    [processId, windowId, tabId, javaClassName]
   );
 
   return {
