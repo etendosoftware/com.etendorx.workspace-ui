@@ -17,13 +17,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, onSignOff }) 
 
   return (
     <div className="flex flex-col items-center justify-center h-[9.5rem]">
-      <Image
-        src={BackgroundGradient}
-        height={window.innerHeight}
-        width={window.innerWidth}
-        className={"absolute"}
-        alt="Background Gradient"
-      />
+      <img src={BackgroundGradient} className={"absolute h-[9.5rem]"} alt="Background Gradient" />
       <div className="top-4 right-4 z-10 absolute">
         <IconButton tooltip="Log out" onClick={handleSignOff} className="h-6 w-6 [&>svg]:w-4 [&>svg]:h-4">
           <LogoutIcon />

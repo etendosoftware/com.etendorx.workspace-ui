@@ -36,7 +36,7 @@ const getButtonClasses = ({
       clsx(
         "text-white",
         disabled
-          ? "bg-blue-300 cursor-not-allowed opacity-60"
+          ? "bg-blue-300 cursor-not-allowed opacity-6 hover:bg-(--color-dynamic-main)"
           : active
             ? "bg-black hover:bg-blue-700"
             : "bg-blue-600 hover:bg-blue-700"
