@@ -1,6 +1,6 @@
 import type { RecentlyViewedProps } from "@workspaceui/componentlibrary/src/components/Drawer/types";
 import type { Menu } from "@workspaceui/api-client/src/api/types";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useRecentItems } from "../../../hooks/useRecentItems";
 import { useTranslation } from "../../../hooks/useTranslation";
 import { useUserContext } from "../../../hooks/useUserContext";
@@ -17,6 +17,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
 
     const { t } = useTranslation();
     const { currentRole } = useUserContext();
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const handleCloseMenu = useCallback(() => {
       setAnchorEl(null);
@@ -36,6 +37,27 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
           return setAnchorEl(event.currentTarget);
         }
         setExpanded((prev) => !prev);
+      },
+      [open]
+    );
+
+    const handleMouseLeave = useCallback(() => {
+      if (!open) {
+        hoverTimeoutRef.current = setTimeout(() => {
+          setAnchorEl(null);
+        }, 150);
+      }
+    }, [open]);
+
+    const handleMouseEnter = useCallback(
+      (event: React.MouseEvent<HTMLElement>) => {
+        if (!open) {
+          if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+            hoverTimeoutRef.current = null;
+          }
+          setAnchorEl(event.currentTarget);
+        }
       },
       [open]
     );
@@ -62,6 +84,13 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
       [addRecentItem]
     );
 
+    useEffect(() => {
+      return () => {
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+        }
+      };
+    }, []);
     useImperativeHandle(
       ref,
       () => ({
@@ -80,9 +109,18 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
     };
 
     return (
-      <div className="p-2">
+      <div
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className={`${open && expanded && item.children && "bg-(--color-baseline-10) m-2 mb-0 p-1 pb-0"} p-2 rounded-lg`}>
         <button
           type="button"
+          onMouseEnter={() => {
+            if (hoverTimeoutRef.current) {
+              clearTimeout(hoverTimeoutRef.current);
+              hoverTimeoutRef.current = null;
+            }
+          }}
           onClick={handleClick}
           className={`flex transition-colors duration-300 cursor-pointer w-full items-center
             ${open ? "rounded-lg" : "p-2.5 rounded-full justify-center"}
@@ -112,7 +150,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
         </button>
 
         {expanded && open && (
-          <div className="pt-2 pl-4 flex flex-wrap gap-2 w-full">
+          <div className="py-2 pl-4 flex flex-wrap gap-2 w-full">
             {localRecentItems.map((recentItem) => (
               <button
                 key={recentItem.id}
@@ -129,10 +167,10 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
         )}
         {!open && (
           <MenuLibrary
-            className="max-h-80 w-full max-w-60  overflow-y-scroll overflow-hidden hide-scrollbar"
+            className="max-h-80 w-full max-w-60 overflow-y-scroll overflow-hidden hide-scrollbar border border-transparent-neutral-5"
             anchorEl={anchorEl}
-            offsetX={52}
-            offsetY={-40}
+            offsetX={62}
+            offsetY={-110}
             onClose={handleCloseMenu}>
             <div
               className="border-b border-transparent-neutral-5 h-13 flex items-center px-6 bg-neutral-50 

@@ -103,7 +103,7 @@ const Drawer: React.FC<DrawerProps> = ({
       <div
         style={{ width: `${drawerWidth}rem` }}
         className={`h-screen max-h-screen transition-all duration-500 ease-in-out
-             bg-(--color-baseline-0) border-none
+             bg-(--color-baseline-0) border-none 
              rounded-tr-xl rounded-br-xl flex flex-col overflow-hidden pb-4  ${open ? "w-[16.25rem]" : "w-[3.5rem]"}`}>
         <DrawerHeader logo={logo} title={title} open={open} onClick={handleHeaderClick} tabIndex={-1} />
         {open && (
@@ -127,7 +127,7 @@ const Drawer: React.FC<DrawerProps> = ({
             ref={setRecentlyViewedRef}
           />
         )}
-        <div className={`flex-grow overflow-y-auto ${!open && "flex flex-col gap-2"}`}>
+        <div className={`flex-grow overflow-y-auto hide-scrollbar ${!open && "flex flex-col gap-2"}`}>
           <DrawerItems
             items={searchValue ? filteredItems : items}
             onClick={handleItemClick}
