@@ -1,9 +1,11 @@
 import { useTabContext } from "@/contexts/tab";
 import { useProcessConfig } from "@/hooks/datasource/useProcessDatasourceConfig";
+import { useProcessInitialization } from "@/hooks/useProcessInitialization";
+import { useProcessInitializationState } from "@/hooks/useProcessInitialState";
 import { useSelected } from "@/hooks/useSelected";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserContext } from "@/hooks/useUserContext";
-import { buildPayloadByInputName } from "@/utils";
+import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
 import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
@@ -34,7 +36,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const { graph } = useSelected();
   const { tab, record } = useTabContext();
   const { session } = useUserContext();
-  const form = useForm();
 
   const { onProcess, onLoad } = button.processDefinition;
   const processId = button.processDefinition.id;
@@ -73,6 +74,75 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     windowId: windowId || "",
     tabId,
   });
+
+  // Process initialization for default values (adapted from FormInitialization pattern)
+  const {
+    processInitialization,
+    loading: initializationLoading,
+    error: initializationError,
+    refetch: refetchDefaults,
+  } = useProcessInitialization({
+    processId: processId || "",
+    windowId: windowId || "",
+    recordId: record?.id ? String(record.id) : undefined, // Convert EntityValue to string
+    enabled: !!processId && !!windowId && open, // Only fetch when modal is open
+    record: record || undefined, // Pass complete record data
+    tab: tab || undefined,       // Pass tab metadata
+  });
+
+  // Process form initial state (similar to useFormInitialState)
+  // Memoize parameters to prevent infinite re-execution
+  const memoizedParameters = useMemo(() => Object.values(parameters), [parameters]);
+
+  const {
+    initialState,
+    logicFields,
+    filterExpressions,
+    refreshParent,
+    hasData: hasInitialData,
+  } = useProcessInitializationState(
+    processInitialization,
+    memoizedParameters // Use memoized version to prevent infinite loops
+  );
+
+  // Combined form data: record values + process defaults (similar to FormView pattern)
+  const availableFormData = useMemo(() => {
+    if (!record || !tab) return {};
+
+    // Build base payload with system context fields
+    const basePayload = buildProcessPayload(
+      record,           // Complete record data
+      tab,             // Tab metadata
+      {},              // Don't include initialState here yet
+      {}               // User input will be added during execution
+    );
+
+    // Use initialState directly - it's already processed by useProcessInitializationState
+    // No need to reprocess the values, they're already mapped correctly
+    console.log('Raw initialState from hook:', initialState);
+    console.log('Available form data will be:', {
+      ...basePayload,
+      ...initialState
+    });
+
+    return {
+      ...basePayload,        // System context fields
+      ...initialState,       // Already processed defaults from useProcessInitializationState
+    };
+  }, [record, tab, initialState]);
+
+  const form = useForm({
+    values: availableFormData, // Pre-populate with combined data
+    mode: "onChange"
+  });
+
+  // Reset form values when defaults are loaded
+  useEffect(() => {
+    if (hasInitialData && Object.keys(availableFormData).length > 0) {
+      console.log('Resetting form with new values:', availableFormData);
+      form.reset(availableFormData);
+    }
+  }, [hasInitialData, availableFormData, form]);
 
   const handleClose = useCallback(() => {
     if (isExecuting) return;
@@ -155,18 +225,26 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       return;
     }
 
-    if (!onProcess || !tab) return;
+    if (!onProcess || !tab || !record) return;
 
     setIsExecuting(true);
     setIsSuccess(false);
 
     try {
+      // Build complete payload with all context fields
+      const completePayload = buildProcessPayload(
+        record,                 // Complete record data
+        tab,                   // Tab metadata
+        initialState || {},    // Process defaults from server (handle null case)
+        form.getValues()       // User input from form
+      );
+
       const result = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
         buttonValue: "DONE",
         windowId: tab.window,
         entityName: tab.entityName,
         recordIds: selectedRecords?.map((r) => r.id),
-        ...form.getValues(),
+        ...completePayload,    // Use complete payload instead of just form values
       });
 
       const responseMessage = result.responseActions[0].showMsgInProcessView;
@@ -191,6 +269,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     handleWindowReferenceExecute,
     onProcess,
     tab,
+    record,
+    initialState,
     button.processDefinition,
     selectedRecords,
     form,
@@ -212,13 +292,25 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     }
   }, [fetchConfig, recordValues, session, tabId, open, hasWindowReference]);
 
+  // Note: Default values are now handled by availableFormData (FormInitialization pattern)
+  // This replaces the previous processConfig.defaults logic with comprehensive
+  // DefaultsProcessActionHandler integration including mixed types and logic fields
+
+  // Handle initialization errors and logging
   useEffect(() => {
-    if (processConfig?.defaults) {
-      for (const [key, data] of Object.entries(processConfig.defaults)) {
-        form.setValue(key, data.identifier);
-      }
+    if (initializationError) {
+      logger.warn("Process initialization error:", initializationError);
     }
-  }, [form, processConfig?.defaults]);
+    
+    if (hasInitialData) {
+      logger.debug("Process defaults loaded successfully", {
+        processId,
+        fieldsCount: Object.keys(initialState || {}).length,
+        hasLogicFields: Object.keys(logicFields || {}).length > 0,
+        hasFilterExpressions: Object.keys(filterExpressions || {}).length > 0
+      });
+    }
+  }, [initializationError, hasInitialData, processId, initialState, logicFields, filterExpressions]);
 
   useEffect(() => {
     if (open) {
@@ -294,7 +386,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       if (parameter.reference === WINDOW_REFERENCE_ID) {
         return (
           <WindowReferenceGrid
-            key={parameter.id}
+            key={`window-ref-${parameter.id || parameter.name}`}
             parameter={parameter}
             onSelectionChange={setGridSelection}
             tabId={tabId}
@@ -308,7 +400,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         );
       }
       // Use new ProcessParameterSelector for enhanced field reference support
-      return <ProcessParameterSelector key={parameter.name} parameter={parameter} />;
+      return (
+        <ProcessParameterSelector 
+          key={`param-${parameter.id || parameter.name}-${parameter.reference || 'default'}`}
+          parameter={parameter}
+          logicFields={logicFields} // Pass logic fields from process defaults
+        />
+      );
     });
   };
 
@@ -360,11 +458,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
               <div className={`relative ${isExecuting ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
                 <div
                   className={`absolute transition-opacity inset-0 flex items-center pointer-events-none justify-center bg-white ${
-                    loading ? "opacity-100" : "opacity-0"
+                    loading || initializationLoading ? "opacity-100" : "opacity-0"
                   }`}>
                   <Loading />
                 </div>
-                <div className={`transition-opacity ${loading ? "opacity-0" : "opacity-100"}`}>
+                <div className={`transition-opacity ${loading || initializationLoading ? "opacity-0" : "opacity-100"}`}>
                   {renderResponse()}
                   {renderParameters()}
                 </div>

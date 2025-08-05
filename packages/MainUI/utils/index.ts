@@ -78,23 +78,32 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
 };
 
 export const parseDynamicExpression = (expr: string) => {
-  const expr1 = expr.replace(/OB\.Utilities\.getValue\((\w+),\s*["']([^"']+)["']\)/g, (_, obj, prop) => {
+  // Transform @field_name@ syntax to valid JavaScript references
+  const expr0 = expr.replace(/@([a-zA-Z_][a-zA-Z0-9_]*)@/g, (_, fieldName) => {
+    return `(currentValues["${fieldName}"] || context["${fieldName}"])`;
+  });
+
+  // Transform Etendo comparison operators to JavaScript
+  // Convert single = to == for comparison (avoiding conflicts with assignment)
+  const expr1 = expr0.replace(/([^=!<>])=([^=])/g, '$1==$2');
+
+  const expr2 = expr1.replace(/OB\.Utilities\.getValue\((\w+),\s*["']([^"']+)["']\)/g, (_, obj, prop) => {
     return `${obj}["${prop}"]`;
   });
 
-  const expr2 = expr1.replace(/context\.(\$?\w+)/g, (_, prop) => {
+  const expr3 = expr2.replace(/context\.(\$?\w+)/g, (_, prop) => {
     return `context.${prop}`;
   });
 
-  const expr3 = expr2.replace(/context\[\s*(['"])([^"'\]]+)\1\s*\]/g, (_, quote, prop) => {
+  const expr4 = expr3.replace(/context\[\s*(['"])([^"'\]]+)\1\s*\]/g, (_, quote, prop) => {
     return `context[${quote}${prop}${quote}]`;
   });
 
-  const expr4 = expr3.replace(/context\[\s*(['"])(.*?)\1\s*\]/g, (_, quote, key) => {
+  const expr5 = expr4.replace(/context\[\s*(['"])(.*?)\1\s*\]/g, (_, quote, key) => {
     return `context[${quote}${key}${quote}]`;
   });
 
-  return expr4;
+  return expr5;
 };
 
 export const buildQueryString = ({
@@ -181,6 +190,67 @@ export const formatLabel = (label: string, count?: number): string | undefined =
     return label.replace("%s", String(count));
   }
   return undefined;
+};
+
+export const buildProcessPayload = (
+  record: Record<string, unknown>,
+  tab: Tab,
+  processDefaults: Record<string, unknown> = {},
+  userInput: Record<string, unknown> = {}
+) => {
+  // Base record values with input name mapping
+  const recordValues = buildPayloadByInputName(record, tab.fields);
+
+  // System context fields that are needed for process execution
+  const systemContext = {
+    // Window/Tab metadata
+    [`inp${tab.entityName?.replace(/^C_/, '')?.toLowerCase() || 'record'}Id`]: record.id,
+    inpTabId: String(tab.id),
+    inpwindowId: String(tab.window),
+    inpTableId: String(tab.table),
+    inpkeyColumnId: `${tab.entityName}_ID`, // Use entityName + "_ID" pattern instead of keyColumn
+    keyProperty: "id",
+    inpKeyName: `inp${tab.entityName}_ID`, // Use entityName + "_ID" pattern
+    keyColumnName: `${tab.entityName}_ID`, // Use entityName + "_ID" pattern
+    keyPropertyType: "_id_13",
+
+    // Process execution fields
+    PromotionsDefined: "N",
+    IsReversalDocument: "N",
+    DOCBASETYPE: record.docBaseType || "",
+    VoidAutomaticallyCreated: 0,
+    FinancialManagement: "Y",
+    _ShowAcct: "Y",
+
+    // Accounting dimension display logic
+    ACCT_DIMENSION_DISPLAY: "",
+    "$IsAcctDimCentrally": "Y",
+
+    // Element context fields (these come from accounting configuration)
+    $Element_BP: record.cBpartnerId ? "Y" : "",
+    $Element_OO: record.adOrgId ? "Y" : "",
+    $Element_PJ: record.cProjectId ? "Y" : "",
+    $Element_CC: record.cCostcenterId ? "Y" : "",
+    $Element_MC: record.mCostcenterId ? "Y" : "",
+    $Element_U1: record.user1Id ? "Y" : "",
+    $Element_U2: record.user2Id ? "Y" : "",
+
+    // Document-specific element visibility
+    "$Element_BP_ARI_H": "Y",
+    "$Element_OO_ARI_H": "Y",
+    "$Element_PJ_ARI_H": "Y",
+    "$Element_CC_ARI_H": "",
+    "$Element_U1_ARI_H": "N",
+    "$Element_U2_ARI_H": "N",
+  };
+
+  // Combine all payload parts
+  return {
+    ...recordValues,      // Record data with proper input names
+    ...systemContext,     // System context and metadata
+    ...processDefaults,   // Process defaults from server
+    ...userInput,         // User input from form
+  };
 };
 
 export { shouldShowTab, type TabWithParentInfo } from "./tabUtils";
