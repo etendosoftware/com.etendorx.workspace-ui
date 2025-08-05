@@ -31,13 +31,17 @@ export default function StatusBar({ fields }: { fields: Record<string, Field> })
   }, [isSaved, onBack]);
 
   return (
-    <div className="h-10 flex items-center justify-between bg-gray-100/50 shadow px-3 py-2 rounded-xl">
+    <div 
+      data-testid="status-bar-container"
+      className="h-10 flex items-center justify-between bg-gray-100/50 shadow px-3 py-2 rounded-xl"
+    >
       <div className="flex gap-4 text-sm">
         {Object.entries(fields).map(([key, field]) => (
           <StatusBarField key={key} field={field} />
         ))}
       </div>
       <IconButton
+        data-testid="icon-button"
         onClick={handleCloseRecord}
         className="w-8 h-8"
         tooltip={t("forms.statusBar.closeRecord")}
