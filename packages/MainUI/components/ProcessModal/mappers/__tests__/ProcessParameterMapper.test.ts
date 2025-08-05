@@ -142,4 +142,52 @@ describe("ProcessParameterMapper", () => {
       expect(ProcessParameterMapper.getFieldType(paramWithoutReference)).toBe("text");
     });
   });
+
+  describe("mapSelectorInfo", () => {
+    it("should map Product reference to ProductByPriceAndWarehouse datasource", () => {
+      const productParam = { ...mockParameter, reference: "Product" };
+      const field = ProcessParameterMapper.mapToField(productParam);
+      
+      expect(field.selector).toBeDefined();
+      expect(field.selector.datasourceName).toBe("ProductByPriceAndWarehouse");
+    });
+
+    it("should map TableDir reference to ComboTableDatasourceService", () => {
+      const tableDirParam = { ...mockParameter, reference: "TableDir" };
+      const field = ProcessParameterMapper.mapToField(tableDirParam);
+      
+      expect(field.selector).toBeDefined();
+      expect(field.selector.datasourceName).toBe("ComboTableDatasourceService");
+    });
+
+    it("should map Select reference to ComboTableDatasourceService", () => {
+      const selectParam = { ...mockParameter, reference: "Select" };
+      const field = ProcessParameterMapper.mapToField(selectParam);
+      
+      expect(field.selector).toBeDefined();
+      expect(field.selector.datasourceName).toBe("ComboTableDatasourceService");
+    });
+
+    it("should not map selector for non-datasource field types", () => {
+      const textParam = { ...mockParameter, reference: "String" };
+      const field = ProcessParameterMapper.mapToField(textParam);
+      
+      expect(field.selector).toBeUndefined();
+    });
+
+    it("should preserve existing selector info if provided", () => {
+      const paramWithSelector = { 
+        ...mockParameter, 
+        reference: "Product",
+        selector: {
+          datasourceName: "CustomDatasource",
+          customProperty: "test"
+        }
+      };
+      const field = ProcessParameterMapper.mapToField(paramWithSelector);
+      
+      expect(field.selector.datasourceName).toBe("CustomDatasource");
+      expect(field.selector.customProperty).toBe("test");
+    });
+  });
 });

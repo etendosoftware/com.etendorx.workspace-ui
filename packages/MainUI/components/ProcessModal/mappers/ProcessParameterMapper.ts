@@ -13,6 +13,8 @@ export class ProcessParameterMapper {
    * @returns Field interface compatible with FormView selectors
    */
   static mapToField(parameter: ProcessParameter | ExtendedProcessParameter): Field {
+    const mappedReference = this.mapReferenceType(parameter.reference);
+    
     return {
       // Core identification properties
       hqlName: parameter.dBColumnName || parameter.name,
@@ -32,10 +34,13 @@ export class ProcessParameterMapper {
       
       // Reference and type information
       column: {
-        reference: this.mapReferenceType(parameter.reference),
+        reference: mappedReference,
         length: "255", // Default length, can be overridden
         ...parameter.column
       },
+      
+      // Selector configuration for datasource fields
+      selector: this.mapSelectorInfo(mappedReference, parameter),
       
       // List data for select/list fields
       refList: parameter.refList || [],
@@ -85,6 +90,43 @@ export class ProcessParameterMapper {
       referencedWindowId: "",
       referencedTabId: ""
     };
+  }
+
+  /**
+   * Maps selector information for datasource-dependent field types
+   * @param reference - The mapped reference code
+   * @param parameter - The original ProcessParameter
+   * @returns Selector configuration object
+   */
+  static mapSelectorInfo(reference: string, parameter: ProcessParameter | ExtendedProcessParameter): any {
+    // If parameter already has selector info, use it
+    if (parameter.selector) {
+      return parameter.selector;
+    }
+
+    // Map reference types to appropriate datasource names
+    const datasourceMap: Record<string, string> = {
+      [FIELD_REFERENCE_CODES.PRODUCT]: "ProductByPriceAndWarehouse",
+      [FIELD_REFERENCE_CODES.TABLE_DIR_19]: "ComboTableDatasourceService",
+      [FIELD_REFERENCE_CODES.TABLE_DIR_18]: "ComboTableDatasourceService",
+      [FIELD_REFERENCE_CODES.SELECT_30]: "ComboTableDatasourceService",
+    };
+
+    const datasourceName = datasourceMap[reference];
+    
+    if (datasourceName) {
+      return {
+        datasourceName,
+        _textMatchStyle: "startsWith",
+        _noCount: true,
+        _selectedProperties: "id",
+        _extraProperties: "_identifier,",
+        extraSearchFields: "",
+      };
+    }
+
+    // Return undefined for field types that don't need datasource
+    return undefined;
   }
 
   /**
