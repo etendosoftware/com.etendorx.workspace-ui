@@ -11,6 +11,11 @@ import Label from "@/components/Label";
 import { PasswordSelector } from "@/components/Form/FormView/selectors/PasswordSelector";
 import { BooleanSelector } from "@/components/Form/FormView/selectors/BooleanSelector";
 import { NumericSelector } from "@/components/Form/FormView/selectors/NumericSelector";
+import { DateSelector } from "@/components/Form/FormView/selectors/DateSelector";
+import { DatetimeSelector } from "@/components/Form/FormView/selectors/DatetimeSelector";
+import { SelectSelector } from "@/components/Form/FormView/selectors/SelectSelector";
+import { TableDirSelector } from "@/components/Form/FormView/selectors/TableDirSelector";
+import QuantitySelector from "@/components/Form/FormView/selectors/QuantitySelector";
 
 // Import mapper
 import { ProcessParameterMapper } from "../mappers/ProcessParameterMapper";
@@ -101,8 +106,54 @@ export const ProcessParameterSelector = ({ parameter }: ProcessParameterSelector
             />
           );
 
-        // Future field types will be added here in subsequent phases
         case "date":
+          return (
+            <DateSelector 
+              field={mappedField}
+              isReadOnly={isReadOnly}
+            />
+          );
+
+        case "datetime":
+          return (
+            <DatetimeSelector 
+              field={mappedField}
+              isReadOnly={isReadOnly}
+            />
+          );
+
+        case "select":
+          return (
+            <SelectSelector 
+              field={mappedField}
+              isReadOnly={isReadOnly}
+              pageSize={20}
+              initialPageSize={20}
+            />
+          );
+
+        case "tabledir":
+        case "product":
+          return (
+            <TableDirSelector 
+              field={mappedField}
+              isReadOnly={isReadOnly}
+            />
+          );
+
+        case "quantity":
+          return (
+            <QuantitySelector 
+              field={mappedField}
+              value={mappedField.hasDefaultValue ? parameter.defaultValue : ""}
+              name={mappedField.hqlName}
+              readOnly={isReadOnly}
+              min={null}
+              max={null}
+            />
+          );
+
+        // Future field types will be added here in subsequent phases
         case "list":
         case "window":
         case "text":

@@ -114,6 +114,16 @@ export class ProcessParameterMapper {
       // List types
       "List": FIELD_REFERENCE_CODES.LIST_17,
       
+      // Select types
+      "Select": FIELD_REFERENCE_CODES.SELECT_30,
+      
+      // Product types
+      "Product": FIELD_REFERENCE_CODES.PRODUCT,
+      
+      // Table Directory types
+      "TableDir": FIELD_REFERENCE_CODES.TABLE_DIR_19,
+      "Table Directory": FIELD_REFERENCE_CODES.TABLE_DIR_19,
+      
       // Password
       "Password": FIELD_REFERENCE_CODES.PASSWORD,
       
@@ -144,7 +154,7 @@ export class ProcessParameterMapper {
     const supportedReferences = [
       "String", "Text", "Password", "Yes/No", "YesNo", "Boolean",
       "Amount", "Number", "Decimal", "Integer", "Quantity",
-      "Date", "DateTime", "List", "Window"
+      "Date", "DateTime", "List", "Select", "Product", "TableDir", "Table Directory", "Window"
     ];
 
     return !parameter.reference || 
@@ -162,10 +172,17 @@ export class ProcessParameterMapper {
     
     if (reference === FIELD_REFERENCE_CODES.PASSWORD) return "password";
     if (reference === FIELD_REFERENCE_CODES.BOOLEAN) return "boolean";
-    if ([FIELD_REFERENCE_CODES.DECIMAL, FIELD_REFERENCE_CODES.INTEGER, FIELD_REFERENCE_CODES.QUANTITY_29].includes(reference as any)) {
+    if ([FIELD_REFERENCE_CODES.DECIMAL, FIELD_REFERENCE_CODES.INTEGER].includes(reference as any)) {
       return "numeric";
     }
-    if ([FIELD_REFERENCE_CODES.DATE, FIELD_REFERENCE_CODES.DATETIME].includes(reference as any)) return "date";
+    if ([FIELD_REFERENCE_CODES.QUANTITY_29, FIELD_REFERENCE_CODES.QUANTITY_22].includes(reference as any)) {
+      return "quantity";
+    }
+    if (reference === FIELD_REFERENCE_CODES.DATE) return "date";
+    if (reference === FIELD_REFERENCE_CODES.DATETIME) return "datetime";
+    if (reference === FIELD_REFERENCE_CODES.SELECT_30) return "select";
+    if (reference === FIELD_REFERENCE_CODES.PRODUCT) return "product";
+    if ([FIELD_REFERENCE_CODES.TABLE_DIR_19, FIELD_REFERENCE_CODES.TABLE_DIR_18].includes(reference as any)) return "tabledir";
     if ([FIELD_REFERENCE_CODES.LIST_17, FIELD_REFERENCE_CODES.LIST_13].includes(reference as any)) return "list";
     if (reference === FIELD_REFERENCE_CODES.WINDOW) return "window";
     

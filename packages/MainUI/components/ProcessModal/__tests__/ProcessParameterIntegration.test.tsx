@@ -23,6 +23,28 @@ jest.mock("@/components/Form/FormView/selectors/NumericSelector", () => ({
   NumericSelector: ({ field }: any) => <input data-testid="numeric-field" name={field.hqlName} type="number" />
 }));
 
+jest.mock("@/components/Form/FormView/selectors/DateSelector", () => ({
+  DateSelector: ({ field }: any) => <input data-testid="date-field" name={field.hqlName} type="date" />
+}));
+
+jest.mock("@/components/Form/FormView/selectors/DatetimeSelector", () => ({
+  DatetimeSelector: ({ field }: any) => <input data-testid="datetime-field" name={field.hqlName} type="datetime-local" />
+}));
+
+jest.mock("@/components/Form/FormView/selectors/SelectSelector", () => ({
+  SelectSelector: ({ field }: any) => <select data-testid="select-field" name={field.hqlName} />
+}));
+
+jest.mock("@/components/Form/FormView/selectors/TableDirSelector", () => ({
+  TableDirSelector: ({ field }: any) => <select data-testid="tabledir-field" name={field.hqlName} />
+}));
+
+jest.mock("@/components/Form/FormView/selectors/QuantitySelector", () => {
+  return function QuantitySelector({ field }: any) {
+    return <input data-testid="quantity-field" name={field.hqlName} type="number" step="any" />;
+  };
+});
+
 jest.mock("../selectors/GenericSelector", () => {
   return function GenericSelector({ parameter }: any) {
     return <input data-testid="generic-field" name={parameter.name} />;
@@ -225,14 +247,17 @@ describe("ProcessParameterSelector Integration", () => {
   });
 
   describe("Progress Tracking", () => {
-    it("should support 3 out of 9 field reference types (33% Phase 1 target)", () => {
-      // Phase 1 supported types: Password, Boolean, Numeric (Integer/Decimal/Amount)
-      const supportedTypes = ["Password", "Yes/No", "Boolean", "Amount", "Integer", "Decimal"];
+    it("should support 9 out of 11 field reference types (82% Phase 2 target)", () => {
+      // Phase 1 + Phase 2 supported types: Password, Boolean, Numeric, Date, DateTime, Select, Product, TableDir, Quantity
+      const supportedTypes = [
+        "Password", "Yes/No", "Boolean", "Amount", "Integer", "Decimal", "Quantity",
+        "Date", "DateTime", "Select", "Product", "TableDir", "Table Directory"
+      ];
       
-      // Phase 2+ types (future): Date, DateTime, List, Window, String, etc.
-      const futureTypes = ["Date", "DateTime", "List", "Window", "String"];
+      // Phase 3 types (future): List, Window, String, etc.
+      const futureTypes = ["List", "Window", "String"];
       
-      // Test that Phase 1 types work correctly
+      // Test that Phase 1 + Phase 2 types work correctly
       supportedTypes.forEach((type, index) => {
         const { unmount } = render(
           <TestWrapper>
@@ -254,7 +279,12 @@ describe("ProcessParameterSelector Integration", () => {
         const hasSpecializedSelector = 
           screen.queryByTestId("password-field") ||
           screen.queryByTestId("boolean-field") ||
-          screen.queryByTestId("numeric-field");
+          screen.queryByTestId("numeric-field") ||
+          screen.queryByTestId("date-field") ||
+          screen.queryByTestId("datetime-field") ||
+          screen.queryByTestId("select-field") ||
+          screen.queryByTestId("tabledir-field") ||
+          screen.queryByTestId("quantity-field");
           
         expect(hasSpecializedSelector).toBeInTheDocument();
         unmount();

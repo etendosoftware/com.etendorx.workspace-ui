@@ -19,6 +19,28 @@ jest.mock("@/components/Form/FormView/selectors/NumericSelector", () => ({
   NumericSelector: ({ field }: any) => <input data-testid="numeric-selector" name={field.hqlName} type="number" />
 }));
 
+jest.mock("@/components/Form/FormView/selectors/DateSelector", () => ({
+  DateSelector: ({ field }: any) => <input data-testid="date-selector" name={field.hqlName} type="date" />
+}));
+
+jest.mock("@/components/Form/FormView/selectors/DatetimeSelector", () => ({
+  DatetimeSelector: ({ field }: any) => <input data-testid="datetime-selector" name={field.hqlName} type="datetime-local" />
+}));
+
+jest.mock("@/components/Form/FormView/selectors/SelectSelector", () => ({
+  SelectSelector: ({ field }: any) => <select data-testid="select-selector" name={field.hqlName} />
+}));
+
+jest.mock("@/components/Form/FormView/selectors/TableDirSelector", () => ({
+  TableDirSelector: ({ field }: any) => <select data-testid="tabledir-selector" name={field.hqlName} />
+}));
+
+jest.mock("@/components/Form/FormView/selectors/QuantitySelector", () => {
+  return function QuantitySelector({ field }: any) {
+    return <input data-testid="quantity-selector" name={field.hqlName} type="number" step="any" />;
+  };
+});
+
 jest.mock("../GenericSelector", () => {
   return function GenericSelector({ parameter }: any) {
     return <input data-testid="generic-selector" name={parameter.name} />;
@@ -185,6 +207,85 @@ describe("ProcessParameterSelector", () => {
       );
       
       expect(screen.getByTestId("boolean-selector")).toBeInTheDocument();
+      unmount();
+    });
+  });
+
+  it("should render DateSelector for date reference", () => {
+    const dateParameter = { ...baseParameter, reference: "Date" };
+    
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={dateParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("date-selector")).toBeInTheDocument();
+    expect(screen.getByTestId("date-selector")).toHaveAttribute("type", "date");
+  });
+
+  it("should render DatetimeSelector for datetime reference", () => {
+    const datetimeParameter = { ...baseParameter, reference: "DateTime" };
+    
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={datetimeParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("datetime-selector")).toBeInTheDocument();
+    expect(screen.getByTestId("datetime-selector")).toHaveAttribute("type", "datetime-local");
+  });
+
+  it("should render SelectSelector for select reference", () => {
+    const selectParameter = { ...baseParameter, reference: "Select" };
+    
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={selectParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("select-selector")).toBeInTheDocument();
+  });
+
+  it("should render TableDirSelector for product reference", () => {
+    const productParameter = { ...baseParameter, reference: "Product" };
+    
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={productParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("tabledir-selector")).toBeInTheDocument();
+  });
+
+  it("should render TableDirSelector for table directory reference", () => {
+    const tableDirParameter = { ...baseParameter, reference: "TableDir" };
+    
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={tableDirParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("tabledir-selector")).toBeInTheDocument();
+  });
+
+  it("should render QuantitySelector for quantity references", () => {
+    const quantityFormats = ["Quantity"];
+    
+    quantityFormats.forEach((format, index) => {
+      const { unmount } = render(
+        <TestWrapper>
+          <ProcessParameterSelector parameter={{ ...baseParameter, reference: format, id: `test-quantity-${index}` }} />
+        </TestWrapper>
+      );
+      
+      expect(screen.getByTestId("quantity-selector")).toBeInTheDocument();
+      expect(screen.getByTestId("quantity-selector")).toHaveAttribute("type", "number");
+      expect(screen.getByTestId("quantity-selector")).toHaveAttribute("step", "any");
       unmount();
     });
   });

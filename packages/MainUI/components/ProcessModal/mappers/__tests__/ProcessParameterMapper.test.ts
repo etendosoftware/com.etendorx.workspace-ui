@@ -96,7 +96,11 @@ describe("ProcessParameterMapper", () => {
     });
 
     it("should return true for supported reference types", () => {
-      const supportedTypes = ["String", "Password", "Yes/No", "Boolean", "Amount", "Integer", "Date", "List"];
+      const supportedTypes = [
+        "String", "Password", "Yes/No", "Boolean", "Amount", "Integer", "Decimal", 
+        "Quantity", "Date", "DateTime", "List", "Select", "Product", "TableDir", 
+        "Table Directory", "Window"
+      ];
       
       supportedTypes.forEach(referenceType => {
         const param = { ...mockParameter, reference: referenceType };
@@ -118,7 +122,14 @@ describe("ProcessParameterMapper", () => {
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Boolean" })).toBe("boolean");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Amount" })).toBe("numeric");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Integer" })).toBe("numeric");
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Decimal" })).toBe("numeric");
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Quantity" })).toBe("quantity");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Date" })).toBe("date");
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "DateTime" })).toBe("datetime");
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Select" })).toBe("select");
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Product" })).toBe("product");
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "TableDir" })).toBe("tabledir");
+      expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Table Directory" })).toBe("tabledir");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "List" })).toBe("list");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "Window" })).toBe("window");
       expect(ProcessParameterMapper.getFieldType({ ...mockParameter, reference: "String" })).toBe("text");
