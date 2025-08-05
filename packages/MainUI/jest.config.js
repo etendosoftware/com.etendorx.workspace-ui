@@ -17,10 +17,16 @@ export default {
 
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
+    "^@workspaceui/api-client/src/(.*)$": "<rootDir>/../api-client/src/$1",
     "^@workspaceui/api-client(.*)$": "<rootDir>/../api-client/src$1",
-    "\\.svg$": "<rootDir>/__mocks__/svgMock.js",
+    "^@workspaceui/componentlibrary/src/assets/.*\\.svg\\?url$": "<rootDir>/__mocks__/svgUrlMock.js",
+    "^@workspaceui/componentlibrary/src/assets/.*\\.svg$": "<rootDir>/__mocks__/svgMock.js",
+    "^@workspaceui/componentlibrary/src/(.*)$": "<rootDir>/../ComponentLibrary/src/$1",
     "^@workspaceui/componentlibrary(.*)$": "<rootDir>/../ComponentLibrary/src$1",
-    "\\.(css|less|scss|sass)$": "identity-obj-proxy",
+    "^react-markdown$": "<rootDir>/__mocks__/react-markdown.js",
+    "\\.svg\\?url$": "<rootDir>/__mocks__/svgUrlMock.js",
+    "\\.svg$": "<rootDir>/__mocks__/svgMock.js",
+    "\\.(css|less|scss|sass)$": "<rootDir>/__mocks__/cssMock.js",
     "\\.(gif|ttf|eot|png|jpg|jpeg)$": "<rootDir>/__mocks__/fileMock.js",
   },
 
@@ -37,6 +43,10 @@ export default {
       },
     ],
   },
+
+  transformIgnorePatterns: [
+    "node_modules/(?!(@workspaceui)/)"
+  ],
 
   collectCoverageFrom: [
     "app/**/*.{ts,tsx}",
@@ -58,5 +68,13 @@ export default {
 
   testEnvironmentOptions: {
     url: "http://localhost:3000",
+  },
+
+  extensionsToTreatAsEsm: ['.ts', '.tsx'],
+
+  globals: {
+    'ts-jest': {
+      useESM: true
+    }
   },
 };
