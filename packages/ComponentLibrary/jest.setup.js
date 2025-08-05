@@ -1,4 +1,5 @@
 require("../../jest.setup.js");
+require("@testing-library/jest-dom");
 
 jest.mock("@mui/material/styles", () => ({
   ...jest.requireActual("@mui/material/styles"),
