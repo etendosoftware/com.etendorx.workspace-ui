@@ -127,7 +127,7 @@ importers:
         specifier: ^7.53.2
         version: 7.62.0(react@18.3.1)
       react-markdown:
-        specifier: ^9.0.1
+        specifier: ^9.1.0
         version: 9.1.0(@types/react@18.3.1)(react@18.3.1)
     devDependencies:
       '@types/node':
@@ -196,6 +196,9 @@ importers:
       framer-motion:
         specifier: ^12.10.1
         version: 12.23.12(react-dom@18.3.1)(react@18.3.1)
+      identity-obj-proxy:
+        specifier: ^3.0.0
+        version: 3.0.0
       next:
         specifier: ^15.0.1
         version: 15.4.5(@babel/core@7.28.0)(react-dom@18.3.1)(react@18.3.1)
@@ -7263,6 +7266,10 @@ packages:
       uglify-js: 3.19.3
     dev: true
 
+  /harmony-reflect@1.6.2:
+    resolution: {integrity: sha512-HIp/n38R9kQjDEziXyDTuW3vvoxxyxjxFzXLrBr18uB47GnSt+G9D29fqrpM5ZkspMcPICud3XsBJQ4Y2URg8g==}
+    dev: false
+
   /has-ansi@2.0.0:
     resolution: {integrity: sha512-C8vBJ8DwUCx19vhm7urhTuUsr4/IyP6l4VzNQDv+ryHQObW3TTTp9yB68WpYgRe2bbaGuZ/se74IqFeVnMnLZg==}
     engines: {node: '>=0.10.0'}
@@ -7384,6 +7391,13 @@ packages:
     dependencies:
       safer-buffer: 2.1.2
     dev: true
+
+  /identity-obj-proxy@3.0.0:
+    resolution: {integrity: sha512-00n6YnVHKrinT9t0d9+5yZC6UBNJANpYEQvL2LlX6Ab9lnmxzIRcEmTPuyGScvl1+jKuCICX1Z0Ab1pPKKdikA==}
+    engines: {node: '>=4'}
+    dependencies:
+      harmony-reflect: 1.6.2
+    dev: false
 
   /ieee754@1.2.1:
     resolution: {integrity: sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==}

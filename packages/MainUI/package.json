@@ -26,6 +26,7 @@
     "@workspaceui/componentlibrary": "workspace:componentlibrary",
     "event-source-polyfill": "^1.0.31",
     "framer-motion": "^12.10.1",
+    "identity-obj-proxy": "^3.0.0",
     "next": "^15.0.1",
     "postcss": "^8.5.3",
     "react-hook-form": "^7.53.2",

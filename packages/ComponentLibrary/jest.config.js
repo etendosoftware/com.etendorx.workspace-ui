@@ -15,6 +15,9 @@ export default {
     "^@workspaceui/mainui(.*)$": "<rootDir>/../MainUI$1",
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",
     "\\.(gif|ttf|eot|svg|png|jpg|jpeg)$": "<rootDir>/__mocks__/fileMock.js",
+    "^react-markdown$": "<rootDir>/__mocks__/react-markdown.js",
+    'react-markdown': '<rootDir>/node_modules/react-markdown/react-markdown.min.js',
+    '\\.svg\\?url$': '<rootDir>/__mocks__/fileMock.js',
   },
 
   transform: {
@@ -44,4 +47,8 @@ export default {
   ],
 
   testPathIgnorePatterns: ["<rootDir>/node_modules/", "<rootDir>/dist/"],
+
+  transformIgnorePatterns: [
+    "node_modules/(?!(react-markdown|remark-.*|unist-.*|unified|bail|is-plain-obj|trough|vfile|vfile-message|micromark|micromark-.*|mdast-.*|character-entities|decode-named-character-reference|property-information|hast-.*|html-void-elements|space-separated-tokens|comma-separated-tokens|zwitch|longest-streak|ccount|escape-string-regexp|markdown-table)/)"
+  ],
 };
