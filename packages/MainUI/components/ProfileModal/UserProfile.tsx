@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import Image from "next/image";
 import { useStyle, TEXT_LOGO } from "./styles";
-import BackgroundGradient from "../../../ComponentLibrary/src/assets/images/backgroundGradient.svg";
+import BackgroundGradient from "../../../ComponentLibrary/src/assets/images/backgroundGradient.svg?url";
 import LogoutIcon from "../../../ComponentLibrary/src/assets/icons/log-out.svg";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import type { UserProfileProps } from "./types";

@@ -34,9 +34,9 @@ export class ProcessParameterMapper {
       
       // Reference and type information
       column: {
-        reference: mappedReference,
         length: "255", // Default length, can be overridden
-        ...parameter.column
+        ...parameter.column,
+        reference: mappedReference
       },
       
       // Selector configuration for datasource fields
