@@ -45,6 +45,10 @@ jest.mock("@/components/Form/FormView/selectors/QuantitySelector", () => {
   };
 });
 
+jest.mock("@/components/Form/FormView/selectors/ListSelector", () => ({
+  ListSelector: ({ field }: any) => <select data-testid="list-field" name={field.hqlName} />
+}));
+
 jest.mock("../selectors/GenericSelector", () => {
   return function GenericSelector({ parameter }: any) {
     return <input data-testid="generic-field" name={parameter.name} />;
@@ -247,17 +251,17 @@ describe("ProcessParameterSelector Integration", () => {
   });
 
   describe("Progress Tracking", () => {
-    it("should support 9 out of 11 field reference types (82% Phase 2 target)", () => {
-      // Phase 1 + Phase 2 supported types: Password, Boolean, Numeric, Date, DateTime, Select, Product, TableDir, Quantity
+    it("should support 11 out of 11 field reference types (100% Phase 3 target)", () => {
+      // Phase 1 + Phase 2 + Phase 3 supported types: All field types now supported
       const supportedTypes = [
         "Password", "Yes/No", "Boolean", "Amount", "Integer", "Decimal", "Quantity",
-        "Date", "DateTime", "Select", "Product", "TableDir", "Table Directory"
+        "Date", "DateTime", "Select", "Product", "TableDir", "Table Directory", "List", "Window"
       ];
       
-      // Phase 3 types (future): List, Window, String, etc.
-      const futureTypes = ["List", "Window", "String"];
+      // Only fallback types remain: String, Text, etc.
+      const fallbackTypes = ["String", "Text"];
       
-      // Test that Phase 1 + Phase 2 types work correctly
+      // Test that all supported types work correctly
       supportedTypes.forEach((type, index) => {
         const { unmount } = render(
           <TestWrapper>
@@ -284,14 +288,16 @@ describe("ProcessParameterSelector Integration", () => {
           screen.queryByTestId("datetime-field") ||
           screen.queryByTestId("select-field") ||
           screen.queryByTestId("tabledir-field") ||
-          screen.queryByTestId("quantity-field");
+          screen.queryByTestId("quantity-field") ||
+          screen.queryByTestId("list-field") ||
+          screen.queryByTestId("generic-field"); // Window uses GenericSelector with WindowReferenceGrid
           
         expect(hasSpecializedSelector).toBeInTheDocument();
         unmount();
       });
       
-      // Verify future types fall back to GenericSelector
-      futureTypes.forEach((type, index) => {
+      // Verify fallback types use GenericSelector
+      fallbackTypes.forEach((type, index) => {
         const { unmount } = render(
           <TestWrapper>
             <ProcessParameterSelector 

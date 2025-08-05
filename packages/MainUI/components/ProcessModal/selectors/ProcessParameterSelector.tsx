@@ -16,6 +16,7 @@ import { DatetimeSelector } from "@/components/Form/FormView/selectors/DatetimeS
 import { SelectSelector } from "@/components/Form/FormView/selectors/SelectSelector";
 import { TableDirSelector } from "@/components/Form/FormView/selectors/TableDirSelector";
 import QuantitySelector from "@/components/Form/FormView/selectors/QuantitySelector";
+import { ListSelector } from "@/components/Form/FormView/selectors/ListSelector";
 
 // Import mapper
 import { ProcessParameterMapper } from "../mappers/ProcessParameterMapper";
@@ -79,6 +80,12 @@ export const ProcessParameterSelector = ({ parameter }: ProcessParameterSelector
   // Render the appropriate selector based on field type
   const renderSelector = () => {
     try {
+      // Validate field mapping before rendering
+      if (!mappedField.hqlName) {
+        logger.warn("Missing hqlName for parameter:", parameter.name);
+        return <GenericSelector parameter={parameter} readOnly={isReadOnly} />;
+      }
+
       switch (fieldType) {
         case "password":
           return (
@@ -153,8 +160,19 @@ export const ProcessParameterSelector = ({ parameter }: ProcessParameterSelector
             />
           );
 
-        // Future field types will be added here in subsequent phases
         case "list":
+          if (!mappedField.refList || mappedField.refList.length === 0) {
+            logger.warn("List field without options, falling back to GenericSelector:", parameter.name);
+            return <GenericSelector parameter={parameter} readOnly={isReadOnly} />;
+          }
+          return (
+            <ListSelector 
+              field={mappedField}
+              isReadOnly={isReadOnly}
+            />
+          );
+
+        // Window references already handled by GenericSelector with WindowReferenceGrid
         case "window":
         case "text":
         default:

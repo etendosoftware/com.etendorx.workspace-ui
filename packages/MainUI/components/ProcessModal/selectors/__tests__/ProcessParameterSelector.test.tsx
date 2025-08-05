@@ -41,6 +41,10 @@ jest.mock("@/components/Form/FormView/selectors/QuantitySelector", () => {
   };
 });
 
+jest.mock("@/components/Form/FormView/selectors/ListSelector", () => ({
+  ListSelector: ({ field }: any) => <select data-testid="list-selector" name={field.hqlName} />
+}));
+
 jest.mock("../GenericSelector", () => {
   return function GenericSelector({ parameter }: any) {
     return <input data-testid="generic-selector" name={parameter.name} />;
@@ -288,5 +292,36 @@ describe("ProcessParameterSelector", () => {
       expect(screen.getByTestId("quantity-selector")).toHaveAttribute("step", "any");
       unmount();
     });
+  });
+
+  it("should render ListSelector for list reference", () => {
+    const listParameter = { 
+      ...baseParameter, 
+      reference: "List", 
+      refList: [
+        { id: "1", label: "Option 1", value: "opt1" },
+        { id: "2", label: "Option 2", value: "opt2" }
+      ]
+    };
+    
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={listParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("list-selector")).toBeInTheDocument();
+  });
+
+  it("should fallback to GenericSelector for list without options", () => {
+    const listParameter = { ...baseParameter, reference: "List", refList: [] };
+    
+    render(
+      <TestWrapper>
+        <ProcessParameterSelector parameter={listParameter} />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("generic-selector")).toBeInTheDocument();
   });
 });
