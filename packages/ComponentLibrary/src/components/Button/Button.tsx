@@ -31,17 +31,24 @@ const getButtonClasses = ({
   const styles: Record<ButtonVariant, (args: { disabled?: boolean }) => string> = {
     filled: ({ disabled }) =>
       clsx(
-        "text-white",
+        "text-(--color-etendo-contrast-text)",
         disabled
           ? "bg-(--color-transparent-neutral-100) opacity-20 cursor-not-allowed"
-          : "bg-(--color-baseline-100) hover:bg-(--color-dynamic-main)"
+          : ["bg-(--color-baseline-100)", "hover:bg-(--color-dynamic-main)", "hover:[&>span>svg]:fill-white"]
       ),
     outlined: ({ disabled }) =>
       clsx(
         "border",
         disabled
-          ? "border-gray-200 text-gray-400 cursor-not-allowed opacity-60"
-          : "bg-blue-600 text-white border-blue-600"
+          ? "border-gray-200 text-(--color-transparent-neutral-700) cursor-not-allowed opacity-60"
+          : [
+              "text-(--color-transparent-neutral-700)",
+              "hover:text-(--color-etendo-contrast-text)",
+              "border-(--color-transparent-neutral-20)",
+              "hover:border-(--color-etendo-dark)",
+              "hover:bg-(--color-etendo-dark)",
+              "hover:[&>span>svg]:fill-white",
+            ]
       ),
   };
 

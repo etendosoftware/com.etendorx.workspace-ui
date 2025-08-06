@@ -29,7 +29,7 @@ const ToggleSections: React.FC<ToggleSectionsProps> = ({ sections, currentSectio
           <Button
             key={id}
             variant={"outlined"}
-            className={`${isActive && "bg-white"} cursor-pointer flex-[1_0_0] border-0`}
+            className={`${isActive && "bg-(--color-baseline-0)"} cursor-pointer flex-[1_0_0] border-0 hover:bg-(--color-dynamic-main)`}
             onClick={() => onToggle(id)}
             startIcon={isActive ? icon : null}>
             {label}

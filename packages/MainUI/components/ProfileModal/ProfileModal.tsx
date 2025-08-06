@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -59,7 +59,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { styles, sx } = useStyle();
+  const { styles } = useStyle();
   const [currentSection, setCurrentSection] = useState<string>("profile");
   const { language: initialLanguage, getFlag } = useLanguage();
   const [languagesFlags, setLanguageFlags] = useState(getFlag(initialLanguage));
@@ -304,7 +304,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           <Button
             className="flex-[1_0_0]"
             variant="filled"
-            active={true}
             startIcon={<CheckCircle fill={theme.palette.baselineColor.neutral[0]} />}
             onClick={handleSave}
             disabled={isSaveDisabled}>
