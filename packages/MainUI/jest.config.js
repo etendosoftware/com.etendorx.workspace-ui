@@ -34,7 +34,7 @@ export default {
 
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
-    "^@workspaceui/api-client(.*)$": "<rootDir>/../api-client/src$1",
+    "^@workspaceui/api-client/src(.*)$": "<rootDir>/../api-client/src$1",
     "\\.svg$": "<rootDir>/__mocks__/svgMock.js",
     "^@workspaceui/componentlibrary(.*)$": "<rootDir>/../ComponentLibrary/src$1",
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",
