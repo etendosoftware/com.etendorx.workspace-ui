@@ -19,17 +19,54 @@
 
 import { createContext, useContext, useState, useCallback, useMemo } from "react";
 
+/**
+ * Available toolbar actions that can be registered by components.
+ * Each action represents a common operation that can be triggered from the toolbar.
+ * Components should implement these actions according to their specific needs
+ * and register them using the registerActions function from ToolbarContext.
+ */
 type ToolbarActions = {
-  save: () => Promise<void>;
+  /** 
+   * Save the current record or form data.
+   * @param showModal - Whether to show a confirmation modal after saving
+   * @returns Promise that resolves when save operation is complete
+   */
+  save: (showModal: boolean) => Promise<void>;
+  
+  /** 
+   * Refresh the current view or data.
+   * Typically reloads data from the server or resets the current state.
+   */
   refresh: () => void;
+  
+  /** 
+   * Create a new record or navigate to create mode.
+   * Usually clears the form and sets up for new record creation.
+   */
   new: () => void;
+  
+  /** 
+   * Navigate back to the previous view or parent level.
+   * Commonly used to return from form view to table view.
+   */
   back: () => void;
+  
+  /** 
+   * Open or toggle the filter interface.
+   * Allows users to filter data in table views.
+   */
   filter: () => void;
+  
+  /** 
+   * Open or toggle column filters for table views.
+   * @param buttonRef - Optional reference to the button element that triggered the action,
+   *                   used for positioning dropdown/popover filters
+   */
   columnFilters: (buttonRef?: HTMLElement | null) => void;
 };
 
 type ToolbarContextType = {
-  onSave: () => Promise<void>;
+  onSave: (showModal: boolean) => Promise<void>;
   onRefresh: () => void;
   onNew: () => void;
   onBack: () => void;
