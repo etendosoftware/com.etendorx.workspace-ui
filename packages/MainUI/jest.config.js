@@ -34,7 +34,7 @@ export default {
 
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
-    "^@workspaceui/api-client/src/(.*)$": "<rootDir>/../api-client/src/$1",
+    "^@workspaceui/api-client/src(.*)$": "<rootDir>/../api-client/src$1",
     "^@workspaceui/api-client(.*)$": "<rootDir>/../api-client/src$1",
     "^@workspaceui/componentlibrary/src/assets/.*\\.svg\\?url$": "<rootDir>/__mocks__/svgUrlMock.js",
     "^@workspaceui/componentlibrary/src/assets/.*\\.svg$": "<rootDir>/__mocks__/svgMock.js",

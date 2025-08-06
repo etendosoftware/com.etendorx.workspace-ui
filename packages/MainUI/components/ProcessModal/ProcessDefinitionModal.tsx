@@ -14,7 +14,21 @@
  * Contributor(s): Futit Services S.L.
  *************************************************************************
  */
-
+/**
+ * @fileoverview ProcessDefinitionModal - Modal component for executing Etendo process definitions
+ * 
+ * This component provides a comprehensive interface for executing different types of processes:
+ * - Window Reference Processes: Processes that display a grid for record selection
+ * - Direct Java Processes: Processes executed directly via servlet calls  
+ * - String Function Processes: Processes executed via client-side JavaScript functions
+ * 
+ * The modal handles:
+ * - Parameter rendering with various input types
+ * - Default value loading via DefaultsProcessActionHandler
+ * - Process execution with proper error handling
+ * - Response message display and success/error states
+ * 
+ */
 import { useTabContext } from "@/contexts/tab";
 import { useProcessConfig } from "@/hooks/datasource/useProcessDatasourceConfig";
 import { useSelected } from "@/hooks/useSelected";
@@ -42,9 +56,27 @@ import type {
 } from "./types";
 import { PROCESS_DEFINITION_DATA } from "@/utils/processes/definition/constants";
 
+/** Fallback object for record values when no record context exists */
 export const FALLBACK_RESULT = {};
+
+/** Reference ID for window reference field types */
 const WINDOW_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW;
 
+/**
+ * ProcessDefinitionModalContent - Core modal component for process execution
+ * 
+ * Handles three types of process execution:
+ * 1. Window Reference Processes - Displays a grid for record selection
+ * 2. Direct Java Processes - Executes servlet directly using javaClassName
+ * 3. String Function Processes - Executes client-side JavaScript functions
+ * 
+ * @param props - Component props
+ * @param props.onClose - Callback when modal is closed
+ * @param props.button - Process definition button configuration
+ * @param props.open - Modal visibility state
+ * @param props.onSuccess - Optional callback when process completes successfully
+ * @returns JSX.Element Modal component with process execution interface
+ */
 function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: ProcessDefinitionModalContentProps) {
   const { t } = useTranslation();
   const { graph } = useSelected();
@@ -88,8 +120,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     processId: processId || "",
     windowId: windowId || "",
     tabId,
+    javaClassName,
   });
 
+  /**
+   * Handles modal close action with state cleanup
+   * Prevents closing if process is currently executing
+   */
   const handleClose = useCallback(() => {
     if (isExecuting) return;
     setResponse(undefined);
@@ -100,8 +137,15 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     onClose();
   }, [button.processDefinition.parameters, isExecuting, onClose]);
 
+  /**
+   * Executes processes with window reference parameters
+   * Used for processes that require grid record selection
+   * Calls servlet with selected grid records and process-specific data
+   */
   const handleWindowReferenceExecute = useCallback(async () => {
-    if (!tab || !processId) return;
+    if (!tab || !processId) {
+      return;
+    }
 
     setIsExecuting(true);
     setIsSuccess(false);
@@ -165,13 +209,106 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     }
   }, [tab, processId, javaClassName, recordValues, gridSelection, entityName, t, onSuccess]);
 
+  /**
+   * Executes processes directly via servlet using javaClassName
+   * Used for processes that have javaClassName but no onProcess function
+   * Bypasses client-side JavaScript execution and calls servlet directly
+   */
+  const handleDirectJavaProcessExecute = useCallback(async () => {
+    if (!tab || !processId || !javaClassName) {
+      return;
+    }
+
+    setIsExecuting(true);
+    setIsSuccess(false);
+
+    try {
+      const params = new URLSearchParams({
+        processId,
+        windowId: tab.window,
+        _action: javaClassName,
+      });
+
+      const payload = {
+        _buttonValue: "DONE",
+        _entityName: tab.entityName,
+        ...recordValues,
+        ...form.getValues(),
+      };
+
+      const response = await Metadata.kernelClient.post(`?${params}`, payload);
+
+      // Handle responseActions format (like normal processes)
+      if (response?.data?.responseActions?.[0]?.showMsgInProcessView) {
+        const responseMessage = response.data.responseActions[0].showMsgInProcessView;
+        setResponse(responseMessage);
+
+        if (responseMessage.msgType === "success") {
+          setIsSuccess(true);
+          onSuccess?.();
+        }
+      }
+      // Handle legacy message format
+      else if (response?.data?.message) {
+        const isSuccessResponse = response.data.message.severity === "success";
+
+        setResponse({
+          msgText: response.data.message.text || "",
+          msgTitle: isSuccessResponse ? t("process.completedSuccessfully") : t("process.processError"),
+          msgType: response.data.message.severity,
+        });
+
+        if (isSuccessResponse) {
+          setIsSuccess(true);
+          onSuccess?.();
+        }
+      }
+      // Fallback for responses without specific error structure
+      else if (response?.data && !response.data.responseActions) {
+        setResponse({
+          msgText: "Process completed successfully",
+          msgTitle: t("process.completedSuccessfully"),
+          msgType: "success",
+        });
+
+        setIsSuccess(true);
+        onSuccess?.();
+      }
+    } catch (error) {
+      logger.warn("Error executing direct Java process:", error);
+      setResponse({
+        msgText: error instanceof Error ? error.message : "Unknown error",
+        msgTitle: t("errors.internalServerError.title"),
+        msgType: "error",
+      });
+    } finally {
+      setIsExecuting(false);
+    }
+  }, [tab, processId, javaClassName, recordValues, form, t, onSuccess]);
+
+  /**
+   * Main process execution handler - routes to appropriate execution method
+   * 
+   * Execution Priority:
+   * 1. Window Reference Process (hasWindowReference = true)
+   * 2. Direct Java Process (javaClassName exists, no onProcess)  
+   * 3. String Function Process (onProcess exists)
+   */
   const handleExecute = useCallback(async () => {
     if (hasWindowReference) {
       await handleWindowReferenceExecute();
       return;
     }
 
-    if (!onProcess || !tab) return;
+    // If process has javaClassName but no onProcess, execute directly via servlet
+    if (!onProcess && javaClassName && tab) {
+      await handleDirectJavaProcessExecute();
+      return;
+    }
+
+    if (!onProcess || !tab) {
+      return;
+    }
 
     setIsExecuting(true);
     setIsSuccess(false);
@@ -205,7 +342,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [
     hasWindowReference,
     handleWindowReferenceExecute,
+    handleDirectJavaProcessExecute,
     onProcess,
+    javaClassName,
     tab,
     button.processDefinition,
     selectedRecords,
@@ -411,6 +550,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   );
 }
 
+/**
+ * ProcessDefinitionModal - Main export component with null check
+ * 
+ * Provides a guard against null button props and forwards all props to the content component.
+ * This wrapper ensures the modal only renders when a valid process button is provided.
+ * 
+ * @param props - Modal props including button configuration
+ * @param props.button - Process definition button (nullable)
+ * @param props.onSuccess - Success callback
+ * @returns JSX.Element | null - Modal component or null if no button provided
+ */
 export default function ProcessDefinitionModal({ button, onSuccess, ...props }: ProcessDefinitionModalProps) {
   if (!button) return null;
 
