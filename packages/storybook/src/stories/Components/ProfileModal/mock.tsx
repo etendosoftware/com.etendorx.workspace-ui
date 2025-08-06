@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import PersonOutlineIcon from '@workspaceui/componentlibrary/src/assets/icons/check-circle.svg';
+import ProfileIcon from '@workspaceui/componentlibrary/src/assets/icons/profile.svg';
 import LockIcon from '@workspaceui/componentlibrary/src/assets/icons/lock.svg';
 import type { Section } from '@workspaceui/mainui/components/ProfileModal/ToggleButton/types';
 
@@ -25,7 +25,7 @@ export const sections: Section[] = [
   {
     id: 'profile',
     label: 'Perfil',
-    icon: <PersonOutlineIcon fill={defaultFill} />,
+    icon: <ProfileIcon fill={defaultFill} />,
   },
   {
     id: 'password',

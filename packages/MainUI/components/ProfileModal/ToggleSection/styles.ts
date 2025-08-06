@@ -28,10 +28,11 @@ export const useStyle = () => {
 
   const styles: toggleSection = {
     selectorListStyles: {
-      padding: "0rem 1rem 0.75rem 1rem",
+      padding: "0rem 1rem 1rem 1rem",
     },
     formStyle: {
       margin: "0rem 0rem 1rem 0rem",
+      gap: "1rem",
     },
     labelStyles: {
       color: theme.palette.baselineColor.neutral[80],
