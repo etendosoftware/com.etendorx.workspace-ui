@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import {
   MaterialReactTable,
   type MRT_ColumnFiltersState,
@@ -5,11 +22,13 @@ import {
   useMaterialReactTable,
   type MRT_TableBodyRowProps,
   type MRT_TableInstance,
+  type MRT_VisibilityState,
 } from "material-react-table";
 import { useStyle } from "./styles";
 import type { DatasourceOptions, EntityData } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearch } from "../../contexts/searchContext";
+import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import EmptyState from "./EmptyState";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
@@ -40,7 +59,24 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
   const { language } = useLanguage();
   const { t } = useTranslation();
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<MRT_VisibilityState>({});
+  const [columnMenuAnchor, setColumnMenuAnchor] = useState<HTMLElement | null>(null);
   const { graph } = useSelected();
+
+  const toggleColumnsDropdown = useCallback(
+    (buttonRef?: HTMLElement | null) => {
+      if (columnMenuAnchor) {
+        setColumnMenuAnchor(null);
+      } else {
+        setColumnMenuAnchor(buttonRef || null);
+      }
+    },
+    [columnMenuAnchor]
+  );
+
+  const handleCloseColumnMenu = useCallback(() => {
+    setColumnMenuAnchor(null);
+  }, []);
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
@@ -246,13 +282,16 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     enableRowVirtualization: true,
     enableTopToolbar: false,
     enableBottomToolbar: false,
+    enableHiding: true,
     initialState: { density: "compact" },
     state: {
       columnFilters,
+      columnVisibility,
       showColumnFilters: true,
       showProgressBars: loading,
     },
     onColumnFiltersChange: handleColumnFiltersChange,
+    onColumnVisibilityChange: setColumnVisibility,
     getRowId,
     enableColumnFilters: true,
     enableSorting: true,
@@ -302,8 +341,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
       refresh: refetch,
       filter: toggleImplicitFilters,
       save: async () => {},
+      columnFilters: toggleColumnsDropdown,
     });
-  }, [refetch, registerActions, toggleImplicitFilters]);
+  }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown]);
 
   if (error) {
     return (
@@ -328,6 +368,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
         loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
       }`}>
       <MaterialReactTable table={table} />
+
+      <ColumnVisibilityMenu anchorEl={columnMenuAnchor} onClose={handleCloseColumnMenu} table={table} />
     </div>
   );
 };

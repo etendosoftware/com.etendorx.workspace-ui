@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
@@ -16,6 +33,8 @@ import {
   NEW_RECORD_ID,
   FORM_MODES,
   TAB_MODES,
+  TAB_ACTIVE,
+  TAB_INACTIVE,
   type FormMode,
   type TabMode,
 } from "@/utils/url/constants";
@@ -90,7 +109,7 @@ const processTabParameters = (
 };
 
 const createWindowState = (windowId: string, searchParams: URLSearchParams): WindowState => {
-  const isActive = searchParams.get(`${WINDOW_PREFIX}${windowId}`) === "active";
+  const isActive = searchParams.get(`${WINDOW_PREFIX}${windowId}`) === TAB_ACTIVE;
   const formRecordId = searchParams.get(`${FORM_RECORD_ID_PREFIX}${windowId}`) || undefined;
   const formMode = (searchParams.get(`${FORM_MODE_PREFIX}${windowId}`) as FormMode) || undefined;
   const order = Number.parseInt(searchParams.get(`${ORDER_PREFIX}${windowId}`) || "1", 10);
@@ -125,7 +144,7 @@ const setWindowParameters = (params: URLSearchParams, window: WindowState): void
     title,
   } = window;
 
-  params.set(`${WINDOW_PREFIX}${windowId}`, isActive ? "active" : "inactive");
+  params.set(`${WINDOW_PREFIX}${windowId}`, isActive ? TAB_ACTIVE : TAB_INACTIVE);
   params.set(`${ORDER_PREFIX}${windowId}`, (order ?? 1).toString());
   params.set(`${WINDOW_IDENTIFIER_PREFIX}${windowId}`, window_identifier);
 
@@ -181,9 +200,10 @@ export function useMultiWindowURL() {
     const windowStates: WindowState[] = [];
     let active: WindowState | undefined;
 
-    const currentPath = typeof window !== "undefined" ? window.location.pathname : "/";
-    const hasWindowParams = Array.from(searchParams.entries()).some(([key]) => key.startsWith(WINDOW_PREFIX));
-    const isHome = currentPath === "/" && !hasWindowParams;
+    const hasWindowActiveParams = Array.from(searchParams.entries()).some(
+      ([key, value]) => key.startsWith(WINDOW_PREFIX) && value === TAB_ACTIVE
+    );
+    const isHome = !hasWindowActiveParams;
 
     const windowIds = extractWindowIds(searchParams);
 

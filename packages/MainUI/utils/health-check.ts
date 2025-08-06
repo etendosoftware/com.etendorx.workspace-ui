@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import { delay } from "@/utils";
 import { logger } from "@/utils/logger";
 import { API_LOGIN_URL } from "@workspaceui/api-client/src/api/constants";
@@ -36,5 +53,55 @@ export async function performHealthCheck(
 
       await delay(delayMs);
     }
+  }
+}
+
+export async function performCopilotHealthCheck(baseUrl: string, token: string, signal?: AbortSignal) {
+  const assistantsUrl = `${baseUrl}assistants`;
+
+  logger.info("Copilot Health Check:", {
+    baseUrl,
+    assistantsUrl,
+    hasToken: !!token,
+    tokenLength: token?.length || 0,
+  });
+
+  try {
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    if (process.env.NODE_ENV === "production") {
+      headers.Authorization = `Bearer ${token}`;
+    } else {
+      headers.Authorization = `Basic ${btoa("admin:admin")}`;
+    }
+
+    const response = await fetch(assistantsUrl, {
+      method: "GET",
+      headers,
+      signal,
+      credentials: "include",
+    });
+
+    logger.info("Copilot Health Check Response:", {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      url: response.url,
+      headers: Object.fromEntries(response.headers.entries()),
+    });
+
+    if (response.ok) {
+      const data = await response.text();
+      logger.info("Copilot Health Check Data:", data.substring(0, 200));
+      return { success: true, data, status: response.status };
+    }
+    const errorText = await response.text();
+    logger.error("Copilot Health Check Failed:", errorText.substring(0, 200));
+    return { success: false, error: errorText, status: response.status };
+  } catch (error) {
+    logger.error("Copilot Health Check Error:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
   }
 }

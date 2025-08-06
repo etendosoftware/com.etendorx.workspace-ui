@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import {
   type EntityData,
   type Field,
@@ -6,6 +23,7 @@ import {
   type Tab,
   type WindowMetadata,
 } from "@workspaceui/api-client/src/api/types";
+import { FIELD_REFERENCE_CODES } from "./form/constants";
 
 export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -13,25 +31,25 @@ export const getFieldReference = (reference?: string): FieldType => {
   switch (reference) {
     case "10":
       return FieldType.DATETIME;
-    case "19":
-    case "95E2A8B50A254B2AAE6774B8C2F28120":
-    case "18":
+    case FIELD_REFERENCE_CODES.TABLE_DIR_19:
+    case FIELD_REFERENCE_CODES.PRODUCT:
+    case FIELD_REFERENCE_CODES.TABLE_DIR_18:
       return FieldType.TABLEDIR;
-    case "15":
-    case "16":
+    case FIELD_REFERENCE_CODES.DATE:
+    case FIELD_REFERENCE_CODES.DATETIME:
       return FieldType.DATE;
-    case "20":
+    case FIELD_REFERENCE_CODES.BOOLEAN:
       return FieldType.BOOLEAN;
-    case "29":
+    case FIELD_REFERENCE_CODES.QUANTITY_29:
       return FieldType.QUANTITY;
-    case "17":
-    case "13":
+    case FIELD_REFERENCE_CODES.LIST_17:
+    case FIELD_REFERENCE_CODES.LIST_13:
       return FieldType.LIST;
     case "28":
       return FieldType.BUTTON;
-    case "30":
+    case FIELD_REFERENCE_CODES.SELECT_30:
       return FieldType.SELECT;
-    case "FF80818132D8F0F30132D9BC395D0038":
+    case FIELD_REFERENCE_CODES.WINDOW:
       return FieldType.WINDOW;
     default:
       return FieldType.TEXT;
@@ -154,3 +172,32 @@ export const buildRequestOptions = (
 });
 
 export const formatNumber = (value: number) => new Intl.NumberFormat(navigator.language).format(value);
+
+export const formatTime = (input: string | Date): string => {
+  const date = typeof input === "string" ? new Date(input) : input;
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const hoursStr = hours < 10 ? `0${hours}` : hours.toString();
+  const minutesStr = minutes < 10 ? `0${minutes}` : minutes.toString();
+
+  return `${hoursStr}:${minutesStr}`;
+};
+
+export const getMessageType = (sender: string) => {
+  if (sender === "error") {
+    return "error";
+  }
+  if (sender === "user") {
+    return "right-user";
+  }
+  return "left-user";
+};
+
+export const formatLabel = (label: string, count?: number): string | undefined => {
+  if (label.includes("%s") && count !== undefined) {
+    return label.replace("%s", String(count));
+  }
+  return undefined;
+};
+
+export { shouldShowTab, type TabWithParentInfo } from "./tabUtils";

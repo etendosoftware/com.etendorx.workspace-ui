@@ -1,0 +1,32 @@
+{
+  "8B59A07EB4C2475AE040007F010031CA": {
+    "url": "/SalesInvoice/Header_Edition.html",
+    "command": "BUTTONDocAction111",
+    "inpkeyColumnId": "C_Invoice_ID",
+    "keyColumnName": "C_Invoice_ID"
+  },
+  "1083": {
+    "url": "/SalesOrder/Header_Edition.html",
+    "command": "BUTTONDocAction104",
+    "inpkeyColumnId": "C_Order_ID",
+    "keyColumnName": "C_Order_ID"
+  },
+  "B04327AC6B644FCBA9AA805EB59D572F": {
+    "url": "/org.openbravo.erpCommon.ad_actionButton/ProcessGoods.html",
+    "command": "DEFAULT",
+    "inpkeyColumnId": "M_InOut_ID",
+    "keyColumnName": "M_InOut_ID"
+  },
+  "3663": {
+    "url": "/SalesInvoice/Header_Edition.html",
+    "command": "BUTTONPosted",
+    "inpkeyColumnId": "C_Invoice_ID",
+    "keyColumnName": "C_Invoice_ID"
+  },
+  "4242": {
+    "url": "/ad_actionButton/CreateFrom.html",
+    "command": "FIND_PO",
+    "inpkeyColumnId": "M_InOut_ID",
+    "keyColumnName": "M_InOut_ID"
+  }
+}

@@ -1,5 +1,21 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import type { OrganizedSections, ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
-import type { TranslateFunction } from "@/hooks/types";
 import type React from "react";
 import Base64Icon from "@workspaceui/componentlibrary/src/components/Base64Icon";
 import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
@@ -18,14 +34,17 @@ const isBase64Image = (str: string): boolean => {
 
 const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.NEW]:
-    "toolbar-button-new bg-(--color-baseline-100) text-(--color-baseline-0) h-8 w-8 px-3 disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0)",
+    "toolbar-button-new bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 py-1 pl-3 pr-5 disabled:bg-[var(--color-baseline-100)] disabled:opacity-20 disabled:text-[var(--color-baseline-0)]",
   [TOOLBAR_BUTTONS_ACTIONS.SAVE]:
-    "toolbar-button-save bg-(--color-baseline-100) text-(--color-baseline-0) h-8 w-8 px-3 disabled:bg-(--color-baseline-20) disabled:text-(--color-baseline-0)",
-  [TOOLBAR_BUTTONS_ACTIONS.REFRESH]: "toolbar-button-refresh",
+    "toolbar-button-save bg-[var(--color-baseline-100)] text-[var(--color-baseline-0)] h-8 w-8 py-1 pl-3 pr-5 disabled:bg-[var(--color-baseline-100)] disabled:opacity-20 disabled:text-[var(--color-baseline-0)]",
+  [TOOLBAR_BUTTONS_ACTIONS.REFRESH]:
+    "toolbar-button-refresh border-1 border-[var(--color-transparent-neutral-20)] h-8 w-8 hover:border-none hover:bg-[var(--color-etendo-dark)] hover:text-[var(--color-baseline-80)]",
   [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: "toolbar-button-cancel",
   [TOOLBAR_BUTTONS_ACTIONS.DELETE]: "toolbar-button-delete",
   [TOOLBAR_BUTTONS_ACTIONS.FIND]: "toolbar-button-find",
   [TOOLBAR_BUTTONS_ACTIONS.FILTER]: "toolbar-button-filter",
+  [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: "toolbar-button-copilot",
+  [TOOLBAR_BUTTONS_ACTIONS.COLUMN_FILTERS]: "toolbar-button-column-filters",
 } as const;
 
 export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
@@ -42,10 +61,6 @@ export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }
   }
 
   return <span style={{ fontSize: "0.75rem", fontWeight: "bold" }}>{iconKey}</span>;
-};
-
-export const ProcessMenuIcon = () => {
-  return <span style={{ fontSize: "1rem" }}>⚙️</span>;
 };
 
 const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMetadata[] => {
@@ -143,7 +158,8 @@ export const createButtonByType = ({
         const isDisabledCancel = !(isFormView || hasSelectedRecord);
         return { disabled: isDisabledCancel, tooltip: isDisabledCancel ? "" : button.name };
       }
-      case TOOLBAR_BUTTONS_ACTIONS.DELETE: {
+      case TOOLBAR_BUTTONS_ACTIONS.DELETE:
+      case TOOLBAR_BUTTONS_ACTIONS.COPILOT: {
         const isDisabledDelete = !hasSelectedRecord;
         return { disabled: isDisabledDelete, tooltip: isDisabledDelete ? "" : button.name };
       }
@@ -190,7 +206,7 @@ export const createButtonByType = ({
         };
       default:
         return {
-          onClick: () => onAction(button.action, button),
+          onClick: (event?: React.MouseEvent<HTMLElement>) => onAction(button.action, button, event),
         };
     }
   };
@@ -206,24 +222,3 @@ export const createButtonByType = ({
 export const getButtonStyles = (button: ToolbarButtonMetadata) => {
   return BUTTON_STYLES[button.action as keyof typeof BUTTON_STYLES];
 };
-
-export const createProcessMenuButton = (
-  processCount: number,
-  hasSelectedRecord: boolean,
-  onMenuOpen: (event: React.MouseEvent<HTMLButtonElement>) => void,
-  t: TranslateFunction,
-  anchorEl: HTMLElement | null
-): ToolbarButton => ({
-  key: "process-menu",
-  icon: <ProcessMenuIcon />,
-  iconText: t("common.processes"),
-  tooltip: t("common.processes"),
-  anchorEl: anchorEl,
-  disabled: !hasSelectedRecord,
-  className: "bg-(--color-warning-main) disabled:bg-(--color-warning-light) h-8 [&>svg]:w-4 [&>svg]:h-4",
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
-    if (hasSelectedRecord && event && processCount > 0) {
-      onMenuOpen(event);
-    }
-  },
-});

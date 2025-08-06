@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 "use client";
 import { useCallback, useState } from "react";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
@@ -13,7 +30,7 @@ import { useTabs } from "@/contexts/tabs";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function WindowTabs() {
-  const { windows, setActiveWindow, closeWindow, navigateToHome } = useMultiWindowURL();
+  const { windows, isHomeRoute, setActiveWindow, closeWindow, navigateToHome } = useMultiWindowURL();
   const { getWindowTitle } = useMetadataContext();
   const { t } = useTranslation();
 
@@ -50,31 +67,39 @@ export default function WindowTabs() {
 
   return (
     <div
-      className="flex items-center bg-(--color-transparent-neutral-5) rounded-full overflow-hidden p-0 pl-0.5 h-9 min-h-9"
+      className="flex items-center bg-(--color-transparent-neutral-5) rounded-full overflow-hidden p-0 px-0.5 h-9 min-h-9"
       ref={containerRef}>
       <div className="flex items-center h-8">
         <IconButton
           onClick={handleGoHome}
-          className="w-8 h-8 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-transparent-neutral-5) hover:text-(--color-baseline-80)">
-          <HomeIcon />
+          className={`w-8 h-8 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-etendo-main) hover:text-(--color-etendo-contrast-text) ${isHomeRoute ? "bg-(--color-etendo-main) text-(--color-etendo-contrast-text)" : ""}`}
+          tooltip={t("primaryTabs.dashboard")}
+          aria-label={t("primaryTabs.dashboard")}>
+          <HomeIcon className="h-[1.125rem] w-[1.125rem]" />
         </IconButton>
       </div>
       {showLeftScrollButton && (
-        <IconButton onClick={handleScrollLeft} className="bg-transparent w-auto h-full rounded-full p-2 text-sm">
-          <ChevronLeftIcon />
+        <IconButton
+          onClick={handleScrollLeft}
+          className="max-h-7 bg-transparent w-auto h-full rounded-full p-2 text-sm hover:bg-[var(--color-transparent-neutral-5)] hover:text-(--color-baseline-80)">
+          <ChevronLeftIcon className="h-[1rem] w-[1rem]" />
         </IconButton>
       )}
       <div
-        className="w-full flex items-center px-2 overflow-x-auto overflow-y-hidden scroll-smooth no-scrollbar h-9 min-h-9"
+        className="w-full flex items-center px-2 overflow-x-auto overflow-y-hidden scroll-smooth hide-scrollbar h-9"
         ref={windowsContainerRef}>
         {windows.map((window, index) => {
           const title = window.title || getWindowTitle?.(window.windowId);
           const isActive = window.isActive;
           const canClose = windows.length > 1;
+
+          const activeIndex = windows.findIndex((w) => w.isActive);
+          const showSeparator = index !== activeIndex - 1 && index !== activeIndex;
+
           return (
             <div
               key={window.windowId}
-              className="flex items-center"
+              className="flex items-center h-9"
               ref={(el) => {
                 tabRefs.current[window.windowId] = el;
               }}>
@@ -90,23 +115,28 @@ export default function WindowTabs() {
                 }}
                 canClose={canClose}
               />
-              {index < windows.length - 1 && <div className="h-5 w-0.5 bg-[#00030D1A] mx-1" />}
+              {showSeparator && index < windows.length - 1 && (
+                <div className="h-4 w-0.5 bg-(--color-baseline-100) opacity-10 mx-0.5" />
+              )}
             </div>
           );
         })}
       </div>
       {showRightScrollButton && (
-        <IconButton onClick={handleScrollRight} className="bg-transparent w-auto h-full rounded-full p-2 text-sm">
-          <ChevronRightIcon />
+        <IconButton
+          onClick={handleScrollRight}
+          className="max-h-7 bg-transparent w-auto h-full rounded-full p-2 text-sm hover:bg-[var(--color-transparent-neutral-5)] hover:text-(--color-baseline-80)">
+          <ChevronRightIcon className="h-[1rem] w-[1rem]" />
         </IconButton>
       )}
       {showRightMenuButton && (
         <IconButton
           onClick={handleTabMenuOpen}
-          className="bg-white w-auto h-full rounded-full p-2 text-sm"
+          containerClassName="h-8 w-8 flex justify-center items-center"
+          className="h-8 w-8 bg-white rounded-full p-1.5 text-sm"
           tooltip={t("primaryTabs.showTabs")}
           tooltipPosition="left">
-          <ChevronsRightIcon />
+          <ChevronsRightIcon className="h-[1.125rem] w-[1.125rem]" />
         </IconButton>
       )}
       <MenuTabs anchorEl={anchorEl} onClose={handleTabMenuClose} onSelect={handleSelectWindow} />

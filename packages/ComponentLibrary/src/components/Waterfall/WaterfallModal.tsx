@@ -1,10 +1,26 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 "use client";
 
 import { Box, Button, List, MenuItem, styled, useTheme } from "@mui/material";
 import { useCallback, useState } from "react";
 import NavigateNext from "../../assets/icons/chevron-right.svg";
 import Edit from "../../assets/icons/edit.svg";
-import type { Person } from "../DragModal/DragModal.types";
 import DragModalContent from "../DragModal/DragModalContent";
 import IconButton from "../IconButton";
 import Menu from "../Menu";
@@ -14,7 +30,8 @@ import type { WaterfallModalProps } from "./types";
 
 const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
   menuItems,
-  initialPeople,
+  items,
+  setItems,
   backButtonText,
   activateAllText,
   deactivateAllText,
@@ -35,7 +52,6 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
   const { sx, styles } = useStyle();
   const [showDragModal, setShowDragModal] = useState(false);
   const [fade, setFade] = useState(false);
-  const [people, setPeople] = useState<Person[]>(initialPeople);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
@@ -100,8 +116,8 @@ const WaterfallDropdown: React.FC<WaterfallModalProps> = ({
             </>
           ) : (
             <DragModalContent
-              people={people}
-              setPeople={setPeople}
+              items={items}
+              setItems={setItems}
               onBack={handleBack}
               backButtonText={backButtonText}
               activateAllText={activateAllText}

@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import {
   type ProcessActionButton,
   type ProcessResponse,
@@ -14,6 +31,8 @@ import { UserContext } from "../../contexts/user";
 import { useApiContext } from "../useApiContext";
 import { useMetadataContext } from "../useMetadataContext";
 import type { ExecuteProcessDefinitionParams, ExecuteProcessParams } from "./types";
+import { getParams } from "@/utils/processes/manual/utils";
+import data from "@/utils/processes/manual/data.json";
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
@@ -83,67 +102,40 @@ export function useProcessExecution() {
           setLoading(true);
           setError(null);
 
-          if (!record) {
-            throw new Error("No se ha cargado el registro correctamente");
+          if (!record || !tab.id || !tab.window || !button.id) {
+            throw new Error("Record or Tab or Button not found");
           }
 
-          const extractValue = (keys: string[], defaultValue: string): string => {
-            for (const key of keys) {
-              const value = record[key];
-              if (value !== undefined && value !== null && value !== "") {
-                return String(value);
-              }
-            }
-            return defaultValue;
-          };
-
-          const docStatus = extractValue(["documentStatus", "docstatus", "docStatus", "DOCSTATUS", "DocStatus"], "DR");
-          const isProcessing = extractValue(
-            ["processing", "isprocessing", "isProcessing", "PROCESSING", "Processing"],
-            "N"
-          );
-          const adClientId = extractValue(
-            ["adClientId", "AD_Client_ID", "aD_Client_ID", "adclientid", "AdClientId", "client"],
-            "23C59575B9CF467C9620760EB255B389"
-          );
-          const adOrgId = extractValue(
-            ["adOrgId", "AD_Org_ID", "aD_Org_ID", "adorgid", "AdOrgId", "organization"],
-            "7BABA5FF80494CAFA54DEBD22EC46F01"
-          );
-
-          const isPostedProcess = button.id === "Posted";
-          const commandAction = "BUTTONDocAction104";
-          const baseUrl = `${API_BASE_URL}${API_FORWARD_PATH}${button.processAction.manualURL}`; //"http://localhost:8080/etendo/SalesOrder/Header_Edition.html";
-          const safeWindowId = windowId || (tab?.window ? String(tab.window) : "143");
-          const safeTabId = tab?.id ? String(tab.id) : "186";
+          const currentButtonId = button.id;
+          const safeWindowId = windowId || (tab.window ? String(tab.window) : "");
+          const safeTabId = tab.id ? String(tab.id) : "";
           const safeRecordId = String(record.id || recordId || "");
+          const safeTableId = tab.table ? String(tab.table) : "";
 
-          const params = new URLSearchParams();
-          params.append("IsPopUpCall", "1");
-          params.append("Command", commandAction);
-          params.append("inpcOrderId", safeRecordId);
-          params.append("inpKey", safeRecordId);
+          const requiredData = [safeWindowId, safeTabId, safeRecordId, currentButtonId, safeTableId];
 
-          if (isPostedProcess) {
-            params.append("inpdocstatus", docStatus);
-            params.append("inpprocessing", isProcessing);
-            params.append("inpdocaction", "P");
-          } else {
-            params.append("inpdocstatus", docStatus);
-            params.append("inpprocessing", isProcessing);
-            params.append("inpdocaction", "CO");
+          if (!requiredData.every((value) => value)) {
+            throw new Error("Required data not found");
           }
 
-          params.append("inpwindowId", safeWindowId);
-          params.append("inpTabId", safeTabId);
-          params.append("inpadClientId", adClientId);
-          params.append("inpadOrgId", adOrgId);
-          params.append("inpkeyColumnId", "C_Order_ID");
-          params.append("keyColumnName", "C_Order_ID");
-
-          if (token) {
-            params.append("token", token);
+          if (!(currentButtonId in data)) {
+            throw new Error("Button ID not found in data");
           }
+
+          const processAction = data[currentButtonId as keyof typeof data];
+          const baseUrl = `${API_BASE_URL}${API_FORWARD_PATH}${processAction.url}`;
+          const isPostedProcess = currentButtonId === "Posted";
+
+          const params = getParams({
+            currentButtonId,
+            record,
+            recordId: safeRecordId,
+            windowId: safeWindowId,
+            tabId: safeTabId,
+            tableId: safeTableId,
+            token,
+            isPostedProcess,
+          });
 
           const completeUrl = `${baseUrl}?${params.toString()}`;
           setIframeUrl(completeUrl);

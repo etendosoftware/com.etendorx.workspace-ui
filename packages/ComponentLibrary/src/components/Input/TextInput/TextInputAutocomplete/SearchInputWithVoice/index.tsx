@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 "use client";
 
 import { memo, useCallback, useState } from "react";
@@ -72,8 +89,8 @@ const SearchInputWithVoice = ({ onVoiceClick, disabled = false, ...props }: Sear
           {...props}
           InputProps={{
             ...props.InputProps,
-            startAdornment: <StartAdornment />,
-            endAdornment: <EndAdornment />,
+            startAdornment: props.InputProps?.startAdornment || <StartAdornment />,
+            endAdornment: props.InputProps?.endAdornment || <EndAdornment />,
             style: { height: "2.5rem" },
           }}
           disabled={disabled}

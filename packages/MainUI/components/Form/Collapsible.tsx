@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 "use client";
 
 import ChevronDown from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
@@ -10,6 +27,7 @@ import type { CollapsibleProps } from "./FormView/types";
 function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onToggle }: CollapsibleProps) {
   const contentRef = useRef<React.ElementRef<"div">>(null);
   const [maxHeight, setMaxHeight] = useState<CSSProperties["maxHeight"]>("100%");
+  const [overflowVisible, setOverflowVisible] = useState(false);
   const style = useMemo(() => ({ maxHeight: isExpanded ? maxHeight : 0 }), [isExpanded, maxHeight]);
 
   const handleToggle = useCallback(() => {
@@ -23,6 +41,16 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
       setMaxHeight(contentRef.current.scrollHeight);
     }
   }, [isExpanded, children]);
+
+  useEffect(() => {
+    if (isExpanded) {
+      const timeoutId = setTimeout(() => {
+        setOverflowVisible(true);
+      }, 300);
+      return () => clearTimeout(timeoutId);
+    }
+    setOverflowVisible(false);
+  }, [isExpanded]);
 
   useEffect(() => {
     if (!contentRef.current) return;
@@ -78,18 +106,18 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
           <IconButton>{isExpanded ? <ChevronUp /> : <ChevronDown />}</IconButton>
         </div>
       </div>
-      {isExpanded && (
-        <div
-          id={`section-content-${sectionId}`}
-          ref={contentRef}
-          className="transition-all duration-300 ease-in-out"
-          style={style}
-          aria-hidden={!isExpanded}>
-          <div className="px-3">
-            {React.isValidElement(children) && children.type === "div" ? children : <div>{children}</div>}
-          </div>
+      <div
+        id={`section-content-${sectionId}`}
+        ref={contentRef}
+        className={`transition-all duration-300 ease-in-out ${
+          overflowVisible ? "overflow-visible" : "overflow-hidden"
+        }`}
+        style={style}
+        aria-hidden={!isExpanded}>
+        <div className="px-3 pb-12">
+          {React.isValidElement(children) && children.type === "div" ? children : <div>{children}</div>}
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import type React from "react";
 import Tooltip from "../Tooltip";
 import { cleanDefaultClasses } from "../../utils/classUtil";
@@ -21,6 +38,8 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
   iconText?: string;
   /** Ref forwarded to the underlying button element */
   ref?: React.LegacyRef<HTMLButtonElement>;
+  /** Additional CSS classes to customize the container */
+  containerClassName?: string;
 }
 
 /**
@@ -42,6 +61,7 @@ const IconButton = ({
   tooltipPosition,
   iconText,
   ref,
+  containerClassName,
   ...rest
 }: IconButtonProps) => {
   const DEFAULT_BUTTON_CLASSES = `
@@ -51,8 +71,8 @@ const IconButton = ({
     disabled:text-(--color-transparent-neutral-30)
     rounded-full
     text-(--color-baseline-80)
-    hover:text-(--color-baseline-0)
     bg-(--color-baseline-0)
+    hover:text-(--color-baseline-0)
     hover:bg-(--color-dynamic-main)
     inline-flex
     items-center
@@ -65,7 +85,7 @@ const IconButton = ({
   `;
 
   return (
-    <Tooltip title={tooltip} position={tooltipPosition}>
+    <Tooltip title={tooltip} position={tooltipPosition} containerClassName={containerClassName}>
       <button
         ref={ref}
         type="button"
