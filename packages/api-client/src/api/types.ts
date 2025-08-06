@@ -68,6 +68,8 @@ export interface DatasourceOptions {
   tabId?: string;
   windowId?: string;
   language?: string;
+  parentId?: string | number;
+  referencedTableId?: string;
 }
 
 export interface ProcessAction extends Record<string, unknown> {

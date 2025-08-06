@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -26,7 +26,19 @@ import type {
 import { ColumnFilterUtils, SearchUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-const loadData = async (entity: string, page: number, pageSize: number, params: DatasourceOptions) => {
+const loadData = async (
+  entity: string, 
+  page: number, 
+  pageSize: number, 
+  params: DatasourceOptions,
+  treeOptions?: {
+    isTreeMode: boolean;
+    windowId?: string;
+    tabId?: string;
+    referencedTableId?: string;
+    parentId?: string | number;
+  }
+) => {
   const safePageSize = pageSize ?? 1000;
   const startRow = (page - 1) * pageSize;
   const endRow = page * pageSize - 1;
@@ -38,7 +50,36 @@ const loadData = async (entity: string, page: number, pageSize: number, params: 
     pageSize: safePageSize,
   };
 
-  return datasource.get(entity, processedParams);
+  // Solo agregar parámetros tree si estamos en tree mode
+  if (treeOptions?.isTreeMode) {
+    processedParams.parentId = treeOptions.parentId ?? -1;
+    if (treeOptions.tabId) {
+      processedParams.tabId = treeOptions.tabId;
+    }
+    if (treeOptions.windowId) {
+      processedParams.windowId = treeOptions.windowId;
+    }
+    if (treeOptions.referencedTableId) {
+      processedParams.referencedTableId = treeOptions.referencedTableId;
+    }
+    
+    console.log("🔍 Tree Datasource Request:", {
+      entity,
+      processedParams,
+      treeOptions,
+    });
+  }
+
+  const result = await datasource.get(entity, processedParams);
+  
+  if (treeOptions?.isTreeMode) {
+    console.log("📊 Tree Datasource Response:", {
+      result: result.data?.response?.data?.slice(0, 2), // Solo los primeros 2 items para no saturar logs
+      totalItems: result.data?.response?.data?.length,
+    });
+  }
+
+  return result;
 };
 
 const defaultParams: DatasourceOptions = {
@@ -51,9 +92,16 @@ export type UseDatasourceOptions = {
   searchQuery?: string;
   columns?: Column[];
   skip?: boolean;
+  treeOptions?: {
+    isTreeMode: boolean;
+    windowId?: string;
+    tabId?: string;
+    referencedTableId?: string;
+    parentId?: string | number;
+  };
 };
 
-export function useDatasource({ entity, params = defaultParams, columns, searchQuery, skip }: UseDatasourceOptions) {
+export function useDatasource({ entity, params = defaultParams, columns, searchQuery, skip, treeOptions }: UseDatasourceOptions) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [records, setRecords] = useState<EntityData[]>([]);
@@ -134,7 +182,7 @@ export function useDatasource({ entity, params = defaultParams, columns, searchQ
 
     const f = async () => {
       try {
-        const { ok, data } = await loadData(entity, page, safePageSize, queryParams);
+        const { ok, data } = await loadData(entity, page, safePageSize, queryParams, treeOptions);
 
         if (!(ok && data.response.data)) {
           throw data;
