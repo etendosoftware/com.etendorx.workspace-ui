@@ -24,3 +24,4 @@ junit.xml
 
 # Claude Code
 .claude/
+.idea/

@@ -1,7 +1,7 @@
 import Nav from '@workspaceui/componentlibrary/src/components/Nav/Nav';
 import NotificationModal from '@workspaceui/componentlibrary/src/components/NotificationsModal';
 import NotificationButton from '@workspaceui/componentlibrary/src/components/NotificationsButton';
-import ProfileModal from '@workspaceui/componentlibrary/src/components/ProfileModal/ProfileModal';
+// import ProfileModal from '@workspaceui/componentlibrary/src/components/ProfileModal/ProfileModal';
 import WaterfallModal from '@workspaceui/componentlibrary/src/components/Waterfall/WaterfallModal';
 import ConfigurationModal from '@workspaceui/componentlibrary/src/components/ConfigurationModal';
 import { NOTIFICATIONS } from '../notifications.mock';
@@ -14,7 +14,7 @@ import PersonIcon from '@workspaceui/componentlibrary/src/assets/icons/user.svg'
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import NotificationIcon from '@workspaceui/componentlibrary/src/assets/icons/bell.svg';
 import AddIcon from '@workspaceui/componentlibrary/src/assets/icons/plus.svg';
-import { sections } from '../ProfileModal/mock';
+// import { sections } from '../ProfileModal/mock';
 import type { Meta, StoryObj } from '@storybook/react';
 
 const meta: Meta<typeof Nav> = {
@@ -59,7 +59,7 @@ export const DefaultNav: Story = {
             actionButtonLabel={args.actionButtonLabel}
           />
         </NotificationButton>
-        <ProfileModal
+        {/* <ProfileModal
           cancelButtonText={args.cancelButtonText}
           saveButtonText={args.saveButtonText}
           tooltipButtonProfile={args.tooltipButtonProfile}
@@ -80,7 +80,7 @@ export const DefaultNav: Story = {
           selectedWarehouse={null}
           saveAsDefault={false}
           onSaveAsDefaultChange={() => {}}
-        />
+        /> */}
       </div>
     </Nav>
   ),
@@ -116,6 +116,6 @@ export const DefaultNav: Story = {
     userName: 'Ayelén García',
     userEmail: 'ayelen.garcia@etendo.software',
     sectionTooltip: 'Sign off',
-    sections: sections,
+    // sections: sections,
   },
 };

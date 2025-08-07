@@ -1,9 +1,9 @@
 import type React from 'react';
 import { useState } from 'react';
-import ToggleButton from '@workspaceui/componentlibrary/src/components/ProfileModal/ToggleButton';
+import ToggleButton from '@/components/ProfileModal/ToggleButton';
 import { sectionsMock, sectionsMock3, sectionsMock4 } from './mock';
 import type { Meta, StoryObj } from '@storybook/react';
-import type { Section } from '@workspaceui/componentlibrary/src/components/ProfileModal/ToggleButton/types';
+import type { Section } from '@/components/ProfileModal/ToggleButton/types';
 
 interface ToggleButtonProps {
   sections: Section[];
