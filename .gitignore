@@ -6,7 +6,7 @@
 
 .DS_Store
 .gradle
-.env
+.env.local
 
 *.d.ts.map
 tsconfig.tsbuildinfo
