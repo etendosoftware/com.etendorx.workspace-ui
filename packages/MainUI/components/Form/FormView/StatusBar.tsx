@@ -1,5 +1,22 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import type { Field } from "@workspaceui/api-client/src/api/types";
-import StatusBarField from "./StatusBarField";
+import StatusBarField from "@/components/Form/FormView/StatusBarField";
 import { IconButton } from "@workspaceui/componentlibrary/src/components";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -13,7 +30,7 @@ export default function StatusBar({ fields }: { fields: Record<string, Field> })
 
   const handleCloseRecord = async () => {
     try {
-      await onSave();
+      await onSave(false);
       setIsSaved(true);
     } catch (error) {
       console.error("Error saving record", error);
@@ -31,13 +48,17 @@ export default function StatusBar({ fields }: { fields: Record<string, Field> })
   }, [isSaved, onBack]);
 
   return (
-    <div className="h-10 flex items-center justify-between bg-gray-100/50 shadow px-3 py-2 rounded-xl">
+    <div 
+      data-testid="status-bar-container"
+      className="h-10 flex items-center justify-between bg-gray-100/50 shadow px-3 py-2 rounded-xl"
+    >
       <div className="flex gap-4 text-sm">
         {Object.entries(fields).map(([key, field]) => (
           <StatusBarField key={key} field={field} />
         ))}
       </div>
       <IconButton
+        data-testid="icon-button"
         onClick={handleCloseRecord}
         className="w-8 h-8"
         tooltip={t("forms.statusBar.closeRecord")}

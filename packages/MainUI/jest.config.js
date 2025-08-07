@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 /** @type {import('jest').Config} */
 export default {
   displayName: "MainUI",
@@ -17,10 +34,16 @@ export default {
 
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
-    "^@workspaceui/api-client(.*)$": "<rootDir>/../api-client$1",
+    "^@workspaceui/api-client/src(.*)$": "<rootDir>/../api-client/src$1",
+    "^@workspaceui/api-client(.*)$": "<rootDir>/../api-client/src$1",
+    "^@workspaceui/componentlibrary/src/assets/.*\\.svg\\?url$": "<rootDir>/__mocks__/svgUrlMock.js",
+    "^@workspaceui/componentlibrary/src/assets/.*\\.svg$": "<rootDir>/__mocks__/svgMock.js",
+    "^@workspaceui/componentlibrary/src/(.*)$": "<rootDir>/../ComponentLibrary/src/$1",
+    "^@workspaceui/componentlibrary(.*)$": "<rootDir>/../ComponentLibrary/src$1",
+    "^react-markdown$": "<rootDir>/__mocks__/react-markdown.js",
+    "\\.svg\\?url$": "<rootDir>/__mocks__/svgUrlMock.js",
     "\\.svg$": "<rootDir>/__mocks__/svgMock.js",
-    "^@workspaceui/componentlibrary(.*)$": "<rootDir>/../ComponentLibrary$1",
-    "\\.(css|less|scss|sass)$": "identity-obj-proxy",
+    "\\.(css|less|scss|sass)$": "<rootDir>/__mocks__/cssMock.js",
     "\\.(gif|ttf|eot|png|jpg|jpeg)$": "<rootDir>/__mocks__/fileMock.js",
     "^react-markdown$": "<rootDir>/__mocks__/ReactMarkdownMock.tsx",
     "\\.svg\\?url$": "<rootDir>/__mocks__/fileMock.js",
@@ -39,6 +62,10 @@ export default {
       },
     ],
   },
+
+  transformIgnorePatterns: [
+    "node_modules/(?!(@workspaceui)/)"
+  ],
 
   collectCoverageFrom: [
     "app/**/*.{ts,tsx}",
@@ -65,4 +92,6 @@ export default {
   testEnvironmentOptions: {
     url: "http://localhost:3000",
   },
+
+  extensionsToTreatAsEsm: ['.ts', '.tsx'],
 };

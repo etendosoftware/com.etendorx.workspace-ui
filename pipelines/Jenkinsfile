@@ -1,16 +1,16 @@
 pipeline {
 
   environment { // MARK: Environment Variables
-    NPM_TOKEN           = credentials('npmjs-access-token')
-    EMAIL_ADDRESS       = credentials('email_builds')
+    NPM_TOKEN            = credentials('npmjs-access-token')
+    EMAIL_ADDRESS        = credentials('email_builds')
 
-    OWNER_REPOSITORY    = "etendosoftware"
-    GITHUB_URL          = "https://github.com"
-    GITHUB_SSH_URL      = "git@github.com:etendosoftware"
+    OWNER_REPOSITORY     = "etendosoftware"
+    GITHUB_URL           = "https://github.com"
+    GITHUB_SSH_URL       = "git@github.com:etendosoftware"
 
-    SUCCESS             = "SUCCESS"
-    FAILED              = "FAILED"
-    UNSTABLE            = "UNSTABLE"
+    SUCCESS              = "SUCCESS"
+    FAILED               = "FAILED"
+    UNSTABLE             = "UNSTABLE"
 
     COMMIT_INPROGRESS_STATUS = "pending"
     COMMIT_SUCCESS_STATUS    = "success"
@@ -119,6 +119,28 @@ spec:
               """
               echo "-------------------------- Build Successful --------------------------"
               
+              sh """
+              apt-get install -y --no-install-recommends \
+                libatk1.0-0 \
+                libatk-bridge2.0-0 \
+                libatspi2.0-0 \
+                libxcomposite1 \
+                libxdamage1 \
+                libxfixes3 \
+                libxrandr2 \
+                libgbm1 \
+                libxkbcommon0 \
+                libgtk-3-0 \
+                libnss3 \
+                libnspr4 \
+                libasound2 \
+                libpango-1.0-0 \
+                libcairo2 \
+                libx11-xcb1 \
+                libxshmfence1 \
+                fonts-liberation
+              """
+              
               echo "-------------------------- Getting Commit Information --------------------------"
               def rootDir = pwd()
               def infoCommit = load "${rootDir}/pipelines/utils/infoCommits.groovy"
@@ -175,6 +197,39 @@ spec:
           }
         }
       }
+    }
+
+    stage('UI/Storybook Tests') { // MARK: STORYBOOK
+        when {
+            expression {
+                currentBuild.result == SUCCESS
+            }
+        }
+        steps {
+            container('compiler') {
+                timeout(time: 25, unit: 'MINUTES') {
+                    sh """
+                    cd ${REPOSITORY_NAME}
+
+                    # 1) Levantar Storybook dev server en 127.0.0.1:6006
+                    #    Los flags se pasan tras '--'
+                    pnpm run storybook -- --host 127.0.0.1 --port 6006 --quiet &
+                    SB_PID=\$!
+                    trap "kill \$SB_PID || true" EXIT
+
+                    # 2) (Opcional) Instalar browsers de Playwright si tu imagen no los trae
+                    pnpm dlx playwright install chromium || true
+
+                    # 3) Esperar a que el server esté listo
+                    pnpm dlx wait-on --timeout 180000 http://127.0.0.1:6006/index.json
+
+                    # 4) Ejecutar el runner desde el paquete de storybook
+                    cd packages/storybook
+                    pnpm test-storybook --ci --url http://127.0.0.1:6006 --maxWorkers=2 
+                    """
+                }
+            }
+        }
     }
 
     stage('Run Sonarqube Analysis') { // MARK: Run Sonarqube Analysis

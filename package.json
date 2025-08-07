@@ -1,12 +1,13 @@
 {
   "name": "workspaceui",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "",
   "type": "module",
   "main": "packages/MainUI/server.js",
   "packageManager": "pnpm@9.15.2",
   "scripts": {
     "build:all": "pnpm --filter @workspaceui/storybook build && pnpm --filter @workspaceui/mainui build",
+    "storybook": "pnpm --filter @workspaceui/storybook storybook",
     "dev": "pnpm --filter @workspaceui/mainui dev",
     "build": "cd packages/MainUI && ./build.sh && cd ../..",
     "clean": "pnpm -r exec -- rm -rf dist node_modules .next && rm -rf node_modules",
@@ -57,6 +58,7 @@
   "dependencies": {
     "material-react-table": "2.13.0",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "vite-tsconfig-paths": "^5.1.4"
   }
 }

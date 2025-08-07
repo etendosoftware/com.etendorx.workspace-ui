@@ -1,8 +1,25 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import { buildFormPayload, buildQueryString } from "@/utils";
 import { shouldRemoveIdFields } from "@/utils/form/entityConfig";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { EntityData, FormMode, Tab, WindowMetadata } from "@workspaceui/api-client/src/api/types";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { UseFormHandleSubmit } from "react-hook-form";
 import { useUserContext } from "./useUserContext";
 
@@ -10,7 +27,7 @@ export interface UseFormActionParams {
   windowMetadata?: WindowMetadata;
   tab: Tab;
   mode: FormMode;
-  onSuccess: (data: EntityData) => void;
+  onSuccess: (data: EntityData, showModal: boolean) => void;
   onError: (data: string) => void;
   initialState?: EntityData;
   submit: UseFormHandleSubmit<EntityData>;
@@ -31,7 +48,7 @@ export const useFormAction = ({
   const userId = user?.id;
 
   const execute = useCallback(
-    async (values: EntityData) => {
+    async (values: EntityData, showModal: boolean) => {
       try {
         setLoading(true);
 
@@ -65,7 +82,7 @@ export const useFormAction = ({
 
         if (ok && data?.response?.status === 0 && !controller.current.signal.aborted) {
           setLoading(false);
-          onSuccess?.(data.response.data[0]);
+          onSuccess?.(data.response.data[0], showModal);
         } else {
           throw new Error(data.response.error?.message);
         }
@@ -77,7 +94,7 @@ export const useFormAction = ({
     [initialState, mode, onError, onSuccess, tab, userId, windowMetadata]
   );
 
-  const save = useMemo(() => submit(execute), [execute, submit]);
+  const save = useCallback((showModal: boolean) => submit((values) => execute(values, showModal))(), [execute, submit]);
 
   useEffect(() => {
     const _controller = controller.current;

@@ -1,7 +1,24 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import Nav from '@workspaceui/componentlibrary/src/components/Nav/Nav';
 import NotificationModal from '@workspaceui/componentlibrary/src/components/NotificationsModal';
 import NotificationButton from '@workspaceui/componentlibrary/src/components/NotificationsButton';
-import ProfileModal from '@workspaceui/componentlibrary/src/components/ProfileModal/ProfileModal';
+// import ProfileModal from '@workspaceui/componentlibrary/src/components/ProfileModal/ProfileModal';
 import WaterfallModal from '@workspaceui/componentlibrary/src/components/Waterfall/WaterfallModal';
 import ConfigurationModal from '@workspaceui/componentlibrary/src/components/ConfigurationModal';
 import { NOTIFICATIONS } from '../notifications.mock';
@@ -14,7 +31,7 @@ import PersonIcon from '@workspaceui/componentlibrary/src/assets/icons/user.svg'
 import IconButton from '@workspaceui/componentlibrary/src/components/IconButton';
 import NotificationIcon from '@workspaceui/componentlibrary/src/assets/icons/bell.svg';
 import AddIcon from '@workspaceui/componentlibrary/src/assets/icons/plus.svg';
-import { sections } from '../ProfileModal/mock';
+// import { sections } from '../ProfileModal/mock';
 import type { Meta, StoryObj } from '@storybook/react';
 
 const meta: Meta<typeof Nav> = {
@@ -59,7 +76,7 @@ export const DefaultNav: Story = {
             actionButtonLabel={args.actionButtonLabel}
           />
         </NotificationButton>
-        <ProfileModal
+        {/* <ProfileModal
           cancelButtonText={args.cancelButtonText}
           saveButtonText={args.saveButtonText}
           tooltipButtonProfile={args.tooltipButtonProfile}
@@ -80,7 +97,7 @@ export const DefaultNav: Story = {
           selectedWarehouse={null}
           saveAsDefault={false}
           onSaveAsDefaultChange={() => {}}
-        />
+        /> */}
       </div>
     </Nav>
   ),
@@ -116,6 +133,6 @@ export const DefaultNav: Story = {
     userName: 'Ayelén García',
     userEmail: 'ayelen.garcia@etendo.software',
     sectionTooltip: 'Sign off',
-    sections: sections,
+    // sections: sections,
   },
 };

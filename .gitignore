@@ -6,7 +6,7 @@
 
 .DS_Store
 .gradle
-.env
+.env.local
 
 *.d.ts.map
 tsconfig.tsbuildinfo
@@ -24,3 +24,4 @@ junit.xml
 
 # Claude Code
 .claude/
+.idea/
