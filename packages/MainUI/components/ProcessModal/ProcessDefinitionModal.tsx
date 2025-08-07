@@ -48,6 +48,7 @@ import Modal from "../Modal";
 import Loading from "../loading";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import BaseSelector from "./selectors/BaseSelector";
+import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import type {
   ProcessDefinitionModalContentProps,
   ProcessDefinitionModalProps,
@@ -462,7 +463,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           />
         );
       }
-      return <BaseSelector key={parameter.name} parameter={parameter} />;
+      // Use new ProcessParameterSelector for enhanced field reference support
+      return <ProcessParameterSelector key={parameter.name} parameter={parameter} />;
     });
   };
 
