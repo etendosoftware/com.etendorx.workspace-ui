@@ -1,8 +1,25 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 "use client";
 
 import { useLanguage } from "@/contexts/language";
 import { useTranslation } from "@/hooks/useTranslation";
-import { Button, useTheme } from "@mui/material";
+import { useTheme } from "@mui/material";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import type { Option } from "@workspaceui/componentlibrary/src/components/Input/Select/types";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
@@ -15,6 +32,7 @@ import SelectorList from "./ToggleSection";
 import UserProfile from "./UserProfile";
 import { useStyle } from "./styles";
 import type { ProfileModalProps } from "./types";
+import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 
 const DefaultOrg = { title: "*", value: "0", id: "0" };
 
@@ -41,7 +59,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { styles, sx } = useStyle();
+  const { styles } = useStyle();
   const [currentSection, setCurrentSection] = useState<string>("profile");
   const { language: initialLanguage, getFlag } = useLanguage();
   const [languagesFlags, setLanguageFlags] = useState(getFlag(initialLanguage));
@@ -256,7 +274,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       <IconButton onClick={handleClick} className="w-10 h-10">
         {icon}
       </IconButton>
-      <Menu anchorEl={anchorEl} onClose={handleClose} className="w-88">
+      <Menu anchorEl={anchorEl} onClose={handleClose} className="w-[20.75rem]">
         <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} onSignOff={onSignOff} />
         <div style={styles.toggleSectionStyles}>
           <ToggleSection sections={sections} currentSection={currentSection} onToggle={handleToggle} />
@@ -280,12 +298,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           languagesFlags={languagesFlags}
         />
         <div style={styles.buttonContainerStyles}>
-          <Button sx={sx.buttonStyles} onClick={handleClose}>
+          <Button className="flex-[1_0_0]" variant="outlined" onClick={handleClose}>
             {t("common.cancel")}
           </Button>
           <Button
+            className="flex-[1_0_0]"
+            variant="filled"
             startIcon={<CheckCircle fill={theme.palette.baselineColor.neutral[0]} />}
-            sx={sx.saveButtonStyles}
             onClick={handleSave}
             disabled={isSaveDisabled}>
             {t("common.save")}

@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import { useFormAction } from "@/hooks/useFormAction";
@@ -228,7 +245,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   }, []);
 
   const onSuccess = useCallback(
-    async (data: EntityData) => {
+    async (data: EntityData, showModal: boolean) => {
       if (mode === FormMode.EDIT) {
         reset({ ...initialState, ...data });
       } else {
@@ -243,8 +260,11 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         setSelectedRecord(windowId, tab.id, String(data.id));
       }
 
-      showSuccessModal("Saved");
       setIsSucessfullEdit(true);
+
+      if (showModal) {
+        showSuccessModal("Saved");
+      }
     },
     [mode, graph, tab, activeWindow?.windowId, showSuccessModal, reset, initialState, setRecordId, setSelectedRecord]
   );
@@ -275,10 +295,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   );
 
   // NOTE: toolbar actions
-  const handleSave = useCallback(async () => {
-    await save();
-    resetFormChanges();
-  }, [save, resetFormChanges]);
+  const handleSave = useCallback(
+    async (showModal: boolean) => {
+      await save(showModal);
+      resetFormChanges();
+    },
+    [save, resetFormChanges]
+  );
 
   const onReset = useCallback(async () => {
     await refetch();
@@ -320,7 +343,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
           className={`flex h-full max-h-full w-full flex-col gap-2 overflow-hidden transition duration-300 ${
             loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
           }`}
-          onSubmit={handleSave}>
+          onSubmit={() => handleSave(true)}>
           {statusModal.open && (
             <StatusModal
               statusType={statusModal.statusType}

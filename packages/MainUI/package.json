@@ -43,6 +43,7 @@
     "babel-plugin-inline-react-svg": "^2.0.2",
     "eslint": "^9.28.0",
     "eslint-plugin-react-hooks": "^5.2.0",
+    "identity-obj-proxy": "^3.0.0",
     "svg-inline-loader": "^0.8.2",
     "typescript": "^5.2.2"
   }

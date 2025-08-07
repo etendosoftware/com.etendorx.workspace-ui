@@ -1,3 +1,20 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
 import { useCallback, useState } from "react";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { logger } from "@/utils/logger";
@@ -14,16 +31,18 @@ interface UseProcessConfigProps {
   processId: string;
   windowId: string;
   tabId: string;
+  javaClassName?: string;
 }
 
 /**
- * Hook to obtain the configuration based on DefaultsProcessActionHandler
+ * Hook to obtain the configuration for process execution
  * @param processId - ID of the process
  * @param windowId - ID of the window
  * @param tabId - ID of the tab
+ * @param javaClassName - Java class name for the process action (optional, defaults to DefaultsProcessActionHandler)
  * @returns Object with functions to handle the configuration of the process
  */
-export const useProcessConfig = ({ processId, windowId, tabId }: UseProcessConfigProps) => {
+export const useProcessConfig = ({ processId, windowId, tabId, javaClassName }: UseProcessConfigProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [config, setConfig] = useState<ProcessConfigResponse | null>(null);
@@ -37,8 +56,7 @@ export const useProcessConfig = ({ processId, windowId, tabId }: UseProcessConfi
       const params = new URLSearchParams({
         processId,
         windowId,
-        // TODO: Remove hardcoded value and use action provided by process metadata
-        _action: "org.openbravo.client.application.process.DefaultsProcessActionHandler",
+        _action: javaClassName || "org.openbravo.client.application.process.DefaultsProcessActionHandler",
       });
 
       const requestPayload = { ...payload };
@@ -68,7 +86,7 @@ export const useProcessConfig = ({ processId, windowId, tabId }: UseProcessConfi
         setLoading(false);
       }
     },
-    [processId, windowId, tabId]
+    [processId, windowId, tabId, javaClassName]
   );
 
   return {
