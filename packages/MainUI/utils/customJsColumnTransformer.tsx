@@ -27,6 +27,11 @@ export const transformColumnsWithCustomJs = (originalColumns: Column[], fields: 
     if (field?.etmetaCustomjs?.trim()) {
       return {
         ...column,
+        muiTableBodyCellProps: {
+          sx: {
+            padding: "0px",
+          },
+        },
         Cell: ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: MRT_Row<EntityData> }) => {
           return <CustomJsCell cell={cell} row={row} customJsCode={field.etmetaCustomjs} column={column} />;
         },
