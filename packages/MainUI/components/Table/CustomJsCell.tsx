@@ -22,6 +22,7 @@ import type { MRT_Cell, MRT_Row } from "material-react-table";
 import { evaluateCustomJs } from "@/utils/customJsEvaluator";
 import { isColorString } from "@/utils/table/utils";
 import ColorCell from "@/components/Table/Cells/ColorCell";
+import { logger } from "@/utils/logger";
 
 const renderCellContent = (result: unknown): JSX.Element => {
   if (isColorString(result)) {
@@ -57,7 +58,7 @@ export const CustomJsCell: React.FC<CustomJsCellProps> = React.memo(({ cell, row
         });
         setResult(evaluated);
       } catch (error) {
-        console.error("Custom JS evaluation failed:", error);
+        logger.error("Custom JS evaluation failed:", error);
         setResult(cell.getValue()); // Fallback to original value
       } finally {
         setIsEvaluating(false);
@@ -68,7 +69,7 @@ export const CustomJsCell: React.FC<CustomJsCellProps> = React.memo(({ cell, row
   }, [customJsCode, cell.getValue(), row.original, column]);
 
   if (isEvaluating) {
-    return <span className="text-gray-400">...</span>;
+    return null; // Optionally return a loading state or placeholder
   }
 
   return renderCellContent(result);
