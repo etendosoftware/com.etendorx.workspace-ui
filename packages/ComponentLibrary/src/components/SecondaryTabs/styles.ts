@@ -120,7 +120,6 @@ export const useStyle = () => {
         menuItem: {
           display: "flex",
           alignItems: "center",
-          maxHeight: "36.25rem",
           width: "14.5rem",
           padding: "0.5rem",
           fontWeight: 500,
