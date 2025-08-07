@@ -1,1 +1,1 @@
-export const FALLBACK_URL = "http://localhost:8080/etendo";
+export const FALLBACK_URL = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';

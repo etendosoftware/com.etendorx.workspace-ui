@@ -18,11 +18,17 @@ export class Metadata {
   public static locationClient = new LocationClient();
 
   public static setBaseUrl(url: string) {
-    Metadata.client.setBaseUrl(url + API_METADATA_URL);
-    Metadata.kernelClient.setBaseUrl(url + API_KERNEL_SERVLET);
-    Metadata.datasourceServletClient.setBaseUrl(url + API_DATASOURCE_SERVLET);
-    Metadata.loginClient.setBaseUrl(`${url}/`);
-    Metadata.locationClient.setBaseUrl(url + API_METADATA_URL);
+    // Instead of connecting directly to ERP, use Next.js proxy routes
+    const baseUrl = typeof window !== 'undefined' 
+      ? window.location.origin 
+      : 'http://localhost:3000'; // fallback for SSR
+    
+    // Route all metadata requests through generic ERP proxy
+    Metadata.client.setBaseUrl(baseUrl + '/api/erp');
+    Metadata.kernelClient.setBaseUrl(baseUrl + '/api/erp');
+    Metadata.datasourceServletClient.setBaseUrl(baseUrl + '/api/datasource');
+    Metadata.loginClient.setBaseUrl(baseUrl);
+    Metadata.locationClient.setBaseUrl(baseUrl + '/api/erp');
   }
 
   public static setLanguage(value: string) {
@@ -64,11 +70,15 @@ export class Metadata {
   }
 
   public static getDatasource(id: string, body: BodyInit | Record<string, unknown> | null | undefined) {
-    return Metadata.datasourceServletClient.post(id, body);
+    // Use the new datasource format that matches our proxy
+    return Metadata.datasourceServletClient.post('', {
+      entity: id,
+      params: body
+    });
   }
 
   private static async _getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
-    const { data, ok } = await Metadata.client.post(`window/${windowId}`);
+    const { data, ok } = await Metadata.client.post(`meta/window/${windowId}`);
 
     if (!ok) {
       throw new Error("Window not found");
@@ -92,7 +102,7 @@ export class Metadata {
   }
 
   private static async _getTab(tabId?: Etendo.Tab["id"]): Promise<Etendo.Tab> {
-    const { data } = await Metadata.client.post(`tab/${tabId}`);
+    const { data } = await Metadata.client.post(`meta/tab/${tabId}`);
 
     Metadata.cache.set(`tab-${tabId}`, data);
 
@@ -109,7 +119,7 @@ export class Metadata {
   }
 
   private static async _getLabels(): Promise<Etendo.Labels> {
-    const { data } = await Metadata.client.request("labels");
+    const { data } = await Metadata.client.request("meta/labels");
 
     Metadata.cache.set(`labels-${Metadata.language}`, data);
 
@@ -137,7 +147,7 @@ export class Metadata {
       return cached;
     }
     try {
-      const { data } = await Metadata.client.post("menu", { role: currentRoleId });
+      const { data } = await Metadata.client.post("meta/menu", { role: currentRoleId });
       const menu = data.menu;
       Metadata.cache.set("OBMenu", menu);
       Metadata.currentRoleId = currentRoleId;

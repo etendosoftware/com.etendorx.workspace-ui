@@ -7,7 +7,7 @@ export class LocationClient extends Client {
    */
   public async createLocation(locationData: CreateLocationRequest): Promise<LocationResponse> {
     try {
-      const response = await this.post("/location/create", locationData);
+      const response = await this.post("location/create", locationData);
       const data = response.data as LocationApiResponse;
 
       if (!data.success) {
@@ -27,7 +27,7 @@ export class LocationClient extends Client {
    */
   public async getLocationIdentifier(locationId: string): Promise<string> {
     try {
-      const response = await this.post("/location/identifier", { locationId });
+      const response = await this.post("location/identifier", { locationId });
       const data = response.data as { identifier: string };
       return data.identifier;
     } catch (error) {
