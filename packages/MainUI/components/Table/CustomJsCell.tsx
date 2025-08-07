@@ -20,6 +20,20 @@ import type { Column } from "@workspaceui/api-client/src/api/types";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Cell, MRT_Row } from "material-react-table";
 import { evaluateCustomJs } from "@/utils/customJsEvaluator";
+import { isColorString } from "@/utils/table/utils";
+import ColorCell from "@/components/Table/Cells/ColorCell";
+
+const renderCellContent = (result: unknown): JSX.Element => {
+  if (isColorString(result)) {
+    return <ColorCell color={result as string} />;
+  }
+
+  if (React.isValidElement(result)) {
+    return result;
+  }
+
+  return <span>{String(result)}</span>;
+};
 
 interface CustomJsCellProps {
   cell: MRT_Cell<EntityData, unknown>;
@@ -27,15 +41,6 @@ interface CustomJsCellProps {
   customJsCode: string | null | undefined;
   column: Column;
 }
-
-const customJsCodeTest = `async (context) => {
-  console.log('column:', context.column);
-  console.log('record:', context.record);
-  console.log('full context:', context);
-  
-  // Return a simple value from the record
-  return context.record.name || context.record.id || 'No name/id found';
-}`;
 
 export const CustomJsCell: React.FC<CustomJsCellProps> = React.memo(({ cell, row, customJsCode, column }) => {
   const [result, setResult] = useState<unknown>(cell.getValue());
@@ -46,7 +51,7 @@ export const CustomJsCell: React.FC<CustomJsCellProps> = React.memo(({ cell, row
     const evaluateCode = async () => {
       setIsEvaluating(true);
       try {
-        const evaluated = await evaluateCustomJs(customJsCodeTest, {
+        const evaluated = await evaluateCustomJs(customJsCode, {
           record: row.original,
           column,
         });
@@ -66,11 +71,7 @@ export const CustomJsCell: React.FC<CustomJsCellProps> = React.memo(({ cell, row
     return <span className="text-gray-400">...</span>;
   }
 
-  if (React.isValidElement(result)) {
-    return result;
-  }
-
-  return <span>{String(result)}</span>;
+  return renderCellContent(result);
 });
 
 CustomJsCell.displayName = "CustomJsCell";
