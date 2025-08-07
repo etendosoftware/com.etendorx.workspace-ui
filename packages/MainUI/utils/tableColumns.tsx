@@ -38,6 +38,7 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
         result.push({
           header: column.name ?? column.hqlName,
           id: column.name,
+          fieldId: column.id,
           columnName: column.hqlName,
           isMandatory: column.isMandatory,
           _identifier: column.name,

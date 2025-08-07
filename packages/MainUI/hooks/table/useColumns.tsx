@@ -24,13 +24,16 @@ import type { Column } from "@workspaceui/api-client/src/api/types";
 import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
 import { getFieldReference } from "@/utils";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
+import { transformColumnsWithCustomJs } from "@/utils/customJsColumnTransformer";
 
 export const useColumns = (tab: Tab) => {
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
 
   const columns = useMemo(() => {
-    const originalColumns = parseColumns(Object.values(tab.fields));
-    const customColumns = originalColumns.map((column: Column) => {
+    const fieldsAsArray = Object.values(tab.fields);
+    const originalColumns = parseColumns(fieldsAsArray);
+
+    const referencedColumns = originalColumns.map((column: Column) => {
       const isReference = isEntityReference(getFieldReference(column.column?.reference));
 
       if (isReference) {
@@ -55,7 +58,14 @@ export const useColumns = (tab: Tab) => {
       }
       return column;
     });
-    return customColumns;
+
+    // Apply custom JavaScript code
+    const customJsColumns = transformColumnsWithCustomJs(
+      referencedColumns,
+      fieldsAsArray
+    );
+
+    return customJsColumns;
   }, [tab.fields, handleClickRedirect, handleKeyDownRedirect]);
 
   return columns;

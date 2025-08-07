@@ -31,19 +31,19 @@ export class Logger implements ILogger {
   }
 
   public debug(...data: unknown[]) {
-    this.implementation.debug(...data);
+    // this.implementation.debug(...data);
   }
   public info(...data: unknown[]) {
-    this.implementation.info(...data);
+    // this.implementation.info(...data);
   }
   public log(...data: unknown[]) {
-    this.implementation.log(...data);
+    // this.implementation.log(...data);
   }
   public warn(...data: unknown[]) {
-    this.implementation.warn(...data);
+    // this.implementation.warn(...data);
   }
   public error(...data: unknown[]) {
-    this.implementation.error(...data);
+    // this.implementation.error(...data);
   }
 }
 
