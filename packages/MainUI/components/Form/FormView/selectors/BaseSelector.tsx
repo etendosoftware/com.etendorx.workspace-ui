@@ -3,8 +3,9 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at
- * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * You may obtain a copy of the License at  
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendimport XIcon from "../../../assets/icons/x.svg";
+o_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
  * implied. See the License for the specific language governing rights
@@ -33,6 +34,7 @@ import { GenericSelector } from "./GenericSelector";
 import useDisplayLogic from "@/hooks/useDisplayLogic";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 import useFormParent from "@/hooks/useFormParent";
+import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.svg";
 
 export const compileExpression = (expression: string) => {
   try {
@@ -298,19 +300,13 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
 
   if (isDisplayed) {
     return (
-      <div
-        className="h-12 grid grid-cols-3 auto-rows-auto gap-4 items-center"
-        title={field.helpComment || ""}
-        aria-describedby={field.helpComment ? `${field.name}-help` : ""}>
-        <div className="relative">
-          {field.isMandatory && (
-            <span className="absolute -top-4 right-0 text-[#DC143C] text-xs font-bold" aria-required>
-              *
-            </span>
-          )}
+      <div className="h-12 flex items-center title={field.helpComment || ''} aria-describedby={field.helpComment ? `${field.name}-help` : ''}">
+        <div className="w-1/3 flex items-center gap-2 pr-2">
           <Label field={field} />
+          <Asterisk className="fill-(--color-error-main) h-3 w-3" />
+          <div className="flex-1 self-center h-[2px] bg-[length:4px_2px] bg-repeat-x bg-[radial-gradient(circle,var(--color-transparent-neutral-20)_1px,transparent_1px)]" />
         </div>
-        <div className="col-span-2">
+        <div className="w-2/3">
           <GenericSelector field={field} isReadOnly={isReadOnly} />
         </div>
       </div>
