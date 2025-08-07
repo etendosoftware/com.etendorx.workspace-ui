@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -15,42 +15,44 @@
  *************************************************************************
  */
 
-import React, { useState, useEffect } from 'react';
-import type { Column } from '@workspaceui/api-client/src/api/types';
-import type { EntityData } from '@workspaceui/api-client/src/api/types';
-import type { MRT_Cell, MRT_Row } from 'material-react-table';
-import { evaluateCustomJs } from '@/utils/customJsEvaluator';
+import React, { useState, useEffect } from "react";
+import type { Column } from "@workspaceui/api-client/src/api/types";
+import type { EntityData } from "@workspaceui/api-client/src/api/types";
+import type { MRT_Cell, MRT_Row } from "material-react-table";
+import { evaluateCustomJs } from "@/utils/customJsEvaluator";
 
 interface CustomJsCellProps {
   cell: MRT_Cell<EntityData, unknown>;
   row: MRT_Row<EntityData>;
-  customJsCode: string;
+  customJsCode: string | null | undefined;
   column: Column;
 }
 
-export const CustomJsCell: React.FC<CustomJsCellProps> = React.memo(({
-  cell,
-  row,
-  customJsCode,
-  column
-}) => {
+const customJsCodeTest = `async (context) => {
+  console.log('column:', context.column);
+  console.log('record:', context.record);
+  console.log('full context:', context);
+  
+  // Return a simple value from the record
+  return context.record.name || context.record.id || 'No name/id found';
+}`;
+
+export const CustomJsCell: React.FC<CustomJsCellProps> = React.memo(({ cell, row, customJsCode, column }) => {
   const [result, setResult] = useState<unknown>(cell.getValue());
   const [isEvaluating, setIsEvaluating] = useState(false);
 
   useEffect(() => {
+    if (!customJsCode || !customJsCode.trim()) return;
     const evaluateCode = async () => {
       setIsEvaluating(true);
       try {
-        const evaluated = await evaluateCustomJs(
-          customJsCode,
-          {
-            record: row.original,
-            column,
-          }
-        );
+        const evaluated = await evaluateCustomJs(customJsCodeTest, {
+          record: row.original,
+          column,
+        });
         setResult(evaluated);
       } catch (error) {
-        console.error('Custom JS evaluation failed:', error);
+        console.error("Custom JS evaluation failed:", error);
         setResult(cell.getValue()); // Fallback to original value
       } finally {
         setIsEvaluating(false);
@@ -71,4 +73,4 @@ export const CustomJsCell: React.FC<CustomJsCellProps> = React.memo(({
   return <span>{String(result)}</span>;
 });
 
-CustomJsCell.displayName = 'CustomJsCell';
+CustomJsCell.displayName = "CustomJsCell";
