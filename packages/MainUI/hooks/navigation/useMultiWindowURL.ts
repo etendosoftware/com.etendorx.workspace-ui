@@ -242,9 +242,19 @@ export function useMultiWindowURL() {
   const navigate = useCallback(
     (newWindows: WindowState[], preserveCurrentPath?: boolean) => {
       const url = buildURL(newWindows, preserveCurrentPath);
+      try {
+        const current = searchParams?.toString?.() ?? "";
+        const next = url.split("?")[1] || "";
+        if (current === next) {
+          // Avoid redundant replace when URL params are identical
+          return;
+        }
+      } catch {
+        // best-effort guard; if any error, proceed with replace
+      }
       router.replace(url);
     },
-    [router, buildURL]
+    [router, buildURL, searchParams]
   );
 
   const navigateToHome = useCallback(() => {
@@ -442,6 +452,86 @@ export function useMultiWindowURL() {
     [windows]
   );
 
+  // Batch operations
+  const applyWindowUpdates = useCallback(
+    (transform: (windows: WindowState[]) => WindowState[], preserveCurrentPath?: boolean) => {
+      const nextWindows = transform(windows);
+      navigate(nextWindows, preserveCurrentPath);
+    },
+    [windows, navigate]
+  );
+
+  const clearChildrenSelections = useCallback(
+    (windowId: string, childTabIds: string[]) => {
+      applyWindowUpdates((prev) =>
+        prev.map((w) => {
+          if (w.windowId !== windowId) return w;
+          const newSelected = { ...w.selectedRecords };
+          const newTabStates = { ...w.tabFormStates } as Record<string, { recordId?: string; mode?: TabMode; formMode?: FormMode }>;
+          for (const tabId of childTabIds) {
+            delete newSelected[tabId];
+            delete newTabStates[tabId];
+          }
+          return { ...w, selectedRecords: newSelected, tabFormStates: newTabStates };
+        })
+      );
+    },
+    [applyWindowUpdates]
+  );
+
+  const openWindowAndSelect = useCallback(
+    (
+      windowId: string,
+      options?: {
+        title?: string;
+        window_identifier?: string;
+        selection?: { tabId: string; recordId: string; openForm?: boolean; formMode?: FormMode };
+      }
+    ) => {
+      applyWindowUpdates((prev) => {
+        const updated = prev.map((w) => ({ ...w, isActive: false }));
+        const existingIndex = updated.findIndex((w) => w.windowId === windowId);
+
+        let target: WindowState;
+        if (existingIndex >= 0) {
+          const current = updated[existingIndex];
+          target = {
+            ...current,
+            isActive: true,
+            title: options?.title ?? current.title,
+            window_identifier: options?.window_identifier ?? current.window_identifier,
+          };
+          updated[existingIndex] = target;
+        } else {
+          const nextOrder = getNextOrder(updated);
+          target = {
+            windowId,
+            isActive: true,
+            order: nextOrder,
+            window_identifier: options?.window_identifier || windowId,
+            title: options?.title,
+            selectedRecords: {},
+            tabFormStates: {},
+          };
+          updated.push(target);
+        }
+
+        if (options?.selection) {
+          const { tabId, recordId, openForm, formMode } = options.selection;
+          target.selectedRecords = { ...target.selectedRecords, [tabId]: recordId };
+          if (openForm) {
+            target.tabFormStates = {
+              ...target.tabFormStates,
+              [tabId]: { recordId, mode: TAB_MODES.FORM, formMode: formMode || FORM_MODES.EDIT },
+            };
+          }
+        }
+        return updated;
+      });
+    },
+    [applyWindowUpdates]
+  );
+
   const setRecord = useCallback(
     (windowId: string, recordId: string, tabId?: string) => {
       if (tabId) {
@@ -521,5 +611,10 @@ export function useMultiWindowURL() {
 
     reorderWindows,
     getNextOrder,
+
+    // batching helpers
+    applyWindowUpdates,
+    clearChildrenSelections,
+    openWindowAndSelect,
   };
 }
