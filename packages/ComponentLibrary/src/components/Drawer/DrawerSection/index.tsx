@@ -33,11 +33,13 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     hasChildren,
     isExpandable,
     windowId,
+    pendingWindowId,
     isExpanded: externalExpanded,
     parentId,
   }) => {
-    const isSelected = Boolean(windowId?.length && item.windowId === windowId);
-    const hasActiveChild = !isSelected && Boolean(windowId?.length && findActive(windowId, item.children));
+    const targetWindowId = windowId || pendingWindowId;
+    const isSelected = Boolean(targetWindowId?.length && item.windowId === targetWindowId);
+    const hasActiveChild = !isSelected && Boolean(targetWindowId?.length && findActive(targetWindowId, item.children));
     const isParentActive = isSelected || hasActiveChild;
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const toggleFunctions = useRef<ToggleFunctions>({});

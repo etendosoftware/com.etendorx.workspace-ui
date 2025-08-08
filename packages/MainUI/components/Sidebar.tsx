@@ -44,6 +44,7 @@ export default function Sidebar() {
 
   const [searchValue, setSearchValue] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [pendingWindowId, setPendingWindowId] = useState<string | undefined>(undefined);
 
   const searchIndex = useMemo(() => createSearchIndex(menu), [menu]);
   const { filteredItems, searchExpandedItems } = useMemo(() => {
@@ -61,6 +62,11 @@ export default function Sidebar() {
       }
 
       const isInWindowRoute = pathname.includes("window");
+
+      // Immediate feedback: set optimistic selected until activeWindow updates
+      if (windowId) {
+        setPendingWindowId(windowId);
+      }
 
       if (isInWindowRoute) {
         openWindow(windowId, item.name);
@@ -106,9 +112,17 @@ export default function Sidebar() {
 
   const currentWindowId = activeWindow?.windowId;
 
+  // Clear optimistic selection when the active window matches
+  useEffect(() => {
+    if (pendingWindowId && currentWindowId === pendingWindowId) {
+      setPendingWindowId(undefined);
+    }
+  }, [currentWindowId, pendingWindowId]);
+
   return (
     <Drawer
       windowId={currentWindowId}
+      pendingWindowId={pendingWindowId}
       logo={EtendoLogotype.src}
       title={t("common.etendo")}
       items={menu}

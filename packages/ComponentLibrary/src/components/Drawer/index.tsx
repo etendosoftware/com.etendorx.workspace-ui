@@ -36,6 +36,7 @@ const DRAWER_MAX_WIDTH = 50;
 
 const Drawer: React.FC<DrawerProps> = ({
   windowId,
+  pendingWindowId,
   items = [],
   logo,
   title,
@@ -155,6 +156,7 @@ const Drawer: React.FC<DrawerProps> = ({
             toggleItemExpansion={toggleItemExpansion}
             searchValue={searchValue}
             windowId={windowId}
+            pendingWindowId={pendingWindowId}
           />
         </div>
       </div>

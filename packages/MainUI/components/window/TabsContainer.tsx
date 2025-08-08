@@ -96,7 +96,13 @@ export default function TabsContainer() {
   }, [groupedTabs, getActiveTabForLevel]);
 
   if (!windowData) {
-    return <div>{t("common.loadingWindowContent")}</div>;
+    return (
+      <div className="p-4 animate-pulse flex-1 flex flex-col gap-4">
+        <div className="h-6 w-1/2 bg-(--color-transparent-neutral-10) rounded-md" />
+        <div className="h-10 w-full bg-(--color-transparent-neutral-10) rounded-md" />
+        <div className="flex-1 bg-(--color-transparent-neutral-10) rounded-md" />
+      </div>
+    );
   }
 
   const firstExpandedIndex = filteredGroupedTabs.findIndex(
