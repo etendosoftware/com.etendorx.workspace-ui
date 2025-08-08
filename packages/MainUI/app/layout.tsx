@@ -49,17 +49,24 @@ export default async function RootLayout({
     (function() {
       try {
         const className = localStorage.getItem("${DENSITY_KEY}");
-        if (className) document.documentElement.classList.add(JSON.parse(className));
+        if (className) {
+          var parsed = JSON.parse(className);
+          document.documentElement.classList.add(parsed);
+          try {
+            var maxAge = 60 * 60 * 24 * 365; // 1 year
+            document.cookie = "${DENSITY_KEY}=" + encodeURIComponent(parsed) + "; path=/; max-age=" + maxAge;
+          } catch (_) {}
+        }
       } catch(e) {}
     })();
   `;
+  // Read density from cookie on the server to avoid SSR/CSR mismatch
+  const cookieStore = cookies();
+  const density = cookieStore.get(DENSITY_KEY)?.value ?? "";
+  const htmlClass = [inter.variable, density].filter(Boolean).join(" ");
+
   return (
-    <html lang="en" className={(() => {
-      // Read density from cookie on the server to avoid SSR/CSR mismatch
-      const cookieStore = cookies();
-      const density = cookieStore.get(DENSITY_KEY)?.value ?? "";
-      return [inter.variable, density].filter(Boolean).join(" ");
-    })()}>
+    <html lang="en" className={htmlClass} suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <link rel="icon" href="/favicon.ico" sizes="any" />

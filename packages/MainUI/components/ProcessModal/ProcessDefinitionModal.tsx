@@ -36,13 +36,14 @@ import { useProcessInitializationState } from "@/hooks/useProcessInitialState";
 import { useSelected } from "@/hooks/useSelected";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUserContext } from "@/hooks/useUserContext";
+import { executeProcess, type ExecuteProcessResult } from "@/app/actions/process";
 import { buildPayloadByInputName, buildProcessPayload } from "@/utils";
 import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
@@ -91,9 +92,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const javaClassName = button.processDefinition.javaClassName;
 
   const [parameters, setParameters] = useState(button.processDefinition.parameters);
-  const [response, setResponse] = useState<ResponseMessage>();
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [result, setResult] = useState<ExecuteProcessResult | null>(null);
+  const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
   const [gridSelection, setGridSelection] = useState<unknown[]>([]);
 
@@ -161,29 +161,23 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
     // Build base payload with system context fields
     const basePayload = buildProcessPayload(
-      record,           // Complete record data
-      tab,             // Tab metadata
-      {},              // Don't include initialState here yet
-      {}               // User input will be added during execution
+      record,
+      tab,
+      {},
+      {}
     );
 
-    // Use initialState directly - it's already processed by useProcessInitializationState
-    // No need to reprocess the values, they're already mapped correctly
-    console.log('Raw initialState from hook:', initialState);
-    console.log('Available form data will be:', {
-      ...basePayload,
-      ...initialState
-    });
-
     return {
-      ...basePayload,        // System context fields
-      ...initialState,       // Already processed defaults from useProcessInitializationState
+      ...basePayload,
+      ...initialState,
     };
   }, [record, tab, initialState]);
 
+  // Important: use defaultValues to avoid re-initializing the form on every render
+  // Then rely on the reset effect below when defaults actually arrive
   const form = useForm({
-    values: availableFormData, // Pre-populate with combined data
-    mode: "onChange"
+    defaultValues: availableFormData,
+    mode: "onChange",
   });
 
   // Reset form values when defaults are loaded
@@ -195,14 +189,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [hasInitialData, availableFormData, form]);
 
   const handleClose = useCallback(() => {
-    if (isExecuting) return;
-    setResponse(undefined);
-    setIsExecuting(false);
-    setIsSuccess(false);
+    if (isPending) return;
+    setResult(null);
     setLoading(true);
     setParameters(button.processDefinition.parameters);
     onClose();
-  }, [button.processDefinition.parameters, isExecuting, onClose]);
+  }, [button.processDefinition.parameters, isPending, onClose]);
 
   /**
    * Executes processes with window reference parameters
@@ -213,68 +205,34 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     if (!tab || !processId) {
       return;
     }
+    startTransition(async () => {
+      try {
+        const currentAttrs = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
+        const currentRecordValue = recordValues?.[currentAttrs.inpPrimaryKeyColumnId];
 
-    setIsExecuting(true);
-    setIsSuccess(false);
-
-    try {
-      const params = new URLSearchParams({
-        processId,
-        windowId: tab.window,
-        _action: javaClassName,
-      });
-
-      const currentAttrs = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
-      const currentRecordValue = recordValues?.[currentAttrs.inpPrimaryKeyColumnId];
-
-      const payload = {
-        [currentAttrs.inpColumnId]: currentRecordValue,
-        [currentAttrs.inpPrimaryKeyColumnId]: currentRecordValue,
-        _buttonValue: "DONE",
-        _params: {
-          grid: {
-            _selection: gridSelection,
+        const payload = {
+          [currentAttrs.inpColumnId]: currentRecordValue,
+          [currentAttrs.inpPrimaryKeyColumnId]: currentRecordValue,
+          _buttonValue: "DONE",
+          _params: {
+            grid: {
+              _selection: gridSelection,
+            },
           },
-        },
-        _entityName: entityName,
-      };
+          _entityName: entityName,
+          _action: javaClassName,
+          windowId: tab.window,
+        };
 
-      const response = await Metadata.kernelClient.post(`?${params}`, payload);
-
-      if (response?.data?.message) {
-        const isSuccessResponse = response.data.message.severity === "success";
-
-        setResponse({
-          msgText: response.data.message.text || "",
-          msgTitle: isSuccessResponse ? t("process.completedSuccessfully") : t("process.processError"),
-          msgType: response.data.message.severity,
-        });
-
-        if (isSuccessResponse) {
-          setIsSuccess(true);
-          onSuccess?.();
-        }
-      } else if (response?.data) {
-        setResponse({
-          msgText: "Process completed successfully",
-          msgTitle: t("process.completedSuccessfully"),
-          msgType: "success",
-        });
-
-        setIsSuccess(true);
-        onSuccess?.();
+        const res = await executeProcess(processId, payload);
+        setResult(res);
+        if (res.success) onSuccess?.();
+      } catch (error) {
+        logger.warn("Error executing process:", error);
+        setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
-    } catch (error) {
-      logger.warn("Error executing process:", error);
-      setResponse({
-        msgText: error instanceof Error ? error.message : "Unknown error",
-        msgTitle: t("errors.internalServerError.title"),
-        msgType: "error",
-      });
-    } finally {
-      setIsExecuting(false);
-    }
-  }, [tab, processId, javaClassName, recordValues, gridSelection, entityName, t, onSuccess]);
+    });
+  }, [tab, processId, javaClassName, recordValues, gridSelection, entityName, t, onSuccess, startTransition]);
 
   /**
    * Executes processes directly via servlet using javaClassName
@@ -285,73 +243,26 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     if (!tab || !processId || !javaClassName) {
       return;
     }
+    startTransition(async () => {
+      try {
+        const payload = {
+          _buttonValue: "DONE",
+          _entityName: tab.entityName,
+          ...recordValues,
+          ...form.getValues(),
+          _action: javaClassName,
+          windowId: tab.window,
+        };
 
-    setIsExecuting(true);
-    setIsSuccess(false);
-
-    try {
-      const params = new URLSearchParams({
-        processId,
-        windowId: tab.window,
-        _action: javaClassName,
-      });
-
-      const payload = {
-        _buttonValue: "DONE",
-        _entityName: tab.entityName,
-        ...recordValues,
-        ...form.getValues(),
-      };
-
-      const response = await Metadata.kernelClient.post(`?${params}`, payload);
-
-      // Handle responseActions format (like normal processes)
-      if (response?.data?.responseActions?.[0]?.showMsgInProcessView) {
-        const responseMessage = response.data.responseActions[0].showMsgInProcessView;
-        setResponse(responseMessage);
-
-        if (responseMessage.msgType === "success") {
-          setIsSuccess(true);
-          onSuccess?.();
-        }
+        const res = await executeProcess(processId, payload);
+        setResult(res);
+        if (res.success) onSuccess?.();
+      } catch (error) {
+        logger.warn("Error executing direct Java process:", error);
+        setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
-      // Handle legacy message format
-      else if (response?.data?.message) {
-        const isSuccessResponse = response.data.message.severity === "success";
-
-        setResponse({
-          msgText: response.data.message.text || "",
-          msgTitle: isSuccessResponse ? t("process.completedSuccessfully") : t("process.processError"),
-          msgType: response.data.message.severity,
-        });
-
-        if (isSuccessResponse) {
-          setIsSuccess(true);
-          onSuccess?.();
-        }
-      }
-      // Fallback for responses without specific error structure
-      else if (response?.data && !response.data.responseActions) {
-        setResponse({
-          msgText: "Process completed successfully",
-          msgTitle: t("process.completedSuccessfully"),
-          msgType: "success",
-        });
-
-        setIsSuccess(true);
-        onSuccess?.();
-      }
-    } catch (error) {
-      logger.warn("Error executing direct Java process:", error);
-      setResponse({
-        msgText: error instanceof Error ? error.message : "Unknown error",
-        msgTitle: t("errors.internalServerError.title"),
-        msgType: "error",
-      });
-    } finally {
-      setIsExecuting(false);
-    }
-  }, [tab, processId, javaClassName, recordValues, form, t, onSuccess]);
+    });
+  }, [tab, processId, javaClassName, recordValues, form, onSuccess, startTransition]);
 
   /**
    * Main process execution handler - routes to appropriate execution method
@@ -377,10 +288,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       return;
     }
 
-    setIsExecuting(true);
-    setIsSuccess(false);
-
-    try {
+    startTransition(async () => {
       // Build complete payload with all context fields
       const completePayload = buildProcessPayload(
         record,                 // Complete record data
@@ -388,32 +296,24 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         initialState || {},    // Process defaults from server (handle null case)
         form.getValues()       // User input from form
       );
+      try {
+        const stringFnResult = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
+          buttonValue: "DONE",
+          windowId: tab.window,
+          entityName: tab.entityName,
+          recordIds: selectedRecords?.map((r) => r.id),
+          ...completePayload,    // Use complete payload instead of just form values
+        });
 
-      const result = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
-        buttonValue: "DONE",
-        windowId: tab.window,
-        entityName: tab.entityName,
-        recordIds: selectedRecords?.map((r) => r.id),
-        ...completePayload,    // Use complete payload instead of just form values
-      });
-
-      const responseMessage = result.responseActions[0].showMsgInProcessView;
-      setResponse(responseMessage);
-
-      if (responseMessage.msgType === "success") {
-        setIsSuccess(true);
-        onSuccess?.();
+        const responseMessage = stringFnResult.responseActions[0].showMsgInProcessView;
+        const success = responseMessage.msgType === "success";
+        setResult({ success, data: responseMessage, error: success ? undefined : responseMessage.msgText });
+        if (success) onSuccess?.();
+      } catch (error) {
+        logger.warn("Error executing process:", error);
+        setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
-    } catch (error) {
-      logger.warn("Error executing process:", error);
-      setResponse({
-        msgText: error instanceof Error ? error.message : "Unknown error",
-        msgTitle: t("errors.internalServerError.title"),
-        msgType: "error",
-      });
-    } finally {
-      setIsExecuting(false);
-    }
+    });
   }, [
     hasWindowReference,
     handleWindowReferenceExecute,
@@ -466,9 +366,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   useEffect(() => {
     if (open) {
-      setIsExecuting(false);
-      setIsSuccess(false);
-      setResponse(undefined);
+      setResult(null);
       setParameters(button.processDefinition.parameters);
       setGridSelection([]);
     }
@@ -515,24 +413,28 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [button.processDefinition, onLoad, open, selectedRecords, tab, tabId]);
 
   const renderResponse = () => {
-    if (!response) return null;
+    if (!result) return null;
 
-    const isSuccessMessage = response.msgType === "success";
+    const isSuccessMessage = result.success;
+    const msgTitle = isSuccessMessage ? t("process.completedSuccessfully") : t("process.processError");
+    const msgText = isSuccessMessage
+      ? typeof result.data === "string" ? (result.data as string) : t("process.completedSuccessfully")
+      : result.error || t("errors.internalServerError.title");
+
     const messageClasses = `p-3 rounded mb-4 border-l-4 ${
       isSuccessMessage ? "bg-green-50 border-(--color-success-main)" : "bg-gray-50 border-(--color-etendo-main)"
     }`;
 
     return (
       <div className={messageClasses}>
-        <h4 className="font-bold text-sm">{response.msgTitle}</h4>
-        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: <explanation> */}
-        <p className="text-sm" dangerouslySetInnerHTML={{ __html: response.msgText }} />
+        <h4 className="font-bold text-sm">{msgTitle}</h4>
+        <p className="text-sm">{msgText}</p>
       </div>
     );
   };
 
   const renderParameters = () => {
-    if (isSuccess) return null;
+    if (result?.success) return null;
 
     return Object.values(parameters).map((parameter) => {
       if (parameter.reference === WINDOW_REFERENCE_ID) {
@@ -563,11 +465,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   };
 
   const renderActionButton = () => {
-    if (isExecuting) {
+    if (isPending) {
       return <span className="animate-pulse">{t("common.loading")}...</span>;
     }
 
-    if (isSuccess) {
+    if (result?.success) {
       return (
         <span className="flex items-center gap-2">
           <CheckIcon fill="white" />
@@ -584,7 +486,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     );
   };
 
-  const isActionButtonDisabled = isExecuting || isSuccess || (hasWindowReference && gridSelection.length === 0);
+  const isActionButtonDisabled = isPending || !!result?.success || (hasWindowReference && gridSelection.length === 0);
 
   return (
     <Modal open={open} onClose={handleClose}>
@@ -600,14 +502,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                 type="button"
                 onClick={handleClose}
                 className="p-1 rounded-full hover:bg-(--color-baseline-10)"
-                disabled={isExecuting}>
+                disabled={isPending}>
                 <CloseIcon />
               </button>
             </div>
 
             {/* Content */}
             <div className="flex-1 overflow-auto p-4">
-              <div className={`relative ${isExecuting ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
+              <div className={`relative ${isPending ? "animate-pulse cursor-progress cursor-to-children" : ""}`}>
                 <div
                   className={`absolute transition-opacity inset-0 flex items-center pointer-events-none justify-center bg-white ${
                     loading || initializationLoading ? "opacity-100" : "opacity-0"
@@ -628,7 +530,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                 onClick={handleClose}
                 className="transition px-4 py-2 border border-(--color-baseline-60) text-(--color-baseline-90) rounded-full w-full
                 font-medium focus:outline-none hover:bg-(--color-transparent-neutral-10)"
-                disabled={isExecuting}>
+                disabled={isPending}>
                 {t("common.close")}
               </button>
               <button
