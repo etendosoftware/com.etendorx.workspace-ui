@@ -1,5 +1,5 @@
 /**
- * Integration-like test: Grids POST /api/datasource with criteria array → single JSON array string.
+ * Test: /api/datasource respects cache policy helper and bypasses cache when disabled.
  */
 
 import type { NextRequest } from 'next/server';
@@ -10,20 +10,28 @@ jest.mock('next/server', () => ({
   },
 }));
 
+// Make cached function throw if used, so we can detect accidental cache usage
+const cachedCallGuard = jest.fn();
 jest.mock('next/cache', () => ({
-  unstable_cache: (fn: any) => (...args: any[]) => fn(...args),
+  unstable_cache: (fn: any) => (...args: any[]) => {
+    cachedCallGuard();
+    throw new Error('Cached function should not be called when caching is disabled');
+  },
+}));
+
+// Force policy to disable caching
+jest.mock('@/app/api/_utils/datasourceCache', () => ({
+  shouldCacheDatasource: jest.fn().mockReturnValue(false),
 }));
 
 jest.mock('@/lib/auth', () => ({
-  getUserContext: jest.fn().mockResolvedValue({
-    userId: '100', clientId: '23C5', orgId: '0', roleId: 'ROLE', warehouseId: 'WH',
-  }),
-  extractBearerToken: jest.fn().mockReturnValue('token-grid'),
+  getUserContext: jest.fn().mockResolvedValue({ userId: '100' }),
+  extractBearerToken: jest.fn().mockReturnValue('token-cache-policy'),
 }));
 
 import { POST } from '../route';
 
-describe('Grids: /api/datasource criteria handling', () => {
+describe('Datasource cache policy (disabled)', () => {
   const OLD_ENV = process.env;
   const originalFetch = global.fetch as unknown as jest.Mock;
 
@@ -34,9 +42,10 @@ describe('Grids: /api/datasource criteria handling', () => {
       ok: true,
       status: 200,
       headers: { get: () => 'application/json' },
-      text: async () => JSON.stringify({ response: { status: 0 } }),
-      json: async () => ({ response: { status: 0 } }),
+      text: async () => JSON.stringify({ response: { status: 0, data: [] } }),
+      json: async () => ({ response: { status: 0, data: [] } }),
     });
+    cachedCallGuard.mockClear();
   });
 
   afterAll(() => {
@@ -57,26 +66,20 @@ describe('Grids: /api/datasource criteria handling', () => {
     } as unknown as NextRequest;
   }
 
-  it('flattens multiple criteria entries into a single JSON array string', async () => {
-    const criteria = [
-      JSON.stringify({ fieldName: 'name', operator: 'iContains', value: 'abc' }),
-      JSON.stringify({ fieldName: 'code', operator: 'iContains', value: '123' }),
-    ];
-    const body = { entity: 'Invoice', params: { criteria, _operationType: 'fetch', _startRow: '0', _endRow: '50' } };
-    const req = makeRequest('token-grid', body);
+  it('bypasses cached function and calls ERP directly when policy is false', async () => {
+    const body = { entity: 'Invoice', params: { _operationType: 'fetch', _startRow: '0', _endRow: '50' } };
+    const req = makeRequest('token-cache-policy', body);
 
     const res: any = await POST(req as any);
     expect(res.status).toBe(200);
 
+    // ensure fetch was called (direct call to ERP)
+    expect((global as any).fetch).toHaveBeenCalledTimes(1);
     const [dest, init] = (global as any).fetch.mock.calls[0];
     expect(String(dest)).toBe('http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice');
-    expect(init.headers['Authorization']).toBe('Bearer token-grid');
-    expect(init.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
-    const decoded = decodeURIComponent(init.body as string);
-    // Should be a single criteria=[...] entry
-    expect(decoded).toContain('criteria=[');
-    expect(decoded.match(/criteria=/g)?.length).toBe(1);
-    expect(decoded).toContain('"fieldName":"name"');
-    expect(decoded).toContain('"fieldName":"code"');
+    expect(init.headers['Authorization']).toBe('Bearer token-cache-policy');
+
+    // cached function must not be used
+    expect(cachedCallGuard).not.toHaveBeenCalled();
   });
 });

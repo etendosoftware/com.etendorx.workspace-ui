@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
+import { setErpSessionCookie } from '@/app/api/_utils/sessionStore';
 
 // Handle OPTIONS request for health check
 export async function OPTIONS(request: NextRequest) {
@@ -39,6 +41,31 @@ export async function POST(request: NextRequest) {
     });
 
     const data = await erpResponse.json();
+
+    // Capture ERP session cookie (e.g., JSESSIONID) and store it keyed by returned token
+    try {
+      let jsession: string | null = null;
+      const single = erpResponse.headers.get('set-cookie');
+      if (single) {
+        const m = single.match(/JSESSIONID=([^;]+)/);
+        if (m) jsession = m[1];
+      }
+      // Fallback: scan all headers for multiple Set-Cookie entries if runtime collapses differently
+      if (!jsession) {
+        for (const [k, v] of erpResponse.headers.entries()) {
+          if (k.toLowerCase() === 'set-cookie') {
+            const m = v.match(/JSESSIONID=([^;]+)/);
+            if (m) { jsession = m[1]; break; }
+          }
+        }
+      }
+      if (jsession && data?.token) {
+        const cookieHeader = `JSESSIONID=${jsession}`;
+        setErpSessionCookie(data.token, cookieHeader);
+      }
+    } catch {
+      // ignore extraction errors
+    }
 
     if (!erpResponse.ok) {
       console.log('ERP login failed:', { status: erpResponse.status, data });

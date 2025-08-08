@@ -67,11 +67,11 @@ describe('API: /api/datasource/:entity save/update', () => {
     expect((global as any).fetch).toHaveBeenCalledTimes(1);
 
     const [dest, init] = (global as any).fetch.mock.calls[0];
-    expect(String(dest)).toBe('http://erp.example/etendo/org.openbravo.service.datasource/Invoice?windowId=167&tabId=263&_operationType=add');
+    expect(String(dest)).toBe('http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice?windowId=167&tabId=263&_operationType=add');
     expect(init.method).toBe('POST');
     expect(init.headers['Authorization']).toBe('Bearer token-abc');
     expect(init.headers['Accept']).toBe('application/json');
-    expect(init.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
+    expect(init.headers['Content-Type']).toBeUndefined();
     expect(init.headers['X-CSRF-Token']).toBe('CSRF123');
     const decoded = decodeURIComponent(init.body as string);
     expect(decoded).toContain('dataSource=isc_OBViewDataSource_0');
@@ -97,7 +97,7 @@ describe('API: /api/datasource/:entity save/update', () => {
 
     await POST(request, { params: { entity: 'Order' } } as any);
     const [dest, init] = (global as any).fetch.mock.calls[0];
-    expect(String(dest)).toBe('http://erp.example/etendo/org.openbravo.service.datasource/Order?windowId=1&tabId=2&_operationType=update');
+    expect(String(dest)).toBe('http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Order?windowId=1&tabId=2&_operationType=update');
     expect(init.headers['Content-Type']).toBe('application/x-custom');
     expect(init.body).toBe(rawBody);
   });

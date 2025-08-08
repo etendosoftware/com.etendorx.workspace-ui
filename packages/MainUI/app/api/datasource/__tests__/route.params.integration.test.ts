@@ -1,5 +1,5 @@
 /**
- * Integration-like test: Grids POST /api/datasource with criteria array → single JSON array string.
+ * Integration-like test: /api/datasource param coverage for reads (grids).
  */
 
 import type { NextRequest } from 'next/server';
@@ -15,15 +15,13 @@ jest.mock('next/cache', () => ({
 }));
 
 jest.mock('@/lib/auth', () => ({
-  getUserContext: jest.fn().mockResolvedValue({
-    userId: '100', clientId: '23C5', orgId: '0', roleId: 'ROLE', warehouseId: 'WH',
-  }),
-  extractBearerToken: jest.fn().mockReturnValue('token-grid'),
+  getUserContext: jest.fn().mockResolvedValue({ userId: '100', clientId: '23C5', orgId: '0', roleId: 'ROLE', warehouseId: 'WH' }),
+  extractBearerToken: jest.fn().mockReturnValue('token-params'),
 }));
 
 import { POST } from '../route';
 
-describe('Grids: /api/datasource criteria handling', () => {
+describe('Grids: param coverage', () => {
   const OLD_ENV = process.env;
   const originalFetch = global.fetch as unknown as jest.Mock;
 
@@ -57,26 +55,33 @@ describe('Grids: /api/datasource criteria handling', () => {
     } as unknown as NextRequest;
   }
 
-  it('flattens multiple criteria entries into a single JSON array string', async () => {
-    const criteria = [
-      JSON.stringify({ fieldName: 'name', operator: 'iContains', value: 'abc' }),
-      JSON.stringify({ fieldName: 'code', operator: 'iContains', value: '123' }),
-    ];
-    const body = { entity: 'Invoice', params: { criteria, _operationType: 'fetch', _startRow: '0', _endRow: '50' } };
-    const req = makeRequest('token-grid', body);
-
+  it('serializes typical params and forwards to ERP', async () => {
+    const params = {
+      _operationType: 'fetch',
+      _startRow: '0',
+      _endRow: '50',
+      language: 'en_US',
+      windowId: '167',
+      tabId: '263',
+      _noActiveFilter: 'true',
+    };
+    const body = { entity: 'Invoice', params };
+    const req = makeRequest('token-params', body);
     const res: any = await POST(req as any);
     expect(res.status).toBe(200);
 
     const [dest, init] = (global as any).fetch.mock.calls[0];
     expect(String(dest)).toBe('http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice');
-    expect(init.headers['Authorization']).toBe('Bearer token-grid');
-    expect(init.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
+    expect(init.headers['Authorization']).toBe('Bearer token-params');
     const decoded = decodeURIComponent(init.body as string);
-    // Should be a single criteria=[...] entry
-    expect(decoded).toContain('criteria=[');
-    expect(decoded.match(/criteria=/g)?.length).toBe(1);
-    expect(decoded).toContain('"fieldName":"name"');
-    expect(decoded).toContain('"fieldName":"code"');
+    expect(decoded).toContain('_operationType=fetch');
+    expect(decoded).toContain('_startRow=0');
+    expect(decoded).toContain('_endRow=50');
+    expect(decoded).toContain('language=en_US');
+    expect(decoded).toContain('windowId=167');
+    expect(decoded).toContain('tabId=263');
+    expect(decoded).toContain('_noActiveFilter=true');
+    // no criteria since not provided
+    expect(decoded).not.toContain('criteria=');
   });
 });
