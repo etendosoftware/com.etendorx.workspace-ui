@@ -77,12 +77,10 @@ export function useToolbar(windowId: string, tabId?: string) {
       //   }),
       // );
 
-      const url = tabId ? "etmeta_Toolbar" : `toolbar/${windowId}`;
-
-      const response = await Metadata.datasourceServletClient.post(url, params, {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
+      const entity = tabId ? "etmeta_Toolbar" : `toolbar/${windowId}`;
+      const response = await Metadata.datasourceServletClient.post('', {
+        entity,
+        params: Object.fromEntries(params.entries()),
       });
 
       setToolbar(response.data);

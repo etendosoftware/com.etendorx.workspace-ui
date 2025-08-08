@@ -40,11 +40,12 @@ export class Datasource {
   }
 
   public setBaseUrl(_url: string) {
-    // Instead of setting the ERP URL, we set the Next.js API route
-    const baseUrl = typeof window !== 'undefined' 
-      ? window.location.origin 
+    // Base URL for selector/forwarded datasource requests (no leading slash in path)
+    const baseUrl = typeof window !== 'undefined'
+      ? window.location.origin
       : 'http://localhost:3000'; // fallback for SSR
-    this.client.setBaseUrl(baseUrl);
+    // For relative paths like '<selectorId>' route through forward servlet
+    this.client.setBaseUrl(baseUrl + '/api/erp/meta/forward/org.openbravo.service.datasource/');
   }
 
   public setToken(token: string) {

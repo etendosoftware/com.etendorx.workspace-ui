@@ -54,7 +54,12 @@ export class Client {
   }
 
   public setBaseUrl(url: string) {
-    this.baseUrl = url;
+    // Ensure base URL ends with a slash for proper URL resolution
+    if (url) {
+      this.baseUrl = url.endsWith("/") ? url : url + "/";
+    } else {
+      this.baseUrl = "";
+    }
   }
 
   private cleanUrl(url: string) {
@@ -107,8 +112,18 @@ export class Client {
 
       options.credentials = "include";
 
-      const rawUrl = `${this.baseUrl}${this.cleanUrl(url)}`;
-      const destination = new URL(rawUrl, window.location.origin);
+      // Build a robust absolute URL
+      let relative = this.cleanUrl(url);
+      // If caller passes paths like 'api/datasource', treat as absolute app path
+      if (relative.startsWith('api/')) {
+        relative = '/' + relative;
+      }
+      const base = this.baseUrl
+        ? this.baseUrl
+        : typeof window !== "undefined" && window.location?.origin
+          ? window.location.origin + "/"
+          : "http://localhost:3000/";
+      const destination = new URL(relative, base);
       this.baseQueryParams.forEach((value, key) => destination.searchParams.append(key, value));
 
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
