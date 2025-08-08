@@ -39,6 +39,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     clearTabFormState,
     getTabFormState,
     getSelectedRecord,
+    clearChildrenSelections,
   } = useMultiWindowURL();
   const { registerActions } = useToolbarContext();
   const { graph } = useSelected();
@@ -114,12 +115,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
     const children = graph.getChildren(tab);
     if (children && children.length > 0) {
-      for (const child of children) {
-        clearSelectedRecord(windowId, child.id);
-        clearTabFormState(windowId, child.id);
-      }
+      const childIds = children.map((c) => c.id);
+      // Batch clear to avoid multiple navigations
+      clearChildrenSelections(windowId, childIds);
     }
-  }, [windowId, graph, tab, clearSelectedRecord, clearTabFormState]);
+  }, [windowId, graph, tab, clearChildrenSelections]);
 
   useEffect(() => {
     const actions = {
