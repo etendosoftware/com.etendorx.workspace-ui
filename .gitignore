@@ -25,3 +25,7 @@ junit.xml
 # Claude Code
 .claude/
 .idea/
+
+# Local logs and test artifacts
+app.log
+jest-output.json

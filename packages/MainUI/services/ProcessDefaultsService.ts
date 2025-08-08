@@ -1,5 +1,6 @@
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { logger } from "@/utils/logger";
+import { generateId } from "@/utils";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
 
 export interface ProcessDefaultsRequest {
@@ -200,7 +201,7 @@ export class ProcessDefaultsService {
           details: { type: 'parameter_validation' },
         };
       }
-
+      // Fallback for other Error instances
       return {
         code: 'API_ERROR',
         message: `API error: ${error.message}`,
@@ -208,42 +209,10 @@ export class ProcessDefaultsService {
       };
     }
 
-    // Handle HTTP response errors
+    // Handle HTTP response-like errors
     if (error?.response) {
-      const status = error.response.status;
-      const statusText = error.response.statusText || 'Unknown error';
-      
-      if (status === 400) {
-        return {
-          code: 'BAD_REQUEST',
-          message: 'Invalid request parameters',
-          details: { status, statusText, data: error.response.data },
-        };
-      }
-      
-      if (status === 401 || status === 403) {
-        return {
-          code: 'UNAUTHORIZED',
-          message: 'Authentication failed or access denied',
-          details: { status, statusText },
-        };
-      }
-      
-      if (status === 404) {
-        return {
-          code: 'NOT_FOUND',
-          message: 'Process or endpoint not found',
-          details: { status, statusText },
-        };
-      }
-      
-      if (status >= 500) {
-        return {
-          code: 'SERVER_ERROR',
-          message: 'Internal server error',
-          details: { status, statusText },
-        };
-      }
+      const parsed = this.parseHttpError(error.response);
+      if (parsed) return parsed;
     }
 
     return {
@@ -253,11 +222,45 @@ export class ProcessDefaultsService {
     };
   }
 
+  private static parseHttpError(response: any): { code: string; message: string; details?: any } | null {
+    const status = response.status;
+    const statusText = response.statusText || 'Unknown error';
+
+    switch (true) {
+      case status === 400:
+        return {
+          code: 'BAD_REQUEST',
+          message: 'Invalid request parameters',
+          details: { status, statusText, data: response.data },
+        };
+      case status === 401 || status === 403:
+        return {
+          code: 'UNAUTHORIZED',
+          message: 'Authentication failed or access denied',
+          details: { status, statusText },
+        };
+      case status === 404:
+        return {
+          code: 'NOT_FOUND',
+          message: 'Process or endpoint not found',
+          details: { status, statusText },
+        };
+      case status >= 500:
+        return {
+          code: 'SERVER_ERROR',
+          message: 'Internal server error',
+          details: { status, statusText },
+        };
+      default:
+        return null;
+    }
+  }
+
   /**
    * Generates a unique request ID for tracking
    */
   private static generateRequestId(): string {
-    return `defaults_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return generateId("defaults_");
   }
 
   /**

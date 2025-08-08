@@ -348,10 +348,24 @@ export class ProcessParameterMapper {
         parameterMap.set(param.name, param);
       });
 
+      const isLogicField = (name: string) =>
+        name.endsWith('_display_logic') || name.endsWith('_readonly_logic');
+
+      const convertSimpleValue = (val: any, param?: ProcessParameter) => {
+        if (
+          param?.reference === FIELD_REFERENCE_CODES.BOOLEAN ||
+          param?.reference === 'Yes/No' ||
+          param?.reference === 'Boolean'
+        ) {
+          return val === 'Y' || val === true;
+        }
+        return val;
+      };
+
       for (const [fieldName, value] of Object.entries(processDefaults.defaults)) {
         try {
           // Skip logic fields (processed separately)
-          if (fieldName.endsWith('_display_logic') || fieldName.endsWith('_readonly_logic')) {
+          if (isLogicField(fieldName)) {
             continue;
           }
 
@@ -371,14 +385,7 @@ export class ProcessParameterMapper {
             });
           } else if (isSimpleValue(value)) {
             // Handle simple values with type conversion
-            if (parameter?.reference === FIELD_REFERENCE_CODES.BOOLEAN || 
-                parameter?.reference === "Yes/No" || 
-                parameter?.reference === "Boolean") {
-              // Convert string "Y"/"N" to boolean
-              formData[fieldName] = value === "Y" || value === true;
-            } else {
-              formData[fieldName] = value;
-            }
+            formData[fieldName] = convertSimpleValue(value, parameter);
             
             logger.debug(`Processed simple field ${fieldName}:`, {
               value: value,

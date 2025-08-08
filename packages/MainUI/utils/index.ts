@@ -96,7 +96,7 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
 
 export const parseDynamicExpression = (expr: string) => {
   // Transform @field_name@ syntax to valid JavaScript references
-  const expr0 = expr.replace(/@([a-zA-Z_][a-zA-Z0-9_]*)@/g, (_, fieldName) => {
+  const expr0 = expr.replace(/@([A-Za-z_]\w*)@/g, (_, fieldName) => {
     return `(currentValues["${fieldName}"] || context["${fieldName}"])`;
   });
 
@@ -210,18 +210,20 @@ export const formatLabel = (label: string, count?: number): string | undefined =
 };
 
 export const buildProcessPayload = (
-  record: Record<string, unknown>,
+  record: Record<string, unknown> | null | undefined,
   tab: Tab,
   processDefaults: Record<string, unknown> = {},
   userInput: Record<string, unknown> = {}
 ) => {
+  // Ensure we always have a safe record object
+  const rec: Record<string, unknown> = record ?? {};
   // Base record values with input name mapping
-  const recordValues = buildPayloadByInputName(record, tab.fields);
+  const recordValues = buildPayloadByInputName(rec, tab.fields);
 
   // System context fields that are needed for process execution
   const systemContext = {
     // Window/Tab metadata
-    [`inp${tab.entityName?.replace(/^C_/, '')?.toLowerCase() || 'record'}Id`]: record.id,
+    [`inp${tab.entityName?.replace(/^C_/, '')?.toLowerCase() || 'record'}Id`]: (rec as any).id,
     inpTabId: String(tab.id),
     inpwindowId: String(tab.window),
     inpTableId: String(tab.table),
@@ -234,7 +236,7 @@ export const buildProcessPayload = (
     // Process execution fields
     PromotionsDefined: "N",
     IsReversalDocument: "N",
-    DOCBASETYPE: record.docBaseType || "",
+    DOCBASETYPE: (rec as any).docBaseType || "",
     VoidAutomaticallyCreated: 0,
     FinancialManagement: "Y",
     _ShowAcct: "Y",
@@ -244,13 +246,13 @@ export const buildProcessPayload = (
     "$IsAcctDimCentrally": "Y",
 
     // Element context fields (these come from accounting configuration)
-    $Element_BP: record.cBpartnerId ? "Y" : "",
-    $Element_OO: record.adOrgId ? "Y" : "",
-    $Element_PJ: record.cProjectId ? "Y" : "",
-    $Element_CC: record.cCostcenterId ? "Y" : "",
-    $Element_MC: record.mCostcenterId ? "Y" : "",
-    $Element_U1: record.user1Id ? "Y" : "",
-    $Element_U2: record.user2Id ? "Y" : "",
+    $Element_BP: (rec as any).cBpartnerId ? "Y" : "",
+    $Element_OO: (rec as any).adOrgId ? "Y" : "",
+    $Element_PJ: (rec as any).cProjectId ? "Y" : "",
+    $Element_CC: (rec as any).cCostcenterId ? "Y" : "",
+    $Element_MC: (rec as any).mCostcenterId ? "Y" : "",
+    $Element_U1: (rec as any).user1Id ? "Y" : "",
+    $Element_U2: (rec as any).user2Id ? "Y" : "",
 
     // Document-specific element visibility
     "$Element_BP_ARI_H": "Y",
@@ -271,3 +273,4 @@ export const buildProcessPayload = (
 };
 
 export { shouldShowTab, type TabWithParentInfo } from "./tabUtils";
+export { generateId } from "./id";

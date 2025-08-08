@@ -130,7 +130,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     processInitialization,
     loading: initializationLoading,
     error: initializationError,
-    refetch: refetchDefaults,
   } = useProcessInitialization({
     processId: processId || "",
     windowId: windowId || "",
@@ -148,7 +147,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     initialState,
     logicFields,
     filterExpressions,
-    refreshParent,
     hasData: hasInitialData,
   } = useProcessInitializationState(
     processInitialization,
@@ -383,7 +381,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     try {
       // Build complete payload with all context fields
       const completePayload = buildProcessPayload(
-        record,                 // Complete record data
+        record ?? FALLBACK_RESULT, // Ensure non-null object for types
         tab,                   // Tab metadata
         initialState || {},    // Process defaults from server (handle null case)
         form.getValues()       // User input from form

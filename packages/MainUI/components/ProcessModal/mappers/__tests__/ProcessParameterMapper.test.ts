@@ -1,6 +1,12 @@
 import { ProcessParameterMapper } from "../ProcessParameterMapper";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import type { ProcessDefaultsResponse } from "../../types/ProcessParameterExtensions";
+import {
+  createMockParameters,
+  createMockProcessDefaults,
+  createBooleanDefaults,
+  createMinimalDefaultsForForm,
+} from "../../../../testUtils/processDefaults.fixtures";
 
 // Mock logger
 jest.mock('@/utils/logger', () => ({
@@ -203,56 +209,8 @@ describe("ProcessParameterMapper", () => {
   });
 
   describe('processDefaultsForForm', () => {
-    const mockProcessDefaults: ProcessDefaultsResponse = {
-      defaults: {
-        "trxtype": "",
-        "ad_org_id": {
-          "value": "E443A31992CB4635AFCAEABE7183CE85",
-          "identifier": "F&B España - Región Norte"
-        },
-        "actual_payment": "1.85",
-        "issotrx": true,
-        "trxtype_display_logic": "N",
-        "actual_payment_readonly_logic": "N"
-      },
-      filterExpressions: {},
-      refreshParent: false
-    };
-
-    const mockParameters = [
-      {
-        id: '1',
-        name: 'trxtype',
-        reference: 'String',
-        mandatory: false,
-        defaultValue: '',
-        refList: []
-      },
-      {
-        id: '2',
-        name: 'ad_org_id',
-        reference: 'Search',
-        mandatory: true,
-        defaultValue: '',
-        refList: []
-      },
-      {
-        id: '3',
-        name: 'actual_payment',
-        reference: 'Amount',
-        mandatory: false,
-        defaultValue: '',
-        refList: []
-      },
-      {
-        id: '4',
-        name: 'issotrx',
-        reference: 'Boolean',
-        mandatory: false,
-        defaultValue: '',
-        refList: []
-      }
-    ] as any[];
+    const mockProcessDefaults: ProcessDefaultsResponse = createMinimalDefaultsForForm();
+    const mockParameters = createMockParameters() as any[];
 
     it('should process defaults for React Hook Form correctly', () => {
       const result = ProcessParameterMapper.processDefaultsForForm(mockProcessDefaults, mockParameters);
@@ -276,13 +234,7 @@ describe("ProcessParameterMapper", () => {
         refList: []
       } as any;
 
-      const booleanDefaults: ProcessDefaultsResponse = {
-        defaults: {
-          "test_boolean": "Y"
-        },
-        filterExpressions: {},
-        refreshParent: false
-      };
+      const booleanDefaults: ProcessDefaultsResponse = createBooleanDefaults("test_boolean");
 
       const result = ProcessParameterMapper.processDefaultsForForm(
         booleanDefaults, 
@@ -340,48 +292,8 @@ describe("ProcessParameterMapper", () => {
 
   describe('Integration with real response structure', () => {
     it('should handle complete real world response', () => {
-      const realResponse: ProcessDefaultsResponse = {
-        "defaults": {
-          "trxtype": "",
-          "ad_org_id": {
-            "value": "E443A31992CB4635AFCAEABE7183CE85",
-            "identifier": "F&B España - Región Norte"
-          },
-          "bslamount": "",
-          "payment_documentno": "<1000373>",
-          "c_currency_id": {
-            "value": "102",
-            "identifier": "EUR"
-          },
-          "actual_payment": "1.85",
-          "payment_date": "05-08-2025",
-          "transaction_type": "I",
-          "customer_credit": "0",
-          "issotrx": true,
-          "StdPrecision": "2",
-          "generateCredit": "0",
-          "DOCBASETYPE": "ARR",
-          "overpayment_action_display_logic": "N",
-          "trxtype_display_logic": "N",
-          "actual_payment_readonly_logic": "N",
-          "received_from_readonly_logic": "Y"
-        },
-        "filterExpressions": {
-          "order_invoice": {
-            "paymentMethodName": "Transferencia"
-          },
-          "glitem": {},
-          "credit_to_use": {}
-        },
-        "refreshParent": true
-      };
-
-      const mockParams = [
-        { id: '1', name: 'trxtype', reference: 'String', mandatory: false, defaultValue: '', refList: [] },
-        { id: '2', name: 'ad_org_id', reference: 'Search', mandatory: true, defaultValue: '', refList: [] },
-        { id: '3', name: 'actual_payment', reference: 'Amount', mandatory: false, defaultValue: '', refList: [] },
-        { id: '4', name: 'issotrx', reference: 'Boolean', mandatory: false, defaultValue: '', refList: [] }
-      ] as any[];
+      const realResponse: ProcessDefaultsResponse = createMockProcessDefaults();
+      const mockParams = createMockParameters() as any[];
       
       // Extract form data
       const formData = ProcessParameterMapper.processDefaultsForForm(realResponse, mockParams);

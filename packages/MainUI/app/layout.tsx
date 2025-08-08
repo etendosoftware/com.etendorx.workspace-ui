@@ -28,11 +28,18 @@ import MetadataProvider from "@/contexts/metadata";
 import Layout from "@/components/layout";
 import { DENSITY_KEY } from "@/utils/accessibility/constants";
 
+// Allow disabling Google Fonts usage in restricted environments
+const disableRemoteFonts = process.env.DISABLE_REMOTE_FONTS === "1" || process.env.CI === "1";
+
+// Font loaders must be called at module scope
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-inter",
 });
+
+// Only apply the class when remote fonts are allowed
+const interVariable = disableRemoteFonts ? "" : inter.variable;
 
 export const metadata: Metadata = {
   title: "Etendo",
@@ -54,7 +61,7 @@ export default function RootLayout({
   `;
 
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={interVariable}>
       <head>
         <meta charSet="utf-8" />
         <link rel="icon" href="/favicon.ico" sizes="any" />

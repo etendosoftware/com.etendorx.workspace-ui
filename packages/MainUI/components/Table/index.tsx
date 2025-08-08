@@ -304,8 +304,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
   useTableSelection(tab, records, table.getState().rowSelection, handleTableSelectionChange);
 
   useEffect(() => {
-    const handleGraphClear = (eventTab: typeof tab) => {
-      if (eventTab.id === tab.id) {
+    const handleGraphClear = (eventTab: { id: string | number }) => {
+      if (String(eventTab.id) === String(tabId)) {
         const currentSelection = table.getState().rowSelection;
         const hasTableSelection = Object.keys(currentSelection).some((id) => currentSelection[id]);
 

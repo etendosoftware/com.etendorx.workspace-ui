@@ -56,7 +56,10 @@ export const useProcessDefaults = ({
    * Generates a cache key based on processId, windowId, and context hash
    */
   const generateCacheKey = useCallback((contextData: Record<string, EntityValue>): string => {
-    const contextHash = JSON.stringify(contextData, Object.keys(contextData).sort());
+    const contextHash = JSON.stringify(
+      contextData,
+      Object.keys(contextData).sort((a, b) => a.localeCompare(b))
+    );
     return `${processId}:${windowId}:${btoa(contextHash).slice(0, 16)}`;
   }, [processId, windowId]);
 
@@ -149,7 +152,10 @@ export const useProcessDefaults = ({
       const cacheEntry: CacheEntry = {
         data: processedDefaults,
         timestamp: Date.now(),
-        contextHash: JSON.stringify(contextData, Object.keys(contextData).sort()),
+        contextHash: JSON.stringify(
+          contextData,
+          Object.keys(contextData).sort((a, b) => a.localeCompare(b))
+        ),
       };
       cacheRef.current.set(cacheKey, cacheEntry);
 

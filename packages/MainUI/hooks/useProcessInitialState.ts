@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { logger } from "@/utils/logger";
 import type { EntityData, ProcessParameter } from "@workspaceui/api-client/src/api/types";
-import type { 
-  ProcessDefaultsResponse, 
-  ProcessDefaultValue
+import type {
+  ProcessDefaultsResponse,
+  ProcessDefaultValue,
 } from "@/components/ProcessModal/types/ProcessParameterExtensions";
 import { 
   isReferenceValue, 
@@ -16,98 +16,84 @@ import {
  */
 export const useProcessInitialState = (
   processInitialization?: ProcessDefaultsResponse | null,
-  parameters?: ProcessParameter[]
+  _parameters?: ProcessParameter[]
 ) => {
-  // Create parameter name mapping for efficient lookups
-  const parameterMap = useMemo(() => {
-    if (!parameters) return new Map<string, ProcessParameter>();
-    
-    const map = new Map<string, ProcessParameter>();
-    parameters.forEach(param => {
-      // Map by name (primary)
-      map.set(param.name, param);
-      // Map by dBColumnName if different
-      if (param.dBColumnName && param.dBColumnName !== param.name) {
-        map.set(param.dBColumnName, param);
+  const isLogicField = (name: string) =>
+    name.endsWith('_display_logic') || name.endsWith('_readonly_logic');
+
+  const processDefaultField = (
+    acc: EntityData,
+    fieldName: string,
+    value: ProcessDefaultValue,
+  ) => {
+    // Skip logic fields (will be processed separately)
+    if (isLogicField(fieldName)) return;
+
+    // Use the original field name from server, not the parameter display name
+    const formFieldName = fieldName;
+
+    if (isReferenceValue(value)) {
+      acc[formFieldName] = value.value;
+      if (value.identifier) {
+        acc[`${formFieldName}$_identifier`] = value.identifier;
       }
-      // Map by ID as fallback
-      if (param.id && param.id !== param.name) {
-        map.set(param.id, param);
+      logger.debug(`Mapped reference field ${fieldName} to ${formFieldName}:`, {
+        value: value.value,
+        identifier: value.identifier,
+      });
+      return;
+    }
+
+    if (isSimpleValue(value)) {
+      acc[formFieldName] = typeof value === 'boolean' ? value : String(value);
+      logger.debug(`Mapped simple field ${fieldName} to ${formFieldName}:`, {
+        value: String(value),
+        type: typeof value,
+      });
+      return;
+    }
+
+    // Fallback for unexpected value types
+    logger.warn(`Unexpected value type for field ${fieldName}:`, value);
+    if (typeof value === 'object' && value !== null) {
+      acc[formFieldName] = JSON.stringify(value);
+    } else {
+      acc[formFieldName] = String(value || "");
+    }
+  };
+
+  const buildInitialStateFromDefaults = (
+    defaults: Record<string, ProcessDefaultValue>,
+  ) => {
+    const acc = {} as EntityData;
+    for (const [fieldName, value] of Object.entries(defaults)) {
+      try {
+        processDefaultField(acc, fieldName, value);
+      } catch (error) {
+        logger.error(`Error processing default value for field ${fieldName}:`, error);
+        acc[fieldName] = "";
       }
-    });
-    return map;
-  }, [parameters]);
+    }
+    return acc;
+  };
 
   const initialState = useMemo(() => {
     if (!processInitialization?.defaults) return null;
-    
-    // If defaults is empty object, return empty object (not null)
-    if (Object.keys(processInitialization.defaults).length === 0) return {};
 
-    const acc = {} as EntityData;
     const { defaults } = processInitialization;
+    // If defaults is empty object, return empty object (not null)
+    if (Object.keys(defaults).length === 0) return {};
 
-    // Process each default value
-    for (const [fieldName, value] of Object.entries(defaults)) {
-      try {
-        // Skip logic fields (will be processed separately)
-        if (fieldName.endsWith('_display_logic') || fieldName.endsWith('_readonly_logic')) {
-          continue;
-        }
-
-        // Find corresponding parameter
-        const parameter = parameterMap.get(fieldName);
-        // Use the original field name from server, not the parameter display name
-        const formFieldName = fieldName; // parameter?.name causes mismatch with form field names
-
-        if (isReferenceValue(value)) {
-          // Handle reference objects with value/identifier pairs
-          acc[formFieldName] = value.value;
-          
-          // Store identifier for display purposes
-          if (value.identifier) {
-            acc[`${formFieldName}$_identifier`] = value.identifier;
-          }
-          
-          logger.debug(`Mapped reference field ${fieldName} to ${formFieldName}:`, {
-            value: value.value,
-            identifier: value.identifier
-          });
-        } else if (isSimpleValue(value)) {
-          // Handle simple values (string, number, boolean)
-          acc[formFieldName] = typeof value === 'boolean' ? value : String(value);
-          
-          logger.debug(`Mapped simple field ${fieldName} to ${formFieldName}:`, {
-            value: String(value),
-            type: typeof value
-          });
-        } else {
-          // Fallback for unexpected value types
-          logger.warn(`Unexpected value type for field ${fieldName}:`, value);
-          // Handle objects that aren't reference values
-          if (typeof value === 'object' && value !== null) {
-            acc[formFieldName] = JSON.stringify(value);
-          } else {
-            acc[formFieldName] = String(value || "");
-          }
-        }
-      } catch (error) {
-        logger.error(`Error processing default value for field ${fieldName}:`, error);
-        // Set fallback value to prevent form errors
-        const parameter = parameterMap.get(fieldName);
-        const formFieldName = parameter?.name || fieldName;
-        acc[formFieldName] = "";
-      }
-    }
+    const acc = buildInitialStateFromDefaults(defaults);
 
     logger.debug("Process initial state:", {
       originalFields: Object.keys(defaults).length,
       processedFields: Object.keys(acc).length,
-      fieldNames: Object.keys(acc)
+      fieldNames: Object.keys(acc),
     });
 
     return acc;
-  }, [processInitialization, parameterMap]);
+  }, [processInitialization]);
 
   return initialState;
 };

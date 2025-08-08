@@ -17,32 +17,35 @@ export const useProcessDefaultsInitialState = (
   processDefaults?: ProcessDefaultsResponse | null,
   parameters?: Record<string, ProcessParameter>
 ) => {
+  // Create parameter name mapping (field name to parameter mapping)
+  const parameterNameMap = useMemo(() => {
+    if (!parameters) return {} as Record<string, ProcessParameter>;
+
+    const map: Record<string, ProcessParameter> = {};
+    Object.values(parameters).forEach((param) => {
+      // Map by name and dBColumnName
+      map[param.name] = param;
+      if (param.dBColumnName && param.dBColumnName !== param.name) {
+        map[param.dBColumnName] = param;
+      }
+    });
+    return map;
+  }, [parameters]);
+
   const initialState = useMemo(() => {
     if (!processDefaults?.defaults) return {};
 
     const acc = {} as EntityData;
     const { defaults } = processDefaults;
 
-    // Create parameter name mapping (field name to parameter mapping)
-    const parameterNameMap = useMemo(() => {
-      if (!parameters) return {};
-      
-      const map: Record<string, ProcessParameter> = {};
-      Object.values(parameters).forEach(param => {
-        // Map by name and dBColumnName
-        map[param.name] = param;
-        if (param.dBColumnName && param.dBColumnName !== param.name) {
-          map[param.dBColumnName] = param;
-        }
-      });
-      return map;
-    }, [parameters]);
-
     // Process each default value
     for (const [fieldName, value] of Object.entries(defaults)) {
       try {
         // Skip logic fields (will be processed separately)
-        if (fieldName.endsWith('_display_logic') || fieldName.endsWith('_readonly_logic')) {
+        if (
+          fieldName.endsWith('_display_logic') ||
+          fieldName.endsWith('_readonly_logic')
+        ) {
           continue;
         }
 
@@ -54,19 +57,19 @@ export const useProcessDefaultsInitialState = (
           // Handle reference objects with value/identifier
           acc[formFieldName] = value.value;
           acc[`${formFieldName}$_identifier`] = value.identifier;
-          
+
           logger.debug(`Mapped reference field ${fieldName}:`, {
             formField: formFieldName,
             value: value.value,
-            identifier: value.identifier
+            identifier: value.identifier,
           });
         } else if (isSimpleValue(value)) {
           // Handle simple values (string, number, boolean)
           acc[formFieldName] = String(value);
-          
+
           logger.debug(`Mapped simple field ${fieldName}:`, {
             formField: formFieldName,
-            value: String(value)
+            value: String(value),
           });
         } else {
           logger.warn(`Unexpected value type for field ${fieldName}:`, value);
@@ -74,7 +77,10 @@ export const useProcessDefaultsInitialState = (
           acc[formFieldName] = String(value);
         }
       } catch (error) {
-        logger.error(`Error processing default value for field ${fieldName}:`, error);
+        logger.error(
+          `Error processing default value for field ${fieldName}:`,
+          error
+        );
         // Set fallback value to prevent form errors
         acc[fieldName] = "";
       }
@@ -82,7 +88,7 @@ export const useProcessDefaultsInitialState = (
 
     logger.info("Process defaults initial state:", acc);
     return acc;
-  }, [processDefaults, parameters]);
+  }, [processDefaults, parameterNameMap]);
 
   return initialState;
 };
