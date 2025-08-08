@@ -71,4 +71,22 @@ describe('API: /api/erp base forward', () => {
     expect(init.headers['Authorization']).toBe('Bearer token-abc');
     expect(init.body).toBe('{"k":"v"}');
   });
+
+  it('forwards GET to base ERP URL + query with Authorization', async () => {
+    const url = 'http://localhost:3000/api/erp?foo=bar&x=1';
+    const headers = new Map<string, string>();
+    headers.set('Authorization', 'Bearer get-token');
+    const req = {
+      method: 'GET',
+      headers: { get: (k: string) => headers.get(k) || null } as any,
+      url,
+      text: async () => '',
+    } as unknown as NextRequest;
+    const { GET } = await import('../route');
+    await GET(req as any);
+    const [dest, init] = (global as any).fetch.mock.calls[0];
+    expect(String(dest)).toBe('http://erp.example/etendo?foo=bar&x=1');
+    expect(init.method).toBe('GET');
+    expect(init.headers['Authorization']).toBe('Bearer get-token');
+  });
 });

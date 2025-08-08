@@ -18,7 +18,7 @@ describe('Invoice save parity: /api/datasource/Invoice', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: 'http://erp.example/etendo' };
+    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: 'http://erp.example/etendo' } as any;
     (global as any).fetch = jest.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -68,18 +68,16 @@ describe('Invoice save parity: /api/datasource/Invoice', () => {
 
     const [dest, init] = (global as any).fetch.mock.calls[0];
     expect(String(dest)).toBe(
-      'http://erp.example/etendo/org.openbravo.service.datasource/Invoice?windowId=167&tabId=263&moduleId=0&_operationType=update&_noActiveFilter=true&sendOriginalIDBack=true&_extraProperties=&Constants_FIELDSEPARATOR=%24&_className=OBViewDataSource&Constants_IDENTIFIER=_identifier&isc_dataFormat=json'
+      'http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice?windowId=167&tabId=263&moduleId=0&_operationType=update&_noActiveFilter=true&sendOriginalIDBack=true&_extraProperties=&Constants_FIELDSEPARATOR=%24&_className=OBViewDataSource&Constants_IDENTIFIER=_identifier&isc_dataFormat=json'
     );
     expect(init.method).toBe('POST');
     expect(init.headers['Authorization']).toBe('Bearer Bearer-Token-123');
-    expect(init.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
-    expect(init.headers['X-CSRF-Token']).toBe('8FDC75ECD28E4C428690BF880FFAE82D');
-    const decoded = decodeURIComponent(init.body as string);
-    expect(decoded).toContain('dataSource=isc_OBViewDataSource_0');
-    expect(decoded).toContain('operationType=add');
-    expect(decoded).toContain('componentId=isc_OBViewForm_0');
-    expect(decoded).toContain('csrfToken=8FDC75ECD28E4C428690BF880FFAE82D');
-    expect(decoded).toContain('data=');
+    expect(init.headers['Content-Type']).toContain('application/json');
+    expect(init.headers['X-CSRF-Token']).toBeUndefined();
+    const raw = init.body as string;
+    expect(raw).toContain('"dataSource":"isc_OBViewDataSource_0"');
+    expect(raw).toContain('"operationType":"add"');
+    expect(raw).toContain('"componentId":"isc_OBViewForm_0"');
+    expect(raw).toContain('"csrfToken":"8FDC75ECD28E4C428690BF880FFAE82D"');
   });
 });
-

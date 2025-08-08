@@ -16,6 +16,7 @@
  */
 
 import type { Metadata } from "next/types";
+import { cookies } from "next/headers";
 import { Inter } from "next/font/google";
 import ApiProviderWrapper from "@/contexts/api/wrapper";
 import "./styles/global.css";
@@ -39,7 +40,7 @@ export const metadata: Metadata = {
   applicationName: "Etendo",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -52,9 +53,13 @@ export default function RootLayout({
       } catch(e) {}
     })();
   `;
-
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={(() => {
+      // Read density from cookie on the server to avoid SSR/CSR mismatch
+      const cookieStore = cookies();
+      const density = cookieStore.get(DENSITY_KEY)?.value ?? "";
+      return [inter.variable, density].filter(Boolean).join(" ");
+    })()}>
       <head>
         <meta charSet="utf-8" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
