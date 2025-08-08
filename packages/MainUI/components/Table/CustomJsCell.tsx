@@ -23,6 +23,7 @@ import { evaluateCustomJs } from "@/utils/customJsEvaluator";
 import { isColorString } from "@/utils/table/utils";
 import ColorCell from "@/components/Table/Cells/ColorCell";
 import { logger } from "@/utils/logger";
+import { CircularProgress } from "@mui/material";
 
 const renderCellContent = (result: unknown): JSX.Element => {
   if (isColorString(result)) {
@@ -69,7 +70,11 @@ export const CustomJsCell: React.FC<CustomJsCellProps> = React.memo(({ cell, row
   }, [customJsCode, cell.getValue(), row.original, column]);
 
   if (isEvaluating) {
-    return null; // Optionally return a loading state or placeholder
+    return (
+      <span className="w-full h-full flex justify-center items-center">
+        <CircularProgress />
+      </span>
+    );
   }
 
   return renderCellContent(result);

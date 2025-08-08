@@ -18,6 +18,7 @@
 import { executeStringFunction } from "./functions";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { Column } from "@workspaceui/api-client/src/api/types";
+import { logger } from "@/utils/logger";
 
 export interface CustomJsContext {
   record: Record<string, unknown>;
@@ -28,7 +29,7 @@ export async function evaluateCustomJs(jsCode: string, context: CustomJsContext)
   try {
     return await executeStringFunction(jsCode, { Metadata }, context);
   } catch (error) {
-    console.error("Error evaluating custom JS:", error);
+    logger.error("Error evaluating custom JS:", error);
     // Fallback: show original value or placeholder
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return `[Error: ${errorMessage}]`;

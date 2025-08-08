@@ -39,6 +39,9 @@
  * const context = { db: { add: (x, y) => x + y } };
  * const result = await executeStringFunction(code, context, 5, 7);
  * console.log(result); // 12
+ *
+ * WARNING: Executing code from strings is dangerous. Only use with trusted input.
+ * Consider validating or restricting the code parameter to prevent code injection attacks.
  */
 
 export async function executeStringFunction(code: string, context = {}, ...args: unknown[]) {
