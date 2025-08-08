@@ -12,10 +12,12 @@ export default {
   moduleNameMapper: {
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",
     "\\.(gif|ttf|eot|svg|png|jpg|jpeg)$": "<rootDir>/__mocks__/fileMock.js",
-    "^@workspaceui/api-client(.*)$": "<rootDir>/packages/api-client/src$1",
-    "^@workspaceui/componentlibrary(.*)$": "<rootDir>/packages/ComponentLibrary/src$1",
+    "^@workspaceui/api-client(.*)$": "<rootDir>/packages/api-client$1",
+    "^@workspaceui/componentlibrary(.*)$": "<rootDir>/packages/ComponentLibrary$1",
     "^@workspaceui/mainui(.*)$": "<rootDir>/packages/MainUI$1",
     "^@/(.*)$": "<rootDir>/packages/MainUI/$1",
+    "^react-markdown$": "<rootDir>/__mocks__/react-markdown.js",
+    "\\.svg\\?url$": "<rootDir>/__mocks__/fileMock.js",
   },
 
   testPathIgnorePatterns: ["<rootDir>/node_modules/", "<rootDir>/dist/", "<rootDir>/build/", "<rootDir>/.next/"],
