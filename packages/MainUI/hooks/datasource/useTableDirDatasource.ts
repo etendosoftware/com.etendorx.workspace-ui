@@ -31,7 +31,8 @@ import {
 } from "./constants";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
-import { FALLBACK_RESULT } from "@/components/ProcessModal/ProcessDefinitionModal";
+// Local fallback to avoid importing UI components (and Next server modules) in hooks/tests
+const FALLBACK_RESULT: Record<string, EntityValue> = {} as any;
 
 export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 20 }: UseTableDirDatasourceParams) => {
   const { getValues, watch } = useFormContext();
@@ -58,7 +59,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
 
     for (const [sourceField, targetField] of Object.entries(INVOICE_FIELD_MAPPINGS)) {
       if (!recordValues) {
-        return [];
+        return FALLBACK_RESULT;
       }
       const value = recordValues[sourceField];
       if (value !== null && value !== undefined && value !== "") {

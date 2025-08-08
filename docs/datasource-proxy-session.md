@@ -105,6 +105,11 @@ Passthrough Control (JSON vs form)
 - CSRF errors (session‑less):
   - ERP may require JSESSIONID for CSRF validation. Switch to stateful (`ERP_FORWARD_COOKIES=true`) or update ERP config.
 
+- Callout side-effects after save:
+  - If you see unexpected cascades or field updates after a save or a callout, enable callout debug logs to trace execution:
+    - Set `DEBUG_CALLOUTS=true` (or `NEXT_PUBLIC_DEBUG_CALLOUTS=true`) in env, or run `localStorage.setItem('DEBUG_CALLOUTS','true')` in the browser console.
+    - Review `docs/callouts-behavior.md` for the execution model and suppression/resume flow.
+
 ## Tests
 
 - Session‑less behavior is covered by:

@@ -113,3 +113,10 @@ Make sure `package.json` inside `./packages/storybook` includes:
 For any issues or questions, please reach out to the maintainers or open an issue in this repository.
 
 Happy coding! 🌟
+
+---
+
+## Reference Docs
+
+- `docs/datasource-proxy-session.md` — ERP proxy modes (stateful/session‑less), JSON passthrough via `?isc_dataFormat=json`.
+- `docs/callouts-behavior.md` — Form callouts execution model, batch application without cascades, entries injection, and debugging with `DEBUG_CALLOUTS`.

@@ -181,15 +181,10 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   }, [selectedTab, expandedSections]);
 
   useEffect(() => {
-    if (recordId || isSucessfullEdit) {
+    if (recordId) {
       refetch();
-      setIsSucessfullEdit(false);
     }
-
-    return () => {
-      setIsSucessfullEdit(false);
-    };
-  }, [recordId, isSucessfullEdit, refetch, mode]);
+  }, [recordId, refetch, mode]);
 
   useEffect(() => {
     if (!availableFormData) return;
@@ -246,11 +241,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const onSuccess = useCallback(
     async (data: EntityData, showModal: boolean) => {
+      // Prevent callouts while applying server-updated values
+      setIsFormInitializing(true);
       if (mode === FormMode.EDIT) {
         reset({ ...initialState, ...data });
       } else {
         setRecordId(String(data.id));
       }
+      setTimeout(() => setIsFormInitializing(false), 50);
 
       graph.setSelected(tab, data);
       graph.setSelectedMultiple(tab, [data]);
@@ -259,9 +257,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       if (windowId) {
         setSelectedRecord(windowId, tab.id, String(data.id));
       }
-
-      setIsSucessfullEdit(true);
-
       if (showModal) {
         showSuccessModal("Saved");
       }
