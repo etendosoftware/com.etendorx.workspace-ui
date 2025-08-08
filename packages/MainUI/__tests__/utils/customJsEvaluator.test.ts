@@ -28,6 +28,13 @@ jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
   Metadata: {},
 }));
 
+// Mock logger
+jest.mock("@/utils/logger", () => ({
+  logger: {
+    error: jest.fn(),
+  },
+}));
+
 describe("CustomJS Evaluator", () => {
   const mockRecord = {
     id: "1",
@@ -55,15 +62,10 @@ describe("CustomJS Evaluator", () => {
   };
 
   const { executeStringFunction } = require("@/utils/functions");
+  const { logger } = require("@/utils/logger");
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset console.error mock
-    jest.spyOn(console, "error").mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
   });
 
   describe("Successful evaluations", () => {
@@ -158,7 +160,7 @@ describe("CustomJS Evaluator", () => {
 
       const result = await evaluateCustomJs(code, mockContext);
 
-      expect(console.error).toHaveBeenCalledWith("Error evaluating custom JS:", error);
+      expect(logger.error).toHaveBeenCalledWith("Error evaluating custom JS:", error);
       expect(result).toBe("[Error: Cannot read property 'property' of undefined]");
     });
 
@@ -169,7 +171,7 @@ describe("CustomJS Evaluator", () => {
 
       const result = await evaluateCustomJs(code, mockContext);
 
-      expect(console.error).toHaveBeenCalledWith("Error evaluating custom JS:", error);
+      expect(logger.error).toHaveBeenCalledWith("Error evaluating custom JS:", error);
       expect(result).toBe("[Error: Unexpected end of input]");
     });
 

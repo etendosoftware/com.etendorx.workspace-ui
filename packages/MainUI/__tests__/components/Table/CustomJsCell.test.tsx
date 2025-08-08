@@ -94,12 +94,10 @@ describe("CustomJsCell Component", () => {
   it("should show loading state during evaluation", () => {
     mockEvaluateCustomJs.mockImplementation(() => new Promise(() => {})); // Never resolves
 
-    const { container } = render(
-      <CustomJsCell cell={mockCell} row={mockRow} customJsCode="(record) => record.name" column={mockColumn} />
-    );
+    render(<CustomJsCell cell={mockCell} row={mockRow} customJsCode="(record) => record.name" column={mockColumn} />);
 
-    // The component returns null during loading, so the container should be empty
-    expect(container.firstChild).toBeNull();
+    // The component should show a loading spinner during evaluation
+    expect(screen.getByRole("progressbar")).toBeInTheDocument();
   });
 
   it("should fallback to original value on error", async () => {
