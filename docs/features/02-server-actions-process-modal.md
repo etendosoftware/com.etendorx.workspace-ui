@@ -1,6 +1,6 @@
 ## **PRD-02: Migration of `ProcessDefinitionModal` to Server Actions**
 
-**Status:** Proposed
+**Status:** Implemented
 **Owner:** Development Team
 **Date:** 2024-07-25
 **Priority:** CRITICAL
@@ -29,54 +29,43 @@ The Server Action will handle the following:
 
 #### **3.1. Creating the Server Action**
 
-A new file will be created at `app/actions/process.ts`:
+New file created at `packages/MainUI/app/actions/process.ts`:
 
 ```typescript
-// app/actions/process.ts
+// packages/MainUI/app/actions/process.ts
 'use server';
-
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { logger } from '@/utils/logger';
 
-export async function executeProcess(
-processId: string,
-parameters: Record<string, any>
-) {
-try {
-// Execution is now 10x faster on the server
-const response = await fetch(`${process.env.ETENDO_CLASSIC_URL}/process/${processId}`, {
-  method: 'POST',
-  headers: {
-  // Forward the user's Bearer token (derived from JWT in the request)
-  'Authorization': `Bearer ${userToken}`,
-  'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(parameters),
-  next: {
-tags: [`process-${processId}`], // Optional: cache for the process itself
-}
-});
+export async function executeProcess(processId: string, parameters: Record<string, any>) {
+  try {
+    const apiUrl = `${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/api/erp?processId=${encodeURIComponent(processId)}`;
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(parameters ?? {}),
+    });
 
-if (!response.ok) {
-const errorData = await response.json();
-return { success: false, error: errorData.message || 'Execution failed' };
-}
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Execution failed');
+      logger.error?.(`executeProcess(${processId}) failed: ${response.status} ${response.statusText}. ${errorText}`);
+      return { success: false, error: errorText || 'Process execution failed' };
+    }
 
-const result = await response.json();
-
-// Invalidate the cache for data that may have changed
-revalidateTag('datasource');
-revalidatePath('/window'); // Invalidate specific paths
-
-return { success: true, data: result };
-} catch (error) {
-return { success: false, error: 'An unexpected error occurred' };
-}
+    const result = await response.json().catch(() => null);
+    revalidateTag('datasource');
+    revalidatePath('/window');
+    return { success: true, data: result };
+  } catch (error) {
+    logger.error?.(`Server Action executeProcess(${processId}) error`, error);
+    return { success: false, error: 'An unexpected server error occurred' };
+  }
 }
 ```
 
 #### **3.2. Refactoring the `ProcessDefinitionModal` Component**
 
-The modal will be significantly simplified by using the `useFormState` or `useTransition` hook to handle the action's state.
+The modal is simplified using `useTransition` to handle the action's state and replaces local `isExecuting`, `isSuccess`, and `response` with a single `result` object.
 
 ```typescript
 // ProcessDefinitionModal.tsx

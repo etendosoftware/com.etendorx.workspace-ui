@@ -74,6 +74,13 @@ const ConfigurationSection: React.FC = () => {
       }
       rootElement.classList.add(newStyle);
       setDensity(newStyle);
+      try {
+        // Persist also in a cookie so SSR can read and match the class
+        const maxAge = 60 * 60 * 24 * 365; // 1 year
+        document.cookie = `${DENSITY_KEY}=${encodeURIComponent(newStyle)}; path=/; max-age=${maxAge}`;
+      } catch (_) {
+        // no-op
+      }
     }
   };
 
