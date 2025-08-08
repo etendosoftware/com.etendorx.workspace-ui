@@ -16,11 +16,13 @@
  */
 
 import { logger } from "@/utils/logger";
+import { isDebugCallouts } from "@/utils/debug";
 
 class GlobalCalloutManager {
   private isCalloutInProgress = false;
   private pendingCallouts = new Map<string, () => Promise<void>>();
   private calloutQueue: string[] = [];
+  private suppressCount = 0;
 
   async executeCallout(fieldName: string, calloutFn: () => Promise<void>): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -58,9 +60,9 @@ class GlobalCalloutManager {
 
       const callout = this.pendingCallouts.get(fieldName);
       if (!callout) return;
-
+      if (isDebugCallouts()) logger.debug(`[Callout] Executing: ${fieldName}`);
       await callout();
-
+      if (isDebugCallouts()) logger.debug(`[Callout] Completed: ${fieldName}`);
       this.pendingCallouts.delete(fieldName);
 
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -86,6 +88,25 @@ class GlobalCalloutManager {
 
   arePendingCalloutsEmpty(): boolean {
     return this.calloutQueue.length === 0 && this.pendingCallouts.size === 0;
+  }
+
+  // Globally suppress callouts (e.g., while applying server-driven values)
+  suppress(): void {
+    this.suppressCount++;
+    if (isDebugCallouts()) logger.debug(`[Callout] Suppress on (depth=${this.suppressCount})`);
+  }
+
+  resume(): void {
+    this.suppressCount = Math.max(0, this.suppressCount - 1);
+    if (isDebugCallouts()) logger.debug(`[Callout] Resume (depth=${this.suppressCount})`);
+  }
+
+  isSuppressed(): boolean {
+    return this.suppressCount > 0;
+  }
+
+  canExecute(hqlName: string): boolean {
+    return !this.isCalloutInProgress && !this.isSuppressed();
   }
 }
 

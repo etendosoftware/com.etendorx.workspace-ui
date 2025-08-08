@@ -22,6 +22,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import { globalCalloutManager } from "@/services/callouts";
 import { buildPayloadByInputName, parseDynamicExpression } from "@/utils";
 import { logger } from "@/utils/logger";
+import { isDebugCallouts } from "@/utils/debug";
 import { type Field, type FormInitializationResponse, FormMode } from "@workspaceui/api-client/src/api/types";
 import { getFieldsByColumnName } from "@workspaceui/api-client/src/utils/metadata";
 import { useParams } from "next/navigation";
@@ -106,6 +107,16 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         } else if (targetField && !identifier && value) {
           setValue(`${hqlName}$_identifier`, "", { shouldDirty: false });
         }
+
+        // If the callout returned restricted entries for this field, expose them to selectors
+        const withEntries = (columnValues as any)[column]?.entries as Array<{ id: string; _identifier: string }> | undefined;
+        if (withEntries && withEntries.length) {
+          setValue(
+            `${hqlName}$_entries`,
+            withEntries.map((e) => ({ id: e.id, label: e._identifier })),
+            { shouldDirty: false }
+          );
+        }
       }
     },
     [fieldsByColumnName, setValue]
@@ -125,6 +136,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     if (!tab || !field.column.callout) return;
 
     try {
+      if (isDebugCallouts()) logger.debug(`[Callout] Trigger by user on field: ${field.hqlName}`);
       const entityKeyColumn = tab.fields.id.columnName;
       const payload = buildPayloadByInputName(getValues(), fieldsByHqlName);
 
@@ -152,8 +164,20 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
       const data = await debouncedCallout(calloutData);
 
       if (data) {
-        applyColumnValues(data.columnValues);
-        applyAuxiliaryInputValues(data.auxiliaryInputValues);
+        // Prevent cascading callouts across fields while applying server-driven values
+        globalCalloutManager.suppress();
+        isSettingFromCallout.current = true;
+        try {
+          if (isDebugCallouts()) logger.debug(`[Callout] Applying values for field: ${field.hqlName}`, data);
+          applyColumnValues(data.columnValues);
+          applyAuxiliaryInputValues(data.auxiliaryInputValues);
+        } finally {
+          // Resume after react-hook-form state updates flush
+          setTimeout(() => {
+            isSettingFromCallout.current = false;
+            globalCalloutManager.resume();
+          }, 0);
+        }
       }
     } catch (err) {
       logger.error("Callout execution failed:", err);
@@ -175,14 +199,17 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
 
   const runCallout = useCallback(async () => {
     if (isSettingFromCallout.current) {
+      if (isDebugCallouts()) logger.debug(`[Callout] Skipped (setting from callout): ${field.hqlName}`);
       return;
     }
 
     if (isFormInitializing) {
+      if (isDebugCallouts()) logger.debug(`[Callout] Skipped (form initializing): ${field.hqlName}`);
       return;
     }
 
-    if (globalCalloutManager.isCalloutRunning()) {
+    if (globalCalloutManager.isCalloutRunning() || globalCalloutManager.isSuppressed()) {
+      if (isDebugCallouts()) logger.debug(`[Callout] Skipped (global busy/suppressed): ${field.hqlName}`);
       return;
     }
 

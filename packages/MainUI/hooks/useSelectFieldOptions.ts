@@ -24,17 +24,27 @@ export const useSelectFieldOptions = (field: Field, records: EntityData[]) => {
   const { watch } = useFormContext();
   const idKey = (field.selector?.valueField ?? "") as string;
   const identifierKey = (field.selector?.displayField ?? "") as string;
-  const [currentValue, currentIdentifier] = watch([field.hqlName, `${field.hqlName}$_identifier`]);
+  const [currentValue, currentIdentifier, injectedEntries] = watch([
+    field.hqlName,
+    `${field.hqlName}$_identifier`,
+    `${field.hqlName}$_entries`,
+  ]);
 
   return useMemo(() => {
     const result: SelectProps["options"] = [];
+    const injected = Array.isArray(injectedEntries) ? injectedEntries : [];
 
-    for (const record of records) {
-      const label = record[identifierKey] as string;
-      const id = record[idKey] as string;
-
-      if (id && label) {
-        result.push({ id, label, data: record });
+    if (injected.length > 0) {
+      for (const { id, label } of injected) {
+        if (id && label) result.push({ id, label, data: {} });
+      }
+    } else {
+      for (const record of records) {
+        const label = record[identifierKey] as string;
+        const id = record[idKey] as string;
+        if (id && label) {
+          result.push({ id, label, data: record });
+        }
       }
     }
 
@@ -45,5 +55,5 @@ export const useSelectFieldOptions = (field: Field, records: EntityData[]) => {
     }
 
     return result;
-  }, [currentIdentifier, currentValue, idKey, identifierKey, records]);
+  }, [currentIdentifier, currentValue, idKey, identifierKey, records, injectedEntries]);
 };
