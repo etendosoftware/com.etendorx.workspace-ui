@@ -28,6 +28,7 @@ export const DrawerItems: React.FC<DrawerItemsProps> = React.memo(
     toggleItemExpansion,
     searchValue,
     windowId,
+    pendingWindowId,
     onReportClick,
     onProcessClick,
   }) => {
@@ -54,6 +55,7 @@ export const DrawerItems: React.FC<DrawerItemsProps> = React.memo(
                   isExpandable={!searchValue && Array.isArray(item.children) && item.children.length > 0}
                   isSearchActive={Boolean(searchValue)}
                   windowId={windowId}
+                  pendingWindowId={pendingWindowId}
                 />
               );
             })

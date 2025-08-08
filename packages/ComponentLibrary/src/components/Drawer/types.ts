@@ -42,6 +42,7 @@ export interface DrawerProps {
   children?: React.ReactNode;
   sectionGroups?: SectionGroup[];
   windowId?: string;
+  pendingWindowId?: string;
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   RecentlyViewedComponent?: any;
   getTranslatedName?: (item: Menu) => string;
@@ -72,6 +73,7 @@ export interface DrawerSectionProps extends React.PropsWithChildren {
   isSearchActive: boolean;
   reportId?: string;
   windowId?: string;
+  pendingWindowId?: string;
   parentId?: string;
 }
 
@@ -109,6 +111,7 @@ export interface DrawerItemsProps {
   toggleItemExpansion: (itemId: string) => void;
   searchValue: string;
   windowId?: string;
+  pendingWindowId?: string;
   reportId?: string;
 }
 

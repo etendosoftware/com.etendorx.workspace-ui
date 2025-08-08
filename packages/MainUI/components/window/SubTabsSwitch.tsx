@@ -22,7 +22,7 @@ import { TabButton } from "@/components/window/TabButton";
 import { IconButton } from "@workspaceui/componentlibrary/src/components";
 import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 
-export const SubTabsSwitch = ({ tabs, current, onClick, onClose, onDoubleClick, collapsed }: TabsSwitchProps) => {
+export const SubTabsSwitch = ({ tabs, current, activeTabId, onClick, onClose, onDoubleClick, collapsed }: TabsSwitchProps) => {
   return (
     <div
       onDoubleClick={() => {
@@ -35,7 +35,7 @@ export const SubTabsSwitch = ({ tabs, current, onClick, onClose, onDoubleClick, 
             key={tab.id}
             tab={tab}
             onClick={onClick}
-            active={current.id === tab.id}
+            active={(activeTabId ?? current.id) === tab.id}
             onDoubleClick={onDoubleClick}
           />
         ))}

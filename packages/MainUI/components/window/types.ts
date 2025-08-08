@@ -21,6 +21,7 @@ export type TabsProps = { tabs: Tab[] };
 export type TabsSwitchProps = {
   current: Tab;
   tabs: Tab[];
+  activeTabId?: string;
   collapsed?: boolean;
   onClick: (tab: Tab) => void;
   onDoubleClick: (tab: Tab) => void;
