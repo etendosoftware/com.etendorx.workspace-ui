@@ -61,7 +61,7 @@ export default async function RootLayout({
     })();
   `;
   // Read density from cookie on the server to avoid SSR/CSR mismatch
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const density = cookieStore.get(DENSITY_KEY)?.value ?? "";
   const htmlClass = [inter.variable, density].filter(Boolean).join(" ");
 

@@ -79,6 +79,9 @@ function isSmartClientPayload(params: any): boolean {
 export async function POST(request: NextRequest) {
   try {
     const userToken = extractBearerToken(request);
+    if (!userToken) {
+      return NextResponse.json({ error: 'Unauthorized - Missing Bearer token' }, { status: 401 });
+    }
     // 1. Extract the full user context from the session
     const userContext = await getUserContext(request);
     if (!userContext) {
