@@ -26,13 +26,14 @@ import GenericSelector from "./GenericSelector";
 
 interface ProcessParameterSelectorProps {
   parameter: ProcessParameter | ExtendedProcessParameter;
+  logicFields?: Record<string, boolean>; // Optional logic fields from process defaults
 }
 
 /**
  * Main selector component that routes ProcessParameters to appropriate form controls
  * This component bridges ProcessParameters with FormView selectors for consistent UI
  */
-export const ProcessParameterSelector = ({ parameter }: ProcessParameterSelectorProps) => {
+export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessParameterSelectorProps) => {
   const { session } = useUserContext();
   const { getValues } = useFormContext();
 
@@ -41,21 +42,48 @@ export const ProcessParameterSelector = ({ parameter }: ProcessParameterSelector
     return ProcessParameterMapper.mapToField(parameter);
   }, [parameter]);
 
-  // Evaluate display logic expression
+  // Evaluate display logic expression (combine parameter logic with process defaults logic)
   const isDisplayed = useMemo(() => {
+    // Check process defaults logic first (takes precedence)
+    const defaultsDisplayLogic = logicFields?.[`${parameter.name}.display`];
+    if (defaultsDisplayLogic !== undefined) {
+      return defaultsDisplayLogic;
+    }
+    
+    // Fallback to parameter's own display logic
     if (!parameter.displayLogic) return true;
     
+    // Skip compilation if display logic looks like a field name (contains underscores and ends with _logic)
+    if (parameter.displayLogic.includes('_logic') && !parameter.displayLogic.includes('@')) {
+      logger.warn("Invalid display logic expression - looks like field name:", parameter.displayLogic);
+      return true; // Default to visible for malformed expressions
+    }
+    
+    // WAIT for form data to be available before evaluating expressions
+    const currentValues = getValues();
+    if (!currentValues || Object.keys(currentValues).length === 0) {
+      // Form data not loaded yet, default to visible to avoid errors
+      return true;
+    }
+
     try {
       const compiledExpr = compileExpression(parameter.displayLogic);
-      return compiledExpr(session, getValues());
+      return compiledExpr(session, currentValues);
     } catch (error) {
       logger.warn("Error executing display logic expression:", parameter.displayLogic, error);
       return true; // Default to visible on error
     }
-  }, [parameter.displayLogic, session, getValues]);
+  }, [parameter.displayLogic, parameter.name, logicFields, session, getValues]);
 
-  // Evaluate readonly logic expression
+  // Evaluate readonly logic expression (combine parameter logic with process defaults logic)
   const isReadOnly = useMemo(() => {
+    // Check process defaults logic first (takes precedence)
+    const defaultsReadOnlyLogic = logicFields?.[`${parameter.name}.readonly`];
+    if (defaultsReadOnlyLogic !== undefined) {
+      return defaultsReadOnlyLogic;
+    }
+    
+    // Fallback to parameter's own readonly logic
     if (!parameter.readOnlyLogicExpression) return false;
     
     try {
@@ -65,7 +93,7 @@ export const ProcessParameterSelector = ({ parameter }: ProcessParameterSelector
       logger.warn("Error executing readonly logic expression:", parameter.readOnlyLogicExpression, error);
       return false; // Default to editable on error
     }
-  }, [parameter.readOnlyLogicExpression, session, getValues]);
+  }, [parameter.readOnlyLogicExpression, parameter.name, logicFields, session, getValues]);
 
   // Get field type for selector routing
   const fieldType = useMemo(() => {

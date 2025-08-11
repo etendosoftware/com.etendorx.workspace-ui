@@ -1,5 +1,16 @@
 import { ProcessParameterMapper } from "../ProcessParameterMapper";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import type { ProcessDefaultsResponse } from "../../types/ProcessParameterExtensions";
+
+// Mock logger
+jest.mock('@/utils/logger', () => ({
+  logger: {
+    debug: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    info: jest.fn(),
+  },
+}));
 
 describe("ProcessParameterMapper", () => {
   const mockParameter = {
@@ -188,6 +199,209 @@ describe("ProcessParameterMapper", () => {
       
       expect(field.selector.datasourceName).toBe("CustomDatasource");
       expect(field.selector.customProperty).toBe("test");
+    });
+  });
+
+  describe('processDefaultsForForm', () => {
+    const mockProcessDefaults: ProcessDefaultsResponse = {
+      defaults: {
+        "trxtype": "",
+        "ad_org_id": {
+          "value": "E443A31992CB4635AFCAEABE7183CE85",
+          "identifier": "F&B España - Región Norte"
+        },
+        "actual_payment": "1.85",
+        "issotrx": true,
+        "trxtype_display_logic": "N",
+        "actual_payment_readonly_logic": "N"
+      },
+      filterExpressions: {},
+      refreshParent: false
+    };
+
+    const mockParameters = [
+      {
+        id: '1',
+        name: 'trxtype',
+        reference: 'String',
+        mandatory: false,
+        defaultValue: '',
+        refList: []
+      },
+      {
+        id: '2',
+        name: 'ad_org_id',
+        reference: 'Search',
+        mandatory: true,
+        defaultValue: '',
+        refList: []
+      },
+      {
+        id: '3',
+        name: 'actual_payment',
+        reference: 'Amount',
+        mandatory: false,
+        defaultValue: '',
+        refList: []
+      },
+      {
+        id: '4',
+        name: 'issotrx',
+        reference: 'Boolean',
+        mandatory: false,
+        defaultValue: '',
+        refList: []
+      }
+    ] as any[];
+
+    it('should process defaults for React Hook Form correctly', () => {
+      const result = ProcessParameterMapper.processDefaultsForForm(mockProcessDefaults, mockParameters);
+
+      expect(result).toEqual({
+        "trxtype": "",
+        "ad_org_id": "E443A31992CB4635AFCAEABE7183CE85",
+        "ad_org_id$_identifier": "F&B España - Región Norte",
+        "actual_payment": "1.85",
+        "issotrx": true
+      });
+    });
+
+    it('should handle boolean conversion for Yes/No fields', () => {
+      const booleanParameter = {
+        id: '5',
+        name: 'test_boolean',
+        reference: 'Yes/No',
+        mandatory: false,
+        defaultValue: '',
+        refList: []
+      } as any;
+
+      const booleanDefaults: ProcessDefaultsResponse = {
+        defaults: {
+          "test_boolean": "Y"
+        },
+        filterExpressions: {},
+        refreshParent: false
+      };
+
+      const result = ProcessParameterMapper.processDefaultsForForm(
+        booleanDefaults, 
+        [booleanParameter]
+      );
+
+      expect(result["test_boolean"]).toBe(true);
+    });
+
+    it('should skip logic fields', () => {
+      const result = ProcessParameterMapper.processDefaultsForForm(mockProcessDefaults, mockParameters);
+
+      expect(result["trxtype_display_logic"]).toBeUndefined();
+      expect(result["actual_payment_readonly_logic"]).toBeUndefined();
+    });
+  });
+
+  describe('extractLogicFields', () => {
+    const mockProcessDefaults: ProcessDefaultsResponse = {
+      defaults: {
+        "trxtype": "",
+        "trxtype_display_logic": "N",
+        "ad_org_id_display_logic": "Y",
+        "actual_payment_readonly_logic": "N",
+        "received_from_readonly_logic": "Y"
+      },
+      filterExpressions: {},
+      refreshParent: false
+    };
+
+    it('should extract logic fields correctly', () => {
+      const result = ProcessParameterMapper.extractLogicFields(mockProcessDefaults);
+
+      expect(result).toEqual({
+        "trxtype.display": false,
+        "ad_org_id.display": true,
+        "actual_payment.readonly": false,
+        "received_from.readonly": true
+      });
+    });
+
+    it('should handle empty logic fields', () => {
+      const emptyDefaults: ProcessDefaultsResponse = {
+        defaults: {
+          "trxtype": "test"
+        },
+        filterExpressions: {},
+        refreshParent: false
+      };
+
+      const result = ProcessParameterMapper.extractLogicFields(emptyDefaults);
+      expect(result).toEqual({});
+    });
+  });
+
+  describe('Integration with real response structure', () => {
+    it('should handle complete real world response', () => {
+      const realResponse: ProcessDefaultsResponse = {
+        "defaults": {
+          "trxtype": "",
+          "ad_org_id": {
+            "value": "E443A31992CB4635AFCAEABE7183CE85",
+            "identifier": "F&B España - Región Norte"
+          },
+          "bslamount": "",
+          "payment_documentno": "<1000373>",
+          "c_currency_id": {
+            "value": "102",
+            "identifier": "EUR"
+          },
+          "actual_payment": "1.85",
+          "payment_date": "05-08-2025",
+          "transaction_type": "I",
+          "customer_credit": "0",
+          "issotrx": true,
+          "StdPrecision": "2",
+          "generateCredit": "0",
+          "DOCBASETYPE": "ARR",
+          "overpayment_action_display_logic": "N",
+          "trxtype_display_logic": "N",
+          "actual_payment_readonly_logic": "N",
+          "received_from_readonly_logic": "Y"
+        },
+        "filterExpressions": {
+          "order_invoice": {
+            "paymentMethodName": "Transferencia"
+          },
+          "glitem": {},
+          "credit_to_use": {}
+        },
+        "refreshParent": true
+      };
+
+      const mockParams = [
+        { id: '1', name: 'trxtype', reference: 'String', mandatory: false, defaultValue: '', refList: [] },
+        { id: '2', name: 'ad_org_id', reference: 'Search', mandatory: true, defaultValue: '', refList: [] },
+        { id: '3', name: 'actual_payment', reference: 'Amount', mandatory: false, defaultValue: '', refList: [] },
+        { id: '4', name: 'issotrx', reference: 'Boolean', mandatory: false, defaultValue: '', refList: [] }
+      ] as any[];
+      
+      // Extract form data
+      const formData = ProcessParameterMapper.processDefaultsForForm(realResponse, mockParams);
+      
+      // Extract logic fields
+      const logicFields = ProcessParameterMapper.extractLogicFields(realResponse);
+
+      // Verify form data
+      expect(formData["ad_org_id"]).toBe("E443A31992CB4635AFCAEABE7183CE85");
+      expect(formData["ad_org_id$_identifier"]).toBe("F&B España - Región Norte");
+      expect(formData["actual_payment"]).toBe("1.85");
+      expect(formData["issotrx"]).toBe(true);
+
+      // Verify logic fields
+      expect(logicFields["trxtype.display"]).toBe(false);
+      expect(logicFields["received_from.readonly"]).toBe(true);
+
+      // Verify filter expressions
+      expect(realResponse.filterExpressions["order_invoice"]["paymentMethodName"]).toBe("Transferencia");
+      expect(realResponse.refreshParent).toBe(true);
     });
   });
 });

@@ -1,6 +1,15 @@
 import type { Field, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
-import type { ExtendedProcessParameter } from "../types/ProcessParameterExtensions";
+import type { 
+  ExtendedProcessParameter,
+  ProcessDefaultsResponse,
+  ProcessDefaultValue
+} from "../types/ProcessParameterExtensions";
+import { 
+  isReferenceValue,
+  isSimpleValue
+} from "../types/ProcessParameterExtensions";
+import { logger } from "@/utils/logger";
 
 /**
  * Maps ProcessParameter to FormView Field interface
@@ -229,5 +238,200 @@ export class ProcessParameterMapper {
     if (reference === FIELD_REFERENCE_CODES.WINDOW) return "window";
     
     return "text"; // Default fallback
+  }
+
+  /**
+   * Maps DefaultsProcessActionHandler response to parameter-based field names
+   * This handles the complex response structure with mixed value types
+   * @param response - Raw response from DefaultsProcessActionHandler
+   * @param parameters - Array of ProcessParameters for field name mapping
+   * @returns Processed response with mapped field names
+   */
+  static mapInitializationResponse(
+    response: Record<string, any>,
+    parameters: ProcessParameter[]
+  ): ProcessDefaultsResponse {
+    try {
+      // Create parameter lookup maps for efficient mapping
+      const parameterByName = new Map<string, ProcessParameter>();
+      const parameterByColumn = new Map<string, ProcessParameter>();
+      
+      parameters.forEach(param => {
+        parameterByName.set(param.name, param);
+        if (param.dBColumnName) {
+          parameterByColumn.set(param.dBColumnName, param);
+        }
+      });
+
+      const defaults: Record<string, ProcessDefaultValue> = {};
+      const filterExpressions: Record<string, Record<string, any>> = {};
+
+      // Process the raw response
+      for (const [key, value] of Object.entries(response)) {
+        if (key === 'filterExpressions') {
+          // Handle filter expressions directly
+          Object.assign(filterExpressions, value || {});
+          continue;
+        }
+
+        if (key === 'refreshParent') {
+          // Skip - handled separately
+          continue;
+        }
+
+        // Try to map field names from response keys
+        let mappedFieldName = key;
+        
+        // Handle 'inp' prefixed fields (common in Openbravo responses)
+        if (key.startsWith('inp')) {
+          const fieldName = key.substring(3); // Remove 'inp' prefix
+          
+          // Try to find parameter by various naming patterns
+          const parameter = parameterByName.get(fieldName) || 
+                           parameterByColumn.get(fieldName) ||
+                           parameterByName.get(fieldName.toLowerCase()) ||
+                           parameterByColumn.get(fieldName.toLowerCase());
+          
+          if (parameter) {
+            mappedFieldName = parameter.name;
+          } else {
+            mappedFieldName = fieldName;
+          }
+        }
+
+        // Store the mapped value
+        defaults[mappedFieldName] = value;
+      }
+
+      const processedResponse: ProcessDefaultsResponse = {
+        defaults,
+        filterExpressions,
+        refreshParent: !!response.refreshParent
+      };
+
+      logger.debug("Mapped initialization response:", {
+        originalKeys: Object.keys(response).length,
+        mappedDefaults: Object.keys(defaults).length,
+        filterExpressions: Object.keys(filterExpressions).length,
+        refreshParent: processedResponse.refreshParent
+      });
+
+      return processedResponse;
+    } catch (error) {
+      logger.error("Error mapping initialization response:", error);
+      
+      // Return safe fallback
+      return {
+        defaults: {},
+        filterExpressions: {},
+        refreshParent: false
+      };
+    }
+  }
+
+  /**
+   * Processes process defaults for React Hook Form compatibility
+   * @param processDefaults - ProcessDefaultsResponse from backend
+   * @param parameters - Array of ProcessParameters for type information
+   * @returns Object ready for form initialization
+   */
+  static processDefaultsForForm(
+    processDefaults: ProcessDefaultsResponse,
+    parameters: ProcessParameter[]
+  ): Record<string, any> {
+    const formData: Record<string, any> = {};
+    
+    try {
+      // Create parameter lookup for type information
+      const parameterMap = new Map<string, ProcessParameter>();
+      parameters.forEach(param => {
+        parameterMap.set(param.name, param);
+      });
+
+      for (const [fieldName, value] of Object.entries(processDefaults.defaults)) {
+        try {
+          // Skip logic fields (processed separately)
+          if (fieldName.endsWith('_display_logic') || fieldName.endsWith('_readonly_logic')) {
+            continue;
+          }
+
+          const parameter = parameterMap.get(fieldName);
+          
+          if (isReferenceValue(value)) {
+            // Handle reference objects with value/identifier
+            formData[fieldName] = value.value;
+            if (value.identifier) {
+              formData[`${fieldName}$_identifier`] = value.identifier;
+            }
+            
+            logger.debug(`Processed reference field ${fieldName}:`, {
+              value: value.value,
+              identifier: value.identifier,
+              parameterType: parameter?.reference
+            });
+          } else if (isSimpleValue(value)) {
+            // Handle simple values with type conversion
+            if (parameter?.reference === FIELD_REFERENCE_CODES.BOOLEAN || 
+                parameter?.reference === "Yes/No" || 
+                parameter?.reference === "Boolean") {
+              // Convert string "Y"/"N" to boolean
+              formData[fieldName] = value === "Y" || value === true;
+            } else {
+              formData[fieldName] = value;
+            }
+            
+            logger.debug(`Processed simple field ${fieldName}:`, {
+              value: value,
+              type: typeof value,
+              parameterType: parameter?.reference
+            });
+          } else {
+            // Fallback for unexpected types
+            logger.warn(`Unexpected value type for field ${fieldName}:`, value);
+            formData[fieldName] = String(value || "");
+          }
+        } catch (fieldError) {
+          logger.error(`Error processing field ${fieldName}:`, fieldError);
+          formData[fieldName] = ""; // Safe fallback
+        }
+      }
+
+      logger.debug("Processed form data:", {
+        totalFields: Object.keys(formData).length,
+        fieldNames: Object.keys(formData)
+      });
+
+      return formData;
+    } catch (error) {
+      logger.error("Error processing defaults for form:", error);
+      return {}; // Safe fallback
+    }
+  }
+
+  /**
+   * Extracts logic fields from process defaults
+   * @param processDefaults - ProcessDefaultsResponse from backend
+   * @returns Object with display and readonly logic flags
+   */
+  static extractLogicFields(processDefaults: ProcessDefaultsResponse): Record<string, boolean> {
+    const logicFields: Record<string, boolean> = {};
+    
+    try {
+      for (const [fieldName, value] of Object.entries(processDefaults.defaults)) {
+        if (fieldName.endsWith('_display_logic')) {
+          const baseField = fieldName.replace('_display_logic', '');
+          logicFields[`${baseField}.display`] = value === "Y";
+        } else if (fieldName.endsWith('_readonly_logic')) {
+          const baseField = fieldName.replace('_readonly_logic', '');
+          logicFields[`${baseField}.readonly`] = value === "Y";
+        }
+      }
+
+      logger.debug("Extracted logic fields:", logicFields);
+      return logicFields;
+    } catch (error) {
+      logger.error("Error extracting logic fields:", error);
+      return {};
+    }
   }
 }
