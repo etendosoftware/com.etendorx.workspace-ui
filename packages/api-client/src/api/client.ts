@@ -107,7 +107,7 @@ export class Client {
 
       options.credentials = "include";
 
-      const destination = new URL(`${this.baseUrl}${this.cleanUrl(url)}`);
+      const destination = new URL(`${this.baseUrl}/${this.cleanUrl(url)}`);
       this.baseQueryParams.forEach((value, key) => destination.searchParams.append(key, value));
 
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>

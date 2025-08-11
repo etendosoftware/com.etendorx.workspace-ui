@@ -35,12 +35,16 @@ export class CopilotClient {
 
   /**
    * Initializes the CopilotClient with base URL
-   * Follows the pattern from Metadata class
+   * Uses Next.js proxy instead of direct ERP connection
    */
   public static setBaseUrl(etendoUrl: string) {
-    const copilotUrl = `${etendoUrl.replace(/\/$/, "")}${COPILOT_BASE_PATH}`;
-    CopilotClient.currentBaseUrl = copilotUrl;
-    CopilotClient.client.setBaseUrl(copilotUrl);
+    // Instead of connecting directly to ERP, use Next.js API route
+    const proxyUrl = typeof window !== 'undefined' 
+      ? `${window.location.origin}/api/copilot`
+      : 'http://localhost:3000/api/copilot';
+    
+    CopilotClient.currentBaseUrl = proxyUrl;
+    CopilotClient.client.setBaseUrl(proxyUrl);
     CopilotClient.isInitialized = true;
   }
 
