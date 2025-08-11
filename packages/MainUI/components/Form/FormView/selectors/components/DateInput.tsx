@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -73,7 +73,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       const baseClass = "w-full h-full py-2 pl-2 pr-10 border-b outline-none text-sm";
       const focusClass = isFocused ? "border-baseline-80 bg-baseline-0" : "border-baseline-60";
       const readOnlyClass = isReadOnly
-        ? "bg-transparent-neutral-20 rounded-t-lg cursor-not-allowed"
+        ? "border-b border-dotted border-(--color-transparent-neutral-70) rounded-t-lg cursor-not-allowed"
         : "bg-transparent text-baseline-90 hover:border-baseline-80";
       const errorClass = error ? "border-error-main" : "";
 

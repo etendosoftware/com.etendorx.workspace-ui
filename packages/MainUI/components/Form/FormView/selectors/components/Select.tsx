@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -275,7 +275,7 @@ function SelectCmp({
         onMouseLeave={handleMouseLeave}
         className={`w-full flex items-center justify-between px-3 py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light
           ${isOpen ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : "border-baseline-40"} 
-          ${isReadOnly ? "bg-transparent-neutral-20 rounded-t-lg cursor-not-allowed" : "bg-white text-baseline-90 cursor-pointer hover:border-baseline-60"}
+          ${isReadOnly ? "border-b border-dotted border-(--color-transparent-neutral-70) rounded-t-lg cursor-not-allowed" : "bg-white text-baseline-90 cursor-pointer hover:border-baseline-60"}
           transition-colors outline-none`}>
         <span
           className={`text-sm truncate max-w-[calc(100%-40px)] ${selectedLabel ? "text-baseline-90 font-medium" : "text-baseline-60"}`}>
