@@ -54,7 +54,12 @@ export class Client {
   }
 
   public setBaseUrl(url: string) {
-    this.baseUrl = url;
+    // Ensure base URL ends with a slash for proper URL resolution
+    if (url) {
+      this.baseUrl = url.endsWith("/") ? url : url + "/";
+    } else {
+      this.baseUrl = "";
+    }
   }
 
   private cleanUrl(url: string) {

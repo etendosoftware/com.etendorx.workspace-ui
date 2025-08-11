@@ -119,28 +119,6 @@ spec:
               """
               echo "-------------------------- Build Successful --------------------------"
               
-              sh """
-              apt-get install -y --no-install-recommends \
-                libatk1.0-0 \
-                libatk-bridge2.0-0 \
-                libatspi2.0-0 \
-                libxcomposite1 \
-                libxdamage1 \
-                libxfixes3 \
-                libxrandr2 \
-                libgbm1 \
-                libxkbcommon0 \
-                libgtk-3-0 \
-                libnss3 \
-                libnspr4 \
-                libasound2 \
-                libpango-1.0-0 \
-                libcairo2 \
-                libx11-xcb1 \
-                libxshmfence1 \
-                fonts-liberation
-              """
-              
               echo "-------------------------- Getting Commit Information --------------------------"
               def rootDir = pwd()
               def infoCommit = load "${rootDir}/pipelines/utils/infoCommits.groovy"
@@ -218,7 +196,7 @@ spec:
                     trap "kill \$SB_PID || true" EXIT
 
                     # 2) (Opcional) Instalar browsers de Playwright si tu imagen no los trae
-                    pnpm dlx playwright install chromium || true
+                    pnpm dlx playwright install --with-deps chromium
 
                     # 3) Esperar a que el server esté listo
                     pnpm dlx wait-on --timeout 180000 http://127.0.0.1:6006/index.json

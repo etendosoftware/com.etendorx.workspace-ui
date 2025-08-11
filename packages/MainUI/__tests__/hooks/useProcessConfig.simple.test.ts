@@ -1,4 +1,7 @@
 import { renderHook, waitFor } from "@testing-library/react";
+// TODO(tech-debt): These tests trigger state updates outside React's act().
+// Refactor to wrap async updates with React Testing Library helpers (act/waitFor)
+// and remove the console.error suppression in jest.setup.js once addressed.
 import "@testing-library/jest-dom";
 
 // Simple mock for testing the core logic

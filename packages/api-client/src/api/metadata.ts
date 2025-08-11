@@ -40,9 +40,10 @@ export class Metadata {
       ? window.location.origin 
       : 'http://localhost:3000'; // fallback for SSR
     
-    // Route all metadata requests through generic ERP proxy
+    // Route metadata and kernel through ERP proxy
     Metadata.client.setBaseUrl(baseUrl + '/api/erp');
-    Metadata.kernelClient.setBaseUrl(baseUrl + '/api/erp');
+    // Kernel endpoints are called via forward servlet
+    Metadata.kernelClient.setBaseUrl(baseUrl + '/api/erp/meta/forward/org.openbravo.client.kernel');
     Metadata.datasourceServletClient.setBaseUrl(baseUrl + '/api/datasource');
     Metadata.loginClient.setBaseUrl(baseUrl);
     Metadata.locationClient.setBaseUrl(baseUrl + '/api/erp');

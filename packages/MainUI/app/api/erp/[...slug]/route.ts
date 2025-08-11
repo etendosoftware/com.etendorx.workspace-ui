@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
-import { getUserContext, extractBearerToken, createUserContextHeaders } from '@/lib/auth';
+import { getUserContext, extractBearerToken } from '@/lib/auth';
 
 // Cached function for generic ERP requests
 const getCachedErpData = unstable_cache(
@@ -51,13 +51,11 @@ async function handleERPRequest(request: NextRequest, params: Promise<{ slug: st
     const resolvedParams = await params;
     const slug = resolvedParams.slug.join('/');
     
-    // Handle query parameters for GET requests
+    // Build ERP URL and always append query parameters if present
     let erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
-    if (method === 'GET') {
-      const url = new URL(request.url);
-      if (url.search) {
-        erpUrl += url.search;
-      }
+    const url = new URL(request.url);
+    if (url.search) {
+      erpUrl += url.search;
     }
     
     const requestBody = method === 'GET' ? undefined : await request.text();
@@ -78,10 +76,7 @@ async function handleERPRequest(request: NextRequest, params: Promise<{ slug: st
         headers['Content-Type'] = contentType;
       }
 
-      // Add user context headers if available
-      if (userContext) {
-        Object.assign(headers, createUserContextHeaders(userContext));
-      }
+      // Do not forward custom user-context headers; context derives from JWT
 
       const response = await fetch(erpUrl, {
         method,
