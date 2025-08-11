@@ -47,6 +47,7 @@ import MinusFolderIcon from "../../../ComponentLibrary/src/assets/icons/folder-m
 import CircleFilledIcon from "../../../ComponentLibrary/src/assets/icons/circle-filled.svg";
 import ChevronUp from "../../../ComponentLibrary/src/assets/icons/chevron-up.svg";
 import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
+import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check.svg";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -168,15 +169,18 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
               <div className="w-5 h-5" />
             )}
 
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={(e) => {
-                e.stopPropagation();
-                row.toggleSelected();
-              }}
-              className="min-w-4 min-h-4 cursor-pointer rounded border-[1.67px] border-[rgba(0,3,13,0.4)] checked:bg-(--color-etendo-main) checked:border-(--color-etendo-main)"
-            />
+            <div className="relative flex items-end">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  row.toggleSelected();
+                }}
+                className="min-w-4 min-h-4 cursor-pointer rounded border-[1.67px] border-[rgba(0,3,13,0.4)] appearance-none bg-white checked:bg-[#004ACA] checked:border-[#004ACA]"
+              />
+              {isSelected && <CheckIcon className="absolute top-0.5 left-0.5 w-3 h-3 pointer-events-none fill-white" />}
+            </div>
 
             {HierarchyIcon && <HierarchyIcon className="min-w-5 min-h-5" fill={"#004ACA"} />}
 
