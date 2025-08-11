@@ -38,9 +38,15 @@ export async function POST(request: NextRequest) {
         'Accept': 'application/json'
       },
       body: JSON.stringify(body),
+    }).catch((fetchError) => {
+      console.error('Fetch error - Etendo Classic backend not accessible:', fetchError);
+      throw new Error('Etendo Classic backend is not accessible');
     });
 
-    const data = await erpResponse.json();
+    const data = await erpResponse.json().catch((jsonError) => {
+      console.error('JSON parse error:', jsonError);
+      throw new Error('Invalid response from Etendo Classic backend');
+    });
 
     // Capture ERP session cookie (e.g., JSESSIONID) and store it keyed by returned token
     try {
@@ -80,8 +86,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(data, { status: 200 });
   } catch (error) {
     console.error('API Route /api/auth/login Error:', error);
+    
+    // Return specific error message if available
+    const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
+    
     return NextResponse.json(
-      { error: 'Internal Server Error' }, 
+      { error: errorMessage }, 
       { status: 500 }
     );
   }

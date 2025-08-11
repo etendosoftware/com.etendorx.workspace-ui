@@ -31,7 +31,6 @@ jest.mock("@/hooks/useSelected", () => ({
 // Spy on useTransition to force pending state
 // Force React.useTransition to always be pending
 jest.mock("react", () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const actual = jest.requireActual("react");
   return { ...actual, useTransition: () => [true, (cb: any) => cb()] };
 });

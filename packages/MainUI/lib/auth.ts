@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 
 export interface UserContext {
@@ -13,7 +13,7 @@ export interface UserContext {
  * Extracts user context from the request for cache key generation
  * This ensures that cached data is properly isolated per user/role/client/org
  */
-export async function getUserContext(request: NextRequest): Promise<UserContext | null> {
+export async function getUserContext(request: Request | NextRequest): Promise<UserContext | null> {
   try {
     // Preferred: derive user context by decoding the Bearer JWT
     const token = extractBearerToken(request);
@@ -82,7 +82,7 @@ export function validateUserContext(userContext: Partial<UserContext>): userCont
 /**
  * Extracts Bearer token from Authorization header
  */
-export function extractBearerToken(request: NextRequest): string | null {
+export function extractBearerToken(request: Request | NextRequest): string | null {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return null;

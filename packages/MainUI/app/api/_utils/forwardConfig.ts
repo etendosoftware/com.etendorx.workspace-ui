@@ -28,7 +28,7 @@ export function shouldForwardErpCookies(): boolean {
  * Returns the Cookie header to forward to ERP, combining any incoming browser cookies
  * with the stored ERP session cookie (captured at login), unless disabled by config.
  */
-export function getCombinedErpCookieHeader(request: NextRequest, userToken: string | null): string {
+export function getCombinedErpCookieHeader(request: Request | NextRequest, userToken: string | null): string {
   if (!shouldForwardErpCookies()) return '';
   const incomingCookie = request.headers.get('cookie') || '';
   const erpSessionCookie = userToken ? getErpSessionCookie(userToken) : null;
@@ -40,7 +40,7 @@ export function getCombinedErpCookieHeader(request: NextRequest, userToken: stri
  * Set ERP_FORWARD_JSON_PASSTHROUGH=true to skip JSON->form conversion.
  * Also auto-enables when URL param `isc_dataFormat=json` is present.
  */
-export function shouldPassthroughJson(request: NextRequest): boolean {
+export function shouldPassthroughJson(request: Request | NextRequest): boolean {
   try {
     const url = new URL(request.url);
     const v = url.searchParams.get('isc_dataFormat');

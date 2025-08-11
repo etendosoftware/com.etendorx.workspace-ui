@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { extractBearerToken } from '@/lib/auth';
 import { getCombinedErpCookieHeader, shouldPassthroughJson } from '@/app/api/_utils/forwardConfig';
 import { encodeDatasourcePayload } from '@/app/api/_utils/datasource';
 
 export const runtime = 'nodejs';
 
-async function handle(request: NextRequest, { params }: { params: { entity: string } }) {
+async function handle(request: Request, { params }: { params: { entity: string } }) {
   try {
     const userToken = extractBearerToken(request);
     if (!userToken) {
@@ -94,4 +94,22 @@ async function handle(request: NextRequest, { params }: { params: { entity: stri
   }
 }
 
-export { handle as GET, handle as POST, handle as PUT, handle as DELETE, handle as PATCH };
+export async function GET(request: Request, context: any) {
+  return handle(request, context as { params: { entity: string } });
+}
+
+export async function POST(request: Request, context: any) {
+  return handle(request, context as { params: { entity: string } });
+}
+
+export async function PUT(request: Request, context: any) {
+  return handle(request, context as { params: { entity: string } });
+}
+
+export async function DELETE(request: Request, context: any) {
+  return handle(request, context as { params: { entity: string } });
+}
+
+export async function PATCH(request: Request, context: any) {
+  return handle(request, context as { params: { entity: string } });
+}
