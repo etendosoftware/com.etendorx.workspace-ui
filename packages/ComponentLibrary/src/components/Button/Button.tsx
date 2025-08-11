@@ -23,7 +23,7 @@ const getButtonClasses = ({
 }) => {
   const base = `
     inline-flex items-center justify-center font-medium rounded-full
-    transition-colors duration-200
+    transition-colors duration-200 w-full "
   `;
 
   const sizeClass = size === "small" ? "py-3 text-sm" : "h-10 px-4 text-base";

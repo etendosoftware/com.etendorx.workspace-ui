@@ -17,12 +17,13 @@
 
 "use client";
 import { useCallback, useState } from "react";
-import { Button, Typography } from "@mui/material";
+import { Typography } from "@mui/material";
 import { useStyle } from "../styles";
 import type { LoginProps } from "../types";
 import { useTranslation } from "../../../hooks/useTranslation";
 import "./Login.css";
 import Input from "../Input";
+import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 export default function Login({ title, onSubmit, error }: LoginProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -77,7 +78,17 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
             onChange={handlePasswordChange}
             autoComplete="current-password"
           />
-          <Button type="submit" fullWidth variant="contained" sx={styles.button}>
+          <Button type="submit" className="mt-6 h-10">
+            {t("login.buttons.submit")}
+          </Button>
+          <div className="relative flex items-center my-4">
+            <div className="flex-grow border-t border-(--color-transparent-neutral-10)" />
+            <span className="font-inter font-medium text-xs leading-4 tracking-normal mx-4 border-(--color-transparent-neutral-70)">
+              O
+            </span>
+            <div className="flex-grow border-t border-(--color-transparent-neutral-10)" />
+          </div>
+          <Button variant="outlined" type="submit" className="mt-6 h-10">
             {t("login.buttons.submit")}
           </Button>
           {error && (
