@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import { render, screen } from "@testing-library/react";
 import { useSelectFieldOptions } from "@/hooks/useSelectFieldOptions";
 import { FormProvider, useForm } from "react-hook-form";

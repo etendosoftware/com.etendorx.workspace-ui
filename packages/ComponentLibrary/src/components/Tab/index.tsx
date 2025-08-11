@@ -46,13 +46,13 @@ const TabsMUI = ({ tabArray }: TabsMUIProps) => {
             scrollButtons
             allowScrollButtonsMobile>
             {tabArray.map((tab, index) => (
-              <Tab key={index} label={tab.title} value={`${index}`} />
+              <Tab key={tab.title} label={tab.title} value={`${index}`} />
             ))}
           </TabList>
         </Box>
 
         {tabArray.map((tab, index) => (
-          <TabPanel key={index} value={`${index}`} sx={{ height: "100%" }}>
+          <TabPanel key={tab.title} value={`${index}`} sx={{ height: "100%" }}>
             {tab.children}
           </TabPanel>
         ))}

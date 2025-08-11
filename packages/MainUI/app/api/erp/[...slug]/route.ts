@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
-import { getUserContext, extractBearerToken } from '@/lib/auth';
+import { extractBearerToken } from '@/lib/auth';
 
 // Cached function for generic ERP requests
 const getCachedErpData = unstable_cache(
-  async (userToken: string, slug: string, method: string, body: string, contentType: string, queryParams: string = '') => {
+  async (userToken: string, slug: string, method: string, body: string, contentType: string, queryParams = '') => {
     let erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     if (method === 'GET' && queryParams) {
       erpUrl += queryParams;
@@ -46,9 +46,6 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
       return NextResponse.json({ error: 'Unauthorized - Missing Bearer token' }, { status: 401 });
     }
 
-    // Extract user context for cache isolation (optional for generic routes)
-    const userContext = await getUserContext(request);
-    
     const slug = resolvedParams.slug.join('/');
     
     // Build ERP URL and always append query parameters if present
@@ -85,7 +82,6 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
         return NextResponse.json(
           { error: `ERP request failed: ${response.status} ${response.statusText}` }, 
           { status: response.status }

@@ -24,10 +24,6 @@ export class CacheStore {
       throw new Error("Duration must be a positive number.");
     }
 
-    // if (![localStorage, sessionStorage].includes(storage)) {
-    //   throw new Error('Invalid storage type. Expected localStorage or sessionStorage.');
-    // }
-
     this.duration = duration;
     this.storage = typeof window !== "undefined" ? window.localStorage : undefined;
   }

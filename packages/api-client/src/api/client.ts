@@ -54,7 +54,6 @@ export class Client {
   }
 
   public setBaseUrl(url: string) {
-    // Ensure base URL ends with a slash for proper URL resolution
     if (url) {
       this.baseUrl = url.endsWith("/") ? url : url + "/";
     } else {
@@ -64,6 +63,16 @@ export class Client {
 
   private cleanUrl(url: string) {
     return url.startsWith("/") ? url.substring(1) : url;
+  }
+
+  private getFormattedBody(body: ClientOptions["body"]): RequestInit["body"] {
+    if (typeof body === "string" || body instanceof URLSearchParams || body instanceof FormData) {
+      return body;
+    }
+    if (body) {
+      return JSON.stringify(body);
+    }
+    return undefined;
   }
 
   private isJson(response: Response) {
@@ -112,7 +121,10 @@ export class Client {
 
       options.credentials = "include";
 
-      const rawUrl = `${this.baseUrl}/${this.cleanUrl(url)}`;
+      // If URL starts with 'api/', treat it as absolute path from origin
+      const rawUrl = url.startsWith('api/') 
+        ? `/${url}`
+        : `${this.baseUrl}/${this.cleanUrl(url)}`;
       const destination = new URL(rawUrl, window.location.origin);
       this.baseQueryParams.forEach((value, key) => destination.searchParams.append(key, value));
 
@@ -120,14 +132,7 @@ export class Client {
       let response: Response & { data?: any } = await fetch(destination, {
         ...options,
         credentials: "include",
-        body:
-          typeof options.body === "string" ||
-          options.body instanceof URLSearchParams ||
-          options.body instanceof FormData
-            ? options.body
-            : options.body
-              ? JSON.stringify(options.body)
-              : undefined,
+        body: this.getFormattedBody(options.body),
         headers: {
           ...this.baseHeaders,
           ...options.headers,

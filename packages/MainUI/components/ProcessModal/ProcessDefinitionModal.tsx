@@ -50,13 +50,11 @@ import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
 import Modal from "../Modal";
 import Loading from "../loading";
 import WindowReferenceGrid from "./WindowReferenceGrid";
-import BaseSelector from "./selectors/BaseSelector";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import type {
   ProcessDefinitionModalContentProps,
   ProcessDefinitionModalProps,
   RecordValues,
-  ResponseMessage,
 } from "./types";
 import { PROCESS_DEFINITION_DATA } from "@/utils/processes/definition/constants";
 
@@ -130,7 +128,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     processInitialization,
     loading: initializationLoading,
     error: initializationError,
-    refetch: refetchDefaults,
   } = useProcessInitialization({
     processId: processId || "",
     windowId: windowId || "",
@@ -148,7 +145,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     initialState,
     logicFields,
     filterExpressions,
-    refreshParent,
     hasData: hasInitialData,
   } = useProcessInitializationState(
     processInitialization,
@@ -417,9 +413,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
     const isSuccessMessage = result.success;
     const msgTitle = isSuccessMessage ? t("process.completedSuccessfully") : t("process.processError");
-    const msgText = isSuccessMessage
-      ? typeof result.data === "string" ? (result.data as string) : t("process.completedSuccessfully")
-      : result.error || t("errors.internalServerError.title");
+    let msgText: string;
+    if (isSuccessMessage) {
+      msgText = typeof result.data === "string" ? (result.data as string) : t("process.completedSuccessfully");
+    } else {
+      msgText = result.error || t("errors.internalServerError.title");
+    }
 
     const messageClasses = `p-3 rounded mb-4 border-l-4 ${
       isSuccessMessage ? "bg-green-50 border-(--color-success-main)" : "bg-gray-50 border-(--color-etendo-main)"

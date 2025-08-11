@@ -2,8 +2,7 @@ import { useMemo } from "react";
 import { logger } from "@/utils/logger";
 import type { EntityData, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import type { 
-  ProcessDefaultsResponse, 
-  ProcessDefaultValue
+  ProcessDefaultsResponse
 } from "@/components/ProcessModal/types/ProcessParameterExtensions";
 import { 
   isReferenceValue, 
@@ -56,7 +55,6 @@ export const useProcessInitialState = (
         }
 
         // Find corresponding parameter
-        const parameter = parameterMap.get(fieldName);
         // Use the original field name from server, not the parameter display name
         const formFieldName = fieldName; // parameter?.name causes mismatch with form field names
 

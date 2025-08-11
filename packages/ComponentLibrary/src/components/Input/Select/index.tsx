@@ -55,9 +55,7 @@ const Select: React.FC<ISelectInput> = ({
   const [inputValue, setInputValue] = useState<string>("");
   const [focused, setFocused] = useState<boolean>(false);
 
-  const CustomPaper: React.FC<PaperProps> = (paperProps) => {
-    return <Paper {...paperProps} sx={sx.optionsContainer} />;
-  };
+  // Use inline Paper renderer to avoid recreating a local component
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(event.target.value);
@@ -146,7 +144,7 @@ const Select: React.FC<ISelectInput> = ({
         popupIcon={<ExpandMoreIcon style={sx.dropdownIcons} />}
         renderInput={renderInput}
         sx={sx.autocomplete}
-        PaperComponent={CustomPaper}
+        PaperComponent={(paperProps: PaperProps) => <Paper {...paperProps} sx={sx.optionsContainer} />}
         ListboxProps={{
           sx: sx.listBox,
         }}

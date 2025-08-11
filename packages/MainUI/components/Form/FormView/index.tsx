@@ -68,7 +68,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
   const [selectedTab, setSelectedTab] = useState<string>("");
-  const [isSucessfullEdit, setIsSucessfullEdit] = useState(false);
   const [isFormInitializing, setIsFormInitializing] = useState(false);
 
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});

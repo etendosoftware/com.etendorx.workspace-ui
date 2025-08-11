@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import React from "react";
+import type React from "react";
 import PrimaryTabs from "../../../src/components/PrimaryTab/index";
 import type { TabItem } from "../../../src/components/PrimaryTab/types";
 

@@ -70,12 +70,6 @@ export function useToolbar(windowId: string, tabId?: string) {
       params.append("_operationType", "fetch");
       params.append("_startRow", "0");
       params.append("_endRow", "75");
-      // params.append(
-      //   'criteria',
-      //   JSON.stringify({
-      //     // Create a criteria that returns every recoord when tab id null and filter the records by tabId when it has one
-      //   }),
-      // );
 
       const entity = tabId ? "etmeta_Toolbar" : `toolbar/${windowId}`;
       const response = await Metadata.datasourceServletClient.post('', {

@@ -23,7 +23,6 @@ async function handle(request: Request, { params }: { params: { entity: string }
 
     const method = request.method;
     const contentType = request.headers.get('Content-Type') || 'application/json';
-    const incomingCookie = request.headers.get('cookie') || '';
     let body: string | undefined = undefined;
 
     // If client sent JSON but ERP expects form-urlencoded, convert

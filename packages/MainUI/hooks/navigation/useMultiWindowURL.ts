@@ -184,7 +184,7 @@ const getNextOrder = (windows: WindowState[]): number => {
 };
 
 const normalizeWindowOrders = (windows: WindowState[]): WindowState[] => {
-  return windows
+  return [...windows]
     .sort((a, b) => (a.order || 1) - (b.order || 1))
     .map((window, index) => ({
       ...window,
@@ -216,10 +216,10 @@ export function useMultiWindowURL() {
       }
     }
 
-    windowStates.sort((a, b) => a.order - b.order);
+    const orderedStates = [...windowStates].sort((a, b) => a.order - b.order);
 
     return {
-      windows: windowStates,
+      windows: orderedStates,
       activeWindow: active,
       isHomeRoute: isHome,
     };

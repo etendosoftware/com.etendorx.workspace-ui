@@ -36,7 +36,7 @@ describe('api-client: Metadata.kernelClient forward base', () => {
     const url = String((global as any).fetch.mock.calls[0][0]);
     // Trailing slash normalization is fine; accept both forms
     expect(url.replace('/org.openbravo.client.kernel/', '/org.openbravo.client.kernel')).toBe(
-      'http://localhost:3000/api/erp/meta/forward/org.openbravo.client.kernel?MODE=NEW&TAB_ID=186&_action=org.openbravo.client.application.window.FormInitializationComponent'
+      'http://localhost:3000/api/erp/meta/forward/org.openbravo.client.kernel/?MODE=NEW&TAB_ID=186&_action=org.openbravo.client.application.window.FormInitializationComponent'
     );
   });
 });

@@ -17,7 +17,7 @@
 
 import { CacheStore } from "./cache";
 import { Client, type Interceptor } from "./client";
-import { API_DATASOURCE_SERVLET, API_DEFAULT_CACHE_DURATION, API_KERNEL_SERVLET, API_METADATA_URL } from "./constants";
+import { API_DEFAULT_CACHE_DURATION, } from "./constants";
 import { LocationClient } from "./location";
 import type * as Etendo from "./types";
 import type { Menu } from "./types";

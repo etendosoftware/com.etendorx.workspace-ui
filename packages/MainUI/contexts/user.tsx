@@ -232,7 +232,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
         }
       } catch (error) {
         console.error(error);
-        //clearUserData();
       } finally {
         setReady(true);
       }

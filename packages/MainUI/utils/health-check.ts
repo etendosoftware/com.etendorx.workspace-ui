@@ -17,7 +17,6 @@
 
 import { delay } from "@/utils";
 import { logger } from "@/utils/logger";
-import { API_LOGIN_URL } from "@workspaceui/api-client/src/api/constants";
 
 export async function performHealthCheck(
   url: string,

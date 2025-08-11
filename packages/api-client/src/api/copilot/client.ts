@@ -16,7 +16,7 @@
  */
 
 import { Client, type Interceptor, type ClientOptions } from "../client";
-import { COPILOT_ENDPOINTS, COPILOT_METHODS, isProduction, COPILOT_BASE_PATH } from "./constants";
+import { COPILOT_ENDPOINTS, COPILOT_METHODS, isProduction } from "./constants";
 import type { IAssistant, ILabels, CopilotQuestionParams, CopilotUploadResponse } from "./types";
 
 export class CopilotUnauthorizedError extends Error {

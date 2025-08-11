@@ -1,4 +1,4 @@
-import React, { PropsWithChildren } from "react";
+import type React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 // Mock UserContext to avoid importing heavy client module

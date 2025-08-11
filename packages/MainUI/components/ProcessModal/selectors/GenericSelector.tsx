@@ -26,7 +26,6 @@ const GenericSelector = ({ parameter, readOnly }: { parameter: ProcessParameter;
 
   if (reference === FieldType.LIST) {
     return <RadioSelector parameter={parameter} />;
-    // return <ListSelector parameter={parameter} />;
   }
   return (
     <input

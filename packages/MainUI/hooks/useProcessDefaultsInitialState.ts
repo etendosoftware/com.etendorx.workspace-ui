@@ -17,26 +17,25 @@ export const useProcessDefaultsInitialState = (
   processDefaults?: ProcessDefaultsResponse | null,
   parameters?: Record<string, ProcessParameter>
 ) => {
+  // Build parameter name map once per change of parameters
+  const parameterNameMap = useMemo(() => {
+    if (!parameters) return {} as Record<string, ProcessParameter>;
+
+    const map: Record<string, ProcessParameter> = {};
+    Object.values(parameters).forEach((param) => {
+      map[param.name] = param;
+      if (param.dBColumnName && param.dBColumnName !== param.name) {
+        map[param.dBColumnName] = param;
+      }
+    });
+    return map;
+  }, [parameters]);
+
   const initialState = useMemo(() => {
     if (!processDefaults?.defaults) return {};
 
     const acc = {} as EntityData;
     const { defaults } = processDefaults;
-
-    // Create parameter name mapping (field name to parameter mapping)
-    const parameterNameMap = useMemo(() => {
-      if (!parameters) return {};
-      
-      const map: Record<string, ProcessParameter> = {};
-      Object.values(parameters).forEach(param => {
-        // Map by name and dBColumnName
-        map[param.name] = param;
-        if (param.dBColumnName && param.dBColumnName !== param.name) {
-          map[param.dBColumnName] = param;
-        }
-      });
-      return map;
-    }, [parameters]);
 
     // Process each default value
     for (const [fieldName, value] of Object.entries(defaults)) {
@@ -82,7 +81,7 @@ export const useProcessDefaultsInitialState = (
 
     logger.info("Process defaults initial state:", acc);
     return acc;
-  }, [processDefaults, parameters]);
+  }, [processDefaults, parameterNameMap]);
 
   return initialState;
 };

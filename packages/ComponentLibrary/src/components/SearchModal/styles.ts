@@ -51,9 +51,9 @@ export const useStyle = () => {
           borderBottom: isLast ? "none" : `1px solid ${theme.palette.baselineColor.transparentNeutral[10]}`,
           backgroundColor: theme.palette.baselineColor.neutral[0],
         }),
-        sectionInnerBox: (isLast: boolean) => ({
+        sectionInnerBox: (_isLast: boolean) => ({
           padding: "0.75rem",
-          paddingBottom: isLast ? "0.5rem" : "0.5rem",
+          paddingBottom: "0.5rem",
           margin: 0,
           display: "flex",
           flexDirection: "column",

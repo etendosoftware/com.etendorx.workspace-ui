@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
 import { extractBearerToken } from '@/lib/auth';
 
 // Cached function for ERP requests to the base URL (no slug)
 const getCachedErpData = unstable_cache(
-  async (userToken: string, method: string, body: string, contentType: string, queryParams: string = '') => {
+  async (userToken: string, method: string, body: string, contentType: string, queryParams = '') => {
     let erpUrl = `${process.env.ETENDO_CLASSIC_URL}`;
     if (method === 'GET' && queryParams) {
       erpUrl += queryParams;
@@ -77,7 +77,6 @@ async function handleERPBaseRequest(request: NextRequest, method: string) {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
         return NextResponse.json(
           { error: `ERP request failed: ${response.status} ${response.statusText}` },
           { status: response.status }

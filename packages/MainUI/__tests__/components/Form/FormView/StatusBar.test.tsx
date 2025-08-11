@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import { FormProvider, useForm } from "react-hook-form";
-import React from "react";
+import type React from "react";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import StatusBar from "@/components/Form/FormView/StatusBar";
 

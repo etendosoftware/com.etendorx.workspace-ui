@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from "react";
+import React, { Component, type ErrorInfo, type ReactNode } from "react";
 import { logger } from "@/utils/logger";
 
 interface ProcessDefaultsErrorBoundaryProps {
@@ -95,7 +95,7 @@ export class ProcessDefaultsErrorBoundary extends Component<
 
   render() {
     const { hasError, error, errorId } = this.state;
-    const { children, fallback, processId } = this.props;
+    const { children, fallback } = this.props;
 
     if (hasError) {
       // Use custom fallback if provided

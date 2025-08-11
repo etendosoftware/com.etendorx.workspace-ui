@@ -23,7 +23,6 @@ import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useSelected } from "@/hooks/useSelected";
 import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
-import { useTranslation } from "@/hooks/useTranslation";
 import AppBreadcrumb from "@/components/Breadcrums";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
@@ -32,7 +31,7 @@ export default function TabsContainer() {
   const { activeLevels, clearAllStates } = useSelected();
   const { activeWindow } = useMultiWindowURL();
   const { getWindowMetadata } = useMetadataContext();
-  const { t } = useTranslation();
+  // Translation not used here
 
   const [activeTabsByLevel, setActiveTabsByLevel] = useState<Map<number, string>>(new Map());
 

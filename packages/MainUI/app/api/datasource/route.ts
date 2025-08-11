@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
 import { getUserContext, extractBearerToken } from '@/lib/auth';
 import { shouldCacheDatasource } from '@/app/api/_utils/datasourceCache';
@@ -98,11 +98,14 @@ export async function POST(request: NextRequest) {
     const combinedCookie = getCombinedErpCookieHeader(request, userToken);
     const contentType = request.headers.get('Content-Type') || '';
     const passJson = shouldPassthroughJson(request) && contentType.includes('application/json') && isSmartClientPayload(params);
-    const data = useCache
-      ? await getCachedDatasource(userToken, entity, params)
-      : passJson
-        ? await fetchDatasourceJson(userToken, entity, params, combinedCookie)
-        : await fetchDatasource(userToken, entity, params, combinedCookie);
+    let data;
+    if (useCache) {
+      data = await getCachedDatasource(userToken, entity, params);
+    } else if (passJson) {
+      data = await fetchDatasourceJson(userToken, entity, params, combinedCookie);
+    } else {
+      data = await fetchDatasource(userToken, entity, params, combinedCookie);
+    }
     return NextResponse.json(data);
   } catch (error) {
     console.error('API Route /api/datasource Error:', error);
