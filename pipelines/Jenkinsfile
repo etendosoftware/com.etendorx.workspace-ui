@@ -1,16 +1,16 @@
 pipeline {
 
   environment { // MARK: Environment Variables
-    NPM_TOKEN           = credentials('npmjs-access-token')
-    EMAIL_ADDRESS       = credentials('email_builds')
+    NPM_TOKEN            = credentials('npmjs-access-token')
+    EMAIL_ADDRESS        = credentials('email_builds')
 
-    OWNER_REPOSITORY    = "etendosoftware"
-    GITHUB_URL          = "https://github.com"
-    GITHUB_SSH_URL      = "git@github.com:etendosoftware"
+    OWNER_REPOSITORY     = "etendosoftware"
+    GITHUB_URL           = "https://github.com"
+    GITHUB_SSH_URL       = "git@github.com:etendosoftware"
 
-    SUCCESS             = "SUCCESS"
-    FAILED              = "FAILED"
-    UNSTABLE            = "UNSTABLE"
+    SUCCESS              = "SUCCESS"
+    FAILED               = "FAILED"
+    UNSTABLE             = "UNSTABLE"
 
     COMMIT_INPROGRESS_STATUS = "pending"
     COMMIT_SUCCESS_STATUS    = "success"
@@ -175,6 +175,39 @@ spec:
           }
         }
       }
+    }
+
+    // =========================================================================
+    // MARK: NUEVA ETAPA PARA STORYBOOK
+    // =========================================================================
+    stage('UI/Storybook Tests') {
+        when {
+            expression {
+                currentBuild.result == SUCCESS
+            }
+        }
+        steps {
+            container('compiler') {
+                script {
+                    try {
+                        sh "./pipelines/utils/repo-update-scripts/build-update-github.sh ${REPOSITORY_NAME} ${COMMIT_INPROGRESS_STATUS} \"Running Storybook UI Tests\" ${ACCESS_TOKEN} ${GIT_COMMIT} ${BUILD_URL} \"${CONTEXT_BUILD}\""
+                        echo "-------------------------- Running Storybook UI Tests --------------------------"
+                        sh """
+                            cd ${REPOSITORY_NAME}/packages/storybook
+                            pnpm run test-storybook:ci
+                        """
+                        echo "-------------------------- Storybook UI Tests Successful --------------------------"
+                        currentBuild.result = SUCCESS
+                    } catch (Exception e) {
+                        env.ERROR_MESSAGE = "Failed Storybook UI Tests"
+                        echo "Exception occurred: " + e.toString()
+                        echo "-------------------------- ${env.ERROR_MESSAGE} --------------------------"
+                        currentBuild.result = UNSTABLE
+                        unstable(env.ERROR_MESSAGE)
+                    }
+                }
+            }
+        }
     }
 
     stage('Run Sonarqube Analysis') { // MARK: Run Sonarqube Analysis

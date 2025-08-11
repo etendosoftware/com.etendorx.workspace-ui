@@ -42,10 +42,10 @@ export interface BaseUser {
 export interface BaseRole {
   id: string;
   name: string;
-  orgList: Array<{
+  organizations: Array<{
     id: string;
     name: string;
-    warehouseList: Array<{
+    warehouses: Array<{
       id: string;
       name: string;
     }>;

@@ -22,7 +22,6 @@ import TextInputBaseMUI from "./Input/TextInput/TextInputBase";
 import InputPasswordMUI from "./Input/TextInput/TextInputBase/InputPassword";
 import ToggleChipMUI from "./Toggle/ToggleChip";
 import Nav from "./Nav/Nav";
-import ProfileModal from "@workspaceui/mainui/components/ProfileModal/ProfileModal";
 import WaterfallModal from "./Waterfall/WaterfallModal";
 import ConfigurationModalCustom from "./ConfigurationModal";
 import NotificationBase from "./NotificationsButton";
@@ -43,7 +42,6 @@ const InputPassword = InputPasswordMUI;
 const SearchInputWithVoice = SearchInputWithVoiceMUI;
 const ToggleChip = ToggleChipMUI;
 const Navbar = Nav;
-const Profile = ProfileModal;
 const Waterfall = WaterfallModal;
 const ConfigurationModal = ConfigurationModalCustom;
 const NotificationButton = NotificationBase;
@@ -65,7 +63,6 @@ export {
   SearchInputWithVoice,
   ToggleChip,
   Navbar,
-  Profile,
   Waterfall,
   ConfigurationModal,
   NotificationButton,
