@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -199,7 +199,8 @@ const en = {
     recentlyViewed: "Recently Viewed",
   },
   login: {
-    subtitle: "Enter your credentials to access your account.",
+    title: "Log In",
+    subtitle: "Enter your username and password to continue.",
     fields: {
       username: {
         label: "Username",
