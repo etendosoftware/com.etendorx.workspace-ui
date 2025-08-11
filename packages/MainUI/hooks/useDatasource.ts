@@ -27,9 +27,9 @@ import { ColumnFilterUtils, SearchUtils } from "@workspaceui/api-client/src/util
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const loadData = async (
-  entity: string, 
-  page: number, 
-  pageSize: number, 
+  entity: string,
+  page: number,
+  pageSize: number,
   params: DatasourceOptions,
   treeOptions?: {
     isTreeMode: boolean;
@@ -62,22 +62,9 @@ const loadData = async (
     if (treeOptions.referencedTableId) {
       processedParams.referencedTableId = treeOptions.referencedTableId;
     }
-    
-    console.log("🔍 Tree Datasource Request:", {
-      entity,
-      processedParams,
-      treeOptions,
-    });
   }
 
   const result = await datasource.get(entity, processedParams);
-  
-  if (treeOptions?.isTreeMode) {
-    console.log("📊 Tree Datasource Response:", {
-      result: result.data?.response?.data?.slice(0, 2), // Solo los primeros 2 items para no saturar logs
-      totalItems: result.data?.response?.data?.length,
-    });
-  }
 
   return result;
 };
@@ -101,7 +88,14 @@ export type UseDatasourceOptions = {
   };
 };
 
-export function useDatasource({ entity, params = defaultParams, columns, searchQuery, skip, treeOptions }: UseDatasourceOptions) {
+export function useDatasource({
+  entity,
+  params = defaultParams,
+  columns,
+  searchQuery,
+  skip,
+  treeOptions,
+}: UseDatasourceOptions) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [records, setRecords] = useState<EntityData[]>([]);

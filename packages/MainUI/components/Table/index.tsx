@@ -42,6 +42,11 @@ import { useTabContext } from "@/contexts/tab";
 import { useDatasource } from "@/hooks/useDatasource";
 import { useSelected } from "@/hooks/useSelected";
 import { useColumns } from "@/hooks/table/useColumns";
+import PlusFolderFilledIcon from "../../../ComponentLibrary/src/assets/icons/folder-plus-filled.svg";
+import MinusFolderIcon from "../../../ComponentLibrary/src/assets/icons/folder-minus.svg";
+import CircleFilledIcon from "../../../ComponentLibrary/src/assets/icons/circle-filled.svg";
+import ChevronUp from "../../../ComponentLibrary/src/assets/icons/chevron-up.svg";
+import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -58,9 +63,9 @@ interface DynamicTableProps {
 
 const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: DynamicTableProps) => {
   const [expanded, setExpanded] = useState<MRT_ExpandedState>({});
-  const [loadedNodes, setLoadedNodes] = useState<Set<string>>(new Set()); // Track loaded child nodes
-  const [childrenData, setChildrenData] = useState<Map<string, EntityData[]>>(new Map()); // Store children by parent ID
-  const [flattenedRecords, setFlattenedRecords] = useState<EntityData[]>([]); // Combined parent + children records
+  const [loadedNodes, setLoadedNodes] = useState<Set<string>>(new Set());
+  const [childrenData, setChildrenData] = useState<Map<string, EntityData[]>>(new Map());
+  const [flattenedRecords, setFlattenedRecords] = useState<EntityData[]>([]);
 
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
@@ -92,46 +97,103 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const tabId = tab.id;
   const parentId = String(parentRecord?.id ?? "");
   const tableContainerRef = useRef<HTMLDivElement>(null);
-
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-  // Determinar si usar tree mode basado en metadata y prop (mover antes de todo)
   const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
   const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
 
   const baseColumns = useColumns(tab);
+  const [prevShouldUseTreeMode, setPrevShouldUseTreeMode] = useState(shouldUseTreeMode);
 
-  // Modificar las columnas para tree mode
   const columns = useMemo(() => {
-    if (!shouldUseTreeMode || !baseColumns.length) {
+    if (!baseColumns.length) {
       return baseColumns;
     }
 
-    // Clonar las columnas y modificar la primera para agregar iconos de jerarquía
-    const modifiedColumns = [...baseColumns];
+    const modifiedColumns = baseColumns.map((col) => ({ ...col }));
     const firstColumn = { ...modifiedColumns[0] };
-
-    // Guardar el Cell original si existe
     const originalCell = firstColumn.Cell;
 
-    // Crear una nueva función Cell que agregue iconos de jerarquía
-    firstColumn.Cell = ({ renderedCellValue, row }: any) => {
-      const level = row.original.__level || 0;
-      const hasChildren = row.original.showDropIcon === true;
+    if (shouldUseTreeMode) {
+      firstColumn.size = 300;
+      firstColumn.minSize = 250;
+      firstColumn.maxSize = 500;
+    }
 
-      // Iconos para diferentes tipos de nodos
-      let icon = "";
-      if (level === 0) {
-        icon = hasChildren ? "📁" : "📄"; // Carpeta para padres con hijos, documento para hojas
-      } else {
-        icon = "└ 📄"; // Línea conectora para nodos hijos
+    firstColumn.Cell = ({
+      renderedCellValue,
+      row,
+      table,
+    }: {
+      renderedCellValue: React.ReactNode;
+      row: MRT_Row<EntityData>;
+      table: MRT_TableInstance<EntityData>;
+    }) => {
+      const hasChildren = row.original.showDropIcon === true;
+      const canExpand = shouldUseTreeMode && hasChildren;
+      const isExpanded = row.getIsExpanded();
+      const isSelected = row.getIsSelected();
+
+      let HierarchyIcon = null;
+      if (shouldUseTreeMode) {
+        if (hasChildren) {
+          HierarchyIcon = isExpanded ? MinusFolderIcon : PlusFolderFilledIcon;
+        } else {
+          HierarchyIcon = CircleFilledIcon;
+        }
       }
 
+      if (shouldUseTreeMode) {
+        return (
+          <div className="flex items-center gap-2 w-full">
+            {hasChildren ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (canExpand) {
+                    row.toggleExpanded();
+                  }
+                }}
+                className="bg-transparent border-0 cursor-pointer p-0.5 flex items-center justify-center min-w-5 min-h-5 rounded-full shadow-[0px_2.5px_6.25px_0px_rgba(0,3,13,0.1)]">
+                {canExpand ? (
+                  isExpanded ? (
+                    <ChevronDown height={12} width={12} fill={"#3F4A7E"} />
+                  ) : (
+                    <ChevronUp height={12} width={12} fill={"#3F4A7E"} />
+                  )
+                ) : null}
+              </button>
+            ) : (
+              <div className="w-5 h-5" />
+            )}
+
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={(e) => {
+                e.stopPropagation();
+                row.toggleSelected();
+              }}
+              className="min-w-4 min-h-4 cursor-pointer rounded border-[1.67px] border-[rgba(0,3,13,0.4)] checked:bg-(--color-etendo-main) checked:border-(--color-etendo-main)"
+            />
+
+            {HierarchyIcon && <HierarchyIcon className="min-w-5 min-h-5" fill={"#004ACA"} />}
+
+            <span className="flex-1">
+              {originalCell && typeof originalCell === "function"
+                ? originalCell({ renderedCellValue, row, table })
+                : renderedCellValue}
+            </span>
+          </div>
+        );
+      }
       return (
-        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          <span style={{ opacity: 0.6, fontSize: "12px" }}>{icon}</span>
-          <span>{originalCell ? (originalCell as any)({ renderedCellValue, row }) : renderedCellValue}</span>
-        </div>
+        <span className="flex-1">
+          {originalCell && typeof originalCell === "function"
+            ? originalCell({ renderedCellValue, row, table })
+            : renderedCellValue}
+        </span>
       );
     };
 
@@ -139,7 +201,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     return modifiedColumns;
   }, [baseColumns, shouldUseTreeMode]);
 
-  // Definir query antes de loadChildNodes para evitar dependencia circular
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || "id";
     const value = parentId;
@@ -176,35 +237,28 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     language,
   ]);
 
-  // Función para cargar nodos hijos dinámicamente
   const loadChildNodes = useCallback(
-    async (parentId: string, parentData: EntityData) => {
+    async (parentId: string) => {
       if (!shouldUseTreeMode || loadedNodes.has(parentId)) {
-        return; // Ya cargado o no en tree mode
+        return;
       }
 
-      console.log("📡 Cargando nodos hijos para parentId:", parentId);
-
       try {
-        // Crear opciones específicas para cargar nodos hijos
         const childTreeOptions = {
           isTreeMode: true,
           windowId: tab.window,
           tabId: tab.id,
           referencedTableId: treeMetadata.referencedTableId || "155",
-          parentId: parentId, // El ID del nodo padre que se expandió
+          parentId: parentId,
         };
 
-        // Hacer la consulta con parentId específico
         const childQuery = {
           ...query,
-          // Agregar criterios específicos si es necesario
         };
 
-        // Simular la carga (en la implementación real usaríamos loadData del useDatasource)
         const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
 
-        const safePageSize = 1000; // Por ahora cargamos muchos nodos hijos
+        const safePageSize = 1000;
         const startRow = 0;
         const endRow = safePageSize - 1;
 
@@ -219,40 +273,23 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           referencedTableId: childTreeOptions.referencedTableId,
         };
 
-        console.log("🚀 Enviando request para nodos hijos:", {
-          entity: treeEntity,
-          processedParams,
-          parentData: { id: parentData.id, name: parentData.name || parentData._identifier },
-        });
-
         const response = await datasource.get(treeEntity, processedParams);
 
         if (response.ok && response.data?.response?.data) {
           const childNodes = response.data.response.data;
 
-          console.log("✅ Nodos hijos cargados:", {
-            parentId,
-            childCount: childNodes.length,
-            children: childNodes.map((child: EntityData) => ({
-              id: child.id,
-              name: child.name || child._identifier,
-            })),
-          });
-
-          // Guardar los nodos hijos en el estado
           setChildrenData((prev) => new Map(prev.set(parentId, childNodes)));
           setLoadedNodes((prev) => new Set(prev.add(parentId)));
         } else {
-          console.error("❌ Error cargando nodos hijos:", response);
+          console.error("❌ Error loading child nodes:", response);
         }
       } catch (error) {
-        console.error("❌ Excepción cargando nodos hijos:", error);
+        console.error("❌ Exception loading child nodes:", error);
       }
     },
     [shouldUseTreeMode, loadedNodes, treeEntity, tab, treeMetadata, query]
   );
 
-  // Función para construir la lista plana de registros con jerarquía
   const buildFlattenedRecords = useCallback(
     (
       parentRecords: EntityData[],
@@ -261,41 +298,34 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     ): EntityData[] => {
       const result: EntityData[] = [];
 
-      for (const parentRecord of parentRecords) {
-        // Agregar el registro padre con nivel 0
-        const parentWithLevel = {
-          ...parentRecord,
-          __level: 0, // Nivel de indentación
-          __isParent: true,
-          __originalParentId: parentRecord.parentId,
-        };
-        result.push(parentWithLevel);
+      const processNode = (record: EntityData, level = 0, parentTreeId?: string) => {
+        const nodeWithLevel = {
+          ...record,
+          __level: level,
+          __isParent: level === 0 ? true : record.showDropIcon === true,
+          __originalParentId: record.parentId,
+          __treeParentId: parentTreeId || null,
+        } as EntityData;
+        result.push(nodeWithLevel);
 
-        // Si el nodo está expandido, agregar sus hijos
-        const parentId = String(parentRecord.id);
-        const isExpanded = typeof expandedState === "object" && expandedState[parentId];
+        const nodeId = String(record.id);
+        const isExpanded = typeof expandedState === "object" && expandedState[nodeId];
 
-        if (isExpanded && childrenMap.has(parentId)) {
-          const children = childrenMap.get(parentId) || [];
+        if (isExpanded && childrenMap.has(nodeId)) {
+          const children = childrenMap.get(nodeId) || [];
           for (const childRecord of children) {
-            const childWithLevel = {
-              ...childRecord,
-              __level: 1, // Nivel de indentación para hijos
-              __isParent: false,
-              __originalParentId: childRecord.parentId,
-              __treeParentId: parentId, // ID del padre en el árbol
-            };
-            result.push(childWithLevel);
+            processNode(childRecord, level + 1, nodeId);
           }
         }
-      }
+      };
 
+      for (const parentRecord of parentRecords) {
+        processNode(parentRecord, 0);
+      }
       return result;
     },
     []
   );
-
-  // Esta función se definirá después de obtener records
 
   const treeOptions = shouldUseTreeMode
     ? {
@@ -303,22 +333,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         windowId: tab.window,
         tabId: tab.id,
         referencedTableId: treeMetadata.referencedTableId || "155",
-        parentId: -1, // Empezar con nodos raíz
+        parentId: -1,
       }
     : undefined;
-
-  // Debug logging
-  console.log("🌳 Tree Mode Debug:", {
-    isTreeMode,
-    entityName: tab.entityName,
-    treeMetadata,
-    treeMetadataLoading,
-    shouldUseTreeMode,
-    treeEntity,
-    treeOptions,
-    windowId: tab.window,
-    tabId: tab.id,
-  });
 
   const {
     updateColumnFilters,
@@ -339,20 +356,26 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     treeOptions,
   });
 
-  // Usar flattenedRecords para tree mode, records normales para table mode
+  useEffect(() => {
+    if (prevShouldUseTreeMode !== shouldUseTreeMode) {
+      if (!shouldUseTreeMode) {
+        setExpanded({});
+        setLoadedNodes(new Set());
+        setChildrenData(new Map());
+        setFlattenedRecords([]);
+      }
+      refetch();
+
+      setPrevShouldUseTreeMode(shouldUseTreeMode);
+    }
+  }, [shouldUseTreeMode, prevShouldUseTreeMode, refetch]);
+
   const displayRecords = shouldUseTreeMode ? flattenedRecords : records;
 
-  // Actualizar registros planos cuando cambien los datos o el estado expandido
   useEffect(() => {
     if (shouldUseTreeMode) {
       const flattened = buildFlattenedRecords(records, expanded, childrenData);
       setFlattenedRecords(flattened);
-
-      console.log("🔄 Actualizando registros planos:", {
-        originalRecords: records.length,
-        flattenedRecords: flattened.length,
-        expandedNodes: Object.keys(expanded).filter((k) => expanded[k as keyof typeof expanded]),
-      });
     } else {
       setFlattenedRecords(records);
     }
@@ -402,6 +425,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
       return {
         onClick: (event) => {
+          const target = event.target as HTMLElement;
+          if (target.tagName === "INPUT" || target.tagName === "BUTTON" || target.closest("button")) {
+            return;
+          }
+
           const existingTimeout = clickTimeoutsRef.current.get(rowId);
           if (existingTimeout) {
             clearTimeout(existingTimeout);
@@ -409,10 +437,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           }
 
           const timeout = setTimeout(() => {
-            if (!event.ctrlKey) {
+            if (event.ctrlKey || event.metaKey) {
               table.setRowSelection({});
+              row.toggleSelected(true);
+            } else {
+              row.toggleSelected();
             }
-            row.toggleSelected();
             clickTimeoutsRef.current.delete(rowId);
           }, 250);
 
@@ -420,6 +450,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         },
 
         onDoubleClick: (event) => {
+          const target = event.target as HTMLElement;
+          if (target.tagName === "INPUT" || target.tagName === "BUTTON" || target.closest("button")) {
+            return;
+          }
+
           event.stopPropagation();
 
           const timeout = clickTimeoutsRef.current.get(rowId);
@@ -477,26 +512,69 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   const table = useMaterialReactTable<EntityData>({
     muiTablePaperProps: { sx: sx.tablePaper },
-    muiTableHeadCellProps: { sx: sx.tableHeadCell },
+
+    muiTableHeadCellProps: {
+      sx: {
+        ...sx.tableHeadCell,
+      },
+    },
+
     muiTableBodyCellProps: ({ row, column }) => ({
       sx: {
         ...sx.tableBodyCell,
-        // Agregar indentación para nodos hijos en la primera columna
         ...(shouldUseTreeMode &&
           column.id === columns[0]?.id && {
-            paddingLeft: `${16 + ((row.original.__level as number) || 0) * 24}px`,
+            paddingLeft: `${12 + ((row.original.__level as number) || 0) * 16}px`,
             position: "relative",
           }),
       },
     }),
-    // Personalizar el renderizado de celdas para agregar iconos de jerarquía
+
     displayColumnDefOptions: shouldUseTreeMode
       ? {
           "mrt-row-expand": {
             size: 60,
+            muiTableHeadCellProps: {
+              sx: {
+                display: "none",
+              },
+            },
+            muiTableBodyCellProps: {
+              sx: {
+                display: "none",
+              },
+            },
+          },
+          "mrt-row-select": {
+            size: 0,
+            muiTableHeadCellProps: {
+              sx: {
+                display: "none",
+              },
+            },
+            muiTableBodyCellProps: {
+              sx: {
+                display: "none",
+              },
+            },
           },
         }
-      : undefined,
+      : {
+          "mrt-row-expand": {
+            size: 0,
+            muiTableHeadCellProps: {
+              sx: {
+                display: "none",
+              },
+            },
+            muiTableBodyCellProps: {
+              sx: {
+                display: "none",
+              },
+            },
+          },
+        },
+
     muiTableBodyProps: { sx: sx.tableBody },
     layoutMode: "semantic",
     enableGlobalFilter: false,
@@ -518,31 +596,16 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     enableTopToolbar: false,
     enableBottomToolbar: false,
     enableExpanding: shouldUseTreeMode,
-    paginateExpandedRows: false, // Importante para tree view
+    paginateExpandedRows: false,
     getRowCanExpand: (row) => {
-      // En tree mode, solo los nodos padre pueden expandirse
-      const isParentNode = shouldUseTreeMode ? row.original.__isParent !== false : true;
-      const canExpand = row.original.showDropIcon === true && isParentNode;
-
       if (shouldUseTreeMode) {
-        console.log("🔍 Checking row expansion:", {
-          id: row.original.id,
-          showDropIcon: row.original.showDropIcon,
-          isParentNode,
-          __isParent: row.original.__isParent,
-          __level: row.original.__level,
-          canExpand,
-        });
+        return true;
       }
+      const isParentNode = row.original.__isParent !== false;
+      const canExpand = row.original.showDropIcon === true && isParentNode;
       return canExpand;
     },
-    // Configuración adicional para asegurar que los botones de expansión aparezcan
-    initialState: shouldUseTreeMode
-      ? {
-          expanded: {},
-        }
-      : undefined,
-    // Ya no necesitamos renderDetailPanel porque los nodos hijos son filas reales
+    initialState: { density: "compact" },
     renderDetailPanel: undefined,
     onExpandedChange: (newExpanded) => {
       const prevExpanded = expandedRef.current;
@@ -551,7 +614,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       setExpanded(newExpandedState);
       expandedRef.current = newExpandedState;
 
-      // Verificar si newExpandedState es un objeto (Record<string, boolean>)
       if (typeof newExpandedState === "object" && newExpandedState !== null && !Array.isArray(newExpandedState)) {
         const prevExpandedObj =
           typeof prevExpanded === "object" && prevExpanded !== null && !Array.isArray(prevExpanded) ? prevExpanded : {};
@@ -564,32 +626,26 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         const expandedRowIds = newKeys.filter((k) => !prevKeys.includes(k));
         const collapsedRowIds = prevKeys.filter((k) => !newKeys.includes(k));
 
-        // Carga dinámica de nodos hijos
         for (const id of expandedRowIds) {
           const rowData = displayRecords.find((record) => String(record.id) === id);
-          console.log("🔍 Se expandió la fila:", {
-            id,
-            rowData: rowData ? { id: rowData.id, ...rowData } : "No encontrada",
-          });
 
           if (shouldUseTreeMode && rowData && rowData.__isParent !== false) {
-            // Solo cargar nodos hijos para nodos padre
-            loadChildNodes(String(rowData.id), rowData);
+            loadChildNodes(String(rowData.id));
           }
         }
 
         for (const id of collapsedRowIds) {
-          const rowData = displayRecords.find((record) => String(record.id) === id);
-          console.log("📁 Se colapsó la fila:", {
-            id,
-            rowData: rowData ? { id: rowData.id, ...rowData } : "No encontrada",
+          setChildrenData((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(id);
+            return newMap;
+          });
+          setLoadedNodes((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(id);
+            return newSet;
           });
         }
-
-        console.log("📊 Estado de expansión actualizado:", {
-          totalExpanded: newKeys.length,
-          expandedIds: newKeys,
-        });
       }
     },
     state: {

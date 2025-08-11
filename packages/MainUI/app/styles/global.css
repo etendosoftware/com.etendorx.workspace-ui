@@ -91,7 +91,8 @@
 .toolbar-button-delete .icon-base64,
 .toolbar-button-copilot .icon-base64,
 .toolbar-button-column-filters .icon-base64,
-.toolbar-button-refresh .icon-base64 {
+.toolbar-button-refresh .icon-base64,
+.toolbar-button-toggle-tree-view .icon-base64 {
   opacity: 1;
 }
 
@@ -101,7 +102,8 @@
 .toolbar-button-filter:hover .icon-base64,
 .toolbar-button-find:hover .icon-base64,
 .toolbar-button-copilot:hover .icon-base64,
-.toolbar-button-column-filters:hover .icon-base64 {
+.toolbar-button-column-filters:hover .icon-base64,
+.toolbar-button-toggle-tree-view:hover .icon-base64 {
   filter: brightness(1000%);
   opacity: 1;
 }
@@ -119,7 +121,8 @@
 .toolbar-button-cancel:disabled .icon-base64,
 .toolbar-button-delete:disabled .icon-base64,
 .toolbar-button-copilot:disabled .icon-base64,
-.toolbar-button-column-filters:disabled .icon-base64 {
+.toolbar-button-column-filters:disabled .icon-base64,
+.toolbar-button-toggle-tree-view:disabled .icon-base64 {
   filter: grayscale(100%);
   opacity: 0.3;
 }
