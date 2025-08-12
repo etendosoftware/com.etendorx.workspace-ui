@@ -190,10 +190,10 @@ export function setupApiTestEnvironment() {
     process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: "http://erp.example/etendo" };
     (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
       ok: true,
-      status: 200,
+      status: 201, // Different status from datasource
       headers: { get: () => "application/json" },
-      text: async () => JSON.stringify({ response: { status: 0 } }),
-      json: async () => ({ response: { status: 0 } }),
+      text: async () => JSON.stringify({ api: "test", success: true }),
+      json: async () => ({ api: "test", success: true }),
     });
   };
 

@@ -27,7 +27,6 @@ jest.mock("@/lib/auth", () => ({
 
 import {
   setupDatasourceMocks,
-  setupDatasourceAuthMock,
   setupDatasourceTestEnvironment,
   createDatasourceRequest,
   assertDatasourceCall,

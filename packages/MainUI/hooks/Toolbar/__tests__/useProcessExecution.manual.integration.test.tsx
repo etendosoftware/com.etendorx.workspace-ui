@@ -219,8 +219,6 @@ describe("useProcessExecution manual processes integration", () => {
       window.localStorage.setItem("DEBUG_MANUAL_PROCESSES", "true");
     } catch {}
 
-    const debugSpy = jest.spyOn(logger, "debug").mockImplementation(() => {});
-
     const userCtx = { token: "tok_abc123" };
     render(withUser(userCtx, <Harness buttonId="TEST_BUTTON" />));
 
