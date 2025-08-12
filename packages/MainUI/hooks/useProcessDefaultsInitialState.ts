@@ -1,12 +1,11 @@
 import { useMemo } from "react";
 import type { EntityData, ProcessParameter } from "@workspaceui/api-client/src/api/types";
-import type { 
-  ProcessDefaultsResponse
-} from "@/components/ProcessModal/types/ProcessParameterExtensions";
+import type { ProcessDefaultsResponse } from "@/components/ProcessModal/types/ProcessParameterExtensions";
 import {
-  isReferenceValue,
-  isSimpleValue 
-} from "@/components/ProcessModal/types/ProcessParameterExtensions";
+  createParameterNameMap,
+  processDefaultValueLegacy,
+  extractLogicFields,
+} from "@/utils/process/processDefaultsUtils";
 import { logger } from "@/utils/logger";
 
 /**
@@ -19,16 +18,7 @@ export const useProcessDefaultsInitialState = (
 ) => {
   // Build parameter name map once per change of parameters
   const parameterNameMap = useMemo(() => {
-    if (!parameters) return {} as Record<string, ProcessParameter>;
-
-    const map: Record<string, ProcessParameter> = {};
-    Object.values(parameters).forEach((param) => {
-      map[param.name] = param;
-      if (param.dBColumnName && param.dBColumnName !== param.name) {
-        map[param.dBColumnName] = param;
-      }
-    });
-    return map;
+    return createParameterNameMap(parameters);
   }, [parameters]);
 
   const initialState = useMemo(() => {
@@ -39,43 +29,12 @@ export const useProcessDefaultsInitialState = (
 
     // Process each default value
     for (const [fieldName, value] of Object.entries(defaults)) {
-      try {
-        // Skip logic fields (will be processed separately)
-        if (fieldName.endsWith('_display_logic') || fieldName.endsWith('_readonly_logic')) {
-          continue;
+      const processed = processDefaultValueLegacy(fieldName, value, parameterNameMap);
+      if (processed) {
+        acc[processed.fieldName] = processed.fieldValue;
+        if (processed.identifier) {
+          acc[`${processed.fieldName}$_identifier`] = processed.identifier;
         }
-
-        // Find corresponding parameter
-        const parameter = parameterNameMap[fieldName];
-        const formFieldName = parameter?.name || fieldName;
-
-        if (isReferenceValue(value)) {
-          // Handle reference objects with value/identifier
-          acc[formFieldName] = value.value;
-          acc[`${formFieldName}$_identifier`] = value.identifier;
-          
-          logger.debug(`Mapped reference field ${fieldName}:`, {
-            formField: formFieldName,
-            value: value.value,
-            identifier: value.identifier
-          });
-        } else if (isSimpleValue(value)) {
-          // Handle simple values (string, number, boolean)
-          acc[formFieldName] = String(value);
-          
-          logger.debug(`Mapped simple field ${fieldName}:`, {
-            formField: formFieldName,
-            value: String(value)
-          });
-        } else {
-          logger.warn(`Unexpected value type for field ${fieldName}:`, value);
-          // Fallback to string conversion
-          acc[formFieldName] = String(value);
-        }
-      } catch (error) {
-        logger.error(`Error processing default value for field ${fieldName}:`, error);
-        // Set fallback value to prevent form errors
-        acc[fieldName] = "";
       }
     }
 
@@ -94,19 +53,7 @@ export const useProcessLogicFields = (processDefaults?: ProcessDefaultsResponse 
   const logicFields = useMemo(() => {
     if (!processDefaults?.defaults) return {};
 
-    const logic: Record<string, boolean> = {};
-    const { defaults } = processDefaults;
-
-    for (const [fieldName, value] of Object.entries(defaults)) {
-      if (fieldName.endsWith('_display_logic')) {
-        const baseFieldName = fieldName.replace('_display_logic', '');
-        logic[`${baseFieldName}.display`] = value === "Y";
-      } else if (fieldName.endsWith('_readonly_logic')) {
-        const baseFieldName = fieldName.replace('_readonly_logic', '');
-        logic[`${baseFieldName}.readonly`] = value === "Y";
-      }
-    }
-
+    const logic = extractLogicFields(processDefaults.defaults);
     logger.debug("Process logic fields:", logic);
     return logic;
   }, [processDefaults]);
@@ -143,6 +90,6 @@ export const useProcessDefaults = (
     initialState,
     logicFields,
     filterExpressions,
-    refreshParent: processDefaults?.refreshParent || false
+    refreshParent: processDefaults?.refreshParent || false,
   };
 };

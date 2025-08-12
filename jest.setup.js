@@ -31,6 +31,38 @@ try {
   } catch (_) {}
 } catch (_) {}
 
+// Final fallback polyfill for Response (if still missing) so Next's internals (which call Response.json) work in tests
+if (typeof global.Response === 'undefined') {
+  class SimpleResponse {
+    constructor(body = null, init = {}) {
+      this._body = body;
+      this.status = init.status || 200;
+      this.ok = this.status >= 200 && this.status < 300;
+      this.headers = init.headers || new Map();
+    }
+    static json(data, init = {}) {
+      const body = JSON.stringify(data);
+      const headers = new Map();
+      headers.set('content-type', 'application/json');
+      return new SimpleResponse(body, { ...init, headers });
+    }
+    async json() {
+      try {
+        if (typeof this._body === 'string') return JSON.parse(this._body);
+        return this._body;
+      } catch {
+        return null;
+      }
+    }
+    async text() {
+      if (typeof this._body === 'string') return this._body;
+      return JSON.stringify(this._body);
+    }
+  }
+  // @ts-ignore
+  global.Response = SimpleResponse;
+}
+
 const { configure } = require("@testing-library/react");
 
 configure({
