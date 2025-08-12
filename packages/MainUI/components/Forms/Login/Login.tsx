@@ -17,17 +17,18 @@
 
 "use client";
 import { useCallback, useState } from "react";
-import { Typography } from "@mui/material";
-import { useStyle } from "../styles";
 import type { LoginProps } from "../types";
 import { useTranslation } from "../../../hooks/useTranslation";
 import "./Login.css";
 import Input from "../Input";
 import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
+import UserIcon from "../../../../ComponentLibrary/src/assets/icons/user.svg";
+import LockIcon from "../../../../ComponentLibrary/src/assets/icons/lock.svg";
+import GoogleIcon from "../../../../ComponentLibrary/src/assets/icons/ilustration/google.svg";
+
 export default function Login({ title, onSubmit, error }: LoginProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const { styles } = useStyle();
   const { t } = useTranslation();
 
   const handleUsernameChange = useCallback(
@@ -54,26 +55,36 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
       <div className="bg-(--color-baseline-0) border border-(--color-transparent-neutral-10) rounded-xl overflow-hidden max-w-96">
         <div className="h-14 flex items-center gap-2 pl-6 bg-(--color-baseline-10) border-b border-(--color-transparent-neutral-10)">
           <div className="logo h-8 w-8" />
-          <div className="font-inter font-semibold text-sm leading-[20px] tracking-[0.15px] align-middle">{title}</div>
+          <div className="font-inter font-semibold text-sm text-(--color-baseline-100) leading-[20px] tracking-[0.15px] align-middle">
+            {title}
+          </div>
         </div>
         <form className="py-6 px-8" onSubmit={handleSubmit} noValidate>
-          <div className="font-inter font-semibold text-2xl leading-7 tracking-normal">{t("login.title")}</div>
-          <div className="font-inter font-medium text-xs leading-4 tracking-normal mt-1">{t("login.subtitle")}</div>
+          <div className="font-inter text-(--color-transparent-neutral-70) font-semibold text-2xl leading-7 tracking-normal">
+            {t("login.title")}
+          </div>
+          <div className="font-inter text-(--color-transparent-neutral-70) font-medium text-xs leading-4 tracking-normal mt-1 mb-3">
+            {t("login.subtitle")}
+          </div>
           <Input
+            icon={UserIcon}
+            label={t("login.fields.username.placeholder")}
+            required
             type="text"
             name="username"
             id="username"
-            placeholder={t("login.fields.username.placeholder")}
             value={username}
             onChange={handleUsernameChange}
             autoComplete="username"
           />
+          <div className="my-2" />
           <Input
-            title={t("login.fields.password.placeholder")}
+            icon={LockIcon}
+            label={t("login.fields.password.placeholder")}
+            required
             type="password"
             name="password"
             id="password"
-            placeholder={t("login.fields.password.placeholder")}
             value={password}
             onChange={handlePasswordChange}
             autoComplete="current-password"
@@ -88,14 +99,10 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
             </span>
             <div className="flex-grow border-t border-(--color-transparent-neutral-10)" />
           </div>
-          <Button variant="outlined" type="submit" className="mt-6 h-10">
-            {t("login.buttons.submit")}
+          <Button disabled variant="outlined" type="submit" className="h-10" startIcon={<GoogleIcon />}>
+            {t("login.buttons.google")}
           </Button>
-          {error && (
-            <Typography component="div" sx={styles.error}>
-              {error}
-            </Typography>
-          )}
+          {error && <div>{error}</div>}
         </form>
       </div>
     </div>

@@ -216,6 +216,7 @@ const es = {
     },
     buttons: {
       submit: "Acceso",
+      google: "Continue with Google",
     },
   },
   grid: {

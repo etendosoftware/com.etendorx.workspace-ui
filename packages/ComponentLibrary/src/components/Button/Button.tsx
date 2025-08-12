@@ -23,24 +23,26 @@ const getButtonClasses = ({
 }) => {
   const base = `
     inline-flex items-center justify-center font-medium rounded-full
-    transition-colors duration-200 w-full "
+    transition-colors duration-200 w-full
   `;
 
   const sizeClass = size === "small" ? "py-3 text-sm" : "h-10 px-4 text-base";
+
+  const cursorClass = disabled ? "!cursor-default" : "!cursor-pointer";
 
   const styles: Record<ButtonVariant, (args: { disabled?: boolean }) => string> = {
     filled: ({ disabled }) =>
       clsx(
         "text-(--color-etendo-contrast-text)",
         disabled
-          ? "bg-(--color-transparent-neutral-100) opacity-20 cursor-not-allowed"
+          ? "bg-(--color-transparent-neutral-100) opacity-20"
           : ["bg-(--color-baseline-100)", "hover:bg-(--color-dynamic-main)", "hover:[&>span>svg]:fill-white"]
       ),
     outlined: ({ disabled }) =>
       clsx(
         "border",
         disabled
-          ? "border-gray-200 text-(--color-transparent-neutral-700) cursor-not-allowed opacity-60"
+          ? "border-gray-200 text-(--color-transparent-neutral-700) opacity-60"
           : [
               "text-(--color-transparent-neutral-700)",
               "hover:text-(--color-etendo-contrast-text)",
@@ -52,7 +54,7 @@ const getButtonClasses = ({
       ),
   };
 
-  return clsx(base, sizeClass, styles[variant]({ disabled }));
+  return clsx(base, sizeClass, cursorClass, styles[variant]({ disabled }));
 };
 
 const Button = ({
@@ -62,12 +64,24 @@ const Button = ({
   disabled = false,
   className = "",
   children,
+  style,
   ...rest
 }: ButtonProps) => {
   const classes = getButtonClasses({ variant, size, disabled });
 
+  // Forzar el cursor mediante style como respaldo
+  const buttonStyle = {
+    ...style,
+    cursor: disabled ? "not-allowed" : "pointer",
+  };
+
   return (
-    <button type="button" disabled={disabled} className={cleanDefaultClasses(classes, className)} {...rest}>
+    <button
+      type="button"
+      disabled={disabled}
+      className={cleanDefaultClasses(classes, className)}
+      style={buttonStyle}
+      {...rest}>
       <span className="mr-2 [&>svg]:w-4 [&>svg]:h-4">{startIcon}</span>
       <span>{children}</span>
     </button>

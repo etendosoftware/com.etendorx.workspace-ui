@@ -213,6 +213,7 @@ const en = {
     },
     buttons: {
       submit: "Log In",
+      google: "Continuar con Google",
     },
   },
   grid: {
