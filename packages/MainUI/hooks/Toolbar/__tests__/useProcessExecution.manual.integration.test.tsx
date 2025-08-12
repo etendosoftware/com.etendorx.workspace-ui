@@ -102,7 +102,7 @@ function Harness({ buttonId }: { buttonId: string }) {
 }
 
 function withUser(ctxValue: any, ui: React.ReactElement) {
-  return <UserContext.Provider value={ctxValue as any}>{ui}</UserContext.Provider>;
+  return <UserContext.Provider value={ctxValue}>{ui}</UserContext.Provider>;
 }
 
 describe("useProcessExecution manual processes integration", () => {

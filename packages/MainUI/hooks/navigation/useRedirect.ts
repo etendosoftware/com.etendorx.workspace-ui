@@ -27,6 +27,63 @@ export const useRedirect = () => {
   const { openWindow, buildURL, getNextOrder, windows, openWindowAndSelect } = useMultiWindowURL();
   const { getWindowMetadata, loadWindowData } = useMetadataContext();
 
+  const createBaseWindow = useCallback((windowId: string, windowIdentifier?: string) => ({
+    windowId,
+    window_identifier: windowIdentifier || windowId,
+    isActive: true,
+    order: getNextOrder(windows),
+    title: windowIdentifier || windowId,
+    selectedRecords: {},
+    tabFormStates: {},
+  }), [getNextOrder, windows]);
+
+  const handleRecordSelection = useCallback(async (
+    windowId: string,
+    windowIdentifier: string | undefined,
+    selectedRecordId: string,
+    isInWindowRoute: boolean
+  ) => {
+    let targetTabId: string | undefined;
+    const meta = getWindowMetadata(windowId) || (await loadWindowData(windowId).catch(() => undefined));
+    
+    if (meta?.tabs?.length) {
+      const rootTab = meta.tabs.find((t) => t.tabLevel === 0) || meta.tabs[0];
+      targetTabId = rootTab?.id;
+    }
+
+    if (isInWindowRoute) {
+      if (targetTabId) {
+        openWindowAndSelect(windowId, {
+          selection: {
+            tabId: targetTabId,
+            recordId: selectedRecordId,
+            openForm: isLinkedLabelOpenInForm(),
+          },
+        });
+      } else {
+        openWindow(windowId);
+      }
+      return;
+    }
+
+    const baseWindow = createBaseWindow(windowId, windowIdentifier);
+    if (targetTabId) {
+      baseWindow.selectedRecords = { [targetTabId]: selectedRecordId };
+      if (isLinkedLabelOpenInForm()) {
+        baseWindow.tabFormStates = { 
+          [targetTabId]: { 
+            recordId: selectedRecordId, 
+            mode: "form", 
+            formMode: "edit" 
+          } 
+        };
+      }
+    }
+
+    const targetURL = buildURL([baseWindow]);
+    router.push(targetURL);
+  }, [getWindowMetadata, loadWindowData, openWindowAndSelect, openWindow, createBaseWindow, buildURL, router]);
+
   const handleAction = useCallback(
     async (
       windowId: string | undefined,
@@ -40,45 +97,8 @@ export const useRedirect = () => {
 
       const isInWindowRoute = pathname.includes("window");
 
-      // If a record id is provided, attempt to preselect on target window's root tab
       if (selectedRecordId) {
-        let targetTabId: string | undefined;
-        const meta = getWindowMetadata(windowId) || (await loadWindowData(windowId).catch(() => undefined));
-        if (meta?.tabs?.length) {
-          const rootTab = meta.tabs.find((t) => t.tabLevel === 0) || meta.tabs[0];
-          targetTabId = rootTab?.id;
-        }
-
-        if (isInWindowRoute) {
-          if (targetTabId) {
-            openWindowAndSelect(windowId, {
-              selection: {
-                tabId: targetTabId,
-                recordId: selectedRecordId,
-                openForm: isLinkedLabelOpenInForm(),
-              },
-            });
-          } else {
-            openWindow(windowId);
-          }
-          return;
-        }
-
-        const baseWindow = {
-          windowId,
-          window_identifier: windowIdentifier || windowId,
-          isActive: true,
-          order: getNextOrder(windows),
-          title: windowIdentifier || windowId,
-          selectedRecords: targetTabId ? { [targetTabId]: selectedRecordId } : {},
-          tabFormStates:
-            targetTabId && isLinkedLabelOpenInForm()
-              ? { [targetTabId]: { recordId: selectedRecordId, mode: "form", formMode: "edit" } }
-              : {},
-        } as any;
-
-        const targetURL = buildURL([baseWindow]);
-        router.push(targetURL);
+        await handleRecordSelection(windowId, windowIdentifier, selectedRecordId, isInWindowRoute);
         return;
       }
 
@@ -88,27 +108,18 @@ export const useRedirect = () => {
         return;
       }
 
-      const newWindow = {
-        windowId,
-        window_identifier: windowIdentifier || windowId,
-        isActive: true,
-        order: getNextOrder(windows),
-        title: windowIdentifier || windowId,
-        selectedRecords: {},
-        tabFormStates: {},
-      };
-
+      const newWindow = createBaseWindow(windowId, windowIdentifier);
       const targetURL = buildURL([newWindow]);
       router.push(targetURL);
     },
-    [router, pathname, windows, buildURL, openWindow, openWindowAndSelect, getNextOrder, getWindowMetadata, loadWindowData]
+    [router, pathname, handleRecordSelection, openWindow, createBaseWindow, buildURL]
   );
 
   const handleClickRedirect = useCallback(
     (e: React.MouseEvent, windowId: string | undefined, windowIdentifier: string | undefined, selectedRecordId?: string) => {
       e.stopPropagation();
       e.preventDefault();
-      void handleAction(windowId, windowIdentifier, selectedRecordId);
+      handleAction(windowId, windowIdentifier, selectedRecordId);
     },
     [handleAction]
   );
@@ -118,7 +129,7 @@ export const useRedirect = () => {
       e.stopPropagation();
       e.preventDefault();
       if (e.key === "Enter" || e.key === " ") {
-        void handleAction(windowId, windowIdentifier, selectedRecordId);
+        handleAction(windowId, windowIdentifier, selectedRecordId);
       }
     },
     [handleAction]

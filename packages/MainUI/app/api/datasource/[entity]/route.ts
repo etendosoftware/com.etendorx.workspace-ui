@@ -5,6 +5,73 @@ import { encodeDatasourcePayload } from '@/app/api/_utils/datasource';
 
 export const runtime = 'nodejs';
 
+function buildErpUrl(entity: string, request: Request): string {
+  let erpUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/forward/org.openbravo.service.datasource/${entity}`;
+  
+  const url = new URL(request.url);
+  if (url.search) {
+    erpUrl += url.search;
+  }
+  
+  return erpUrl;
+}
+
+function buildHeaders(userToken: string, request: Request): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${userToken}`,
+    'Accept': 'application/json',
+  };
+  
+  const combinedCookie = getCombinedErpCookieHeader(request, userToken);
+  if (combinedCookie) {
+    headers['Cookie'] = combinedCookie;
+  }
+  
+  return headers;
+}
+
+async function processRequestBody(request: Request, contentType: string): Promise<{ body: string | undefined; headers: Record<string, string> }> {
+  const method = request.method;
+  
+  if (method === 'GET') {
+    return { body: undefined, headers: {} };
+  }
+
+  const additionalHeaders: Record<string, string> = {};
+  
+  if (contentType.includes('application/json')) {
+    const raw = await request.text();
+    
+    if (shouldPassthroughJson(request)) {
+      additionalHeaders['Content-Type'] = contentType;
+      return { body: raw, headers: additionalHeaders };
+    }
+    
+    try {
+      const payload = JSON.parse(raw);
+      const encoded = encodeDatasourcePayload(payload);
+      return { body: encoded.body, headers: encoded.headers };
+    } catch {
+      additionalHeaders['Content-Type'] = contentType;
+      return { body: raw, headers: additionalHeaders };
+    }
+  }
+  
+  const body = await request.text();
+  if (!contentType.includes('application/x-www-form-urlencoded')) {
+    additionalHeaders['Content-Type'] = contentType;
+  }
+  
+  return { body, headers: additionalHeaders };
+}
+
+function addCsrfHeader(headers: Record<string, string>, request: Request): void {
+  const incomingCsrf = request.headers.get('X-CSRF-Token') || request.headers.get('x-csrf-token');
+  if (incomingCsrf) {
+    headers['X-CSRF-Token'] = incomingCsrf;
+  }
+}
+
 async function handle(request: Request, { params }: { params: { entity: string } }) {
   try {
     const userToken = extractBearerToken(request);
@@ -13,71 +80,23 @@ async function handle(request: Request, { params }: { params: { entity: string }
     }
 
     const entity = params.entity;
-    let erpUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/forward/org.openbravo.service.datasource/${entity}`;
-
-    // Append original query string if present
-    const url = new URL(request.url);
-    if (url.search) {
-      erpUrl += url.search;
-    }
-
-    const method = request.method;
+    const erpUrl = buildErpUrl(entity, request);
     const contentType = request.headers.get('Content-Type') || 'application/json';
-    let body: string | undefined = undefined;
-
-    // If client sent JSON but ERP expects form-urlencoded, convert
-    let headers: Record<string, string> = {
-      'Authorization': `Bearer ${userToken}`,
-      'Accept': 'application/json',
-    };
-    const combinedCookie = getCombinedErpCookieHeader(request, userToken);
-    if (combinedCookie) headers['Cookie'] = combinedCookie;
-
-    if (method !== 'GET') {
-      if (contentType.includes('application/json')) {
-        // Optional passthrough: forward JSON as-is to match legacy behavior
-        if (shouldPassthroughJson(request)) {
-          body = await request.text();
-          headers['Content-Type'] = contentType;
-        } else {
-          // Prefer robust text->JSON parse to support tests and environments
-          const raw = await request.text();
-          try {
-            const payload = JSON.parse(raw);
-            const encoded = encodeDatasourcePayload(payload);
-            body = encoded.body;
-            headers = { ...headers, ...encoded.headers };
-            // Workaround backend bug: do not send Content-Type for form payloads
-            delete headers['Content-Type'];
-          } catch {
-            // If not valid JSON, forward as-is
-            body = raw;
-            headers['Content-Type'] = contentType;
-          }
-        }
-      } else {
-        body = await request.text();
-        // If client already sent application/x-www-form-urlencoded, avoid Content-Type header
-        if (!contentType.includes('application/x-www-form-urlencoded')) {
-          headers['Content-Type'] = contentType;
-        }
-      }
-    }
-
-    // Pass through CSRF header if sent by client
-    const incomingCsrf = request.headers.get('X-CSRF-Token') || request.headers.get('x-csrf-token');
-    if (incomingCsrf) {
-      headers['X-CSRF-Token'] = incomingCsrf;
-    }
+    
+    const headers = buildHeaders(userToken, request);
+    const { body, headers: bodyHeaders } = await processRequestBody(request, contentType);
+    
+    Object.assign(headers, bodyHeaders);
+    addCsrfHeader(headers, request);
 
     const response = await fetch(erpUrl, {
-      method,
+      method: request.method,
       headers,
       body,
     });
 
     const text = await response.text();
-    // Try to parse JSON response; fall back to text
+    
     try {
       const json = JSON.parse(text);
       return NextResponse.json(json, { status: response.status });

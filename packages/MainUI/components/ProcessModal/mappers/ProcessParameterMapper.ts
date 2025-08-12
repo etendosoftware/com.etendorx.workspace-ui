@@ -255,7 +255,6 @@ export class ProcessParameterMapper {
       // Create parameter lookup maps for efficient mapping
       const parameterByName = new Map<string, ProcessParameter>();
       const parameterByColumn = new Map<string, ProcessParameter>();
-      
       parameters.forEach(param => {
         parameterByName.set(param.name, param);
         if (param.dBColumnName) {
@@ -266,42 +265,28 @@ export class ProcessParameterMapper {
       const defaults: Record<string, ProcessDefaultValue> = {};
       const filterExpressions: Record<string, Record<string, any>> = {};
 
-      // Process the raw response
-      for (const [key, value] of Object.entries(response)) {
-        if (key === 'filterExpressions') {
-          // Handle filter expressions directly
-          Object.assign(filterExpressions, value || {});
-          continue;
-        }
+      // Helper to map field names
+      const mapFieldName = (key: string): string => {
+        if (!key.startsWith('inp')) return key;
+        const fieldName = key.substring(3);
+        const parameter = parameterByName.get(fieldName) ||
+          parameterByColumn.get(fieldName) ||
+          parameterByName.get(fieldName.toLowerCase()) ||
+          parameterByColumn.get(fieldName.toLowerCase());
+        return parameter ? parameter.name : fieldName;
+      };
 
-        if (key === 'refreshParent') {
-          // Skip - handled separately
-          continue;
-        }
-
-        // Try to map field names from response keys
-        let mappedFieldName = key;
-        
-        // Handle 'inp' prefixed fields (common in Openbravo responses)
-        if (key.startsWith('inp')) {
-          const fieldName = key.substring(3); // Remove 'inp' prefix
-          
-          // Try to find parameter by various naming patterns
-          const parameter = parameterByName.get(fieldName) || 
-                           parameterByColumn.get(fieldName) ||
-                           parameterByName.get(fieldName.toLowerCase()) ||
-                           parameterByColumn.get(fieldName.toLowerCase());
-          
-          if (parameter) {
-            mappedFieldName = parameter.name;
-          } else {
-            mappedFieldName = fieldName;
-          }
-        }
-
-        // Store the mapped value
-        defaults[mappedFieldName] = value;
+      // Process filterExpressions first if present
+      if (response.filterExpressions) {
+        Object.assign(filterExpressions, response.filterExpressions || {});
       }
+
+      // Process defaults and skip filterExpressions/refreshParent
+      Object.entries(response).forEach(([key, value]) => {
+        if (key === 'filterExpressions' || key === 'refreshParent') return;
+        const mappedFieldName = mapFieldName(key);
+        defaults[mappedFieldName] = value;
+      });
 
       const processedResponse: ProcessDefaultsResponse = {
         defaults,
@@ -319,7 +304,6 @@ export class ProcessParameterMapper {
       return processedResponse;
     } catch (error) {
       logger.error("Error mapping initialization response:", error);
-      
       // Return safe fallback
       return {
         defaults: {},
@@ -348,52 +332,49 @@ export class ProcessParameterMapper {
         parameterMap.set(param.name, param);
       });
 
-      for (const [fieldName, value] of Object.entries(processDefaults.defaults)) {
+      const processField = (fieldName: string, value: any, parameterMap: Map<string, ProcessParameter>, formData: Record<string, any>) => {
+        if (fieldName.endsWith('_display_logic') || fieldName.endsWith('_readonly_logic')) {
+          return;
+        }
+        const parameter = parameterMap.get(fieldName);
         try {
-          // Skip logic fields (processed separately)
-          if (fieldName.endsWith('_display_logic') || fieldName.endsWith('_readonly_logic')) {
-            continue;
-          }
-
-          const parameter = parameterMap.get(fieldName);
-          
           if (isReferenceValue(value)) {
-            // Handle reference objects with value/identifier
             formData[fieldName] = value.value;
             if (value.identifier) {
               formData[`${fieldName}$_identifier`] = value.identifier;
             }
-            
             logger.debug(`Processed reference field ${fieldName}:`, {
               value: value.value,
               identifier: value.identifier,
               parameterType: parameter?.reference
             });
-          } else if (isSimpleValue(value)) {
-            // Handle simple values with type conversion
+            return;
+          }
+          if (isSimpleValue(value)) {
             if (parameter?.reference === FIELD_REFERENCE_CODES.BOOLEAN || 
                 parameter?.reference === "Yes/No" || 
                 parameter?.reference === "Boolean") {
-              // Convert string "Y"/"N" to boolean
               formData[fieldName] = value === "Y" || value === true;
             } else {
               formData[fieldName] = value;
             }
-            
             logger.debug(`Processed simple field ${fieldName}:`, {
               value: value,
               type: typeof value,
               parameterType: parameter?.reference
             });
-          } else {
-            // Fallback for unexpected types
-            logger.warn(`Unexpected value type for field ${fieldName}:`, value);
-            formData[fieldName] = String(value || "");
+            return;
           }
+          logger.warn(`Unexpected value type for field ${fieldName}:`, value);
+          formData[fieldName] = String(value || "");
         } catch (fieldError) {
           logger.error(`Error processing field ${fieldName}:`, fieldError);
-          formData[fieldName] = ""; // Safe fallback
+          formData[fieldName] = "";
         }
+      };
+
+      for (const [fieldName, value] of Object.entries(processDefaults.defaults)) {
+        processField(fieldName, value, parameterMap, formData);
       }
 
       logger.debug("Processed form data:", {

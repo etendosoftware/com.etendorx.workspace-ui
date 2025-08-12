@@ -22,7 +22,7 @@ describe('Datasource [entity] save does not forward Cookie when ERP_FORWARD_COOK
 
   beforeEach(() => {
     jest.resetModules();
-    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: 'http://erp.example/etendo', ERP_FORWARD_COOKIES: 'false' } as any;
+    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: 'http://erp.example/etendo', ERP_FORWARD_COOKIES: 'false' };
     (global as any).fetch = jest.fn().mockResolvedValue({
       ok: true,
       status: 200,

@@ -31,14 +31,19 @@ async function fetchDatasource(userToken: string, entity: string, params: any, c
     }
   }
 
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${userToken}`,
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Accept': 'application/json',
+  };
+  
+  if (cookieHeader) {
+    headers['Cookie'] = cookieHeader;
+  }
+
   const response = await fetch(erpUrl, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${userToken}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Accept': 'application/json',
-      ...(cookieHeader ? { 'Cookie': cookieHeader } : {}),
-    },
+    headers,
     body: formData,
   });
 
@@ -51,14 +56,19 @@ async function fetchDatasource(userToken: string, entity: string, params: any, c
 async function fetchDatasourceJson(userToken: string, entity: string, params: any, cookieHeader = '') {
   const erpUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/forward/org.openbravo.service.datasource/${entity}`;
 
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${userToken}`,
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+  };
+  
+  if (cookieHeader) {
+    headers['Cookie'] = cookieHeader;
+  }
+
   const response = await fetch(erpUrl, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${userToken}`,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      ...(cookieHeader ? { 'Cookie': cookieHeader } : {}),
-    },
+    headers,
     body: JSON.stringify(params),
   });
 

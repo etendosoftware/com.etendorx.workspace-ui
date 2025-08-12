@@ -16,7 +16,6 @@ export interface EncodedPayload {
 export function encodeDatasourcePayload(json: SmartClientPayload): EncodedPayload {
   const form = new URLSearchParams();
   const headers: Record<string, string> = {
-    'Content-Type': 'application/x-www-form-urlencoded',
   };
 
   if (json.dataSource) form.set('dataSource', String(json.dataSource));

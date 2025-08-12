@@ -27,7 +27,7 @@ describe("SubTabsSwitch - activeTabId visual state", () => {
     render(
       <SubTabsSwitch
         tabs={tabs as any}
-        current={tabs[0] as any}
+        current={tabs[0]}
         activeTabId={tabs[1].id}
         onClick={jest.fn()}
         onDoubleClick={jest.fn()}

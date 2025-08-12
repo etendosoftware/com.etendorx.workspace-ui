@@ -18,7 +18,7 @@ describe('Invoice save parity: /api/datasource/Invoice', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: 'http://erp.example/etendo' } as any;
+    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: 'http://erp.example/etendo' };
     (global as any).fetch = jest.fn().mockResolvedValue({
       ok: true,
       status: 200,

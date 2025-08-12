@@ -37,6 +37,60 @@ export const useProcessInitialState = (
     return map;
   }, [parameters]);
 
+  const processDefaultValue = (fieldName: string, value: DefaultValue, parameterMap: Map<string, ProcessParameter>): { fieldName: string; fieldValue: EntityValue; identifier?: string } | null => {
+    try {
+      // Skip logic fields (will be processed separately)
+      if (fieldName.endsWith('_display_logic') || fieldName.endsWith('_readonly_logic')) {
+        return null;
+      }
+
+      const formFieldName = fieldName;
+
+      if (isReferenceValue(value)) {
+        logger.debug(`Mapped reference field ${fieldName} to ${formFieldName}:`, {
+          value: value.value,
+          identifier: value.identifier
+        });
+        return {
+          fieldName: formFieldName,
+          fieldValue: value.value,
+          identifier: value.identifier
+        };
+      }
+
+      if (isSimpleValue(value)) {
+        const processedValue = typeof value === 'boolean' ? value : String(value);
+        logger.debug(`Mapped simple field ${fieldName} to ${formFieldName}:`, {
+          value: String(value),
+          type: typeof value
+        });
+        return {
+          fieldName: formFieldName,
+          fieldValue: processedValue
+        };
+      }
+
+      // Fallback for unexpected value types
+      logger.warn(`Unexpected value type for field ${fieldName}:`, value);
+      const fallbackValue = typeof value === 'object' && value !== null 
+        ? JSON.stringify(value) 
+        : String(value || "");
+      
+      return {
+        fieldName: formFieldName,
+        fieldValue: fallbackValue
+      };
+    } catch (error) {
+      logger.error(`Error processing default value for field ${fieldName}:`, error);
+      const parameter = parameterMap.get(fieldName);
+      const formFieldName = parameter?.name || fieldName;
+      return {
+        fieldName: formFieldName,
+        fieldValue: ""
+      };
+    }
+  };
+
   const initialState = useMemo(() => {
     if (!processInitialization?.defaults) return null;
     
@@ -48,53 +102,14 @@ export const useProcessInitialState = (
 
     // Process each default value
     for (const [fieldName, value] of Object.entries(defaults)) {
-      try {
-        // Skip logic fields (will be processed separately)
-        if (fieldName.endsWith('_display_logic') || fieldName.endsWith('_readonly_logic')) {
-          continue;
+      const processed = processDefaultValue(fieldName, value, parameterMap);
+      if (processed) {
+        acc[processed.fieldName] = processed.fieldValue;
+        
+        // Store identifier for display purposes if present
+        if (processed.identifier) {
+          acc[`${processed.fieldName}$_identifier`] = processed.identifier;
         }
-
-        // Find corresponding parameter
-        // Use the original field name from server, not the parameter display name
-        const formFieldName = fieldName; // parameter?.name causes mismatch with form field names
-
-        if (isReferenceValue(value)) {
-          // Handle reference objects with value/identifier pairs
-          acc[formFieldName] = value.value;
-          
-          // Store identifier for display purposes
-          if (value.identifier) {
-            acc[`${formFieldName}$_identifier`] = value.identifier;
-          }
-          
-          logger.debug(`Mapped reference field ${fieldName} to ${formFieldName}:`, {
-            value: value.value,
-            identifier: value.identifier
-          });
-        } else if (isSimpleValue(value)) {
-          // Handle simple values (string, number, boolean)
-          acc[formFieldName] = typeof value === 'boolean' ? value : String(value);
-          
-          logger.debug(`Mapped simple field ${fieldName} to ${formFieldName}:`, {
-            value: String(value),
-            type: typeof value
-          });
-        } else {
-          // Fallback for unexpected value types
-          logger.warn(`Unexpected value type for field ${fieldName}:`, value);
-          // Handle objects that aren't reference values
-          if (typeof value === 'object' && value !== null) {
-            acc[formFieldName] = JSON.stringify(value);
-          } else {
-            acc[formFieldName] = String(value || "");
-          }
-        }
-      } catch (error) {
-        logger.error(`Error processing default value for field ${fieldName}:`, error);
-        // Set fallback value to prevent form errors
-        const parameter = parameterMap.get(fieldName);
-        const formFieldName = parameter?.name || fieldName;
-        acc[formFieldName] = "";
       }
     }
 

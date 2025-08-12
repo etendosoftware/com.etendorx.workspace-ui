@@ -96,7 +96,7 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
 
 export const parseDynamicExpression = (expr: string) => {
   // Transform @field_name@ syntax to valid JavaScript references
-  const expr0 = expr.replace(/@([a-zA-Z_][a-zA-Z0-9_]*)@/g, (_, fieldName) => {
+  const expr0 = expr.replace(/@([a-zA-Z_]\w*)@/g, (_, fieldName) => {
     return `(currentValues["${fieldName}"] || context["${fieldName}"])`;
   });
 

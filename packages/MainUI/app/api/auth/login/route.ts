@@ -14,64 +14,77 @@ export async function OPTIONS(request: NextRequest) {
   });
 }
 
+function validateEnvironment(): void {
+  if (!process.env.ETENDO_CLASSIC_URL) {
+    console.error('ETENDO_CLASSIC_URL environment variable is not set');
+    throw new Error('Server configuration error');
+  }
+}
+
+async function fetchErpLogin(erpLoginUrl: string, body: any): Promise<Response> {
+  return fetch(erpLoginUrl, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(body),
+  }).catch((fetchError) => {
+    console.error('Fetch error - Etendo Classic backend not accessible:', fetchError);
+    throw new Error('Etendo Classic backend is not accessible');
+  });
+}
+
+function extractJSessionId(erpResponse: Response): string | null {
+  let jsession: string | null = null;
+  
+  // Try to get JSESSIONID from set-cookie header
+  const single = erpResponse.headers.get('set-cookie');
+  if (single) {
+    const match = single.match(/JSESSIONID=([^;]+)/);
+    if (match) return match[1];
+  }
+  
+  // Fallback: scan all headers for multiple Set-Cookie entries
+  for (const [key, value] of erpResponse.headers.entries()) {
+    if (key.toLowerCase() === 'set-cookie') {
+      const match = value.match(/JSESSIONID=([^;]+)/);
+      if (match) return match[1];
+    }
+  }
+  
+  return jsession;
+}
+
+function storeCookieForToken(erpResponse: Response, data: any): void {
+  try {
+    const jsession = extractJSessionId(erpResponse);
+    if (jsession && data?.token) {
+      const cookieHeader = `JSESSIONID=${jsession}`;
+      setErpSessionCookie(data.token, cookieHeader);
+    }
+  } catch {
+    // ignore extraction errors
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // Validate environment variables
-    if (!process.env.ETENDO_CLASSIC_URL) {
-      console.error('ETENDO_CLASSIC_URL environment variable is not set');
-      return NextResponse.json(
-        { error: 'Server configuration error' }, 
-        { status: 500 }
-      );
-    }
+    validateEnvironment();
 
     const body = await request.json();
     const erpLoginUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/login`;
     
     console.log('Login proxy attempt:', { erpLoginUrl, body: { username: body.username } });
 
-    // Proxy the login request to the ERP without authentication
-    const erpResponse = await fetch(erpLoginUrl, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(body),
-    }).catch((fetchError) => {
-      console.error('Fetch error - Etendo Classic backend not accessible:', fetchError);
-      throw new Error('Etendo Classic backend is not accessible');
-    });
+    const erpResponse = await fetchErpLogin(erpLoginUrl, body);
 
     const data = await erpResponse.json().catch((jsonError) => {
       console.error('JSON parse error:', jsonError);
       throw new Error('Invalid response from Etendo Classic backend');
     });
 
-    // Capture ERP session cookie (e.g., JSESSIONID) and store it keyed by returned token
-    try {
-      let jsession: string | null = null;
-      const single = erpResponse.headers.get('set-cookie');
-      if (single) {
-        const m = single.match(/JSESSIONID=([^;]+)/);
-        if (m) jsession = m[1];
-      }
-      // Fallback: scan all headers for multiple Set-Cookie entries if runtime collapses differently
-      if (!jsession) {
-        for (const [k, v] of erpResponse.headers.entries()) {
-          if (k.toLowerCase() === 'set-cookie') {
-            const m = v.match(/JSESSIONID=([^;]+)/);
-            if (m) { jsession = m[1]; break; }
-          }
-        }
-      }
-      if (jsession && data?.token) {
-        const cookieHeader = `JSESSIONID=${jsession}`;
-        setErpSessionCookie(data.token, cookieHeader);
-      }
-    } catch {
-      // ignore extraction errors
-    }
+    storeCookieForToken(erpResponse, data);
 
     if (!erpResponse.ok) {
       console.log('ERP login failed:', { status: erpResponse.status, data });
@@ -81,13 +94,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Return successful login response
     console.log('Login successful');
     return NextResponse.json(data, { status: 200 });
   } catch (error) {
     console.error('API Route /api/auth/login Error:', error);
     
-    // Return specific error message if available
     const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
     
     return NextResponse.json(

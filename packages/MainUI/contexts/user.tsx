@@ -80,10 +80,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   const setDefaultConfiguration = useCallback(async (config: DefaultConfiguration) => {
     try {
-      return apiSetDefaultConfiguration(config);
+      return await apiSetDefaultConfiguration(config);
     } catch (error) {
       logger.warn("Error setting default configuration:", error);
-
       throw error;
     }
   }, []);

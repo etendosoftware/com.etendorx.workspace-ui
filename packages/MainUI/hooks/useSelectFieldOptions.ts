@@ -20,6 +20,36 @@ import type { EntityData, Field } from "@workspaceui/api-client/src/api/types";
 import { useMemo } from "react";
 import { useFormContext } from "react-hook-form";
 
+const buildOptionsFromInjected = (injectedEntries: any[]): SelectProps["options"] => {
+  const result: SelectProps["options"] = [];
+  for (const { id, label } of injectedEntries) {
+    if (id && label) {
+      result.push({ id, label, data: {} });
+    }
+  }
+  return result;
+};
+
+const buildOptionsFromRecords = (records: EntityData[], idKey: string, identifierKey: string): SelectProps["options"] => {
+  const result: SelectProps["options"] = [];
+  for (const record of records) {
+    const label = record[identifierKey] as string;
+    const id = record[idKey] as string;
+    if (id && label) {
+      result.push({ id, label, data: record });
+    }
+  }
+  return result;
+};
+
+const addCurrentValueIfMissing = (options: SelectProps["options"], currentValue: string, currentIdentifier: string): SelectProps["options"] => {
+  const currentOption = options.find((record) => record.id === currentValue);
+  if (!currentOption && currentValue && currentIdentifier) {
+    return [...options, { id: currentValue, label: currentIdentifier, data: {} }];
+  }
+  return options;
+};
+
 export const useSelectFieldOptions = (field: Field, records: EntityData[]) => {
   const { watch } = useFormContext();
   const idKey = (field.selector?.valueField ?? "") as string;
@@ -31,29 +61,15 @@ export const useSelectFieldOptions = (field: Field, records: EntityData[]) => {
   ]);
 
   return useMemo(() => {
-    const result: SelectProps["options"] = [];
     const injected = Array.isArray(injectedEntries) ? injectedEntries : [];
-
+    
+    let result: SelectProps["options"];
     if (injected.length > 0) {
-      for (const { id, label } of injected) {
-        if (id && label) result.push({ id, label, data: {} });
-      }
+      result = buildOptionsFromInjected(injected);
     } else {
-      for (const record of records) {
-        const label = record[identifierKey] as string;
-        const id = record[idKey] as string;
-        if (id && label) {
-          result.push({ id, label, data: record });
-        }
-      }
+      result = buildOptionsFromRecords(records, idKey, identifierKey);
     }
 
-    const currentOption = result.find((record) => record.id === currentValue);
-
-    if (!currentOption && currentValue && currentIdentifier) {
-      result.push({ id: currentValue, label: currentIdentifier, data: {} });
-    }
-
-    return result;
+    return addCurrentValueIfMissing(result, currentValue, currentIdentifier);
   }, [currentIdentifier, currentValue, idKey, identifierKey, records, injectedEntries]);
 };

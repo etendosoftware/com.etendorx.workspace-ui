@@ -13,7 +13,7 @@ describe('encodeDatasourcePayload', () => {
 
     const { body, headers } = encodeDatasourcePayload(payload);
 
-    expect(headers['Content-Type']).toBe('application/x-www-form-urlencoded');
+    expect(headers['Content-Type']).toBeUndefined();
     expect(headers['X-CSRF-Token']).toBe('100');
     expect(body).toContain('dataSource=isc_OBViewDataSource_0');
     expect(body).toContain('operationType=add');
@@ -29,7 +29,7 @@ describe('encodeDatasourcePayload', () => {
       data: { foo: 'bar' },
     } as any;
     const { body, headers } = encodeDatasourcePayload(payload);
-    expect(headers['Content-Type']).toBe('application/x-www-form-urlencoded');
+    expect(headers['Content-Type']).toBeUndefined();
     expect(headers['X-CSRF-Token']).toBeUndefined();
     expect(body).toContain('data=');
     expect(body).not.toContain('oldValues=');

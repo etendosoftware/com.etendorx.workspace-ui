@@ -77,23 +77,19 @@ export class Datasource {
       isImplicitFilterApplied: options.isImplicitFilterApplied ? "true" : "false",
     };
 
-    if (options.windowId) {
-      params.windowId = options.windowId;
-    }
+    const formatKey = (key: string) => isWrappedWithAt(key) ? key : `_${key}`;
+    const formatValue = (value: any) => Array.isArray(value) ? value.join(",") : String(value);
 
-    if (options.tabId) {
-      params.tabId = options.tabId;
+    if (options.windowId) params.windowId = options.windowId;
+    if (options.tabId) params.tabId = options.tabId;
+
+    if (Array.isArray(options.criteria)) {
+      params.criteria = options.criteria.map(criteria => JSON.stringify(criteria));
     }
 
     for (const [key, value] of Object.entries(options)) {
-      if (typeof value !== "undefined") {
-        if (key === "criteria" && Array.isArray(value)) {
-          params[key] = value.map(criteria => JSON.stringify(criteria));
-        } else {
-          const formattedKey = isWrappedWithAt(key) ? key : `_${key}`;
-          params[formattedKey] = Array.isArray(value) ? value.join(",") : String(value);
-        }
-      }
+      if (typeof value === "undefined" || key === "criteria" || key === "windowId" || key === "tabId" || key === "isImplicitFilterApplied") continue;
+      params[formatKey(key)] = formatValue(value);
     }
 
     return params;

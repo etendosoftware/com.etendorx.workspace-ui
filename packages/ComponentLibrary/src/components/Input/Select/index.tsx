@@ -133,6 +133,8 @@ const Select: React.FC<ISelectInput> = ({
     );
   };
 
+  const paperComponent = (paperProps: PaperProps) => <Paper {...paperProps} sx={sx.optionsContainer} />
+
   return (
     <>
       <Autocomplete
@@ -144,7 +146,7 @@ const Select: React.FC<ISelectInput> = ({
         popupIcon={<ExpandMoreIcon style={sx.dropdownIcons} />}
         renderInput={renderInput}
         sx={sx.autocomplete}
-        PaperComponent={(paperProps: PaperProps) => <Paper {...paperProps} sx={sx.optionsContainer} />}
+        PaperComponent={paperComponent}
         ListboxProps={{
           sx: sx.listBox,
         }}

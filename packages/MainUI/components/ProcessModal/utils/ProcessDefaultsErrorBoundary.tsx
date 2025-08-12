@@ -32,7 +32,7 @@ export class ProcessDefaultsErrorBoundary extends Component<
   }
 
   static getDerivedStateFromError(error: Error): Partial<ProcessDefaultsErrorBoundaryState> {
-    const errorId = `defaults_error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const errorId = `defaults_error_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     
     return {
       hasError: true,

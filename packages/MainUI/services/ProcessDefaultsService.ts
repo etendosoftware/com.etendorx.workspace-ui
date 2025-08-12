@@ -39,26 +39,43 @@ export class ProcessDefaultsService {
     const { processId, windowId, contextData, requestId } = request;
     const startTime = performance.now();
 
-    try {
-      // Validate required parameters
+    // Helper for validation
+    const validateParams = (processId: string, windowId: string) => {
       if (!processId || !windowId) {
-        throw new Error("ProcessId and WindowId are required");
+        return "ProcessId and WindowId are required";
       }
+      return null;
+    };
 
-      // Build request parameters
-      const params = new URLSearchParams({
+    // Helper for building params and payload
+    const buildParams = (processId: string, windowId: string) =>
+      new URLSearchParams({
         processId,
         windowId,
         _action: this.ENDPOINT_ACTION,
       });
 
-      // Prepare request payload
-      const requestPayload = {
-        ...contextData,
-        _requestType: "defaults",
-        _requestId: requestId || this.generateRequestId(),
-        _timestamp: Date.now().toString(),
+    const buildPayload = (contextData: any, requestId?: string) => ({
+      ...contextData,
+      _requestType: "defaults",
+      _requestId: requestId || this.generateRequestId(),
+      _timestamp: Date.now().toString(),
+    });
+
+    const validationError = validateParams(processId, windowId);
+    if (validationError) {
+      logger.error("ProcessDefaultsService: Validation failed", { processId, windowId, requestId, error: validationError });
+      return {
+        success: false,
+        error: { code: "VALIDATION_ERROR", message: validationError },
+        requestId,
+        timestamp: Date.now(),
       };
+    }
+
+    try {
+      const params = buildParams(processId, windowId);
+      const requestPayload = buildPayload(contextData, requestId);
 
       logger.debug("ProcessDefaultsService: Making API request", {
         processId,
@@ -67,9 +84,7 @@ export class ProcessDefaultsService {
         contextKeys: Object.keys(contextData),
       });
 
-      // Make the API call with retry logic
       const response = await this.makeRequestWithRetry(params, requestPayload);
-      
       const duration = performance.now() - startTime;
       logger.debug("ProcessDefaultsService: Request completed", {
         processId,
@@ -83,10 +98,8 @@ export class ProcessDefaultsService {
         requestId,
         timestamp: Date.now(),
       };
-
     } catch (error) {
       const duration = performance.now() - startTime;
-      
       logger.error("ProcessDefaultsService: Request failed", {
         processId,
         windowId,
@@ -94,7 +107,6 @@ export class ProcessDefaultsService {
         duration: `${duration.toFixed(2)}ms`,
         error: error instanceof Error ? error.message : "Unknown error",
       });
-
       return {
         success: false,
         error: this.processError(error),
@@ -112,11 +124,13 @@ export class ProcessDefaultsService {
     payload: Record<string, any>,
     attempt = 1
   ): Promise<any> {
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    const shouldRetry = (error: any, attempt: number) =>
+      attempt < this.MAX_RETRIES && this.isRetryableError(error);
+
     try {
-      // Create abort controller for timeout
       const abortController = new AbortController();
       const timeoutId = setTimeout(() => abortController.abort(), this.REQUEST_TIMEOUT);
-
       const response = await Metadata.kernelClient.post(`?${params}`, payload, {
         signal: abortController.signal,
         headers: {
@@ -125,22 +139,15 @@ export class ProcessDefaultsService {
           "X-Attempt": attempt.toString(),
         },
       });
-
       clearTimeout(timeoutId);
       return response;
-
     } catch (error) {
-      // Retry logic for transient failures
-      if (attempt < this.MAX_RETRIES && this.isRetryableError(error)) {
+      if (shouldRetry(error, attempt)) {
         logger.warn(`ProcessDefaultsService: Retrying request (attempt ${attempt + 1}/${this.MAX_RETRIES})`);
-        
-        // Exponential backoff delay
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        
+        const backoff = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+        await delay(backoff);
         return this.makeRequestWithRetry(params, payload, attempt + 1);
       }
-
       throw error;
     }
   }
@@ -173,46 +180,43 @@ export class ProcessDefaultsService {
    * Processes and normalizes error responses
    */
   private static processError(error: any): { code: string; message: string; details?: any } {
+    const isTimeoutError = (err: any) => err instanceof Error && err.name === 'AbortError';
+    const isNetworkError = (err: any) => err instanceof Error && (err.message.includes('fetch') || err.name === 'NetworkError');
+    const isValidationError = (err: any) => err instanceof Error && err.message.includes('required');
+    const getStatus = (err: any) => err?.response?.status;
+    const getStatusText = (err: any) => err?.response?.statusText || 'Unknown error';
+
+    if (isTimeoutError(error)) {
+      return {
+        code: 'REQUEST_TIMEOUT',
+        message: 'Request timed out while fetching process defaults',
+        details: { timeout: this.REQUEST_TIMEOUT },
+      };
+    }
+    if (isNetworkError(error)) {
+      return {
+        code: 'NETWORK_ERROR',
+        message: 'Network error while fetching process defaults',
+        details: { originalError: error.message },
+      };
+    }
+    if (isValidationError(error)) {
+      return {
+        code: 'VALIDATION_ERROR',
+        message: error.message,
+        details: { type: 'parameter_validation' },
+      };
+    }
     if (error instanceof Error) {
-      // Handle abort/timeout errors
-      if (error.name === 'AbortError') {
-        return {
-          code: 'REQUEST_TIMEOUT',
-          message: 'Request timed out while fetching process defaults',
-          details: { timeout: this.REQUEST_TIMEOUT },
-        };
-      }
-
-      // Handle network errors
-      if (error.message.includes('fetch') || error.name === 'NetworkError') {
-        return {
-          code: 'NETWORK_ERROR',
-          message: 'Network error while fetching process defaults',
-          details: { originalError: error.message },
-        };
-      }
-
-      // Handle validation errors
-      if (error.message.includes('required')) {
-        return {
-          code: 'VALIDATION_ERROR',
-          message: error.message,
-          details: { type: 'parameter_validation' },
-        };
-      }
-
       return {
         code: 'API_ERROR',
         message: `API error: ${error.message}`,
         details: { originalError: error.message },
       };
     }
-
-    // Handle HTTP response errors
     if (error?.response) {
-      const status = error.response.status;
-      const statusText = error.response.statusText || 'Unknown error';
-      
+      const status = getStatus(error);
+      const statusText = getStatusText(error);
       if (status === 400) {
         return {
           code: 'BAD_REQUEST',
@@ -220,7 +224,6 @@ export class ProcessDefaultsService {
           details: { status, statusText, data: error.response.data },
         };
       }
-      
       if (status === 401 || status === 403) {
         return {
           code: 'UNAUTHORIZED',
@@ -228,7 +231,6 @@ export class ProcessDefaultsService {
           details: { status, statusText },
         };
       }
-      
       if (status === 404) {
         return {
           code: 'NOT_FOUND',
@@ -236,7 +238,6 @@ export class ProcessDefaultsService {
           details: { status, statusText },
         };
       }
-      
       if (status >= 500) {
         return {
           code: 'SERVER_ERROR',
@@ -245,7 +246,6 @@ export class ProcessDefaultsService {
         };
       }
     }
-
     return {
       code: 'UNKNOWN_ERROR',
       message: 'An unknown error occurred',
@@ -257,7 +257,7 @@ export class ProcessDefaultsService {
    * Generates a unique request ID for tracking
    */
   private static generateRequestId(): string {
-    return `defaults_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `defaults_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
   }
 
   /**
