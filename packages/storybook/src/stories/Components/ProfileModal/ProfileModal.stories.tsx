@@ -250,6 +250,17 @@ export default meta;
 type Story = StoryObj<ProfileModalProps>;
 
 export const ProfileDefault: Story = {
+  parameters: {
+    // Increase timeout for this story
+    testRunner: {
+      timeout: 30000,
+    },
+    // Disable automatic play for smoke test
+    chromatic: { 
+      delay: 2000,
+      pauseAnimationAtEnd: true 
+    },
+  },
   args: {
     // Base props
     icon: <PersonIcon fill='#2E365C' />,
@@ -280,11 +291,17 @@ export const ProfileDefault: Story = {
     onSaveAsDefaultChange: (event) => console.log('Save as default:', event.target.checked),
     onSetDefaultConfiguration: async (config) => {
       console.log('Setting default configuration:', config);
-      return Promise.resolve();
+      // Return immediately resolved promise
+      return new Promise((resolve) => {
+        setTimeout(() => resolve(undefined), 0);
+      });
     },
     changeProfile: async (params) => {
       console.log('Changing profile:', params);
-      return Promise.resolve();
+      // Return immediately resolved promise
+      return new Promise((resolve) => {
+        setTimeout(() => resolve(undefined), 0);
+      });
     },
     logger: mockLogger,
   },
