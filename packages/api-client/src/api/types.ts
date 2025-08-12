@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -53,6 +53,7 @@ export interface DatasourceParams {
   isSorting?: boolean;
   isImplicitFilterApplied?: boolean;
   operator?: "and" | "or";
+  parentId?: string;
 }
 
 export interface DatasourceOptions {
@@ -68,6 +69,8 @@ export interface DatasourceOptions {
   tabId?: string;
   windowId?: string;
   language?: string;
+  parentId?: string | number;
+  referencedTableId?: string;
 }
 
 export interface ProcessAction extends Record<string, unknown> {
@@ -246,6 +249,7 @@ export interface Tab {
   module: string;
   parentTabId?: string;
   table$_identifier?: string;
+  tableTree?: boolean;
 }
 
 export interface WindowMetadata {

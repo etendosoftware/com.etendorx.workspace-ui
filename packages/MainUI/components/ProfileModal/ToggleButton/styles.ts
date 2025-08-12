@@ -33,6 +33,7 @@ export const useStyle = () => {
       alignItems: "center",
       alignSelf: "stretch",
       borderRadius: "12.5rem",
+      gap: "0.25rem",
       background: theme.palette.baselineColor.transparentNeutral[10],
     },
     toggleButtonStyles: {

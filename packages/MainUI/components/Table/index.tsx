@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -23,6 +23,7 @@ import {
   type MRT_TableBodyRowProps,
   type MRT_TableInstance,
   type MRT_VisibilityState,
+  type MRT_ExpandedState,
 } from "material-react-table";
 import { useStyle } from "./styles";
 import type { DatasourceOptions, EntityData } from "@workspaceui/api-client/src/api/types";
@@ -33,6 +34,7 @@ import { useDatasourceContext } from "@/contexts/datasourceContext";
 import EmptyState from "./EmptyState";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useLanguage } from "@/contexts/language";
+import { useTreeModeMetadata } from "@/hooks/useTreeModeMetadata";
 import useTableSelection from "@/hooks/useTableSelection";
 import { ErrorDisplay } from "../ErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -40,6 +42,12 @@ import { useTabContext } from "@/contexts/tab";
 import { useDatasource } from "@/hooks/useDatasource";
 import { useSelected } from "@/hooks/useSelected";
 import { useColumns } from "@/hooks/table/useColumns";
+import PlusFolderFilledIcon from "../../../ComponentLibrary/src/assets/icons/folder-plus-filled.svg";
+import MinusFolderIcon from "../../../ComponentLibrary/src/assets/icons/folder-minus.svg";
+import CircleFilledIcon from "../../../ComponentLibrary/src/assets/icons/circle-filled.svg";
+import ChevronUp from "../../../ComponentLibrary/src/assets/icons/chevron-up.svg";
+import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
+import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check.svg";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -51,9 +59,15 @@ const getRowId = (row: EntityData) => String(row.id);
 interface DynamicTableProps {
   setRecordId: React.Dispatch<React.SetStateAction<string>>;
   onRecordSelection?: (recordId: string) => void;
+  isTreeMode?: boolean;
 }
 
-const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => {
+const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: DynamicTableProps) => {
+  const [expanded, setExpanded] = useState<MRT_ExpandedState>({});
+  const [loadedNodes, setLoadedNodes] = useState<Set<string>>(new Set());
+  const [childrenData, setChildrenData] = useState<Map<string, EntityData[]>>(new Map());
+  const [flattenedRecords, setFlattenedRecords] = useState<EntityData[]>([]);
+
   const { sx } = useStyle();
   const { searchQuery } = useSearch();
   const { language } = useLanguage();
@@ -80,13 +94,116 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
+  const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
   const tabId = tab.id;
   const parentId = String(parentRecord?.id ?? "");
   const tableContainerRef = useRef<HTMLDivElement>(null);
-
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-  const columns = useColumns(tab);
+  const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
+  const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
+
+  const baseColumns = useColumns(tab);
+  const [prevShouldUseTreeMode, setPrevShouldUseTreeMode] = useState(shouldUseTreeMode);
+
+  const columns = useMemo(() => {
+    if (!baseColumns.length) {
+      return baseColumns;
+    }
+
+    const modifiedColumns = baseColumns.map((col) => ({ ...col }));
+    const firstColumn = { ...modifiedColumns[0] };
+    const originalCell = firstColumn.Cell;
+
+    if (shouldUseTreeMode) {
+      firstColumn.size = 300;
+      firstColumn.minSize = 250;
+      firstColumn.maxSize = 500;
+    }
+
+    firstColumn.Cell = ({
+      renderedCellValue,
+      row,
+      table,
+    }: {
+      renderedCellValue: React.ReactNode;
+      row: MRT_Row<EntityData>;
+      table: MRT_TableInstance<EntityData>;
+    }) => {
+      const hasChildren = row.original.showDropIcon === true;
+      const canExpand = shouldUseTreeMode && hasChildren;
+      const isExpanded = row.getIsExpanded();
+      const isSelected = row.getIsSelected();
+
+      let HierarchyIcon = null;
+      if (shouldUseTreeMode) {
+        if (hasChildren) {
+          HierarchyIcon = isExpanded ? MinusFolderIcon : PlusFolderFilledIcon;
+        } else {
+          HierarchyIcon = CircleFilledIcon;
+        }
+      }
+
+      if (shouldUseTreeMode) {
+        return (
+          <div className="flex items-center gap-2 w-full">
+            {hasChildren ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (canExpand) {
+                    row.toggleExpanded();
+                  }
+                }}
+                className="bg-transparent border-0 cursor-pointer p-0.5 flex items-center justify-center min-w-5 min-h-5 rounded-full shadow-[0px_2.5px_6.25px_0px_rgba(0,3,13,0.1)]">
+                {canExpand ? (
+                  isExpanded ? (
+                    <ChevronDown height={12} width={12} fill={"#3F4A7E"} />
+                  ) : (
+                    <ChevronUp height={12} width={12} fill={"#3F4A7E"} />
+                  )
+                ) : null}
+              </button>
+            ) : (
+              <div className="w-5 h-5" />
+            )}
+
+            <div className="relative flex items-end">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  row.toggleSelected();
+                }}
+                className="min-w-4 min-h-4 cursor-pointer rounded border-[1.67px] border-[rgba(0,3,13,0.4)] appearance-none bg-white checked:bg-[#004ACA] checked:border-[#004ACA]"
+              />
+              {isSelected && <CheckIcon className="absolute top-0.5 left-0.5 w-3 h-3 pointer-events-none fill-white" />}
+            </div>
+
+            {HierarchyIcon && <HierarchyIcon className="min-w-5 min-h-5" fill={"#004ACA"} />}
+
+            <span className="flex-1">
+              {originalCell && typeof originalCell === "function"
+                ? originalCell({ renderedCellValue, row, table })
+                : renderedCellValue}
+            </span>
+          </div>
+        );
+      }
+      return (
+        <span className="flex-1">
+          {originalCell && typeof originalCell === "function"
+            ? originalCell({ renderedCellValue, row, table })
+            : renderedCellValue}
+        </span>
+      );
+    };
+
+    modifiedColumns[0] = firstColumn;
+    return modifiedColumns;
+  }, [baseColumns, shouldUseTreeMode]);
 
   const query: DatasourceOptions = useMemo(() => {
     const fieldName = tab.parentColumns[0] || "id";
@@ -124,6 +241,106 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     language,
   ]);
 
+  const loadChildNodes = useCallback(
+    async (parentId: string) => {
+      if (!shouldUseTreeMode || loadedNodes.has(parentId)) {
+        return;
+      }
+
+      try {
+        const childTreeOptions = {
+          isTreeMode: true,
+          windowId: tab.window,
+          tabId: tab.id,
+          referencedTableId: treeMetadata.referencedTableId || "155",
+          parentId: parentId,
+        };
+
+        const childQuery = {
+          ...query,
+        };
+
+        const { datasource } = await import("@workspaceui/api-client/src/api/datasource");
+
+        const safePageSize = 1000;
+        const startRow = 0;
+        const endRow = safePageSize - 1;
+
+        const processedParams = {
+          ...childQuery,
+          startRow,
+          endRow,
+          pageSize: safePageSize,
+          parentId: parentId,
+          tabId: childTreeOptions.tabId,
+          windowId: childTreeOptions.windowId,
+          referencedTableId: childTreeOptions.referencedTableId,
+        };
+
+        const response = await datasource.get(treeEntity, processedParams);
+
+        if (response.ok && response.data?.response?.data) {
+          const childNodes = response.data.response.data;
+
+          setChildrenData((prev) => new Map(prev.set(parentId, childNodes)));
+          setLoadedNodes((prev) => new Set(prev.add(parentId)));
+        } else {
+          console.error("❌ Error loading child nodes:", response);
+        }
+      } catch (error) {
+        console.error("❌ Exception loading child nodes:", error);
+      }
+    },
+    [shouldUseTreeMode, loadedNodes, treeEntity, tab, treeMetadata, query]
+  );
+
+  const buildFlattenedRecords = useCallback(
+    (
+      parentRecords: EntityData[],
+      expandedState: MRT_ExpandedState,
+      childrenMap: Map<string, EntityData[]>
+    ): EntityData[] => {
+      const result: EntityData[] = [];
+
+      const processNode = (record: EntityData, level = 0, parentTreeId?: string) => {
+        const nodeWithLevel = {
+          ...record,
+          __level: level,
+          __isParent: level === 0 ? true : record.showDropIcon === true,
+          __originalParentId: record.parentId,
+          __treeParentId: parentTreeId || null,
+        } as EntityData;
+        result.push(nodeWithLevel);
+
+        const nodeId = String(record.id);
+        const isExpanded = typeof expandedState === "object" && expandedState[nodeId];
+
+        if (isExpanded && childrenMap.has(nodeId)) {
+          const children = childrenMap.get(nodeId) || [];
+          for (const childRecord of children) {
+            processNode(childRecord, level + 1, nodeId);
+          }
+        }
+      };
+
+      for (const parentRecord of parentRecords) {
+        processNode(parentRecord, 0);
+      }
+      return result;
+    },
+    []
+  );
+
+  const treeOptions = shouldUseTreeMode
+    ? {
+        isTreeMode: true,
+        windowId: tab.window,
+        tabId: tab.id,
+        referencedTableId: treeMetadata.referencedTableId || "155",
+        parentId: -1,
+      }
+    : undefined;
+
   const {
     updateColumnFilters,
     toggleImplicitFilters,
@@ -135,12 +352,38 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     loading,
     hasMoreRecords,
   } = useDatasource({
-    entity: tab.entityName,
+    entity: treeEntity,
     params: query,
     columns,
     searchQuery,
     skip: parentTab ? Boolean(!parentRecord || (parentRecords && parentRecords.length !== 1)) : false,
+    treeOptions,
   });
+
+  useEffect(() => {
+    if (prevShouldUseTreeMode !== shouldUseTreeMode) {
+      if (!shouldUseTreeMode) {
+        setExpanded({});
+        setLoadedNodes(new Set());
+        setChildrenData(new Map());
+        setFlattenedRecords([]);
+      }
+      refetch();
+
+      setPrevShouldUseTreeMode(shouldUseTreeMode);
+    }
+  }, [shouldUseTreeMode, prevShouldUseTreeMode, refetch]);
+
+  const displayRecords = shouldUseTreeMode ? flattenedRecords : records;
+
+  useEffect(() => {
+    if (shouldUseTreeMode) {
+      const flattened = buildFlattenedRecords(records, expanded, childrenData);
+      setFlattenedRecords(flattened);
+    } else {
+      setFlattenedRecords(records);
+    }
+  }, [records, expanded, childrenData, shouldUseTreeMode, buildFlattenedRecords]);
 
   const handleColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
@@ -186,6 +429,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
 
       return {
         onClick: (event) => {
+          const target = event.target as HTMLElement;
+          if (target.tagName === "INPUT" || target.tagName === "BUTTON" || target.closest("button")) {
+            return;
+          }
+
           const existingTimeout = clickTimeoutsRef.current.get(rowId);
           if (existingTimeout) {
             clearTimeout(existingTimeout);
@@ -193,10 +441,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
           }
 
           const timeout = setTimeout(() => {
-            if (!event.ctrlKey) {
+            if (event.ctrlKey || event.metaKey) {
               table.setRowSelection({});
+              row.toggleSelected(true);
+            } else {
+              row.toggleSelected();
             }
-            row.toggleSelected();
             clickTimeoutsRef.current.delete(rowId);
           }, 250);
 
@@ -204,6 +454,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
         },
 
         onDoubleClick: (event) => {
+          const target = event.target as HTMLElement;
+          if (target.tagName === "INPUT" || target.tagName === "BUTTON" || target.closest("button")) {
+            return;
+          }
+
           event.stopPropagation();
 
           const timeout = clickTimeoutsRef.current.get(rowId);
@@ -257,16 +512,78 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     },
     [fetchMore, hasMoreRecords, loading]
   );
+  const expandedRef = useRef<MRT_ExpandedState>({});
 
   const table = useMaterialReactTable<EntityData>({
     muiTablePaperProps: { sx: sx.tablePaper },
-    muiTableHeadCellProps: { sx: sx.tableHeadCell },
-    muiTableBodyCellProps: { sx: sx.tableBodyCell },
+
+    muiTableHeadCellProps: {
+      sx: {
+        ...sx.tableHeadCell,
+      },
+    },
+
+    muiTableBodyCellProps: ({ row, column }) => ({
+      sx: {
+        ...sx.tableBodyCell,
+        ...(shouldUseTreeMode &&
+          column.id === columns[0]?.id && {
+            paddingLeft: `${12 + ((row.original.__level as number) || 0) * 16}px`,
+            position: "relative",
+          }),
+      },
+    }),
+
+    displayColumnDefOptions: shouldUseTreeMode
+      ? {
+          "mrt-row-expand": {
+            size: 60,
+            muiTableHeadCellProps: {
+              sx: {
+                display: "none",
+              },
+            },
+            muiTableBodyCellProps: {
+              sx: {
+                display: "none",
+              },
+            },
+          },
+          "mrt-row-select": {
+            size: 0,
+            muiTableHeadCellProps: {
+              sx: {
+                display: "none",
+              },
+            },
+            muiTableBodyCellProps: {
+              sx: {
+                display: "none",
+              },
+            },
+          },
+        }
+      : {
+          "mrt-row-expand": {
+            size: 0,
+            muiTableHeadCellProps: {
+              sx: {
+                display: "none",
+              },
+            },
+            muiTableBodyCellProps: {
+              sx: {
+                display: "none",
+              },
+            },
+          },
+        },
+
     muiTableBodyProps: { sx: sx.tableBody },
     layoutMode: "semantic",
     enableGlobalFilter: false,
     columns,
-    data: records,
+    data: displayRecords,
     enableRowSelection: true,
     enableMultiRowSelection: true,
     positionToolbarAlertBanner: "none",
@@ -282,11 +599,63 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
     enableRowVirtualization: true,
     enableTopToolbar: false,
     enableBottomToolbar: false,
-    enableHiding: true,
+    enableExpanding: shouldUseTreeMode,
+    paginateExpandedRows: false,
+    getRowCanExpand: (row) => {
+      if (shouldUseTreeMode) {
+        return true;
+      }
+      const isParentNode = row.original.__isParent !== false;
+      const canExpand = row.original.showDropIcon === true && isParentNode;
+      return canExpand;
+    },
     initialState: { density: "compact" },
+    renderDetailPanel: undefined,
+    onExpandedChange: (newExpanded) => {
+      const prevExpanded = expandedRef.current;
+      const newExpandedState = typeof newExpanded === "function" ? newExpanded(expanded) : newExpanded;
+
+      setExpanded(newExpandedState);
+      expandedRef.current = newExpandedState;
+
+      if (typeof newExpandedState === "object" && newExpandedState !== null && !Array.isArray(newExpandedState)) {
+        const prevExpandedObj =
+          typeof prevExpanded === "object" && prevExpanded !== null && !Array.isArray(prevExpanded) ? prevExpanded : {};
+
+        const prevKeys = Object.keys(prevExpandedObj).filter((k) => prevExpandedObj[k as keyof typeof prevExpandedObj]);
+        const newKeys = Object.keys(newExpandedState).filter(
+          (k) => newExpandedState[k as keyof typeof newExpandedState]
+        );
+
+        const expandedRowIds = newKeys.filter((k) => !prevKeys.includes(k));
+        const collapsedRowIds = prevKeys.filter((k) => !newKeys.includes(k));
+
+        for (const id of expandedRowIds) {
+          const rowData = displayRecords.find((record) => String(record.id) === id);
+
+          if (shouldUseTreeMode && rowData && rowData.__isParent !== false) {
+            loadChildNodes(String(rowData.id));
+          }
+        }
+
+        for (const id of collapsedRowIds) {
+          setChildrenData((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(id);
+            return newMap;
+          });
+          setLoadedNodes((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(id);
+            return newSet;
+          });
+        }
+      }
+    },
     state: {
       columnFilters,
       columnVisibility,
+      expanded: shouldUseTreeMode ? expanded : {},
       showColumnFilters: true,
       showProgressBars: loading,
     },
@@ -322,7 +691,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
       graph.removeListener("unselected", handleGraphClear);
       graph.removeListener("unselectedMultiple", handleGraphClear);
     };
-  }, [graph, table, tabId]);
+  }, [graph, table, tabId, tab.id]);
 
   useEffect(() => {
     if (removeRecordLocally) {
@@ -363,14 +732,24 @@ const DynamicTable = ({ setRecordId, onRecordSelection }: DynamicTableProps) => 
   }
 
   return (
-    <div
-      className={`h-full overflow-hidden rounded-3xl transition-opacity ${
-        loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
-      }`}>
-      <MaterialReactTable table={table} />
+    <>
+      {shouldUseTreeMode && (
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      )}
+      <div
+        className={`h-full overflow-hidden rounded-3xl transition-opacity ${
+          loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
+        }`}>
+        <MaterialReactTable table={table} />
 
-      <ColumnVisibilityMenu anchorEl={columnMenuAnchor} onClose={handleCloseColumnMenu} table={table} />
-    </div>
+        <ColumnVisibilityMenu anchorEl={columnMenuAnchor} onClose={handleCloseColumnMenu} table={table} />
+      </div>
+    </>
   );
 };
 

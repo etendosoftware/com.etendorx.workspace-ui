@@ -33,7 +33,6 @@ export const useStyle = () => {
           flexDirection: "column",
           alignItems: "center",
           borderRadius: "0.75rem",
-          background: theme.palette.baselineColor.neutral[0],
           position: "relative",
           overflow: "hidden",
         },
@@ -88,11 +87,6 @@ export const useStyle = () => {
           background: theme.palette.dynamicColor.light,
           borderRadius: "12.5rem",
           margin: "0.5rem 0",
-        },
-        nameStyles: {
-          margin: 0,
-          zIndex: 2,
-          padding: "0 0 0.25rem 0",
         },
         emailStyles: {
           margin: 0,

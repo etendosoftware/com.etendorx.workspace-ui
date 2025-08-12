@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -23,7 +23,7 @@ import { useMetadataContext } from "../../hooks/useMetadataContext";
 import { FormView } from "@/components/Form/FormView";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import type { TabLevelProps } from "@/components/window/types";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
@@ -42,6 +42,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   } = useMultiWindowURL();
   const { registerActions } = useToolbarContext();
   const { graph } = useSelected();
+  const [toggle, setToggle] = useState(false);
 
   const windowId = activeWindow?.windowId;
 
@@ -109,6 +110,12 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
   }, [windowId, clearTabFormState, tab, graph]);
 
+  const handleTreeView = useCallback(() => {
+    if (windowId) {
+      setToggle((prev) => !prev);
+    }
+  }, [windowId]);
+
   const handleClearChildren = useCallback(() => {
     if (!windowId) return;
 
@@ -125,10 +132,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     const actions = {
       new: handleNew,
       back: handleBack,
+      treeView: handleTreeView,
     };
 
     registerActions(actions);
-  }, [registerActions, handleNew, handleBack, tab.id]);
+  }, [registerActions, handleNew, handleBack, handleTreeView, tab.id]);
 
   useEffect(() => {
     const handleDeselection = (eventTab: typeof tab) => {
@@ -174,7 +182,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
           setRecordId={handleSetRecordId}
         />
       ) : (
-        <DynamicTable setRecordId={handleSetRecordId} onRecordSelection={handleRecordSelection} />
+        <DynamicTable isTreeMode={toggle} setRecordId={handleSetRecordId} onRecordSelection={handleRecordSelection} />
       )}
     </div>
   );

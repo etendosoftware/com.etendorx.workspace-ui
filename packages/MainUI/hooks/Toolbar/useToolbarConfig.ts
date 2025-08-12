@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -55,7 +55,7 @@ export const useToolbarConfig = ({
     hideStatusModal,
   } = useStatusModal();
   const { t } = useTranslation();
-  const { onRefresh, onSave, onNew, onBack, onFilter, onColumnFilters } = useToolbarContext();
+  const { onRefresh, onSave, onNew, onBack, onFilter, onColumnFilters, onToggleTreeView } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -160,7 +160,7 @@ export const useToolbarConfig = ({
         onFilter?.();
       },
       SAVE: () => {
-        onSave?.();
+        onSave?.(true);
       },
       DELETE: () => {
         if (tab) {
@@ -217,24 +217,28 @@ export const useToolbarConfig = ({
         const buttonElement = event?.currentTarget as HTMLElement;
         onColumnFilters?.(buttonElement);
       },
+      TOGGLE_TREE_VIEW: () => {
+        onToggleTreeView?.();
+      },
     }),
     [
-      deleteRecord,
       onBack,
-      onFilter,
       onNew,
-      onRefresh,
+      onFilter,
       onSave,
-      onColumnFilters,
+      tab,
       selectedIds,
       selectedMultiple,
       showConfirmModal,
-      showErrorModal,
       t,
-      tab,
+      deleteRecord,
+      showErrorModal,
+      onRefresh,
+      hasSelectedRecords,
       contextString,
       contextItems,
-      hasSelectedRecords,
+      onColumnFilters,
+      onToggleTreeView,
     ]
   );
 

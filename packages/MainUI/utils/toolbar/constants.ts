@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -25,6 +25,7 @@ export const TOOLBAR_BUTTONS_ACTIONS = {
   FILTER: "FILTER",
   COPILOT: "COPILOT",
   COLUMN_FILTERS: "COLUMN_FILTERS",
+  TOGGLE_TREE_VIEW: "TOGGLE_TREE_VIEW",
 };
 
 export const TOOLBAR_BUTTONS_TYPES = {
