@@ -1,5 +1,5 @@
 /**
- * Utilidades específicas para tests de datasource API
+ * Specific utilities for datasource API tests
  */
 
 import type { NextRequest } from "next/server";
@@ -18,7 +18,7 @@ interface ErpRequestOptions {
 }
 
 /**
- * Configuración común de mocks para tests de datasource
+ * Common mock configuration for datasource tests
  */
 export function setupDatasourceMocks() {
   jest.mock("next/server", () => ({
@@ -40,7 +40,7 @@ export function setupDatasourceMocks() {
 }
 
 /**
- * Configuración común de auth mock para tests de datasource
+ * Common auth mock configuration for datasource tests
  */
 export function setupDatasourceAuthMock(tokenSuffix = "default") {
   jest.mock("@/lib/auth", () => ({
@@ -56,21 +56,29 @@ export function setupDatasourceAuthMock(tokenSuffix = "default") {
 }
 
 /**
- * Configuración común del entorno de test para datasource
+ * Generic test environment configuration
  */
-export function setupDatasourceTestEnvironment() {
+export function setupTestEnvironment(
+  config: {
+    status?: number;
+    response?: unknown;
+    etendoUrl?: string;
+  } = {}
+) {
+  const { status = 200, response = { response: { status: 0 } }, etendoUrl = "http://erp.example/etendo" } = config;
+
   const OLD_ENV = process.env;
   const originalFetch = global.fetch as jest.Mock;
 
   const setup = () => {
     jest.resetModules();
-    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: "http://erp.example/etendo" };
+    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: etendoUrl };
     (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
       ok: true,
-      status: 200,
+      status,
       headers: { get: () => "application/json" },
-      text: async () => JSON.stringify({ response: { status: 0 } }),
-      json: async () => ({ response: { status: 0 } }),
+      text: async () => JSON.stringify(response),
+      json: async () => response,
     });
   };
 
@@ -83,12 +91,43 @@ export function setupDatasourceTestEnvironment() {
 }
 
 /**
- * Crea un NextRequest mock para tests de datasource
+ * Common test environment configuration for datasource
  */
-export function createDatasourceRequest(bearer: string, jsonBody: JsonBody): NextRequest {
+export function setupDatasourceTestEnvironment() {
+  return setupTestEnvironment({
+    status: 200,
+    response: { response: { status: 0 } },
+  });
+}
+
+/**
+ * Common test environment configuration for API
+ */
+export function setupApiTestEnvironment() {
+  return setupTestEnvironment({
+    status: 201,
+    response: { api: "test", success: true },
+  });
+}
+
+/**
+ * Helper function to create headers map for NextRequest mocks
+ */
+function createRequestHeaders(bearer: string, contentType = "application/json", cookie?: string): Map<string, string> {
   const headers = new Map<string, string>();
   headers.set("Authorization", `Bearer ${bearer}`);
-  headers.set("Content-Type", "application/json");
+  headers.set("Content-Type", contentType);
+  if (cookie) {
+    headers.set("cookie", cookie);
+  }
+  return headers;
+}
+
+/**
+ * Creates a NextRequest mock for datasource tests
+ */
+export function createDatasourceRequest(bearer: string, jsonBody: JsonBody): NextRequest {
+  const headers = createRequestHeaders(bearer);
 
   return {
     method: "POST",
@@ -100,7 +139,7 @@ export function createDatasourceRequest(bearer: string, jsonBody: JsonBody): Nex
 }
 
 /**
- * Crea un NextRequest mock genérico para tests de ERP
+ * Creates a generic NextRequest mock for ERP tests
  */
 export function createErpRequest({
   url,
@@ -110,12 +149,7 @@ export function createErpRequest({
   contentType = "application/json",
   cookie,
 }: ErpRequestOptions): NextRequest {
-  const headers = new Map<string, string>();
-  headers.set("Authorization", `Bearer ${bearer}`);
-  headers.set("Content-Type", contentType);
-  if (cookie) {
-    headers.set("cookie", cookie);
-  }
+  const headers = createRequestHeaders(bearer, contentType, cookie);
 
   return {
     method,
@@ -127,7 +161,7 @@ export function createErpRequest({
 }
 
 /**
- * Suite de test completa para datasource con configuración común
+ * Complete test suite for datasource with common configuration
  */
 export function createDatasourceTestSuite(suiteName: string, tokenSuffix = "default") {
   setupDatasourceMocks();
@@ -151,7 +185,7 @@ export function createDatasourceTestSuite(suiteName: string, tokenSuffix = "defa
 }
 
 /**
- * Aserciones comunes para tests de datasource
+ * Common assertions for datasource tests
  */
 export function assertDatasourceCall(
   expectedUrl: string,
@@ -164,43 +198,16 @@ export function assertDatasourceCall(
   const [dest, init] = fetchMock.mock.calls[0];
   expect(String(dest)).toBe(expectedUrl);
 
-  // Verificar headers
+  // Verify headers
   for (const [header, value] of Object.entries(expectedHeaders)) {
     expect(init.headers[header]).toBe(value);
   }
 
-  // Verificar parámetros en el body (si están presentes)
+  // Verify parameters in body (if present)
   if (Object.keys(expectedParams).length > 0) {
     const decoded = decodeURIComponent(init.body as string);
     for (const [param, value] of Object.entries(expectedParams)) {
       expect(decoded).toContain(`${param}=${value}`);
     }
   }
-}
-
-/**
- * Configuración de entorno genérica para tests de API
- */
-export function setupApiTestEnvironment() {
-  const OLD_ENV = process.env;
-  const originalFetch = global.fetch as jest.Mock;
-
-  const setup = () => {
-    jest.resetModules();
-    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: "http://erp.example/etendo" };
-    (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
-      ok: true,
-      status: 201, // Different status from datasource
-      headers: { get: () => "application/json" },
-      text: async () => JSON.stringify({ api: "test", success: true }),
-      json: async () => ({ api: "test", success: true }),
-    });
-  };
-
-  const cleanup = () => {
-    process.env = OLD_ENV;
-    (global.fetch as jest.Mock) = originalFetch;
-  };
-
-  return { setup, cleanup };
 }
