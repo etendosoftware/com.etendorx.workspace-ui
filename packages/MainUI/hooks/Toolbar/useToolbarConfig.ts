@@ -160,7 +160,7 @@ export const useToolbarConfig = ({
         onFilter?.();
       },
       SAVE: () => {
-        onSave?.();
+        onSave?.(true);
       },
       DELETE: () => {
         if (tab) {

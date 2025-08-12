@@ -245,7 +245,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   }, []);
 
   const onSuccess = useCallback(
-    async (data: EntityData) => {
+    async (data: EntityData, showModal: boolean) => {
       if (mode === FormMode.EDIT) {
         reset({ ...initialState, ...data });
       } else {
@@ -260,8 +260,11 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
         setSelectedRecord(windowId, tab.id, String(data.id));
       }
 
-      showSuccessModal("Saved");
       setIsSucessfullEdit(true);
+
+      if (showModal) {
+        showSuccessModal("Saved");
+      }
     },
     [mode, graph, tab, activeWindow?.windowId, showSuccessModal, reset, initialState, setRecordId, setSelectedRecord]
   );
@@ -292,10 +295,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   );
 
   // NOTE: toolbar actions
-  const handleSave = useCallback(async () => {
-    await save();
-    resetFormChanges();
-  }, [save, resetFormChanges]);
+  const handleSave = useCallback(
+    async (showModal: boolean) => {
+      await save(showModal);
+      resetFormChanges();
+    },
+    [save, resetFormChanges]
+  );
 
   const onReset = useCallback(async () => {
     await refetch();
@@ -337,7 +343,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
           className={`flex h-full max-h-full w-full flex-col gap-2 overflow-hidden transition duration-300 ${
             loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
           }`}
-          onSubmit={handleSave}>
+          onSubmit={() => handleSave(true)}>
           {statusModal.open && (
             <StatusModal
               statusType={statusModal.statusType}

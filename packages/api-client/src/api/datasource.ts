@@ -85,7 +85,7 @@ export class Datasource {
       params.set("tabId", options.tabId);
     }
 
-    if (options.tabId) {
+    if (options.parentId) {
       params.set("parentId", options.parentId);
     }
 

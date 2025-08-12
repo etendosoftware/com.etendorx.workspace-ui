@@ -53,6 +53,7 @@ export interface DatasourceParams {
   isSorting?: boolean;
   isImplicitFilterApplied?: boolean;
   operator?: "and" | "or";
+  parentId?: string;
 }
 
 export interface DatasourceOptions {
