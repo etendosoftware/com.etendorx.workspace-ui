@@ -1,16 +1,16 @@
 pipeline {
 
   environment { // MARK: Environment Variables
-    NPM_TOKEN           = credentials('npmjs-access-token')
-    EMAIL_ADDRESS       = credentials('email_builds')
+    NPM_TOKEN            = credentials('npmjs-access-token')
+    EMAIL_ADDRESS        = credentials('email_builds')
 
-    OWNER_REPOSITORY    = "etendosoftware"
-    GITHUB_URL          = "https://github.com"
-    GITHUB_SSH_URL      = "git@github.com:etendosoftware"
+    OWNER_REPOSITORY     = "etendosoftware"
+    GITHUB_URL           = "https://github.com"
+    GITHUB_SSH_URL       = "git@github.com:etendosoftware"
 
-    SUCCESS             = "SUCCESS"
-    FAILED              = "FAILED"
-    UNSTABLE            = "UNSTABLE"
+    SUCCESS              = "SUCCESS"
+    FAILED               = "FAILED"
+    UNSTABLE             = "UNSTABLE"
 
     COMMIT_INPROGRESS_STATUS = "pending"
     COMMIT_SUCCESS_STATUS    = "success"
@@ -116,6 +116,7 @@ spec:
                 cd ${REPOSITORY_NAME}
                 pnpm install
                 pnpm add -D -w istanbul-lib-coverage istanbul-lib-report istanbul-reports
+                pnpm build
               """
               echo "-------------------------- Build Successful --------------------------"
               
@@ -175,6 +176,37 @@ spec:
           }
         }
       }
+    }
+
+    stage('UI/Storybook Tests') { // MARK: STORYBOOK
+        when {
+            expression {
+                false
+            }
+        }
+        steps {
+            container('compiler') {
+                timeout(time: 25, unit: 'MINUTES') {
+                    sh """
+                    cd ${REPOSITORY_NAME}
+
+                    pnpm run storybook -- --host 127.0.0.1 --port 6006 --quiet &
+                    SB_PID=\$!
+                    trap "kill \$SB_PID || true" EXIT
+
+                    # 2) (Opcional) Instalar browsers de Playwright si tu imagen no los trae
+                    pnpm dlx playwright install --with-deps chromium
+
+                    # 3) Esperar a que el server esté listo
+                    pnpm dlx wait-on --timeout 180000 http://127.0.0.1:6006/index.json
+
+                    # 4) Ejecutar el runner desde el paquete de storybook
+                    cd packages/storybook
+                    pnpm test-storybook --ci --url http://127.0.0.1:6006 --maxWorkers=2 
+                    """
+                }
+            }
+        }
     }
 
     stage('Run Sonarqube Analysis') { // MARK: Run Sonarqube Analysis

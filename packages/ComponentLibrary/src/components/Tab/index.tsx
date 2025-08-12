@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -46,13 +46,13 @@ const TabsMUI = ({ tabArray }: TabsMUIProps) => {
             scrollButtons
             allowScrollButtonsMobile>
             {tabArray.map((tab, index) => (
-              <Tab key={index} label={tab.title} value={`${index}`} />
+              <Tab key={tab.title} label={tab.title} value={`${index}`} />
             ))}
           </TabList>
         </Box>
 
         {tabArray.map((tab, index) => (
-          <TabPanel key={index} value={`${index}`} sx={{ height: "100%" }}>
+          <TabPanel key={tab.title} value={`${index}`} sx={{ height: "100%" }}>
             {tab.children}
           </TabPanel>
         ))}

@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -66,14 +66,14 @@ const MessageList: React.FC<MessageListProps> = ({ messages, labels, isLoading =
 
   return (
     <div className="p-4 h-full overflow-y-auto flex flex-col gap-4">
-      {messages.map((message, index) => {
+      {messages.map((message, _index) => {
         const messageHasContext = message.sender === MESSAGE_ROLES.USER && hasContextInMessage(message.text);
         const displayMessage = messageHasContext ? getMessageWithoutContext(message.text) : message.text;
         const contextCount = messageHasContext ? getContextCountFromMessage(message.text) : 0;
 
         return (
           <div
-            key={index}
+            key={message.message_id || `${message.sender}-${message.timestamp}`}
             className={`flex mb-2 ${message.sender === MESSAGE_ROLES.USER ? "justify-end" : "justify-start"}`}>
             <div
               className={`max-w-[70%] p-4 rounded-xl ${

@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -31,7 +31,8 @@ import {
 } from "./constants";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
-import { FALLBACK_RESULT } from "@/components/ProcessModal/ProcessDefinitionModal";
+// Local fallback to avoid importing UI components (and Next server modules) in hooks/tests
+const FALLBACK_RESULT: Record<string, EntityValue> = {} as any;
 
 export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 20 }: UseTableDirDatasourceParams) => {
   const { getValues, watch } = useFormContext();
@@ -58,7 +59,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
 
     for (const [sourceField, targetField] of Object.entries(INVOICE_FIELD_MAPPINGS)) {
       if (!recordValues) {
-        return [];
+        return FALLBACK_RESULT;
       }
       const value = recordValues[sourceField];
       if (value !== null && value !== undefined && value !== "") {

@@ -63,7 +63,7 @@ export default {
     "!**/node_modules/**",
   ],
 
-  testPathIgnorePatterns: ["<rootDir>/node_modules/", "<rootDir>/dist/"],
+  testPathIgnorePatterns: ["<rootDir>/node_modules/", "<rootDir>/dist/", "<rootDir>/__tests__/test-utils.tsx"],
 
   transformIgnorePatterns: [
     "node_modules/(?!(react-markdown|remark-.*|unist-.*|unified|bail|is-plain-obj|trough|vfile|vfile-message|micromark|micromark-.*|mdast-.*|character-entities|decode-named-character-reference|property-information|hast-.*|html-void-elements|space-separated-tokens|comma-separated-tokens|zwitch|longest-streak|ccount|escape-string-regexp|markdown-table)/)"

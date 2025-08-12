@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -16,6 +16,7 @@
  */
 
 import type { Metadata } from "next/types";
+import { cookies } from "next/headers";
 import { Inter } from "next/font/google";
 import ApiProviderWrapper from "@/contexts/api/wrapper";
 import "./styles/global.css";
@@ -39,7 +40,7 @@ export const metadata: Metadata = {
   applicationName: "Etendo",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -48,13 +49,24 @@ export default function RootLayout({
     (function() {
       try {
         const className = localStorage.getItem("${DENSITY_KEY}");
-        if (className) document.documentElement.classList.add(JSON.parse(className));
+        if (className) {
+          var parsed = JSON.parse(className);
+          document.documentElement.classList.add(parsed);
+          try {
+            var maxAge = 60 * 60 * 24 * 365; // 1 year
+            document.cookie = "${DENSITY_KEY}=" + encodeURIComponent(parsed) + "; path=/; max-age=" + maxAge;
+          } catch (_) {}
+        }
       } catch(e) {}
     })();
   `;
+  // Read density from cookie on the server to avoid SSR/CSR mismatch
+  const cookieStore = await cookies();
+  const density = cookieStore.get(DENSITY_KEY)?.value ?? "";
+  const htmlClass = [inter.variable, density].filter(Boolean).join(" ");
 
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={htmlClass} suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <link rel="icon" href="/favicon.ico" sizes="any" />

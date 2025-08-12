@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -23,7 +23,6 @@ import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useSelected } from "@/hooks/useSelected";
 import { groupTabsByLevel } from "@workspaceui/api-client/src/utils/metadata";
-import { useTranslation } from "@/hooks/useTranslation";
 import AppBreadcrumb from "@/components/Breadcrums";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { shouldShowTab, type TabWithParentInfo } from "@/utils/tabUtils";
@@ -32,7 +31,7 @@ export default function TabsContainer() {
   const { activeLevels, clearAllStates } = useSelected();
   const { activeWindow } = useMultiWindowURL();
   const { getWindowMetadata } = useMetadataContext();
-  const { t } = useTranslation();
+  // Translation not used here
 
   const [activeTabsByLevel, setActiveTabsByLevel] = useState<Map<number, string>>(new Map());
 
@@ -96,7 +95,13 @@ export default function TabsContainer() {
   }, [groupedTabs, getActiveTabForLevel]);
 
   if (!windowData) {
-    return <div>{t("common.loadingWindowContent")}</div>;
+    return (
+      <div className="p-4 animate-pulse flex-1 flex flex-col gap-4">
+        <div className="h-6 w-1/2 bg-(--color-transparent-neutral-10) rounded-md" />
+        <div className="h-10 w-full bg-(--color-transparent-neutral-10) rounded-md" />
+        <div className="flex-1 bg-(--color-transparent-neutral-10) rounded-md" />
+      </div>
+    );
   }
 
   const firstExpandedIndex = filteredGroupedTabs.findIndex(

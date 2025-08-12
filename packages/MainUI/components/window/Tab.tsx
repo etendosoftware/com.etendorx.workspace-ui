@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -39,6 +39,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     clearTabFormState,
     getTabFormState,
     getSelectedRecord,
+    clearChildrenSelections,
   } = useMultiWindowURL();
   const { registerActions } = useToolbarContext();
   const { graph } = useSelected();
@@ -114,12 +115,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
 
     const children = graph.getChildren(tab);
     if (children && children.length > 0) {
-      for (const child of children) {
-        clearSelectedRecord(windowId, child.id);
-        clearTabFormState(windowId, child.id);
-      }
+      const childIds = children.map((c) => c.id);
+      // Batch clear to avoid multiple navigations
+      clearChildrenSelections(windowId, childIds);
     }
-  }, [windowId, graph, tab, clearSelectedRecord, clearTabFormState]);
+  }, [windowId, graph, tab, clearChildrenSelections]);
 
   useEffect(() => {
     const actions = {

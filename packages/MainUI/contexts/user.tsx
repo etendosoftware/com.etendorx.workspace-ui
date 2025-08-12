@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -80,10 +80,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   const setDefaultConfiguration = useCallback(async (config: DefaultConfiguration) => {
     try {
-      return apiSetDefaultConfiguration(config);
+      return await apiSetDefaultConfiguration(config);
     } catch (error) {
       logger.warn("Error setting default configuration:", error);
-
       throw error;
     }
   }, []);
@@ -232,7 +231,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
         }
       } catch (error) {
         console.error(error);
-        clearUserData();
       } finally {
         setReady(true);
       }

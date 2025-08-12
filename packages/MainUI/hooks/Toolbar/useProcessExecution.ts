@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -23,6 +23,7 @@ import {
 } from "@/components/ProcessModal/types";
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
+import { isDebugManualProcesses } from "@/utils/debug";
 import { API_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useParams } from "next/navigation";
@@ -138,6 +139,24 @@ export function useProcessExecution() {
           });
 
           const completeUrl = `${baseUrl}?${params.toString()}`;
+
+          if (isDebugManualProcesses()) {
+            try {
+              const debugParams: Record<string, string> = {};
+              params.forEach((v, k) => {
+                debugParams[k] = v;
+              });
+              logger.debug("[MANUAL_PROCESS] Prepared URL", completeUrl);
+              logger.debug("[MANUAL_PROCESS] Context", {
+                buttonId: currentButtonId,
+                windowId: safeWindowId,
+                tabId: safeTabId,
+                tableId: safeTableId,
+                recordId: safeRecordId,
+              });
+              logger.debug("[MANUAL_PROCESS] Params", debugParams);
+            } catch {}
+          }
           setIframeUrl(completeUrl);
 
           resolve({

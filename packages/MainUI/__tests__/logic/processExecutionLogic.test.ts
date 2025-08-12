@@ -1,43 +1,42 @@
 /**
  * Pure Logic Tests for Process Execution
- * 
+ *
  * These tests focus on the core business logic without React hooks or components.
  * They validate the key fixes implemented for the process execution feature.
  */
 
 describe("Process Execution Core Logic", () => {
-  
   describe("Dynamic _action Parameter Selection", () => {
     it("should use DefaultsProcessActionHandler when javaClassName is not provided", () => {
       const javaClassName = undefined;
       const _action = javaClassName || "org.openbravo.client.application.process.DefaultsProcessActionHandler";
-      
+
       expect(_action).toBe("org.openbravo.client.application.process.DefaultsProcessActionHandler");
     });
 
     it("should use DefaultsProcessActionHandler when javaClassName is empty string", () => {
       const javaClassName = "";
       const _action = javaClassName || "org.openbravo.client.application.process.DefaultsProcessActionHandler";
-      
+
       expect(_action).toBe("org.openbravo.client.application.process.DefaultsProcessActionHandler");
     });
 
     it("should use custom javaClassName when provided", () => {
       const javaClassName = "com.etendoerp.copilot.process.CheckHostsButton";
       const _action = javaClassName || "org.openbravo.client.application.process.DefaultsProcessActionHandler";
-      
+
       expect(_action).toBe("com.etendoerp.copilot.process.CheckHostsButton");
     });
 
     it("should handle various custom javaClassName values", () => {
       const testCases = [
         "com.test.CustomProcess",
-        "org.openbravo.custom.MyHandler", 
+        "org.openbravo.custom.MyHandler",
         "com.etendoerp.copilot.process.CheckHostsButton",
-        "com.example.business.ProcessHandler"
+        "com.example.business.ProcessHandler",
       ];
 
-      testCases.forEach(javaClassName => {
+      testCases.forEach((javaClassName) => {
         const _action = javaClassName || "org.openbravo.client.application.process.DefaultsProcessActionHandler";
         expect(_action).toBe(javaClassName);
       });
@@ -49,7 +48,7 @@ describe("Process Execution Core Logic", () => {
       const processId = "test-process-123";
       const windowId = "window-456";
       const javaClassName = undefined;
-      
+
       const params = new URLSearchParams({
         processId,
         windowId,
@@ -65,7 +64,7 @@ describe("Process Execution Core Logic", () => {
       const processId = "EC2C48FB84274D3CB3A3F5FD49808926";
       const windowId = "30F66066197F43368E354DC4630D3378";
       const javaClassName = "com.etendoerp.copilot.process.CheckHostsButton";
-      
+
       const params = new URLSearchParams({
         processId,
         windowId,
@@ -87,34 +86,34 @@ describe("Process Execution Core Logic", () => {
               showMsgInProcessView: {
                 msgType: "error",
                 msgTitle: "Process Error",
-                msgText: "Configuration failed"
-              }
-            }
+                msgText: "Configuration failed",
+              },
+            },
           ],
           message: {
             severity: "success",
-            text: "This should be ignored"
-          }
-        }
+            text: "This should be ignored",
+          },
+        },
       };
 
       // Simulate the response processing logic
       let processedResponse;
-      
+
       if (mockResponse?.data?.responseActions?.[0]?.showMsgInProcessView) {
         processedResponse = mockResponse.data.responseActions[0].showMsgInProcessView;
       } else if (mockResponse?.data?.message) {
         // This path should not be taken
         processedResponse = {
           msgType: mockResponse.data.message.severity,
-          msgText: mockResponse.data.message.text
+          msgText: mockResponse.data.message.text,
         };
       }
 
       expect(processedResponse).toEqual({
         msgType: "error",
-        msgTitle: "Process Error", 
-        msgText: "Configuration failed"
+        msgTitle: "Process Error",
+        msgText: "Configuration failed",
       });
     });
 
@@ -123,14 +122,14 @@ describe("Process Execution Core Logic", () => {
         data: {
           message: {
             severity: "warning",
-            text: "Process completed with warnings"
-          }
-        }
+            text: "Process completed with warnings",
+          },
+        },
       };
 
       // Simulate the response processing logic
       let processedResponse;
-      
+
       if (mockResponse?.data?.responseActions?.[0]?.showMsgInProcessView) {
         // This path should not be taken
         processedResponse = mockResponse.data.responseActions[0].showMsgInProcessView;
@@ -138,16 +137,15 @@ describe("Process Execution Core Logic", () => {
         processedResponse = {
           msgType: mockResponse.data.message.severity,
           msgText: mockResponse.data.message.text,
-          msgTitle: mockResponse.data.message.severity === "success" 
-            ? "process.completedSuccessfully" 
-            : "process.processError"
+          msgTitle:
+            mockResponse.data.message.severity === "success" ? "process.completedSuccessfully" : "process.processError",
         };
       }
 
       expect(processedResponse).toEqual({
         msgType: "warning",
         msgText: "Process completed with warnings",
-        msgTitle: "process.processError"
+        msgTitle: "process.processError",
       });
     });
 
@@ -155,33 +153,33 @@ describe("Process Execution Core Logic", () => {
       const mockResponse = {
         data: {
           someOtherProperty: "value",
-          result: "completed"
-        }
+          result: "completed",
+        },
       };
 
       // Simulate the response processing logic
       let processedResponse;
-      
+
       if (mockResponse?.data?.responseActions?.[0]?.showMsgInProcessView) {
         processedResponse = mockResponse.data.responseActions[0].showMsgInProcessView;
       } else if (mockResponse?.data?.message) {
         processedResponse = {
           msgType: mockResponse.data.message.severity,
-          msgText: mockResponse.data.message.text
+          msgText: mockResponse.data.message.text,
         };
       } else if (mockResponse?.data && !mockResponse.data.responseActions) {
         // Fallback success case
         processedResponse = {
           msgText: "Process completed successfully",
           msgTitle: "process.completedSuccessfully",
-          msgType: "success"
+          msgType: "success",
         };
       }
 
       expect(processedResponse).toEqual({
         msgText: "Process completed successfully",
         msgTitle: "process.completedSuccessfully",
-        msgType: "success"
+        msgType: "success",
       });
     });
 
@@ -193,29 +191,29 @@ describe("Process Execution Core Logic", () => {
               showMsgInProcessView: {
                 msgType: "error",
                 msgTitle: "",
-                msgText: "no protocol: ETENDO_HOST_NOT_CONFIGURED/sws/copilot/configcheck"
-              }
-            }
-          ]
-        }
+                msgText: "no protocol: ETENDO_HOST_NOT_CONFIGURED/sws/copilot/configcheck",
+              },
+            },
+          ],
+        },
       };
 
       // Simulate the response processing logic - this is the key fix
       let processedResponse;
-      
+
       if (mockResponse?.data?.responseActions?.[0]?.showMsgInProcessView) {
         processedResponse = mockResponse.data.responseActions[0].showMsgInProcessView;
       } else if (mockResponse?.data?.message) {
         processedResponse = {
           msgType: mockResponse.data.message.severity,
-          msgText: mockResponse.data.message.text
+          msgText: mockResponse.data.message.text,
         };
       } else if (mockResponse?.data && !mockResponse.data.responseActions) {
         // This should NOT happen because responseActions exists
         processedResponse = {
           msgText: "Process completed successfully",
-          msgTitle: "process.completedSuccessfully", 
-          msgType: "success"
+          msgTitle: "process.completedSuccessfully",
+          msgType: "success",
         };
       }
 
@@ -311,17 +309,17 @@ describe("Process Execution Core Logic", () => {
     it("should construct correct payload for direct Java process", () => {
       const tab = {
         window: "30F66066197F43368E354DC4630D3378",
-        entityName: "ADTab"
+        entityName: "ADTab",
       };
 
       const recordValues = {
         selectedRecord: "record-123",
-        contextField: "context-value"
+        contextField: "context-value",
       };
 
       const formValues = {
         userInput: "user-value",
-        formField: "form-data"
+        formField: "form-data",
       };
 
       const payload = {
@@ -333,11 +331,11 @@ describe("Process Execution Core Logic", () => {
 
       expect(payload).toEqual({
         _buttonValue: "DONE",
-        _entityName: "ADTab", 
+        _entityName: "ADTab",
         selectedRecord: "record-123",
         contextField: "context-value",
-        userInput: "user-value", 
-        formField: "form-data"
+        userInput: "user-value",
+        formField: "form-data",
       });
     });
   });
@@ -346,23 +344,23 @@ describe("Process Execution Core Logic", () => {
     it("should handle null/undefined responses gracefully", () => {
       const testCases = [null, undefined, {}, { data: null }, { data: {} }];
 
-      testCases.forEach(mockResponse => {
+      testCases.forEach((mockResponse) => {
         // Simulate response processing
         let processedResponse = null;
-        
+
         try {
           if (mockResponse?.data?.responseActions?.[0]?.showMsgInProcessView) {
             processedResponse = mockResponse.data.responseActions[0].showMsgInProcessView;
           } else if (mockResponse?.data?.message) {
             processedResponse = {
               msgType: mockResponse.data.message.severity,
-              msgText: mockResponse.data.message.text
+              msgText: mockResponse.data.message.text,
             };
           } else if (mockResponse?.data && !mockResponse.data.responseActions) {
             processedResponse = {
               msgText: "Process completed successfully",
               msgTitle: "process.completedSuccessfully",
-              msgType: "success"
+              msgType: "success",
             };
           }
         } catch (error) {

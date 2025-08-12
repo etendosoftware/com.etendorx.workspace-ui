@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -23,10 +23,6 @@ export class CacheStore {
     if (duration <= 0) {
       throw new Error("Duration must be a positive number.");
     }
-
-    // if (![localStorage, sessionStorage].includes(storage)) {
-    //   throw new Error('Invalid storage type. Expected localStorage or sessionStorage.');
-    // }
 
     this.duration = duration;
     this.storage = typeof window !== "undefined" ? window.localStorage : undefined;
