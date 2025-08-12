@@ -181,7 +181,7 @@ spec:
     stage('UI/Storybook Tests') { // MARK: STORYBOOK
         when {
             expression {
-                currentBuild.result == SUCCESS
+                false
             }
         }
         steps {

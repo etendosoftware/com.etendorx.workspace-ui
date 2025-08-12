@@ -41,7 +41,7 @@ export class Datasource {
     // Base URL for selector/forwarded datasource requests (no leading slash in path)
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"; // fallback for SSR
     // For relative paths like '<selectorId>' route through forward servlet
-    this.client.setBaseUrl(baseUrl + "/api/erp/meta/forward/org.openbravo.service.datasource/");
+    this.client.setBaseUrl(baseUrl);
   }
 
   public setToken(token: string) {

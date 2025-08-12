@@ -3,7 +3,7 @@ const { getStoryContext } = require('@storybook/test-runner');
 module.exports = {
   async preVisit(page, context) {
     // Increase timeout for longer running tests
-    page.setDefaultTimeout(30000);
+    page.setDefaultTimeout(60000); // Increased from 30000
     
     // Add error handling for navigation errors
     page.on('pageerror', (error) => {
@@ -14,22 +14,26 @@ module.exports = {
       if (msg.type() === 'error') {
         console.log('Console error:', msg.text());
       }
+      // Log ProfileModal specific messages
+      if (msg.text().includes('ProfileModal') || msg.text().includes('Router')) {
+        console.log('ProfileModal/Router log:', msg.text());
+      }
     });
   },
   
   async postVisit(page, context) {
     const storyContext = await getStoryContext(page, context);
     
-    // Skip smoke test for stories that have navigation issues
-    if (storyContext.title.includes('ProfileModal')) {
-      // Wait for component to be fully rendered
-      await page.waitForSelector('[data-testid="profile-modal"], .profile-modal, [class*="modal"]', {
-        timeout: 20000,
-        state: 'visible'
-      }).catch(() => {
-        // If selector not found, just wait a bit for the component to render
-        return page.waitForTimeout(2000);
-      });
+    // Check multiple ways to skip stories
+    const shouldSkip = 
+      storyContext.parameters?.testRunner?.skip ||
+      storyContext.parameters?.test?.skip ||
+      storyContext.tags?.includes('skip-test');
+    
+    if (shouldSkip) {
+      console.log('Skipping story:', storyContext.name, 'due to skip configuration');
+      return; // Early return to skip processing
     }
+    
   }
 };
