@@ -2,7 +2,12 @@
  * Integration-like test: ERP error passthrough on save (non-200).
  */
 
-import type { NextRequest } from 'next/server';
+import { POST } from '../route';
+import {
+  createMockRequest,
+  setupTestEnvironment,
+  assertFetchCall,
+} from '../../../_test-utils/api-test-utils';
 
 jest.mock('next/server', () => ({
   NextResponse: {
@@ -10,15 +15,12 @@ jest.mock('next/server', () => ({
   },
 }));
 
-import { POST } from '../route';
-
 describe('Save error passthrough', () => {
-  const OLD_ENV = process.env;
-  const originalFetch = global.fetch as unknown as jest.Mock;
+  const { setup, cleanup } = setupTestEnvironment();
 
   beforeEach(() => {
-    jest.resetModules();
-    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: 'http://erp.example/etendo' };
+    setup();
+    // Override with error response for this specific test
     (global as any).fetch = jest.fn().mockResolvedValue({
       ok: false,
       status: 400,
@@ -29,31 +31,35 @@ describe('Save error passthrough', () => {
     });
   });
 
-  afterAll(() => {
-    process.env = OLD_ENV;
-    (global as any).fetch = originalFetch;
-  });
-
-  function makeRequest(url: string, bearer: string, jsonBody: any): NextRequest {
-    const headers = new Map<string, string>();
-    headers.set('Authorization', `Bearer ${bearer}`);
-    headers.set('Content-Type', 'application/json');
-    return {
-      method: 'POST',
-      headers: { get: (k: string) => headers.get(k) || null } as any,
-      url,
-      text: async () => JSON.stringify(jsonBody),
-    } as unknown as NextRequest;
-  }
+  afterAll(cleanup);
 
   it('returns same status when ERP returns error', async () => {
     const url = 'http://localhost:3000/api/datasource/Order?windowId=10&tabId=20&_operationType=add';
-    const body = { dataSource: 'isc_OBViewDataSource_0', operationType: 'add', componentId: 'isc_OBViewForm_0', data: {}, oldValues: {}, csrfToken: 'X' };
-    const req = makeRequest(url, 'err-token', body);
+    const body = { 
+      dataSource: 'isc_OBViewDataSource_0', 
+      operationType: 'add', 
+      componentId: 'isc_OBViewForm_0', 
+      data: {}, 
+      oldValues: {}, 
+      csrfToken: 'X' 
+    };
+    
+    const req = createMockRequest({
+      url,
+      bearer: 'err-token',
+      jsonBody: body
+    });
+    
     const res: any = await POST(req, { params: { entity: 'Order' } } as any);
+    
     // Proxy should surface ERP error status; expect 400 here
     expect(res.status).toBe(400);
-    const [_, init] = (global as any).fetch.mock.calls[0];
-    expect(init.headers['Authorization']).toBe('Bearer err-token');
+    
+    assertFetchCall(
+      global.fetch as jest.Mock,
+      'http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Order?windowId=10&tabId=20&_operationType=add',
+      'POST',
+      { 'Authorization': 'Bearer err-token' }
+    );
   });
 });

@@ -1,6 +1,7 @@
 
 import { render, fireEvent, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
+import { useRedirect } from "@/hooks/navigation/useRedirect";
 
 let pushSpy: jest.Mock;
 let replaceSpy: jest.Mock;
@@ -24,26 +25,26 @@ jest.mock("@/hooks/useMetadataContext", () => ({
 }));
 
 // Default preference mocked to table mode; individual tests can re-mock
+const mockState = { openInForm: false };
 jest.mock("@/utils/prefs", () => ({
-  isLinkedLabelOpenInForm: () => false,
+  isLinkedLabelOpenInForm: () => mockState.openInForm,
+  __setOpenInForm: (v: boolean) => (mockState.openInForm = v),
 }));
 
-describe.skip("useRedirect - linked label preselects and opens form", () => {
+describe("useRedirect - linked label preselects and opens form", () => {
   beforeEach(() => {
     pushSpy?.mockClear();
     replaceSpy?.mockClear();
   });
 
   it("pushes URL including selected record only (table mode)", () => {
-    jest.isolateModules(() => {
-      jest.doMock("@/utils/prefs", () => ({ isLinkedLabelOpenInForm: () => false }));
-      const { useRedirect } = require("@/hooks/navigation/useRedirect");
-      function Harness() {
-        const { handleClickRedirect } = useRedirect();
-        return <button onClick={(e) => handleClickRedirect(e, "W9", "W9-name", "R77")}>go</button>;
-      }
-      render(<Harness />);
-    });
+    const prefs = require("@/utils/prefs");
+    prefs.__setOpenInForm(false);
+    function Harness() {
+      const { handleClickRedirect } = useRedirect();
+      return <button onClick={(e) => handleClickRedirect(e, "W9", "W9-name", "R77")}>go</button>;
+    }
+    render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: /go/i }));
 
     expect(pushSpy).toHaveBeenCalledTimes(1);
@@ -59,15 +60,13 @@ describe.skip("useRedirect - linked label preselects and opens form", () => {
   });
 
   it("pushes URL including tab form state when pref = form", () => {
-    jest.isolateModules(() => {
-      jest.doMock("@/utils/prefs", () => ({ isLinkedLabelOpenInForm: () => true }));
-      const { useRedirect } = require("@/hooks/navigation/useRedirect");
-      function HarnessForm() {
-        const { handleClickRedirect } = useRedirect();
-        return <button onClick={(e) => handleClickRedirect(e, "W9", "W9-name", "R77")}>go</button>;
-      }
-      render(<HarnessForm />);
-    });
+    const prefs = require("@/utils/prefs");
+    prefs.__setOpenInForm(true);
+    function HarnessForm() {
+      const { handleClickRedirect } = useRedirect();
+      return <button onClick={(e) => handleClickRedirect(e, "W9", "W9-name", "R77")}>go</button>;
+    }
+    render(<HarnessForm />);
     fireEvent.click(screen.getByRole("button", { name: /go/i }));
 
     expect(pushSpy).toHaveBeenCalledTimes(1);

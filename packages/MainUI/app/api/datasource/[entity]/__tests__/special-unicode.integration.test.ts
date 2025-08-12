@@ -2,8 +2,6 @@
  * Integration-like test: Datasource save with special/Unicode characters in payload.
  */
 
-import type { NextRequest } from 'next/server';
-
 jest.mock('next/server', () => ({
   NextResponse: {
     json: (body: unknown, init?: { status?: number }) => ({ ok: true, status: init?.status ?? 200, body }),
@@ -11,39 +9,11 @@ jest.mock('next/server', () => ({
 }));
 
 import { POST } from '../route';
+import { createMockApiRequest, setupApiTestEnvironment } from '../../../_test-utils/api-test-utils';
 
 describe('Save with special/Unicode fields', () => {
-  const OLD_ENV = process.env;
-  const originalFetch = global.fetch as unknown as jest.Mock;
-
-  beforeEach(() => {
-    jest.resetModules();
-    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: 'http://erp.example/etendo' };
-    (global as any).fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: { get: () => 'application/json; charset=utf-8' },
-      text: async () => JSON.stringify({ response: { status: 0 } }),
-      json: async () => ({ response: { status: 0 } }),
-    });
-  });
-
-  afterAll(() => {
-    process.env = OLD_ENV;
-    (global as any).fetch = originalFetch;
-  });
-
-  function makeRequest(url: string, bearer: string, jsonBody: any): NextRequest {
-    const headers = new Map<string, string>();
-    headers.set('Authorization', `Bearer ${bearer}`);
-    headers.set('Content-Type', 'application/json');
-    return {
-      method: 'POST',
-      headers: { get: (k: string) => headers.get(k) || null } as any,
-      url,
-      text: async () => JSON.stringify(jsonBody),
-    } as unknown as NextRequest;
-  }
+  // Configura entorno y fetch mock una vez para este archivo
+  setupApiTestEnvironment();
 
   it('encodes UTF-8 content correctly in form body', async () => {
     const url = 'http://localhost:3000/api/datasource/OrderLine?windowId=143&tabId=187&_operationType=add&language=es_ES';
@@ -60,7 +30,13 @@ describe('Save with special/Unicode fields', () => {
       oldValues: {},
     };
 
-    const req = makeRequest(url, 'Bearer-Token-UNICODE', body);
+    const req = createMockApiRequest({
+      url,
+      bearer: 'Bearer-Token-UNICODE',
+      jsonBody: body,
+      method: 'POST',
+      contentType: 'application/json; charset=utf-8',
+    });
     const res: any = await POST(req, { params: { entity: 'OrderLine' } } as any);
     expect(res.status).toBe(200);
 

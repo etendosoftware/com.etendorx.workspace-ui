@@ -15,9 +15,8 @@
  *************************************************************************
  */
 
-import { render, screen, fireEvent } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import IconButton from "../src/components/IconButton/index";
+import { screen, fireEvent } from "@testing-library/react";
+import { renderIconButton } from "./test-utils";
 
 // Mock the Tooltip component to simplify testing
 jest.mock("../src/components/Tooltip", () => ({
@@ -27,50 +26,33 @@ jest.mock("../src/components/Tooltip", () => ({
 
 describe("IconButton", () => {
   it("renders with children", () => {
-    render(
-      <IconButton ariaLabel="test button">
-        <svg data-testid="test-icon" />
-      </IconButton>
-    );
+    renderIconButton({
+      ariaLabel: "test button",
+      children: <svg data-testid="test-icon" />,
+    });
 
-    expect(screen.getByRole("button")).toBeDefined();
-    expect(screen.getByTestId("test-icon")).toBeDefined();
+    expect(screen.getByRole("button")).toBeInTheDocument();
+    expect(screen.getByTestId("test-icon")).toBeInTheDocument();
   });
 
   it("applies aria-label correctly", () => {
-    render(
-      <IconButton ariaLabel="Close dialog">
-        <span>X</span>
-      </IconButton>
-    );
-
+    renderIconButton({ ariaLabel: "Close dialog" });
     expect(screen.getByRole("button")).toHaveAttribute("aria-label", "Close dialog");
   });
 
   it("handles click events", async () => {
     const handleClick = jest.fn();
-    const user = userEvent.setup();
+    const { user, getByRole } = renderIconButton({ onClick: handleClick });
 
-    render(
-      <IconButton onClick={handleClick} ariaLabel="click me">
-        <span>Click</span>
-      </IconButton>
-    );
-
-    await user.click(screen.getByRole("button"));
+    await user.click(getByRole("button"));
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 
   it("is disabled when disabled prop is true", () => {
     const handleClick = jest.fn();
+    const { getByRole } = renderIconButton({ disabled: true, onClick: handleClick });
 
-    render(
-      <IconButton disabled onClick={handleClick} ariaLabel="disabled button">
-        <span>Disabled</span>
-      </IconButton>
-    );
-
-    const button = screen.getByRole("button");
+    const button = getByRole("button");
     expect(button).toBeDisabled();
 
     fireEvent.click(button);
@@ -78,22 +60,17 @@ describe("IconButton", () => {
   });
 
   it("renders icon text when provided", () => {
-    render(
-      <IconButton iconText="Save" ariaLabel="save button">
-        <svg data-testid="save-icon" />
-      </IconButton>
-    );
+    const { getByText, getByTestId } = renderIconButton({
+      iconText: "Save",
+      children: <svg data-testid="save-icon" />,
+    });
 
-    expect(screen.getByText("Save")).toBeDefined();
-    expect(screen.getByTestId("save-icon")).toBeDefined();
+    expect(getByText("Save")).toBeInTheDocument();
+    expect(getByTestId("save-icon")).toBeInTheDocument();
   });
 
   it("passes through additional props", () => {
-    render(
-      <IconButton data-testid="custom-button" id="my-button" ariaLabel="button with props">
-        <span>Props</span>
-      </IconButton>
-    );
+    renderIconButton({ "data-testid": "custom-button", id: "my-button" });
 
     const button = screen.getByRole("button");
     expect(button).toHaveAttribute("data-testid", "custom-button");
@@ -101,12 +78,7 @@ describe("IconButton", () => {
   });
 
   it("has correct default button type", () => {
-    render(
-      <IconButton ariaLabel="default type">
-        <span>Default</span>
-      </IconButton>
-    );
-
+    renderIconButton({});
     expect(screen.getByRole("button")).toHaveAttribute("type", "button");
   });
 });

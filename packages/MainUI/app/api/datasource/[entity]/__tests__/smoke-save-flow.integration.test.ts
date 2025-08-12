@@ -2,8 +2,6 @@
  * Smoke test: Save flow to ERP via forward servlet using JSON → x-www-form-urlencoded conversion.
  */
 
-import type { NextRequest } from 'next/server';
-
 jest.mock('next/server', () => ({
   NextResponse: {
     json: (body: unknown, init?: { status?: number }) => ({ ok: true, status: init?.status ?? 200, body }),
@@ -15,39 +13,10 @@ jest.mock('@/lib/auth', () => ({
 }));
 
 import { POST } from '../route';
+import { createMockApiRequest, setupApiTestEnvironment } from '../../../_test-utils/api-test-utils';
 
 describe('Smoke: save flow via forward servlet', () => {
-  const OLD_ENV = process.env;
-  const originalFetch = global.fetch as unknown as jest.Mock;
-
-  beforeEach(() => {
-    jest.resetModules();
-    process.env = { ...OLD_ENV, ETENDO_CLASSIC_URL: 'http://erp.example/etendo' };
-    (global as any).fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: { get: () => 'application/json' },
-      text: async () => JSON.stringify({ response: { status: 0 } }),
-      json: async () => ({ response: { status: 0 } }),
-    });
-  });
-
-  afterAll(() => {
-    process.env = OLD_ENV;
-    (global as any).fetch = originalFetch;
-  });
-
-  function makeRequest(url: string, jsonBody: any): NextRequest {
-    const headers = new Map<string, string>();
-    headers.set('Authorization', `Bearer Bearer-SMOKE-TOKEN`);
-    headers.set('Content-Type', 'application/json; charset=utf-8');
-    return {
-      method: 'POST',
-      headers: { get: (k: string) => headers.get(k) || null } as any,
-      url,
-      text: async () => JSON.stringify(jsonBody),
-    } as unknown as NextRequest;
-  }
+  setupApiTestEnvironment();
 
   it('forwards to /meta/forward/org.openbravo.service.datasource/:entity with encoded form body', async () => {
     const url = 'http://localhost:3000/api/datasource/Invoice?windowId=10&tabId=20&_operationType=add';
@@ -60,7 +29,13 @@ describe('Smoke: save flow via forward servlet', () => {
       oldValues: {},
     };
 
-    const req = makeRequest(url, payload);
+    const req = createMockApiRequest({
+      url,
+      method: 'POST',
+      bearer: 'Bearer-SMOKE-TOKEN',
+      jsonBody: payload,
+      contentType: 'application/json; charset=utf-8',
+    });
     const res: any = await POST(req as any, { params: { entity: 'Invoice' } } as any);
     expect(res.status).toBe(200);
 

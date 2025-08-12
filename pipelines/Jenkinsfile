@@ -189,8 +189,6 @@ spec:
                     sh """
                     cd ${REPOSITORY_NAME}
 
-                    # 1) Levantar Storybook dev server en 127.0.0.1:6006
-                    #    Los flags se pasan tras '--'
                     pnpm run storybook -- --host 127.0.0.1 --port 6006 --quiet &
                     SB_PID=\$!
                     trap "kill \$SB_PID || true" EXIT

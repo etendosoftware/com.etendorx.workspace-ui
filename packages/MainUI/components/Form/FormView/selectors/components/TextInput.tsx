@@ -15,10 +15,10 @@
  *************************************************************************
  */
 
-import type { ChangeEvent } from "react";
+import { type ChangeEvent, forwardRef } from "react";
 import type { TextInputProps } from "./types";
 
-export const TextInput = ({
+export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
   leftIcon,
   rightIcon,
   onLeftIconClick,
@@ -33,7 +33,7 @@ export const TextInput = ({
   endAdornment,
   errorText,
   ...props
-}: TextInputProps) => {
+}, ref) => {
   const isDisabled = disabled || readOnly;
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -64,6 +64,7 @@ export const TextInput = ({
           </div>
         )}
         <input
+          ref={ref}
           className={`w-full h-full py-2 border-b outline-none text-sm transition-colors
             ${leftIcon ? "pl-10" : "pl-3"} 
             ${rightIcon ? "pr-10" : "pr-3"}
@@ -88,4 +89,4 @@ export const TextInput = ({
       <div className="h-5">{errorText && <p className="text-xs text-red-500 mt-1">{errorText}</p>}</div>
     </div>
   );
-};
+});

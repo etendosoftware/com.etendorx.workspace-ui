@@ -36,7 +36,7 @@ async function fetchErpLogin(erpLoginUrl: string, body: any): Promise<Response> 
 }
 
 function extractJSessionId(erpResponse: Response): string | null {
-  let jsession: string | null = null;
+  const jsession: string | null = null;
   
   // Try to get JSESSIONID from set-cookie header
   const single = erpResponse.headers.get('set-cookie');
