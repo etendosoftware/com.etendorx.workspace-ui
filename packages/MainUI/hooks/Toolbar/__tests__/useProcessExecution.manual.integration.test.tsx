@@ -83,7 +83,16 @@ function Harness({ buttonId }: { buttonId: string }) {
       id: buttonId,
       action: "processAction",
       buttonText: "Execute",
-      processInfo: { parameters: [], _entityName: "", id: "", name: "", javaClassName: "", clientSideValidation: "", loadFunction: "", searchKey: "" },
+      processInfo: {
+        parameters: [],
+        _entityName: "",
+        id: "",
+        name: "",
+        javaClassName: "",
+        clientSideValidation: "",
+        loadFunction: "",
+        searchKey: "",
+      },
       processAction: { id: "PA1" },
     };
 
@@ -172,7 +181,7 @@ describe("useProcessExecution manual processes integration", () => {
       const { executeProcess } = useProcessExecution();
       const onRun = async () => {
         const badBtn: any = {
-          id: "TEST_BUTTON", // Valid ID 
+          id: "TEST_BUTTON", // Valid ID
           action: "unsupportedAction", // Invalid action type
           buttonText: "Execute",
           // Remove processAction and processDefinition to make it unrecognized
@@ -206,7 +215,9 @@ describe("useProcessExecution manual processes integration", () => {
   it("emits debug logs when DEBUG_MANUAL_PROCESSES is enabled", async () => {
     // Enable debug via localStorage flag
     process.env.NEXT_PUBLIC_DEBUG_MANUAL_PROCESSES = "true";
-    try { window.localStorage.setItem("DEBUG_MANUAL_PROCESSES", "true"); } catch {}
+    try {
+      window.localStorage.setItem("DEBUG_MANUAL_PROCESSES", "true");
+    } catch {}
 
     const debugSpy = jest.spyOn(logger, "debug").mockImplementation(() => {});
 

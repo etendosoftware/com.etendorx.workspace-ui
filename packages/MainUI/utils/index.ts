@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -102,7 +102,7 @@ export const parseDynamicExpression = (expr: string) => {
 
   // Transform Etendo comparison operators to JavaScript
   // Convert single = to == for comparison (avoiding conflicts with assignment)
-  const expr1 = expr0.replace(/([^=!<>])=([^=])/g, '$1==$2');
+  const expr1 = expr0.replace(/([^=!<>])=([^=])/g, "$1==$2");
 
   const expr2 = expr1.replace(/OB\.Utilities\.getValue\((\w+),\s*["']([^"']+)["']\)/g, (_, obj, prop) => {
     return `${obj}["${prop}"]`;
@@ -221,7 +221,7 @@ export const buildProcessPayload = (
   // System context fields that are needed for process execution
   const systemContext = {
     // Window/Tab metadata
-    [`inp${tab.entityName?.replace(/^C_/, '')?.toLowerCase() || 'record'}Id`]: record.id,
+    [`inp${tab.entityName?.replace(/^C_/, "")?.toLowerCase() || "record"}Id`]: record.id,
     inpTabId: String(tab.id),
     inpwindowId: String(tab.window),
     inpTableId: String(tab.table),
@@ -241,7 +241,7 @@ export const buildProcessPayload = (
 
     // Accounting dimension display logic
     ACCT_DIMENSION_DISPLAY: "",
-    "$IsAcctDimCentrally": "Y",
+    $IsAcctDimCentrally: "Y",
 
     // Element context fields (these come from accounting configuration)
     $Element_BP: record.cBpartnerId ? "Y" : "",
@@ -253,20 +253,20 @@ export const buildProcessPayload = (
     $Element_U2: record.user2Id ? "Y" : "",
 
     // Document-specific element visibility
-    "$Element_BP_ARI_H": "Y",
-    "$Element_OO_ARI_H": "Y",
-    "$Element_PJ_ARI_H": "Y",
-    "$Element_CC_ARI_H": "",
-    "$Element_U1_ARI_H": "N",
-    "$Element_U2_ARI_H": "N",
+    $Element_BP_ARI_H: "Y",
+    $Element_OO_ARI_H: "Y",
+    $Element_PJ_ARI_H: "Y",
+    $Element_CC_ARI_H: "",
+    $Element_U1_ARI_H: "N",
+    $Element_U2_ARI_H: "N",
   };
 
   // Combine all payload parts
   return {
-    ...recordValues,      // Record data with proper input names
-    ...systemContext,     // System context and metadata
-    ...processDefaults,   // Process defaults from server
-    ...userInput,         // User input from form
+    ...recordValues, // Record data with proper input names
+    ...systemContext, // System context and metadata
+    ...processDefaults, // Process defaults from server
+    ...userInput, // User input from form
   };
 };
 

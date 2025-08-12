@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -22,7 +22,15 @@ import { TabButton } from "@/components/window/TabButton";
 import { IconButton } from "@workspaceui/componentlibrary/src/components";
 import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 
-export const SubTabsSwitch = ({ tabs, current, activeTabId, onClick, onClose, onDoubleClick, collapsed }: TabsSwitchProps) => {
+export const SubTabsSwitch = ({
+  tabs,
+  current,
+  activeTabId,
+  onClick,
+  onClose,
+  onDoubleClick,
+  collapsed,
+}: TabsSwitchProps) => {
   return (
     <div
       onDoubleClick={() => {

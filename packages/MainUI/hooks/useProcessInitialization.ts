@@ -96,13 +96,13 @@ export type UseProcessInitialization = State & {
  * Hook for fetching process default values using DefaultsProcessActionHandler
  * Adapts the FormInitialization pattern for ProcessModal usage
  */
-export function useProcessInitialization({ 
-  processId, 
-  windowId, 
-  recordId, 
+export function useProcessInitialization({
+  processId,
+  windowId,
+  recordId,
   enabled = true,
   record,
-  tab
+  tab,
 }: ProcessInitializationParams): UseProcessInitialization {
   const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
   const { error, processInitialization, loading } = state;
@@ -112,77 +112,83 @@ export function useProcessInitialization({
     [processId, windowId, enabled]
   );
 
-  const fetch = useCallback(async (contextData: Record<string, EntityValue> = {}) => {
-    if (!params || !enabled) return;
+  const fetch = useCallback(
+    async (contextData: Record<string, EntityValue> = {}) => {
+      if (!params || !enabled) return;
 
-    try {
-      // Build complete payload with all system context fields
-      let payload: Record<string, EntityValue>;
+      try {
+        // Build complete payload with all system context fields
+        let payload: Record<string, EntityValue>;
 
-      if (record && tab) {
-        // Use buildProcessPayload to include all system context fields
-        const processPayload = buildProcessPayload(
-          record,           // Complete record data
-          tab,             // Tab metadata for context fields
-          {},              // No process defaults yet (we're fetching them)
-          contextData      // Additional context data
-        );
+        if (record && tab) {
+          // Use buildProcessPayload to include all system context fields
+          const processPayload = buildProcessPayload(
+            record, // Complete record data
+            tab, // Tab metadata for context fields
+            {}, // No process defaults yet (we're fetching them)
+            contextData // Additional context data
+          );
 
-        // Convert to EntityValue compatible format and add process initialization specific fields
-        payload = {
-          ...Object.fromEntries(
-            Object.entries(processPayload).map(([key, value]) => [
-              key,
-              value === null ? null : String(value) // Convert to EntityValue compatible types
-            ])
-          ),
+          // Convert to EntityValue compatible format and add process initialization specific fields
+          payload = {
+            ...Object.fromEntries(
+              Object.entries(processPayload).map(([key, value]) => [
+                key,
+                value === null ? null : String(value), // Convert to EntityValue compatible types
+              ])
+            ),
+            processId,
+            windowId: windowId || "",
+            recordId: recordId || "",
+            _requestType: "defaults",
+            _timestamp: Date.now().toString(),
+          };
+        } else {
+          // Fallback to basic payload if record/tab not available
+          payload = {
+            ...contextData,
+            processId,
+            windowId: windowId || "",
+            recordId: recordId || "",
+            _requestType: "defaults",
+            _timestamp: Date.now().toString(),
+          };
+        }
+
+        logger.debug(`Fetching process defaults for process ${processId}`, {
+          windowId,
+          recordId,
+          contextKeys: Object.keys(contextData),
+          hasCompletePayload: !!(record && tab),
+          payloadFieldsCount: Object.keys(payload).length,
+        });
+
+        const data = await fetchProcessInitialization(params, payload);
+
+        logger.debug(`Process defaults fetched successfully`, {
           processId,
-          windowId: windowId || "",
-          recordId: recordId || "",
-          _requestType: "defaults",
-          _timestamp: Date.now().toString(),
-        };
-      } else {
-        // Fallback to basic payload if record/tab not available
-        payload = {
-          ...contextData,
-          processId,
-          windowId: windowId || "",
-          recordId: recordId || "",
-          _requestType: "defaults",
-          _timestamp: Date.now().toString(),
-        };
+          defaultsCount: Object.keys(data.defaults).length,
+          hasFilterExpressions: Object.keys(data.filterExpressions).length > 0,
+          refreshParent: data.refreshParent,
+        });
+
+        dispatch({ type: "FETCH_SUCCESS", payload: data });
+      } catch (err) {
+        logger.error(`Error fetching process defaults for ${processId}:`, err);
+        dispatch({ type: "FETCH_ERROR", payload: err instanceof Error ? err : new Error("Unknown error") });
       }
+    },
+    [params, enabled, processId, windowId, recordId, record, tab]
+  );
 
-      logger.debug(`Fetching process defaults for process ${processId}`, {
-        windowId,
-        recordId,
-        contextKeys: Object.keys(contextData),
-        hasCompletePayload: !!(record && tab),
-        payloadFieldsCount: Object.keys(payload).length
-      });
-
-      const data = await fetchProcessInitialization(params, payload);
-      
-      logger.debug(`Process defaults fetched successfully`, {
-        processId,
-        defaultsCount: Object.keys(data.defaults).length,
-        hasFilterExpressions: Object.keys(data.filterExpressions).length > 0,
-        refreshParent: data.refreshParent,
-      });
-
-      dispatch({ type: "FETCH_SUCCESS", payload: data });
-    } catch (err) {
-      logger.error(`Error fetching process defaults for ${processId}:`, err);
-      dispatch({ type: "FETCH_ERROR", payload: err instanceof Error ? err : new Error("Unknown error") });
-    }
-  }, [params, enabled, processId, windowId, recordId, record, tab]);
-
-  const refetch = useCallback(async (contextData: Record<string, EntityValue> = {}) => {
-    if (!params || !enabled) return;
-    dispatch({ type: "FETCH_START" });
-    await fetch(contextData);
-  }, [params, enabled, fetch]);
+  const refetch = useCallback(
+    async (contextData: Record<string, EntityValue> = {}) => {
+      if (!params || !enabled) return;
+      dispatch({ type: "FETCH_START" });
+      await fetch(contextData);
+    },
+    [params, enabled, fetch]
+  );
 
   // Auto-fetch on mount if enabled
   useMemo(() => {

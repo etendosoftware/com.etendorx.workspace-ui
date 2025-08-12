@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -109,7 +109,9 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         }
 
         // If the callout returned restricted entries for this field, expose them to selectors
-        const withEntries = (columnValues as any)[column]?.entries as Array<{ id: string; _identifier: string }> | undefined;
+        const withEntries = (columnValues as any)[column]?.entries as
+          | Array<{ id: string; _identifier: string }>
+          | undefined;
         if (withEntries && withEntries.length) {
           setValue(
             `${hqlName}$_entries`,

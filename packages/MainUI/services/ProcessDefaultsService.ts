@@ -64,7 +64,12 @@ export class ProcessDefaultsService {
 
     const validationError = validateParams(processId, windowId);
     if (validationError) {
-      logger.error("ProcessDefaultsService: Validation failed", { processId, windowId, requestId, error: validationError });
+      logger.error("ProcessDefaultsService: Validation failed", {
+        processId,
+        windowId,
+        requestId,
+        error: validationError,
+      });
       return {
         success: false,
         error: { code: "VALIDATION_ERROR", message: validationError },
@@ -120,13 +125,12 @@ export class ProcessDefaultsService {
    * Makes API request with retry logic for transient failures
    */
   private static async makeRequestWithRetry(
-    params: URLSearchParams, 
+    params: URLSearchParams,
     payload: Record<string, any>,
     attempt = 1
   ): Promise<any> {
-    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-    const shouldRetry = (error: any, attempt: number) =>
-      attempt < this.MAX_RETRIES && this.isRetryableError(error);
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    const shouldRetry = (error: any, attempt: number) => attempt < this.MAX_RETRIES && this.isRetryableError(error);
 
     try {
       const abortController = new AbortController();
@@ -158,12 +162,12 @@ export class ProcessDefaultsService {
   private static isRetryableError(error: any): boolean {
     if (error instanceof Error) {
       // Network errors are retryable
-      if (error.name === 'NetworkError' || error.message.includes('fetch')) {
+      if (error.name === "NetworkError" || error.message.includes("fetch")) {
         return true;
       }
-      
+
       // Timeout errors are retryable
-      if (error.name === 'AbortError' || error.message.includes('timeout')) {
+      if (error.name === "AbortError" || error.message.includes("timeout")) {
         return true;
       }
     }
@@ -180,36 +184,37 @@ export class ProcessDefaultsService {
    * Processes and normalizes error responses
    */
   private static processError(error: any): { code: string; message: string; details?: any } {
-    const isTimeoutError = (err: any) => err instanceof Error && err.name === 'AbortError';
-    const isNetworkError = (err: any) => err instanceof Error && (err.message.includes('fetch') || err.name === 'NetworkError');
-    const isValidationError = (err: any) => err instanceof Error && err.message.includes('required');
+    const isTimeoutError = (err: any) => err instanceof Error && err.name === "AbortError";
+    const isNetworkError = (err: any) =>
+      err instanceof Error && (err.message.includes("fetch") || err.name === "NetworkError");
+    const isValidationError = (err: any) => err instanceof Error && err.message.includes("required");
     const getStatus = (err: any) => err?.response?.status;
-    const getStatusText = (err: any) => err?.response?.statusText || 'Unknown error';
+    const getStatusText = (err: any) => err?.response?.statusText || "Unknown error";
 
     if (isTimeoutError(error)) {
       return {
-        code: 'REQUEST_TIMEOUT',
-        message: 'Request timed out while fetching process defaults',
+        code: "REQUEST_TIMEOUT",
+        message: "Request timed out while fetching process defaults",
         details: { timeout: this.REQUEST_TIMEOUT },
       };
     }
     if (isNetworkError(error)) {
       return {
-        code: 'NETWORK_ERROR',
-        message: 'Network error while fetching process defaults',
+        code: "NETWORK_ERROR",
+        message: "Network error while fetching process defaults",
         details: { originalError: error.message },
       };
     }
     if (isValidationError(error)) {
       return {
-        code: 'VALIDATION_ERROR',
+        code: "VALIDATION_ERROR",
         message: error.message,
-        details: { type: 'parameter_validation' },
+        details: { type: "parameter_validation" },
       };
     }
     if (error instanceof Error) {
       return {
-        code: 'API_ERROR',
+        code: "API_ERROR",
         message: `API error: ${error.message}`,
         details: { originalError: error.message },
       };
@@ -219,36 +224,36 @@ export class ProcessDefaultsService {
       const statusText = getStatusText(error);
       if (status === 400) {
         return {
-          code: 'BAD_REQUEST',
-          message: 'Invalid request parameters',
+          code: "BAD_REQUEST",
+          message: "Invalid request parameters",
           details: { status, statusText, data: error.response.data },
         };
       }
       if (status === 401 || status === 403) {
         return {
-          code: 'UNAUTHORIZED',
-          message: 'Authentication failed or access denied',
+          code: "UNAUTHORIZED",
+          message: "Authentication failed or access denied",
           details: { status, statusText },
         };
       }
       if (status === 404) {
         return {
-          code: 'NOT_FOUND',
-          message: 'Process or endpoint not found',
+          code: "NOT_FOUND",
+          message: "Process or endpoint not found",
           details: { status, statusText },
         };
       }
       if (status >= 500) {
         return {
-          code: 'SERVER_ERROR',
-          message: 'Internal server error',
+          code: "SERVER_ERROR",
+          message: "Internal server error",
           details: { status, statusText },
         };
       }
     }
     return {
-      code: 'UNKNOWN_ERROR',
-      message: 'An unknown error occurred',
+      code: "UNKNOWN_ERROR",
+      message: "An unknown error occurred",
       details: { error },
     };
   }
@@ -264,7 +269,7 @@ export class ProcessDefaultsService {
    * Validates the response data structure
    */
   static validateResponse(data: any): boolean {
-    if (!data || typeof data !== 'object') {
+    if (!data || typeof data !== "object") {
       return false;
     }
 
@@ -276,7 +281,7 @@ export class ProcessDefaultsService {
    * Transforms backend response to normalized format
    */
   static normalizeDefaults(responseData: any): Record<string, EntityValue> {
-    if (!responseData || typeof responseData !== 'object') {
+    if (!responseData || typeof responseData !== "object") {
       return {};
     }
 
@@ -286,7 +291,7 @@ export class ProcessDefaultsService {
     for (const [key, value] of Object.entries(responseData)) {
       if (value !== null && value !== undefined) {
         // Handle object values with identifier/value structure
-        if (typeof value === 'object' && value !== null && 'identifier' in value) {
+        if (typeof value === "object" && value !== null && "identifier" in value) {
           normalized[key] = (value as any).identifier;
         } else {
           normalized[key] = value as EntityValue;

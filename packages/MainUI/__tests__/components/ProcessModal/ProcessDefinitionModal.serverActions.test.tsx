@@ -1,4 +1,3 @@
-
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import ProcessDefinitionModal from "@/components/ProcessModal/ProcessDefinitionModal";
@@ -85,13 +84,7 @@ describe("ProcessDefinitionModal - Server Actions path", () => {
   it("calls executeProcess on click and shows pending state", async () => {
     mockExecuteProcess.mockResolvedValueOnce({ success: true, data: { ok: 1 } });
 
-    render(
-      <ProcessDefinitionModal
-        open={true}
-        onClose={jest.fn()}
-        button={button}
-      />
-    );
+    render(<ProcessDefinitionModal open={true} onClose={jest.fn()} button={button} />);
 
     const executeBtn = screen.getByRole("button", { name: /common.execute/i });
     fireEvent.click(executeBtn);

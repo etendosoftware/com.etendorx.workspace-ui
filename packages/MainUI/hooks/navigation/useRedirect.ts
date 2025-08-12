@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -27,69 +27,71 @@ export const useRedirect = () => {
   const { openWindow, buildURL, getNextOrder, windows, openWindowAndSelect } = useMultiWindowURL();
   const { getWindowMetadata, loadWindowData } = useMetadataContext();
 
-  const createBaseWindow = useCallback((windowId: string, windowIdentifier?: string) => ({
-    windowId,
-    window_identifier: windowIdentifier || windowId,
-    isActive: true,
-    order: getNextOrder(windows),
-    title: windowIdentifier || windowId,
-    selectedRecords: {},
-    tabFormStates: {},
-  }), [getNextOrder, windows]);
+  const createBaseWindow = useCallback(
+    (windowId: string, windowIdentifier?: string) => ({
+      windowId,
+      window_identifier: windowIdentifier || windowId,
+      isActive: true,
+      order: getNextOrder(windows),
+      title: windowIdentifier || windowId,
+      selectedRecords: {},
+      tabFormStates: {},
+    }),
+    [getNextOrder, windows]
+  );
 
-  const handleRecordSelection = useCallback(async (
-    windowId: string,
-    windowIdentifier: string | undefined,
-    selectedRecordId: string,
-    isInWindowRoute: boolean
-  ) => {
-    let targetTabId: string | undefined;
-    const meta = getWindowMetadata(windowId) || (await loadWindowData(windowId).catch(() => undefined));
-    
-    if (meta?.tabs?.length) {
-      const rootTab = meta.tabs.find((t) => t.tabLevel === 0) || meta.tabs[0];
-      targetTabId = rootTab?.id;
-    }
+  const handleRecordSelection = useCallback(
+    async (
+      windowId: string,
+      windowIdentifier: string | undefined,
+      selectedRecordId: string,
+      isInWindowRoute: boolean
+    ) => {
+      let targetTabId: string | undefined;
+      const meta = getWindowMetadata(windowId) || (await loadWindowData(windowId).catch(() => undefined));
 
-    if (isInWindowRoute) {
+      if (meta?.tabs?.length) {
+        const rootTab = meta.tabs.find((t) => t.tabLevel === 0) || meta.tabs[0];
+        targetTabId = rootTab?.id;
+      }
+
+      if (isInWindowRoute) {
+        if (targetTabId) {
+          openWindowAndSelect(windowId, {
+            selection: {
+              tabId: targetTabId,
+              recordId: selectedRecordId,
+              openForm: isLinkedLabelOpenInForm(),
+            },
+          });
+        } else {
+          openWindow(windowId);
+        }
+        return;
+      }
+
+      const baseWindow = createBaseWindow(windowId, windowIdentifier);
       if (targetTabId) {
-        openWindowAndSelect(windowId, {
-          selection: {
-            tabId: targetTabId,
-            recordId: selectedRecordId,
-            openForm: isLinkedLabelOpenInForm(),
-          },
-        });
-      } else {
-        openWindow(windowId);
+        baseWindow.selectedRecords = { [targetTabId]: selectedRecordId };
+        if (isLinkedLabelOpenInForm()) {
+          baseWindow.tabFormStates = {
+            [targetTabId]: {
+              recordId: selectedRecordId,
+              mode: "form",
+              formMode: "edit",
+            },
+          };
+        }
       }
-      return;
-    }
 
-    const baseWindow = createBaseWindow(windowId, windowIdentifier);
-    if (targetTabId) {
-      baseWindow.selectedRecords = { [targetTabId]: selectedRecordId };
-      if (isLinkedLabelOpenInForm()) {
-        baseWindow.tabFormStates = { 
-          [targetTabId]: { 
-            recordId: selectedRecordId, 
-            mode: "form", 
-            formMode: "edit" 
-          } 
-        };
-      }
-    }
-
-    const targetURL = buildURL([baseWindow]);
-    router.push(targetURL);
-  }, [getWindowMetadata, loadWindowData, openWindowAndSelect, openWindow, createBaseWindow, buildURL, router]);
+      const targetURL = buildURL([baseWindow]);
+      router.push(targetURL);
+    },
+    [getWindowMetadata, loadWindowData, openWindowAndSelect, openWindow, createBaseWindow, buildURL, router]
+  );
 
   const handleAction = useCallback(
-    async (
-      windowId: string | undefined,
-      windowIdentifier: string | undefined,
-      selectedRecordId?: string
-    ) => {
+    async (windowId: string | undefined, windowIdentifier: string | undefined, selectedRecordId?: string) => {
       if (!windowId) {
         console.warn("No windowId found");
         return;
@@ -116,7 +118,12 @@ export const useRedirect = () => {
   );
 
   const handleClickRedirect = useCallback(
-    (e: React.MouseEvent, windowId: string | undefined, windowIdentifier: string | undefined, selectedRecordId?: string) => {
+    (
+      e: React.MouseEvent,
+      windowId: string | undefined,
+      windowIdentifier: string | undefined,
+      selectedRecordId?: string
+    ) => {
       e.stopPropagation();
       e.preventDefault();
       handleAction(windowId, windowIdentifier, selectedRecordId);
@@ -125,7 +132,12 @@ export const useRedirect = () => {
   );
 
   const handleKeyDownRedirect = useCallback(
-    (e: React.KeyboardEvent, windowId: string | undefined, windowIdentifier: string | undefined, selectedRecordId?: string) => {
+    (
+      e: React.KeyboardEvent,
+      windowId: string | undefined,
+      windowIdentifier: string | undefined,
+      selectedRecordId?: string
+    ) => {
       e.stopPropagation();
       e.preventDefault();
       if (e.key === "Enter" || e.key === " ") {

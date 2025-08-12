@@ -1,4 +1,3 @@
-
 import { render, screen } from "@testing-library/react";
 
 // Mock TabButton to expose the "active" prop in markup for easier assertions
@@ -40,4 +39,3 @@ describe("SubTabsSwitch - activeTabId visual state", () => {
     expect(screen.getByTestId("tab-t1")).toHaveAttribute("data-active", "false");
   });
 });
-

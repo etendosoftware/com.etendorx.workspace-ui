@@ -6,7 +6,7 @@
 // In prod/serverless, consider replacing with a shared store (Redis/KV).
 
 type SessionMap = Map<string, string>;
-const globalKey = '__ERP_SESSION_STORE__';
+const globalKey = "__ERP_SESSION_STORE__";
 // biome-ignore lint/suspicious/noExplicitAny: adopt global typing safely
 const g = globalThis as any;
 const store: SessionMap = g[globalKey] ?? new Map<string, string>();

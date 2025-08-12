@@ -1,4 +1,3 @@
-
 import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
@@ -9,7 +8,7 @@ jest.mock("next/navigation", () => {
   return {
     __esModule: true,
     useRouter: () => ({ replace: replaceSpy, push: jest.fn() }),
-    useSearchParams: () => new URLSearchParams("")
+    useSearchParams: () => new URLSearchParams(""),
   };
 });
 
@@ -18,9 +17,7 @@ import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 function Harness() {
   const { openWindowAndSelect } = useMultiWindowURL();
   return (
-    <button onClick={() => openWindowAndSelect("W9", { selection: { tabId: "T10", recordId: "R77" } }) }>
-      run
-    </button>
+    <button onClick={() => openWindowAndSelect("W9", { selection: { tabId: "T10", recordId: "R77" } })}>run</button>
   );
 }
 
@@ -44,4 +41,3 @@ describe("useMultiWindowURL - openWindowAndSelect", () => {
     expect(p.get("s_W9_T10")).toBe("R77");
   });
 });
-

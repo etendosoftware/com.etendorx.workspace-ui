@@ -1,10 +1,10 @@
-import { renderHook } from '@testing-library/react';
-import { useProcessInitialState, useProcessLogicFields, useProcessFilterExpressions } from '../useProcessInitialState';
-import type { ProcessDefaultsResponse } from '@/components/ProcessModal/types/ProcessParameterExtensions';
-import type { ProcessParameter } from '@workspaceui/api-client/src/api/types';
+import { renderHook } from "@testing-library/react";
+import { useProcessInitialState, useProcessLogicFields, useProcessFilterExpressions } from "../useProcessInitialState";
+import type { ProcessDefaultsResponse } from "@/components/ProcessModal/types/ProcessParameterExtensions";
+import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
 
 // Mock logger
-jest.mock('@/utils/logger', () => ({
+jest.mock("@/utils/logger", () => ({
   logger: {
     debug: jest.fn(),
     warn: jest.fn(),
@@ -13,230 +13,204 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
-describe('useProcessInitialState', () => {
+describe("useProcessInitialState", () => {
   const mockParameters: ProcessParameter[] = [
     {
-      id: '1',
-      name: 'trxtype',
-      reference: 'String',
+      id: "1",
+      name: "trxtype",
+      reference: "String",
       mandatory: false,
-      defaultValue: '',
-      refList: []
+      defaultValue: "",
+      refList: [],
     },
     {
-      id: '2',
-      name: 'ad_org_id',
-      reference: 'Search',
+      id: "2",
+      name: "ad_org_id",
+      reference: "Search",
       mandatory: true,
-      defaultValue: '',
-      refList: []
+      defaultValue: "",
+      refList: [],
     },
     {
-      id: '3',
-      name: 'actual_payment',
-      reference: 'Amount',
+      id: "3",
+      name: "actual_payment",
+      reference: "Amount",
       mandatory: false,
-      defaultValue: '',
-      refList: []
+      defaultValue: "",
+      refList: [],
     },
     {
-      id: '4',
-      name: 'issotrx',
-      reference: 'Boolean',
+      id: "4",
+      name: "issotrx",
+      reference: "Boolean",
       mandatory: false,
-      defaultValue: '',
-      refList: []
-    }
+      defaultValue: "",
+      refList: [],
+    },
   ];
 
   const mockProcessDefaults: ProcessDefaultsResponse = {
     defaults: {
-      "trxtype": "",
-      "ad_org_id": {
-        "value": "E443A31992CB4635AFCAEABE7183CE85",
-        "identifier": "F&B España - Región Norte"
+      trxtype: "",
+      ad_org_id: {
+        value: "E443A31992CB4635AFCAEABE7183CE85",
+        identifier: "F&B España - Región Norte",
       },
-      "bslamount": "",
-      "payment_documentno": "<1000373>",
-      "actual_payment": "1.85",
-      "issotrx": true,
-      "StdPrecision": "2",
-      "trxtype_display_logic": "N",
-      "ad_org_id_display_logic": "N",
-      "actual_payment_readonly_logic": "N",
-      "received_from_readonly_logic": "Y"
+      bslamount: "",
+      payment_documentno: "<1000373>",
+      actual_payment: "1.85",
+      issotrx: true,
+      StdPrecision: "2",
+      trxtype_display_logic: "N",
+      ad_org_id_display_logic: "N",
+      actual_payment_readonly_logic: "N",
+      received_from_readonly_logic: "Y",
     },
     filterExpressions: {
-      "order_invoice": {
-        "paymentMethodName": "Transferencia"
+      order_invoice: {
+        paymentMethodName: "Transferencia",
       },
-      "glitem": {},
-      "credit_to_use": {}
+      glitem: {},
+      credit_to_use: {},
     },
-    refreshParent: true
+    refreshParent: true,
   };
 
-  describe('useProcessInitialState', () => {
-    it('should return null when no process defaults provided', () => {
-      const { result } = renderHook(() => 
-        useProcessInitialState(null, mockParameters)
-      );
+  describe("useProcessInitialState", () => {
+    it("should return null when no process defaults provided", () => {
+      const { result } = renderHook(() => useProcessInitialState(null, mockParameters));
 
       expect(result.current).toBeNull();
     });
 
-    it('should return empty object when no defaults in process response', () => {
+    it("should return empty object when no defaults in process response", () => {
       const emptyDefaults: ProcessDefaultsResponse = {
         defaults: {},
         filterExpressions: {},
-        refreshParent: false
+        refreshParent: false,
       };
 
-      const { result } = renderHook(() => 
-        useProcessInitialState(emptyDefaults, mockParameters)
-      );
+      const { result } = renderHook(() => useProcessInitialState(emptyDefaults, mockParameters));
 
       expect(result.current).toEqual({});
     });
 
-    it('should process simple values correctly', () => {
-      const { result } = renderHook(() => 
-        useProcessInitialState(mockProcessDefaults, mockParameters)
-      );
+    it("should process simple values correctly", () => {
+      const { result } = renderHook(() => useProcessInitialState(mockProcessDefaults, mockParameters));
 
       const initialState = result.current;
       expect(initialState).not.toBeNull();
-      expect(initialState!['trxtype']).toBe('');
-      expect(initialState!['payment_documentno']).toBe('<1000373>');
-      expect(initialState!['actual_payment']).toBe('1.85');
-      expect(initialState!['issotrx']).toBe(true);
-      expect(initialState!['StdPrecision']).toBe('2');
+      expect(initialState!["trxtype"]).toBe("");
+      expect(initialState!["payment_documentno"]).toBe("<1000373>");
+      expect(initialState!["actual_payment"]).toBe("1.85");
+      expect(initialState!["issotrx"]).toBe(true);
+      expect(initialState!["StdPrecision"]).toBe("2");
     });
 
-    it('should process reference values correctly', () => {
-      const { result } = renderHook(() => 
-        useProcessInitialState(mockProcessDefaults, mockParameters)
-      );
+    it("should process reference values correctly", () => {
+      const { result } = renderHook(() => useProcessInitialState(mockProcessDefaults, mockParameters));
 
       const initialState = result.current;
       expect(initialState).not.toBeNull();
-      expect(initialState!['ad_org_id']).toBe('E443A31992CB4635AFCAEABE7183CE85');
-      expect(initialState!['ad_org_id$_identifier']).toBe('F&B España - Región Norte');
+      expect(initialState!["ad_org_id"]).toBe("E443A31992CB4635AFCAEABE7183CE85");
+      expect(initialState!["ad_org_id$_identifier"]).toBe("F&B España - Región Norte");
     });
 
-    it('should skip logic fields', () => {
-      const { result } = renderHook(() => 
-        useProcessInitialState(mockProcessDefaults, mockParameters)
-      );
+    it("should skip logic fields", () => {
+      const { result } = renderHook(() => useProcessInitialState(mockProcessDefaults, mockParameters));
 
       const initialState = result.current;
       expect(initialState).not.toBeNull();
-      expect(initialState!['trxtype_display_logic']).toBeUndefined();
-      expect(initialState!['ad_org_id_display_logic']).toBeUndefined();
-      expect(initialState!['actual_payment_readonly_logic']).toBeUndefined();
+      expect(initialState!["trxtype_display_logic"]).toBeUndefined();
+      expect(initialState!["ad_org_id_display_logic"]).toBeUndefined();
+      expect(initialState!["actual_payment_readonly_logic"]).toBeUndefined();
     });
 
-    it('should handle parameters without parameter mapping', () => {
-      const { result } = renderHook(() => 
-        useProcessInitialState(mockProcessDefaults, [])
-      );
+    it("should handle parameters without parameter mapping", () => {
+      const { result } = renderHook(() => useProcessInitialState(mockProcessDefaults, []));
 
       const initialState = result.current;
       expect(initialState).not.toBeNull();
       // Should still process fields even without parameter mapping
-      expect(initialState!['trxtype']).toBe('');
-      expect(initialState!['ad_org_id']).toBe('E443A31992CB4635AFCAEABE7183CE85');
+      expect(initialState!["trxtype"]).toBe("");
+      expect(initialState!["ad_org_id"]).toBe("E443A31992CB4635AFCAEABE7183CE85");
     });
   });
 
-  describe('useProcessLogicFields', () => {
-    it('should extract display logic fields', () => {
-      const { result } = renderHook(() => 
-        useProcessLogicFields(mockProcessDefaults)
-      );
+  describe("useProcessLogicFields", () => {
+    it("should extract display logic fields", () => {
+      const { result } = renderHook(() => useProcessLogicFields(mockProcessDefaults));
 
       const logicFields = result.current;
-      expect(logicFields['trxtype.display']).toBe(false); // "N" -> false
-      expect(logicFields['ad_org_id.display']).toBe(false); // "N" -> false
+      expect(logicFields["trxtype.display"]).toBe(false); // "N" -> false
+      expect(logicFields["ad_org_id.display"]).toBe(false); // "N" -> false
     });
 
-    it('should extract readonly logic fields', () => {
-      const { result } = renderHook(() => 
-        useProcessLogicFields(mockProcessDefaults)
-      );
+    it("should extract readonly logic fields", () => {
+      const { result } = renderHook(() => useProcessLogicFields(mockProcessDefaults));
 
       const logicFields = result.current;
-      expect(logicFields['actual_payment.readonly']).toBe(false); // "N" -> false
-      expect(logicFields['received_from.readonly']).toBe(true); // "Y" -> true
+      expect(logicFields["actual_payment.readonly"]).toBe(false); // "N" -> false
+      expect(logicFields["received_from.readonly"]).toBe(true); // "Y" -> true
     });
 
-    it('should return empty object when no defaults provided', () => {
-      const { result } = renderHook(() => 
-        useProcessLogicFields(null)
-      );
+    it("should return empty object when no defaults provided", () => {
+      const { result } = renderHook(() => useProcessLogicFields(null));
 
       expect(result.current).toEqual({});
     });
   });
 
-  describe('useProcessFilterExpressions', () => {
-    it('should return filter expressions from response', () => {
-      const { result } = renderHook(() => 
-        useProcessFilterExpressions(mockProcessDefaults)
-      );
+  describe("useProcessFilterExpressions", () => {
+    it("should return filter expressions from response", () => {
+      const { result } = renderHook(() => useProcessFilterExpressions(mockProcessDefaults));
 
       const filterExpressions = result.current;
       expect(filterExpressions).toEqual({
-        "order_invoice": {
-          "paymentMethodName": "Transferencia"
+        order_invoice: {
+          paymentMethodName: "Transferencia",
         },
-        "glitem": {},
-        "credit_to_use": {}
+        glitem: {},
+        credit_to_use: {},
       });
     });
 
-    it('should return empty object when no filter expressions', () => {
+    it("should return empty object when no filter expressions", () => {
       const noFilters: ProcessDefaultsResponse = {
         defaults: {},
         filterExpressions: {},
-        refreshParent: false
+        refreshParent: false,
       };
 
-      const { result } = renderHook(() => 
-        useProcessFilterExpressions(noFilters)
-      );
+      const { result } = renderHook(() => useProcessFilterExpressions(noFilters));
 
       expect(result.current).toEqual({});
     });
 
-    it('should return empty object when no response provided', () => {
-      const { result } = renderHook(() => 
-        useProcessFilterExpressions(null)
-      );
+    it("should return empty object when no response provided", () => {
+      const { result } = renderHook(() => useProcessFilterExpressions(null));
 
       expect(result.current).toEqual({});
     });
   });
 
-  describe('Error handling', () => {
-    it('should handle malformed field processing gracefully', () => {
+  describe("Error handling", () => {
+    it("should handle malformed field processing gracefully", () => {
       const malformedDefaults: ProcessDefaultsResponse = {
         defaults: {
-          "normal_field": "normal_value",
-          "broken_field": { value: 123 } as any, // Invalid reference object
+          normal_field: "normal_value",
+          broken_field: { value: 123 } as any, // Invalid reference object
         },
         filterExpressions: {},
-        refreshParent: false
+        refreshParent: false,
       };
 
-      const { result } = renderHook(() => 
-        useProcessInitialState(malformedDefaults, mockParameters)
-      );
+      const { result } = renderHook(() => useProcessInitialState(malformedDefaults, mockParameters));
 
       const initialState = result.current;
       expect(initialState).not.toBeNull();
-      expect(initialState!['normal_field']).toBe('normal_value');
-      expect(initialState!['broken_field']).toBe('{"value":123}'); // Should stringify object
+      expect(initialState!["normal_field"]).toBe("normal_value");
+      expect(initialState!["broken_field"]).toBe('{"value":123}'); // Should stringify object
     });
   });
 });

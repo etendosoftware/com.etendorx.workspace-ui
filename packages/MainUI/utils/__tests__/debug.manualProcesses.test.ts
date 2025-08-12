@@ -4,14 +4,13 @@ describe("isDebugManualProcesses", () => {
   const prev = { ...process.env };
   beforeEach(() => {
     jest.resetModules();
-    for (const k of [
-      "NEXT_PUBLIC_DEBUG_MANUAL_PROCESSES",
-      "DEBUG_MANUAL_PROCESSES",
-    ]) {
+    for (const k of ["NEXT_PUBLIC_DEBUG_MANUAL_PROCESSES", "DEBUG_MANUAL_PROCESSES"]) {
       // @ts-ignore
       delete process.env[k];
     }
-    try { window.localStorage.clear(); } catch {}
+    try {
+      window.localStorage.clear();
+    } catch {}
   });
   afterAll(() => {
     process.env = prev;

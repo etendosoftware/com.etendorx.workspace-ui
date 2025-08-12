@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -17,7 +17,7 @@
 
 import { CacheStore } from "./cache";
 import { Client, type Interceptor } from "./client";
-import { API_DEFAULT_CACHE_DURATION, } from "./constants";
+import { API_DEFAULT_CACHE_DURATION } from "./constants";
 import { LocationClient } from "./location";
 import type * as Etendo from "./types";
 import type { Menu } from "./types";
@@ -36,17 +36,15 @@ export class Metadata {
 
   public static setBaseUrl(url: string) {
     // Instead of connecting directly to ERP, use Next.js proxy routes
-    const baseUrl = typeof window !== 'undefined' 
-      ? window.location.origin 
-      : 'http://localhost:3000'; // fallback for SSR
-    
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"; // fallback for SSR
+
     // Route metadata and kernel through ERP proxy
-    Metadata.client.setBaseUrl(baseUrl + '/api/erp');
+    Metadata.client.setBaseUrl(baseUrl + "/api/erp");
     // Kernel endpoints are called via forward servlet
-    Metadata.kernelClient.setBaseUrl(baseUrl + '/api/erp/meta/forward/org.openbravo.client.kernel');
-    Metadata.datasourceServletClient.setBaseUrl(baseUrl + '/api/datasource');
+    Metadata.kernelClient.setBaseUrl(baseUrl + "/api/erp/meta/forward/org.openbravo.client.kernel");
+    Metadata.datasourceServletClient.setBaseUrl(baseUrl + "/api/datasource");
     Metadata.loginClient.setBaseUrl(baseUrl);
-    Metadata.locationClient.setBaseUrl(baseUrl + '/api/erp');
+    Metadata.locationClient.setBaseUrl(baseUrl + "/api/erp");
   }
 
   public static setLanguage(value: string) {
@@ -89,9 +87,9 @@ export class Metadata {
 
   public static getDatasource(id: string, body: BodyInit | Record<string, unknown> | null | undefined) {
     // Use the new datasource format that matches our proxy
-    return Metadata.datasourceServletClient.post('', {
+    return Metadata.datasourceServletClient.post("", {
       entity: id,
-      params: body
+      params: body,
     });
   }
 

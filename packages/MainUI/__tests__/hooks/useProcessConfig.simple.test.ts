@@ -18,48 +18,51 @@ const useProcessConfigLogic = (props: {
   javaClassName?: string;
 }) => {
   const { useState, useCallback } = require("react");
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [config, setConfig] = useState<any>(null);
 
-  const fetchConfig = useCallback(async (payload: Record<string, any> = {}) => {
-    if (!props.processId || !props.windowId || !props.tabId) {
-      return null;
-    }
+  const fetchConfig = useCallback(
+    async (payload: Record<string, any> = {}) => {
+      if (!props.processId || !props.windowId || !props.tabId) {
+        return null;
+      }
 
-    // This is the core logic we're testing
-    const params = new URLSearchParams({
-      processId: props.processId,
-      windowId: props.windowId,
-      _action: props.javaClassName || "org.openbravo.client.application.process.DefaultsProcessActionHandler",
-    });
-
-    const requestPayload = { ...payload };
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await mockKernelPost(`?${params}`, requestPayload);
-
-      const processedConfig = {
+      // This is the core logic we're testing
+      const params = new URLSearchParams({
         processId: props.processId,
-        defaults: response?.data?.defaults || {},
-        filterExpressions: response?.data?.filterExpressions || {},
-        refreshParent: !!response?.data?.refreshParent,
-      };
+        windowId: props.windowId,
+        _action: props.javaClassName || "org.openbravo.client.application.process.DefaultsProcessActionHandler",
+      });
 
-      setConfig(processedConfig);
-      return processedConfig;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error fetching process config";
-      setError(new Error(errorMessage));
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [props.processId, props.windowId, props.tabId, props.javaClassName]);
+      const requestPayload = { ...payload };
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await mockKernelPost(`?${params}`, requestPayload);
+
+        const processedConfig = {
+          processId: props.processId,
+          defaults: response?.data?.defaults || {},
+          filterExpressions: response?.data?.filterExpressions || {},
+          refreshParent: !!response?.data?.refreshParent,
+        };
+
+        setConfig(processedConfig);
+        return processedConfig;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Unknown error fetching process config";
+        setError(new Error(errorMessage));
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [props.processId, props.windowId, props.tabId, props.javaClassName]
+  );
 
   return {
     fetchConfig,
@@ -72,7 +75,7 @@ const useProcessConfigLogic = (props: {
 describe("useProcessConfig Core Logic", () => {
   const defaultProps = {
     processId: "test-process-id",
-    windowId: "test-window-id", 
+    windowId: "test-window-id",
     tabId: "test-tab-id",
   };
 
@@ -82,11 +85,11 @@ describe("useProcessConfig Core Logic", () => {
 
   describe("Core functionality", () => {
     it("should return null when required parameters are missing", async () => {
-      const { result } = renderHook(() => 
-        useProcessConfigLogic({ 
-          processId: "", 
-          windowId: "test-window-id", 
-          tabId: "test-tab-id" 
+      const { result } = renderHook(() =>
+        useProcessConfigLogic({
+          processId: "",
+          windowId: "test-window-id",
+          tabId: "test-tab-id",
         })
       );
 
@@ -145,12 +148,12 @@ describe("useProcessConfig Core Logic", () => {
     it("should handle successful response and update state", async () => {
       const mockResponse = {
         data: {
-          defaults: { 
+          defaults: {
             param1: { value: "value1", identifier: "Identifier1" },
-            param2: { value: "value2", identifier: "Identifier2" }
+            param2: { value: "value2", identifier: "Identifier2" },
           },
-          filterExpressions: { 
-            gridParam: { field1: "expression1" }
+          filterExpressions: {
+            gridParam: { field1: "expression1" },
           },
           refreshParent: true,
         },
@@ -205,13 +208,13 @@ describe("useProcessConfig Core Logic", () => {
       const mockResponse = {
         data: { defaults: {}, filterExpressions: {} },
       };
-      
+
       // Create a promise we can control
       let resolvePromise: (value: any) => void;
       const controlledPromise = new Promise((resolve) => {
         resolvePromise = resolve;
       });
-      
+
       mockKernelPost.mockReturnValueOnce(controlledPromise);
 
       const { result } = renderHook(() => useProcessConfigLogic(defaultProps));
@@ -251,7 +254,7 @@ describe("useProcessConfig Core Logic", () => {
     it("should construct correct URL parameters with custom javaClassName", () => {
       const javaClassName = "com.etendoerp.copilot.process.CheckHostsButton";
       const params = new URLSearchParams({
-        processId: "test-process", 
+        processId: "test-process",
         windowId: "test-window",
         _action: javaClassName,
       });
@@ -266,7 +269,10 @@ describe("useProcessConfig Core Logic", () => {
         { javaClassName: undefined, expected: "org.openbravo.client.application.process.DefaultsProcessActionHandler" },
         { javaClassName: "", expected: "org.openbravo.client.application.process.DefaultsProcessActionHandler" },
         { javaClassName: "com.test.CustomProcess", expected: "com.test.CustomProcess" },
-        { javaClassName: "com.etendoerp.copilot.process.CheckHostsButton", expected: "com.etendoerp.copilot.process.CheckHostsButton" },
+        {
+          javaClassName: "com.etendoerp.copilot.process.CheckHostsButton",
+          expected: "com.etendoerp.copilot.process.CheckHostsButton",
+        },
       ];
 
       testCases.forEach(({ javaClassName, expected }) => {

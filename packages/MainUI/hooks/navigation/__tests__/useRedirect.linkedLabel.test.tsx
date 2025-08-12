@@ -1,4 +1,3 @@
-
 import { render, fireEvent, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
@@ -13,7 +12,7 @@ jest.mock("next/navigation", () => {
     __esModule: true,
     useRouter: () => ({ push: pushSpy, replace: replaceSpy }),
     usePathname: () => "/", // not in window route
-    useSearchParams: () => new URLSearchParams("")
+    useSearchParams: () => new URLSearchParams(""),
   };
 });
 

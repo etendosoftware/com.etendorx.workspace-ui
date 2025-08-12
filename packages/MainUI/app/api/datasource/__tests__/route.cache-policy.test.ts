@@ -53,7 +53,6 @@ jest.mock("@/app/api/_utils/datasourceCache", () => ({
   shouldCacheDatasource: jest.fn().mockReturnValue(false),
 }));
 
-
 describe("Datasource cache policy (disabled)", () => {
   const { setup, cleanup } = setupDatasourceTestEnvironment();
 

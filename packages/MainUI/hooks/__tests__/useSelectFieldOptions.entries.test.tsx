@@ -20,8 +20,8 @@ describe("useSelectFieldOptions entries injection", () => {
       const methods = useForm({
         defaultValues: {
           cTaxId: "TAX1",
-          "cTaxId$_identifier": "Tax 1",
-          "cTaxId$_entries": [
+          cTaxId$_identifier: "Tax 1",
+          cTaxId$_entries: [
             { id: "TAX1", label: "Tax 1" },
             { id: "TAX2", label: "Tax 2" },
           ],
@@ -39,4 +39,3 @@ describe("useSelectFieldOptions entries injection", () => {
     expect(screen.getByTestId("count").textContent).toBe("2");
   });
 });
-

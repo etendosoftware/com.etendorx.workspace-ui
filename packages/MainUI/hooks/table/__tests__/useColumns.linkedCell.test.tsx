@@ -1,4 +1,3 @@
-
 import { render, fireEvent, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
@@ -60,4 +59,3 @@ describe("useColumns - reference cell links carry record id", () => {
     expect(typeof windowIdentifier).toBe("string");
   });
 });
-

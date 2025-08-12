@@ -1,48 +1,48 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { unstable_cache } from 'next/cache';
-import { getUserContext, extractBearerToken } from '@/lib/auth';
-import { shouldCacheDatasource } from '@/app/api/_utils/datasourceCache';
-import { getCombinedErpCookieHeader, shouldPassthroughJson } from '@/app/api/_utils/forwardConfig';
+import { type NextRequest, NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
+import { getUserContext, extractBearerToken } from "@/lib/auth";
+import { shouldCacheDatasource } from "@/app/api/_utils/datasourceCache";
+import { getCombinedErpCookieHeader, shouldPassthroughJson } from "@/app/api/_utils/forwardConfig";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 // Cached function that includes the full user context in its key
 const getCachedDatasource = unstable_cache(
   async (userToken: string, entity: string, params: any) => fetchDatasource(userToken, entity, params),
-  ['datasource_v2']
+  ["datasource_v2"]
 );
 
-async function fetchDatasource(userToken: string, entity: string, params: any, cookieHeader = '') {
+async function fetchDatasource(userToken: string, entity: string, params: any, cookieHeader = "") {
   const erpUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/forward/org.openbravo.service.datasource/${entity}`;
 
   // Convert params object to URLSearchParams for the ERP request
   const formData = new URLSearchParams();
   for (const [key, value] of Object.entries(params || {})) {
-    if (key === 'criteria' && Array.isArray(value)) {
+    if (key === "criteria" && Array.isArray(value)) {
       // Datasource expects a single JSON array string under 'criteria'
-      const arrayStr = `[${value.join(',')}]`;
-      formData.set('criteria', arrayStr);
+      const arrayStr = `[${value.join(",")}]`;
+      formData.set("criteria", arrayStr);
     } else if (Array.isArray(value)) {
       for (const item of value) {
         formData.append(key, String(item));
       }
-    } else if (typeof value !== 'undefined' && value !== null) {
+    } else if (typeof value !== "undefined" && value !== null) {
       formData.append(key, String(value));
     }
   }
 
   const headers: Record<string, string> = {
-    'Authorization': `Bearer ${userToken}`,
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'Accept': 'application/json',
+    Authorization: `Bearer ${userToken}`,
+    "Content-Type": "application/x-www-form-urlencoded",
+    Accept: "application/json",
   };
-  
+
   if (cookieHeader) {
-    headers['Cookie'] = cookieHeader;
+    headers["Cookie"] = cookieHeader;
   }
 
   const response = await fetch(erpUrl, {
-    method: 'POST',
+    method: "POST",
     headers,
     body: formData,
   });
@@ -53,21 +53,21 @@ async function fetchDatasource(userToken: string, entity: string, params: any, c
   return response.json();
 }
 
-async function fetchDatasourceJson(userToken: string, entity: string, params: any, cookieHeader = '') {
+async function fetchDatasourceJson(userToken: string, entity: string, params: any, cookieHeader = "") {
   const erpUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/forward/org.openbravo.service.datasource/${entity}`;
 
   const headers: Record<string, string> = {
-    'Authorization': `Bearer ${userToken}`,
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
+    Authorization: `Bearer ${userToken}`,
+    Accept: "application/json",
+    "Content-Type": "application/json",
   };
-  
+
   if (cookieHeader) {
-    headers['Cookie'] = cookieHeader;
+    headers["Cookie"] = cookieHeader;
   }
 
   const response = await fetch(erpUrl, {
-    method: 'POST',
+    method: "POST",
     headers,
     body: JSON.stringify(params),
   });
@@ -79,9 +79,9 @@ async function fetchDatasourceJson(userToken: string, entity: string, params: an
 }
 
 function isSmartClientPayload(params: any): boolean {
-  if (!params || typeof params !== 'object') return false;
+  if (!params || typeof params !== "object") return false;
   const keys = Object.keys(params);
-  return ['operationType','data','oldValues','dataSource','componentId','csrfToken'].some(k => keys.includes(k));
+  return ["operationType", "data", "oldValues", "dataSource", "componentId", "csrfToken"].some((k) => keys.includes(k));
 }
 
 // Use shared extractor from auth utilities
@@ -90,24 +90,25 @@ export async function POST(request: NextRequest) {
   try {
     const userToken = extractBearerToken(request);
     if (!userToken) {
-      return NextResponse.json({ error: 'Unauthorized - Missing Bearer token' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized - Missing Bearer token" }, { status: 401 });
     }
     // 1. Extract the full user context from the session
     const userContext = await getUserContext(request);
     if (!userContext) {
-      return NextResponse.json({ error: 'Unauthorized - Missing user context' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized - Missing user context" }, { status: 401 });
     }
 
     const { entity, params } = await request.json();
     if (!entity) {
-      return NextResponse.json({ error: 'Entity is required' }, { status: 400 });
+      return NextResponse.json({ error: "Entity is required" }, { status: 400 });
     }
 
     // 2. Decide caching policy per-entity (disabled by default)
     const useCache = shouldCacheDatasource(entity, params);
     const combinedCookie = getCombinedErpCookieHeader(request, userToken);
-    const contentType = request.headers.get('Content-Type') || '';
-    const passJson = shouldPassthroughJson(request) && contentType.includes('application/json') && isSmartClientPayload(params);
+    const contentType = request.headers.get("Content-Type") || "";
+    const passJson =
+      shouldPassthroughJson(request) && contentType.includes("application/json") && isSmartClientPayload(params);
     let data;
     if (useCache) {
       data = await getCachedDatasource(userToken, entity, params);
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json(data);
   } catch (error) {
-    console.error('API Route /api/datasource Error:', error);
-    return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
+    console.error("API Route /api/datasource Error:", error);
+    return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });
   }
 }

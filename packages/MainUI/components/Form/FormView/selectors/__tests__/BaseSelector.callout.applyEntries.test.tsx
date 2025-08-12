@@ -1,4 +1,3 @@
-
 import { render, act } from "@testing-library/react";
 import { FormProvider, useForm } from "react-hook-form";
 import { BaseSelector } from "@/components/Form/FormView/selectors/BaseSelector";
@@ -16,7 +15,15 @@ jest.mock("@/hooks/useUserContext", () => ({
   useUserContext: () => ({ session: {} }),
 }));
 jest.mock("@/contexts/tab", () => ({
-  useTabContext: () => ({ tab: { id: "TAB1", table: "TBL", window: "WIN", entityName: "InvoiceLine", fields: { id: { columnName: "id", inputName: "id" } } } }),
+  useTabContext: () => ({
+    tab: {
+      id: "TAB1",
+      table: "TBL",
+      window: "WIN",
+      entityName: "InvoiceLine",
+      fields: { id: { columnName: "id", inputName: "id" } },
+    },
+  }),
 }));
 jest.mock("@/hooks/useCallout", () => ({
   useCallout: () => async () => ({

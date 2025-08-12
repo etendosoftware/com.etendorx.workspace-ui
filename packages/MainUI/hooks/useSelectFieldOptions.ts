@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -30,7 +30,11 @@ const buildOptionsFromInjected = (injectedEntries: any[]): SelectProps["options"
   return result;
 };
 
-const buildOptionsFromRecords = (records: EntityData[], idKey: string, identifierKey: string): SelectProps["options"] => {
+const buildOptionsFromRecords = (
+  records: EntityData[],
+  idKey: string,
+  identifierKey: string
+): SelectProps["options"] => {
   const result: SelectProps["options"] = [];
   for (const record of records) {
     const label = record[identifierKey] as string;
@@ -42,7 +46,11 @@ const buildOptionsFromRecords = (records: EntityData[], idKey: string, identifie
   return result;
 };
 
-const addCurrentValueIfMissing = (options: SelectProps["options"], currentValue: string, currentIdentifier: string): SelectProps["options"] => {
+const addCurrentValueIfMissing = (
+  options: SelectProps["options"],
+  currentValue: string,
+  currentIdentifier: string
+): SelectProps["options"] => {
   const currentOption = options.find((record) => record.id === currentValue);
   if (!currentOption && currentValue && currentIdentifier) {
     return [...options, { id: currentValue, label: currentIdentifier, data: {} }];
@@ -62,7 +70,7 @@ export const useSelectFieldOptions = (field: Field, records: EntityData[]) => {
 
   return useMemo(() => {
     const injected = Array.isArray(injectedEntries) ? injectedEntries : [];
-    
+
     let result: SelectProps["options"];
     if (injected.length > 0) {
       result = buildOptionsFromInjected(injected);

@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -16,18 +16,18 @@
  */
 /**
  * @fileoverview ProcessDefinitionModal - Modal component for executing Etendo process definitions
- * 
+ *
  * This component provides a comprehensive interface for executing different types of processes:
  * - Window Reference Processes: Processes that display a grid for record selection
- * - Direct Java Processes: Processes executed directly via servlet calls  
+ * - Direct Java Processes: Processes executed directly via servlet calls
  * - String Function Processes: Processes executed via client-side JavaScript functions
- * 
+ *
  * The modal handles:
  * - Parameter rendering with various input types
  * - Default value loading via DefaultsProcessActionHandler
  * - Process execution with proper error handling
  * - Response message display and success/error states
- * 
+ *
  */
 import { useTabContext } from "@/contexts/tab";
 import { useProcessConfig } from "@/hooks/datasource/useProcessDatasourceConfig";
@@ -51,11 +51,7 @@ import Modal from "../Modal";
 import Loading from "../loading";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
-import type {
-  ProcessDefinitionModalContentProps,
-  ProcessDefinitionModalProps,
-  RecordValues,
-} from "./types";
+import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import { PROCESS_DEFINITION_DATA } from "@/utils/processes/definition/constants";
 
 /** Fallback object for record values when no record context exists */
@@ -66,12 +62,12 @@ const WINDOW_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW;
 
 /**
  * ProcessDefinitionModalContent - Core modal component for process execution
- * 
+ *
  * Handles three types of process execution:
  * 1. Window Reference Processes - Displays a grid for record selection
  * 2. Direct Java Processes - Executes servlet directly using javaClassName
  * 3. String Function Processes - Executes client-side JavaScript functions
- * 
+ *
  * @param props - Component props
  * @param props.onClose - Callback when modal is closed
  * @param props.button - Process definition button configuration
@@ -134,7 +130,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     recordId: record?.id ? String(record.id) : undefined, // Convert EntityValue to string
     enabled: !!processId && !!windowId && open, // Only fetch when modal is open
     record: record || undefined, // Pass complete record data
-    tab: tab || undefined,       // Pass tab metadata
+    tab: tab || undefined, // Pass tab metadata
   });
 
   // Process form initial state (similar to useFormInitialState)
@@ -156,12 +152,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     if (!record || !tab) return {};
 
     // Build base payload with system context fields
-    const basePayload = buildProcessPayload(
-      record,
-      tab,
-      {},
-      {}
-    );
+    const basePayload = buildProcessPayload(record, tab, {}, {});
 
     return {
       ...basePayload,
@@ -179,7 +170,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   // Reset form values when defaults are loaded
   useEffect(() => {
     if (hasInitialData && Object.keys(availableFormData).length > 0) {
-      console.log('Resetting form with new values:', availableFormData);
+      console.log("Resetting form with new values:", availableFormData);
       form.reset(availableFormData);
     }
   }, [hasInitialData, availableFormData, form]);
@@ -262,10 +253,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   /**
    * Main process execution handler - routes to appropriate execution method
-   * 
+   *
    * Execution Priority:
    * 1. Window Reference Process (hasWindowReference = true)
-   * 2. Direct Java Process (javaClassName exists, no onProcess)  
+   * 2. Direct Java Process (javaClassName exists, no onProcess)
    * 3. String Function Process (onProcess exists)
    */
   const handleExecute = useCallback(async () => {
@@ -287,10 +278,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     startTransition(async () => {
       // Build complete payload with all context fields
       const completePayload = buildProcessPayload(
-        record || {},          // Complete record data (fallback to empty object)
-        tab,                   // Tab metadata
-        initialState || {},    // Process defaults from server (handle null case)
-        form.getValues()       // User input from form
+        record || {}, // Complete record data (fallback to empty object)
+        tab, // Tab metadata
+        initialState || {}, // Process defaults from server (handle null case)
+        form.getValues() // User input from form
       );
       try {
         const stringFnResult = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
@@ -298,7 +289,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           windowId: tab.window,
           entityName: tab.entityName,
           recordIds: selectedRecords?.map((r) => r.id),
-          ...completePayload,    // Use complete payload instead of just form values
+          ...completePayload, // Use complete payload instead of just form values
         });
 
         const responseMessage = stringFnResult.responseActions[0].showMsgInProcessView;
@@ -349,13 +340,13 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     if (initializationError) {
       logger.warn("Process initialization error:", initializationError);
     }
-    
+
     if (hasInitialData) {
       logger.debug("Process defaults loaded successfully", {
         processId,
         fieldsCount: Object.keys(initialState || {}).length,
         hasLogicFields: Object.keys(logicFields || {}).length > 0,
-        hasFilterExpressions: Object.keys(filterExpressions || {}).length > 0
+        hasFilterExpressions: Object.keys(filterExpressions || {}).length > 0,
       });
     }
   }, [initializationError, hasInitialData, processId, initialState, logicFields, filterExpressions]);
@@ -454,8 +445,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       }
       // Use new ProcessParameterSelector for enhanced field reference support
       return (
-        <ProcessParameterSelector 
-          key={`param-${parameter.id || parameter.name}-${parameter.reference || 'default'}`}
+        <ProcessParameterSelector
+          key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
           parameter={parameter}
           logicFields={logicFields} // Pass logic fields from process defaults
         />
@@ -549,10 +540,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
 /**
  * ProcessDefinitionModal - Main export component with null check
- * 
+ *
  * Provides a guard against null button props and forwards all props to the content component.
  * This wrapper ensures the modal only renders when a valid process button is provided.
- * 
+ *
  * @param props - Modal props including button configuration
  * @param props.button - Process definition button (nullable)
  * @param props.onSuccess - Success callback

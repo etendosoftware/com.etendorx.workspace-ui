@@ -1,5 +1,5 @@
-import type { NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
+import type { NextRequest } from "next/server";
+import { cookies } from "next/headers";
 
 export interface UserContext {
   userId: string;
@@ -23,11 +23,7 @@ export async function getUserContext(request: Request | NextRequest): Promise<Us
         const userId = stringy(payload.userId ?? payload.user ?? payload.sub);
         const clientId = stringy(payload.clientId ?? payload.client ?? payload.client_id);
         const orgId = stringy(
-          payload.orgId ??
-          payload.org ??
-          payload.organization ??
-          payload.organizationId ??
-          payload.org_id
+          payload.orgId ?? payload.org ?? payload.organization ?? payload.organizationId ?? payload.org_id
         );
         const roleId = stringy(payload.roleId ?? payload.role ?? payload.role_id);
         const warehouseId = stringy(payload.warehouseId ?? payload.warehouse ?? payload.warehouse_id);
@@ -40,11 +36,11 @@ export async function getUserContext(request: Request | NextRequest): Promise<Us
 
     // Fallback: Extract from cookies if available (legacy)
     const cookieStore = await cookies();
-    const userIdCookie = cookieStore.get('userId')?.value;
-    const clientIdCookie = cookieStore.get('clientId')?.value;
-    const orgIdCookie = cookieStore.get('orgId')?.value;
-    const roleIdCookie = cookieStore.get('roleId')?.value;
-    const warehouseIdCookie = cookieStore.get('warehouseId')?.value || cookieStore.get('warehouse')?.value;
+    const userIdCookie = cookieStore.get("userId")?.value;
+    const clientIdCookie = cookieStore.get("clientId")?.value;
+    const orgIdCookie = cookieStore.get("orgId")?.value;
+    const roleIdCookie = cookieStore.get("roleId")?.value;
+    const warehouseIdCookie = cookieStore.get("warehouseId")?.value || cookieStore.get("warehouse")?.value;
 
     if (userIdCookie && clientIdCookie && orgIdCookie && roleIdCookie && warehouseIdCookie) {
       return {
@@ -58,7 +54,7 @@ export async function getUserContext(request: Request | NextRequest): Promise<Us
 
     return null;
   } catch (error) {
-    console.error('Error extracting user context:', error);
+    console.error("Error extracting user context:", error);
     return null;
   }
 }
@@ -76,27 +72,33 @@ export function generateCacheKey(userContext: UserContext, entity: string, param
  * Validates that user context contains all required fields
  */
 export function validateUserContext(userContext: Partial<UserContext>): userContext is UserContext {
-  return !!(userContext.userId && userContext.clientId && userContext.orgId && userContext.roleId && userContext.warehouseId);
+  return !!(
+    userContext.userId &&
+    userContext.clientId &&
+    userContext.orgId &&
+    userContext.roleId &&
+    userContext.warehouseId
+  );
 }
 
 /**
  * Extracts Bearer token from Authorization header
  */
 export function extractBearerToken(request: Request | NextRequest): string | null {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
     return null;
   }
-  return authHeader.split(' ')[1];
+  return authHeader.split(" ")[1];
 }
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
-    const parts = token.split('.');
+    const parts = token.split(".");
     if (parts.length < 2) return null;
-    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
-    const json = Buffer.from(padded, 'base64').toString('utf-8');
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+    const json = Buffer.from(padded, "base64").toString("utf-8");
     return JSON.parse(json);
   } catch {
     return null;
@@ -104,8 +106,8 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 }
 
 function stringy(value: unknown): string | null {
-  if (typeof value === 'string' && value.trim()) return value;
-  if (typeof value === 'number') return String(value);
+  if (typeof value === "string" && value.trim()) return value;
+  if (typeof value === "number") return String(value);
   return null;
 }
 
@@ -114,10 +116,10 @@ function stringy(value: unknown): string | null {
  */
 export function createUserContextHeaders(userContext: UserContext): Record<string, string> {
   return {
-    'X-User-ID': userContext.userId,
-    'X-Client-ID': userContext.clientId,
-    'X-Org-ID': userContext.orgId,
-    'X-Role-ID': userContext.roleId,
-    'X-Warehouse-ID': userContext.warehouseId,
+    "X-User-ID": userContext.userId,
+    "X-Client-ID": userContext.clientId,
+    "X-Org-ID": userContext.orgId,
+    "X-Role-ID": userContext.roleId,
+    "X-Warehouse-ID": userContext.warehouseId,
   };
 }

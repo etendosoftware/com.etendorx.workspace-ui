@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -467,7 +467,10 @@ export function useMultiWindowURL() {
         prev.map((w) => {
           if (w.windowId !== windowId) return w;
           const newSelected = { ...w.selectedRecords };
-          const newTabStates = { ...w.tabFormStates } as Record<string, { recordId?: string; mode?: TabMode; formMode?: FormMode }>;
+          const newTabStates = { ...w.tabFormStates } as Record<
+            string,
+            { recordId?: string; mode?: TabMode; formMode?: FormMode }
+          >;
           for (const tabId of childTabIds) {
             delete newSelected[tabId];
             delete newTabStates[tabId];

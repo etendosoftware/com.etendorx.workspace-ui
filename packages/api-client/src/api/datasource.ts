@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -30,9 +30,7 @@ export class Datasource {
   public static getInstance(url = "") {
     if (!Datasource.instance) {
       // Initialize with current origin + API route path for Next.js proxy
-      const baseUrl = typeof window !== 'undefined' 
-        ? window.location.origin 
-        : 'http://localhost:3000'; // fallback for SSR
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"; // fallback for SSR
       Datasource.instance = new Datasource(baseUrl);
     }
 
@@ -41,11 +39,9 @@ export class Datasource {
 
   public setBaseUrl(_url: string) {
     // Base URL for selector/forwarded datasource requests (no leading slash in path)
-    const baseUrl = typeof window !== 'undefined'
-      ? window.location.origin
-      : 'http://localhost:3000'; // fallback for SSR
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"; // fallback for SSR
     // For relative paths like '<selectorId>' route through forward servlet
-    this.client.setBaseUrl(baseUrl + '/api/erp/meta/forward/org.openbravo.service.datasource/');
+    this.client.setBaseUrl(baseUrl + "/api/erp/meta/forward/org.openbravo.service.datasource/");
   }
 
   public setToken(token: string) {
@@ -59,9 +55,9 @@ export class Datasource {
   public get(entity: string, options: Record<string, unknown> = {}) {
     try {
       // Post to the Next.js API route with entity and params
-      return this.client.post('/api/datasource', {
+      return this.client.post("/api/datasource", {
         entity,
-        params: this.buildParams(options)
+        params: this.buildParams(options),
       });
     } catch (error) {
       console.error(`Error fetching from datasource for entity ${entity}: ${error}`);
@@ -77,18 +73,25 @@ export class Datasource {
       isImplicitFilterApplied: options.isImplicitFilterApplied ? "true" : "false",
     };
 
-    const formatKey = (key: string) => isWrappedWithAt(key) ? key : `_${key}`;
-    const formatValue = (value: any) => Array.isArray(value) ? value.join(",") : String(value);
+    const formatKey = (key: string) => (isWrappedWithAt(key) ? key : `_${key}`);
+    const formatValue = (value: any) => (Array.isArray(value) ? value.join(",") : String(value));
 
     if (options.windowId) params.windowId = options.windowId;
     if (options.tabId) params.tabId = options.tabId;
 
     if (Array.isArray(options.criteria)) {
-      params.criteria = options.criteria.map(criteria => JSON.stringify(criteria));
+      params.criteria = options.criteria.map((criteria) => JSON.stringify(criteria));
     }
 
     for (const [key, value] of Object.entries(options)) {
-      if (typeof value === "undefined" || key === "criteria" || key === "windowId" || key === "tabId" || key === "isImplicitFilterApplied") continue;
+      if (
+        typeof value === "undefined" ||
+        key === "criteria" ||
+        key === "windowId" ||
+        key === "tabId" ||
+        key === "isImplicitFilterApplied"
+      )
+        continue;
       params[formatKey(key)] = formatValue(value);
     }
 

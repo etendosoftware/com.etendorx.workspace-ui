@@ -38,4 +38,3 @@ describe("GlobalCalloutManager", () => {
     expect(bStart).toBeLessThan(bEnd);
   });
 });
-

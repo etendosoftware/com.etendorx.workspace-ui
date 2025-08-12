@@ -1,4 +1,3 @@
-
 import { render, screen } from "@testing-library/react";
 
 // Mock subcomponents to reduce rendering complexity

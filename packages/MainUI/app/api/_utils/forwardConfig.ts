@@ -1,11 +1,11 @@
-import type { NextRequest } from 'next/server';
-import { getErpSessionCookie } from './sessionStore';
+import type { NextRequest } from "next/server";
+import { getErpSessionCookie } from "./sessionStore";
 
 function getEnvVar(key: string): string | undefined {
   try {
     // In Node runtime
     // biome-ignore lint/suspicious/noExplicitAny: process may be undefined in edge
-    const p: any = typeof process !== 'undefined' ? process : undefined;
+    const p: any = typeof process !== "undefined" ? process : undefined;
     return p?.env?.[key];
   } catch {
     return undefined;
@@ -17,9 +17,9 @@ function getEnvVar(key: string): string | undefined {
  * Set ERP_FORWARD_COOKIES=false to run in session-less mode.
  */
 export function shouldForwardErpCookies(): boolean {
-  const v = getEnvVar('ERP_FORWARD_COOKIES');
-  if (typeof v === 'string') {
-    return v.toLowerCase() !== 'false' && v !== '0';
+  const v = getEnvVar("ERP_FORWARD_COOKIES");
+  if (typeof v === "string") {
+    return v.toLowerCase() !== "false" && v !== "0";
   }
   return true; // default: forward cookies (stateful)
 }
@@ -29,10 +29,10 @@ export function shouldForwardErpCookies(): boolean {
  * with the stored ERP session cookie (captured at login), unless disabled by config.
  */
 export function getCombinedErpCookieHeader(request: Request | NextRequest, userToken: string | null): string {
-  if (!shouldForwardErpCookies()) return '';
-  const incomingCookie = request.headers.get('cookie') || '';
+  if (!shouldForwardErpCookies()) return "";
+  const incomingCookie = request.headers.get("cookie") || "";
   const erpSessionCookie = userToken ? getErpSessionCookie(userToken) : null;
-  return [incomingCookie, erpSessionCookie].filter(Boolean).join('; ');
+  return [incomingCookie, erpSessionCookie].filter(Boolean).join("; ");
 }
 
 /**
@@ -43,8 +43,8 @@ export function getCombinedErpCookieHeader(request: Request | NextRequest, userT
 export function shouldPassthroughJson(request: Request | NextRequest): boolean {
   try {
     const url = new URL(request.url);
-    const v = url.searchParams.get('isc_dataFormat');
-    return !!v && v.toLowerCase() === 'json';
+    const v = url.searchParams.get("isc_dataFormat");
+    return !!v && v.toLowerCase() === "json";
   } catch {
     return false;
   }

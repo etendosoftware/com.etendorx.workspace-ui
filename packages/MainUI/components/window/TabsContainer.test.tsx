@@ -1,4 +1,3 @@
-
 import { render } from "@testing-library/react";
 
 // Mocks for hooks used by TabsContainer so we can hit the skeleton branch

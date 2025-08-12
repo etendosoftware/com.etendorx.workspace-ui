@@ -1,37 +1,37 @@
-import { isReferenceValue, isSimpleValue } from '../ProcessParameterExtensions';
+import { isReferenceValue, isSimpleValue } from "../ProcessParameterExtensions";
 
-describe('ProcessParameterExtensions Type Guards', () => {
-  describe('isReferenceValue', () => {
-    it('should return true for valid reference objects', () => {
+describe("ProcessParameterExtensions Type Guards", () => {
+  describe("isReferenceValue", () => {
+    it("should return true for valid reference objects", () => {
       const referenceValue = {
         value: "E443A31992CB4635AFCAEABE7183CE85",
-        identifier: "F&B España - Región Norte"
+        identifier: "F&B España - Región Norte",
       };
 
       expect(isReferenceValue(referenceValue)).toBe(true);
     });
 
-    it('should return false for simple string values', () => {
+    it("should return false for simple string values", () => {
       expect(isReferenceValue("simple string")).toBe(false);
       expect(isReferenceValue("")).toBe(false);
     });
 
-    it('should return false for numbers', () => {
+    it("should return false for numbers", () => {
       expect(isReferenceValue(123)).toBe(false);
       expect(isReferenceValue(0)).toBe(false);
     });
 
-    it('should return false for booleans', () => {
+    it("should return false for booleans", () => {
       expect(isReferenceValue(true)).toBe(false);
       expect(isReferenceValue(false)).toBe(false);
     });
 
-    it('should return false for null or undefined', () => {
+    it("should return false for null or undefined", () => {
       expect(isReferenceValue(null)).toBe(false);
       expect(isReferenceValue(undefined)).toBe(false);
     });
 
-    it('should return false for objects missing required properties', () => {
+    it("should return false for objects missing required properties", () => {
       expect(isReferenceValue({ value: "123" })).toBe(false);
       expect(isReferenceValue({ identifier: "test" })).toBe(false);
       expect(isReferenceValue({ value: 123, identifier: "test" })).toBe(false);
@@ -39,49 +39,49 @@ describe('ProcessParameterExtensions Type Guards', () => {
     });
   });
 
-  describe('isSimpleValue', () => {
-    it('should return true for strings', () => {
+  describe("isSimpleValue", () => {
+    it("should return true for strings", () => {
       expect(isSimpleValue("test")).toBe(true);
       expect(isSimpleValue("")).toBe(true);
       expect(isSimpleValue("1.85")).toBe(true);
     });
 
-    it('should return true for numbers', () => {
+    it("should return true for numbers", () => {
       expect(isSimpleValue(123)).toBe(true);
       expect(isSimpleValue(0)).toBe(true);
       expect(isSimpleValue(1.85)).toBe(true);
     });
 
-    it('should return true for booleans', () => {
+    it("should return true for booleans", () => {
       expect(isSimpleValue(true)).toBe(true);
       expect(isSimpleValue(false)).toBe(true);
     });
 
-    it('should return false for objects', () => {
+    it("should return false for objects", () => {
       expect(isSimpleValue({ value: "123", identifier: "test" })).toBe(false);
       expect(isSimpleValue({})).toBe(false);
       expect(isSimpleValue([])).toBe(false);
     });
 
-    it('should return false for null or undefined', () => {
+    it("should return false for null or undefined", () => {
       expect(isSimpleValue(null)).toBe(false);
       expect(isSimpleValue(undefined)).toBe(false);
     });
   });
 
-  describe('Real world data', () => {
-    it('should correctly identify real response values', () => {
+  describe("Real world data", () => {
+    it("should correctly identify real response values", () => {
       const realResponseData = {
-        "trxtype": "",
-        "ad_org_id": {
-          "value": "E443A31992CB4635AFCAEABE7183CE85",
-          "identifier": "F&B España - Región Norte"
+        trxtype: "",
+        ad_org_id: {
+          value: "E443A31992CB4635AFCAEABE7183CE85",
+          identifier: "F&B España - Región Norte",
         },
-        "bslamount": "",
-        "payment_documentno": "<1000373>",
-        "actual_payment": "1.85",
-        "issotrx": true,
-        "StdPrecision": "2"
+        bslamount: "",
+        payment_documentno: "<1000373>",
+        actual_payment: "1.85",
+        issotrx: true,
+        StdPrecision: "2",
       };
 
       // Simple values

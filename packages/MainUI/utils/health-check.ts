@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -29,10 +29,11 @@ export async function performHealthCheck(
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       // Use Next.js proxy endpoint for health check instead of direct ERP URL
-      const healthCheckUrl = typeof window !== 'undefined' 
-        ? `${window.location.origin}/api/auth/login`
-        : 'http://localhost:3000/api/auth/login';
-      
+      const healthCheckUrl =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/api/auth/login`
+          : "http://localhost:3000/api/auth/login";
+
       const response = await fetch(healthCheckUrl, {
         method: "OPTIONS",
         signal,
@@ -62,9 +63,10 @@ export async function performHealthCheck(
 
 export async function performCopilotHealthCheck(baseUrl: string, token: string, signal?: AbortSignal) {
   // Use Next.js proxy endpoint for copilot instead of direct ERP URL
-  const assistantsUrl = typeof window !== 'undefined' 
-    ? `${window.location.origin}/api/copilot/assistants`
-    : 'http://localhost:3000/api/copilot/assistants';
+  const assistantsUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/api/copilot/assistants`
+      : "http://localhost:3000/api/copilot/assistants";
 
   logger.info("Copilot Health Check:", {
     baseUrl, // Original ERP base URL (for reference)
