@@ -23,6 +23,8 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { HEALTH_CHECK_MAX_ATTEMPTS, HEALTH_CHECK_RETRY_DELAY_MS } from "@/constants/config";
 import { initialState, stateReducer } from "./state";
 import { performHealthCheck } from "../../utils/health-check";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import Loading from "@/components/loading";
 
 export const ApiContext = createContext<string | null>(null);
@@ -63,6 +65,11 @@ export default function ApiProvider({ children, url }: React.PropsWithChildren<{
       controllerRef.current = new AbortController();
     };
   }, [healthCheck]);
+
+  useEffect(() => {
+    Metadata.setBaseUrl();
+    datasource.setBaseUrl("");
+  }, []);
 
   if (state.connected) {
     return <ApiContext.Provider value={url}>{children}</ApiContext.Provider>;
