@@ -29,7 +29,7 @@ describe("api-client: Metadata.kernelClient forward base", () => {
   });
 
   it("posts to /api/erp/meta/forward/org.openbravo.client.kernel?...", async () => {
-    Metadata.setBaseUrl("http://localhost:3000");
+    Metadata.setBaseUrl(); // Auto-configures using window.location.origin
     Metadata.setToken("tkn");
     await Metadata.kernelClient.post(
       "?MODE=NEW&TAB_ID=186&_action=org.openbravo.client.application.window.FormInitializationComponent"
