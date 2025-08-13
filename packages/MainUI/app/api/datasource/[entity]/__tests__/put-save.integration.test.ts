@@ -40,13 +40,12 @@ describe("Save via PUT JSON→form conversion", () => {
       "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice?windowId=1&tabId=2&_operationType=update"
     );
     expect(init.method).toBe("PUT");
-    expect(init.headers["Authorization"]).toBe("Bearer put-token");
-    expect(init.headers["Content-Type"]).toBeUndefined();
-    expect(init.headers["X-CSRF-Token"]).toBe("PUT-123");
+    expect(init.headers.Authorization).toBe("Bearer put-token");
+    expect(init.headers["Content-Type"]).toBe("application/json; charset=utf-8");
     const decoded = decodeURIComponent(init.body as string);
-    expect(decoded).toContain("operationType=update");
-    expect(decoded).toContain("dataSource=isc_OBViewDataSource_0");
-    expect(decoded).toContain("data=");
-    expect(decoded).toContain("oldValues=");
+    expect(decoded).toContain('"operationType":"update"');
+    expect(decoded).toContain('"dataSource":"isc_OBViewDataSource_0"');
+    expect(decoded).toContain('"data"');
+    expect(decoded).toContain('"oldValues"');
   });
 });

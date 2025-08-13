@@ -132,6 +132,7 @@ const Drawer: React.FC<DrawerProps> = ({
               placeholder="Search"
               autoCompleteTexts={allItemTitles}
               inputRef={searchInputRef}
+              data-testid="drawer-search-input"
             />
           </div>
         )}
