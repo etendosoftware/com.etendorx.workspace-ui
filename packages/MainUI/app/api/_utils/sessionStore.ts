@@ -22,7 +22,8 @@ export function setErpSessionCookie(token: string, cookieHeader: string) {
 
 export function getErpSessionCookie(token: string | null | undefined): string | null {
   if (!token) return null;
-  return store.get(token) ?? null;
+  const cookie = store.get(token) ?? null;
+  return cookie;
 }
 
 export function clearErpSessionCookie(token: string) {
