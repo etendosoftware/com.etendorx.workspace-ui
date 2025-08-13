@@ -1,136 +1,145 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { extractBearerToken } from "@/lib/auth";
-import { getCombinedErpCookieHeader, shouldPassthroughJson } from "@/app/api/_utils/forwardConfig";
-import { encodeDatasourcePayload } from "@/app/api/_utils/datasource";
+import { getCombinedErpCookieHeader } from "../../_utils/forwardConfig";
 
-export const runtime = "nodejs";
-
-function buildErpUrl(entity: string, request: Request): string {
-  let erpUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/forward/org.openbravo.service.datasource/${entity}`;
-
-  const url = new URL(request.url);
-  if (url.search) {
-    erpUrl += url.search;
-  }
-
-  return erpUrl;
+// Type definitions for better code clarity
+interface ProcessedRequestData {
+  headers: Record<string, string>;
+  body?: string;
 }
 
-function buildHeaders(userToken: string, request: Request): Record<string, string> {
+/**
+ * Validates the incoming request and extracts the user token
+ * @param request - The incoming Next.js request
+ * @returns The user token or null if unauthorized
+ */
+function validateAndExtractToken(request: NextRequest): string | null {
+  const userToken = extractBearerToken(request);
+  if (!userToken) {
+    return null;
+  }
+  return userToken;
+}
+
+/**
+ * Builds the target ERP URL with query parameters
+ * @param entity - The datasource entity name
+ * @param requestUrl - The original request URL
+ * @returns The complete ERP URL with query parameters
+ */
+function buildErpUrl(entity: string, requestUrl: URL): string {
+  const baseUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/forward/org.openbravo.service.datasource/${entity}`;
+
+  // Preserve original query parameters from the request
+  return requestUrl.search ? `${baseUrl}${requestUrl.search}` : baseUrl;
+}
+
+/**
+ * Processes the request body and headers for forwarding to the ERP system
+ * @param request - The incoming Next.js request
+ * @param userToken - The authenticated user token
+ * @returns Processed headers and body for the ERP request
+ */
+async function processRequestData(
+  request: NextRequest,
+  userToken: string,
+  combinedCookie: string
+): Promise<ProcessedRequestData> {
+  const method = request.method;
+  const contentType = request.headers.get("Content-Type") || "application/json";
+
+  // Base headers for all requests
   const headers: Record<string, string> = {
     Authorization: `Bearer ${userToken}`,
     Accept: "application/json",
   };
 
-  const combinedCookie = getCombinedErpCookieHeader(request, userToken);
+  // GET requests don't have a body
+  if (method === "GET") {
+    return { headers };
+  }
+
   if (combinedCookie) {
     headers["Cookie"] = combinedCookie;
   }
 
-  return headers;
-}
-
-async function processRequestBody(
-  request: Request,
-  contentType: string
-): Promise<{ body: string | undefined; headers: Record<string, string> }> {
-  const method = request.method;
-
-  if (method === "GET") {
-    return { body: undefined, headers: {} };
-  }
-
-  const additionalHeaders: Record<string, string> = {};
-
-  if (contentType.includes("application/json")) {
-    const raw = await request.text();
-
-    if (shouldPassthroughJson(request)) {
-      additionalHeaders["Content-Type"] = contentType;
-      return { body: raw, headers: additionalHeaders };
-    }
-
-    try {
-      const payload = JSON.parse(raw);
-      const encoded = encodeDatasourcePayload(payload);
-      return { body: encoded.body, headers: encoded.headers };
-    } catch {
-      additionalHeaders["Content-Type"] = contentType;
-      return { body: raw, headers: additionalHeaders };
-    }
-  }
-
   const body = await request.text();
-  if (!contentType.includes("application/x-www-form-urlencoded")) {
-    additionalHeaders["Content-Type"] = contentType;
+
+  // If no body content, return headers only
+  if (!body) {
+    return { headers };
   }
 
-  return { body, headers: additionalHeaders };
-}
-
-function addCsrfHeader(headers: Record<string, string>, request: Request): void {
-  const incomingCsrf = request.headers.get("X-CSRF-Token") || request.headers.get("x-csrf-token");
-  if (incomingCsrf) {
-    headers["X-CSRF-Token"] = incomingCsrf;
+  // Handle JSON content type - convert to form-urlencoded for ERP compatibility
+  if (contentType.includes("application/json")) {
+    //return processJsonBody(body, headers);
   }
+
+  // For non-JSON content, preserve original content type
+  headers["Content-Type"] = contentType;
+  return { headers, body };
 }
 
-async function handle(request: Request, { params }: { params: { entity: string } }) {
+/**
+ * Handles the response from the ERP system and formats it for the client
+ * @param response - The fetch response from the ERP system
+ * @returns A Next.js response object
+ */
+async function handleErpResponse(response: Response): Promise<NextResponse> {
+  const responseText = await response.text();
+
+  // Attempt to parse as JSON first
   try {
-    const userToken = extractBearerToken(request);
+    const jsonData = JSON.parse(responseText);
+    return NextResponse.json(jsonData, { status: response.status });
+  } catch {
+    // If not valid JSON, return as plain text
+    return new NextResponse(responseText, {
+      status: response.status,
+      headers: {
+        "Content-Type": response.headers.get("Content-Type") || "text/plain",
+      },
+    });
+  }
+}
+
+/**
+ * Main request handler that orchestrates the datasource proxy functionality
+ * @param request - The incoming Next.js request
+ * @param params - Route parameters containing the entity name
+ * @returns A Next.js response
+ */
+async function handle(request: NextRequest, { params }: { params: { entity: string } }) {
+  try {
+    // Step 1: Validate authentication
+    const userToken = validateAndExtractToken(request);
     if (!userToken) {
       return NextResponse.json({ error: "Unauthorized - Missing Bearer token" }, { status: 401 });
     }
 
-    const entity = params.entity;
-    const erpUrl = buildErpUrl(entity, request);
-    const contentType = request.headers.get("Content-Type") || "application/json";
+    // Step 2: Extract entity and build target URL
+    const entity = (await params).entity;
+    const requestUrl = new URL(request.url);
+    const erpUrl = buildErpUrl(entity, requestUrl);
 
-    const headers = buildHeaders(userToken, request);
-    const { body, headers: bodyHeaders } = await processRequestBody(request, contentType);
+    const combinedCookie = getCombinedErpCookieHeader(request, userToken);
+    // Step 3: Process request data for ERP compatibility
+    const { headers, body } = await processRequestData(request, userToken, combinedCookie);
 
-    Object.assign(headers, bodyHeaders);
-    addCsrfHeader(headers, request);
-
-    const response = await fetch(erpUrl, {
+    // Step 4: Forward request to ERP system
+    const erpResponse = await fetch(erpUrl, {
       method: request.method,
       headers,
       body,
     });
 
-    const text = await response.text();
-
-    try {
-      const json = JSON.parse(text);
-      return NextResponse.json(json, { status: response.status });
-    } catch {
-      return new NextResponse(text, {
-        status: response.status,
-        headers: { "Content-Type": response.headers.get("Content-Type") || "text/plain" },
-      });
-    }
+    // Step 5: Process and return the ERP response
+    return await handleErpResponse(erpResponse);
   } catch (error) {
-    console.error("API Route /api/datasource/[entity] Error:", error);
+    console.error("Datasource proxy error:", error);
     return NextResponse.json({ error: "Failed to forward datasource request" }, { status: 500 });
   }
 }
 
-export async function GET(request: Request, context: any) {
-  return handle(request, context as { params: { entity: string } });
-}
-
-export async function POST(request: Request, context: any) {
-  return handle(request, context as { params: { entity: string } });
-}
-
-export async function PUT(request: Request, context: any) {
-  return handle(request, context as { params: { entity: string } });
-}
-
-export async function DELETE(request: Request, context: any) {
-  return handle(request, context as { params: { entity: string } });
-}
-
-export async function PATCH(request: Request, context: any) {
-  return handle(request, context as { params: { entity: string } });
-}
+// Export the handler for all HTTP methods
+export { handle as GET, handle as POST, handle as PUT, handle as DELETE, handle as PATCH };

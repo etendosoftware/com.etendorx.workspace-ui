@@ -202,7 +202,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           }
         }
 
-        const { data } = await datasource.client.request(field.selector?.datasourceName ?? "", {
+        const { data } = await datasource.client.request(`/api/datasource/${field.selector?.datasourceName ?? ""}`, {
           method: "POST",
           body,
         });

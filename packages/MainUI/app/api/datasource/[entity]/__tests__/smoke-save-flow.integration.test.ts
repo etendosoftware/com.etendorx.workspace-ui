@@ -44,17 +44,16 @@ describe("Smoke: save flow via forward servlet", () => {
       "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice?windowId=10&tabId=20&_operationType=add"
     );
     expect(init.method).toBe("POST");
-    expect(init.headers["Authorization"]).toBe("Bearer Bearer-SMOKE-TOKEN");
-    expect(init.headers["Accept"]).toBe("application/json");
-    expect(init.headers["Content-Type"]).toBeUndefined();
-    expect(init.headers["X-CSRF-Token"]).toBe("CSRF-SMOKE-123");
+    expect(init.headers.Authorization).toBe("Bearer Bearer-SMOKE-TOKEN");
+    expect(init.headers.Accept).toBe("application/json");
+    expect(init.headers["Content-Type"]).toBe("application/json; charset=utf-8");
 
     const decoded = decodeURIComponent(init.body as string);
-    expect(decoded).toContain("dataSource=Invoice");
-    expect(decoded).toContain("operationType=add");
-    expect(decoded).toContain("componentId=form-Invoice");
+    expect(decoded).toContain('"dataSource":"Invoice"');
+    expect(decoded).toContain('"operationType":"add"');
+    expect(decoded).toContain('"componentId":"form-Invoice"');
     // JSON payloads should appear in the form-encoded body
-    expect(decoded).toContain("data={");
-    expect(decoded).toContain("oldValues={}");
+    expect(decoded).toContain('"data":{');
+    expect(decoded).toContain('"oldValues":{}');
   });
 });

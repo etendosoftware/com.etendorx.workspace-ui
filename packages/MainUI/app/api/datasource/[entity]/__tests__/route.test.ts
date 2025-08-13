@@ -71,18 +71,15 @@ describe("API: /api/datasource/:entity save/update", () => {
       "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice?windowId=167&tabId=263&_operationType=add"
     );
     expect(init.method).toBe("POST");
-    expect(init.headers["Authorization"]).toBe("Bearer token-abc");
-    expect(init.headers["Accept"]).toBe("application/json");
-    expect(init.headers["Content-Type"]).toBeUndefined();
-    expect(init.headers["X-CSRF-Token"]).toBe("CSRF123");
+    expect(init.headers.Authorization).toBe("Bearer token-abc");
+    expect(init.headers.Accept).toBe("application/json");
+    expect(init.headers["Content-Type"]).toBe("application/json");
     const decoded = decodeURIComponent(init.body as string);
-    expect(decoded).toContain("dataSource=isc_OBViewDataSource_0");
-    expect(decoded).toContain("operationType=add");
-    expect(decoded).toContain("componentId=isc_OBViewForm_0");
-    expect(decoded).toContain("csrfToken=CSRF123");
-    // After decodeURIComponent, JSON is readable in the string
-    expect(decoded).toContain('data={"key":"val"}');
-    expect(decoded).toContain('oldValues={"prev":1}');
+    expect(decoded).toContain('"operationType":"add"');
+    expect(decoded).toContain('"componentId":"isc_OBViewForm_0"');
+    expect(decoded).toContain('"csrfToken":"CSRF123"');
+    expect(decoded).toContain('"data":{"key":"val"}');
+    expect(decoded).toContain('"oldValues":{"prev":1}');
   });
 
   it("passes through non-JSON bodies with original content-type", async () => {

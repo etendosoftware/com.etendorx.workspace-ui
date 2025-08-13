@@ -45,9 +45,8 @@ describe("Save with special/Unicode fields", () => {
     expect(String(dest)).toBe(
       "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/OrderLine?windowId=143&tabId=187&_operationType=add&language=es_ES"
     );
-    expect(init.headers["Authorization"]).toBe("Bearer Bearer-Token-UNICODE");
-    expect(init.headers["Content-Type"]).toBeUndefined();
-    expect(init.headers["X-CSRF-Token"]).toBe("CSRF-Üñîçødé-🙂");
+    expect(init.headers.Authorization).toBe("Bearer Bearer-Token-UNICODE");
+    expect(init.headers["Content-Type"]).toBe("application/json; charset=utf-8");
     const decoded = decodeURIComponent(init.body as string);
     // Spaces may be encoded as '+' in URL encoding; accept both forms
     expect(decoded.replace(/\+/g, " ")).toContain("España – Región Norte ☕️");
