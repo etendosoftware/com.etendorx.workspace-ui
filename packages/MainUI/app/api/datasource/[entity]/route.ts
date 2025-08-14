@@ -60,7 +60,7 @@ async function processRequestData(
   }
 
   if (combinedCookie) {
-    headers["Cookie"] = combinedCookie;
+    headers.Cookie = combinedCookie;
   }
 
   const body = await request.text();
@@ -70,12 +70,6 @@ async function processRequestData(
     return { headers };
   }
 
-  // Handle JSON content type - convert to form-urlencoded for ERP compatibility
-  if (contentType.includes("application/json")) {
-    //return processJsonBody(body, headers);
-  }
-
-  // For non-JSON content, preserve original content type
   headers["Content-Type"] = contentType;
   return { headers, body };
 }
@@ -106,10 +100,10 @@ async function handleErpResponse(response: Response): Promise<NextResponse> {
 /**
  * Main request handler that orchestrates the datasource proxy functionality
  * @param request - The incoming Next.js request
- * @param params - Route parameters containing the entity name
+ * @param context - Route context (contains params). Kept loosely typed to match Next export expectations.
  * @returns A Next.js response
  */
-async function handle(request: NextRequest, { params }: { params: { entity: string } }) {
+async function handle(request: NextRequest, context: any) {
   try {
     // Step 1: Validate authentication
     const userToken = validateAndExtractToken(request);
@@ -118,7 +112,8 @@ async function handle(request: NextRequest, { params }: { params: { entity: stri
     }
 
     // Step 2: Extract entity and build target URL
-    const entity = (await params).entity;
+    const params = context?.params ?? {};
+    const entity = params.entity as string;
     const requestUrl = new URL(request.url);
     const erpUrl = buildErpUrl(entity, requestUrl);
 

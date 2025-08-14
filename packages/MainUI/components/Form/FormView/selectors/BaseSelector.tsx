@@ -112,7 +112,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         const withEntries = (columnValues as any)[column]?.entries as
           | Array<{ id: string; _identifier: string }>
           | undefined;
-        if (withEntries && withEntries.length) {
+        if (withEntries?.length) {
           setValue(
             `${hqlName}$_entries`,
             withEntries.map((e) => ({ id: e.id, label: e._identifier })),
@@ -188,6 +188,7 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
   }, [
     field.column.callout,
     field.inputName,
+    field.hqlName,
     tab,
     getValues,
     fieldsByHqlName,

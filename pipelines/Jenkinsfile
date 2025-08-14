@@ -116,6 +116,10 @@ spec:
                 cd ${REPOSITORY_NAME}
                 pnpm install
                 pnpm add -D -w istanbul-lib-coverage istanbul-lib-report istanbul-reports
+              """
+              echo "-------------------------- Building Project --------------------------"
+              sh """
+                cd ${REPOSITORY_NAME}
                 pnpm build
               """
               echo "-------------------------- Build Successful --------------------------"
