@@ -25,7 +25,7 @@ import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
 import { getFieldReference } from "@/utils";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
-import { ColumnFilter } from "../../components/ColumnFilter/ColumnFilter";
+import { ColumnFilter } from "../../components/Table/ColumnFilter";
 
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
 
@@ -83,7 +83,10 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
               column={column}
               filterState={filterState}
               onFilterChange={(selectedOptions) => onColumnFilter(column.id, selectedOptions)}
-              onLoadOptions={(searchQuery) => onLoadFilterOptions(column.id, searchQuery)}
+              onLoadOptions={(searchQuery) => {
+                console.log(`Loading options for column ${column.id} with search:`, searchQuery);
+                return onLoadFilterOptions(column.id, searchQuery);
+              }}
             />
           ),
         };

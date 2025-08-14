@@ -143,13 +143,20 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   const handleLoadFilterOptions = useCallback(
     async (columnId: string, searchQuery?: string): Promise<FilterOption[]> => {
+      console.log(`handleLoadFilterOptions called for ${columnId} with search:`, searchQuery);
       const column = rawColumns.find((col: any) => col.id === columnId || col.columnName === columnId);
       if (!column) {
+        console.log(`Column ${columnId} not found`);
         return [];
       }
 
+      console.log(`Column ${columnId} type:`, column.type, 'isSelect:', ColumnFilterUtils.isSelectColumn(column), 'isTableDir:', ColumnFilterUtils.isTableDirColumn(column));
+
       if (ColumnFilterUtils.isSelectColumn(column)) {
-        return ColumnFilterUtils.getSelectOptions(column);
+        const options = ColumnFilterUtils.getSelectOptions(column);
+        console.log(`Select options for ${columnId}:`, options);
+        setFilterOptions(columnId, options);
+        return options;
       }
 
       if (ColumnFilterUtils.isTableDirColumn(column)) {
@@ -787,14 +794,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   // Sync column filters with useDatasource
   useEffect(() => {
     updateColumnFilters(columnFilters);
-
-    // Force refresh after a short delay to ensure state has updated
-    const timeoutId = setTimeout(() => {
-      refetch();
-    }, 50);
-
-    return () => clearTimeout(timeoutId);
-  }, [columnFilters, updateColumnFilters, refetch]);
+  }, [columnFilters, updateColumnFilters]);
 
   if (error) {
     return (

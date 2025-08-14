@@ -30,6 +30,7 @@ export interface UseColumnFiltersReturn {
   clearColumnFilter: (columnId: string) => void;
   clearAllFilters: () => void;
   loadFilterOptions: (columnId: string, searchQuery?: string) => Promise<void>;
+  setFilterOptions: (columnId: string, options: FilterOption[]) => void;
   getFilterableColumns: () => Column[];
   hasActiveFilters: boolean;
 }
@@ -87,7 +88,7 @@ export function useColumnFilters({ columns, onFiltersChange }: UseColumnFiltersP
     setColumnFilters((prev) => prev.map((filter) => ({ ...filter, selectedOptions: [] })));
   }, []);
 
-  const loadFilterOptions = useCallback((columnId: string, searchQuery?: string) => {
+  const loadFilterOptions = useCallback(async (columnId: string, searchQuery?: string) => {
     // Just set loading state and search query - actual data loading is handled by the parent component
     setColumnFilters((prev) =>
       prev.map((filter) => (filter.id === columnId ? { ...filter, loading: true, searchQuery } : filter))

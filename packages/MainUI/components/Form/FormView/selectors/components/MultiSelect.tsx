@@ -1,0 +1,354 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
+import useDebounce from "@/hooks/useDebounce";
+import Image from "next/image";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import checkIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/check-circle-filled.svg?url";
+import ChevronDown from "../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
+import closeIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/x.svg?url";
+
+interface MultiSelectOption {
+  id: string;
+  label: string;
+  data?: unknown;
+}
+
+interface MultiSelectProps {
+  options: MultiSelectOption[];
+  selectedValues: string[];
+  onSelectionChange: (selectedIds: string[]) => void;
+  onSearch?: (term: string) => void;
+  onFocus?: () => void;
+  onLoadMore?: () => void;
+  loading?: boolean;
+  hasMore?: boolean;
+  placeholder?: string;
+  maxHeight?: number;
+}
+
+const OptionItem = memo(
+  ({
+    id,
+    label,
+    index,
+    isSelected,
+    isHighlighted,
+    onOptionClick,
+    onMouseEnter,
+  }: {
+    id: string;
+    label: string;
+    index: number;
+    isSelected: boolean;
+    isHighlighted: boolean;
+    onOptionClick: (id: string) => void;
+    onMouseEnter: (index: number) => void;
+  }) => (
+    <li
+      aria-selected={isSelected}
+      onClick={() => onOptionClick(id)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOptionClick(id);
+        }
+      }}
+      onMouseEnter={() => onMouseEnter(index)}
+      className={`px-4 py-3 text-sm cursor-pointer flex items-center justify-between focus:outline-none focus:bg-baseline-10
+      ${isHighlighted ? "bg-baseline-10" : ""}
+      ${isSelected ? "bg-baseline-10 font-medium" : ""}
+      hover:bg-baseline-10`}>
+      <span className={`truncate mr-2 ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>{label}</span>
+      {isSelected && (
+        <Image src={checkIconUrl} alt="Selected Item" className="fade-in-left flex-shrink-0" height={16} width={16} />
+      )}
+    </li>
+  )
+);
+
+OptionItem.displayName = "OptionItem";
+
+function MultiSelectCmp({
+  options,
+  selectedValues,
+  onSelectionChange,
+  onSearch,
+  onFocus,
+  onLoadMore,
+  loading = false,
+  hasMore = true,
+  placeholder = "Select options...",
+  maxHeight = 240,
+}: MultiSelectProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+  const [isHovering, setIsHovering] = useState(false);
+  const listRef = useRef<HTMLUListElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const debouncedSetSearchTerm = useDebounce(onSearch);
+
+  const filteredOptions = useMemo(
+    () => options.filter((option) => option.label.toLowerCase().includes(searchTerm.toLowerCase())),
+    [options, searchTerm]
+  );
+
+  // Debug logging
+  console.log("MultiSelect render:", {
+    options,
+    filteredOptions,
+    selectedValues,
+    searchTerm,
+    isOpen,
+  });
+
+  const selectedLabels = useMemo(() => {
+    return options.filter((option) => selectedValues.includes(option.id)).map((option) => option.label);
+  }, [options, selectedValues]);
+
+  const displayText = useMemo(() => {
+    if (selectedLabels.length === 0) return placeholder;
+    if (selectedLabels.length === 1) return selectedLabels[0];
+    return `${selectedLabels.length} selected`;
+  }, [selectedLabels, placeholder]);
+
+  const handleSelect = useCallback(
+    (id: string) => {
+      const newSelection = selectedValues.includes(id)
+        ? selectedValues.filter((value) => value !== id)
+        : [...selectedValues, id];
+      onSelectionChange(newSelection);
+    },
+    [selectedValues, onSelectionChange]
+  );
+
+  const handleOptionClick = useCallback(
+    (id: string) => {
+      handleSelect(id);
+    },
+    [handleSelect]
+  );
+
+  const handleOptionMouseEnter = useCallback((index: number) => {
+    setHighlightedIndex(index);
+  }, []);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHighlightedIndex((prev) => (prev + 1) % filteredOptions.length);
+      }
+
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHighlightedIndex((prev) => (prev <= 0 ? filteredOptions.length - 1 : prev - 1));
+      }
+
+      if (e.key === "Enter" && highlightedIndex >= 0) {
+        e.preventDefault();
+        const option = filteredOptions[highlightedIndex];
+        if (option) handleSelect(option.id);
+      }
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setIsOpen(false);
+        setHighlightedIndex(-1);
+      }
+    },
+    [filteredOptions, highlightedIndex, handleSelect]
+  );
+
+  const handleBlur = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+    }
+  }, []);
+
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+      setIsOpen(false);
+    }
+  }, []);
+
+  const handleClick = useCallback(() => {
+    const wasOpen = isOpen;
+    setIsOpen(!wasOpen);
+
+    // Load options when opening for the first time
+    if (!wasOpen && options.length === 0 && onFocus) {
+      onFocus();
+    }
+  }, [isOpen, options.length, onFocus]);
+
+  const handleClear = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onSelectionChange([]);
+    },
+    [onSelectionChange]
+  );
+
+  const handleMouseEnter = useCallback(() => {
+    setIsHovering(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovering(false);
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (!listRef.current || loading || !hasMore) return;
+
+    const list = listRef.current;
+    const scrollBottom = list.scrollTop + list.clientHeight;
+
+    if (scrollBottom >= list.scrollHeight * 0.9) {
+      onLoadMore?.();
+    }
+  }, [loading, hasMore, onLoadMore]);
+
+  const handleFocus = useCallback(() => {
+    onFocus?.();
+  }, [onFocus]);
+
+  const handleSetSearchTerm = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const term = e.target.value;
+      setSearchTerm(term);
+
+      if (debouncedSetSearchTerm) {
+        debouncedSetSearchTerm(term);
+      }
+    },
+    [debouncedSetSearchTerm]
+  );
+
+  useEffect(() => {
+    if (isOpen) {
+      setSearchTerm("");
+      setHighlightedIndex(0);
+      setTimeout(() => searchInputRef.current?.focus(), 1);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [handleClickOutside]);
+
+  const renderedOptions = useMemo(() => {
+    if (filteredOptions.length > 0) {
+      return filteredOptions.map(({ id, label }, index) => (
+        <OptionItem
+          key={id}
+          id={id}
+          label={label}
+          index={index}
+          isSelected={selectedValues.includes(id)}
+          isHighlighted={highlightedIndex === index}
+          onOptionClick={handleOptionClick}
+          onMouseEnter={handleOptionMouseEnter}
+        />
+      ));
+    }
+    return <li className="px-4 py-3 text-sm text-baseline-60">No options found</li>;
+  }, [filteredOptions, highlightedIndex, selectedValues, handleOptionClick, handleOptionMouseEnter]);
+
+  return (
+    <div ref={wrapperRef} className="relative w-full font-['Inter']" onBlur={handleBlur} tabIndex={-1}>
+      <div
+        onClick={handleClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className={`w-full flex items-center justify-between px-3 py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light
+          ${isOpen ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : "border-baseline-40"} 
+           text-baseline-90 cursor-pointer hover:border-baseline-60
+          transition-colors outline-none`}>
+        <span
+          className={`text-sm truncate max-w-[calc(100%-40px)] ${selectedLabels.length > 0 ? "text-baseline-90 font-medium" : "text-baseline-90"}`}>
+          {displayText}
+        </span>
+        <div className="flex items-center flex-shrink-0 ml-2">
+          {selectedLabels.length > 0 && (isHovering || isOpen) && (
+            <button
+              type="button"
+              onClick={handleClear}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleClear(e as unknown as React.MouseEvent);
+                }
+              }}
+              className="mr-1 text-baseline-60 hover:text-baseline-80 transition-opacity opacity-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light rounded"
+              aria-label="Clear selection">
+              <Image src={closeIconUrl} alt="Clear" height={16} width={16} />
+            </button>
+          )}
+          <ChevronDown
+            fill="currentColor"
+            className={`w-5 h-5 text-baseline-60 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          />
+        </div>
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-10 mt-1 w-full bg-white rounded shadow-lg overflow-hidden">
+          <div className="p-2">
+            <input
+              ref={searchInputRef}
+              value={searchTerm}
+              onChange={handleSetSearchTerm}
+              onKeyDown={handleKeyDown}
+              placeholder="Search..."
+              className="w-full p-2 text-sm border border-baseline-30 rounded focus:outline-none focus:border-dynamic-main focus:ring-1 focus:ring-dynamic-light"
+              aria-label="Search options"
+              onFocus={handleFocus}
+            />
+          </div>
+          <ul
+            ref={listRef}
+            className="overflow-y-auto focus:outline-none"
+            style={{ maxHeight: `${maxHeight}px` }}
+            onScroll={handleScroll}>
+            {renderedOptions}
+            {loading && hasMore && (
+              <li className="px-4 py-3 text-sm text-baseline-60 text-center">Loading more options...</li>
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const MultiSelect = memo(MultiSelectCmp);
+export default MultiSelect;
+export { MultiSelect };
+export type { MultiSelectProps, MultiSelectOption };

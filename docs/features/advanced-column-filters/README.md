@@ -10,14 +10,15 @@ The advanced column filters system provides dropdown-based multi-selection filte
 
 ### Core Components
 
-#### 1. ColumnFilter Component (`packages/ComponentLibrary/src/components/ColumnFilter/ColumnFilter.tsx`)
-- Main filter component that renders a filter icon with badge
-- Opens a popover containing the dropdown filter interface
-- Handles filter state display and clear functionality
-- Shows filter summary (e.g., "2 selected" or individual item name)
+#### 1. ColumnFilter Component (`packages/MainUI/components/Table/ColumnFilter.tsx`)
+- Main filter component integrated into table columns
+- Uses the existing Etendo design system components
+- Handles filter state and option loading
+- Provides interface between table and multi-select dropdown
 
-#### 2. ColumnFilterDropdown Component (`packages/ComponentLibrary/src/components/ColumnFilter/ColumnFilterDropdown.tsx`)
-- Material-UI Autocomplete-based dropdown with multi-selection
+#### 2. MultiSelect Component (`packages/MainUI/components/Form/FormView/selectors/components/MultiSelect.tsx`)
+- Custom multi-select dropdown based on existing Select component
+- Consistent with Etendo design system and styling
 - Supports both `select` (static options) and `tabledir` (dynamic server options) columns
 - Implements debounced search for `tabledir` columns
 - Handles option loading states and empty states
@@ -217,10 +218,33 @@ The system creates filter criteria that match Etendo Classic format:
 - Existing filter logic preserved for unsupported column types
 - Backward compatibility maintained with existing table configurations
 
+### From Previous Implementation
+- **Removed duplicate components**: Eliminated ColumnFilter components from ComponentLibrary 
+- **Unified with design system**: Now uses existing Select components and Etendo styling
+- **Better performance**: Leverages existing hooks and utilities from form selectors
+- **Consistent UX**: Same look and feel as form selectors throughout the application
+
 ### Etendo Classic Compatibility
 - Filter criteria format matches Classic exactly
 - Same API endpoints and authentication patterns
 - Consistent user experience across platforms
+
+## Architecture Benefits
+
+### Design System Consistency
+- Uses existing Etendo Select components and styling
+- Maintains consistent spacing, colors, and interaction patterns
+- Integrates seamlessly with existing form components
+
+### Code Reusability
+- Leverages existing `useSelectFieldOptions` and `useTableDirDatasource` hooks
+- Reuses debouncing, search, and infinite scroll functionality
+- Reduces code duplication and maintenance burden
+
+### Performance Optimizations
+- Uses established patterns for data fetching and caching
+- Efficient re-rendering with existing React optimization patterns
+- Consistent loading states and error handling
 
 ## Troubleshooting
 
