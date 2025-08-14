@@ -18,7 +18,7 @@
 import { useMemo } from "react";
 import { parseColumns } from "@/utils/tableColumns";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
-import type { MRT_Cell, MRT_Header, MRT_TableInstance } from "material-react-table";
+import type { MRT_Cell } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
@@ -77,11 +77,11 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
           id: column.id,
           type: column.type,
           columnName: column.columnName,
-          header: column.header
+          header: column.header,
         });
-        
-        const filterState = columnFilterStates?.find(f => f.id === column.id);
-        
+
+        const filterState = columnFilterStates?.find((f) => f.id === column.id);
+
         columnConfig = {
           ...columnConfig,
           enableColumnFilter: true, // Keep column filter enabled

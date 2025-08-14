@@ -225,11 +225,11 @@ export class SearchUtils {
     if (columnFilterCriteria.length > 0) {
       // Convert BaseCriteria to CompositeCriteria format
       const compositeColumnFilters: CompositeCriteria[] = columnFilterCriteria.map((criteria) => {
-        if ('criteria' in criteria && criteria.criteria) {
+        if ("criteria" in criteria && criteria.criteria) {
           // Already a composite criteria (OR group)
           return criteria as CompositeCriteria;
         }
-        
+
         // Single criteria - wrap it
         return {
           operator: "and",

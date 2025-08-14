@@ -45,6 +45,14 @@ export const ColumnFilterDropdown: React.FC<ColumnFilterDropdownProps> = ({
   const [inputValue, setInputValue] = useState("");
   const [open, setOpen] = useState(false);
 
+  // Debug logging
+  console.log(`ColumnFilterDropdown for ${column.name}:`, {
+    selectedOptions,
+    availableOptions,
+    loading,
+    availableOptionsCount: availableOptions.length
+  });
+
   const isTableDir = ColumnFilterUtils.isTableDirColumn(column);
   const isSelect = ColumnFilterUtils.isSelectColumn(column);
 

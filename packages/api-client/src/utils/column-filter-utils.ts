@@ -15,7 +15,6 @@
  *************************************************************************
  */
 
-import { datasource } from "../api/datasource";
 import type { Column, BaseCriteria } from "../api/types";
 import { FieldType } from "../api/types";
 
@@ -70,65 +69,13 @@ export class ColumnFilterUtils {
       return [];
     }
 
-    return (column.refList as any[] || []).map((item: any) => ({
+    return ((column.refList as any[]) || []).map((item: any) => ({
       id: item.id,
       label: item.label,
       value: item.value,
     }));
   }
 
-  /**
-   * Fetch filter options for a tabledir column (from datasource)
-   */
-  static async fetchTableDirOptions(
-    column: Column,
-    searchQuery?: string,
-    limit: number = 75
-  ): Promise<FilterOption[]> {
-    if (!ColumnFilterUtils.isTableDirColumn(column) || !column.referencedEntity) {
-      return [];
-    }
-
-    try {
-      const queryParams: Record<string, unknown> = {
-        _noCount: true,
-        _operationType: "fetch",
-        _startRow: 0,
-        _endRow: limit,
-        _textMatchStyle: "substring",
-        _distinct: column.columnName,
-      };
-
-      // Add search criteria if provided
-      if (searchQuery && searchQuery.trim()) {
-        queryParams.criteria = JSON.stringify({
-          fieldName: "_identifier",
-          operator: "iContains",
-          value: searchQuery.trim(),
-        });
-      }
-
-      const entityName = column.referencedEntity as string;
-      if (!entityName) {
-        return [];
-      }
-
-      const response = await datasource.get(entityName, queryParams);
-
-      if (response.ok && response.data?.response?.data) {
-        return response.data.response.data.map((item: any) => ({
-          id: item.id,
-          label: item._identifier || item.name || item.id,
-          value: item.id,
-        }));
-      }
-
-      return [];
-    } catch (error) {
-      console.error(`Error fetching options for ${column.columnName}:`, error);
-      return [];
-    }
-  }
 
   /**
    * Create criteria for column filters
@@ -139,8 +86,6 @@ export class ColumnFilterUtils {
     for (const filter of columnFilters) {
       if (filter.selectedOptions.length === 0) continue;
 
-      const column = { columnName: filter.id } as Column; // We need access to the column metadata
-      
       if (filter.selectedOptions.length === 1) {
         // Single selection
         criteria.push({
@@ -172,7 +117,7 @@ export class ColumnFilterUtils {
   static createEtendoClassicCriteria(columnFilters: ColumnFilterState[]): string | null {
     if (columnFilters.length === 0) return null;
 
-    const criteriaGroups: any[] = [];
+    const criteriaGroups: Record<string, unknown>[] = [];
 
     for (const filter of columnFilters) {
       if (filter.selectedOptions.length === 0) continue;

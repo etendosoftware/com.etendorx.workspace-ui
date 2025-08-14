@@ -17,11 +17,7 @@
 
 import { useState, useCallback, useEffect, useMemo } from "react";
 import type { Column } from "../api/types";
-import {
-  ColumnFilterUtils,
-  type ColumnFilterState,
-  type FilterOption,
-} from "../utils/column-filter-utils";
+import { ColumnFilterUtils, type ColumnFilterState, type FilterOption } from "../utils/column-filter-utils";
 
 export interface UseColumnFiltersProps {
   columns: Column[];
@@ -38,23 +34,17 @@ export interface UseColumnFiltersReturn {
   hasActiveFilters: boolean;
 }
 
-export function useColumnFilters({
-  columns,
-  onFiltersChange,
-}: UseColumnFiltersProps): UseColumnFiltersReturn {
+export function useColumnFilters({ columns, onFiltersChange }: UseColumnFiltersProps): UseColumnFiltersReturn {
   const [columnFilters, setColumnFilters] = useState<ColumnFilterState[]>([]);
 
   // Get columns that support dropdown filtering
-  const filterableColumns = useMemo(
-    () => columns.filter(ColumnFilterUtils.supportsDropdownFilter),
-    [columns]
-  );
+  const filterableColumns = useMemo(() => columns.filter(ColumnFilterUtils.supportsDropdownFilter), [columns]);
 
   // Initialize filter states for filterable columns
   useEffect(() => {
     const initialFilters: ColumnFilterState[] = filterableColumns.map((column) => {
       const existingFilter = columnFilters.find((filter) => filter.id === column.id);
-      
+
       if (existingFilter) {
         return existingFilter;
       }
@@ -83,78 +73,43 @@ export function useColumnFilters({
 
   const setColumnFilter = useCallback((columnId: string, selectedOptions: FilterOption[]) => {
     setColumnFilters((prev) =>
-      prev.map((filter) =>
-        filter.id === columnId
-          ? { ...filter, selectedOptions }
-          : filter
-      )
+      prev.map((filter) => (filter.id === columnId ? { ...filter, selectedOptions } : filter))
     );
   }, []);
 
   const clearColumnFilter = useCallback((columnId: string) => {
     setColumnFilters((prev) =>
-      prev.map((filter) =>
-        filter.id === columnId
-          ? { ...filter, selectedOptions: [] }
-          : filter
-      )
+      prev.map((filter) => (filter.id === columnId ? { ...filter, selectedOptions: [] } : filter))
     );
   }, []);
 
   const clearAllFilters = useCallback(() => {
-    setColumnFilters((prev) =>
-      prev.map((filter) => ({ ...filter, selectedOptions: [] }))
-    );
+    setColumnFilters((prev) => prev.map((filter) => ({ ...filter, selectedOptions: [] })));
   }, []);
 
   const loadFilterOptions = useCallback(
-    async (columnId: string, searchQuery?: string) => {
-      const column = filterableColumns.find(
-        (col) => col.id === columnId || col.columnName === columnId
-      );
-      
-      if (!column || !ColumnFilterUtils.isTableDirColumn(column)) {
-        return;
-      }
-
-      // Set loading state
+    (columnId: string, searchQuery?: string) => {
+      // Just set loading state and search query - actual data loading is handled by the parent component
       setColumnFilters((prev) =>
-        prev.map((filter) =>
-          filter.id === columnId
-            ? { ...filter, loading: true, searchQuery }
-            : filter
-        )
+        prev.map((filter) => (filter.id === columnId ? { ...filter, loading: true, searchQuery } : filter))
       );
-
-      try {
-        const options = await ColumnFilterUtils.fetchTableDirOptions(column, searchQuery);
-        
-        setColumnFilters((prev) =>
-          prev.map((filter) =>
-            filter.id === columnId
-              ? { 
-                  ...filter, 
-                  availableOptions: options, 
-                  loading: false,
-                  searchQuery 
-                }
-              : filter
-          )
-        );
-      } catch (error) {
-        console.error(`Failed to load options for column ${columnId}:`, error);
-        
-        setColumnFilters((prev) =>
-          prev.map((filter) =>
-            filter.id === columnId
-              ? { ...filter, loading: false }
-              : filter
-          )
-        );
-      }
     },
-    [filterableColumns]
+    []
   );
+
+  const setFilterOptions = useCallback((columnId: string, options: FilterOption[]) => {
+    setColumnFilters((prev) =>
+      prev.map((filter) =>
+        filter.id === columnId
+          ? {
+              ...filter,
+              availableOptions: options,
+              loading: false,
+            }
+          : filter
+      )
+    );
+  }, []);
 
   const getFilterableColumns = useCallback(() => filterableColumns, [filterableColumns]);
 
@@ -169,6 +124,7 @@ export function useColumnFilters({
     clearColumnFilter,
     clearAllFilters,
     loadFilterOptions,
+    setFilterOptions,
     getFilterableColumns,
     hasActiveFilters,
   };

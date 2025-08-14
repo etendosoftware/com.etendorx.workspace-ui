@@ -16,20 +16,10 @@
  */
 
 import React, { useState, useEffect, useMemo } from "react";
-import {
-  TextField,
-  Autocomplete,
-  Chip,
-  CircularProgress,
-  Box,
-  InputAdornment,
-} from "@mui/material";
+import { TextField, Autocomplete, Chip, CircularProgress, Box, InputAdornment } from "@mui/material";
 import { FilterList as FilterIcon } from "@mui/icons-material";
 import type { Column } from "@workspaceui/api-client/src/api/types";
-import {
-  ColumnFilterUtils,
-  type FilterOption,
-} from "@workspaceui/api-client/src/utils/column-filter-utils";
+import { ColumnFilterUtils, type FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
 
 export interface ColumnFilterDropdownProps {
   column: Column;
@@ -78,9 +68,7 @@ export const ColumnFilterDropdown: React.FC<ColumnFilterDropdownProps> = ({
 
     if (!inputValue) return availableOptions;
 
-    return availableOptions.filter((option) =>
-      option.label.toLowerCase().includes(inputValue.toLowerCase())
-    );
+    return availableOptions.filter((option) => option.label.toLowerCase().includes(inputValue.toLowerCase()));
   }, [availableOptions, inputValue, isTableDir]);
 
   const handleOpen = () => {
@@ -155,8 +143,7 @@ export const ColumnFilterDropdown: React.FC<ColumnFilterDropdownProps> = ({
           display: "flex",
           alignItems: "center",
           width: "100%",
-        }}
-      >
+        }}>
         {option.label}
         {selected && (
           <Box component="span" sx={{ ml: "auto", color: "primary.main" }}>

@@ -49,6 +49,7 @@ import ChevronUp from "../../../ComponentLibrary/src/assets/icons/chevron-up.svg
 import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check.svg";
 import { useColumnFilters } from "@workspaceui/api-client/src/hooks/useColumnFilters";
+import { useColumnFilterData } from "@workspaceui/api-client/src/hooks/useColumnFilterData";
 import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 
@@ -115,7 +116,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     columnFilters: advancedColumnFilters,
     setColumnFilter,
     loadFilterOptions,
+    setFilterOptions,
   } = useColumnFilters({ columns: rawColumns });
+
+  const { fetchFilterOptions } = useColumnFilterData();
 
   const handleColumnFilterChange = useCallback(
     async (columnId: string, selectedOptions: FilterOption[]) => {
@@ -150,8 +154,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         type: column.type,
         referencedEntity: column.referencedEntity,
         refList: column.refList,
+        selectorDefinitionId: (column as any).selectorDefinitionId,
+        datasourceId: (column as any).datasourceId,
+        allColumnProps: Object.keys(column),
         isSelect: ColumnFilterUtils.isSelectColumn(column),
-        isTableDir: ColumnFilterUtils.isTableDirColumn(column)
+        isTableDir: ColumnFilterUtils.isTableDirColumn(column),
+        fullColumn: column,
       });
 
       if (ColumnFilterUtils.isSelectColumn(column)) {
@@ -161,16 +169,22 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       }
 
       if (ColumnFilterUtils.isTableDirColumn(column)) {
-        await loadFilterOptions(columnId, searchQuery);
-        const options = await ColumnFilterUtils.fetchTableDirOptions(column, searchQuery);
-        console.log(`TABLEDIR options for ${columnId}:`, options);
-        return options;
+        loadFilterOptions(columnId, searchQuery);
+        const selectorDefinitionId = (column as any).selectorDefinitionId;
+        const datasourceId = (column as any).datasourceId || (column as any).referencedEntity;
+        
+        if (datasourceId) {
+          const options = await fetchFilterOptions(datasourceId, selectorDefinitionId, searchQuery);
+          console.log(`TABLEDIR options for ${columnId}:`, options);
+          setFilterOptions(columnId, options);
+          return options;
+        }
       }
 
       console.warn(`Column ${columnId} does not support dropdown filtering`);
       return [];
     },
-    [rawColumns, loadFilterOptions]
+    [rawColumns, loadFilterOptions, fetchFilterOptions, setFilterOptions]
   );
 
   const baseColumns = useColumns(tab, {

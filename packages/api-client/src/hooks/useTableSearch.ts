@@ -18,7 +18,6 @@
 import { useState, useCallback, useMemo } from "react";
 import type { Column, CompositeCriteria } from "../api/types";
 import { SearchUtils } from "../utils/search-utils";
-import { ColumnFilterUtils } from "../utils/column-filter-utils";
 import { useColumnFilters } from "./useColumnFilters";
 import type { ColumnFilterState, FilterOption } from "../utils/column-filter-utils";
 
@@ -31,7 +30,7 @@ export interface UseTableSearchReturn {
   // Global search
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  
+
   // Column filters
   columnFilters: ColumnFilterState[];
   setColumnFilter: (columnId: string, selectedOptions: FilterOption[]) => void;
@@ -39,20 +38,17 @@ export interface UseTableSearchReturn {
   clearAllFilters: () => void;
   loadFilterOptions: (columnId: string, searchQuery?: string) => Promise<void>;
   getFilterableColumns: () => Column[];
-  
+
   // Combined state
   hasActiveFilters: boolean;
   hasActiveSearch: boolean;
   searchCriteria: CompositeCriteria[];
-  
+
   // Actions
   clearAllSearchAndFilters: () => void;
 }
 
-export function useTableSearch({
-  columns,
-  onSearchChange,
-}: UseTableSearchProps): UseTableSearchReturn {
+export function useTableSearch({ columns, onSearchChange }: UseTableSearchProps): UseTableSearchReturn {
   const [searchQuery, setSearchQueryState] = useState("");
 
   // Column filters hook
@@ -79,13 +75,16 @@ export function useTableSearch({
   }, [columns, searchQuery, columnFilters]);
 
   // Update search query
-  const setSearchQuery = useCallback((query: string) => {
-    setSearchQueryState(query);
-    
-    // Recalculate criteria with new search query
-    const criteria = SearchUtils.combineSearchAndColumnFilters(columns, query, columnFilters);
-    onSearchChange?.(criteria);
-  }, [columns, columnFilters, onSearchChange]);
+  const setSearchQuery = useCallback(
+    (query: string) => {
+      setSearchQueryState(query);
+
+      // Recalculate criteria with new search query
+      const criteria = SearchUtils.combineSearchAndColumnFilters(columns, query, columnFilters);
+      onSearchChange?.(criteria);
+    },
+    [columns, columnFilters, onSearchChange]
+  );
 
   // Clear all search and filters
   const clearAllSearchAndFilters = useCallback(() => {
@@ -102,7 +101,7 @@ export function useTableSearch({
     // Global search
     searchQuery,
     setSearchQuery,
-    
+
     // Column filters
     columnFilters,
     setColumnFilter,
@@ -110,12 +109,12 @@ export function useTableSearch({
     clearAllFilters,
     loadFilterOptions,
     getFilterableColumns,
-    
+
     // Combined state
     hasActiveFilters,
     hasActiveSearch,
     searchCriteria,
-    
+
     // Actions
     clearAllSearchAndFilters,
   };
