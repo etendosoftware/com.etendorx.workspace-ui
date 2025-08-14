@@ -61,14 +61,6 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
     label: option.label,
   }));
 
-  // Debug logging
-  console.log(`ColumnFilter for ${column.columnName}:`, {
-    column: column.columnName,
-    filterState,
-    availableOptions,
-    selectedValues,
-    loading: filterState?.loading
-  });
 
   return (
     <MultiSelect

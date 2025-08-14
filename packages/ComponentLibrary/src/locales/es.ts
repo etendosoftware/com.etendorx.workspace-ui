@@ -316,6 +316,13 @@ const es = {
     closeWindow: "Cerrar ventana",
     showTabs: "Mostrar pestañas",
   },
+  multiselect: {
+    searchPlaceholder: "Buscar...",
+    searchOptions: "Buscar opciones",
+    clearSelection: "Limpiar selección",
+    noOptionsFound: "No se encontraron opciones",
+    loadingOptions: "Cargando más opciones...",
+  },
 };
 
 export default es;

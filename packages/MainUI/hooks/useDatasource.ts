@@ -154,12 +154,15 @@ export function useDatasource({
       allCriteria = [...allCriteria, ...columnFilterCriteria];
     }
 
-    return {
+    const finalParams = {
       ...params,
       criteria: allCriteria,
       isImplicitFilterApplied,
     };
-  }, [params, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied]);
+
+
+    return finalParams;
+  }, [params, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied, activeColumnFilters]);
 
   const load = useCallback(() => {
     if (!entity || skip) {

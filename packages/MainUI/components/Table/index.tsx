@@ -143,18 +143,13 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   const handleLoadFilterOptions = useCallback(
     async (columnId: string, searchQuery?: string): Promise<FilterOption[]> => {
-      console.log(`handleLoadFilterOptions called for ${columnId} with search:`, searchQuery);
       const column = rawColumns.find((col: any) => col.id === columnId || col.columnName === columnId);
       if (!column) {
-        console.log(`Column ${columnId} not found`);
         return [];
       }
 
-      console.log(`Column ${columnId} type:`, column.type, 'isSelect:', ColumnFilterUtils.isSelectColumn(column), 'isTableDir:', ColumnFilterUtils.isTableDirColumn(column));
-
       if (ColumnFilterUtils.isSelectColumn(column)) {
         const options = ColumnFilterUtils.getSelectOptions(column);
-        console.log(`Select options for ${columnId}:`, options);
         setFilterOptions(columnId, options);
         return options;
       }
@@ -307,6 +302,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         },
       ];
     }
+    
     return options;
   }, [
     tab.parentColumns,

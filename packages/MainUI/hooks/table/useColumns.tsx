@@ -84,7 +84,6 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
               filterState={filterState}
               onFilterChange={(selectedOptions) => onColumnFilter(column.id, selectedOptions)}
               onLoadOptions={(searchQuery) => {
-                console.log(`Loading options for column ${column.id} with search:`, searchQuery);
                 return onLoadFilterOptions(column.id, searchQuery);
               }}
             />

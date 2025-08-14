@@ -16,6 +16,7 @@
  */
 
 import useDebounce from "@/hooks/useDebounce";
+import { useTranslation } from "@/hooks/useTranslation";
 import Image from "next/image";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import checkIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/check-circle-filled.svg?url";
@@ -95,6 +96,7 @@ function MultiSelectCmp({
   placeholder = "Select options...",
   maxHeight = 240,
 }: MultiSelectProps) {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
@@ -108,15 +110,6 @@ function MultiSelectCmp({
     () => options.filter((option) => option.label.toLowerCase().includes(searchTerm.toLowerCase())),
     [options, searchTerm]
   );
-
-  // Debug logging
-  console.log("MultiSelect render:", {
-    options,
-    filteredOptions,
-    selectedValues,
-    searchTerm,
-    isOpen,
-  });
 
   const selectedLabels = useMemo(() => {
     return options.filter((option) => selectedValues.includes(option.id)).map((option) => option.label);
@@ -272,8 +265,8 @@ function MultiSelectCmp({
         />
       ));
     }
-    return <li className="px-4 py-3 text-sm text-baseline-60">No options found</li>;
-  }, [filteredOptions, highlightedIndex, selectedValues, handleOptionClick, handleOptionMouseEnter]);
+    return <li className="px-4 py-3 text-sm text-baseline-60">{t("multiselect.noOptionsFound")}</li>;
+  }, [filteredOptions, highlightedIndex, selectedValues, handleOptionClick, handleOptionMouseEnter, t]);
 
   return (
     <div ref={wrapperRef} className="relative w-full font-['Inter']" onBlur={handleBlur} tabIndex={-1}>
@@ -289,10 +282,10 @@ function MultiSelectCmp({
         onMouseLeave={handleMouseLeave}
         className={`w-full flex items-center justify-between px-3 py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light
           ${isOpen ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : "border-baseline-40"} 
-           text-baseline-90 cursor-pointer hover:border-baseline-60
+           text-baseline-20 cursor-pointer hover:border-baseline-60
           transition-colors outline-none`}>
         <span
-          className={`text-sm truncate max-w-[calc(100%-40px)] ${selectedLabels.length > 0 ? "text-baseline-90 font-medium" : "text-baseline-90"}`}>
+          className={`text-sm truncate max-w-[calc(100%-40px)] ${selectedLabels.length > 0 ? "text-baseline-90 font-medium" : "text-baseline-50"}`}>
           {displayText}
         </span>
         <div className="flex items-center flex-shrink-0 ml-2">
@@ -307,7 +300,7 @@ function MultiSelectCmp({
                 }
               }}
               className="mr-1 text-baseline-60 hover:text-baseline-80 transition-opacity opacity-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light rounded"
-              aria-label="Clear selection">
+              aria-label={t("multiselect.clearSelection")}>
               <Image src={closeIconUrl} alt="Clear" height={16} width={16} />
             </button>
           )}
@@ -319,16 +312,16 @@ function MultiSelectCmp({
       </div>
 
       {isOpen && (
-        <div className="absolute z-10 mt-1 w-full bg-white rounded shadow-lg overflow-hidden">
+        <div className="absolute z-10 mt-1 w-64 bg-white rounded shadow-lg overflow-hidden border-1 border-transparent-neutral-10">
           <div className="p-2">
             <input
               ref={searchInputRef}
               value={searchTerm}
               onChange={handleSetSearchTerm}
               onKeyDown={handleKeyDown}
-              placeholder="Search..."
+              placeholder={t("multiselect.searchPlaceholder")}
               className="w-full p-2 text-sm border border-baseline-30 rounded focus:outline-none focus:border-dynamic-main focus:ring-1 focus:ring-dynamic-light"
-              aria-label="Search options"
+              aria-label={t("multiselect.searchOptions")}
               onFocus={handleFocus}
             />
           </div>
@@ -339,7 +332,7 @@ function MultiSelectCmp({
             onScroll={handleScroll}>
             {renderedOptions}
             {loading && hasMore && (
-              <li className="px-4 py-3 text-sm text-baseline-60 text-center">Loading more options...</li>
+              <li className="px-4 py-3 text-sm text-baseline-60 text-center">{t("multiselect.loadingOptions")}</li>
             )}
           </ul>
         </div>
