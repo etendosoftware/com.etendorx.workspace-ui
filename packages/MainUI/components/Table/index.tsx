@@ -159,9 +159,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
                 className="bg-transparent border-0 cursor-pointer p-0.5 flex items-center justify-center min-w-5 min-h-5 rounded-full shadow-[0px_2.5px_6.25px_0px_rgba(0,3,13,0.1)]">
                 {canExpand ? (
                   isExpanded ? (
-                    <ChevronDown height={12} width={12} fill={"#3F4A7E"} />
-                  ) : (
                     <ChevronUp height={12} width={12} fill={"#3F4A7E"} />
+                  ) : (
+                    <ChevronDown height={12} width={12} fill={"#3F4A7E"} />
                   )
                 ) : null}
               </button>
