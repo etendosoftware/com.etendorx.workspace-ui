@@ -27,7 +27,7 @@ export class Datasource {
     this.client = new Client(url);
   }
 
-  public static getInstance(url = "") {
+  public static getInstance() {
     if (!Datasource.instance) {
       // Initialize with current origin + API route path for Next.js proxy
       const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"; // fallback for SSR
@@ -81,6 +81,10 @@ export class Datasource {
 
     if (Array.isArray(options.criteria)) {
       params.criteria = options.criteria.map((criteria) => JSON.stringify(criteria));
+    }
+
+    if (options.parentId) {
+      params.parentId = options.parentId;
     }
 
     for (const [key, value] of Object.entries(options)) {

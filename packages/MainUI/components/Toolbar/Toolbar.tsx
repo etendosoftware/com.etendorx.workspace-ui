@@ -75,6 +75,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const selectedRecord = useSelectedRecord(tab);
   const hasParentTab = !!tab?.parentTabId;
   const parentId = parentRecord?.id?.toString();
+  const isTreeNodeView = tab?.tableTree;
 
   const {
     handleAction,
@@ -162,7 +163,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const handleCloseStatusModal = useCallback(() => setActiveModal(null), []);
 
   const toolbarConfig = useMemo(() => {
-    const organizedButtons = organizeButtonsBySection(buttons, isFormView);
+    const organizedButtons = organizeButtonsBySection(buttons, isFormView, isTreeNodeView);
     const hasSelectedRecord = !!selectedRecord?.id;
     const hasParentRecordSelected = !hasParentTab || selectedParentItems.length === 1;
 
@@ -205,6 +206,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     return config;
   }, [
     buttons,
+    isTreeNodeView,
     isFormView,
     selectedRecord?.id,
     processButtons.length,

@@ -45,6 +45,7 @@ const BUTTON_STYLES = {
   [TOOLBAR_BUTTONS_ACTIONS.FILTER]: "toolbar-button-filter",
   [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: "toolbar-button-copilot",
   [TOOLBAR_BUTTONS_ACTIONS.COLUMN_FILTERS]: "toolbar-button-column-filters",
+  [TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW]: "toolbar-button-toggle-tree-view",
 } as const;
 
 export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
@@ -76,23 +77,31 @@ const sortButtonsBySeqno = (buttons: ToolbarButtonMetadata[]): ToolbarButtonMeta
   });
 };
 
-const isVisibleButton = (button: ToolbarButtonMetadata, isFormView: boolean) => {
+const isVisibleButton = (button: ToolbarButtonMetadata, isFormView: boolean, isTreeNodeView?: boolean) => {
   if (!button.active) return false;
 
   const isFindButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FIND;
   const isSaveButtonInNonFormView = !isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE;
   const isCreateButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.NEW;
   const isFilterButtonInFormView = isFormView && button.action === TOOLBAR_BUTTONS_ACTIONS.FILTER;
-
+  const isToggleTreeView = !isTreeNodeView && button.action === TOOLBAR_BUTTONS_ACTIONS.TOGGLE_TREE_VIEW;
   return (
-    !isFindButtonInFormView && !isSaveButtonInNonFormView && !isCreateButtonInFormView && !isFilterButtonInFormView
+    !isFindButtonInFormView &&
+    !isSaveButtonInNonFormView &&
+    !isCreateButtonInFormView &&
+    !isFilterButtonInFormView &&
+    !isToggleTreeView
   );
 };
 
-export const organizeButtonsBySection = (buttons: ToolbarButtonMetadata[], isFormView: boolean): OrganizedSections => {
+export const organizeButtonsBySection = (
+  buttons: ToolbarButtonMetadata[],
+  isFormView: boolean,
+  isTreeNodeView?: boolean
+): OrganizedSections => {
   const sections: OrganizedSections = { left: [], center: [], right: [] };
 
-  const visibleButtons = buttons.filter((button) => isVisibleButton(button, isFormView));
+  const visibleButtons = buttons.filter((button) => isVisibleButton(button, isFormView, isTreeNodeView));
 
   for (const button of visibleButtons) {
     if (button.section && sections[button.section]) {

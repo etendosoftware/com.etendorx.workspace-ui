@@ -23,7 +23,7 @@ import { useMetadataContext } from "../../hooks/useMetadataContext";
 import { FormView } from "@/components/Form/FormView";
 import { FormMode } from "@workspaceui/api-client/src/api/types";
 import type { TabLevelProps } from "@/components/window/types";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
 import { useSelected } from "@/hooks/useSelected";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
@@ -43,6 +43,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
   } = useMultiWindowURL();
   const { registerActions } = useToolbarContext();
   const { graph } = useSelected();
+  const [toggle, setToggle] = useState(false);
 
   const windowId = activeWindow?.windowId;
 
@@ -110,6 +111,12 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
   }, [windowId, clearTabFormState, tab, graph]);
 
+  const handleTreeView = useCallback(() => {
+    if (windowId) {
+      setToggle((prev) => !prev);
+    }
+  }, [windowId]);
+
   const handleClearChildren = useCallback(() => {
     if (!windowId) return;
 
@@ -125,10 +132,11 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     const actions = {
       new: handleNew,
       back: handleBack,
+      treeView: handleTreeView,
     };
 
     registerActions(actions);
-  }, [registerActions, handleNew, handleBack, tab.id]);
+  }, [registerActions, handleNew, handleBack, handleTreeView, tab.id]);
 
   useEffect(() => {
     const handleDeselection = (eventTab: typeof tab) => {
@@ -174,7 +182,7 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
           setRecordId={handleSetRecordId}
         />
       ) : (
-        <DynamicTable setRecordId={handleSetRecordId} onRecordSelection={handleRecordSelection} />
+        <DynamicTable isTreeMode={toggle} setRecordId={handleSetRecordId} onRecordSelection={handleRecordSelection} />
       )}
     </div>
   );

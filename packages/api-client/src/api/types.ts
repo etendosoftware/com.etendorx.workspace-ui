@@ -53,6 +53,7 @@ export interface DatasourceParams {
   isSorting?: boolean;
   isImplicitFilterApplied?: boolean;
   operator?: "and" | "or";
+  parentId?: string;
 }
 
 export interface DatasourceOptions {
@@ -68,6 +69,8 @@ export interface DatasourceOptions {
   tabId?: string;
   windowId?: string;
   language?: string;
+  parentId?: string | number;
+  referencedTableId?: string;
 }
 
 export interface ProcessAction extends Record<string, unknown> {
@@ -246,6 +249,7 @@ export interface Tab {
   module: string;
   parentTabId?: string;
   table$_identifier?: string;
+  tableTree?: boolean;
 }
 
 export interface WindowMetadata {

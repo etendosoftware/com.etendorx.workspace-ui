@@ -56,6 +56,7 @@ type ToolbarActions = {
    * Allows users to filter data in table views.
    */
   filter: () => void;
+  treeView: () => void;
 
   /**
    * Open or toggle column filters for table views.
@@ -71,6 +72,7 @@ type ToolbarContextType = {
   onNew: () => void;
   onBack: () => void;
   onFilter: () => void;
+  onToggleTreeView: () => void;
   onColumnFilters: (buttonRef?: HTMLElement | null) => void;
   registerActions: (actions: Partial<ToolbarActions>) => void;
 };
@@ -82,6 +84,7 @@ const initialState: ToolbarActions = {
   back: () => {},
   filter: () => {},
   columnFilters: () => {},
+  treeView: () => {},
 };
 
 const ToolbarContext = createContext<ToolbarContextType>({} as ToolbarContextType);
@@ -90,7 +93,15 @@ export const useToolbarContext = () => useContext(ToolbarContext);
 
 export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
   const [
-    { new: onNew, refresh: onRefresh, save: onSave, back: onBack, filter: onFilter, columnFilters: onColumnFilters },
+    {
+      new: onNew,
+      refresh: onRefresh,
+      treeView: onToggleTreeView,
+      save: onSave,
+      back: onBack,
+      filter: onFilter,
+      columnFilters: onColumnFilters,
+    },
     setActions,
   ] = useState<ToolbarActions>(initialState);
 
@@ -99,8 +110,8 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
   }, []);
 
   const value = useMemo(
-    () => ({ onSave, onRefresh, onNew, onBack, onFilter, onColumnFilters, registerActions }),
-    [onNew, onRefresh, onSave, onBack, onFilter, onColumnFilters, registerActions]
+    () => ({ onSave, onRefresh, onNew, onBack, onFilter, onColumnFilters, onToggleTreeView, registerActions }),
+    [onSave, onRefresh, onNew, onBack, onFilter, onColumnFilters, onToggleTreeView, registerActions]
   );
 
   return <ToolbarContext.Provider value={value}>{children}</ToolbarContext.Provider>;

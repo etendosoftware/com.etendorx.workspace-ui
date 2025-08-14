@@ -55,7 +55,7 @@ export const useToolbarConfig = ({
     hideStatusModal,
   } = useStatusModal();
   const { t } = useTranslation();
-  const { onRefresh, onSave, onNew, onBack, onFilter, onColumnFilters } = useToolbarContext();
+  const { onRefresh, onSave, onNew, onBack, onFilter, onColumnFilters, onToggleTreeView } = useToolbarContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -217,24 +217,28 @@ export const useToolbarConfig = ({
         const buttonElement = event?.currentTarget as HTMLElement;
         onColumnFilters?.(buttonElement);
       },
+      TOGGLE_TREE_VIEW: () => {
+        onToggleTreeView?.();
+      },
     }),
     [
-      deleteRecord,
       onBack,
-      onFilter,
       onNew,
-      onRefresh,
+      onFilter,
       onSave,
-      onColumnFilters,
+      tab,
       selectedIds,
       selectedMultiple,
       showConfirmModal,
-      showErrorModal,
       t,
-      tab,
+      deleteRecord,
+      showErrorModal,
+      onRefresh,
+      hasSelectedRecords,
       contextString,
       contextItems,
-      hasSelectedRecords,
+      onColumnFilters,
+      onToggleTreeView,
     ]
   );
 
