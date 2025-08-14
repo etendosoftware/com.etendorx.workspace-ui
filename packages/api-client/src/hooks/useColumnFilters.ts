@@ -87,15 +87,12 @@ export function useColumnFilters({ columns, onFiltersChange }: UseColumnFiltersP
     setColumnFilters((prev) => prev.map((filter) => ({ ...filter, selectedOptions: [] })));
   }, []);
 
-  const loadFilterOptions = useCallback(
-    (columnId: string, searchQuery?: string) => {
-      // Just set loading state and search query - actual data loading is handled by the parent component
-      setColumnFilters((prev) =>
-        prev.map((filter) => (filter.id === columnId ? { ...filter, loading: true, searchQuery } : filter))
-      );
-    },
-    []
-  );
+  const loadFilterOptions = useCallback((columnId: string, searchQuery?: string) => {
+    // Just set loading state and search query - actual data loading is handled by the parent component
+    setColumnFilters((prev) =>
+      prev.map((filter) => (filter.id === columnId ? { ...filter, loading: true, searchQuery } : filter))
+    );
+  }, []);
 
   const setFilterOptions = useCallback((columnId: string, options: FilterOption[]) => {
     setColumnFilters((prev) =>

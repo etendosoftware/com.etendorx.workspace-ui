@@ -45,16 +45,7 @@ export const ColumnFilterDropdown: React.FC<ColumnFilterDropdownProps> = ({
   const [inputValue, setInputValue] = useState("");
   const [open, setOpen] = useState(false);
 
-  // Debug logging
-  console.log(`ColumnFilterDropdown for ${column.name}:`, {
-    selectedOptions,
-    availableOptions,
-    loading,
-    availableOptionsCount: availableOptions.length
-  });
-
   const isTableDir = ColumnFilterUtils.isTableDirColumn(column);
-  const isSelect = ColumnFilterUtils.isSelectColumn(column);
 
   // For tabledir columns, debounce the search
   useEffect(() => {
@@ -102,7 +93,7 @@ export const ColumnFilterDropdown: React.FC<ColumnFilterDropdownProps> = ({
     return option.id === value.id;
   };
 
-  const renderTags = (tagValue: FilterOption[], getTagProps: any) => {
+  const renderTags = (tagValue: FilterOption[], getTagProps: (options: { index: number }) => object) => {
     return tagValue.map((option, index) => (
       <Chip
         {...getTagProps({ index })}
@@ -178,11 +169,11 @@ export const ColumnFilterDropdown: React.FC<ColumnFilterDropdownProps> = ({
       onOpen={handleOpen}
       onClose={handleClose}
       value={selectedOptions}
-      onChange={(event, newValue) => {
+      onChange={(_, newValue) => {
         onSelectionChange(newValue as FilterOption[]);
       }}
       inputValue={inputValue}
-      onInputChange={(event, newInputValue) => {
+      onInputChange={(_, newInputValue) => {
         setInputValue(newInputValue);
       }}
       options={filteredOptions}
@@ -201,7 +192,6 @@ export const ColumnFilterDropdown: React.FC<ColumnFilterDropdownProps> = ({
       }}
       sx={{
         minWidth: 250,
-        bgcolor: "red",
         "& .MuiAutocomplete-popupIndicator": {
           transform: open ? "rotate(180deg)" : "rotate(0deg)",
           transition: "transform 0.2s",

@@ -145,43 +145,25 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     async (columnId: string, searchQuery?: string): Promise<FilterOption[]> => {
       const column = rawColumns.find((col: any) => col.id === columnId || col.columnName === columnId);
       if (!column) {
-        console.warn(`Column not found: ${columnId}`);
         return [];
       }
 
-      console.log(`Loading options for ${columnId}:`, {
-        columnName: column.columnName,
-        type: column.type,
-        referencedEntity: column.referencedEntity,
-        refList: column.refList,
-        selectorDefinitionId: (column as any).selectorDefinitionId,
-        datasourceId: (column as any).datasourceId,
-        allColumnProps: Object.keys(column),
-        isSelect: ColumnFilterUtils.isSelectColumn(column),
-        isTableDir: ColumnFilterUtils.isTableDirColumn(column),
-        fullColumn: column,
-      });
-
       if (ColumnFilterUtils.isSelectColumn(column)) {
-        const options = ColumnFilterUtils.getSelectOptions(column);
-        console.log(`SELECT options for ${columnId}:`, options);
-        return options;
+        return ColumnFilterUtils.getSelectOptions(column);
       }
 
       if (ColumnFilterUtils.isTableDirColumn(column)) {
         loadFilterOptions(columnId, searchQuery);
         const selectorDefinitionId = (column as any).selectorDefinitionId;
         const datasourceId = (column as any).datasourceId || (column as any).referencedEntity;
-        
+
         if (datasourceId) {
           const options = await fetchFilterOptions(datasourceId, selectorDefinitionId, searchQuery);
-          console.log(`TABLEDIR options for ${columnId}:`, options);
           setFilterOptions(columnId, options);
           return options;
         }
       }
 
-      console.warn(`Column ${columnId} does not support dropdown filtering`);
       return [];
     },
     [rawColumns, loadFilterOptions, fetchFilterOptions, setFilterOptions]
@@ -801,6 +783,18 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       columnFilters: toggleColumnsDropdown,
     });
   }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown]);
+
+  // Sync column filters with useDatasource
+  useEffect(() => {
+    updateColumnFilters(columnFilters);
+
+    // Force refresh after a short delay to ensure state has updated
+    const timeoutId = setTimeout(() => {
+      refetch();
+    }, 50);
+
+    return () => clearTimeout(timeoutId);
+  }, [columnFilters, updateColumnFilters, refetch]);
 
   if (error) {
     return (

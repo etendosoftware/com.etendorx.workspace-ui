@@ -66,9 +66,9 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({ column, filterState,
   const getFilterSummary = () => {
     if (!hasActiveFilter) return "";
 
-    const count = filterState!.selectedOptions.length;
+    const count = filterState?.selectedOptions.length || 0;
     if (count === 1) {
-      return filterState!.selectedOptions[0].label;
+      return filterState?.selectedOptions[0].label || "";
     }
     return `${count} selected`;
   };
@@ -76,7 +76,7 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({ column, filterState,
   return (
     <>
       <Badge
-        badgeContent={hasActiveFilter ? filterState!.selectedOptions.length : 0}
+        badgeContent={hasActiveFilter ? filterState?.selectedOptions.length || 0 : 0}
         color="primary"
         invisible={!hasActiveFilter}
         sx={{
@@ -154,7 +154,7 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({ column, filterState,
               <Divider />
               <Box display="flex" justifyContent="space-between" alignItems="center">
                 <Typography variant="caption" color="text.secondary">
-                  {filterState!.selectedOptions.length} filter(s) applied
+                  {filterState?.selectedOptions.length || 0} filter(s) applied
                 </Typography>
                 <Button size="small" variant="text" color="error" onClick={handleClearFilter} startIcon={<ClearIcon />}>
                   Clear

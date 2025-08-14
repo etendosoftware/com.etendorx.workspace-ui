@@ -320,25 +320,33 @@ export class LegacyColumnFilterUtils {
   private static handleArrayFilter(fieldName: string, values: unknown[], column: Column): BaseCriteria[] {
     if (values.length === 0) return [];
 
-    const validCriteria: BaseCriteria[] = [];
+    // For TABLEDIR columns, use the $_identifier field and iEquals operator (like Etendo Classic)
+    const actualFieldName = ColumnFilterUtils.isTableDirColumn(column) ? `${fieldName}$_identifier` : fieldName;
 
-    for (const val of values) {
-      const formattedValue = LegacyColumnFilterUtils.formatValueForType(val, column);
-      if (formattedValue === null) continue;
+    const operator = ColumnFilterUtils.isTableDirColumn(column) ? "iEquals" : "equals";
 
-      validCriteria.push({
-        fieldName,
-        operator: "equals",
-        value: String(formattedValue),
-      });
+    if (values.length === 1) {
+      // Single value - direct criteria (no OR wrapper)
+      return [
+        {
+          fieldName: actualFieldName,
+          operator,
+          value: String(values[0]),
+        },
+      ];
     }
 
-    if (validCriteria.length === 0) return [];
+    // Multiple values - OR criteria
+    const orCriteria = values.map((value) => ({
+      fieldName: actualFieldName,
+      operator,
+      value: String(value),
+    }));
 
     return [
       {
         operator: "or",
-        criteria: validCriteria,
+        criteria: orCriteria,
       } as unknown as BaseCriteria,
     ];
   }
@@ -387,7 +395,10 @@ export class LegacyColumnFilterUtils {
 
     for (const filter of columnFilters) {
       const column = columns.find((col) => col.id === filter.id || col.columnName === filter.id);
-      if (!column) continue;
+
+      if (!column) {
+        continue;
+      }
 
       const fieldName = column.columnName;
       if (filter.value === undefined || filter.value === null) continue;
@@ -401,6 +412,7 @@ export class LegacyColumnFilterUtils {
           column
         );
       } else if (Array.isArray(filter.value)) {
+        // Handle dropdown filters (our new implementation)
         filterCriteria = LegacyColumnFilterUtils.handleArrayFilter(fieldName, filter.value, column);
       } else {
         filterCriteria = LegacyColumnFilterUtils.handleSingleValueFilter(fieldName, filter.value, column);

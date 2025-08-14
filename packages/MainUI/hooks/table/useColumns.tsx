@@ -73,13 +73,6 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
       // Configure advanced filters for select/tabledir columns
       if (supportsDropdownFilter && onColumnFilter && onLoadFilterOptions) {
-        console.log(`✅ Column ${column.columnName} supports dropdown filter:`, {
-          id: column.id,
-          type: column.type,
-          columnName: column.columnName,
-          header: column.header,
-        });
-
         const filterState = columnFilterStates?.find((f) => f.id === column.id);
 
         columnConfig = {

@@ -76,7 +76,6 @@ export class ColumnFilterUtils {
     }));
   }
 
-
   /**
    * Create criteria for column filters
    */

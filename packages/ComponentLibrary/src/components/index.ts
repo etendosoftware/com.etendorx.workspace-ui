@@ -78,7 +78,7 @@ export {
 };
 
 // Export ColumnFilter components
-export { ColumnFilter, ColumnFilterDropdown, ColumnFilterExample } from "./ColumnFilter";
+export { ColumnFilter, ColumnFilterDropdown } from "./ColumnFilter";
 export type { ColumnFilterProps, ColumnFilterDropdownProps } from "./ColumnFilter";
 
 // Export Copilot constants from api-client

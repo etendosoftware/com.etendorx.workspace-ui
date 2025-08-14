@@ -137,7 +137,6 @@ export function useDatasource({
 
   const columnFilterCriteria = useMemo(() => {
     if (!columns || !activeColumnFilters.length) return [];
-
     return LegacyColumnFilterUtils.createColumnFilterCriteria(activeColumnFilters, columns);
   }, [activeColumnFilters, columns]);
 
