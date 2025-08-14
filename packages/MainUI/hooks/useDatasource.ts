@@ -23,7 +23,7 @@ import type {
   EntityData,
   MRT_ColumnFiltersState,
 } from "@workspaceui/api-client/src/api/types";
-import { ColumnFilterUtils, SearchUtils } from "@workspaceui/api-client/src/utils/search-utils";
+import { LegacyColumnFilterUtils, SearchUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const loadData = async (
@@ -138,7 +138,7 @@ export function useDatasource({
   const columnFilterCriteria = useMemo(() => {
     if (!columns || !activeColumnFilters.length) return [];
 
-    return ColumnFilterUtils.createColumnFilterCriteria(activeColumnFilters, columns);
+    return LegacyColumnFilterUtils.createColumnFilterCriteria(activeColumnFilters, columns);
   }, [activeColumnFilters, columns]);
 
   const queryParams = useMemo(() => {

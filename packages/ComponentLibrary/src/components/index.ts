@@ -77,6 +77,10 @@ export {
   RadioGrid,
 };
 
+// Export ColumnFilter components
+export { ColumnFilter, ColumnFilterDropdown, ColumnFilterExample } from "./ColumnFilter";
+export type { ColumnFilterProps, ColumnFilterDropdownProps } from "./ColumnFilter";
+
 // Export Copilot constants from api-client
 export { MESSAGE_ROLES, CONTEXT_CONSTANTS } from "@workspaceui/api-client/src/api/copilot";
 export type { MessageRole } from "@workspaceui/api-client/src/api/copilot";

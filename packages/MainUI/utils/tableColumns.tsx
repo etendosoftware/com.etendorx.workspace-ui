@@ -35,6 +35,9 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
           columnType = column.column.reference$_identifier;
         }
 
+        // Get the proper field type using the reference mapping
+        const fieldType = getFieldReference(column.column?.reference);
+        
         result.push({
           header: column.name ?? column.hqlName,
           id: column.name,
@@ -46,8 +49,10 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
             reference: column.column?.reference,
           },
           name: column.name,
-          type: columnType,
+          type: fieldType, // Use the properly mapped field type
           referencedWindowId: column.referencedWindowId,
+          refList: column.refList, // Include refList for SELECT fields
+          referencedEntity: column.referencedEntity, // Include referencedEntity for TABLEDIR fields
           accessorFn: (v: Record<string, unknown>) => {
             const reference = getFieldReference(column.column?.reference);
 

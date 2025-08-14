@@ -48,6 +48,9 @@ import CircleFilledIcon from "../../../ComponentLibrary/src/assets/icons/circle-
 import ChevronUp from "../../../ComponentLibrary/src/assets/icons/chevron-up.svg";
 import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check.svg";
+import { useColumnFilters } from "@workspaceui/api-client/src/hooks/useColumnFilters";
+import type { FilterOption } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -103,7 +106,78 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
   const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
 
-  const baseColumns = useColumns(tab);
+  const rawColumns = useMemo(() => {
+    const { parseColumns } = require("@/utils/tableColumns");
+    return parseColumns(Object.values(tab.fields));
+  }, [tab.fields]);
+
+  const {
+    columnFilters: advancedColumnFilters,
+    setColumnFilter,
+    loadFilterOptions,
+  } = useColumnFilters({ columns: rawColumns });
+
+  const handleColumnFilterChange = useCallback(
+    async (columnId: string, selectedOptions: FilterOption[]) => {
+      setColumnFilter(columnId, selectedOptions);
+
+      const mrtFilter =
+        selectedOptions.length > 0
+          ? {
+              id: columnId,
+              value: selectedOptions.map((opt) => opt.value),
+            }
+          : null;
+
+      setColumnFilters((prev) => {
+        const filtered = prev.filter((f) => f.id !== columnId);
+        return mrtFilter ? [...filtered, mrtFilter] : filtered;
+      });
+    },
+    [setColumnFilter]
+  );
+
+  const handleLoadFilterOptions = useCallback(
+    async (columnId: string, searchQuery?: string): Promise<FilterOption[]> => {
+      const column = rawColumns.find((col: any) => col.id === columnId || col.columnName === columnId);
+      if (!column) {
+        console.warn(`Column not found: ${columnId}`);
+        return [];
+      }
+
+      console.log(`Loading options for ${columnId}:`, {
+        columnName: column.columnName,
+        type: column.type,
+        referencedEntity: column.referencedEntity,
+        refList: column.refList,
+        isSelect: ColumnFilterUtils.isSelectColumn(column),
+        isTableDir: ColumnFilterUtils.isTableDirColumn(column)
+      });
+
+      if (ColumnFilterUtils.isSelectColumn(column)) {
+        const options = ColumnFilterUtils.getSelectOptions(column);
+        console.log(`SELECT options for ${columnId}:`, options);
+        return options;
+      }
+
+      if (ColumnFilterUtils.isTableDirColumn(column)) {
+        await loadFilterOptions(columnId, searchQuery);
+        const options = await ColumnFilterUtils.fetchTableDirOptions(column, searchQuery);
+        console.log(`TABLEDIR options for ${columnId}:`, options);
+        return options;
+      }
+
+      console.warn(`Column ${columnId} does not support dropdown filtering`);
+      return [];
+    },
+    [rawColumns, loadFilterOptions]
+  );
+
+  const baseColumns = useColumns(tab, {
+    onColumnFilter: handleColumnFilterChange,
+    onLoadFilterOptions: handleLoadFilterOptions,
+    columnFilterStates: advancedColumnFilters,
+  });
   const [prevShouldUseTreeMode, setPrevShouldUseTreeMode] = useState(shouldUseTreeMode);
 
   const columns = useMemo(() => {

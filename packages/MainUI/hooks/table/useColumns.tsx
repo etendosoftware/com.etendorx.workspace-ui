@@ -18,26 +18,41 @@
 import { useMemo } from "react";
 import { parseColumns } from "@/utils/tableColumns";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
-import type { MRT_Cell } from "material-react-table";
+import type { MRT_Cell, MRT_Header, MRT_TableInstance } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
 import { getFieldReference } from "@/utils";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
+import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import { ColumnFilter } from "../../components/ColumnFilter/ColumnFilter";
 
-export const useColumns = (tab: Tab) => {
+import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
+
+interface UseColumnsOptions {
+  onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
+  onLoadFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
+  columnFilterStates?: ColumnFilterState[];
+}
+
+export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
+  const { onColumnFilter, onLoadFilterOptions, columnFilterStates } = options || {};
 
   const columns = useMemo(() => {
     const originalColumns = parseColumns(Object.values(tab.fields));
     const customColumns = originalColumns.map((column: Column) => {
       const isReference = isEntityReference(getFieldReference(column.column?.reference));
+      const supportsDropdownFilter = ColumnFilterUtils.supportsDropdownFilter(column);
 
+      let columnConfig = { ...column };
+
+      // Configure reference columns with navigation
       if (isReference) {
         const windowId = column.referencedWindowId;
         const windowIdentifier = column._identifier;
-        return {
-          ...column,
+        columnConfig = {
+          ...columnConfig,
           Cell: ({ cell }: { cell: MRT_Cell<EntityData, unknown> }) => {
             const row = cell.row.original as EntityData;
             const selectedRecordId = row?.[column.columnName as keyof EntityData];
@@ -55,10 +70,36 @@ export const useColumns = (tab: Tab) => {
           },
         };
       }
-      return column;
+
+      // Configure advanced filters for select/tabledir columns
+      if (supportsDropdownFilter && onColumnFilter && onLoadFilterOptions) {
+        console.log(`✅ Column ${column.columnName} supports dropdown filter:`, {
+          id: column.id,
+          type: column.type,
+          columnName: column.columnName,
+          header: column.header
+        });
+        
+        const filterState = columnFilterStates?.find(f => f.id === column.id);
+        
+        columnConfig = {
+          ...columnConfig,
+          enableColumnFilter: true, // Keep column filter enabled
+          Filter: () => (
+            <ColumnFilter
+              column={column}
+              filterState={filterState}
+              onFilterChange={(selectedOptions) => onColumnFilter(column.id, selectedOptions)}
+              onLoadOptions={(searchQuery) => onLoadFilterOptions(column.id, searchQuery)}
+            />
+          ),
+        };
+      }
+
+      return columnConfig;
     });
     return customColumns;
-  }, [tab.fields, handleClickRedirect, handleKeyDownRedirect]);
+  }, [tab.fields, handleClickRedirect, handleKeyDownRedirect, onColumnFilter, onLoadFilterOptions, columnFilterStates]);
 
   return columns;
 };

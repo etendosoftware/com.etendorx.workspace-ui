@@ -16,6 +16,8 @@
  */
 
 import type { BaseCriteria, Column, CompositeCriteria, MRT_ColumnFiltersState } from "../api/types";
+import type { ColumnFilterState } from "./column-filter-utils";
+import { ColumnFilterUtils } from "./column-filter-utils";
 
 type FormattedValue = string | number | null;
 
@@ -200,9 +202,49 @@ export class SearchUtils {
 
     return compositeCriteria;
   }
+
+  /**
+   * Combine global search criteria with column filter criteria
+   */
+  static combineSearchAndColumnFilters(
+    columns: Column[],
+    searchQuery: string,
+    columnFilters: ColumnFilterState[]
+  ): CompositeCriteria[] {
+    const searchCriteria = SearchUtils.createSearchCriteria(columns, searchQuery);
+    const columnFilterCriteria = ColumnFilterUtils.createColumnFilterCriteria(columnFilters);
+
+    const allCriteria: CompositeCriteria[] = [];
+
+    // Add search criteria (OR conditions for matching text across columns)
+    if (searchCriteria.length > 0) {
+      allCriteria.push(...searchCriteria);
+    }
+
+    // Add column filter criteria (AND conditions for specific column values)
+    if (columnFilterCriteria.length > 0) {
+      // Convert BaseCriteria to CompositeCriteria format
+      const compositeColumnFilters: CompositeCriteria[] = columnFilterCriteria.map((criteria) => {
+        if ('criteria' in criteria && criteria.criteria) {
+          // Already a composite criteria (OR group)
+          return criteria as CompositeCriteria;
+        }
+        
+        // Single criteria - wrap it
+        return {
+          operator: "and",
+          criteria: [criteria],
+        } as CompositeCriteria;
+      });
+
+      allCriteria.push(...compositeColumnFilters);
+    }
+
+    return allCriteria;
+  }
 }
 
-export class ColumnFilterUtils {
+export class LegacyColumnFilterUtils {
   static isNumericField(column: Column): boolean {
     if (column.type && typeof column.type === "string") {
       const lowerType = column.type.toLowerCase();
@@ -232,7 +274,7 @@ export class ColumnFilterUtils {
       return null;
     }
 
-    if (ColumnFilterUtils.isNumericField(column)) {
+    if (LegacyColumnFilterUtils.isNumericField(column)) {
       const numValue = Number.parseFloat(String(value).replace(",", "."));
       if (!Number.isNaN(numValue)) {
         return numValue;
@@ -251,7 +293,7 @@ export class ColumnFilterUtils {
     const result: BaseCriteria[] = [];
 
     if (rangeFilter.from !== null && rangeFilter.from !== undefined) {
-      const formattedValue = ColumnFilterUtils.formatValueForType(rangeFilter.from, column);
+      const formattedValue = LegacyColumnFilterUtils.formatValueForType(rangeFilter.from, column);
       if (formattedValue !== null) {
         result.push({
           fieldName,
@@ -262,7 +304,7 @@ export class ColumnFilterUtils {
     }
 
     if (rangeFilter.to !== null && rangeFilter.to !== undefined) {
-      const formattedValue = ColumnFilterUtils.formatValueForType(rangeFilter.to, column);
+      const formattedValue = LegacyColumnFilterUtils.formatValueForType(rangeFilter.to, column);
       if (formattedValue !== null) {
         result.push({
           fieldName,
@@ -281,7 +323,7 @@ export class ColumnFilterUtils {
     const validCriteria: BaseCriteria[] = [];
 
     for (const val of values) {
-      const formattedValue = ColumnFilterUtils.formatValueForType(val, column);
+      const formattedValue = LegacyColumnFilterUtils.formatValueForType(val, column);
       if (formattedValue === null) continue;
 
       validCriteria.push({
@@ -302,7 +344,7 @@ export class ColumnFilterUtils {
   }
 
   private static handleSingleValueFilter(fieldName: string, value: unknown, column: Column): BaseCriteria[] {
-    const formattedValue = ColumnFilterUtils.formatValueForType(value, column);
+    const formattedValue = LegacyColumnFilterUtils.formatValueForType(value, column);
     if (formattedValue === null) return [];
 
     if (REFERENCE_FIELDS.includes(fieldName)) {
@@ -319,7 +361,7 @@ export class ColumnFilterUtils {
       return SearchUtils.getDateCriteria(fieldName, String(formattedValue));
     }
 
-    if (ColumnFilterUtils.isNumericField(column)) {
+    if (LegacyColumnFilterUtils.isNumericField(column)) {
       return [
         {
           fieldName,
@@ -353,15 +395,15 @@ export class ColumnFilterUtils {
       let filterCriteria: BaseCriteria[] = [];
 
       if (typeof filter.value === "object" && filter.value !== null && "from" in filter.value && "to" in filter.value) {
-        filterCriteria = ColumnFilterUtils.handleRangeFilter(
+        filterCriteria = LegacyColumnFilterUtils.handleRangeFilter(
           fieldName,
           filter.value as { from: FormattedValue; to: FormattedValue },
           column
         );
       } else if (Array.isArray(filter.value)) {
-        filterCriteria = ColumnFilterUtils.handleArrayFilter(fieldName, filter.value, column);
+        filterCriteria = LegacyColumnFilterUtils.handleArrayFilter(fieldName, filter.value, column);
       } else {
-        filterCriteria = ColumnFilterUtils.handleSingleValueFilter(fieldName, filter.value, column);
+        filterCriteria = LegacyColumnFilterUtils.handleSingleValueFilter(fieldName, filter.value, column);
       }
 
       allCriteria.push(...filterCriteria);

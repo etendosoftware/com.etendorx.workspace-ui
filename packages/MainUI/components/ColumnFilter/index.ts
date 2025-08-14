@@ -15,12 +15,8 @@
  *************************************************************************
  */
 
-export * from "./api/metadata";
-export * from "./api/client";
-export * from "./api/copilot/index";
-export * from "./api/types";
-
-// Export column filter utilities and hooks
-export * from "./utils/column-filter-utils";
-export * from "./hooks/useColumnFilters";
-export * from "./hooks/useTableSearch";
+export { ColumnFilter } from "./ColumnFilter";
+export { ColumnFilterDropdown } from "./ColumnFilterDropdown";
+export { ColumnFilterExample } from "./ColumnFilterExample";
+export type { ColumnFilterProps } from "./ColumnFilter";
+export type { ColumnFilterDropdownProps } from "./ColumnFilterDropdown";
