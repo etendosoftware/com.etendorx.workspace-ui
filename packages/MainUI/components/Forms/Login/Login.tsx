@@ -51,8 +51,8 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
   );
 
   return (
-    <div className="bg-login flex flex-1 items-center justify-center">
-      <div className="bg-(--color-baseline-0) border border-(--color-transparent-neutral-10) rounded-xl overflow-hidden max-w-96">
+    <div className="bg-login flex flex-1 items-center justify-center pb-[10vh] flex-column">
+      <div className="w-100 bg-(--color-baseline-0) border border-(--color-transparent-neutral-10) rounded-xl overflow-hidden  shadow-[0px_4px_10px_0px_var(--color-transparent-neutral-10)]">
         <div className="h-14 flex items-center gap-2 pl-6 bg-(--color-baseline-10) border-b border-(--color-transparent-neutral-10)">
           <div className="logo h-8 w-8" />
           <div className="font-inter font-semibold text-sm text-(--color-baseline-100) leading-[20px] tracking-[0.15px] align-middle">
@@ -60,7 +60,7 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
           </div>
         </div>
         <form className="py-6 px-8" onSubmit={handleSubmit} noValidate>
-          <div className="font-inter text-(--color-transparent-neutral-70) font-semibold text-2xl leading-7 tracking-normal">
+          <div className="font-inter text-(--color-baseline-100) font-semibold text-2xl leading-7 tracking-normal">
             {t("login.title")}
           </div>
           <div className="font-inter text-(--color-transparent-neutral-70) font-medium text-xs leading-4 tracking-normal mt-1 mb-3">
@@ -89,22 +89,22 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
             onChange={handlePasswordChange}
             autoComplete="current-password"
           />
-          <Button type="submit" className="mt-6 h-10">
+          <Button type="submit" className="mt-6" size="large">
             {t("login.buttons.submit")}
           </Button>
           <div className="relative flex items-center my-4">
             <div className="flex-grow border-t border-(--color-transparent-neutral-10)" />
             <span className="font-inter font-medium text-xs leading-4 tracking-normal mx-4 border-(--color-transparent-neutral-70)">
-              O
+              {t("login.buttons.google")}
             </span>
             <div className="flex-grow border-t border-(--color-transparent-neutral-10)" />
           </div>
-          <Button disabled variant="outlined" type="submit" className="h-10" startIcon={<GoogleIcon />}>
+          <Button disabled variant="outlined" type="submit" size="large" startIcon={<GoogleIcon />}>
             {t("login.buttons.google")}
           </Button>
-          {error && <div>{error}</div>}
         </form>
       </div>
+      {error && <div className="font-medium text-sm text-(--color-error-main) mt-4">{error}</div>}
     </div>
   );
 }

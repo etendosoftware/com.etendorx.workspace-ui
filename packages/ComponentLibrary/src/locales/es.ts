@@ -216,8 +216,9 @@ const es = {
     },
     buttons: {
       submit: "Acceso",
-      google: "Continue with Google",
+      google: "Continuar con Google",
     },
+    or: "O",
   },
   grid: {
     items: {

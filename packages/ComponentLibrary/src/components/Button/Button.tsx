@@ -26,7 +26,7 @@ const getButtonClasses = ({
     transition-colors duration-200 w-full
   `;
 
-  const sizeClass = size === "small" ? "py-3 text-sm" : "h-10 px-4 text-base";
+  const sizeClass = size === "small" ? "h-8 text-sm" : "h-10 px-4 text-base";
 
   const cursorClass = disabled ? "!cursor-default" : "!cursor-pointer";
 
@@ -40,13 +40,12 @@ const getButtonClasses = ({
       ),
     outlined: ({ disabled }) =>
       clsx(
-        "border",
+        "border border-(--color-transparent-neutral-20) ",
         disabled
-          ? "border-gray-200 text-(--color-transparent-neutral-700) opacity-60"
+          ? "bg-(--color-transparent-neutral-10) text-(--color-transparent-neutral-70) opacity-60"
           : [
-              "text-(--color-transparent-neutral-700)",
+              "text-(--color-transparent-neutral-70)",
               "hover:text-(--color-etendo-contrast-text)",
-              "border-(--color-transparent-neutral-20)",
               "hover:border-(--color-etendo-dark)",
               "hover:bg-(--color-etendo-dark)",
               "hover:[&>span>svg]:fill-white",
@@ -69,7 +68,6 @@ const Button = ({
 }: ButtonProps) => {
   const classes = getButtonClasses({ variant, size, disabled });
 
-  // Forzar el cursor mediante style como respaldo
   const buttonStyle = {
     ...style,
     cursor: disabled ? "not-allowed" : "pointer",

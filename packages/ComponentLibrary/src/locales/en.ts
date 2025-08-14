@@ -213,8 +213,9 @@ const en = {
     },
     buttons: {
       submit: "Log In",
-      google: "Continuar con Google",
+      google: "Continue with Google",
     },
+    or: "OR",
   },
   grid: {
     items: {
