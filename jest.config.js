@@ -25,6 +25,8 @@ export default {
   collectCoverageFrom: [
     "packages/ComponentLibrary/src/**/*.{ts,tsx}",
     "packages/MainUI/src/**/*.{ts,tsx}",
+    "packages/MainUI/app/**/*.{ts,tsx}",
+    "packages/MainUI/app/api/**/*.{ts,tsx}",
     "packages/MainUI/components/**/*.{ts,tsx}",
     "packages/MainUI/hooks/**/*.{ts,tsx}",
     "packages/MainUI/contexts/**/*.{ts,tsx}",

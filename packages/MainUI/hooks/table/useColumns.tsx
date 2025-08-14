@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -42,14 +42,16 @@ export const useColumns = (tab: Tab) => {
         return {
           ...column,
           Cell: ({ cell }: { cell: MRT_Cell<EntityData, unknown> }) => {
+            const row = cell.row.original as EntityData;
+            const selectedRecordId = row?.[column.columnName as keyof EntityData];
             return (
               <button
                 type="button"
                 tabIndex={0}
                 aria-label="Navigate to referenced window"
                 className="bg-transparent border-none p-0 text-(--color-dynamic-main) hover:underline text-left"
-                onClick={(e) => handleClickRedirect(e, windowId, windowIdentifier)}
-                onKeyDown={(e) => handleKeyDownRedirect(e, windowId, windowIdentifier)}>
+                onClick={(e) => handleClickRedirect(e, windowId, windowIdentifier, String(selectedRecordId ?? ""))}
+                onKeyDown={(e) => handleKeyDownRedirect(e, windowId, windowIdentifier, String(selectedRecordId ?? ""))}>
                 {cell.getValue<string>()}
               </button>
             );

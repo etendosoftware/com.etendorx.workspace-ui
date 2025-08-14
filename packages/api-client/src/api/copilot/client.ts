@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -16,7 +16,7 @@
  */
 
 import { Client, type Interceptor, type ClientOptions } from "../client";
-import { COPILOT_ENDPOINTS, COPILOT_METHODS, isProduction, COPILOT_BASE_PATH } from "./constants";
+import { COPILOT_ENDPOINTS, COPILOT_METHODS, isProduction } from "./constants";
 import type { IAssistant, ILabels, CopilotQuestionParams, CopilotUploadResponse } from "./types";
 
 export class CopilotUnauthorizedError extends Error {
@@ -35,12 +35,15 @@ export class CopilotClient {
 
   /**
    * Initializes the CopilotClient with base URL
-   * Follows the pattern from Metadata class
+   * Uses Next.js proxy instead of direct ERP connection
    */
   public static setBaseUrl(etendoUrl: string) {
-    const copilotUrl = `${etendoUrl.replace(/\/$/, "")}${COPILOT_BASE_PATH}`;
-    CopilotClient.currentBaseUrl = copilotUrl;
-    CopilotClient.client.setBaseUrl(copilotUrl);
+    // Instead of connecting directly to ERP, use Next.js API route
+    const proxyUrl =
+      typeof window !== "undefined" ? `${window.location.origin}/api/copilot` : "http://localhost:3000/api/copilot";
+
+    CopilotClient.currentBaseUrl = proxyUrl;
+    CopilotClient.client.setBaseUrl(proxyUrl);
     CopilotClient.isInitialized = true;
   }
 

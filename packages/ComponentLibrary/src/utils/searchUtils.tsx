@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -18,48 +18,50 @@
 import type { Menu } from "@workspaceui/api-client/src/api/types";
 import type { IndexedMenu, SearchIndex } from "../components/Drawer/types";
 
-const index: SearchIndex = {
-  byId: new Map(),
-  byPhrase: new Map(),
-};
-
-const addToPhraseIndex = (phrase: string, id: string) => {
+const addToPhraseIndex = (index: SearchIndex, phrase: string, id: string) => {
   if (!index.byPhrase.has(phrase)) {
     index.byPhrase.set(phrase, new Set());
   }
   index.byPhrase.get(phrase)?.add(id);
 };
 
-const traverse = (items: Menu[], path: string[] = [], fullPath = "") => {
+const traverse = (index: SearchIndex, items: Menu[], path: string[] = [], fullPath = "") => {
+  if (!Array.isArray(items) || items.length === 0) return;
+
   for (const item of items) {
     const newFullPath = fullPath ? `${fullPath} > ${item.name}` : item.name;
     const indexedItem: IndexedMenu = { ...item, path, fullPath: newFullPath };
     index.byId.set(item.id, indexedItem);
 
     const lowerName = item.name.toLowerCase();
-    addToPhraseIndex(lowerName, item.id);
+    addToPhraseIndex(index, lowerName, item.id);
 
     const words = lowerName.split(/\s+/);
     for (const word of words) {
-      addToPhraseIndex(word, item.id);
+      addToPhraseIndex(index, word, item.id);
     }
 
-    addToPhraseIndex(newFullPath.toLowerCase(), item.id);
+    addToPhraseIndex(index, newFullPath.toLowerCase(), item.id);
 
     if (Array.isArray(item.children)) {
-      traverse(item.children, [...path, item.id], newFullPath);
+      traverse(index, item.children, [...path, item.id], newFullPath);
     }
   }
 };
 
-export const createSearchIndex = (items: Menu[]): SearchIndex => {
+export const createSearchIndex = (items: Menu[] | undefined | null): SearchIndex => {
+  const freshIndex: SearchIndex = {
+    byId: new Map<string, IndexedMenu>(),
+    byPhrase: new Map<string, Set<string>>(),
+  };
+
   try {
-    traverse(items);
+    traverse(freshIndex, Array.isArray(items) ? items : []);
   } catch (e) {
     console.warn("Error in createSearchIndex", e);
   }
 
-  return index;
+  return freshIndex;
 };
 
 const findMatchingIds = (searchValue: string, searchIndex: SearchIndex): Set<string> => {

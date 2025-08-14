@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -75,6 +75,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const selectedRecord = useSelectedRecord(tab);
   const hasParentTab = !!tab?.parentTabId;
   const parentId = parentRecord?.id?.toString();
+  const isTreeNodeView = tab?.tableTree;
 
   const {
     handleAction,
@@ -162,7 +163,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const handleCloseStatusModal = useCallback(() => setActiveModal(null), []);
 
   const toolbarConfig = useMemo(() => {
-    const organizedButtons = organizeButtonsBySection(buttons, isFormView);
+    const organizedButtons = organizeButtonsBySection(buttons, isFormView, isTreeNodeView);
     const hasSelectedRecord = !!selectedRecord?.id;
     const hasParentRecordSelected = !hasParentTab || selectedParentItems.length === 1;
 
@@ -205,6 +206,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     return config;
   }, [
     buttons,
+    isTreeNodeView,
     isFormView,
     selectedRecord?.id,
     processButtons.length,
@@ -217,7 +219,25 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     hasFormChanges,
   ]);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="h-10 flex justify-between items-center gap-1 animate-pulse">
+        <div className="bg-(--color-baseline-0) rounded-4xl p-1 flex items-center gap-2">
+          <div className="h-6 w-20 bg-(--color-transparent-neutral-10) rounded" />
+          <div className="h-6 w-16 bg-(--color-transparent-neutral-10) rounded" />
+        </div>
+        <div className="bg-(--color-baseline-0) rounded-4xl p-1 flex-1 flex items-center gap-2 shadow-[0px_4px_10px_var(--color-transparent-neutral-10)]">
+          <div className="h-6 w-24 bg-(--color-transparent-neutral-10) rounded" />
+          <div className="h-6 w-32 bg-(--color-transparent-neutral-10) rounded" />
+          <div className="h-6 w-20 bg-(--color-transparent-neutral-10) rounded" />
+        </div>
+        <div className="bg-transparent-neutral-5 rounded-4xl p-1 flex items-center gap-2">
+          <div className="h-6 w-6 bg-(--color-transparent-neutral-10) rounded-full" />
+          <div className="h-6 w-6 bg-(--color-transparent-neutral-10) rounded-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

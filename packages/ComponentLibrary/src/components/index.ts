@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -22,7 +22,6 @@ import TextInputBaseMUI from "./Input/TextInput/TextInputBase";
 import InputPasswordMUI from "./Input/TextInput/TextInputBase/InputPassword";
 import ToggleChipMUI from "./Toggle/ToggleChip";
 import Nav from "./Nav/Nav";
-import ProfileModal from "@workspaceui/mainui/components/ProfileModal/ProfileModal";
 import WaterfallModal from "./Waterfall/WaterfallModal";
 import ConfigurationModalCustom from "./ConfigurationModal";
 import NotificationBase from "./NotificationsButton";
@@ -43,7 +42,6 @@ const InputPassword = InputPasswordMUI;
 const SearchInputWithVoice = SearchInputWithVoiceMUI;
 const ToggleChip = ToggleChipMUI;
 const Navbar = Nav;
-const Profile = ProfileModal;
 const Waterfall = WaterfallModal;
 const ConfigurationModal = ConfigurationModalCustom;
 const NotificationButton = NotificationBase;
@@ -65,7 +63,6 @@ export {
   SearchInputWithVoice,
   ToggleChip,
   Navbar,
-  Profile,
   Waterfall,
   ConfigurationModal,
   NotificationButton,

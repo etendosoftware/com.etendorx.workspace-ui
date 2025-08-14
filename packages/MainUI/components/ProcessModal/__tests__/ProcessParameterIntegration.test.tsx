@@ -8,35 +8,37 @@ import { ProcessParameterSelector } from "../selectors/ProcessParameterSelector"
 
 // Mock dependencies
 jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: () => ({ session: {} })
+  useUserContext: () => ({ session: {} }),
 }));
 
 jest.mock("@/components/Form/FormView/selectors/PasswordSelector", () => ({
-  PasswordSelector: ({ field }: any) => <input data-testid="password-field" name={field.hqlName} type="password" />
+  PasswordSelector: ({ field }: any) => <input data-testid="password-field" name={field.hqlName} type="password" />,
 }));
 
 jest.mock("@/components/Form/FormView/selectors/BooleanSelector", () => ({
-  BooleanSelector: ({ field }: any) => <input data-testid="boolean-field" name={field.hqlName} type="checkbox" />
+  BooleanSelector: ({ field }: any) => <input data-testid="boolean-field" name={field.hqlName} type="checkbox" />,
 }));
 
 jest.mock("@/components/Form/FormView/selectors/NumericSelector", () => ({
-  NumericSelector: ({ field }: any) => <input data-testid="numeric-field" name={field.hqlName} type="number" />
+  NumericSelector: ({ field }: any) => <input data-testid="numeric-field" name={field.hqlName} type="number" />,
 }));
 
 jest.mock("@/components/Form/FormView/selectors/DateSelector", () => ({
-  DateSelector: ({ field }: any) => <input data-testid="date-field" name={field.hqlName} type="date" />
+  DateSelector: ({ field }: any) => <input data-testid="date-field" name={field.hqlName} type="date" />,
 }));
 
 jest.mock("@/components/Form/FormView/selectors/DatetimeSelector", () => ({
-  DatetimeSelector: ({ field }: any) => <input data-testid="datetime-field" name={field.hqlName} type="datetime-local" />
+  DatetimeSelector: ({ field }: any) => (
+    <input data-testid="datetime-field" name={field.hqlName} type="datetime-local" />
+  ),
 }));
 
 jest.mock("@/components/Form/FormView/selectors/SelectSelector", () => ({
-  SelectSelector: ({ field }: any) => <select data-testid="select-field" name={field.hqlName} />
+  SelectSelector: ({ field }: any) => <select data-testid="select-field" name={field.hqlName} />,
 }));
 
 jest.mock("@/components/Form/FormView/selectors/TableDirSelector", () => ({
-  TableDirSelector: ({ field }: any) => <select data-testid="tabledir-field" name={field.hqlName} />
+  TableDirSelector: ({ field }: any) => <select data-testid="tabledir-field" name={field.hqlName} />,
 }));
 
 jest.mock("@/components/Form/FormView/selectors/QuantitySelector", () => {
@@ -46,7 +48,7 @@ jest.mock("@/components/Form/FormView/selectors/QuantitySelector", () => {
 });
 
 jest.mock("@/components/Form/FormView/selectors/ListSelector", () => ({
-  ListSelector: ({ field }: any) => <select data-testid="list-field" name={field.hqlName} />
+  ListSelector: ({ field }: any) => <select data-testid="list-field" name={field.hqlName} />,
 }));
 
 jest.mock("../selectors/GenericSelector", () => {
@@ -77,7 +79,7 @@ describe("ProcessParameterSelector Integration", () => {
         reference: "Password",
         mandatory: true,
         defaultValue: "",
-        refList: []
+        refList: [],
       };
 
       render(
@@ -100,7 +102,7 @@ describe("ProcessParameterSelector Integration", () => {
         reference: "Yes/No",
         mandatory: false,
         defaultValue: "N",
-        refList: []
+        refList: [],
       };
 
       render(
@@ -123,7 +125,7 @@ describe("ProcessParameterSelector Integration", () => {
         reference: "Amount",
         mandatory: true,
         defaultValue: "0.00",
-        refList: []
+        refList: [],
       };
 
       render(
@@ -146,7 +148,7 @@ describe("ProcessParameterSelector Integration", () => {
         reference: "Integer",
         mandatory: false,
         defaultValue: "1",
-        refList: []
+        refList: [],
       };
 
       render(
@@ -168,7 +170,7 @@ describe("ProcessParameterSelector Integration", () => {
         reference: "ComplexType",
         mandatory: false,
         defaultValue: "",
-        refList: []
+        refList: [],
       };
 
       render(
@@ -189,7 +191,7 @@ describe("ProcessParameterSelector Integration", () => {
         reference: "String",
         mandatory: false,
         defaultValue: "",
-        refList: []
+        refList: [],
       };
 
       render(
@@ -211,7 +213,7 @@ describe("ProcessParameterSelector Integration", () => {
         reference: "Boolean",
         mandatory: false,
         defaultValue: "N",
-        refList: []
+        refList: [],
       };
 
       render(
@@ -226,11 +228,11 @@ describe("ProcessParameterSelector Integration", () => {
 
     it("should handle different boolean reference formats", () => {
       const booleanFormats = ["Yes/No", "YesNo", "Boolean"];
-      
+
       booleanFormats.forEach((format, index) => {
         const { unmount } = render(
           <TestWrapper>
-            <ProcessParameterSelector 
+            <ProcessParameterSelector
               parameter={{
                 id: `bool-${index}`,
                 name: `Boolean Field ${index}`,
@@ -238,12 +240,12 @@ describe("ProcessParameterSelector Integration", () => {
                 reference: format,
                 mandatory: false,
                 defaultValue: "N",
-                refList: []
-              }} 
+                refList: [],
+              }}
             />
           </TestWrapper>
         );
-        
+
         expect(screen.getByTestId("boolean-field")).toBeInTheDocument();
         unmount();
       });
@@ -254,18 +256,31 @@ describe("ProcessParameterSelector Integration", () => {
     it("should support 11 out of 11 field reference types (100% Phase 3 target)", () => {
       // Phase 1 + Phase 2 + Phase 3 supported types: All field types now supported
       const supportedTypes = [
-        "Password", "Yes/No", "Boolean", "Amount", "Integer", "Decimal", "Quantity",
-        "Date", "DateTime", "Select", "Product", "TableDir", "Table Directory", "List", "Window"
+        "Password",
+        "Yes/No",
+        "Boolean",
+        "Amount",
+        "Integer",
+        "Decimal",
+        "Quantity",
+        "Date",
+        "DateTime",
+        "Select",
+        "Product",
+        "TableDir",
+        "Table Directory",
+        "List",
+        "Window",
       ];
-      
+
       // Only fallback types remain: String, Text, etc.
       const fallbackTypes = ["String", "Text"];
-      
+
       // Test that all supported types work correctly
       supportedTypes.forEach((type, index) => {
         const { unmount } = render(
           <TestWrapper>
-            <ProcessParameterSelector 
+            <ProcessParameterSelector
               parameter={{
                 id: `supported-${index}`,
                 name: `Supported Field ${index}`,
@@ -273,14 +288,14 @@ describe("ProcessParameterSelector Integration", () => {
                 reference: type,
                 mandatory: false,
                 defaultValue: "",
-                refList: []
-              }} 
+                refList: [],
+              }}
             />
           </TestWrapper>
         );
-        
+
         // Should render specialized selector (not generic)
-        const hasSpecializedSelector = 
+        const hasSpecializedSelector =
           screen.queryByTestId("password-field") ||
           screen.queryByTestId("boolean-field") ||
           screen.queryByTestId("numeric-field") ||
@@ -291,16 +306,16 @@ describe("ProcessParameterSelector Integration", () => {
           screen.queryByTestId("quantity-field") ||
           screen.queryByTestId("list-field") ||
           screen.queryByTestId("generic-field"); // Window uses GenericSelector with WindowReferenceGrid
-          
+
         expect(hasSpecializedSelector).toBeInTheDocument();
         unmount();
       });
-      
+
       // Verify fallback types use GenericSelector
       fallbackTypes.forEach((type, index) => {
         const { unmount } = render(
           <TestWrapper>
-            <ProcessParameterSelector 
+            <ProcessParameterSelector
               parameter={{
                 id: `future-${index}`,
                 name: `Future Field ${index}`,
@@ -308,12 +323,12 @@ describe("ProcessParameterSelector Integration", () => {
                 reference: type,
                 mandatory: false,
                 defaultValue: "",
-                refList: []
-              }} 
+                refList: [],
+              }}
             />
           </TestWrapper>
         );
-        
+
         expect(screen.getByTestId("generic-field")).toBeInTheDocument();
         unmount();
       });

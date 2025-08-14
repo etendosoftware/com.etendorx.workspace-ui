@@ -26,13 +26,14 @@ import GenericSelector from "./GenericSelector";
 
 interface ProcessParameterSelectorProps {
   parameter: ProcessParameter | ExtendedProcessParameter;
+  logicFields?: Record<string, boolean>; // Optional logic fields from process defaults
 }
 
 /**
  * Main selector component that routes ProcessParameters to appropriate form controls
  * This component bridges ProcessParameters with FormView selectors for consistent UI
  */
-export const ProcessParameterSelector = ({ parameter }: ProcessParameterSelectorProps) => {
+export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessParameterSelectorProps) => {
   const { session } = useUserContext();
   const { getValues } = useFormContext();
 
@@ -41,23 +42,50 @@ export const ProcessParameterSelector = ({ parameter }: ProcessParameterSelector
     return ProcessParameterMapper.mapToField(parameter);
   }, [parameter]);
 
-  // Evaluate display logic expression
+  // Evaluate display logic expression (combine parameter logic with process defaults logic)
   const isDisplayed = useMemo(() => {
+    // Check process defaults logic first (takes precedence)
+    const defaultsDisplayLogic = logicFields?.[`${parameter.name}.display`];
+    if (defaultsDisplayLogic !== undefined) {
+      return defaultsDisplayLogic;
+    }
+
+    // Fallback to parameter's own display logic
     if (!parameter.displayLogic) return true;
-    
+
+    // Skip compilation if display logic looks like a field name (contains underscores and ends with _logic)
+    if (parameter.displayLogic.includes("_logic") && !parameter.displayLogic.includes("@")) {
+      logger.warn("Invalid display logic expression - looks like field name:", parameter.displayLogic);
+      return true; // Default to visible for malformed expressions
+    }
+
+    // WAIT for form data to be available before evaluating expressions
+    const currentValues = getValues();
+    if (!currentValues || Object.keys(currentValues).length === 0) {
+      // Form data not loaded yet, default to visible to avoid errors
+      return true;
+    }
+
     try {
       const compiledExpr = compileExpression(parameter.displayLogic);
-      return compiledExpr(session, getValues());
+      return compiledExpr(session, currentValues);
     } catch (error) {
       logger.warn("Error executing display logic expression:", parameter.displayLogic, error);
       return true; // Default to visible on error
     }
-  }, [parameter.displayLogic, session, getValues]);
+  }, [parameter.displayLogic, parameter.name, logicFields, session, getValues]);
 
-  // Evaluate readonly logic expression
+  // Evaluate readonly logic expression (combine parameter logic with process defaults logic)
   const isReadOnly = useMemo(() => {
+    // Check process defaults logic first (takes precedence)
+    const defaultsReadOnlyLogic = logicFields?.[`${parameter.name}.readonly`];
+    if (defaultsReadOnlyLogic !== undefined) {
+      return defaultsReadOnlyLogic;
+    }
+
+    // Fallback to parameter's own readonly logic
     if (!parameter.readOnlyLogicExpression) return false;
-    
+
     try {
       const compiledExpr = compileExpression(parameter.readOnlyLogicExpression);
       return compiledExpr(session, getValues());
@@ -65,7 +93,7 @@ export const ProcessParameterSelector = ({ parameter }: ProcessParameterSelector
       logger.warn("Error executing readonly logic expression:", parameter.readOnlyLogicExpression, error);
       return false; // Default to editable on error
     }
-  }, [parameter.readOnlyLogicExpression, session, getValues]);
+  }, [parameter.readOnlyLogicExpression, parameter.name, logicFields, session, getValues]);
 
   // Get field type for selector routing
   const fieldType = useMemo(() => {
@@ -88,69 +116,30 @@ export const ProcessParameterSelector = ({ parameter }: ProcessParameterSelector
 
       switch (fieldType) {
         case "password":
-          return (
-            <PasswordSelector 
-              field={mappedField}
-              disabled={isReadOnly}
-              placeholder={parameter.description}
-            />
-          );
+          return <PasswordSelector field={mappedField} disabled={isReadOnly} placeholder={parameter.description} />;
 
         case "boolean":
-          return (
-            <BooleanSelector 
-              field={mappedField}
-              isReadOnly={isReadOnly}
-            />
-          );
+          return <BooleanSelector field={mappedField} isReadOnly={isReadOnly} />;
 
         case "numeric":
-          return (
-            <NumericSelector 
-              field={mappedField}
-              disabled={isReadOnly}
-              placeholder={parameter.description}
-            />
-          );
+          return <NumericSelector field={mappedField} disabled={isReadOnly} placeholder={parameter.description} />;
 
         case "date":
-          return (
-            <DateSelector 
-              field={mappedField}
-              isReadOnly={isReadOnly}
-            />
-          );
+          return <DateSelector field={mappedField} isReadOnly={isReadOnly} />;
 
         case "datetime":
-          return (
-            <DatetimeSelector 
-              field={mappedField}
-              isReadOnly={isReadOnly}
-            />
-          );
+          return <DatetimeSelector field={mappedField} isReadOnly={isReadOnly} />;
 
         case "select":
-          return (
-            <SelectSelector 
-              field={mappedField}
-              isReadOnly={isReadOnly}
-              pageSize={20}
-              initialPageSize={20}
-            />
-          );
+          return <SelectSelector field={mappedField} isReadOnly={isReadOnly} pageSize={20} initialPageSize={20} />;
 
         case "tabledir":
         case "product":
-          return (
-            <TableDirSelector 
-              field={mappedField}
-              isReadOnly={isReadOnly}
-            />
-          );
+          return <TableDirSelector field={mappedField} isReadOnly={isReadOnly} />;
 
         case "quantity":
           return (
-            <QuantitySelector 
+            <QuantitySelector
               field={mappedField}
               value={mappedField.hasDefaultValue ? parameter.defaultValue : ""}
               name={mappedField.hqlName}
@@ -165,12 +154,7 @@ export const ProcessParameterSelector = ({ parameter }: ProcessParameterSelector
             logger.warn("List field without options, falling back to GenericSelector:", parameter.name);
             return <GenericSelector parameter={parameter} readOnly={isReadOnly} />;
           }
-          return (
-            <ListSelector 
-              field={mappedField}
-              isReadOnly={isReadOnly}
-            />
-          );
+          return <ListSelector field={mappedField} isReadOnly={isReadOnly} />;
 
         // Window references already handled by GenericSelector with WindowReferenceGrid
         case "window":
@@ -196,9 +180,7 @@ export const ProcessParameterSelector = ({ parameter }: ProcessParameterSelector
         )}
         <Label htmlFor={mappedField.hqlName} name={parameter.name} />
       </div>
-      <div className="w-full pb-8">
-        {renderSelector()}
-      </div>
+      <div className="w-full pb-8">{renderSelector()}</div>
     </div>
   );
 };
