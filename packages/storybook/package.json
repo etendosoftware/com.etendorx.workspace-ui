@@ -3,7 +3,10 @@
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -12,7 +15,12 @@
     "start": "npx http-server storybook-static",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "rm -rf storybook-static && storybook build",
-    "build-storybook-local": "rm -rf storybook-static && yarn build-storybook && cd storybook-static && npx http-server"
+    "build-storybook-local": "rm -rf storybook-static && yarn build-storybook && cd storybook-static && npx http-server",
+    "test-storybook": "test-storybook",
+    "test-storybook:ci": "concurrently -k -s first -n \"SB,TEST\" -c \"magenta,blue\" \"pnpm build-storybook && pnpm dlx http-server storybook-static --port 6006 \" \"wait-on tcp:6006 && pnpm test-storybook\"",
+    "test-storybook:coverage": "test-storybook --coverage",
+    "test-storybook:visual": "VISUAL_TESTS=true test-storybook",
+    "chromatic": "chromatic --exit-zero-on-changes"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
@@ -20,12 +28,13 @@
     "@mui/icons-material": "^5.15.19",
     "@mui/material": "^5.15.19",
     "@mui/x-date-pickers": "^7.1.1",
-    "@workspaceui/componentlibrary": "workspace:componentlibrary",
     "@workspaceui/api-client": "workspace:api-client",
+    "@workspaceui/componentlibrary": "workspace:componentlibrary",
     "@workspaceui/mainui": "workspace:mainui",
     "react-markdown": "^9.0.1",
     "react-router-dom": "^6.26.0",
-    "vite-plugin-svgr": "^4.2.0"
+    "vite-plugin-svgr": "^4.2.0",
+    "vite-tsconfig-paths": "^5.1.4"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^1.5.0",
@@ -34,16 +43,23 @@
     "@storybook/addon-interactions": "^8.1.10",
     "@storybook/addon-links": "^8.1.10",
     "@storybook/addon-onboarding": "^8.1.10",
+    "@storybook/addon-coverage": "^1.0.4",
     "@storybook/blocks": "^8.1.10",
     "@storybook/react": "^8.1.10",
     "@storybook/react-vite": "^8.1.10",
     "@storybook/test": "^8.1.10",
+    "@storybook/test-runner": "^0.19.1",
     "@types/react": "18.3.1",
     "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "^4.2.1",
     "chromatic": "^11.5.4",
+    "concurrently": "^8.2.2",
+    "http-server": "^14.1.1",
+    "playwright": "^1.44.1",
     "storybook": "^8.1.10",
     "typescript": "^5.2.2",
-    "vite": "^5.2.0"
+    "vite": "^5.2.0",
+    "wait-on": "^7.2.0",
+    "next-router-mock": "^0.9.13"
   }
 }

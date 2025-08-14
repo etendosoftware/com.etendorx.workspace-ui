@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -16,7 +16,7 @@
  */
 
 "use client";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMetadataContext } from "@/hooks/useMetadataContext";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
@@ -45,6 +45,7 @@ export default function WindowTabs() {
     handleScrollRight,
   } = useTabs();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [closingWindowIds, setClosingWindowIds] = useState<Set<string>>(new Set());
 
   const handleTabMenuOpen = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -64,6 +65,22 @@ export default function WindowTabs() {
   const handleGoHome = () => {
     navigateToHome();
   };
+
+  // Clear any optimistic closing ids that no longer exist in windows
+  useEffect(() => {
+    setClosingWindowIds((prev) => {
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (windows.some((w) => w.windowId === id)) next.add(id);
+      }
+      return next;
+    });
+  }, [windows]);
+
+  const visibleWindows = useMemo(
+    () => windows.filter((w) => !closingWindowIds.has(w.windowId)),
+    [windows, closingWindowIds]
+  );
 
   return (
     <div
@@ -88,12 +105,12 @@ export default function WindowTabs() {
       <div
         className="w-full flex items-center px-2 overflow-x-auto overflow-y-hidden scroll-smooth hide-scrollbar h-9"
         ref={windowsContainerRef}>
-        {windows.map((window, index) => {
+        {visibleWindows.map((window, index) => {
           const title = window.title || getWindowTitle?.(window.windowId);
           const isActive = window.isActive;
-          const canClose = windows.length > 1;
+          const canClose = visibleWindows.length > 1;
 
-          const activeIndex = windows.findIndex((w) => w.isActive);
+          const activeIndex = visibleWindows.findIndex((w) => w.isActive);
           const showSeparator = index !== activeIndex - 1 && index !== activeIndex;
 
           return (
@@ -111,11 +128,13 @@ export default function WindowTabs() {
                   handleSelectWindow(window.windowId);
                 }}
                 onClose={() => {
+                  // Optimistic removal for instant feedback
+                  setClosingWindowIds((prev) => new Set(prev).add(window.windowId));
                   closeWindow(window.windowId);
                 }}
                 canClose={canClose}
               />
-              {showSeparator && index < windows.length - 1 && (
+              {showSeparator && index < visibleWindows.length - 1 && (
                 <div className="h-4 w-0.5 bg-(--color-baseline-100) opacity-10 mx-0.5" />
               )}
             </div>

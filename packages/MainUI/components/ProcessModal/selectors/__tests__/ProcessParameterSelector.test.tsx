@@ -4,35 +4,37 @@ import { ProcessParameterSelector } from "../ProcessParameterSelector";
 
 // Mock hooks and components
 jest.mock("@/hooks/useUserContext", () => ({
-  useUserContext: () => ({ session: {} })
+  useUserContext: () => ({ session: {} }),
 }));
 
 jest.mock("@/components/Form/FormView/selectors/PasswordSelector", () => ({
-  PasswordSelector: ({ field }: any) => <input data-testid="password-selector" name={field.hqlName} type="password" />
+  PasswordSelector: ({ field }: any) => <input data-testid="password-selector" name={field.hqlName} type="password" />,
 }));
 
 jest.mock("@/components/Form/FormView/selectors/BooleanSelector", () => ({
-  BooleanSelector: ({ field }: any) => <input data-testid="boolean-selector" name={field.hqlName} type="checkbox" />
+  BooleanSelector: ({ field }: any) => <input data-testid="boolean-selector" name={field.hqlName} type="checkbox" />,
 }));
 
 jest.mock("@/components/Form/FormView/selectors/NumericSelector", () => ({
-  NumericSelector: ({ field }: any) => <input data-testid="numeric-selector" name={field.hqlName} type="number" />
+  NumericSelector: ({ field }: any) => <input data-testid="numeric-selector" name={field.hqlName} type="number" />,
 }));
 
 jest.mock("@/components/Form/FormView/selectors/DateSelector", () => ({
-  DateSelector: ({ field }: any) => <input data-testid="date-selector" name={field.hqlName} type="date" />
+  DateSelector: ({ field }: any) => <input data-testid="date-selector" name={field.hqlName} type="date" />,
 }));
 
 jest.mock("@/components/Form/FormView/selectors/DatetimeSelector", () => ({
-  DatetimeSelector: ({ field }: any) => <input data-testid="datetime-selector" name={field.hqlName} type="datetime-local" />
+  DatetimeSelector: ({ field }: any) => (
+    <input data-testid="datetime-selector" name={field.hqlName} type="datetime-local" />
+  ),
 }));
 
 jest.mock("@/components/Form/FormView/selectors/SelectSelector", () => ({
-  SelectSelector: ({ field }: any) => <select data-testid="select-selector" name={field.hqlName} />
+  SelectSelector: ({ field }: any) => <select data-testid="select-selector" name={field.hqlName} />,
 }));
 
 jest.mock("@/components/Form/FormView/selectors/TableDirSelector", () => ({
-  TableDirSelector: ({ field }: any) => <select data-testid="tabledir-selector" name={field.hqlName} />
+  TableDirSelector: ({ field }: any) => <select data-testid="tabledir-selector" name={field.hqlName} />,
 }));
 
 jest.mock("@/components/Form/FormView/selectors/QuantitySelector", () => {
@@ -42,7 +44,7 @@ jest.mock("@/components/Form/FormView/selectors/QuantitySelector", () => {
 });
 
 jest.mock("@/components/Form/FormView/selectors/ListSelector", () => ({
-  ListSelector: ({ field }: any) => <select data-testid="list-selector" name={field.hqlName} />
+  ListSelector: ({ field }: any) => <select data-testid="list-selector" name={field.hqlName} />,
 }));
 
 jest.mock("../GenericSelector", () => {
@@ -71,7 +73,7 @@ describe("ProcessParameterSelector", () => {
     reference: "String",
     mandatory: false,
     defaultValue: "",
-    refList: []
+    refList: [],
   } as any;
 
   it("should render parameter label correctly", () => {
@@ -86,7 +88,7 @@ describe("ProcessParameterSelector", () => {
 
   it("should show mandatory indicator when parameter is mandatory", () => {
     const mandatoryParameter = { ...baseParameter, mandatory: true };
-    
+
     render(
       <TestWrapper>
         <ProcessParameterSelector parameter={mandatoryParameter} />
@@ -98,7 +100,7 @@ describe("ProcessParameterSelector", () => {
 
   it("should render PasswordSelector for password reference", () => {
     const passwordParameter = { ...baseParameter, reference: "Password" };
-    
+
     render(
       <TestWrapper>
         <ProcessParameterSelector parameter={passwordParameter} />
@@ -111,7 +113,7 @@ describe("ProcessParameterSelector", () => {
 
   it("should render BooleanSelector for boolean reference", () => {
     const booleanParameter = { ...baseParameter, reference: "Yes/No" };
-    
+
     render(
       <TestWrapper>
         <ProcessParameterSelector parameter={booleanParameter} />
@@ -124,7 +126,7 @@ describe("ProcessParameterSelector", () => {
 
   it("should render NumericSelector for numeric references", () => {
     const numericParameter = { ...baseParameter, reference: "Amount" };
-    
+
     render(
       <TestWrapper>
         <ProcessParameterSelector parameter={numericParameter} />
@@ -137,7 +139,7 @@ describe("ProcessParameterSelector", () => {
 
   it("should render GenericSelector for unsupported references", () => {
     const textParameter = { ...baseParameter, reference: "String" };
-    
+
     render(
       <TestWrapper>
         <ProcessParameterSelector parameter={textParameter} />
@@ -149,7 +151,7 @@ describe("ProcessParameterSelector", () => {
 
   it("should render GenericSelector as fallback for unknown references", () => {
     const unknownParameter = { ...baseParameter, reference: "UnknownType" };
-    
+
     render(
       <TestWrapper>
         <ProcessParameterSelector parameter={unknownParameter} />
@@ -162,7 +164,7 @@ describe("ProcessParameterSelector", () => {
   it("should handle parameters without reference type", () => {
     const parameterWithoutReference = { ...baseParameter };
     delete parameterWithoutReference.reference;
-    
+
     render(
       <TestWrapper>
         <ProcessParameterSelector parameter={parameterWithoutReference} />
@@ -173,11 +175,11 @@ describe("ProcessParameterSelector", () => {
   });
 
   it("should render with description as title attribute", () => {
-    const parameterWithDescription = { 
-      ...baseParameter, 
-      description: "This is a test parameter description" 
+    const parameterWithDescription = {
+      ...baseParameter,
+      description: "This is a test parameter description",
     };
-    
+
     render(
       <TestWrapper>
         <ProcessParameterSelector parameter={parameterWithDescription} />
@@ -190,7 +192,7 @@ describe("ProcessParameterSelector", () => {
 
   it("should handle integer reference as numeric type", () => {
     const integerParameter = { ...baseParameter, reference: "Integer" };
-    
+
     render(
       <TestWrapper>
         <ProcessParameterSelector parameter={integerParameter} />
@@ -202,14 +204,14 @@ describe("ProcessParameterSelector", () => {
 
   it("should handle different boolean reference formats", () => {
     const booleanFormats = ["Yes/No", "YesNo", "Boolean"];
-    
+
     booleanFormats.forEach((format, index) => {
       const { unmount } = render(
         <TestWrapper>
           <ProcessParameterSelector parameter={{ ...baseParameter, reference: format, id: `test-${index}` }} />
         </TestWrapper>
       );
-      
+
       expect(screen.getByTestId("boolean-selector")).toBeInTheDocument();
       unmount();
     });
@@ -217,7 +219,7 @@ describe("ProcessParameterSelector", () => {
 
   it("should render DateSelector for date reference", () => {
     const dateParameter = { ...baseParameter, reference: "Date" };
-    
+
     render(
       <TestWrapper>
         <ProcessParameterSelector parameter={dateParameter} />
@@ -230,7 +232,7 @@ describe("ProcessParameterSelector", () => {
 
   it("should render DatetimeSelector for datetime reference", () => {
     const datetimeParameter = { ...baseParameter, reference: "DateTime" };
-    
+
     render(
       <TestWrapper>
         <ProcessParameterSelector parameter={datetimeParameter} />
@@ -243,7 +245,7 @@ describe("ProcessParameterSelector", () => {
 
   it("should render SelectSelector for select reference", () => {
     const selectParameter = { ...baseParameter, reference: "Select" };
-    
+
     render(
       <TestWrapper>
         <ProcessParameterSelector parameter={selectParameter} />
@@ -255,7 +257,7 @@ describe("ProcessParameterSelector", () => {
 
   it("should render TableDirSelector for product reference", () => {
     const productParameter = { ...baseParameter, reference: "Product" };
-    
+
     render(
       <TestWrapper>
         <ProcessParameterSelector parameter={productParameter} />
@@ -267,7 +269,7 @@ describe("ProcessParameterSelector", () => {
 
   it("should render TableDirSelector for table directory reference", () => {
     const tableDirParameter = { ...baseParameter, reference: "TableDir" };
-    
+
     render(
       <TestWrapper>
         <ProcessParameterSelector parameter={tableDirParameter} />
@@ -279,14 +281,14 @@ describe("ProcessParameterSelector", () => {
 
   it("should render QuantitySelector for quantity references", () => {
     const quantityFormats = ["Quantity"];
-    
+
     quantityFormats.forEach((format, index) => {
       const { unmount } = render(
         <TestWrapper>
           <ProcessParameterSelector parameter={{ ...baseParameter, reference: format, id: `test-quantity-${index}` }} />
         </TestWrapper>
       );
-      
+
       expect(screen.getByTestId("quantity-selector")).toBeInTheDocument();
       expect(screen.getByTestId("quantity-selector")).toHaveAttribute("type", "number");
       expect(screen.getByTestId("quantity-selector")).toHaveAttribute("step", "any");
@@ -295,15 +297,15 @@ describe("ProcessParameterSelector", () => {
   });
 
   it("should render ListSelector for list reference", () => {
-    const listParameter = { 
-      ...baseParameter, 
-      reference: "List", 
+    const listParameter = {
+      ...baseParameter,
+      reference: "List",
       refList: [
         { id: "1", label: "Option 1", value: "opt1" },
-        { id: "2", label: "Option 2", value: "opt2" }
-      ]
+        { id: "2", label: "Option 2", value: "opt2" },
+      ],
     };
-    
+
     render(
       <TestWrapper>
         <ProcessParameterSelector parameter={listParameter} />
@@ -315,7 +317,7 @@ describe("ProcessParameterSelector", () => {
 
   it("should fallback to GenericSelector for list without options", () => {
     const listParameter = { ...baseParameter, reference: "List", refList: [] };
-    
+
     render(
       <TestWrapper>
         <ProcessParameterSelector parameter={listParameter} />

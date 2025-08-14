@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -34,12 +34,12 @@ const createMockTab = (overrides: Partial<Tab> = {}): Tab => ({
   displayLogic: "",
   orderByClause: "",
   whereClause: "",
-  ...overrides
+  ...overrides,
 });
 
 const createMockTabWithParentInfo = (overrides: Partial<TabWithParentInfo> = {}): TabWithParentInfo => ({
   ...createMockTab(),
-  ...overrides
+  ...overrides,
 });
 
 describe("tabUtils", () => {
@@ -51,7 +51,7 @@ describe("tabUtils", () => {
         name: "Root Tab",
         _identifier: "tab1",
         entityName: "Entity",
-        table$_identifier: "table1"
+        table$_identifier: "table1",
       });
 
       const result = shouldShowTab(tab, null);
@@ -66,7 +66,7 @@ describe("tabUtils", () => {
         name: "Child Tab",
         _identifier: "tab2",
         entityName: "Entity",
-        table$_identifier: "table2"
+        table$_identifier: "table2",
       });
 
       const result = shouldShowTab(tab, null);
@@ -82,7 +82,7 @@ describe("tabUtils", () => {
         _identifier: "tab3",
         entityName: "Entity",
         table$_identifier: "table3",
-        active: false
+        active: false,
       });
 
       const activeParentTab = createMockTab({
@@ -91,7 +91,7 @@ describe("tabUtils", () => {
         name: "Parent Tab",
         _identifier: "parent1",
         entityName: "ParentEntity",
-        table$_identifier: "parent_table"
+        table$_identifier: "parent_table",
       });
 
       const result = shouldShowTab(tab, activeParentTab);
@@ -107,7 +107,7 @@ describe("tabUtils", () => {
         _identifier: "tab4",
         entityName: "Entity",
         table$_identifier: "table4",
-        parentTabId: "parent1"
+        parentTabId: "parent1",
       });
 
       const activeParentTab = createMockTab({
@@ -116,7 +116,7 @@ describe("tabUtils", () => {
         name: "Parent Tab",
         _identifier: "parent1",
         entityName: "ParentEntity",
-        table$_identifier: "parent_table"
+        table$_identifier: "parent_table",
       });
 
       const result = shouldShowTab(tab, activeParentTab);
@@ -132,7 +132,7 @@ describe("tabUtils", () => {
         _identifier: "tab5",
         entityName: "Entity",
         table$_identifier: "table5",
-        parentTabId: "different_parent"
+        parentTabId: "different_parent",
       });
 
       const activeParentTab = createMockTab({
@@ -141,7 +141,7 @@ describe("tabUtils", () => {
         name: "Parent Tab",
         _identifier: "parent1",
         entityName: "ParentEntity",
-        table$_identifier: "parent_table"
+        table$_identifier: "parent_table",
       });
 
       const result = shouldShowTab(tab, activeParentTab);
@@ -157,7 +157,7 @@ describe("tabUtils", () => {
         _identifier: "tab6",
         entityName: "Entity",
         table$_identifier: "table6",
-        parentColumns: ["business_partner_id"]
+        parentColumns: ["business_partner_id"],
       });
 
       const activeParentTab = createMockTab({
@@ -166,7 +166,7 @@ describe("tabUtils", () => {
         name: "Parent Tab",
         _identifier: "parent1",
         entityName: "BusinessPartner",
-        table$_identifier: "c_bpartner"
+        table$_identifier: "c_bpartner",
       });
 
       const result = shouldShowTab(tab, activeParentTab);
@@ -182,7 +182,7 @@ describe("tabUtils", () => {
         _identifier: "tab7",
         entityName: "Entity",
         table$_identifier: "table7",
-        parentColumns: ["product_id"]
+        parentColumns: ["product_id"],
       });
 
       const activeParentTab = createMockTab({
@@ -191,7 +191,7 @@ describe("tabUtils", () => {
         name: "Parent Tab",
         _identifier: "parent1",
         entityName: "SomeEntity",
-        table$_identifier: "m_product"
+        table$_identifier: "m_product",
       });
 
       const result = shouldShowTab(tab, activeParentTab);
@@ -207,7 +207,7 @@ describe("tabUtils", () => {
         _identifier: "tab8",
         entityName: "Entity",
         table$_identifier: "table8",
-        parentColumns: ["unrelated_column_id"]
+        parentColumns: ["unrelated_column_id"],
       });
 
       const activeParentTab = createMockTab({
@@ -216,7 +216,7 @@ describe("tabUtils", () => {
         name: "Parent Tab",
         _identifier: "parent1",
         entityName: "BusinessPartner",
-        table$_identifier: "c_bpartner"
+        table$_identifier: "c_bpartner",
       });
 
       const result = shouldShowTab(tab, activeParentTab);
@@ -232,7 +232,7 @@ describe("tabUtils", () => {
         _identifier: "tab9",
         entityName: "Entity",
         table$_identifier: "table9",
-        parentColumns: ["invoice_id"]
+        parentColumns: ["invoice_id"],
       });
 
       const activeParentTab = createMockTab({
@@ -241,7 +241,7 @@ describe("tabUtils", () => {
         name: "Parent Tab",
         _identifier: "parent1",
         entityName: "FinInvoice",
-        table$_identifier: "c_invoice"
+        table$_identifier: "c_invoice",
       });
 
       const result = shouldShowTab(tab, activeParentTab);
@@ -256,7 +256,7 @@ describe("tabUtils", () => {
         name: "Child Tab",
         _identifier: "tab10",
         entityName: "Entity",
-        table$_identifier: "table10"
+        table$_identifier: "table10",
       });
 
       const activeParentTab = createMockTab({
@@ -265,7 +265,7 @@ describe("tabUtils", () => {
         name: "Parent Tab",
         _identifier: "parent1",
         entityName: "ParentEntity",
-        table$_identifier: "parent_table"
+        table$_identifier: "parent_table",
       });
 
       const result = shouldShowTab(tab, activeParentTab);

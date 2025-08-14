@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import { FormProvider, useForm } from "react-hook-form";
-import React from "react";
+import type React from "react";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import StatusBar from "@/components/Form/FormView/StatusBar";
 
@@ -54,17 +54,13 @@ jest.mock("@/components/Form/FormView/StatusBarField", () => {
 function TestWrapper({ children }: { children: React.ReactNode }) {
   const methods = useForm();
 
-  return (
-    <FormProvider {...methods}>
-      {children}
-    </FormProvider>
-  );
+  return <FormProvider {...methods}>{children}</FormProvider>;
 }
 
 const mockFields: Record<string, Field> = {
   status: {
     hqlName: "status",
-    inputName: "status", 
+    inputName: "status",
     columnName: "status",
     process: "",
     shownInStatusBar: true,
@@ -99,7 +95,7 @@ const mockFields: Record<string, Field> = {
   createdBy: {
     hqlName: "createdBy",
     inputName: "createdBy",
-    columnName: "createdBy", 
+    columnName: "createdBy",
     process: "",
     shownInStatusBar: true,
     tab: "test-tab",
@@ -313,7 +309,7 @@ describe("StatusBar", () => {
       });
 
       expect(mockToolbarContext.onBack).not.toHaveBeenCalled();
-      
+
       consoleErrorSpy.mockRestore();
     });
 
@@ -332,10 +328,10 @@ describe("StatusBar", () => {
       await user.click(closeButton);
 
       // Wait a bit to ensure onBack is not called
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       expect(mockToolbarContext.onBack).not.toHaveBeenCalled();
-      
+
       consoleErrorSpy.mockRestore();
     });
 
@@ -360,7 +356,7 @@ describe("StatusBar", () => {
       );
 
       const closeButton = screen.getByTestId("icon-button");
-      
+
       // Click multiple times rapidly
       await user.click(closeButton);
       await user.click(closeButton);
@@ -368,7 +364,7 @@ describe("StatusBar", () => {
 
       // Even with multiple clicks, should only trigger the save/back cycle appropriately
       expect(mockToolbarContext.onSave).toHaveBeenCalledTimes(3);
-      
+
       await waitFor(() => {
         expect(mockToolbarContext.onBack).toHaveBeenCalledTimes(3);
       });
@@ -432,7 +428,7 @@ describe("StatusBar", () => {
 
       const closeButton = screen.getByTestId("icon-button");
       closeButton.focus();
-      
+
       await user.keyboard("{Enter}");
       expect(mockToolbarContext.onSave).toHaveBeenCalledWith(false);
     });
@@ -460,7 +456,7 @@ describe("StatusBar", () => {
       );
 
       // Should render all fields provided
-      Object.keys(mockFields).forEach(fieldKey => {
+      Object.keys(mockFields).forEach((fieldKey) => {
         expect(screen.getByTestId(`status-field-${fieldKey}`)).toBeInTheDocument();
       });
     });

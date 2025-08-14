@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -33,11 +33,13 @@ export const DrawerSection: React.FC<DrawerSectionProps> = React.memo(
     hasChildren,
     isExpandable,
     windowId,
+    pendingWindowId,
     isExpanded: externalExpanded,
     parentId,
   }) => {
-    const isSelected = Boolean(windowId?.length && item.windowId === windowId);
-    const hasActiveChild = !isSelected && Boolean(windowId?.length && findActive(windowId, item.children));
+    const targetWindowId = windowId || pendingWindowId;
+    const isSelected = Boolean(targetWindowId?.length && item.windowId === targetWindowId);
+    const hasActiveChild = !isSelected && Boolean(targetWindowId?.length && findActive(targetWindowId, item.children));
     const isParentActive = isSelected || hasActiveChild;
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const toggleFunctions = useRef<ToggleFunctions>({});

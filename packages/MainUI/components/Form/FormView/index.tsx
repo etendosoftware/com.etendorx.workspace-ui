@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -68,7 +68,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const [expandedSections, setExpandedSections] = useState<string[]>(["null"]);
   const [selectedTab, setSelectedTab] = useState<string>("");
-  const [isSucessfullEdit, setIsSucessfullEdit] = useState(false);
   const [isFormInitializing, setIsFormInitializing] = useState(false);
 
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
@@ -181,15 +180,10 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   }, [selectedTab, expandedSections]);
 
   useEffect(() => {
-    if (recordId || isSucessfullEdit) {
+    if (recordId) {
       refetch();
-      setIsSucessfullEdit(false);
     }
-
-    return () => {
-      setIsSucessfullEdit(false);
-    };
-  }, [recordId, isSucessfullEdit, refetch, mode]);
+  }, [recordId, refetch, mode]);
 
   useEffect(() => {
     if (!availableFormData) return;
@@ -246,11 +240,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const onSuccess = useCallback(
     async (data: EntityData, showModal: boolean) => {
+      // Prevent callouts while applying server-updated values
+      setIsFormInitializing(true);
       if (mode === FormMode.EDIT) {
         reset({ ...initialState, ...data });
       } else {
         setRecordId(String(data.id));
       }
+      setTimeout(() => setIsFormInitializing(false), 50);
 
       graph.setSelected(tab, data);
       graph.setSelectedMultiple(tab, [data]);
@@ -259,9 +256,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       if (windowId) {
         setSelectedRecord(windowId, tab.id, String(data.id));
       }
-
-      setIsSucessfullEdit(true);
-
       if (showModal) {
         showSuccessModal("Saved");
       }
