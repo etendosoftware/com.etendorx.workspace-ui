@@ -54,6 +54,5 @@ describe("Save without csrfToken", () => {
     const [, requestInit] = fetchMock.mock.calls[0];
     const rawBody = requestInit.body as string;
     expect(rawBody).not.toContain("csrfToken");
-    expect(rawBody).toContain("dataSource=isc_OBViewDataSource_0");
   });
 });

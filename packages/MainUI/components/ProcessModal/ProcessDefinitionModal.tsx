@@ -219,7 +219,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
     });
-  }, [tab, processId, javaClassName, recordValues, gridSelection, entityName, t, onSuccess, startTransition]);
+  }, [tab, processId, javaClassName, recordValues, gridSelection, entityName, onSuccess, startTransition]);
 
   /**
    * Executes processes directly via servlet using javaClassName
@@ -313,7 +313,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     button.processDefinition,
     selectedRecords,
     form,
-    t,
     onSuccess,
   ]);
 

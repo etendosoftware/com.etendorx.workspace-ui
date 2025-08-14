@@ -106,7 +106,7 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
           return;
         }
       },
-      [maxLength, setValue, minValue, maxValue, onChange]
+      [maxLength, setValue, onChange]
     );
 
     const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {

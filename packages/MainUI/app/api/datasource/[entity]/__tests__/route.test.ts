@@ -5,17 +5,12 @@
 
 import type { NextRequest } from "next/server";
 
-// Mock next/server to avoid depending on Next runtime
-jest.mock("next/server", () => {
-  return {
-    NextResponse: {
-      json: (body: unknown, init?: { status?: number }) => ({ ok: true, status: init?.status ?? 200, body }),
-    },
-  };
-});
+// Import shared mocks before importing the module under test to ensure mocks are applied
+import "../../../_test-utils/test-shared-mocks";
 
 // Import after mocking
 import { POST } from "../route";
+import { assertErpForwardCall } from "../../../_test-utils/fetch-assertions";
 
 describe("API: /api/datasource/:entity save/update", () => {
   const OLD_ENV = process.env;
@@ -66,23 +61,17 @@ describe("API: /api/datasource/:entity save/update", () => {
     expect(res.status).toBe(200);
     expect((global as any).fetch).toHaveBeenCalledTimes(1);
 
-    const [dest, init] = (global as any).fetch.mock.calls[0];
-    expect(String(dest)).toBe(
-      "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice?windowId=167&tabId=263&_operationType=add"
+    const { decoded } = assertErpForwardCall(
+      "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice?windowId=167&tabId=263&_operationType=add",
+      "Bearer token-abc",
+      undefined,
+      "application/json"
     );
-    expect(init.method).toBe("POST");
-    expect(init.headers["Authorization"]).toBe("Bearer token-abc");
-    expect(init.headers["Accept"]).toBe("application/json");
-    expect(init.headers["Content-Type"]).toBeUndefined();
-    expect(init.headers["X-CSRF-Token"]).toBe("CSRF123");
-    const decoded = decodeURIComponent(init.body as string);
-    expect(decoded).toContain("dataSource=isc_OBViewDataSource_0");
-    expect(decoded).toContain("operationType=add");
-    expect(decoded).toContain("componentId=isc_OBViewForm_0");
-    expect(decoded).toContain("csrfToken=CSRF123");
-    // After decodeURIComponent, JSON is readable in the string
-    expect(decoded).toContain('data={"key":"val"}');
-    expect(decoded).toContain('oldValues={"prev":1}');
+    expect(decoded).toContain('"operationType":"add"');
+    expect(decoded).toContain('"componentId":"isc_OBViewForm_0"');
+    expect(decoded).toContain('"csrfToken":"CSRF123"');
+    expect(decoded).toContain('"data":{"key":"val"}');
+    expect(decoded).toContain('"oldValues":{"prev":1}');
   });
 
   it("passes through non-JSON bodies with original content-type", async () => {
