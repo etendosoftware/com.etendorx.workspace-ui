@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -42,6 +42,7 @@ export interface DrawerProps {
   children?: React.ReactNode;
   sectionGroups?: SectionGroup[];
   windowId?: string;
+  pendingWindowId?: string;
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   RecentlyViewedComponent?: any;
   getTranslatedName?: (item: Menu) => string;
@@ -72,6 +73,7 @@ export interface DrawerSectionProps extends React.PropsWithChildren {
   isSearchActive: boolean;
   reportId?: string;
   windowId?: string;
+  pendingWindowId?: string;
   parentId?: string;
 }
 
@@ -109,6 +111,7 @@ export interface DrawerItemsProps {
   toggleItemExpansion: (itemId: string) => void;
   searchValue: string;
   windowId?: string;
+  pendingWindowId?: string;
   reportId?: string;
 }
 

@@ -1,4 +1,4 @@
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { renderHook } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
 // Mock the Metadata kernelClient
@@ -26,7 +26,7 @@ import { useProcessConfig } from "@/hooks/datasource/useProcessDatasourceConfig"
 describe("useProcessConfig", () => {
   const defaultProps = {
     processId: "test-process-id",
-    windowId: "test-window-id", 
+    windowId: "test-window-id",
     tabId: "test-tab-id",
   };
 
@@ -47,11 +47,11 @@ describe("useProcessConfig", () => {
 
   describe("fetchConfig function", () => {
     it("should return null when required parameters are missing", async () => {
-      const { result } = renderHook(() => 
-        useProcessConfig({ 
-          processId: "", 
-          windowId: "test-window-id", 
-          tabId: "test-tab-id" 
+      const { result } = renderHook(() =>
+        useProcessConfig({
+          processId: "",
+          windowId: "test-window-id",
+          tabId: "test-tab-id",
         })
       );
 
@@ -59,6 +59,5 @@ describe("useProcessConfig", () => {
       expect(config).toBe(null);
       expect(mockKernelPost).not.toHaveBeenCalled();
     });
-
-  })
+  });
 });

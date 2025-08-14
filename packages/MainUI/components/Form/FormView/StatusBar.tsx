@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -48,10 +48,9 @@ export default function StatusBar({ fields }: { fields: Record<string, Field> })
   }, [isSaved, onBack]);
 
   return (
-    <div 
+    <div
       data-testid="status-bar-container"
-      className="h-10 flex items-center justify-between bg-gray-100/50 shadow px-3 py-2 rounded-xl"
-    >
+      className="h-10 flex items-center justify-between bg-gray-100/50 shadow px-3 py-2 rounded-xl">
       <div className="flex gap-4 text-sm">
         {Object.entries(fields).map(([key, field]) => (
           <StatusBarField key={key} field={field} />

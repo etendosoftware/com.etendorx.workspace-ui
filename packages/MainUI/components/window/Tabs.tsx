@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -17,7 +17,7 @@
 
 "use client";
 
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, useTransition } from "react";
 import type { Tab as TabType } from "@workspaceui/api-client/src/api/types";
 import type { TabsProps } from "@/components/window/types";
 import { TabContainer } from "@/components/window/TabContainer";
@@ -35,9 +35,12 @@ interface ExtendedTabsProps extends TabsProps {
 export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }: ExtendedTabsProps) {
   const { activeLevels, setActiveLevel } = useSelected();
   const [current, setCurrent] = useState(tabs[0]);
+  // Visual active tab id updates immediately for instant feedback
+  const [activeTabId, setActiveTabId] = useState(tabs[0].id);
   const collapsed = !activeLevels.includes(current.tabLevel);
   const [expand, setExpanded] = useState(false);
   const [customHeight, setCustomHeight] = useState(50);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (onTabChange && current) {
@@ -47,21 +50,30 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
 
   const handleClick = useCallback(
     (tab: TabType) => {
-      setCustomHeight(50);
-      setCurrent(tab);
-      setActiveLevel(tab.tabLevel);
+      // Immediate visual feedback
+      setActiveTabId(tab.id);
+      // Defer heavy content update so the UI responds instantly
+      startTransition(() => {
+        setCustomHeight(50);
+        setCurrent(tab);
+        setActiveLevel(tab.tabLevel);
+      });
     },
-    [setActiveLevel]
+    [setActiveLevel, startTransition]
   );
 
   const handleDoubleClick = useCallback(
     (tab: TabType) => {
-      setCurrent(tab);
+      setActiveTabId(tab.id);
       const newExpand = !expand;
-      setExpanded(newExpand);
-      setActiveLevel(tab.tabLevel, newExpand);
+      // Defer deeper updates to avoid blocking click feedback
+      startTransition(() => {
+        setCurrent(tab);
+        setExpanded(newExpand);
+        setActiveLevel(tab.tabLevel, newExpand);
+      });
     },
-    [expand, setActiveLevel]
+    [expand, setActiveLevel, startTransition]
   );
 
   const handleHeightChange = useCallback((height: number) => {
@@ -83,6 +95,7 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
     const subTabsSwitch = (
       <SubTabsSwitch
         current={current}
+        activeTabId={activeTabId}
         tabs={tabs}
         collapsed={collapsed}
         onClick={handleClick}
@@ -105,9 +118,17 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
   return (
     <TabContainer current={current} collapsed={collapsed} isTopExpanded={isTopExpanded} customHeight={customHeight}>
       {renderTabContent()}
-      <TabContextProvider tab={current}>
-        <Tab tab={current} collapsed={collapsed} />
-      </TabContextProvider>
+      {isPending ? (
+        <div className="p-4 animate-pulse flex-1 flex flex-col gap-4">
+          <div className="h-10 w-full bg-(--color-transparent-neutral-10) rounded-md" />
+          <div className="h-8 w-3/4 bg-(--color-transparent-neutral-10) rounded-md" />
+          <div className="flex-1 bg-(--color-transparent-neutral-10) rounded-md" />
+        </div>
+      ) : (
+        <TabContextProvider tab={current}>
+          <Tab tab={current} collapsed={collapsed} />
+        </TabContextProvider>
+      )}
     </TabContainer>
   );
 }

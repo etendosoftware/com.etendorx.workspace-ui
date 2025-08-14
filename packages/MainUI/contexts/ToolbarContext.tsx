@@ -57,6 +57,12 @@ type ToolbarActions = {
    */
   filter: () => void;
   treeView: () => void;
+
+  /**
+   * Open or toggle column filters for table views.
+   * @param buttonRef - Optional reference to the button element that triggered the action,
+   *                   used for positioning dropdown/popover filters
+   */
   columnFilters: (buttonRef?: HTMLElement | null) => void;
 };
 

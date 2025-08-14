@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -55,9 +55,7 @@ const Select: React.FC<ISelectInput> = ({
   const [inputValue, setInputValue] = useState<string>("");
   const [focused, setFocused] = useState<boolean>(false);
 
-  const CustomPaper: React.FC<PaperProps> = (paperProps) => {
-    return <Paper {...paperProps} sx={sx.optionsContainer} />;
-  };
+  // Use inline Paper renderer to avoid recreating a local component
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(event.target.value);
@@ -135,6 +133,8 @@ const Select: React.FC<ISelectInput> = ({
     );
   };
 
+  const paperComponent = (paperProps: PaperProps) => <Paper {...paperProps} sx={sx.optionsContainer} />;
+
   return (
     <>
       <Autocomplete
@@ -146,7 +146,7 @@ const Select: React.FC<ISelectInput> = ({
         popupIcon={<ExpandMoreIcon style={sx.dropdownIcons} />}
         renderInput={renderInput}
         sx={sx.autocomplete}
-        PaperComponent={CustomPaper}
+        PaperComponent={paperComponent}
         ListboxProps={{
           sx: sx.listBox,
         }}

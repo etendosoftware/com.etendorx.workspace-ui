@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import React from "react";
+import type React from "react";
 import PrimaryTabs from "../../../src/components/PrimaryTab/index";
 import type { TabItem } from "../../../src/components/PrimaryTab/types";
 
@@ -193,9 +193,9 @@ describe("PrimaryTabs", () => {
     // Check tooltips have correct titles
     const tooltips = screen.getAllByTestId("tooltip");
     expect(tooltips.length).toBeGreaterThan(0);
-    
+
     // At least the first tab should be there
-    const firstTabTooltip = tooltips.find(tooltip => tooltip.getAttribute("title") === "First Tab");
+    const firstTabTooltip = tooltips.find((tooltip) => tooltip.getAttribute("title") === "First Tab");
     expect(firstTabTooltip).toBeInTheDocument();
   });
 
@@ -225,8 +225,8 @@ describe("PrimaryTabs", () => {
 
     // Find and click on a menu item
     const tooltips = screen.getAllByTestId("tooltip");
-    const secondTabTooltip = tooltips.find(tooltip => tooltip.getAttribute("title") === "Second Tab");
-    
+    const secondTabTooltip = tooltips.find((tooltip) => tooltip.getAttribute("title") === "Second Tab");
+
     if (secondTabTooltip) {
       await user.click(secondTabTooltip);
       expect(onChange).toHaveBeenCalledWith("tab2");

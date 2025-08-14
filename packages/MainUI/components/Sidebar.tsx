@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -44,6 +44,7 @@ export default function Sidebar() {
 
   const [searchValue, setSearchValue] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [pendingWindowId, setPendingWindowId] = useState<string | undefined>(undefined);
 
   const searchIndex = useMemo(() => createSearchIndex(menu), [menu]);
   const { filteredItems, searchExpandedItems } = useMemo(() => {
@@ -61,6 +62,11 @@ export default function Sidebar() {
       }
 
       const isInWindowRoute = pathname.includes("window");
+
+      // Immediate feedback: set optimistic selected until activeWindow updates
+      if (windowId) {
+        setPendingWindowId(windowId);
+      }
 
       if (isInWindowRoute) {
         openWindow(windowId, item.name);
@@ -106,9 +112,17 @@ export default function Sidebar() {
 
   const currentWindowId = activeWindow?.windowId;
 
+  // Clear optimistic selection when the active window matches
+  useEffect(() => {
+    if (pendingWindowId && currentWindowId === pendingWindowId) {
+      setPendingWindowId(undefined);
+    }
+  }, [currentWindowId, pendingWindowId]);
+
   return (
     <Drawer
       windowId={currentWindowId}
+      pendingWindowId={pendingWindowId}
       logo={EtendoLogotype.src}
       title={t("common.etendo")}
       items={menu}
