@@ -19,6 +19,34 @@ import { ColumnFilterUtils, type ColumnFilterState, type FilterOption } from "..
 import type { Column } from "../../api/types";
 import { FieldType } from "../../api/types";
 
+// Helper functions to reduce test duplication
+const createMockFilterState = (
+  id: string,
+  selectedOptions: FilterOption[],
+  isMultiSelect = false,
+  availableOptions: FilterOption[] = [],
+  loading = false
+): ColumnFilterState => ({
+  id,
+  selectedOptions,
+  isMultiSelect,
+  availableOptions,
+  loading,
+});
+
+const createMockCriteria = (fieldName: string, operator: string, value: string) => ({
+  fieldName,
+  operator,
+  value,
+});
+
+const createMockAdvancedCriteria = (fieldName: string, operator: string, value: string) => ({
+  fieldName,
+  operator,
+  value,
+  _constructor: "AdvancedCriteria",
+});
+
 describe("ColumnFilterUtils", () => {
   const selectColumn: Column = {
     id: "status",
@@ -138,35 +166,19 @@ describe("ColumnFilterUtils", () => {
 
     it("should create criteria for single selection", () => {
       const columnFilters: ColumnFilterState[] = [
-        {
-          id: "status",
-          selectedOptions: [singleFilterOption],
-          isMultiSelect: false,
-          availableOptions: [],
-          loading: false,
-        },
+        createMockFilterState("status", [singleFilterOption]),
       ];
 
       const criteria = ColumnFilterUtils.createColumnFilterCriteria(columnFilters);
 
       expect(criteria).toEqual([
-        {
-          fieldName: "status",
-          operator: "equals",
-          value: "A",
-        },
+        createMockCriteria("status", "equals", "A"),
       ]);
     });
 
     it("should create OR criteria for multiple selections", () => {
       const columnFilters: ColumnFilterState[] = [
-        {
-          id: "status",
-          selectedOptions: multipleFilterOptions,
-          isMultiSelect: true,
-          availableOptions: [],
-          loading: false,
-        },
+        createMockFilterState("status", multipleFilterOptions, true),
       ];
 
       const criteria = ColumnFilterUtils.createColumnFilterCriteria(columnFilters);
@@ -175,8 +187,8 @@ describe("ColumnFilterUtils", () => {
         {
           operator: "or",
           criteria: [
-            { fieldName: "status", operator: "equals", value: "A" },
-            { fieldName: "status", operator: "equals", value: "I" },
+            createMockCriteria("status", "equals", "A"),
+            createMockCriteria("status", "equals", "I"),
           ],
         },
       ]);
@@ -184,51 +196,27 @@ describe("ColumnFilterUtils", () => {
 
     it("should handle multiple column filters", () => {
       const columnFilters: ColumnFilterState[] = [
-        {
-          id: "status",
-          selectedOptions: [singleFilterOption],
-          isMultiSelect: false,
-          availableOptions: [],
-          loading: false,
-        },
-        {
-          id: "category",
-          selectedOptions: [{ id: "cat1", label: "Category 1", value: "CAT1" }],
-          isMultiSelect: false,
-          availableOptions: [],
-          loading: false,
-        },
+        createMockFilterState("status", [singleFilterOption]),
+        createMockFilterState("category", [{ id: "cat1", label: "Category 1", value: "CAT1" }]),
       ];
 
       const criteria = ColumnFilterUtils.createColumnFilterCriteria(columnFilters);
 
       expect(criteria).toEqual([
-        { fieldName: "status", operator: "equals", value: "A" },
-        { fieldName: "category", operator: "equals", value: "CAT1" },
+        createMockCriteria("status", "equals", "A"),
+        createMockCriteria("category", "equals", "CAT1"),
       ]);
     });
 
     it("should ignore filters with no selected options", () => {
       const columnFilters: ColumnFilterState[] = [
-        {
-          id: "status",
-          selectedOptions: [],
-          isMultiSelect: false,
-          availableOptions: [],
-          loading: false,
-        },
-        {
-          id: "category",
-          selectedOptions: [{ id: "cat1", label: "Category 1", value: "CAT1" }],
-          isMultiSelect: false,
-          availableOptions: [],
-          loading: false,
-        },
+        createMockFilterState("status", []),
+        createMockFilterState("category", [{ id: "cat1", label: "Category 1", value: "CAT1" }]),
       ];
 
       const criteria = ColumnFilterUtils.createColumnFilterCriteria(columnFilters);
 
-      expect(criteria).toEqual([{ fieldName: "category", operator: "equals", value: "CAT1" }]);
+      expect(criteria).toEqual([createMockCriteria("category", "equals", "CAT1")]);
     });
 
     it("should return empty array for no filters", () => {

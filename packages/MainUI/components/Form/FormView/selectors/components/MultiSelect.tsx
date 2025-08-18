@@ -32,6 +32,10 @@ const handleKeyboardActivation = (e: React.KeyboardEvent, callback: () => void) 
 
 const FOCUS_STYLES = "focus:outline-none focus:ring-2 focus:ring-dynamic-light";
 const BASE_TRANSITION = "transition-colors outline-none";
+const LIST_ITEM_BASE = "px-4 py-3 text-sm";
+const TEXT_MUTED = "text-baseline-60";
+const ICON_SIZE = "w-5 h-5";
+const HOVER_TEXT_COLOR = "hover:text-baseline-80";
 
 interface MultiSelectOption {
   id: string;
@@ -75,7 +79,7 @@ const OptionItem = memo(
       onClick={() => onOptionClick(id)}
       onKeyDown={(e) => handleKeyboardActivation(e, () => onOptionClick(id))}
       onMouseEnter={() => onMouseEnter(index)}
-      className={`px-4 py-3 text-sm cursor-pointer flex items-center justify-between ${FOCUS_STYLES} focus:bg-baseline-10
+      className={`${LIST_ITEM_BASE} cursor-pointer flex items-center justify-between ${FOCUS_STYLES} focus:bg-baseline-10
       ${isHighlighted ? "bg-baseline-10" : ""}
       ${isSelected ? "bg-baseline-10 font-medium" : ""}
       hover:bg-baseline-10`}>
@@ -270,7 +274,7 @@ function MultiSelectCmp({
         />
       ));
     }
-    return <li className="px-4 py-3 text-sm text-baseline-60">{t("multiselect.noOptionsFound")}</li>;
+    return <li className={`${LIST_ITEM_BASE} ${TEXT_MUTED}`}>{t("multiselect.noOptionsFound")}</li>;
   }, [filteredOptions, highlightedIndex, selectedValues, handleOptionClick, handleOptionMouseEnter, t]);
 
   return (
@@ -294,14 +298,14 @@ function MultiSelectCmp({
               type="button"
               onClick={handleClear}
               onKeyDown={(e) => handleKeyboardActivation(e, () => handleClear(e as unknown as React.MouseEvent))}
-              className={`mr-1 text-baseline-60 hover:text-baseline-80 transition-opacity opacity-100 ${FOCUS_STYLES} rounded`}
+              className={`mr-1 ${TEXT_MUTED} ${HOVER_TEXT_COLOR} transition-opacity opacity-100 ${FOCUS_STYLES} rounded`}
               aria-label={t("multiselect.clearSelection")}>
               <Image src={closeIconUrl} alt="Clear" height={16} width={16} />
             </button>
           )}
           <ChevronDown
             fill="currentColor"
-            className={`w-5 h-5 text-baseline-60 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`${ICON_SIZE} ${TEXT_MUTED} transition-transform ${isOpen ? "rotate-180" : ""}`}
           />
         </div>
       </div>
@@ -327,7 +331,7 @@ function MultiSelectCmp({
             onScroll={handleScroll}>
             {renderedOptions}
             {loading && hasMore && (
-              <li className="px-4 py-3 text-sm text-baseline-60 text-center">{t("multiselect.loadingOptions")}</li>
+              <li className={`${LIST_ITEM_BASE} ${TEXT_MUTED} text-center`}>{t("multiselect.loadingOptions")}</li>
             )}
           </ul>
         </div>
