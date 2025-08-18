@@ -2,11 +2,13 @@ import { useState, type ComponentProps, type FC, type ComponentType, type SVGPro
 import Eye from "../../../ComponentLibrary/src/assets/icons/eye.svg";
 import EyeOff from "../../../ComponentLibrary/src/assets/icons/eye-off.svg";
 import Asterisk from "../../../ComponentLibrary/src/assets/icons/asterisk.svg";
+import X from "../../../ComponentLibrary/src/assets/icons/x.svg";
 
 interface InputProps extends ComponentProps<"input"> {
   label?: string;
   required?: boolean;
   icon?: ComponentType<SVGProps<SVGSVGElement>>;
+  clearable?: boolean; // Nueva prop para habilitar/deshabilitar el botón clear
 }
 
 const Input: FC<InputProps> = ({
@@ -19,6 +21,7 @@ const Input: FC<InputProps> = ({
   icon: Icon,
   className,
   id,
+  clearable = true, // Por defecto habilitado
   ...props
 }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -29,9 +32,18 @@ const Input: FC<InputProps> = ({
 
   const inputId = id || generatedId;
 
-  const baseClassName = `w-full ${Icon ? "pl-10" : "pl-3"} ${
-    isPassword ? "pr-12" : "pr-3"
-  } rounded-t tracking-normal h-8 border-0 border-b bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 
+  // Verificar si hay contenido para mostrar el botón clear
+  const hasValue = value && value.toString().length > 0;
+  const showClearButton = clearable && hasValue && !isPassword;
+
+  // Calcular el padding derecho basado en los botones que se muestran
+  const getRightPadding = () => {
+    if (isPassword) return "pr-12";
+    if (showClearButton) return "pr-10";
+    return "pr-3";
+  };
+
+  const baseClassName = `w-full ${Icon ? "pl-10" : "pl-3"} ${getRightPadding()} rounded-t tracking-normal h-8 border-0 border-b bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 
     focus:border-b-2 focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none 
     hover:border-(--color-transparent-neutral-100) hover:border-b-2 hover:bg-(--color-transparent-neutral-10)
   `;
@@ -49,6 +61,16 @@ const Input: FC<InputProps> = ({
     setIsFocused(false);
     if (props.onBlur) {
       props.onBlur(e);
+    }
+  };
+
+  const handleClear = () => {
+    if (onChange) {
+      const syntheticEvent = {
+        target: { value: "" },
+        currentTarget: { value: "" },
+      } as React.ChangeEvent<HTMLInputElement>;
+      onChange(syntheticEvent);
     }
   };
 
@@ -84,6 +106,18 @@ const Input: FC<InputProps> = ({
           onBlur={handleBlur}
           {...props}
         />
+        {showClearButton && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors">
+            <X
+              className={`h-4 w-4 transition-colors ${
+                isFocused ? "fill-(--color-baseline-100)" : "fill-(--color-transparent-neutral-60)"
+              }`}
+            />
+          </button>
+        )}
         {isPassword && (
           <button
             type="button"
