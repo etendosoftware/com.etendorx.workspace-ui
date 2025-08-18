@@ -42,6 +42,7 @@ import {
 import ProcessMenu from "./Menus/ProcessMenu";
 import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar/TopToolbar";
+import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
 import { createButtonByType, getButtonStyles, organizeButtonsBySection } from "@/utils/toolbar/utils";
 import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
@@ -220,23 +221,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   ]);
 
   if (loading) {
-    return (
-      <div className="h-10 flex justify-between items-center gap-1 animate-pulse">
-        <div className="bg-(--color-baseline-0) rounded-4xl p-1 flex items-center gap-2">
-          <div className="h-6 w-20 bg-(--color-transparent-neutral-10) rounded" />
-          <div className="h-6 w-16 bg-(--color-transparent-neutral-10) rounded" />
-        </div>
-        <div className="bg-(--color-baseline-0) rounded-4xl p-1 flex-1 flex items-center gap-2 shadow-[0px_4px_10px_var(--color-transparent-neutral-10)]">
-          <div className="h-6 w-24 bg-(--color-transparent-neutral-10) rounded" />
-          <div className="h-6 w-32 bg-(--color-transparent-neutral-10) rounded" />
-          <div className="h-6 w-20 bg-(--color-transparent-neutral-10) rounded" />
-        </div>
-        <div className="bg-transparent-neutral-5 rounded-4xl p-1 flex items-center gap-2">
-          <div className="h-6 w-6 bg-(--color-transparent-neutral-10) rounded-full" />
-          <div className="h-6 w-6 bg-(--color-transparent-neutral-10) rounded-full" />
-        </div>
-      </div>
-    );
+    return <ToolbarSkeleton />;
   }
 
   return (
