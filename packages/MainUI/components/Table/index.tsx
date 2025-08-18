@@ -156,6 +156,26 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
       if (ColumnFilterUtils.isTableDirColumn(column)) {
         loadFilterOptions(columnId, searchQuery);
+        
+        // For TABLE_DIR columns, use distinct values from current table instead of full entity list
+        if (ColumnFilterUtils.needsDistinctValues(column)) {
+          const currentDatasource = treeEntity; // Use current table's datasource
+          const tabIdStr = tab.id; // Current tab ID
+          const distinctField = column.columnName; // Field to get distinct values for
+          
+          const options = await fetchFilterOptions(
+            currentDatasource, 
+            undefined, // No selector definition for distinct queries
+            searchQuery, 
+            20, // limit
+            distinctField, // distinct field
+            tabIdStr // tab ID
+          );
+          setFilterOptions(columnId, options);
+          return options;
+        }
+        
+        // Fallback to original behavior for non-distinct columns
         const selectorDefinitionId = (column as any).selectorDefinitionId;
         const datasourceId = (column as any).datasourceId || (column as any).referencedEntity;
 
@@ -168,7 +188,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
       return [];
     },
-    [rawColumns, loadFilterOptions, fetchFilterOptions, setFilterOptions]
+    [rawColumns, loadFilterOptions, fetchFilterOptions, setFilterOptions, tab.id, treeEntity]
   );
 
   const baseColumns = useColumns(tab, {

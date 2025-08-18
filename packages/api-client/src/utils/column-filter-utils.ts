@@ -62,6 +62,14 @@ export class ColumnFilterUtils {
   }
 
   /**
+   * Check if a column needs distinct values from the current table instead of full entity list
+   * TABLE_DIR columns should use distinct values from current table for better filtering
+   */
+  static needsDistinctValues(column: Column): boolean {
+    return ColumnFilterUtils.isTableDirColumn(column);
+  }
+
+  /**
    * Get filter options for a select column (from refList)
    */
   static getSelectOptions(column: Column): FilterOption[] {
