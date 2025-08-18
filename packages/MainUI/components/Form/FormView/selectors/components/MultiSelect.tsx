@@ -23,6 +23,16 @@ import checkIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/ch
 import ChevronDown from "../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import closeIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/x.svg?url";
 
+const handleKeyboardActivation = (e: React.KeyboardEvent, callback: () => void) => {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    callback();
+  }
+};
+
+const FOCUS_STYLES = "focus:outline-none focus:ring-2 focus:ring-dynamic-light";
+const BASE_TRANSITION = "transition-colors outline-none";
+
 interface MultiSelectOption {
   id: string;
   label: string;
@@ -63,14 +73,9 @@ const OptionItem = memo(
     <li
       aria-selected={isSelected}
       onClick={() => onOptionClick(id)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onOptionClick(id);
-        }
-      }}
+      onKeyDown={(e) => handleKeyboardActivation(e, () => onOptionClick(id))}
       onMouseEnter={() => onMouseEnter(index)}
-      className={`px-4 py-3 text-sm cursor-pointer flex items-center justify-between focus:outline-none focus:bg-baseline-10
+      className={`px-4 py-3 text-sm cursor-pointer flex items-center justify-between ${FOCUS_STYLES} focus:bg-baseline-10
       ${isHighlighted ? "bg-baseline-10" : ""}
       ${isSelected ? "bg-baseline-10 font-medium" : ""}
       hover:bg-baseline-10`}>
@@ -272,18 +277,13 @@ function MultiSelectCmp({
     <div ref={wrapperRef} className="relative w-full font-['Inter']" onBlur={handleBlur} tabIndex={-1}>
       <div
         onClick={handleClick}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            handleClick();
-          }
-        }}
+        onKeyDown={(e) => handleKeyboardActivation(e, handleClick)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className={`w-full flex items-center justify-between px-3 py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light
+        className={`w-full flex items-center justify-between px-3 py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 ${FOCUS_STYLES}
           ${isOpen ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : "border-baseline-40"} 
            text-baseline-20 cursor-pointer hover:border-baseline-60
-          transition-colors outline-none`}>
+          ${BASE_TRANSITION}`}>
         <span
           className={`text-sm truncate max-w-[calc(100%-40px)] ${selectedLabels.length > 0 ? "text-baseline-90 font-medium" : "text-baseline-50"}`}>
           {displayText}
@@ -293,13 +293,8 @@ function MultiSelectCmp({
             <button
               type="button"
               onClick={handleClear}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleClear(e as unknown as React.MouseEvent);
-                }
-              }}
-              className="mr-1 text-baseline-60 hover:text-baseline-80 transition-opacity opacity-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light rounded"
+              onKeyDown={(e) => handleKeyboardActivation(e, () => handleClear(e as unknown as React.MouseEvent))}
+              className={`mr-1 text-baseline-60 hover:text-baseline-80 transition-opacity opacity-100 ${FOCUS_STYLES} rounded`}
               aria-label={t("multiselect.clearSelection")}>
               <Image src={closeIconUrl} alt="Clear" height={16} width={16} />
             </button>

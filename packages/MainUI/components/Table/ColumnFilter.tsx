@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import React from "react";
+import type React from "react";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import {
   ColumnFilterUtils,
@@ -31,21 +31,13 @@ export interface ColumnFilterProps {
   onLoadOptions?: (searchQuery?: string) => void;
 }
 
-export const ColumnFilter: React.FC<ColumnFilterProps> = ({ 
-  column, 
-  filterState, 
-  onFilterChange, 
-  onLoadOptions 
-}) => {
+export const ColumnFilter: React.FC<ColumnFilterProps> = ({ column, filterState, onFilterChange, onLoadOptions }) => {
   if (!ColumnFilterUtils.supportsDropdownFilter(column)) {
     return null;
   }
 
-
   const handleSelectionChange = (selectedIds: string[]) => {
-    const selectedOptions = (filterState?.availableOptions || []).filter(option => 
-      selectedIds.includes(option.id)
-    );
+    const selectedOptions = (filterState?.availableOptions || []).filter((option) => selectedIds.includes(option.id));
     onFilterChange(selectedOptions);
   };
 
@@ -55,12 +47,11 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
     }
   };
 
-  const selectedValues = (filterState?.selectedOptions || []).map(option => option.id);
-  const availableOptions = (filterState?.availableOptions || []).map(option => ({
+  const selectedValues = (filterState?.selectedOptions || []).map((option) => option.id);
+  const availableOptions = (filterState?.availableOptions || []).map((option) => ({
     id: option.id,
     label: option.label,
   }));
-
 
   return (
     <MultiSelect

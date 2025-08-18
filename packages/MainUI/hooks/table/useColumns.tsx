@@ -56,13 +56,17 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
           Cell: ({ row, cell }: { row: { original: EntityData }; cell: MRT_Cell<EntityData, unknown> }) => {
             const recordData = row?.original as EntityData;
             const selectedRecordId = recordData?.[column.columnName as keyof EntityData];
-            
+
             // Get the display value (identifier) using the same logic as accessorFn
             const identifierKey = `${column.columnName}$_identifier`;
-            const displayValue = cell?.getValue ? 
-              String(cell.getValue()) : 
-              String(recordData?.[identifierKey as keyof EntityData] || recordData?.[column.columnName as keyof EntityData] || '');
-            
+            const displayValue = cell?.getValue
+              ? String(cell.getValue())
+              : String(
+                  recordData?.[identifierKey as keyof EntityData] ||
+                    recordData?.[column.columnName as keyof EntityData] ||
+                    ""
+                );
+
             return (
               <button
                 type="button"
