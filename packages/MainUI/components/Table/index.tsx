@@ -302,7 +302,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         },
       ];
     }
-    
+
     return options;
   }, [
     tab.parentColumns,
@@ -404,34 +404,30 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     []
   );
 
-  const treeOptions = shouldUseTreeMode
-    ? {
-        isTreeMode: true,
-        windowId: tab.window,
-        tabId: tab.id,
-        referencedTableId: treeMetadata.referencedTableId || "155",
-        parentId: -1,
-      }
-    : undefined;
+  const treeOptions = useMemo(
+    () =>
+      shouldUseTreeMode
+        ? {
+            isTreeMode: true,
+            windowId: tab.window,
+            tabId: tab.id,
+            referencedTableId: treeMetadata.referencedTableId || "155",
+            parentId: -1,
+          }
+        : undefined,
+    [shouldUseTreeMode, tab.id, tab.window, treeMetadata.referencedTableId]
+  );
 
-  const {
-    updateColumnFilters,
-    toggleImplicitFilters,
-    fetchMore,
-    records,
-    removeRecordLocally,
-    error,
-    refetch,
-    loading,
-    hasMoreRecords,
-  } = useDatasource({
-    entity: treeEntity,
-    params: query,
-    columns,
-    searchQuery,
-    skip: parentTab ? Boolean(!parentRecord || (parentRecords && parentRecords.length !== 1)) : false,
-    treeOptions,
-  });
+  const { toggleImplicitFilters, fetchMore, records, removeRecordLocally, error, refetch, loading, hasMoreRecords } =
+    useDatasource({
+      entity: treeEntity,
+      params: query,
+      columns,
+      searchQuery,
+      skip: parentTab ? Boolean(!parentRecord || (parentRecords && parentRecords.length !== 1)) : false,
+      treeOptions,
+      activeColumnFilters: columnFilters,
+    });
 
   useEffect(() => {
     if (prevShouldUseTreeMode !== shouldUseTreeMode) {
@@ -458,31 +454,19 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     }
   }, [records, expanded, childrenData, shouldUseTreeMode, buildFlattenedRecords]);
 
-  const handleColumnFiltersChange = useCallback(
+  const handleMRTColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
-      let isRealFilterChange = false;
+      let newColumnFilters: MRT_ColumnFiltersState;
 
-      setColumnFilters((columnFilters) => {
-        let newColumnFilters: MRT_ColumnFiltersState;
+      if (typeof updaterOrValue === "function") {
+        newColumnFilters = updaterOrValue(columnFilters);
+      } else {
+        newColumnFilters = updaterOrValue;
+      }
 
-        if (typeof updaterOrValue === "function") {
-          newColumnFilters = updaterOrValue(columnFilters);
-        } else {
-          newColumnFilters = updaterOrValue;
-        }
-
-        isRealFilterChange =
-          JSON.stringify(newColumnFilters.map((f) => ({ id: f.id, value: f.value }))) !==
-          JSON.stringify(columnFilters.map((f) => ({ id: f.id, value: f.value })));
-
-        if (isRealFilterChange) {
-          updateColumnFilters(newColumnFilters);
-        }
-
-        return newColumnFilters;
-      });
+      setColumnFilters(newColumnFilters);
     },
-    [updateColumnFilters]
+    [columnFilters]
   );
 
   const handleTableSelectionChange = useCallback(
@@ -732,7 +716,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       showColumnFilters: true,
       showProgressBars: loading,
     },
-    onColumnFiltersChange: handleColumnFiltersChange,
+    onColumnFiltersChange: handleMRTColumnFiltersChange,
     onColumnVisibilityChange: setColumnVisibility,
     getRowId,
     enableColumnFilters: true,
@@ -786,11 +770,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       columnFilters: toggleColumnsDropdown,
     });
   }, [refetch, registerActions, toggleImplicitFilters, toggleColumnsDropdown]);
-
-  // Sync column filters with useDatasource
-  useEffect(() => {
-    updateColumnFilters(columnFilters);
-  }, [columnFilters, updateColumnFilters]);
 
   if (error) {
     return (
