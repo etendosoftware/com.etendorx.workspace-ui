@@ -39,10 +39,29 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
   const { formState } = useFormContext();
   const { graph } = useSelected();
   const { activeWindow, clearTabFormState } = useMultiWindowURL();
-  const { registerActions } = useToolbarContext();
+  const { registerActions, setSaveButtonState } = useToolbarContext();
   const { markFormAsChanged, resetFormChanges } = useTabContext();
 
   const { validateRequiredFields } = useFormValidation(tab);
+
+  // Update validation state when form data changes
+  useEffect(() => {
+    const validationResult = validateRequiredFields();
+    setSaveButtonState((prev) => ({
+      ...prev,
+      hasValidationErrors: !validationResult.isValid,
+      validationErrors: validationResult.missingFields.map((field) => field.fieldLabel),
+    }));
+
+    return () => {
+      setSaveButtonState((prev) => ({
+        ...prev,
+        hasValidationErrors: false,
+        isSaving: false,
+        validationErrors: [],
+      }));
+    };
+  }, [validateRequiredFields, setSaveButtonState]);
 
   useEffect(() => {
     if (formState.isDirty) {
@@ -56,27 +75,36 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
 
   const handleSave = useCallback(
     async (showModal: boolean) => {
-      // Check if any callouts are currently running
-      const globalCalloutState = globalCalloutManager.getState();
-      if (globalCalloutState.isRunning) {
-        logger.warn("Cannot save while callouts are running");
-        return;
+      try {
+        // Set saving state
+        setSaveButtonState((prev) => ({ ...prev, isSaving: true }));
+
+        // Check if any callouts are currently running
+        const globalCalloutState = globalCalloutManager.getState();
+        if (globalCalloutState.isRunning) {
+          logger.warn("Cannot save while callouts are running");
+          return;
+        }
+
+        // Perform required field validation
+        const validationResult = validateRequiredFields();
+
+        if (!validationResult.isValid) {
+          const missingFields = validationResult.missingFields.map((field) => field.fieldLabel).join(", ");
+          showErrorModal(`The following required fields are missing: ${missingFields}`);
+          return;
+        }
+
+        // Proceed with save if validation passes
+        await onSave(showModal);
+      } catch (error) {
+        logger.error("Error during save operation:", error);
+      } finally {
+        // Clear saving state
+        setSaveButtonState((prev) => ({ ...prev, isSaving: false }));
       }
-
-      // Perform required field validation
-      const validationResult = validateRequiredFields();
-
-      if (!validationResult.isValid) {
-        const missingFields = validationResult.missingFields.map((field) => field.fieldLabel).join(", ");
-        showErrorModal(`The following required fields are missing: ${missingFields}`);
-        return;
-      }
-
-      // Proceed with save if validation passes
-      await onSave(showModal);
-      resetFormChanges();
     },
-    [onSave, resetFormChanges, showErrorModal]
+    [onSave, showErrorModal, setSaveButtonState, validateRequiredFields]
   );
 
   const onReset = useCallback(async () => {

@@ -23,7 +23,7 @@ import { globalCalloutManager } from "@/services/callouts";
 /**
  * Save button state management interface
  */
-interface SaveButtonState {
+export interface SaveButtonState {
   isCalloutLoading: boolean; // External dependency
   hasValidationErrors: boolean; // Internal validation
   isSaving: boolean; // Operation progress

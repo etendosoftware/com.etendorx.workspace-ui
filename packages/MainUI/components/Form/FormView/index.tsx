@@ -37,6 +37,7 @@ import { FormHeader } from "./FormHeader";
 import { FormFields } from "./FormFieldsContent";
 import { FormActions } from "./FormActions";
 import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
+import { useTabContext } from "@/contexts/tab";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon />,
@@ -69,6 +70,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const { graph } = useSelected();
   const { activeWindow, getSelectedRecord, setSelectedRecord } = useMultiWindowURL();
   const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
+  const { resetFormChanges } = useTabContext();
 
   const {
     formInitialization,
@@ -220,8 +222,21 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       if (showModal) {
         showSuccessModal("Saved");
       }
+
+      resetFormChanges();
     },
-    [mode, graph, tab, activeWindow?.windowId, showSuccessModal, reset, initialState, setRecordId, setSelectedRecord]
+    [
+      mode,
+      graph,
+      tab,
+      activeWindow?.windowId,
+      showSuccessModal,
+      reset,
+      initialState,
+      setRecordId,
+      setSelectedRecord,
+      resetFormChanges,
+    ]
   );
 
   const onError = useCallback(

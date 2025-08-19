@@ -17,6 +17,7 @@
 
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useTabContext } from "@/contexts/tab";
+import { useToolbarContext } from "@/contexts/ToolbarContext";
 import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
@@ -65,6 +66,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
+  const { saveButtonState } = useToolbarContext();
   const { buttons, processButtons, loading, refetch } = useToolbar(windowId, tab?.id);
   const { graph } = useSelected();
   const { executeProcess } = useProcessExecution();
@@ -177,6 +179,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           hasFormChanges,
           hasSelectedRecord,
           hasParentRecordSelected,
+          saveButtonState,
         });
 
         const styles = getButtonStyles(button);
@@ -218,6 +221,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     hasParentTab,
     selectedParentItems,
     hasFormChanges,
+    saveButtonState,
   ]);
 
   if (loading) {

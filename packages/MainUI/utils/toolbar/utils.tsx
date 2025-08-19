@@ -20,6 +20,7 @@ import type React from "react";
 import Base64Icon from "@workspaceui/componentlibrary/src/components/Base64Icon";
 import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
 import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
+import type { SaveButtonState } from "@/contexts/ToolbarContext";
 
 const isBase64Image = (str: string): boolean => {
   try {
@@ -123,6 +124,7 @@ export const createButtonByType = ({
   hasFormChanges,
   hasSelectedRecord,
   hasParentRecordSelected,
+  saveButtonState,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
@@ -130,6 +132,7 @@ export const createButtonByType = ({
   hasFormChanges: boolean;
   hasSelectedRecord: boolean;
   hasParentRecordSelected: boolean;
+  saveButtonState?: SaveButtonState;
 }): ToolbarButton => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
@@ -147,6 +150,10 @@ export const createButtonByType = ({
     const showIconTextFor = [TOOLBAR_BUTTONS_ACTIONS.NEW, TOOLBAR_BUTTONS_ACTIONS.SAVE];
 
     if (showIconTextFor.includes(button.action)) {
+      if (button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE && saveButtonState?.isCalloutLoading) {
+        return { iconText: "Loading..." };
+      }
+
       return { iconText: button.name };
     }
 
@@ -182,6 +189,18 @@ export const createButtonByType = ({
       }
       case TOOLBAR_BUTTONS_ACTIONS.SAVE: {
         const isDisabledSave = !isFormView || !hasFormChanges || !hasParentRecordSelected;
+        if (saveButtonState) {
+          const isCalloutLoading = saveButtonState.isCalloutLoading;
+          const isSaving = saveButtonState.isSaving;
+
+          const isDisabledCustomSave = isDisabledSave || isCalloutLoading || isSaving;
+
+          return {
+            disabled: isDisabledCustomSave,
+            tooltip: isDisabledCustomSave ? "" : button.name,
+          };
+        }
+
         return { disabled: isDisabledSave, tooltip: isDisabledSave ? "" : button.name };
       }
       default: {
