@@ -15,6 +15,35 @@
  *************************************************************************
  */
 
+/**
+ * Executes a JavaScript function defined as a string, injecting a custom context and arguments.
+ *
+ * @param {string} code - A string containing the body of a JavaScript function.
+ * @param {Record<string, unknown>} [context={}] - An optional object with key-value pairs to inject as variables in the function scope.
+ * @param {...unknown} args - Arguments to pass to the evaluated function when called.
+ * @returns {Promise<unknown>} - Returns the result of the executed function (awaited if it's asynchronous).
+ *
+ * @example
+ * const code = "(a, b) => a + b";
+ * const result = await executeStringFunction(code, {}, 2, 3);
+ * console.log(result); // 5
+ *
+ * @example
+ * const code = "(user) => `Hello, ${user}`";
+ * const context = {};
+ * const result = await executeStringFunction(code, context, "Luciano");
+ * console.log(result); // "Hello, Luciano"
+ *
+ * @example
+ * const code = "(a, b) => db.add(a, b)";
+ * const context = { db: { add: (x, y) => x + y } };
+ * const result = await executeStringFunction(code, context, 5, 7);
+ * console.log(result); // 12
+ *
+ * WARNING: Executing code from strings is dangerous. Only use with trusted input.
+ * Consider validating or restricting the code parameter to prevent code injection attacks.
+ */
+
 export async function executeStringFunction(code: string, context = {}, ...args: unknown[]) {
   const contextKeys = Object.keys(context);
   const contextValues = Object.values(context);

@@ -47,6 +47,184 @@ const handleExecute = useCallback(async () => {
 
 ## Component Composition
 
+### Custom JavaScript Evaluation Pattern
+
+The custom JavaScript evaluation pattern provides a secure way to execute dynamic code in table cells while maintaining React's architecture principles.
+
+#### Cell Component Pattern
+```typescript
+// Pattern: Separate React component for custom evaluation
+export const CustomJsCell: React.FC<CustomJsCellProps> = React.memo(({
+  cell,
+  row,
+  customJsCode,
+  column
+}) => {
+  const [result, setResult] = useState<unknown>(cell.getValue());
+  const [isEvaluating, setIsEvaluating] = useState(false);
+
+  useEffect(() => {
+    const evaluateCode = async () => {
+      setIsEvaluating(true);
+      try {
+        const evaluated = await evaluateCustomJs(customJsCode, {
+          record: row.original,
+          column,
+        });
+        setResult(evaluated);
+      } catch (error) {
+        console.error('Custom JS evaluation failed:', error);
+        setResult(cell.getValue()); // Fallback to original value
+      } finally {
+        setIsEvaluating(false);
+      }
+    };
+
+    if (customJsCode?.trim()) {
+      evaluateCode();
+    }
+  }, [customJsCode, cell.getValue(), row.original, column]);
+
+  // Handle loading state
+  if (isEvaluating) {
+    return null; // or loading indicator
+  }
+
+  // Handle different result types
+  if (isColorString(result)) {
+    return <ColorCell color={result as string} />;
+  }
+
+  if (React.isValidElement(result)) {
+    return result;
+  }
+
+  return <span>{String(result)}</span>;
+});
+```
+
+#### Column Transformation Pattern
+```typescript
+// Pattern: Pure transformation function for column processing
+export const transformColumnsWithCustomJs = (
+  originalColumns: Column[], 
+  fields: Field[]
+): Column[] => {
+  return originalColumns.map((column) => {
+    const field = fields.find(f => f.id === column.fieldId);
+    
+    if (field?.etmetaCustomjs?.trim()) {
+      return {
+        ...column,
+        Cell: ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: MRT_Row<EntityData> }) => (
+          <CustomJsCell
+            cell={cell}
+            row={row}
+            customJsCode={field.etmetaCustomjs}
+            column={column}
+          />
+        ),
+      };
+    }
+
+    return column;
+  });
+};
+```
+
+#### Integration with useColumns Hook
+```typescript
+// Pattern: Integration in existing hooks without violating React rules
+export const useColumns = (tab: Tab) => {
+  const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
+
+  const columns = useMemo(() => {
+    const fieldsAsArray = Object.values(tab.fields);
+    const originalColumns = parseColumns(fieldsAsArray);
+
+    // Apply reference columns first
+    const referencedColumns = originalColumns.map((column: Column) => {
+      // Reference column logic...
+      return column;
+    });
+
+    // Apply custom JavaScript transformations
+    const customJsColumns = transformColumnsWithCustomJs(
+      referencedColumns,
+      fieldsAsArray
+    );
+
+    return customJsColumns;
+  }, [tab.fields, handleClickRedirect, handleKeyDownRedirect]);
+
+  return columns;
+};
+```
+
+#### Security and Error Handling Pattern
+```typescript
+// Pattern: Safe JavaScript evaluation with error boundaries
+export async function evaluateCustomJs(
+  jsCode: string,
+  context: CustomJsContext
+): Promise<unknown> {
+  try {
+    // Use existing executeStringFunction for security
+    return await executeStringFunction(jsCode, { Metadata }, context);
+  } catch (error) {
+    console.error("Error evaluating custom JS:", error);
+    // Return user-friendly error format
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return `[Error: ${errorMessage}]`;
+  }
+}
+```
+
+#### Anti-Patterns to Avoid
+
+❌ **Don't use hooks inside transformation functions**:
+```typescript
+// WRONG: Hooks inside utility functions
+export const transformColumnsWithCustomJs = (columns: Column[]) => {
+  return columns.map(column => {
+    const [result, setResult] = useState(); // ❌ Violates Rules of Hooks
+    // ...
+  });
+};
+```
+
+✅ **Do use hooks only in React components**:
+```typescript
+// CORRECT: Hooks only in React components
+export const CustomJsCell: React.FC<Props> = ({ customJsCode }) => {
+  const [result, setResult] = useState(); // ✅ Proper hook usage
+  // ...
+};
+```
+
+❌ **Don't perform side effects in render**:
+```typescript
+// WRONG: Side effects during render
+const CustomJsCell = ({ customJsCode }) => {
+  evaluateCustomJs(customJsCode); // ❌ Side effect in render
+  return <span>Result</span>;
+};
+```
+
+✅ **Do use useEffect for side effects**:
+```typescript
+// CORRECT: Side effects in useEffect
+const CustomJsCell = ({ customJsCode }) => {
+  const [result, setResult] = useState();
+  
+  useEffect(() => {
+    evaluateCustomJs(customJsCode).then(setResult); // ✅ Proper side effect
+  }, [customJsCode]);
+  
+  return <span>{result}</span>;
+};
+```
+
 ### Modal Pattern
 ```typescript
 // Pattern: Content component + Wrapper component

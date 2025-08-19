@@ -141,6 +141,7 @@ export interface Field {
   helpComment: string;
   processDefinition?: ProcessDefinition;
   processAction?: ProcessAction;
+  etmetaCustomjs?: string | null;
 }
 
 export interface Option<T extends string = string> {
@@ -168,6 +169,7 @@ export interface Column {
   column?: Record<string, string>;
   referencedWindowId?: string;
   [key: string]: unknown;
+  fieldId?: string;
 }
 
 export interface MappedField {

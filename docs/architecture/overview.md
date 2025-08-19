@@ -43,12 +43,14 @@ flowchart TB
 - **Material-UI**: Design system base
 - **React Hook Form**: Form management
 - **TypeScript**: Type safety
+- **Custom JavaScript Evaluation**: Secure dynamic code execution in table cells
 
 ### Integration Layer  
 - **API Client**: Backend communication abstraction
 - **Metadata Client**: Window/tab metadata retrieval
 - **Kernel Client**: Process and action execution
 - **Datasource Client**: Entity data retrieval
+- **Custom JS Engine**: Sandboxed JavaScript evaluation for column customization
 
 ### Backend Integration
 - **Etendo Classic**: ERP backend with Java servlets

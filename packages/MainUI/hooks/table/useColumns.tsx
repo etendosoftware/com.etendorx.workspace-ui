@@ -24,6 +24,7 @@ import type { Column } from "@workspaceui/api-client/src/api/types";
 import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
 import { getFieldReference } from "@/utils";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
+import { transformColumnsWithCustomJs } from "@/utils/customJsColumnTransformer";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilter } from "../../components/Table/ColumnFilter";
 
@@ -40,8 +41,10 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
   const { onColumnFilter, onLoadFilterOptions, columnFilterStates } = options || {};
 
   const columns = useMemo(() => {
-    const originalColumns = parseColumns(Object.values(tab.fields));
-    const customColumns = originalColumns.map((column: Column) => {
+    const fieldsAsArray = Object.values(tab.fields);
+    const originalColumns = parseColumns(fieldsAsArray);
+
+    const referencedColumns = originalColumns.map((column: Column) => {
       const isReference = isEntityReference(getFieldReference(column.column?.reference));
       const supportsDropdownFilter = ColumnFilterUtils.supportsDropdownFilter(column);
 
@@ -104,7 +107,11 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
       return columnConfig;
     });
-    return customColumns;
+
+    // Apply custom JavaScript code
+    const customJsColumns = transformColumnsWithCustomJs(referencedColumns, fieldsAsArray);
+
+    return customJsColumns;
   }, [tab.fields, handleClickRedirect, handleKeyDownRedirect, onColumnFilter, onLoadFilterOptions, columnFilterStates]);
 
   return columns;
