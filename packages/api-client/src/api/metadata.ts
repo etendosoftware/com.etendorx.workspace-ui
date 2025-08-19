@@ -17,7 +17,7 @@
 
 import { CacheStore } from "./cache";
 import { Client, type Interceptor } from "./client";
-import { API_DEFAULT_CACHE_DURATION } from "./constants";
+import { API_DEFAULT_CACHE_DURATION, API_KERNEL_SERVLET, API_ERP_PROXY, API_DATASOURCE_PROXY } from "./constants";
 import { LocationClient } from "./location";
 import type * as Etendo from "./types";
 import type { Menu } from "./types";
@@ -34,17 +34,16 @@ export class Metadata {
   private static language: string | null = null;
   public static locationClient = new LocationClient();
 
-  public static setBaseUrl(url: string) {
-    // Instead of connecting directly to ERP, use Next.js proxy routes
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"; // fallback for SSR
+  public static setBaseUrl() {
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
 
     // Route metadata and kernel through ERP proxy
-    Metadata.client.setBaseUrl(baseUrl + "/api/erp");
+    Metadata.client.setBaseUrl(`${baseUrl}${API_ERP_PROXY}`);
     // Kernel endpoints are called via forward servlet
-    Metadata.kernelClient.setBaseUrl(baseUrl + "/api/erp/meta/forward/org.openbravo.client.kernel");
-    Metadata.datasourceServletClient.setBaseUrl(baseUrl + "/api/datasource");
+    Metadata.kernelClient.setBaseUrl(`${baseUrl}${API_ERP_PROXY}${API_KERNEL_SERVLET}`);
+    Metadata.datasourceServletClient.setBaseUrl(`${baseUrl}${API_DATASOURCE_PROXY}`);
     Metadata.loginClient.setBaseUrl(baseUrl);
-    Metadata.locationClient.setBaseUrl(baseUrl + "/api/erp");
+    Metadata.locationClient.setBaseUrl(`${baseUrl}${API_ERP_PROXY}`);
   }
 
   public static setLanguage(value: string) {
@@ -86,7 +85,6 @@ export class Metadata {
   }
 
   public static getDatasource(id: string, body: BodyInit | Record<string, unknown> | null | undefined) {
-    // Use the new datasource format that matches our proxy
     return Metadata.datasourceServletClient.post("", {
       entity: id,
       params: body,

@@ -80,6 +80,7 @@ const mockTabContext: {
     parentColumns: string[];
     hqlfilterclause: string;
     sQLWhereClause: string;
+    fields: Record<string, any>;
   };
   parentTab: { id: string } | null;
   parentRecord: { id: string } | null;
@@ -92,6 +93,24 @@ const mockTabContext: {
     parentColumns: ["parentId"],
     hqlfilterclause: "",
     sQLWhereClause: "",
+    fields: {
+      name: {
+        id: "name",
+        columnName: "name",
+        label: "Name",
+        type: "string",
+        length: 200,
+        isRequired: false,
+      },
+      status: {
+        id: "status",
+        columnName: "status",
+        label: "Status",
+        type: "string",
+        length: 150,
+        isRequired: false,
+      },
+    },
   },
   parentTab: null,
   parentRecord: { id: "parent-123" },
@@ -177,7 +196,6 @@ jest.mock("@/hooks/table/useColumns", () => ({
 }));
 
 const mockDatasourceHook: {
-  updateColumnFilters: jest.Mock;
   toggleImplicitFilters: jest.Mock;
   fetchMore: jest.Mock;
   records: EntityData[];
@@ -187,7 +205,6 @@ const mockDatasourceHook: {
   loading: boolean;
   hasMoreRecords: boolean;
 } = {
-  updateColumnFilters: jest.fn(),
   toggleImplicitFilters: jest.fn(),
   fetchMore: jest.fn(),
   records: [],
@@ -205,6 +222,23 @@ jest.mock("@/hooks/useDatasource", () => ({
 jest.mock("@/hooks/useTableSelection", () => ({
   __esModule: true,
   default: jest.fn(),
+}));
+
+// Mock useColumnFilters hook
+jest.mock("@workspaceui/api-client/src/hooks/useColumnFilters", () => ({
+  useColumnFilters: () => ({
+    columnFilters: [],
+    setColumnFilter: jest.fn(),
+    loadFilterOptions: jest.fn(),
+    setFilterOptions: jest.fn(),
+  }),
+}));
+
+// Mock useColumnFilterData hook
+jest.mock("@workspaceui/api-client/src/hooks/useColumnFilterData", () => ({
+  useColumnFilterData: () => ({
+    fetchFilterOptions: jest.fn().mockResolvedValue([]),
+  }),
 }));
 
 // Mock Material React Table
@@ -466,8 +500,8 @@ describe("DynamicTable", () => {
     it("handles column filter changes", () => {
       render(<DynamicTable {...defaultProps} />);
 
-      // Column filtering would be handled through the table state
-      expect(mockDatasourceHook.updateColumnFilters).toBeDefined();
+      // Column filtering is now handled through activeColumnFilters prop
+      expect(screen.getByTestId("material-react-table")).toBeInTheDocument();
     });
 
     it("toggles implicit filters", () => {

@@ -29,8 +29,7 @@ export class Datasource {
 
   public static getInstance() {
     if (!Datasource.instance) {
-      // Initialize with current origin + API route path for Next.js proxy
-      const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"; // fallback for SSR
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
       Datasource.instance = new Datasource(baseUrl);
     }
 
@@ -38,9 +37,7 @@ export class Datasource {
   }
 
   public setBaseUrl(_url: string) {
-    // Base URL for selector/forwarded datasource requests (no leading slash in path)
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"; // fallback for SSR
-    // For relative paths like '<selectorId>' route through forward servlet
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
     this.client.setBaseUrl(baseUrl);
   }
 

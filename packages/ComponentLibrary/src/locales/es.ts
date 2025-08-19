@@ -202,7 +202,8 @@ const es = {
     recentlyViewed: "Visto recientemente",
   },
   login: {
-    subtitle: "Ingrese sus credenciales para acceder a su cuenta",
+    title: "Iniciar sesión",
+    subtitle: "Ingresa tu usuario y contraseña para continuar.",
     fields: {
       username: {
         label: "Usuario",
@@ -215,7 +216,9 @@ const es = {
     },
     buttons: {
       submit: "Acceso",
+      google: "Continuar con Google",
     },
+    or: "O",
   },
   grid: {
     items: {
@@ -315,6 +318,13 @@ const es = {
     dashboard: "Panel",
     closeWindow: "Cerrar ventana",
     showTabs: "Mostrar pestañas",
+  },
+  multiselect: {
+    searchPlaceholder: "Buscar...",
+    searchOptions: "Buscar opciones",
+    clearSelection: "Limpiar selección",
+    noOptionsFound: "No se encontraron opciones",
+    loadingOptions: "Cargando más opciones...",
   },
 };
 

@@ -23,7 +23,7 @@ import type {
   EntityData,
   MRT_ColumnFiltersState,
 } from "@workspaceui/api-client/src/api/types";
-import { ColumnFilterUtils, SearchUtils } from "@workspaceui/api-client/src/utils/search-utils";
+import { LegacyColumnFilterUtils, SearchUtils } from "@workspaceui/api-client/src/utils/search-utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const loadData = async (
@@ -50,7 +50,6 @@ const loadData = async (
     pageSize: safePageSize,
   };
 
-  // Solo agregar parámetros tree si estamos en tree mode
   if (treeOptions?.isTreeMode) {
     processedParams.parentId = treeOptions.parentId ?? -1;
     if (treeOptions.tabId) {
@@ -86,6 +85,7 @@ export type UseDatasourceOptions = {
     referencedTableId?: string;
     parentId?: string | number;
   };
+  activeColumnFilters?: MRT_ColumnFiltersState;
 };
 
 export function useDatasource({
@@ -95,6 +95,7 @@ export function useDatasource({
   searchQuery,
   skip,
   treeOptions,
+  activeColumnFilters = [],
 }: UseDatasourceOptions) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -103,7 +104,6 @@ export function useDatasource({
   const [page, setPage] = useState(1);
   const [isImplicitFilterApplied, setIsImplicitFilterApplied] = useState(params.isImplicitFilterApplied ?? false);
   const [pageSize, setPageSize] = useState(params.pageSize ?? defaultParams.pageSize);
-  const [activeColumnFilters, setActiveColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [hasMoreRecords, setHasMoreRecords] = useState(true);
 
   const removeRecordLocally = useCallback((recordId: string) => {
@@ -112,12 +112,6 @@ export function useDatasource({
 
   const fetchMore = useCallback(() => {
     setPage((prev) => prev + 1);
-  }, []);
-
-  const updateColumnFilters = useCallback((filters: MRT_ColumnFiltersState) => {
-    setActiveColumnFilters(filters);
-    setPage(1);
-    setRecords([]);
   }, []);
 
   const changePageSize = useCallback((size: number) => {
@@ -137,8 +131,8 @@ export function useDatasource({
 
   const columnFilterCriteria = useMemo(() => {
     if (!columns || !activeColumnFilters.length) return [];
-
-    return ColumnFilterUtils.createColumnFilterCriteria(activeColumnFilters, columns);
+    const criteria = LegacyColumnFilterUtils.createColumnFilterCriteria(activeColumnFilters, columns);
+    return criteria;
   }, [activeColumnFilters, columns]);
 
   const queryParams = useMemo(() => {
@@ -155,16 +149,20 @@ export function useDatasource({
       allCriteria = [...allCriteria, ...columnFilterCriteria];
     }
 
-    return {
+    const finalParams = {
       ...params,
       criteria: allCriteria,
       isImplicitFilterApplied,
     };
+
+    return finalParams;
   }, [params, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied]);
 
-  const load = useCallback(() => {
-    if (!entity || skip) {
-      reinit();
+  useEffect(() => {
+    if (skip) {
+      setRecords([]);
+      setPage(1);
+      setHasMoreRecords(true);
       setLoaded(true);
       return;
     }
@@ -174,7 +172,7 @@ export function useDatasource({
 
     const safePageSize = pageSize ?? 1000;
 
-    const f = async () => {
+    const fetchData = async () => {
       try {
         const { ok, data } = await loadData(entity, page, safePageSize, queryParams, treeOptions);
 
@@ -182,7 +180,7 @@ export function useDatasource({
           throw data;
         }
         setHasMoreRecords(data.response.data.length >= safePageSize);
-        setRecords((prev) => (page === 1 || searchQuery ? data.response.data : prev.concat(data.response.data)));
+        setRecords(data.response.data);
         setLoaded(true);
       } catch (e) {
         logger.warn(e);
@@ -197,35 +195,27 @@ export function useDatasource({
       }
     };
 
-    f();
-  }, [entity, isImplicitFilterApplied, page, pageSize, queryParams, reinit, searchQuery, skip]);
+    fetchData();
+  }, [entity, page, pageSize, queryParams, skip, treeOptions, isImplicitFilterApplied]);
 
   useEffect(() => {
     reinit();
-    setLoaded(false);
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  }, [activeColumnFilters, searchQuery, reinit]);
 
   const refetch = useCallback(() => {
     reinit();
-    setLoaded(false);
-    load();
-  }, [load]);
+    setError(undefined);
+  }, [reinit]);
 
   return {
     loading,
     error,
     fetchMore,
     changePageSize,
-    load,
     records,
     loaded,
     isImplicitFilterApplied,
     toggleImplicitFilters,
-    updateColumnFilters,
     activeColumnFilters,
     removeRecordLocally,
     refetch,
