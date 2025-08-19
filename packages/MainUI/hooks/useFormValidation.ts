@@ -115,8 +115,10 @@ export const useFormValidation = (tab: Tab) => {
       const fieldLabel = field.name || field.hqlName;
 
       // Reference fields (Table Directory) need both value and identifier
-      if (field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_18 || 
-          field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_19) {
+      if (
+        field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_18 ||
+        field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_19
+      ) {
         const identifierValue = formValues[`${field.hqlName}$_identifier`];
         const isValid = !!(value && identifierValue);
 
@@ -129,8 +131,10 @@ export const useFormValidation = (tab: Tab) => {
       }
 
       // String fields - check for non-empty strings (handle whitespace-only inputs)
-      if (field.column?.reference === FIELD_REFERENCE_CODES.STRING || 
-          field.column?.reference === FIELD_REFERENCE_CODES.TEXT_LONG) {
+      if (
+        field.column?.reference === FIELD_REFERENCE_CODES.STRING ||
+        field.column?.reference === FIELD_REFERENCE_CODES.TEXT_LONG
+      ) {
         const isValid = !!(value && typeof value === "string" && value.trim() !== "");
 
         return {
@@ -142,9 +146,11 @@ export const useFormValidation = (tab: Tab) => {
       }
 
       // Numeric fields (allow zero values - business logic requirement)
-      if (field.column?.reference === FIELD_REFERENCE_CODES.INTEGER || 
-          field.column?.reference === FIELD_REFERENCE_CODES.NUMERIC || 
-          field.column?.reference === FIELD_REFERENCE_CODES.QUANTITY_22) {
+      if (
+        field.column?.reference === FIELD_REFERENCE_CODES.INTEGER ||
+        field.column?.reference === FIELD_REFERENCE_CODES.NUMERIC ||
+        field.column?.reference === FIELD_REFERENCE_CODES.QUANTITY_22
+      ) {
         const isValid = value !== null && value !== undefined && value !== "";
 
         return {
