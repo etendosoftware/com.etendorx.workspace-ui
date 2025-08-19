@@ -71,8 +71,8 @@ export default async function RootLayout({
         <meta charSet="utf-8" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: 
-        Apply the density class as early as possible to avoid layout shift. 
-        This script is 100% safe because it doesn't evaluate user input. */}
+         Apply the density class as early as possible to avoid layout shift. 
+         This script is 100% safe because it doesn't evaluate user input. */}
         <script dangerouslySetInnerHTML={{ __html: setInitialDensityScript }} />
       </head>
       <body>

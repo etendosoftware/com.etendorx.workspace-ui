@@ -199,7 +199,8 @@ const en = {
     recentlyViewed: "Recently Viewed",
   },
   login: {
-    subtitle: "Enter your credentials to access your account.",
+    title: "Log In",
+    subtitle: "Enter your username and password to continue.",
     fields: {
       username: {
         label: "Username",
@@ -212,7 +213,9 @@ const en = {
     },
     buttons: {
       submit: "Log In",
+      google: "Continue with Google",
     },
+    or: "OR",
   },
   grid: {
     items: {

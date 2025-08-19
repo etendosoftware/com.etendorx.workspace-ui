@@ -1,0 +1,15 @@
+.bg-login {
+  background-image: url("../../../../ComponentLibrary/src/assets/images/Login.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  width: 100vw;
+  height: 100vh;
+}
+
+.logo {
+  background-image: url("../../../../ComponentLibrary/src/assets/images/Etendo.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
