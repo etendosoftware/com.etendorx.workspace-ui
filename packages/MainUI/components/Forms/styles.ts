@@ -17,7 +17,6 @@
 
 import { useTheme } from "@mui/material";
 import { useMemo } from "react";
-import EtendoImg from "../../../ComponentLibrary/src/assets/images/Etendo.svg?url";
 
 export const useStyle = () => {
   const theme = useTheme();
@@ -25,34 +24,6 @@ export const useStyle = () => {
   return useMemo(
     () => ({
       styles: {
-        container: {
-          display: "flex",
-          flex: 1,
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "100vh",
-          backgroundColor: theme.palette.dynamicColor.light,
-          padding: "2rem",
-          position: "relative",
-          overflow: "hidden",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            width: "200%",
-            height: "200%",
-            top: "-50%",
-            left: "-57%",
-            backgroundImage: `url(${EtendoImg})`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-            backgroundSize: "contain",
-            transform: "rotate(-15deg)",
-            opacity: 0.3,
-            zIndex: 0,
-            pointerEvents: "none",
-          },
-        },
         contentWrapper: {
           display: "flex",
           alignItems: "stretch",
@@ -140,7 +111,6 @@ export const useStyle = () => {
           width: "100%",
           aspectRatio: "1/1",
           padding: "2rem",
-          background: `linear-gradient(135deg, ${theme.palette.baselineColor.neutral[40]} 0%, ${theme.palette.baselineColor.neutral[90]} 100%)`,
           borderRadius: "1.5rem",
           position: "relative",
           "&::before": {
@@ -150,7 +120,6 @@ export const useStyle = () => {
             left: -2,
             right: -2,
             bottom: -2,
-            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.baselineColor.neutral[50]} 100%)`,
             borderRadius: "1.75rem",
             zIndex: -1,
           },
@@ -173,7 +142,6 @@ export const useStyle = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            background: "linear-gradient(145deg, rgba(159, 203, 209, 0.28) 0%, rgba(255,255,255,0) 100%)",
             opacity: 0.5,
             zIndex: 1,
           },

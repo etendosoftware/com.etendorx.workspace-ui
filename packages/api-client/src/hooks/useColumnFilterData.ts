@@ -1,0 +1,118 @@
+/*
+ *************************************************************************
+ * The contents of this file are subject to the Etendo License
+ * (the "License"), you may not use this file except in compliance with
+ * the License.
+ * You may obtain a copy of the License at
+ * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
+ * Software distributed under the License is distributed on an
+ * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing rights
+ * and limitations under the License.
+ * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
+ * All Rights Reserved.
+ * Contributor(s): Futit Services S.L.
+ *************************************************************************
+ */
+
+import { useCallback } from "react";
+import { datasource } from "../api/datasource";
+import type { FilterOption } from "../utils/column-filter-utils";
+
+/**
+ * Hook for fetching column filter data using the same pattern as useDatasource
+ * but optimized for simple filter queries. Supports both direct datasource queries
+ * and distinct value queries from the current table.
+ */
+export const useColumnFilterData = () => {
+  const fetchFilterOptions = useCallback(
+    async (
+      datasourceId: string,
+      selectorDefinitionId?: string,
+      searchQuery?: string,
+      limit = 20,
+      distinctField?: string,
+      tabId?: string
+    ): Promise<FilterOption[]> => {
+      try {
+        // Construct params without _ prefix since datasource.get() will add them automatically
+        const params: Record<string, unknown> = {
+          startRow: 0,
+          endRow: limit,
+          textMatchStyle: "substring",
+          requestId: 1,
+          dataSource: datasourceId,
+        };
+
+        // For distinct field queries, use the current table's datasource and add distinct parameter
+        if (distinctField && tabId) {
+          params.distinct = distinctField;
+          params.tabId = tabId;
+          // Add dummy criteria to match Classic behavior
+          params.operator = "and";
+          params._constructor = "AdvancedCriteria";
+          params.criteria = JSON.stringify({
+            fieldName: "_dummy",
+            operator: "equals",
+            value: Date.now(),
+          });
+        } else {
+          // Add selector definition ID if available (for regular selector queries)
+          if (selectorDefinitionId) {
+            params.selectorDefinitionId = selectorDefinitionId;
+            params.filterClass = "org.openbravo.userinterface.selector.SelectorDataSourceFilter";
+          }
+
+          // Add search criteria if provided
+          if (searchQuery?.trim()) {
+            params.currentValue = searchQuery.trim();
+          }
+        }
+
+        // Use the same datasource.get method that useDatasource uses
+        const response = await datasource.get(datasourceId, params);
+
+        if (response.ok && response.data?.response?.data) {
+          const options = response.data.response.data.map((item: Record<string, unknown>) => {
+            // For distinct queries, we get the field value and its identifier
+            if (distinctField) {
+              const fieldValue = item[distinctField];
+              const identifierKey = `${distinctField}$_identifier`;
+              const identifier = String(item[identifierKey] || fieldValue || item._identifier || item.id);
+              
+              return {
+                id: String(fieldValue || item.id),
+                label: identifier,
+                value: String(fieldValue || identifier), // Use the actual field value for filtering
+              };
+            }
+            
+            // Regular selector/entity queries
+            const identifier = String(
+              item._identifier ||
+                item.name ||
+                item[Object.keys(item).find((key) => key.endsWith("$_identifier")) || "id"] ||
+                item.id
+            );
+
+            return {
+              id: String(item.id),
+              label: identifier,
+              value: identifier, // Use identifier for filtering, not ID
+            };
+          });
+
+          return options;
+        }
+
+        return [];
+      } catch (error) {
+        console.error("Error fetching filter options:", error);
+        return [];
+      }
+    },
+    []
+  );
+
+  return { fetchFilterOptions };
+};

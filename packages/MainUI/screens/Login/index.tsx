@@ -18,7 +18,7 @@
 import { useCallback, useState } from "react";
 import { useUserContext } from "../../hooks/useUserContext";
 import { logger } from "../../utils/logger";
-import Login from "../../components/Forms/Login";
+import Login from "../../components/Forms/Login/Login";
 
 export default function LoginScreen() {
   const [error, setError] = useState("");

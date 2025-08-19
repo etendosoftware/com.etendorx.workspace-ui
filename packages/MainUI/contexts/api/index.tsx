@@ -67,11 +67,9 @@ export default function ApiProvider({ children, url }: React.PropsWithChildren<{
   }, [healthCheck]);
 
   useEffect(() => {
-    if (url) {
-      Metadata.setBaseUrl(url);
-      datasource.setBaseUrl(url);
-    }
-  }, [url]);
+    Metadata.setBaseUrl();
+    datasource.setBaseUrl("");
+  }, []);
 
   if (state.connected) {
     return <ApiContext.Provider value={url}>{children}</ApiContext.Provider>;
