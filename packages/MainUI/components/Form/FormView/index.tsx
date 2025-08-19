@@ -22,6 +22,8 @@ import useFormFields from "@/hooks/useFormFields";
 import { useFormInitialState } from "@/hooks/useFormInitialState";
 import { useFormInitialization } from "@/hooks/useFormInitialization";
 import { useSelected } from "@/hooks/useSelected";
+import { useFormValidation } from "@/hooks/useFormValidation";
+import { globalCalloutManager } from "@/services/callouts";
 import { useTheme } from "@mui/material";
 import InfoIcon from "@workspaceui/componentlibrary/src/assets/icons/file-text.svg";
 import FileIcon from "@workspaceui/componentlibrary/src/assets/icons/file.svg";
@@ -43,6 +45,7 @@ import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { useTabContext } from "@/contexts/tab";
 import { FormInitializationProvider } from "@/contexts/FormInitializationContext";
+import { logger } from "@/utils/logger";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon />,
@@ -133,6 +136,9 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const formMethods = useForm({ values: availableFormData as EntityData });
   const { reset, setValue, formState, ...form } = formMethods;
+
+  // Add validation hook
+  const validation = useFormValidation(tab);
 
   const resetRef = useRef(reset);
   resetRef.current = reset;
@@ -291,10 +297,27 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   // NOTE: toolbar actions
   const handleSave = useCallback(
     async (showModal: boolean) => {
+      // Check if any callouts are currently running
+      const globalCalloutState = globalCalloutManager.getState();
+      if (globalCalloutState.isRunning) {
+        logger.warn("Cannot save while callouts are running");
+        return;
+      }
+
+      // Perform required field validation
+      const validationResult = validation.validateRequiredFields();
+
+      if (!validationResult.isValid) {
+        const missingFields = validationResult.missingFields.map((field) => field.fieldLabel).join(", ");
+        showErrorModal(missingFields);
+        return;
+      }
+
+      // Proceed with save if validation passes
       await save(showModal);
       resetFormChanges();
     },
-    [save, resetFormChanges]
+    [save, resetFormChanges, validation]
   );
 
   const onReset = useCallback(async () => {
