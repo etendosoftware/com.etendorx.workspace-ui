@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
+import { joinUrl } from "../../_utils/url";
 
 // Cached function for generic ERP requests
 const getCachedErpData = unstable_cache(
   async (userToken: string, slug: string, method: string, body: string, contentType: string, queryParams = "") => {
-    let erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
+    let erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, slug);
     if (method === "GET" && queryParams) {
       erpUrl += queryParams;
     }
@@ -49,7 +50,7 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
     const slug = resolvedParams.slug.join("/");
 
     // Build ERP URL and always append query parameters if present
-    let erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
+    let erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, slug);
     const url = new URL(request.url);
     if (url.search) {
       erpUrl += url.search;

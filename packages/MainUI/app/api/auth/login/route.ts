@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 import { setErpSessionCookie, getErpSessionCookie } from "@/app/api/_utils/sessionStore";
 import { extractBearerToken } from "@/lib/auth";
+import { joinUrl } from "../../_utils/url";
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
     validateEnvironment();
 
     const body = await request.json();
-    const erpLoginUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/login`;
+    const erpLoginUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, "/meta/login");
 
     const userToken = extractBearerToken(request);
     let cookieHeader: string | null = null;

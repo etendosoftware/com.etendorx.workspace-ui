@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { getUserContext, extractBearerToken } from "@/lib/auth";
 import { shouldCacheDatasource } from "@/app/api/_utils/datasourceCache";
 import { getCombinedErpCookieHeader, shouldPassthroughJson } from "@/app/api/_utils/forwardConfig";
+import { joinUrl } from "../_utils/url";
 
 export const runtime = "nodejs";
 
@@ -13,7 +14,7 @@ const getCachedDatasource = unstable_cache(
 );
 
 async function fetchDatasource(userToken: string, entity: string, params: any, cookieHeader = "") {
-  const erpUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/forward/org.openbravo.service.datasource/${entity}`;
+  const erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, `/meta/forward/org.openbravo.service.datasource/${entity}`);
 
   // Convert params object to URLSearchParams for the ERP request
   const formData = new URLSearchParams();
@@ -54,7 +55,7 @@ async function fetchDatasource(userToken: string, entity: string, params: any, c
 }
 
 async function fetchDatasourceJson(userToken: string, entity: string, params: any, cookieHeader = "") {
-  const erpUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/forward/org.openbravo.service.datasource/${entity}`;
+  const erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, `/meta/forward/org.openbravo.service.datasource/${entity}`);
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${userToken}`,

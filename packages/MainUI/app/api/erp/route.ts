@@ -50,7 +50,10 @@ async function handleERPBaseRequest(request: NextRequest, method: string) {
     // Special-case: kernel forward endpoints invoked via query _action
     const action = params.get("_action");
     if (action === "org.openbravo.client.application.window.FormInitializationComponent") {
-      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/forward/org.openbravo.client.kernel`;
+      const baseUrl = process.env.ETENDO_CLASSIC_URL?.endsWith("/") 
+        ? process.env.ETENDO_CLASSIC_URL.slice(0, -1) 
+        : process.env.ETENDO_CLASSIC_URL;
+      erpUrl = `${baseUrl}/meta/forward/org.openbravo.client.kernel`;
     }
     if (url.search) {
       erpUrl += url.search;

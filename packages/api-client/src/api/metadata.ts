@@ -19,6 +19,7 @@ import { CacheStore } from "./cache";
 import { Client, type Interceptor } from "./client";
 import { API_DEFAULT_CACHE_DURATION, API_KERNEL_SERVLET, API_ERP_PROXY, API_DATASOURCE_PROXY } from "./constants";
 import { LocationClient } from "./location";
+import { joinUrl } from "./utils";
 import type * as Etendo from "./types";
 import type { Menu } from "./types";
 
@@ -38,12 +39,12 @@ export class Metadata {
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
 
     // Route metadata and kernel through ERP proxy
-    Metadata.client.setBaseUrl(`${baseUrl}${API_ERP_PROXY}`);
+    Metadata.client.setBaseUrl(joinUrl(baseUrl, API_ERP_PROXY));
     // Kernel endpoints are called via forward servlet
-    Metadata.kernelClient.setBaseUrl(`${baseUrl}${API_ERP_PROXY}${API_KERNEL_SERVLET}`);
-    Metadata.datasourceServletClient.setBaseUrl(`${baseUrl}${API_DATASOURCE_PROXY}`);
+    Metadata.kernelClient.setBaseUrl(joinUrl(baseUrl, API_ERP_PROXY + API_KERNEL_SERVLET));
+    Metadata.datasourceServletClient.setBaseUrl(joinUrl(baseUrl, API_DATASOURCE_PROXY));
     Metadata.loginClient.setBaseUrl(baseUrl);
-    Metadata.locationClient.setBaseUrl(`${baseUrl}${API_ERP_PROXY}`);
+    Metadata.locationClient.setBaseUrl(joinUrl(baseUrl, API_ERP_PROXY));
   }
 
   public static setLanguage(value: string) {
