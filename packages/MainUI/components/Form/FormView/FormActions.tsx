@@ -59,7 +59,6 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
       // Check if any callouts are currently running
       const globalCalloutState = globalCalloutManager.getState();
       if (globalCalloutState.isRunning) {
-        console.log("Cannot save while callouts are running");
         logger.warn("Cannot save while callouts are running");
         return;
       }
@@ -68,7 +67,6 @@ export function FormActions({ tab, setRecordId, refetch, onSave, showErrorModal 
       const validationResult = validateRequiredFields();
 
       if (!validationResult.isValid) {
-        console.log("Form validation failed");
         const missingFields = validationResult.missingFields.map((field) => field.fieldLabel).join(", ");
         showErrorModal(`The following required fields are missing: ${missingFields}`);
         return;
