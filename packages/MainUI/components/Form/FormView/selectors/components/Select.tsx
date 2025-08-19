@@ -18,9 +18,13 @@
 import {
   handleKeyboardActivation,
   useClickOutside,
+  useFocusHandler,
+  useHoverHandlers,
   useInfiniteScroll,
   useKeyboardNavigation,
+  useOpenDropdownEffect,
   useSearchHandler,
+  useSearchTermHandler,
 } from "@/utils/selectorUtils";
 import Image from "next/image";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -158,29 +162,15 @@ function SelectCmp({
     [name, setValue]
   );
 
-  const handleMouseEnter = useCallback(() => {
-    setIsHovering(true);
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    setIsHovering(false);
-  }, []);
+  const { handleMouseEnter, handleMouseLeave } = useHoverHandlers(setIsHovering);
 
   const handleScroll = useInfiniteScroll(listRef, loading, hasMore, onLoadMore);
 
-  const handleFocus = useCallback(() => {
-    onFocus?.();
-  }, [onFocus]);
+  const handleFocus = useFocusHandler(onFocus);
 
   useClickOutside(wrapperRef, setIsOpen);
 
-  const handleSetSearchTerm = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const term = handleSearchChange(e);
-      setSearchTerm(term);
-    },
-    [handleSearchChange]
-  );
+  const handleSetSearchTerm = useSearchTermHandler(handleSearchChange, setSearchTerm);
 
   useEffect(() => {
     const selectedOption = options.find((option) => option.id === selectedValue);
@@ -191,13 +181,7 @@ function SelectCmp({
     }
   }, [selectedValue, options, currentIdentifier]);
 
-  useEffect(() => {
-    if (isOpen) {
-      setSearchTerm("");
-      setHighlightedIndex(0);
-      setTimeout(() => searchInputRef.current?.focus(), 1);
-    }
-  }, [isOpen]);
+  useOpenDropdownEffect(isOpen, setSearchTerm, setHighlightedIndex, searchInputRef);
 
   const renderedOptions = useMemo(() => {
     if (filteredOptions.length > 0) {

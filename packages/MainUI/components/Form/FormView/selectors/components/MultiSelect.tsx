@@ -19,13 +19,17 @@ import { useTranslation } from "@/hooks/useTranslation";
 import {
   handleKeyboardActivation,
   useClickOutside,
+  useFocusHandler,
+  useHoverHandlers,
   useInfiniteScroll,
   useKeyboardNavigation,
+  useOpenDropdownEffect,
   useSearchHandler,
+  useSearchTermHandler,
   type Option,
 } from "@/utils/selectorUtils";
 import Image from "next/image";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 import checkIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/check-circle-filled.svg?url";
 import ChevronDown from "../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import closeIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/x.svg?url";
@@ -183,37 +187,17 @@ function MultiSelectCmp({
     [onSelectionChange]
   );
 
-  const handleMouseEnter = useCallback(() => {
-    setIsHovering(true);
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    setIsHovering(false);
-  }, []);
+  const { handleMouseEnter, handleMouseLeave } = useHoverHandlers(setIsHovering);
 
   const handleScroll = useInfiniteScroll(listRef, loading, hasMore, onLoadMore);
 
-  const handleFocus = useCallback(() => {
-    onFocus?.();
-  }, [onFocus]);
+  const handleFocus = useFocusHandler(onFocus);
 
   useClickOutside(wrapperRef, setIsOpen);
 
-  const handleSetSearchTerm = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const term = handleSearchChange(e);
-      setSearchTerm(term);
-    },
-    [handleSearchChange]
-  );
+  const handleSetSearchTerm = useSearchTermHandler(handleSearchChange, setSearchTerm);
 
-  useEffect(() => {
-    if (isOpen) {
-      setSearchTerm("");
-      setHighlightedIndex(0);
-      setTimeout(() => searchInputRef.current?.focus(), 1);
-    }
-  }, [isOpen]);
+  useOpenDropdownEffect(isOpen, setSearchTerm, setHighlightedIndex, searchInputRef);
 
   const renderedOptions = useMemo(() => {
     if (filteredOptions.length > 0) {

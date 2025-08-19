@@ -96,6 +96,51 @@ export const useInfiniteScroll = (
   }, [listRef, loading, hasMore, onLoadMore]);
 };
 
+export const useHoverHandlers = (setIsHovering: (isHovering: boolean) => void) => {
+  return {
+    handleMouseEnter: useCallback(() => {
+      setIsHovering(true);
+    }, [setIsHovering]),
+    handleMouseLeave: useCallback(() => {
+      setIsHovering(false);
+    }, [setIsHovering]),
+  };
+};
+
+export const useFocusHandler = (onFocus?: () => void) => {
+  return useCallback(() => {
+    onFocus?.();
+  }, [onFocus]);
+};
+
+export const useSearchTermHandler = (
+  handleSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => string,
+  setSearchTerm: (term: string) => void
+) => {
+  return useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const term = handleSearchChange(e);
+      setSearchTerm(term);
+    },
+    [handleSearchChange, setSearchTerm]
+  );
+};
+
+export const useOpenDropdownEffect = (
+  isOpen: boolean,
+  setSearchTerm: (term: string) => void,
+  setHighlightedIndex: (index: number) => void,
+  searchInputRef: React.RefObject<HTMLInputElement>
+) => {
+  useEffect(() => {
+    if (isOpen) {
+      setSearchTerm("");
+      setHighlightedIndex(0);
+      setTimeout(() => searchInputRef.current?.focus(), 1);
+    }
+  }, [isOpen, setSearchTerm, setHighlightedIndex, searchInputRef]);
+};
+
 export const handleKeyboardActivation = (e: React.KeyboardEvent, callback: () => void) => {
   if (e.key === "Enter" || e.key === " ") {
     e.preventDefault();
