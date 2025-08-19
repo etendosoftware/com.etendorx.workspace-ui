@@ -38,15 +38,9 @@ describe("useColumns - reference cell links carry record id", () => {
     function Harness() {
       const columns = useColumns(tab);
       const Cell: any = (columns[0] as any).Cell;
-      const row = { id: "R77", C_Order_ID: "R77" } as any;
-      return (
-        <Cell
-          cell={{
-            row: { original: row },
-            getValue: () => "SO/1000",
-          }}
-        />
-      );
+      const row = { original: { id: "R77", C_Order_ID: "R77" } } as any;
+      const cell = { getValue: () => "SO/1000" } as any;
+      return <Cell row={row} cell={cell} />;
     }
 
     render(<Harness />);

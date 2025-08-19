@@ -35,33 +35,34 @@ export default function WindowTab({ title, isActive, onActivate, onClose, canClo
 
   return (
     <Tooltip title={title}>
-      <button
-        type="button"
+      <div
         className={`
-        h-9 flex gap-2 items-center justify-center p-2 cursor-pointer max-w-[220px] 
-        relative group transition-all duration-200 text-(--color-baseline-90) 
-        ${
-          isActive
-            ? "bg-(--color-baseline-0) border-b-2 border-(--color-dynamic-main)"
-            : "hover:bg-(--color-baseline-0)"
-        }
-      `}
+         h-9 flex gap-2 items-center justify-center p-2 cursor-pointer max-w-[220px] 
+         relative group transition-all duration-200 text-(--color-baseline-90) 
+         ${
+           isActive
+             ? "bg-(--color-baseline-0) border-b-2 border-(--color-dynamic-main)"
+             : "hover:bg-(--color-baseline-0)"
+         }
+       `}
         style={{
           borderTopLeftRadius: "12px",
           borderTopRightRadius: "12px",
-        }}
-        onClick={onActivate}>
-        <div className="h-full flex items-center flex-1 truncate gap-2">
+        }}>
+        <button
+          type="button"
+          className="h-full flex items-center flex-1 truncate gap-2 bg-transparent border-none cursor-pointer"
+          onClick={onActivate}>
           <FolderIcon className="fill-black" />
           <span className="flex-1 truncate text-sm font-medium">{title}</span>
-        </div>
+        </button>
         {canClose && (
           <button
             type="button"
             className={`
-            w-5 h-5 flex-shrink-0 rounded-full transition-opacity duration-200
-            hover:bg-gray-300 hover:text-gray-800 flex items-center justify-center
-          `}
+             w-5 h-5 flex-shrink-0 rounded-full transition-opacity duration-200
+             hover:bg-gray-300 hover:text-gray-800 flex items-center justify-center
+           `}
             onClick={(e) => {
               e.stopPropagation();
               onClose();
@@ -70,7 +71,7 @@ export default function WindowTab({ title, isActive, onActivate, onClose, canClo
             <CloseIcon />
           </button>
         )}
-      </button>
+      </div>
     </Tooltip>
   );
 }

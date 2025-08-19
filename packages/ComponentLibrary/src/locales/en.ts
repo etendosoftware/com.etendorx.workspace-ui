@@ -316,6 +316,13 @@ const en = {
     closeWindow: "Close Window",
     showTabs: "Show Tabs",
   },
+  multiselect: {
+    searchPlaceholder: "Search...",
+    searchOptions: "Search options",
+    clearSelection: "Clear selection",
+    noOptionsFound: "No options found",
+    loadingOptions: "Loading more options...",
+  },
 };
 
 export default en;

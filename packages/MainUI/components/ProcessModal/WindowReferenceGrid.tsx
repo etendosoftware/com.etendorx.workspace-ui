@@ -134,13 +134,13 @@ function WindowReferenceGrid({
     records,
     loading: datasourceLoading,
     error: datasourceError,
-    updateColumnFilters,
     refetch,
     hasMoreRecords,
     fetchMore,
   } = useDatasource({
     entity: String(entityName),
     params: datasourceOptions,
+    activeColumnFilters: columnFilters,
   });
 
   useEffect(() => {
@@ -167,19 +167,9 @@ function WindowReferenceGrid({
   const handleColumnFiltersChange = useCallback(
     (updaterOrValue: MRT_ColumnFiltersState | ((prev: MRT_ColumnFiltersState) => MRT_ColumnFiltersState)) => {
       const newColumnFilters = typeof updaterOrValue === "function" ? updaterOrValue(columnFilters) : updaterOrValue;
-
-      const normalizedNew = newColumnFilters.map((f) => ({ id: f.id, value: f.value }));
-      const normalizedCurrent = columnFilters.map((f) => ({ id: f.id, value: f.value }));
-
-      const isRealFilterChange = JSON.stringify(normalizedNew) !== JSON.stringify(normalizedCurrent);
-
       setColumnFilters(newColumnFilters);
-
-      if (isRealFilterChange && updateColumnFilters) {
-        updateColumnFilters(newColumnFilters);
-      }
     },
-    [columnFilters, updateColumnFilters]
+    [columnFilters]
   );
 
   const handleClearSelections = useCallback(() => {
