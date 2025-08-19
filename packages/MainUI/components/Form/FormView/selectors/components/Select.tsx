@@ -15,7 +15,13 @@
  *************************************************************************
  */
 
-import useDebounce from "@/hooks/useDebounce";
+import {
+  handleKeyboardActivation,
+  useClickOutside,
+  useInfiniteScroll,
+  useKeyboardNavigation,
+  useSearchHandler,
+} from "@/utils/selectorUtils";
 import Image from "next/image";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
@@ -89,7 +95,7 @@ function SelectCmp({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef<HTMLLIElement>(null);
-  const debouncedSetSearchTerm = useDebounce(onSearch);
+  const handleSearchChange = useSearchHandler(onSearch);
 
   const filteredOptions = useMemo(
     () => options.filter((option) => option.label.toLowerCase().includes(searchTerm.toLowerCase())),
@@ -119,43 +125,21 @@ function SelectCmp({
     setHighlightedIndex(index);
   }, []);
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setHighlightedIndex((prev) => (prev + 1) % filteredOptions.length);
-      }
-
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setHighlightedIndex((prev) => (prev <= 0 ? filteredOptions.length - 1 : prev - 1));
-      }
-
-      if (e.key === "Enter" && highlightedIndex >= 0) {
-        e.preventDefault();
-        const option = filteredOptions[highlightedIndex];
-        if (option) handleSelect(option.id, option.label);
-      }
-
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-      }
-    },
-    [filteredOptions, highlightedIndex, handleSelect]
+  const handleKeyDown = useKeyboardNavigation(
+    filteredOptions,
+    highlightedIndex,
+    setHighlightedIndex,
+    (option) => handleSelect(option.id, option.label),
+    () => {
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+    }
   );
 
   const handleBlur = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       setIsOpen(false);
       setHighlightedIndex(-1);
-    }
-  }, []);
-
-  const handleClickOutside = useCallback((event: MouseEvent) => {
-    if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-      setIsOpen(false);
     }
   }, []);
 
@@ -182,31 +166,20 @@ function SelectCmp({
     setIsHovering(false);
   }, []);
 
-  const handleScroll = useCallback(() => {
-    if (!listRef.current || loading || !hasMore) return;
-
-    const list = listRef.current;
-    const scrollBottom = list.scrollTop + list.clientHeight;
-
-    if (scrollBottom >= list.scrollHeight * 0.9) {
-      onLoadMore?.();
-    }
-  }, [loading, hasMore, onLoadMore]);
+  const handleScroll = useInfiniteScroll(listRef, loading, hasMore, onLoadMore);
 
   const handleFocus = useCallback(() => {
     onFocus?.();
   }, [onFocus]);
 
+  useClickOutside(wrapperRef, setIsOpen);
+
   const handleSetSearchTerm = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const term = e.target.value;
+      const term = handleSearchChange(e);
       setSearchTerm(term);
-
-      if (debouncedSetSearchTerm) {
-        debouncedSetSearchTerm(term);
-      }
     },
-    [debouncedSetSearchTerm]
+    [handleSearchChange]
   );
 
   useEffect(() => {
@@ -225,13 +198,6 @@ function SelectCmp({
       setTimeout(() => searchInputRef.current?.focus(), 1);
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [handleClickOutside]);
 
   const renderedOptions = useMemo(() => {
     if (filteredOptions.length > 0) {
@@ -265,12 +231,7 @@ function SelectCmp({
       <input {...register(name)} type="hidden" readOnly={isReadOnly} />
       <div
         onClick={handleClick}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            handleClick();
-          }
-        }}
+        onKeyDown={(e) => handleKeyboardActivation(e, handleClick)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={`w-full flex items-center justify-between px-3 py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light
@@ -286,12 +247,7 @@ function SelectCmp({
             <button
               type="button"
               onClick={handleClear}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleClear;
-                }
-              }}
+              onKeyDown={(e) => handleKeyboardActivation(e, () => handleClear(e as unknown as React.MouseEvent))}
               className="mr-1 text-baseline-60 hover:text-baseline-80 transition-opacity opacity-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light rounded"
               aria-label="Clear selection">
               <Image src={closeIconUrl} alt="Clear" height={16} width={16} />

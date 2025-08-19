@@ -15,20 +15,20 @@
  *************************************************************************
  */
 
-import useDebounce from "@/hooks/useDebounce";
 import { useTranslation } from "@/hooks/useTranslation";
+import {
+  handleKeyboardActivation,
+  useClickOutside,
+  useInfiniteScroll,
+  useKeyboardNavigation,
+  useSearchHandler,
+  type Option,
+} from "@/utils/selectorUtils";
 import Image from "next/image";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import checkIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/check-circle-filled.svg?url";
 import ChevronDown from "../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import closeIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/x.svg?url";
-
-const handleKeyboardActivation = (e: React.KeyboardEvent, callback: () => void) => {
-  if (e.key === "Enter" || e.key === " ") {
-    e.preventDefault();
-    callback();
-  }
-};
 
 const FOCUS_STYLES = "focus:outline-none focus:ring-2 focus:ring-dynamic-light";
 const BASE_TRANSITION = "transition-colors outline-none";
@@ -37,11 +37,7 @@ const TEXT_MUTED = "text-baseline-60";
 const ICON_SIZE = "w-5 h-5";
 const HOVER_TEXT_COLOR = "hover:text-baseline-80";
 
-interface MultiSelectOption {
-  id: string;
-  label: string;
-  data?: unknown;
-}
+interface MultiSelectOption extends Option {}
 
 interface MultiSelectProps {
   options: MultiSelectOption[];
@@ -113,7 +109,7 @@ function MultiSelectCmp({
   const listRef = useRef<HTMLUListElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const debouncedSetSearchTerm = useDebounce(onSearch);
+  const handleSearchChange = useSearchHandler(onSearch);
 
   const filteredOptions = useMemo(
     () => options.filter((option) => option.label.toLowerCase().includes(searchTerm.toLowerCase())),
@@ -151,43 +147,21 @@ function MultiSelectCmp({
     setHighlightedIndex(index);
   }, []);
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setHighlightedIndex((prev) => (prev + 1) % filteredOptions.length);
-      }
-
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setHighlightedIndex((prev) => (prev <= 0 ? filteredOptions.length - 1 : prev - 1));
-      }
-
-      if (e.key === "Enter" && highlightedIndex >= 0) {
-        e.preventDefault();
-        const option = filteredOptions[highlightedIndex];
-        if (option) handleSelect(option.id);
-      }
-
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-      }
-    },
-    [filteredOptions, highlightedIndex, handleSelect]
+  const handleKeyDown = useKeyboardNavigation(
+    filteredOptions,
+    highlightedIndex,
+    setHighlightedIndex,
+    (option) => handleSelect(option.id),
+    () => {
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+    }
   );
 
   const handleBlur = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       setIsOpen(false);
       setHighlightedIndex(-1);
-    }
-  }, []);
-
-  const handleClickOutside = useCallback((event: MouseEvent) => {
-    if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-      setIsOpen(false);
     }
   }, []);
 
@@ -217,31 +191,20 @@ function MultiSelectCmp({
     setIsHovering(false);
   }, []);
 
-  const handleScroll = useCallback(() => {
-    if (!listRef.current || loading || !hasMore) return;
-
-    const list = listRef.current;
-    const scrollBottom = list.scrollTop + list.clientHeight;
-
-    if (scrollBottom >= list.scrollHeight * 0.9) {
-      onLoadMore?.();
-    }
-  }, [loading, hasMore, onLoadMore]);
+  const handleScroll = useInfiniteScroll(listRef, loading, hasMore, onLoadMore);
 
   const handleFocus = useCallback(() => {
     onFocus?.();
   }, [onFocus]);
 
+  useClickOutside(wrapperRef, setIsOpen);
+
   const handleSetSearchTerm = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const term = e.target.value;
+      const term = handleSearchChange(e);
       setSearchTerm(term);
-
-      if (debouncedSetSearchTerm) {
-        debouncedSetSearchTerm(term);
-      }
     },
-    [debouncedSetSearchTerm]
+    [handleSearchChange]
   );
 
   useEffect(() => {
@@ -251,13 +214,6 @@ function MultiSelectCmp({
       setTimeout(() => searchInputRef.current?.focus(), 1);
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [handleClickOutside]);
 
   const renderedOptions = useMemo(() => {
     if (filteredOptions.length > 0) {
