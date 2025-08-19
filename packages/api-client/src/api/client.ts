@@ -55,14 +55,16 @@ export class Client {
 
   public setBaseUrl(url: string) {
     if (url) {
-      this.baseUrl = url.endsWith("/") ? url : url + "/";
+      this.baseUrl = url;
     } else {
       this.baseUrl = "";
     }
   }
 
   private cleanUrl(url: string) {
-    return url.startsWith("/") ? url.substring(1) : url;
+    let cleaned = url.startsWith("/") ? url.substring(1) : url;
+    cleaned = cleaned.endsWith("/") ? cleaned.slice(0, -1) : cleaned;
+    return cleaned;
   }
 
   private getFormattedBody(body: ClientOptions["body"]): RequestInit["body"] {
@@ -121,8 +123,19 @@ export class Client {
 
       options.credentials = "include";
 
-      // If URL starts with 'api/', treat it as absolute path from origin
-      const rawUrl = url.startsWith("api/") ? `/${url}` : `${this.baseUrl}/${this.cleanUrl(url)}`;
+      // Handle query strings, empty strings and paths differently
+      let rawUrl: string;
+      if (url.startsWith("api/")) {
+        rawUrl = `/${this.cleanUrl(url)}`;
+      } else if (url.startsWith("?")) {
+        // Query string - append directly to baseUrl without adding slash
+        rawUrl = `${this.baseUrl}${url}`;
+      } else if (url === "") {
+        // Empty string - use baseUrl as-is
+        rawUrl = this.baseUrl;
+      } else {
+        rawUrl = `${this.baseUrl}/${this.cleanUrl(url)}`;
+      }
       const destination = new URL(rawUrl, window.location.origin);
       this.baseQueryParams.forEach((value, key) => destination.searchParams.append(key, value));
 

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { extractBearerToken } from "@/lib/auth";
+import { joinUrl } from "../../_utils/url";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   try {
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
 
-    const erpUrl = `${process.env.ETENDO_CLASSIC_URL}/copilot/${copilotPath}`;
+    const erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, `/copilot/${copilotPath}`);
 
     console.log("Copilot proxy request:", { erpUrl, userToken: !!userToken });
 

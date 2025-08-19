@@ -26,9 +26,12 @@ import { compileExpression } from "@/components/Form/FormView/selectors/BaseSele
 import { useUserContext } from "@/hooks/useUserContext";
 import type { ProcessButton } from "@/components/ProcessModal/types";
 
+const toolbarCache = new Map<string, ToolbarResponse>();
+
 export function useToolbar(windowId: string, tabId?: string) {
-  const [toolbar, setToolbar] = useState<ToolbarResponse | null>(null);
-  const [loading, setLoading] = useState(!!windowId);
+  const cacheKey = `${windowId}-${tabId || "default"}`;
+  const [toolbar, setToolbar] = useState<ToolbarResponse | null>(() => toolbarCache.get(cacheKey) || null);
+  const [loading, setLoading] = useState(!!windowId && !toolbarCache.has(cacheKey));
   const [error, setError] = useState<Error | null>(null);
 
   const { session } = useUserContext();
@@ -62,6 +65,13 @@ export function useToolbar(windowId: string, tabId?: string) {
   const fetchToolbar = useCallback(async () => {
     if (!windowId) return;
 
+    const cachedData = toolbarCache.get(cacheKey);
+    if (cachedData) {
+      setToolbar(cachedData);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -77,6 +87,7 @@ export function useToolbar(windowId: string, tabId?: string) {
         params: Object.fromEntries(params.entries()),
       });
 
+      toolbarCache.set(cacheKey, response.data);
       setToolbar(response.data);
     } catch (error) {
       logger.warn(error);
@@ -85,7 +96,7 @@ export function useToolbar(windowId: string, tabId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [windowId, tabId]);
+  }, [windowId, tabId, cacheKey]);
 
   const buttons: ToolbarButtonMetadata[] = useMemo(() => toolbar?.response?.data ?? [], [toolbar]);
 
@@ -93,13 +104,22 @@ export function useToolbar(windowId: string, tabId?: string) {
     if (windowId) {
       fetchToolbar();
     }
-  }, [fetchToolbar, windowId]);
+  }, [fetchToolbar]);
+
+  const clearCache = useCallback(() => {
+    toolbarCache.delete(cacheKey);
+  }, [cacheKey]);
+
+  const refetch = useCallback(async () => {
+    clearCache();
+    await fetchToolbar();
+  }, [clearCache, fetchToolbar]);
 
   return {
     loading,
     error,
     buttons,
     processButtons,
-    refetch: fetchToolbar,
+    refetch,
   };
 }
