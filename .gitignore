@@ -4,6 +4,9 @@
 **/dist/
 **/.next/
 
+# npm lockfile (project uses pnpm)
+package-lock.json
+
 .DS_Store
 .gradle
 .env.local
