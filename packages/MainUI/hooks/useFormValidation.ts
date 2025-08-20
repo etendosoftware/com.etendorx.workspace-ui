@@ -102,6 +102,102 @@ export const useFormValidation = (tab: Tab) => {
   );
 
   /**
+   * Create field validation result
+   */
+  const createValidationResult = useCallback((field: Field, isValid: boolean): FieldValidationResult => {
+    const fieldLabel = field.name || field.hqlName;
+    return {
+      fieldName: field.hqlName,
+      fieldLabel,
+      isValid,
+      message: isValid ? undefined : `${fieldLabel} is required`,
+    };
+  }, []);
+
+  /**
+   * Validate reference fields (Table Directory)
+   */
+  const validateReferenceField = useCallback(
+    (field: Field, value: unknown, formValues: Record<string, unknown>): FieldValidationResult => {
+      const identifierValue = formValues[`${field.hqlName}$_identifier`];
+      const isValid = !!(value || identifierValue);
+      return createValidationResult(field, isValid);
+    },
+    [createValidationResult]
+  );
+
+  /**
+   * Validate string fields
+   */
+  const validateStringField = useCallback(
+    (field: Field, value: unknown): FieldValidationResult => {
+      const isValid = !!(value && typeof value === "string" && value.trim() !== "");
+      return createValidationResult(field, isValid);
+    },
+    [createValidationResult]
+  );
+
+  /**
+   * Validate numeric fields
+   */
+  const validateNumericField = useCallback(
+    (field: Field, value: unknown): FieldValidationResult => {
+      const isValid = value !== null && value !== undefined && value !== "";
+      return createValidationResult(field, isValid);
+    },
+    [createValidationResult]
+  );
+
+  /**
+   * Validate boolean fields
+   */
+  const validateBooleanField = useCallback(
+    (field: Field, value: unknown): FieldValidationResult => {
+      const isValid = value !== null && value !== undefined;
+      return createValidationResult(field, isValid);
+    },
+    [createValidationResult]
+  );
+
+  /**
+   * Check if field is reference type
+   */
+  const isReferenceField = (field: Field): boolean => {
+    return (
+      field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_18 ||
+      field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_19
+    );
+  };
+
+  /**
+   * Check if field is string type
+   */
+  const isStringField = (field: Field): boolean => {
+    return (
+      field.column?.reference === FIELD_REFERENCE_CODES.STRING ||
+      field.column?.reference === FIELD_REFERENCE_CODES.TEXT_LONG
+    );
+  };
+
+  /**
+   * Check if field is numeric type
+   */
+  const isNumericField = (field: Field): boolean => {
+    return (
+      field.column?.reference === FIELD_REFERENCE_CODES.INTEGER ||
+      field.column?.reference === FIELD_REFERENCE_CODES.NUMERIC ||
+      field.column?.reference === FIELD_REFERENCE_CODES.QUANTITY_22
+    );
+  };
+
+  /**
+   * Check if field is boolean type
+   */
+  const isBooleanField = (field: Field): boolean => {
+    return field.column?.reference === FIELD_REFERENCE_CODES.BOOLEAN;
+  };
+
+  /**
    * Validate a single field value based on its type and requirements
    * Different field types have different "empty" definitions
    *
@@ -112,78 +208,27 @@ export const useFormValidation = (tab: Tab) => {
    */
   const validateField = useCallback(
     (field: Field, value: unknown, formValues: Record<string, unknown>): FieldValidationResult => {
-      const fieldLabel = field.name || field.hqlName;
-
-      // Reference fields (Table Directory) need both value and identifier
-      if (
-        field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_18 ||
-        field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_19
-      ) {
-        const identifierValue = formValues[`${field.hqlName}$_identifier`];
-        const isValid = !!(value || identifierValue);
-
-        return {
-          fieldName: field.hqlName,
-          fieldLabel,
-          isValid,
-          message: isValid ? undefined : `${fieldLabel} is required`,
-        };
+      if (isReferenceField(field)) {
+        return validateReferenceField(field, value, formValues);
       }
 
-      // String fields - check for non-empty strings (handle whitespace-only inputs)
-      if (
-        field.column?.reference === FIELD_REFERENCE_CODES.STRING ||
-        field.column?.reference === FIELD_REFERENCE_CODES.TEXT_LONG
-      ) {
-        const isValid = !!(value && typeof value === "string" && value.trim() !== "");
-
-        return {
-          fieldName: field.hqlName,
-          fieldLabel,
-          isValid,
-          message: isValid ? undefined : `${fieldLabel} is required`,
-        };
+      if (isStringField(field)) {
+        return validateStringField(field, value);
       }
 
-      // Numeric fields (allow zero values - business logic requirement)
-      if (
-        field.column?.reference === FIELD_REFERENCE_CODES.INTEGER ||
-        field.column?.reference === FIELD_REFERENCE_CODES.NUMERIC ||
-        field.column?.reference === FIELD_REFERENCE_CODES.QUANTITY_22
-      ) {
-        const isValid = value !== null && value !== undefined && value !== "";
-
-        return {
-          fieldName: field.hqlName,
-          fieldLabel,
-          isValid,
-          message: isValid ? undefined : `${fieldLabel} is required`,
-        };
+      if (isNumericField(field)) {
+        return validateNumericField(field, value);
       }
 
-      // Boolean fields (both states are valid)
-      if (field.column?.reference === FIELD_REFERENCE_CODES.BOOLEAN) {
-        const isValid = value !== null && value !== undefined;
-
-        return {
-          fieldName: field.hqlName,
-          fieldLabel,
-          isValid,
-          message: isValid ? undefined : `${fieldLabel} is required`,
-        };
+      if (isBooleanField(field)) {
+        return validateBooleanField(field, value);
       }
 
       // Default validation for other field types
       const isValid = value !== null && value !== undefined && value !== "";
-
-      return {
-        fieldName: field.hqlName,
-        fieldLabel,
-        isValid,
-        message: isValid ? undefined : `${fieldLabel} is required`,
-      };
+      return createValidationResult(field, isValid);
     },
-    []
+    [validateReferenceField, validateStringField, validateNumericField, validateBooleanField, createValidationResult]
   );
 
   /**
