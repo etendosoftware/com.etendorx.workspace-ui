@@ -120,7 +120,7 @@ export const useFormValidation = (tab: Tab) => {
         field.column?.reference === FIELD_REFERENCE_CODES.TABLE_DIR_19
       ) {
         const identifierValue = formValues[`${field.hqlName}$_identifier`];
-        const isValid = !!(value && identifierValue);
+        const isValid = !!(value || identifierValue);
 
         return {
           fieldName: field.hqlName,
