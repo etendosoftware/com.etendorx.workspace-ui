@@ -151,7 +151,7 @@ export const createButtonByType = ({
 
     if (showIconTextFor.includes(button.action)) {
       if (button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE && saveButtonState?.isCalloutLoading) {
-        return { iconText: "Loading..." };
+        return { iconText: "Loading callouts..." };
       }
 
       return { iconText: button.name };
