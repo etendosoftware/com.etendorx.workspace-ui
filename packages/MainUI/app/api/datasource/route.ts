@@ -5,16 +5,22 @@ import { shouldCacheDatasource } from "@/app/api/_utils/datasourceCache";
 import { shouldPassthroughJson } from "@/app/api/_utils/forwardConfig";
 import { executeWithSessionRetry } from "@/app/api/_utils/sessionRetry";
 import { joinUrl } from "../_utils/url";
+import type { DatasourceParams } from "@workspaceui/api-client/src/api/types";
+import type { SmartClientPayload } from "@/app/api/_utils/datasource";
 
 export const runtime = "nodejs";
 
+// Union type for datasource parameters
+type DatasourceRequestParams = DatasourceParams | SmartClientPayload;
+
 // Cached function that includes the full user context in its key
 const getCachedDatasource = unstable_cache(
-  async (userToken: string, entity: string, params: any) => fetchDatasource(userToken, entity, params),
+  async (userToken: string, entity: string, params: DatasourceRequestParams) =>
+    fetchDatasource(userToken, entity, params),
   ["datasource_v2"]
 );
 
-async function fetchDatasource(userToken: string, entity: string, params: any, cookieHeader = "") {
+async function fetchDatasource(userToken: string, entity: string, params: DatasourceRequestParams, cookieHeader = "") {
   const erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, `/meta/forward/org.openbravo.service.datasource/${entity}`);
 
   // Convert params object to URLSearchParams for the ERP request
@@ -40,7 +46,7 @@ async function fetchDatasource(userToken: string, entity: string, params: any, c
   };
 
   if (cookieHeader) {
-    headers["Cookie"] = cookieHeader;
+    headers.Cookie = cookieHeader;
   }
 
   const response = await fetch(erpUrl, {
@@ -56,7 +62,12 @@ async function fetchDatasource(userToken: string, entity: string, params: any, c
   return { response, data };
 }
 
-async function fetchDatasourceJson(userToken: string, entity: string, params: any, cookieHeader = "") {
+async function fetchDatasourceJson(
+  userToken: string,
+  entity: string,
+  params: DatasourceRequestParams,
+  cookieHeader = ""
+) {
   const erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, `/meta/forward/org.openbravo.service.datasource/${entity}`);
 
   const headers: Record<string, string> = {
@@ -66,7 +77,7 @@ async function fetchDatasourceJson(userToken: string, entity: string, params: an
   };
 
   if (cookieHeader) {
-    headers["Cookie"] = cookieHeader;
+    headers.Cookie = cookieHeader;
   }
 
   const response = await fetch(erpUrl, {
@@ -82,7 +93,7 @@ async function fetchDatasourceJson(userToken: string, entity: string, params: an
   return { response, data };
 }
 
-function isSmartClientPayload(params: any): boolean {
+function isSmartClientPayload(params: DatasourceRequestParams): params is SmartClientPayload {
   if (!params || typeof params !== "object") return false;
   const keys = Object.keys(params);
   return ["operationType", "data", "oldValues", "dataSource", "componentId", "csrfToken"].some((k) => keys.includes(k));
@@ -123,9 +134,8 @@ export async function POST(request: NextRequest) {
     const requestFn = async (cookieHeader: string) => {
       if (passJson) {
         return await fetchDatasourceJson(userToken, entity, params, cookieHeader);
-      } else {
-        return await fetchDatasource(userToken, entity, params, cookieHeader);
       }
+      return await fetchDatasource(userToken, entity, params, cookieHeader);
     };
 
     const result = await executeWithSessionRetry(request, userToken, requestFn);
