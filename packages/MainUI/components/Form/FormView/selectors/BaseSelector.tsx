@@ -201,6 +201,23 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
   ]);
 
   const runCallout = useCallback(async () => {
+    if (isDebugCallouts()) {
+      logger.debug(`[Callout] Attempting to run callout for field: ${field.hqlName}`, {
+        hasCallout: !!field.column.callout,
+        value,
+        previousValue: previousValue.current,
+        isSettingFromCallout: isSettingFromCallout.current,
+        isFormInitializing,
+        isCalloutRunning: globalCalloutManager.isCalloutRunning(),
+        isSuppressed: globalCalloutManager.isSuppressed(),
+      });
+    }
+
+    if (!field.column.callout) {
+      if (isDebugCallouts()) logger.debug(`[Callout] Skipped (no callout defined): ${field.hqlName}`);
+      return;
+    }
+
     if (isSettingFromCallout.current) {
       if (isDebugCallouts()) logger.debug(`[Callout] Skipped (setting from callout): ${field.hqlName}`);
       return;
@@ -211,15 +228,29 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
       return;
     }
 
-    if (globalCalloutManager.isCalloutRunning() || globalCalloutManager.isSuppressed()) {
-      if (isDebugCallouts()) logger.debug(`[Callout] Skipped (global busy/suppressed): ${field.hqlName}`);
+    if (globalCalloutManager.isCalloutRunning()) {
+      if (isDebugCallouts()) logger.debug(`[Callout] Deferred (callout running): ${field.hqlName}`);
+      // Instead of skipping, defer to queue
+      await globalCalloutManager.executeCallout(field.hqlName, executeCallout);
+      return;
+    }
+
+    if (globalCalloutManager.isSuppressed()) {
+      if (isDebugCallouts()) logger.debug(`[Callout] Skipped (globally suppressed): ${field.hqlName}`);
+      return;
+    }
+
+    // Check if value actually changed
+    if (previousValue.current === value) {
+      if (isDebugCallouts()) logger.debug(`[Callout] Skipped (value unchanged): ${field.hqlName}`);
       return;
     }
 
     previousValue.current = value;
-
+    
+    if (isDebugCallouts()) logger.debug(`[Callout] Executing callout for field: ${field.hqlName}`, { value });
     await globalCalloutManager.executeCallout(field.hqlName, executeCallout);
-  }, [field.hqlName, value, executeCallout, isFormInitializing]);
+  }, [field.hqlName, field.column.callout, value, executeCallout, isFormInitializing]);
 
   useEffect(() => {
     if (ready.current) {
