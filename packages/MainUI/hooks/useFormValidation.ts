@@ -21,6 +21,7 @@ import type { Tab, Field } from "@workspaceui/api-client/src/api/types";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import { useUserContext } from "./useUserContext";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
+import { logger } from "@/utils/logger";
 
 /**
  * Interface for validation result of a single field
@@ -94,7 +95,7 @@ export const useFormValidation = (tab: Tab) => {
         const compiledExpression = compileExpression(field.displayLogicExpression);
         return compiledExpression(session, currentValues);
       } catch (error) {
-        console.warn(`Error evaluating display logic for field ${field.hqlName}:`, error);
+        logger.warn(`Error evaluating display logic for field ${field.hqlName}:`, error);
         return field.displayed; // Default to displayed on error
       }
     },
