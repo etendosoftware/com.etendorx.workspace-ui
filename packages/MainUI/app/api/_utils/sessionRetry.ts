@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -52,7 +52,7 @@ export async function executeWithSessionRetry<T>(
     // First attempt with current session
     let cookieHeader = getCombinedErpCookieHeader(request, userToken);
     let result = await requestFn(cookieHeader);
-    
+
     // Check if session is expired
     if (!isSessionExpired(result.response, result.data)) {
       return { success: true, data: result.data };
@@ -60,10 +60,10 @@ export async function executeWithSessionRetry<T>(
 
     // Check if we should attempt recovery
     if (!shouldAttemptRecovery(result.response, result.data)) {
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: `Request failed with status ${result.response.status}`,
-        data: result.data 
+        data: result.data,
       };
     }
 
@@ -71,12 +71,12 @@ export async function executeWithSessionRetry<T>(
 
     // Attempt session recovery
     const recoveryResult = await recoverSession(userToken);
-    
+
     if (!recoveryResult.success) {
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: `Session recovery failed: ${recoveryResult.error}`,
-        data: result.data 
+        data: result.data,
       };
     }
 
@@ -86,16 +86,15 @@ export async function executeWithSessionRetry<T>(
 
     // Check if retry was successful
     if (isSessionExpired(result.response, result.data)) {
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: "Request failed even after session recovery",
-        data: result.data 
+        data: result.data,
       };
     }
 
     console.log(`Session recovery and retry successful for token ${userToken.substring(0, 10)}...`);
     return { success: true, data: result.data, recovered: true };
-
   } catch (error) {
     console.error("Error in session retry logic:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error in session retry";

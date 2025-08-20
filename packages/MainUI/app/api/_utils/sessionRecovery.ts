@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -59,14 +59,14 @@ export async function recoverSession(userToken: string): Promise<SessionRecovery
   try {
     // Get the current session cookie (may be expired)
     const currentCookie = getErpSessionCookie(userToken);
-    
+
     // Prepare login request with JWT token for re-authentication
     const erpLoginUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, "/meta/login");
-    
+
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "Accept": "application/json",
-      "Authorization": `Bearer ${userToken}`,
+      Accept: "application/json",
+      Authorization: `Bearer ${userToken}`,
     };
 
     // Include current cookie if available (ERP might need it for context)
@@ -91,15 +91,15 @@ export async function recoverSession(userToken: string): Promise<SessionRecovery
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        return { 
-          success: false, 
-          error: `Re-authentication failed: ${response.status} ${errorData.error || response.statusText}` 
+        return {
+          success: false,
+          error: `Re-authentication failed: ${response.status} ${errorData.error || response.statusText}`,
         };
       }
 
       // Extract new JSESSIONID from response
       const newJSessionId = extractJSessionId(response);
-      
+
       if (!newJSessionId) {
         return { success: false, error: "No JSESSIONID received in re-authentication response" };
       }
@@ -113,20 +113,18 @@ export async function recoverSession(userToken: string): Promise<SessionRecovery
 
       console.log(`Session recovery successful for token: ${userToken.substring(0, 10)}...`);
       return { success: true };
-
     } catch (fetchError) {
       clearTimeout(timeoutId);
-      
-      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+
+      if (fetchError instanceof Error && fetchError.name === "AbortError") {
         return { success: false, error: "Session recovery timed out" };
       }
-      
+
       throw fetchError;
     }
-
   } catch (error) {
     console.error("Session recovery error:", error);
-    
+
     const errorMessage = error instanceof Error ? error.message : "Unknown error during session recovery";
     return { success: false, error: errorMessage };
   }
