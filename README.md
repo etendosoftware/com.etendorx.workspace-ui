@@ -31,6 +31,45 @@ You can set it up in one of the following ways:
 
 Make sure the backend is running and accessible before interacting with data in the UI.
 
+## 🐳 Docker Deployment
+
+This repository uses a **release-based Docker workflow**. Docker images are built and published only when version tags are created, ensuring consistent and versioned deployments.
+
+### Quick Start with Docker
+
+1. **Copy the environment template:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Set your desired UI version and backend URL in `.env`:**
+   ```bash
+   UI_VERSION=1.2.3  # Use specific version for production
+   ETENDO_CLASSIC_URL=http://your-backend:8080/etendo
+   ```
+
+3. **Deploy using Docker Compose:**
+   ```bash
+   docker-compose up -d
+   ```
+
+### Version Management
+
+- **Production deployments** should use specific version tags (e.g., `1.2.3`, `2.0.1`)
+- **Development** can use `latest` tag for the most recent release
+- **Update to specific version:**
+  ```bash
+  ./scripts/update-ui-version.sh 1.2.3
+  docker-compose pull etendo_ui
+  docker-compose up -d etendo_ui
+  ```
+
+### Release Process
+
+Docker images are automatically built and published when:
+- A new Git tag is created (e.g., `v1.2.3` or `1.2.3`)
+- Images are tagged with both the version number and `latest`
+
 ---
 
 # WorkspaceUI Monorepo

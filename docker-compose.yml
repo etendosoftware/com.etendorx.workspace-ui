@@ -1,0 +1,15 @@
+services:
+  etendo_ui:
+    container_name: etendo_ui
+    image: etendo/etendo_ui:${UI_VERSION:-latest}
+    ports:
+      - "3000:3000"
+    networks:
+      - etendo
+    environment:
+      - ETENDO_CLASSIC_URL=${ETENDO_CLASSIC_URL}
+      - DEBUG_MODE=${DEBUG_MODE:-false}
+
+networks:
+  etendo:
+    external: true
