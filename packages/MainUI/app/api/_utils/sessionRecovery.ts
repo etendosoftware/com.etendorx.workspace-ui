@@ -146,12 +146,13 @@ function extractJSessionId(response: Response): string | null {
   }
 
   // Check all headers for set-cookie (in case of multiple)
-  for (const [key, value] of response.headers.entries()) {
+  const allHeaders = response.headers;
+  allHeaders.forEach((value, key) => {
     if (key.toLowerCase() === "set-cookie") {
       const match = value.match(/JSESSIONID=([^;]+)/);
       if (match) return match[1];
     }
-  }
+  });
 
   return null;
 }
