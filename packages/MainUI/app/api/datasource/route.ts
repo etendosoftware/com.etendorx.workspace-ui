@@ -2,7 +2,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { getUserContext, extractBearerToken } from "@/lib/auth";
 import { shouldCacheDatasource } from "@/app/api/_utils/datasourceCache";
-import { getCombinedErpCookieHeader, shouldPassthroughJson } from "@/app/api/_utils/forwardConfig";
+import { shouldPassthroughJson } from "@/app/api/_utils/forwardConfig";
+import { executeWithSessionRetry } from "@/app/api/_utils/sessionRetry";
 import { joinUrl } from "../_utils/url";
 
 export const runtime = "nodejs";
@@ -51,7 +52,8 @@ async function fetchDatasource(userToken: string, entity: string, params: any, c
   if (!response.ok) {
     throw new Error(`ERP Datasource request failed: ${response.statusText}`);
   }
-  return response.json();
+  const data = await response.json();
+  return { response, data };
 }
 
 async function fetchDatasourceJson(userToken: string, entity: string, params: any, cookieHeader = "") {
@@ -76,7 +78,8 @@ async function fetchDatasourceJson(userToken: string, entity: string, params: an
   if (!response.ok) {
     throw new Error(`ERP Datasource JSON request failed: ${response.statusText}`);
   }
-  return response.json();
+  const data = await response.json();
+  return { response, data };
 }
 
 function isSmartClientPayload(params: any): boolean {
@@ -106,19 +109,33 @@ export async function POST(request: NextRequest) {
 
     // 2. Decide caching policy per-entity (disabled by default)
     const useCache = shouldCacheDatasource(entity, params);
-    const combinedCookie = getCombinedErpCookieHeader(request, userToken);
     const contentType = request.headers.get("Content-Type") || "";
     const passJson =
       shouldPassthroughJson(request) && contentType.includes("application/json") && isSmartClientPayload(params);
-    let data;
+
+    // For cached requests, use the existing flow without retry logic
     if (useCache) {
-      data = await getCachedDatasource(userToken, entity, params);
-    } else if (passJson) {
-      data = await fetchDatasourceJson(userToken, entity, params, combinedCookie);
-    } else {
-      data = await fetchDatasource(userToken, entity, params, combinedCookie);
+      const data = await getCachedDatasource(userToken, entity, params);
+      return NextResponse.json(data);
     }
-    return NextResponse.json(data);
+
+    // For non-cached requests, use session retry logic
+    const requestFn = async (cookieHeader: string) => {
+      if (passJson) {
+        return await fetchDatasourceJson(userToken, entity, params, cookieHeader);
+      } else {
+        return await fetchDatasource(userToken, entity, params, cookieHeader);
+      }
+    };
+
+    const result = await executeWithSessionRetry(request, userToken, requestFn);
+
+    if (!result.success) {
+      console.error("Datasource request failed:", result.error);
+      return NextResponse.json({ error: result.error || "Failed to fetch data" }, { status: 500 });
+    }
+
+    return NextResponse.json(result.data);
   } catch (error) {
     console.error("API Route /api/datasource Error:", error);
     return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });
