@@ -53,13 +53,76 @@ jest.mock("../useUserContext", () => ({
   })),
 }));
 
-const mockTab: Tab = {
+// Helper function to create mock fields with required properties
+const createMockField = (overrides: Partial<Field>): Field =>
+  ({
+    id: "mock-id",
+    hqlName: "mockField",
+    name: "Mock Field",
+    inputName: "mockField",
+    columnName: "MOCK_FIELD",
+    process: "",
+    isMandatory: false,
+    displayed: true,
+    isReadOnly: false,
+    shownInStatusBar: false,
+    isParent: false,
+    isTransient: false,
+    seqno: 0,
+    startRow: 0,
+    startRowStandardWindow: 0,
+    updatable: true,
+    isActive: true,
+    column: { reference: "10" },
+    firstFocused: false,
+    isEncrypted: false,
+    isSecondaryKey: false,
+    isSortable: false,
+    isStoredInSession: false,
+    isSummary: false,
+    maxLength: 0,
+    displayLength: 0,
+    callout: "",
+    defaultValue: "",
+    descriptionField: "",
+    displayLogicExpression: "",
+    mandatoryLogicExpression: "",
+    readOnlyLogicExpression: "",
+    validationCode: "",
+    valueMapValueExpression: "",
+    inpColumnName: "",
+    ...overrides,
+  }) as Field;
+
+// Helper function to create mock tabs with required properties
+const createMockTab = (overrides: Partial<Tab>): Tab => ({
+  id: "mock-tab",
+  name: "Mock Tab",
+  title: "Mock Tab Title",
+  window: "mock-window",
+  entityName: "MockEntity",
+  uIPattern: "STD" as const,
+  parentColumns: [],
+  table: "mock_table",
+  tabLevel: 0,
+  _identifier: "mock-identifier",
+  records: {},
+  hqlfilterclause: "",
+  hqlwhereclause: "",
+  sQLWhereClause: "",
+  module: "mock-module",
+  fields: {},
+  ...overrides,
+});
+
+const mockTab: Tab = createMockTab({
   id: "test-tab",
   name: "Test Tab",
   window: "test-window",
   entityName: "TestEntity",
+  uIPattern: "STD",
   fields: {
-    mandatoryField1: {
+    mandatoryField1: createMockField({
       id: "field1",
       hqlName: "mandatoryField1",
       name: "Mandatory Field 1",
@@ -67,8 +130,8 @@ const mockTab: Tab = {
       displayed: true,
       isReadOnly: false,
       column: { reference: "10" }, // String field
-    } as Partial<Field>,
-    optionalField: {
+    }),
+    optionalField: createMockField({
       id: "field2",
       hqlName: "optionalField",
       name: "Optional Field",
@@ -76,8 +139,8 @@ const mockTab: Tab = {
       displayed: true,
       isReadOnly: false,
       column: { reference: "10" },
-    } as Partial<Field>,
-    hiddenMandatoryField: {
+    }),
+    hiddenMandatoryField: createMockField({
       id: "field3",
       hqlName: "hiddenMandatoryField",
       name: "Hidden Mandatory Field",
@@ -85,8 +148,8 @@ const mockTab: Tab = {
       displayed: false,
       isReadOnly: false,
       column: { reference: "10" },
-    } as Partial<Field>,
-    readOnlyMandatoryField: {
+    }),
+    readOnlyMandatoryField: createMockField({
       id: "field4",
       hqlName: "readOnlyMandatoryField",
       name: "ReadOnly Mandatory Field",
@@ -94,8 +157,8 @@ const mockTab: Tab = {
       displayed: true,
       isReadOnly: true,
       column: { reference: "10" },
-    } as Partial<Field>,
-    referenceField: {
+    }),
+    referenceField: createMockField({
       id: "field5",
       hqlName: "referenceField",
       name: "Reference Field",
@@ -103,8 +166,8 @@ const mockTab: Tab = {
       displayed: true,
       isReadOnly: false,
       column: { reference: "18" }, // Reference field
-    } as Partial<Field>,
-    numericField: {
+    }),
+    numericField: createMockField({
       id: "field6",
       hqlName: "numericField",
       name: "Numeric Field",
@@ -112,8 +175,8 @@ const mockTab: Tab = {
       displayed: true,
       isReadOnly: false,
       column: { reference: "11" }, // Numeric field
-    } as Partial<Field>,
-    booleanField: {
+    }),
+    booleanField: createMockField({
       id: "field7",
       hqlName: "booleanField",
       name: "Boolean Field",
@@ -121,9 +184,9 @@ const mockTab: Tab = {
       displayed: true,
       isReadOnly: false,
       column: { reference: "20" }, // Boolean field
-    } as Partial<Field>,
+    }),
   },
-} as Partial<Tab> as Tab;
+});
 
 interface TestWrapperProps {
   children: React.ReactNode;
@@ -386,7 +449,7 @@ describe("useFormValidation", () => {
 
   describe("Edge Cases", () => {
     test("should handle empty tab gracefully", () => {
-      const emptyTab = { fields: {} } as Partial<Tab> as Tab;
+      const emptyTab = createMockTab({ fields: {} });
 
       const { result } = renderHook(() => useFormValidation(emptyTab), {
         wrapper: ({ children }: { children: React.ReactNode }) => <TestWrapper>{children}</TestWrapper>,
@@ -397,7 +460,7 @@ describe("useFormValidation", () => {
     });
 
     test("should handle tab without fields property", () => {
-      const invalidTab = {} as Partial<Tab> as Tab;
+      const invalidTab = createMockTab({ fields: {} });
 
       const { result } = renderHook(() => useFormValidation(invalidTab), {
         wrapper: ({ children }: { children: React.ReactNode }) => <TestWrapper>{children}</TestWrapper>,
@@ -408,11 +471,11 @@ describe("useFormValidation", () => {
     });
 
     test("should handle fields with display logic gracefully", () => {
-      const tabWithDisplayLogic: Tab = {
+      const tabWithDisplayLogic = createMockTab({
         ...mockTab,
         fields: {
           ...mockTab.fields,
-          conditionalField: {
+          conditionalField: createMockField({
             id: "conditional",
             hqlName: "conditionalField",
             name: "Conditional Field",
@@ -421,9 +484,9 @@ describe("useFormValidation", () => {
             isReadOnly: false,
             column: { reference: "10" },
             displayLogicExpression: "@someCondition@ = 'Y'",
-          } as Partial<Field> as Field,
+          }),
         },
-      };
+      });
 
       const { result } = renderHook(() => useFormValidation(tabWithDisplayLogic), {
         wrapper: ({ children }: { children: React.ReactNode }) => <TestWrapper>{children}</TestWrapper>,
