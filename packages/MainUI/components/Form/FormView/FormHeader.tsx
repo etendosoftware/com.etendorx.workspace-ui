@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useTheme } from "@mui/material";
 import Info from "@workspaceui/componentlibrary/src/assets/icons/info.svg";
 import PrimaryTabs from "@workspaceui/componentlibrary/src/components/PrimaryTab";
@@ -52,10 +52,6 @@ export function FormHeader({ statusBarFields, groups, statusModal, hideStatusMod
       showInTab: true,
     }));
   }, [groups, getIconForGroup, theme.palette.baselineColor.neutral]);
-
-  useEffect(() => {
-    console.log("statusModal: ", statusModal);
-  }, [statusModal]);
 
   return (
     <>
