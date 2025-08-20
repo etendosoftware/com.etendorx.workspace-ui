@@ -67,7 +67,7 @@ const mockTab: Tab = {
       displayed: true,
       isReadOnly: false,
       column: { reference: "10" }, // String field
-    } as Partial<Field> as Field,
+    } as Partial<Field>,
     optionalField: {
       id: "field2",
       hqlName: "optionalField",
@@ -76,7 +76,7 @@ const mockTab: Tab = {
       displayed: true,
       isReadOnly: false,
       column: { reference: "10" },
-    } as Partial<Field> as Field,
+    } as Partial<Field>,
     hiddenMandatoryField: {
       id: "field3",
       hqlName: "hiddenMandatoryField",
@@ -85,7 +85,7 @@ const mockTab: Tab = {
       displayed: false,
       isReadOnly: false,
       column: { reference: "10" },
-    } as Partial<Field> as Field,
+    } as Partial<Field>,
     readOnlyMandatoryField: {
       id: "field4",
       hqlName: "readOnlyMandatoryField",
@@ -94,7 +94,7 @@ const mockTab: Tab = {
       displayed: true,
       isReadOnly: true,
       column: { reference: "10" },
-    } as Partial<Field> as Field,
+    } as Partial<Field>,
     referenceField: {
       id: "field5",
       hqlName: "referenceField",
@@ -103,7 +103,7 @@ const mockTab: Tab = {
       displayed: true,
       isReadOnly: false,
       column: { reference: "18" }, // Reference field
-    } as Partial<Field> as Field,
+    } as Partial<Field>,
     numericField: {
       id: "field6",
       hqlName: "numericField",
@@ -112,7 +112,7 @@ const mockTab: Tab = {
       displayed: true,
       isReadOnly: false,
       column: { reference: "11" }, // Numeric field
-    } as Partial<Field> as Field,
+    } as Partial<Field>,
     booleanField: {
       id: "field7",
       hqlName: "booleanField",
@@ -121,7 +121,7 @@ const mockTab: Tab = {
       displayed: true,
       isReadOnly: false,
       column: { reference: "20" }, // Boolean field
-    } as Partial<Field> as Field,
+    } as Partial<Field>,
   },
 } as Partial<Tab> as Tab;
 
@@ -241,17 +241,17 @@ describe("useFormValidation", () => {
 
       const field = mockTab.fields.referenceField;
 
-      // Missing identifier should be invalid
+      // Having value without identifier should be valid (OR logic)
       const missingIdentifierResult = result.current.validateField(field, "ref-value", {
         referenceField: "ref-value",
       });
-      expect(missingIdentifierResult.isValid).toBe(false);
+      expect(missingIdentifierResult.isValid).toBe(true);
 
-      // Missing value should be invalid
+      // Having identifier without value should be valid (OR logic)
       const missingValueResult = result.current.validateField(field, "", {
         referenceField$_identifier: "ref-identifier",
       });
-      expect(missingValueResult.isValid).toBe(false);
+      expect(missingValueResult.isValid).toBe(true);
 
       // Both value and identifier should be valid
       const validResult = result.current.validateField(field, "ref-value", {
@@ -259,6 +259,10 @@ describe("useFormValidation", () => {
         referenceField$_identifier: "ref-identifier",
       });
       expect(validResult.isValid).toBe(true);
+
+      // Neither value nor identifier should be invalid
+      const neitherResult = result.current.validateField(field, "", {});
+      expect(neitherResult.isValid).toBe(false);
     });
 
     test("should handle numeric fields correctly", () => {
