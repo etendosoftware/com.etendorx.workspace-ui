@@ -3,7 +3,7 @@
  * The contents of this file are subject to the Etendo License
  * (the "License"), you may not use this file except in compliance with
  * the License.
- * You may obtain a copy of the License at  
+ * You may obtain a copy of the License at
  * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
  * Software distributed under the License is distributed on an
  * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
@@ -37,26 +37,27 @@ export function isSessionExpired(response: Response, data: unknown): boolean {
   }
 
   // Check for specific ERP error messages in response data
-  if (data && typeof data === 'object') {
+  if (data && typeof data === "object") {
     const errorObj = data as Record<string, unknown>;
-    const errorMessage = errorObj.error || errorObj.message || '';
-    
-    if (typeof errorMessage === 'string') {
+    const errorMessage = errorObj.error || errorObj.message || "";
+
+    if (typeof errorMessage === "string") {
       const lowerMessage = errorMessage.toLowerCase();
-      
+
       // Common session expiration indicators
-      if (lowerMessage.includes('session') && (
-          lowerMessage.includes('expired') ||
-          lowerMessage.includes('timeout') ||
-          lowerMessage.includes('invalid')
-        )) {
+      if (
+        lowerMessage.includes("session") &&
+        (lowerMessage.includes("expired") || lowerMessage.includes("timeout") || lowerMessage.includes("invalid"))
+      ) {
         return true;
       }
-      
+
       // Additional authentication-related indicators
-      if (lowerMessage.includes('unauthorized') || 
-          lowerMessage.includes('authentication') ||
-          lowerMessage.includes('login required')) {
+      if (
+        lowerMessage.includes("unauthorized") ||
+        lowerMessage.includes("authentication") ||
+        lowerMessage.includes("login required")
+      ) {
         return true;
       }
     }
