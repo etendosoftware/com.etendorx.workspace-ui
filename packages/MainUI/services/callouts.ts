@@ -145,7 +145,7 @@ class GlobalCalloutManager {
             // Emit calloutStart event with current queue length
             const queueLength = this.calloutQueue.length;
             this.emit("calloutStart", { queueLength });
-            
+
             // Start processing the queue
             this.processQueue().catch((error) => {
               logger.error("Error processing callout queue:", error);
@@ -163,6 +163,10 @@ class GlobalCalloutManager {
 
     this.isCalloutInProgress = true;
 
+    await this.executeQueuedCallouts();
+  }
+
+  private async executeQueuedCallouts(): Promise<void> {
     try {
       while (this.calloutQueue.length > 0) {
         const fieldName = this.calloutQueue.shift();
@@ -172,7 +176,7 @@ class GlobalCalloutManager {
         if (!callout) continue;
 
         if (isDebugCallouts()) logger.debug(`[Callout] Executing: ${fieldName}`);
-        
+
         try {
           await callout();
           if (isDebugCallouts()) logger.debug(`[Callout] Completed: ${fieldName}`);
@@ -180,7 +184,7 @@ class GlobalCalloutManager {
           logger.error(`[Callout] Error executing ${fieldName}:`, error);
           // Continue processing other callouts even if one fails
         }
-        
+
         this.pendingCallouts.delete(fieldName);
 
         // Emit progress event if more callouts remain
@@ -189,10 +193,7 @@ class GlobalCalloutManager {
             completed: fieldName,
             remaining: this.calloutQueue.length,
           });
-        }
 
-        // Short delay between callouts for UI responsiveness
-        if (this.calloutQueue.length > 0) {
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
       }
