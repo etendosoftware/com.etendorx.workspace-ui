@@ -18,14 +18,108 @@
 import { logger } from "@/utils/logger";
 import { isDebugCallouts } from "@/utils/debug";
 
+/**
+ * Event types emitted by GlobalCalloutManager
+ */
+type CalloutEventType = "calloutStart" | "calloutEnd" | "calloutProgress";
+
+/**
+ * Event listener function signature
+ */
+type CalloutEventListener = (data?: Record<string, unknown>) => void;
+
+/**
+ * State information returned by getState()
+ */
+interface CalloutState {
+  isRunning: boolean;
+  queueLength: number;
+  pendingCount: number;
+  isSuppressed: boolean;
+}
+
 class GlobalCalloutManager {
   private isCalloutInProgress = false;
   private pendingCallouts = new Map<string, () => Promise<void>>();
   private calloutQueue: string[] = [];
   private suppressCount = 0;
 
+  // Event system implementation
+  private eventListeners = new Map<CalloutEventType, CalloutEventListener[]>();
+
+  /**
+   * Subscribe to callout events
+   * @param event - Event type to listen for
+   * @param listener - Callback function to execute when event occurs
+   */
+  on(event: CalloutEventType, listener: CalloutEventListener): void {
+    if (!this.eventListeners.has(event)) {
+      this.eventListeners.set(event, []);
+    }
+    this.eventListeners.get(event)?.push(listener);
+
+    if (isDebugCallouts()) {
+      logger.debug(
+        `[CalloutManager] Event listener added for '${event}', total: ${this.eventListeners.get(event)?.length}`
+      );
+    }
+  }
+
+  /**
+   * Unsubscribe from callout events
+   * @param event - Event type to stop listening for
+   * @param listener - Specific callback function to remove
+   */
+  off(event: CalloutEventType, listener: CalloutEventListener): void {
+    const listeners = this.eventListeners.get(event);
+    if (listeners) {
+      const index = listeners.indexOf(listener);
+      if (index > -1) {
+        listeners.splice(index, 1);
+        if (isDebugCallouts()) {
+          logger.debug(`[CalloutManager] Event listener removed for '${event}', remaining: ${listeners.length}`);
+        }
+      }
+    }
+  }
+
+  /**
+   * Emit an event to all registered listeners
+   * @param event - Event type to emit
+   * @param data - Optional data to pass to listeners
+   */
+  private emit(event: CalloutEventType, data?: Record<string, unknown>): void {
+    const listeners = this.eventListeners.get(event) || [];
+
+    if (isDebugCallouts() && listeners.length > 0) {
+      logger.debug(`[CalloutManager] Emitting '${event}' to ${listeners.length} listeners`, data);
+    }
+
+    for (const listener of listeners) {
+      try {
+        listener(data);
+      } catch (error) {
+        logger.error(`Error in callout event listener for ${event}:`, error);
+      }
+    }
+  }
+
+  /**
+   * Get comprehensive state information
+   * @returns Current callout manager state
+   */
+  getState(): CalloutState {
+    return {
+      isRunning: this.isCalloutInProgress,
+      queueLength: this.calloutQueue.length,
+      pendingCount: this.pendingCallouts.size,
+      isSuppressed: this.suppressCount > 0,
+    };
+  }
+
   async executeCallout(fieldName: string, calloutFn: () => Promise<void>): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
+      // Wrap the callout to handle promise resolution
       const wrappedCallout = async () => {
         try {
           await calloutFn();
@@ -35,14 +129,29 @@ class GlobalCalloutManager {
         }
       };
 
+      // Add callout to pending list
       this.pendingCallouts.set(fieldName, wrappedCallout);
 
+      // Add to queue if not already present
       if (!this.calloutQueue.includes(fieldName)) {
         this.calloutQueue.push(fieldName);
       }
 
+      // If not currently processing, start the queue
       if (!this.isCalloutInProgress) {
-        this.processQueue();
+        // Use queueMicrotask to allow multiple callouts to be queued in the same tick
+        queueMicrotask(() => {
+          if (!this.isCalloutInProgress && this.calloutQueue.length > 0) {
+            // Emit calloutStart event with current queue length
+            const queueLength = this.calloutQueue.length;
+            this.emit("calloutStart", { queueLength });
+
+            // Start processing the queue
+            this.processQueue().catch((error) => {
+              logger.error("Error processing callout queue:", error);
+            });
+          }
+        });
       }
     });
   }
@@ -54,26 +163,47 @@ class GlobalCalloutManager {
 
     this.isCalloutInProgress = true;
 
+    await this.executeQueuedCallouts();
+  }
+
+  private async executeQueuedCallouts(): Promise<void> {
     try {
-      const fieldName = this.calloutQueue.shift();
-      if (!fieldName) return;
+      while (this.calloutQueue.length > 0) {
+        const fieldName = this.calloutQueue.shift();
+        if (!fieldName) continue;
 
-      const callout = this.pendingCallouts.get(fieldName);
-      if (!callout) return;
-      if (isDebugCallouts()) logger.debug(`[Callout] Executing: ${fieldName}`);
-      await callout();
-      if (isDebugCallouts()) logger.debug(`[Callout] Completed: ${fieldName}`);
-      this.pendingCallouts.delete(fieldName);
+        const callout = this.pendingCallouts.get(fieldName);
+        if (!callout) continue;
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
+        if (isDebugCallouts()) logger.debug(`[Callout] Executing: ${fieldName}`);
+
+        try {
+          await callout();
+          if (isDebugCallouts()) logger.debug(`[Callout] Completed: ${fieldName}`);
+        } catch (error) {
+          logger.error(`[Callout] Error executing ${fieldName}:`, error);
+          // Continue processing other callouts even if one fails
+        }
+
+        this.pendingCallouts.delete(fieldName);
+
+        // Emit progress event if more callouts remain
+        if (this.calloutQueue.length > 0) {
+          this.emit("calloutProgress", {
+            completed: fieldName,
+            remaining: this.calloutQueue.length,
+          });
+
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      }
     } catch (error) {
       logger.error("Callout execution failed:", error);
     } finally {
       this.isCalloutInProgress = false;
 
-      if (this.calloutQueue.length > 0) {
-        setTimeout(() => this.processQueue(), 10);
-      }
+      // Emit calloutEnd event when all callouts complete
+      this.emit("calloutEnd", { allCompleted: true });
     }
   }
 
@@ -82,8 +212,15 @@ class GlobalCalloutManager {
   }
 
   clearPendingCallouts(): void {
+    const hadPendingCallouts = this.pendingCallouts.size > 0 || this.calloutQueue.length > 0;
+
     this.pendingCallouts.clear();
     this.calloutQueue.length = 0;
+
+    // Emit calloutEnd event if there were pending callouts
+    if (hadPendingCallouts) {
+      this.emit("calloutEnd", { cleared: true });
+    }
   }
 
   arePendingCalloutsEmpty(): boolean {
@@ -105,8 +242,23 @@ class GlobalCalloutManager {
     return this.suppressCount > 0;
   }
 
-  canExecute(hqlName: string): boolean {
+  canExecute(_hqlName: string): boolean {
     return !this.isCalloutInProgress && !this.isSuppressed();
+  }
+
+  /**
+   * Reset the callout manager to initial state
+   */
+  reset(): void {
+    this.isCalloutInProgress = false;
+    this.pendingCallouts.clear();
+    this.calloutQueue.length = 0;
+    this.suppressCount = 0;
+    this.eventListeners.clear();
+
+    if (isDebugCallouts()) {
+      logger.debug("[CalloutManager] Reset to initial state");
+    }
   }
 }
 

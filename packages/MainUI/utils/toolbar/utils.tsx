@@ -20,6 +20,7 @@ import type React from "react";
 import Base64Icon from "@workspaceui/componentlibrary/src/components/Base64Icon";
 import { IconSize, type ToolbarButton } from "@/components/Toolbar/types";
 import { TOOLBAR_BUTTONS_ACTIONS, TOOLBAR_BUTTONS_TYPES } from "@/utils/toolbar/constants";
+import type { SaveButtonState } from "@/contexts/ToolbarContext";
 
 const isBase64Image = (str: string): boolean => {
   try {
@@ -123,6 +124,7 @@ export const createButtonByType = ({
   hasFormChanges,
   hasSelectedRecord,
   hasParentRecordSelected,
+  saveButtonState,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
@@ -130,6 +132,7 @@ export const createButtonByType = ({
   hasFormChanges: boolean;
   hasSelectedRecord: boolean;
   hasParentRecordSelected: boolean;
+  saveButtonState?: SaveButtonState;
 }): ToolbarButton => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
@@ -147,6 +150,10 @@ export const createButtonByType = ({
     const showIconTextFor = [TOOLBAR_BUTTONS_ACTIONS.NEW, TOOLBAR_BUTTONS_ACTIONS.SAVE];
 
     if (showIconTextFor.includes(button.action)) {
+      if (button.action === TOOLBAR_BUTTONS_ACTIONS.SAVE && saveButtonState?.isCalloutLoading) {
+        return { iconText: "Loading callouts..." };
+      }
+
       return { iconText: button.name };
     }
 
@@ -161,34 +168,29 @@ export const createButtonByType = ({
     return {};
   };
 
+  const buildDisableConfig = (isDisabled: boolean): Partial<ToolbarButton> => ({
+    disabled: isDisabled,
+    tooltip: isDisabled ? "" : button.name,
+  });
+
   const getDisableConfig = (): Partial<ToolbarButton> => {
-    switch (button.action) {
-      case TOOLBAR_BUTTONS_ACTIONS.CANCEL: {
-        const isDisabledCancel = !(isFormView || hasSelectedRecord);
-        return { disabled: isDisabledCancel, tooltip: isDisabledCancel ? "" : button.name };
-      }
-      case TOOLBAR_BUTTONS_ACTIONS.DELETE:
-      case TOOLBAR_BUTTONS_ACTIONS.COPILOT: {
-        const isDisabledDelete = !hasSelectedRecord;
-        return { disabled: isDisabledDelete, tooltip: isDisabledDelete ? "" : button.name };
-      }
-      case TOOLBAR_BUTTONS_ACTIONS.NEW: {
-        const isDisabledNew = !hasParentRecordSelected;
-        return { disabled: isDisabledNew, tooltip: isDisabledNew ? "" : button.name };
-      }
-      case TOOLBAR_BUTTONS_ACTIONS.REFRESH: {
-        const isDisabledRefresh = !hasParentRecordSelected;
-        return { disabled: isDisabledRefresh, tooltip: isDisabledRefresh ? "" : button.name };
-      }
-      case TOOLBAR_BUTTONS_ACTIONS.SAVE: {
-        const isDisabledSave = !isFormView || !hasFormChanges || !hasParentRecordSelected;
-        return { disabled: isDisabledSave, tooltip: isDisabledSave ? "" : button.name };
-      }
-      default: {
-        const isDisabledDefault = !button.active;
-        return { disabled: isDisabledDefault, tooltip: isDisabledDefault ? "" : button.name };
-      }
-    }
+    const actionHandlers = {
+      [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: () => buildDisableConfig(!(isFormView || hasSelectedRecord)),
+      [TOOLBAR_BUTTONS_ACTIONS.DELETE]: () => buildDisableConfig(!hasSelectedRecord),
+      [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () => buildDisableConfig(!hasSelectedRecord),
+      [TOOLBAR_BUTTONS_ACTIONS.NEW]: () => buildDisableConfig(!hasParentRecordSelected),
+      [TOOLBAR_BUTTONS_ACTIONS.REFRESH]: () => buildDisableConfig(!hasParentRecordSelected),
+      [TOOLBAR_BUTTONS_ACTIONS.SAVE]: () => {
+        const baseDisabled = !isFormView || !hasFormChanges || !hasParentRecordSelected;
+        const additionalDisabled = saveButtonState
+          ? saveButtonState.isCalloutLoading || saveButtonState.isSaving
+          : false;
+        return buildDisableConfig(baseDisabled || additionalDisabled);
+      },
+    };
+
+    const handler = actionHandlers[button.action];
+    return handler ? handler() : buildDisableConfig(!button.active);
   };
 
   const getClickConfig = (): Partial<ToolbarButton> => {

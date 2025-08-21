@@ -32,6 +32,10 @@ export const FIELD_REFERENCE_CODES = {
   // Window reference
   WINDOW: "FF80818132D8F0F30132D9BC395D0038",
 
+  // String/Text field references
+  STRING: "10",
+  TEXT_LONG: "14",
+
   // Table directory references
   TABLE_DIR_19: "19",
   TABLE_DIR_18: "18",
@@ -44,20 +48,21 @@ export const FIELD_REFERENCE_CODES = {
   BOOLEAN: "20",
 
   // Numeric references
-  QUANTITY_29: "29",
+  INTEGER: "11",
+  NUMERIC: "12",
   QUANTITY_22: "22",
+  QUANTITY_29: "29",
 
   // List references
-  LIST_17: "17",
   LIST_13: "13",
+  LIST_17: "17",
 
   // Select reference with location support
-  SELECT_30: "30",
   LOCATION_21: "21",
+  SELECT_30: "30",
 
-  // Numeric types
+  // Advanced numeric types
   DECIMAL: "800008",
-  INTEGER: "11",
 } as const;
 
 /**

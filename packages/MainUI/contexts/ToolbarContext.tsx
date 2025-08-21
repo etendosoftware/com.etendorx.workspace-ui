@@ -17,7 +17,18 @@
 
 "use client";
 
-import { createContext, useContext, useState, useCallback, useMemo } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
+import { globalCalloutManager } from "@/services/callouts";
+
+/**
+ * Save button state management interface
+ */
+export interface SaveButtonState {
+  isCalloutLoading: boolean; // External dependency
+  hasValidationErrors: boolean; // Internal validation
+  isSaving: boolean; // Operation progress
+  validationErrors: string[]; // User feedback
+}
 
 /**
  * Available toolbar actions that can be registered by components.
@@ -75,6 +86,9 @@ type ToolbarContextType = {
   onToggleTreeView: () => void;
   onColumnFilters: (buttonRef?: HTMLElement | null) => void;
   registerActions: (actions: Partial<ToolbarActions>) => void;
+  // Save button state management
+  saveButtonState: SaveButtonState;
+  setSaveButtonState: React.Dispatch<React.SetStateAction<SaveButtonState>>;
 };
 
 const initialState: ToolbarActions = {
@@ -87,7 +101,23 @@ const initialState: ToolbarActions = {
   treeView: () => {},
 };
 
-const ToolbarContext = createContext<ToolbarContextType>({} as ToolbarContextType);
+const ToolbarContext = createContext<ToolbarContextType>({
+  onSave: async () => {},
+  onRefresh: () => {},
+  onNew: () => {},
+  onBack: () => {},
+  onFilter: () => {},
+  onToggleTreeView: () => {},
+  onColumnFilters: () => {},
+  registerActions: () => {},
+  saveButtonState: {
+    isCalloutLoading: false,
+    hasValidationErrors: false,
+    isSaving: false,
+    validationErrors: [],
+  },
+  setSaveButtonState: () => {},
+} as ToolbarContextType);
 
 export const useToolbarContext = () => useContext(ToolbarContext);
 
@@ -105,13 +135,59 @@ export const ToolbarProvider = ({ children }: React.PropsWithChildren) => {
     setActions,
   ] = useState<ToolbarActions>(initialState);
 
+  // Save button state management
+  const [saveButtonState, setSaveButtonState] = useState<SaveButtonState>({
+    isCalloutLoading: false,
+    hasValidationErrors: false,
+    isSaving: false,
+    validationErrors: [],
+  });
+
+  // Event-based callout monitoring
+  useEffect(() => {
+    const handleCalloutStart = () => {
+      setSaveButtonState((prev) => ({ ...prev, isCalloutLoading: true }));
+    };
+
+    const handleCalloutEnd = () => {
+      setSaveButtonState((prev) => ({ ...prev, isCalloutLoading: false }));
+    };
+
+    // Subscribe to callout events
+    globalCalloutManager.on("calloutStart", handleCalloutStart);
+    globalCalloutManager.on("calloutEnd", handleCalloutEnd);
+
+    // Set initial state from callout manager
+    setSaveButtonState((prev) => ({
+      ...prev,
+      isCalloutLoading: globalCalloutManager.isCalloutRunning(),
+    }));
+
+    return () => {
+      // Cleanup event listeners
+      globalCalloutManager.off("calloutStart", handleCalloutStart);
+      globalCalloutManager.off("calloutEnd", handleCalloutEnd);
+    };
+  }, []);
+
   const registerActions = useCallback((newActions: Partial<ToolbarActions>) => {
     setActions((prev) => ({ ...prev, ...newActions }));
   }, []);
 
   const value = useMemo(
-    () => ({ onSave, onRefresh, onNew, onBack, onFilter, onColumnFilters, onToggleTreeView, registerActions }),
-    [onSave, onRefresh, onNew, onBack, onFilter, onColumnFilters, onToggleTreeView, registerActions]
+    () => ({
+      onSave,
+      onRefresh,
+      onNew,
+      onBack,
+      onFilter,
+      onColumnFilters,
+      onToggleTreeView,
+      registerActions,
+      saveButtonState,
+      setSaveButtonState,
+    }),
+    [onSave, onRefresh, onNew, onBack, onFilter, onColumnFilters, onToggleTreeView, registerActions, saveButtonState]
   );
 
   return <ToolbarContext.Provider value={value}>{children}</ToolbarContext.Provider>;

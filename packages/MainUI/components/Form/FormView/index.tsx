@@ -15,34 +15,29 @@
  *************************************************************************
  */
 
-import { useToolbarContext } from "@/contexts/ToolbarContext";
-import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
-import { useFormAction } from "@/hooks/useFormAction";
-import useFormFields from "@/hooks/useFormFields";
-import { useFormInitialState } from "@/hooks/useFormInitialState";
-import { useFormInitialization } from "@/hooks/useFormInitialization";
-import { useSelected } from "@/hooks/useSelected";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormProvider, type SetValueConfig, useForm } from "react-hook-form";
 import { useTheme } from "@mui/material";
 import InfoIcon from "@workspaceui/componentlibrary/src/assets/icons/file-text.svg";
 import FileIcon from "@workspaceui/componentlibrary/src/assets/icons/file.svg";
 import FolderIcon from "@workspaceui/componentlibrary/src/assets/icons/folder.svg";
 import Info from "@workspaceui/componentlibrary/src/assets/icons/info.svg";
-import PrimaryTabs from "@workspaceui/componentlibrary/src/components/PrimaryTab";
-import type { TabItem } from "@workspaceui/componentlibrary/src/components/PrimaryTab/types";
-import Spinner from "@workspaceui/componentlibrary/src/components/Spinner";
-import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
-import { type EntityData, type EntityValue, FormMode } from "@workspaceui/api-client/src/api/types";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FormProvider, type SetValueConfig, useForm } from "react-hook-form";
-import Collapsible from "../Collapsible";
-import StatusBar from "./StatusBar";
-import { BaseSelector, compileExpression } from "./selectors/BaseSelector";
-import type { FormViewProps } from "./types";
-import { useUserContext } from "@/hooks/useUserContext";
+import { FormMode, type EntityData, type EntityValue } from "@workspaceui/api-client/src/api/types";
+import useFormFields from "@/hooks/useFormFields";
+import { useFormInitialState } from "@/hooks/useFormInitialState";
+import { useFormInitialization } from "@/hooks/useFormInitialization";
+import { useSelected } from "@/hooks/useSelected";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
-import { useTabContext } from "@/contexts/tab";
 import { FormInitializationProvider } from "@/contexts/FormInitializationContext";
+import { useFormAction } from "@/hooks/useFormAction";
+import type { FormViewProps } from "./types";
+import { FormViewContext, type FormViewContextValue } from "./contexts/FormViewContext";
+import { FormHeader } from "./FormHeader";
+import { FormFields } from "./FormFieldsContent";
+import { FormActions } from "./FormActions";
+import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
+import { useTabContext } from "@/contexts/tab";
 
 const iconMap: Record<string, React.ReactElement> = {
   "Main Section": <FileIcon />,
@@ -71,14 +66,12 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const [isFormInitializing, setIsFormInitializing] = useState(false);
 
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const { graph } = useSelected();
-  const { session } = useUserContext();
-  const { activeWindow, getSelectedRecord, clearTabFormState, setSelectedRecord } = useMultiWindowURL();
-  const { statusModal, showSuccessModal, showErrorModal, hideStatusModal } = useStatusModal();
-  const { registerActions } = useToolbarContext();
-  const { markFormAsChanged, resetFormChanges } = useTabContext();
+  const { activeWindow, getSelectedRecord, setSelectedRecord } = useMultiWindowURL();
+  const { statusModal, hideStatusModal, showSuccessModal, showErrorModal } = useStatusModal();
+  const { resetFormChanges } = useTabContext();
+
   const {
     formInitialization,
     refetch,
@@ -141,44 +134,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     resetRef.current(data);
   }, []);
 
-  const tabs: TabItem[] = useMemo(() => {
-    return groups.map(([id, group]) => ({
-      id: String(id || "_main"),
-      icon: getIconForGroup(group.identifier),
-      label: group.identifier,
-      fill: theme.palette.baselineColor.neutral[80],
-      hoverFill: theme.palette.baselineColor.neutral[0],
-      showInTab: true,
-    }));
-  }, [groups, getIconForGroup, theme.palette.baselineColor.neutral]);
-
-  useEffect(() => {
-    if (formState.isDirty) {
-      markFormAsChanged();
-    }
-
-    return () => {
-      resetFormChanges();
-    };
-  }, [formState.isDirty, markFormAsChanged, resetFormChanges]);
-
-  useEffect(() => {
-    if (selectedTab && containerRef.current) {
-      const sectionElement = sectionRefs.current[selectedTab];
-      if (sectionElement) {
-        const containerRect = containerRef.current.getBoundingClientRect();
-        const sectionRect = sectionElement.getBoundingClientRect();
-
-        const sectionTop = sectionRect.top - containerRect.top + containerRef.current.scrollTop;
-
-        containerRef.current.scrollTo({
-          top: Math.max(0, sectionTop - 20),
-          behavior: "smooth",
-        });
-      }
-    }
-  }, [selectedTab, expandedSections]);
-
   useEffect(() => {
     if (recordId) {
       refetch();
@@ -238,6 +193,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     }
   }, []);
 
+  const isSectionExpanded = useCallback(
+    (sectionId: string | null) => {
+      const id = String(sectionId);
+      return expandedSections.includes(id);
+    },
+    [expandedSections]
+  );
+
   const onSuccess = useCallback(
     async (data: EntityData, showModal: boolean) => {
       // Prevent callouts while applying server-updated values
@@ -259,8 +222,21 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
       if (showModal) {
         showSuccessModal("Saved");
       }
+
+      resetFormChanges();
     },
-    [mode, graph, tab, activeWindow?.windowId, showSuccessModal, reset, initialState, setRecordId, setSelectedRecord]
+    [
+      mode,
+      graph,
+      tab,
+      activeWindow?.windowId,
+      showSuccessModal,
+      reset,
+      initialState,
+      setRecordId,
+      setSelectedRecord,
+      resetFormChanges,
+    ]
   );
 
   const onError = useCallback(
@@ -280,122 +256,78 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     submit: form.handleSubmit,
   });
 
-  const isSectionExpanded = useCallback(
-    (sectionId: string | null) => {
-      const id = String(sectionId);
-      return expandedSections.includes(id);
-    },
-    [expandedSections]
-  );
-
-  // NOTE: toolbar actions
   const handleSave = useCallback(
     async (showModal: boolean) => {
       await save(showModal);
-      resetFormChanges();
     },
-    [save, resetFormChanges]
+    [save]
   );
-
-  const onReset = useCallback(async () => {
-    await refetch();
-    resetFormChanges();
-  }, [refetch, resetFormChanges]);
-
-  const handleBack = useCallback(() => {
-    const windowId = activeWindow?.windowId;
-    if (windowId) {
-      clearTabFormState(windowId, tab.id);
-    }
-    graph.clear(tab);
-    graph.clearSelected(tab);
-    resetFormChanges();
-  }, [activeWindow?.windowId, clearTabFormState, graph, tab, resetFormChanges]);
-
-  const handleNew = useCallback(() => {
-    setRecordId(NEW_RECORD_ID);
-    resetFormChanges();
-  }, [setRecordId, resetFormChanges]);
-
-  useEffect(() => {
-    const actions = {
-      save: handleSave,
-      refresh: onReset,
-      back: handleBack,
-      new: handleNew,
-    };
-
-    registerActions(actions);
-  }, [registerActions, handleSave, onReset, handleBack, handleNew, tab.id]);
 
   const isLoading = loading || loadingFormInitialization;
 
+  const contextValue: FormViewContextValue = useMemo(
+    () => ({
+      window: windowMetadata,
+      tab,
+      mode,
+      recordId,
+      setRecordId,
+      expandedSections,
+      setExpandedSections,
+      selectedTab,
+      setSelectedTab,
+      isFormInitializing,
+      setIsFormInitializing,
+      handleSectionRef,
+      handleAccordionChange,
+      handleTabChange,
+      isSectionExpanded,
+      getIconForGroup,
+    }),
+    [
+      windowMetadata,
+      tab,
+      mode,
+      recordId,
+      setRecordId,
+      expandedSections,
+      selectedTab,
+      isFormInitializing,
+      handleSectionRef,
+      handleAccordionChange,
+      handleTabChange,
+      isSectionExpanded,
+      getIconForGroup,
+    ]
+  );
+
   return (
     <FormInitializationProvider value={{ isFormInitializing }}>
-      <FormProvider setValue={handleSetValue} reset={reset} formState={formState} {...form}>
-        <form
-          className={`flex h-full max-h-full w-full flex-col gap-2 overflow-hidden transition duration-300 ${
-            loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
-          }`}
-          onSubmit={() => handleSave(true)}>
-          {statusModal.open && (
-            <StatusModal
-              statusType={statusModal.statusType}
-              statusText={statusModal.statusText}
-              errorMessage={statusModal.errorMessage}
-              saveLabel={statusModal.saveLabel}
-              secondaryButtonLabel={statusModal.secondaryButtonLabel}
-              onClose={hideStatusModal}
-              isDeleteSuccess={statusModal.isDeleteSuccess}
+      <FormViewContext.Provider value={contextValue}>
+        <FormProvider setValue={handleSetValue} reset={reset} formState={formState} {...form}>
+          <form
+            className={`flex h-full max-h-full w-full flex-col gap-2 overflow-hidden transition duration-300 ${
+              loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
+            }`}>
+            <FormHeader
+              statusBarFields={fields.statusBarFields}
+              groups={groups}
+              statusModal={statusModal}
+              hideStatusModal={hideStatusModal}
             />
-          )}
-          <StatusBar fields={fields.statusBarFields} />
-          <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
-          {isLoading ? (
-            <Spinner />
-          ) : (
-            <div className="flex flex-col gap-2 flex-grow overflow-auto" ref={containerRef}>
-              {groups.map(([id, group]) => {
-                const sectionId = String(id || "_main");
 
-                const hasVisibleFields = Object.values(group.fields).some((field) => {
-                  if (!field.displayed) return false;
-                  if (!field.displayLogicExpression) return true;
+            <FormFields tab={tab} mode={mode} groups={groups} loading={isLoading} />
 
-                  const compiledExpr = compileExpression(field.displayLogicExpression);
-                  try {
-                    return compiledExpr(session, form.watch());
-                  } catch (error) {
-                    console.warn("Error executing expression:", field.displayLogicExpression, error);
-                    return true;
-                  }
-                });
-
-                if (!hasVisibleFields) {
-                  return null;
-                }
-
-                return (
-                  <div key={sectionId} ref={handleSectionRef(id)}>
-                    <Collapsible
-                      title={group.identifier}
-                      isExpanded={isSectionExpanded(id)}
-                      sectionId={sectionId}
-                      icon={getIconForGroup(group.identifier)}
-                      onToggle={(isOpen: boolean) => handleAccordionChange(id, isOpen)}>
-                      <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2">
-                        {Object.entries(group.fields).map(([hqlName, field]) => (
-                          <BaseSelector field={field} key={hqlName} formMode={mode} />
-                        ))}
-                      </div>
-                    </Collapsible>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </form>
-      </FormProvider>
+            <FormActions
+              tab={tab}
+              setRecordId={setRecordId}
+              refetch={refetch}
+              onSave={handleSave}
+              showErrorModal={showErrorModal}
+            />
+          </form>
+        </FormProvider>
+      </FormViewContext.Provider>
     </FormInitializationProvider>
   );
 }

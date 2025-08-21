@@ -17,6 +17,7 @@
 
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import { useTabContext } from "@/contexts/tab";
+import { useToolbarContext } from "@/contexts/ToolbarContext";
 import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
@@ -42,6 +43,7 @@ import {
 import ProcessMenu from "./Menus/ProcessMenu";
 import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar/TopToolbar";
+import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
 import { createButtonByType, getButtonStyles, organizeButtonsBySection } from "@/utils/toolbar/utils";
 import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
@@ -64,6 +66,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   const { refetchDatasource } = useDatasourceContext();
   const { tab, parentTab, parentRecord, hasFormChanges } = useTabContext();
+  const { saveButtonState } = useToolbarContext();
   const { buttons, processButtons, loading, refetch } = useToolbar(windowId, tab?.id);
   const { graph } = useSelected();
   const { executeProcess } = useProcessExecution();
@@ -176,6 +179,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           hasFormChanges,
           hasSelectedRecord,
           hasParentRecordSelected,
+          saveButtonState,
         });
 
         const styles = getButtonStyles(button);
@@ -217,26 +221,11 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     hasParentTab,
     selectedParentItems,
     hasFormChanges,
+    saveButtonState,
   ]);
 
   if (loading) {
-    return (
-      <div className="h-10 flex justify-between items-center gap-1 animate-pulse">
-        <div className="bg-(--color-baseline-0) rounded-4xl p-1 flex items-center gap-2">
-          <div className="h-6 w-20 bg-(--color-transparent-neutral-10) rounded" />
-          <div className="h-6 w-16 bg-(--color-transparent-neutral-10) rounded" />
-        </div>
-        <div className="bg-(--color-baseline-0) rounded-4xl p-1 flex-1 flex items-center gap-2 shadow-[0px_4px_10px_var(--color-transparent-neutral-10)]">
-          <div className="h-6 w-24 bg-(--color-transparent-neutral-10) rounded" />
-          <div className="h-6 w-32 bg-(--color-transparent-neutral-10) rounded" />
-          <div className="h-6 w-20 bg-(--color-transparent-neutral-10) rounded" />
-        </div>
-        <div className="bg-transparent-neutral-5 rounded-4xl p-1 flex items-center gap-2">
-          <div className="h-6 w-6 bg-(--color-transparent-neutral-10) rounded-full" />
-          <div className="h-6 w-6 bg-(--color-transparent-neutral-10) rounded-full" />
-        </div>
-      </div>
-    );
+    return <ToolbarSkeleton />;
   }
 
   return (
