@@ -45,22 +45,47 @@ async function handleERPBaseRequest(request: NextRequest, method: string) {
     // Build ERP URL with query string for GET requests
     const url = new URL(request.url);
     const params = url.searchParams;
-    // Default: base ERP URL
-    let erpUrl = `${process.env.ETENDO_CLASSIC_URL}`;
-    // Special-case: kernel forward endpoints invoked via query _action
-    const action = params.get("_action");
-    if (action === "org.openbravo.client.application.window.FormInitializationComponent") {
+    
+    // Check if this is a process execution request
+    const processId = params.get("processId");
+    let erpUrl: string;
+    
+    if (processId && method === "POST") {
+      // For process execution, use the kernel forward endpoint with appropriate ActionHandler
       const baseUrl = process.env.ETENDO_CLASSIC_URL?.endsWith("/") 
         ? process.env.ETENDO_CLASSIC_URL.slice(0, -1) 
         : process.env.ETENDO_CLASSIC_URL;
-      erpUrl = `${baseUrl}/meta/forward/org.openbravo.client.kernel`;
-    }
-    if (url.search) {
-      erpUrl += url.search;
+      
+      // Build kernel URL with required query parameters
+      const kernelParams = new URLSearchParams();
+      kernelParams.set("processId", processId);
+      kernelParams.set("_action", "org.openbravo.client.application.process.ExecuteProcessActionHandler");
+      
+      erpUrl = `${baseUrl}/meta/forward/org.openbravo.client.kernel?${kernelParams.toString()}`;
+    } else {
+      // Default: base ERP URL
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}`;
+      // Special-case: kernel forward endpoints invoked via query _action
+      const action = params.get("_action");
+      if (action === "org.openbravo.client.application.window.FormInitializationComponent") {
+        const baseUrl = process.env.ETENDO_CLASSIC_URL?.endsWith("/") 
+          ? process.env.ETENDO_CLASSIC_URL.slice(0, -1) 
+          : process.env.ETENDO_CLASSIC_URL;
+        erpUrl = `${baseUrl}/meta/forward/org.openbravo.client.kernel`;
+      }
+      if (url.search) {
+        erpUrl += url.search;
+      }
     }
 
-    const requestBody = method === "GET" ? undefined : await request.text();
-    const contentType = request.headers.get("Content-Type") || "application/json";
+    let requestBody: string | undefined;
+    let contentType = request.headers.get("Content-Type") || "application/json";
+    
+    if (method === "GET") {
+      requestBody = undefined;
+    } else {
+      requestBody = await request.text();
+    }
 
     // Mutations: direct fetch (no cache). Reads (GET): use cache
     const isMutation = method !== "GET";
@@ -80,12 +105,25 @@ async function handleERPBaseRequest(request: NextRequest, method: string) {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`ERP request failed: ${response.status} ${response.statusText}. Response: ${errorText}`);
         return NextResponse.json(
           { error: `ERP request failed: ${response.status} ${response.statusText}` },
           { status: response.status }
         );
       }
-      data = await response.json();
+      
+      // Try to parse JSON, but handle cases where response is not JSON
+      const responseText = await response.text();
+      console.log(`ERP Response: ${responseText.substring(0, 200)}...`); // Log first 200 chars for debugging
+      
+      try {
+        data = JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error(`Failed to parse ERP response as JSON: ${jsonError}. Response: ${responseText}`);
+        // If it's not JSON, return the text response wrapped in a structure
+        data = { success: true, message: responseText };
+      }
     } else {
       const queryParams = new URL(request.url).search;
       data = await getCachedErpData(userToken, method, requestBody || "", contentType, queryParams);
