@@ -81,9 +81,7 @@ function storeCookieForToken(
       // If the token changed, clear the old one from the store
       if (oldToken && oldToken !== newToken) {
         clearErpSessionCookie(oldToken);
-        logger.log(
-          `Token updated during session recovery: ${oldToken.substring(0, 10)}... -> ${newToken.substring(0, 10)}...`
-        );
+        logger.log("Token updated during session recovery");
       }
     }
   } catch (error) {
@@ -163,9 +161,7 @@ async function performRecovery(userToken: string): Promise<SessionRecoveryResult
       }
 
       const isTokenUpdated = newToken !== userToken;
-      logger.log(
-        `Session recovery successful for token: ${userToken.substring(0, 10)}...${isTokenUpdated ? " (token updated)" : ""}`
-      );
+      logger.log("Session recovery successful");
 
       return {
         success: true,
@@ -209,7 +205,7 @@ export async function recoverSession(userToken: string): Promise<SessionRecovery
   const existingRecovery = activeRecoveries.get(userToken);
   if (existingRecovery) {
     // Wait for the existing recovery to complete and return its result
-    logger.log(`Joining existing recovery operation for token: ${userToken.substring(0, 10)}...`);
+    logger.log("Joining existing recovery operation");
     return await existingRecovery;
   }
 
