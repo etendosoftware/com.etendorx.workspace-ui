@@ -636,6 +636,13 @@ export interface ToolbarButton {
   action: string;
   enabled: boolean;
   visible: boolean;
+  icon: string;
+  seqno: number;
+  description: string;
+  etmetaActionHandler: string;
+  nameKey: string;
+  buttonType: string;
+  section: string;
 }
 
 export interface ToolbarMetadata {

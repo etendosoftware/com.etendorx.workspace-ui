@@ -92,6 +92,21 @@ export class Metadata {
     });
   }
 
+  public static async getToolbar(): Promise<Etendo.ToolbarButton[]> {
+    const cached = Metadata.cache.get<Etendo.ToolbarButton[]>("toolbar");
+    if (cached) {
+      return cached;
+    }
+    return Metadata._getToolbar();
+  }
+
+  private static async _getToolbar(): Promise<Etendo.ToolbarButton[]> {
+    const response = await Metadata.client.post("meta/toolbar");
+    const data = response.data.response.data;
+    Metadata.cache.set("toolbar", data);
+    return data;
+  }
+
   private static async _getWindow(windowId: Etendo.WindowId): Promise<Etendo.WindowMetadata> {
     const { data, ok } = await Metadata.client.post(`meta/window/${windowId}`);
 

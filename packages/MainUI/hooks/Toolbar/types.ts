@@ -27,7 +27,6 @@ export interface ToolbarButtonMetadata {
   action: string;
   name: string;
   icon?: string | null;
-  active: boolean;
   seqno?: number | null;
   buttonType: ButtonType;
   section: ButtonSection;
