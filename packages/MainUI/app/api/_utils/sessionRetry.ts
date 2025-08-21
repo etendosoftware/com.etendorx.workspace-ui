@@ -34,6 +34,7 @@ export interface RetryResult<T> {
   data?: T;
   error?: string;
   recovered?: boolean;
+  newToken?: string; // New token if it was updated during recovery
 }
 
 /**
@@ -80,8 +81,12 @@ export async function executeWithSessionRetry<T>(
       };
     }
 
-    // Retry request with new session
-    cookieHeader = getCombinedErpCookieHeader(request, userToken);
+    // Use the updated token if one was returned, otherwise use original token
+    const tokenToUse = recoveryResult.newToken || userToken;
+    const tokenChanged = recoveryResult.newToken && recoveryResult.newToken !== userToken;
+
+    // Retry request with new session (and potentially new token)
+    cookieHeader = getCombinedErpCookieHeader(request, tokenToUse);
     result = await requestFn(cookieHeader);
 
     // Check if retry was successful
@@ -93,8 +98,15 @@ export async function executeWithSessionRetry<T>(
       };
     }
 
-    console.log(`Session recovery and retry successful for token ${userToken.substring(0, 10)}...`);
-    return { success: true, data: result.data, recovered: true };
+    console.log(
+      `Session recovery and retry successful for token ${userToken.substring(0, 10)}...${tokenChanged ? " (token updated)" : ""}`
+    );
+    return {
+      success: true,
+      data: result.data,
+      recovered: true,
+      newToken: recoveryResult.newToken,
+    };
   } catch (error) {
     console.error("Error in session retry logic:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error in session retry";

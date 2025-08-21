@@ -15,7 +15,8 @@
  *************************************************************************
  */
 
-import { setErpSessionCookie, getErpSessionCookie } from "./sessionStore";
+import { logger } from "@/utils/logger";
+import { setErpSessionCookie, getErpSessionCookie, clearErpSessionCookie } from "./sessionStore";
 import { joinUrl } from "./url";
 
 /**
@@ -28,6 +29,64 @@ import { joinUrl } from "./url";
 export interface SessionRecoveryResult {
   success: boolean;
   error?: string;
+  newToken?: string; // New token returned by ERP if different from the original
+}
+
+/**
+ * Extracts JSESSIONID from response headers (reused from login route)
+ * @param response The HTTP response
+ * @returns The JSESSIONID value or null if not found
+ */
+function extractJSessionId(response: Response): string | null {
+  // Check single set-cookie header
+  const singleCookie = response.headers.get("set-cookie");
+  if (singleCookie) {
+    const match = singleCookie.match(/JSESSIONID=([^;]+)/);
+    if (match) return match[1];
+  }
+
+  // Check all headers for set-cookie (in case of multiple)
+  const allHeaders = response.headers;
+  allHeaders.forEach((value, key) => {
+    if (key.toLowerCase() === "set-cookie") {
+      const match = value.match(/JSESSIONID=([^;]+)/);
+      if (match) return match[1];
+    }
+  });
+
+  return null;
+}
+
+/**
+ * Stores session cookie for token (reused logic from login route)
+ * @param erpResponse The HTTP response from ERP
+ * @param data The parsed response data containing the token
+ * @param oldToken The previous token to clear if different
+ */
+function storeCookieForToken(
+  erpResponse: Response,
+  data: { token?: string; [key: string]: unknown },
+  oldToken?: string
+): void {
+  try {
+    const jsessionId = extractJSessionId(erpResponse);
+    const newToken = data?.token;
+
+    if (jsessionId && newToken) {
+      const cookieHeader = `JSESSIONID=${jsessionId}`;
+      setErpSessionCookie(newToken, cookieHeader);
+
+      // If the token changed, clear the old one from the store
+      if (oldToken && oldToken !== newToken) {
+        clearErpSessionCookie(oldToken);
+        logger.log(
+          `Token updated during session recovery: ${oldToken.substring(0, 10)}... -> ${newToken.substring(0, 10)}...`
+        );
+      }
+    }
+  } catch (error) {
+    logger.warn("Error storing cookie for token:", error);
+  }
 }
 
 /**
@@ -97,22 +156,38 @@ export async function recoverSession(userToken: string): Promise<SessionRecovery
         };
       }
 
-      // Extract new JSESSIONID from response
-      const newJSessionId = extractJSessionId(response);
+      // Parse response data to get the new token
+      const data = await response.json().catch((jsonError) => {
+        logger.error("JSON parse error during session recovery:", jsonError);
+        throw new Error("Invalid response from ERP during session recovery");
+      });
 
-      if (!newJSessionId) {
-        return { success: false, error: "No JSESSIONID received in re-authentication response" };
+      // Store the new session cookie and handle token updates
+      storeCookieForToken(response, data, userToken);
+
+      // Check if we got a new token
+      const newToken = data?.token;
+      if (!newToken) {
+        return { success: false, error: "No token received in re-authentication response" };
       }
 
-      // Update session store with new cookie
-      const newCookieHeader = `JSESSIONID=${newJSessionId}`;
-      setErpSessionCookie(userToken, newCookieHeader);
+      // Clear recovery attempts on success (use the original token for clearing)
+      clearRecoveryAttempts(userToken);
 
-      // Clear recovery attempts on success
-      recoveryAttempts.delete(userToken);
+      // If we got a new token, also clear any attempts for the new token to start fresh
+      if (newToken && newToken !== userToken) {
+        clearRecoveryAttempts(newToken);
+      }
 
-      console.log(`Session recovery successful for token: ${userToken.substring(0, 10)}...`);
-      return { success: true };
+      const isTokenUpdated = newToken !== userToken;
+      logger.log(
+        `Session recovery successful for token: ${userToken.substring(0, 10)}...${isTokenUpdated ? " (token updated)" : ""}`
+      );
+
+      return {
+        success: true,
+        newToken: isTokenUpdated ? newToken : undefined,
+      };
     } catch (fetchError) {
       clearTimeout(timeoutId);
 
@@ -123,36 +198,11 @@ export async function recoverSession(userToken: string): Promise<SessionRecovery
       throw fetchError;
     }
   } catch (error) {
-    console.error("Session recovery error:", error);
+    logger.error("Session recovery error:", error);
 
     const errorMessage = error instanceof Error ? error.message : "Unknown error during session recovery";
     return { success: false, error: errorMessage };
   }
-}
-
-/**
- * Extracts JSESSIONID from response headers
- * @param response The HTTP response
- * @returns The JSESSIONID value or null if not found
- */
-function extractJSessionId(response: Response): string | null {
-  // Check single set-cookie header
-  const singleCookie = response.headers.get("set-cookie");
-  if (singleCookie) {
-    const match = singleCookie.match(/JSESSIONID=([^;]+)/);
-    if (match) return match[1];
-  }
-
-  // Check all headers for set-cookie (in case of multiple)
-  const allHeaders = response.headers;
-  allHeaders.forEach((value, key) => {
-    if (key.toLowerCase() === "set-cookie") {
-      const match = value.match(/JSESSIONID=([^;]+)/);
-      if (match) return match[1];
-    }
-  });
-
-  return null;
 }
 
 /**
