@@ -74,5 +74,5 @@ export function isSessionExpired(response: Response, data: unknown): boolean {
  */
 export function shouldAttemptRecovery(response: Response, data: unknown): boolean {
   // Only attempt recovery for session expiration, not other authentication issues
-  return isSessionExpired(response, data) && response.status !== 403;
+  return isSessionExpired(response, data);
 }
