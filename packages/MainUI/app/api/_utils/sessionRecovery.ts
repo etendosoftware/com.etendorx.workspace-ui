@@ -90,31 +90,20 @@ function storeCookieForToken(
 }
 
 /**
- * Tracks recovery attempts to prevent infinite loops
+ * Tracks recovery attempts and active recovery operations to prevent infinite loops
+ * while supporting parallel requests
  */
-const recoveryAttempts = new Map<string, number>();
+const recoveryAttempts = new Map<string, number>(); // Failed recovery attempts
+const activeRecoveries = new Map<string, Promise<SessionRecoveryResult>>(); // Ongoing recovery operations
 const MAX_RECOVERY_ATTEMPTS = 3;
 const RECOVERY_TIMEOUT_MS = 30000; // 30 seconds
 
 /**
- * Attempts to recover an expired session by re-authenticating with the ERP
+ * Performs the actual session recovery operation
  * @param userToken The JWT token to use for re-authentication
  * @returns Promise resolving to recovery result
  */
-export async function recoverSession(userToken: string): Promise<SessionRecoveryResult> {
-  if (!userToken) {
-    return { success: false, error: "No user token provided" };
-  }
-
-  // Check if we've exceeded recovery attempts for this token
-  const attempts = recoveryAttempts.get(userToken) || 0;
-  if (attempts >= MAX_RECOVERY_ATTEMPTS) {
-    return { success: false, error: "Maximum recovery attempts exceeded" };
-  }
-
-  // Increment attempt counter
-  recoveryAttempts.set(userToken, attempts + 1);
-
+async function performRecovery(userToken: string): Promise<SessionRecoveryResult> {
   try {
     // Get the current session cookie (may be expired)
     const currentCookie = getErpSessionCookie(userToken);
@@ -171,14 +160,6 @@ export async function recoverSession(userToken: string): Promise<SessionRecovery
         return { success: false, error: "No token received in re-authentication response" };
       }
 
-      // Clear recovery attempts on success (use the original token for clearing)
-      clearRecoveryAttempts(userToken);
-
-      // If we got a new token, also clear any attempts for the new token to start fresh
-      if (newToken && newToken !== userToken) {
-        clearRecoveryAttempts(newToken);
-      }
-
       const isTokenUpdated = newToken !== userToken;
       logger.log(
         `Session recovery successful for token: ${userToken.substring(0, 10)}...${isTokenUpdated ? " (token updated)" : ""}`
@@ -206,11 +187,69 @@ export async function recoverSession(userToken: string): Promise<SessionRecovery
 }
 
 /**
+ * Attempts to recover an expired session by re-authenticating with the ERP
+ * Supports parallel requests by reusing ongoing recovery operations
+ * @param userToken The JWT token to use for re-authentication
+ * @returns Promise resolving to recovery result
+ */
+export async function recoverSession(userToken: string): Promise<SessionRecoveryResult> {
+  if (!userToken) {
+    return { success: false, error: "No user token provided" };
+  }
+
+  // Check if we've exceeded FAILED recovery attempts for this token
+  const failedAttempts = recoveryAttempts.get(userToken) || 0;
+  if (failedAttempts >= MAX_RECOVERY_ATTEMPTS) {
+    return { success: false, error: "Maximum recovery attempts exceeded" };
+  }
+
+  // Check if there's already an active recovery for this token
+  const existingRecovery = activeRecoveries.get(userToken);
+  if (existingRecovery) {
+    // Wait for the existing recovery to complete and return its result
+    logger.log(`Joining existing recovery operation for token: ${userToken.substring(0, 10)}...`);
+    return await existingRecovery;
+  }
+
+  // Create a new recovery operation
+  const recoveryPromise = performRecovery(userToken);
+
+  // Store the active recovery promise
+  activeRecoveries.set(userToken, recoveryPromise);
+
+  try {
+    const result = await recoveryPromise;
+
+    // Handle the result
+    if (result.success) {
+      // Clear failed attempts on success
+      recoveryAttempts.delete(userToken);
+
+      // If we got a new token, also clear any failed attempts for the new token
+      if (result.newToken && result.newToken !== userToken) {
+        recoveryAttempts.delete(result.newToken);
+      }
+    } else {
+      // Increment failed attempts only on actual failure
+      const currentFailed = recoveryAttempts.get(userToken) || 0;
+      recoveryAttempts.set(userToken, currentFailed + 1);
+    }
+
+    return result;
+  } finally {
+    // Always clean up the active recovery
+    activeRecoveries.delete(userToken);
+  }
+}
+
+/**
  * Clears recovery attempt tracking for a token
  * @param userToken The JWT token
  */
 export function clearRecoveryAttempts(userToken: string): void {
   recoveryAttempts.delete(userToken);
+  // Also clear any active recovery to allow fresh attempts
+  activeRecoveries.delete(userToken);
 }
 
 /**
@@ -220,4 +259,13 @@ export function clearRecoveryAttempts(userToken: string): void {
  */
 export function getRecoveryAttempts(userToken: string): number {
   return recoveryAttempts.get(userToken) || 0;
+}
+
+/**
+ * Checks if there's an active recovery operation for a token
+ * @param userToken The JWT token
+ * @returns True if there's an active recovery operation
+ */
+export function isRecoveryActive(userToken: string): boolean {
+  return activeRecoveries.has(userToken);
 }
