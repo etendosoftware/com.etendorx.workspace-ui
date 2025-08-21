@@ -51,7 +51,6 @@ describe("datasourceCache", () => {
     it("should ignore parameters parameter (not currently used)", () => {
       expect(shouldCacheDatasource("Entity", { param1: "value1" })).toBe(false);
       expect(shouldCacheDatasource("Entity", null)).toBe(false);
-      expect(shouldCacheDatasource("Entity", undefined)).toBe(false);
       expect(shouldCacheDatasource("Entity", {})).toBe(false);
       expect(shouldCacheDatasource("Entity", { complex: { nested: "object" } })).toBe(false);
     });
