@@ -19,6 +19,7 @@ import { isSessionExpired, shouldAttemptRecovery } from "./sessionValidator";
 import { recoverSession } from "./sessionRecovery";
 import { getCombinedErpCookieHeader } from "./forwardConfig";
 import type { NextRequest } from "next/server";
+import { logger } from "@/utils/logger";
 
 /**
  * Request retry utilities with automatic session recovery
@@ -68,7 +69,7 @@ export async function executeWithSessionRetry<T>(
       };
     }
 
-    console.log(`Session expired for token ${userToken.substring(0, 10)}..., attempting recovery`);
+    logger.log("Session expired, attempting recovery");
 
     // Attempt session recovery
     const recoveryResult = await recoverSession(userToken);
@@ -83,7 +84,6 @@ export async function executeWithSessionRetry<T>(
 
     // Use the updated token if one was returned, otherwise use original token
     const tokenToUse = recoveryResult.newToken || userToken;
-    const tokenChanged = recoveryResult.newToken && recoveryResult.newToken !== userToken;
 
     // Retry request with new session (and potentially new token)
     cookieHeader = getCombinedErpCookieHeader(request, tokenToUse);
@@ -98,9 +98,7 @@ export async function executeWithSessionRetry<T>(
       };
     }
 
-    console.log(
-      `Session recovery and retry successful for token ${userToken.substring(0, 10)}...${tokenChanged ? " (token updated)" : ""}`
-    );
+    logger.log("Session recovery and retry successful");
     return {
       success: true,
       data: result.data,
@@ -108,7 +106,7 @@ export async function executeWithSessionRetry<T>(
       newToken: recoveryResult.newToken,
     };
   } catch (error) {
-    console.error("Error in session retry logic:", error);
+    logger.error("Error in session retry logic:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error in session retry";
     return { success: false, error: errorMessage };
   }

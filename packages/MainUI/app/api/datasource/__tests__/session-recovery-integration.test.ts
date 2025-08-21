@@ -37,45 +37,16 @@ jest.mock("@/app/api/_utils/datasourceCache");
 jest.mock("@/app/api/_utils/forwardConfig");
 jest.mock("@/app/api/_utils/sessionRetry");
 jest.mock("@/app/api/_utils/url");
-
-import type { NextRequest } from "next/server";
 import { POST } from "../route";
-
-// Create mock NextRequest function (same as in sessionRetry.test.ts)
-const createMockRequest = (
-  url: string,
-  init?: { method?: string; headers?: Record<string, string>; body?: string }
-) => {
-  const mockHeaders = {
-    get: (key: string) => init?.headers?.[key] || init?.headers?.[key.toLowerCase()],
-    set: jest.fn(),
-    has: jest.fn(),
-    delete: jest.fn(),
-    forEach: jest.fn(),
-    keys: jest.fn(),
-    values: jest.fn(),
-    entries: jest.fn(),
-  };
-
-  return {
-    url,
-    method: init?.method || "GET",
-    headers: mockHeaders,
-    cookies: {
-      get: jest.fn(),
-      getAll: jest.fn(),
-      has: jest.fn(),
-      set: jest.fn(),
-      delete: jest.fn(),
-    },
-    nextUrl: { pathname: "/api/datasource", searchParams: new URLSearchParams() },
-    json: jest.fn().mockResolvedValue(init?.body ? JSON.parse(init.body) : {}),
-    text: jest.fn().mockResolvedValue(init?.body || ""),
-    formData: jest.fn(),
-    arrayBuffer: jest.fn(),
-    clone: jest.fn(),
-  } as unknown as NextRequest;
-};
+import {
+  createMockRequest,
+  createDatasourceRequest,
+  createMockResponseData,
+  createSessionRetryResult,
+  createSessionRetryError,
+  expectSuccessfulResponse,
+  expectErrorResponse,
+} from "../../../../utils/tests/mockHelpers";
 
 const mockExtractBearerToken = require("@/lib/auth").extractBearerToken as jest.MockedFunction<
   typeof import("@/lib/auth").extractBearerToken
@@ -112,108 +83,59 @@ describe("Datasource API Route - Session Recovery Integration", () => {
   });
 
   it("should successfully process request without session issues", async () => {
-    const requestBody = {
+    const mockRequest = createDatasourceRequest({
       entity: "TestEntity",
-      params: { test: "value" },
-    };
-
-    const mockRequest = createMockRequest("https://example.com/api/datasource", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${testToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
+      token: testToken,
     });
 
-    const mockResponseData = { response: { data: [{ id: 1, name: "Test" }] } };
+    const mockResponseData = createMockResponseData();
 
-    mockExecuteWithSessionRetry.mockResolvedValue({
-      success: true,
-      data: mockResponseData,
-      recovered: false,
-    });
+    mockExecuteWithSessionRetry.mockResolvedValue(createSessionRetryResult(mockResponseData));
 
     const response = await POST(mockRequest);
-    const result = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(result).toEqual(mockResponseData);
+    await expectSuccessfulResponse(response, mockResponseData);
     expect(mockExecuteWithSessionRetry).toHaveBeenCalledWith(mockRequest, testToken, expect.any(Function));
   });
 
   it("should successfully recover from session expiration", async () => {
-    const requestBody = {
+    const mockRequest = createDatasourceRequest({
       entity: "TestEntity",
-      params: { test: "value" },
-    };
-
-    const mockRequest = createMockRequest("https://example.com/api/datasource", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${testToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
+      token: testToken,
     });
 
-    const mockResponseData = { response: { data: [{ id: 1, name: "Test After Recovery" }] } };
+    const mockResponseData = createMockResponseData([{ id: 1, name: "Test After Recovery" }]);
 
-    mockExecuteWithSessionRetry.mockResolvedValue({
-      success: true,
-      data: mockResponseData,
-      recovered: true, // Indicates session was recovered
-    });
+    mockExecuteWithSessionRetry.mockResolvedValue(
+      createSessionRetryResult(mockResponseData, true) // Indicates session was recovered
+    );
 
     const response = await POST(mockRequest);
-    const result = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(result).toEqual(mockResponseData);
+    await expectSuccessfulResponse(response, mockResponseData);
     expect(mockExecuteWithSessionRetry).toHaveBeenCalledWith(mockRequest, testToken, expect.any(Function));
   });
 
   it("should return error when session recovery fails", async () => {
-    const requestBody = {
+    const mockRequest = createDatasourceRequest({
       entity: "TestEntity",
-      params: { test: "value" },
-    };
-
-    const mockRequest = createMockRequest("https://example.com/api/datasource", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${testToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
+      token: testToken,
     });
 
-    mockExecuteWithSessionRetry.mockResolvedValue({
-      success: false,
-      error: "Session recovery failed: Maximum recovery attempts exceeded",
-    });
+    mockExecuteWithSessionRetry.mockResolvedValue(
+      createSessionRetryError("Session recovery failed: Maximum recovery attempts exceeded")
+    );
 
     const response = await POST(mockRequest);
-    const result = await response.json();
 
-    expect(response.status).toBe(500);
-    expect(result.error).toBe("Session recovery failed: Maximum recovery attempts exceeded");
+    await expectErrorResponse(response, 500, "Session recovery failed: Maximum recovery attempts exceeded");
     expect(mockExecuteWithSessionRetry).toHaveBeenCalledWith(mockRequest, testToken, expect.any(Function));
   });
 
   it("should bypass session retry for cached requests", async () => {
-    const requestBody = {
+    const mockRequest = createDatasourceRequest({
       entity: "CachedEntity",
-      params: { test: "value" },
-    };
-
-    const mockRequest = createMockRequest("https://example.com/api/datasource", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${testToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
+      token: testToken,
     });
 
     // Enable caching for this test
@@ -226,51 +148,30 @@ describe("Datasource API Route - Session Recovery Integration", () => {
   });
 
   it("should handle missing authorization token", async () => {
-    const requestBody = {
+    const mockRequest = createDatasourceRequest({
       entity: "TestEntity",
-      params: { test: "value" },
-    };
-
-    const mockRequest = createMockRequest("https://example.com/api/datasource", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
+      // No token provided
     });
 
     mockExtractBearerToken.mockReturnValue(null);
 
     const response = await POST(mockRequest);
-    const result = await response.json();
 
-    expect(response.status).toBe(401);
-    expect(result.error).toBe("Unauthorized - Missing Bearer token");
+    await expectErrorResponse(response, 401, "Unauthorized - Missing Bearer token");
     expect(mockExecuteWithSessionRetry).not.toHaveBeenCalled();
   });
 
   it("should handle missing user context", async () => {
-    const requestBody = {
+    const mockRequest = createDatasourceRequest({
       entity: "TestEntity",
-      params: { test: "value" },
-    };
-
-    const mockRequest = createMockRequest("https://example.com/api/datasource", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${testToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
+      token: testToken,
     });
 
     mockGetUserContext.mockResolvedValue(null);
 
     const response = await POST(mockRequest);
-    const result = await response.json();
 
-    expect(response.status).toBe(401);
-    expect(result.error).toBe("Unauthorized - Missing user context");
+    await expectErrorResponse(response, 401, "Unauthorized - Missing user context");
     expect(mockExecuteWithSessionRetry).not.toHaveBeenCalled();
   });
 
@@ -287,13 +188,12 @@ describe("Datasource API Route - Session Recovery Integration", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestBody),
+      pathname: "/api/datasource",
     });
 
     const response = await POST(mockRequest);
-    const result = await response.json();
 
-    expect(response.status).toBe(400);
-    expect(result.error).toBe("Entity is required");
+    await expectErrorResponse(response, 400, "Entity is required");
     expect(mockExecuteWithSessionRetry).not.toHaveBeenCalled();
   });
 });

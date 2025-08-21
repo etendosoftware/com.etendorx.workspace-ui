@@ -16,135 +16,138 @@
  */
 
 import { isSessionExpired, shouldAttemptRecovery } from "../sessionValidator";
+import { createMockResponse, createTestData, expectSessionValidation } from "../../../../utils/tests/mockHelpers";
 
 describe("sessionValidator", () => {
   describe("isSessionExpired", () => {
     it("should return true for 401 status", () => {
-      const response = new Response("", { status: 401 });
-      const data = {};
-
-      expect(isSessionExpired(response, data)).toBe(true);
+      expectSessionValidation(isSessionExpired, createMockResponse(401), createTestData.empty(), true);
     });
 
     it("should return true for 403 status", () => {
-      const response = new Response("", { status: 403 });
-      const data = {};
-
-      expect(isSessionExpired(response, data)).toBe(true);
+      expectSessionValidation(isSessionExpired, createMockResponse(403), createTestData.empty(), true);
     });
 
     it("should return false for 200 status", () => {
-      const response = new Response("", { status: 200 });
-      const data = {};
-
-      expect(isSessionExpired(response, data)).toBe(false);
+      expectSessionValidation(isSessionExpired, createMockResponse(200), createTestData.empty(), false);
     });
 
     it("should return true for session expired error messages", () => {
-      const response = new Response("", { status: 500 });
-      const data = { error: "Session expired" };
-
-      expect(isSessionExpired(response, data)).toBe(true);
+      expectSessionValidation(
+        isSessionExpired,
+        createMockResponse(500),
+        createTestData.withError("Session expired"),
+        true
+      );
     });
 
     it("should return true for session timeout error messages", () => {
-      const response = new Response("", { status: 500 });
-      const data = { message: "Session timeout occurred" };
-
-      expect(isSessionExpired(response, data)).toBe(true);
+      expectSessionValidation(
+        isSessionExpired,
+        createMockResponse(500),
+        createTestData.withMessage("Session timeout occurred"),
+        true
+      );
     });
 
     it("should return true for invalid session error messages", () => {
-      const response = new Response("", { status: 200 });
-      const data = { error: "Invalid session detected" };
-
-      expect(isSessionExpired(response, data)).toBe(true);
+      expectSessionValidation(
+        isSessionExpired,
+        createMockResponse(200),
+        createTestData.withError("Invalid session detected"),
+        true
+      );
     });
 
     it("should return true for unauthorized error messages", () => {
-      const response = new Response("", { status: 200 });
-      const data = { message: "Unauthorized access" };
-
-      expect(isSessionExpired(response, data)).toBe(true);
+      expectSessionValidation(
+        isSessionExpired,
+        createMockResponse(200),
+        createTestData.withMessage("Unauthorized access"),
+        true
+      );
     });
 
     it("should return true for authentication error messages", () => {
-      const response = new Response("", { status: 200 });
-      const data = { error: "Authentication failed" };
-
-      expect(isSessionExpired(response, data)).toBe(true);
+      expectSessionValidation(
+        isSessionExpired,
+        createMockResponse(200),
+        createTestData.withError("Authentication failed"),
+        true
+      );
     });
 
     it("should return true for login required error messages", () => {
-      const response = new Response("", { status: 200 });
-      const data = { message: "Login required" };
-
-      expect(isSessionExpired(response, data)).toBe(true);
+      expectSessionValidation(
+        isSessionExpired,
+        createMockResponse(200),
+        createTestData.withMessage("Login required"),
+        true
+      );
     });
 
     it("should return false for non-session related errors", () => {
-      const response = new Response("", { status: 500 });
-      const data = { error: "Database connection failed" };
-
-      expect(isSessionExpired(response, data)).toBe(false);
+      expectSessionValidation(
+        isSessionExpired,
+        createMockResponse(500),
+        createTestData.withError("Database connection failed"),
+        false
+      );
     });
 
     it("should return false for successful responses", () => {
-      const response = new Response("", { status: 200 });
-      const data = { result: "success" };
-
-      expect(isSessionExpired(response, data)).toBe(false);
+      expectSessionValidation(isSessionExpired, createMockResponse(200), createTestData.withResult("success"), false);
     });
 
     it("should handle null/undefined data gracefully", () => {
-      const response = new Response("", { status: 200 });
+      const response = createMockResponse(200);
 
-      expect(isSessionExpired(response, null)).toBe(false);
-      expect(isSessionExpired(response, undefined)).toBe(false);
+      expectSessionValidation(isSessionExpired, response, null, false);
+      expectSessionValidation(isSessionExpired, response, undefined, false);
     });
 
     it("should handle non-object data gracefully", () => {
-      const response = new Response("", { status: 200 });
+      const response = createMockResponse(200);
 
-      expect(isSessionExpired(response, "string data")).toBe(false);
-      expect(isSessionExpired(response, 123)).toBe(false);
+      expectSessionValidation(isSessionExpired, response, "string data", false);
+      expectSessionValidation(isSessionExpired, response, 123, false);
     });
   });
 
   describe("shouldAttemptRecovery", () => {
     it("should return true for 401 status (session expired)", () => {
-      const response = new Response("", { status: 401 });
-      const data = {};
-
-      expect(shouldAttemptRecovery(response, data)).toBe(true);
+      expectSessionValidation(shouldAttemptRecovery, createMockResponse(401), createTestData.empty(), true);
     });
 
     it("should return true for 403 status (forbidden, also session-related)", () => {
-      const response = new Response("", { status: 403 });
-      const data = {};
-
-      expect(shouldAttemptRecovery(response, data)).toBe(true);
+      expectSessionValidation(shouldAttemptRecovery, createMockResponse(403), createTestData.empty(), true);
     });
 
     it("should return true for session expired messages with non-403 status", () => {
-      const response = new Response("", { status: 500 });
-      const data = { error: "Session expired" };
-
-      expect(shouldAttemptRecovery(response, data)).toBe(true);
+      expectSessionValidation(
+        shouldAttemptRecovery,
+        createMockResponse(500),
+        createTestData.withError("Session expired"),
+        true
+      );
     });
 
     it("should return false for non-session errors", () => {
-      const response = new Response("", { status: 500 });
-      const data = { error: "Database error" };
-
-      expect(shouldAttemptRecovery(response, data)).toBe(false);
+      expectSessionValidation(
+        shouldAttemptRecovery,
+        createMockResponse(500),
+        createTestData.withError("Database error"),
+        false
+      );
     });
 
     it("should return false for successful responses", () => {
-      const response = new Response("", { status: 200 });
-      const data = { result: "success" };
-
-      expect(shouldAttemptRecovery(response, data)).toBe(false);
+      expectSessionValidation(
+        shouldAttemptRecovery,
+        createMockResponse(200),
+        createTestData.withResult("success"),
+        false
+      );
     });
   });
 });

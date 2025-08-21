@@ -20,44 +20,13 @@ import * as sessionValidator from "../sessionValidator";
 import * as sessionRecovery from "../sessionRecovery";
 import * as forwardConfig from "../forwardConfig";
 import type { NextRequest } from "next/server";
+import { createMockRequest } from "../../../../utils/tests/mockHelpers";
 
 // Mock dependencies
 jest.mock("../sessionValidator");
 jest.mock("../sessionRecovery");
 jest.mock("../forwardConfig");
-
-// Mock NextRequest by creating a simple object with the properties we need
-const createMockRequest = (url: string, init?: { method?: string; headers?: Record<string, string> }) => {
-  const mockHeaders = {
-    get: (key: string) => init?.headers?.[key] || init?.headers?.[key.toLowerCase()],
-    set: jest.fn(),
-    has: jest.fn(),
-    delete: jest.fn(),
-    forEach: jest.fn(),
-    keys: jest.fn(),
-    values: jest.fn(),
-    entries: jest.fn(),
-  };
-
-  return {
-    url,
-    method: init?.method || "GET",
-    headers: mockHeaders,
-    cookies: {
-      get: jest.fn(),
-      getAll: jest.fn(),
-      has: jest.fn(),
-      set: jest.fn(),
-      delete: jest.fn(),
-    },
-    nextUrl: { pathname: "/api/test", searchParams: new URLSearchParams() },
-    json: jest.fn(),
-    text: jest.fn(),
-    formData: jest.fn(),
-    arrayBuffer: jest.fn(),
-    clone: jest.fn(),
-  } as unknown as NextRequest;
-};
+jest.mock("@/utils/logger");
 
 const mockIsSessionExpired = sessionValidator.isSessionExpired as jest.MockedFunction<
   typeof sessionValidator.isSessionExpired
@@ -69,6 +38,18 @@ const mockRecoverSession = sessionRecovery.recoverSession as jest.MockedFunction
 const mockGetCombinedErpCookieHeader = forwardConfig.getCombinedErpCookieHeader as jest.MockedFunction<
   typeof forwardConfig.getCombinedErpCookieHeader
 >;
+
+// Mock logger methods
+const mockLogger = {
+  log: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  info: jest.fn(),
+  debug: jest.fn(),
+};
+
+// Apply the mock to the module
+jest.mocked(require("@/utils/logger")).logger = mockLogger;
 
 describe("sessionRetry", () => {
   const testToken = "test-jwt-token";
@@ -88,6 +69,13 @@ describe("sessionRetry", () => {
 
     // Default mock behaviors
     mockGetCombinedErpCookieHeader.mockReturnValue("JSESSIONID=test123");
+
+    // Reset logger mocks
+    mockLogger.log.mockClear();
+    mockLogger.error.mockClear();
+    mockLogger.warn.mockClear();
+    mockLogger.info.mockClear();
+    mockLogger.debug.mockClear();
   });
 
   describe("executeWithSessionRetry", () => {
@@ -164,6 +152,10 @@ describe("sessionRetry", () => {
       expect(result.recovered).toBe(true);
       expect(requestFn).toHaveBeenCalledTimes(2);
       expect(mockRecoverSession).toHaveBeenCalledWith(testToken);
+
+      // Verify logger calls
+      expect(mockLogger.log).toHaveBeenCalledWith("Session expired, attempting recovery");
+      expect(mockLogger.log).toHaveBeenCalledWith("Session recovery and retry successful");
     });
 
     it("should return error when session recovery fails", async () => {
@@ -220,7 +212,8 @@ describe("sessionRetry", () => {
     });
 
     it("should handle request function errors", async () => {
-      const requestFn = jest.fn().mockRejectedValue(new Error("Network error"));
+      const requestError = new Error("Network error");
+      const requestFn = jest.fn().mockRejectedValue(requestError);
 
       const result = await executeWithSessionRetry(mockRequest, testToken, requestFn);
 
@@ -228,6 +221,9 @@ describe("sessionRetry", () => {
       expect(result.error).toBe("Network error");
       expect(requestFn).toHaveBeenCalledTimes(1);
       expect(mockRecoverSession).not.toHaveBeenCalled();
+
+      // Verify error logging
+      expect(mockLogger.error).toHaveBeenCalledWith("Error in session retry logic:", requestError);
     });
 
     it("should handle session recovery errors", async () => {
@@ -239,15 +235,20 @@ describe("sessionRetry", () => {
         data: expiredData,
       });
 
+      const recoveryError = new Error("Recovery error");
       mockIsSessionExpired.mockReturnValue(true);
       mockShouldAttemptRecovery.mockReturnValue(true);
-      mockRecoverSession.mockRejectedValue(new Error("Recovery error"));
+      mockRecoverSession.mockRejectedValue(recoveryError);
 
       const result = await executeWithSessionRetry(mockRequest, testToken, requestFn);
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Recovery error");
       expect(requestFn).toHaveBeenCalledTimes(1);
+
+      // Verify both attempt recovery log and error log
+      expect(mockLogger.log).toHaveBeenCalledWith("Session expired, attempting recovery");
+      expect(mockLogger.error).toHaveBeenCalledWith("Error in session retry logic:", recoveryError);
     });
 
     it("should call getCombinedErpCookieHeader for each request attempt", async () => {
