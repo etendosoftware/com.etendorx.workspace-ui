@@ -158,23 +158,12 @@ export function useDatasource({
     return finalParams;
   }, [params, searchQuery, columns, columnFilterCriteria, isImplicitFilterApplied]);
 
-  useEffect(() => {
-    if (skip) {
-      setRecords([]);
-      setPage(1);
-      setHasMoreRecords(true);
-      setLoaded(true);
-      return;
-    }
+  const fetchData = useCallback(
+    async (targetPage: number = page) => {
+      const safePageSize = pageSize ?? 1000;
 
-    setError(undefined);
-    setLoading(true);
-
-    const safePageSize = pageSize ?? 1000;
-
-    const fetchData = async () => {
       try {
-        const { ok, data } = await loadData(entity, page, safePageSize, queryParams, treeOptions);
+        const { ok, data } = await loadData(entity, targetPage, safePageSize, queryParams, treeOptions);
 
         if (!(ok && data.response.data)) {
           throw data;
@@ -193,19 +182,36 @@ export function useDatasource({
       } finally {
         setLoading(false);
       }
-    };
+    },
+    [entity, page, pageSize, queryParams, treeOptions, isImplicitFilterApplied]
+  );
+
+  useEffect(() => {
+    if (skip) {
+      setRecords([]);
+      setPage(1);
+      setHasMoreRecords(true);
+      setLoaded(true);
+      return;
+    }
+
+    setError(undefined);
+    setLoading(true);
 
     fetchData();
-  }, [entity, page, pageSize, queryParams, skip, treeOptions, isImplicitFilterApplied]);
+  }, [entity, page, pageSize, queryParams, skip, treeOptions, isImplicitFilterApplied, fetchData]);
 
   useEffect(() => {
     reinit();
   }, [activeColumnFilters, searchQuery, reinit]);
 
-  const refetch = useCallback(() => {
+  const refetch = useCallback(async () => {
     reinit();
     setError(undefined);
-  }, [reinit]);
+    setLoading(true);
+
+    await fetchData(1);
+  }, [reinit, fetchData]);
 
   return {
     loading,
