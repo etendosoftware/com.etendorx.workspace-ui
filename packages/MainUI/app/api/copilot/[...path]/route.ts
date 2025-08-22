@@ -7,11 +7,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   try {
     // Extract user token for authentication with ERP
     const userToken = extractBearerToken(request);
-    
+
     // For development: allow Basic auth if no Bearer token provided
     const authHeader = request.headers.get("Authorization");
     const hasBasicAuth = authHeader?.startsWith("Basic ");
-    
+
     if (!userToken && !hasBasicAuth) {
       return NextResponse.json({ error: "Unauthorized - Missing Bearer token or Basic auth" }, { status: 401 });
     }
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       if (combinedCookie) {
         headers.Cookie = combinedCookie;
       }
-    } else if (hasBasicAuth) {
+    } else if (hasBasicAuth && authHeader) {
       // Pass through Basic auth directly to ERP
       headers.Authorization = authHeader;
     }
