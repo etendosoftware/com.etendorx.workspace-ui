@@ -72,24 +72,24 @@ const NoteSection = ({
   };
 
   return (
-    <Box data-testid="Box__a680f8">
-      <Grid container spacing={2} data-testid="Grid__a680f8">
-        <Grid item xs={6} data-testid="Grid__a680f8">
+    <Box data-testid="Box__a680f8_1">
+      <Grid container spacing={2} data-testid="Grid__a680f8_1">
+        <Grid item xs={6} data-testid="Grid__a680f8_trigger">
           <Modal
             HeaderIcon={NoteIcon}
             tittleHeader={modalTitleText}
             descriptionText={modalDescriptionText}
             customTrigger={
-              <Button sx={sx.addNoteButton} data-testid="Button__a680f8">
-                <IconButton data-testid="IconButton__a680f8">
-                  <PlusIcon fill={theme.palette.baselineColor.neutral[80]} data-testid="PlusIcon__a680f8" />
+              <Button sx={sx.addNoteButton} data-testid="Button__a680f8_add">
+                <IconButton data-testid="IconButton__a680f8_add">
+                  <PlusIcon fill={theme.palette.baselineColor.neutral[80]} data-testid="PlusIcon__a680f8_add" />
                 </IconButton>
-                <Typography variant="body1" sx={sx.addNoteText} data-testid="Typography__a680f8">
+                <Typography variant="body1" sx={sx.addNoteText} data-testid="Typography__a680f8_add">
                   {addNoteButtonText}
                 </Typography>
               </Button>
             }
-            data-testid="Modal__a680f8">
+            data-testid="Modal__a680f8_add">
             <TextField
               fullWidth
               multiline
@@ -97,28 +97,35 @@ const NoteSection = ({
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
               placeholder={noteInputPlaceholder}
-              data-testid="TextField__a680f8"
+              data-testid="TextField__a680f8_input"
             />
-            <Button onClick={addNote} variant="contained" sx={{ mt: 2 }} data-testid="Button__a680f8">
+            <Button onClick={addNote} variant="contained" sx={{ mt: 2 }} data-testid="Button__a680f8_submit">
               {addNoteSubmitText}
             </Button>
           </Modal>
         </Grid>
         {notes.map((note) => (
-          <Grid item xs={6} key={note.id} data-testid="Grid__a680f8">
-            <Card sx={{ ...sx.noteCard, backgroundColor: note.color }} data-testid="Card__a680f8">
-              <CardContent sx={sx.noteCardContent} data-testid="CardContent__a680f8">
-                <Box sx={sx.noteContentBox} data-testid="Box__a680f8">
-                  <Typography variant="body1" sx={sx.noteContentText} data-testid="Typography__a680f8">
+          <Grid item xs={6} key={note.id} data-testid={`Grid__a680f8_item_${note.id}`}>
+            <Card sx={{ ...sx.noteCard, backgroundColor: note.color }} data-testid={`Card__a680f8_${note.id}`}>
+              <CardContent sx={sx.noteCardContent} data-testid={`CardContent__a680f8_${note.id}`}>
+                <Box sx={sx.noteContentBox} data-testid={`Box__a680f8_${note.id}`}>
+                  <Typography
+                    variant="body1"
+                    sx={sx.noteContentText}
+                    data-testid={`Typography__a680f8_content_${note.id}`}>
                     {note.content}
                   </Typography>
                 </Box>
-                <Typography variant="body2" component="div" sx={sx.noteDate} data-testid="Typography__a680f8">
+                <Typography
+                  variant="body2"
+                  component="div"
+                  sx={sx.noteDate}
+                  data-testid={`Typography__a680f8_date_${note.id}`}>
                   {new Date(note.createdAt).toDateString()}
                 </Typography>
-                <Box sx={sx.deleteButtonBox} data-testid="Box__a680f8">
-                  <IconButton onClick={() => deleteNote(note.id)} data-testid="IconButton__a680f8">
-                    <CloseIcon fontSize="small" data-testid="CloseIcon__a680f8" />
+                <Box sx={sx.deleteButtonBox} data-testid={`Box__a680f8_delete_${note.id}`}>
+                  <IconButton onClick={() => deleteNote(note.id)} data-testid={`IconButton__a680f8_delete_${note.id}`}>
+                    <CloseIcon fontSize="small" data-testid={`CloseIcon__a680f8_${note.id}`} />
                   </IconButton>
                 </Box>
               </CardContent>

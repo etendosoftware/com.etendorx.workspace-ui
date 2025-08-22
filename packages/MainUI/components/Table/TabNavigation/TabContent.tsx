@@ -47,22 +47,22 @@ export const TabContent: React.FC<TabContentProps> = ({
         </div>
         <div className="flex items-center flex-shrink-0">
           {!isMainTab && (
-            <IconButton onClick={handleFullSize} className="bg-transparent" data-testid="IconButton__8e9f6c">
+            <IconButton onClick={handleFullSize} className="bg-transparent" data-testid="IconButton__8e9f6c_1">
               {isFullSize ? (
-                <ChevronDown data-testid="ChevronDown__8e9f6c" />
+                <ChevronDown data-testid="ChevronDown__8e9f6c_1" />
               ) : (
-                <ChevronUp data-testid="ChevronUp__8e9f6c" />
+                <ChevronUp data-testid="ChevronUp__8e9f6c_1" />
               )}
             </IconButton>
           )}
-          <IconButton className="bg-transparent" data-testid="IconButton__8e9f6c">
-            <ChevronUpRight data-testid="ChevronUpRight__8e9f6c" />
+          <IconButton className="bg-transparent" data-testid="IconButton__8e9f6c_2">
+            <ChevronUpRight data-testid="ChevronUpRight__8e9f6c_1" />
           </IconButton>
           <IconButton
             onClick={onClose}
             className="bg-transparent ml-1 text-red-500 hover:text-red-700"
-            data-testid="IconButton__8e9f6c">
-            <XCircle data-testid="XCircle__8e9f6c" />
+            data-testid="IconButton__8e9f6c_3">
+            <XCircle data-testid="XCircle__8e9f6c_1" />
           </IconButton>
         </div>
       </div>
