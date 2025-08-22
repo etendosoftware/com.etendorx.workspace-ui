@@ -128,7 +128,7 @@ describe("API: /api/erp base forward", () => {
       
       await POST(req as any);
       
-      const [dest, init] = (global as any).fetch.mock.calls[0];
+      const [, init] = (global as any).fetch.mock.calls[0];
       expect(init.headers["Cookie"]).toBe("JSESSIONID=test-session-id; other=cookie");
     });
 

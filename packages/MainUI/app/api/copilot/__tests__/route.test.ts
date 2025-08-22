@@ -7,10 +7,10 @@ import type { NextRequest } from "next/server";
 
 jest.mock("next/server", () => ({
   NextResponse: {
-    json: (body: unknown, init?: { status?: number }) => ({ 
-      ok: true, 
-      status: init?.status ?? 200, 
-      body 
+    json: (body: unknown, init?: { status?: number }) => ({
+      ok: true,
+      status: init?.status ?? 200,
+      body,
     }),
   },
 }));
@@ -51,7 +51,7 @@ describe("API: /api/copilot authentication", () => {
       status: 200,
       headers: { get: () => "text/event-stream" },
       text: async () => "data: test response",
-    } as Response);
+    } as unknown as Response);
   });
 
   afterAll(() => {
@@ -75,8 +75,8 @@ describe("API: /api/copilot authentication", () => {
   it("returns 401 when no Bearer token or Basic auth provided", async () => {
     const req = makeRequest(["aquestion"]);
     const params = Promise.resolve({ path: ["aquestion"] });
-    
-    const result = await GET(req as NextRequest, { params }) as MockResponse;
+
+    const result = (await GET(req as NextRequest, { params })) as MockResponse;
     expect(result.status).toBe(401);
     expect(result.body.error).toBe("Unauthorized - Missing Bearer token or Basic auth");
   });
@@ -91,9 +91,9 @@ describe("API: /api/copilot authentication", () => {
       url: "http://localhost:3000/api/copilot/assistants",
     };
     const params = Promise.resolve({ path: ["assistants"] });
-    
+
     await GET(req as NextRequest, { params });
-    
+
     const [dest, init] = (global.fetch as jest.MockedFunction<typeof fetch>).mock.calls[0];
     expect(String(dest)).toBe("http://erp.example/etendo/copilot/assistants");
     expect(init?.method).toBe("GET");
@@ -105,9 +105,9 @@ describe("API: /api/copilot authentication", () => {
   it("forwards request with proper authentication when token provided", async () => {
     const req = makeRequest(["aquestion"], "token-with-session", "?question=test&app_id=123");
     const params = Promise.resolve({ path: ["aquestion"] });
-    
+
     await GET(req as NextRequest, { params });
-    
+
     const [dest, init] = (global.fetch as jest.MockedFunction<typeof fetch>).mock.calls[0];
     expect(String(dest)).toBe("http://erp.example/etendo/copilot/aquestion?question=test&app_id=123");
     expect(init?.method).toBe("GET");
@@ -118,11 +118,13 @@ describe("API: /api/copilot authentication", () => {
   it("forwards query parameters correctly", async () => {
     const req = makeRequest(["aquestion"], "valid-token", "?question=Hola&app_id=B3BFC46BF0AC4586B983B62109E87EAA");
     const params = Promise.resolve({ path: ["aquestion"] });
-    
+
     await GET(req as NextRequest, { params });
-    
+
     const [dest] = (global.fetch as jest.MockedFunction<typeof fetch>).mock.calls[0];
-    expect(String(dest)).toBe("http://erp.example/etendo/copilot/aquestion?question=Hola&app_id=B3BFC46BF0AC4586B983B62109E87EAA");
+    expect(String(dest)).toBe(
+      "http://erp.example/etendo/copilot/aquestion?question=Hola&app_id=B3BFC46BF0AC4586B983B62109E87EAA"
+    );
   });
 
   it("handles ERP server errors gracefully", async () => {
@@ -135,8 +137,8 @@ describe("API: /api/copilot authentication", () => {
 
     const req = makeRequest(["aquestion"], "valid-token");
     const params = Promise.resolve({ path: ["aquestion"] });
-    
-    const result = await GET(req as NextRequest, { params }) as MockResponse;
+
+    const result = (await GET(req as NextRequest, { params })) as MockResponse;
     expect(result.status).toBe(400);
     expect(result.body.error).toBe("Invalid request parameters");
   });
