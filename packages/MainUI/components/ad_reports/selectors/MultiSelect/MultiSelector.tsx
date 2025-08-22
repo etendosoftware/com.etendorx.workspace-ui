@@ -44,8 +44,8 @@ const SelectorTable: React.FC<SelectorTableProps & { selectedIds: string[] }> = 
       // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
       state={{ rowSelection: selectedIds.reduce((acc, id) => ({ ...acc, [id]: true }), {}) }}
       renderTopToolbarCustomActions={() => (
-        <Box sx={sx.titleContainer}>
-          <Typography>{title}</Typography>
+        <Box sx={sx.titleContainer} data-testid="Box__c5d3b2">
+          <Typography data-testid="Typography__c5d3b2">{title}</Typography>
         </Box>
       )}
       muiTableBodyRowProps={({ row }) => ({
@@ -65,6 +65,7 @@ const SelectorTable: React.FC<SelectorTableProps & { selectedIds: string[] }> = 
         sx: sx.tableBodyCell,
       }}
       initialState={TABLE_INITIAL_STATE}
+      data-testid="MaterialReactTable__c5d3b2"
     />
   );
 };
@@ -145,29 +146,37 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   if (loading) return <div>Loading...</div>;
 
   return (
-    <Box sx={sx.multiSelectContainer}>
-      <Box sx={sx.contentContainer}>
-        <Typography>{title}</Typography>
-        <SelectedItemsContainer items={selectedOptions} onRemove={handleRemoveItem} />
+    <Box sx={sx.multiSelectContainer} data-testid="Box__c5d3b2">
+      <Box sx={sx.contentContainer} data-testid="Box__c5d3b2">
+        <Typography data-testid="Typography__c5d3b2">{title}</Typography>
+        <SelectedItemsContainer
+          items={selectedOptions}
+          onRemove={handleRemoveItem}
+          data-testid="SelectedItemsContainer__c5d3b2"
+        />
       </Box>
       <SearchBar
         readOnly={readOnly}
         onClear={handleClear}
         onOpen={() => setOpen(true)}
         hasItems={selectedOptions.length > 0}
+        data-testid="SearchBar__c5d3b2"
       />
-      <Dialog open={open} onClose={() => setOpen(false)} {...DIALOG_PROPS}>
-        <DialogContent sx={sx.dialogContent}>
+      <Dialog open={open} onClose={() => setOpen(false)} {...DIALOG_PROPS} data-testid="Dialog__c5d3b2">
+        <DialogContent sx={sx.dialogContent} data-testid="DialogContent__c5d3b2">
           <SelectorTable
             data={tableData}
             onRowClick={handleRowClick}
             columns={columns}
             title={title || ""}
             selectedIds={selectedIds}
+            data-testid="SelectorTable__c5d3b2"
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Close</Button>
+        <DialogActions data-testid="DialogActions__c5d3b2">
+          <Button onClick={() => setOpen(false)} data-testid="Button__c5d3b2">
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

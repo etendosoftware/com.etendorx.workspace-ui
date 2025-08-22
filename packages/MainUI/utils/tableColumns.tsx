@@ -66,7 +66,14 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
 
               const config = v[column.hqlName] ? yesNoConfig.Y : yesNoConfig.N;
 
-              return <Tag type={config.type} icon={config.icon} label={v[column.hqlName] ? yesText : noText} />;
+              return (
+                <Tag
+                  type={config.type}
+                  icon={config.icon}
+                  label={v[column.hqlName] ? yesText : noText}
+                  data-testid="Tag__2b5175"
+                />
+              );
             }
 
             if (reference === FieldType.LIST && column.refList && Array.isArray(column.refList)) {
@@ -81,7 +88,7 @@ export const parseColumns = (columns?: Field[], t?: TranslateFunction): Column[]
               if (refItem) {
                 const config = statusConfig[refItem.value as string] || DEFAULT_STATUS_CONFIG;
 
-                return <Tag type={config.type} icon={config.icon} label={refItem.label} />;
+                return <Tag type={config.type} icon={config.icon} label={refItem.label} data-testid="Tag__2b5175" />;
               }
             }
             const columnHqlName = column.hqlName;

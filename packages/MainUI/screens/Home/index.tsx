@@ -30,35 +30,36 @@ export default function Home() {
   const dashboardWidgets = [widgets[1], widgets[2], widgets[4], widgets[5], widgets[7], widgets[8]];
 
   return (
-    <Container maxWidth="lg" sx={styles.container}>
-      <Box sx={styles.headerContainer}>
-        <Typography variant="h4" component="h1" sx={styles.pageTitle} gutterBottom>
+    <Container maxWidth="lg" sx={styles.container} data-testid="Container__3ef224">
+      <Box sx={styles.headerContainer} data-testid="Box__3ef224">
+        <Typography variant="h4" component="h1" sx={styles.pageTitle} gutterBottom data-testid="Typography__3ef224">
           {t("common.etendo")} {t("breadcrumb.home")}
         </Typography>
-        <Typography variant="subtitle1" sx={styles.pageSubtitle}>
+        <Typography variant="subtitle1" sx={styles.pageSubtitle} data-testid="Typography__3ef224">
           {t("table.content.currentTitle")}
         </Typography>
       </Box>
-
-      <Grid container spacing={3}>
+      <Grid container spacing={3} data-testid="Grid__3ef224">
         {dashboardWidgets.map((widget) => (
-          <Grid item key={widget.id} xs={12} md={widget.size === "full" ? 12 : 6}>
+          <Grid item key={widget.id} xs={12} md={widget.size === "full" ? 12 : 6} data-testid="Grid__3ef224">
             <Box
               sx={{
                 ...styles.widgetContainer,
                 bgcolor: widget.bgcolor,
                 color: widget.color,
-              }}>
-              <Box sx={styles.widgetHeader}>
-                <Box sx={styles.widgetTitleContainer}>
+              }}
+              data-testid="Box__3ef224">
+              <Box sx={styles.widgetHeader} data-testid="Box__3ef224">
+                <Box sx={styles.widgetTitleContainer} data-testid="Box__3ef224">
                   <Box
                     sx={{
                       ...styles.iconContainer,
                       bgcolor: widget.iconBgColor,
-                    }}>
+                    }}
+                    data-testid="Box__3ef224">
                     {widget.icon}
                   </Box>
-                  <Typography variant="h6" sx={styles.widgetTitle}>
+                  <Typography variant="h6" sx={styles.widgetTitle} data-testid="Typography__3ef224">
                     {widget.title}
                   </Typography>
                 </Box>
@@ -75,11 +76,14 @@ export default function Home() {
                     },
                   }}
                   onClick={widget.iconButtonAction}
-                  title={widget.tooltip || t("table.tooltips.details")}>
+                  title={widget.tooltip || t("table.tooltips.details")}
+                  data-testid="Box__3ef224">
                   {widget.icon}
                 </Box>
               </Box>
-              <Box sx={styles.widgetContent}>{widget.children}</Box>
+              <Box sx={styles.widgetContent} data-testid="Box__3ef224">
+                {widget.children}
+              </Box>
             </Box>
           </Grid>
         ))}

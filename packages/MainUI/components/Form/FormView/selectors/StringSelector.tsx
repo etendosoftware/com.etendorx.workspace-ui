@@ -25,5 +25,7 @@ export const StringSelector = (props: { field: Field } & React.ComponentProps<ty
   const rawLen = Number(props.field?.column?.length);
   const maxLength = Number.isFinite(rawLen) && rawLen > 0 ? rawLen : undefined;
 
-  return <TextInput {...props} {...register(props.field.hqlName)} maxLength={maxLength} />;
+  return (
+    <TextInput {...props} {...register(props.field.hqlName)} maxLength={maxLength} data-testid="TextInput__1e890e" />
+  );
 };

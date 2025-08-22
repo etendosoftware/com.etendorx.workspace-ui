@@ -35,6 +35,7 @@ export default function GlobalLoading() {
           color: "#1976d2",
         },
       }}
+      data-testid="Loading__2eddba"
     />
   );
 }

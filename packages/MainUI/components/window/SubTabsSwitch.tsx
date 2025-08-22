@@ -15,6 +15,7 @@
  *************************************************************************
  */
 
+// @data-testid-ignore
 "use client";
 
 import type { TabsSwitchProps } from "@/components/window/types";
@@ -45,13 +46,15 @@ export const SubTabsSwitch = ({
             onClick={onClick}
             active={(activeTabId ?? current.id) === tab.id}
             onDoubleClick={onDoubleClick}
+            data-testid={`TabButton__${tab.id ?? "a89627"}`}
           />
         ))}
       </div>
-      <IconButton className="bg-transparent">
+      <IconButton className="bg-transparent" data-testid={`IconButton__${current?.id ?? activeTabId ?? "a89627"}`}>
         <ChevronDown
           onClick={collapsed ? () => onClick(current) : onClose}
           className={`transition-transform duration-300 ease-in-out ${collapsed ? "rotate-180" : "rotate-0"}`}
+          data-testid={`ChevronDown__${current?.id ?? activeTabId ?? "a89627"}`}
         />
       </IconButton>
     </div>

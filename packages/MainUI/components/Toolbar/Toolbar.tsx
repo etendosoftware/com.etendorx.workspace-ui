@@ -230,7 +230,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
 
   return (
     <>
-      <TopToolbar {...toolbarConfig} />
+      <TopToolbar {...toolbarConfig} data-testid="TopToolbar__a2dd07" />
       {activeModal && (
         <StatusModal
           open={activeModal.isOpen}
@@ -238,6 +238,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           statusType="info"
           saveLabel="Cerrar"
           onClose={handleCloseStatusModal}
+          data-testid="StatusModal__a2dd07"
         />
       )}
       {statusModal.open && (
@@ -249,6 +250,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           saveLabel={statusModal.saveLabel || t("common.close")}
           secondaryButtonLabel={statusModal.secondaryButtonLabel}
           onClose={hideStatusModal}
+          data-testid="StatusModal__a2dd07"
         />
       )}
       {confirmAction && (
@@ -259,6 +261,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           onCancel={handleCancelConfirm}
           saveLabel={confirmAction.saveLabel || t("common.confirm")}
           secondaryButtonLabel={confirmAction.secondaryButtonLabel || t("common.cancel")}
+          data-testid="ConfirmModal__a2dd07"
         />
       )}
       {processButtons.length > 0 && (
@@ -268,6 +271,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           processButtons={processButtons}
           onProcessClick={handleProcessMenuClick}
           selectedRecord={selectedRecord}
+          data-testid="ProcessMenu__a2dd07"
         />
       )}
       {searchOpen && !isFormView && (
@@ -278,6 +282,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           onClose={handleCloseSearch}
           placeholder={t("table.placeholders.search")}
           autoCompleteTexts={EMPTY_ARRAY}
+          data-testid="SearchPortal__a2dd07"
         />
       )}
       <ProcessIframeModal
@@ -287,6 +292,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         title={selectedProcessActionButton?.name}
         onProcessSuccess={handleProcessSuccess}
         tabId={tab.id}
+        data-testid="ProcessIframeModal__a2dd07"
       />
       <ProcessDefinitionModal
         open={showProcessDefinitionModal}
@@ -294,6 +300,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
         button={selectedProcessDefinitionButton}
         onSuccess={handleCompleteRefresh}
         onError={handleCompleteRefresh}
+        data-testid="ProcessDefinitionModal__a2dd07"
       />
     </>
   );

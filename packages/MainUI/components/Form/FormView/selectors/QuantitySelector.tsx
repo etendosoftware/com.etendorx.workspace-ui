@@ -36,8 +36,9 @@ const EndAdormentQuantity = () => {
             input.stepUp();
             input.dispatchEvent(new Event("input", { bubbles: true }));
           }
-        }}>
-        <AddIcon fontSize="small" />
+        }}
+        data-testid="IconButton__ed9a77">
+        <AddIcon fontSize="small" data-testid="AddIcon__ed9a77" />
       </IconButton>
       <IconButton
         className="w-6 rounded-0 hover:bg-[rgba(0,0,0,0.04)] hover:text-[rgba(0,0,0,0.4)]"
@@ -49,8 +50,9 @@ const EndAdormentQuantity = () => {
             input.stepDown();
             input.dispatchEvent(new Event("input", { bubbles: true }));
           }
-        }}>
-        <RemoveIcon fontSize="small" />
+        }}
+        data-testid="IconButton__ed9a77">
+        <RemoveIcon fontSize="small" data-testid="RemoveIcon__ed9a77" />
       </IconButton>
     </div>
   );
@@ -141,13 +143,16 @@ const QuantitySelector: React.FC<QuantityProps> = memo(
         onBlur={handleBlur}
         disabled={readOnly}
         name={name}
-        endAdornment={DEFAULT_TYPE === "decimal" ? undefined : <EndAdormentQuantity />}
+        endAdornment={
+          DEFAULT_TYPE === "decimal" ? undefined : <EndAdormentQuantity data-testid="EndAdormentQuantity__ed9a77" />
+        }
         errorText={error ? errorMessage : " "}
         role="spinbutton"
         aria-readonly={readOnly}
         aria-disabled={readOnly}
         {...(typeof minValue !== "undefined" ? { "aria-valuemin": minValue } : {})}
         {...(typeof maxValue !== "undefined" ? { "aria-valuemax": maxValue } : {})}
+        data-testid="TextInput__ed9a77"
       />
     );
   }

@@ -181,7 +181,11 @@ export const useProcessDefaultsErrorHandler = (processId?: string) => {
     handleError,
     ErrorBoundary: React.useCallback(
       ({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) => (
-        <ProcessDefaultsErrorBoundary processId={processId} onError={handleError} fallback={fallback}>
+        <ProcessDefaultsErrorBoundary
+          processId={processId}
+          onError={handleError}
+          fallback={fallback}
+          data-testid="ProcessDefaultsErrorBoundary__967814">
           {children}
         </ProcessDefaultsErrorBoundary>
       ),

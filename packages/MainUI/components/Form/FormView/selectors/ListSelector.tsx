@@ -32,5 +32,7 @@ export const ListSelector = ({ field, isReadOnly }: { field: Field; isReadOnly: 
     return [];
   }, [field.refList]);
 
-  return <Select name={field.hqlName} options={options} isReadOnly={isReadOnly} field={field} />;
+  return (
+    <Select name={field.hqlName} options={options} isReadOnly={isReadOnly} field={field} data-testid="Select__2483fb" />
+  );
 };

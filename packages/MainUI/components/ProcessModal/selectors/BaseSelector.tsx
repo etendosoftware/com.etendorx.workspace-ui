@@ -49,10 +49,10 @@ const BaseSelector = ({ parameter }: { parameter: ProcessParameter }) => {
             *
           </span>
         )}
-        <Label htmlFor={parameter.dBColumnName} name={parameter.name} />
+        <Label htmlFor={parameter.dBColumnName} name={parameter.name} data-testid="Label__6e9c1c" />
       </div>
       <div className="w-full pb-8">
-        <GenericSelector parameter={parameter} readOnly={isReadOnly} />
+        <GenericSelector parameter={parameter} readOnly={isReadOnly} data-testid="GenericSelector__6e9c1c" />
       </div>
     </div>
   );

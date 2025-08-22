@@ -23,11 +23,11 @@ import GlobalLoading from "./Layout/GlobalLoading";
 function LayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex w-full h-full relative overflow-hidden">
-      <GlobalLoading />
-      <Sidebar />
+      <GlobalLoading data-testid="GlobalLoading__519d5c" />
+      <Sidebar data-testid="Sidebar__519d5c" />
       <div className="flex flex-1 flex-col max-w-auto max-h-auto overflow-hidden">
         <div className="w-full h-14 min-h-14 p-1">
-          <Navigation />
+          <Navigation data-testid="Navigation__519d5c" />
         </div>
         <div className="flex flex-1 max-h-auto max-w-auto overflow-hidden">{children}</div>
       </div>
@@ -36,5 +36,5 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <LayoutContent>{children}</LayoutContent>;
+  return <LayoutContent data-testid="LayoutContent__519d5c">{children}</LayoutContent>;
 }

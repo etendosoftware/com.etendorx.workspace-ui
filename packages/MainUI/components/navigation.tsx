@@ -179,7 +179,7 @@ const Navigation: React.FC = () => {
 
   return (
     <>
-      <Nav title={t("common.notImplemented")}>
+      <Nav title={t("common.notImplemented")} data-testid="Nav__120cc9">
         <Waterfall
           menuItems={menuItems}
           backButtonText={t("modal.secondaryButtonLabel")}
@@ -189,18 +189,22 @@ const Navigation: React.FC = () => {
           buttonText={t("navigation.waterfall.buttons")}
           customizeText={t("navigation.waterfall.customize")}
           items={item}
-          icon={<AddIcon />}
+          icon={<AddIcon data-testid="AddIcon__120cc9" />}
           setItems={() => {}}
+          data-testid="Waterfall__120cc9"
         />
-        <ConfigurationSection />
-        <CopilotButton onClick={handleCopilotOpen} tooltip="Copilot" />
-        <NotificationButton notifications={NOTIFICATIONS} icon={<NotificationIcon />}>
+        <ConfigurationSection data-testid="ConfigurationSection__120cc9" />
+        <CopilotButton onClick={handleCopilotOpen} tooltip="Copilot" data-testid="CopilotButton__120cc9" />
+        <NotificationButton
+          notifications={NOTIFICATIONS}
+          icon={<NotificationIcon data-testid="NotificationIcon__120cc9" />}
+          data-testid="NotificationButton__120cc9">
           <NotificationModal
             notifications={NOTIFICATIONS}
             anchorEl={anchorEl}
             onClose={handleClose}
             title={{
-              icon: <NotificationIcon fill="#2E365C" />,
+              icon: <NotificationIcon fill="#2E365C" data-testid="NotificationIcon__120cc9" />,
               label: t("navigation.notificationModal.title"),
             }}
             linkTitle={{
@@ -211,10 +215,11 @@ const Navigation: React.FC = () => {
             emptyStateMessage={t("navigation.notificationModal.emptyStateMessage")}
             emptyStateDescription={t("navigation.notificationModal.emptyStateDescription")}
             actionButtonLabel={t("navigation.notificationModal.actionButtonLabel")}
+            data-testid="NotificationModal__120cc9"
           />
         </NotificationButton>
         <ProfileModal
-          icon={<PersonIcon />}
+          icon={<PersonIcon data-testid="PersonIcon__120cc9" />}
           sections={sections}
           section={""}
           translations={{
@@ -237,6 +242,7 @@ const Navigation: React.FC = () => {
           userName={profile.name}
           userEmail={profile.email}
           userPhotoUrl={profile.image}
+          data-testid="ProfileModal__120cc9"
         />
       </Nav>
       <CopilotPopup
@@ -281,6 +287,7 @@ const Navigation: React.FC = () => {
             typing: t("copilot.messageList.typing"),
           },
         }}
+        data-testid="CopilotPopup__120cc9"
       />
     </>
   );

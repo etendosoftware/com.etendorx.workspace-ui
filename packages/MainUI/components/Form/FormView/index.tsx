@@ -40,9 +40,9 @@ import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import { useTabContext } from "@/contexts/tab";
 
 const iconMap: Record<string, React.ReactElement> = {
-  "Main Section": <FileIcon />,
-  "More Information": <InfoIcon />,
-  Dimensions: <FolderIcon />,
+  "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
+  "More Information": <InfoIcon data-testid="InfoIcon__1a0853" />,
+  Dimensions: <FolderIcon data-testid="FolderIcon__1a0853" />,
 };
 
 const processFormData = (data: Record<string, EntityValue>): Record<string, EntityValue> => {
@@ -84,7 +84,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const initialState = useFormInitialState(formInitialization) || undefined;
 
   const defaultIcon = useMemo(
-    () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
+    () => <Info fill={theme.palette.baselineColor.neutral[80]} data-testid="Info__1a0853" />,
     [theme.palette.baselineColor.neutral]
   );
 

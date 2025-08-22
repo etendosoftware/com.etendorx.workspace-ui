@@ -92,7 +92,7 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
   selectedRecord,
 }) => {
   return (
-    <Menu anchorEl={anchorEl} onClose={onClose} className="rounded-xl">
+    <Menu anchorEl={anchorEl} onClose={onClose} className="rounded-xl" data-testid="Menu__541926">
       <div className="rounded-2xl px-2 py-4">
         {processButtons.map((button: ProcessButton, index: number) =>
           isProcessActionButton(button) ? (
@@ -101,6 +101,7 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
               button={button}
               onProcessClick={onProcessClick}
               disabled={!selectedRecord}
+              data-testid="ProcessMenuItem__541926"
             />
           ) : (
             <ProcessDefinitionMenuItem
@@ -108,6 +109,7 @@ const ProcessMenu: React.FC<ProcessMenuProps> = ({
               button={button}
               onProcessClick={onProcessClick}
               disabled={!selectedRecord}
+              data-testid="ProcessDefinitionMenuItem__541926"
             />
           )
         )}

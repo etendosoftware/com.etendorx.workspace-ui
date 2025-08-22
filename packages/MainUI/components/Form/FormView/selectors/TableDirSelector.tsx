@@ -35,6 +35,7 @@ export const TableDirSelector = ({ field, isReadOnly }: { field: Field; isReadOn
       onLoadMore={loadMore}
       loading={loading}
       hasMore={hasMore}
+      data-testid="Select__2e8a5b"
     />
   );
 };

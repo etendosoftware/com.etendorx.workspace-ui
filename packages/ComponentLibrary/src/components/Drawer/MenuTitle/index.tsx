@@ -15,6 +15,7 @@
  *************************************************************************
  */
 
+// @data-testid-ignore
 "use client";
 import React from "react";
 import ChevronDown from "../../../assets/icons/chevron-down.svg";
@@ -40,6 +41,7 @@ export const MenuTitle: React.FC<MenuTitleProps> = React.memo(
 
     return (
       <button
+        data-testid={`MenuTitle__${item.id ?? (item.name ? item.name.replace(/\s+/g, "-").toLowerCase() : "menu-title")}`}
         type="button"
         onClick={onClick}
         className={`${open && "hover:[&_img]:filter-[brightness(0)_saturate(100%)_invert(18%)_sepia(40%)_saturate(7101%)_hue-rotate(215deg)_brightness(91%)_contrast(102%)]"}

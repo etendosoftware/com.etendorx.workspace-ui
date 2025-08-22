@@ -38,25 +38,29 @@ function DynamicReport<T extends FieldValues>({ metadata, onSubmit }: DynamicRep
   };
 
   return (
-    <FormProvider {...methods}>
-      <Paper sx={{ p: 2 }}>
+    <FormProvider {...methods} data-testid="FormProvider__390fd1">
+      <Paper sx={{ p: 2 }} data-testid="Paper__390fd1">
         {metadata.sections.map((section) => (
-          <Box key={section.id} sx={{ mb: 4 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
+          <Box key={section.id} sx={{ mb: 4 }} data-testid="Box__390fd1">
+            <Typography variant="h6" sx={{ mb: 2 }} data-testid="Typography__390fd1">
               {section.title}
             </Typography>
-            <Grid container spacing={2}>
+            <Grid container spacing={2} data-testid="Grid__390fd1">
               {section.fields.map((field: ReportField) => (
-                <Grid item xs={8} md={4} key={field.id}>
-                  <DynamicField field={field} />
+                <Grid item xs={8} md={4} key={field.id} data-testid="Grid__390fd1">
+                  <DynamicField field={field} data-testid="DynamicField__390fd1" />
                 </Grid>
               ))}
             </Grid>
           </Box>
         ))}
-        <Box sx={{ mt: 4, display: "flex", justifyContent: "flex-end", gap: 2 }}>
+        <Box sx={{ mt: 4, display: "flex", justifyContent: "flex-end", gap: 2 }} data-testid="Box__390fd1">
           {metadata.actions.map((action) => (
-            <Button key={action.id} variant="contained" onClick={() => handleSubmit(action.format)}>
+            <Button
+              key={action.id}
+              variant="contained"
+              onClick={() => handleSubmit(action.format)}
+              data-testid="Button__390fd1">
               {action.name}
             </Button>
           ))}

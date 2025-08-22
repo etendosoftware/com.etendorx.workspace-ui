@@ -50,6 +50,7 @@ const RadioSelector = ({ parameter }: { parameter: ProcessParameter }) => {
         columns={parameter.refList.length <= 2 ? (parameter.refList.length as 1 | 2) : 3}
         name={parameter.dBColumnName}
         className="grid-flow-col"
+        data-testid="RadioGrid__e80360"
       />
       <input
         type="hidden"

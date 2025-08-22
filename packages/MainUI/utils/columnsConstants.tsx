@@ -56,17 +56,17 @@ export const statusConfig: Record<string, { type: TagType; icon?: React.ReactEle
 
 export const DEFAULT_STATUS_CONFIG = {
   type: "draft" as TagType,
-  icon: <InfoIcon fill={defaultColor} />,
+  icon: <InfoIcon fill={defaultColor} data-testid="InfoIcon__f961ca" />,
 };
 
 export const yesNoConfig = {
   Y: {
     type: "success" as TagType,
-    icon: <CheckIcon fill={defaultColor} />,
+    icon: <CheckIcon fill={defaultColor} data-testid="CheckIcon__f961ca" />,
   },
   N: {
     type: "error" as TagType,
-    icon: <ErrorIcon fill={defaultColor} />,
+    icon: <ErrorIcon fill={defaultColor} data-testid="ErrorIcon__f961ca" />,
   },
 };
 

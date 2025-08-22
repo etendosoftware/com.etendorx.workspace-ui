@@ -37,18 +37,18 @@ const DeprecatedFeatureModal = ({ isOpen, onClose, title, message }: ProcessDepr
       <div className="relative bg-white flex flex-col w-full max-w-md border-4 border-gray-300 rounded-xl">
         <div className="flex justify-between items-center p-4 border-b border-gray-200 rounded-t-xl bg-[var(--color-baseline-10)]">
           <h2 className="text-lg font-semibold">{title || t("common.processTitle")}</h2>
-          <IconButton onClick={onClose}>
-            <CloseIcon />
+          <IconButton onClick={onClose} data-testid="IconButton__d21da7">
+            <CloseIcon data-testid="CloseIcon__d21da7" />
           </IconButton>
         </div>
         <div className="p-6">
           <div className="flex items-center justify-center mb-4">
-            <WarningIcon fill="red" width="2rem" height="2rem" />
+            <WarningIcon fill="red" width="2rem" height="2rem" data-testid="WarningIcon__d21da7" />
           </div>
           <p className="text-center text-lg font-medium mb-4">{message || t("common.notImplemented")}</p>
         </div>
         <div className="p-4 border-t border-gray-200 flex justify-center rounded-b-xl bg-[var(--color-baseline-10)]">
-          <Button onClick={handleClose} variant="contained">
+          <Button onClick={handleClose} variant="contained" data-testid="Button__d21da7">
             {t("common.close")}
           </Button>
         </div>
