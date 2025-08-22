@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
+import { getCombinedErpCookieHeader } from "@/app/api/_utils/forwardConfig";
 
 // Cached function for ERP requests to the base URL (no slug)
 const getCachedErpData = unstable_cache(
@@ -45,23 +46,53 @@ async function handleERPBaseRequest(request: NextRequest, method: string) {
     // Build ERP URL with query string for GET requests
     const url = new URL(request.url);
     const params = url.searchParams;
+    const pathname = url.pathname;
     
-    // Check if this is a process execution request
+    // Check if this is a kernel servlet request (process execution or defaults)
+    const isKernelRequest = pathname.includes('/meta/forward/org.openbravo.client.kernel');
     const processId = params.get("processId");
+    const windowId = params.get("windowId");
+    const reportId = params.get("reportId");
+    const actionHandler = params.get("_action");
     let erpUrl: string;
     
-    if (processId && method === "POST") {
-      // For process execution, use the kernel forward endpoint with appropriate ActionHandler
+    
+    if (isKernelRequest || (processId && method === "POST")) {
+      // For process execution, use the kernel endpoint to match Classic Etendo pattern
       const baseUrl = process.env.ETENDO_CLASSIC_URL?.endsWith("/") 
         ? process.env.ETENDO_CLASSIC_URL.slice(0, -1) 
         : process.env.ETENDO_CLASSIC_URL;
       
-      // Build kernel URL with required query parameters
+      // Build kernel URL with required query parameters to match Classic pattern
       const kernelParams = new URLSearchParams();
-      kernelParams.set("processId", processId);
-      kernelParams.set("_action", "org.openbravo.client.application.process.ExecuteProcessActionHandler");
+      if (processId) {
+        kernelParams.set("processId", processId);
+      }
       
-      erpUrl = `${baseUrl}/meta/forward/org.openbravo.client.kernel?${kernelParams.toString()}`;
+      if (windowId) {
+        kernelParams.set("windowId", windowId);
+      }
+      
+      if (reportId !== null && reportId !== undefined) {
+        kernelParams.set("reportId", reportId);
+      }
+      
+      // Use the provided action handler, with proper fallback logic
+      let action: string;
+      if (actionHandler) {
+        action = actionHandler;
+      } else if (isKernelRequest) {
+        // For kernel requests without explicit action, use DefaultsProcessActionHandler
+        action = "org.openbravo.client.application.process.DefaultsProcessActionHandler";
+      } else {
+        // For direct process execution, use ExecuteProcessActionHandler
+        action = "org.openbravo.client.application.process.ExecuteProcessActionHandler";
+      }
+      kernelParams.set("_action", action);
+      
+      // Use direct kernel endpoint to match Classic Etendo behavior
+      erpUrl = `${baseUrl}/org.openbravo.client.kernel?${kernelParams.toString()}`;
+      
     } else {
       // Default: base ERP URL
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}`;
@@ -90,14 +121,29 @@ async function handleERPBaseRequest(request: NextRequest, method: string) {
     // Mutations: direct fetch (no cache). Reads (GET): use cache
     const isMutation = method !== "GET";
 
-    let data;
+    let data: any;
     if (isMutation) {
       const headers: Record<string, string> = {
-        Authorization: `Bearer ${userToken}`,
-        Accept: "application/json",
+        Accept: "*/*",
+        "Accept-Language": "en-US,en;q=0.9",
+        Connection: "keep-alive",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
       };
-      if (requestBody) headers["Content-Type"] = contentType;
-
+      
+      if (requestBody) {
+        headers["Content-Type"] = "application/json;charset=UTF-8";
+      }
+      
+      // Use the combined ERP cookie header that includes JSESSIONID
+      const combinedCookie = getCombinedErpCookieHeader(request, userToken);
+      
+      if (combinedCookie) {
+        headers["Cookie"] = combinedCookie;
+      }
+      
       const response = await fetch(erpUrl, {
         method,
         headers,
@@ -131,7 +177,7 @@ async function handleERPBaseRequest(request: NextRequest, method: string) {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error(`API Route /api/erp Error:`, error);
+    console.error("API Route /api/erp Error:", error);
     return NextResponse.json({ error: "Failed to fetch ERP data" }, { status: 500 });
   }
 }

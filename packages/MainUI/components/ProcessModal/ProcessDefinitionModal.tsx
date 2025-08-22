@@ -207,11 +207,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             },
           },
           _entityName: entityName,
-          _action: javaClassName,
           windowId: tab.window,
         };
 
-        const res = await executeProcess(processId, payload, token || "");
+        const res = await executeProcess(
+          processId, 
+          payload, 
+          token || "", 
+          tab.window?.toString(), 
+          undefined, 
+          javaClassName
+        );
         setResult(res);
         if (res.success) onSuccess?.();
       } catch (error) {
@@ -233,15 +239,23 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     startTransition(async () => {
       try {
         const payload = {
+          recordIds: record?.id ? [record.id] : [],
           _buttonValue: "DONE",
+          _params: {},
           _entityName: tab.entityName,
           ...recordValues,
           ...form.getValues(),
-          _action: javaClassName,
           windowId: tab.window,
         };
 
-        const res = await executeProcess(processId, payload, token || "");
+        const res = await executeProcess(
+          processId, 
+          payload, 
+          token || "", 
+          tab.window?.toString(), 
+          undefined, 
+          javaClassName
+        );
         setResult(res);
         if (res.success) onSuccess?.();
       } catch (error) {
@@ -249,7 +263,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
     });
-  }, [tab, processId, javaClassName, recordValues, form, onSuccess, startTransition, token]);
+  }, [tab, processId, javaClassName, recordValues, form, onSuccess, startTransition, token, record?.id]);
 
   /**
    * Main process execution handler - routes to appropriate execution method

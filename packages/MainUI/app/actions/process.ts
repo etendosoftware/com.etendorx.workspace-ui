@@ -22,26 +22,46 @@ export interface ExecuteProcessResult<T = any> {
 export async function executeProcess(
   processId: string,
   parameters: Record<string, any>,
-  token: string
+  token: string,
+  windowId?: string,
+  reportId?: string,
+  actionHandler?: string
 ): Promise<ExecuteProcessResult> {
   try {
+
     if (!token) {
       logger.error?.("executeProcess: No authentication token provided");
       return { success: false, error: "Authentication required" };
     }
 
-    // Prefer calling our internal ERP proxy to keep concerns centralized.
-    // The proxy handles kernel forwards and query composition.
+    // Build URL with proper query parameters to match Classic Etendo behavior
     const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
-    const apiUrl = `${baseUrl}/api/erp?processId=${encodeURIComponent(processId)}`;
+    const queryParams = new URLSearchParams();
+    queryParams.set("processId", processId);
+    
+    if (windowId) {
+      queryParams.set("windowId", windowId);
+    }
+    
+    if (reportId !== undefined) {
+      queryParams.set("reportId", reportId);
+    }
+    
+    if (actionHandler) {
+      queryParams.set("_action", actionHandler);
+    }
+    
+    const apiUrl = `${baseUrl}/api/erp?${queryParams.toString()}`;
+
 
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/json;charset=UTF-8",
         "Authorization": `Bearer ${token}`,
       },
       body: JSON.stringify(parameters ?? {}),
+      credentials: "include",
     });
 
     if (!response.ok) {
