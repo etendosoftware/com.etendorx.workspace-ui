@@ -225,7 +225,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   ]);
 
   if (loading) {
-    return <ToolbarSkeleton />;
+    return <ToolbarSkeleton data-testid="ToolbarSkeleton__a2dd07" />;
   }
 
   return (

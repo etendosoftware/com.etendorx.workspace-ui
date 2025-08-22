@@ -225,11 +225,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         };
 
         const res = await executeProcess(
-          processId, 
-          payload, 
-          token || "", 
-          tab.window?.toString(), 
-          undefined, 
+          processId,
+          payload,
+          token || "",
+          tab.window?.toString(),
+          undefined,
           javaClassName
         );
         setResult(res);
@@ -263,11 +263,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         };
 
         const res = await executeProcess(
-          processId, 
-          payload, 
-          token || "", 
-          tab.window?.toString(), 
-          undefined, 
+          processId,
+          payload,
+          token || "",
+          tab.window?.toString(),
+          undefined,
           javaClassName
         );
         setResult(res);

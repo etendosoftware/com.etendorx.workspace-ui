@@ -79,14 +79,14 @@ export const useColumnFilterData = () => {
               const fieldValue = item[distinctField];
               const identifierKey = `${distinctField}$_identifier`;
               const identifier = String(item[identifierKey] || fieldValue || item._identifier || item.id);
-              
+
               return {
                 id: String(fieldValue || item.id),
                 label: identifier,
                 value: String(fieldValue || identifier), // Use the actual field value for filtering
               };
             }
-            
+
             // Regular selector/entity queries
             const identifier = String(
               item._identifier ||

@@ -60,6 +60,7 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
             value={username}
             onChange={handleUsernameChange}
             autoComplete="username"
+            data-testid="Input__602739"
           />
 
           <div className="my-2" />
@@ -74,9 +75,10 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
             value={password}
             onChange={handlePasswordChange}
             autoComplete="current-password"
+            data-testid="Input__602739"
           />
 
-          <Button type="submit" className="mt-6" size="large">
+          <Button type="submit" className="mt-6" size="large" data-testid="Button__602739">
             {t("login.buttons.submit")}
           </Button>
 
@@ -88,7 +90,13 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
             <div className="flex-grow border-t border-(--color-transparent-neutral-10)" />
           </div>
 
-          <Button disabled variant="outlined" type="submit" size="large" startIcon={<GoogleIcon />}>
+          <Button
+            disabled
+            variant="outlined"
+            type="submit"
+            size="large"
+            startIcon={<GoogleIcon data-testid="GoogleIcon__602739" />}
+            data-testid="Button__602739">
             {t("login.buttons.google")}
           </Button>
         </form>

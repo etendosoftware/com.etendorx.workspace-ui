@@ -34,7 +34,7 @@ export default function WindowTab({ title, isActive, onActivate, onClose, canClo
   const { t } = useTranslation();
 
   return (
-    <Tooltip title={title}>
+    <Tooltip title={title} data-testid="Tooltip__15c554">
       <div
         className={`
          h-9 flex gap-2 items-center justify-center p-2 cursor-pointer max-w-[220px] 
@@ -53,7 +53,7 @@ export default function WindowTab({ title, isActive, onActivate, onClose, canClo
           type="button"
           className="h-full flex items-center flex-1 truncate gap-2 bg-transparent border-none cursor-pointer"
           onClick={onActivate}>
-          <FolderIcon className="fill-black" />
+          <FolderIcon className="fill-black" data-testid="FolderIcon__15c554" />
           <span className="flex-1 truncate text-sm font-medium">{title}</span>
         </button>
         {canClose && (
