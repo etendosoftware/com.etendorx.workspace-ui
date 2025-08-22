@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react';
+import { render, fireEvent, waitFor, type RenderResult } from '@testing-library/react';
 import ProcessDefinitionModal from '../ProcessDefinitionModal';
 import { executeProcess } from '@/app/actions/process';
 
@@ -76,6 +76,34 @@ jest.mock('react-hook-form', () => ({
 
 const mockExecuteProcess = executeProcess as jest.MockedFunction<typeof executeProcess>;
 
+// Helper functions to reduce code duplication
+interface RenderModalOptions {
+  onClose?: jest.Mock;
+  onSuccess?: jest.Mock;
+}
+
+const clickExecuteButton = async (container: RenderResult): Promise<void> => {
+  const executeButton = container.getByText('common.execute');
+  fireEvent.click(executeButton);
+};
+
+const expectExecuteProcessCall = (expectedToken: string) => {
+  return expect(mockExecuteProcess).toHaveBeenCalledWith(
+    'TEST_PROCESS_ID',
+    expect.objectContaining({
+      recordIds: ['test-record'],
+      _buttonValue: 'DONE',
+      _params: {},
+      _entityName: 'TestEntity',
+      windowId: 'test-window',
+    }),
+    expectedToken,
+    'test-window',         // windowId parameter
+    undefined,             // reportId parameter  
+    'com.test.TestProcess' // actionHandler parameter
+  );
+};
+
 describe('ProcessDefinitionModal token handling', () => {
   const mockButton = {
     processDefinition: {
@@ -89,73 +117,40 @@ describe('ProcessDefinitionModal token handling', () => {
     },
   };
 
+  const renderModal = (options: RenderModalOptions = {}): RenderResult => {
+    const { onClose = jest.fn(), onSuccess = jest.fn() } = options;
+    
+    return render(
+      <ProcessDefinitionModal
+        button={mockButton}
+        open={true}
+        onClose={onClose}
+        onSuccess={onSuccess}
+      />
+    );
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockExecuteProcess.mockResolvedValue({ success: true, data: {} });
   });
 
   it('passes authentication token to executeProcess server action', async () => {
-    const { getByText } = render(
-      <ProcessDefinitionModal
-        button={mockButton as any}
-        open={true}
-        onClose={jest.fn()}
-        onSuccess={jest.fn()}
-      />
-    );
-
-    // Find and click the execute button
-    const executeButton = getByText('common.execute');
-    fireEvent.click(executeButton);
+    const container = renderModal();
+    await clickExecuteButton(container);
 
     await waitFor(() => {
-      expect(mockExecuteProcess).toHaveBeenCalledWith(
-        'TEST_PROCESS_ID',
-        expect.objectContaining({
-          recordIds: ['test-record'],
-          _buttonValue: 'DONE',
-          _params: {},
-          _entityName: 'TestEntity',
-          windowId: 'test-window',
-        }),
-        'test-auth-token-123', // This is the key assertion - token must be passed
-        'test-window',         // windowId parameter
-        undefined,             // reportId parameter  
-        'com.test.TestProcess' // actionHandler parameter
-      );
+      expectExecuteProcessCall('test-auth-token-123'); // This is the key assertion - token must be passed
     });
   });
 
-  it('handles missing token gracefully', async () => {
-    // Test that even when token is available, the component handles it correctly
-    // This test verifies the token parameter is passed through properly
-    const { getByText } = render(
-      <ProcessDefinitionModal
-        button={mockButton as any}
-        open={true}
-        onClose={jest.fn()}
-        onSuccess={jest.fn()}
-      />
-    );
-
-    const executeButton = getByText('common.execute');
-    fireEvent.click(executeButton);
+  it('handles token parameter correctly', async () => {
+    // Test that the token parameter is passed through properly
+    const container = renderModal();
+    await clickExecuteButton(container);
 
     await waitFor(() => {
-      expect(mockExecuteProcess).toHaveBeenCalledWith(
-        'TEST_PROCESS_ID',
-        expect.objectContaining({
-          recordIds: ['test-record'],
-          _buttonValue: 'DONE',
-          _params: {},
-          _entityName: 'TestEntity',
-          windowId: 'test-window',
-        }),
-        'test-auth-token-123', // Token is properly passed
-        'test-window',         // windowId parameter
-        undefined,             // reportId parameter  
-        'com.test.TestProcess' // actionHandler parameter
-      );
+      expectExecuteProcessCall('test-auth-token-123'); // Token is properly passed
     });
   });
 
@@ -163,14 +158,7 @@ describe('ProcessDefinitionModal token handling', () => {
     // This test ensures that changes to token trigger re-creation of callback functions
     // We test this by checking that the component doesn't throw dependency warnings
     expect(() => {
-      render(
-        <ProcessDefinitionModal
-          button={mockButton as any}
-          open={true}
-          onClose={jest.fn()}
-          onSuccess={jest.fn()}
-        />
-      );
+      renderModal();
     }).not.toThrow();
   });
 });
