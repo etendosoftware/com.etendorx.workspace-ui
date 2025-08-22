@@ -25,7 +25,7 @@ export const TopToolbar = ({ leftSection, centerSection, rightSection, processBu
       <ToolbarSection
         {...leftSection}
         className="bg-[var(--color-baseline-0)] rounded-4xl p-1"
-        data-testid="ToolbarSection__f0537e"
+        data-testid="ToolbarSection__f0537e_1"
       />
       <ToolbarSection
         {...centerSection}
@@ -34,12 +34,12 @@ export const TopToolbar = ({ leftSection, centerSection, rightSection, processBu
         style={{
           boxShadow: "0px 4px 10px var(--color-transparent-neutral-10)",
         }}
-        data-testid="ToolbarSection__f0537e"
+        data-testid="ToolbarSection__f0537e_2"
       />
       <ToolbarSection
         {...rightSection}
         className="bg-transparent-neutral-5 rounded-4xl p-1"
-        data-testid="ToolbarSection__f0537e"
+        data-testid="ToolbarSection__f0537e_3"
       />
     </div>
   );
