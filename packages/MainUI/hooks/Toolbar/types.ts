@@ -37,6 +37,8 @@ export interface ToolbarButtonMetadata {
   dropdownConfig?: {
     items?: Array<{ label: string; action: string }>;
   };
+  // TODO: check the implementation of active state
+  active?: boolean;
 }
 
 export interface OrganizedSections {
