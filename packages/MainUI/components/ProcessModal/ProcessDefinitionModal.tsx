@@ -79,7 +79,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const { t } = useTranslation();
   const { graph } = useSelected();
   const { tab, record } = useTabContext();
-  const { session } = useUserContext();
+  const { session, token } = useUserContext();
 
   const { onProcess, onLoad } = button.processDefinition;
   const processId = button.processDefinition.id;
@@ -207,11 +207,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             },
           },
           _entityName: entityName,
-          _action: javaClassName,
           windowId: tab.window,
         };
 
-        const res = await executeProcess(processId, payload);
+        const res = await executeProcess(
+          processId, 
+          payload, 
+          token || "", 
+          tab.window?.toString(), 
+          undefined, 
+          javaClassName
+        );
         setResult(res);
         if (res.success) onSuccess?.();
       } catch (error) {
@@ -219,7 +225,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
     });
-  }, [tab, processId, javaClassName, recordValues, gridSelection, entityName, onSuccess, startTransition]);
+  }, [tab, processId, javaClassName, recordValues, gridSelection, entityName, onSuccess, startTransition, token]);
 
   /**
    * Executes processes directly via servlet using javaClassName
@@ -233,15 +239,23 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     startTransition(async () => {
       try {
         const payload = {
+          recordIds: record?.id ? [record.id] : [],
           _buttonValue: "DONE",
+          _params: {},
           _entityName: tab.entityName,
           ...recordValues,
           ...form.getValues(),
-          _action: javaClassName,
           windowId: tab.window,
         };
 
-        const res = await executeProcess(processId, payload);
+        const res = await executeProcess(
+          processId, 
+          payload, 
+          token || "", 
+          tab.window?.toString(), 
+          undefined, 
+          javaClassName
+        );
         setResult(res);
         if (res.success) onSuccess?.();
       } catch (error) {
@@ -249,7 +263,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
     });
-  }, [tab, processId, javaClassName, recordValues, form, onSuccess, startTransition]);
+  }, [tab, processId, javaClassName, recordValues, form, onSuccess, startTransition, token, record?.id]);
 
   /**
    * Main process execution handler - routes to appropriate execution method

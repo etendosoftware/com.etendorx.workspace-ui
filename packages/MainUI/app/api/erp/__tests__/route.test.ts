@@ -13,6 +13,16 @@ jest.mock("next/server", () => {
   };
 });
 
+// Mock getCombinedErpCookieHeader
+jest.mock("@/app/api/_utils/forwardConfig", () => ({
+  getCombinedErpCookieHeader: jest.fn((request: any, userToken: string) => {
+    if (userToken === "token-with-session") {
+      return "JSESSIONID=test-session-id; other=cookie";
+    }
+    return "";
+  }),
+}));
+
 // Mock unstable_cache to directly invoke the wrapped function
 jest.mock("next/cache", () => ({
   unstable_cache:
@@ -74,7 +84,7 @@ describe("API: /api/erp base forward", () => {
     const [dest, init] = (global as any).fetch.mock.calls[0];
     expect(String(dest)).toBe("http://erp.example/etendo?foo=bar&x=1");
     expect(init.method).toBe("POST");
-    expect(init.headers["Authorization"]).toBe("Bearer token-abc");
+    expect(init.headers["Cookie"]).toBeUndefined(); // No session for token-abc
     expect(init.body).toBe('{"k":"v"}');
   });
 
@@ -94,5 +104,95 @@ describe("API: /api/erp base forward", () => {
     expect(String(dest)).toBe("http://erp.example/etendo?foo=bar&x=1");
     expect(init.method).toBe("GET");
     expect(init.headers["Authorization"]).toBe("Bearer get-token");
+  });
+
+  describe("Process execution", () => {
+    it("forwards process execution to kernel with correct parameters", async () => {
+      const url = "http://localhost:3000/api/erp?processId=EC2C48FB84274D3CB3A3F5FD49808926";
+      const req = makeRequest(url, "process-token", '{"param1":"value1","param2":"value2"}');
+      
+      await POST(req as any);
+      
+      const [dest, init] = (global as any).fetch.mock.calls[0];
+      expect(String(dest)).toBe(
+        "http://erp.example/etendo/org.openbravo.client.kernel?processId=EC2C48FB84274D3CB3A3F5FD49808926&_action=org.openbravo.client.application.process.ExecuteProcessActionHandler"
+      );
+      expect(init.method).toBe("POST");
+      expect(init.headers["Cookie"]).toBeUndefined(); // No session for process-token
+      expect(init.body).toBe('{"param1":"value1","param2":"value2"}');
+    });
+
+    it("includes cookies when token has session", async () => {
+      const url = "http://localhost:3000/api/erp?processId=EC2C48FB84274D3CB3A3F5FD49808926";
+      const req = makeRequest(url, "token-with-session", '{"param":"value"}');
+      
+      await POST(req as any);
+      
+      const [, init] = (global as any).fetch.mock.calls[0];
+      expect(init.headers["Cookie"]).toBe("JSESSIONID=test-session-id; other=cookie");
+    });
+
+    it("handles custom action handlers correctly", async () => {
+      const url = "http://localhost:3000/api/erp?processId=TEST123&_action=com.etendoerp.copilot.process.SyncAssistant";
+      const body = '{"recordIds":["REC123"],"_buttonValue":"DONE","_params":{},"_entityName":"ETCOP_App"}';
+      const req = makeRequest(url, "token-with-session", body);
+      
+      await POST(req as any);
+      
+      const [dest, init] = (global as any).fetch.mock.calls[0];
+      expect(String(dest)).toBe(
+        "http://erp.example/etendo/org.openbravo.client.kernel?processId=TEST123&_action=com.etendoerp.copilot.process.SyncAssistant"
+      );
+      expect(init.body).toBe(body);
+      expect(init.headers["Cookie"]).toBe("JSESSIONID=test-session-id; other=cookie");
+    });
+
+    it("returns 401 when no Bearer token provided for process execution", async () => {
+      const url = "http://localhost:3000/api/erp?processId=SOME_PROCESS_ID";
+      const headers = new Map<string, string>();
+      headers.set("Content-Type", "application/json");
+      const req = {
+        method: "POST",
+        headers: { get: (k: string) => headers.get(k) || null } as any,
+        url,
+        text: async () => '{"data":"test"}',
+      } as unknown as NextRequest;
+
+      const result = await POST(req as any) as any;
+      expect(result.status).toBe(401);
+      expect(result.body.error).toBe("Unauthorized - Missing Bearer token");
+    });
+
+    it("handles ERP server errors gracefully for process execution", async () => {
+      (global as any).fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: "Internal Server Error",
+        text: async () => "Process execution failed",
+      });
+
+      const url = "http://localhost:3000/api/erp?processId=FAILING_PROCESS";
+      const req = makeRequest(url, "valid-token", '{"param":"value"}');
+      
+      const result = await POST(req as any) as any;
+      expect(result.status).toBe(500);
+      expect(result.body.error).toBe("ERP request failed: 500 Internal Server Error");
+    });
+
+    it("handles non-JSON responses from ERP server for process execution", async () => {
+      (global as any).fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => "OK - Process completed successfully",
+      });
+
+      const url = "http://localhost:3000/api/erp?processId=TEXT_RESPONSE_PROCESS";
+      const req = makeRequest(url, "valid-token", '{"param":"value"}');
+      
+      const result = await POST(req as any) as any;
+      expect(result.status).toBe(200);
+      expect(result.body.success).toBe(true);
+      expect(result.body.message).toBe("OK - Process completed successfully");
+    });
   });
 });

@@ -21,20 +21,47 @@ export interface ExecuteProcessResult<T = any> {
  */
 export async function executeProcess(
   processId: string,
-  parameters: Record<string, any>
+  parameters: Record<string, any>,
+  token: string,
+  windowId?: string,
+  reportId?: string,
+  actionHandler?: string
 ): Promise<ExecuteProcessResult> {
   try {
-    // Prefer calling our internal ERP proxy to keep concerns centralized.
-    // The proxy handles kernel forwards and query composition.
-    const apiUrl = `${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/erp?processId=${encodeURIComponent(processId)}`;
+
+    if (!token) {
+      logger.error?.("executeProcess: No authentication token provided");
+      return { success: false, error: "Authentication required" };
+    }
+
+    // Build URL with proper query parameters to match Classic Etendo behavior
+    const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
+    const queryParams = new URLSearchParams();
+    queryParams.set("processId", processId);
+    
+    if (windowId) {
+      queryParams.set("windowId", windowId);
+    }
+    
+    if (reportId !== undefined) {
+      queryParams.set("reportId", reportId);
+    }
+    
+    if (actionHandler) {
+      queryParams.set("_action", actionHandler);
+    }
+    
+    const apiUrl = `${baseUrl}/api/erp?${queryParams.toString()}`;
+
 
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        // Authorization header should be added by the proxy layer or derived via session in a future iteration.
+        "Content-Type": "application/json;charset=UTF-8",
+        "Authorization": `Bearer ${token}`,
       },
       body: JSON.stringify(parameters ?? {}),
+      credentials: "include",
     });
 
     if (!response.ok) {

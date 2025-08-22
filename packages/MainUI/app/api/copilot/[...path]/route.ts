@@ -1,11 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { extractBearerToken } from "@/lib/auth";
+import { getCombinedErpCookieHeader } from "@/app/api/_utils/forwardConfig";
 import { joinUrl } from "../../_utils/url";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   try {
     // Extract user token for authentication with ERP
     const userToken = extractBearerToken(request);
+    
+    // For development: allow Basic auth if no Bearer token provided
+    const authHeader = request.headers.get("Authorization");
+    const hasBasicAuth = authHeader?.startsWith("Basic ");
+    
+    if (!userToken && !hasBasicAuth) {
+      return NextResponse.json({ error: "Unauthorized - Missing Bearer token or Basic auth" }, { status: 401 });
+    }
 
     const resolvedParams = await params;
     const copilotPath = resolvedParams.path.join("/");
@@ -16,19 +25,34 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
 
-    const erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, `/copilot/${copilotPath}`);
+    // Build ERP URL with query parameters
+    const url = new URL(request.url);
+    const queryParams = url.search;
+    const erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, `/copilot/${copilotPath}`) + queryParams;
 
-    console.log("Copilot proxy request:", { erpUrl, userToken: !!userToken });
+    console.log("Copilot proxy request:", { erpUrl, userToken: !!userToken, hasBasicAuth });
 
     const headers: HeadersInit = {
-      "Content-Type": "application/json",
+      Accept: "*/*",
+      "Accept-Language": "en-US,en;q=0.9",
+      Connection: "keep-alive",
+      "Sec-Fetch-Dest": "empty",
+      "Sec-Fetch-Mode": "cors",
+      "Sec-Fetch-Site": "same-origin",
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
     };
 
-    // Use development auth for now, but could also use userToken if needed
-    if (process.env.NODE_ENV === "production" && userToken) {
-      headers.Authorization = `Bearer ${userToken}`;
-    } else {
-      headers.Authorization = `Basic ${btoa("admin:admin")}`;
+    // Use Bearer token auth if available, otherwise fall back to Basic auth
+    if (userToken) {
+      // Use the combined ERP cookie header that includes JSESSIONID for Bearer token auth
+      const combinedCookie = getCombinedErpCookieHeader(request, userToken);
+      if (combinedCookie) {
+        headers.Cookie = combinedCookie;
+      }
+    } else if (hasBasicAuth) {
+      // Pass through Basic auth directly to ERP
+      headers.Authorization = authHeader;
     }
 
     const response = await fetch(erpUrl, {
