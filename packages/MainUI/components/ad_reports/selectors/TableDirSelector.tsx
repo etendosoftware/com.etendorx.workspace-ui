@@ -68,12 +68,12 @@ const TableDirSelector = ({ onChange, entity, value, name, isReadOnly }: TableDi
     [onChange]
   );
 
-  if (loading || !loaded) return <Spinner />;
+  if (loading || !loaded) return <Spinner data-testid="Spinner__70e7a1" />;
   if (error) return <div>Error: {error?.message}</div>;
 
   return (
     <Select
-      iconLeft={<SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />}
+      iconLeft={<SearchOutlined fill={theme.palette.baselineColor.neutral[90]} data-testid="SearchOutlined__70e7a1" />}
       options={options}
       onChange={handleChange}
       value={selectedValue}
@@ -81,6 +81,7 @@ const TableDirSelector = ({ onChange, entity, value, name, isReadOnly }: TableDi
       isOptionEqualToValue={optionEqualValue}
       name={name}
       disabled={isReadOnly}
+      data-testid="Select__70e7a1"
     />
   );
 };

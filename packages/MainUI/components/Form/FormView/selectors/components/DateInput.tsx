@@ -118,8 +118,12 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             {...props}
           />
           <div className="absolute right-1 top-1/2 transform -translate-y-1/2">
-            <IconButton onClick={handleCalendarClick} disabled={isReadOnly} className="w-8 h-8">
-              <CalendarIcon className="w-5 h-5" />
+            <IconButton
+              onClick={handleCalendarClick}
+              disabled={isReadOnly}
+              className="w-8 h-8"
+              data-testid="IconButton__417e7f">
+              <CalendarIcon className="w-5 h-5" data-testid="CalendarIcon__417e7f" />
             </IconButton>
           </div>
         </div>

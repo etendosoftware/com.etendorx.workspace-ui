@@ -24,6 +24,8 @@
     "test:coverage:html": "jest --coverage --coverageReporters=html",
     "test:ci": "jest --ci --coverage --watchAll=false",
     "test:mainui": "jest --selectProjects MainUI",
+    "check:data-testid": "sh ./scripts/check-add-data-testid.sh",
+    "apply:data-testid": "sh ./scripts/apply-add-data-testid.sh",
     "test:api-client": "jest --selectProjects \"API Client\"",
     "test:component-library": "jest --selectProjects ComponentLibrary",
     "test:mainui:watch": "jest --selectProjects MainUI --watch",

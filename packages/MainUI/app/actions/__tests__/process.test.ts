@@ -69,7 +69,7 @@ describe("Server Action: executeProcess", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json;charset=UTF-8",
-          "Authorization": "Bearer test-auth-token",
+          Authorization: "Bearer test-auth-token",
         },
         body: JSON.stringify({ param: "value" }),
         credentials: "include",
@@ -86,10 +86,7 @@ describe("Server Action: executeProcess", () => {
 
     await executeProcess("PROCESS123", { data: "test" }, "token");
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      "http://localhost:3000/api/erp?processId=PROCESS123",
-      expect.any(Object)
-    );
+    expect(mockFetch).toHaveBeenCalledWith("http://localhost:3000/api/erp?processId=PROCESS123", expect.any(Object));
   });
 
   it("handles fetch network errors gracefully", async () => {

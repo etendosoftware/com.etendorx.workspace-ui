@@ -70,12 +70,13 @@ const ListSelector: React.FC<ListSelectorProps> = ({ field, value, onChange, rea
 
   return (
     <Select
-      iconLeft={<SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />}
+      iconLeft={<SearchOutlined fill={theme.palette.baselineColor.neutral[90]} data-testid="SearchOutlined__effc33" />}
       options={options}
       onChange={handleChange}
       value={selectedValue}
       isOptionEqualToValue={isOptionEqualToValue}
       disabled={readOnly}
+      data-testid="Select__effc33"
     />
   );
 };

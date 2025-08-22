@@ -63,6 +63,7 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({ column, filterState,
       loading={filterState?.loading || false}
       placeholder={`Filter ${column.name || column.columnName}...`}
       maxHeight={200}
+      data-testid="MultiSelect__a8fea9"
     />
   );
 };

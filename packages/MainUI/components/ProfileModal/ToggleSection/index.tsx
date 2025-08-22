@@ -63,10 +63,10 @@ const SelectorList: React.FC<SelectorListProps> = ({
 
   const icons: { [key in Item]: React.ReactElement } = {
     [Item.Role]: <></>,
-    [Item.Client]: <ClientIcon fill={defaultFill} />,
-    [Item.Organization]: <OrganizationIcon fill={defaultFill} />,
-    [Item.Warehouse]: <WarehouseIcon fill={defaultFill} />,
-    [Item.Language]: <FlagEmoji flag={languagesFlags} />,
+    [Item.Client]: <ClientIcon fill={defaultFill} data-testid="ClientIcon__da17cd" />,
+    [Item.Organization]: <OrganizationIcon fill={defaultFill} data-testid="OrganizationIcon__da17cd" />,
+    [Item.Warehouse]: <WarehouseIcon fill={defaultFill} data-testid="WarehouseIcon__da17cd" />,
+    [Item.Language]: <FlagEmoji flag={languagesFlags} data-testid="FlagEmoji__da17cd" />,
   };
 
   const CustomCheckbox = styled(Checkbox)(() => ({
@@ -160,7 +160,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
     <div style={styles.selectorListStyles}>
       {section === "profile" && (
         <>
-          <FormControl fullWidth style={styles.formStyle}>
+          <FormControl fullWidth style={styles.formStyle} data-testid="FormControl__da17cd">
             <Select
               id="role-select"
               title={Item.Role}
@@ -169,6 +169,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               onChange={onRoleChange}
               iconLeft={icons[Item.Role]}
               isOptionEqualToValue={isOptionEqualToValue}
+              data-testid="Select__da17cd"
             />
             <Select
               id="client-select"
@@ -178,6 +179,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               iconLeft={icons[Item.Client]}
               isOptionEqualToValue={isOptionEqualToValue}
               disabled={true}
+              data-testid="Select__da17cd"
             />
             <Select
               id="organization-select"
@@ -188,6 +190,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               iconLeft={icons[Item.Organization]}
               isOptionEqualToValue={isOptionEqualToValue}
               disabled={!selectedClient || isSystem}
+              data-testid="Select__da17cd"
             />
             <Select
               id="warehouse-select"
@@ -198,6 +201,7 @@ const SelectorList: React.FC<SelectorListProps> = ({
               iconLeft={icons[Item.Warehouse]}
               disabled={!selectedOrg || isSystem}
               isOptionEqualToValue={isOptionEqualToValue}
+              data-testid="Select__da17cd"
             />
             <Select
               id="language-select"
@@ -207,40 +211,52 @@ const SelectorList: React.FC<SelectorListProps> = ({
               onChange={onLanguageChange}
               iconLeft={icons[Item.Language]}
               isOptionEqualToValue={isOptionEqualToValue}
+              data-testid="Select__da17cd"
             />
           </FormControl>
           <FormControlLabel
-            control={<CustomCheckbox size="small" checked={saveAsDefault} onChange={onSaveAsDefaultChange} />}
+            control={
+              <CustomCheckbox
+                size="small"
+                checked={saveAsDefault}
+                onChange={onSaveAsDefaultChange}
+                data-testid="CustomCheckbox__da17cd"
+              />
+            }
             label={translations?.saveAsDefault}
+            data-testid="FormControlLabel__da17cd"
           />
         </>
       )}
       {section === "password" && (
-        <Grid margin="0.5rem">
+        <Grid margin="0.5rem" data-testid="Grid__da17cd">
           <form action="#" autoComplete="off">
             <InputPassword
               label={t("common.notImplemented")}
               value={password}
               setValue={setPassword}
-              leftIcon={<LockOutlined fill={defaultFill} />}
+              leftIcon={<LockOutlined fill={defaultFill} data-testid="LockOutlined__da17cd" />}
               autoComplete="new-password"
               disabled
+              data-testid="InputPassword__da17cd"
             />
             <InputPassword
               label={t("common.notImplemented")}
               value={newPassword}
               setValue={setNewPassword}
-              leftIcon={<LockOutlined fill={defaultFill} />}
+              leftIcon={<LockOutlined fill={defaultFill} data-testid="LockOutlined__da17cd" />}
               autoComplete="new-password"
               disabled
+              data-testid="InputPassword__da17cd"
             />
             <InputPassword
               label={t("common.notImplemented")}
               value={newPasswordConfirmation}
               setValue={setNewPasswordConfirmation}
-              leftIcon={<LockOutlined fill={defaultFill} />}
+              leftIcon={<LockOutlined fill={defaultFill} data-testid="LockOutlined__da17cd" />}
               autoComplete="new-password"
               disabled
+              data-testid="InputPassword__da17cd"
             />
           </form>
         </Grid>

@@ -15,6 +15,7 @@
  *************************************************************************
  */
 
+// @data-testid-ignore
 "use client";
 
 import { useCallback, useState, useEffect, useTransition } from "react";
@@ -101,12 +102,18 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         onClose={handleClose}
+        data-testid={`SubTabsSwitch__${current?.id ?? activeTabId ?? "6fa401"}`}
       />
     );
 
     if (showResizeHandle) {
       return (
-        <ResizeHandle initialHeight={customHeight} minHeight={9} maxOffsetRem={9} onHeightChange={handleHeightChange}>
+        <ResizeHandle
+          initialHeight={customHeight}
+          minHeight={9}
+          maxOffsetRem={9}
+          onHeightChange={handleHeightChange}
+          data-testid={`ResizeHandle__${current?.id ?? activeTabId ?? "6fa401"}`}>
           {subTabsSwitch}
         </ResizeHandle>
       );
@@ -116,7 +123,12 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
   };
 
   return (
-    <TabContainer current={current} collapsed={collapsed} isTopExpanded={isTopExpanded} customHeight={customHeight}>
+    <TabContainer
+      current={current}
+      collapsed={collapsed}
+      isTopExpanded={isTopExpanded}
+      customHeight={customHeight}
+      data-testid="TabContainer__6fa401">
       {renderTabContent()}
       {isPending ? (
         <div className="p-4 animate-pulse flex-1 flex flex-col gap-4">
@@ -125,8 +137,8 @@ export default function TabsComponent({ tabs, isTopGroup = false, onTabChange }:
           <div className="flex-1 bg-(--color-transparent-neutral-10) rounded-md" />
         </div>
       ) : (
-        <TabContextProvider tab={current}>
-          <Tab tab={current} collapsed={collapsed} />
+        <TabContextProvider tab={current} data-testid={`TabContextProvider__${current?.id ?? activeTabId ?? "6fa401"}`}>
+          <Tab tab={current} collapsed={collapsed} data-testid={`Tab__${current?.id ?? activeTabId ?? "6fa401"}`} />
         </TabContextProvider>
       )}
     </TabContainer>

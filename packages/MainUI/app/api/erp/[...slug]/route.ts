@@ -91,6 +91,9 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
       }
 
       data = await response.json();
+
+      // Preserve upstream status for mutation responses (e.g., 201 Created)
+      return NextResponse.json(data, { status: response.status });
     } else {
       // Use cache for read operations (GET requests only)
       const queryParams = method === "GET" ? new URL(request.url).search : "";

@@ -51,8 +51,8 @@ const SearchPortal: React.FC<SearchPortalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <Portal>
-      <Box sx={styles.portal}>
+    <Portal data-testid="Portal__b0b7d2">
+      <Box sx={styles.portal} data-testid="Box__b0b7d2">
         <TextInputAutocomplete
           value={searchValue}
           setValue={onSearchChange}
@@ -61,6 +61,7 @@ const SearchPortal: React.FC<SearchPortalProps> = ({
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
           autoFocus={true}
+          data-testid="TextInputAutocomplete__b0b7d2"
         />
       </Box>
     </Portal>

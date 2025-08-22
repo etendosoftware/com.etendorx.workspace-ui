@@ -247,10 +247,10 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
               *
             </span>
           )}
-          <Label field={field} />
+          <Label field={field} data-testid="Label__38060a" />
         </div>
         <div className="col-span-2">
-          <GenericSelector field={field} isReadOnly={isReadOnly} />
+          <GenericSelector field={field} isReadOnly={isReadOnly} data-testid="GenericSelector__38060a" />
         </div>
       </div>
     );

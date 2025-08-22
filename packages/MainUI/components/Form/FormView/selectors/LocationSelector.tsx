@@ -195,6 +195,73 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
     return regions.find((region) => region.value === locationData.regionId) || null;
   }, [regions, locationData.regionId]);
 
+  const countrySelect = useMemo(() => {
+    if (loadingCountries) {
+      return (
+        <div className="flex items-center justify-center p-4">
+          <Spinner data-testid="Spinner__e401ac" />
+        </div>
+      );
+    }
+
+    if (countryError) {
+      return <div className="text-red-500 text-sm">{t("location.errors.loadingCountries")}</div>;
+    }
+
+    return (
+      <Select
+        options={countries}
+        value={selectedCountry}
+        onChange={handleCountryChange}
+        id="country-select"
+        disabled={locationLoading}
+        data-testid="Select__e401ac"
+      />
+    );
+  }, [loadingCountries, countryError, countries, selectedCountry, handleCountryChange, locationLoading, t]);
+
+  const regionSelect = useMemo(() => {
+    if (!locationData.countryId) {
+      return (
+        <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
+          {t("location.fields.region.selectCountryFirst")}
+        </div>
+      );
+    }
+
+    if (loadingRegions) {
+      return (
+        <div className="flex items-center justify-center p-4">
+          <Spinner data-testid="Spinner__e401ac" />
+        </div>
+      );
+    }
+
+    if (regionError) {
+      return <div className="text-red-500 text-sm">{t("location.errors.loadingRegions")}</div>;
+    }
+
+    return (
+      <Select
+        options={regions}
+        value={selectedRegion}
+        onChange={handleRegionChange}
+        id="region-select"
+        disabled={locationLoading}
+        data-testid="Select__e401ac"
+      />
+    );
+  }, [
+    locationData.countryId,
+    loadingRegions,
+    regionError,
+    regions,
+    selectedRegion,
+    handleRegionChange,
+    locationLoading,
+    t,
+  ]);
+
   const isFormValid = useMemo(() => {
     return locationData.address1.trim() !== "" && locationData.city.trim() !== "" && locationData.countryId !== "";
   }, [locationData]);
@@ -256,15 +323,14 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
             }
           }}>
           <div className="flex items-center gap-2">
-            <SearchOutlined fill="#6B7280" className="w-4 h-4" />
+            <SearchOutlined fill="#6B7280" className="w-4 h-4" data-testid="SearchOutlined__e401ac" />
             <span className={`text-sm ${displayValue ? "text-gray-900" : "text-gray-500"}`}>
               {displayValue || t("location.selector.placeholder")}
             </span>
           </div>
-          {!isReadOnly && <LocationIcon fill="#9CA3AF" className="w-4 h-4" />}
+          {!isReadOnly && <LocationIcon fill="#9CA3AF" className="w-4 h-4" data-testid="LocationIcon__e401ac" />}
         </div>
       </div>
-
       <Modal
         open={isModalOpen}
         onCancel={handleCloseModal}
@@ -274,13 +340,21 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
         showHeader
         buttons={
           <div className="flex gap-2">
-            <Button variant="outlined" onClick={handleCloseModal} disabled={locationLoading}>
+            <Button
+              variant="outlined"
+              onClick={handleCloseModal}
+              disabled={locationLoading}
+              data-testid="Button__e401ac">
               {t("location.selector.buttons.cancel")}
             </Button>
-            <Button variant="contained" onClick={handleSaveLocation} disabled={!isFormValid || locationLoading}>
+            <Button
+              variant="contained"
+              onClick={handleSaveLocation}
+              disabled={!isFormValid || locationLoading}
+              data-testid="Button__e401ac">
               {locationLoading ? (
                 <div className="flex items-center gap-2">
-                  <Spinner />
+                  <Spinner data-testid="Spinner__e401ac" />
                   <span>{t("location.selector.buttons.creating")}</span>
                 </div>
               ) : (
@@ -288,7 +362,8 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
               )}
             </Button>
           </div>
-        }>
+        }
+        data-testid="Modal__e401ac">
         <div className="space-y-4 p-4">
           {combinedError && (
             <div className="bg-red-50 border border-red-200 rounded-md p-3">
@@ -315,6 +390,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
             placeholder={t("location.fields.address1.placeholder")}
             maxLength={60}
             className="w-full"
+            data-testid="TextInput__e401ac"
           />
 
           <TextInput
@@ -330,6 +406,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
             placeholder={t("location.fields.address2.placeholder")}
             maxLength={60}
             className="w-full"
+            data-testid="TextInput__e401ac"
           />
 
           <div className="grid grid-cols-2 gap-4">
@@ -346,6 +423,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
               placeholder={t("location.fields.postal.placeholder")}
               maxLength={10}
               className="w-full"
+              data-testid="TextInput__e401ac"
             />
             <TextInput
               label={t("location.fields.city.label")}
@@ -360,6 +438,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
               placeholder={t("location.fields.city.placeholder")}
               maxLength={60}
               className="w-full"
+              data-testid="TextInput__e401ac"
             />
           </div>
 
@@ -367,46 +446,14 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ field, isReadOnly }
             <label htmlFor="country-select" className="block text-sm font-medium text-gray-700 mb-1">
               {t("location.fields.country.label")} *
             </label>
-            {loadingCountries ? (
-              <div className="flex items-center justify-center p-4">
-                <Spinner />
-              </div>
-            ) : countryError ? (
-              <div className="text-red-500 text-sm">{t("location.errors.loadingCountries")}</div>
-            ) : (
-              <Select
-                options={countries}
-                value={selectedCountry}
-                onChange={handleCountryChange}
-                id="country-select"
-                disabled={locationLoading}
-              />
-            )}
+            {countrySelect}
           </div>
 
           <div>
             <label htmlFor="region-select" className="block text-sm font-medium text-gray-700 mb-1">
               {t("location.fields.region.label")}
             </label>
-            {!locationData.countryId ? (
-              <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
-                {t("location.fields.region.selectCountryFirst")}
-              </div>
-            ) : loadingRegions ? (
-              <div className="flex items-center justify-center p-4">
-                <Spinner />
-              </div>
-            ) : regionError ? (
-              <div className="text-red-500 text-sm">{t("location.errors.loadingRegions")}</div>
-            ) : (
-              <Select
-                options={regions}
-                value={selectedRegion}
-                onChange={handleRegionChange}
-                id="region-select"
-                disabled={locationLoading}
-              />
-            )}
+            {regionSelect}
           </div>
         </div>
       </Modal>

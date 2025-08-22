@@ -84,14 +84,17 @@ const ListSelector = ({ parameter }: { parameter: ProcessParameter }) => {
         onClick={toggleOpen}
         className="w-full flex items-center justify-between px-3 py-2 h-10 border border-baseline-10 hover:border-baseline-100 rounded bg-white text-baseline-90 cursor-pointer transition-colors">
         <span>{selectedLabel}</span>
-        {open ? <ChevronUp fill="currentColor" /> : <ChevronDown fill="currentColor" />}
+        {open ? (
+          <ChevronUp fill="currentColor" data-testid="ChevronUp__695fe2" />
+        ) : (
+          <ChevronDown fill="currentColor" data-testid="ChevronDown__695fe2" />
+        )}
       </button>
-
       <div
         className={`absolute z-10 mt-1 w-full bg-white border border-baseline-20 rounded shadow-lg max-h-60 overflow-y-auto origin-top transition-all duration-200 ${open ? "opacity-100 scale-y-100 pointer-events-auto" : "opacity-0 scale-y-0 pointer-events-none"}`}
         style={{ transformOrigin: "top" }}>
         {parameter.refList.map((option) => (
-          <SelectOption option={option} onClick={handleSelect} key={option.id} />
+          <SelectOption option={option} onClick={handleSelect} key={option.id} data-testid="SelectOption__695fe2" />
         ))}
       </div>
     </div>

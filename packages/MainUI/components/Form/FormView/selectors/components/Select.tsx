@@ -53,6 +53,7 @@ const OptionItem = memo(
     onMouseEnter: (index: number) => void;
   }) => (
     <li
+      data-testid={`OptionItem__${id}`}
       aria-selected={isSelected}
       onClick={() => onOptionClick(id, label)}
       onKeyDown={(e) => {
@@ -68,7 +69,14 @@ const OptionItem = memo(
       hover:bg-baseline-10`}>
       <span className={`truncate mr-2 ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>{label}</span>
       {isSelected && (
-        <Image src={checkIconUrl} alt="Selected Item" className="fade-in-left flex-shrink-0" height={16} width={16} />
+        <Image
+          src={checkIconUrl}
+          alt="Selected Item"
+          className="fade-in-left flex-shrink-0"
+          height={16}
+          width={16}
+          data-testid={`Image__${id}`}
+        />
       )}
     </li>
   )
@@ -195,6 +203,7 @@ function SelectCmp({
           isHighlighted={highlightedIndex === index}
           onOptionClick={handleOptionClick}
           onMouseEnter={handleOptionMouseEnter}
+          data-testid="OptionItem__ff38f9"
         />
       ));
     }
@@ -234,16 +243,16 @@ function SelectCmp({
               onKeyDown={(e) => handleKeyboardActivation(e, () => handleClear(e as unknown as React.MouseEvent))}
               className="mr-1 text-baseline-60 hover:text-baseline-80 transition-opacity opacity-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light rounded"
               aria-label="Clear selection">
-              <Image src={closeIconUrl} alt="Clear" height={16} width={16} />
+              <Image src={closeIconUrl} alt="Clear" height={16} width={16} data-testid="Image__ff38f9" />
             </button>
           )}
           <ChevronDown
             fill="currentColor"
             className={`w-5 h-5 text-baseline-60 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            data-testid="ChevronDown__ff38f9"
           />
         </div>
       </div>
-
       {!isReadOnly && isOpen && (
         <div className="absolute z-10 mt-1 w-full bg-white rounded shadow-lg overflow-hidden">
           <div className="p-2">

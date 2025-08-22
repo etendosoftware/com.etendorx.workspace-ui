@@ -27,7 +27,7 @@ import { CircularProgress } from "@mui/material";
 
 const renderCellContent = (result: unknown): JSX.Element => {
   if (isColorString(result)) {
-    return <ColorCell color={result as string} />;
+    return <ColorCell color={result as string} data-testid="ColorCell__af261f" />;
   }
 
   if (React.isValidElement(result)) {
@@ -72,7 +72,7 @@ export const CustomJsCell: React.FC<CustomJsCellProps> = React.memo(({ cell, row
   if (isEvaluating) {
     return (
       <span className="w-full h-full flex justify-center items-center">
-        <CircularProgress />
+        <CircularProgress data-testid="CircularProgress__af261f" />
       </span>
     );
   }

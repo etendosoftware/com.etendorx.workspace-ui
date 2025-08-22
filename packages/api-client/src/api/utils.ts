@@ -55,9 +55,9 @@ export const getDecodedJsonResponse = async (result: Response): Promise<LoginRes
  */
 export function joinUrl(baseUrl: string | undefined, path: string): string {
   if (!baseUrl) return path;
-  
-  const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  
+
+  const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+
   return `${cleanBase}${cleanPath}`;
 }

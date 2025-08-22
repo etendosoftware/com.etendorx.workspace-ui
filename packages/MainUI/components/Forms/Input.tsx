@@ -82,7 +82,8 @@ const Input: FC<InputProps> = ({
           className={`flex items-center gap-1 font-medium text-sm leading-5 tracking-normal transition-colors ${
             isFocused ? "text-(--color-baseline-100)" : "text-(--color-baseline-80)"
           }`}>
-          {label} {required && <Asterisk className="h-3 w-3 fill-(--color-error-main)" />}
+          {label}{" "}
+          {required && <Asterisk className="h-3 w-3 fill-(--color-error-main)" data-testid="Asterisk__ce3099" />}
         </label>
       )}
       <div className="relative">
@@ -92,6 +93,7 @@ const Input: FC<InputProps> = ({
               className={`h-4 w-4 transition-colors ${
                 isFocused ? "fill-(--color-baseline-100)" : "fill-(--color-transparent-neutral-60)"
               }`}
+              data-testid="Icon__ce3099"
             />
           </div>
         )}
@@ -115,6 +117,7 @@ const Input: FC<InputProps> = ({
               className={`h-4 w-4 transition-colors ${
                 isFocused ? "fill-(--color-baseline-100)" : "fill-(--color-transparent-neutral-60)"
               }`}
+              data-testid="X__ce3099"
             />
           </button>
         )}
@@ -128,12 +131,14 @@ const Input: FC<InputProps> = ({
                 className={`h-4 w-4 transition-colors ${
                   isFocused ? "fill-(--color-baseline-100)" : "fill-(--color-transparent-neutral-60)"
                 }`}
+                data-testid="EyeOff__ce3099"
               />
             ) : (
               <Eye
                 className={`h-4 w-4 transition-colors ${
                   isFocused ? "fill-(--color-baseline-100)" : "fill-(--color-transparent-neutral-60)"
                 }`}
+                data-testid="Eye__ce3099"
               />
             )}
           </button>

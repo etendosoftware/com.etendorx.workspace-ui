@@ -18,5 +18,5 @@
 import Loading from "@/components/loading";
 
 export default function LoadingScreen() {
-  return <Loading />;
+  return <Loading data-testid="Loading__df1398" />;
 }

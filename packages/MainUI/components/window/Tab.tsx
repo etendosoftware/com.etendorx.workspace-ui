@@ -172,7 +172,12 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
       className={`bg-(linear-gradient(180deg, #C6CFFF 0%, #FCFCFD 55.65%)) flex gap-2 max-w-auto overflow-hidden flex-col min-h-0 shadow-lg ${
         collapsed ? "hidden" : "flex-1 h-full"
       }`}>
-      <Toolbar windowId={window?.id || tab.window} tabId={tab.id} isFormView={shouldShowForm} />
+      <Toolbar
+        windowId={window?.id || tab.window}
+        tabId={tab.id}
+        isFormView={shouldShowForm}
+        data-testid="Toolbar__5893c8"
+      />
       {shouldShowForm ? (
         <FormView
           mode={formMode}
@@ -180,9 +185,15 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
           window={window}
           recordId={currentRecordId}
           setRecordId={handleSetRecordId}
+          data-testid="FormView__5893c8"
         />
       ) : (
-        <DynamicTable isTreeMode={toggle} setRecordId={handleSetRecordId} onRecordSelection={handleRecordSelection} />
+        <DynamicTable
+          isTreeMode={toggle}
+          setRecordId={handleSetRecordId}
+          onRecordSelection={handleRecordSelection}
+          data-testid="DynamicTable__5893c8"
+        />
       )}
     </div>
   );

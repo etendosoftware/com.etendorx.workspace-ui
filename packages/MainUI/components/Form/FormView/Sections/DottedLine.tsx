@@ -50,7 +50,7 @@ const DottedLine = ({
   const shouldRenderDottedLine = index < fields.length && (index + 1) % dottedLineInterval !== 0;
 
   if (shouldRenderDottedLine) {
-    return <Box sx={dottedLine} />;
+    return <Box sx={dottedLine} data-testid="Box__575ca2" />;
   }
 
   return null;

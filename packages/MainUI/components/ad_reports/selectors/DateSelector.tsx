@@ -87,13 +87,18 @@ const DateSelector = memo(
         InputLabelProps={INPUT_LABEL_PROPS}
         InputProps={{
           endAdornment: (
-            <InputAdornment position="end">
-              <IconButton onClick={handleIconClick} disabled={readOnly} className="w-1 h-1">
-                <CalendarIcon />
+            <InputAdornment position="end" data-testid="InputAdornment__134851">
+              <IconButton
+                onClick={handleIconClick}
+                disabled={readOnly}
+                className="w-1 h-1"
+                data-testid="IconButton__134851">
+                <CalendarIcon data-testid="CalendarIcon__134851" />
               </IconButton>
             </InputAdornment>
           ),
         }}
+        data-testid="StyledTextField__134851"
       />
     );
   }
