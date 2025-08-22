@@ -302,9 +302,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   );
 
   return (
-    <FormInitializationProvider value={{ isFormInitializing }}>
+    <FormInitializationProvider value={{ isFormInitializing }} data-testid="FormInitializationProvider__1a0853">
       <FormViewContext.Provider value={contextValue}>
-        <FormProvider setValue={handleSetValue} reset={reset} formState={formState} {...form}>
+        <FormProvider
+          setValue={handleSetValue}
+          reset={reset}
+          formState={formState}
+          {...form}
+          data-testid="FormProvider__1a0853">
           <form
             className={`flex h-full max-h-full w-full flex-col gap-2 overflow-hidden transition duration-300 ${
               loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
@@ -314,9 +319,10 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               groups={groups}
               statusModal={statusModal}
               hideStatusModal={hideStatusModal}
+              data-testid="FormHeader__1a0853"
             />
 
-            <FormFields tab={tab} mode={mode} groups={groups} loading={isLoading} />
+            <FormFields tab={tab} mode={mode} groups={groups} loading={isLoading} data-testid="FormFields__1a0853" />
 
             <FormActions
               tab={tab}
@@ -324,6 +330,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               refetch={refetch}
               onSave={handleSave}
               showErrorModal={showErrorModal}
+              data-testid="FormActions__1a0853"
             />
           </form>
         </FormProvider>

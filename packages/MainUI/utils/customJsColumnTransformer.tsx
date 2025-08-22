@@ -33,7 +33,15 @@ export const transformColumnsWithCustomJs = (originalColumns: Column[], fields: 
           },
         },
         Cell: ({ cell, row }: { cell: MRT_Cell<EntityData, unknown>; row: MRT_Row<EntityData> }) => {
-          return <CustomJsCell cell={cell} row={row} customJsCode={field.etmetaCustomjs} column={column} />;
+          return (
+            <CustomJsCell
+              cell={cell}
+              row={row}
+              customJsCode={field.etmetaCustomjs}
+              column={column}
+              data-testid="CustomJsCell__2fc819"
+            />
+          );
         },
       };
     }

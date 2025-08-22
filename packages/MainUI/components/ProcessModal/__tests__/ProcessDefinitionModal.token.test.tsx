@@ -65,7 +65,9 @@ jest.mock("react-hook-form", () => ({
     getValues: () => ({}),
     setValue: jest.fn(),
     watch: () => ({}),
+    control: {},
   }),
+  useFormState: (_: { control?: any } = {}) => ({ isValid: true, isSubmitting: false }),
 }));
 
 const mockExecuteProcess = executeProcess as jest.MockedFunction<typeof executeProcess>;
