@@ -68,10 +68,11 @@ describe("Server Action: executeProcess", () => {
       expect.objectContaining({
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json;charset=UTF-8",
           "Authorization": "Bearer test-auth-token",
         },
         body: JSON.stringify({ param: "value" }),
+        credentials: "include",
       })
     );
   });

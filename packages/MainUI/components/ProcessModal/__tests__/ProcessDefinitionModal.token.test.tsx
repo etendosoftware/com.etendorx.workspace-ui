@@ -14,11 +14,13 @@ jest.mock('@/app/actions/process', () => ({
 }));
 
 // Mock the user context to provide a token
+const mockUseUserContext = jest.fn(() => ({
+  token: 'test-auth-token-123',
+  session: { userId: 'test-user' },
+}));
+
 jest.mock('@/hooks/useUserContext', () => ({
-  useUserContext: () => ({
-    token: 'test-auth-token-123',
-    session: { userId: 'test-user' },
-  }),
+  useUserContext: () => mockUseUserContext(),
 }));
 
 // Mock other dependencies
@@ -34,7 +36,11 @@ jest.mock('@/contexts/tab', () => ({
 }));
 
 jest.mock('@/hooks/useSelected', () => ({
-  useSelected: () => ({ graph: [] }),
+  useSelected: () => ({ 
+    graph: {
+      getSelectedMultiple: jest.fn(() => [])
+    } 
+  }),
 }));
 
 jest.mock('@/hooks/useTranslation', () => ({
@@ -99,30 +105,32 @@ describe('ProcessDefinitionModal token handling', () => {
     );
 
     // Find and click the execute button
-    const executeButton = getByText('DONE');
+    const executeButton = getByText('common.execute');
     fireEvent.click(executeButton);
 
     await waitFor(() => {
       expect(mockExecuteProcess).toHaveBeenCalledWith(
         'TEST_PROCESS_ID',
         expect.objectContaining({
+          recordIds: ['test-record'],
           _buttonValue: 'DONE',
+          _params: {},
           _entityName: 'TestEntity',
-          _action: 'com.test.TestProcess',
           windowId: 'test-window',
         }),
-        'test-auth-token-123' // This is the key assertion - token must be passed
+        'test-auth-token-123', // This is the key assertion - token must be passed
+        'test-window',         // windowId parameter
+        undefined,             // reportId parameter  
+        'com.test.TestProcess' // actionHandler parameter
       );
     });
   });
 
   it('handles missing token gracefully', async () => {
     // Override the mock to return no token
-    jest.doMock('@/hooks/useUserContext', () => ({
-      useUserContext: () => ({
-        token: null,
-        session: { userId: 'test-user' },
-      }),
+    mockUseUserContext.mockImplementationOnce(() => ({
+      token: null,
+      session: { userId: 'test-user' },
     }));
 
     const { getByText } = render(
@@ -134,14 +142,17 @@ describe('ProcessDefinitionModal token handling', () => {
       />
     );
 
-    const executeButton = getByText('DONE');
+    const executeButton = getByText('common.execute');
     fireEvent.click(executeButton);
 
     await waitFor(() => {
       expect(mockExecuteProcess).toHaveBeenCalledWith(
         'TEST_PROCESS_ID',
         expect.any(Object),
-        '' // Empty string when no token
+        '', // Empty string when no token
+        'test-window',         // windowId parameter
+        undefined,             // reportId parameter  
+        'com.test.TestProcess' // actionHandler parameter
       );
     });
   });

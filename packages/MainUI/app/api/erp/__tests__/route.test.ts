@@ -13,6 +13,16 @@ jest.mock("next/server", () => {
   };
 });
 
+// Mock getCombinedErpCookieHeader
+jest.mock("@/app/api/_utils/forwardConfig", () => ({
+  getCombinedErpCookieHeader: jest.fn((request: any, userToken: string) => {
+    if (userToken === "token-with-session") {
+      return "JSESSIONID=test-session-id; other=cookie";
+    }
+    return "";
+  }),
+}));
+
 // Mock unstable_cache to directly invoke the wrapped function
 jest.mock("next/cache", () => ({
   unstable_cache:
@@ -74,7 +84,7 @@ describe("API: /api/erp base forward", () => {
     const [dest, init] = (global as any).fetch.mock.calls[0];
     expect(String(dest)).toBe("http://erp.example/etendo?foo=bar&x=1");
     expect(init.method).toBe("POST");
-    expect(init.headers["Authorization"]).toBe("Bearer token-abc");
+    expect(init.headers["Cookie"]).toBeUndefined(); // No session for token-abc
     expect(init.body).toBe('{"k":"v"}');
   });
 
@@ -97,7 +107,7 @@ describe("API: /api/erp base forward", () => {
   });
 
   describe("Process execution", () => {
-    it("forwards process execution to kernel forward with correct parameters", async () => {
+    it("forwards process execution to kernel with correct parameters", async () => {
       const url = "http://localhost:3000/api/erp?processId=EC2C48FB84274D3CB3A3F5FD49808926";
       const req = makeRequest(url, "process-token", '{"param1":"value1","param2":"value2"}');
       
@@ -105,11 +115,36 @@ describe("API: /api/erp base forward", () => {
       
       const [dest, init] = (global as any).fetch.mock.calls[0];
       expect(String(dest)).toBe(
-        "http://erp.example/etendo/meta/forward/org.openbravo.client.kernel?processId=EC2C48FB84274D3CB3A3F5FD49808926&_action=org.openbravo.client.application.process.ExecuteProcessActionHandler"
+        "http://erp.example/etendo/org.openbravo.client.kernel?processId=EC2C48FB84274D3CB3A3F5FD49808926&_action=org.openbravo.client.application.process.ExecuteProcessActionHandler"
       );
       expect(init.method).toBe("POST");
-      expect(init.headers["Authorization"]).toBe("Bearer process-token");
+      expect(init.headers["Cookie"]).toBeUndefined(); // No session for process-token
       expect(init.body).toBe('{"param1":"value1","param2":"value2"}');
+    });
+
+    it("includes cookies when token has session", async () => {
+      const url = "http://localhost:3000/api/erp?processId=EC2C48FB84274D3CB3A3F5FD49808926";
+      const req = makeRequest(url, "token-with-session", '{"param":"value"}');
+      
+      await POST(req as any);
+      
+      const [dest, init] = (global as any).fetch.mock.calls[0];
+      expect(init.headers["Cookie"]).toBe("JSESSIONID=test-session-id; other=cookie");
+    });
+
+    it("handles custom action handlers correctly", async () => {
+      const url = "http://localhost:3000/api/erp?processId=TEST123&_action=com.etendoerp.copilot.process.SyncAssistant";
+      const body = '{"recordIds":["REC123"],"_buttonValue":"DONE","_params":{},"_entityName":"ETCOP_App"}';
+      const req = makeRequest(url, "token-with-session", body);
+      
+      await POST(req as any);
+      
+      const [dest, init] = (global as any).fetch.mock.calls[0];
+      expect(String(dest)).toBe(
+        "http://erp.example/etendo/org.openbravo.client.kernel?processId=TEST123&_action=com.etendoerp.copilot.process.SyncAssistant"
+      );
+      expect(init.body).toBe(body);
+      expect(init.headers["Cookie"]).toBe("JSESSIONID=test-session-id; other=cookie");
     });
 
     it("returns 401 when no Bearer token provided for process execution", async () => {
