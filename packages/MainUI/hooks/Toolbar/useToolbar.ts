@@ -17,7 +17,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import type { ToolbarButtonMetadata, ToolbarResponse } from "./types";
+import type { ToolbarButtonMetadata } from "./types";
 import { logger } from "@/utils/logger";
 import { useTabContext } from "@/contexts/tab";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
@@ -26,11 +26,11 @@ import { compileExpression } from "@/components/Form/FormView/selectors/BaseSele
 import { useUserContext } from "@/hooks/useUserContext";
 import type { ProcessButton } from "@/components/ProcessModal/types";
 
-const toolbarCache = new Map<string, ToolbarResponse>();
+const toolbarCache = new Map<string, ToolbarButtonMetadata[]>();
 
 export function useToolbar(windowId: string, tabId?: string) {
   const cacheKey = `${windowId}-${tabId || "default"}`;
-  const [toolbar, setToolbar] = useState<ToolbarResponse | null>(() => toolbarCache.get(cacheKey) || null);
+  const [toolbar, setToolbar] = useState<ToolbarButtonMetadata[] | null>(() => toolbarCache.get(cacheKey) || null);
   const [loading, setLoading] = useState(!!windowId && !toolbarCache.has(cacheKey));
   const [error, setError] = useState<Error | null>(null);
 
@@ -75,20 +75,9 @@ export function useToolbar(windowId: string, tabId?: string) {
     try {
       setLoading(true);
       setError(null);
-
-      const params = new URLSearchParams();
-      params.append("_operationType", "fetch");
-      params.append("_startRow", "0");
-      params.append("_endRow", "75");
-
-      const entity = tabId ? "etmeta_Toolbar" : `toolbar/${windowId}`;
-      const response = await Metadata.datasourceServletClient.post("", {
-        entity,
-        params: Object.fromEntries(params.entries()),
-      });
-
-      toolbarCache.set(cacheKey, response.data);
-      setToolbar(response.data);
+      const data = (await Metadata.getToolbar()) as ToolbarButtonMetadata[];
+      toolbarCache.set(cacheKey, data);
+      setToolbar(data);
     } catch (error) {
       logger.warn(error);
 
@@ -96,15 +85,15 @@ export function useToolbar(windowId: string, tabId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [windowId, tabId, cacheKey]);
+  }, [windowId, cacheKey]);
 
-  const buttons: ToolbarButtonMetadata[] = useMemo(() => toolbar?.response?.data ?? [], [toolbar]);
+  const buttons: ToolbarButtonMetadata[] = useMemo(() => toolbar ?? [], [toolbar]);
 
   useEffect(() => {
     if (windowId) {
       fetchToolbar();
     }
-  }, [fetchToolbar]);
+  }, [windowId, fetchToolbar]);
 
   const clearCache = useCallback(() => {
     toolbarCache.delete(cacheKey);
