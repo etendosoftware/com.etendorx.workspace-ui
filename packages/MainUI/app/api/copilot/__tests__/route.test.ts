@@ -5,15 +5,32 @@
 
 import type { NextRequest } from "next/server";
 
-jest.mock("next/server", () => ({
-  NextResponse: {
+jest.mock("next/server", () => {
+  const mockNextResponse = {
     json: (body: unknown, init?: { status?: number }) => ({
       ok: true,
       status: init?.status ?? 200,
       body,
     }),
-  },
-}));
+  };
+  
+  // Mock constructor for NextResponse
+  const NextResponseConstructor = (body?: BodyInit, init?: ResponseInit) => {
+    return {
+      ok: true,
+      status: init?.status ?? 200,
+      body,
+      headers: init?.headers || {},
+    };
+  };
+  
+  // Combine static methods with constructor
+  Object.assign(NextResponseConstructor, mockNextResponse);
+  
+  return {
+    NextResponse: NextResponseConstructor,
+  };
+});
 
 // Mock getCombinedErpCookieHeader
 jest.mock("@/app/api/_utils/forwardConfig", () => ({
@@ -22,6 +39,28 @@ jest.mock("@/app/api/_utils/forwardConfig", () => ({
       return "JSESSIONID=test-session-id; other=cookie";
     }
     return "";
+  }),
+}));
+
+// Mock executeWithSessionRetry
+jest.mock("@/app/api/_utils/sessionRetry", () => ({
+  executeWithSessionRetry: jest.fn(async (_request, _userToken, fetchFunction) => {
+    const cookieHeader = "JSESSIONID=test-session-id; other=cookie";
+    const result = await fetchFunction(cookieHeader);
+    
+    // Check if the response is not ok (simulate server error)
+    if (!result.response.ok) {
+      return {
+        success: false,
+        error: result.data,
+      };
+    }
+    
+    return {
+      success: true,
+      data: result.data,
+      recovered: undefined,
+    };
   }),
 }));
 
@@ -135,7 +174,15 @@ describe("API: /api/copilot authentication", () => {
       text: async () => "Invalid request parameters",
     } as Response);
 
-    const req = makeRequest(["aquestion"], "valid-token");
+    // Use Basic auth instead of Bearer token to test server error handling
+    const headers = new Map<string, string>();
+    headers.set("Authorization", "Basic YWRtaW46YWRtaW4=");
+    headers.set("Content-Type", "application/json");
+    const req: MockRequest = {
+      method: "GET",
+      headers: { get: (k: string) => headers.get(k) || null },
+      url: "http://localhost:3000/api/copilot/aquestion",
+    };
     const params = Promise.resolve({ path: ["aquestion"] });
 
     const result = (await GET(req as NextRequest, { params })) as MockResponse;
