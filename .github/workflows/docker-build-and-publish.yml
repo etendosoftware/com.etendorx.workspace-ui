@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "*"
+    branches:
+      - copilot/*
 
 jobs:
   build-and-publish:
