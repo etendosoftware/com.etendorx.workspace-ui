@@ -35,3 +35,7 @@ export function isDebugCallouts(): boolean {
 export function isDebugManualProcesses(): boolean {
   return isDebugEnabled("DEBUG_MANUAL_PROCESSES", "DEBUG_MANUAL_PROCESSES");
 }
+
+export function isDebugErpRequests(): boolean {
+  return isDebugEnabled("DEBUG_ERP_REQUESTS", "DEBUG_ERP_REQUESTS");
+}

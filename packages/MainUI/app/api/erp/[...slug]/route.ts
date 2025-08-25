@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
 import { joinUrl } from "../../_utils/url";
+import { withDebugLogging } from "../../_utils/debugLogger";
 
 // Cached function for generic ERP requests
 const getCachedErpData = unstable_cache(
@@ -106,21 +107,31 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 }
 
 export async function GET(request: Request, context: any) {
-  return handleERPRequest(request, Promise.resolve((context as { params: { slug: string[] } }).params), "GET");
+  return withDebugLogging("/api/erp/[...slug]", async (request) => {
+    return handleERPRequest(request, Promise.resolve((context as { params: { slug: string[] } }).params), "GET");
+  }, request);
 }
 
 export async function POST(request: Request, context: any) {
-  return handleERPRequest(request, Promise.resolve((context as { params: { slug: string[] } }).params), "POST");
+  return withDebugLogging("/api/erp/[...slug]", async (request) => {
+    return handleERPRequest(request, Promise.resolve((context as { params: { slug: string[] } }).params), "POST");
+  }, request);
 }
 
 export async function PUT(request: Request, context: any) {
-  return handleERPRequest(request, Promise.resolve((context as { params: { slug: string[] } }).params), "PUT");
+  return withDebugLogging("/api/erp/[...slug]", async (request) => {
+    return handleERPRequest(request, Promise.resolve((context as { params: { slug: string[] } }).params), "PUT");
+  }, request);
 }
 
 export async function DELETE(request: Request, context: any) {
-  return handleERPRequest(request, Promise.resolve((context as { params: { slug: string[] } }).params), "DELETE");
+  return withDebugLogging("/api/erp/[...slug]", async (request) => {
+    return handleERPRequest(request, Promise.resolve((context as { params: { slug: string[] } }).params), "DELETE");
+  }, request);
 }
 
 export async function PATCH(request: Request, context: any) {
-  return handleERPRequest(request, Promise.resolve((context as { params: { slug: string[] } }).params), "PATCH");
+  return withDebugLogging("/api/erp/[...slug]", async (request) => {
+    return handleERPRequest(request, Promise.resolve((context as { params: { slug: string[] } }).params), "PATCH");
+  }, request);
 }
