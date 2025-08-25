@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { setErpSessionCookie, getErpSessionCookie } from "@/app/api/_utils/sessionStore";
 import { extractBearerToken } from "@/lib/auth";
 import { joinUrl } from "../../_utils/url";
+import { withDebugLogging } from "../../_utils/debugLogger";
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -81,43 +82,45 @@ function storeCookieForToken(erpResponse: Response, data: any): void {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    validateEnvironment();
+  return withDebugLogging("/api/auth/login", async (request: NextRequest) => {
+    try {
+      validateEnvironment();
 
-    const body = await request.json();
-    const erpLoginUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, "/meta/login");
+      const body = await request.json();
+      const erpLoginUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, "/meta/login");
 
-    const userToken = extractBearerToken(request);
-    let cookieHeader: string | null = null;
+      const userToken = extractBearerToken(request);
+      let cookieHeader: string | null = null;
 
-    console.log("Login request debug:", {
-      hasAuthHeader: !!request.headers.get("Authorization"),
-      userToken: userToken ? `${userToken.substring(0, 10)}...` : null,
-      requestBody: body,
-    });
+      console.log("Login request debug:", {
+        hasAuthHeader: !!request.headers.get("Authorization"),
+        userToken: userToken ? `${userToken.substring(0, 10)}...` : null,
+        requestBody: body,
+      });
 
-    if (userToken) {
-      cookieHeader = getErpSessionCookie(userToken);
+      if (userToken) {
+        cookieHeader = getErpSessionCookie(userToken);
+      }
+
+      const erpResponse = await fetchErpLogin(erpLoginUrl, body, cookieHeader || undefined, userToken || undefined);
+
+      const data = await erpResponse.json().catch((jsonError) => {
+        console.error("JSON parse error:", jsonError);
+        throw new Error("Invalid response from Etendo Classic backend");
+      });
+
+      storeCookieForToken(erpResponse, data);
+
+      if (!erpResponse.ok) {
+        return NextResponse.json({ error: data.error || "Login failed" }, { status: erpResponse.status });
+      }
+      return NextResponse.json(data, { status: 200 });
+    } catch (error) {
+      console.error("API Route /api/auth/login Error:", error);
+
+      const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
+
+      return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
-
-    const erpResponse = await fetchErpLogin(erpLoginUrl, body, cookieHeader || undefined, userToken || undefined);
-
-    const data = await erpResponse.json().catch((jsonError) => {
-      console.error("JSON parse error:", jsonError);
-      throw new Error("Invalid response from Etendo Classic backend");
-    });
-
-    storeCookieForToken(erpResponse, data);
-
-    if (!erpResponse.ok) {
-      return NextResponse.json({ error: data.error || "Login failed" }, { status: erpResponse.status });
-    }
-    return NextResponse.json(data, { status: 200 });
-  } catch (error) {
-    console.error("API Route /api/auth/login Error:", error);
-
-    const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
-
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
-  }
+  }, request);
 }

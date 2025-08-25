@@ -7,6 +7,7 @@ import { executeWithSessionRetry } from "@/app/api/_utils/sessionRetry";
 import { joinUrl } from "../_utils/url";
 import type { DatasourceParams } from "@workspaceui/api-client/src/api/types";
 import type { SmartClientPayload } from "@/app/api/_utils/datasource";
+import { withDebugLogging } from "../_utils/debugLogger";
 
 export const runtime = "nodejs";
 
@@ -102,52 +103,54 @@ function isSmartClientPayload(params: DatasourceRequestParams): params is SmartC
 // Use shared extractor from auth utilities
 
 export async function POST(request: NextRequest) {
-  try {
-    const userToken = extractBearerToken(request);
-    if (!userToken) {
-      return NextResponse.json({ error: "Unauthorized - Missing Bearer token" }, { status: 401 });
-    }
-    // 1. Extract the full user context from the session
-    const userContext = await getUserContext(request);
-    if (!userContext) {
-      return NextResponse.json({ error: "Unauthorized - Missing user context" }, { status: 401 });
-    }
-
-    const { entity, params } = await request.json();
-    if (!entity) {
-      return NextResponse.json({ error: "Entity is required" }, { status: 400 });
-    }
-
-    // 2. Decide caching policy per-entity (disabled by default)
-    const useCache = shouldCacheDatasource(entity, params);
-    const contentType = request.headers.get("Content-Type") || "";
-    const passJson =
-      shouldPassthroughJson(request) && contentType.includes("application/json") && isSmartClientPayload(params);
-
-    // For cached requests, use the existing flow without retry logic
-    if (useCache) {
-      const data = await getCachedDatasource(userToken, entity, params);
-      return NextResponse.json(data);
-    }
-
-    // For non-cached requests, use session retry logic
-    const requestFn = async (cookieHeader: string) => {
-      if (passJson) {
-        return await fetchDatasourceJson(userToken, entity, params, cookieHeader);
+  return withDebugLogging("/api/datasource", async (request: NextRequest) => {
+    try {
+      const userToken = extractBearerToken(request);
+      if (!userToken) {
+        return NextResponse.json({ error: "Unauthorized - Missing Bearer token" }, { status: 401 });
       }
-      return await fetchDatasource(userToken, entity, params, cookieHeader);
-    };
+      // 1. Extract the full user context from the session
+      const userContext = await getUserContext(request);
+      if (!userContext) {
+        return NextResponse.json({ error: "Unauthorized - Missing user context" }, { status: 401 });
+      }
 
-    const result = await executeWithSessionRetry(request, userToken, requestFn);
+      const { entity, params } = await request.json();
+      if (!entity) {
+        return NextResponse.json({ error: "Entity is required" }, { status: 400 });
+      }
 
-    if (!result.success) {
-      console.error("Datasource request failed:", result.error);
-      return NextResponse.json({ error: result.error || "Failed to fetch data" }, { status: 500 });
+      // 2. Decide caching policy per-entity (disabled by default)
+      const useCache = shouldCacheDatasource(entity, params);
+      const contentType = request.headers.get("Content-Type") || "";
+      const passJson =
+        shouldPassthroughJson(request) && contentType.includes("application/json") && isSmartClientPayload(params);
+
+      // For cached requests, use the existing flow without retry logic
+      if (useCache) {
+        const data = await getCachedDatasource(userToken, entity, params);
+        return NextResponse.json(data);
+      }
+
+      // For non-cached requests, use session retry logic
+      const requestFn = async (cookieHeader: string) => {
+        if (passJson) {
+          return await fetchDatasourceJson(userToken, entity, params, cookieHeader);
+        }
+        return await fetchDatasource(userToken, entity, params, cookieHeader);
+      };
+
+      const result = await executeWithSessionRetry(request, userToken, requestFn);
+
+      if (!result.success) {
+        console.error("Datasource request failed:", result.error);
+        return NextResponse.json({ error: result.error || "Failed to fetch data" }, { status: 500 });
+      }
+
+      return NextResponse.json(result.data);
+    } catch (error) {
+      console.error("API Route /api/datasource Error:", error);
+      return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });
     }
-
-    return NextResponse.json(result.data);
-  } catch (error) {
-    console.error("API Route /api/datasource Error:", error);
-    return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });
-  }
+  }, request);
 }
