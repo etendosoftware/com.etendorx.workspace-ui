@@ -1,0 +1,30 @@
+# syntax=docker.io/docker/dockerfile:1
+
+# This Dockerfile is optimized for dependency caching
+# It's designed to be used as a base image for faster builds
+
+FROM node:18-alpine AS pnpm-base
+
+# Install system dependencies
+RUN apk add --no-cache libc6-compat
+
+# Enable pnpm
+RUN corepack prepare pnpm@9.15.2 --activate && corepack enable pnpm
+
+# Configure pnpm for better caching
+RUN pnpm config set store-dir /pnpm/store
+
+WORKDIR /app
+
+# Copy only package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/MainUI/package.json ./packages/MainUI/
+COPY packages/ComponentLibrary/package.json ./packages/ComponentLibrary/
+COPY packages/api-client/package.json ./packages/api-client/
+COPY packages/storybook/package.json ./packages/storybook/
+
+# Install all dependencies with cache mount
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --ignore-scripts
+
+# This image can be used as a base for faster subsequent builds
