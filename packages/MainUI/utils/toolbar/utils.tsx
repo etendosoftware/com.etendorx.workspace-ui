@@ -157,10 +157,6 @@ export const createButtonByType = ({
       return { iconText: button.name };
     }
 
-    if (button.buttonType === TOOLBAR_BUTTONS_TYPES.DROPDOWN) {
-      return { iconText: `${button.name} ▼` };
-    }
-
     if (button.buttonType === TOOLBAR_BUTTONS_TYPES.MODAL && button.modalConfig?.title) {
       return { iconText: button.modalConfig.title };
     }
@@ -195,12 +191,6 @@ export const createButtonByType = ({
 
   const getClickConfig = (): Partial<ToolbarButton> => {
     switch (button.buttonType) {
-      case TOOLBAR_BUTTONS_TYPES.DROPDOWN:
-        return {
-          onClick: (event?: React.MouseEvent<HTMLElement>) => {
-            onAction("OPEN_DROPDOWN", button, event);
-          },
-        };
       case TOOLBAR_BUTTONS_TYPES.MODAL:
         return {
           onClick: () => onAction("OPEN_MODAL", button),
