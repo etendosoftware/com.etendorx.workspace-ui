@@ -33,6 +33,12 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm config set store-dir /pnpm/store && \
     pnpm install --frozen-lockfile --ignore-scripts
 
+# Ensure per-package node_modules directories exist so COPY from deps won't fail
+RUN mkdir -p /app/packages/MainUI/node_modules \
+    /app/packages/ComponentLibrary/node_modules \
+    /app/packages/api-client/node_modules \
+    /app/packages/storybook/node_modules || true
+
 # Build stage - copy source and build
 FROM base AS builder
 WORKDIR /app
