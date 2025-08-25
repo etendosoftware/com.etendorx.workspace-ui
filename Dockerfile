@@ -12,9 +12,26 @@ FROM base AS builder
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
+
+# Enable pnpm
+RUN corepack prepare pnpm@9.15.2 --activate && corepack enable pnpm
+
+# Copy package files first for better layer caching
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/MainUI/package.json ./packages/MainUI/
+COPY packages/ComponentLibrary/package.json ./packages/ComponentLibrary/
+COPY packages/api-client/package.json ./packages/api-client/
+COPY packages/storybook/package.json ./packages/storybook/
+
+# Install dependencies with cache mount for faster builds
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm config set store-dir /pnpm/store && \
+    pnpm install --frozen-lockfile
+
+# Copy source code
 COPY . .
 
-RUN corepack prepare pnpm@9.15.2 --activate && corepack enable pnpm && pnpm install --frozen-lockfile && pnpm build
+# Build the project
+RUN pnpm build
 
 RUN ls -la /app/dist
 

@@ -14,7 +14,7 @@ __tests__/__snapshots__
 .next/
 out/
 
-# Production builds
+# Production builds (but keep package.json files)
 dist/
 build/
 
@@ -45,7 +45,7 @@ Thumbs.db
 .git
 .gitignore
 
-# Documentation and project files
+# Documentation and project files (optimize for Docker context)
 *.md
 README*
 CHANGELOG*
@@ -73,13 +73,12 @@ biome.json
 .prettierrc*
 sonar-project.properties
 
-# Scripts and utilities
+# Scripts and utilities (keep only essential build files)
 scripts/
 pipelines/
 commit.sh
-*.sh
 
-# Storybook
+# Storybook (not needed for main UI build)
 storybook-static/
 .storybook/
 
@@ -102,3 +101,12 @@ __mocks__/
 # Project management files
 CLAUDE.md
 TESTING.md
+DOCUMENTO_TECNICO_PERFORMANCE_MEJORAS.md
+
+# Docker ignore optimization - exclude large unnecessary files
+*.tar
+*.zip
+*.gz
+*.bz2
+*.xz
+*.7z

@@ -1,0 +1,26 @@
+# Next.js build artifacts
+.next/
+out/
+dist/
+
+# Testing
+__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+coverage/
+
+# Development files
+.env.local
+.env.development.local
+jest.config.js
+jest.setup.js
+tsconfig.json
+
+# Reports and analysis
+reports/
+analyze/
+
+# Documentation
+README.md
