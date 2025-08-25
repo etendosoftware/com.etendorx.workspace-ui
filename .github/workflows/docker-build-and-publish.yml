@@ -28,16 +28,21 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Get tag version
+        id: set_version
         run: |
-          # Extract tag name and remove 'v' prefix if present
+          # Extract tag/branch name and remove 'v' prefix if present
           TAG_NAME="${{ github.ref_name }}"
           VERSION="${TAG_NAME#v}"
-          # Replace '/' with '-'
+          # Replace '/' with '-' to produce a valid docker tag
           VERSION="${VERSION//\//-}"
 
+          # Export for subsequent steps and as a step output
           echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "Building Docker image with version: $VERSION"
+        shell: bash
 
       - name: Build and Push Docker image (Multi-platform)
         uses: docker/build-push-action@v5
@@ -46,7 +51,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            etendo/etendo_ui:${{ env.VERSION }}
+            etendo/etendo_ui:${{ steps.set_version.outputs.version }}
             etendo/etendo_ui:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
