@@ -198,7 +198,13 @@ class GlobalCalloutManager {
         }
       }
     } catch (error) {
-      logger.error("Callout execution failed:", error);
+      const fieldName = this.calloutQueue[0]; // The one we just tried to process
+      logger.error(`Callout execution failed for field: ${fieldName}`, error);
+
+      // Remove the failed callout from pending to prevent infinite retry
+      if (fieldName) {
+        this.pendingCallouts.delete(fieldName);
+      }
     } finally {
       this.isCalloutInProgress = false;
 

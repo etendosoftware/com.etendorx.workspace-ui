@@ -19,7 +19,6 @@ import { delay } from "@/utils";
 import { logger } from "@/utils/logger";
 
 export async function performHealthCheck(
-  url: string,
   signal: AbortSignal,
   maxAttempts: number,
   delayMs: number,
