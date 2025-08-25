@@ -8,25 +8,30 @@ import "../../../_test-utils/test-shared-mocks";
 import { POST } from "../route";
 import { createMockApiRequest, setupApiTestEnvironment } from "../../../_test-utils/api-test-utils";
 import { assertErpForwardCall } from "../../../_test-utils/fetch-assertions";
+import { setErpSessionCookie } from "@/app/api/_utils/sessionStore";
 
 describe("Smoke: save flow via forward servlet", () => {
   setupApiTestEnvironment();
 
   it("forwards to /meta/forward/org.openbravo.service.datasource/:entity with encoded form body", async () => {
     const url = "http://localhost:3000/api/datasource/Invoice?windowId=10&tabId=20&_operationType=add";
+    const CSRF_TOKEN = "CSRF-SMOKE-123";
+    const BEARER_TOKEN = "Bearer-SMOKE-TOKEN";
+
     const payload = {
       dataSource: "Invoice",
       operationType: "add",
       componentId: "form-Invoice",
-      csrfToken: "CSRF-SMOKE-123",
+      csrfToken: CSRF_TOKEN,
       data: { id: "abc", description: "Test Ñ Ü ✓", amount: 100.5 },
       oldValues: {},
     };
+    setErpSessionCookie(BEARER_TOKEN, { cookieHeader: "123", csrfToken: CSRF_TOKEN });
 
     const req = createMockApiRequest({
       url,
       method: "POST",
-      bearer: "Bearer-SMOKE-TOKEN",
+      bearer: BEARER_TOKEN,
       jsonBody: payload,
       contentType: "application/json; charset=utf-8",
     });

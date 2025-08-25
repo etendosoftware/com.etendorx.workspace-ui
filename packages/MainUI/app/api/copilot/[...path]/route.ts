@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { extractBearerToken } from "@/lib/auth";
-import { getCombinedErpCookieHeader } from "@/app/api/_utils/forwardConfig";
-import { executeWithSessionRetry } from "@/app/api/_utils/sessionRetry";
+import { getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
 import { joinUrl } from "../../_utils/url";
+import { executeWithSessionRetry } from "../../_utils/sessionRetry";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   try {
@@ -30,13 +30,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const queryParams = url.search;
     const erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, `/copilot/${copilotPath}`) + queryParams;
 
-    const combinedCookieDebug = userToken ? getCombinedErpCookieHeader(request, userToken) : null;
+    const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
     console.log("Copilot proxy request:", {
       erpUrl,
       userToken: !!userToken,
       hasBasicAuth,
-      cookiePresent: !!combinedCookieDebug,
-      cookieLength: combinedCookieDebug?.length || 0,
+      cookiePresent: !!cookieHeader,
+      cookieLength: cookieHeader?.length || 0,
       incomingCookies: request.headers.get("cookie")?.length || 0,
     });
 
@@ -52,6 +52,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         if (cookieHeader) {
           headers.Cookie = cookieHeader;
         }
+        if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
 
         const response = await fetch(erpUrl, {
           method: "GET",
@@ -76,6 +77,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         },
       });
     }
+
     if (hasBasicAuth && authHeader) {
       const headers: HeadersInit = {
         Accept: "*/*",

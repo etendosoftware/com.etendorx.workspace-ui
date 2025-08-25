@@ -12,6 +12,7 @@ jest.mock("next/server", () => ({
   },
 }));
 
+import { setErpSessionCookie } from "@/app/api/_utils/sessionStore";
 import {
   createMockRequest,
   setupTestEnvironment,
@@ -27,11 +28,16 @@ describe("Save without csrfToken", () => {
   afterAll(cleanup);
 
   it("omits CSRF header and field when csrfToken is absent", async () => {
+    const BEARER_TOKEN = "Bearer-Token-NoCSRF";
+    setErpSessionCookie(BEARER_TOKEN, {
+      cookieHeader: "JSESSIONID=ABC123DEF456; Path=/; HttpOnly",
+      csrfToken: "CSRF-TEST-123",
+    });
     const { csrfToken, ...bodyWithoutCsrf } = testData.defaultPayload;
 
     const req = createMockRequest({
       url: testData.urls.simple,
-      bearer: "Bearer-Token-NoCSRF",
+      bearer: BEARER_TOKEN,
       jsonBody: bodyWithoutCsrf,
     });
 

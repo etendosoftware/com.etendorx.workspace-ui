@@ -4,6 +4,7 @@
 
 import { POST } from "../route";
 import { createMockRequest, setupTestEnvironment, assertFetchCall } from "../../../_test-utils/api-test-utils";
+import { setErpSessionCookie } from "@/app/api/_utils/sessionStore";
 
 jest.mock("next/server", () => ({
   NextResponse: {
@@ -30,6 +31,8 @@ describe("Save error passthrough", () => {
   afterAll(cleanup);
 
   it("returns same status when ERP returns error", async () => {
+    const CSRF_TOKEN = "CSRF-ERROR-123";
+    const BEARER_TOKEN = "Bearer-ERROR-TOKEN";
     const url = "http://localhost:3000/api/datasource/Order?windowId=10&tabId=20&_operationType=add";
     const body = {
       dataSource: "isc_OBViewDataSource_0",
@@ -37,12 +40,13 @@ describe("Save error passthrough", () => {
       componentId: "isc_OBViewForm_0",
       data: {},
       oldValues: {},
-      csrfToken: "X",
+      csrfToken: CSRF_TOKEN,
     };
 
+    setErpSessionCookie(BEARER_TOKEN, { cookieHeader: "123", csrfToken: CSRF_TOKEN });
     const req = createMockRequest({
       url,
-      bearer: "err-token",
+      bearer: BEARER_TOKEN,
       jsonBody: body,
     });
 
@@ -55,7 +59,7 @@ describe("Save error passthrough", () => {
       global.fetch as jest.Mock,
       "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Order?windowId=10&tabId=20&_operationType=add",
       "POST",
-      { Authorization: "Bearer err-token" }
+      { Authorization: `Bearer ${BEARER_TOKEN}` }
     );
   });
 });

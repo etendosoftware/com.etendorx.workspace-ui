@@ -7,6 +7,7 @@ jest.mock("next/server", () => ({
     json: (body: unknown, init?: { status?: number }) => ({ ok: true, status: init?.status ?? 200, body }),
   },
 }));
+import { setErpSessionCookie } from "@/app/api/_utils/sessionStore";
 import {
   createMockRequest,
   setupTestEnvironment,
@@ -23,9 +24,14 @@ describe("Invoice save parity: /api/datasource/Invoice", () => {
   afterAll(cleanup);
 
   it("forwards to ERP with expected URL, headers and form body", async () => {
+    const BEARER_TOKEN = "Bearer-Token-123";
+    setErpSessionCookie(BEARER_TOKEN, {
+      cookieHeader: "JSESSIONID=ABC123DEF456; Path=/; HttpOnly",
+      csrfToken: "CSRF-TEST-123",
+    });
     const req = createMockRequest({
       url: testData.urls.invoice,
-      bearer: "Bearer-Token-123",
+      bearer: BEARER_TOKEN,
       jsonBody: testData.invoicePayload,
     });
 

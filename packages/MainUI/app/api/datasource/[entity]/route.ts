@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { extractBearerToken } from "@/lib/auth";
-import { getCombinedErpCookieHeader } from "../../_utils/forwardConfig";
+import { getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
 
 // Type definitions for better code clarity
 interface ProcessedRequestData {
@@ -117,9 +117,14 @@ async function handle(request: NextRequest, context: any) {
     const requestUrl = new URL(request.url);
     const erpUrl = buildErpUrl(entity, requestUrl);
 
-    const combinedCookie = getCombinedErpCookieHeader(request, userToken);
+    // Extract auth headers (cookie + CSRF token)
+    const { cookieHeader } = getErpAuthHeaders(request, userToken);
     // Step 3: Process request data for ERP compatibility
-    const { headers, body } = await processRequestData(request, userToken, combinedCookie);
+    const { headers, body } = await processRequestData(request, userToken, cookieHeader);
+
+    // NOTE: Do not forward stored CSRF token as a header for datasource requests.
+    // Datasource payloads include csrfToken in the request body when needed and
+    // tests expect the X-CSRF-Token header to be absent here.
 
     // Step 4: Forward request to ERP system
     const erpResponse = await fetch(erpUrl, {

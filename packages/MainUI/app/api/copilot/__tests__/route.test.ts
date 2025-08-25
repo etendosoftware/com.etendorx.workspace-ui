@@ -32,13 +32,19 @@ jest.mock("next/server", () => {
   };
 });
 
-// Mock getCombinedErpCookieHeader
+// Mock getErpAuthHeaders
 jest.mock("@/app/api/_utils/forwardConfig", () => ({
-  getCombinedErpCookieHeader: jest.fn((_request: unknown, userToken: string) => {
+  getErpAuthHeaders: jest.fn((_request: unknown, userToken: string) => {
     if (userToken === "token-with-session") {
-      return "JSESSIONID=test-session-id; other=cookie";
+      return {
+        cookieHeader: "JSESSIONID=test-session-id; other=cookie",
+        csrfToken: "CSRF-TEST-123",
+      };
     }
-    return "";
+    return {
+      cookieHeader: "",
+      csrfToken: null,
+    };
   }),
 }));
 

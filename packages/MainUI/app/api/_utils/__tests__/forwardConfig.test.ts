@@ -15,7 +15,12 @@
  *************************************************************************
  */
 
-import { shouldForwardErpCookies, getCombinedErpCookieHeader, shouldPassthroughJson } from "../forwardConfig";
+import {
+  shouldForwardErpCookies,
+  getCombinedErpCookieHeader,
+  getErpAuthHeaders,
+  shouldPassthroughJson,
+} from "../forwardConfig";
 import * as sessionStore from "../sessionStore";
 
 // Mock sessionStore
@@ -260,9 +265,81 @@ describe("forwardConfig", () => {
       expect(shouldForwardErpCookies()).toBe(true);
       expect(shouldPassthroughJson(request)).toBe(true);
 
+      expect(shouldForwardErpCookies()).toBe(true);
+      expect(shouldPassthroughJson(request)).toBe(true);
+
       const cookieHeader = getCombinedErpCookieHeader(request, "test-token");
       expect(cookieHeader).toContain("complex=cookie");
       expect(cookieHeader).toContain("JSESSIONID=complex123");
+    });
+  });
+
+  describe("getErpAuthHeaders", () => {
+    const testToken = "test-jwt-token";
+    const erpSessionCookie = "JSESSIONID=ABC123";
+    const browserCookie = "user_pref=dark_mode; lang=en";
+
+    beforeEach(() => {
+      process.env.ERP_FORWARD_COOKIES = "true";
+    });
+
+    it("should return both cookieHeader and csrfToken with (request, token) signature", () => {
+      const request = createMockRequest("https://example.com", { cookie: browserCookie });
+      mockGetErpSessionCookie.mockReturnValue(erpSessionCookie);
+
+      // Mock CSRF token
+      const mockGetErpCsrfToken = sessionStore.getErpCsrfToken as jest.MockedFunction<
+        typeof sessionStore.getErpCsrfToken
+      >;
+      mockGetErpCsrfToken.mockReturnValue("CSRF-TEST-123");
+
+      const result = getErpAuthHeaders(request, testToken);
+      expect(result).toEqual({
+        cookieHeader: `${browserCookie}; ${erpSessionCookie}`,
+        csrfToken: "CSRF-TEST-123",
+      });
+    });
+
+    it("should return both cookieHeader and csrfToken with (token) signature", () => {
+      mockGetErpSessionCookie.mockReturnValue(erpSessionCookie);
+
+      const mockGetErpCsrfToken = sessionStore.getErpCsrfToken as jest.MockedFunction<
+        typeof sessionStore.getErpCsrfToken
+      >;
+      mockGetErpCsrfToken.mockReturnValue("CSRF-TEST-456");
+
+      const result = getErpAuthHeaders(testToken);
+      expect(result).toEqual({
+        cookieHeader: erpSessionCookie,
+        csrfToken: "CSRF-TEST-456",
+      });
+    });
+
+    it("should return null csrfToken when no token provided", () => {
+      const request = createMockRequest("https://example.com", { cookie: browserCookie });
+
+      const result = getErpAuthHeaders(request, null);
+      expect(result).toEqual({
+        cookieHeader: browserCookie,
+        csrfToken: null,
+      });
+    });
+
+    it("should handle request objects correctly", () => {
+      const request = createMockRequest("https://example.com", { cookie: browserCookie });
+      mockGetErpSessionCookie.mockReturnValue(erpSessionCookie);
+
+      const mockGetErpCsrfToken = sessionStore.getErpCsrfToken as jest.MockedFunction<
+        typeof sessionStore.getErpCsrfToken
+      >;
+      mockGetErpCsrfToken.mockReturnValue("CSRF-REQUEST-123");
+
+      // Test with explicit request and token
+      const result = getErpAuthHeaders(request, testToken);
+      expect(result).toEqual({
+        cookieHeader: `${browserCookie}; ${erpSessionCookie}`,
+        csrfToken: "CSRF-REQUEST-123",
+      });
     });
   });
 });

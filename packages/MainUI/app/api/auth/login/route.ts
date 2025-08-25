@@ -73,10 +73,9 @@ function extractJSessionId(erpResponse: Response): string | null {
 function storeCookieForToken(erpResponse: Response, data: any): void {
   try {
     const jsession = extractJSessionId(erpResponse);
-    if (jsession && data?.token) {
-      const cookieHeader = `JSESSIONID=${jsession}`;
-      setErpSessionCookie(data.token, cookieHeader);
-    }
+    const csrfToken = erpResponse.headers.get("X-CSRF-Token") || erpResponse.headers.get("x-csrf-token") || null;
+    const cookieHeader = `JSESSIONID=${jsession}`;
+    setErpSessionCookie(data.token, { cookieHeader, csrfToken });
   } catch {}
 }
 

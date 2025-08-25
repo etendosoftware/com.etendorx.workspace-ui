@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
-import { getCombinedErpCookieHeader } from "@/app/api/_utils/forwardConfig";
+import { getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
 
 // Cached function for ERP requests to the base URL (no slug)
 const getCachedErpData = unstable_cache(
@@ -51,19 +51,19 @@ function buildKernelUrl(
   isKernelRequest: boolean
 ): string {
   const kernelParams = new URLSearchParams();
-  
+
   if (processId) {
     kernelParams.set("processId", processId);
   }
-  
+
   if (windowId) {
     kernelParams.set("windowId", windowId);
   }
-  
+
   if (reportId !== null && reportId !== undefined) {
     kernelParams.set("reportId", reportId);
   }
-  
+
   // Determine action handler with fallback logic
   let action: string;
   if (actionHandler) {
@@ -74,30 +74,30 @@ function buildKernelUrl(
     action = "org.openbravo.client.application.process.ExecuteProcessActionHandler";
   }
   kernelParams.set("_action", action);
-  
+
   return `${baseUrl}/org.openbravo.client.kernel?${kernelParams.toString()}`;
 }
 
 function buildErpUrl(url: URL, params: URLSearchParams): string {
   const baseUrl = normalizeBaseUrl(process.env.ETENDO_CLASSIC_URL);
   const pathname = url.pathname;
-  const isKernelRequest = pathname.includes('/meta/forward/org.openbravo.client.kernel');
+  const isKernelRequest = pathname.includes("/meta/forward/org.openbravo.client.kernel");
   const processId = params.get("processId");
   const windowId = params.get("windowId");
   const reportId = params.get("reportId");
   const actionHandler = params.get("_action");
-  
+
   // Check if this should use kernel endpoint
-  if (isKernelRequest || (processId && url.pathname.includes('/api/erp'))) {
+  if (isKernelRequest || (processId && url.pathname.includes("/api/erp"))) {
     return buildKernelUrl(baseUrl, processId, windowId, reportId, actionHandler, isKernelRequest);
   }
-  
+
   // Handle FormInitializationComponent special case
   const action = params.get("_action");
   if (action === "org.openbravo.client.application.window.FormInitializationComponent") {
     return `${baseUrl}/meta/forward/org.openbravo.client.kernel${url.search}`;
   }
-  
+
   // Default: base ERP URL with query params
   return `${process.env.ETENDO_CLASSIC_URL}${url.search}`;
 }
@@ -116,19 +116,24 @@ async function executeMutation(
     "Sec-Fetch-Dest": "empty",
     "Sec-Fetch-Mode": "cors",
     "Sec-Fetch-Site": "same-origin",
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "User-Agent":
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
   };
-  
+
   if (requestBody) {
     headers["Content-Type"] = "application/json;charset=UTF-8";
   }
-  
-  // Use the combined ERP cookie header that includes JSESSIONID
-  const combinedCookie = getCombinedErpCookieHeader(request, userToken);
-  if (combinedCookie) {
-    headers["Cookie"] = combinedCookie;
+
+  // Use the combined ERP auth headers (cookie + CSRF token)
+  const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
+
+  if (cookieHeader) {
+    headers.Cookie = cookieHeader;
   }
-  
+  if (csrfToken) {
+    headers["X-CSRF-Token"] = csrfToken;
+  }
+
   const response = await fetch(erpUrl, {
     method,
     headers,
@@ -140,11 +145,11 @@ async function executeMutation(
     console.error(`ERP request failed: ${response.status} ${response.statusText}. Response: ${errorText}`);
     throw new Error(`ERP request failed: ${response.status} ${response.statusText}`);
   }
-  
+
   // Try to parse JSON, but handle cases where response is not JSON
   const responseText = await response.text();
   console.log(`ERP Response: ${responseText.substring(0, 200)}...`); // Log first 200 chars for debugging
-  
+
   try {
     return JSON.parse(responseText);
   } catch (jsonError) {
@@ -163,7 +168,7 @@ async function handleERPBaseRequest(request: NextRequest, method: string) {
     const url = new URL(request.url);
     const params = url.searchParams;
     const erpUrl = buildErpUrl(url, params);
-    
+
     const requestBody = method === "GET" ? undefined : await request.text();
     const contentType = request.headers.get("Content-Type") || "application/json";
     const isMutation = method !== "GET";
@@ -179,14 +184,14 @@ async function handleERPBaseRequest(request: NextRequest, method: string) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("API Route /api/erp Error:", error);
-    
+
     // Handle specific error types
     if (error instanceof Error && error.message.includes("ERP request failed")) {
       const statusMatch = error.message.match(/(\d{3})/);
-      const status = statusMatch ? parseInt(statusMatch[1]) : 500;
+      const status = statusMatch ? Number.parseInt(statusMatch[1]) : 500;
       return NextResponse.json({ error: error.message }, { status });
     }
-    
+
     return NextResponse.json({ error: "Failed to fetch ERP data" }, { status: 500 });
   }
 }

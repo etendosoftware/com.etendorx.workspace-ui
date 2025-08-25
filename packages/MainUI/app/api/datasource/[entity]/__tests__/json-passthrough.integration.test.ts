@@ -12,6 +12,7 @@ jest.mock("next/server", () => ({
   },
 }));
 
+import { setErpSessionCookie } from "@/app/api/_utils/sessionStore";
 import {
   createMockRequest,
   setupTestEnvironment,
@@ -27,11 +28,14 @@ describe("Datasource [entity] JSON pass-through", () => {
   afterAll(cleanup);
 
   it("forwards Content-Type application/json and raw JSON body", async () => {
+    const BEARER_TOKEN = "Bearer-JSON-TOKEN";
     const payload = { dataSource: "Invoice", operationType: "add", data: { id: "1" } };
+
+    setErpSessionCookie(BEARER_TOKEN, { cookieHeader: "123", csrfToken: "CSRF-JSON-123" });
 
     const req = createMockRequest({
       url: "http://localhost:3000/api/datasource/Invoice?windowId=10&tabId=20&_operationType=add&isc_dataFormat=json",
-      bearer: "token-json-pt",
+      bearer: BEARER_TOKEN,
       jsonBody: payload,
       contentType: "application/json; charset=utf-8",
     });
