@@ -45,9 +45,10 @@ COPY --from=deps /app/packages ./packages
 COPY . .
 
 # Restore package.json files and node_modules per package if needed
-COPY --from=deps /app/packages/MainUI/node_modules ./packages/MainUI/node_modules 2>/dev/null || true
-COPY --from=deps /app/packages/ComponentLibrary/node_modules ./packages/ComponentLibrary/node_modules 2>/dev/null || true
-COPY --from=deps /app/packages/api-client/node_modules ./packages/api-client/node_modules 2>/dev/null || true
+## Copy per-package node_modules from deps stage. Avoid shell redirections in Dockerfile COPY.
+COPY --from=deps /app/packages/MainUI/node_modules ./packages/MainUI/node_modules
+COPY --from=deps /app/packages/ComponentLibrary/node_modules ./packages/ComponentLibrary/node_modules
+COPY --from=deps /app/packages/api-client/node_modules ./packages/api-client/node_modules
 
 # Build the application
 RUN pnpm build
