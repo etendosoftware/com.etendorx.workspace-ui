@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "*"
+    branches:
+      - copilot/*
 
 jobs:
   build-and-publish:
@@ -30,7 +32,9 @@ jobs:
           # Extract tag name and remove 'v' prefix if present
           TAG_NAME="${{ github.ref_name }}"
           VERSION="${TAG_NAME#v}"
-          
+          # Replace '/' with '-'
+          VERSION="${VERSION//\//-}"
+
           echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Building Docker image with version: $VERSION"
