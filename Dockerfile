@@ -1,14 +1,18 @@
 # syntax=docker.io/docker/dockerfile:1
 
-FROM node:18-alpine AS base
+# Use debian-slim for better compatibility and fewer network issues
+FROM node:18-slim AS base
 
 ARG ETENDO_CLASSIC_URL
 ARG DEBUG_MODE
 ENV ETENDO_CLASSIC_URL=${ETENDO_CLASSIC_URL}
 ENV DEBUG_MODE=${DEBUG_MODE}
 
-# Install libc6-compat for better Alpine compatibility
-RUN apk add --no-cache libc6-compat
+# Install only essential system dependencies
+RUN apt-get update && apt-get install -y \
+    libc6 \
+    --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
 
 # Enable pnpm globally
 RUN corepack prepare pnpm@9.15.2 --activate && corepack enable pnpm
@@ -58,8 +62,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Optimize for production
 ENV NODE_OPTIONS="--max-old-space-size=512"
 
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --gid nodejs nextjs
 
 # Copy the standalone build output
 COPY --from=builder --chown=nextjs:nodejs /app/dist ./

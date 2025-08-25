@@ -1,0 +1,67 @@
+# syntax=docker.io/docker/dockerfile:1
+
+# Alternative Dockerfile for environments without BuildKit cache support
+# This version focuses on layer caching optimization
+
+FROM node:18-slim AS base
+
+ARG ETENDO_CLASSIC_URL
+ARG DEBUG_MODE
+ENV ETENDO_CLASSIC_URL=${ETENDO_CLASSIC_URL}
+ENV DEBUG_MODE=${DEBUG_MODE}
+
+# Install system dependencies in single layer
+RUN apt-get update && apt-get install -y \
+    libc6 \
+    --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/* && \
+    corepack prepare pnpm@9.15.2 --activate && \
+    corepack enable pnpm
+
+# Dependencies stage
+FROM base AS deps
+WORKDIR /app
+
+# Copy package.json files for better caching
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/MainUI/package.json ./packages/MainUI/
+COPY packages/ComponentLibrary/package.json ./packages/ComponentLibrary/
+COPY packages/api-client/package.json ./packages/api-client/
+COPY packages/storybook/package.json ./packages/storybook/
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile --ignore-scripts
+
+# Builder stage
+FROM deps AS builder
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN pnpm build
+
+# Production stage
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS="--max-old-space-size=512"
+
+# Create user
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --gid nodejs nextjs
+
+# Copy build output
+COPY --from=builder --chown=nextjs:nodejs /app/dist ./
+
+USER nextjs
+
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+WORKDIR /app/packages/MainUI
+
+CMD ["node", "server.js"]
