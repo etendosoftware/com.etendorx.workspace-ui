@@ -15,20 +15,53 @@
  *************************************************************************
  */
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useCallback, useState } from "react";
 
 interface FormInitializationContextType {
   isFormInitializing: boolean;
+  isSettingInitialValues: boolean;
+  setIsSettingInitialValues: (value: boolean) => void;
+  markFormReady: () => void;
 }
 
 const FormInitializationContext = createContext<FormInitializationContextType | undefined>(undefined);
 
-export const FormInitializationProvider = FormInitializationContext.Provider;
+export const FormInitializationProvider = ({ 
+  children, 
+  value 
+}: { 
+  children: React.ReactNode;
+  value: { isFormInitializing: boolean };
+}) => {
+  const [isSettingInitialValues, setIsSettingInitialValues] = useState(false);
+  
+  const markFormReady = useCallback(() => {
+    setIsSettingInitialValues(false);
+  }, []);
+
+  const contextValue: FormInitializationContextType = {
+    isFormInitializing: value.isFormInitializing,
+    isSettingInitialValues,
+    setIsSettingInitialValues,
+    markFormReady,
+  };
+
+  return (
+    <FormInitializationContext.Provider value={contextValue}>
+      {children}
+    </FormInitializationContext.Provider>
+  );
+};
 
 export const useFormInitializationContext = () => {
   const context = useContext(FormInitializationContext);
   if (context === undefined) {
-    return { isFormInitializing: false };
+    return { 
+      isFormInitializing: false, 
+      isSettingInitialValues: false, 
+      setIsSettingInitialValues: () => {},
+      markFormReady: () => {}
+    };
   }
   return context;
 };

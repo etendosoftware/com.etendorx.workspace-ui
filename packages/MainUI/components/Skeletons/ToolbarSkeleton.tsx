@@ -29,14 +29,14 @@ const ToolbarSkeleton: React.FC = () => {
         <div className="h-6 w-20 bg-(--color-transparent-neutral-10) rounded" />
         <div className="h-6 w-16 bg-(--color-transparent-neutral-10) rounded" />
       </div>
-      
+
       {/* Center section skeleton */}
       <div className="bg-(--color-baseline-0) rounded-4xl p-1 flex-1 flex items-center gap-2 shadow-[0px_4px_10px_var(--color-transparent-neutral-10)]">
         <div className="h-6 w-24 bg-(--color-transparent-neutral-10) rounded" />
         <div className="h-6 w-32 bg-(--color-transparent-neutral-10) rounded" />
         <div className="h-6 w-20 bg-(--color-transparent-neutral-10) rounded" />
       </div>
-      
+
       {/* Right section skeleton */}
       <div className="bg-transparent-neutral-5 rounded-4xl p-1 flex items-center gap-2">
         <div className="h-6 w-6 bg-(--color-transparent-neutral-10) rounded-full" />
