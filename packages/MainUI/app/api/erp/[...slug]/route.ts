@@ -38,10 +38,86 @@ const getCachedErpData = unstable_cache(
   ["erp_logic_v1"] // Base key for this function
 );
 
+/**
+ * Determines if a route should bypass caching (mutations or non-GET requests)
+ * @param slug - The API slug path
+ * @param method - HTTP method
+ * @returns true if this is a mutation route that should not be cached
+ */
+function isMutationRoute(slug: string, method: string): boolean {
+  return slug.includes("create") || slug.includes("update") || slug.includes("delete") || method !== "GET";
+}
+
+/**
+ * Builds headers for ERP requests including auth and CSRF tokens
+ * @param userToken - Bearer token for authentication
+ * @param request - Original request for extracting ERP headers
+ * @param method - HTTP method
+ * @param requestBody - Request body (if any)
+ * @param contentType - Content type header
+ * @returns Headers object for the ERP request
+ */
+function buildErpHeaders(
+  userToken: string,
+  request: Request,
+  method: string,
+  requestBody: string | undefined,
+  contentType: string
+): Record<string, string> {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${userToken}`,
+    Accept: "application/json",
+  };
+
+  if (method !== "GET" && requestBody) {
+    headers["Content-Type"] = contentType;
+  }
+
+  // Use the combined ERP auth headers (cookie + CSRF token)
+  const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
+
+  if (cookieHeader) {
+    headers.Cookie = cookieHeader;
+  }
+  if (csrfToken) {
+    headers["X-CSRF-Token"] = csrfToken;
+  }
+
+  return headers;
+}
+
+/**
+ * Handles mutation requests (non-cached) to the ERP system
+ * @param erpUrl - Target ERP URL
+ * @param method - HTTP method
+ * @param headers - Request headers
+ * @param requestBody - Request body
+ * @returns Response data from ERP
+ */
+async function handleMutationRequest(
+  erpUrl: string,
+  method: string,
+  headers: Record<string, string>,
+  requestBody: string | undefined
+): Promise<unknown> {
+  const response = await fetch(erpUrl, {
+    method,
+    headers,
+    body: requestBody,
+  });
+
+  if (!response.ok) {
+    throw new Error(`ERP request failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
 async function handleERPRequest(request: Request, params: Promise<{ slug: string[] }>, method: string) {
   try {
     const resolvedParams = await params;
     console.log(`API Route /api/erp/${resolvedParams.slug.join("/")} - Method: ${method}`);
+    
     // Extract user token for authentication with ERP
     const userToken = extractBearerToken(request);
     if (!userToken) {
@@ -60,48 +136,11 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
     const requestBody = method === "GET" ? undefined : await request.text();
     const contentType = request.headers.get("Content-Type") || "application/json";
 
-    // For some routes we might want to bypass cache (e.g., mutations)
-    const isMutationRoute =
-      slug.includes("create") || slug.includes("update") || slug.includes("delete") || method !== "GET";
-
     let data: unknown;
-    if (isMutationRoute) {
+    if (isMutationRoute(slug, method)) {
       // Don't cache mutations or non-GET requests, make direct request
-      const headers: Record<string, string> = {
-        Authorization: `Bearer ${userToken}`,
-        Accept: "application/json",
-      };
-
-      if (method !== "GET" && requestBody) {
-        headers["Content-Type"] = contentType;
-      }
-
-      // Use the combined ERP auth headers (cookie + CSRF token)
-      const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
-
-      if (cookieHeader) {
-        headers.Cookie = cookieHeader;
-      }
-      if (csrfToken) {
-        headers["X-CSRF-Token"] = csrfToken;
-      }
-
-      // Do not forward custom user-context headers; context derives from JWT
-
-      const response = await fetch(erpUrl, {
-        method,
-        headers,
-        body: requestBody,
-      });
-
-      if (!response.ok) {
-        return NextResponse.json(
-          { error: `ERP request failed: ${response.status} ${response.statusText}` },
-          { status: response.status }
-        );
-      }
-
-      data = await response.json();
+      const headers = buildErpHeaders(userToken, request, method, requestBody, contentType);
+      data = await handleMutationRequest(erpUrl, method, headers, requestBody);
     } else {
       // Use cache for read operations (GET requests only)
       const queryParams = method === "GET" ? new URL(request.url).search : "";
