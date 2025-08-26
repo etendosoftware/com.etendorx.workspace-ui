@@ -50,7 +50,7 @@ describe("Invoice save parity: /api/datasource/Invoice", () => {
       dataSource: "isc_OBViewDataSource_0",
       operationType: "add",
       componentId: "isc_OBViewForm_0",
-      csrfToken: "8FDC75ECD28E4C428690BF880FFAE82D",
+      csrfToken: "CSRF-TEST-123", // Should be replaced with token from session store
     });
   });
 });

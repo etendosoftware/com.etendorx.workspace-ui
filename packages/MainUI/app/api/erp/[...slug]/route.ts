@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
 import { joinUrl } from "../../_utils/url";
+import { getErpAuthHeaders } from "../../_utils/forwardConfig";
 
 // Cached function for generic ERP requests
 const getCachedErpData = unstable_cache(
@@ -63,7 +64,7 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
     const isMutationRoute =
       slug.includes("create") || slug.includes("update") || slug.includes("delete") || method !== "GET";
 
-    let data;
+    let data: unknown;
     if (isMutationRoute) {
       // Don't cache mutations or non-GET requests, make direct request
       const headers: Record<string, string> = {
@@ -73,6 +74,16 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 
       if (method !== "GET" && requestBody) {
         headers["Content-Type"] = contentType;
+      }
+
+      // Use the combined ERP auth headers (cookie + CSRF token)
+      const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
+
+      if (cookieHeader) {
+        headers.Cookie = cookieHeader;
+      }
+      if (csrfToken) {
+        headers["X-CSRF-Token"] = csrfToken;
       }
 
       // Do not forward custom user-context headers; context derives from JWT
@@ -105,22 +116,22 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
   }
 }
 
-export async function GET(request: Request, context: any) {
-  return handleERPRequest(request, Promise.resolve((context as { params: { slug: string[] } }).params), "GET");
+export async function GET(request: Request, context: { params: Promise<{ slug: string[] }> }) {
+  return handleERPRequest(request, context.params, "GET");
 }
 
-export async function POST(request: Request, context: any) {
-  return handleERPRequest(request, Promise.resolve((context as { params: { slug: string[] } }).params), "POST");
+export async function POST(request: Request, context: { params: Promise<{ slug: string[] }> }) {
+  return handleERPRequest(request, context.params, "POST");
 }
 
-export async function PUT(request: Request, context: any) {
-  return handleERPRequest(request, Promise.resolve((context as { params: { slug: string[] } }).params), "PUT");
+export async function PUT(request: Request, context: { params: Promise<{ slug: string[] }> }) {
+  return handleERPRequest(request, context.params, "PUT");
 }
 
-export async function DELETE(request: Request, context: any) {
-  return handleERPRequest(request, Promise.resolve((context as { params: { slug: string[] } }).params), "DELETE");
+export async function DELETE(request: Request, context: { params: Promise<{ slug: string[] }> }) {
+  return handleERPRequest(request, context.params, "DELETE");
 }
 
-export async function PATCH(request: Request, context: any) {
-  return handleERPRequest(request, Promise.resolve((context as { params: { slug: string[] } }).params), "PATCH");
+export async function PATCH(request: Request, context: { params: Promise<{ slug: string[] }> }) {
+  return handleERPRequest(request, context.params, "PATCH");
 }

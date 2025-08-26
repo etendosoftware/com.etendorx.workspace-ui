@@ -4,12 +4,7 @@
  */
 
 import { setErpSessionCookie } from "@/app/api/_utils/sessionStore";
-import {
-  createMockRequest,
-  setupTestEnvironment,
-  testData,
-  assertFetchCall,
-} from "./api-test-utils";
+import { createMockRequest, setupTestEnvironment, testData, assertFetchCall } from "./api-test-utils";
 import { POST } from "../datasource/[entity]/route";
 
 /**
@@ -50,7 +45,7 @@ export const DEFAULT_TEST_CONFIG = {
 /**
  * Creates a complete test scenario with ERP session setup and request execution.
  * Handles the common pattern of setting up session cookies and making requests.
- * 
+ *
  * @param config - Configuration for the test scenario
  * @returns Promise resolving to the response from the POST route
  */
@@ -77,8 +72,9 @@ export async function executeTestScenario(config: TestScenarioConfig) {
     jsonBody: payload,
   });
 
-  // Execute the POST route
-  const response = await POST(req, { params: { entity } });
+  // Execute the POST route  
+  const params = Promise.resolve({ entity });
+  const response = await POST(req, { params });
 
   return response;
 }
@@ -90,7 +86,7 @@ export async function executeTestScenario(config: TestScenarioConfig) {
 export class DatasourceTestAssertions {
   /**
    * Assert that a response has the expected status code.
-   * 
+   *
    * @param response - Response object to check
    * @param expectedStatus - Expected HTTP status code
    */
@@ -100,7 +96,7 @@ export class DatasourceTestAssertions {
 
   /**
    * Assert that a fetch call was made with the expected parameters.
-   * 
+   *
    * @param expectedUrl - Expected URL that was called
    * @param expectedMethod - Expected HTTP method
    * @param expectedHeaders - Expected headers object
@@ -116,14 +112,11 @@ export class DatasourceTestAssertions {
 
   /**
    * Assert that the request body contains or does not contain specific content.
-   * 
+   *
    * @param shouldContain - Content that should be present in the body
    * @param shouldNotContain - Content that should NOT be present in the body
    */
-  static assertRequestBodyContent(
-    shouldContain?: string,
-    shouldNotContain?: string
-  ): void {
+  static assertRequestBodyContent(shouldContain?: string, shouldNotContain?: string): void {
     const fetchMock = (global as unknown as { fetch: jest.Mock }).fetch;
     const [, requestInit] = fetchMock.mock.calls[0];
     const rawBody = requestInit.body as string;
@@ -144,19 +137,14 @@ export class DatasourceTestAssertions {
 export const DatasourceTestData = {
   /**
    * Creates a standard ERP forward URL for a given entity and operation.
-   * 
+   *
    * @param entity - Entity name (e.g., "Order", "Invoice")
    * @param windowId - Window ID for the operation
    * @param tabId - Tab ID for the operation
    * @param operationType - Type of operation (default: "add")
    * @returns Formatted ERP forward URL
    */
-  createErpForwardUrl: (
-    entity: string,
-    windowId = 10,
-    tabId = 20,
-    operationType = "add"
-  ): string => {
+  createErpForwardUrl: (entity: string, windowId = 10, tabId = 20, operationType = "add"): string => {
     return `http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/${entity}?windowId=${windowId}&tabId=${tabId}&_operationType=${operationType}`;
   },
 
@@ -175,7 +163,7 @@ export const DatasourceTestData = {
   payloads: {
     /**
      * Creates a standard payload with optional CSRF token.
-     * 
+     *
      * @param includeCsrf - Whether to include CSRF token in payload
      * @returns Standard test payload
      */
@@ -195,10 +183,4 @@ export const DatasourceTestData = {
 } as const;
 
 // Re-export commonly used utilities for convenience
-export {
-  createMockRequest,
-  testData,
-  assertFetchCall,
-  setErpSessionCookie,
-  POST,
-};
+export { createMockRequest, testData, assertFetchCall, setErpSessionCookie, POST };

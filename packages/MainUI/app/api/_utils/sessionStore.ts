@@ -19,6 +19,32 @@ if (!g[globalKey]) {
   g[globalKey] = store;
 }
 
+/**
+ * Generates a cryptographically secure CSRF token
+ * @returns A random CSRF token string
+ */
+function generateCsrfToken(): string {
+  // Use crypto.randomUUID() if available (Node.js 14.17.0+), otherwise fallback
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID().replace(/-/g, "");
+  }
+
+  // Fallback: generate random hex string
+  const array = new Uint8Array(16);
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    crypto.getRandomValues(array);
+  } else {
+    // Last resort fallback for environments without crypto
+    for (let i = 0; i < array.length; i++) {
+      array[i] = Math.floor(Math.random() * 256);
+    }
+  }
+
+  return Array.from(array)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 export function setErpSessionCookie(
   token: string,
   { cookieHeader, csrfToken }: { cookieHeader: string; csrfToken: string | null }
@@ -29,7 +55,14 @@ export function setErpSessionCookie(
   const key = String(token);
   const existing = store.get(key) ?? {};
   const merged = { ...existing, cookieHeader } as SessionValue;
-  if (csrfToken?.trim()) merged.csrfToken = csrfToken;
+
+  // If csrfToken is provided and not empty, use it; otherwise generate a new one
+  if (csrfToken?.trim()) {
+    merged.csrfToken = csrfToken;
+  } else {
+    merged.csrfToken = generateCsrfToken();
+  }
+
   store.set(key, merged);
 }
 
