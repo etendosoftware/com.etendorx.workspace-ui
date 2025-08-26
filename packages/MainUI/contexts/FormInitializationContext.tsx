@@ -15,7 +15,7 @@
  *************************************************************************
  */
 
-import { createContext, useContext, useCallback, useState } from "react";
+import { createContext, useContext, useCallback, useState, useMemo } from "react";
 
 interface FormInitializationContextType {
   isFormInitializing: boolean;
@@ -39,12 +39,12 @@ export const FormInitializationProvider = ({
     setIsSettingInitialValues(false);
   }, []);
 
-  const contextValue: FormInitializationContextType = {
+  const contextValue: FormInitializationContextType = useMemo(() => ({
     isFormInitializing: value.isFormInitializing,
     isSettingInitialValues,
     setIsSettingInitialValues,
     markFormReady,
-  };
+  }), [value.isFormInitializing, isSettingInitialValues, setIsSettingInitialValues, markFormReady]);
 
   return (
     <FormInitializationContext.Provider value={contextValue}>
