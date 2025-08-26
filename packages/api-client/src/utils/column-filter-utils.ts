@@ -49,16 +49,21 @@ export class ColumnFilterUtils {
 
   /**
    * Check if a column is a select type (uses refList)
+   * Only applies to SELECT columns without referencedEntity
    */
   static isSelectColumn(column: Column): boolean {
-    return column.type === FieldType.SELECT && Array.isArray(column.refList);
+    return column.type === FieldType.SELECT && Array.isArray(column.refList) && !column.referencedEntity;
   }
 
   /**
    * Check if a column is a tabledir type (uses referencedEntity)
+   * Also includes SELECT columns that have referencedEntity (search fields)
    */
   static isTableDirColumn(column: Column): boolean {
-    return column.type === FieldType.TABLEDIR && !!column.referencedEntity;
+    return (
+      (column.type === FieldType.TABLEDIR && !!column.referencedEntity) ||
+      (column.type === FieldType.SELECT && !!column.referencedEntity)
+    );
   }
 
   /**
@@ -77,7 +82,7 @@ export class ColumnFilterUtils {
       return [];
     }
 
-    return ((column.refList as any[]) || []).map((item: any) => ({
+    return ((column.refList as { id: string; label: string; value: string }[]) || []).map((item: { id: string; label: string; value: string }) => ({
       id: item.id,
       label: item.label,
       value: item.value,
