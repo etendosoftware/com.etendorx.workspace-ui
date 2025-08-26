@@ -145,11 +145,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
     setIsFormInitializing(true);
     const processedData = processFormData(availableFormData);
+
+    // Mark that we're about to set initial values programmatically
     stableReset(processedData);
 
-    setTimeout(() => {
+    // Use microtask to ensure react-hook-form state has been updated
+    queueMicrotask(() => {
       setIsFormInitializing(false);
-    }, 50);
+    });
   }, [availableFormData, tab.id, stableReset]);
 
   const handleSetValue = useCallback(
