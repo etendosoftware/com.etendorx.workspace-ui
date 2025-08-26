@@ -31,40 +31,40 @@ describe("sessionStore", () => {
 
   describe("setErpSessionCookie", () => {
     it("should store a session cookie for a valid token", () => {
-      setErpSessionCookie(testToken, testCookie);
+      const authOptions = { cookieHeader: testCookie, csrfToken: "CSRF-TEST-123" };
+      setErpSessionCookie(testToken, authOptions);
 
       const retrieved = getErpSessionCookie(testToken);
-      expect(retrieved).toBe(testCookie);
+      expect(retrieved).toEqual("JSESSIONID=ABC123DEF456; Path=/; HttpOnly");
     });
 
     it("should not store when token is empty", () => {
-      setErpSessionCookie("", testCookie);
+      expect(() => setErpSessionCookie("", { cookieHeader: "", csrfToken: "" })).toThrow();
 
       const retrieved = getErpSessionCookie("");
       expect(retrieved).toBeNull();
     });
 
     it("should not store when cookie is empty", () => {
-      setErpSessionCookie(testToken, "");
+      expect(() => setErpSessionCookie(testToken, { cookieHeader: "", csrfToken: "1234" })).toThrow();
 
-      const retrieved = getErpSessionCookie(testToken);
-      expect(retrieved).toBeNull();
+      expect(() => getErpSessionCookie(testToken)).toThrow();
     });
 
     it("should overwrite existing cookie for same token", () => {
       const firstCookie = "JSESSIONID=FIRST123";
       const secondCookie = "JSESSIONID=SECOND456";
 
-      setErpSessionCookie(testToken, firstCookie);
+      setErpSessionCookie(testToken, { cookieHeader: firstCookie, csrfToken: "CSRF-TEST-123" });
       expect(getErpSessionCookie(testToken)).toBe(firstCookie);
 
-      setErpSessionCookie(testToken, secondCookie);
+      setErpSessionCookie(testToken, { cookieHeader: secondCookie, csrfToken: "CSRF-TEST-456" });
       expect(getErpSessionCookie(testToken)).toBe(secondCookie);
     });
 
     it("should handle multiple different tokens", () => {
-      setErpSessionCookie(testToken, testCookie);
-      setErpSessionCookie(anotherToken, anotherCookie);
+      setErpSessionCookie(testToken, { cookieHeader: testCookie, csrfToken: "CSRF-TEST-123" });
+      setErpSessionCookie(anotherToken, { cookieHeader: anotherCookie, csrfToken: "CSRF-ANOTHER-123" });
 
       expect(getErpSessionCookie(testToken)).toBe(testCookie);
       expect(getErpSessionCookie(anotherToken)).toBe(anotherCookie);
@@ -73,15 +73,14 @@ describe("sessionStore", () => {
 
   describe("getErpSessionCookie", () => {
     it("should return stored cookie for valid token", () => {
-      setErpSessionCookie(testToken, testCookie);
+      setErpSessionCookie(testToken, { cookieHeader: testCookie, csrfToken: "CSRF-TEST-123" });
 
       const retrieved = getErpSessionCookie(testToken);
       expect(retrieved).toBe(testCookie);
     });
 
     it("should return null for non-existent token", () => {
-      const retrieved = getErpSessionCookie("non-existent-token");
-      expect(retrieved).toBeNull();
+      expect(() => getErpSessionCookie("non-existent-token")).toThrow();
     });
 
     it("should return null for null token", () => {
@@ -101,7 +100,7 @@ describe("sessionStore", () => {
 
     it("should handle complex cookie strings", () => {
       const complexCookie = "JSESSIONID=ABC123; Path=/; Domain=.example.com; Secure; HttpOnly; SameSite=Strict";
-      setErpSessionCookie(testToken, complexCookie);
+      setErpSessionCookie(testToken, { cookieHeader: complexCookie, csrfToken: "CSRF-TEST-123" });
 
       const retrieved = getErpSessionCookie(testToken);
       expect(retrieved).toBe(complexCookie);
@@ -110,20 +109,20 @@ describe("sessionStore", () => {
 
   describe("clearErpSessionCookie", () => {
     it("should remove stored cookie for valid token", () => {
-      setErpSessionCookie(testToken, testCookie);
+      setErpSessionCookie(testToken, { cookieHeader: testCookie, csrfToken: "CSRF-TEST-123" });
       expect(getErpSessionCookie(testToken)).toBe(testCookie);
 
       clearErpSessionCookie(testToken);
-      expect(getErpSessionCookie(testToken)).toBeNull();
+      expect(() => getErpSessionCookie(testToken)).toThrow();
     });
 
     it("should not affect other stored cookies", () => {
-      setErpSessionCookie(testToken, testCookie);
-      setErpSessionCookie(anotherToken, anotherCookie);
+      setErpSessionCookie(testToken, { cookieHeader: testCookie, csrfToken: "CSRF-TEST-123" });
+      setErpSessionCookie(anotherToken, { cookieHeader: anotherCookie, csrfToken: "CSRF-ANOTHER-123" });
 
       clearErpSessionCookie(testToken);
 
-      expect(getErpSessionCookie(testToken)).toBeNull();
+      expect(() => getErpSessionCookie(testToken)).toThrow();
       expect(getErpSessionCookie(anotherToken)).toBe(anotherCookie);
     });
 
@@ -138,9 +137,10 @@ describe("sessionStore", () => {
 
   describe("persistence across operations", () => {
     it("should persist data across multiple operations", () => {
+      const CSRF_TOKEN = "CSRF-ANOTHER-123";
       // Store multiple sessions
-      setErpSessionCookie(testToken, testCookie);
-      setErpSessionCookie(anotherToken, anotherCookie);
+      setErpSessionCookie(testToken, { cookieHeader: testCookie, csrfToken: "CSRF-TEST-123" });
+      setErpSessionCookie(anotherToken, { cookieHeader: anotherCookie, csrfToken: CSRF_TOKEN });
 
       // Verify both are stored
       expect(getErpSessionCookie(testToken)).toBe(testCookie);
@@ -150,12 +150,12 @@ describe("sessionStore", () => {
       clearErpSessionCookie(testToken);
 
       // Verify the other remains
-      expect(getErpSessionCookie(testToken)).toBeNull();
+      expect(() => getErpSessionCookie(testToken)).toThrow();
       expect(getErpSessionCookie(anotherToken)).toBe(anotherCookie);
 
       // Update the remaining one
       const updatedCookie = "JSESSIONID=UPDATED789";
-      setErpSessionCookie(anotherToken, updatedCookie);
+      setErpSessionCookie(anotherToken, { cookieHeader: updatedCookie, csrfToken: CSRF_TOKEN });
       expect(getErpSessionCookie(anotherToken)).toBe(updatedCookie);
     });
   });
@@ -163,24 +163,24 @@ describe("sessionStore", () => {
   describe("edge cases and error handling", () => {
     it("should handle special characters in tokens", () => {
       const specialToken = "token-with-special-chars!@#$%^&*()";
-      setErpSessionCookie(specialToken, testCookie);
+      setErpSessionCookie(specialToken, { cookieHeader: testCookie, csrfToken: "CSRF-TEST-123" });
 
       expect(getErpSessionCookie(specialToken)).toBe(testCookie);
 
       clearErpSessionCookie(specialToken);
-      expect(getErpSessionCookie(specialToken)).toBeNull();
+      expect(() => getErpSessionCookie(specialToken)).toThrow();
     });
 
     it("should handle very long token strings", () => {
       const longToken = "a".repeat(1000);
-      setErpSessionCookie(longToken, testCookie);
+      setErpSessionCookie(longToken, { cookieHeader: testCookie, csrfToken: "CSRF-TEST-123" });
 
       expect(getErpSessionCookie(longToken)).toBe(testCookie);
     });
 
     it("should handle very long cookie strings", () => {
       const longCookie = `JSESSIONID=${"x".repeat(500)}; Path=/`;
-      setErpSessionCookie(testToken, longCookie);
+      setErpSessionCookie(testToken, { cookieHeader: longCookie, csrfToken: "CSRF-TEST-123" });
 
       expect(getErpSessionCookie(testToken)).toBe(longCookie);
     });
@@ -189,7 +189,7 @@ describe("sessionStore", () => {
       const unicodeToken = "token-测试-🚀";
       const unicodeCookie = "JSESSIONID=测试值123🎯; Path=/";
 
-      setErpSessionCookie(unicodeToken, unicodeCookie);
+      setErpSessionCookie(unicodeToken, { cookieHeader: unicodeCookie, csrfToken: "CSRF-TEST-123" });
       expect(getErpSessionCookie(unicodeToken)).toBe(unicodeCookie);
     });
   });

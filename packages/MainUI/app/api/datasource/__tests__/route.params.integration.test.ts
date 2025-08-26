@@ -32,12 +32,18 @@ jest.mock("@/lib/auth", () => ({
  */
 
 import { createDatasourceTestSuite, assertDatasourceCall } from "../../_test-utils/datasource-test-utils";
+import { setErpSessionCookie } from "../../_utils/sessionStore";
 import { POST } from "../route";
 
 const testSuite = createDatasourceTestSuite("Grids: param coverage", "params");
 
 testSuite.describe(() => {
   it("serializes typical params and forwards to ERP", async () => {
+    const BEARER_TOKEN = "Bearer-Token-Params";
+    setErpSessionCookie(BEARER_TOKEN, {
+      cookieHeader: "JSESSIONID=ABC123DEF456; Path=/; HttpOnly",
+      csrfToken: "CSRF-TEST-123",
+    });
     const params = {
       _operationType: "fetch",
       _startRow: "0",
@@ -48,14 +54,14 @@ testSuite.describe(() => {
       _noActiveFilter: "true",
     };
     const body = { entity: "Invoice", params };
-    const req = testSuite.createRequest("token-params", body);
+    const req = testSuite.createRequest(BEARER_TOKEN, body);
 
     const res: any = await POST(req as any);
     expect(res.status).toBe(200);
 
     assertDatasourceCall(
       "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice",
-      { Authorization: "Bearer token-params" },
+      { Authorization: `Bearer ${BEARER_TOKEN}` },
       {
         _operationType: "fetch",
         _startRow: "0",

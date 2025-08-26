@@ -35,8 +35,8 @@ const mockShouldAttemptRecovery = sessionValidator.shouldAttemptRecovery as jest
   typeof sessionValidator.shouldAttemptRecovery
 >;
 const mockRecoverSession = sessionRecovery.recoverSession as jest.MockedFunction<typeof sessionRecovery.recoverSession>;
-const mockGetCombinedErpCookieHeader = forwardConfig.getCombinedErpCookieHeader as jest.MockedFunction<
-  typeof forwardConfig.getCombinedErpCookieHeader
+const mockGetErpAuthHeaders = forwardConfig.getErpAuthHeaders as jest.MockedFunction<
+  typeof forwardConfig.getErpAuthHeaders
 >;
 
 // Mock logger methods
@@ -68,7 +68,10 @@ describe("sessionRetry", () => {
     });
 
     // Default mock behaviors
-    mockGetCombinedErpCookieHeader.mockReturnValue("JSESSIONID=test123");
+    mockGetErpAuthHeaders.mockReturnValue({
+      cookieHeader: "JSESSIONID=test123",
+      csrfToken: "CSRF-TEST-123",
+    });
 
     // Reset logger mocks
     mockLogger.log.mockClear();
@@ -251,7 +254,7 @@ describe("sessionRetry", () => {
       expect(mockLogger.error).toHaveBeenCalledWith("Error in session retry logic:", recoveryError);
     });
 
-    it("should call getCombinedErpCookieHeader for each request attempt", async () => {
+    it("should call getErpAuthHeaders for each request attempt", async () => {
       const expiredData = { error: "Session expired" };
       const expiredResponse = new Response(JSON.stringify(expiredData), { status: 401 });
 
@@ -277,8 +280,8 @@ describe("sessionRetry", () => {
       await executeWithSessionRetry(mockRequest, testToken, requestFn);
 
       // Should be called twice - once for initial attempt, once for retry
-      expect(mockGetCombinedErpCookieHeader).toHaveBeenCalledTimes(2);
-      expect(mockGetCombinedErpCookieHeader).toHaveBeenCalledWith(mockRequest, testToken);
+      expect(mockGetErpAuthHeaders).toHaveBeenCalledTimes(2);
+      expect(mockGetErpAuthHeaders).toHaveBeenCalledWith(mockRequest, testToken);
     });
   });
 });

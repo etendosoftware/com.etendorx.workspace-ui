@@ -31,6 +31,7 @@ import {
   createDatasourceRequest,
   assertDatasourceCall,
 } from "../../_test-utils/datasource-test-utils";
+import { setErpSessionCookie } from "../../_utils/sessionStore";
 import { POST } from "../route";
 
 // Setup base mocks
@@ -63,15 +64,21 @@ describe("Datasource cache policy (disabled)", () => {
   afterAll(cleanup);
 
   it("bypasses cached function and calls ERP directly when policy is false", async () => {
+    // extractBearerToken is mocked to return 'token-cache-policy' above
+    const BEARER_TOKEN = "token-cache-policy";
+    setErpSessionCookie(BEARER_TOKEN, {
+      cookieHeader: "JSESSIONID=ABC123DEF456; Path=/; HttpOnly",
+      csrfToken: "CSRF-TEST-123",
+    });
     const body = { entity: "Invoice", params: { _operationType: "fetch", _startRow: "0", _endRow: "50" } };
-    const req = createDatasourceRequest("token-cache-policy", body);
+    const req = createDatasourceRequest(BEARER_TOKEN, body);
 
     const res = await POST(req as never);
     expect(res.status).toBe(200);
 
     // ensure fetch was called (direct call to ERP)
     assertDatasourceCall("http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice", {
-      Authorization: "Bearer token-cache-policy",
+      Authorization: `Bearer ${BEARER_TOKEN}`,
     });
 
     // cached function must not be used

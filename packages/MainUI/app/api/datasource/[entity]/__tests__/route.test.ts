@@ -11,6 +11,7 @@ import "../../../_test-utils/test-shared-mocks";
 // Import after mocking
 import { POST } from "../route";
 import { assertErpForwardCall } from "../../../_test-utils/fetch-assertions";
+import { setErpSessionCookie } from "@/app/api/_utils/sessionStore";
 
 describe("API: /api/datasource/:entity save/update", () => {
   const OLD_ENV = process.env;
@@ -46,6 +47,11 @@ describe("API: /api/datasource/:entity save/update", () => {
   }
 
   it("forwards to ERP with form-urlencoded body and X-CSRF-Token header", async () => {
+    const BEARER_TOKEN = "Bearer-Token-123";
+    setErpSessionCookie(BEARER_TOKEN, {
+      cookieHeader: "JSESSIONID=ABC123DEF456; Path=/; HttpOnly",
+      csrfToken: "CSRF-TEST-123",
+    });
     const body = {
       dataSource: "isc_OBViewDataSource_0",
       operationType: "add",
@@ -55,7 +61,7 @@ describe("API: /api/datasource/:entity save/update", () => {
       oldValues: { prev: 1 },
     };
     const url = "http://localhost:3000/api/datasource/Invoice?windowId=167&tabId=263&_operationType=add";
-    const request = makeRequest(url, "token-abc", body);
+    const request = makeRequest(url, BEARER_TOKEN, body);
 
     const res: any = await POST(request, { params: { entity: "Invoice" } } as any);
     expect(res.status).toBe(200);
@@ -63,7 +69,7 @@ describe("API: /api/datasource/:entity save/update", () => {
 
     const { decoded } = assertErpForwardCall(
       "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice?windowId=167&tabId=263&_operationType=add",
-      "Bearer token-abc",
+      `Bearer ${BEARER_TOKEN}`,
       undefined,
       "application/json"
     );
@@ -75,8 +81,13 @@ describe("API: /api/datasource/:entity save/update", () => {
   });
 
   it("passes through non-JSON bodies with original content-type", async () => {
+    const BEARER_TOKEN = "Bearer-Token-XYZ";
+    setErpSessionCookie(BEARER_TOKEN, {
+      cookieHeader: "JSESSIONID=ABC123DEF456; Path=/; HttpOnly",
+      csrfToken: "CSRF-TEST-123",
+    });
     const headers = new Map<string, string>();
-    headers.set("Authorization", "Bearer token-xyz");
+    headers.set("Authorization", `Bearer ${BEARER_TOKEN}`);
     headers.set("Content-Type", "application/x-custom");
     const rawBody = "raw-binary-or-custom";
     const request = {

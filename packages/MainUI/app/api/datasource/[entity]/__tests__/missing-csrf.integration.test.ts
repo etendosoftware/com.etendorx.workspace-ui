@@ -2,47 +2,40 @@
  * Integration-like test: Save without csrfToken should not set X-CSRF-Token nor csrfToken form field.
  */
 
-jest.mock("next/server", () => ({
-  NextResponse: {
-    json: (body: unknown, init?: { status?: number }) => ({
-      ok: true,
-      status: init?.status ?? 200,
-      body,
-    }),
-  },
-}));
+// Import shared mocks to avoid duplicating jest.mock declarations
+import "../../../_test-utils/test-shared-mocks";
 
 import {
-  createMockRequest,
-  setupTestEnvironment,
+  useDatasourceTestEnvironment,
+  executeTestScenario,
+  DatasourceTestAssertions,
+  DatasourceTestData,
   testData,
-  assertFetchCall,
-} from "../../../_test-utils/api-test-utils";
-import { POST } from "../route";
+} from "../../../_test-utils/datasource-integration-commons";
 
 describe("Save without csrfToken", () => {
-  const { setup, cleanup } = setupTestEnvironment();
+  const { setup, cleanup } = useDatasourceTestEnvironment();
 
   beforeEach(setup);
   afterAll(cleanup);
 
   it("omits CSRF header and field when csrfToken is absent", async () => {
-    const { csrfToken, ...bodyWithoutCsrf } = testData.defaultPayload;
+    const BEARER_TOKEN = DatasourceTestData.tokens.noCsrf;
+    
+    // Create payload without CSRF token
+    const payloadWithoutCsrf = DatasourceTestData.payloads.createStandard(false);
 
-    const req = createMockRequest({
+    const response = await executeTestScenario({
+      bearerToken: BEARER_TOKEN,
+      payload: payloadWithoutCsrf,
       url: testData.urls.simple,
-      bearer: "Bearer-Token-NoCSRF",
-      jsonBody: bodyWithoutCsrf,
+      entity: "Invoice",
     });
 
-    const res: any = await POST(req, { params: { entity: "Invoice" } });
-    expect(res.status).toBe(200);
+    DatasourceTestAssertions.assertResponseStatus(response);
 
-    const fetchMock = (global as any).fetch;
-
-    assertFetchCall(
-      fetchMock,
-      "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice?windowId=1&tabId=2&_operationType=add",
+    DatasourceTestAssertions.assertFetchCallWasMade(
+      DatasourceTestData.createErpForwardUrl("Invoice", 1, 2),
       "POST",
       {
         Authorization: "Bearer Bearer-Token-NoCSRF",
@@ -51,8 +44,9 @@ describe("Save without csrfToken", () => {
     );
 
     // Verify that the body does not contain csrfToken
-    const [, requestInit] = fetchMock.mock.calls[0];
-    const rawBody = requestInit.body as string;
-    expect(rawBody).not.toContain("csrfToken");
+    DatasourceTestAssertions.assertRequestBodyContent(
+      undefined,
+      "csrfToken"
+    );
   });
 });

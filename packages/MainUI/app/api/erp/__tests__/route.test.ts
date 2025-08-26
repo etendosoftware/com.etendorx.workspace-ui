@@ -13,13 +13,19 @@ jest.mock("next/server", () => {
   };
 });
 
-// Mock getCombinedErpCookieHeader
+// Mock getErpAuthHeaders to return both cookie and CSRF token
 jest.mock("@/app/api/_utils/forwardConfig", () => ({
-  getCombinedErpCookieHeader: jest.fn((request: any, userToken: string) => {
+  getErpAuthHeaders: jest.fn((request: any, userToken: string) => {
     if (userToken === "token-with-session") {
-      return "JSESSIONID=test-session-id; other=cookie";
+      return {
+        cookieHeader: "JSESSIONID=test-session-id; other=cookie",
+        csrfToken: "CSRF-TEST-123",
+      };
     }
-    return "";
+    return {
+      cookieHeader: "",
+      csrfToken: null,
+    };
   }),
 }));
 
@@ -32,6 +38,7 @@ jest.mock("next/cache", () => ({
 }));
 
 import { POST } from "../route";
+import { setErpSessionCookie } from "../../_utils/sessionStore";
 
 describe("API: /api/erp base forward", () => {
   const OLD_ENV = process.env;
@@ -67,9 +74,14 @@ describe("API: /api/erp base forward", () => {
   }
 
   it("forwards FormInitializationComponent to kernel forward path", async () => {
+    const BEARER_TOKEN = "Bearer-Token-Form-Init";
+    setErpSessionCookie(BEARER_TOKEN, {
+      cookieHeader: "JSESSIONID=ABC123DEF456; Path=/; HttpOnly",
+      csrfToken: "CSRF-TEST-123",
+    });
     const url =
       "http://localhost:3000/api/erp?MODE=NEW&TAB_ID=186&_action=org.openbravo.client.application.window.FormInitializationComponent&language=en_US";
-    const req = makeRequest(url, "token-zzz", '{"foo":"bar"}');
+    const req = makeRequest(url, BEARER_TOKEN, '{"foo":"bar"}');
     await POST(req as any);
     const [dest] = (global as any).fetch.mock.calls[0];
     expect(String(dest)).toBe(
@@ -78,6 +90,11 @@ describe("API: /api/erp base forward", () => {
   });
 
   it("forwards non-special POST to base ERP URL + query", async () => {
+    const BEARER_TOKEN = "Bearer-Token-Non-Special";
+    setErpSessionCookie(BEARER_TOKEN, {
+      cookieHeader: "JSESSIONID=ABC123DEF456; Path=/; HttpOnly",
+      csrfToken: "CSRF-TEST-123",
+    });
     const url = "http://localhost:3000/api/erp?foo=bar&x=1";
     const req = makeRequest(url, "token-abc", '{"k":"v"}');
     await POST(req as any);
@@ -110,9 +127,9 @@ describe("API: /api/erp base forward", () => {
     it("forwards process execution to kernel with correct parameters", async () => {
       const url = "http://localhost:3000/api/erp?processId=EC2C48FB84274D3CB3A3F5FD49808926";
       const req = makeRequest(url, "process-token", '{"param1":"value1","param2":"value2"}');
-      
+
       await POST(req as any);
-      
+
       const [dest, init] = (global as any).fetch.mock.calls[0];
       expect(String(dest)).toBe(
         "http://erp.example/etendo/org.openbravo.client.kernel?processId=EC2C48FB84274D3CB3A3F5FD49808926&_action=org.openbravo.client.application.process.ExecuteProcessActionHandler"
@@ -125,9 +142,9 @@ describe("API: /api/erp base forward", () => {
     it("includes cookies when token has session", async () => {
       const url = "http://localhost:3000/api/erp?processId=EC2C48FB84274D3CB3A3F5FD49808926";
       const req = makeRequest(url, "token-with-session", '{"param":"value"}');
-      
+
       await POST(req as any);
-      
+
       const [, init] = (global as any).fetch.mock.calls[0];
       expect(init.headers["Cookie"]).toBe("JSESSIONID=test-session-id; other=cookie");
     });
@@ -136,9 +153,9 @@ describe("API: /api/erp base forward", () => {
       const url = "http://localhost:3000/api/erp?processId=TEST123&_action=com.etendoerp.copilot.process.SyncAssistant";
       const body = '{"recordIds":["REC123"],"_buttonValue":"DONE","_params":{},"_entityName":"ETCOP_App"}';
       const req = makeRequest(url, "token-with-session", body);
-      
+
       await POST(req as any);
-      
+
       const [dest, init] = (global as any).fetch.mock.calls[0];
       expect(String(dest)).toBe(
         "http://erp.example/etendo/org.openbravo.client.kernel?processId=TEST123&_action=com.etendoerp.copilot.process.SyncAssistant"
@@ -158,7 +175,7 @@ describe("API: /api/erp base forward", () => {
         text: async () => '{"data":"test"}',
       } as unknown as NextRequest;
 
-      const result = await POST(req as any) as any;
+      const result = (await POST(req as any)) as any;
       expect(result.status).toBe(401);
       expect(result.body.error).toBe("Unauthorized - Missing Bearer token");
     });
@@ -173,8 +190,8 @@ describe("API: /api/erp base forward", () => {
 
       const url = "http://localhost:3000/api/erp?processId=FAILING_PROCESS";
       const req = makeRequest(url, "valid-token", '{"param":"value"}');
-      
-      const result = await POST(req as any) as any;
+
+      const result = (await POST(req as any)) as any;
       expect(result.status).toBe(500);
       expect(result.body.error).toBe("ERP request failed: 500 Internal Server Error");
     });
@@ -188,8 +205,8 @@ describe("API: /api/erp base forward", () => {
 
       const url = "http://localhost:3000/api/erp?processId=TEXT_RESPONSE_PROCESS";
       const req = makeRequest(url, "valid-token", '{"param":"value"}');
-      
-      const result = await POST(req as any) as any;
+
+      const result = (await POST(req as any)) as any;
       expect(result.status).toBe(200);
       expect(result.body.success).toBe(true);
       expect(result.body.message).toBe("OK - Process completed successfully");

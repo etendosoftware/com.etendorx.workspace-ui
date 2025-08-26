@@ -42,7 +42,6 @@ async function fetchDatasource(userToken: string, entity: string, params: Dataso
   const headers: Record<string, string> = {
     Authorization: `Bearer ${userToken}`,
     "Content-Type": "application/x-www-form-urlencoded",
-    Accept: "application/json",
   };
 
   if (cookieHeader) {

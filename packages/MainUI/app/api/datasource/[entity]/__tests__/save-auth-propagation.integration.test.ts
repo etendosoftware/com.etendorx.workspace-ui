@@ -2,46 +2,39 @@
  * Integration-like test: Authorization header propagation on save.
  */
 
-jest.mock("next/server", () => ({
-  NextResponse: {
-    json: (body: unknown, init?: { status?: number }) => ({
-      ok: true,
-      status: init?.status ?? 200,
-      body,
-    }),
-  },
-}));
+// Import shared mocks to avoid duplicating jest.mock declarations
+import "../../../_test-utils/test-shared-mocks";
 
 import {
-  createMockRequest,
-  setupTestEnvironment,
+  useDatasourceTestEnvironment,
+  executeTestScenario,
+  DatasourceTestAssertions,
+  DatasourceTestData,
   testData,
-  assertFetchCall,
-} from "../../../_test-utils/api-test-utils";
-import { POST } from "../route";
+} from "../../../_test-utils/datasource-integration-commons";
 
 describe("Save: Authorization propagation", () => {
-  const { setup, cleanup } = setupTestEnvironment();
+  const { setup, cleanup } = useDatasourceTestEnvironment();
 
   beforeEach(setup);
   afterAll(cleanup);
 
   it("forwards Authorization unchanged", async () => {
-    const req = createMockRequest({
+    const BEARER_TOKEN = DatasourceTestData.tokens.standard;
+    
+    const response = await executeTestScenario({
+      bearerToken: BEARER_TOKEN,
+      payload: testData.defaultPayload,
       url: testData.urls.order,
-      bearer: "BEARER-XYZ",
-      jsonBody: testData.defaultPayload,
+      entity: "Order",
     });
 
-    const res: any = await POST(req, { params: { entity: "Order" } });
-    expect(res.status).toBe(200);
+    DatasourceTestAssertions.assertResponseStatus(response);
 
-    const fetchMock = (global as any).fetch;
-    assertFetchCall(
-      fetchMock,
-      "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Order?windowId=10&tabId=20&_operationType=add",
+    DatasourceTestAssertions.assertFetchCallWasMade(
+      DatasourceTestData.createErpForwardUrl("Order"),
       "POST",
-      { Authorization: "Bearer BEARER-XYZ" }
+      { Authorization: `Bearer ${BEARER_TOKEN}` }
     );
   });
 });

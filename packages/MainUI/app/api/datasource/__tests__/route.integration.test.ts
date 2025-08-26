@@ -33,12 +33,18 @@ jest.mock("@/lib/auth", () => ({
  */
 
 import { createDatasourceTestSuite, assertDatasourceCall } from "../../_test-utils/datasource-test-utils";
+import { setErpSessionCookie } from "../../_utils/sessionStore";
 import { POST } from "../route";
 
 const testSuite = createDatasourceTestSuite("Grids: /api/datasource criteria handling", "grid");
 
 testSuite.describe(() => {
   it("flattens multiple criteria entries into a single JSON array string", async () => {
+    const BEARER_TOKEN = "Bearer-Token-XYZ";
+    setErpSessionCookie(BEARER_TOKEN, {
+      cookieHeader: "JSESSIONID=ABC123DEF456; Path=/; HttpOnly",
+      csrfToken: "CSRF-TEST-123",
+    });
     const criteria = [
       JSON.stringify({ fieldName: "name", operator: "iContains", value: "abc" }),
       JSON.stringify({ fieldName: "code", operator: "iContains", value: "123" }),
@@ -52,13 +58,13 @@ testSuite.describe(() => {
         _endRow: "50",
       },
     };
-    const req = testSuite.createRequest("token-grid", body);
+    const req = testSuite.createRequest(BEARER_TOKEN, body);
 
     const res = await POST(req as never);
     expect(res.status).toBe(200);
 
     assertDatasourceCall("http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice", {
-      Authorization: "Bearer token-grid",
+      Authorization: `Bearer ${BEARER_TOKEN}`,
       "Content-Type": "application/x-www-form-urlencoded",
     });
 

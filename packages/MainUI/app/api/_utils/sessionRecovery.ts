@@ -76,7 +76,7 @@ function storeCookieForToken(
 
     if (jsessionId && newToken) {
       const cookieHeader = `JSESSIONID=${jsessionId}`;
-      setErpSessionCookie(newToken, cookieHeader);
+      setErpSessionCookie(newToken, { cookieHeader, csrfToken: null });
 
       // If the token changed, clear the old one from the store
       if (oldToken && oldToken !== newToken) {
