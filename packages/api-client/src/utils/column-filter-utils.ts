@@ -31,6 +31,8 @@ export interface ColumnFilterState {
   availableOptions: FilterOption[];
   loading: boolean;
   searchQuery?: string;
+  hasMore?: boolean; // For pagination
+  currentPage?: number; // Track current page for pagination
 }
 
 export interface ColumnFilterProps {
@@ -66,12 +68,12 @@ export class ColumnFilterUtils {
     );
   }
 
-  /**
-   * Check if a column needs distinct values from the current table instead of full entity list
-   * TABLE_DIR columns should use distinct values from current table for better filtering
-   */
   static needsDistinctValues(column: Column): boolean {
-    return ColumnFilterUtils.isTableDirColumn(column);
+    if (column.datasourceId || column.referencedEntity) {
+      return true;
+    }
+    
+    return false;
   }
 
   /**

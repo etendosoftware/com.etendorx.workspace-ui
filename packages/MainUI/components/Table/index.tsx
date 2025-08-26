@@ -116,10 +116,15 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     columnFilters: advancedColumnFilters,
     setColumnFilter,
     setFilterOptions,
+    loadMoreFilterOptions,
   } = useColumnFilters({
     columns: rawColumns,
-    // Don't pass onFiltersChange to prevent unnecessary updates
   });
+
+  console.debug(
+    "module column:",
+    rawColumns.find((col: Column) => col.columnName === "module" || col.id === "module")
+  );
 
   const { fetchFilterOptions } = useColumnFilterData();
 
@@ -162,9 +167,16 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       }
 
       if (ColumnFilterUtils.isSelectColumn(column)) {
-        const options = ColumnFilterUtils.getSelectOptions(column);
-        setFilterOptions(columnId, options);
-        return options;
+        const allOptions = ColumnFilterUtils.getSelectOptions(column);
+
+        // Filter locally if there's a search query
+        const filteredOptions = searchQuery
+          ? allOptions.filter((option) => option.label.toLowerCase().includes(searchQuery.toLowerCase()))
+          : allOptions;
+
+        // SELECT columns have fixed options, no pagination needed
+        setFilterOptions(columnId, filteredOptions, false, false);
+        return filteredOptions;
       }
 
       if (ColumnFilterUtils.isTableDirColumn(column)) {
@@ -176,21 +188,44 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
             const tabIdStr = tab.id;
             const distinctField = column.columnName;
 
-            options = await fetchFilterOptions(currentDatasource, undefined, searchQuery, 20, distinctField, tabIdStr);
+            options = await fetchFilterOptions(
+              currentDatasource,
+              undefined,
+              searchQuery,
+              20,
+              distinctField,
+              tabIdStr,
+              0
+            );
           } else {
             const selectorDefinitionId = column.selectorDefinitionId;
             const datasourceId = column.datasourceId || column.referencedEntity;
+            console.debug(
+              "[FILTER DEBUG] Using datasourceId:",
+              datasourceId,
+              "selectorDefinitionId:",
+              selectorDefinitionId
+            );
 
             if (datasourceId) {
-              options = await fetchFilterOptions(datasourceId, selectorDefinitionId, searchQuery);
+              options = await fetchFilterOptions(
+                datasourceId,
+                selectorDefinitionId,
+                searchQuery,
+                20,
+                undefined,
+                undefined,
+                0
+              );
             }
           }
 
-          setFilterOptions(columnId, options);
+          const hasMore = options.length === 20;
+          setFilterOptions(columnId, options, hasMore, false);
           return options;
         } catch (error) {
           console.error("Error loading filter options:", error);
-          setFilterOptions(columnId, []);
+          setFilterOptions(columnId, [], false, false);
           return [];
         }
       }
@@ -200,9 +235,80 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     [rawColumns, fetchFilterOptions, setFilterOptions, tab.id, treeEntity]
   );
 
+  const handleLoadMoreFilterOptions = useCallback(
+    async (columnId: string, searchQuery?: string): Promise<FilterOption[]> => {
+      const column = rawColumns.find((col: Column) => col.id === columnId || col.columnName === columnId);
+      if (!column) {
+        return [];
+      }
+
+      if (!ColumnFilterUtils.isTableDirColumn(column)) {
+        return [];
+      }
+
+      // Get current filter state to determine pagination
+      const filterState = advancedColumnFilters.find((f) => f.id === columnId);
+      const currentPage = filterState?.currentPage || 0;
+      const currentSearchQuery = searchQuery || filterState?.searchQuery;
+
+      loadMoreFilterOptions(columnId, currentSearchQuery);
+
+      try {
+        let options: FilterOption[] = [];
+
+        // Calculate offset for pagination (20 items per page)
+        const pageSize = 20;
+        const offset = currentPage * pageSize;
+
+        if (ColumnFilterUtils.needsDistinctValues(column)) {
+          const currentDatasource = treeEntity;
+          const tabIdStr = tab.id;
+          const distinctField = column.columnName;
+
+          options = await fetchFilterOptions(
+            currentDatasource,
+            undefined,
+            currentSearchQuery,
+            pageSize,
+            distinctField,
+            tabIdStr,
+            offset
+          );
+        } else {
+          const selectorDefinitionId = column.selectorDefinitionId;
+          const datasourceId = column.datasourceId || column.referencedEntity;
+
+          if (datasourceId) {
+            // TODO: Add offset parameter to fetchFilterOptions for non-distinct queries
+            options = await fetchFilterOptions(
+              datasourceId,
+              selectorDefinitionId,
+              currentSearchQuery,
+              pageSize,
+              undefined,
+              undefined,
+              offset
+            );
+          }
+        }
+
+        // Append new options to existing ones
+        const hasMore = options.length === pageSize; // If we got full page, there might be more
+        setFilterOptions(columnId, options, hasMore, true); // append = true
+        return options;
+      } catch (error) {
+        console.error("Error loading more filter options:", error);
+        setFilterOptions(columnId, [], false, true);
+        return [];
+      }
+    },
+    [rawColumns, fetchFilterOptions, setFilterOptions, loadMoreFilterOptions, tab.id, treeEntity, advancedColumnFilters]
+  );
+
   const baseColumns = useColumns(tab, {
     onColumnFilter: handleColumnFilterChange,
     onLoadFilterOptions: handleLoadFilterOptions,
+    onLoadMoreFilterOptions: handleLoadMoreFilterOptions,
     columnFilterStates: advancedColumnFilters,
   });
   const [prevShouldUseTreeMode, setPrevShouldUseTreeMode] = useState(shouldUseTreeMode);

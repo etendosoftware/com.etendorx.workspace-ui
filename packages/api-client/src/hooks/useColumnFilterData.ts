@@ -20,9 +20,7 @@ import { datasource } from "../api/datasource";
 import type { FilterOption } from "../utils/column-filter-utils";
 
 /**
- * Hook for fetching column filter data using the same pattern as useDatasource
- * but optimized for simple filter queries. Supports both direct datasource queries
- * and distinct value queries from the current table.
+ * Hook for fetching column filter data optimized for simple filter queries.
  */
 export const useColumnFilterData = () => {
   const fetchFilterOptions = useCallback(
@@ -32,49 +30,62 @@ export const useColumnFilterData = () => {
       searchQuery?: string,
       limit = 20,
       distinctField?: string,
-      tabId?: string
+      tabId?: string,
+      offset = 0
     ): Promise<FilterOption[]> => {
       try {
-        // Construct params without _ prefix since datasource.get() will add them automatically
         const params: Record<string, unknown> = {
-          startRow: 0,
-          endRow: limit,
+          startRow: offset,
+          endRow: offset + limit - 1,
           textMatchStyle: "substring",
-          requestId: 1,
+          operationType: "fetch",
           dataSource: datasourceId,
         };
 
-        // For distinct field queries, use the current table's datasource and add distinct parameter
         if (distinctField && tabId) {
           params.distinct = distinctField;
           params.tabId = tabId;
-          // Add dummy criteria to match Classic behavior
           params.operator = "and";
           params._constructor = "AdvancedCriteria";
-          params.criteria = JSON.stringify({
-            fieldName: "_dummy",
-            operator: "equals",
-            value: Date.now(),
-          });
+          
+          if (searchQuery?.trim()) {
+            params.criteria = JSON.stringify({
+              fieldName: `${distinctField}$_identifier`,
+              operator: "iContains", 
+              value: searchQuery.trim(),
+              _constructor: "AdvancedCriteria"
+            });
+          } else {
+            params.criteria = JSON.stringify({
+              fieldName: "_dummy",
+              operator: "equals",
+              value: Date.now(),
+              _constructor: "AdvancedCriteria"
+            });
+          }
         } else {
-          // Add selector definition ID if available (for regular selector queries)
           if (selectorDefinitionId) {
             params.selectorDefinitionId = selectorDefinitionId;
             params.filterClass = "org.openbravo.userinterface.selector.SelectorDataSourceFilter";
           }
 
-          // Add search criteria if provided
           if (searchQuery?.trim()) {
-            params.currentValue = searchQuery.trim();
+            params.criteria = JSON.stringify({
+              fieldName: "_identifier",
+              operator: "iContains", 
+              value: searchQuery.trim(),
+              _constructor: "AdvancedCriteria"
+            });
+            
+            params.operator = "and";
+            params._constructor = "AdvancedCriteria";
           }
         }
-
-        // Use the same datasource.get method that useDatasource uses
+        
         const response = await datasource.get(datasourceId, params);
 
         if (response.ok && response.data?.response?.data) {
           const options = response.data.response.data.map((item: Record<string, unknown>) => {
-            // For distinct queries, we get the field value and its identifier
             if (distinctField) {
               const fieldValue = item[distinctField];
               const identifierKey = `${distinctField}$_identifier`;
@@ -83,11 +94,10 @@ export const useColumnFilterData = () => {
               return {
                 id: String(fieldValue || item.id),
                 label: identifier,
-                value: String(fieldValue || identifier), // Use the actual field value for filtering
+                value: String(fieldValue || identifier),
               };
             }
             
-            // Regular selector/entity queries
             const identifier = String(
               item._identifier ||
                 item.name ||
@@ -98,7 +108,7 @@ export const useColumnFilterData = () => {
             return {
               id: String(item.id),
               label: identifier,
-              value: identifier, // Use identifier for filtering, not ID
+              value: identifier,
             };
           });
 
