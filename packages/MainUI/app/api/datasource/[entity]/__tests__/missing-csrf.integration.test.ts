@@ -21,7 +21,7 @@ describe("Save without csrfToken", () => {
 
   it("omits CSRF header and field when csrfToken is absent", async () => {
     const BEARER_TOKEN = DatasourceTestData.tokens.noCsrf;
-    
+
     // Create payload without CSRF token
     const payloadWithoutCsrf = DatasourceTestData.payloads.createStandard(false);
 
@@ -34,19 +34,12 @@ describe("Save without csrfToken", () => {
 
     DatasourceTestAssertions.assertResponseStatus(response);
 
-    DatasourceTestAssertions.assertFetchCallWasMade(
-      DatasourceTestData.createErpForwardUrl("Invoice", 1, 2),
-      "POST",
-      {
-        Authorization: "Bearer Bearer-Token-NoCSRF",
-        "X-CSRF-Token": undefined,
-      }
-    );
+    DatasourceTestAssertions.assertFetchCallWasMade(DatasourceTestData.createErpForwardUrl("Invoice", 1, 2), "POST", {
+      Authorization: "Bearer Bearer-Token-NoCSRF",
+      "X-CSRF-Token": undefined,
+    });
 
     // Verify that the body does not contain csrfToken
-    DatasourceTestAssertions.assertRequestBodyContent(
-      undefined,
-      "csrfToken"
-    );
+    DatasourceTestAssertions.assertRequestBodyContent(undefined, "csrfToken");
   });
 });

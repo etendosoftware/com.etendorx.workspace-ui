@@ -75,7 +75,7 @@ describe("API: /api/datasource/:entity save/update", () => {
     );
     expect(decoded).toContain('"operationType":"add"');
     expect(decoded).toContain('"componentId":"isc_OBViewForm_0"');
-    expect(decoded).toContain('"csrfToken":"CSRF123"');
+    expect(decoded).toContain('"csrfToken":"CSRF-TEST-123"'); // Should be replaced with token from session store
     expect(decoded).toContain('"data":{"key":"val"}');
     expect(decoded).toContain('"oldValues":{"prev":1}');
   });

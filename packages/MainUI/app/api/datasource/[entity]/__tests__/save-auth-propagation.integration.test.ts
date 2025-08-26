@@ -21,7 +21,7 @@ describe("Save: Authorization propagation", () => {
 
   it("forwards Authorization unchanged", async () => {
     const BEARER_TOKEN = DatasourceTestData.tokens.standard;
-    
+
     const response = await executeTestScenario({
       bearerToken: BEARER_TOKEN,
       payload: testData.defaultPayload,
@@ -31,10 +31,8 @@ describe("Save: Authorization propagation", () => {
 
     DatasourceTestAssertions.assertResponseStatus(response);
 
-    DatasourceTestAssertions.assertFetchCallWasMade(
-      DatasourceTestData.createErpForwardUrl("Order"),
-      "POST",
-      { Authorization: `Bearer ${BEARER_TOKEN}` }
-    );
+    DatasourceTestAssertions.assertFetchCallWasMade(DatasourceTestData.createErpForwardUrl("Order"), "POST", {
+      Authorization: `Bearer ${BEARER_TOKEN}`,
+    });
   });
 });

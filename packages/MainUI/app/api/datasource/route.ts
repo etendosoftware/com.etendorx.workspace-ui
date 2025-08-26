@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { getUserContext, extractBearerToken } from "@/lib/auth";
 import { shouldCacheDatasource } from "@/app/api/_utils/datasourceCache";
-import { shouldPassthroughJson } from "@/app/api/_utils/forwardConfig";
+import { shouldPassthroughJson, getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
 import { executeWithSessionRetry } from "@/app/api/_utils/sessionRetry";
 import { joinUrl } from "../_utils/url";
 import type { DatasourceParams } from "@workspaceui/api-client/src/api/types";
@@ -15,12 +15,21 @@ type DatasourceRequestParams = DatasourceParams | SmartClientPayload;
 
 // Cached function that includes the full user context in its key
 const getCachedDatasource = unstable_cache(
-  async (userToken: string, entity: string, params: DatasourceRequestParams) =>
-    fetchDatasource(userToken, entity, params),
+  async (userToken: string, entity: string, params: DatasourceRequestParams) => {
+    // For cached requests, get auth headers for the user token
+    const { cookieHeader, csrfToken } = getErpAuthHeaders(userToken);
+    return fetchDatasource(userToken, entity, params, cookieHeader, csrfToken);
+  },
   ["datasource_v2"]
 );
 
-async function fetchDatasource(userToken: string, entity: string, params: DatasourceRequestParams, cookieHeader = "") {
+async function fetchDatasource(
+  userToken: string,
+  entity: string,
+  params: DatasourceRequestParams,
+  cookieHeader = "",
+  csrfToken: string | null = null
+) {
   const erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, `/meta/forward/org.openbravo.service.datasource/${entity}`);
 
   // Convert params object to URLSearchParams for the ERP request
@@ -48,6 +57,10 @@ async function fetchDatasource(userToken: string, entity: string, params: Dataso
     headers.Cookie = cookieHeader;
   }
 
+  if (csrfToken) {
+    headers["X-CSRF-Token"] = csrfToken;
+  }
+
   const response = await fetch(erpUrl, {
     method: "POST",
     headers,
@@ -65,9 +78,16 @@ async function fetchDatasourceJson(
   userToken: string,
   entity: string,
   params: DatasourceRequestParams,
-  cookieHeader = ""
+  cookieHeader = "",
+  csrfToken: string | null = null
 ) {
   const erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, `/meta/forward/org.openbravo.service.datasource/${entity}`);
+
+  // Process JSON body to sync csrfToken if needed
+  let processedParams = params;
+  if (csrfToken && params && typeof params === "object" && "csrfToken" in params) {
+    processedParams = { ...params, csrfToken };
+  }
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${userToken}`,
@@ -79,10 +99,14 @@ async function fetchDatasourceJson(
     headers.Cookie = cookieHeader;
   }
 
+  if (csrfToken) {
+    headers["X-CSRF-Token"] = csrfToken;
+  }
+
   const response = await fetch(erpUrl, {
     method: "POST",
     headers,
-    body: JSON.stringify(params),
+    body: JSON.stringify(processedParams),
   });
 
   if (!response.ok) {
@@ -131,10 +155,13 @@ export async function POST(request: NextRequest) {
 
     // For non-cached requests, use session retry logic
     const requestFn = async (cookieHeader: string) => {
+      // Get CSRF token for the current user token
+      const { csrfToken } = getErpAuthHeaders(request, userToken);
+
       if (passJson) {
-        return await fetchDatasourceJson(userToken, entity, params, cookieHeader);
+        return await fetchDatasourceJson(userToken, entity, params, cookieHeader, csrfToken);
       }
-      return await fetchDatasource(userToken, entity, params, cookieHeader);
+      return await fetchDatasource(userToken, entity, params, cookieHeader, csrfToken);
     };
 
     const result = await executeWithSessionRetry(request, userToken, requestFn);

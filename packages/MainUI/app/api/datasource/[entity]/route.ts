@@ -38,12 +38,15 @@ function buildErpUrl(entity: string, requestUrl: URL): string {
  * Processes the request body and headers for forwarding to the ERP system
  * @param request - The incoming Next.js request
  * @param userToken - The authenticated user token
+ * @param combinedCookie - The combined cookie header
+ * @param csrfToken - The CSRF token from the session store
  * @returns Processed headers and body for the ERP request
  */
 async function processRequestData(
   request: NextRequest,
   userToken: string,
-  combinedCookie: string
+  combinedCookie: string,
+  csrfToken: string | null
 ): Promise<ProcessedRequestData> {
   const method = request.method;
   const contentType = request.headers.get("Content-Type") || "application/json";
@@ -70,8 +73,25 @@ async function processRequestData(
     return { headers };
   }
 
+  // Process JSON body to sync csrfToken if needed
+  let processedBody = body;
+  if (contentType.includes("application/json") && csrfToken) {
+    try {
+      const jsonBody = JSON.parse(body);
+
+      // If the JSON already contains csrfToken property, replace its value with the actual token
+      if (jsonBody && typeof jsonBody === "object" && "csrfToken" in jsonBody) {
+        jsonBody.csrfToken = csrfToken;
+        processedBody = JSON.stringify(jsonBody);
+      }
+    } catch (error) {
+      // If JSON parsing fails, keep the original body
+      console.warn("Failed to parse JSON body for CSRF token sync:", error);
+    }
+  }
+
   headers["Content-Type"] = contentType;
-  return { headers, body };
+  return { headers, body: processedBody };
 }
 
 /**
@@ -100,10 +120,10 @@ async function handleErpResponse(response: Response): Promise<NextResponse> {
 /**
  * Main request handler that orchestrates the datasource proxy functionality
  * @param request - The incoming Next.js request
- * @param context - Route context (contains params). Kept loosely typed to match Next export expectations.
+ * @param context - Route context (contains params). Properly typed for Next.js 14+ compatibility.
  * @returns A Next.js response
  */
-async function handle(request: NextRequest, context: any) {
+async function handle(request: NextRequest, context: { params: Promise<{ entity: string }> }) {
   try {
     // Step 1: Validate authentication
     const userToken = validateAndExtractToken(request);
@@ -112,15 +132,14 @@ async function handle(request: NextRequest, context: any) {
     }
 
     // Step 2: Extract entity and build target URL
-    const params = context?.params ?? {};
-    const entity = params.entity as string;
+    const { entity } = await context.params;
     const requestUrl = new URL(request.url);
     const erpUrl = buildErpUrl(entity, requestUrl);
 
     // Extract auth headers (cookie + CSRF token)
-    const { cookieHeader } = getErpAuthHeaders(request, userToken);
+    const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
     // Step 3: Process request data for ERP compatibility
-    const { headers, body } = await processRequestData(request, userToken, cookieHeader);
+    const { headers, body } = await processRequestData(request, userToken, cookieHeader, csrfToken);
 
     // NOTE: Do not forward stored CSRF token as a header for datasource requests.
     // Datasource payloads include csrfToken in the request body when needed and
