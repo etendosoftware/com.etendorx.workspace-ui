@@ -26,7 +26,7 @@ import {
   type MRT_ExpandedState,
 } from "material-react-table";
 import { useStyle } from "./styles";
-import type { DatasourceOptions, EntityData } from "@workspaceui/api-client/src/api/types";
+import type { DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearch } from "../../contexts/searchContext";
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
@@ -115,16 +115,23 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const {
     columnFilters: advancedColumnFilters,
     setColumnFilter,
-    loadFilterOptions,
     setFilterOptions,
-  } = useColumnFilters({ columns: rawColumns });
+  } = useColumnFilters({
+    columns: rawColumns,
+    // Don't pass onFiltersChange to prevent unnecessary updates
+  });
 
   const { fetchFilterOptions } = useColumnFilterData();
+
+  // Separate state for applied table filters (only for actual data filtering)
+  const [appliedTableFilters, setAppliedTableFilters] = useState<MRT_ColumnFiltersState>([]);
 
   const handleColumnFilterChange = useCallback(
     async (columnId: string, selectedOptions: FilterOption[]) => {
       setColumnFilter(columnId, selectedOptions);
 
+      // Only update applied table filters when user actually selects/deselects options
+      // This prevents unnecessary table refetch when just loading filter options
       const mrtFilter =
         selectedOptions.length > 0
           ? {
@@ -133,6 +140,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
             }
           : null;
 
+      setAppliedTableFilters((prev) => {
+        const filtered = prev.filter((f) => f.id !== columnId);
+        return mrtFilter ? [...filtered, mrtFilter] : filtered;
+      });
+
+      // Also update MRT column filters state for UI consistency
       setColumnFilters((prev) => {
         const filtered = prev.filter((f) => f.id !== columnId);
         return mrtFilter ? [...filtered, mrtFilter] : filtered;
@@ -143,7 +156,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   const handleLoadFilterOptions = useCallback(
     async (columnId: string, searchQuery?: string): Promise<FilterOption[]> => {
-      const column = rawColumns.find((col: any) => col.id === columnId || col.columnName === columnId);
+      const column = rawColumns.find((col: Column) => col.id === columnId || col.columnName === columnId);
       if (!column) {
         return [];
       }
@@ -155,40 +168,36 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       }
 
       if (ColumnFilterUtils.isTableDirColumn(column)) {
-        loadFilterOptions(columnId, searchQuery);
+        try {
+          let options: FilterOption[] = [];
 
-        // For TABLE_DIR columns, use distinct values from current table instead of full entity list
-        if (ColumnFilterUtils.needsDistinctValues(column)) {
-          const currentDatasource = treeEntity; // Use current table's datasource
-          const tabIdStr = tab.id; // Current tab ID
-          const distinctField = column.columnName; // Field to get distinct values for
+          if (ColumnFilterUtils.needsDistinctValues(column)) {
+            const currentDatasource = treeEntity;
+            const tabIdStr = tab.id;
+            const distinctField = column.columnName;
 
-          const options = await fetchFilterOptions(
-            currentDatasource,
-            undefined, // No selector definition for distinct queries
-            searchQuery,
-            20, // limit
-            distinctField, // distinct field
-            tabIdStr // tab ID
-          );
+            options = await fetchFilterOptions(currentDatasource, undefined, searchQuery, 20, distinctField, tabIdStr);
+          } else {
+            const selectorDefinitionId = column.selectorDefinitionId;
+            const datasourceId = column.datasourceId || column.referencedEntity;
+
+            if (datasourceId) {
+              options = await fetchFilterOptions(datasourceId, selectorDefinitionId, searchQuery);
+            }
+          }
+
           setFilterOptions(columnId, options);
           return options;
-        }
-
-        // Fallback to original behavior for non-distinct columns
-        const selectorDefinitionId = (column as any).selectorDefinitionId;
-        const datasourceId = (column as any).datasourceId || (column as any).referencedEntity;
-
-        if (datasourceId) {
-          const options = await fetchFilterOptions(datasourceId, selectorDefinitionId, searchQuery);
-          setFilterOptions(columnId, options);
-          return options;
+        } catch (error) {
+          console.error("Error loading filter options:", error);
+          setFilterOptions(columnId, []);
+          return [];
         }
       }
 
       return [];
     },
-    [rawColumns, loadFilterOptions, fetchFilterOptions, setFilterOptions, tab.id, treeEntity]
+    [rawColumns, fetchFilterOptions, setFilterOptions, tab.id, treeEntity]
   );
 
   const baseColumns = useColumns(tab, {
@@ -438,15 +447,23 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     [shouldUseTreeMode, tab.id, tab.window, treeMetadata.referencedTableId]
   );
 
+  const skip = useMemo(() => {
+    return parentTab ? Boolean(!parentRecord || (parentRecords && parentRecords.length !== 1)) : false;
+  }, [parentTab, parentRecord, parentRecords]);
+
+  const stableDatasourceColumns = useMemo(() => {
+    return rawColumns;
+  }, [rawColumns]);
+
   const { toggleImplicitFilters, fetchMore, records, removeRecordLocally, error, refetch, loading, hasMoreRecords } =
     useDatasource({
       entity: treeEntity,
       params: query,
-      columns,
+      columns: stableDatasourceColumns,
       searchQuery,
-      skip: parentTab ? Boolean(!parentRecord || (parentRecords && parentRecords.length !== 1)) : false,
+      skip,
       treeOptions,
-      activeColumnFilters: columnFilters,
+      activeColumnFilters: appliedTableFilters,
     });
 
   useEffect(() => {
