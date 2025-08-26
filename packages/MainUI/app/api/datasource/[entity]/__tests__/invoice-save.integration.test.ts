@@ -41,7 +41,7 @@ describe("Invoice save parity: /api/datasource/Invoice", () => {
     const fetchMock = (global as any).fetch;
 
     assertFetchCall(fetchMock, testData.expectedUrls.invoice, "POST", {
-      Authorization: "Bearer Bearer-Token-123",
+      Authorization: `Bearer ${BEARER_TOKEN}`,
       "Content-Type": "application/json",
       "X-CSRF-Token": undefined,
     });

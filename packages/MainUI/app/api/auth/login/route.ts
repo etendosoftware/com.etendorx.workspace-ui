@@ -76,7 +76,10 @@ function storeCookieForToken(erpResponse: Response, data: any): void {
     const csrfToken = erpResponse.headers.get("X-CSRF-Token") || erpResponse.headers.get("x-csrf-token") || null;
     const cookieHeader = `JSESSIONID=${jsession}`;
     setErpSessionCookie(data.token, { cookieHeader, csrfToken });
-  } catch {}
+  } catch (e) {
+    console.error("Error storing session cookie:", e);
+    throw new Error("Failed to store session cookie");
+  }
 }
 
 export async function POST(request: NextRequest) {

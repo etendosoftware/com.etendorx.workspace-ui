@@ -68,7 +68,7 @@ export function getErpAuthHeaders(
     );
   };
 
-  const request = isRequest(requestOrToken) ? (requestOrToken as Request | NextRequest) : null;
+  const request = isRequest(requestOrToken) ? requestOrToken : null;
   const token = isRequest(requestOrToken)
     ? (maybeToken ?? null)
     : ((requestOrToken as string | null | undefined) ?? null);

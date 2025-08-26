@@ -148,8 +148,6 @@ async function executeMutation(
 
   // Try to parse JSON, but handle cases where response is not JSON
   const responseText = await response.text();
-  console.log(`ERP Response: ${responseText.substring(0, 200)}...`); // Log first 200 chars for debugging
-
   try {
     return JSON.parse(responseText);
   } catch (jsonError) {

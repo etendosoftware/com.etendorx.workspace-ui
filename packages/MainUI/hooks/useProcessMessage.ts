@@ -130,7 +130,6 @@ export function useProcessMessage(tabId: string) {
       }
 
       const txtResponse = await response.text();
-      console.log("Response Text:", txtResponse);
 
       try {
         const data = JSON.parse(txtResponse);
