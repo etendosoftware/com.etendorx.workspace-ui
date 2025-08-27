@@ -28,6 +28,7 @@ import {
 import { useStyle } from "./styles";
 import type { DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useSearch } from "../../contexts/searchContext";
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
@@ -98,6 +99,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
+  const searchParams = useSearchParams();
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
   const tabId = tab.id;
   const parentId = String(parentRecord?.id ?? "");
@@ -555,6 +557,25 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       activeColumnFilters: appliedTableFilters,
     });
 
+  // Initialize row selection from URL parameters
+  const urlBasedRowSelection = useMemo(() => {
+    const urlIds = searchParams.get(`${tab.id}Selection`);
+    if (!urlIds) return {};
+
+    const ids = urlIds.split(",").filter(Boolean);
+    const selection: Record<string, boolean> = {};
+
+    // Only create selection for records that exist
+    for (const id of ids) {
+      const recordExists = records?.some((record) => String(record.id) === id);
+      if (recordExists) {
+        selection[id] = true;
+      }
+    }
+
+    return selection;
+  }, [searchParams, tab.id, records]);
+
   useEffect(() => {
     if (prevShouldUseTreeMode !== shouldUseTreeMode) {
       if (!shouldUseTreeMode) {
@@ -792,7 +813,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       const canExpand = row.original.showDropIcon === true && isParentNode;
       return canExpand;
     },
-    initialState: { density: "compact" },
+    initialState: {
+      density: "compact",
+      rowSelection: urlBasedRowSelection,
+    },
     renderDetailPanel: undefined,
     onExpandedChange: (newExpanded) => {
       const prevExpanded = expandedRef.current;
