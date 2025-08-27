@@ -69,11 +69,7 @@ export class ColumnFilterUtils {
   }
 
   static needsDistinctValues(column: Column): boolean {
-    if (column.datasourceId || column.referencedEntity) {
-      return true;
-    }
-    
-    return false;
+    return !!(column.datasourceId || column.referencedEntity);
   }
 
   /**
@@ -84,11 +80,13 @@ export class ColumnFilterUtils {
       return [];
     }
 
-    return ((column.refList as { id: string; label: string; value: string }[]) || []).map((item: { id: string; label: string; value: string }) => ({
-      id: item.id,
-      label: item.label,
-      value: item.value,
-    }));
+    return ((column.refList as { id: string; label: string; value: string }[]) || []).map(
+      (item: { id: string; label: string; value: string }) => ({
+        id: item.id,
+        label: item.label,
+        value: item.value,
+      })
+    );
   }
 
   /**

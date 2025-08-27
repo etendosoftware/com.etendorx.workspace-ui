@@ -121,22 +121,14 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     columns: rawColumns,
   });
 
-  console.debug(
-    "module column:",
-    rawColumns.find((col: Column) => col.columnName === "module" || col.id === "module")
-  );
-
   const { fetchFilterOptions } = useColumnFilterData();
 
-  // Separate state for applied table filters (only for actual data filtering)
   const [appliedTableFilters, setAppliedTableFilters] = useState<MRT_ColumnFiltersState>([]);
 
   const handleColumnFilterChange = useCallback(
     async (columnId: string, selectedOptions: FilterOption[]) => {
       setColumnFilter(columnId, selectedOptions);
 
-      // Only update applied table filters when user actually selects/deselects options
-      // This prevents unnecessary table refetch when just loading filter options
       const mrtFilter =
         selectedOptions.length > 0
           ? {
@@ -169,12 +161,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       if (ColumnFilterUtils.isSelectColumn(column)) {
         const allOptions = ColumnFilterUtils.getSelectOptions(column);
 
-        // Filter locally if there's a search query
+        // Filter locally if 's a search query
         const filteredOptions = searchQuery
           ? allOptions.filter((option) => option.label.toLowerCase().includes(searchQuery.toLowerCase()))
           : allOptions;
 
-        // SELECT columns have fixed options, no pagination needed
         setFilterOptions(columnId, filteredOptions, false, false);
         return filteredOptions;
       }
@@ -200,12 +191,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           } else {
             const selectorDefinitionId = column.selectorDefinitionId;
             const datasourceId = column.datasourceId || column.referencedEntity;
-            console.debug(
-              "[FILTER DEBUG] Using datasourceId:",
-              datasourceId,
-              "selectorDefinitionId:",
-              selectorDefinitionId
-            );
 
             if (datasourceId) {
               options = await fetchFilterOptions(
@@ -279,7 +264,6 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           const datasourceId = column.datasourceId || column.referencedEntity;
 
           if (datasourceId) {
-            // TODO: Add offset parameter to fetchFilterOptions for non-distinct queries
             options = await fetchFilterOptions(
               datasourceId,
               selectorDefinitionId,
@@ -292,9 +276,8 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
           }
         }
 
-        // Append new options to existing ones
-        const hasMore = options.length === pageSize; // If we got full page, there might be more
-        setFilterOptions(columnId, options, hasMore, true); // append = true
+        const hasMore = options.length === pageSize;
+        setFilterOptions(columnId, options, hasMore, true);
         return options;
       } catch (error) {
         console.error("Error loading more filter options:", error);
