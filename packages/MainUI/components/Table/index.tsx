@@ -24,6 +24,7 @@ import {
   type MRT_TableInstance,
   type MRT_VisibilityState,
   type MRT_ExpandedState,
+  type MRT_RowSelectionState,
 } from "material-react-table";
 import { useStyle } from "./styles";
 import type { DatasourceOptions, EntityData } from "@workspaceui/api-client/src/api/types";
@@ -42,6 +43,7 @@ import { useTabContext } from "@/contexts/tab";
 import { useDatasource } from "@/hooks/useDatasource";
 import { useSelected } from "@/hooks/useSelected";
 import { useColumns } from "@/hooks/table/useColumns";
+import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import PlusFolderFilledIcon from "../../../ComponentLibrary/src/assets/icons/folder-plus-filled.svg";
 import MinusFolderIcon from "../../../ComponentLibrary/src/assets/icons/folder-minus.svg";
 import CircleFilledIcon from "../../../ComponentLibrary/src/assets/icons/circle-filled.svg";
@@ -80,6 +82,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const [columnVisibility, setColumnVisibility] = useState<MRT_VisibilityState>({});
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<HTMLElement | null>(null);
   const { graph } = useSelected();
+  const { activeWindow, getSelectedRecord } = useMultiWindowURL();
 
   const toggleColumnsDropdown = useCallback(
     (buttonRef?: HTMLElement | null) => {
@@ -465,6 +468,40 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   const displayRecords = shouldUseTreeMode ? flattenedRecords : records;
 
+  // Calculate initial row selection state from URL to prevent visual transitions
+  const initialRowSelection = useMemo<MRT_RowSelectionState>(() => {
+    if (!activeWindow?.windowId || !tab || !displayRecords?.length) return {};
+
+    const urlSelectedRecord = getSelectedRecord(activeWindow.windowId, tab.id);
+    if (!urlSelectedRecord) return {};
+
+    // Find the record in current data to ensure it exists
+    const recordExists = displayRecords.find((record) => String(record.id) === urlSelectedRecord);
+    if (!recordExists) return {};
+
+    // Return MRT selection state format
+    return {
+      [urlSelectedRecord]: true,
+    };
+  }, [activeWindow?.windowId, tab, getSelectedRecord, displayRecords]);
+
+  // Synchronize graph state with initial selection (one-time on mount)
+  useEffect(() => {
+    if (!activeWindow?.windowId || !tab || !displayRecords?.length) return;
+
+    const urlSelectedRecord = getSelectedRecord(activeWindow.windowId, tab.id);
+    if (urlSelectedRecord) {
+      const recordData = displayRecords.find((record) => String(record.id) === urlSelectedRecord);
+      if (recordData) {
+        // Only set graph selection if it doesn't already match
+        const currentSelected = graph.getSelected?.(tab);
+        if (!currentSelected || String(currentSelected.id) !== String(recordData.id)) {
+          graph.setSelected(tab, recordData);
+        }
+      }
+    }
+  }, [activeWindow?.windowId, tab, getSelectedRecord, graph, displayRecords]);
+
   useEffect(() => {
     if (shouldUseTreeMode) {
       const flattened = buildFlattenedRecords(records, expanded, childrenData);
@@ -686,7 +723,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       const canExpand = row.original.showDropIcon === true && isParentNode;
       return canExpand;
     },
-    initialState: { density: "compact" },
+    initialState: {
+      density: "compact",
+      rowSelection: initialRowSelection, // Add initial selection state to prevent visual transitions
+    },
     renderDetailPanel: undefined,
     onExpandedChange: (newExpanded) => {
       const prevExpanded = expandedRef.current;

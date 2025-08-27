@@ -60,7 +60,7 @@ export const useToolbarConfig = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { tab } = useTabContext();
-  const { activeWindow, getSelectedRecord, clearSelectedRecord } = useMultiWindowURL();
+  const { activeWindow, getSelectedRecord, clearSelectedRecord, getTabFormState } = useMultiWindowURL();
   const { graph } = useSelected();
 
   const selectedMultiple = useSelectedRecords(tab);
@@ -145,7 +145,17 @@ export const useToolbarConfig = ({
   const actionHandlers = useMemo<Record<string, (event?: React.MouseEvent<HTMLElement>) => void>>(
     () => ({
       CANCEL: () => {
-        onBack?.();
+        // Access current view state directly to determine if we should preserve selection
+        if (!activeWindow?.windowId || !tab) {
+          onBack?.();
+          return;
+        }
+
+        const tabFormState = getTabFormState(activeWindow.windowId, tab.id);
+        const isInFormView = tabFormState?.mode === "form";
+
+        // Preserve URL-based selection if coming from form view, clear all states if coming from table view
+        onBack?.(isInFormView);
       },
       NEW: () => {
         onNew?.();
@@ -239,6 +249,8 @@ export const useToolbarConfig = ({
       contextItems,
       onColumnFilters,
       onToggleTreeView,
+      activeWindow,
+      getTabFormState,
     ]
   );
 

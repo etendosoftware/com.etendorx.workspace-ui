@@ -58,9 +58,12 @@ type ToolbarActions = {
 
   /**
    * Navigate back to the previous view or parent level.
-   * Commonly used to return from form view to table view.
+   * @param preserveUrlSelection - If true, maintains URL-based record selection 
+   *                               when navigating back from form view. The table 
+   *                               component will restore graph selection from URL 
+   *                               state when it remounts. Defaults to false.
    */
-  back: () => void;
+  back: (preserveUrlSelection?: boolean) => void;
 
   /**
    * Open or toggle the filter interface.
@@ -81,7 +84,14 @@ type ToolbarContextType = {
   onSave: (showModal: boolean) => Promise<void>;
   onRefresh: () => void;
   onNew: () => void;
-  onBack: () => void;
+  /** 
+   * Navigate back to the previous view or parent level.
+   * @param preserveUrlSelection - If true, maintains URL-based record selection 
+   *                               when navigating back from form view. The table 
+   *                               component will restore graph selection from URL 
+   *                               state when it remounts. Defaults to false.
+   */
+  onBack: (preserveUrlSelection?: boolean) => void;
   onFilter: () => void;
   onToggleTreeView: () => void;
   onColumnFilters: (buttonRef?: HTMLElement | null) => void;
