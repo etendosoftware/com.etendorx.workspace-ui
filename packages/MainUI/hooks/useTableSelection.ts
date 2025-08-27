@@ -17,10 +17,12 @@
 
 import { useSelected } from "@/hooks/useSelected";
 import { mapBy } from "@/utils/structures";
+import { logger } from "@/utils/logger";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_RowSelectionState } from "material-react-table";
 import { useEffect, useRef } from "react";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { useURLSyncState } from "@/hooks/useURLSyncState";
 
 const compareArraysAlphabetically = (arr1: string[], arr2: string[]): boolean => {
   if (arr1.length !== arr2.length) return false;
@@ -76,19 +78,31 @@ const clearChildrenRecords = (
   }
 };
 
-const updateGraphSelection = (
+function updateGraphSelection(
   graph: ReturnType<typeof useSelected>["graph"],
   tab: Tab,
   lastSelected: EntityData | null,
   selectedRecords: EntityData[],
-  onSelectionChange?: (recordId: string) => void
-): void => {
+  onSelectionChange?: (recordId: string) => void,
+  setSelectedRecord?: (windowId: string, tabId: string, recordId: string, onComplete?: () => void) => void,
+  clearSelectedRecord?: (windowId: string, tabId: string) => void,
+  windowId?: string,
+  startSyncing?: (operation: string) => void,
+  completeSyncing?: (operation: string) => void
+) {
+  const lastSelectedId = lastSelected?.id;
+  const lastSelectedIdStr = lastSelectedId ? String(lastSelectedId) : undefined;
+
   if (lastSelected) {
     graph.setSelected(tab, lastSelected);
-    onSelectionChange?.(String(lastSelected.id));
+    if (lastSelectedIdStr && onSelectionChange) {
+      onSelectionChange(lastSelectedIdStr);
+    }
   } else if (graph.getSelected(tab)) {
     graph.clearSelected(tab);
-    onSelectionChange?.("");
+    if (onSelectionChange) {
+      onSelectionChange("");
+    }
   }
 
   if (selectedRecords.length > 0) {
@@ -96,7 +110,34 @@ const updateGraphSelection = (
   } else {
     graph.clearSelectedMultiple(tab);
   }
-};
+
+  // Handle URL synchronization with sync state
+  if (lastSelectedIdStr && setSelectedRecord && windowId && startSyncing && completeSyncing) {
+    const operation = `table-selection-${lastSelectedIdStr}`;
+    logger.debug(`[updateGraphSelection] Starting URL sync for record: ${lastSelectedIdStr}`, {
+      operation,
+      tabId: tab.id,
+      windowId,
+    });
+
+    startSyncing(operation);
+    setSelectedRecord(windowId, tab.id, lastSelectedIdStr, () => {
+      logger.debug(`[updateGraphSelection] URL sync completed for record: ${lastSelectedIdStr}`, {
+        operation,
+        tabId: tab.id,
+        windowId,
+      });
+      completeSyncing(operation);
+    });
+  } else if (!lastSelectedIdStr && clearSelectedRecord && windowId) {
+    // Handle URL cleanup when deselecting records
+    logger.debug("[updateGraphSelection] Clearing URL selection for deselection", {
+      tabId: tab.id,
+      windowId,
+    });
+    clearSelectedRecord(windowId, tab.id);
+  }
+}
 
 export default function useTableSelection(
   tab: Tab,
@@ -105,7 +146,8 @@ export default function useTableSelection(
   onSelectionChange?: (recordId: string) => void
 ) {
   const { graph } = useSelected();
-  const { activeWindow, clearSelectedRecord } = useMultiWindowURL();
+  const { activeWindow, clearSelectedRecord, setSelectedRecord } = useMultiWindowURL();
+  const { isSyncing, startSyncing, completeSyncing } = useURLSyncState();
   const previousSelectionRef = useRef<string[]>([]);
 
   const windowId = activeWindow?.windowId;
@@ -133,8 +175,33 @@ export default function useTableSelection(
       clearChildrenRecords(windowId, graph, tab, currentWindowId, clearSelectedRecord);
     }
 
-    updateGraphSelection(graph, tab, lastSelected, selectedRecords, onSelectionChange);
-  }, [graph, records, rowSelection, tab, onSelectionChange, windowId, clearSelectedRecord, currentWindowId]);
+    updateGraphSelection(
+      graph,
+      tab,
+      lastSelected,
+      selectedRecords,
+      onSelectionChange,
+      setSelectedRecord,
+      clearSelectedRecord,
+      windowId,
+      startSyncing,
+      completeSyncing
+    );
+  }, [
+    graph,
+    records,
+    rowSelection,
+    tab,
+    onSelectionChange,
+    windowId,
+    clearSelectedRecord,
+    currentWindowId,
+    setSelectedRecord,
+    startSyncing,
+    completeSyncing,
+  ]);
+
+  return { isSyncing };
 }
 
 export function useTableSelectionNumeric(
@@ -144,7 +211,8 @@ export function useTableSelectionNumeric(
   onSelectionChange?: (recordId: string) => void
 ) {
   const { graph } = useSelected();
-  const { activeWindow, clearSelectedRecord } = useMultiWindowURL();
+  const { activeWindow, clearSelectedRecord, setSelectedRecord } = useMultiWindowURL();
+  const { isSyncing, startSyncing, completeSyncing } = useURLSyncState();
   const previousSelectionRef = useRef<string[]>([]);
 
   const windowId = activeWindow?.windowId;
@@ -172,6 +240,31 @@ export function useTableSelectionNumeric(
       clearChildrenRecords(windowId, graph, tab, currentWindowId, clearSelectedRecord);
     }
 
-    updateGraphSelection(graph, tab, lastSelected, selectedRecords, onSelectionChange);
-  }, [graph, records, rowSelection, tab, onSelectionChange, windowId, clearSelectedRecord, currentWindowId]);
+    updateGraphSelection(
+      graph,
+      tab,
+      lastSelected,
+      selectedRecords,
+      onSelectionChange,
+      setSelectedRecord,
+      clearSelectedRecord,
+      windowId,
+      startSyncing,
+      completeSyncing
+    );
+  }, [
+    graph,
+    records,
+    rowSelection,
+    tab,
+    onSelectionChange,
+    windowId,
+    clearSelectedRecord,
+    currentWindowId,
+    setSelectedRecord,
+    startSyncing,
+    completeSyncing,
+  ]);
+
+  return { isSyncing };
 }

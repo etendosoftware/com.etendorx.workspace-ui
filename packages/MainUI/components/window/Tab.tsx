@@ -103,21 +103,24 @@ export function Tab({ tab, collapsed }: TabLevelProps) {
     }
   }, [windowId, tab, setTabFormState]);
 
-  const handleBack = useCallback((preserveUrlSelection = false) => {
-    if (windowId) {
-      // Always clear the form state to return to grid view
-      clearTabFormState(windowId, tab.id);
+  const handleBack = useCallback(
+    (preserveUrlSelection = false) => {
+      if (windowId) {
+        // Always clear the form state to return to grid view
+        clearTabFormState(windowId, tab.id);
 
-      // Always clear graph state since it will be restored from URL state when table remounts
-      graph.clearSelected(tab);
-      graph.clearSelectedMultiple(tab);
+        // Always clear graph state since it will be restored from URL state when table remounts
+        graph.clearSelected(tab);
+        graph.clearSelectedMultiple(tab);
 
-      // Only clear URL-based selection state if not preserving selection
-      if (!preserveUrlSelection) {
-        clearSelectedRecord(windowId, tab.id);
+        // Only clear URL-based selection state if not preserving selection
+        if (!preserveUrlSelection) {
+          clearSelectedRecord(windowId, tab.id);
+        }
       }
-    }
-  }, [windowId, clearTabFormState, tab, graph, clearSelectedRecord]);
+    },
+    [windowId, clearTabFormState, tab, graph, clearSelectedRecord]
+  );
 
   const handleTreeView = useCallback(() => {
     if (windowId) {

@@ -125,6 +125,7 @@ export const createButtonByType = ({
   hasSelectedRecord,
   hasParentRecordSelected,
   saveButtonState,
+  isSyncing,
 }: {
   button: ToolbarButtonMetadata;
   onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
@@ -133,6 +134,7 @@ export const createButtonByType = ({
   hasSelectedRecord: boolean;
   hasParentRecordSelected: boolean;
   saveButtonState?: SaveButtonState;
+  isSyncing?: boolean;
 }): ToolbarButton => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
 
@@ -168,16 +170,42 @@ export const createButtonByType = ({
     return {};
   };
 
-  const buildDisableConfig = (isDisabled: boolean): Partial<ToolbarButton> => ({
+  const buildDisableConfig = (isDisabled: boolean, customTooltip?: string): Partial<ToolbarButton> => ({
     disabled: isDisabled,
-    tooltip: isDisabled ? "" : button.name,
+    tooltip: customTooltip || (isDisabled ? "" : button.name),
   });
 
   const getDisableConfig = (): Partial<ToolbarButton> => {
     const actionHandlers = {
-      [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: () => buildDisableConfig(!(isFormView || hasSelectedRecord)),
-      [TOOLBAR_BUTTONS_ACTIONS.DELETE]: () => buildDisableConfig(!hasSelectedRecord),
-      [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () => buildDisableConfig(!hasSelectedRecord),
+      [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: () => {
+        // Disable if not in form view and no record selected, OR if syncing
+        const baseDisabled = !(isFormView || hasSelectedRecord);
+        const syncDisabled = isSyncing || false;
+
+        if (syncDisabled) {
+          return buildDisableConfig(true, "Waiting for selection to complete...");
+        }
+        return buildDisableConfig(baseDisabled);
+      },
+      [TOOLBAR_BUTTONS_ACTIONS.DELETE]: () => {
+        // Disable if no record selected, OR if syncing
+        const baseDisabled = !hasSelectedRecord;
+        const syncDisabled = isSyncing || false;
+
+        if (syncDisabled) {
+          return buildDisableConfig(true, "Waiting for selection to complete...");
+        }
+        return buildDisableConfig(baseDisabled);
+      },
+      [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () => {
+        const baseDisabled = !hasSelectedRecord;
+        const syncDisabled = isSyncing || false;
+
+        if (syncDisabled) {
+          return buildDisableConfig(true, "Waiting for selection to complete...");
+        }
+        return buildDisableConfig(baseDisabled);
+      },
       [TOOLBAR_BUTTONS_ACTIONS.NEW]: () => buildDisableConfig(!hasParentRecordSelected),
       [TOOLBAR_BUTTONS_ACTIONS.REFRESH]: () => buildDisableConfig(!hasParentRecordSelected),
       [TOOLBAR_BUTTONS_ACTIONS.SAVE]: () => {

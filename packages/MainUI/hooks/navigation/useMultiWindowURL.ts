@@ -350,7 +350,7 @@ export function useMultiWindowURL() {
   );
 
   const setSelectedRecord = useCallback(
-    (windowId: string, tabId: string, recordId: string) => {
+    (windowId: string, tabId: string, recordId: string, onComplete?: () => void) => {
       const updatedWindows = windows.map((w) => {
         if (w.windowId === windowId) {
           return {
@@ -365,6 +365,14 @@ export function useMultiWindowURL() {
       });
 
       navigate(updatedWindows);
+      
+      // Use requestAnimationFrame to ensure URL update completion
+      if (onComplete) {
+        requestAnimationFrame(() => {
+          // URL state has been updated, notify completion
+          onComplete();
+        });
+      }
     },
     [windows, navigate]
   );

@@ -32,6 +32,7 @@ import { useProcessExecution } from "../../hooks/Toolbar/useProcessExecution";
 import { useToolbar } from "../../hooks/Toolbar/useToolbar";
 import { useToolbarConfig } from "../../hooks/Toolbar/useToolbarConfig";
 import { useTranslation } from "../../hooks/useTranslation";
+import { useURLSyncState } from "../../hooks/useURLSyncState";
 import ProcessIframeModal from "../ProcessModal/Iframe";
 import ProcessDefinitionModal from "../ProcessModal/ProcessDefinitionModal";
 import {
@@ -71,6 +72,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { graph } = useSelected();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
+  const { isSyncing } = useURLSyncState();
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -180,6 +182,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
           hasSelectedRecord,
           hasParentRecordSelected,
           saveButtonState,
+          isSyncing,
         });
 
         const styles = getButtonStyles(button);
@@ -222,6 +225,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     selectedParentItems,
     hasFormChanges,
     saveButtonState,
+    isSyncing,
   ]);
 
   if (loading) {

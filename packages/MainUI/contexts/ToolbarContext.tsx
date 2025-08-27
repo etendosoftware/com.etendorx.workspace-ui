@@ -58,10 +58,12 @@ type ToolbarActions = {
 
   /**
    * Navigate back to the previous view or parent level.
-   * @param preserveUrlSelection - If true, maintains URL-based record selection 
-   *                               when navigating back from form view. The table 
-   *                               component will restore graph selection from URL 
-   *                               state when it remounts. Defaults to false.
+   *
+   * @param preserveUrlSelection - Optional parameter to control URL selection state behavior.
+   *                              When true, preserves the URL-based selectedRecord for table restoration.
+   *                              When false or undefined, clears URL selection (default behavior).
+   *                              - Form view cancel: Should use true to restore selection when returning to table
+   *                              - Grid view cancel: Should use false to clear all selection states
    */
   back: (preserveUrlSelection?: boolean) => void;
 
@@ -84,11 +86,11 @@ type ToolbarContextType = {
   onSave: (showModal: boolean) => Promise<void>;
   onRefresh: () => void;
   onNew: () => void;
-  /** 
+  /**
    * Navigate back to the previous view or parent level.
-   * @param preserveUrlSelection - If true, maintains URL-based record selection 
-   *                               when navigating back from form view. The table 
-   *                               component will restore graph selection from URL 
+   * @param preserveUrlSelection - If true, maintains URL-based record selection
+   *                               when navigating back from form view. The table
+   *                               component will restore graph selection from URL
    *                               state when it remounts. Defaults to false.
    */
   onBack: (preserveUrlSelection?: boolean) => void;

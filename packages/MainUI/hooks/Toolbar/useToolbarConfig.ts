@@ -30,6 +30,7 @@ import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useRecordContext } from "@/hooks/useRecordContext";
+import { useURLSyncState } from "@/hooks/useURLSyncState";
 import type { ToolbarButtonMetadata } from "./types";
 
 export const useToolbarConfig = ({
@@ -62,6 +63,7 @@ export const useToolbarConfig = ({
   const { tab } = useTabContext();
   const { activeWindow, getSelectedRecord, clearSelectedRecord, getTabFormState } = useMultiWindowURL();
   const { graph } = useSelected();
+  const { isSyncing } = useURLSyncState();
 
   const selectedMultiple = useSelectedRecords(tab);
   const selectedRecord = useSelectedRecord(tab);
@@ -145,7 +147,12 @@ export const useToolbarConfig = ({
   const actionHandlers = useMemo<Record<string, (event?: React.MouseEvent<HTMLElement>) => void>>(
     () => ({
       CANCEL: () => {
-        // Access current view state directly to determine if we should preserve selection
+        // Prevent action if still syncing
+        if (isSyncing) {
+          logger.warn("Cancel action blocked: URL sync still in progress");
+          return;
+        }
+
         if (!activeWindow?.windowId || !tab) {
           onBack?.();
           return;
@@ -249,6 +256,7 @@ export const useToolbarConfig = ({
       contextItems,
       onColumnFilters,
       onToggleTreeView,
+      isSyncing,
       activeWindow,
       getTabFormState,
     ]
@@ -260,6 +268,12 @@ export const useToolbarConfig = ({
         return;
       }
 
+      // Sync state validation before executing any toolbar action
+      if (isSyncing) {
+        logger.warn(`Toolbar action '${action}' blocked: URL sync still in progress`);
+        return;
+      }
+
       const handler = actionHandlers[action];
       if (handler) {
         handler(event);
@@ -268,7 +282,7 @@ export const useToolbarConfig = ({
 
       console.warn(`[useToolbarConfig ${tabId}] No handler found for action: ${action}`);
     },
-    [actionHandlers, isDeleting, tabId]
+    [actionHandlers, isDeleting, tabId, isSyncing]
   );
 
   const handleSearch = useCallback(
