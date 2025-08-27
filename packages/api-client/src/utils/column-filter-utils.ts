@@ -31,6 +31,8 @@ export interface ColumnFilterState {
   availableOptions: FilterOption[];
   loading: boolean;
   searchQuery?: string;
+  hasMore?: boolean; // For pagination
+  currentPage?: number; // Track current page for pagination
 }
 
 export interface ColumnFilterProps {
@@ -49,24 +51,25 @@ export class ColumnFilterUtils {
 
   /**
    * Check if a column is a select type (uses refList)
+   * Only applies to SELECT columns without referencedEntity
    */
   static isSelectColumn(column: Column): boolean {
-    return column.type === FieldType.SELECT && Array.isArray(column.refList);
+    return column.type === FieldType.SELECT && Array.isArray(column.refList) && !column.referencedEntity;
   }
 
   /**
    * Check if a column is a tabledir type (uses referencedEntity)
+   * Also includes SELECT columns that have referencedEntity (search fields)
    */
   static isTableDirColumn(column: Column): boolean {
-    return column.type === FieldType.TABLEDIR && !!column.referencedEntity;
+    return (
+      (column.type === FieldType.TABLEDIR && !!column.referencedEntity) ||
+      (column.type === FieldType.SELECT && !!column.referencedEntity)
+    );
   }
 
-  /**
-   * Check if a column needs distinct values from the current table instead of full entity list
-   * TABLE_DIR columns should use distinct values from current table for better filtering
-   */
   static needsDistinctValues(column: Column): boolean {
-    return ColumnFilterUtils.isTableDirColumn(column);
+    return !!(column.datasourceId || column.referencedEntity);
   }
 
   /**
@@ -77,11 +80,13 @@ export class ColumnFilterUtils {
       return [];
     }
 
-    return ((column.refList as any[]) || []).map((item: any) => ({
-      id: item.id,
-      label: item.label,
-      value: item.value,
-    }));
+    return ((column.refList as { id: string; label: string; value: string }[]) || []).map(
+      (item: { id: string; label: string; value: string }) => ({
+        id: item.id,
+        label: item.label,
+        value: item.value,
+      })
+    );
   }
 
   /**
