@@ -14,7 +14,7 @@
  * Contributor(s): Futit Services S.L.
  *************************************************************************
  */
-import { useState, type ChangeEvent } from "react";
+import { useState, useMemo, type ChangeEvent } from "react";
 import X from "../../../../../../ComponentLibrary/src/assets/icons/x.svg";
 import type { TextInputProps } from "./types";
 
@@ -39,6 +39,58 @@ export const TextInput = ({
   const [isFocused, setIsFocused] = useState(false);
   const [internalValue, setInternalValue] = useState(props.value || "");
   const isDisabled = disabled || readOnly;
+
+  const labelClassNames = useMemo(() => {
+    const baseClasses = "flex items-center gap-1 font-medium text-sm leading-5 tracking-normal transition-colors";
+
+    let textColorClass: string;
+    if (isFocused && !isDisabled) {
+      textColorClass = "text-(--color-baseline-100)";
+    } else if (isDisabled) {
+      textColorClass = "text-baseline-60";
+    } else {
+      textColorClass = "text-(--color-baseline-80)";
+    }
+
+    return `${baseClasses} ${textColorClass}`;
+  }, [isFocused, isDisabled]);
+
+  const inputBaseClassNames = useMemo(() => {
+    const paddingLeft = leftIcon ? "pl-10" : "pl-3";
+    const paddingRight = showClearButton || rightIcon ? "pr-10" : "pr-3";
+
+    const baseClasses = `w-full ${paddingLeft} ${paddingRight} rounded-t tracking-normal h-10.5 border-0 border-b-2 bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 
+      focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none 
+      hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)`;
+
+    const disabledClasses =
+      "bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) hover:bg-transparent focus:border-dotted focus:border-(--color-transparent-neutral-70) focus:bg-transparent focus:text-(--color-transparent-neutral-80)";
+
+    return isDisabled ? `${baseClasses} ${disabledClasses}` : baseClasses;
+  }, [leftIcon, showClearButton, rightIcon, isDisabled]);
+
+  const leftIconButtonClassNames = useMemo(() => {
+    const baseClasses = "p-1 focus:outline-none transition-colors";
+    const textColorClass =
+      isFocused && !isDisabled ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)";
+
+    return `${baseClasses} ${textColorClass}`;
+  }, [isFocused, isDisabled]);
+
+  const clearButtonIconClassNames = useMemo(() => {
+    const baseClasses = "h-4 w-4 transition-colors";
+    const textColorClass = isFocused ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)";
+
+    return `${baseClasses} ${textColorClass}`;
+  }, [isFocused]);
+
+  const rightIconButtonClassNames = useMemo(() => {
+    const baseClasses = "p-1 focus:outline-none transition-colors";
+    const textColorClass =
+      isFocused && !isDisabled ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)";
+
+    return `${baseClasses} ${textColorClass}`;
+  }, [isFocused, isDisabled]);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
@@ -76,35 +128,14 @@ export const TextInput = ({
     }
   };
 
-  const getRightPadding = () => {
-    if (showClearButton || rightIcon) return "pr-10";
-    return "pr-3";
-  };
-
   const currentValue = props.value ?? internalValue ?? "";
-
   const shouldShowClearButton = showClearButton && currentValue && !isDisabled;
-
-  const baseClassName = `w-full ${leftIcon ? "pl-10" : "pl-3"} ${getRightPadding()} rounded-t tracking-normal h-10.5 border-0 border-b-2 bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 
-     focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none 
-     hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)
-     ${isDisabled ? "bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) hover:bg-transparent focus:border-dotted focus:border-(--color-transparent-neutral-70) focus:bg-transparent focus:text-(--color-transparent-neutral-80)" : ""}
-   `;
-
-  const finalClassName = className ? `${baseClassName} ${className}` : baseClassName;
+  const finalClassName = className ? `${inputBaseClassNames} ${className}` : inputBaseClassNames;
 
   return (
     <div className="w-full font-['Inter'] font-medium">
       {label && (
-        <label
-          htmlFor={props.id || props.name}
-          className={`flex items-center gap-1 font-medium text-sm leading-5 tracking-normal transition-colors ${
-            isFocused && !isDisabled
-              ? "text-(--color-baseline-100)"
-              : isDisabled
-                ? "text-baseline-60"
-                : "text-(--color-baseline-80)"
-          }`}>
+        <label htmlFor={props.id || props.name} className={labelClassNames}>
           {label}
           {field.isMandatory && <span className="text-error-main ml-1">*</span>}
         </label>
@@ -112,13 +143,7 @@ export const TextInput = ({
       <div className={`relative flex items-center w-full ${isDisabled ? "pointer-events-none" : ""}`}>
         {leftIcon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center">
-            <button
-              type="button"
-              onClick={onLeftIconClick}
-              className={`p-1 focus:outline-none transition-colors ${
-                isFocused && !isDisabled ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)"
-              }`}
-              disabled={isDisabled}>
+            <button type="button" onClick={onLeftIconClick} className={leftIconButtonClassNames} disabled={isDisabled}>
               {leftIcon}
             </button>
           </div>
@@ -140,11 +165,7 @@ export const TextInput = ({
             type="button"
             onClick={handleClear}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:text-gray-600 transition-colors z-10 flex items-center justify-center">
-            <X
-              className={`h-4 w-4 transition-colors ${
-                isFocused ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)"
-              }`}
-            />
+            <X className={clearButtonIconClassNames} />
           </button>
         )}
         {!shouldShowClearButton && rightIcon && (
@@ -152,9 +173,7 @@ export const TextInput = ({
             <button
               type="button"
               onClick={onRightIconClick}
-              className={`p-1 focus:outline-none transition-colors ${
-                isFocused && !isDisabled ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)"
-              }`}
+              className={rightIconButtonClassNames}
               disabled={isDisabled}>
               {rightIcon}
             </button>

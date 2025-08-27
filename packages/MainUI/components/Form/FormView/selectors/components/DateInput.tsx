@@ -16,7 +16,7 @@
  */
 
 import type { Field } from "@workspaceui/api-client/src/api/types";
-import { forwardRef, useCallback, useRef, useState, useEffect } from "react";
+import { forwardRef, useCallback, useRef, useState, useEffect, useMemo } from "react";
 import CalendarIcon from "../../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
 
 interface DateInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -33,10 +33,63 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const [isFocused, setIsFocused] = useState(false);
 
+    const labelClassNames = useMemo(() => {
+      const baseClasses = "flex items-center gap-1 font-medium text-sm leading-5 tracking-normal transition-colors";
+
+      let textColorClass: string;
+      if (isFocused && !isReadOnly) {
+        textColorClass = "text-(--color-baseline-100)";
+      } else if (isReadOnly) {
+        textColorClass = "text-baseline-60";
+      } else {
+        textColorClass = "text-(--color-baseline-80)";
+      }
+
+      return `${baseClasses} ${textColorClass}`;
+    }, [isFocused, isReadOnly]);
+
+    const inputClassNames = useMemo(() => {
+      const baseClass = `w-full pl-3 pr-3 rounded-t tracking-normal h-10.5 border-0 border-b-2 
+           bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) 
+           text-(--color-transparent-neutral-80) font-medium text-sm leading-5`;
+
+      const focusClass = isFocused && !isReadOnly ? "border-[#004ACA] text-[#004ACA] bg-[#E5EFFF]" : "";
+
+      const hoverClass = !isReadOnly
+        ? "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)"
+        : "";
+
+      const readOnlyClass = isReadOnly
+        ? "bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) hover:bg-transparent focus:border-dotted focus:border-(--color-transparent-neutral-70) focus:bg-transparent focus:text-(--color-transparent-neutral-80)"
+        : "";
+
+      const errorClass = error ? "border-error-main" : "";
+
+      return `${baseClass} ${focusClass} ${hoverClass} ${readOnlyClass} ${errorClass} focus:outline-none transition-colors`;
+    }, [error, isFocused, isReadOnly]);
+
+    const buttonClassNames = useMemo(() => {
+      const baseClasses =
+        "absolute right-3 top-1/2 transform -translate-y-1/2 p-1 transition-colors z-10 flex items-center justify-center";
+
+      const textColorClass =
+        isFocused && !isReadOnly ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)";
+
+      const cursorClass = isReadOnly ? "cursor-not-allowed" : "hover:text-gray-600";
+
+      return `${baseClasses} ${textColorClass} ${cursorClass}`;
+    }, [isFocused, isReadOnly]);
+
+    const helperTextClassNames = useMemo(() => {
+      const baseClass = "text-xs mt-1";
+      const colorClass = error ? "text-red-500" : "text-baseline-60";
+
+      return `${baseClass} ${colorClass}`;
+    }, [error]);
+
     const handleCalendarClick = useCallback(() => {
       if (!isReadOnly && inputRef.current) {
         inputRef.current.showPicker();
-        // Asegurar que el focus se mantenga en el input después de abrir el picker
         inputRef.current.focus();
       }
     }, [isReadOnly]);
@@ -62,7 +115,6 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
 
     const handleBlur = useCallback(
       (e: React.FocusEvent<HTMLInputElement>) => {
-        // Verificar si el foco se está moviendo fuera del contenedor completo
         const relatedTarget = e.relatedTarget as HTMLElement;
         if (!containerRef.current?.contains(relatedTarget)) {
           setIsFocused(false);
@@ -72,7 +124,6 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       [props]
     );
 
-    // Efecto para detectar clics fuera del componente y quitar el focus
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
         if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -86,56 +137,26 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       };
     }, []);
 
-    const getLabelClass = useCallback(() => {
-      return `flex items-center gap-1 font-medium text-sm leading-5 tracking-normal transition-colors ${
-        isFocused && !isReadOnly
-          ? "text-(--color-baseline-100)"
-          : isReadOnly
-            ? "text-baseline-60"
-            : "text-(--color-baseline-80)"
-      }`;
-    }, [isFocused, isReadOnly]);
-
-    const getInputClass = useCallback(() => {
-      const baseClass = `w-full pl-3 pr-3 rounded-t tracking-normal h-10.5 border-0 border-b-2 
-          bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) 
-          text-(--color-transparent-neutral-80) font-medium text-sm leading-5`;
-
-      const focusClass = isFocused && !isReadOnly ? "border-[#004ACA] text-[#004ACA] bg-[#E5EFFF]" : "";
-
-      const hoverClass = !isReadOnly
-        ? "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)"
-        : "";
-
-      const readOnlyClass = isReadOnly
-        ? "bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) hover:bg-transparent focus:border-dotted focus:border-(--color-transparent-neutral-70) focus:bg-transparent focus:text-(--color-transparent-neutral-80)"
-        : "";
-
-      const errorClass = error ? "border-error-main" : "";
-
-      return `${baseClass} ${focusClass} ${hoverClass} ${readOnlyClass} ${errorClass} focus:outline-none transition-colors`;
-    }, [error, isFocused, isReadOnly]);
-
     const renderLabel = useCallback(() => {
       if (!label) return null;
 
       return (
-        <label htmlFor={name} className={getLabelClass()}>
+        <label htmlFor={name} className={labelClassNames}>
           {label}
           {field.isMandatory && <span className="text-error-main ml-1">*</span>}
         </label>
       );
-    }, [getLabelClass, label, name, field.isMandatory]);
+    }, [labelClassNames, label, name, field.isMandatory]);
 
     const renderHelperText = useCallback(() => {
       if (!helperText) return null;
 
       return (
         <div className="h-0">
-          <p className={`text-xs mt-1 ${error ? "text-red-500" : "text-baseline-60"}`}>{helperText}</p>
+          <p className={helperTextClassNames}>{helperText}</p>
         </div>
       );
-    }, [error, helperText]);
+    }, [helperText, helperTextClassNames]);
 
     return (
       <div ref={containerRef} className="w-full font-['Inter'] font-medium">
@@ -148,7 +169,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             ref={handleRef}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            className={getInputClass()}
+            className={inputClassNames}
             readOnly={isReadOnly}
             disabled={isReadOnly}
             aria-label={field.name}
@@ -158,13 +179,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             aria-details={field.helpComment}
             {...props}
           />
-          <button
-            type="button"
-            onClick={handleCalendarClick}
-            className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 transition-colors z-10 flex items-center justify-center ${
-              isFocused && !isReadOnly ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)"
-            } ${isReadOnly ? "cursor-not-allowed" : "hover:text-gray-600"}`}
-            disabled={isReadOnly}>
+          <button type="button" onClick={handleCalendarClick} className={buttonClassNames} disabled={isReadOnly}>
             <CalendarIcon className="h-5 w-5" />
           </button>
         </div>

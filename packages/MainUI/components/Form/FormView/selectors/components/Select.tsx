@@ -87,6 +87,56 @@ function SelectCmp({
     [options, searchTerm]
   );
 
+  const mainDivClassNames = useMemo(() => {
+    const baseClasses =
+      "w-full flex items-center justify-between px-3 pr-3 rounded-t tracking-normal h-10.5 border-0 border-b-2 transition-colors outline-none";
+
+    if (isReadOnly) {
+      return `${baseClasses} bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) hover:bg-transparent focus:border-dotted focus:border-(--color-transparent-neutral-70) focus:bg-transparent focus:text-(--color-transparent-neutral-80)`;
+    }
+
+    const activeStateClasses = "border-[#004ACA] text-[#004ACA] bg-[#E5EFFF]";
+    const hoverStateClasses =
+      "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)";
+    const focusStateClasses =
+      "focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none cursor-pointer";
+
+    const interactiveStateClasses = isFocused || isOpen ? activeStateClasses : hoverStateClasses;
+
+    return `${baseClasses} bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5 ${interactiveStateClasses} ${focusStateClasses}`;
+  }, [isReadOnly, isFocused, isOpen]);
+
+  const selectedLabelClassNames = useMemo(() => {
+    const baseClasses = "text-sm truncate max-w-[calc(100%-40px)] font-medium";
+
+    if (!selectedLabel) {
+      return `${baseClasses} text-baseline-60`;
+    }
+
+    const isActiveState = (isFocused || isOpen) && !isReadOnly;
+    const textColorClass = isActiveState ? "text-[#004ACA]" : "text-(--color-transparent-neutral-80)";
+
+    return `${baseClasses} ${textColorClass}`;
+  }, [selectedLabel, isFocused, isOpen, isReadOnly]);
+
+  const clearButtonClassNames = useMemo(() => {
+    const baseClasses =
+      "mr-1 hover:text-gray-600 transition-opacity opacity-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light rounded";
+    const textColorClass =
+      isFocused || isOpen ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)";
+
+    return `${baseClasses} ${textColorClass}`;
+  }, [isFocused, isOpen]);
+
+  const chevronClassNames = useMemo(() => {
+    const baseClasses = "w-5 h-5 transition-transform";
+    const isActiveState = isFocused || isOpen;
+    const colorClass = isActiveState ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)";
+    const rotationClass = isActiveState ? "rotate-180" : "";
+
+    return `${baseClasses} ${colorClass} ${rotationClass}`;
+  }, [isFocused, isOpen]);
+
   const handleSelect = useCallback(
     (id: string, label: string) => {
       const option = options.find((opt) => opt.id === id);
@@ -227,48 +277,20 @@ function SelectCmp({
         onMouseLeave={handleMouseLeave}
         onFocus={handleFocus}
         tabIndex={isReadOnly ? -1 : 0}
-        className={`w-full flex items-center justify-between px-3 pr-3 rounded-t tracking-normal h-10.5 border-0 border-b-2 
-           ${
-             isReadOnly
-               ? "bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) hover:bg-transparent focus:border-dotted focus:border-(--color-transparent-neutral-70) focus:bg-transparent focus:text-(--color-transparent-neutral-80)"
-               : `bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5
-                ${
-                  isFocused || isOpen
-                    ? "border-[#004ACA] text-[#004ACA] bg-[#E5EFFF]"
-                    : "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)"
-                }
-                focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none cursor-pointer`
-           }
-           transition-colors outline-none`}>
-        <span
-          className={`text-sm truncate max-w-[calc(100%-40px)] font-medium ${
-            selectedLabel
-              ? (isFocused || isOpen) && !isReadOnly
-                ? "text-[#004ACA]"
-                : "text-(--color-transparent-neutral-80)"
-              : "text-baseline-60"
-          }`}>
-          {selectedLabel || "Select an option"}
-        </span>
+        className={mainDivClassNames}>
+        <span className={selectedLabelClassNames}>{selectedLabel || "Select an option"}</span>
         <div className="flex items-center flex-shrink-0 ml-2">
           {shouldShowClearButton && (
             <button
               type="button"
               onClick={handleClear}
               onKeyDown={(e) => handleKeyboardActivation(e, () => handleClear(e as unknown as React.MouseEvent))}
-              className={`mr-1 hover:text-gray-600 transition-opacity opacity-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light rounded ${
-                isFocused || isOpen ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)"
-              }`}
+              className={clearButtonClassNames}
               aria-label="Clear selection">
               <XIcon />
             </button>
           )}
-          <ChevronDown
-            fill="currentColor"
-            className={`w-5 h-5 transition-transform ${
-              isFocused || isOpen ? "text-(--color-baseline-100) rotate-180" : "text-(--color-transparent-neutral-60)"
-            }`}
-          />
+          <ChevronDown fill="currentColor" className={chevronClassNames} />
         </div>
       </div>
 
