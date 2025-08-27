@@ -21,26 +21,18 @@ import ChevronDown from "@workspaceui/componentlibrary/src/assets/icons/chevron-
 import ChevronUp from "@workspaceui/componentlibrary/src/assets/icons/chevron-up.svg";
 import InfoIcon from "@workspaceui/componentlibrary/src/assets/icons/file-text.svg";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
-import React, { type CSSProperties, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { CollapsibleProps } from "./FormView/types";
 
 function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onToggle }: CollapsibleProps) {
   const contentRef = useRef<React.ElementRef<"div">>(null);
-  const [maxHeight, setMaxHeight] = useState<CSSProperties["maxHeight"]>("100%");
   const [overflowVisible, setOverflowVisible] = useState(false);
-  const style = useMemo(() => ({ maxHeight: isExpanded ? maxHeight : 0 }), [isExpanded, maxHeight]);
 
   const handleToggle = useCallback(() => {
     if (onToggle) {
       onToggle(!isExpanded);
     }
   }, [isExpanded, onToggle]);
-
-  useEffect(() => {
-    if (contentRef.current) {
-      setMaxHeight(contentRef.current.scrollHeight);
-    }
-  }, [isExpanded, children]);
 
   useEffect(() => {
     if (isExpanded) {
@@ -112,7 +104,6 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
         className={`transition-all duration-300 ease-in-out ${
           overflowVisible ? "overflow-visible" : "overflow-hidden"
         }`}
-        style={style}
         aria-hidden={!isExpanded}>
         <div className="px-3 pb-12">
           {React.isValidElement(children) && children.type === "div" ? children : <div>{children}</div>}

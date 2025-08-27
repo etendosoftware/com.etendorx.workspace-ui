@@ -44,6 +44,9 @@ export const useStyle = () => {
               "&:after": {
                 borderColor: theme.palette.baselineColor.transparentNeutral[10],
               },
+              "&:before, &:after": {
+                borderBottom: `1px dotted ${theme.palette.baselineColor.transparentNeutral[70]}`,
+              },
             },
             "&:focus-within": {
               "&:after": {
