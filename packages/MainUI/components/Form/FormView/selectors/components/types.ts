@@ -28,6 +28,8 @@ export interface TextInputProps
   field: Field;
   endAdornment?: React.ReactNode;
   errorText?: string;
+  showClearButton?: boolean;
+  onClear?: () => void;
 }
 
 export interface Option {

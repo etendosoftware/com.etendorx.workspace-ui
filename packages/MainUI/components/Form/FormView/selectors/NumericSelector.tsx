@@ -75,6 +75,16 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
     [isInteger, field.isMandatory, props.required]
   );
 
+  const handleClear = useCallback(() => {
+    setLocalValue("");
+    const clearedValue = field.isMandatory || props.required ? 0 : null;
+    setValue(field.hqlName, clearedValue);
+
+    if (props.onClear) {
+      props.onClear();
+    }
+  }, [field.isMandatory, field.hqlName, props, setValue]);
+
   const handleChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       let value = event.target.value;
@@ -143,6 +153,7 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
       onBlur={handleBlur}
       onChange={handleChange}
       onFocus={handleFocus}
+      onClear={handleClear}
       value={localValue}
       ref={registerProps.ref}
       inputMode={isInteger ? "numeric" : "decimal"}

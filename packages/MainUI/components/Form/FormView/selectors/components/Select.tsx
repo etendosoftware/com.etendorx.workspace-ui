@@ -1,20 +1,3 @@
-/*
- *************************************************************************
- * The contents of this file are subject to the Etendo License
- * (the "License"), you may not use this file except in compliance with
- * the License.
- * You may obtain a copy of the License at
- * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
- * Software distributed under the License is distributed on an
- * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
- * implied. See the License for the specific language governing rights
- * and limitations under the License.
- * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
- * All Rights Reserved.
- * Contributor(s): Futit Services S.L.
- *************************************************************************
- */
-
 import {
   handleKeyboardActivation,
   useClickOutside,
@@ -26,12 +9,11 @@ import {
   useSearchHandler,
   useSearchTermHandler,
 } from "@/utils/selectorUtils";
-import Image from "next/image";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
-import checkIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/check-circle-filled.svg?url";
+import CheckIcon from "../../../../../../ComponentLibrary/src/assets/icons/check-circle-filled.svg";
 import ChevronDown from "../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
-import closeIconUrl from "../../../../../../ComponentLibrary/src/assets/icons/x.svg?url";
+import XIcon from "../../../../../../ComponentLibrary/src/assets/icons/x.svg";
 import type { SelectProps } from "./types";
 
 const OptionItem = memo(
@@ -63,13 +45,11 @@ const OptionItem = memo(
       }}
       onMouseEnter={() => onMouseEnter(index)}
       className={`px-4 py-3 text-sm cursor-pointer flex items-center justify-between focus:outline-none focus:bg-baseline-10
-      ${isHighlighted ? "bg-baseline-10" : ""}
-      ${isSelected ? "bg-baseline-10 font-medium" : ""}
-      hover:bg-baseline-10`}>
+       ${isHighlighted ? "bg-baseline-10" : ""}
+       ${isSelected ? "bg-baseline-10 font-medium" : ""}
+       hover:bg-baseline-10`}>
       <span className={`truncate mr-2 ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>{label}</span>
-      {isSelected && (
-        <Image src={checkIconUrl} alt="Selected Item" className="fade-in-left flex-shrink-0" height={16} width={16} />
-      )}
+      {isSelected && <CheckIcon alt="Selected Item" className="fade-in-left flex-shrink-0" height={16} width={16} />}
     </li>
   )
 );
@@ -95,6 +75,7 @@ function SelectCmp({
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const [isHovering, setIsHovering] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const listRef = useRef<HTMLUListElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -114,6 +95,7 @@ function SelectCmp({
       setSelectedLabel(label);
       setIsOpen(false);
       setHighlightedIndex(-1);
+      setIsFocused(false);
     },
     [name, options, setValue]
   );
@@ -140,16 +122,39 @@ function SelectCmp({
     }
   );
 
-  const handleBlur = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
+  const closeDropdown = useCallback(() => {
+    setIsOpen(false);
+    setHighlightedIndex(-1);
+    setIsFocused(false);
   }, []);
+
+  const handleBlur = useCallback(() => {
+    setTimeout(() => {
+      if (wrapperRef.current && !wrapperRef.current.contains(document.activeElement)) {
+        closeDropdown();
+      }
+    }, 0);
+  }, [closeDropdown]);
+
+  const handleSearchBlur = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      const relatedTarget = e.relatedTarget as Element | null;
+
+      if (wrapperRef.current && relatedTarget && !wrapperRef.current.contains(relatedTarget)) {
+        setTimeout(() => {
+          if (wrapperRef.current && !wrapperRef.current.contains(document.activeElement)) {
+            closeDropdown();
+          }
+        }, 0);
+      }
+    },
+    [closeDropdown]
+  );
 
   const handleClick = useCallback(() => {
     if (!isReadOnly) {
       setIsOpen((prev) => !prev);
+      setIsFocused(true);
     }
   }, [isReadOnly]);
 
@@ -168,7 +173,7 @@ function SelectCmp({
 
   const handleFocus = useFocusHandler(onFocus);
 
-  useClickOutside(wrapperRef, setIsOpen);
+  useClickOutside(wrapperRef, () => closeDropdown());
 
   const handleSetSearchTerm = useSearchTermHandler(handleSearchChange, setSearchTerm);
 
@@ -201,11 +206,13 @@ function SelectCmp({
     return <li className="px-4 py-3 text-sm text-baseline-60">No options found</li>;
   }, [filteredOptions, highlightedIndex, selectedValue, handleOptionClick, handleOptionMouseEnter]);
 
+  const shouldShowClearButton = selectedLabel && (isHovering || isOpen) && !isReadOnly;
+
   return (
     <div
       ref={wrapperRef}
       className={`relative w-full font-['Inter'] ${isReadOnly ? "pointer-events-none" : ""}`}
-      onBlur={isReadOnly ? undefined : handleBlur}
+      onBlur={handleBlur}
       aria-label={field.name}
       aria-readonly={isReadOnly}
       aria-required={field.isMandatory}
@@ -218,28 +225,49 @@ function SelectCmp({
         onKeyDown={(e) => handleKeyboardActivation(e, handleClick)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className={`w-full flex items-center justify-between px-3 py-2 h-10 border-b border-baseline-10 hover:border-baseline-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light
-          ${isOpen ? "rounded border-b-0 border-dynamic-main ring-2 ring-dynamic-light" : "border-baseline-40"} 
-          ${isReadOnly ? "bg-transparent-neutral-20 rounded-t-lg cursor-not-allowed" : "bg-white text-baseline-90 cursor-pointer hover:border-baseline-60"}
-          transition-colors outline-none`}>
+        onFocus={handleFocus}
+        tabIndex={isReadOnly ? -1 : 0}
+        className={`w-full flex items-center justify-between px-3 pr-3 rounded-t tracking-normal h-10.5 border-0 border-b-2 
+           ${
+             isReadOnly
+               ? "bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) hover:bg-transparent focus:border-dotted focus:border-(--color-transparent-neutral-70) focus:bg-transparent focus:text-(--color-transparent-neutral-80)"
+               : `bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) text-(--color-transparent-neutral-80) font-medium text-sm leading-5
+                ${
+                  isFocused || isOpen
+                    ? "border-[#004ACA] text-[#004ACA] bg-[#E5EFFF]"
+                    : "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)"
+                }
+                focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none cursor-pointer`
+           }
+           transition-colors outline-none`}>
         <span
-          className={`text-sm truncate max-w-[calc(100%-40px)] ${selectedLabel ? "text-baseline-90 font-medium" : "text-baseline-60"}`}>
+          className={`text-sm truncate max-w-[calc(100%-40px)] font-medium ${
+            selectedLabel
+              ? (isFocused || isOpen) && !isReadOnly
+                ? "text-[#004ACA]"
+                : "text-(--color-transparent-neutral-80)"
+              : "text-baseline-60"
+          }`}>
           {selectedLabel || "Select an option"}
         </span>
         <div className="flex items-center flex-shrink-0 ml-2">
-          {selectedLabel && (isHovering || isOpen) && (
+          {shouldShowClearButton && (
             <button
               type="button"
               onClick={handleClear}
               onKeyDown={(e) => handleKeyboardActivation(e, () => handleClear(e as unknown as React.MouseEvent))}
-              className="mr-1 text-baseline-60 hover:text-baseline-80 transition-opacity opacity-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light rounded"
+              className={`mr-1 hover:text-gray-600 transition-opacity opacity-100 focus:outline-none focus:ring-2 focus:ring-dynamic-light rounded ${
+                isFocused || isOpen ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)"
+              }`}
               aria-label="Clear selection">
-              <Image src={closeIconUrl} alt="Clear" height={16} width={16} />
+              <XIcon />
             </button>
           )}
           <ChevronDown
             fill="currentColor"
-            className={`w-5 h-5 text-baseline-60 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`w-5 h-5 transition-transform ${
+              isFocused || isOpen ? "text-(--color-baseline-100) rotate-180" : "text-(--color-transparent-neutral-60)"
+            }`}
           />
         </div>
       </div>
@@ -252,6 +280,7 @@ function SelectCmp({
               value={searchTerm}
               onChange={handleSetSearchTerm}
               onKeyDown={handleKeyDown}
+              onBlur={handleSearchBlur}
               placeholder="Search..."
               className="w-full p-2 text-sm border border-baseline-30 rounded focus:outline-none focus:border-dynamic-main focus:ring-1 focus:ring-dynamic-light"
               aria-label="Search options"
