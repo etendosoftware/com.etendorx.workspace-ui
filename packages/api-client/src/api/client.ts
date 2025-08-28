@@ -41,6 +41,7 @@ export class Client {
   private interceptor: Interceptor | null;
   private readonly JSON_CONTENT_TYPE = "application/json";
   private readonly FORM_CONTENT_TYPE = "application/x-www-form-urlencoded";
+  private static abortControllers = new Map<string, AbortController>();
 
   constructor(url?: string) {
     this.baseUrl = url || "";
@@ -116,7 +117,13 @@ export class Client {
   }
 
   public async request(url: string, options: ClientOptions = {}) {
+    const requestId = `${url}-${Date.now()}`;
+    const controller = new AbortController();
+
     try {
+      // Registrar el controller para poder cancelar la request
+      Client.abortControllers.set(requestId, controller);
+
       if (options.method !== "GET") {
         this.setContentType(options);
       }
@@ -142,6 +149,7 @@ export class Client {
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
       let response: Response & { data?: any } = await fetch(destination, {
         ...options,
+        signal: controller.signal,
         credentials: "include",
         body: this.getFormattedBody(options.body),
         headers: {
@@ -158,6 +166,11 @@ export class Client {
 
       return response;
     } catch (error) {
+      // Si la request fue cancelada, no procesar como error
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error("Request cancelled");
+      }
+
       console.warn("API client request failed", {
         url,
         options,
@@ -165,6 +178,9 @@ export class Client {
       });
 
       throw error;
+    } finally {
+      // Limpiar el controller
+      Client.abortControllers.delete(requestId);
     }
   }
 
@@ -187,5 +203,23 @@ export class Client {
     script.textContent = js;
     document.head.appendChild(script);
     document.head.removeChild(script);
+  }
+
+  // Método para cancelar todas las requests pendientes
+  public static cancelAllRequests(): void {
+    Client.abortControllers.forEach((controller) => {
+      controller.abort();
+    });
+    Client.abortControllers.clear();
+  }
+
+  // Método para cancelar requests específicas
+  public static cancelRequestsForEndpoint(endpoint: string): void {
+    Array.from(Client.abortControllers.entries())
+      .filter(([key]) => key.startsWith(endpoint))
+      .forEach(([key, controller]) => {
+        controller.abort();
+        Client.abortControllers.delete(key);
+      });
   }
 }

@@ -25,6 +25,8 @@ import { login as doLogin } from "@workspaceui/api-client/src/api/authentication
 import { changeProfile as doChangeProfile } from "@workspaceui/api-client/src/api/changeProfile";
 import { getSession } from "@workspaceui/api-client/src/api/getSession";
 import { HTTP_CODES } from "@workspaceui/api-client/src/api/constants";
+import { AuthInterceptor } from "@workspaceui/api-client/src/interceptors/authInterceptor";
+import { Client } from "@workspaceui/api-client/src/api/client";
 import type { DefaultConfiguration, IUserContext, Language, LanguageOption } from "./types";
 import type {
   ISession,
@@ -128,6 +130,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
   );
 
   const clearUserData = useCallback(() => {
+    // Cancelar todas las requests pendientes
+    Client.cancelAllRequests();
+
     setToken(null);
     setRoles([]);
     setCurrentRole(undefined);
@@ -229,8 +234,11 @@ export default function UserProvider(props: React.PropsWithChildren) {
           const sessionData = await getSession().catch((error) => {
             console.error(error);
             clearUserData();
+            return null;
           });
-          await updateSessionInfo(sessionData);
+          if (sessionData) {
+            await updateSessionInfo(sessionData);
+          }
         }
       } catch (error) {
         console.error(error);
@@ -261,6 +269,16 @@ export default function UserProvider(props: React.PropsWithChildren) {
       };
     }
   }, [clearUserData, token]);
+
+  useEffect(() => {
+    // Registrar el callback de logout en el interceptor
+    AuthInterceptor.registerLogoutCallback(clearUserData);
+
+    return () => {
+      // Limpiar el callback al desmontar
+      AuthInterceptor.unregisterLogoutCallback(clearUserData);
+    };
+  }, [clearUserData]);
 
   useEffect(() => {
     if (ready && prevRole && prevRole?.id !== currentRole?.id) {
