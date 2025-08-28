@@ -85,7 +85,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
       return await apiSetDefaultConfiguration(config);
     } catch (error) {
       logger.warn("Error setting default configuration:", error);
-      throw error;
+      // Let AuthInterceptor handle the error and provide user-friendly messages
+      AuthInterceptor.handleApiError(error);
     }
   }, []);
 
@@ -162,7 +163,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
         setToken(response.token);
       } catch (error) {
         logger.warn("Error updating profile:", error);
-        throw error;
+        // Let AuthInterceptor handle the error and provide user-friendly messages
+        AuthInterceptor.handleApiError(error);
       }
     },
     [setToken, token]
@@ -179,7 +181,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
         setToken(loginResponse.token);
       } catch (e) {
         logger.warn("Login or session retrieval error:", e);
-        throw e;
+        // Let AuthInterceptor handle the error and provide user-friendly messages
+        AuthInterceptor.handleApiError(e);
       }
     },
     [setToken]
@@ -233,7 +236,15 @@ export default function UserProvider(props: React.PropsWithChildren) {
           datasource.setToken(token);
           const sessionData = await getSession().catch((error) => {
             logger.error("Error fetching session data:", error);
-            clearUserData();
+            // Let AuthInterceptor handle the error - if it's auth-related, it will clear user data
+            try {
+              AuthInterceptor.handleApiError(error);
+            } catch (error) {
+              logger.error("AuthInterceptor can't handle error:", error);
+              // If it's an auth error, AuthInterceptor already triggered logout
+              // For other errors, clear user data manually
+              clearUserData();
+            }
             return null;
           });
           if (sessionData) {
