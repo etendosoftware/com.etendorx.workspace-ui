@@ -28,7 +28,6 @@ import {
 import { useStyle } from "./styles";
 import type { DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { useSearch } from "../../contexts/searchContext";
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
@@ -43,6 +42,8 @@ import { useTabContext } from "@/contexts/tab";
 import { useDatasource } from "@/hooks/useDatasource";
 import { useSelected } from "@/hooks/useSelected";
 import { useColumns } from "@/hooks/table/useColumns";
+import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { logger } from "@/utils/logger";
 import PlusFolderFilledIcon from "../../../ComponentLibrary/src/assets/icons/folder-plus-filled.svg";
 import MinusFolderIcon from "../../../ComponentLibrary/src/assets/icons/folder-minus.svg";
 import CircleFilledIcon from "../../../ComponentLibrary/src/assets/icons/circle-filled.svg";
@@ -99,7 +100,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
   const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
-  const searchParams = useSearchParams();
+  const { activeWindow, getSelectedRecord } = useMultiWindowURL();
   const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
   const tabId = tab.id;
   const parentId = String(parentRecord?.id ?? "");
@@ -557,24 +558,57 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       activeColumnFilters: appliedTableFilters,
     });
 
-  // Initialize row selection from URL parameters
+  // Initialize row selection from URL parameters with proper validation and logging
   const urlBasedRowSelection = useMemo(() => {
-    const urlIds = searchParams.get(`${tab.id}Selection`);
-    if (!urlIds) return {};
+    // Use proper URL state management instead of search params
+    const windowId = activeWindow?.windowId;
+    if (!windowId || windowId !== tab.window) {
+      return {};
+    }
 
-    const ids = urlIds.split(",").filter(Boolean);
-    const selection: Record<string, boolean> = {};
+    // Get the selected record from URL for this specific tab
+    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    if (!urlSelectedId) {
+      return {};
+    }
 
-    // Only create selection for records that exist
-    for (const id of ids) {
-      const recordExists = records?.some((record) => String(record.id) === id);
+    // Validate that the record exists in current dataset
+    const recordExists = records?.some((record) => String(record.id) === urlSelectedId);
+    if (recordExists) {
+      logger.info(`[URLSelection] Applied URL selection for record: ${urlSelectedId} in tab: ${tab.id}`);
+      return { [urlSelectedId]: true };
+    }
+
+    logger.warn(`[URLSelection] Record ${urlSelectedId} from URL not found in current dataset for tab: ${tab.id}`);
+    return {};
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records]);
+
+  // Track URL selection changes to detect direct navigation
+  const previousURLSelection = useRef<string | null>(null);
+
+  useEffect(() => {
+    const windowId = activeWindow?.windowId;
+    if (!windowId || windowId !== tab.window) {
+      return;
+    }
+
+    const currentURLSelection = getSelectedRecord(windowId, tab.id);
+
+    // Detect URL-driven navigation (direct links, browser back/forward)
+    if (currentURLSelection !== previousURLSelection.current && currentURLSelection) {
+      const recordExists = records?.some((record) => String(record.id) === currentURLSelection);
+
       if (recordExists) {
-        selection[id] = true;
+        logger.info(`[URLNavigation] Detected URL navigation to record: ${currentURLSelection}`);
+      } else {
+        logger.warn(`[URLNavigation] URL navigation to invalid record: ${currentURLSelection}`);
       }
     }
 
-    return selection;
-  }, [searchParams, tab.id, records]);
+    if (currentURLSelection) {
+      previousURLSelection.current = currentURLSelection;
+    }
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records]);
 
   useEffect(() => {
     if (prevShouldUseTreeMode !== shouldUseTreeMode) {
@@ -618,11 +652,17 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   const handleTableSelectionChange = useCallback(
     (recordId: string) => {
+      if (recordId) {
+        logger.debug(`[TableSelection] Selection changed to record: ${recordId} in tab: ${tab.id}`);
+      } else {
+        logger.debug(`[TableSelection] Selection cleared in tab: ${tab.id}`);
+      }
+
       if (onRecordSelection) {
         onRecordSelection(recordId);
       }
     },
-    [onRecordSelection]
+    [onRecordSelection, tab.id]
   );
 
   const rowProps = useCallback<RowProps>(
@@ -878,6 +918,59 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   });
 
   useTableSelection(tab, records, table.getState().rowSelection, handleTableSelectionChange);
+
+  // Ensure URL selection is maintained when table data changes
+  useEffect(() => {
+    const windowId = activeWindow?.windowId;
+    if (!windowId || windowId !== tab.window || !records) {
+      return;
+    }
+
+    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    if (!urlSelectedId) {
+      return;
+    }
+
+    // Check if URL selection is still valid with current data
+    const recordExists = records.some((record) => String(record.id) === urlSelectedId);
+    const currentSelection = table.getState().rowSelection;
+    const isCurrentlySelected = currentSelection[urlSelectedId];
+
+    if (recordExists && !isCurrentlySelected) {
+      // Record exists but is not selected - restore URL selection
+      logger.info(`[URLSelection] Restoring URL selection after data change: ${urlSelectedId}`);
+      table.setRowSelection({ [urlSelectedId]: true });
+    } else if (!recordExists && isCurrentlySelected) {
+      // Record no longer exists but is still selected - clear selection
+      logger.warn(`[URLSelection] Clearing selection for record no longer in dataset: ${urlSelectedId}`);
+      table.setRowSelection({});
+    }
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table]);
+
+  // Handle browser navigation and direct link access
+  useEffect(() => {
+    const windowId = activeWindow?.windowId;
+    if (!windowId || windowId !== tab.window || !records) {
+      return;
+    }
+
+    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    if (!urlSelectedId) {
+      return;
+    }
+
+    // Handle case where user navigates directly to a URL with selection
+    const recordExists = records.some((record) => String(record.id) === urlSelectedId);
+    if (recordExists) {
+      const currentSelection = table.getState().rowSelection;
+      const isCurrentlySelected = currentSelection[urlSelectedId];
+
+      if (!isCurrentlySelected) {
+        logger.info(`[URLNavigation] Applying URL selection for direct navigation: ${urlSelectedId}`);
+        table.setRowSelection({ [urlSelectedId]: true });
+      }
+    }
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table]);
 
   useEffect(() => {
     const handleGraphClear = (eventTab: typeof tab) => {
