@@ -179,7 +179,7 @@ export class Client {
 
       throw error;
     } finally {
-      // Limpiar el controller
+      // Clear the controller
       Client.abortControllers.delete(requestId);
     }
   }

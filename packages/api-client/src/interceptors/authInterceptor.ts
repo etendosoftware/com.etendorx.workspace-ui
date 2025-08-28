@@ -42,6 +42,7 @@ export class AuthInterceptor {
     const UNAUTHORIZED_CODES = [401, 403];
     const AUTH_ERROR_MESSAGES = ["token expired", "invalid token", "unauthorized"];
 
+    // TODO: Improve detection of auth errors based on API error structure
     // Handle Response objects with status codes
     if (error && typeof error === "object" && "status" in error) {
       const errorWithStatus = error as { status: number };
@@ -51,6 +52,7 @@ export class AuthInterceptor {
       }
     }
 
+    // TODO: Improve detection of auth errors based on API error structure
     // Handle error objects with message strings
     if (error && typeof error === "object" && "message" in error) {
       const errorWithMessage = error as { message: string };

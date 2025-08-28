@@ -38,6 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): State {
     // If it's an authentication error, don't show the error boundary
+    // TODO: Implement a more robust error handling strategy
     if (error.message?.includes("login again")) {
       return { hasError: false, error: null };
     }
