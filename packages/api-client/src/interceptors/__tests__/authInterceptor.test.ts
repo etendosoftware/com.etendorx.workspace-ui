@@ -20,7 +20,7 @@ import { AuthInterceptor } from "../authInterceptor";
 describe("AuthInterceptor", () => {
   beforeEach(() => {
     // Clear all registered callbacks before each test
-    AuthInterceptor["logoutCallbacks"] = [];
+    AuthInterceptor.clearAllLogoutCallbacks();
   });
 
   describe("callback registration", () => {
@@ -31,9 +31,7 @@ describe("AuthInterceptor", () => {
       AuthInterceptor.registerLogoutCallback(callback1);
       AuthInterceptor.registerLogoutCallback(callback2);
 
-      expect(AuthInterceptor["logoutCallbacks"]).toHaveLength(2);
-      expect(AuthInterceptor["logoutCallbacks"]).toContain(callback1);
-      expect(AuthInterceptor["logoutCallbacks"]).toContain(callback2);
+      expect(AuthInterceptor.getLogoutCallbackCount()).toBe(2);
     });
 
     it("should unregister logout callbacks", () => {
@@ -42,11 +40,22 @@ describe("AuthInterceptor", () => {
 
       AuthInterceptor.registerLogoutCallback(callback1);
       AuthInterceptor.registerLogoutCallback(callback2);
-      AuthInterceptor.unregisterLogoutCallback(callback1);
+      expect(AuthInterceptor.getLogoutCallbackCount()).toBe(2);
 
-      expect(AuthInterceptor["logoutCallbacks"]).toHaveLength(1);
-      expect(AuthInterceptor["logoutCallbacks"]).toContain(callback2);
-      expect(AuthInterceptor["logoutCallbacks"]).not.toContain(callback1);
+      AuthInterceptor.unregisterLogoutCallback(callback1);
+      expect(AuthInterceptor.getLogoutCallbackCount()).toBe(1);
+    });
+
+    it("should clear all logout callbacks", () => {
+      const callback1 = jest.fn();
+      const callback2 = jest.fn();
+
+      AuthInterceptor.registerLogoutCallback(callback1);
+      AuthInterceptor.registerLogoutCallback(callback2);
+      expect(AuthInterceptor.getLogoutCallbackCount()).toBe(2);
+
+      AuthInterceptor.clearAllLogoutCallbacks();
+      expect(AuthInterceptor.getLogoutCallbackCount()).toBe(0);
     });
   });
 
@@ -116,7 +125,7 @@ describe("AuthInterceptor", () => {
         throw new Error("Callback error");
       });
       const workingCallback = jest.fn();
-      
+
       AuthInterceptor.registerLogoutCallback(failingCallback);
       AuthInterceptor.registerLogoutCallback(workingCallback);
 
@@ -124,11 +133,11 @@ describe("AuthInterceptor", () => {
 
       const error = { status: 401 };
       expect(() => AuthInterceptor.handleApiError(error)).toThrow("Session expired. Please login again.");
-      
+
       expect(failingCallback).toHaveBeenCalled();
       expect(workingCallback).toHaveBeenCalled();
       expect(consoleSpy).toHaveBeenCalledWith("Error during logout callback:", expect.any(Error));
-      
+
       consoleSpy.mockRestore();
     });
 

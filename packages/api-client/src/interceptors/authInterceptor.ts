@@ -26,6 +26,22 @@ export class AuthInterceptor {
     AuthInterceptor.logoutCallbacks = AuthInterceptor.logoutCallbacks.filter((cb) => cb !== callback);
   }
 
+  /**
+   * Clear all registered logout callbacks.
+   * This method is primarily intended for testing purposes.
+   */
+  public static clearAllLogoutCallbacks(): void {
+    AuthInterceptor.logoutCallbacks = [];
+  }
+
+  /**
+   * Get the number of registered logout callbacks.
+   * This method is primarily intended for testing purposes.
+   */
+  public static getLogoutCallbackCount(): number {
+    return AuthInterceptor.logoutCallbacks.length;
+  }
+
   private static triggerLogout(): void {
     const logoutCallbacks = AuthInterceptor.logoutCallbacks;
     for (const callback of logoutCallbacks) {
