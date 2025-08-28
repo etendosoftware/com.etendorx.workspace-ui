@@ -35,16 +35,15 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
+    // Si es un error de autenticación, no mostrar el error boundary
+    if (error.message?.includes("login again")) {
+      return { hasError: false, error: null };
+    }
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Global error caught:", error, errorInfo);
-
-    // Si es un error de autenticación, no mostrar el error boundary
-    if (error.message?.includes("login again")) {
-      return;
-    }
   }
 
   handleReset = () => {
