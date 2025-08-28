@@ -81,15 +81,6 @@ async function processRequestData(
   let processedBody = body;
   if (contentType.includes("application/json") && csrfToken) {
     try {
-      /*
-      const jsonBody = JSON.parse(body);
-
-      // If the JSON already contains csrfToken property, replace its value with the actual token
-      if (jsonBody && typeof jsonBody === "object" && "csrfToken" in jsonBody) {
-        jsonBody.csrfToken = csrfToken;
-        processedBody = JSON.stringify(jsonBody);
-      }
-        */
       // replace csrfToken in the body
       processedBody = processedBody.replace(/"csrfToken":\s*".*?"/, `"csrfToken":"${csrfToken}"`);
     } catch (error) {

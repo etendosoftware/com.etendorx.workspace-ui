@@ -226,10 +226,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         if (token) {
           Metadata.setToken(token);
           datasource.setToken(token);
-          const sessionData = await getSession().catch((error) => {
-            console.error(error);
-            clearUserData();
-          });
+          const sessionData = await getSession();
           await updateSessionInfo(sessionData);
         }
       } catch (error) {
