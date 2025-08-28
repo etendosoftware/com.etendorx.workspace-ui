@@ -41,7 +41,7 @@ export const useApiRequest = <T>(): UseApiRequestResult<T> => {
     try {
       const client = new Client();
       const response = await client.request(endpoint, options);
-      
+
       if (!response.ok) {
         throw new Error(response.statusText || "Request failed");
       }
@@ -52,7 +52,7 @@ export const useApiRequest = <T>(): UseApiRequestResult<T> => {
       const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred";
       setError(errorMessage);
 
-      // Si es un error de autenticación, no mostrar error ya que se hará logout
+      // If it's an authentication error, don't show the error since logout will occur
       if (errorMessage.includes("login again")) {
         return null;
       }

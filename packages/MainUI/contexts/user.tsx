@@ -130,7 +130,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   );
 
   const clearUserData = useCallback(() => {
-    // Cancelar todas las requests pendientes
+    // Cancel all pending requests
     Client.cancelAllRequests();
 
     setToken(null);
@@ -232,7 +232,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
           Metadata.setToken(token);
           datasource.setToken(token);
           const sessionData = await getSession().catch((error) => {
-            console.error(error);
+            logger.error("Error fetching session data:", error);
             clearUserData();
             return null;
           });
@@ -241,7 +241,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
           }
         }
       } catch (error) {
-        console.error(error);
+        logger.error("Error verifying session:", error);
       } finally {
         setReady(true);
       }
@@ -271,11 +271,11 @@ export default function UserProvider(props: React.PropsWithChildren) {
   }, [clearUserData, token]);
 
   useEffect(() => {
-    // Registrar el callback de logout en el interceptor
+    // Register the logout callback in the interceptor
     AuthInterceptor.registerLogoutCallback(clearUserData);
 
     return () => {
-      // Limpiar el callback al desmontar
+      // Clean up the callback on unmount
       AuthInterceptor.unregisterLogoutCallback(clearUserData);
     };
   }, [clearUserData]);

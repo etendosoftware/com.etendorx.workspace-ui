@@ -121,7 +121,7 @@ export class Client {
     const controller = new AbortController();
 
     try {
-      // Registrar el controller para poder cancelar la request
+      // Register the controller to be able to cancel the request
       Client.abortControllers.set(requestId, controller);
 
       if (options.method !== "GET") {
@@ -166,7 +166,7 @@ export class Client {
 
       return response;
     } catch (error) {
-      // Si la request fue cancelada, no procesar como error
+      // If the request was cancelled, do not process as an error
       if (error instanceof Error && error.name === "AbortError") {
         throw new Error("Request cancelled");
       }
@@ -205,21 +205,21 @@ export class Client {
     document.head.removeChild(script);
   }
 
-  // Método para cancelar todas las requests pendientes
+  // Method to cancel all pending requests
   public static cancelAllRequests(): void {
-    Client.abortControllers.forEach((controller) => {
+    const allControllers = Array.from(Client.abortControllers.values());
+    for (const controller of allControllers) {
       controller.abort();
-    });
+    }
     Client.abortControllers.clear();
   }
 
-  // Método para cancelar requests específicas
+  // MMethod to cancel specific requests
   public static cancelRequestsForEndpoint(endpoint: string): void {
-    Array.from(Client.abortControllers.entries())
-      .filter(([key]) => key.startsWith(endpoint))
-      .forEach(([key, controller]) => {
-        controller.abort();
-        Client.abortControllers.delete(key);
-      });
+    const entries = Array.from(Client.abortControllers.entries()).filter(([key]) => key.startsWith(endpoint));
+    for (const [key, controller] of entries) {
+      controller.abort();
+      Client.abortControllers.delete(key);
+    }
   }
 }

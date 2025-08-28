@@ -15,8 +15,10 @@
  *************************************************************************
  */
 
-import React, { Component, type ErrorInfo, type ReactNode } from "react";
+"use client";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Alert, Button, Box } from "@mui/material";
+import { logger } from "@/utils/logger";
 
 interface Props {
   children: ReactNode;
@@ -35,7 +37,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
-    // Si es un error de autenticación, no mostrar el error boundary
+    // If it's an authentication error, don't show the error boundary
     if (error.message?.includes("login again")) {
       return { hasError: false, error: null };
     }
@@ -43,7 +45,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Global error caught:", error, errorInfo);
+    logger.error("Global error caught:", error, errorInfo);
   }
 
   handleReset = () => {
@@ -61,8 +63,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 <Button color="inherit" size="small" onClick={this.handleReset}>
                   Retry
                 </Button>
-              }
-            >
+              }>
               Something went wrong. Please try again.
             </Alert>
           </Box>

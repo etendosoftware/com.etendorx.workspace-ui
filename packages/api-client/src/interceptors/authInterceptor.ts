@@ -19,25 +19,26 @@ export class AuthInterceptor {
   private static logoutCallbacks: (() => void)[] = [];
 
   public static registerLogoutCallback(callback: () => void): void {
-    this.logoutCallbacks.push(callback);
+    AuthInterceptor.logoutCallbacks.push(callback);
   }
 
   public static unregisterLogoutCallback(callback: () => void): void {
-    this.logoutCallbacks = this.logoutCallbacks.filter((cb) => cb !== callback);
+    AuthInterceptor.logoutCallbacks = AuthInterceptor.logoutCallbacks.filter((cb) => cb !== callback);
   }
 
   private static triggerLogout(): void {
-    this.logoutCallbacks.forEach((callback) => {
+    const logoutCallbacks = AuthInterceptor.logoutCallbacks;
+    for (const callback of logoutCallbacks) {
       try {
         callback();
       } catch (error) {
         console.error("Error during logout callback:", error);
       }
-    });
+    }
   }
 
   public static handleApiError(error: unknown): never {
-    // Códigos de error que requieren logout
+    // Error codes that require logout
     const UNAUTHORIZED_CODES = [401, 403];
     const AUTH_ERROR_MESSAGES = ["token expired", "invalid token", "unauthorized"];
 
@@ -45,7 +46,7 @@ export class AuthInterceptor {
     if (error && typeof error === "object" && "status" in error) {
       const errorWithStatus = error as { status: number };
       if (UNAUTHORIZED_CODES.includes(errorWithStatus.status)) {
-        this.triggerLogout();
+        AuthInterceptor.triggerLogout();
         throw new Error("Session expired. Please login again.");
       }
     }
@@ -57,12 +58,12 @@ export class AuthInterceptor {
         errorWithMessage.message &&
         AUTH_ERROR_MESSAGES.some((msg) => errorWithMessage.message.toLowerCase().includes(msg))
       ) {
-        this.triggerLogout();
+        AuthInterceptor.triggerLogout();
         throw new Error("Authentication failed. Please login again.");
       }
     }
 
-    // Re-lanzar el error original si no es de autenticación
+    // Re-throw the original error if it's not an authentication error
     throw error;
   }
 }
