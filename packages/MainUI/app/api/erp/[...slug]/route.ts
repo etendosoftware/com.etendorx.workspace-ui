@@ -117,7 +117,7 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
   try {
     const resolvedParams = await params;
     console.log(`API Route /api/erp/${resolvedParams.slug.join("/")} - Method: ${method}`);
-    
+
     // Extract user token for authentication with ERP
     const userToken = extractBearerToken(request);
     if (!userToken) {
