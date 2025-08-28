@@ -27,6 +27,7 @@ import UserProvider from "@/contexts/user";
 import { DatasourceProvider } from "@/contexts/datasourceContext";
 import MetadataProvider from "@/contexts/metadata";
 import Layout from "@/components/layout";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { DENSITY_KEY } from "@/utils/accessibility/constants";
 
 const inter = Inter({
@@ -76,21 +77,23 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: setInitialDensityScript }} />
       </head>
       <body>
-        <ApiProviderWrapper>
-          <ThemeProvider>
-            <LanguageProvider>
-              <UserProvider>
-                <DatasourceProvider>
-                  <MetadataProvider>
-                    <LoadingProvider>
-                      <Layout>{children}</Layout>
-                    </LoadingProvider>
-                  </MetadataProvider>
-                </DatasourceProvider>
-              </UserProvider>
-            </LanguageProvider>
-          </ThemeProvider>
-        </ApiProviderWrapper>
+        <ErrorBoundary>
+          <ApiProviderWrapper>
+            <ThemeProvider>
+              <LanguageProvider>
+                <UserProvider>
+                  <DatasourceProvider>
+                    <MetadataProvider>
+                      <LoadingProvider>
+                        <Layout>{children}</Layout>
+                      </LoadingProvider>
+                    </MetadataProvider>
+                  </DatasourceProvider>
+                </UserProvider>
+              </LanguageProvider>
+            </ThemeProvider>
+          </ApiProviderWrapper>
+        </ErrorBoundary>
       </body>
     </html>
   );
