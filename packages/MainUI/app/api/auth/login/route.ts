@@ -82,6 +82,15 @@ function storeCookieForToken(erpResponse: Response, data: any): void {
   }
 }
 
+function getCookieHeader(userToken: string): string | null {
+  try {
+    return getErpSessionCookie(userToken);
+  } catch (error) {
+    console.error("Error getting cookie header:", error);
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     validateEnvironment();
@@ -99,7 +108,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (userToken) {
-      cookieHeader = getErpSessionCookie(userToken);
+      cookieHeader = getCookieHeader(userToken);
     }
 
     const erpResponse = await fetchErpLogin(erpLoginUrl, body, cookieHeader || undefined, userToken || undefined);
