@@ -575,11 +575,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     // Validate that the record exists in current dataset
     const recordExists = records?.some((record) => String(record.id) === urlSelectedId);
     if (recordExists) {
-      logger.info(`[URLSelection] Applied URL selection for record: ${urlSelectedId} in tab: ${tab.id}`);
       return { [urlSelectedId]: true };
     }
 
-    logger.warn(`[URLSelection] Record ${urlSelectedId} from URL not found in current dataset for tab: ${tab.id}`);
     return {};
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, records]);
 
@@ -938,11 +936,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
     if (recordExists && !isCurrentlySelected) {
       // Record exists but is not selected - restore URL selection
-      logger.info(`[URLSelection] Restoring URL selection after data change: ${urlSelectedId}`);
       table.setRowSelection({ [urlSelectedId]: true });
     } else if (!recordExists && isCurrentlySelected) {
       // Record no longer exists but is still selected - clear selection
-      logger.warn(`[URLSelection] Clearing selection for record no longer in dataset: ${urlSelectedId}`);
       table.setRowSelection({});
     }
   }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table]);
