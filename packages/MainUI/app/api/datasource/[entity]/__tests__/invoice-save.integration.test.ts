@@ -7,6 +7,7 @@ jest.mock("next/server", () => ({
     json: (body: unknown, init?: { status?: number }) => ({ ok: true, status: init?.status ?? 200, body }),
   },
 }));
+import { setErpSessionCookie } from "@/app/api/_utils/sessionStore";
 import {
   createMockRequest,
   setupTestEnvironment,
@@ -23,9 +24,14 @@ describe("Invoice save parity: /api/datasource/Invoice", () => {
   afterAll(cleanup);
 
   it("forwards to ERP with expected URL, headers and form body", async () => {
+    const BEARER_TOKEN = "Bearer-Token-123";
+    setErpSessionCookie(BEARER_TOKEN, {
+      cookieHeader: "JSESSIONID=ABC123DEF456; Path=/; HttpOnly",
+      csrfToken: "CSRF-TEST-123",
+    });
     const req = createMockRequest({
       url: testData.urls.invoice,
-      bearer: "Bearer-Token-123",
+      bearer: BEARER_TOKEN,
       jsonBody: testData.invoicePayload,
     });
 
@@ -35,16 +41,16 @@ describe("Invoice save parity: /api/datasource/Invoice", () => {
     const fetchMock = (global as any).fetch;
 
     assertFetchCall(fetchMock, testData.expectedUrls.invoice, "POST", {
-      Authorization: "Bearer Bearer-Token-123",
+      Authorization: `Bearer ${BEARER_TOKEN}`,
       "Content-Type": "application/json",
-      "X-CSRF-Token": undefined,
+      "X-CSRF-Token": "CSRF-TEST-123",
     });
 
     assertRequestBody(fetchMock, {
       dataSource: "isc_OBViewDataSource_0",
       operationType: "add",
       componentId: "isc_OBViewForm_0",
-      csrfToken: "8FDC75ECD28E4C428690BF880FFAE82D",
+      csrfToken: "CSRF-TEST-123", // Should be replaced with token from session store
     });
   });
 });

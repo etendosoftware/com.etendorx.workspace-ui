@@ -26,7 +26,7 @@ import {
   type MRT_ExpandedState,
 } from "material-react-table";
 import { useStyle } from "./styles";
-import type { DatasourceOptions, EntityData } from "@workspaceui/api-client/src/api/types";
+import type { DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearch } from "../../contexts/searchContext";
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
@@ -115,11 +115,15 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const {
     columnFilters: advancedColumnFilters,
     setColumnFilter,
-    loadFilterOptions,
     setFilterOptions,
-  } = useColumnFilters({ columns: rawColumns });
+    loadMoreFilterOptions,
+  } = useColumnFilters({
+    columns: rawColumns,
+  });
 
   const { fetchFilterOptions } = useColumnFilterData();
+
+  const [appliedTableFilters, setAppliedTableFilters] = useState<MRT_ColumnFiltersState>([]);
 
   const handleColumnFilterChange = useCallback(
     async (columnId: string, selectedOptions: FilterOption[]) => {
@@ -133,6 +137,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
             }
           : null;
 
+      setAppliedTableFilters((prev) => {
+        const filtered = prev.filter((f) => f.id !== columnId);
+        return mrtFilter ? [...filtered, mrtFilter] : filtered;
+      });
+
+      // Also update MRT column filters state for UI consistency
       setColumnFilters((prev) => {
         const filtered = prev.filter((f) => f.id !== columnId);
         return mrtFilter ? [...filtered, mrtFilter] : filtered;
@@ -143,57 +153,145 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   const handleLoadFilterOptions = useCallback(
     async (columnId: string, searchQuery?: string): Promise<FilterOption[]> => {
-      const column = rawColumns.find((col: any) => col.id === columnId || col.columnName === columnId);
+      const column = rawColumns.find((col: Column) => col.id === columnId || col.columnName === columnId);
       if (!column) {
         return [];
       }
 
       if (ColumnFilterUtils.isSelectColumn(column)) {
-        const options = ColumnFilterUtils.getSelectOptions(column);
-        setFilterOptions(columnId, options);
-        return options;
+        const allOptions = ColumnFilterUtils.getSelectOptions(column);
+
+        // Filter locally if 's a search query
+        const filteredOptions = searchQuery
+          ? allOptions.filter((option) => option.label.toLowerCase().includes(searchQuery.toLowerCase()))
+          : allOptions;
+
+        setFilterOptions(columnId, filteredOptions, false, false);
+        return filteredOptions;
       }
 
       if (ColumnFilterUtils.isTableDirColumn(column)) {
-        loadFilterOptions(columnId, searchQuery);
+        try {
+          let options: FilterOption[] = [];
 
-        // For TABLE_DIR columns, use distinct values from current table instead of full entity list
-        if (ColumnFilterUtils.needsDistinctValues(column)) {
-          const currentDatasource = treeEntity; // Use current table's datasource
-          const tabIdStr = tab.id; // Current tab ID
-          const distinctField = column.columnName; // Field to get distinct values for
+          if (ColumnFilterUtils.needsDistinctValues(column)) {
+            const currentDatasource = treeEntity;
+            const tabIdStr = tab.id;
+            const distinctField = column.columnName;
 
-          const options = await fetchFilterOptions(
-            currentDatasource,
-            undefined, // No selector definition for distinct queries
-            searchQuery,
-            20, // limit
-            distinctField, // distinct field
-            tabIdStr // tab ID
-          );
-          setFilterOptions(columnId, options);
+            options = await fetchFilterOptions(
+              currentDatasource,
+              undefined,
+              searchQuery,
+              20,
+              distinctField,
+              tabIdStr,
+              0
+            );
+          } else {
+            const selectorDefinitionId = column.selectorDefinitionId;
+            const datasourceId = column.datasourceId || column.referencedEntity;
+
+            if (datasourceId) {
+              options = await fetchFilterOptions(
+                datasourceId,
+                selectorDefinitionId,
+                searchQuery,
+                20,
+                undefined,
+                undefined,
+                0
+              );
+            }
+          }
+
+          const hasMore = options.length === 20;
+          setFilterOptions(columnId, options, hasMore, false);
           return options;
-        }
-
-        // Fallback to original behavior for non-distinct columns
-        const selectorDefinitionId = (column as any).selectorDefinitionId;
-        const datasourceId = (column as any).datasourceId || (column as any).referencedEntity;
-
-        if (datasourceId) {
-          const options = await fetchFilterOptions(datasourceId, selectorDefinitionId, searchQuery);
-          setFilterOptions(columnId, options);
-          return options;
+        } catch (error) {
+          console.error("Error loading filter options:", error);
+          setFilterOptions(columnId, [], false, false);
+          return [];
         }
       }
 
       return [];
     },
-    [rawColumns, loadFilterOptions, fetchFilterOptions, setFilterOptions, tab.id, treeEntity]
+    [rawColumns, fetchFilterOptions, setFilterOptions, tab.id, treeEntity]
+  );
+
+  const handleLoadMoreFilterOptions = useCallback(
+    async (columnId: string, searchQuery?: string): Promise<FilterOption[]> => {
+      const column = rawColumns.find((col: Column) => col.id === columnId || col.columnName === columnId);
+      if (!column) {
+        return [];
+      }
+
+      if (!ColumnFilterUtils.isTableDirColumn(column)) {
+        return [];
+      }
+
+      // Get current filter state to determine pagination
+      const filterState = advancedColumnFilters.find((f) => f.id === columnId);
+      const currentPage = filterState?.currentPage || 0;
+      const currentSearchQuery = searchQuery || filterState?.searchQuery;
+
+      loadMoreFilterOptions(columnId, currentSearchQuery);
+
+      try {
+        let options: FilterOption[] = [];
+
+        // Calculate offset for pagination (20 items per page)
+        const pageSize = 20;
+        const offset = currentPage * pageSize;
+
+        if (ColumnFilterUtils.needsDistinctValues(column)) {
+          const currentDatasource = treeEntity;
+          const tabIdStr = tab.id;
+          const distinctField = column.columnName;
+
+          options = await fetchFilterOptions(
+            currentDatasource,
+            undefined,
+            currentSearchQuery,
+            pageSize,
+            distinctField,
+            tabIdStr,
+            offset
+          );
+        } else {
+          const selectorDefinitionId = column.selectorDefinitionId;
+          const datasourceId = column.datasourceId || column.referencedEntity;
+
+          if (datasourceId) {
+            options = await fetchFilterOptions(
+              datasourceId,
+              selectorDefinitionId,
+              currentSearchQuery,
+              pageSize,
+              undefined,
+              undefined,
+              offset
+            );
+          }
+        }
+
+        const hasMore = options.length === pageSize;
+        setFilterOptions(columnId, options, hasMore, true);
+        return options;
+      } catch (error) {
+        console.error("Error loading more filter options:", error);
+        setFilterOptions(columnId, [], false, true);
+        return [];
+      }
+    },
+    [rawColumns, fetchFilterOptions, setFilterOptions, loadMoreFilterOptions, tab.id, treeEntity, advancedColumnFilters]
   );
 
   const baseColumns = useColumns(tab, {
     onColumnFilter: handleColumnFilterChange,
     onLoadFilterOptions: handleLoadFilterOptions,
+    onLoadMoreFilterOptions: handleLoadMoreFilterOptions,
     columnFilterStates: advancedColumnFilters,
   });
   const [prevShouldUseTreeMode, setPrevShouldUseTreeMode] = useState(shouldUseTreeMode);
@@ -438,15 +536,23 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     [shouldUseTreeMode, tab.id, tab.window, treeMetadata.referencedTableId]
   );
 
+  const skip = useMemo(() => {
+    return parentTab ? Boolean(!parentRecord || (parentRecords && parentRecords.length !== 1)) : false;
+  }, [parentTab, parentRecord, parentRecords]);
+
+  const stableDatasourceColumns = useMemo(() => {
+    return rawColumns;
+  }, [rawColumns]);
+
   const { toggleImplicitFilters, fetchMore, records, removeRecordLocally, error, refetch, loading, hasMoreRecords } =
     useDatasource({
       entity: treeEntity,
       params: query,
-      columns,
+      columns: stableDatasourceColumns,
       searchQuery,
-      skip: parentTab ? Boolean(!parentRecord || (parentRecords && parentRecords.length !== 1)) : false,
+      skip,
       treeOptions,
-      activeColumnFilters: columnFilters,
+      activeColumnFilters: appliedTableFilters,
     });
 
   useEffect(() => {

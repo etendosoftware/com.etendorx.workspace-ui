@@ -29,3 +29,4 @@ junit.xml
 .claude/
 .idea/
 .env
+app.log

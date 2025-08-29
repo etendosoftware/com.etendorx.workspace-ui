@@ -17,7 +17,7 @@
 
 import { isSessionExpired, shouldAttemptRecovery } from "./sessionValidator";
 import { recoverSession } from "./sessionRecovery";
-import { getCombinedErpCookieHeader } from "./forwardConfig";
+import { getErpAuthHeaders } from "./forwardConfig";
 import type { NextRequest } from "next/server";
 import { logger } from "@/utils/logger";
 
@@ -52,7 +52,7 @@ export async function executeWithSessionRetry<T>(
 ): Promise<RetryResult<T>> {
   try {
     // First attempt with current session
-    let cookieHeader = getCombinedErpCookieHeader(request, userToken);
+    let cookieHeader = getErpAuthHeaders(request, userToken).cookieHeader;
     let result = await requestFn(cookieHeader);
 
     // Check if session is expired
@@ -86,7 +86,7 @@ export async function executeWithSessionRetry<T>(
     const tokenToUse = recoveryResult.newToken || userToken;
 
     // Retry request with new session (and potentially new token)
-    cookieHeader = getCombinedErpCookieHeader(request, tokenToUse);
+    cookieHeader = getErpAuthHeaders(request, tokenToUse).cookieHeader;
     result = await requestFn(cookieHeader);
 
     // Check if retry was successful

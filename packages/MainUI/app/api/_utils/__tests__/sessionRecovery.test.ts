@@ -124,7 +124,10 @@ describe("sessionRecovery", () => {
       expect(result.newToken).toBe(newToken);
 
       // Verify old token was cleared and new token was stored
-      expect(mockSetErpSessionCookie).toHaveBeenCalledWith(newToken, `JSESSIONID=${mockJSessionId}`);
+      expect(mockSetErpSessionCookie).toHaveBeenCalledWith(newToken, {
+        cookieHeader: `JSESSIONID=${mockJSessionId}`,
+        csrfToken: null,
+      });
       expect(mockClearErpSessionCookie).toHaveBeenCalledWith(testToken);
 
       // Verify recovery attempts were cleared

@@ -40,7 +40,6 @@ export default function ApiProvider({ children, url }: React.PropsWithChildren<{
     if (url && !signal.aborted) {
       dispatch({ type: "RESET" });
       performHealthCheck(
-        url,
         signal,
         HEALTH_CHECK_MAX_ATTEMPTS,
         HEALTH_CHECK_RETRY_DELAY_MS,

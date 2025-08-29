@@ -129,9 +129,15 @@ export function useProcessMessage(tabId: string) {
         return null;
       }
 
-      const data = await response.json();
+      const txtResponse = await response.text();
 
-      return processResponseData(data);
+      try {
+        const data = JSON.parse(txtResponse);
+        return processResponseData(data);
+      } catch (error) {
+        logger.warn("Failed to parse JSON:", error);
+        return handleFetchError(error);
+      }
     } catch (error) {
       return handleFetchError(error);
     }

@@ -10,12 +10,18 @@ jest.mock("next/server", () => ({
 
 import { POST } from "../route";
 import { createMockApiRequest, setupApiTestEnvironment } from "../../../_test-utils/api-test-utils";
+import { setErpSessionCookie } from "@/app/api/_utils/sessionStore";
 
 describe("Save with special/Unicode fields", () => {
   // Configura entorno y fetch mock una vez para este archivo
   setupApiTestEnvironment();
 
   it("encodes UTF-8 content correctly in form body", async () => {
+    const BEARER_TOKEN = "Bearer-Token-UNICODE";
+    setErpSessionCookie(BEARER_TOKEN, {
+      cookieHeader: "JSESSIONID=ABC123DEF456; Path=/; HttpOnly",
+      csrfToken: "CSRF-TEST-123",
+    });
     const url =
       "http://localhost:3000/api/datasource/OrderLine?windowId=143&tabId=187&_operationType=add&language=es_ES";
     const body = {

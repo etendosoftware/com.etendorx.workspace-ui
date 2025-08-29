@@ -119,41 +119,57 @@ class GlobalCalloutManager {
 
   async executeCallout(fieldName: string, calloutFn: () => Promise<void>): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      // Wrap the callout to handle promise resolution
-      const wrappedCallout = async () => {
-        try {
-          await calloutFn();
-          resolve();
-        } catch (error) {
-          reject(error);
-        }
-      };
+      const wrappedCallout = this.createWrappedCallout(calloutFn, resolve, reject);
+      this.queueCallout(fieldName, wrappedCallout);
+      this.startProcessingIfNeeded();
+    });
+  }
 
-      // Add callout to pending list
-      this.pendingCallouts.set(fieldName, wrappedCallout);
-
-      // Add to queue if not already present
-      if (!this.calloutQueue.includes(fieldName)) {
-        this.calloutQueue.push(fieldName);
+  private createWrappedCallout(
+    calloutFn: () => Promise<void>,
+    resolve: () => void,
+    reject: (error: unknown) => void
+  ): () => Promise<void> {
+    return async () => {
+      try {
+        await calloutFn();
+        resolve();
+      } catch (error) {
+        reject(error);
       }
+    };
+  }
 
-      // If not currently processing, start the queue
-      if (!this.isCalloutInProgress) {
-        // Use queueMicrotask to allow multiple callouts to be queued in the same tick
-        queueMicrotask(() => {
-          if (!this.isCalloutInProgress && this.calloutQueue.length > 0) {
-            // Emit calloutStart event with current queue length
-            const queueLength = this.calloutQueue.length;
-            this.emit("calloutStart", { queueLength });
+  private queueCallout(fieldName: string, wrappedCallout: () => Promise<void>): void {
+    this.pendingCallouts.set(fieldName, wrappedCallout);
+    
+    if (!this.calloutQueue.includes(fieldName)) {
+      this.calloutQueue.push(fieldName);
+    }
+  }
 
-            // Start processing the queue
-            this.processQueue().catch((error) => {
-              logger.error("Error processing callout queue:", error);
-            });
-          }
+  private startProcessingIfNeeded(): void {
+    if (this.isCalloutInProgress) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      if (this.shouldStartProcessing()) {
+        this.emitCalloutStart();
+        this.processQueue().catch((error) => {
+          logger.error("Error processing callout queue:", error);
         });
       }
     });
+  }
+
+  private shouldStartProcessing(): boolean {
+    return !this.isCalloutInProgress && this.calloutQueue.length > 0;
+  }
+
+  private emitCalloutStart(): void {
+    const queueLength = this.calloutQueue.length;
+    this.emit("calloutStart", { queueLength });
   }
 
   private async processQueue(): Promise<void> {
@@ -169,42 +185,60 @@ class GlobalCalloutManager {
   private async executeQueuedCallouts(): Promise<void> {
     try {
       while (this.calloutQueue.length > 0) {
-        const fieldName = this.calloutQueue.shift();
-        if (!fieldName) continue;
-
-        const callout = this.pendingCallouts.get(fieldName);
-        if (!callout) continue;
-
-        if (isDebugCallouts()) logger.debug(`[Callout] Executing: ${fieldName}`);
-
-        try {
-          await callout();
-          if (isDebugCallouts()) logger.debug(`[Callout] Completed: ${fieldName}`);
-        } catch (error) {
-          logger.error(`[Callout] Error executing ${fieldName}:`, error);
-          // Continue processing other callouts even if one fails
-        }
-
-        this.pendingCallouts.delete(fieldName);
-
-        // Emit progress event if more callouts remain
-        if (this.calloutQueue.length > 0) {
-          this.emit("calloutProgress", {
-            completed: fieldName,
-            remaining: this.calloutQueue.length,
-          });
-
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
+        await this.processNextCallout();
       }
     } catch (error) {
-      logger.error("Callout execution failed:", error);
+      this.handleExecutionError(error);
     } finally {
-      this.isCalloutInProgress = false;
-
-      // Emit calloutEnd event when all callouts complete
-      this.emit("calloutEnd", { allCompleted: true });
+      this.finalizeExecution();
     }
+  }
+
+  private async processNextCallout(): Promise<void> {
+    const fieldName = this.calloutQueue.shift();
+    if (!fieldName) return;
+
+    const callout = this.pendingCallouts.get(fieldName);
+    if (!callout) return;
+
+    await this.executeCalloutWithLogging(fieldName, callout);
+    this.pendingCallouts.delete(fieldName);
+    await this.emitProgressIfNeeded(fieldName);
+  }
+
+  private async executeCalloutWithLogging(fieldName: string, callout: () => Promise<void>): Promise<void> {
+    if (isDebugCallouts()) logger.debug(`[Callout] Executing: ${fieldName}`);
+
+    try {
+      await callout();
+      if (isDebugCallouts()) logger.debug(`[Callout] Completed: ${fieldName}`);
+    } catch (error) {
+      logger.error(`[Callout] Error executing ${fieldName}:`, error);
+    }
+  }
+
+  private async emitProgressIfNeeded(fieldName: string): Promise<void> {
+    if (this.calloutQueue.length > 0) {
+      this.emit("calloutProgress", {
+        completed: fieldName,
+        remaining: this.calloutQueue.length,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+
+  private handleExecutionError(error: unknown): void {
+    const fieldName = this.calloutQueue[0];
+    logger.error(`Callout execution failed for field: ${fieldName}`, error);
+
+    if (fieldName) {
+      this.pendingCallouts.delete(fieldName);
+    }
+  }
+
+  private finalizeExecution(): void {
+    this.isCalloutInProgress = false;
+    this.emit("calloutEnd", { allCompleted: true });
   }
 
   isCalloutRunning(): boolean {

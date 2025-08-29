@@ -10,12 +10,18 @@ jest.mock("next/server", () => ({
 
 import { PUT } from "../route";
 import { createMockApiRequest, setupApiTestEnvironment } from "../../../_test-utils/api-test-utils";
+import { setErpSessionCookie } from "@/app/api/_utils/sessionStore";
 
 describe("Save via PUT JSON→form conversion", () => {
   // Configura entorno y fetch mock una vez para este archivo
   setupApiTestEnvironment();
 
   it("encodes JSON to form-urlencoded on PUT", async () => {
+    const BEARER_TOKEN = "put-token";
+    setErpSessionCookie(BEARER_TOKEN, {
+      cookieHeader: "JSESSIONID=ABC123DEF456; Path=/; HttpOnly",
+      csrfToken: "CSRF-TEST-123",
+    });
     const url = "http://localhost:3000/api/datasource/Invoice?windowId=1&tabId=2&_operationType=update";
     const body = {
       dataSource: "isc_OBViewDataSource_0",
@@ -27,7 +33,7 @@ describe("Save via PUT JSON→form conversion", () => {
     };
     const req = createMockApiRequest({
       url,
-      bearer: "put-token",
+      bearer: BEARER_TOKEN,
       jsonBody: body,
       method: "PUT",
       contentType: "application/json; charset=utf-8",
@@ -40,7 +46,7 @@ describe("Save via PUT JSON→form conversion", () => {
       "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice?windowId=1&tabId=2&_operationType=update"
     );
     expect(init.method).toBe("PUT");
-    expect(init.headers.Authorization).toBe("Bearer put-token");
+    expect(init.headers.Authorization).toBe(`Bearer ${BEARER_TOKEN}`);
     expect(init.headers["Content-Type"]).toBe("application/json; charset=utf-8");
     const decoded = decodeURIComponent(init.body as string);
     expect(decoded).toContain('"operationType":"update"');

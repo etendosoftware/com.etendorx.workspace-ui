@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { getErpSessionCookie } from "./sessionStore";
+import { getErpSessionCookie, getErpCsrfToken } from "./sessionStore";
 
 function getEnvVar(key: string): string | undefined {
   try {
@@ -28,11 +28,54 @@ export function shouldForwardErpCookies(): boolean {
  * Returns the Cookie header to forward to ERP, combining any incoming browser cookies
  * with the stored ERP session cookie (captured at login), unless disabled by config.
  */
-export function getCombinedErpCookieHeader(request: Request | NextRequest, userToken: string | null): string {
+export function getCombinedErpCookieHeader(request: Request | NextRequest | null, userToken: string | null): string {
   if (!shouldForwardErpCookies()) return "";
-  const incomingCookie = request.headers.get("cookie") || "";
+
+  // Extract browser Cookie header if available
+  let browserCookie: string | null = null;
+  try {
+    browserCookie = request?.headers?.get("cookie") ?? null;
+  } catch {
+    browserCookie = null;
+  }
+
   const erpSessionCookie = userToken ? getErpSessionCookie(userToken) : null;
-  return [incomingCookie, erpSessionCookie].filter(Boolean).join("; ");
+
+  const parts: string[] = [];
+  if (browserCookie) parts.push(browserCookie);
+  if (erpSessionCookie) parts.push(erpSessionCookie);
+
+  return parts.join("; ");
+}
+
+/**
+ * Returns both the combined Cookie header and the stored X-CSRF-Token for the user token.
+ * Useful so routes can forward both Cookie and X-CSRF-Token to Etendo Classic when present.
+ */
+export function getErpAuthHeaders(
+  requestOrToken?: Request | NextRequest | string | null,
+  maybeToken?: string | null
+): { cookieHeader: string; csrfToken: string | null } {
+  // Normalize arguments: allow calling as (request, token) or (token)
+  const isRequest = (obj: unknown): obj is Request | NextRequest => {
+    if (!obj || typeof obj !== "object") return false;
+    const candidate = obj as Record<string, unknown>;
+    return (
+      "headers" in candidate &&
+      typeof candidate.headers === "object" &&
+      candidate.headers !== null &&
+      typeof (candidate.headers as Record<string, unknown>).get === "function"
+    );
+  };
+
+  const request = isRequest(requestOrToken) ? requestOrToken : null;
+  const token = isRequest(requestOrToken)
+    ? (maybeToken ?? null)
+    : ((requestOrToken as string | null | undefined) ?? null);
+
+  const cookieHeader = getCombinedErpCookieHeader(request, token);
+  const csrfToken = token ? getErpCsrfToken(token) : null;
+  return { cookieHeader, csrfToken };
 }
 
 /**

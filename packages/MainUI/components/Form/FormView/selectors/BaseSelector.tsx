@@ -44,8 +44,9 @@ export const compileExpression = (expression: string) => {
 };
 
 const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; formMode?: FormMode }) => {
-  const { watch, getValues, setValue, register } = useFormContext();
-  const { isFormInitializing } = useFormInitializationContext();
+  const formMethods = useFormContext();
+  const { watch, getValues, setValue, register, formState } = formMethods;
+  const { isFormInitializing, isSettingInitialValues, setIsSettingInitialValues } = useFormInitializationContext();
   const { tab } = useTabContext();
   const fieldsByColumnName = useMemo(() => getFieldsByColumnName(tab), [tab]);
   const { recordId } = useParams<{ recordId: string }>();
@@ -109,9 +110,9 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
         }
 
         // If the callout returned restricted entries for this field, expose them to selectors
-        const withEntries = (columnValues as any)[column]?.entries as
-          | Array<{ id: string; _identifier: string }>
-          | undefined;
+        const withEntries = (columnValues as Record<string, { entries?: Array<{ id: string; _identifier: string }> }>)[
+          column
+        ]?.entries;
         if (withEntries?.length) {
           setValue(
             `${hqlName}$_entries`,
@@ -200,26 +201,77 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     applyAuxiliaryInputValues,
   ]);
 
+  const shouldExecuteCallout = useCallback((): boolean => {
+    if (!field.column.callout) return false;
+    if (isSettingFromCallout.current) return false;
+    if (globalCalloutManager.isSuppressed()) return false;
+
+    if (isFormInitializing) return false;
+    if (isSettingInitialValues) return false;
+
+    if (formMode === FormMode.NEW) {
+      const fieldState = formState.dirtyFields[field.hqlName];
+      if (!fieldState) {
+        if (isDebugCallouts()) {
+          logger.debug(`[Callout] Skipped (field not dirty in NEW mode): ${field.hqlName}`, {
+            formState: formState.dirtyFields,
+            fieldState,
+          });
+        }
+        return false;
+      }
+    }
+
+    if (previousValue.current === value) return false;
+
+    return true;
+  }, [
+    field.hqlName,
+    field.column.callout,
+    value,
+    isFormInitializing,
+    isSettingInitialValues,
+    formMode,
+    formState.dirtyFields,
+  ]);
+
   const runCallout = useCallback(async () => {
-    if (isSettingFromCallout.current) {
-      if (isDebugCallouts()) logger.debug(`[Callout] Skipped (setting from callout): ${field.hqlName}`);
-      return;
+    if (isDebugCallouts()) {
+      logger.debug(`[Callout] Attempting to run callout for field: ${field.hqlName}`, {
+        hasCallout: !!field.column.callout,
+        value,
+        previousValue: previousValue.current,
+        isSettingFromCallout: isSettingFromCallout.current,
+        isFormInitializing,
+        isSettingInitialValues,
+        fieldDirty: formState.dirtyFields[field.hqlName],
+        isCalloutRunning: globalCalloutManager.isCalloutRunning(),
+        isSuppressed: globalCalloutManager.isSuppressed(),
+      });
     }
 
-    if (isFormInitializing) {
-      if (isDebugCallouts()) logger.debug(`[Callout] Skipped (form initializing): ${field.hqlName}`);
-      return;
-    }
+    if (!shouldExecuteCallout()) return;
 
-    if (globalCalloutManager.isCalloutRunning() || globalCalloutManager.isSuppressed()) {
-      if (isDebugCallouts()) logger.debug(`[Callout] Skipped (global busy/suppressed): ${field.hqlName}`);
+    if (globalCalloutManager.isCalloutRunning()) {
+      if (isDebugCallouts()) logger.debug(`[Callout] Deferred (callout running): ${field.hqlName}`);
+      await globalCalloutManager.executeCallout(field.hqlName, executeCallout);
       return;
     }
 
     previousValue.current = value;
 
+    if (isDebugCallouts()) logger.debug(`[Callout] Executing callout for field: ${field.hqlName}`, { value });
     await globalCalloutManager.executeCallout(field.hqlName, executeCallout);
-  }, [field.hqlName, value, executeCallout, isFormInitializing]);
+  }, [
+    field.hqlName,
+    field.column.callout,
+    shouldExecuteCallout,
+    value,
+    executeCallout,
+    isFormInitializing,
+    isSettingInitialValues,
+    formState.dirtyFields,
+  ]);
 
   useEffect(() => {
     if (ready.current) {
@@ -228,6 +280,14 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
       ready.current = true;
     }
   }, [runCallout, value]);
+
+  useEffect(() => {
+    if (isFormInitializing) {
+      setIsSettingInitialValues(true);
+    } else {
+      setIsSettingInitialValues(false);
+    }
+  }, [isFormInitializing, setIsSettingInitialValues]);
 
   useEffect(() => {
     return () => {

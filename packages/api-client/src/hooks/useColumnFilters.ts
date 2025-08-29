@@ -30,7 +30,8 @@ export interface UseColumnFiltersReturn {
   clearColumnFilter: (columnId: string) => void;
   clearAllFilters: () => void;
   loadFilterOptions: (columnId: string, searchQuery?: string) => Promise<void>;
-  setFilterOptions: (columnId: string, options: FilterOption[]) => void;
+  setFilterOptions: (columnId: string, options: FilterOption[], hasMore?: boolean, append?: boolean) => void;
+  loadMoreFilterOptions: (columnId: string, searchQuery?: string) => void;
   getFilterableColumns: () => Column[];
   hasActiveFilters: boolean;
 }
@@ -95,17 +96,25 @@ export function useColumnFilters({ columns, onFiltersChange }: UseColumnFiltersP
     );
   }, []);
 
-  const setFilterOptions = useCallback((columnId: string, options: FilterOption[]) => {
+  const setFilterOptions = useCallback((columnId: string, options: FilterOption[], hasMore?: boolean, append?: boolean) => {
     setColumnFilters((prev) =>
       prev.map((filter) =>
         filter.id === columnId
           ? {
               ...filter,
-              availableOptions: options,
+              availableOptions: append ? [...filter.availableOptions, ...options] : options,
               loading: false,
+              hasMore: hasMore || false,
+              currentPage: append ? (filter.currentPage || 0) + 1 : 1,
             }
           : filter
       )
+    );
+  }, []);
+
+  const loadMoreFilterOptions = useCallback((columnId: string, searchQuery?: string) => {
+    setColumnFilters((prev) =>
+      prev.map((filter) => (filter.id === columnId ? { ...filter, loading: true, searchQuery } : filter))
     );
   }, []);
 
@@ -123,6 +132,7 @@ export function useColumnFilters({ columns, onFiltersChange }: UseColumnFiltersP
     clearAllFilters,
     loadFilterOptions,
     setFilterOptions,
+    loadMoreFilterOptions,
     getFilterableColumns,
     hasActiveFilters,
   };
