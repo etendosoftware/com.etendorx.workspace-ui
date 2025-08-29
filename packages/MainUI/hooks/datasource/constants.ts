@@ -36,6 +36,7 @@ export const INVOICE_FIELD_MAPPINGS: Record<string, string> = {
   currency: "inpcCurrencyId",
   businessPartner: "inpcBpartnerId",
   invoiceDate: "inpdateinvoiced",
+  organization: "inpadOrgId",
   documentType: "inpcDoctypeId",
   transactionDocument: "inpcDoctypetargetId",
   paymentTerms: "inpcPaymenttermId",
