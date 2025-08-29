@@ -143,7 +143,7 @@ export default function useTableSelection(
 
   // Bidirectional synchronization check
   const performBidirectionalSync = useCallback(() => {
-    if (!windowId || windowId !== currentWindowId) return;
+    if (!windowId || windowId !== currentWindowId || records.length === 0) return;
 
     try {
       const urlSelectedId = getSelectedRecord(windowId, tab.id);
@@ -160,7 +160,7 @@ export default function useTableSelection(
     } catch (error) {
       handleSyncError(error as Error, "bidirectional sync");
     }
-  }, [windowId, currentWindowId, tab.id, rowSelection, getSelectedRecord, reconcileStates, handleSyncError]);
+  }, [windowId, currentWindowId, tab.id, rowSelection, records, getSelectedRecord, reconcileStates, handleSyncError]);
 
   useEffect(() => {
     const isCorrectWindow = windowId === currentWindowId;
