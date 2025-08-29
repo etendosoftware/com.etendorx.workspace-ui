@@ -31,10 +31,9 @@ import {
 } from "./constants";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
-// Local fallback to avoid importing UI components (and Next server modules) in hooks/tests
-const FALLBACK_RESULT: Record<string, EntityValue> = {} as any;
+const FALLBACK_RESULT: Record<string, EntityValue> = {} as Record<string, EntityValue>;
 
-export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 20 }: UseTableDirDatasourceParams) => {
+export const useTableDirDatasource = ({ field, pageSize = 75, initialPageSize = 75 }: UseTableDirDatasourceParams) => {
   const { getValues, watch } = useFormContext();
   const { tab, parentRecord } = useTabContext();
   const windowId = tab.window;
@@ -175,8 +174,8 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           Object.assign(baseBody, {
             _noCount: "true",
             ...(selectorId && { _selectorDefinitionId: selectorId }),
-            ...invoiceValue,
             ...formValues,
+            ...invoiceValue,
           });
         } else {
           Object.assign(baseBody, {
@@ -219,11 +218,16 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
 
             for (const record of records) {
               const recordId = record.id || JSON.stringify(record);
-              recordMap.set(recordId, record);
+              if (!recordMap.has(recordId)) {
+                recordMap.set(recordId, record);
+              }
             }
+
             for (const record of data.response.data) {
               const recordId = record.id || JSON.stringify(record);
-              recordMap.set(recordId, record);
+              if (!recordMap.has(recordId)) {
+                recordMap.set(recordId, record);
+              }
             }
 
             setRecords(Array.from(recordMap.values()));

@@ -187,7 +187,7 @@ function SelectCmp({
     if (filteredOptions.length > 0) {
       return filteredOptions.map(({ id, label }, index) => (
         <OptionItem
-          key={id}
+          key={`${id}-${index}`}
           id={id}
           label={label}
           index={index}

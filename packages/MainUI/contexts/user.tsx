@@ -155,12 +155,18 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
         localStorage.setItem("token", response.token);
         setToken(response.token);
+
+        Metadata.setToken(response.token);
+        datasource.setToken(response.token);
+
+        const sessionData = await getSession();
+        await updateSessionInfo(sessionData);
       } catch (error) {
         logger.warn("Error updating profile:", error);
         throw error;
       }
     },
-    [setToken, token]
+    [setToken, token, updateSessionInfo]
   );
 
   const login = useCallback(
@@ -172,12 +178,16 @@ export default function UserProvider(props: React.PropsWithChildren) {
         Metadata.setToken(loginResponse.token);
         datasource.setToken(loginResponse.token);
         setToken(loginResponse.token);
+        
+        // Fetch and update session info immediately after login
+        const sessionData = await getSession();
+        await updateSessionInfo(sessionData);
       } catch (e) {
         logger.warn("Login or session retrieval error:", e);
         throw e;
       }
     },
-    [setToken]
+    [setToken, updateSessionInfo]
   );
 
   const value = useMemo<IUserContext>(
