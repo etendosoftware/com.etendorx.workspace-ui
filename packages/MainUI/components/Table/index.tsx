@@ -676,12 +676,14 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
             return;
           }
 
+          // Clear any existing timeout for this row
           const existingTimeout = clickTimeoutsRef.current.get(rowId);
           if (existingTimeout) {
             clearTimeout(existingTimeout);
             clickTimeoutsRef.current.delete(rowId);
           }
 
+          // Set a new timeout for single click action
           const timeout = setTimeout(() => {
             if (event.ctrlKey || event.metaKey) {
               table.setRowSelection({});
@@ -703,24 +705,24 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
           event.stopPropagation();
 
-          const timeout = clickTimeoutsRef.current.get(rowId);
-          if (timeout) {
+          // Cancel ALL pending timeouts to prevent single click execution
+          for (const timeout of clickTimeoutsRef.current.values()) {
             clearTimeout(timeout);
             clickTimeoutsRef.current.delete(rowId);
           }
+          clickTimeoutsRef.current.clear();
 
           const parent = graph.getParent(tab);
           const parentSelection = parent ? graph.getSelected(parent) : undefined;
 
-          if (!isSelected) {
-            row.toggleSelected();
-          }
-
+          // Set graph selection for consistency but avoid triggering URL updates
           graph.setSelected(tab, row.original);
 
           if (parent && parentSelection) {
             setTimeout(() => graph.setSelected(parent, parentSelection), 10);
           }
+
+          // Navigate to form view - this will handle the URL update properly
           setRecordId(record.id);
         },
 
