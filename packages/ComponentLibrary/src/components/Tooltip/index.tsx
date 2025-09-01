@@ -83,6 +83,7 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom",
   }, [disabled]);
 
   const showTooltip = () => {
+    if (disabled) return;
     if (showTimer.current) clearTimeout(showTimer.current);
     showTimer.current = window.setTimeout(() => {
       setVisible(true);
