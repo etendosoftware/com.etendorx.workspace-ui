@@ -33,15 +33,6 @@ const compareArraysAlphabetically = (arr1: string[], arr2: string[]): boolean =>
   return sorted1.every((item, index) => item === sorted2[index]);
 };
 
-const compareArraysNumerically = (arr1: string[], arr2: string[]): boolean => {
-  if (arr1.length !== arr2.length) return false;
-
-  const sorted1 = [...arr1].sort((a, b) => Number(a) - Number(b));
-  const sorted2 = [...arr2].sort((a, b) => Number(a) - Number(b));
-
-  return sorted1.every((item, index) => item === sorted2[index]);
-};
-
 const processSelectedRecords = (
   rowSelection: MRT_RowSelectionState,
   recordsMap: Record<string, EntityData>
