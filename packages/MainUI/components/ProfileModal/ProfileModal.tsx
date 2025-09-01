@@ -133,22 +133,24 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     }
   }, [language, languages]);
 
-  const handleRoleChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
-    setSelectedRole(value);
-    
-    if (value) {
-      const selectedRoleData = roles.find((role) => role.id === value.value);
-      
-      if (selectedRoleData?.organizations && selectedRoleData.organizations.length > 0) {
-        const defaultOrganization = selectedRoleData.organizations[0];
-        setSelectedOrg({
-          title: defaultOrganization.name,
-          value: defaultOrganization.id,
-          id: defaultOrganization.id,
-        });
-        
-        if (defaultOrganization.warehouses && defaultOrganization.warehouses.length > 0) {
-          const defaultWarehouse = defaultOrganization.warehouses[0];
+  const handleRoleChange = useCallback(
+    (_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
+      setSelectedRole(value);
+
+      if (value) {
+        const selectedRoleData = roles.find((role) => role.id === value.value);
+        const defaultOrganization = selectedRoleData?.organizations?.[0];
+        const defaultWarehouse = defaultOrganization?.warehouses?.[0];
+        if (defaultOrganization) {
+          setSelectedOrg({
+            title: defaultOrganization.name,
+            value: defaultOrganization.id,
+            id: defaultOrganization.id,
+          });
+        } else {
+          setSelectedOrg(DefaultOrg);
+        }
+        if (defaultWarehouse) {
           setSelectedWarehouse({
             title: defaultWarehouse.name,
             value: defaultWarehouse.id,
@@ -161,11 +163,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         setSelectedOrg(DefaultOrg);
         setSelectedWarehouse(null);
       }
-    } else {
-      setSelectedOrg(DefaultOrg);
-      setSelectedWarehouse(null);
-    }
-  }, [roles]);
+    },
+    [roles]
+  );
 
   const handleOrgChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
     setSelectedOrg(value ?? DefaultOrg);

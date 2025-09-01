@@ -625,10 +625,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
           const timeout = setTimeout(() => {
             if (event.ctrlKey || event.metaKey) {
+              row.toggleSelected();
+            } else {
               table.setRowSelection({});
               row.toggleSelected(true);
-            } else {
-              row.toggleSelected();
             }
             clickTimeoutsRef.current.delete(rowId);
           }, 250);
