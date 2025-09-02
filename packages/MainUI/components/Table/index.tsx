@@ -106,6 +106,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const parentId = String(parentRecord?.id ?? "");
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const hasScrolledToSelection = useRef<boolean>(false);
 
   const shouldUseTreeMode = isTreeMode && treeMetadata.supportsTreeMode && !treeMetadataLoading;
   const treeEntity = shouldUseTreeMode ? treeMetadata.treeEntity || "90034CAE96E847D78FBEF6D38CB1930D" : tab.entityName;
@@ -601,6 +602,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       } else {
         logger.warn(`[URLNavigation] URL navigation to invalid record: ${currentURLSelection}`);
       }
+      hasScrolledToSelection.current = false;
     }
 
     if (currentURLSelection) {
@@ -669,7 +671,24 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       const isSelected = row.getIsSelected();
       const rowId = String(record.id);
 
+      // Auto-scroll to selected row when it first renders
+      const windowId = activeWindow?.windowId;
+      const urlSelectedId = windowId && windowId === tab.window ? getSelectedRecord(windowId, tab.id) : null;
+
       return {
+        ref: (element: HTMLTableRowElement | null) => {
+          // Auto-scroll to selected row when it first renders
+          if (element && isSelected && urlSelectedId === rowId && !hasScrolledToSelection.current) {
+            element.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+              inline: "nearest",
+            });
+            hasScrolledToSelection.current = true;
+            logger.info(`[TableScroll] Auto-scrolled to selected record: ${rowId}`);
+          }
+        },
+
         onClick: (event) => {
           const target = event.target as HTMLElement;
           if (target.tagName === "INPUT" || target.tagName === "BUTTON" || target.closest("button")) {
@@ -735,7 +754,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         table,
       };
     },
-    [graph, setRecordId, sx.rowSelected, tab]
+    [graph, setRecordId, sx.rowSelected, tab, activeWindow, getSelectedRecord]
   );
 
   const renderEmptyRowsFallback = useCallback(
