@@ -27,7 +27,7 @@ import {
 } from "material-react-table";
 import { useStyle } from "./styles";
 import type { DatasourceOptions, EntityData, Column } from "@workspaceui/api-client/src/api/types";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearch } from "../../contexts/searchContext";
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
@@ -671,24 +671,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       const isSelected = row.getIsSelected();
       const rowId = String(record.id);
 
-      // Auto-scroll to selected row when it first renders
-      const windowId = activeWindow?.windowId;
-      const urlSelectedId = windowId && windowId === tab.window ? getSelectedRecord(windowId, tab.id) : null;
-
       return {
-        ref: (element: HTMLTableRowElement | null) => {
-          // Auto-scroll to selected row when it first renders
-          if (element && isSelected && urlSelectedId === rowId && !hasScrolledToSelection.current) {
-            element.scrollIntoView({
-              behavior: "smooth",
-              block: "center",
-              inline: "nearest",
-            });
-            hasScrolledToSelection.current = true;
-            logger.info(`[TableScroll] Auto-scrolled to selected record: ${rowId}`);
-          }
-        },
-
         onClick: (event) => {
           const target = event.target as HTMLElement;
           if (target.tagName === "INPUT" || target.tagName === "BUTTON" || target.closest("button")) {
@@ -754,7 +737,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
         table,
       };
     },
-    [graph, setRecordId, sx.rowSelected, tab, activeWindow, getSelectedRecord]
+    [graph, setRecordId, sx.rowSelected, tab]
   );
 
   const renderEmptyRowsFallback = useCallback(
@@ -937,6 +920,51 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   });
 
   useTableSelection(tab, records, table.getState().rowSelection, handleTableSelectionChange);
+
+  // Handle auto-scroll to selected record with virtualization support
+  useLayoutEffect(() => {
+    const windowId = activeWindow?.windowId;
+    if (!windowId || windowId !== tab.window || !displayRecords) {
+      return;
+    }
+
+    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    if (!urlSelectedId) {
+      return;
+    }
+
+    // Always mark as scrolled after first attempt, regardless of whether scroll was needed
+    if (!hasScrolledToSelection.current && displayRecords.length > 0) {
+      hasScrolledToSelection.current = true;
+
+      // Find the index of the selected record in the display records
+      const selectedIndex = displayRecords.findIndex((record) => String(record.id) === urlSelectedId);
+
+      if (selectedIndex >= 0 && tableContainerRef.current) {
+        try {
+          if (tableContainerRef.current) {
+            const containerElement = tableContainerRef.current;
+
+            const estimatedRowHeight = 40; // Approximate row height
+            const headerHeight = 75; // Approximate header height
+            const scrollTop = selectedIndex * estimatedRowHeight - containerElement.clientHeight / 2 + headerHeight;
+
+            // Scroll to the calculated position synchronously after DOM updates
+            containerElement.scrollTo({
+              top: Math.max(0, scrollTop),
+              behavior: "smooth",
+            });
+
+            logger.info(`[TableScroll] Auto-scrolled to record at index ${selectedIndex}: ${urlSelectedId}`);
+          }
+        } catch (error) {
+          logger.error(`[TableScroll] Error scrolling to selected record: ${error}`);
+        }
+      } else {
+        logger.debug(`[TableScroll] Record found but scroll not needed: ${urlSelectedId}`);
+      }
+    }
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, displayRecords, table]);
 
   // Ensure URL selection is maintained when table data changes
   useEffect(() => {
