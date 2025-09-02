@@ -66,6 +66,10 @@ async function processRequestData(
     headers.Cookie = combinedCookie;
   }
 
+  if (csrfToken) {
+    headers["X-CSRF-Token"] = csrfToken;
+  }
+
   const body = await request.text();
 
   // If no body content, return headers only
@@ -77,17 +81,14 @@ async function processRequestData(
   let processedBody = body;
   if (contentType.includes("application/json") && csrfToken) {
     try {
-      const jsonBody = JSON.parse(body);
-
-      // If the JSON already contains csrfToken property, replace its value with the actual token
-      if (jsonBody && typeof jsonBody === "object" && "csrfToken" in jsonBody) {
-        jsonBody.csrfToken = csrfToken;
-        processedBody = JSON.stringify(jsonBody);
-      }
+      // replace csrfToken in the body
+      processedBody = processedBody.replace(/"csrfToken":\s*".*?"/, `"csrfToken":"${csrfToken}"`);
     } catch (error) {
       // If JSON parsing fails, keep the original body
       console.warn("Failed to parse JSON body for CSRF token sync:", error);
     }
+  } else {
+    processedBody += `&csrfToken=${csrfToken}`;
   }
 
   headers["Content-Type"] = contentType;

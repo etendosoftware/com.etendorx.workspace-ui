@@ -33,12 +33,13 @@ import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/sr
 interface UseColumnsOptions {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
   onLoadFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
+  onLoadMoreFilterOptions?: (columnId: string, searchQuery?: string) => Promise<FilterOption[]>;
   columnFilterStates?: ColumnFilterState[];
 }
 
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
-  const { onColumnFilter, onLoadFilterOptions, columnFilterStates } = options || {};
+  const { onColumnFilter, onLoadFilterOptions, onLoadMoreFilterOptions, columnFilterStates } = options || {};
 
   const columns = useMemo(() => {
     const fieldsAsArray = Object.values(tab.fields);
@@ -100,6 +101,9 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
               onLoadOptions={(searchQuery?: string) => {
                 return onLoadFilterOptions(column.id, searchQuery);
               }}
+              onLoadMoreOptions={onLoadMoreFilterOptions ? (searchQuery?: string) => {
+                return onLoadMoreFilterOptions(column.id, searchQuery);
+              } : undefined}
             />
           ),
         };
@@ -112,7 +116,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     const customJsColumns = transformColumnsWithCustomJs(referencedColumns, fieldsAsArray);
 
     return customJsColumns;
-  }, [tab.fields, handleClickRedirect, handleKeyDownRedirect, onColumnFilter, onLoadFilterOptions, columnFilterStates]);
+  }, [tab.fields, handleClickRedirect, handleKeyDownRedirect, onColumnFilter, onLoadFilterOptions, onLoadMoreFilterOptions, columnFilterStates]);
 
   return columns;
 };

@@ -103,6 +103,6 @@ describe("API: /api/datasource/:entity save/update", () => {
       "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Order?windowId=1&tabId=2&_operationType=update"
     );
     expect(init.headers["Content-Type"]).toBe("application/x-custom");
-    expect(init.body).toBe(rawBody);
+    expect(init.body).toBe(`${rawBody}&csrfToken=CSRF-TEST-123`);
   });
 });

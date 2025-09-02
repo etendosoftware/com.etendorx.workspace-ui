@@ -74,6 +74,15 @@ describe("ColumnFilterUtils", () => {
     type: FieldType.TEXT,
   } as unknown as Column;
 
+  const businessPartnerColumn: Column = {
+    id: "businessPartner",
+    columnName: "businessPartner",
+    label: "Business Partner",
+    type: FieldType.SELECT,
+    referencedEntity: "BusinessPartner",
+    datasourceId: "BusinessPartner",
+  } as unknown as Column;
+
   describe("supportsDropdownFilter", () => {
     it("should return true for SELECT columns", () => {
       expect(ColumnFilterUtils.supportsDropdownFilter(selectColumn)).toBe(true);
@@ -81,6 +90,10 @@ describe("ColumnFilterUtils", () => {
 
     it("should return true for TABLEDIR columns", () => {
       expect(ColumnFilterUtils.supportsDropdownFilter(tableDirColumn)).toBe(true);
+    });
+
+    it("should return true for SELECT columns with referencedEntity (businessPartner case)", () => {
+      expect(ColumnFilterUtils.supportsDropdownFilter(businessPartnerColumn)).toBe(true);
     });
 
     it("should return false for other column types", () => {
@@ -99,6 +112,10 @@ describe("ColumnFilterUtils", () => {
         refList: undefined,
       };
       expect(ColumnFilterUtils.isSelectColumn(selectWithoutRefList)).toBe(false);
+    });
+
+    it("should return false for SELECT columns with referencedEntity (businessPartner case)", () => {
+      expect(ColumnFilterUtils.isSelectColumn(businessPartnerColumn)).toBe(false);
     });
 
     it("should return false for non-SELECT columns", () => {
@@ -120,7 +137,11 @@ describe("ColumnFilterUtils", () => {
       expect(ColumnFilterUtils.isTableDirColumn(tableDirWithoutEntity)).toBe(false);
     });
 
-    it("should return false for non-TABLEDIR columns", () => {
+    it("should return true for SELECT columns with referencedEntity (businessPartner case)", () => {
+      expect(ColumnFilterUtils.isTableDirColumn(businessPartnerColumn)).toBe(true);
+    });
+
+    it("should return false for non-TABLEDIR/non-reference columns", () => {
       expect(ColumnFilterUtils.isTableDirColumn(selectColumn)).toBe(false);
       expect(ColumnFilterUtils.isTableDirColumn(textColumn)).toBe(false);
     });

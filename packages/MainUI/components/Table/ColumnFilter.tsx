@@ -29,9 +29,10 @@ export interface ColumnFilterProps {
   filterState?: ColumnFilterState;
   onFilterChange: (selectedOptions: FilterOption[]) => void;
   onLoadOptions?: (searchQuery?: string) => void;
+  onLoadMoreOptions?: (searchQuery?: string) => void;
 }
 
-export const ColumnFilter: React.FC<ColumnFilterProps> = ({ column, filterState, onFilterChange, onLoadOptions }) => {
+export const ColumnFilter: React.FC<ColumnFilterProps> = ({ column, filterState, onFilterChange, onLoadOptions, onLoadMoreOptions }) => {
   if (!ColumnFilterUtils.supportsDropdownFilter(column)) {
     return null;
   }
@@ -47,20 +48,32 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({ column, filterState,
     }
   };
 
+  const handleLoadMore = () => {
+    if (onLoadMoreOptions && ColumnFilterUtils.isTableDirColumn(column)) {
+      // Pass current search query for consistent pagination
+      onLoadMoreOptions(filterState?.searchQuery);
+    }
+  };
+
   const selectedValues = (filterState?.selectedOptions || []).map((option) => option.id);
   const availableOptions = (filterState?.availableOptions || []).map((option) => ({
     id: option.id,
     label: option.label,
   }));
 
+  const supportsSearch = ColumnFilterUtils.isTableDirColumn(column) || ColumnFilterUtils.isSelectColumn(column);
+  const supportsLoadMore = ColumnFilterUtils.isTableDirColumn(column); // Only table dir supports server-side pagination for now
+
   return (
     <MultiSelect
       options={availableOptions}
       selectedValues={selectedValues}
       onSelectionChange={handleSelectionChange}
-      onSearch={ColumnFilterUtils.isTableDirColumn(column) ? handleSearchChange : undefined}
+      onSearch={supportsSearch ? handleSearchChange : undefined}
       onFocus={onLoadOptions}
+      onLoadMore={supportsLoadMore ? handleLoadMore : undefined}
       loading={filterState?.loading || false}
+      hasMore={filterState?.hasMore || false}
       placeholder={`Filter ${column.name || column.columnName}...`}
       maxHeight={200}
     />

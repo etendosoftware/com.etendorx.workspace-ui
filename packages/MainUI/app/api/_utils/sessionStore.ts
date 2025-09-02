@@ -26,7 +26,7 @@ if (!g[globalKey]) {
 function generateCsrfToken(): string {
   // Use crypto.randomUUID() if available (Node.js 14.17.0+), otherwise fallback
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
-    return crypto.randomUUID().replace(/-/g, "");
+    return crypto.randomUUID().replace(/-/g, "").toUpperCase();
   }
 
   // Fallback: generate random hex string
