@@ -21,48 +21,27 @@ import { useFormContext } from "react-hook-form";
 import RadioSelector from "./RadioSelector";
 
 const GenericSelector = ({ parameter, readOnly }: { parameter: ProcessParameter; readOnly?: boolean }) => {
-  const { register, setValue, watch } = useFormContext();
+  const { register, watch } = useFormContext();
   const reference = getFieldReference(parameter.reference);
-  
-  const fieldName = parameter.name; // Use parameter.name to match form reset field names
-  const identifierFieldName = `${fieldName}$_identifier`;
-  
-  // Watch both value and identifier
-  const fieldValue = watch(fieldName);
-  const identifierValue = watch(identifierFieldName);
-  
-  console.debug("GenericSelector registering field:", {
-    parameterName: parameter.name,
-    dBColumnName: parameter.dBColumnName,
-    registeringAs: fieldName,
-    reference,
-    readOnly,
-    fieldValue,
-    identifierValue
-  });
+
+  // Get the identifier for display (if available) - try both parameter.name and dBColumnName
+  const identifierValue = watch(`${parameter.name}$_identifier`) || watch(`${parameter.dBColumnName}$_identifier`);
+  const fieldValue = watch(parameter.name);
+
 
   if (reference === FieldType.LIST) {
     return <RadioSelector parameter={parameter} />;
   }
   return (
-    <>
-      {/* Hidden field for the actual value (ID) that gets sent in requests */}
-      <input
-        type="hidden"
-        {...register(fieldName, {
-          required: parameter.required,
-        })}
-      />
-      
-      {/* Visible field showing the identifier for user readability */}
-      <input
-        readOnly={readOnly}
-        className={`w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:border-(--color-etendo-main) ${readOnly ? "bg-(--color-baseline-10) font-medium text-zinc-500" : ""}`}
-        value={identifierValue || fieldValue || ""}
-        disabled={readOnly}
-        onChange={() => {}} // Read-only for now, user can't edit selectors
-      />
-    </>
+    <input
+      readOnly={readOnly}
+      className={`w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:border-(--color-etendo-main) ${readOnly ? "bg-(--color-baseline-10) font-medium text-zinc-500" : ""}`}
+      value={identifierValue || fieldValue || ""}
+      {...register(parameter.name, {
+        required: parameter.required,
+        disabled: readOnly,
+      })}
+    />
   );
 };
 

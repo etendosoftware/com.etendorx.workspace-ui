@@ -7,10 +7,19 @@ import { logger } from "@/utils/logger";
 import { compileExpression } from "@/components/Form/FormView/selectors/BaseSelector";
 import Label from "@/components/Label";
 
-// Using GenericSelector for simplified logic
+// Import FormView selectors for reuse
+import { PasswordSelector } from "@/components/Form/FormView/selectors/PasswordSelector";
+import { BooleanSelector } from "@/components/Form/FormView/selectors/BooleanSelector";
+import { NumericSelector } from "@/components/Form/FormView/selectors/NumericSelector";
+import { DateSelector } from "@/components/Form/FormView/selectors/DateSelector";
+import { DatetimeSelector } from "@/components/Form/FormView/selectors/DatetimeSelector";
+import { SelectSelector } from "@/components/Form/FormView/selectors/SelectSelector";
+import { TableDirSelector } from "@/components/Form/FormView/selectors/TableDirSelector";
+import QuantitySelector from "@/components/Form/FormView/selectors/QuantitySelector";
+import { ListSelector } from "@/components/Form/FormView/selectors/ListSelector";
 
-// Simplified approach - no complex mapping needed
-// import { ProcessParameterMapper } from "../mappers/ProcessParameterMapper";
+// Import mapper
+import { ProcessParameterMapper } from "../mappers/ProcessParameterMapper";
 
 // Import existing ProcessModal selectors for fallback
 import GenericSelector from "./GenericSelector";
@@ -28,7 +37,10 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
   const { session } = useUserContext();
   const { getValues } = useFormContext();
 
-  // Note: Not using field mapping for simplified approach
+  // Map ProcessParameter to Field interface for FormView selector compatibility
+  const mappedField = useMemo(() => {
+    return ProcessParameterMapper.mapToField(parameter);
+  }, [parameter]);
 
   // Evaluate display logic expression (combine parameter logic with process defaults logic)
   const isDisplayed = useMemo(() => {
@@ -83,19 +95,75 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
     }
   }, [parameter.readOnlyLogicExpression, parameter.name, logicFields, session, getValues]);
 
-  // Simplified approach - no complex field type mapping needed
+  // Get field type for selector routing
+  const fieldType = useMemo(() => {
+    return ProcessParameterMapper.getFieldType(parameter);
+  }, [parameter]);
+
 
   // Don't render if display logic evaluates to false
   if (!isDisplayed) {
     return null;
   }
 
-  // Render the appropriate selector - simplified logic like BaseSelector
+  // Render the appropriate selector based on field type
   const renderSelector = () => {
     try {
-      // For now, just use GenericSelector like the working BaseSelector did
-      // This avoids complex field type mapping issues while we debug
-      return <GenericSelector parameter={parameter} readOnly={isReadOnly} />;
+      // Validate field mapping before rendering
+      if (!mappedField.hqlName) {
+        logger.warn("Missing hqlName for parameter:", parameter.name);
+        return <GenericSelector parameter={parameter} readOnly={isReadOnly} />;
+      }
+
+      switch (fieldType) {
+        case "password":
+          return <PasswordSelector field={mappedField} disabled={isReadOnly} placeholder={parameter.description} />;
+
+        case "boolean":
+          return <BooleanSelector field={mappedField} isReadOnly={isReadOnly} />;
+
+        case "numeric":
+          return <NumericSelector field={mappedField} disabled={isReadOnly} placeholder={parameter.description} />;
+
+        case "date":
+          return <DateSelector field={mappedField} isReadOnly={isReadOnly} />;
+
+        case "datetime":
+          return <DatetimeSelector field={mappedField} isReadOnly={isReadOnly} />;
+
+        case "select":
+          return <SelectSelector field={mappedField} isReadOnly={isReadOnly} pageSize={20} initialPageSize={20} />;
+
+        case "tabledir":
+        case "product":
+          return <TableDirSelector field={mappedField} isReadOnly={isReadOnly} />;
+
+        case "quantity":
+          return (
+            <QuantitySelector
+              field={mappedField}
+              value={mappedField.hasDefaultValue ? parameter.defaultValue : ""}
+              name={mappedField.hqlName}
+              readOnly={isReadOnly}
+              min={null}
+              max={null}
+            />
+          );
+
+        case "list":
+          if (!mappedField.refList || mappedField.refList.length === 0) {
+            logger.warn("List field without options, falling back to GenericSelector:", parameter.name);
+            return <GenericSelector parameter={parameter} readOnly={isReadOnly} />;
+          }
+          return <ListSelector field={mappedField} isReadOnly={isReadOnly} />;
+
+        // Window references already handled by GenericSelector with WindowReferenceGrid
+        case "window":
+        case "text":
+        default:
+          // Fallback to existing ProcessModal GenericSelector
+          return <GenericSelector parameter={parameter} readOnly={isReadOnly} />;
+      }
     } catch (error) {
       logger.error("Error rendering selector for parameter:", parameter.name, error);
       // Fallback to GenericSelector on error
@@ -111,7 +179,7 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
             *
           </span>
         )}
-        <Label htmlFor={parameter.name} name={parameter.name} />
+        <Label htmlFor={mappedField.hqlName} name={parameter.name} />
       </div>
       <div className="w-full pb-8">{renderSelector()}</div>
     </div>

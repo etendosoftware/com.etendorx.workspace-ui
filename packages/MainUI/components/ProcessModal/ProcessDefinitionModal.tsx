@@ -167,10 +167,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
   useEffect(() => {
     if (hasInitialData && Object.keys(availableFormData).length > 0) {
-      console.debug('ProcessDefinitionModal resetting form with:', availableFormData);
       form.reset(availableFormData);
     }
-  }, [hasInitialData, availableFormData, form]);
+  }, [hasInitialData, availableFormData, form, initialState]);
 
   const handleClose = useCallback(() => {
     if (isPending) return;

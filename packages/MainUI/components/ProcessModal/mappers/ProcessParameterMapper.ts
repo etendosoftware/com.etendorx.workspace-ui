@@ -23,9 +23,9 @@ export class ProcessParameterMapper {
     const mappedReference = ProcessParameterMapper.mapReferenceType(parameter.reference);
 
     return {
-      // Core identification properties
-      hqlName: parameter.dBColumnName || parameter.name,
-      inputName: parameter.dBColumnName || parameter.name,
+      // Core identification properties - use parameter.name to match form data keys
+      hqlName: parameter.name,
+      inputName: parameter.name,
       columnName: parameter.dBColumnName || parameter.name,
       id: parameter.id,
       name: parameter.name,
