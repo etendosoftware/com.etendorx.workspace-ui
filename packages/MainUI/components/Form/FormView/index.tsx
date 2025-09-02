@@ -122,7 +122,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     return { ...record, ...initialState };
   }, [record, initialState]);
 
-  const { fields, groups } = useFormFields(tab, mode, false, availableFormData);
+  const { fields, groups } = useFormFields(tab, recordId, mode, true, availableFormData);
 
   const formMethods = useForm({ values: availableFormData as EntityData });
   const { reset, setValue, formState, ...form } = formMethods;
@@ -146,10 +146,8 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     setIsFormInitializing(true);
     const processedData = processFormData(availableFormData);
 
-    // Mark that we're about to set initial values programmatically
     stableReset(processedData);
 
-    // Use microtask to ensure react-hook-form state has been updated
     queueMicrotask(() => {
       setIsFormInitializing(false);
     });
@@ -206,7 +204,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const onSuccess = useCallback(
     async (data: EntityData, showModal: boolean) => {
-      // Prevent callouts while applying server-updated values
       setIsFormInitializing(true);
       if (mode === FormMode.EDIT) {
         reset({ ...initialState, ...data });

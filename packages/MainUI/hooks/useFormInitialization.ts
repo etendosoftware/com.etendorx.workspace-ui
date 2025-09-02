@@ -30,6 +30,7 @@ import { useCallback, useMemo, useReducer } from "react";
 import { FieldName } from "./types";
 import useFormParent from "./useFormParent";
 import { useUserContext } from "./useUserContext";
+import { useCurrentRecord } from "./useCurrentRecord";
 
 const getRowId = (mode: FormMode, recordId?: string | null): string => {
   return mode === FormMode.EDIT ? (recordId ?? "null") : "null";
@@ -120,6 +121,12 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   const { error, formInitialization, loading } = state;
   const parentData = useFormParent(FieldName.HQL_NAME);
   const parentId = parent?.id?.toString();
+
+  const { record } = useCurrentRecord({
+    tab: tab,
+    recordId: recordId,
+  });
+
   const params = useMemo(
     () => (tab ? buildFormInitializationParams({ tab, mode, recordId, parentId }) : null),
     [tab, mode, recordId, parentId]
@@ -149,6 +156,62 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       };
 
       const data = await fetchFormInitialization(params, payload);
+
+      if (record && mode !== FormMode.NEW) {
+        const auditFieldsToAdd: Array<{
+          fieldName: string;
+          value: string;
+          inputName: string;
+        }> = [];
+
+        if (record.creationDate) {
+          auditFieldsToAdd.push({
+            fieldName: "creationDate",
+            value: String(record.creationDate),
+            inputName: "inpcreationDate",
+          });
+        }
+
+        if (record.createdBy$_identifier) {
+          auditFieldsToAdd.push({
+            fieldName: "createdBy$_identifier",
+            value: String(record.createdBy$_identifier),
+            inputName: "inpcreatedBy",
+          });
+        }
+
+        if (record.updated) {
+          auditFieldsToAdd.push({
+            fieldName: "updated",
+            value: String(record.updated),
+            inputName: "inpupdated",
+          });
+        }
+
+        if (record.updatedBy$_identifier) {
+          auditFieldsToAdd.push({
+            fieldName: "updatedBy$_identifier",
+            value: String(record.updatedBy$_identifier),
+            inputName: "inpupdatedBy",
+          });
+        }
+
+        for (const { fieldName, value } of auditFieldsToAdd) {
+          if (!data.auxiliaryInputValues[fieldName]) {
+            data.auxiliaryInputValues[fieldName] = {
+              value: value,
+            };
+          }
+        }
+
+        if (data) {
+          const extendedData = data as FormInitializationResponse & Record<string, unknown>;
+          for (const { fieldName, value } of auditFieldsToAdd) {
+            extendedData[fieldName] = value;
+          }
+        }
+      }
+
       const storedInSessionAttributes = Object.entries(data.auxiliaryInputValues).reduce(
         (acc, [key, { value }]) => {
           acc[key] = value || "";
@@ -164,7 +227,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       logger.warn(err);
       dispatch({ type: "FETCH_ERROR", payload: err instanceof Error ? err : new Error("Unknown error") });
     }
-  }, [params, parentData, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.window]);
+  }, [mode, params, parentData, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.window, record]);
 
   const refetch = useCallback(async () => {
     if (!params) return;
