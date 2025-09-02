@@ -21,21 +21,48 @@ import { useFormContext } from "react-hook-form";
 import RadioSelector from "./RadioSelector";
 
 const GenericSelector = ({ parameter, readOnly }: { parameter: ProcessParameter; readOnly?: boolean }) => {
-  const { register } = useFormContext();
+  const { register, setValue, watch } = useFormContext();
   const reference = getFieldReference(parameter.reference);
+  
+  const fieldName = parameter.name; // Use parameter.name to match form reset field names
+  const identifierFieldName = `${fieldName}$_identifier`;
+  
+  // Watch both value and identifier
+  const fieldValue = watch(fieldName);
+  const identifierValue = watch(identifierFieldName);
+  
+  console.debug("GenericSelector registering field:", {
+    parameterName: parameter.name,
+    dBColumnName: parameter.dBColumnName,
+    registeringAs: fieldName,
+    reference,
+    readOnly,
+    fieldValue,
+    identifierValue
+  });
 
   if (reference === FieldType.LIST) {
     return <RadioSelector parameter={parameter} />;
   }
   return (
-    <input
-      readOnly={readOnly}
-      className={`w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:border-(--color-etendo-main) ${readOnly ? "bg-(--color-baseline-10) font-medium text-zinc-500" : ""}`}
-      {...register(parameter.dBColumnName, {
-        required: parameter.required,
-        disabled: readOnly,
-      })}
-    />
+    <>
+      {/* Hidden field for the actual value (ID) that gets sent in requests */}
+      <input
+        type="hidden"
+        {...register(fieldName, {
+          required: parameter.required,
+        })}
+      />
+      
+      {/* Visible field showing the identifier for user readability */}
+      <input
+        readOnly={readOnly}
+        className={`w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:border-(--color-etendo-main) ${readOnly ? "bg-(--color-baseline-10) font-medium text-zinc-500" : ""}`}
+        value={identifierValue || fieldValue || ""}
+        disabled={readOnly}
+        onChange={() => {}} // Read-only for now, user can't edit selectors
+      />
+    </>
   );
 };
 

@@ -20,7 +20,7 @@ export class ProcessParameterMapper {
    * @returns Field interface compatible with FormView selectors
    */
   static mapToField(parameter: ProcessParameter | ExtendedProcessParameter): Field {
-    const mappedReference = this.mapReferenceType(parameter.reference);
+    const mappedReference = ProcessParameterMapper.mapReferenceType(parameter.reference);
 
     return {
       // Core identification properties
@@ -47,7 +47,7 @@ export class ProcessParameterMapper {
       },
 
       // Selector configuration for datasource fields
-      selector: this.mapSelectorInfo(mappedReference, parameter),
+      selector: parameter.selector || ProcessParameterMapper.mapSelectorInfo(mappedReference, parameter),
 
       // List data for select/list fields
       refList: parameter.refList || [],
@@ -235,7 +235,19 @@ export class ProcessParameterMapper {
    * @returns Field type identifier for selector routing
    */
   static getFieldType(parameter: ProcessParameter | ExtendedProcessParameter): string {
-    const reference = this.mapReferenceType(parameter.reference);
+    const reference = ProcessParameterMapper.mapReferenceType(parameter.reference);
+
+    // Check if parameter has selector information - indicates it's a tabledir/selector field
+    if (parameter.selector?.datasourceName) {
+      // Special case for Product selector
+      if (
+        parameter.selector.datasourceName === "ProductByPriceAndWarehouse" ||
+        parameter.selector.datasourceName === "Product"
+      ) {
+        return "product";
+      }
+      return "tabledir";
+    }
 
     if (reference === FIELD_REFERENCE_CODES.PASSWORD) return "password";
     if (reference === FIELD_REFERENCE_CODES.BOOLEAN) return "boolean";

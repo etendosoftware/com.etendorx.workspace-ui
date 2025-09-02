@@ -160,17 +160,14 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     };
   }, [record, tab, initialState]);
 
-  // Important: use defaultValues to avoid re-initializing the form on every render
-  // Then rely on the reset effect below when defaults actually arrive
   const form = useForm({
     defaultValues: availableFormData,
     mode: "onChange",
   });
 
-  // Reset form values when defaults are loaded
   useEffect(() => {
     if (hasInitialData && Object.keys(availableFormData).length > 0) {
-      console.log("Resetting form with new values:", availableFormData);
+      console.debug('ProcessDefinitionModal resetting form with:', availableFormData);
       form.reset(availableFormData);
     }
   }, [hasInitialData, availableFormData, form]);
@@ -244,7 +241,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           _params: {},
           _entityName: tab.entityName,
           ...recordValues,
-          ...form.getValues(),
+          ...(() => { const formValues = form.getValues(); console.debug('ProcessDefinitionModal form values:', formValues); return formValues; })(),
           windowId: tab.window,
         };
 
@@ -295,7 +292,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         record || {}, // Complete record data (fallback to empty object)
         tab, // Tab metadata
         initialState || {}, // Process defaults from server (handle null case)
-        form.getValues() // User input from form
+        (() => { const formValues = form.getValues(); console.debug('ProcessDefinitionModal window reference form values:', formValues); return formValues; })() // User input from form
       );
       try {
         const stringFnResult = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
@@ -436,6 +433,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     );
   };
 
+  console.debug(parameters);
+
   const renderParameters = () => {
     if (result?.success) return null;
 
@@ -445,23 +444,27 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           <WindowReferenceGrid
             key={`window-ref-${parameter.id || parameter.name}`}
             parameter={parameter}
+            parameters={parameters}
             onSelectionChange={setGridSelection}
             tabId={tabId}
             entityName={entityName}
             windowReferenceTab={windowReferenceTab}
-            processConfig={processConfig}
+            processConfig={{
+              processId: processConfig?.processId || "",
+              ...processConfig,
+              defaults: (processInitialization?.defaults || {}) as Record<string, { value: string; identifier: string }>
+            }}
             processConfigLoading={processConfigLoading}
             processConfigError={processConfigError}
             recordValues={recordValues}
           />
         );
       }
-      // Use new ProcessParameterSelector for enhanced field reference support
       return (
         <ProcessParameterSelector
           key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
           parameter={parameter}
-          logicFields={logicFields} // Pass logic fields from process defaults
+          logicFields={logicFields}
         />
       );
     });
