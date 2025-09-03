@@ -18,17 +18,17 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useFormContext } from "react-hook-form";
 
-function formatDateForInput(value: string) {
-  const date = new Date(value);
-  const pad = (n: number) => n.toString().padStart(2, "0");
+function formatDateForInput(value: string): string {
+  if (!value) return "";
 
-  const year = date.getFullYear();
-  const month = pad(date.getMonth() + 1);
-  const day = pad(date.getDate());
-  const hours = pad(date.getHours());
-  const minutes = pad(date.getMinutes());
+  const match = value.match(/^(\d{2})T(\d{2}:\d{2}:\d{2}(?:\.\d*)?)Z-(\d{2})-(\d{4})$/);
 
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
+  const normalized = match ? `${match[4]}-${match[3]}-${match[1]}T${match[2]}Z` : value;
+
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toISOString().slice(0, 16);
 }
 
 export const DatetimeSelector = ({ field, isReadOnly }: { field: Field; isReadOnly?: boolean }) => {
