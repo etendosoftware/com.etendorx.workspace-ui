@@ -92,13 +92,8 @@ function WindowReferenceGrid({
       options[invoiceCurrency] = recordValues?.inpcCurrencyId || "";
     }
 
-    console.debug("WindowReferenceGrid processConfig:", processConfig);
-    console.debug("WindowReferenceGrid processConfig.defaults:", processDefaults);
-
     if (processDefaults) {
       for (const [key, value] of Object.entries(processDefaults)) {
-        console.debug(`WindowReferenceGrid processing default: ${key} =`, value);
-
         // Handle different value structures
         const actualValue = typeof value === "object" && value !== null && "value" in value ? value.value : value;
 
@@ -108,13 +103,11 @@ function WindowReferenceGrid({
 
         // Set the value using the datasource field name (e.g., ad_org_id instead of Legal Entity Organization)
         options[datasourceFieldName] = actualValue;
-        console.debug(`WindowReferenceGrid mapped ${key} to ${datasourceFieldName}:`, actualValue);
 
         // Also handle defaultKeys mapping if provided
         if (defaultKeys && key in defaultKeys) {
           const defaultKey = defaultKeys[key as keyof typeof defaultKeys];
           options[defaultKey] = actualValue;
-          console.debug(`WindowReferenceGrid mapped ${key} to ${defaultKey} via defaultKeys:`, actualValue);
         }
       }
     }

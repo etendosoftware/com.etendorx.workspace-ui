@@ -46,8 +46,7 @@ export class ProcessParameterMapper {
         reference: mappedReference,
       },
 
-      // Selector configuration for datasource fields
-      selector: parameter.selector || ProcessParameterMapper.mapSelectorInfo(mappedReference, parameter),
+      selector: parameter.selector ?? ProcessParameterMapper.mapSelectorInfo(mappedReference, parameter),
 
       // List data for select/list fields
       refList: parameter.refList || [],
@@ -225,9 +224,7 @@ export class ProcessParameterMapper {
     return (
       !parameter.reference ||
       supportedReferences.includes(parameter.reference) ||
-      Object.values(FIELD_REFERENCE_CODES).includes(
-        parameter.reference as (typeof FIELD_REFERENCE_CODES)[keyof typeof FIELD_REFERENCE_CODES]
-      )
+      Object.values(FIELD_REFERENCE_CODES).includes(parameter.reference)
     );
   }
 

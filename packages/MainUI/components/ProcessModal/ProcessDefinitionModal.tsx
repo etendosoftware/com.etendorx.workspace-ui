@@ -242,7 +242,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           ...recordValues,
           ...(() => {
             const formValues = form.getValues();
-            console.debug("ProcessDefinitionModal form values:", formValues);
             return formValues;
           })(),
           windowId: tab.window,
@@ -297,7 +296,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         initialState || {}, // Process defaults from server (handle null case)
         (() => {
           const formValues = form.getValues();
-          console.debug("ProcessDefinitionModal window reference form values:", formValues);
           return formValues;
         })() // User input from form
       );
@@ -439,8 +437,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       </div>
     );
   };
-
-  console.debug(parameters);
 
   const renderParameters = () => {
     if (result?.success) return null;
