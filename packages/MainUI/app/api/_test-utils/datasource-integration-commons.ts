@@ -72,7 +72,7 @@ export async function executeTestScenario(config: TestScenarioConfig) {
     jsonBody: payload,
   });
 
-  // Execute the POST route  
+  // Execute the POST route
   const params = Promise.resolve({ entity });
   const response = await POST(req, { params });
 

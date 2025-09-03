@@ -24,10 +24,9 @@ const GenericSelector = ({ parameter, readOnly }: { parameter: ProcessParameter;
   const { register, watch } = useFormContext();
   const reference = getFieldReference(parameter.reference);
 
-  // Get the identifier for display (if available) - try both parameter.name and dBColumnName
-  const identifierValue = watch(`${parameter.name}$_identifier`) || watch(`${parameter.dBColumnName}$_identifier`);
+  // Get the identifier for display (if available)
+  const identifierValue = watch(`${parameter.name}$_identifier`);
   const fieldValue = watch(parameter.name);
-
 
   if (reference === FieldType.LIST) {
     return <RadioSelector parameter={parameter} />;

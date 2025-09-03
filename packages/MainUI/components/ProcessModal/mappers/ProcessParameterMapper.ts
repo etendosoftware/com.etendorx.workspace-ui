@@ -105,7 +105,7 @@ export class ProcessParameterMapper {
    * @param parameter - The original ProcessParameter
    * @returns Selector configuration object
    */
-  static mapSelectorInfo(reference: string, parameter: ProcessParameter | ExtendedProcessParameter): any {
+  static mapSelectorInfo(reference: string, parameter: ProcessParameter | ExtendedProcessParameter): object {
     // If parameter already has selector info, use it
     if (parameter.selector) {
       return parameter.selector;
@@ -225,7 +225,9 @@ export class ProcessParameterMapper {
     return (
       !parameter.reference ||
       supportedReferences.includes(parameter.reference) ||
-      Object.values(FIELD_REFERENCE_CODES).includes(parameter.reference as any)
+      Object.values(FIELD_REFERENCE_CODES).includes(
+        parameter.reference as (typeof FIELD_REFERENCE_CODES)[keyof typeof FIELD_REFERENCE_CODES]
+      )
     );
   }
 
@@ -251,19 +253,36 @@ export class ProcessParameterMapper {
 
     if (reference === FIELD_REFERENCE_CODES.PASSWORD) return "password";
     if (reference === FIELD_REFERENCE_CODES.BOOLEAN) return "boolean";
-    if ([FIELD_REFERENCE_CODES.DECIMAL, FIELD_REFERENCE_CODES.INTEGER].includes(reference as any)) {
+    if (
+      [FIELD_REFERENCE_CODES.DECIMAL, FIELD_REFERENCE_CODES.INTEGER].includes(
+        reference as (typeof FIELD_REFERENCE_CODES)[keyof typeof FIELD_REFERENCE_CODES]
+      )
+    ) {
       return "numeric";
     }
-    if ([FIELD_REFERENCE_CODES.QUANTITY_29, FIELD_REFERENCE_CODES.QUANTITY_22].includes(reference as any)) {
+    if (
+      [FIELD_REFERENCE_CODES.QUANTITY_29, FIELD_REFERENCE_CODES.QUANTITY_22].includes(
+        reference as (typeof FIELD_REFERENCE_CODES)[keyof typeof FIELD_REFERENCE_CODES]
+      )
+    ) {
       return "quantity";
     }
     if (reference === FIELD_REFERENCE_CODES.DATE) return "date";
     if (reference === FIELD_REFERENCE_CODES.DATETIME) return "datetime";
     if (reference === FIELD_REFERENCE_CODES.SELECT_30) return "select";
     if (reference === FIELD_REFERENCE_CODES.PRODUCT) return "product";
-    if ([FIELD_REFERENCE_CODES.TABLE_DIR_19, FIELD_REFERENCE_CODES.TABLE_DIR_18].includes(reference as any))
+    if (
+      [FIELD_REFERENCE_CODES.TABLE_DIR_19, FIELD_REFERENCE_CODES.TABLE_DIR_18].includes(
+        reference as (typeof FIELD_REFERENCE_CODES)[keyof typeof FIELD_REFERENCE_CODES]
+      )
+    )
       return "tabledir";
-    if ([FIELD_REFERENCE_CODES.LIST_17, FIELD_REFERENCE_CODES.LIST_13].includes(reference as any)) return "list";
+    if (
+      [FIELD_REFERENCE_CODES.LIST_17, FIELD_REFERENCE_CODES.LIST_13].includes(
+        reference as (typeof FIELD_REFERENCE_CODES)[keyof typeof FIELD_REFERENCE_CODES]
+      )
+    )
+      return "list";
     if (reference === FIELD_REFERENCE_CODES.WINDOW) return "window";
 
     return "text"; // Default fallback
@@ -277,22 +296,22 @@ export class ProcessParameterMapper {
    * @returns Processed response with mapped field names
    */
   static mapInitializationResponse(
-    response: Record<string, any>,
+    response: Record<string, unknown>,
     parameters: ProcessParameter[]
   ): ProcessDefaultsResponse {
     try {
       // Create parameter lookup maps for efficient mapping
       const parameterByName = new Map<string, ProcessParameter>();
       const parameterByColumn = new Map<string, ProcessParameter>();
-      parameters.forEach((param) => {
+      for (const param of parameters) {
         parameterByName.set(param.name, param);
         if (param.dBColumnName) {
           parameterByColumn.set(param.dBColumnName, param);
         }
-      });
+      }
 
       const defaults: Record<string, ProcessDefaultValue> = {};
-      const filterExpressions: Record<string, Record<string, any>> = {};
+      const filterExpressions: Record<string, Record<string, unknown>> = {};
 
       // Helper to map field names
       const mapFieldName = (key: string): string => {
@@ -312,11 +331,11 @@ export class ProcessParameterMapper {
       }
 
       // Process defaults and skip filterExpressions/refreshParent
-      Object.entries(response).forEach(([key, value]) => {
-        if (key === "filterExpressions" || key === "refreshParent") return;
+      for (const [key, value] of Object.entries(response)) {
+        if (key === "filterExpressions" || key === "refreshParent") continue;
         const mappedFieldName = mapFieldName(key);
         defaults[mappedFieldName] = value;
-      });
+      }
 
       const processedResponse: ProcessDefaultsResponse = {
         defaults,
@@ -352,21 +371,21 @@ export class ProcessParameterMapper {
   static processDefaultsForForm(
     processDefaults: ProcessDefaultsResponse,
     parameters: ProcessParameter[]
-  ): Record<string, any> {
-    const formData: Record<string, any> = {};
+  ): Record<string, unknown> {
+    const formData: Record<string, unknown> = {};
 
     try {
       // Create parameter lookup for type information
       const parameterMap = new Map<string, ProcessParameter>();
-      parameters.forEach((param) => {
+      for (const param of parameters) {
         parameterMap.set(param.name, param);
-      });
+      }
 
       const processField = (
         fieldName: string,
-        value: any,
+        value: unknown,
         parameterMap: Map<string, ProcessParameter>,
-        formData: Record<string, any>
+        formData: Record<string, unknown>
       ) => {
         if (fieldName.endsWith("_display_logic") || fieldName.endsWith("_readonly_logic")) {
           return;

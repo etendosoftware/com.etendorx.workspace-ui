@@ -47,20 +47,20 @@ export const useColumnFilterData = () => {
           params.tabId = tabId;
           params.operator = "and";
           params._constructor = "AdvancedCriteria";
-          
+
           if (searchQuery?.trim()) {
             params.criteria = JSON.stringify({
               fieldName: `${distinctField}$_identifier`,
-              operator: "iContains", 
+              operator: "iContains",
               value: searchQuery.trim(),
-              _constructor: "AdvancedCriteria"
+              _constructor: "AdvancedCriteria",
             });
           } else {
             params.criteria = JSON.stringify({
               fieldName: "_dummy",
               operator: "equals",
               value: Date.now(),
-              _constructor: "AdvancedCriteria"
+              _constructor: "AdvancedCriteria",
             });
           }
         } else {
@@ -72,16 +72,16 @@ export const useColumnFilterData = () => {
           if (searchQuery?.trim()) {
             params.criteria = JSON.stringify({
               fieldName: "_identifier",
-              operator: "iContains", 
+              operator: "iContains",
               value: searchQuery.trim(),
-              _constructor: "AdvancedCriteria"
+              _constructor: "AdvancedCriteria",
             });
-            
+
             params.operator = "and";
             params._constructor = "AdvancedCriteria";
           }
         }
-        
+
         const response = await datasource.get(datasourceId, params);
 
         if (response.ok && response.data?.response?.data) {
@@ -90,14 +90,14 @@ export const useColumnFilterData = () => {
               const fieldValue = item[distinctField];
               const identifierKey = `${distinctField}$_identifier`;
               const identifier = String(item[identifierKey] || fieldValue || item._identifier || item.id);
-              
+
               return {
                 id: String(fieldValue || item.id),
                 label: identifier,
                 value: String(fieldValue || identifier),
               };
             }
-            
+
             const identifier = String(
               item._identifier ||
                 item.name ||

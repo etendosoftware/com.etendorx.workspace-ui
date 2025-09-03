@@ -13,7 +13,7 @@ jest.mock("next/server", () => {
       body,
     }),
   };
-  
+
   // Mock constructor for NextResponse
   const NextResponseConstructor = (body?: BodyInit, init?: ResponseInit) => {
     return {
@@ -23,10 +23,10 @@ jest.mock("next/server", () => {
       headers: init?.headers || {},
     };
   };
-  
+
   // Combine static methods with constructor
   Object.assign(NextResponseConstructor, mockNextResponse);
-  
+
   return {
     NextResponse: NextResponseConstructor,
   };
@@ -53,7 +53,7 @@ jest.mock("@/app/api/_utils/sessionRetry", () => ({
   executeWithSessionRetry: jest.fn(async (_request, _userToken, fetchFunction) => {
     const cookieHeader = "JSESSIONID=test-session-id; other=cookie";
     const result = await fetchFunction(cookieHeader);
-    
+
     // Check if the response is not ok (simulate server error)
     if (!result.response.ok) {
       return {
@@ -61,7 +61,7 @@ jest.mock("@/app/api/_utils/sessionRetry", () => ({
         error: result.data,
       };
     }
-    
+
     return {
       success: true,
       data: result.data,

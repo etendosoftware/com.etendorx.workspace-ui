@@ -26,41 +26,40 @@ interface FormInitializationContextType {
 
 const FormInitializationContext = createContext<FormInitializationContextType | undefined>(undefined);
 
-export const FormInitializationProvider = ({ 
-  children, 
-  value 
-}: { 
+export const FormInitializationProvider = ({
+  children,
+  value,
+}: {
   children: React.ReactNode;
   value: { isFormInitializing: boolean };
 }) => {
   const [isSettingInitialValues, setIsSettingInitialValues] = useState(false);
-  
+
   const markFormReady = useCallback(() => {
     setIsSettingInitialValues(false);
   }, []);
 
-  const contextValue: FormInitializationContextType = useMemo(() => ({
-    isFormInitializing: value.isFormInitializing,
-    isSettingInitialValues,
-    setIsSettingInitialValues,
-    markFormReady,
-  }), [value.isFormInitializing, isSettingInitialValues, setIsSettingInitialValues, markFormReady]);
-
-  return (
-    <FormInitializationContext.Provider value={contextValue}>
-      {children}
-    </FormInitializationContext.Provider>
+  const contextValue: FormInitializationContextType = useMemo(
+    () => ({
+      isFormInitializing: value.isFormInitializing,
+      isSettingInitialValues,
+      setIsSettingInitialValues,
+      markFormReady,
+    }),
+    [value.isFormInitializing, isSettingInitialValues, setIsSettingInitialValues, markFormReady]
   );
+
+  return <FormInitializationContext.Provider value={contextValue}>{children}</FormInitializationContext.Provider>;
 };
 
 export const useFormInitializationContext = () => {
   const context = useContext(FormInitializationContext);
   if (context === undefined) {
-    return { 
-      isFormInitializing: false, 
-      isSettingInitialValues: false, 
+    return {
+      isFormInitializing: false,
+      isSettingInitialValues: false,
       setIsSettingInitialValues: () => {},
-      markFormReady: () => {}
+      markFormReady: () => {},
     };
   }
   return context;

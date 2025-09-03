@@ -240,7 +240,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           _params: {},
           _entityName: tab.entityName,
           ...recordValues,
-          ...(() => { const formValues = form.getValues(); console.debug('ProcessDefinitionModal form values:', formValues); return formValues; })(),
+          ...(() => {
+            const formValues = form.getValues();
+            console.debug("ProcessDefinitionModal form values:", formValues);
+            return formValues;
+          })(),
           windowId: tab.window,
         };
 
@@ -291,7 +295,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         record || {}, // Complete record data (fallback to empty object)
         tab, // Tab metadata
         initialState || {}, // Process defaults from server (handle null case)
-        (() => { const formValues = form.getValues(); console.debug('ProcessDefinitionModal window reference form values:', formValues); return formValues; })() // User input from form
+        (() => {
+          const formValues = form.getValues();
+          console.debug("ProcessDefinitionModal window reference form values:", formValues);
+          return formValues;
+        })() // User input from form
       );
       try {
         const stringFnResult = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
@@ -451,7 +459,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             processConfig={{
               processId: processConfig?.processId || "",
               ...processConfig,
-              defaults: (processInitialization?.defaults || {}) as Record<string, { value: string; identifier: string }>
+              defaults: (processInitialization?.defaults || {}) as Record<
+                string,
+                { value: string; identifier: string }
+              >,
             }}
             processConfigLoading={processConfigLoading}
             processConfigError={processConfigError}

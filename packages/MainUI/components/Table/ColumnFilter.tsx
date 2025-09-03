@@ -32,7 +32,13 @@ export interface ColumnFilterProps {
   onLoadMoreOptions?: (searchQuery?: string) => void;
 }
 
-export const ColumnFilter: React.FC<ColumnFilterProps> = ({ column, filterState, onFilterChange, onLoadOptions, onLoadMoreOptions }) => {
+export const ColumnFilter: React.FC<ColumnFilterProps> = ({
+  column,
+  filterState,
+  onFilterChange,
+  onLoadOptions,
+  onLoadMoreOptions,
+}) => {
   if (!ColumnFilterUtils.supportsDropdownFilter(column)) {
     return null;
   }

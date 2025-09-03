@@ -100,7 +100,6 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
     return ProcessParameterMapper.getFieldType(parameter);
   }, [parameter]);
 
-
   // Don't render if display logic evaluates to false
   if (!isDisplayed) {
     return null;
@@ -157,11 +156,8 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
           }
           return <ListSelector field={mappedField} isReadOnly={isReadOnly} />;
 
-        // Window references already handled by GenericSelector with WindowReferenceGrid
-        case "window":
-        case "text":
         default:
-          // Fallback to existing ProcessModal GenericSelector
+          // Fallback to GenericSelector for text, window references, and unknown types
           return <GenericSelector parameter={parameter} readOnly={isReadOnly} />;
       }
     } catch (error) {
@@ -179,7 +175,7 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
             *
           </span>
         )}
-        <Label htmlFor={mappedField.hqlName} name={parameter.name} />
+        <Label htmlFor={parameter.name} name={parameter.name} />
       </div>
       <div className="w-full pb-8">{renderSelector()}</div>
     </div>
