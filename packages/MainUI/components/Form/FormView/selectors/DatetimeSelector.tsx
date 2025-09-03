@@ -18,25 +18,56 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useFormContext } from "react-hook-form";
 
-function formatDateForInput(value: string): string {
-  if (!value) return "";
+function convertCustomDateFormat(customDate: string): string {
+  if (!customDate) return "";
 
-  const match = value.match(/^(\d{2})T(\d{2}:\d{2}:\d{2}(?:\.\d*)?)Z-(\d{2})-(\d{4})$/);
+  const customPattern = /^(\d{2})T([\d:\.]+)Z-(\d{2})-(\d{4})$/;
+  const match = customDate.match(customPattern);
 
-  const normalized = match ? `${match[4]}-${match[3]}-${match[1]}T${match[2]}Z` : value;
+  if (!match) {
+    return customDate;
+  }
 
-  const date = new Date(normalized);
-  if (Number.isNaN(date.getTime())) return "";
+  const [, day, time, month, year] = match;
 
-  return date.toISOString().slice(0, 16);
+  return `${year}-${month}-${day}T${time}Z`;
 }
 
-export const DatetimeSelector = ({ field, isReadOnly }: { field: Field; isReadOnly?: boolean }) => {
+function formatDateForInputSafe(value: string): string {
+  if (!value) return "";
+
+  const convertedValue = convertCustomDateFormat(value);
+
+  const date = new Date(convertedValue);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+export const DatetimeSelector = ({
+  field,
+  isReadOnly,
+}: {
+  field: Field;
+  isReadOnly?: boolean;
+}) => {
   const { register, getValues } = useFormContext();
   const value = getValues(field.hqlName);
 
   return (
-    <input type="datetime-local" {...register(field.hqlName)} readOnly={isReadOnly} value={formatDateForInput(value)} />
+    <input
+      type="datetime-local"
+      {...register(field.hqlName)}
+      readOnly={isReadOnly}
+      value={formatDateForInputSafe(value)}
+    />
   );
 };
 
