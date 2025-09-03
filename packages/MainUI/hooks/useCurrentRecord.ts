@@ -40,19 +40,16 @@ interface UseCurrentRecordOptions {
 interface UseCurrentRecordReturn {
   record: Record<string, Field>;
   loading: boolean;
-  error: string | null;
 }
 
 export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): UseCurrentRecordReturn => {
   const [record, setRecord] = useState<Record<string, Field>>({});
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!tab || !recordId || recordId === NEW_RECORD_ID) {
       setRecord({});
       setLoading(false);
-      setError(null);
       return;
     }
 
@@ -62,7 +59,6 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
       if (cancelled) return;
 
       setLoading(true);
-      setError(null);
 
       try {
         const result = (await datasource.get(tab.entityName, {
@@ -80,14 +76,12 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
           setRecord(responseData[0]);
         } else {
           setRecord({});
-          setError("Registro no encontrado");
         }
       } catch (err) {
         if (cancelled) return;
 
-        console.error("Error fetching record:", err);
+        console.error(err);
         setRecord({});
-        setError(err instanceof Error ? err.message : "Error desconocido");
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -105,6 +99,5 @@ export const useCurrentRecord = ({ tab, recordId }: UseCurrentRecordOptions): Us
   return {
     record,
     loading,
-    error,
   };
 };
