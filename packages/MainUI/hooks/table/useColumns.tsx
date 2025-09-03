@@ -109,6 +109,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                     }
                   : undefined
               }
+              data-testid="ColumnFilter__46c09c"
             />
           ),
         };
