@@ -133,11 +133,39 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     }
   }, [language, languages]);
 
-  const handleRoleChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
-    setSelectedRole(value);
-    setSelectedOrg(DefaultOrg);
-    setSelectedWarehouse(null);
-  }, []);
+  const handleRoleChange = useCallback(
+    (_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
+      setSelectedRole(value);
+
+      if (value) {
+        const selectedRoleData = roles.find((role) => role.id === value.value);
+        const defaultOrganization = selectedRoleData?.organizations?.[0];
+        const defaultWarehouse = defaultOrganization?.warehouses?.[0];
+        if (defaultOrganization) {
+          setSelectedOrg({
+            title: defaultOrganization.name,
+            value: defaultOrganization.id,
+            id: defaultOrganization.id,
+          });
+        } else {
+          setSelectedOrg(DefaultOrg);
+        }
+        if (defaultWarehouse) {
+          setSelectedWarehouse({
+            title: defaultWarehouse.name,
+            value: defaultWarehouse.id,
+            id: defaultWarehouse.id,
+          });
+        } else {
+          setSelectedWarehouse(null);
+        }
+      } else {
+        setSelectedOrg(DefaultOrg);
+        setSelectedWarehouse(null);
+      }
+    },
+    [roles]
+  );
 
   const handleOrgChange = useCallback((_event: React.SyntheticEvent<Element, Event>, value: Option | null) => {
     setSelectedOrg(value ?? DefaultOrg);

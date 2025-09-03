@@ -157,8 +157,9 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
 
       //TODO: This will imply the evaluation of out fiels inside the fieldBuilder an it's implementation in metadata module
       if (field.inputName === "inpmProductId" && optionData) {
-        calloutData.inpmProductId_CURR = optionData.currency || session.$C_Currency_ID;
-        calloutData.inpmProductId_UOM = optionData.uOM || session["#C_UOM_ID"];
+        calloutData.inpmProductId_CURR =
+          optionData.product$currency$id || optionData.currency || session.$C_Currency_ID;
+        calloutData.inpmProductId_UOM = optionData.product$uOM$id || optionData.uOM || session["#C_UOM_ID"];
         calloutData.inpmProductId_PSTD = String(optionData.standardPrice || optionData.netListPrice || 0);
         calloutData.inpmProductId_PLIST = String(optionData.netListPrice || 0);
         calloutData.inpmProductId_PLIM = String(optionData.priceLimit || 0);
