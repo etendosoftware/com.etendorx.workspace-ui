@@ -63,13 +63,14 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
             // Get the display value (identifier) using the same logic as accessorFn
             const identifierKey = `${column.columnName}$_identifier`;
-            const displayValue = cell?.getValue
-              ? String(cell.getValue())
-              : String(
-                  recordData?.[identifierKey as keyof EntityData] ||
-                    recordData?.[column.columnName as keyof EntityData] ||
-                    ""
-                );
+            const displayValue =
+              cell?.getValue() != null
+                ? String(cell.getValue())
+                : String(
+                    recordData?.[identifierKey as keyof EntityData] ||
+                      recordData?.[column.columnName as keyof EntityData] ||
+                      ""
+                  );
 
             return (
               <button
