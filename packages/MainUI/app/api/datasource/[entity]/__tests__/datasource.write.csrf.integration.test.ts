@@ -4,6 +4,13 @@ const suite = createDatasourceTestSuite("BFF /api/datasource/:entity - CSRF forw
 
 suite.describe(() => {
   test("DS-WRITE-03: forwards X-CSRF-Token header to ERP", async () => {
+    // Mock session store functions
+    const { setErpSessionCookie } = await import("@/app/api/_utils/sessionStore");
+    setErpSessionCookie("token-default", {
+      cookieHeader: "JSESSIONID=test-session",
+      csrfToken: "csrf-123", // Use the same CSRF token as the request header
+    });
+
     (global.fetch as jest.Mock) = mockFetchFactory({ status: 200, json: { ok: true } });
 
     const req = suite.createErpRequest({

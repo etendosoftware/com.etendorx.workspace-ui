@@ -13,6 +13,13 @@ const suite = createDatasourceTestSuite("BFF /api/datasource - cache integration
 
 suite.describe(() => {
   test("DS-READ-02: cache key composition includes token, entity and params", async () => {
+    // Mock session store functions
+    const { setErpSessionCookie } = await import("@/app/api/_utils/sessionStore");
+    setErpSessionCookie("token-default", {
+      cookieHeader: "JSESSIONID=test-session",
+      csrfToken: "test-csrf-token",
+    });
+
     const spy = jest.fn();
     captureCacheKey(spy);
 

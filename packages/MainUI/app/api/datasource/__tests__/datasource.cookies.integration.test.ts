@@ -17,6 +17,13 @@ suite.describe(() => {
   ];
 
   test.each(cases)("$name", async ({ env, shouldForward }) => {
+    // Mock session store functions
+    const { setErpSessionCookie } = await import("@/app/api/_utils/sessionStore");
+    setErpSessionCookie("token-default", {
+      cookieHeader: "JSESSIONID=test-session",
+      csrfToken: "test-csrf-token",
+    });
+
     // Arrange
     process.env.ERP_FORWARD_COOKIES = env;
 

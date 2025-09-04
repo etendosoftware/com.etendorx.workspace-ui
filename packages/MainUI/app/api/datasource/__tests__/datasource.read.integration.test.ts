@@ -4,6 +4,13 @@ const suite = createDatasourceTestSuite("BFF /api/datasource - read integration"
 
 suite.describe(() => {
   test("DS-READ-01: builds form-urlencoded and forwards to ERP with correct headers", async () => {
+    // Mock session store functions
+    const { setErpSessionCookie } = await import("@/app/api/_utils/sessionStore");
+    setErpSessionCookie("token-default", {
+      cookieHeader: "JSESSIONID=test-session",
+      csrfToken: "test-csrf-token",
+    });
+
     const req = suite.createRequest("token-default", { entity: "Customer", params: { _startRow: 0 } });
 
     // Import the route after mocks are installed to avoid importing next/server before jest.mock is set up

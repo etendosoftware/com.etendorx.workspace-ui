@@ -8,6 +8,13 @@ const suite = createDatasourceTestSuite("BFF /api/datasource/:entity - write pas
 
 suite.describe(() => {
   test("DS-WRITE-01: JSON passthrough when isc_dataFormat=json", async () => {
+    // Mock session store functions
+    const { setErpSessionCookie } = await import("@/app/api/_utils/sessionStore");
+    setErpSessionCookie("token-default", {
+      cookieHeader: "JSESSIONID=test-session",
+      csrfToken: "test-csrf-token",
+    });
+
     // Arrange: install fetch mock that returns 201 and echoes body
     const body = { operationType: "add", data: { id: 1, qty: 2 } };
     (global.fetch as jest.Mock) = mockFetchFactory({ status: 201, json: body });
