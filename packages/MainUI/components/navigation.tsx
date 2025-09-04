@@ -20,6 +20,7 @@
 import { useLanguage } from "@/contexts/language";
 import type { Language } from "@/contexts/types";
 import { UserContext } from "@/contexts/user";
+import { useUserContext } from "@/hooks/useUserContext";
 import { logger } from "@/utils/logger";
 import NotificationIcon from "@workspaceui/componentlibrary/src/assets/icons/bell.svg";
 import AddIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
@@ -61,6 +62,7 @@ const Navigation: React.FC = () => {
     roles,
     languages,
   } = useContext(UserContext);
+  const token = useUserContext();
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const { language, setLanguage, getFlag } = useLanguage();
   const [anchorEl] = useState<HTMLElement | null>(null);
@@ -70,7 +72,7 @@ const Navigation: React.FC = () => {
   const [pendingContextString, setPendingContextString] = useState<string | null>(null);
   const [pendingContextItems, setPendingContextItems] = useState<any[]>([]);
 
-  const { assistants, getAssistants } = useAssistants();
+  const { assistants, getAssistants, invalidateCache, hasAssistants } = useAssistants();
   const { labels, getLabels } = useCopilotLabels();
 
   const { clearUserData } = useContext(UserContext);
@@ -85,13 +87,24 @@ const Navigation: React.FC = () => {
 
   const handleCopilotOpen = useCallback(() => {
     setCopilotOpen(true);
-  }, []);
 
-  const handleCopilotOpenWithContext = useCallback((contextString: string, contextItems: any[]) => {
-    setPendingContextString(contextString);
-    setPendingContextItems(contextItems);
-    setCopilotOpen(true);
-  }, []);
+    if (!hasAssistants) {
+      getAssistants();
+    }
+  }, [hasAssistants, getAssistants]);
+
+  const handleCopilotOpenWithContext = useCallback(
+    (contextString: string, contextItems: any[]) => {
+      setPendingContextString(contextString);
+      setPendingContextItems(contextItems);
+      setCopilotOpen(true);
+
+      if (!hasAssistants) {
+        getAssistants();
+      }
+    },
+    [hasAssistants, getAssistants]
+  );
 
   const handleCopilotClose = useCallback(() => {
     setCopilotOpen(false);
@@ -153,8 +166,18 @@ const Navigation: React.FC = () => {
 
   useEffect(() => {
     getLabels();
-    getAssistants();
-  }, [getLabels, getAssistants]);
+  }, [getLabels]);
+
+  useEffect(() => {
+    if (token?.token) {
+      if (copilotOpen) {
+        handleCopilotClose();
+      }
+
+      invalidateCache();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token?.token]);
 
   useEffect(() => {
     const handleCopilotWithContext = (event: CustomEvent) => {
