@@ -84,7 +84,7 @@ export function useTreeModeMetadata(tab: Tab) {
       logger.warn("Failed to fetch tree metadata:", e);
 
       const fallbackEntityId = getEntityIdFromTab(tab.entityName, tab.id);
-      const supportsTreeMode = detectTreeSupportFromMetadata(tab, undefined);
+      const supportsTreeMode = detectTreeSupportFromMetadata(tab);
       const fallbackMetadata: TreeMetadata = {
         supportsTreeMode,
         treeEntity: fallbackEntityId,
@@ -142,7 +142,7 @@ async function queryTreeByTableName(tableName: string, entityName: string): Prom
     const mockTreeResponse = await simulateTreeQuery(tableName, tableId);
 
     if (mockTreeResponse.found) {
-      const entityId = getEntityIdFromTab(entityName, undefined);
+      const entityId = getEntityIdFromTab(entityName);
       return {
         supportsTreeMode: true,
         treeEntity: entityId,
