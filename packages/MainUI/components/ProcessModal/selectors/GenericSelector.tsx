@@ -21,8 +21,12 @@ import { useFormContext } from "react-hook-form";
 import RadioSelector from "./RadioSelector";
 
 const GenericSelector = ({ parameter, readOnly }: { parameter: ProcessParameter; readOnly?: boolean }) => {
-  const { register } = useFormContext();
+  const { register, watch } = useFormContext();
   const reference = getFieldReference(parameter.reference);
+
+  // Get the identifier for display (if available)
+  const identifierValue = watch(`${parameter.name}$_identifier`);
+  const fieldValue = watch(parameter.name);
 
   if (reference === FieldType.LIST) {
     return <RadioSelector parameter={parameter} />;
@@ -31,7 +35,8 @@ const GenericSelector = ({ parameter, readOnly }: { parameter: ProcessParameter;
     <input
       readOnly={readOnly}
       className={`w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:border-(--color-etendo-main) ${readOnly ? "bg-(--color-baseline-10) font-medium text-zinc-500" : ""}`}
-      {...register(parameter.dBColumnName, {
+      value={identifierValue || fieldValue || ""}
+      {...register(parameter.name, {
         required: parameter.required,
         disabled: readOnly,
       })}

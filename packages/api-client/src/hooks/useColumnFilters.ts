@@ -96,21 +96,24 @@ export function useColumnFilters({ columns, onFiltersChange }: UseColumnFiltersP
     );
   }, []);
 
-  const setFilterOptions = useCallback((columnId: string, options: FilterOption[], hasMore?: boolean, append?: boolean) => {
-    setColumnFilters((prev) =>
-      prev.map((filter) =>
-        filter.id === columnId
-          ? {
-              ...filter,
-              availableOptions: append ? [...filter.availableOptions, ...options] : options,
-              loading: false,
-              hasMore: hasMore || false,
-              currentPage: append ? (filter.currentPage || 0) + 1 : 1,
-            }
-          : filter
-      )
-    );
-  }, []);
+  const setFilterOptions = useCallback(
+    (columnId: string, options: FilterOption[], hasMore?: boolean, append?: boolean) => {
+      setColumnFilters((prev) =>
+        prev.map((filter) =>
+          filter.id === columnId
+            ? {
+                ...filter,
+                availableOptions: append ? [...filter.availableOptions, ...options] : options,
+                loading: false,
+                hasMore: hasMore || false,
+                currentPage: append ? (filter.currentPage || 0) + 1 : 1,
+              }
+            : filter
+        )
+      );
+    },
+    []
+  );
 
   const loadMoreFilterOptions = useCallback((columnId: string, searchQuery?: string) => {
     setColumnFilters((prev) =>

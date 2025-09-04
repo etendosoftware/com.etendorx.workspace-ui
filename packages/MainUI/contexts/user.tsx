@@ -178,7 +178,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         Metadata.setToken(loginResponse.token);
         datasource.setToken(loginResponse.token);
         setToken(loginResponse.token);
-        
+
         // Fetch and update session info immediately after login
         const sessionData = await getSession();
         await updateSessionInfo(sessionData);

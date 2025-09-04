@@ -101,9 +101,13 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
               onLoadOptions={(searchQuery?: string) => {
                 return onLoadFilterOptions(column.id, searchQuery);
               }}
-              onLoadMoreOptions={onLoadMoreFilterOptions ? (searchQuery?: string) => {
-                return onLoadMoreFilterOptions(column.id, searchQuery);
-              } : undefined}
+              onLoadMoreOptions={
+                onLoadMoreFilterOptions
+                  ? (searchQuery?: string) => {
+                      return onLoadMoreFilterOptions(column.id, searchQuery);
+                    }
+                  : undefined
+              }
             />
           ),
         };
@@ -116,7 +120,15 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     const customJsColumns = transformColumnsWithCustomJs(referencedColumns, fieldsAsArray);
 
     return customJsColumns;
-  }, [tab.fields, handleClickRedirect, handleKeyDownRedirect, onColumnFilter, onLoadFilterOptions, onLoadMoreFilterOptions, columnFilterStates]);
+  }, [
+    tab.fields,
+    handleClickRedirect,
+    handleKeyDownRedirect,
+    onColumnFilter,
+    onLoadFilterOptions,
+    onLoadMoreFilterOptions,
+    columnFilterStates,
+  ]);
 
   return columns;
 };

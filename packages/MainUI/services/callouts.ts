@@ -142,7 +142,7 @@ class GlobalCalloutManager {
 
   private queueCallout(fieldName: string, wrappedCallout: () => Promise<void>): void {
     this.pendingCallouts.set(fieldName, wrappedCallout);
-    
+
     if (!this.calloutQueue.includes(fieldName)) {
       this.calloutQueue.push(fieldName);
     }

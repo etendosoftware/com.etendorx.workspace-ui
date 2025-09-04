@@ -46,6 +46,7 @@ const PAGE_SIZE = 100;
  */
 function WindowReferenceGrid({
   parameter,
+  parameters,
   onSelectionChange,
   tabId,
   entityName,
@@ -61,6 +62,11 @@ function WindowReferenceGrid({
 
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
+
+  // Stable values to avoid unnecessary re-renders
+  const processId = processConfig?.processId;
+  const processDefaults = processConfig?.defaults;
+  const filterExpressions = processConfig?.filterExpressions;
 
   const datasourceOptions = useMemo(() => {
     const processId = processConfig?.processId;
@@ -86,21 +92,30 @@ function WindowReferenceGrid({
       options[invoiceCurrency] = recordValues?.inpcCurrencyId || "";
     }
 
-    if (processConfig?.defaults) {
-      for (const [key, value] of Object.entries(processConfig.defaults)) {
-        options[key] = value.value;
+    if (processDefaults) {
+      for (const [key, value] of Object.entries(processDefaults)) {
+        // Handle different value structures
+        const actualValue = typeof value === "object" && value !== null && "value" in value ? value.value : value;
 
+        // Find the corresponding parameter by name to get its dBColumnName
+        const matchingParameter = Object.values(parameters).find((param) => param.name === key);
+        const datasourceFieldName = matchingParameter?.dBColumnName || key;
+
+        // Set the value using the datasource field name (e.g., ad_org_id instead of Legal Entity Organization)
+        options[datasourceFieldName] = actualValue;
+
+        // Also handle defaultKeys mapping if provided
         if (defaultKeys && key in defaultKeys) {
           const defaultKey = defaultKeys[key as keyof typeof defaultKeys];
-          options[defaultKey] = value.value;
+          options[defaultKey] = actualValue;
         }
       }
     }
 
     let criteria: Array<{ fieldName: string; operator: string; value: EntityValue }> = [];
 
-    if (processConfig?.filterExpressions?.grid) {
-      const filterCriteria = Object.entries(processConfig.filterExpressions.grid).map(([fieldName, value]) => ({
+    if (filterExpressions?.grid) {
+      const filterCriteria = Object.entries(filterExpressions.grid).map(([fieldName, value]) => ({
         fieldName,
         operator: "equals",
         value: value === "true" ? true : value === "false" ? false : value,
@@ -113,8 +128,10 @@ function WindowReferenceGrid({
       options.orderBy = "documentNo desc";
     }
 
+    console.debug("WindowReferenceGrid final options:", options);
+
     return options;
-  }, [tabId, parameter.tab, processConfig, recordValues]);
+  }, [tabId, parameter.tab, processId, processDefaults, filterExpressions, recordValues]);
 
   const fields = useMemo(() => {
     if (windowReferenceTab?.fields) {
