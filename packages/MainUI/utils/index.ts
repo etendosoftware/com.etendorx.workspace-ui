@@ -168,18 +168,6 @@ export const buildFormPayload = ({
   csrfToken,
 });
 
-export const buildRequestOptions = (
-  values: EntityData,
-  initialState: EntityData,
-  mode: FormMode,
-  userId: string,
-  signal: AbortSignal
-) => ({
-  signal,
-  method: "POST",
-  body: buildFormPayload({ values, oldValues: initialState, mode, csrfToken: userId }),
-});
-
 export const formatNumber = (value: number) => new Intl.NumberFormat(navigator.language).format(value);
 
 export const formatTime = (input: string | Date): string => {
@@ -269,5 +257,57 @@ export const buildProcessPayload = (
     ...userInput, // User input from form
   };
 };
+export const buildDeleteQueryString = ({
+  windowMetadata,
+  tab,
+  recordId,
+}: {
+  windowMetadata?: WindowMetadata;
+  tab: Tab;
+  recordId: string;
+}) =>
+  new URLSearchParams({
+    windowId: String(windowMetadata?.id || tab.window || ""),
+    tabId: String(tab.id),
+    moduleId: String(tab.module || "0"),
+    _operationType: "remove",
+    _noActiveFilter: "true",
+    sendOriginalIDBack: "true",
+    _extraProperties: "",
+    Constants_FIELDSEPARATOR: "$",
+    _className: "OBViewDataSource",
+    Constants_IDENTIFIER: "_identifier",
+    id: recordId,
+    _textMatchStyle: "substring",
+    _componentId: "isc_OBViewGrid_0",
+    _dataSource: "isc_OBViewDataSource_0",
+    isc_metaDataPrefix: "_",
+    isc_dataFormat: "json",
+  });
 
+export const buildDeletePayload = ({
+  recordId,
+  csrfToken,
+}: {
+  recordId: string;
+  csrfToken: string;
+}) => ({
+  dataSource: "isc_OBViewDataSource_0",
+  operationType: "remove",
+  componentId: "isc_OBViewGrid_0",
+  data: { id: recordId },
+  csrfToken,
+});
+
+export const buildRequestOptions = (
+  values: EntityData,
+  initialState: EntityData,
+  mode: FormMode,
+  userId: string,
+  signal: AbortSignal
+) => ({
+  signal,
+  method: "POST",
+  body: buildFormPayload({ values, oldValues: initialState, mode, csrfToken: userId }),
+});
 export { shouldShowTab, type TabWithParentInfo } from "./tabUtils";
