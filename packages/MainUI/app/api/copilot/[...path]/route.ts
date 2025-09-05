@@ -24,6 +24,50 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   return handleCopilotRequest(request, params, "PATCH");
 }
 
+function buildCopilotHeaders(request: NextRequest, userAgent?: string): HeadersInit {
+  return {
+    Accept: "*/*",
+    "Accept-Language": "en-US,en;q=0.9",
+    Connection: "keep-alive",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+    "User-Agent": userAgent || request.headers.get("User-Agent") || "EtendoWorkspaceUI/1.0",
+    "sec-ch-ua": '"Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"macOS"',
+  };
+}
+
+function addContentTypeIfNeeded(headers: HeadersInit, requestBody: string | undefined, request: NextRequest): void {
+  if (requestBody) {
+    const contentType = request.headers.get("Content-Type") || "application/json";
+    (headers as Record<string, string>)["Content-Type"] = contentType;
+  }
+}
+
+function addAuthHeaders(headers: HeadersInit, cookieHeader: string | null, csrfToken: string | null): void {
+  if (cookieHeader) {
+    (headers as Record<string, string>).Cookie = cookieHeader;
+  }
+  if (csrfToken) {
+    (headers as Record<string, string>)["X-CSRF-Token"] = csrfToken;
+  }
+}
+
+function tryParseJsonResponse(data: string, originalResponse?: Response): NextResponse {
+  try {
+    const jsonData = JSON.parse(data);
+    return NextResponse.json(jsonData);
+  } catch {
+    const contentType = originalResponse?.headers.get("Content-Type") || "text/plain";
+    return new NextResponse(data, {
+      status: 200,
+      headers: { "Content-Type": contentType },
+    });
+  }
+}
+
 async function handleCopilotRequest(request: NextRequest, params: Promise<{ path: string[] }>, method: string) {
   try {
     const userToken = extractBearerToken(request);
@@ -52,49 +96,16 @@ async function handleCopilotRequest(request: NextRequest, params: Promise<{ path
     // Get request body for POST/PUT/PATCH methods
     const requestBody = method !== "GET" ? await request.text() : undefined;
 
-    // Use the same authentication approach as /api/erp
-    const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
-    console.log("Copilot proxy request:", {
-      erpUrl,
-      method,
-      userToken: !!userToken,
-      hasBasicAuth,
-      hasBody: !!requestBody,
-      cookiePresent: !!cookieHeader,
-      cookieLength: cookieHeader?.length || 0,
-      incomingCookies: request.headers.get("cookie")?.length || 0,
-    });
+    const { csrfToken } = getErpAuthHeaders(request, userToken);
 
     if (userToken) {
       const retryResult = await executeWithSessionRetry(request, userToken, async (cookieHeader) => {
-        const headers: HeadersInit = {
-          Accept: "*/*",
-          "Accept-Language": "en-US,en;q=0.9",
-          Connection: "keep-alive",
-          "Sec-Fetch-Dest": "empty",
-          "Sec-Fetch-Mode": "cors",
-          "Sec-Fetch-Site": "same-origin",
-          "User-Agent":
-            request.headers.get("User-Agent") ||
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
-          "sec-ch-ua": '"Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"',
-          "sec-ch-ua-mobile": "?0",
-          "sec-ch-ua-platform": '"macOS"',
-        };
-
-        // Add Content-Type for requests with body
-        if (requestBody) {
-          const contentType = request.headers.get("Content-Type") || "application/json";
-          headers["Content-Type"] = contentType;
-        }
-
-        // Use the same cookie-based authentication as /api/erp
-        if (cookieHeader) {
-          headers.Cookie = cookieHeader;
-        }
-        if (csrfToken) {
-          headers["X-CSRF-Token"] = csrfToken;
-        }
+        const headers = buildCopilotHeaders(
+          request,
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+        );
+        addContentTypeIfNeeded(headers, requestBody, request);
+        addAuthHeaders(headers, cookieHeader, csrfToken);
 
         const response = await fetch(erpUrl, {
           method,
@@ -108,42 +119,16 @@ async function handleCopilotRequest(request: NextRequest, params: Promise<{ path
       });
 
       if (!retryResult.success) {
-        console.log("Copilot request failed:", { error: retryResult.error });
         return NextResponse.json({ error: retryResult.error || "Copilot request failed" }, { status: 500 });
       }
 
-      console.log("Copilot request successful", { recovered: retryResult.recovered });
-
-      // Try to parse as JSON, similar to what the original UI expects
-      const responseData = retryResult.data || "";
-      try {
-        const jsonData = JSON.parse(responseData);
-        return NextResponse.json(jsonData);
-      } catch {
-        // If not JSON, return as text with appropriate content type
-        return new NextResponse(responseData, {
-          status: 200,
-          headers: {
-            "Content-Type": "text/plain",
-          },
-        });
-      }
+      return tryParseJsonResponse(retryResult.data || "");
     }
 
     if (hasBasicAuth && authHeader) {
-      const headers: HeadersInit = {
-        Accept: "*/*",
-        "Accept-Language": "en-US,en;q=0.9",
-        Connection: "keep-alive",
-        "User-Agent": request.headers.get("User-Agent") || "EtendoWorkspaceUI/1.0",
-        Authorization: authHeader,
-      };
-
-      // Add Content-Type for requests with body
-      if (requestBody) {
-        const contentType = request.headers.get("Content-Type") || "application/json";
-        headers["Content-Type"] = contentType;
-      }
+      const headers = buildCopilotHeaders(request);
+      (headers as Record<string, string>).Authorization = authHeader;
+      addContentTypeIfNeeded(headers, requestBody, request);
 
       const response = await fetch(erpUrl, {
         method,
@@ -153,26 +138,12 @@ async function handleCopilotRequest(request: NextRequest, params: Promise<{ path
       });
 
       if (!response.ok) {
-        console.log("Copilot Basic auth request failed:", { status: response.status, statusText: response.statusText });
         const errorText = await response.text();
         return NextResponse.json({ error: errorText || "Copilot request failed" }, { status: response.status });
       }
 
       const data = await response.text();
-      console.log("Copilot Basic auth request successful");
-
-      // Try to parse as JSON for Basic auth too
-      try {
-        const jsonData = JSON.parse(data);
-        return NextResponse.json(jsonData);
-      } catch {
-        return new NextResponse(data, {
-          status: 200,
-          headers: {
-            "Content-Type": response.headers.get("Content-Type") || "text/plain",
-          },
-        });
-      }
+      return tryParseJsonResponse(data, response);
     }
   } catch (error) {
     const resolvedParams = await params;
