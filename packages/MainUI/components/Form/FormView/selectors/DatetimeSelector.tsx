@@ -14,7 +14,6 @@
  * Contributor(s): Futit Services S.L.
  *************************************************************************
  */
-
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useFormContext } from "react-hook-form";
 import { useCallback, useState } from "react";
@@ -28,9 +27,29 @@ interface DatetimeSelectorProps {
   helperText?: string;
 }
 
-function formatDateForInput(value: string) {
+function convertCustomDateFormat(customDate: string): string {
+  if (!customDate) return "";
+
+  const customPattern = /^(\d{2})T([\d:\.]+)Z-(\d{2})-(\d{4})$/;
+  const match = customDate.match(customPattern);
+
+  if (!match) {
+    return customDate;
+  }
+
+  const [, day, time, month, year] = match;
+
+  return `${year}-${month}-${day}T${time}Z`;
+}
+
+function formatDateForInputSafe(value: string): string {
   if (!value) return "";
-  const date = new Date(value);
+
+  const convertedValue = convertCustomDateFormat(value);
+
+  const date = new Date(convertedValue);
+  if (Number.isNaN(date.getTime())) return "";
+
   const pad = (n: number) => n.toString().padStart(2, "0");
   const year = date.getFullYear();
   const month = pad(date.getMonth() + 1);
@@ -40,10 +59,9 @@ function formatDateForInput(value: string) {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-export const DatetimeSelector = ({ field, isReadOnly, error, helperText }: DatetimeSelectorProps) => {
+const DatetimeSelector = ({ field, isReadOnly, error, helperText }: DatetimeSelectorProps) => {
   const { register, getValues, formState } = useFormContext();
   const [isFocused, setIsFocused] = useState(false);
-
   const value = getValues(field.hqlName);
   const fieldError = formState.errors[field.hqlName];
   const hasError = error || !!fieldError;
@@ -94,7 +112,7 @@ export const DatetimeSelector = ({ field, isReadOnly, error, helperText }: Datet
           className={getInputClass()}
           readOnly={isReadOnly}
           disabled={isReadOnly}
-          value={value ? formatDateForInput(value) : ""}
+          value={value ? formatDateForInputSafe(value) : ""}
           aria-label={field.name}
           aria-readonly={isReadOnly}
           aria-required={field.isMandatory}
