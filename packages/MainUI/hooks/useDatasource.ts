@@ -169,7 +169,7 @@ export function useDatasource({
           throw data;
         }
         setHasMoreRecords(data.response.data.length >= safePageSize);
-        setRecords(data.response.data);
+        setRecords((prev) => (page === 1 || searchQuery ? data.response.data : prev.concat(data.response.data)));
         setLoaded(true);
       } catch (e) {
         logger.warn(e);
