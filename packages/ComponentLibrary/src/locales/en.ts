@@ -100,6 +100,9 @@ const en = {
       title: "Missing Metadata",
       description: "Required window metadata is not available",
     },
+    authentication: {
+      message: "Authentication token is not available",
+    },
     formData: {
       title: "Error Loading Form",
       description: "There was an error loading the form data",
