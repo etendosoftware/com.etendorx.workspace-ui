@@ -18,10 +18,30 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useFormContext } from "react-hook-form";
 
-function formatDateForInput(value: string) {
-  const date = new Date(value);
-  const pad = (n: number) => n.toString().padStart(2, "0");
+function convertCustomDateFormat(customDate: string): string {
+  if (!customDate) return "";
 
+  const customPattern = /^(\d{2})T([\d:\.]+)Z-(\d{2})-(\d{4})$/;
+  const match = customDate.match(customPattern);
+
+  if (!match) {
+    return customDate;
+  }
+
+  const [, day, time, month, year] = match;
+
+  return `${year}-${month}-${day}T${time}Z`;
+}
+
+function formatDateForInputSafe(value: string): string {
+  if (!value) return "";
+
+  const convertedValue = convertCustomDateFormat(value);
+
+  const date = new Date(convertedValue);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const pad = (n: number) => n.toString().padStart(2, "0");
   const year = date.getFullYear();
   const month = pad(date.getMonth() + 1);
   const day = pad(date.getDate());
@@ -31,12 +51,23 @@ function formatDateForInput(value: string) {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-export const DatetimeSelector = ({ field, isReadOnly }: { field: Field; isReadOnly?: boolean }) => {
+export const DatetimeSelector = ({
+  field,
+  isReadOnly,
+}: {
+  field: Field;
+  isReadOnly?: boolean;
+}) => {
   const { register, getValues } = useFormContext();
   const value = getValues(field.hqlName);
 
   return (
-    <input type="datetime-local" {...register(field.hqlName)} readOnly={isReadOnly} value={formatDateForInput(value)} />
+    <input
+      type="datetime-local"
+      {...register(field.hqlName)}
+      readOnly={isReadOnly}
+      value={formatDateForInputSafe(value)}
+    />
   );
 };
 
