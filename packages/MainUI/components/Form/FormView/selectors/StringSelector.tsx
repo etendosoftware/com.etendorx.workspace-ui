@@ -17,13 +17,23 @@
 
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { TextInput } from "./components/TextInput";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, type FieldValues } from "react-hook-form";
 
 export const StringSelector = (props: { field: Field } & React.ComponentProps<typeof TextInput>) => {
-  const { register } = useFormContext();
+  const { register, watch, setValue } = useFormContext<FieldValues>();
+  const fieldName = props.field.hqlName;
 
-  const rawLen = Number(props.field?.column?.length);
-  const maxLength = Number.isFinite(rawLen) && rawLen > 0 ? rawLen : undefined;
-
-  return <TextInput {...props} {...register(props.field.hqlName)} maxLength={maxLength} />;
+  const currentValue = watch(fieldName);
+  const handleSetValue = (value: string) => {
+    setValue(fieldName, value, { shouldValidate: true });
+  };
+  return (
+    <TextInput
+      {...register(fieldName)}
+      field={props.field}
+      setValue={handleSetValue}
+      showClearButton={true}
+      value={currentValue}
+    />
+  );
 };

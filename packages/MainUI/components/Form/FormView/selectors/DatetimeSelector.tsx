@@ -105,7 +105,7 @@ export const DatetimeSelector = ({ field, isReadOnly, error, helperText }: Datet
           className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 pointer-events-none z-10 flex items-center justify-center ${
             isFocused && !isReadOnly ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)"
           }`}>
-          <CalendarIcon className="h-5 w-5" />
+          <CalendarIcon fill={"currentColor"} className="h-5 w-5" />
         </div>
       </div>
       {renderHelperText()}
