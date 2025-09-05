@@ -104,7 +104,10 @@ export class ProcessParameterMapper {
    * @param parameter - The original ProcessParameter
    * @returns Selector configuration object
    */
-  static mapSelectorInfo(reference: string, parameter: ProcessParameter | ExtendedProcessParameter): object {
+  static mapSelectorInfo(
+    reference: string,
+    parameter: ProcessParameter | ExtendedProcessParameter
+  ): object | undefined {
     // If parameter already has selector info, use it
     if (parameter.selector) {
       return parameter.selector;
@@ -224,7 +227,7 @@ export class ProcessParameterMapper {
     return (
       !parameter.reference ||
       supportedReferences.includes(parameter.reference) ||
-      Object.values(FIELD_REFERENCE_CODES).includes(parameter.reference)
+      (Object.values(FIELD_REFERENCE_CODES) as string[]).includes(parameter.reference)
     );
   }
 
@@ -250,36 +253,22 @@ export class ProcessParameterMapper {
 
     if (reference === FIELD_REFERENCE_CODES.PASSWORD) return "password";
     if (reference === FIELD_REFERENCE_CODES.BOOLEAN) return "boolean";
-    if (
-      [FIELD_REFERENCE_CODES.DECIMAL, FIELD_REFERENCE_CODES.INTEGER].includes(
-        reference as (typeof FIELD_REFERENCE_CODES)[keyof typeof FIELD_REFERENCE_CODES]
-      )
-    ) {
+    if (reference === FIELD_REFERENCE_CODES.DECIMAL || reference === FIELD_REFERENCE_CODES.INTEGER) {
       return "numeric";
     }
-    if (
-      [FIELD_REFERENCE_CODES.QUANTITY_29, FIELD_REFERENCE_CODES.QUANTITY_22].includes(
-        reference as (typeof FIELD_REFERENCE_CODES)[keyof typeof FIELD_REFERENCE_CODES]
-      )
-    ) {
+    if (reference === FIELD_REFERENCE_CODES.QUANTITY_29 || reference === FIELD_REFERENCE_CODES.QUANTITY_22) {
       return "quantity";
     }
     if (reference === FIELD_REFERENCE_CODES.DATE) return "date";
     if (reference === FIELD_REFERENCE_CODES.DATETIME) return "datetime";
     if (reference === FIELD_REFERENCE_CODES.SELECT_30) return "select";
     if (reference === FIELD_REFERENCE_CODES.PRODUCT) return "product";
-    if (
-      [FIELD_REFERENCE_CODES.TABLE_DIR_19, FIELD_REFERENCE_CODES.TABLE_DIR_18].includes(
-        reference as (typeof FIELD_REFERENCE_CODES)[keyof typeof FIELD_REFERENCE_CODES]
-      )
-    )
+    if (reference === FIELD_REFERENCE_CODES.TABLE_DIR_19 || reference === FIELD_REFERENCE_CODES.TABLE_DIR_18) {
       return "tabledir";
-    if (
-      [FIELD_REFERENCE_CODES.LIST_17, FIELD_REFERENCE_CODES.LIST_13].includes(
-        reference as (typeof FIELD_REFERENCE_CODES)[keyof typeof FIELD_REFERENCE_CODES]
-      )
-    )
+    }
+    if (reference === FIELD_REFERENCE_CODES.LIST_17 || reference === FIELD_REFERENCE_CODES.LIST_13) {
       return "list";
+    }
     if (reference === FIELD_REFERENCE_CODES.WINDOW) return "window";
 
     return "text"; // Default fallback
@@ -331,7 +320,7 @@ export class ProcessParameterMapper {
       for (const [key, value] of Object.entries(response)) {
         if (key === "filterExpressions" || key === "refreshParent") continue;
         const mappedFieldName = mapFieldName(key);
-        defaults[mappedFieldName] = value;
+        defaults[mappedFieldName] = value as ProcessDefaultValue;
       }
 
       const processedResponse: ProcessDefaultsResponse = {
@@ -389,19 +378,20 @@ export class ProcessParameterMapper {
         }
         const parameter = parameterMap.get(fieldName);
         try {
-          if (isReferenceValue(value)) {
-            formData[fieldName] = value.value;
-            if (value.identifier) {
-              formData[`${fieldName}$_identifier`] = value.identifier;
+          const processDefaultValue = value as ProcessDefaultValue;
+          if (isReferenceValue(processDefaultValue)) {
+            formData[fieldName] = processDefaultValue.value;
+            if (processDefaultValue.identifier) {
+              formData[`${fieldName}$_identifier`] = processDefaultValue.identifier;
             }
             logger.debug(`Processed reference field ${fieldName}:`, {
-              value: value.value,
-              identifier: value.identifier,
+              value: processDefaultValue.value,
+              identifier: processDefaultValue.identifier,
               parameterType: parameter?.reference,
             });
             return;
           }
-          if (isSimpleValue(value)) {
+          if (isSimpleValue(processDefaultValue)) {
             if (
               parameter?.reference === FIELD_REFERENCE_CODES.BOOLEAN ||
               parameter?.reference === "Yes/No" ||

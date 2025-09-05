@@ -99,6 +99,9 @@ const es = {
       title: "Falta Metadata",
       description: "La Metadata requerida por la ventana no esta disponible",
     },
+    authentication: {
+      message: "El token de autenticación no está disponible.",
+    },
     formData: {
       title: "Error cargando el formulario",
       description: "Hubo un error cargando la información del formulario",
