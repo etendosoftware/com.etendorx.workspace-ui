@@ -18,7 +18,6 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { memo } from "react";
 import { CUSTOM_SELECTORS_IDENTIFIERS, FIELD_REFERENCE_CODES } from "@/utils/form/constants";
-import { useFormContext } from "react-hook-form";
 import { BooleanSelector } from "./BooleanSelector";
 import { DateSelector } from "./DateSelector";
 import { ListSelector } from "./ListSelector";
@@ -37,10 +36,7 @@ export type GenericSelectorProps = {
 };
 
 const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
-  const { watch } = useFormContext();
-  const value = watch(field.hqlName);
   const { reference } = field.column;
-
   switch (reference) {
     case FIELD_REFERENCE_CODES.PASSWORD:
       return <PasswordSelector field={field} readOnly={isReadOnly} />;
@@ -56,17 +52,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
       return <BooleanSelector field={field} isReadOnly={isReadOnly} />;
     case FIELD_REFERENCE_CODES.QUANTITY_29:
     case FIELD_REFERENCE_CODES.QUANTITY_22:
-      return (
-        <QuantitySelector
-          field={field}
-          name={field.hqlName}
-          value={value}
-          min={field.column.minValue}
-          max={field.column.maxValue}
-          readOnly={isReadOnly}
-          maxLength={field.column.length}
-        />
-      );
+      return <QuantitySelector field={field} min={field.column.minValue} max={field.column.maxValue} />;
     case FIELD_REFERENCE_CODES.LIST_17:
     case FIELD_REFERENCE_CODES.LIST_13:
       return <ListSelector field={field} isReadOnly={isReadOnly} />;

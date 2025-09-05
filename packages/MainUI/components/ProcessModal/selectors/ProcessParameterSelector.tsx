@@ -138,16 +138,7 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
           return <TableDirSelector field={mappedField} isReadOnly={isReadOnly} />;
 
         case "quantity":
-          return (
-            <QuantitySelector
-              field={mappedField}
-              value={mappedField.hasDefaultValue ? parameter.defaultValue : ""}
-              name={mappedField.hqlName}
-              readOnly={isReadOnly}
-              min={null}
-              max={null}
-            />
-          );
+          return <QuantitySelector field={mappedField} />;
 
         case "list":
           if (!mappedField.refList || mappedField.refList.length === 0) {

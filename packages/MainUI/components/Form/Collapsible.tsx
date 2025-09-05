@@ -14,62 +14,70 @@
  * Contributor(s): Futit Services S.L.
  *************************************************************************
  */
-
 "use client";
-
 import ChevronDown from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
 import ChevronUp from "@workspaceui/componentlibrary/src/assets/icons/chevron-up.svg";
 import InfoIcon from "@workspaceui/componentlibrary/src/assets/icons/file-text.svg";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
-import React, { type CSSProperties, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { CollapsibleProps } from "./FormView/types";
 
 function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onToggle }: CollapsibleProps) {
   const contentRef = useRef<React.ElementRef<"div">>(null);
-  const [maxHeight, setMaxHeight] = useState<CSSProperties["maxHeight"]>("100%");
-  const [overflowVisible, setOverflowVisible] = useState(false);
-  const style = useMemo(() => ({ maxHeight: isExpanded ? maxHeight : 0 }), [isExpanded, maxHeight]);
+  const innerContentRef = useRef<React.ElementRef<"div">>(null);
+  const [contentHeight, setContentHeight] = useState<number>(0);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const handleToggle = useCallback(() => {
-    if (onToggle) {
+    if (onToggle && !isAnimating) {
       onToggle(!isExpanded);
     }
-  }, [isExpanded, onToggle]);
+  }, [isExpanded, onToggle, isAnimating]);
 
+  // Calcular altura del contenido
   useEffect(() => {
-    if (contentRef.current) {
-      setMaxHeight(contentRef.current.scrollHeight);
+    if (innerContentRef.current) {
+      const height = innerContentRef.current.scrollHeight;
+      setContentHeight(height);
     }
-  }, [isExpanded, children]);
+  }, [children, isExpanded]);
 
-  useEffect(() => {
-    if (isExpanded) {
-      const timeoutId = setTimeout(() => {
-        setOverflowVisible(true);
-      }, 300);
-      return () => clearTimeout(timeoutId);
-    }
-    setOverflowVisible(false);
-  }, [isExpanded]);
-
+  // Manejar animación
   useEffect(() => {
     if (!contentRef.current) return;
 
-    const focusableElements = contentRef.current.querySelectorAll(
+    setIsAnimating(true);
+
+    const timeoutId = setTimeout(() => {
+      setIsAnimating(false);
+    }, 300); // Duración de la transición
+
+    return () => clearTimeout(timeoutId);
+  }, [isExpanded]);
+
+  // Manejar accesibilidad de elementos focuseables
+  useEffect(() => {
+    if (!innerContentRef.current) return;
+
+    const focusableElements = innerContentRef.current.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
 
     for (const el of focusableElements) {
+      const element = el as HTMLElement;
+
       if (isExpanded) {
-        if ((el as HTMLElement).dataset.originalTabIndex) {
-          (el as HTMLElement).setAttribute("tabindex", (el as HTMLElement).dataset.originalTabIndex || "0");
-          delete (el as HTMLElement).dataset.originalTabIndex;
+        // Restaurar tabindex original
+        if (element.dataset.originalTabIndex) {
+          element.setAttribute("tabindex", element.dataset.originalTabIndex);
+          delete element.dataset.originalTabIndex;
         }
       } else {
-        if (!(el as HTMLElement).dataset.originalTabIndex) {
-          (el as HTMLElement).dataset.originalTabIndex = (el as HTMLElement).getAttribute("tabindex") || "0";
+        // Guardar tabindex original y deshabilitarlo
+        if (!element.dataset.originalTabIndex) {
+          element.dataset.originalTabIndex = element.getAttribute("tabindex") || "0";
         }
-        (el as HTMLElement).setAttribute("tabindex", "-1");
+        element.setAttribute("tabindex", "-1");
       }
     }
   }, [isExpanded]);
@@ -77,25 +85,22 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter" || e.key === " ") {
-        handleToggle();
         e.preventDefault();
+        handleToggle();
       }
     },
     [handleToggle]
   );
 
   return (
-    <div
-      id={`section-${sectionId}`}
-      className={`flex flex-col gap-3 bg-white rounded-xl border border-gray-200 ${isExpanded ? "overflow-visible" : "overflow-hidden"}`}>
+    <div id={`section-${sectionId}`} className="flex flex-col bg-white rounded-xl border border-gray-200">
+      {/* Header */}
       <div
-        // biome-ignore lint/a11y/useSemanticElements: <explanation>
-        role="button"
-        tabIndex={0}
         aria-expanded={isExpanded}
         aria-controls={`section-content-${sectionId}`}
-        className={`w-full h-12 flex justify-between text-(--color-baseline-90) hover:text-(--color-dynamic-main)
-          items-center p-4 cursor-pointer transition-colors hover:bg-(--color-dynamic-contrast-text) bg-gray-50 ${isExpanded ? "rounded-xl" : ""}`}
+        className={`w-full h-12 flex justify-between text-gray-900 hover:text-blue-600
+           items-center p-4 cursor-pointer transition-colors hover:bg-gray-50 bg-gray-50 
+           ${isExpanded ? "rounded-t-xl" : "rounded-xl"}`}
         onClick={handleToggle}
         onKeyDown={handleKeyDown}>
         <div className="flex items-center gap-3">
@@ -106,15 +111,17 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
           <IconButton>{isExpanded ? <ChevronUp /> : <ChevronDown />}</IconButton>
         </div>
       </div>
+
+      {/* Content */}
       <div
         id={`section-content-${sectionId}`}
         ref={contentRef}
-        className={`transition-all duration-300 ease-in-out ${
-          overflowVisible ? "overflow-visible" : "overflow-hidden"
-        }`}
-        style={style}
+        className="transition-all duration-300 ease-in-out overflow-hidden"
+        style={{
+          height: isExpanded ? `${contentHeight}px` : "0px",
+        }}
         aria-hidden={!isExpanded}>
-        <div className="px-3 pb-12">
+        <div ref={innerContentRef} className="px-3 pb-3">
           {React.isValidElement(children) && children.type === "div" ? children : <div>{children}</div>}
         </div>
       </div>

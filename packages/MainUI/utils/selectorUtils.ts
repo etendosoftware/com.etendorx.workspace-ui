@@ -6,8 +6,7 @@ export interface Option {
   label: string;
   data?: unknown;
 }
-
-export const useKeyboardNavigation = (
+export const useKeyboardNavigation = <T extends Element = Element>(
   filteredOptions: Option[],
   highlightedIndex: number,
   setHighlightedIndex: (index: number | ((prev: number) => number)) => void,
@@ -15,15 +14,15 @@ export const useKeyboardNavigation = (
   onClose: () => void
 ) => {
   return useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
+    (e: React.KeyboardEvent<T>) => {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setHighlightedIndex((prev: number) => (prev + 1) % filteredOptions.length);
+        setHighlightedIndex((prev) => (prev + 1) % filteredOptions.length);
       }
 
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        setHighlightedIndex((prev: number) => (prev <= 0 ? filteredOptions.length - 1 : prev - 1));
+        setHighlightedIndex((prev) => (prev <= 0 ? filteredOptions.length - 1 : prev - 1));
       }
 
       if (e.key === "Enter" && highlightedIndex >= 0) {

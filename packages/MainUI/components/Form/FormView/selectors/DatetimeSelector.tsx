@@ -14,9 +14,18 @@
  * Contributor(s): Futit Services S.L.
  *************************************************************************
  */
-
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { useFormContext } from "react-hook-form";
+import { useCallback, useState } from "react";
+import CalendarIcon from "../../../../../ComponentLibrary/src/assets/icons/calendar.svg";
+
+interface DatetimeSelectorProps {
+  field: Field;
+  isReadOnly?: boolean;
+  label?: string;
+  error?: boolean;
+  helperText?: string;
+}
 
 function convertCustomDateFormat(customDate: string): string {
   if (!customDate) return "";
@@ -47,27 +56,78 @@ function formatDateForInputSafe(value: string): string {
   const day = pad(date.getDate());
   const hours = pad(date.getHours());
   const minutes = pad(date.getMinutes());
-
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-export const DatetimeSelector = ({
-  field,
-  isReadOnly,
-}: {
-  field: Field;
-  isReadOnly?: boolean;
-}) => {
-  const { register, getValues } = useFormContext();
+const DatetimeSelector = ({ field, isReadOnly, error, helperText }: DatetimeSelectorProps) => {
+  const { register, getValues, formState } = useFormContext();
+  const [isFocused, setIsFocused] = useState(false);
   const value = getValues(field.hqlName);
+  const fieldError = formState.errors[field.hqlName];
+  const hasError = error || !!fieldError;
+
+  const handleFocus = useCallback(() => setIsFocused(true), []);
+  const handleBlur = useCallback(() => setIsFocused(false), []);
+
+  const getInputClass = useCallback(() => {
+    const baseClass = `w-full pl-3 pr-3 rounded-t tracking-normal h-10.5 border-0 border-b-2 
+        bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) 
+        text-(--color-transparent-neutral-80) font-medium text-sm leading-5`;
+
+    const focusClass = isFocused && !isReadOnly ? "border-[#004ACA] text-[#004ACA] bg-[#E5EFFF]" : "";
+
+    const hoverClass = !isReadOnly
+      ? "hover:border-(--color-transparent-neutral-100) hover:bg-(--color-transparent-neutral-10)"
+      : "";
+
+    const readOnlyClass = isReadOnly
+      ? "bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40) hover:border-dotted hover:border-(--color-transparent-neutral-70) hover:bg-transparent focus:border-dotted focus:border-(--color-transparent-neutral-70) focus:bg-transparent focus:text-(--color-transparent-neutral-80)"
+      : "";
+
+    const errorClass = hasError ? "border-error-main" : "";
+
+    return `${baseClass} ${focusClass} ${hoverClass} ${readOnlyClass} ${errorClass} focus:outline-none transition-colors`;
+  }, [hasError, isFocused, isReadOnly]);
+
+  const renderHelperText = useCallback(() => {
+    const displayHelperText = helperText || (fieldError?.message as string);
+    if (!displayHelperText) return null;
+
+    return (
+      <div className="h-0">
+        <p className={`text-xs mt-1 ${hasError ? "text-red-500" : "text-baseline-60"}`}>{displayHelperText}</p>
+      </div>
+    );
+  }, [hasError, helperText, fieldError]);
 
   return (
-    <input
-      type="datetime-local"
-      {...register(field.hqlName)}
-      readOnly={isReadOnly}
-      value={formatDateForInputSafe(value)}
-    />
+    <div className="w-full font-['Inter'] font-medium">
+      <div className={`relative flex items-center w-full ${isReadOnly ? "pointer-events-none" : ""}`}>
+        <input
+          type="datetime-local"
+          id={field.hqlName}
+          {...register(field.hqlName)}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          className={getInputClass()}
+          readOnly={isReadOnly}
+          disabled={isReadOnly}
+          value={value ? formatDateForInputSafe(value) : ""}
+          aria-label={field.name}
+          aria-readonly={isReadOnly}
+          aria-required={field.isMandatory}
+          aria-disabled={isReadOnly}
+          aria-details={field.helpComment}
+        />
+        <div
+          className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 pointer-events-none z-10 flex items-center justify-center ${
+            isFocused && !isReadOnly ? "text-(--color-baseline-100)" : "text-(--color-transparent-neutral-60)"
+          }`}>
+          <CalendarIcon fill={"currentColor"} className="h-5 w-5" />
+        </div>
+      </div>
+      {renderHelperText()}
+    </div>
   );
 };
 
