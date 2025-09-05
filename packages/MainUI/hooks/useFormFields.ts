@@ -18,8 +18,8 @@
 import { getFieldReference } from "@/utils";
 import { type EntityValue, type Field, FieldType, FormMode, type Tab } from "@workspaceui/api-client/src/api/types";
 import { useMemo } from "react";
-import { useFormContext } from "react-hook-form";
 import { useTranslation } from "./useTranslation";
+import { useCurrentRecord } from "./useCurrentRecord";
 
 const createAuditField = (fieldName: string, label: string, columnName: string, reference: string): Field =>
   ({
@@ -82,19 +82,21 @@ interface UseFormFieldsReturn {
 
 export default function useFormFields(
   tab: Tab,
+  recordId?: string,
   mode: FormMode = FormMode.EDIT,
   hasAuditData = false,
   availableFormData: { [x: string]: EntityValue } = {}
 ): UseFormFieldsReturn {
   const { t } = useTranslation();
-  const formContext = useFormContext();
-
+  const { record } = useCurrentRecord({
+    tab: tab,
+    recordId: recordId,
+  });
   const autoDetectAuditData = useMemo(() => {
     if (mode === FormMode.NEW) {
       return false;
     }
-
-    const formValues = formContext?.watch?.() || availableFormData || {};
+    const formValues = record || availableFormData || {};
 
     const hasAuditInForm = !!(
       formValues?.creationDate ||
@@ -103,39 +105,32 @@ export default function useFormFields(
       formValues?.updatedBy$_identifier
     );
 
-    const hasAuditInTab = !!(
-      tab.fields.creationDate ||
-      tab.fields.createdBy$_identifier ||
-      tab.fields.updated ||
-      tab.fields.updatedBy$_identifier
-    );
-
-    const result = hasAuditInForm || hasAuditInTab || hasAuditData;
+    const result = hasAuditInForm || hasAuditData;
     return result;
-  }, [mode, formContext, hasAuditData, tab.fields, availableFormData]);
+  }, [mode, record, availableFormData, hasAuditData]);
 
   const createAuditFields = useMemo(() => {
     return () => {
       const auditFields: Record<string, Field> = {};
 
-      const formValues = formContext?.watch?.() || availableFormData || {};
+      const formValues = record || availableFormData || {};
 
-      if (tab.fields.creationDate || formValues.creationDate) {
+      if (formValues.creationDate) {
         auditFields.creationDate = createAuditField("creationDate", t("audit.createdDate"), "creationDate", "16");
       }
-      if (tab.fields.createdBy || formValues.createdBy || formValues.createdBy$_identifier) {
+      if (formValues.createdBy || formValues.createdBy$_identifier) {
         auditFields.createdBy = createAuditField("createdBy$_identifier", t("audit.createdBy"), "createdBy", "19");
       }
-      if (tab.fields.updated || formValues.updated) {
+      if (formValues.updated) {
         auditFields.updated = createAuditField("updated", t("audit.updated"), "updated", "16");
       }
-      if (tab.fields.updatedBy || formValues.updatedBy || formValues.updatedBy$_identifier) {
+      if (formValues.updatedBy || formValues.updatedBy$_identifier) {
         auditFields.updatedBy = createAuditField("updatedBy$_identifier", t("audit.updatedBy"), "updatedBy", "18");
       }
 
       return auditFields;
     };
-  }, [tab.fields, formContext, t, availableFormData]);
+  }, [record, availableFormData, t]);
 
   const fields = useMemo(() => {
     const statusBarFields: Record<string, Field> = {};
