@@ -18,12 +18,14 @@
 "use client";
 
 import type { ToggleableItem } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
-import type { MRT_TableInstance, MRT_RowData } from "material-react-table";
+import type { MRT_TableInstance, MRT_RowData, MRT_DefinedColumnDef } from "material-react-table";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useMemo, useState, useCallback } from "react";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
 import DragModalContent from "@workspaceui/componentlibrary/src/components/DragModal/DragModalContent";
-
+export interface CustomColumnDef<TData extends MRT_RowData = MRT_RowData> extends MRT_DefinedColumnDef<TData> {
+  showInGridView?: boolean;
+}
 interface ColumnVisibilityMenuProps<T extends MRT_RowData = MRT_RowData> {
   anchorEl: HTMLElement | null;
   onClose: () => void;
@@ -42,11 +44,20 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
     return table
       .getAllLeafColumns()
       .filter((column) => column.columnDef.enableHiding !== false)
-      .map((column) => ({
-        id: column.id,
-        label: typeof column.columnDef.header === "string" ? column.columnDef.header : column.id,
-        isActive: column.getIsVisible(),
-      }));
+      .map((column) => {
+        const colDef = column.columnDef as CustomColumnDef;
+        const shouldBeVisible = colDef.showInGridView ?? true;
+
+        if (column.getIsVisible() !== shouldBeVisible) {
+          column.toggleVisibility(shouldBeVisible);
+        }
+
+        return {
+          id: column.id,
+          label: typeof colDef.header === "string" ? colDef.header : column.id,
+          isActive: shouldBeVisible,
+        };
+      });
   }, [table]);
 
   const [items, setItems] = useState<ToggleableItem[]>(columnItems);
