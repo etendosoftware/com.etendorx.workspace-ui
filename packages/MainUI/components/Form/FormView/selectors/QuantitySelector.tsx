@@ -36,6 +36,7 @@ export const QuantitySelector = ({ field, min, max }: QuantitySelectorProps) => 
       value={currentValue}
       setValue={handleSetValue}
       onChange={(e) => handleSetValue(e.target.value)}
+      data-testid={`TextInput__${field.id}`}
     />
   );
 };

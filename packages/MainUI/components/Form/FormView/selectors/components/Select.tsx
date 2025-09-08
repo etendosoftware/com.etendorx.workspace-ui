@@ -212,6 +212,7 @@ const DropdownPortal = memo(
         handleKeyDown={handleKeyDown}
         handleSearchBlur={handleSearchBlur}
         handleFocus={handleFocus}
+        data-testid="SearchInput__ff38f9"
       />
     );
 
@@ -520,10 +521,10 @@ function SelectCmp({
                 onKeyDown={(e) => handleKeyboardActivation(e, () => handleClear(e as unknown as React.MouseEvent))}
                 className={clearButtonClassNames}
                 aria-label="Clear selection">
-                <XIcon />
+                <XIcon data-testid={`XIcon__${field.id}`} />
               </button>
             )}
-            <ChevronDown fill="currentColor" className={chevronClassNames} />
+            <ChevronDown fill="currentColor" className={chevronClassNames} data-testid={`ChevronDown__${field.id}`} />
           </div>
         </div>
       </div>
@@ -544,6 +545,7 @@ function SelectCmp({
           hasMore={hasMore}
           loadingRef={loadingRef}
           dropdownId={dropdownId}
+          data-testid={`DropdownPortal__${field.id}`}
         />
       )}
     </>
