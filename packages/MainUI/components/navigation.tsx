@@ -42,6 +42,7 @@ import { useAssistants } from "@/hooks/useAssistants";
 import { useCopilotLabels } from "@/hooks/useCopilotLabels";
 import { useCopilot } from "@/hooks/useCopilot";
 import { buildContextString } from "@/utils/contextUtils";
+import type { ContextItem } from "@/hooks/types";
 import ConfigurationSection from "./Header/ConfigurationSection";
 
 const handleClose = () => {
@@ -70,10 +71,9 @@ const Navigation: React.FC = () => {
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [copilotExpanded, setCopilotExpanded] = useState(false);
   const [pendingContextString, setPendingContextString] = useState<string | null>(null);
-  const [pendingContextItems, setPendingContextItems] = useState<any[]>([]);
+  const [pendingContextItems, setPendingContextItems] = useState<ContextItem[]>([]);
 
-  const assistantsHook = useMemo(() => useAssistants(), []);
-  const { assistants, getAssistants, invalidateCache, hasAssistants } = assistantsHook;
+  const { assistants, getAssistants, invalidateCache, hasAssistants } = useAssistants();
   const { labels, getLabels } = useCopilotLabels();
 
   const { clearUserData } = useContext(UserContext);
@@ -95,7 +95,7 @@ const Navigation: React.FC = () => {
   }, [hasAssistants, getAssistants]);
 
   const handleCopilotOpenWithContext = useCallback(
-    (contextString: string, contextItems: unknown[]) => {
+    (contextString: string, contextItems: ContextItem[]) => {
       setPendingContextString(contextString);
       setPendingContextItems(contextItems);
       setCopilotOpen(true);
