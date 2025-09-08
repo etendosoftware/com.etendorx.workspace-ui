@@ -72,12 +72,12 @@ const SearchSelector = ({ onChange, value, field, name, disabled, readOnly }: Se
     [onChange]
   );
 
-  if (loading) return <Spinner />;
+  if (loading) return <Spinner data-testid="Spinner__c1262c" />;
   if (error) return <div>Error: {error?.message}</div>;
 
   return (
     <Select
-      iconLeft={<SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />}
+      iconLeft={<SearchOutlined fill={theme.palette.baselineColor.neutral[90]} data-testid="SearchOutlined__c1262c" />}
       options={options}
       onChange={handleChange}
       value={selectedValue}
@@ -85,6 +85,7 @@ const SearchSelector = ({ onChange, value, field, name, disabled, readOnly }: Se
       isOptionEqualToValue={optionEqualValue}
       name={name}
       disabled={isDisabled}
+      data-testid="Select__c1262c"
     />
   );
 };

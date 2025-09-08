@@ -85,7 +85,14 @@ const OptionItem = memo(
       hover:bg-baseline-10`}>
       <span className={`truncate mr-2 ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>{label}</span>
       {isSelected && (
-        <Image src={checkIconUrl} alt="Selected Item" className="fade-in-left flex-shrink-0" height={16} width={16} />
+        <Image
+          src={checkIconUrl}
+          alt="Selected Item"
+          className="fade-in-left flex-shrink-0"
+          height={16}
+          width={16}
+          data-testid="Image__cb81f7"
+        />
       )}
     </li>
   )
@@ -211,6 +218,7 @@ function MultiSelectCmp({
           isHighlighted={highlightedIndex === index}
           onOptionClick={handleOptionClick}
           onMouseEnter={handleOptionMouseEnter}
+          data-testid="OptionItem__cb81f7"
         />
       ));
     }
@@ -240,16 +248,16 @@ function MultiSelectCmp({
               onKeyDown={(e) => handleKeyboardActivation(e, () => handleClear(e as unknown as React.MouseEvent))}
               className={`mr-1 ${TEXT_MUTED} ${HOVER_TEXT_COLOR} transition-opacity opacity-100 ${FOCUS_STYLES} rounded`}
               aria-label={t("multiselect.clearSelection")}>
-              <Image src={closeIconUrl} alt="Clear" height={16} width={16} />
+              <Image src={closeIconUrl} alt="Clear" height={16} width={16} data-testid="Image__cb81f7" />
             </button>
           )}
           <ChevronDown
             fill="currentColor"
             className={`${ICON_SIZE} ${TEXT_MUTED} transition-transform ${isOpen ? "rotate-180" : ""}`}
+            data-testid="ChevronDown__cb81f7"
           />
         </div>
       </div>
-
       {isOpen && (
         <div className="absolute z-10 mt-1 w-64 bg-white rounded shadow-lg overflow-hidden border-1 border-transparent-neutral-10">
           <div className="p-2">

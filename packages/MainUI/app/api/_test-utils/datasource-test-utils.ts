@@ -17,6 +17,21 @@ interface ErpRequestOptions {
   cookie?: string;
 }
 
+// Add a hook to capture cache key arguments for assertions in tests
+let cacheKeyCapture: ((args: unknown[]) => void) | null = null;
+
+/**
+ * Install a spy to capture the arguments passed into the wrapped `unstable_cache` function.
+ * Use in tests like:
+ *   const spy = jest.fn();
+ *   captureCacheKey(spy);
+ *   // run handler that uses unstable_cache
+ *   expect(spy).toHaveBeenCalled();
+ */
+export function captureCacheKey(spy: (args: unknown[]) => void) {
+  cacheKeyCapture = spy;
+}
+
 /**
  * Common mock configuration for datasource tests
  */
@@ -31,11 +46,21 @@ export function setupDatasourceMocks() {
     },
   }));
 
+  // Wrap unstable_cache so tests can optionally capture the key-generation args
   jest.mock("next/cache", () => ({
     unstable_cache:
       (fn: (...args: unknown[]) => unknown) =>
-      (...args: unknown[]) =>
-        fn(...args),
+      (...args: unknown[]) => {
+        if (cacheKeyCapture) {
+          try {
+            cacheKeyCapture(args);
+          } catch (err) {
+            // swallow capture errors to avoid breaking tests that don't care
+            console.error("cacheKeyCapture hook failed", err);
+          }
+        }
+        return fn(...args);
+      },
   }));
 }
 
@@ -210,4 +235,39 @@ export function assertDatasourceCall(
       expect(decoded).toContain(`${param}=${value}`);
     }
   }
+}
+
+/**
+ * Helper to create a mock `fetch` implementation for tests.
+ * Returns a jest.Mock that resolves to a Response-like object.
+ */
+export function mockFetchFactory(spec: { status?: number; json?: unknown; text?: string; contentType?: string } = {}) {
+  const { status = 200, json = {}, text, contentType = "application/json" } = spec;
+  return jest.fn().mockResolvedValue({
+    ok: status >= 200 && status < 300,
+    status,
+    headers: { get: () => contentType },
+    text: async () => (typeof text !== "undefined" ? text : JSON.stringify(json)),
+    json: async () => json,
+  });
+}
+
+/**
+ * Install an auth mock for tests. This complements `setupDatasourceAuthMock` but allows
+ * a test to explicitly set userContext and token values.
+ */
+export function installAuthMock(
+  userContext: { userId?: string; clientId?: string; orgId?: string; roleId?: string; warehouseId?: string } = {
+    userId: "100",
+    clientId: "23C5",
+    orgId: "0",
+    roleId: "ROLE",
+    warehouseId: "WH",
+  },
+  token = "token-default"
+) {
+  jest.mock("@/lib/auth", () => ({
+    getUserContext: jest.fn().mockResolvedValue(userContext),
+    extractBearerToken: jest.fn().mockReturnValue(token),
+  }));
 }

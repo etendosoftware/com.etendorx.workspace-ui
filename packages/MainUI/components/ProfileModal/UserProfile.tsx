@@ -36,8 +36,12 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, onSignOff }) 
     <div className="flex flex-col items-center justify-center h-[9.5rem]">
       <img src={BackgroundGradient} className={"absolute h-[9.5rem]"} alt="Background Gradient" />
       <div className="top-4 right-4 z-10 absolute">
-        <IconButton tooltip="Log out" onClick={handleSignOff} className="h-6 w-6 [&>svg]:w-4 [&>svg]:h-4">
-          <LogoutIcon />
+        <IconButton
+          tooltip="Log out"
+          onClick={handleSignOff}
+          className="h-6 w-6 [&>svg]:w-4 [&>svg]:h-4"
+          data-testid="IconButton__d71b83">
+          <LogoutIcon data-testid="LogoutIcon__d71b83" />
         </IconButton>
       </div>
       <div style={styles.profileImageContainerStyles}>
@@ -48,6 +52,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, onSignOff }) 
             width={window.innerWidth}
             alt="Profile"
             className="w-full h-full rounded-full relative z-[2]"
+            data-testid="Image__d71b83"
           />
         ) : (
           <div

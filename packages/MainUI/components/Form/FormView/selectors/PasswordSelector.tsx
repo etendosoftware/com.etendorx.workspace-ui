@@ -29,6 +29,7 @@ export const PasswordSelector = (props: { field: Field } & React.ComponentProps<
       type="password"
       maxLength={Number(props.field.column.length)}
       autoComplete="new-password"
+      data-testid="TextInput__1b1414"
     />
   );
 };

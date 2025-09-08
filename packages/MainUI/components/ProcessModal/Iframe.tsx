@@ -240,7 +240,7 @@ const ProcessIframeOpenModal = ({
 
 const ProcessIframeModal = (props: ProcessIframeModalOpenProps | ProcessIframeModalClosedProps) => {
   if (isIframeModalOpen(props)) {
-    return <ProcessIframeOpenModal {...props} />;
+    return <ProcessIframeOpenModal {...props} data-testid="ProcessIframeOpenModal__f85edd" />;
   }
 
   return null;

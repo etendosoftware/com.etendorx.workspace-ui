@@ -40,9 +40,9 @@ import { useStatusModal } from "@/hooks/Toolbar/useStatusModal";
 import { useTabContext } from "@/contexts/tab";
 
 const iconMap: Record<string, React.ReactElement> = {
-  "Main Section": <FileIcon />,
-  "More Information": <InfoIcon />,
-  Dimensions: <FolderIcon />,
+  "Main Section": <FileIcon data-testid="FileIcon__1a0853" />,
+  "More Information": <InfoIcon data-testid="InfoIcon__1a0853" />,
+  Dimensions: <FolderIcon data-testid="FolderIcon__1a0853" />,
 };
 
 const processFormData = (data: Record<string, EntityValue>): Record<string, EntityValue> => {
@@ -84,7 +84,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const initialState = useFormInitialState(formInitialization) || undefined;
 
   const defaultIcon = useMemo(
-    () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
+    () => <Info fill={theme.palette.baselineColor.neutral[80]} data-testid="Info__1a0853" />,
     [theme.palette.baselineColor.neutral]
   );
 
@@ -302,9 +302,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   );
 
   return (
-    <FormInitializationProvider value={{ isFormInitializing }}>
+    <FormInitializationProvider value={{ isFormInitializing }} data-testid="FormInitializationProvider__1a0853">
       <FormViewContext.Provider value={contextValue}>
-        <FormProvider setValue={handleSetValue} reset={reset} formState={formState} {...form}>
+        <FormProvider
+          setValue={handleSetValue}
+          reset={reset}
+          formState={formState}
+          {...form}
+          data-testid="FormProvider__1a0853">
           <form
             className={`flex h-full max-h-full w-full flex-col gap-2 overflow-hidden transition duration-300 ${
               loading ? "cursor-progress cursor-to-children select-none opacity-50" : ""
@@ -314,9 +319,10 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               groups={groups}
               statusModal={statusModal}
               hideStatusModal={hideStatusModal}
+              data-testid="FormHeader__1a0853"
             />
 
-            <FormFields tab={tab} mode={mode} groups={groups} loading={isLoading} />
+            <FormFields tab={tab} mode={mode} groups={groups} loading={isLoading} data-testid="FormFields__1a0853" />
 
             <FormActions
               tab={tab}
@@ -324,6 +330,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
               refetch={refetch}
               onSave={handleSave}
               showErrorModal={showErrorModal}
+              data-testid="FormActions__1a0853"
             />
           </form>
         </FormProvider>

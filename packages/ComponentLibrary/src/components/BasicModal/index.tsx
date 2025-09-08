@@ -171,7 +171,12 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
     return (
       <>
         {renderTrigger()}
-        <ModalMUI open={isOpen} onClose={handleClose} keepMounted={false} closeAfterTransition>
+        <ModalMUI
+          open={isOpen}
+          onClose={handleClose}
+          keepMounted={false}
+          closeAfterTransition
+          data-testid="BasicModal_Modal">
           <Box
             ref={ref}
             sx={{
@@ -204,7 +209,7 @@ const Modal = forwardRef<HTMLDivElement, ModalIProps>(
                   </IconButton>
                 )}
                 <IconButton aria-label="close" className="h-6 w-4" onClick={handleCancel}>
-                  <CloseIcon />
+                  <CloseIcon data-testid="BasicModal_CloseIcon" />
                 </IconButton>
               </Box>
               <Box sx={contentStyles}>{children}</Box>

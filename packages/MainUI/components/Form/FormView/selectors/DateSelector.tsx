@@ -22,7 +22,9 @@ import { DateInput } from "./components/DateInput";
 export const DateSelector = ({ field, isReadOnly }: { field: Field; isReadOnly?: boolean }) => {
   const { register } = useFormContext();
 
-  return <DateInput field={field} isReadOnly={isReadOnly} {...register(field.hqlName)} />;
+  return (
+    <DateInput field={field} isReadOnly={isReadOnly} {...register(field.hqlName)} data-testid="DateInput__ad19cd" />
+  );
 };
 
 export default DateSelector;
