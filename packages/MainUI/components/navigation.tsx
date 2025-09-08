@@ -177,7 +177,8 @@ const Navigation: React.FC = () => {
 
       invalidateCache();
     }
-  }, [token?.token, copilotOpen, invalidateCache, handleCopilotClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token?.token]);
 
   useEffect(() => {
     const handleCopilotWithContext = (event: CustomEvent) => {
