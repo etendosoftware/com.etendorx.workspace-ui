@@ -5,8 +5,83 @@ import { joinUrl } from "../../_utils/url";
 import { executeWithSessionRetry } from "../../_utils/sessionRetry";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  return handleCopilotRequest(request, params, "GET");
+}
+
+export async function POST(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  return handleCopilotRequest(request, params, "POST");
+}
+
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  return handleCopilotRequest(request, params, "PUT");
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  return handleCopilotRequest(request, params, "DELETE");
+}
+
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  return handleCopilotRequest(request, params, "PATCH");
+}
+
+function buildCopilotHeaders(request: NextRequest): HeadersInit {
+  const headers: Record<string, string> = {
+    Accept: "*/*",
+    "User-Agent": request.headers.get("User-Agent") || "EtendoWorkspaceUI/1.0",
+  };
+
+  const headersToForward = ["Accept-Language", "sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform"];
+
+  for (const headerName of headersToForward) {
+    const headerValue = request.headers.get(headerName);
+    if (headerValue) {
+      headers[headerName] = headerValue;
+    }
+  }
+
+  if (!headers["Accept-Language"]) {
+    headers["Accept-Language"] = "en-US,en;q=0.9";
+  }
+
+  headers.Connection = "keep-alive";
+  headers["Sec-Fetch-Dest"] = "empty";
+  headers["Sec-Fetch-Mode"] = "cors";
+  headers["Sec-Fetch-Site"] = "same-origin";
+
+  return headers;
+}
+
+function addContentTypeIfNeeded(headers: HeadersInit, requestBody: string | undefined, request: NextRequest): void {
+  if (requestBody) {
+    const contentType = request.headers.get("Content-Type") || "application/json";
+    (headers as Record<string, string>)["Content-Type"] = contentType;
+  }
+}
+
+function addAuthHeaders(headers: HeadersInit, cookieHeader: string | null, csrfToken: string | null): void {
+  if (cookieHeader) {
+    (headers as Record<string, string>).Cookie = cookieHeader;
+  }
+  if (csrfToken) {
+    (headers as Record<string, string>)["X-CSRF-Token"] = csrfToken;
+  }
+}
+
+function tryParseJsonResponse(data: string, originalResponse?: Response): NextResponse {
   try {
-    // Extract user token for authentication with ERP
+    const jsonData = JSON.parse(data);
+    return NextResponse.json(jsonData);
+  } catch {
+    const contentType = originalResponse?.headers.get("Content-Type") || "text/plain";
+    return new NextResponse(data, {
+      status: 200,
+      headers: { "Content-Type": contentType },
+    });
+  }
+}
+
+async function handleCopilotRequest(request: NextRequest, params: Promise<{ path: string[] }>, method: string) {
+  try {
     const userToken = extractBearerToken(request);
 
     // For development: allow Basic auth if no Bearer token provided
@@ -30,33 +105,21 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const queryParams = url.search;
     const erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, `/copilot/${copilotPath}`) + queryParams;
 
-    const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
-    console.log("Copilot proxy request:", {
-      erpUrl,
-      userToken: !!userToken,
-      hasBasicAuth,
-      cookiePresent: !!cookieHeader,
-      cookieLength: cookieHeader?.length || 0,
-      incomingCookies: request.headers.get("cookie")?.length || 0,
-    });
+    // Get request body for POST/PUT/PATCH methods
+    const requestBody = method !== "GET" ? await request.text() : undefined;
+
+    const { csrfToken } = getErpAuthHeaders(request, userToken);
 
     if (userToken) {
       const retryResult = await executeWithSessionRetry(request, userToken, async (cookieHeader) => {
-        const headers: HeadersInit = {
-          Accept: "*/*",
-          "Accept-Language": "en-US,en;q=0.9",
-          Connection: "keep-alive",
-          "User-Agent": request.headers.get("User-Agent") || "EtendoWorkspaceUI/1.0",
-        };
-
-        if (cookieHeader) {
-          headers.Cookie = cookieHeader;
-        }
-        if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
+        const headers = buildCopilotHeaders(request);
+        addContentTypeIfNeeded(headers, requestBody, request);
+        addAuthHeaders(headers, cookieHeader, csrfToken);
 
         const response = await fetch(erpUrl, {
-          method: "GET",
+          method,
           headers,
+          body: requestBody,
           credentials: "include",
         });
 
@@ -65,48 +128,31 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       });
 
       if (!retryResult.success) {
-        console.log("Copilot request failed:", { error: retryResult.error });
         return NextResponse.json({ error: retryResult.error || "Copilot request failed" }, { status: 500 });
       }
 
-      console.log("Copilot request successful", { recovered: retryResult.recovered });
-      return new NextResponse(retryResult.data, {
-        status: 200,
-        headers: {
-          "Content-Type": "text/plain",
-        },
-      });
+      return tryParseJsonResponse(retryResult.data || "");
     }
 
     if (hasBasicAuth && authHeader) {
-      const headers: HeadersInit = {
-        Accept: "*/*",
-        "Accept-Language": "en-US,en;q=0.9",
-        Connection: "keep-alive",
-        "User-Agent": request.headers.get("User-Agent") || "EtendoWorkspaceUI/1.0",
-        Authorization: authHeader,
-      };
+      const headers = buildCopilotHeaders(request);
+      (headers as Record<string, string>).Authorization = authHeader;
+      addContentTypeIfNeeded(headers, requestBody, request);
 
       const response = await fetch(erpUrl, {
-        method: "GET",
+        method,
         headers,
+        body: requestBody,
         credentials: "include",
       });
 
       if (!response.ok) {
-        console.log("Copilot Basic auth request failed:", { status: response.status, statusText: response.statusText });
         const errorText = await response.text();
         return NextResponse.json({ error: errorText || "Copilot request failed" }, { status: response.status });
       }
 
       const data = await response.text();
-      console.log("Copilot Basic auth request successful");
-      return new NextResponse(data, {
-        status: 200,
-        headers: {
-          "Content-Type": response.headers.get("Content-Type") || "text/plain",
-        },
-      });
+      return tryParseJsonResponse(data, response);
     }
   } catch (error) {
     const resolvedParams = await params;
