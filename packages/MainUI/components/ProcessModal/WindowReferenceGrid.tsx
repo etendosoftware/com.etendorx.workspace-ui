@@ -293,10 +293,12 @@ function WindowReferenceGrid({
     data: records,
     getRowId: (row) => String(row.id),
     renderTopToolbar,
-    renderBottomToolbar: hasMoreRecords ? () => <LoadMoreButton fetchMore={fetchMore} /> : undefined,
+    renderBottomToolbar: hasMoreRecords
+      ? () => <LoadMoreButton fetchMore={fetchMore} data-testid="LoadMoreButton__ce8544" />
+      : undefined,
     renderEmptyRowsFallback: () => (
       <div className="flex justify-center items-center p-8 text-gray-500">
-        <EmptyState maxWidth={MAX_WIDTH} />
+        <EmptyState maxWidth={MAX_WIDTH} data-testid="EmptyState__ce8544" />
       </div>
     ),
     initialState: {
@@ -317,17 +319,25 @@ function WindowReferenceGrid({
   if (isLoading) {
     return (
       <div className="p-4 flex justify-center">
-        <Loading />
+        <Loading data-testid="Loading__ce8544" />
       </div>
     );
   }
 
   if (error) {
-    return <ErrorDisplay title={t("errors.missingData")} description={error?.message} showRetry onRetry={refetch} />;
+    return (
+      <ErrorDisplay
+        title={t("errors.missingData")}
+        description={error?.message}
+        showRetry
+        onRetry={refetch}
+        data-testid="ErrorDisplay__ce8544"
+      />
+    );
   }
 
   if ((fields.length === 0 && !tabLoading) || !records || records.length === 0) {
-    return <EmptyState maxWidth={MAX_WIDTH} />;
+    return <EmptyState maxWidth={MAX_WIDTH} data-testid="EmptyState__ce8544" />;
   }
 
   return (
@@ -336,7 +346,7 @@ function WindowReferenceGrid({
         datasourceLoading ? "opacity-40 cursor-wait cursor-to-children" : "opacity-100"
       }`}
       ref={contentRef}>
-      <MaterialReactTable table={table} />
+      <MaterialReactTable table={table} data-testid="MaterialReactTable__ce8544" />
     </div>
   );
 }

@@ -158,14 +158,15 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
       ref={registerProps.ref}
       inputMode={isInteger ? "numeric" : "decimal"}
       pattern={isInteger ? "^-?\\d*$" : "^-?(?:\\d+\\.?\\d*|\\.\\d+)$"}
+      data-testid="TextInput__329fab"
     />
   );
 };
 
 export const NumericSelector = (props: { field: Field } & React.ComponentProps<typeof TextInput>) => (
-  <UnifiedNumericSelector {...props} type="decimal" />
+  <UnifiedNumericSelector {...props} type="decimal" data-testid="UnifiedNumericSelector__329fab" />
 );
 
 export const IntegerSelector = (props: { field: Field } & React.ComponentProps<typeof TextInput>) => (
-  <UnifiedNumericSelector {...props} type="integer" />
+  <UnifiedNumericSelector {...props} type="integer" data-testid="UnifiedNumericSelector__329fab" />
 );

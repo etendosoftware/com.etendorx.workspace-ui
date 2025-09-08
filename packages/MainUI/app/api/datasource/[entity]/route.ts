@@ -63,6 +63,12 @@ async function processRequestData(
     Accept: "application/json",
   };
 
+  // Forward X-CSRF-Token header if present on the incoming request
+  const csrf = request.headers.get("X-CSRF-Token");
+  if (csrf) {
+    headers["X-CSRF-Token"] = csrf;
+  }
+
   // GET requests don't have a body
   if (method === "GET") {
     return { headers };

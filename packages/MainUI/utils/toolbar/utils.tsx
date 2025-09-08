@@ -52,14 +52,14 @@ const BUTTON_STYLES = {
 export const DefaultIcon = () => <span style={{ fontSize: "1rem" }}>✣</span>;
 
 export const IconComponent: React.FC<{ iconKey?: string | null }> = ({ iconKey }) => {
-  if (!iconKey) return <DefaultIcon />;
+  if (!iconKey) return <DefaultIcon data-testid="DefaultIcon__5aeccd" />;
 
   if (iconKey.startsWith("data:image/")) {
-    return <Base64Icon src={iconKey} />;
+    return <Base64Icon src={iconKey} data-testid="Base64Icon__5aeccd" />;
   }
 
   if (isBase64Image(iconKey)) {
-    return <Base64Icon src={`data:image/png;base64,${iconKey}`} />;
+    return <Base64Icon src={`data:image/png;base64,${iconKey}`} data-testid="Base64Icon__5aeccd" />;
   }
 
   return <span style={{ fontSize: "0.75rem", fontWeight: "bold" }}>{iconKey}</span>;
@@ -138,7 +138,7 @@ export const createButtonByType = ({
 
   const baseConfig: ToolbarButton = {
     key: buttonKey,
-    icon: <IconComponent iconKey={button.icon} />,
+    icon: <IconComponent iconKey={button.icon} data-testid="IconComponent__5aeccd" />,
     tooltip: button.name,
     disabled: !button.active,
     height: IconSize,

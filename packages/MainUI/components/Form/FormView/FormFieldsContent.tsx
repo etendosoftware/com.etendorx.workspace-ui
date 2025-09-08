@@ -60,7 +60,7 @@ export function FormFields({ mode, groups, loading }: FormFieldsProps) {
   }, [selectedTab, expandedSections]);
 
   if (loading) {
-    return <Spinner />;
+    return <Spinner data-testid="Spinner__38e4a6" />;
   }
 
   return (
@@ -92,10 +92,11 @@ export function FormFields({ mode, groups, loading }: FormFieldsProps) {
               isExpanded={isSectionExpanded(id)}
               sectionId={sectionId}
               icon={getIconForGroup(group.identifier)}
-              onToggle={(isOpen: boolean) => handleAccordionChange(id, isOpen)}>
+              onToggle={(isOpen: boolean) => handleAccordionChange(id, isOpen)}
+              data-testid="Collapsible__38e4a6">
               <div className="grid auto-rows-auto grid-cols-3 gap-x-5 gap-y-2">
                 {Object.entries(group.fields).map(([hqlName, field]) => (
-                  <BaseSelector field={field} key={hqlName} formMode={mode} />
+                  <BaseSelector field={field} key={hqlName} formMode={mode} data-testid="BaseSelector__38e4a6" />
                 ))}
               </div>
             </Collapsible>

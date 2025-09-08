@@ -23,9 +23,9 @@ export const FieldLabel = ({ isEntityReference, label, required, onLinkClick }: 
   const { styles, sx } = useStyle();
 
   return (
-    <Box sx={styles.labelWrapper}>
+    <Box sx={styles.labelWrapper} data-testid="Box__5ba980">
       {isEntityReference ? (
-        <Link onClick={onLinkClick} sx={sx.linkStyles}>
+        <Link onClick={onLinkClick} sx={sx.linkStyles} data-testid="Link__5ba980">
           {label}
         </Link>
       ) : (

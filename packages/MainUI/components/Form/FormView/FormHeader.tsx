@@ -38,7 +38,7 @@ export function FormHeader({ statusBarFields, groups, statusModal, hideStatusMod
   const { selectedTab, handleTabChange, getIconForGroup } = useFormViewContext();
 
   const defaultIcon = useMemo(
-    () => <Info fill={theme.palette.baselineColor.neutral[80]} />,
+    () => <Info fill={theme.palette.baselineColor.neutral[80]} data-testid="Info__cb26f1" />,
     [theme.palette.baselineColor.neutral]
   );
 
@@ -64,10 +64,17 @@ export function FormHeader({ statusBarFields, groups, statusModal, hideStatusMod
           secondaryButtonLabel={statusModal.secondaryButtonLabel}
           onClose={hideStatusModal}
           isDeleteSuccess={statusModal.isDeleteSuccess}
+          data-testid="StatusModal__cb26f1"
         />
       )}
-      <StatusBar fields={statusBarFields} />
-      <PrimaryTabs tabs={tabs} onChange={handleTabChange} selectedTab={selectedTab} icon={defaultIcon} />
+      <StatusBar fields={statusBarFields} data-testid="StatusBar__cb26f1" />
+      <PrimaryTabs
+        tabs={tabs}
+        onChange={handleTabChange}
+        selectedTab={selectedTab}
+        icon={defaultIcon}
+        data-testid="PrimaryTabs__cb26f1"
+      />
     </>
   );
 }

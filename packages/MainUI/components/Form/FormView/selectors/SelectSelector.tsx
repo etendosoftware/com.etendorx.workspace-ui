@@ -15,6 +15,7 @@
  *************************************************************************
  */
 
+// @data-testid-ignore
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import Select from "./components/Select";
 import { useSelectFieldOptions } from "@/hooks/useSelectFieldOptions";
@@ -44,6 +45,7 @@ export const SelectSelector = ({
       loading={loading}
       hasMore={hasMore}
       field={field}
+      data-testid={`Select__${field.id ?? field.hqlName ?? "d5687c"}`}
     />
   );
 };

@@ -302,12 +302,17 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
     return (
       <div className="h-12 flex items-center title={field.helpComment || ''} aria-describedby={field.helpComment ? `${field.name}-help` : ''}">
         <div className="w-1/3 flex items-center gap-2 pr-2">
-          <Label field={field} />
-          {field.isMandatory && <Asterisk className="fill-(--color-error-main) h-3 w-3 min-w-3 min-h-3" />}
+          <Label field={field} data-testid="Label__38060a" />
+          {field.isMandatory && (
+            <Asterisk
+              className="fill-(--color-error-main) h-3 w-3 min-w-3 min-h-3"
+              data-testid={`Asterisk__${field.id}`}
+            />
+          )}
           <div className="flex-1 self-center h-[2px] bg-[length:4px_2px] bg-repeat-x bg-[radial-gradient(circle,var(--color-transparent-neutral-20)_1px,transparent_1px)]" />
         </div>
         <div className="w-2/3">
-          <GenericSelector field={field} isReadOnly={isReadOnly} />
+          <GenericSelector field={field} isReadOnly={isReadOnly} data-testid="GenericSelector__38060a" />
         </div>
       </div>
     );
