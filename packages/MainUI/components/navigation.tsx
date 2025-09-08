@@ -72,7 +72,8 @@ const Navigation: React.FC = () => {
   const [pendingContextString, setPendingContextString] = useState<string | null>(null);
   const [pendingContextItems, setPendingContextItems] = useState<any[]>([]);
 
-  const { assistants, getAssistants, invalidateCache, hasAssistants } = useAssistants();
+  const assistantsHook = useMemo(() => useAssistants(), []);
+  const { assistants, getAssistants, invalidateCache, hasAssistants } = assistantsHook;
   const { labels, getLabels } = useCopilotLabels();
 
   const { clearUserData } = useContext(UserContext);
@@ -176,8 +177,7 @@ const Navigation: React.FC = () => {
 
       invalidateCache();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token?.token]);
+  }, [token?.token, copilotOpen, invalidateCache, handleCopilotClose]);
 
   useEffect(() => {
     const handleCopilotWithContext = (event: CustomEvent) => {

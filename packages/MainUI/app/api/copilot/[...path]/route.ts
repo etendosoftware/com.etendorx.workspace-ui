@@ -24,19 +24,31 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   return handleCopilotRequest(request, params, "PATCH");
 }
 
-function buildCopilotHeaders(request: NextRequest, userAgent?: string): HeadersInit {
-  return {
+function buildCopilotHeaders(request: NextRequest): HeadersInit {
+  const headers: Record<string, string> = {
     Accept: "*/*",
-    "Accept-Language": "en-US,en;q=0.9",
-    Connection: "keep-alive",
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "same-origin",
-    "User-Agent": userAgent || request.headers.get("User-Agent") || "EtendoWorkspaceUI/1.0",
-    "sec-ch-ua": '"Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"',
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": '"macOS"',
+    "User-Agent": request.headers.get("User-Agent") || "EtendoWorkspaceUI/1.0",
   };
+
+  const headersToForward = ["Accept-Language", "sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform"];
+
+  for (const headerName of headersToForward) {
+    const headerValue = request.headers.get(headerName);
+    if (headerValue) {
+      headers[headerName] = headerValue;
+    }
+  }
+
+  if (!headers["Accept-Language"]) {
+    headers["Accept-Language"] = "en-US,en;q=0.9";
+  }
+
+  headers.Connection = "keep-alive";
+  headers["Sec-Fetch-Dest"] = "empty";
+  headers["Sec-Fetch-Mode"] = "cors";
+  headers["Sec-Fetch-Site"] = "same-origin";
+
+  return headers;
 }
 
 function addContentTypeIfNeeded(headers: HeadersInit, requestBody: string | undefined, request: NextRequest): void {
@@ -100,10 +112,7 @@ async function handleCopilotRequest(request: NextRequest, params: Promise<{ path
 
     if (userToken) {
       const retryResult = await executeWithSessionRetry(request, userToken, async (cookieHeader) => {
-        const headers = buildCopilotHeaders(
-          request,
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
-        );
+        const headers = buildCopilotHeaders(request);
         addContentTypeIfNeeded(headers, requestBody, request);
         addAuthHeaders(headers, cookieHeader, csrfToken);
 
