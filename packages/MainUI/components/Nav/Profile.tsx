@@ -81,6 +81,7 @@ const ProfileWrapper = (props: ProfileWrapperProps) => {
       userName={profile.name}
       userEmail={profile.email}
       userPhotoUrl={profile.image}
+      data-testid="ProfileModal__ecafff"
     />
   );
 };

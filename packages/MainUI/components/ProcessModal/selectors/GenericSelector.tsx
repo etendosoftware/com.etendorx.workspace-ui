@@ -29,7 +29,7 @@ const GenericSelector = ({ parameter, readOnly }: { parameter: ProcessParameter;
   const fieldValue = watch(parameter.name);
 
   if (reference === FieldType.LIST) {
-    return <RadioSelector parameter={parameter} />;
+    return <RadioSelector parameter={parameter} data-testid="RadioSelector__6d8277" />;
   }
   return (
     <input

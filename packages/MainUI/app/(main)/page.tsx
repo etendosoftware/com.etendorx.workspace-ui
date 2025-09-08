@@ -18,5 +18,5 @@
 import Page from "./window/page";
 
 export default function HomePage() {
-  return <Page />;
+  return <Page data-testid="Page__90ddba" />;
 }

@@ -15,6 +15,7 @@
  *************************************************************************
  */
 
+// @data-testid-ignore
 import type { ToolbarSectionConfig } from "../types";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import IconButtonWithText from "@workspaceui/componentlibrary/src/components/IconButtonWithText";
@@ -39,6 +40,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
               onClick={onClick}
               disabled={disabled}
               customContainerStyles={className}
+              data-testid={`IconButtonWithText__${key ?? "2bded0"}`}
             />
           );
         }
@@ -49,7 +51,8 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
             onClick={onClick}
             disabled={disabled}
             className={className}
-            iconText={iconText}>
+            iconText={iconText}
+            data-testid={`IconButton__${key ?? "2bded0"}`}>
             {icon}
           </IconButton>
         );
@@ -65,6 +68,7 @@ const ToolbarSection: React.FC<ToolbarSectionConfig> = ({ buttons, style = {}, c
             onClick={processButton.onClick}
             disabled={processButton.disabled}
             customContainerStyles={processButton.customContainerStyles}
+            data-testid={`IconButtonWithText__${processButton.key ?? processButton.text?.replace(/\s+/g, "-").toLowerCase() ?? "2bded0"}`}
           />
         </div>
       )}

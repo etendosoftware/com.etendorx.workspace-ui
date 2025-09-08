@@ -14,7 +14,7 @@
  * Contributor(s): Futit Services S.L.
  *************************************************************************
  */
-
+// @data-testid-ignore
 import { memo } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { TextField, Autocomplete } from "@mui/material";
@@ -47,8 +47,10 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
               required={field.required}
               error={!!error}
               helperText={error?.message}
+              data-testid={`DateSelector__${field.id ?? "6107b5"}`}
             />
           )}
+          data-testid={`Controller__${field.id ?? "6107b5"}`}
         />
       );
     case "select":
@@ -64,8 +66,10 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
               onChange={onChange}
               readOnly={false}
               entity={field.entity || ""}
+              data-testid={`DatabaseSelectSelector__${field.id ?? "6107b5"}`}
             />
           )}
+          data-testid={`Controller__${field.id ?? "6107b5"}`}
         />
       );
     case "search":
@@ -82,10 +86,18 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
               onChange={(_, newValue) => onChange(newValue)}
               fullWidth
               renderInput={(params) => (
-                <TextField {...params} variant="standard" label={field.label} required={field.required} />
+                <TextField
+                  {...params}
+                  variant="standard"
+                  label={field.label}
+                  required={field.required}
+                  data-testid={`TextField__${field.id ?? "6107b5"}`}
+                />
               )}
+              data-testid={`Autocomplete__${field.id ?? "6107b5"}`}
             />
           )}
+          data-testid={`Controller__${field.id ?? "6107b5"}`}
         />
       );
     case "multiselect":
@@ -104,8 +116,10 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
               columnName={field.columnName || ""}
               identifierField={field.identifierField || ""}
               columns={field.columns}
+              data-testid={`MultiSelect__${field.id ?? "6107b5"}`}
             />
           )}
+          data-testid={`Controller__${field.id ?? "6107b5"}`}
         />
       );
     default:
@@ -124,8 +138,10 @@ function DynamicFieldComponent({ field }: DynamicFieldProps) {
               required={field.required}
               error={!!error}
               helperText={error?.message}
+              data-testid="TextField__6107b5"
             />
           )}
+          data-testid="Controller__6107b5"
         />
       );
   }

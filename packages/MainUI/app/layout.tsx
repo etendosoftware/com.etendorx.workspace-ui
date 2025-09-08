@@ -76,14 +76,14 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: setInitialDensityScript }} />
       </head>
       <body>
-        <ApiProviderWrapper>
-          <ThemeProvider>
-            <LanguageProvider>
-              <UserProvider>
-                <DatasourceProvider>
-                  <MetadataProvider>
-                    <LoadingProvider>
-                      <Layout>{children}</Layout>
+        <ApiProviderWrapper data-testid="ApiProviderWrapper__ba7569">
+          <ThemeProvider data-testid="ThemeProvider__ba7569">
+            <LanguageProvider data-testid="LanguageProvider__ba7569">
+              <UserProvider data-testid="UserProvider__ba7569">
+                <DatasourceProvider data-testid="DatasourceProvider__ba7569">
+                  <MetadataProvider data-testid="MetadataProvider__ba7569">
+                    <LoadingProvider data-testid="LoadingProvider__ba7569">
+                      <Layout data-testid="Layout__ba7569">{children}</Layout>
                     </LoadingProvider>
                   </MetadataProvider>
                 </DatasourceProvider>

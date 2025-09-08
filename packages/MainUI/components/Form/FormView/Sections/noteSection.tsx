@@ -72,23 +72,24 @@ const NoteSection = ({
   };
 
   return (
-    <Box>
-      <Grid container spacing={2}>
-        <Grid item xs={6}>
+    <Box data-testid="Box__a680f8">
+      <Grid container spacing={2} data-testid="Grid__a680f8">
+        <Grid item xs={6} data-testid="Grid__a680f8">
           <Modal
             HeaderIcon={NoteIcon}
             tittleHeader={modalTitleText}
             descriptionText={modalDescriptionText}
             customTrigger={
-              <Button sx={sx.addNoteButton}>
-                <IconButton>
-                  <PlusIcon fill={theme.palette.baselineColor.neutral[80]} />
+              <Button sx={sx.addNoteButton} data-testid="Button__a680f8">
+                <IconButton data-testid="IconButton__a680f8">
+                  <PlusIcon fill={theme.palette.baselineColor.neutral[80]} data-testid="PlusIcon__a680f8" />
                 </IconButton>
-                <Typography variant="body1" sx={sx.addNoteText}>
+                <Typography variant="body1" sx={sx.addNoteText} data-testid="Typography__a680f8">
                   {addNoteButtonText}
                 </Typography>
               </Button>
-            }>
+            }
+            data-testid="Modal__a680f8">
             <TextField
               fullWidth
               multiline
@@ -96,27 +97,28 @@ const NoteSection = ({
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
               placeholder={noteInputPlaceholder}
+              data-testid="TextField__a680f8"
             />
-            <Button onClick={addNote} variant="contained" sx={{ mt: 2 }}>
+            <Button onClick={addNote} variant="contained" sx={{ mt: 2 }} data-testid="Button__a680f8">
               {addNoteSubmitText}
             </Button>
           </Modal>
         </Grid>
         {notes.map((note) => (
-          <Grid item xs={6} key={note.id}>
-            <Card sx={{ ...sx.noteCard, backgroundColor: note.color }}>
-              <CardContent sx={sx.noteCardContent}>
-                <Box sx={sx.noteContentBox}>
-                  <Typography variant="body1" sx={sx.noteContentText}>
+          <Grid item xs={6} key={note.id} data-testid="Grid__a680f8">
+            <Card sx={{ ...sx.noteCard, backgroundColor: note.color }} data-testid="Card__a680f8">
+              <CardContent sx={sx.noteCardContent} data-testid="CardContent__a680f8">
+                <Box sx={sx.noteContentBox} data-testid="Box__a680f8">
+                  <Typography variant="body1" sx={sx.noteContentText} data-testid="Typography__a680f8">
                     {note.content}
                   </Typography>
                 </Box>
-                <Typography variant="body2" component="div" sx={sx.noteDate}>
+                <Typography variant="body2" component="div" sx={sx.noteDate} data-testid="Typography__a680f8">
                   {new Date(note.createdAt).toDateString()}
                 </Typography>
-                <Box sx={sx.deleteButtonBox}>
-                  <IconButton onClick={() => deleteNote(note.id)}>
-                    <CloseIcon fontSize="small" />
+                <Box sx={sx.deleteButtonBox} data-testid="Box__a680f8">
+                  <IconButton onClick={() => deleteNote(note.id)} data-testid="IconButton__a680f8">
+                    <CloseIcon fontSize="small" data-testid="CloseIcon__a680f8" />
                   </IconButton>
                 </Box>
               </CardContent>

@@ -104,11 +104,19 @@ function CollapsibleCmp({ title, icon, children, isExpanded, sectionId = "", onT
         onClick={handleToggle}
         onKeyDown={handleKeyDown}>
         <div className="flex items-center gap-3">
-          <IconButton className="[&>svg]:text-[1rem]">{icon || <InfoIcon />}</IconButton>
+          <IconButton className="[&>svg]:text-[1rem]" data-testid="IconButton__650187">
+            {icon || <InfoIcon data-testid="InfoIcon__650187" />}
+          </IconButton>
           <span className="font-semibold text-gray-800">{title}</span>
         </div>
         <div>
-          <IconButton>{isExpanded ? <ChevronUp /> : <ChevronDown />}</IconButton>
+          <IconButton data-testid="IconButton__650187">
+            {isExpanded ? (
+              <ChevronUp data-testid="ChevronUp__650187" />
+            ) : (
+              <ChevronDown data-testid="ChevronDown__650187" />
+            )}
+          </IconButton>
         </div>
       </div>
 

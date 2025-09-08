@@ -67,8 +67,19 @@ async function fetchDatasource(
     body: formData,
   });
 
+  const parsed = await response.json().catch(async () => {
+    // fallback to text
+    const txt = await response.text();
+    try {
+      return JSON.parse(txt);
+    } catch {
+      return { text: txt };
+    }
+  });
+
   if (!response.ok) {
-    throw new Error(`ERP Datasource request failed: ${response.statusText}`);
+    // return a small wrapper so the caller can forward status and body
+    return { __error: true, status: response.status, body: parsed };
   }
   const data = await response.json();
   return { response, data };
@@ -109,8 +120,17 @@ async function fetchDatasourceJson(
     body: JSON.stringify(processedParams),
   });
 
+  const parsed = await response.json().catch(async () => {
+    const txt = await response.text();
+    try {
+      return JSON.parse(txt);
+    } catch {
+      return { text: txt };
+    }
+  });
+
   if (!response.ok) {
-    throw new Error(`ERP Datasource JSON request failed: ${response.statusText}`);
+    return { __error: true, status: response.status, body: parsed };
   }
   const data = await response.json();
   return { response, data };

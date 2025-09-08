@@ -279,5 +279,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
     return null;
   }
 
-  return <UserContext.Provider value={value}>{token ? props.children : <LoginScreen />}</UserContext.Provider>;
+  return (
+    <UserContext.Provider value={value}>
+      {token ? props.children : <LoginScreen data-testid="LoginScreen__2e05d2" />}
+    </UserContext.Provider>
+  );
 }

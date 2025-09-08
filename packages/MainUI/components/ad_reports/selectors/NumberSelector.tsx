@@ -28,6 +28,7 @@ const NumberSelector: React.FC<NumberSelectorProps> = memo(({ name, value, readO
     value={value}
     onChange={(e) => onChange(name, Number(e.target.value))}
     disabled={readOnly}
+    data-testid="TextField__4b2b7e"
   />
 ));
 

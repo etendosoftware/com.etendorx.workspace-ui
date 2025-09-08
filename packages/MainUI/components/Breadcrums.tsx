@@ -113,7 +113,7 @@ const AppBreadcrumb: React.FC<BreadcrumbProps> = ({ allTabs }) => {
 
   return (
     <div className="w-full h-8">
-      <Breadcrumb onHomeClick={handleHomeClick} items={breadcrumbItems || []} />
+      <Breadcrumb onHomeClick={handleHomeClick} items={breadcrumbItems || []} data-testid="Breadcrumb__50ef19" />
     </div>
   );
 };

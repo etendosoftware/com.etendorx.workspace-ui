@@ -68,7 +68,7 @@ export default function WindowTab({ title, isActive, onActivate, onClose, canClo
               onClose();
             }}
             title={t("primaryTabs.closeWindow")}>
-            <CloseIcon />
+            <CloseIcon data-testid="CloseIcon__15c554" />
           </button>
         )}
       </div>

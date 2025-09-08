@@ -63,8 +63,8 @@ export default function TabContextProvider({ tab, children }: React.PropsWithChi
 
   return (
     <TabContext.Provider value={value}>
-      <ToolbarProvider>
-        <SearchProvider>{children}</SearchProvider>
+      <ToolbarProvider data-testid="ToolbarProvider__24e3a6">
+        <SearchProvider data-testid="SearchProvider__24e3a6">{children}</SearchProvider>
       </ToolbarProvider>
     </TabContext.Provider>
   );

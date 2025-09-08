@@ -32,8 +32,11 @@ const GridItem = ({ bgColor = "transparent", children }: GridItemProps) => {
         ...styles.gridItem,
         backgroundColor: bgColor,
         ...(bgColor !== "transparent" && styles.gridItemWithBg),
-      }}>
-      <Box sx={styles.gridItemContent}>{children}</Box>
+      }}
+      data-testid="Paper__b08f17">
+      <Box sx={styles.gridItemContent} data-testid="Box__b08f17">
+        {children}
+      </Box>
     </Paper>
   );
 };
@@ -45,30 +48,36 @@ const GridLayout = () => {
   const { t } = useTranslation();
 
   return (
-    <Box sx={styles.gridContainer}>
-      <GridItem />
-      <GridItem />
-      <GridItem bgColor={ITEMS.ERP_SOFTWARE.color}>
-        <Box sx={styles.gridText}>
-          <Typography sx={{ fontSize: ITEMS.ERP_SOFTWARE.fontSize }}>{t("grid.items.erp.text")}</Typography>
+    <Box sx={styles.gridContainer} data-testid="Box__b08f17">
+      <GridItem data-testid="GridItem__b08f17" />
+      <GridItem data-testid="GridItem__b08f17" />
+      <GridItem bgColor={ITEMS.ERP_SOFTWARE.color} data-testid="GridItem__b08f17">
+        <Box sx={styles.gridText} data-testid="Box__b08f17">
+          <Typography sx={{ fontSize: ITEMS.ERP_SOFTWARE.fontSize }} data-testid="Typography__b08f17">
+            {t("grid.items.erp.text")}
+          </Typography>
         </Box>
       </GridItem>
-      <GridItem bgColor={ITEMS.LOGO.color}>
-        <Box component="img" src={EtendoImg} alt={t("grid.alt.logo")} sx={styles.gridImage} />
+      <GridItem bgColor={ITEMS.LOGO.color} data-testid="GridItem__b08f17">
+        <Box component="img" src={EtendoImg} alt={t("grid.alt.logo")} sx={styles.gridImage} data-testid="Box__b08f17" />
       </GridItem>
-      <GridItem bgColor={ITEMS.TAILORED.color}>
-        <Box sx={styles.gridTextYellow}>
-          <Typography sx={{ fontSize: ITEMS.TAILORED.fontSize }}>{t("grid.items.tailored.text")}</Typography>
+      <GridItem bgColor={ITEMS.TAILORED.color} data-testid="GridItem__b08f17">
+        <Box sx={styles.gridTextYellow} data-testid="Box__b08f17">
+          <Typography sx={{ fontSize: ITEMS.TAILORED.fontSize }} data-testid="Typography__b08f17">
+            {t("grid.items.tailored.text")}
+          </Typography>
         </Box>
       </GridItem>
-      <GridItem />
-      <GridItem bgColor={ITEMS.HIGHLY_ADAPTABLE.color}>
-        <Box sx={styles.gridTextYellow}>
-          <Typography sx={{ fontSize: ITEMS.HIGHLY_ADAPTABLE.fontSize }}>{t("grid.items.adaptable.text")}</Typography>
+      <GridItem data-testid="GridItem__b08f17" />
+      <GridItem bgColor={ITEMS.HIGHLY_ADAPTABLE.color} data-testid="GridItem__b08f17">
+        <Box sx={styles.gridTextYellow} data-testid="Box__b08f17">
+          <Typography sx={{ fontSize: ITEMS.HIGHLY_ADAPTABLE.fontSize }} data-testid="Typography__b08f17">
+            {t("grid.items.adaptable.text")}
+          </Typography>
         </Box>
       </GridItem>
-      <GridItem />
-      <GridItem />
+      <GridItem data-testid="GridItem__b08f17" />
+      <GridItem data-testid="GridItem__b08f17" />
     </Box>
   );
 };

@@ -163,16 +163,15 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
                 className="bg-transparent border-0 cursor-pointer p-0.5 flex items-center justify-center min-w-5 min-h-5 rounded-full shadow-[0px_2.5px_6.25px_0px_rgba(0,3,13,0.1)]">
                 {canExpand ? (
                   isExpanded ? (
-                    <ChevronUp height={12} width={12} fill={"#3F4A7E"} />
+                    <ChevronUp height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronUp__8ca888" />
                   ) : (
-                    <ChevronDown height={12} width={12} fill={"#3F4A7E"} />
+                    <ChevronDown height={12} width={12} fill={"#3F4A7E"} data-testid="ChevronDown__8ca888" />
                   )
                 ) : null}
               </button>
             ) : (
               <div className="w-5 h-5" />
             )}
-
             <div className="relative flex items-end">
               <input
                 type="checkbox"
@@ -183,11 +182,16 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
                 }}
                 className="min-w-4 min-h-4 cursor-pointer rounded border-[1.67px] border-[rgba(0,3,13,0.4)] appearance-none bg-white checked:bg-[#004ACA] checked:border-[#004ACA]"
               />
-              {isSelected && <CheckIcon className="absolute top-0.5 left-0.5 w-3 h-3 pointer-events-none fill-white" />}
+              {isSelected && (
+                <CheckIcon
+                  className="absolute top-0.5 left-0.5 w-3 h-3 pointer-events-none fill-white"
+                  data-testid="CheckIcon__8ca888"
+                />
+              )}
             </div>
-
-            {HierarchyIcon && <HierarchyIcon className="min-w-5 min-h-5" fill={"#004ACA"} />}
-
+            {HierarchyIcon && (
+              <HierarchyIcon className="min-w-5 min-h-5" fill={"#004ACA"} data-testid="HierarchyIcon__8ca888" />
+            )}
             <span className="flex-1">
               {originalCell && typeof originalCell === "function"
                 ? originalCell({ renderedCellValue, row, table })
@@ -292,7 +296,9 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   );
 
   const renderEmptyRowsFallback = useCallback(
-    ({ table }: { table: MRT_TableInstance<EntityData> }) => <EmptyState table={table} />,
+    ({ table }: { table: MRT_TableInstance<EntityData> }) => (
+      <EmptyState table={table} data-testid="EmptyState__8ca888" />
+    ),
     []
   );
 
@@ -513,7 +519,13 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
   if (error) {
     return (
-      <ErrorDisplay title={t("errors.tableError.title")} description={error?.message} showRetry onRetry={refetch} />
+      <ErrorDisplay
+        title={t("errors.tableError.title")}
+        description={error?.message}
+        showRetry
+        onRetry={refetch}
+        data-testid="ErrorDisplay__8ca888"
+      />
     );
   }
 
@@ -529,24 +541,18 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   }
 
   return (
-    <>
-      {shouldUseTreeMode && (
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-      )}
-      <div
-        className={`h-full overflow-hidden rounded-3xl transition-opacity ${
-          loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
-        }`}>
-        <MaterialReactTable table={table} />
-
-        <ColumnVisibilityMenu anchorEl={columnMenuAnchor} onClose={handleCloseColumnMenu} table={table} />
-      </div>
-    </>
+    <div
+      className={`h-full overflow-hidden rounded-3xl transition-opacity ${
+        loading ? "opacity-60 cursor-progress cursor-to-children" : "opacity-100"
+      }`}>
+      <MaterialReactTable table={table} data-testid="MaterialReactTable__8ca888" />
+      <ColumnVisibilityMenu
+        anchorEl={columnMenuAnchor}
+        onClose={handleCloseColumnMenu}
+        table={table}
+        data-testid="ColumnVisibilityMenu__8ca888"
+      />
+    </div>
   );
 };
 
