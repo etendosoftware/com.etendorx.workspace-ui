@@ -67,22 +67,20 @@ async function fetchDatasource(
     body: formData,
   });
 
-  const parsed = await response.json().catch(async () => {
-    // fallback to text
-    const txt = await response.text();
-    try {
-      return JSON.parse(txt);
-    } catch {
-      return { text: txt };
-    }
-  });
+  // Read body ONCE and reuse it (avoid double consumption of stream)
+  const raw = await response.text();
+  let parsed: unknown;
+  try {
+    parsed = raw ? JSON.parse(raw) : null;
+  } catch {
+    parsed = { text: raw };
+  }
 
   if (!response.ok) {
     // return a small wrapper so the caller can forward status and body
-    return { __error: true, status: response.status, body: parsed };
+    return { response, data: parsed, __error: true, status: response.status, body: parsed } as const;
   }
-  const data = await response.json();
-  return { response, data };
+  return { response, data: parsed } as const;
 }
 
 async function fetchDatasourceJson(
@@ -120,20 +118,19 @@ async function fetchDatasourceJson(
     body: JSON.stringify(processedParams),
   });
 
-  const parsed = await response.json().catch(async () => {
-    const txt = await response.text();
-    try {
-      return JSON.parse(txt);
-    } catch {
-      return { text: txt };
-    }
-  });
+  // Read body ONCE and reuse it (avoid double consumption of stream)
+  const raw = await response.text();
+  let parsed: unknown;
+  try {
+    parsed = raw ? JSON.parse(raw) : null;
+  } catch {
+    parsed = { text: raw };
+  }
 
   if (!response.ok) {
-    return { __error: true, status: response.status, body: parsed };
+    return { response, data: parsed, __error: true, status: response.status, body: parsed } as const;
   }
-  const data = await response.json();
-  return { response, data };
+  return { response, data: parsed } as const;
 }
 
 function isSmartClientPayload(params: DatasourceRequestParams): params is SmartClientPayload {

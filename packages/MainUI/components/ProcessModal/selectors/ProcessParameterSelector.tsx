@@ -12,7 +12,7 @@ import { PasswordSelector } from "@/components/Form/FormView/selectors/PasswordS
 import { BooleanSelector } from "@/components/Form/FormView/selectors/BooleanSelector";
 import { NumericSelector } from "@/components/Form/FormView/selectors/NumericSelector";
 import { DateSelector } from "@/components/Form/FormView/selectors/DateSelector";
-import { DatetimeSelector } from "@/components/Form/FormView/selectors/DatetimeSelector";
+import DatetimeSelector from "@/components/Form/FormView/selectors/DatetimeSelector";
 import { SelectSelector } from "@/components/Form/FormView/selectors/SelectSelector";
 import { TableDirSelector } from "@/components/Form/FormView/selectors/TableDirSelector";
 import QuantitySelector from "@/components/Form/FormView/selectors/QuantitySelector";
