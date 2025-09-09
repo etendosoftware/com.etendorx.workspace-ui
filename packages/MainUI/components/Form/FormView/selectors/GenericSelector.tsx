@@ -25,6 +25,7 @@ import { NumericSelector } from "./NumericSelector";
 import QuantitySelector from "./QuantitySelector";
 import { SelectSelector } from "./SelectSelector";
 import { StringSelector } from "./StringSelector";
+import { TextLongSelector } from "./TextLongSelector";
 import { PasswordSelector } from "./PasswordSelector";
 import { TableDirSelector } from "./TableDirSelector";
 import DatetimeSelector from "./DatetimeSelector";
@@ -37,6 +38,7 @@ export type GenericSelectorProps = {
 
 const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   const { reference } = field.column;
+  console.debug(field.column);
   switch (reference) {
     case FIELD_REFERENCE_CODES.PASSWORD:
       return <PasswordSelector field={field} readOnly={isReadOnly} data-testid="PasswordSelector__6e80fa" />;
@@ -79,6 +81,8 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
       return (
         <NumericSelector field={field} type="integer" readOnly={isReadOnly} data-testid="NumericSelector__6e80fa" />
       );
+    case FIELD_REFERENCE_CODES.TEXT_LONG:
+      return <TextLongSelector field={field} readOnly={isReadOnly} data-testid="TextLongSelector__6e80fa" />;
     default:
       return <StringSelector field={field} readOnly={isReadOnly} data-testid="StringSelector__6e80fa" />;
   }
