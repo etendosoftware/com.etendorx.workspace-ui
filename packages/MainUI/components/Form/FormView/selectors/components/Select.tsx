@@ -1,4 +1,5 @@
 import {
+  handleKeyboardActivation,
   useFocusHandler,
   useHoverHandlers,
   useInfiniteScroll,
@@ -11,6 +12,8 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useFormContext } from "react-hook-form";
 import CheckIcon from "../../../../../../ComponentLibrary/src/assets/icons/check-circle-filled.svg";
+import ChevronDown from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
+import XIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import type { SelectProps } from "./types";
 
 const useDropdownPosition = (
