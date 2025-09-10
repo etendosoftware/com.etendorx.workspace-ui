@@ -23,7 +23,7 @@ import {
   testEdgeCases,
   renderWithWrapper,
   testDecimalInput,
-} from "./test-utils/decimal-test-helpers";
+} from "../test-utils/decimal-test-helpers";
 
 const mockField = createMockField(FIELD_REFERENCES.QUANTITY_22, "progress");
 

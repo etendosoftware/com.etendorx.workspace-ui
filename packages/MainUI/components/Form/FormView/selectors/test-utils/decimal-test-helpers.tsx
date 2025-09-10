@@ -36,19 +36,20 @@ export const TestWrapper = ({ children, defaultValues = {} }: TestWrapperProps) 
   return <FormProvider {...methods}>{children}</FormProvider>;
 };
 
-export const createMockField = (reference: string, hqlName: string = "testField"): Field => ({
-  hqlName,
-  id: "test-field",
-  name: "Test Field",
-  column: {
-    reference,
-  },
-  isMandatory: false,
-} as Field);
+export const createMockField = (reference: string, hqlName = "testField"): Field =>
+  ({
+    hqlName,
+    id: "test-field",
+    name: "Test Field",
+    column: {
+      reference,
+    },
+    isMandatory: false,
+  }) as unknown as Field;
 
 export const FIELD_REFERENCES = {
   DECIMAL: "800008",
-  INTEGER: "11", 
+  INTEGER: "11",
   QUANTITY_22: "22",
 } as const;
 
@@ -69,7 +70,7 @@ export const testBasicDecimalInputs = (component: React.ReactNode) => {
       const input = renderWithWrapper(component);
       testDecimalInput(input, "123.45", "123.45");
     },
-    testCommaInput: (expectedNormalized: string = "123.45") => {
+    testCommaInput: (expectedNormalized = "123.45") => {
       const input = renderWithWrapper(component);
       testDecimalInput(input, "123,45", expectedNormalized);
     },
@@ -77,7 +78,7 @@ export const testBasicDecimalInputs = (component: React.ReactNode) => {
       const input = renderWithWrapper(component);
       fireEvent.change(input, { target: { value: inputValue } });
       expectedBehavior();
-    }
+    },
   };
 };
 
@@ -99,6 +100,6 @@ export const testEdgeCases = (component: React.ReactNode) => {
     testValueStartingWithDecimal: (expectedValue: string) => {
       const input = renderWithWrapper(component);
       testDecimalInput(input, ".5", expectedValue);
-    }
+    },
   };
 };
