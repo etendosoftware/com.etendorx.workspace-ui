@@ -38,7 +38,6 @@ export type GenericSelectorProps = {
 
 const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
   const { reference } = field.column;
-  console.debug(field.column);
   switch (reference) {
     case FIELD_REFERENCE_CODES.PASSWORD:
       return <PasswordSelector field={field} readOnly={isReadOnly} data-testid="PasswordSelector__6e80fa" />;
@@ -74,6 +73,7 @@ const GenericSelectorCmp = ({ field, isReadOnly }: GenericSelectorProps) => {
       }
       return <SelectSelector field={field} isReadOnly={isReadOnly} data-testid="SelectSelector__6e80fa" />;
     case FIELD_REFERENCE_CODES.DECIMAL:
+    case FIELD_REFERENCE_CODES.NUMERIC:
       return (
         <NumericSelector field={field} type="decimal" readOnly={isReadOnly} data-testid="NumericSelector__6e80fa" />
       );

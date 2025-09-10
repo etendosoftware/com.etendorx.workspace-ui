@@ -19,6 +19,7 @@ import type { Field } from "@workspaceui/api-client/src/api/types";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
+import { useLanguage } from "@/contexts/language";
 import { TextInput } from "./components/TextInput";
 
 type NumericType = "integer" | "decimal";
@@ -28,8 +29,14 @@ interface UnifiedNumericSelectorProps extends React.ComponentProps<typeof TextIn
   type?: NumericType;
 }
 
+interface NumericSelectorProps extends React.ComponentProps<typeof TextInput> {
+  field: Field;
+  type?: NumericType;
+}
+
 export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: UnifiedNumericSelectorProps) => {
   const { register, setValue, watch, formState } = useFormContext();
+  const { language } = useLanguage();
   const formValue = watch(field.hqlName);
   const [localValue, setLocalValue] = useState(formValue === null || formValue === undefined ? "" : String(formValue));
   const [isFocused, setIsFocused] = useState(false);
@@ -37,17 +44,40 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
 
   const isInteger = type === "integer" || field.column.reference === "11";
 
+  const getDecimalSeparator = useCallback(() => {
+    return language === "es_ES" ? "," : ".";
+  }, [language]);
+
+  const normalizeDecimalInput = useCallback((value: string): string => {
+    return value.replace(",", ".");
+  }, []);
+
+  const formatDisplayValue = useCallback(
+    (value: number): string => {
+      if (isInteger) {
+        return String(value);
+      }
+      const separator = getDecimalSeparator();
+      return String(value).replace(".", separator);
+    },
+    [isInteger, getDecimalSeparator]
+  );
+
   useEffect(() => {
     if (!isFocused) {
-      setLocalValue(formValue === null || formValue === undefined ? "" : String(formValue));
+      if (formValue === null || formValue === undefined) {
+        setLocalValue("");
+      } else {
+        setLocalValue(formatDisplayValue(Number(formValue)));
+      }
     }
-  }, [formValue, isFocused]);
+  }, [formValue, isFocused, formatDisplayValue]);
 
   const getValidationRegex = useCallback(() => {
     if (isInteger) {
       return /^-?\d*$/;
     }
-    return /^-?(?:\d+\.?\d*|\.\d+)$/;
+    return /^-?(?:\d+[.,]?\d*|[.,]\d+)$/;
   }, [isInteger]);
 
   const parseValue = useCallback(
@@ -58,11 +88,11 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
 
       const stringValue = String(value).trim();
 
-      if (stringValue === "" || stringValue === "-" || stringValue === ".") {
+      if (stringValue === "" || stringValue === "-" || stringValue === "." || stringValue === ",") {
         return field.isMandatory || props.required ? 0 : null;
       }
 
-      const normalizedValue = stringValue.replace(",", ".");
+      const normalizedValue = normalizeDecimalInput(stringValue);
 
       const numericValue = isInteger ? Number.parseInt(normalizedValue, 10) : Number.parseFloat(normalizedValue);
 
@@ -72,7 +102,7 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
 
       return numericValue;
     },
-    [isInteger, field.isMandatory, props.required]
+    [isInteger, field.isMandatory, props.required, normalizeDecimalInput]
   );
 
   const handleClear = useCallback(() => {
@@ -92,7 +122,15 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
       if (isInteger) {
         value = value.replace(/[^\d.-]/g, "");
         value = value.replace(/(?!^)-/g, "");
-        value = value.replace(/\./g, "");
+        value = value.replace(/[.,]/g, "");
+      } else {
+        value = value.replace(/[^\d.,-]/g, "");
+        value = value.replace(/(?!^)-/g, "");
+
+        const separatorCount = (value.match(/[.,]/g) || []).length;
+        if (separatorCount > 1) {
+          return;
+        }
       }
 
       const regex = getValidationRegex();
@@ -133,14 +171,14 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
       if (parsedValue === null) {
         setLocalValue("");
       } else {
-        setLocalValue(String(parsedValue));
+        setLocalValue(formatDisplayValue(parsedValue));
       }
 
       if (props.onBlur) {
         props.onBlur(event);
       }
     },
-    [localValue, parseValue, field.hqlName, setValue, props]
+    [localValue, parseValue, field.hqlName, setValue, props, formatDisplayValue]
   );
 
   const registerProps = register(field.hqlName);
@@ -156,15 +194,13 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
       onClear={handleClear}
       value={localValue}
       ref={registerProps.ref}
-      inputMode={isInteger ? "numeric" : "decimal"}
-      pattern={isInteger ? "^-?\\d*$" : "^-?(?:\\d+\\.?\\d*|\\.\\d+)$"}
       data-testid="TextInput__329fab"
     />
   );
 };
 
-export const NumericSelector = (props: { field: Field } & React.ComponentProps<typeof TextInput>) => (
-  <UnifiedNumericSelector {...props} type="decimal" data-testid="UnifiedNumericSelector__329fab" />
+export const NumericSelector = ({ type = "decimal", ...props }: NumericSelectorProps) => (
+  <UnifiedNumericSelector {...props} type={type} data-testid="UnifiedNumericSelector__329fab" />
 );
 
 export const IntegerSelector = (props: { field: Field } & React.ComponentProps<typeof TextInput>) => (
