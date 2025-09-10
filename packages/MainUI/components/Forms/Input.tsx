@@ -92,6 +92,7 @@ const Input: FC<InputProps> = ({
                 isFocused ? "fill-(--color-baseline-100)" : "fill-(--color-transparent-neutral-60)"
               }`}
               data-testid="Icon__ce3099"
+              tabIndex={-1}
             />
           </div>
         )}
@@ -110,6 +111,7 @@ const Input: FC<InputProps> = ({
           <button
             type="button"
             onClick={handleClear}
+            tabIndex={-1}
             className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors">
             <X
               className={`h-4 w-4 transition-colors ${
@@ -123,6 +125,7 @@ const Input: FC<InputProps> = ({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
+            tabIndex={-1}
             className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors">
             {showPassword ? (
               <EyeOff
