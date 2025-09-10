@@ -34,6 +34,7 @@ import { GenericSelector } from "./GenericSelector";
 import useDisplayLogic from "@/hooks/useDisplayLogic";
 import { useFormInitializationContext } from "@/contexts/FormInitializationContext";
 import useFormParent from "@/hooks/useFormParent";
+import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import Asterisk from "../../../../../ComponentLibrary/src/assets/icons/asterisk.svg";
 
 export const compileExpression = (expression: string) => {
@@ -299,8 +300,13 @@ const BaseSelectorComp = ({ field, formMode = FormMode.EDIT }: { field: Field; f
   }, []);
 
   if (isDisplayed) {
+    const isTextLong = field.column.reference === FIELD_REFERENCE_CODES.TEXT_LONG;
+    const containerClasses = isTextLong ? "row-span-3 flex items-start pt-2" : "h-12 flex items-center";
+
     return (
-      <div className="h-12 flex items-center title={field.helpComment || ''} aria-describedby={field.helpComment ? `${field.name}-help` : ''}">
+      <div
+        className={`${containerClasses} title={field.helpComment || ''}`}
+        aria-describedby={field.helpComment ? `${field.name}-help` : ""}>
         <div className="w-1/3 flex items-center gap-2 pr-2">
           <Label field={field} data-testid="Label__38060a" />
           {field.isMandatory && (
