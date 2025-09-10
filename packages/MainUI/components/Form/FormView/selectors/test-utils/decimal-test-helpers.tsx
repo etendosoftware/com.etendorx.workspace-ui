@@ -98,7 +98,7 @@ export const testEdgeCases = (component: React.ReactNode) => {
       if (customAssertion) {
         customAssertion();
       } else {
-        expect(input.value).toBeDefined();
+        expect((input as HTMLInputElement).value).toBeDefined();
       }
     },
     testValueStartingWithDecimal: (expectedValue: string) => {
