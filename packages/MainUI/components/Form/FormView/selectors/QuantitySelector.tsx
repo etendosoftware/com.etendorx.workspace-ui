@@ -27,23 +27,26 @@ export const QuantitySelector = ({ field, min, max }: QuantitySelectorProps) => 
     return value.replace(",", ".");
   }, []);
 
-  const formatDisplayValue = useCallback((value: number): string => {
-    const separator = getDecimalSeparator();
-    return String(value).replace(".", separator);
-  }, [getDecimalSeparator]);
-  
+  const formatDisplayValue = useCallback(
+    (value: number): string => {
+      const separator = getDecimalSeparator();
+      return String(value).replace(".", separator);
+    },
+    [getDecimalSeparator]
+  );
+
   const getDisplayValue = useCallback(() => {
     if (isFocused) {
       return localValue;
     }
-    
+
     if (formValue !== null && formValue !== undefined) {
       return formatDisplayValue(Number(formValue));
     }
-    
+
     return "";
   }, [isFocused, localValue, formValue, formatDisplayValue]);
-  
+
   const displayValue = getDisplayValue();
 
   useEffect(() => {
@@ -53,38 +56,32 @@ export const QuantitySelector = ({ field, min, max }: QuantitySelectorProps) => 
   }, [formValue, isFocused, displayValue]);
 
   const isValidIntermediateValue = useCallback((value: string): boolean => {
-    // Safe regex without backtracking - matches: optional minus, digits, optional separator, optional digits
     return /^-?\d*[.,]?\d*$/.test(value);
   }, []);
 
   const handleSetValue = useCallback(
     (value: string) => {
       const sanitized = value.replace(/[^\d.,-]/g, "");
-      
-      // Update local value immediately for display
+
       setLocalValue(sanitized);
-      
-      // Only validate and update form when value is complete or empty
+
       if (sanitized === "") {
         setValue(fieldName, null, { shouldValidate: true });
         return;
       }
-      
-      // Allow intermediate values while typing
+
       if (!isValidIntermediateValue(sanitized)) {
         return;
       }
-      
-      // For complete values, validate and update
+
       const normalizedValue = normalizeDecimalInput(sanitized);
-      
-      // Skip validation for obviously incomplete values
-      if (normalizedValue.endsWith('.') || normalizedValue === '' || normalizedValue === '-') {
+
+      if (normalizedValue.endsWith(".") || normalizedValue === "" || normalizedValue === "-") {
         return;
       }
-      
+
       const { isValid } = validateNumber(normalizedValue, min ? Number(min) : undefined, max ? Number(max) : undefined);
-      
+
       if (isValid) {
         setValue(fieldName, Number(normalizedValue), { shouldValidate: true });
       }
@@ -98,17 +95,16 @@ export const QuantitySelector = ({ field, min, max }: QuantitySelectorProps) => 
 
   const handleBlur = useCallback(() => {
     setIsFocused(false);
-    
-    // Validate and finalize the value on blur
+
     const normalizedValue = normalizeDecimalInput(localValue);
-    
+
     if (normalizedValue === "" || normalizedValue === "-") {
       setValue(fieldName, null, { shouldValidate: true });
       return;
     }
-    
+
     const { isValid } = validateNumber(normalizedValue, min ? Number(min) : undefined, max ? Number(max) : undefined);
-    
+
     if (isValid) {
       setValue(fieldName, Number(normalizedValue), { shouldValidate: true });
     }
