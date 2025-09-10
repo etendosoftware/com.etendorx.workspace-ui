@@ -77,7 +77,6 @@ export const UnifiedNumericSelector = ({ field, type = "decimal", ...props }: Un
     if (isInteger) {
       return /^-?\d*$/;
     }
-    // Safe regex that avoids backtracking vulnerabilities
     return /^-?(?:\d*[.,]?\d*|[.,]\d+)$/;
   }, [isInteger]);
 

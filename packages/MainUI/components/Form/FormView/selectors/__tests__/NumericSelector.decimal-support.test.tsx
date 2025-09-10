@@ -15,9 +15,16 @@
  *************************************************************************
  */
 
-import { render, screen, fireEvent } from "@testing-library/react";
 import { UnifiedNumericSelector } from "../NumericSelector";
-import { TestWrapper, createMockField, FIELD_REFERENCES } from "./test-utils/decimal-test-helpers";
+import { 
+  TestWrapper, 
+  createMockField, 
+  FIELD_REFERENCES, 
+  testBasicDecimalInputs, 
+  testEdgeCases,
+  renderWithWrapper,
+  testDecimalInput
+} from "./test-utils/decimal-test-helpers";
 
 const mockField = createMockField(FIELD_REFERENCES.DECIMAL, "amount");
 
@@ -27,44 +34,18 @@ describe("NumericSelector - Decimal Separator Support", () => {
   });
 
   describe("Basic decimal support", () => {
-    it("should accept decimal values with dot", () => {
-      render(
-        <TestWrapper>
-          <UnifiedNumericSelector field={mockField} type="decimal" />
-        </TestWrapper>
-      );
+    const component = <UnifiedNumericSelector field={mockField} type="decimal" />;
+    const basicTests = testBasicDecimalInputs(component);
 
-      const input = screen.getByRole("textbox");
-      fireEvent.change(input, { target: { value: "123.45" } });
+    it("should accept decimal values with dot", basicTests.testDotInput);
 
-      expect(input).toHaveValue("123.45");
-    });
-
-    it("should accept comma input and normalize to dot", () => {
-      render(
-        <TestWrapper>
-          <UnifiedNumericSelector field={mockField} type="decimal" />
-        </TestWrapper>
-      );
-
-      const input = screen.getByRole("textbox");
-      fireEvent.change(input, { target: { value: "123,45" } });
-
-      expect(input).toHaveValue("123.45");
-    });
+    it("should accept comma input and normalize to dot", () => basicTests.testCommaInput());
 
     it("should process intermediate values during typing", () => {
-      render(
-        <TestWrapper>
-          <UnifiedNumericSelector field={mockField} type="decimal" />
-        </TestWrapper>
-      );
-
-      const input = screen.getByRole("textbox");
-      
-      // Test intermediate state with trailing dot gets processed
-      fireEvent.change(input, { target: { value: "123." } });
-      expect(input).toHaveValue("123");
+      basicTests.testIntermediateValues("123.", () => {
+        const input = document.querySelector('input') as HTMLInputElement;
+        expect(input).toHaveValue("123");
+      });
     });
   });
 
@@ -72,44 +53,24 @@ describe("NumericSelector - Decimal Separator Support", () => {
     const integerField = createMockField(FIELD_REFERENCES.INTEGER, "integerAmount");
 
     it("should strip decimal separators for integer fields", () => {
-      render(
-        <TestWrapper>
-          <UnifiedNumericSelector field={integerField} type="integer" />
-        </TestWrapper>
-      );
-
-      const input = screen.getByRole("textbox");
-      fireEvent.change(input, { target: { value: "123.45" } });
-
-      expect(input).toHaveValue("12345");
+      const input = renderWithWrapper(<UnifiedNumericSelector field={integerField} type="integer" />);
+      testDecimalInput(input, "123.45", "12345");
     });
   });
 
   describe("Validation edge cases", () => {
+    const component = <UnifiedNumericSelector field={mockField} type="decimal" />;
+    const edgeCaseTests = testEdgeCases(component);
+
     it("should allow negative values", () => {
-      render(
-        <TestWrapper>
-          <UnifiedNumericSelector field={mockField} type="decimal" />
-        </TestWrapper>
-      );
-
-      const input = screen.getByRole("textbox");
-      fireEvent.change(input, { target: { value: "-123.45" } });
-
-      expect(input).toHaveValue("-123.45");
+      edgeCaseTests.testNegativeValue("-123.45", () => {
+        const input = document.querySelector('input') as HTMLInputElement;
+        expect(input).toHaveValue("-123.45");
+      });
     });
 
     it("should normalize values starting with decimal separator", () => {
-      render(
-        <TestWrapper>
-          <UnifiedNumericSelector field={mockField} type="decimal" />
-        </TestWrapper>
-      );
-
-      const input = screen.getByRole("textbox");
-      fireEvent.change(input, { target: { value: ".5" } });
-
-      expect(input).toHaveValue("0.5");
+      edgeCaseTests.testValueStartingWithDecimal("0.5");
     });
   });
 });

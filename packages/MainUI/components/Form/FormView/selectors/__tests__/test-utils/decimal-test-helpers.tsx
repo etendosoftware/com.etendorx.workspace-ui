@@ -16,6 +16,7 @@
  */
 
 import { FormProvider, useForm } from "react-hook-form";
+import { render, screen, fireEvent } from "@testing-library/react";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 
 // Mock the language context to avoid Provider issues
@@ -50,3 +51,54 @@ export const FIELD_REFERENCES = {
   INTEGER: "11", 
   QUANTITY_22: "22",
 } as const;
+
+// Shared test utilities to reduce code duplication
+export const renderWithWrapper = (component: React.ReactNode) => {
+  render(<TestWrapper>{component}</TestWrapper>);
+  return screen.getByRole("textbox");
+};
+
+export const testDecimalInput = (input: HTMLElement, inputValue: string, expectedValue: string) => {
+  fireEvent.change(input, { target: { value: inputValue } });
+  expect(input).toHaveValue(expectedValue);
+};
+
+export const testBasicDecimalInputs = (component: React.ReactNode) => {
+  return {
+    testDotInput: () => {
+      const input = renderWithWrapper(component);
+      testDecimalInput(input, "123.45", "123.45");
+    },
+    testCommaInput: (expectedNormalized: string = "123.45") => {
+      const input = renderWithWrapper(component);
+      testDecimalInput(input, "123,45", expectedNormalized);
+    },
+    testIntermediateValues: (inputValue: string, expectedBehavior: () => void) => {
+      const input = renderWithWrapper(component);
+      fireEvent.change(input, { target: { value: inputValue } });
+      expectedBehavior();
+    }
+  };
+};
+
+export const testEdgeCases = (component: React.ReactNode) => {
+  return {
+    testEmptyValue: () => {
+      const input = renderWithWrapper(component);
+      testDecimalInput(input, "", "");
+    },
+    testNegativeValue: (inputValue: string, customAssertion?: () => void) => {
+      const input = renderWithWrapper(component);
+      fireEvent.change(input, { target: { value: inputValue } });
+      if (customAssertion) {
+        customAssertion();
+      } else {
+        expect(input.value).toBeDefined();
+      }
+    },
+    testValueStartingWithDecimal: (expectedValue: string) => {
+      const input = renderWithWrapper(component);
+      testDecimalInput(input, ".5", expectedValue);
+    }
+  };
+};

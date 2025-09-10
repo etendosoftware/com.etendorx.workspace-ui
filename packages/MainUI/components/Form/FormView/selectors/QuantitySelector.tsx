@@ -53,9 +53,8 @@ export const QuantitySelector = ({ field, min, max }: QuantitySelectorProps) => 
   }, [formValue, isFocused, displayValue]);
 
   const isValidIntermediateValue = useCallback((value: string): boolean => {
-    // Allow empty, negative sign, numbers, and decimal separators
-    // Simplified regex to avoid complexity warnings
-    return /^-?(?:\d*[.,]?\d*)?$/.test(value);
+    // Safe regex that avoids backtracking vulnerabilities
+    return /^-?(?:\d*[.,]?\d*|[.,]\d+)?$/.test(value);
   }, []);
 
   const handleSetValue = useCallback(
