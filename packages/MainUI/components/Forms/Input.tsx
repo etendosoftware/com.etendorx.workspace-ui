@@ -8,7 +8,7 @@ interface InputProps extends ComponentProps<"input"> {
   label?: string;
   required?: boolean;
   icon?: ComponentType<SVGProps<SVGSVGElement>>;
-  clearable?: boolean; // Nueva prop para habilitar/deshabilitar el botón clear
+  clearable?: boolean;
 }
 
 const Input: FC<InputProps> = ({
@@ -21,7 +21,7 @@ const Input: FC<InputProps> = ({
   icon: Icon,
   className,
   id,
-  clearable = true, // Por defecto habilitado
+  clearable = true,
   ...props
 }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -32,11 +32,9 @@ const Input: FC<InputProps> = ({
 
   const inputId = id || generatedId;
 
-  // Verificar si hay contenido para mostrar el botón clear
   const hasValue = value && value.toString().length > 0;
   const showClearButton = clearable && hasValue && !isPassword;
 
-  // Calcular el padding derecho basado en los botones que se muestran
   const getRightPadding = () => {
     if (isPassword) return "pr-12";
     if (showClearButton) return "pr-10";
