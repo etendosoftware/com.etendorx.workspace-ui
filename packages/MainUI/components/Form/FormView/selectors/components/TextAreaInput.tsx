@@ -24,6 +24,12 @@ export const TextAreaInput = ({
   const [isFocused, setIsFocused] = useState(false);
   const isDisabled = disabled || readOnly;
 
+  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    if (onChange) {
+      onChange(e);
+    }
+  };
+
   const labelClassNames = useMemo(() => {
     const base = "flex items-center gap-1 font-medium text-sm leading-5 tracking-normal transition-colors";
 
@@ -42,7 +48,7 @@ export const TextAreaInput = ({
     const paddingLeft = leftIcon ? "pl-10" : "pl-3";
     const paddingRight = showClearButton || rightIcon ? "pr-10" : "pr-3";
 
-    const base = `w-full ${paddingLeft} ${paddingRight} py-2 rounded-t tracking-normal resize-y 
+    const baseClasses = `w-full ${paddingLeft} ${paddingRight} py-2 rounded-t tracking-normal resize-none
       border-0 border-b-2 bg-(--color-transparent-neutral-5) border-(--color-transparent-neutral-30) 
       text-(--color-transparent-neutral-80) font-medium text-sm leading-5 
       focus:border-[#004ACA] focus:text-[#004ACA] focus:bg-[#E5EFFF] focus:outline-none 
@@ -50,14 +56,8 @@ export const TextAreaInput = ({
 
     const disabledStyles =
       "bg-transparent rounded-t-lg cursor-not-allowed border-b-2 border-dotted border-(--color-transparent-neutral-40)";
-    return isDisabled ? `${base} ${disabledStyles}` : base;
+    return isDisabled ? `${baseClasses} ${disabledStyles}` : baseClasses;
   }, [leftIcon, showClearButton, rightIcon, isDisabled]);
-
-  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    if (onChange) {
-      onChange(e);
-    }
-  };
 
   const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
     setIsFocused(true);

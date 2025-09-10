@@ -34,7 +34,7 @@ export const TextLongSelector = (props: { field: Field } & React.ComponentProps<
       setValue={handleSetValue}
       showClearButton={true}
       value={currentValue}
-      rows={2}
+      rows={7}
       data-testid="TextAreaInput__1e890e"
     />
   );
