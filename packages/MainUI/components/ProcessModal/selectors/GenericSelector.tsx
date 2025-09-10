@@ -24,7 +24,6 @@ const GenericSelector = ({ parameter, readOnly }: { parameter: ProcessParameter;
   const { register, watch } = useFormContext();
   const reference = getFieldReference(parameter.reference);
 
-  // Get the identifier for display (if available)
   const identifierValue = watch(`${parameter.name}$_identifier`);
   const fieldValue = watch(parameter.name);
 
