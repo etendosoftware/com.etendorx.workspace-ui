@@ -67,6 +67,12 @@ export const TextInput = ({
     setIsFocused(false);
     if (props.onBlur) props.onBlur(e);
   };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (props.onKeyDown) {
+      props.onKeyDown(e);
+    }
+  };
   const handleClear = () => {
     if (setValue) {
       setValue(""); // <-- solo si setValue está adaptado
@@ -104,6 +110,7 @@ export const TextInput = ({
           onChange={handleChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
           {...props}
         />
 
