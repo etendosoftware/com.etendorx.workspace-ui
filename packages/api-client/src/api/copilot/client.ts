@@ -38,9 +38,9 @@ export class CopilotClient {
    * Uses Next.js proxy instead of direct ERP connection
    */
   public static setBaseUrl(etendoUrl: string) {
-    // Instead of connecting directly to ERP, use Next.js API route
+    // Use existing ERP proxy route that handles all Classic forwarding
     const proxyUrl =
-      typeof window !== "undefined" ? `${window.location.origin}/api/copilot` : "http://localhost:3000/api/copilot";
+      typeof window !== "undefined" ? `${window.location.origin}/api/erp` : "http://localhost:3000/api/erp";
 
     CopilotClient.currentBaseUrl = proxyUrl;
     CopilotClient.client.setBaseUrl(proxyUrl);
@@ -51,12 +51,7 @@ export class CopilotClient {
    * Sets authentication token for all requests
    */
   public static setToken(token: string) {
-    if (!isProduction()) {
-      CopilotClient.client.setAuthHeader(btoa("admin:admin"), "Basic");
-    } else {
-      CopilotClient.client.setAuthHeader(token, "Bearer");
-    }
-
+    CopilotClient.client.setAuthHeader(token, "Bearer");
     return CopilotClient;
   }
 
@@ -292,20 +287,16 @@ export class CopilotClient {
 
   /**
    * Gets headers for SSE connections
-   * Handles environment-specific authentication
+   * Uses the configured authentication token
    */
   public static getSSEHeaders(): Record<string, string> {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      Accept: "text/event-stream",
+    };
 
-    if (!isProduction()) {
-      headers.Authorization = `Basic ${btoa("admin:admin")}`;
-      headers.Accept = "text/event-stream";
-    } else {
-      const authHeader = CopilotClient.client.getAuthHeader();
-      if (authHeader) {
-        headers.Authorization = authHeader;
-      }
-      headers.Accept = "text/event-stream";
+    const authHeader = CopilotClient.client.getAuthHeader();
+    if (authHeader) {
+      headers.Authorization = authHeader;
     }
 
     return headers;

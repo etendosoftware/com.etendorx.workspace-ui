@@ -33,7 +33,11 @@ export interface TestWrapperProps {
 
 export const TestWrapper = ({ children, defaultValues = {} }: TestWrapperProps) => {
   const methods = useForm({ defaultValues });
-  return <FormProvider {...methods}>{children}</FormProvider>;
+  return (
+    <FormProvider {...methods} data-testid="FormProvider__db692f">
+      {children}
+    </FormProvider>
+  );
 };
 
 export const createMockField = (reference: string, hqlName = "testField"): Field =>
@@ -55,7 +59,7 @@ export const FIELD_REFERENCES = {
 
 // Shared test utilities to reduce code duplication
 export const renderWithWrapper = (component: React.ReactNode) => {
-  render(<TestWrapper>{component}</TestWrapper>);
+  render(<TestWrapper data-testid="TestWrapper__db692f">{component}</TestWrapper>);
   return screen.getByRole("textbox");
 };
 
