@@ -27,7 +27,9 @@ jobs:
       - name: Get branch name or tag name
         run: |
           if [ "${{ github.ref_type }}" == "tag" ]; then
-            BRANCH_NAME="${{ github.ref_name#v }}"
+            # Remove 'v' prefix from tag name if it exists
+            TAG_NAME="${{ github.ref_name }}"
+            BRANCH_NAME="${TAG_NAME#v}"
           elif [ "${{ github.ref_name }}" == "develop" ] && [ "${{ github.event_name }}" == "push" ]; then
             BRANCH_NAME="latest"
           fi
