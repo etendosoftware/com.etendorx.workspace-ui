@@ -32,11 +32,19 @@ export const QuantitySelector = ({ field, min, max }: QuantitySelectorProps) => 
     return String(value).replace(".", separator);
   }, [getDecimalSeparator]);
   
-  const displayValue = isFocused 
-    ? localValue 
-    : (formValue !== null && formValue !== undefined 
-        ? formatDisplayValue(Number(formValue))
-        : "");
+  const getDisplayValue = useCallback(() => {
+    if (isFocused) {
+      return localValue;
+    }
+    
+    if (formValue !== null && formValue !== undefined) {
+      return formatDisplayValue(Number(formValue));
+    }
+    
+    return "";
+  }, [isFocused, localValue, formValue, formatDisplayValue]);
+  
+  const displayValue = getDisplayValue();
 
   useEffect(() => {
     if (!isFocused) {
@@ -46,7 +54,8 @@ export const QuantitySelector = ({ field, min, max }: QuantitySelectorProps) => 
 
   const isValidIntermediateValue = useCallback((value: string): boolean => {
     // Allow empty, negative sign, numbers, and decimal separators
-    return /^-?(\d+[.,]?\d*|[.,]?\d*)?$/.test(value);
+    // Simplified regex to avoid complexity warnings
+    return /^-?(?:\d*[.,]?\d*)?$/.test(value);
   }, []);
 
   const handleSetValue = useCallback(

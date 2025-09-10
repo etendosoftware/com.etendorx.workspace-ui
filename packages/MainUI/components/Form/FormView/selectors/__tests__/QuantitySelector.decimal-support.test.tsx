@@ -16,37 +16,10 @@
  */
 
 import { render, screen, fireEvent } from "@testing-library/react";
-import { FormProvider, useForm } from "react-hook-form";
 import { QuantitySelector } from "../QuantitySelector";
-import type { Field } from "@workspaceui/api-client/src/api/types";
+import { TestWrapper, createMockField, FIELD_REFERENCES } from "./test-utils/decimal-test-helpers";
 
-// Mock the language context to avoid Provider issues
-jest.mock("@/contexts/language", () => ({
-  useLanguage: () => ({
-    language: "en_US",
-  }),
-}));
-
-const mockField: Field = {
-  hqlName: "progress",
-  id: "test-field",
-  name: "Progress",
-  column: {
-    reference: "22", // QUANTITY_22
-  },
-  isMandatory: false,
-} as Field;
-
-interface TestWrapperProps {
-  children: React.ReactNode;
-  defaultValues?: Record<string, any>;
-}
-
-const TestWrapper = ({ children, defaultValues = {} }: TestWrapperProps) => {
-  const methods = useForm({ defaultValues });
-
-  return <FormProvider {...methods}>{children}</FormProvider>;
-};
+const mockField = createMockField(FIELD_REFERENCES.QUANTITY_22, "progress");
 
 describe("QuantitySelector - Decimal Separator Support", () => {
   beforeEach(() => {

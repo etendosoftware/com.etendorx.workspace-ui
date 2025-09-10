@@ -16,37 +16,10 @@
  */
 
 import { render, screen, fireEvent } from "@testing-library/react";
-import { FormProvider, useForm } from "react-hook-form";
 import { UnifiedNumericSelector } from "../NumericSelector";
-import type { Field } from "@workspaceui/api-client/src/api/types";
+import { TestWrapper, createMockField, FIELD_REFERENCES } from "./test-utils/decimal-test-helpers";
 
-// Mock the language context to avoid Provider issues
-jest.mock("@/contexts/language", () => ({
-  useLanguage: () => ({
-    language: "en_US",
-  }),
-}));
-
-const mockField: Field = {
-  hqlName: "amount",
-  id: "test-field",
-  name: "Amount",
-  column: {
-    reference: "800008", // DECIMAL
-  },
-  isMandatory: false,
-} as Field;
-
-interface TestWrapperProps {
-  children: React.ReactNode;
-  defaultValues?: Record<string, any>;
-}
-
-const TestWrapper = ({ children, defaultValues = {} }: TestWrapperProps) => {
-  const methods = useForm({ defaultValues });
-
-  return <FormProvider {...methods}>{children}</FormProvider>;
-};
+const mockField = createMockField(FIELD_REFERENCES.DECIMAL, "amount");
 
 describe("NumericSelector - Decimal Separator Support", () => {
   beforeEach(() => {
@@ -96,12 +69,7 @@ describe("NumericSelector - Decimal Separator Support", () => {
   });
 
   describe("Integer fields", () => {
-    const integerField: Field = {
-      ...mockField,
-      column: {
-        reference: "11", // INTEGER
-      },
-    };
+    const integerField = createMockField(FIELD_REFERENCES.INTEGER, "integerAmount");
 
     it("should strip decimal separators for integer fields", () => {
       render(
