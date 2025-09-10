@@ -19,7 +19,6 @@ import { useEffect, useCallback, useMemo, useRef } from "react";
 import { CopilotClient } from "@workspaceui/api-client/src/api/copilot";
 import { useUserContext } from "./useUserContext";
 import { useApiContext } from "./useApiContext";
-import { performCopilotHealthCheck } from "@/utils/health-check";
 import { logger } from "@/utils/logger";
 
 export const useCopilotClient = () => {
@@ -37,9 +36,6 @@ export const useCopilotClient = () => {
     logger.log("CopilotClient: Initializing with token and API URL:", apiUrlStr);
     CopilotClient.setBaseUrl(apiUrlStr);
     CopilotClient.setToken(tokenStr);
-
-    const copilotUrl = CopilotClient.getCurrentBaseUrl();
-    await performCopilotHealthCheck(copilotUrl, tokenStr);
   }, [token?.token, apiUrl]);
 
   const lastInit = useRef<{ token: string; url: string }>({ token: "", url: "" });

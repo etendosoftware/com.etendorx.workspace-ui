@@ -179,7 +179,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             {...props}
           />
           <button type="button" onClick={handleCalendarClick} className={buttonClassNames} disabled={isReadOnly}>
-            <CalendarIcon fill={"currentColor"} className="h-5 w-5" />
+            <CalendarIcon fill={"currentColor"} className="h-5 w-5" data-testid="CalendarIcon__417e7f" />
           </button>
         </div>
         {renderHelperText()}

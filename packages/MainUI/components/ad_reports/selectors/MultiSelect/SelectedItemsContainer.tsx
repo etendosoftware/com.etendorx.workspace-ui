@@ -26,10 +26,10 @@ export const SelectedItem: React.FC<SelectedItemProps> = ({ item, onRemove }) =>
   const { sx } = useStyle();
 
   return (
-    <Box key={item.id} sx={sx.selectedItem}>
-      <Typography>{item.title}</Typography>
-      <IconButton onClick={() => onRemove(item.id)}>
-        <CloseIcon fontSize={ICON_BUTTON_SIZE} />
+    <Box key={item.id} sx={sx.selectedItem} data-testid="Box__229cfc">
+      <Typography data-testid="Typography__229cfc">{item.title}</Typography>
+      <IconButton onClick={() => onRemove(item.id)} data-testid="IconButton__229cfc">
+        <CloseIcon fontSize={ICON_BUTTON_SIZE} data-testid="CloseIcon__229cfc" />
       </IconButton>
     </Box>
   );
@@ -39,11 +39,15 @@ export const SelectedItemsContainer: React.FC<SelectedItemsContainerProps> = ({ 
   const { sx } = useStyle();
 
   return (
-    <Box sx={sx.selectedContainer}>
+    <Box sx={sx.selectedContainer} data-testid="Box__229cfc">
       {items.map((item) => (
-        <SelectedItem key={item.id} item={item} onRemove={onRemove} />
+        <SelectedItem key={item.id} item={item} onRemove={onRemove} data-testid="SelectedItem__229cfc" />
       ))}
-      {items.length === 0 && <Box sx={sx.emptyState}>No items selected</Box>}
+      {items.length === 0 && (
+        <Box sx={sx.emptyState} data-testid="Box__229cfc">
+          No items selected
+        </Box>
+      )}
     </Box>
   );
 };

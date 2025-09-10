@@ -91,15 +91,17 @@ export default function WindowTabs() {
           onClick={handleGoHome}
           className={`w-8 h-8 text-[1.5rem] bg-(--color-baseline-0) hover:bg-(--color-etendo-main) hover:text-(--color-etendo-contrast-text) ${isHomeRoute ? "bg-(--color-etendo-main) text-(--color-etendo-contrast-text)" : ""}`}
           tooltip={t("primaryTabs.dashboard")}
-          aria-label={t("primaryTabs.dashboard")}>
-          <HomeIcon className="h-[1.125rem] w-[1.125rem]" />
+          aria-label={t("primaryTabs.dashboard")}
+          data-testid="IconButton__c8117d">
+          <HomeIcon className="h-[1.125rem] w-[1.125rem]" data-testid="HomeIcon__c8117d" />
         </IconButton>
       </div>
       {showLeftScrollButton && (
         <IconButton
           onClick={handleScrollLeft}
-          className="max-h-7 bg-transparent w-auto h-full rounded-full p-2 text-sm hover:bg-[var(--color-transparent-neutral-5)] hover:text-(--color-baseline-80)">
-          <ChevronLeftIcon className="h-[1rem] w-[1rem]" />
+          className="max-h-7 bg-transparent w-auto h-full rounded-full p-2 text-sm hover:bg-[var(--color-transparent-neutral-5)] hover:text-(--color-baseline-80)"
+          data-testid="IconButton__c8117d">
+          <ChevronLeftIcon className="h-[1rem] w-[1rem]" data-testid="ChevronLeftIcon__c8117d" />
         </IconButton>
       )}
       <div
@@ -133,6 +135,7 @@ export default function WindowTabs() {
                   closeWindow(window.windowId);
                 }}
                 canClose={canClose}
+                data-testid="WindowTab__c8117d"
               />
               {showSeparator && index < visibleWindows.length - 1 && (
                 <div className="h-4 w-0.5 bg-(--color-baseline-100) opacity-10 mx-0.5" />
@@ -144,8 +147,9 @@ export default function WindowTabs() {
       {showRightScrollButton && (
         <IconButton
           onClick={handleScrollRight}
-          className="max-h-7 bg-transparent w-auto h-full rounded-full p-2 text-sm hover:bg-[var(--color-transparent-neutral-5)] hover:text-(--color-baseline-80)">
-          <ChevronRightIcon className="h-[1rem] w-[1rem]" />
+          className="max-h-7 bg-transparent w-auto h-full rounded-full p-2 text-sm hover:bg-[var(--color-transparent-neutral-5)] hover:text-(--color-baseline-80)"
+          data-testid="IconButton__c8117d">
+          <ChevronRightIcon className="h-[1rem] w-[1rem]" data-testid="ChevronRightIcon__c8117d" />
         </IconButton>
       )}
       {showRightMenuButton && (
@@ -154,11 +158,17 @@ export default function WindowTabs() {
           containerClassName="h-8 w-8 flex justify-center items-center"
           className="h-8 w-8 bg-white rounded-full p-1.5 text-sm"
           tooltip={t("primaryTabs.showTabs")}
-          tooltipPosition="left">
-          <ChevronsRightIcon className="h-[1.125rem] w-[1.125rem]" />
+          tooltipPosition="left"
+          data-testid="IconButton__c8117d">
+          <ChevronsRightIcon className="h-[1.125rem] w-[1.125rem]" data-testid="ChevronsRightIcon__c8117d" />
         </IconButton>
       )}
-      <MenuTabs anchorEl={anchorEl} onClose={handleTabMenuClose} onSelect={handleSelectWindow} />
+      <MenuTabs
+        anchorEl={anchorEl}
+        onClose={handleTabMenuClose}
+        onSelect={handleSelectWindow}
+        data-testid="MenuTabs__c8117d"
+      />
     </div>
   );
 }

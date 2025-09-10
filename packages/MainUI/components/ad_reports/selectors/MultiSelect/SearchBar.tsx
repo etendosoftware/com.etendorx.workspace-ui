@@ -46,11 +46,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({ readOnly, onClear, onOpen,
   };
 
   return (
-    <Box onClick={() => !readOnly && onOpen()} sx={searchBarStyles}>
-      <SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />
-      <Typography>{ADD_BUTTON_TEXT}</Typography>
-      <IconButton onClick={handleClear} disabled={readOnly || !hasItems}>
-        <CloseIcon fontSize={ICON_BUTTON_SIZE} />
+    <Box onClick={() => !readOnly && onOpen()} sx={searchBarStyles} data-testid="Box__23a08a">
+      <SearchOutlined fill={theme.palette.baselineColor.neutral[90]} data-testid="SearchOutlined__23a08a" />
+      <Typography data-testid="Typography__23a08a">{ADD_BUTTON_TEXT}</Typography>
+      <IconButton onClick={handleClear} disabled={readOnly || !hasItems} data-testid="IconButton__23a08a">
+        <CloseIcon fontSize={ICON_BUTTON_SIZE} data-testid="CloseIcon__23a08a" />
       </IconButton>
     </Box>
   );

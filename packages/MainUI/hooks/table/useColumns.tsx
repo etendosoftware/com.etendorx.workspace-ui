@@ -118,6 +118,7 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
                   ? (searchQuery?: string) => onLoadMoreFilterOptions(column.id, searchQuery)
                   : undefined
               }
+              data-testid="ColumnFilter__46c09c"
             />
           ),
         };

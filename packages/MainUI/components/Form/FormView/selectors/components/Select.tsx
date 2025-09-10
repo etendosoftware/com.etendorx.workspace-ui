@@ -12,8 +12,8 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useFormContext } from "react-hook-form";
 import CheckIcon from "../../../../../../ComponentLibrary/src/assets/icons/check-circle-filled.svg";
-import ChevronDown from "../../../../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
-import XIcon from "../../../../../../ComponentLibrary/src/assets/icons/x.svg";
+import ChevronDown from "@workspaceui/componentlibrary/src/assets/icons/chevron-down.svg";
+import XIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import type { SelectProps } from "./types";
 
 const useDropdownPosition = (
@@ -109,6 +109,7 @@ const OptionItem = memo(
     onMouseEnter: (index: number) => void;
   }) => (
     <li
+      data-testid={`OptionItem__${id}`}
       aria-selected={isSelected}
       onClick={(e) => {
         e.stopPropagation();
@@ -126,7 +127,15 @@ const OptionItem = memo(
        ${isSelected ? "bg-baseline-10 font-medium" : ""}
        hover:bg-baseline-10`}>
       <span className={`truncate mr-2 ${isSelected ? "text-dynamic-dark" : "text-baseline-90"}`}>{label}</span>
-      {isSelected && <CheckIcon alt="Selected Item" className="fade-in-left flex-shrink-0" height={16} width={16} />}
+      {isSelected && (
+        <CheckIcon
+          alt="Selected Item"
+          className="fade-in-left flex-shrink-0"
+          height={16}
+          width={16}
+          data-testid={`Image__${id}`}
+        />
+      )}
     </li>
   )
 );
@@ -206,6 +215,7 @@ const DropdownPortal = memo(
         handleKeyDown={handleKeyDown}
         handleSearchBlur={handleSearchBlur}
         handleFocus={handleFocus}
+        data-testid="SearchInput__ff38f9"
       />
     );
 
@@ -474,6 +484,7 @@ function SelectCmp({
           isHighlighted={highlightedIndex === index}
           onOptionClick={handleOptionClick}
           onMouseEnter={handleOptionMouseEnter}
+          data-testid="OptionItem__ff38f9"
         />
       ));
     }
@@ -513,10 +524,10 @@ function SelectCmp({
                 onKeyDown={(e) => handleKeyboardActivation(e, () => handleClear(e as unknown as React.MouseEvent))}
                 className={clearButtonClassNames}
                 aria-label="Clear selection">
-                <XIcon />
+                <XIcon data-testid={`XIcon__${field.id}`} />
               </button>
             )}
-            <ChevronDown fill="currentColor" className={chevronClassNames} />
+            <ChevronDown fill="currentColor" className={chevronClassNames} data-testid={`ChevronDown__${field.id}`} />
           </div>
         </div>
       </div>
@@ -537,6 +548,7 @@ function SelectCmp({
           hasMore={hasMore}
           loadingRef={loadingRef}
           dropdownId={dropdownId}
+          data-testid={`DropdownPortal__${field.id}`}
         />
       )}
     </>

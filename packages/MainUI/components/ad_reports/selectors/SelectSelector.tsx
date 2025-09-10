@@ -43,7 +43,7 @@ const SelectSelector = memo(({ value, name, title, onChange, readOnly, field }: 
 
   return (
     <Select
-      iconLeft={<SearchOutlined fill={theme.palette.baselineColor.neutral[90]} />}
+      iconLeft={<SearchOutlined fill={theme.palette.baselineColor.neutral[90]} data-testid="SearchOutlined__46a88c" />}
       title={title}
       options={options}
       getOptionLabel={(option) => option.title}
@@ -51,6 +51,7 @@ const SelectSelector = memo(({ value, name, title, onChange, readOnly, field }: 
       disabled={readOnly}
       name={name}
       value={current}
+      data-testid="Select__46a88c"
     />
   );
 });

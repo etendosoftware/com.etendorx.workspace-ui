@@ -90,6 +90,7 @@ const ConfigurationSection: React.FC = () => {
       sections={sections}
       tooltipButtonProfile={t("navigation.configurationModal.tooltipButtonProfile")}
       onChangeSelect={handleSelectOption}
+      data-testid="ConfigurationModal__d44cf2"
     />
   );
 };

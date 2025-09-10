@@ -15,6 +15,7 @@
  *************************************************************************
  */
 
+// @data-testid-ignore
 "use client";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import Menu from "@workspaceui/componentlibrary/src/components/Menu";
@@ -32,7 +33,7 @@ export default function MenuTabs({ anchorEl, onClose, onSelect }: MenuTabsProps)
   const { getWindowTitle } = useMetadataContext();
 
   return (
-    <Menu anchorEl={anchorEl} onClose={onClose}>
+    <Menu anchorEl={anchorEl} onClose={onClose} data-testid={`Menu__${windows[0]?.windowId ?? "8b7d80"}`}>
       <div
         className="w-full h-full max-h-screen bg-[var(--color-baseline-0)] border border-[var(--color-transparent-neutral-10)] rounded-xl flex flex-col gap-2 p-2 overflow-y-auto"
         style={{
@@ -42,7 +43,16 @@ export default function MenuTabs({ anchorEl, onClose, onSelect }: MenuTabsProps)
           const windowId = window.windowId;
           const title = window.title || getWindowTitle?.(window.windowId);
           const isActive = window.isActive;
-          return <MenuItem key={windowId} windowId={windowId} title={title} isActive={isActive} onSelect={onSelect} />;
+          return (
+            <MenuItem
+              key={windowId}
+              windowId={windowId}
+              title={title}
+              isActive={isActive}
+              onSelect={onSelect}
+              data-testid={`MenuItem__${windowId ?? "8b7d80"}`}
+            />
+          );
         })}
       </div>
     </Menu>

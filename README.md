@@ -159,3 +159,29 @@ Happy coding! 🌟
 
 - `docs/datasource-proxy-session.md` — ERP proxy modes (stateful/session‑less), JSON passthrough via `?isc_dataFormat=json`.
 - `docs/callouts-behavior.md` — Form callouts execution model, batch application without cascades, entries injection, and debugging with `DEBUG_CALLOUTS`.
+
+---
+
+## Data-testid check
+
+This repository runs an automated `data-testid` check in CI that ensures React components have a deterministic `data-testid` attribute added by a codemod.
+
+Quick local commands:
+
+```fish
+# 1) Dry-run check (CI runs this automatically):
+pnpm run check:data-testid
+
+# 2) If the check reports changes, apply them locally:
+pnpm run apply:data-testid
+git add -A
+git commit -m "Feature XXX: Apply add-data-testid codemod"
+
+```
+
+Files and scripts:
+- `scripts/add-data-testid.cjs` — transformer that adds `data-testid` attributes.
+- `scripts/check-add-data-testid.sh` — runs a dry-run and fails if modifications would be made.
+- `scripts/apply-add-data-testid.sh` — applies codemod and can commit changes.
+
+Please run the check and apply the codemod in your branch before opening a PR to avoid the CI marking the build as UNSTABLE.
