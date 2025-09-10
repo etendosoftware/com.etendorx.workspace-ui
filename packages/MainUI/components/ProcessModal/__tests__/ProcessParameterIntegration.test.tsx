@@ -26,11 +26,9 @@ jest.mock("@/components/Form/FormView/selectors/NumericSelector", () => ({
 jest.mock("@/components/Form/FormView/selectors/DateSelector", () => ({
   DateSelector: ({ field }: any) => <input data-testid="date-field" name={field.hqlName} type="date" />,
 }));
-
 jest.mock("@/components/Form/FormView/selectors/DatetimeSelector", () => ({
-  DatetimeSelector: ({ field }: any) => (
-    <input data-testid="datetime-field" name={field.hqlName} type="datetime-local" />
-  ),
+  __esModule: true,
+  default: ({ field }: any) => <input data-testid="datetime-field" name={field.hqlName} type="datetime-local" />,
 }));
 
 jest.mock("@/components/Form/FormView/selectors/SelectSelector", () => ({
@@ -58,8 +56,12 @@ jest.mock("../selectors/GenericSelector", () => {
 });
 
 jest.mock("@/components/Label", () => {
-  return function Label({ name }: any) {
-    return <label data-testid="field-label">{name}</label>;
+  return function Label({ name, htmlFor }: any) {
+    return (
+      <label htmlFor={htmlFor} data-testid="field-label">
+        {name}
+      </label>
+    );
   };
 });
 

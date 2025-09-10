@@ -16,6 +16,7 @@ import { useRedirect } from "@/hooks/navigation/useRedirect";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilter } from "../../components/Table/ColumnFilter";
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import { useTranslation } from "../useTranslation";
 
 interface UseColumnsOptions {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
@@ -30,6 +31,7 @@ const BOOLEAN_COLUMNS = ["isOfficialHoliday", "isActive", "isPaid", "stocked", "
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
   const { onColumnFilter, onLoadFilterOptions, onLoadMoreFilterOptions, columnFilterStates } = options || {};
+  const { t } = useTranslation();
 
   const columns = useMemo(() => {
     const fieldsAsArray = Object.values(tab.fields);
@@ -55,12 +57,13 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
           id: column.id,
           selectedOptions: [],
           availableOptions: [
-            { id: "true", label: "Sí", value: true },
-            { id: "false", label: "No", value: false },
+            { id: "true", label: t("common.trueText"), value: "true" },
+            { id: "false", label: t("common.falseText"), value: "false" },
           ],
           loading: false,
           hasMore: false,
           searchQuery: "",
+          isMultiSelect: false,
         };
       }
 
@@ -124,12 +127,13 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     });
   }, [
     tab.fields,
-    handleClickRedirect,
-    handleKeyDownRedirect,
+    columnFilterStates,
     onColumnFilter,
     onLoadFilterOptions,
+    t,
+    handleClickRedirect,
+    handleKeyDownRedirect,
     onLoadMoreFilterOptions,
-    columnFilterStates,
   ]);
 
   return columns;
