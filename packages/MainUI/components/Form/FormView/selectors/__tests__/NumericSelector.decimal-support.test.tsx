@@ -16,14 +16,13 @@
  */
 
 import { UnifiedNumericSelector } from "../NumericSelector";
-import { 
-  TestWrapper, 
-  createMockField, 
-  FIELD_REFERENCES, 
-  testBasicDecimalInputs, 
+import {
+  createMockField,
+  FIELD_REFERENCES,
+  testBasicDecimalInputs,
   testEdgeCases,
   renderWithWrapper,
-  testDecimalInput
+  testDecimalInput,
 } from "./test-utils/decimal-test-helpers";
 
 const mockField = createMockField(FIELD_REFERENCES.DECIMAL, "amount");
@@ -43,7 +42,7 @@ describe("NumericSelector - Decimal Separator Support", () => {
 
     it("should process intermediate values during typing", () => {
       basicTests.testIntermediateValues("123.", () => {
-        const input = document.querySelector('input') as HTMLInputElement;
+        const input = document.querySelector("input") as HTMLInputElement;
         expect(input).toHaveValue("123");
       });
     });
@@ -64,7 +63,7 @@ describe("NumericSelector - Decimal Separator Support", () => {
 
     it("should allow negative values", () => {
       edgeCaseTests.testNegativeValue("-123.45", () => {
-        const input = document.querySelector('input') as HTMLInputElement;
+        const input = document.querySelector("input") as HTMLInputElement;
         expect(input).toHaveValue("-123.45");
       });
     });

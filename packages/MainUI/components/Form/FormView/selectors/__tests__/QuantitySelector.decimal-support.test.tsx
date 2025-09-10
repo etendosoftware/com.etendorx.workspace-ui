@@ -17,14 +17,12 @@
 
 import { fireEvent } from "@testing-library/react";
 import { QuantitySelector } from "../QuantitySelector";
-import { 
-  TestWrapper, 
-  createMockField, 
-  FIELD_REFERENCES, 
-  testBasicDecimalInputs, 
+import {
+  createMockField,
+  FIELD_REFERENCES,
   testEdgeCases,
   renderWithWrapper,
-  testDecimalInput
+  testDecimalInput,
 } from "./test-utils/decimal-test-helpers";
 
 const mockField = createMockField(FIELD_REFERENCES.QUANTITY_22, "progress");
@@ -36,7 +34,6 @@ describe("QuantitySelector - Decimal Separator Support", () => {
 
   describe("Basic decimal support", () => {
     const component = <QuantitySelector field={mockField} />;
-    const basicTests = testBasicDecimalInputs(component);
 
     it("should accept decimal values with dot", () => {
       const input = renderWithWrapper(component);
@@ -50,11 +47,11 @@ describe("QuantitySelector - Decimal Separator Support", () => {
 
     it("should handle intermediate values during typing", () => {
       const input = renderWithWrapper(component);
-      
+
       // Test intermediate state - QuantitySelector allows but doesn't validate trailing dots
       fireEvent.change(input, { target: { value: "44." } });
-      expect(input.value).toBeDefined();
-      
+      expect((input as HTMLInputElement).value).toBeDefined();
+
       // Complete the value should work
       testDecimalInput(input, "44.5", "44.5");
     });
@@ -63,10 +60,10 @@ describe("QuantitySelector - Decimal Separator Support", () => {
   describe("Validation with min/max values", () => {
     it("should handle validation with min/max values", () => {
       const input = renderWithWrapper(<QuantitySelector field={mockField} min={10} max={50} />);
-      
+
       // Valid value within range
       testDecimalInput(input, "25.5", "25.5");
-      
+
       // Values outside range - behavior depends on validation logic
       testDecimalInput(input, "5.5", "25.5");
     });
