@@ -363,19 +363,20 @@ exit 0
                       script: "curl -s -u ${SONAR_TOKEN}: \"${SONAR_SERVER}/api/measures/component?component=${sonarProjectKey}&branch=${branch}&metricKeys=coverage\"",
                       returnStdout: true
                     ).trim()
+                    echo "SonarQube coverage API response for branch '${branch}': ${response}"
                     def json = readJSON text: response
                     def measures = json?.component?.measures ?: []
                     def covStr = measures.find { it.metric == 'coverage' }?.value
-                    if (covStr) {
+                    if (covStr && covStr != "0") {
                       coverage = covStr.toFloat()
                       break
                     } else {
-                      echo "Coverage not available for branch '${branch}' (attempt ${attempt + 1}/${maxRetries}), waiting 1 minute before retrying..."
-                      sleep(time: 1, unit: 'MINUTES')
+                      echo "Coverage is 0 or not available for branch '${branch}' (attempt ${attempt + 1}/${maxRetries}), waiting 40 seconds before retrying..."
+                      sleep(time: 40, unit: 'SECONDS')
                     }
                   } else if (checkCommit) {
-                    echo "Latest analysis for branch '${branch}' does not match current commit (expected: ${GIT_COMMIT}, got: ${lastRevision}). Waiting 1 minute before retrying..."
-                    sleep(time: 1, unit: 'MINUTES')
+                    echo "Latest analysis for branch '${branch}' does not match current commit (expected: ${GIT_COMMIT}, got: ${lastRevision}). Waiting 40 seconds before retrying..."
+                    sleep(time: 40, unit: 'SECONDS')
                   }
                   attempt++
                 }
@@ -389,7 +390,10 @@ exit 0
                 return coverage
               }
 
-              def coverageCurrent = getCoverageWithRetry(branchCurrent, true)
+              // Only check commit on PR branches
+              def prBranchPattern = /^(feature|hotfix)\//
+              def checkCommitCurrent = branchCurrent ==~ prBranchPattern
+              def coverageCurrent = getCoverageWithRetry(branchCurrent, checkCommitCurrent)
               def coverageMain = getCoverageWithRetry(branchMain, false)
 
               echo "Current branch coverage: ${coverageCurrent}%"
