@@ -25,10 +25,12 @@ import {
   DEFAULT_IS_PROCESSING,
   DEFAULT_AD_CLIENT_ID,
   DEFAULT_AD_ORG_ID,
+  DEFAULT_POSTED_KEYS,
   REQUIRED_PARAMS_KEYS,
   DEFAULT_REQUIRED_PARAMS_KEYS,
   DEFAULT_BUSINESS_PARTNER_ID_KEYS,
   DEFAULT_BUSINESS_PARTNER_ID,
+  DEFAULT_POSTED,
 } from "@/utils/processes/manual/constants";
 import type { GetParamsProps } from "@/utils/processes/manual/types";
 import data from "@/utils/processes/manual/data.json";
@@ -53,6 +55,10 @@ export const getBusinessPartnerId = (record: Record<string, unknown>) => {
   return extractValue(record, DEFAULT_BUSINESS_PARTNER_ID_KEYS, DEFAULT_BUSINESS_PARTNER_ID);
 };
 
+export const checkIfRecordIsPosted = (record: Record<string, unknown>) => {
+  return extractValue(record, DEFAULT_POSTED_KEYS, DEFAULT_POSTED);
+};
+
 export const getParams = ({
   currentButtonId,
   record,
@@ -71,6 +77,7 @@ export const getParams = ({
   const adClientId = getAdClientId(record);
   const adOrgId = getAdOrgId(record);
   const businessPartnerId = getBusinessPartnerId(record);
+  const isPostedRecord = checkIfRecordIsPosted(record);
 
   const params = new URLSearchParams();
 
@@ -89,6 +96,7 @@ export const getParams = ({
   params.append(REQUIRED_PARAMS_KEYS.keyColumnName, processActionData.keyColumnName);
   params.append(REQUIRED_PARAMS_KEYS.inpdocstatus, docStatus);
   params.append(REQUIRED_PARAMS_KEYS.inpprocessing, isProcessing);
+  params.append(REQUIRED_PARAMS_KEYS.inpposted, isPostedRecord);
 
   if (isPostedProcess) {
     params.append(REQUIRED_PARAMS_KEYS.inpdocaction, DEFAULT_REQUIRED_PARAMS_KEYS.inpodcStatusPosted);

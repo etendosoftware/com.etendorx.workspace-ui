@@ -1,17 +1,6 @@
 /*
  *************************************************************************
- * The contents of this file are subject to the Etendo License
- * (the "License"), you may not use this file except in compliance with
- * the License.
- * You may obtain a copy of the License at
- * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
- * Software distributed under the License is distributed on an
- * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
- * implied. See the License for the specific language governing rights
- * and limitations under the License.
- * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
- * All Rights Reserved.
- * Contributor(s): Futit Services S.L.
+ * useColumns.ts
  *************************************************************************
  */
 
@@ -24,11 +13,10 @@ import type { Column } from "@workspaceui/api-client/src/api/types";
 import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
 import { getFieldReference } from "@/utils";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
-import { transformColumnsWithCustomJs } from "@/utils/customJsColumnTransformer";
 import { ColumnFilterUtils } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { ColumnFilter } from "../../components/Table/ColumnFilter";
-
 import type { FilterOption, ColumnFilterState } from "@workspaceui/api-client/src/utils/column-filter-utils";
+import { useTranslation } from "../useTranslation";
 
 interface UseColumnsOptions {
   onColumnFilter?: (columnId: string, selectedOptions: FilterOption[]) => void;
@@ -37,21 +25,51 @@ interface UseColumnsOptions {
   columnFilterStates?: ColumnFilterState[];
 }
 
+// Columnas booleanas conocidas
+const BOOLEAN_COLUMNS = ["isOfficialHoliday", "isActive", "isPaid", "stocked", "isGeneric"];
+
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
   const { onColumnFilter, onLoadFilterOptions, onLoadMoreFilterOptions, columnFilterStates } = options || {};
+  const { t } = useTranslation();
 
   const columns = useMemo(() => {
     const fieldsAsArray = Object.values(tab.fields);
-    const originalColumns = parseColumns(fieldsAsArray);
+    let originalColumns = parseColumns(fieldsAsArray);
 
-    const referencedColumns = originalColumns.map((column: Column) => {
+    // Marcar columnas booleanas automáticamente
+    originalColumns = originalColumns.map((col) => {
+      if (BOOLEAN_COLUMNS.includes(col.columnName)) {
+        return { ...col, type: "boolean" };
+      }
+      return col;
+    });
+
+    return originalColumns.map((column: Column) => {
       const isReference = isEntityReference(getFieldReference(column.column?.reference));
-      const supportsDropdownFilter = ColumnFilterUtils.supportsDropdownFilter(column);
+      const isBooleanColumn = column.type === "boolean" || column.column?._identifier === "YesNo";
+      const supportsDropdownFilter = isBooleanColumn || ColumnFilterUtils.supportsDropdownFilter(column);
+
+      // --- Inicializar filterState para booleanos si no existe ---
+      let filterState = columnFilterStates?.find((f) => f.id === column.id);
+      if (isBooleanColumn && !filterState) {
+        filterState = {
+          id: column.id,
+          selectedOptions: [],
+          availableOptions: [
+            { id: "true", label: t("common.trueText"), value: "true" },
+            { id: "false", label: t("common.falseText"), value: "false" },
+          ],
+          loading: false,
+          hasMore: false,
+          searchQuery: "",
+          isMultiSelect: false,
+        };
+      }
 
       let columnConfig = { ...column };
 
-      // Configure reference columns with navigation
+      // Columnas de referencia con navegación
       if (isReference) {
         const windowId = column.referencedWindowId;
         const windowIdentifier = column._identifier;
@@ -60,17 +78,15 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
           Cell: ({ row, cell }: { row: { original: EntityData }; cell: MRT_Cell<EntityData, unknown> }) => {
             const recordData = row?.original as EntityData;
             const selectedRecordId = recordData?.[column.columnName as keyof EntityData];
-
-            // Get the display value (identifier) using the same logic as accessorFn
             const identifierKey = `${column.columnName}$_identifier`;
-            const displayValue = cell?.getValue
-              ? String(cell.getValue())
-              : String(
-                  recordData?.[identifierKey as keyof EntityData] ||
-                    recordData?.[column.columnName as keyof EntityData] ||
-                    ""
-                );
-
+            const displayValue =
+              cell?.getValue() != null
+                ? String(cell.getValue())
+                : String(
+                    recordData?.[identifierKey as keyof EntityData] ||
+                      recordData?.[column.columnName as keyof EntityData] ||
+                      ""
+                  );
             return (
               <button
                 type="button"
@@ -86,24 +102,23 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
         };
       }
 
-      // Configure advanced filters for select/tabledir columns
+      // Filtros avanzados
       if (supportsDropdownFilter && onColumnFilter && onLoadFilterOptions) {
-        const filterState = columnFilterStates?.find((f) => f.id === column.id);
-
         columnConfig = {
           ...columnConfig,
-          enableColumnFilter: true, // Keep column filter enabled
+          enableColumnFilter: true,
           Filter: () => (
             <ColumnFilter
               column={column}
               filterState={filterState}
               onFilterChange={(selectedOptions: FilterOption[]) => onColumnFilter(column.id, selectedOptions)}
-              onLoadOptions={(searchQuery?: string) => {
-                return onLoadFilterOptions(column.id, searchQuery);
-              }}
-              onLoadMoreOptions={onLoadMoreFilterOptions ? (searchQuery?: string) => {
-                return onLoadMoreFilterOptions(column.id, searchQuery);
-              } : undefined}
+              onLoadOptions={(searchQuery?: string) => onLoadFilterOptions(column.id, searchQuery)}
+              onLoadMoreOptions={
+                onLoadMoreFilterOptions
+                  ? (searchQuery?: string) => onLoadMoreFilterOptions(column.id, searchQuery)
+                  : undefined
+              }
+              data-testid="ColumnFilter__46c09c"
             />
           ),
         };
@@ -111,12 +126,16 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
 
       return columnConfig;
     });
-
-    // Apply custom JavaScript code
-    const customJsColumns = transformColumnsWithCustomJs(referencedColumns, fieldsAsArray);
-
-    return customJsColumns;
-  }, [tab.fields, handleClickRedirect, handleKeyDownRedirect, onColumnFilter, onLoadFilterOptions, onLoadMoreFilterOptions, columnFilterStates]);
+  }, [
+    tab.fields,
+    columnFilterStates,
+    onColumnFilter,
+    onLoadFilterOptions,
+    t,
+    handleClickRedirect,
+    handleKeyDownRedirect,
+    onLoadMoreFilterOptions,
+  ]);
 
   return columns;
 };

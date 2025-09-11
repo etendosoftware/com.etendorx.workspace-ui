@@ -18,7 +18,6 @@
 import { Box, Typography, useTheme } from "@mui/material";
 import { useCallback, useMemo } from "react";
 import { Modal } from "..";
-import SaveIcon from "../../assets/icons/save.svg";
 import { statusConfig } from "./states";
 import { useStyle } from "./styles";
 import type { StatusModalProps } from "./types";
@@ -62,7 +61,6 @@ const StatusModal: React.FC<StatusModalProps> = ({
       showHeader={false}
       saveButtonLabel={!isDeleteSuccess ? saveLabel : undefined}
       secondaryButtonLabel={secondaryLabel}
-      SaveIcon={!isDeleteSuccess ? SaveIcon : undefined}
       backgroundGradient={backgroundGradient}
       onSave={handleClose}
       onAfterClose={handleAfterClose}

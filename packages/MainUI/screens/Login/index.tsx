@@ -37,5 +37,5 @@ export default function LoginScreen() {
     [login]
   );
 
-  return <Login title="Etendo" onSubmit={handleLogin} error={error} />;
+  return <Login title="Etendo" onSubmit={handleLogin} error={error} data-testid="Login__da518c" />;
 }

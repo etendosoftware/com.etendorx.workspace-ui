@@ -2,6 +2,8 @@ name: Docker Build and Publish
 
 on:
   push:
+    branches:
+      - "develop"
     tags:
       - "*"
 
@@ -22,20 +24,22 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Get tag version
+      - name: Get branch name or tag name
         run: |
-          # Extract tag name and remove 'v' prefix if present
-          TAG_NAME="${{ github.ref_name }}"
-          VERSION="${TAG_NAME#v}"
-          
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Building Docker image with version: $VERSION"
+          if [ "${{ github.ref_type }}" == "tag" ]; then
+            # Remove 'v' prefix from tag name if it exists
+            TAG_NAME="${{ github.ref_name }}"
+            BRANCH_NAME="${TAG_NAME#v}"
+          elif [ "${{ github.ref_name }}" == "develop" ] && [ "${{ github.event_name }}" == "push" ]; then
+            BRANCH_NAME="latest"
+          fi
+
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          echo "Building Docker image with tag: $BRANCH_NAME"
 
       - name: Build and Push Docker image (Multi-platform)
         run: |
           docker buildx build \
             --platform=linux/amd64,linux/arm64 \
             --push \
-            -t etendo/etendo_ui:${{ env.VERSION }} \
-            -t etendo/etendo_ui:latest .
+            -t etendo/etendo_ui:${{ env.BRANCH_NAME }} .

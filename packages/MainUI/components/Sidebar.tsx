@@ -132,6 +132,7 @@ export default function Sidebar() {
       getTranslatedName={getTranslatedName}
       RecentlyViewedComponent={RecentlyViewed}
       searchContext={searchContext}
+      data-testid="Drawer__6c6035"
     />
   );
 }

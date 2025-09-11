@@ -44,17 +44,23 @@ export default function TopToolbar({
     <div className="flex justify-between items-center border-b border-b-transparent-neutral-10">
       <div>
         {selectedCount > 0 && (
-          <Stack direction="row" spacing={1} alignItems="center" pl={1}>
-            <Chip label={`${selectedCount} ${selectionLabel}`} color="primary" />
-            <Button size="small" onClick={handleClearSelection} variant="outlined">
+          <Stack direction="row" spacing={1} alignItems="center" pl={1} data-testid="Stack__2e0bf7">
+            <Chip label={`${selectedCount} ${selectionLabel}`} color="primary" data-testid="Chip__2e0bf7" />
+            <Button size="small" onClick={handleClearSelection} variant="outlined" data-testid="Button__2e0bf7">
               {t("common.clear")}
             </Button>
           </Stack>
         )}
       </div>
-      <Box sx={styles.container} onClick={toggleFilter} className="cursor-pointer">
-        <Typography aria-label={label}>{label}</Typography>
-        {filterActive ? <FilterAlt sx={styles.icon} /> : <FilterAltOff sx={styles.icon} />}
+      <Box sx={styles.container} onClick={toggleFilter} className="cursor-pointer" data-testid="Box__2e0bf7">
+        <Typography aria-label={label} data-testid="Typography__2e0bf7">
+          {label}
+        </Typography>
+        {filterActive ? (
+          <FilterAlt sx={styles.icon} data-testid="FilterAlt__2e0bf7" />
+        ) : (
+          <FilterAltOff sx={styles.icon} data-testid="FilterAltOff__2e0bf7" />
+        )}
       </Box>
     </div>
   );

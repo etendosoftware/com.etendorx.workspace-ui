@@ -24,6 +24,7 @@ import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import { login as doLogin } from "@workspaceui/api-client/src/api/authentication";
 import { changeProfile as doChangeProfile } from "@workspaceui/api-client/src/api/changeProfile";
 import { getSession } from "@workspaceui/api-client/src/api/getSession";
+import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
 import { HTTP_CODES } from "@workspaceui/api-client/src/api/constants";
 import type { DefaultConfiguration, IUserContext, Language, LanguageOption } from "./types";
 import type {
@@ -155,12 +156,19 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
         localStorage.setItem("token", response.token);
         setToken(response.token);
+
+        Metadata.setToken(response.token);
+        datasource.setToken(response.token);
+        CopilotClient.setToken(response.token);
+
+        const sessionData = await getSession();
+        await updateSessionInfo(sessionData);
       } catch (error) {
         logger.warn("Error updating profile:", error);
         throw error;
       }
     },
-    [setToken, token]
+    [setToken, token, updateSessionInfo]
   );
 
   const login = useCallback(
@@ -171,13 +179,18 @@ export default function UserProvider(props: React.PropsWithChildren) {
         localStorage.setItem("token", loginResponse.token);
         Metadata.setToken(loginResponse.token);
         datasource.setToken(loginResponse.token);
+        CopilotClient.setToken(loginResponse.token);
         setToken(loginResponse.token);
+
+        // Fetch and update session info immediately after login
+        const sessionData = await getSession();
+        await updateSessionInfo(sessionData);
       } catch (e) {
         logger.warn("Login or session retrieval error:", e);
         throw e;
       }
     },
-    [setToken]
+    [setToken, updateSessionInfo]
   );
 
   const value = useMemo<IUserContext>(
@@ -226,6 +239,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
         if (token) {
           Metadata.setToken(token);
           datasource.setToken(token);
+          CopilotClient.setToken(token);
           const sessionData = await getSession();
           await updateSessionInfo(sessionData);
         }
@@ -251,10 +265,12 @@ export default function UserProvider(props: React.PropsWithChildren) {
     if (token) {
       const unregisterMetadataInterceptor = Metadata.registerInterceptor(interceptor);
       const unregisterDatasourceInterceptor = datasource.registerInterceptor(interceptor);
+      const unregisterCopilotInterceptor = CopilotClient.registerInterceptor(interceptor);
 
       return () => {
         unregisterMetadataInterceptor();
         unregisterDatasourceInterceptor();
+        unregisterCopilotInterceptor();
       };
     }
   }, [clearUserData, token]);
@@ -269,5 +285,9 @@ export default function UserProvider(props: React.PropsWithChildren) {
     return null;
   }
 
-  return <UserContext.Provider value={value}>{token ? props.children : <LoginScreen />}</UserContext.Provider>;
+  return (
+    <UserContext.Provider value={value}>
+      {token ? props.children : <LoginScreen data-testid="LoginScreen__2e05d2" />}
+    </UserContext.Provider>
+  );
 }

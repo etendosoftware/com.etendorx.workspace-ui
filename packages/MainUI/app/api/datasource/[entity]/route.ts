@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { extractBearerToken } from "@/lib/auth";
 import { getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
+import { getErpCsrfToken } from "../../_utils/sessionStore";
 
 // Type definitions for better code clarity
 interface ProcessedRequestData {
@@ -27,13 +28,18 @@ function validateAndExtractToken(request: NextRequest): string | null {
  * @param requestUrl - The original request URL
  * @returns The complete ERP URL with query parameters
  */
-function buildErpUrl(entity: string, requestUrl: URL): string {
+function buildErpUrl(entity: string, requestUrl: URL, body?: string, userToken?: string | null): string {
   const baseUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/forward/org.openbravo.service.datasource/${entity}`;
 
-  // Preserve original query parameters from the request
-  return requestUrl.search ? `${baseUrl}${requestUrl.search}` : baseUrl;
-}
+  const params = new URLSearchParams(requestUrl.search);
 
+  if (!body) {
+    const csrfToken = getErpCsrfToken(userToken);
+    params.set("csrfToken", csrfToken || "");
+  }
+
+  return params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
+}
 /**
  * Processes the request body and headers for forwarding to the ERP system
  * @param request - The incoming Next.js request
@@ -56,6 +62,12 @@ async function processRequestData(
     Authorization: `Bearer ${userToken}`,
     Accept: "application/json",
   };
+
+  // Forward X-CSRF-Token header if present on the incoming request
+  const csrf = request.headers.get("X-CSRF-Token");
+  if (csrf) {
+    headers["X-CSRF-Token"] = csrf;
+  }
 
   // GET requests don't have a body
   if (method === "GET") {
@@ -135,12 +147,12 @@ async function handle(request: NextRequest, context: { params: Promise<{ entity:
     // Step 2: Extract entity and build target URL
     const { entity } = await context.params;
     const requestUrl = new URL(request.url);
-    const erpUrl = buildErpUrl(entity, requestUrl);
 
     // Extract auth headers (cookie + CSRF token)
     const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
     // Step 3: Process request data for ERP compatibility
     const { headers, body } = await processRequestData(request, userToken, cookieHeader, csrfToken);
+    const erpUrl = buildErpUrl(entity, requestUrl, body, userToken);
 
     // NOTE: Do not forward stored CSRF token as a header for datasource requests.
     // Datasource payloads include csrfToken in the request body when needed and

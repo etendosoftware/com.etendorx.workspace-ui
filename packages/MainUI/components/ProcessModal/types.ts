@@ -146,6 +146,7 @@ export interface ResponseMessage {
 export type RecordValues = { [key: string]: EntityValue };
 export interface WindowReferenceGridProps {
   parameter: ProcessParameter;
+  parameters: Record<string, ProcessParameter>; // Added to enable generic parameter mapping
   onSelectionChange: (selection: unknown[]) => void;
   entityName?: EntityValue;
   recordId?: EntityValue;

@@ -78,7 +78,7 @@ export class Datasource {
 
     if (Array.isArray(options.criteria)) {
       params.criteria = options.criteria.map((criteria) => JSON.stringify(criteria));
-    } else if (options.criteria && typeof options.criteria === 'string') {
+    } else if (options.criteria && typeof options.criteria === "string") {
       params.criteria = options.criteria;
     }
 

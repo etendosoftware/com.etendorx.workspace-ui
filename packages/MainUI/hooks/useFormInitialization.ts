@@ -25,11 +25,21 @@ import {
   type FormInitializationResponse,
   FormMode,
   type Tab,
+  type Field,
 } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useMemo, useReducer } from "react";
 import { FieldName } from "./types";
 import useFormParent from "./useFormParent";
 import { useUserContext } from "./useUserContext";
+import { useCurrentRecord } from "./useCurrentRecord";
+
+interface RecordData {
+  creationDate?: string | null;
+  createdBy$_identifier?: string | null;
+  updated?: string | null;
+  updatedBy$_identifier?: string | null;
+  [key: string]: unknown;
+}
 
 const getRowId = (mode: FormMode, recordId?: string | null): string => {
   return mode === FormMode.EDIT ? (recordId ?? "null") : "null";
@@ -60,7 +70,6 @@ const fetchFormInitialization = async (
 ): Promise<FormInitializationResponse> => {
   try {
     const { data } = await Metadata.kernelClient.post(`?${params}`, payload);
-
     return data;
   } catch (error) {
     logger.warn("Error fetching initial form data:", error);
@@ -120,6 +129,12 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   const { error, formInitialization, loading } = state;
   const parentData = useFormParent(FieldName.HQL_NAME);
   const parentId = parent?.id?.toString();
+
+  const { record } = useCurrentRecord({
+    tab: tab,
+    recordId: recordId,
+  });
+
   const params = useMemo(
     () => (tab ? buildFormInitializationParams({ tab, mode, recordId, parentId }) : null),
     [tab, mode, recordId, parentId]
@@ -129,42 +144,86 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     if (!params) return;
 
     try {
-      const entityKeyColumn = Object.values(tab.fields).find((field) => field.column.keyColumn);
-      if (!entityKeyColumn) {
-        throw new Error("Missing key column");
-      }
+      const entityKeyColumn = findEntityKeyColumn(tab.fields);
+      if (!entityKeyColumn) throw new Error("Missing key column");
 
-      const additionalFields = getFieldsToAdd(tab.entityName, mode);
-
-      const payload = {
-        ...parentData,
-        inpKeyName: entityKeyColumn.inputName,
-        inpTabId: tab.id,
-        inpTableId: tab.table,
-        inpkeyColumnId: entityKeyColumn.columnName,
-        keyColumnName: entityKeyColumn.columnName,
-        _entityName: tab.entityName,
-        inpwindowId: tab.window,
-        ...additionalFields,
-      };
-
+      const payload = buildPayload(tab, mode, parentData, entityKeyColumn);
       const data = await fetchFormInitialization(params, payload);
-      const storedInSessionAttributes = Object.entries(data.auxiliaryInputValues).reduce(
-        (acc, [key, { value }]) => {
-          acc[key] = value || "";
 
-          return acc;
-        },
-        {} as Record<string, string>
-      );
+      const enrichedData = enrichWithAuditFields(data, record, mode);
+      const storedInSessionAttributes = buildSessionAttributes(enrichedData);
 
-      setSession((prev) => ({ ...prev, ...storedInSessionAttributes, ...data.sessionAttributes }));
-      dispatch({ type: "FETCH_SUCCESS", payload: data });
+      setSession((prev) => ({
+        ...prev,
+        ...storedInSessionAttributes,
+        ...enrichedData.sessionAttributes,
+      }));
+
+      dispatch({ type: "FETCH_SUCCESS", payload: enrichedData });
     } catch (err) {
       logger.warn(err);
       dispatch({ type: "FETCH_ERROR", payload: err instanceof Error ? err : new Error("Unknown error") });
     }
-  }, [params, parentData, setSession, tab.entityName, tab.fields, tab.id, tab.table, tab.window]);
+  }, [mode, params, parentData, setSession, tab, record]);
+
+  function findEntityKeyColumn(fields: Tab["fields"]): Field | undefined {
+    return Object.values(fields).find((field) => field?.column?.keyColumn);
+  }
+
+  function buildPayload(
+    tab: Tab,
+    mode: FormMode,
+    parentData: Record<string, unknown>,
+    entityKeyColumn: NonNullable<Field>
+  ): Record<string, unknown> {
+    const additionalFields = getFieldsToAdd(tab.entityName, mode);
+
+    return {
+      ...parentData,
+      inpKeyName: entityKeyColumn.inputName,
+      inpTabId: tab.id,
+      inpTableId: tab.table,
+      inpkeyColumnId: entityKeyColumn.columnName,
+      keyColumnName: entityKeyColumn.columnName,
+      _entityName: tab.entityName,
+      inpwindowId: tab.window,
+      ...additionalFields,
+    };
+  }
+
+  function enrichWithAuditFields(
+    data: FormInitializationResponse,
+    record: RecordData | null,
+    mode: FormMode
+  ): FormInitializationResponse {
+    if (!record || mode === FormMode.NEW) return data;
+
+    const auditFields = [
+      { fieldName: "creationDate", value: record.creationDate, inputName: "inpcreationDate" },
+      { fieldName: "createdBy$_identifier", value: record.createdBy$_identifier, inputName: "inpcreatedBy" },
+      { fieldName: "updated", value: record.updated, inputName: "inpupdated" },
+      { fieldName: "updatedBy$_identifier", value: record.updatedBy$_identifier, inputName: "inpupdatedBy" },
+    ].filter(({ value }) => Boolean(value));
+
+    for (const { fieldName, value } of auditFields) {
+      if (!data.auxiliaryInputValues[fieldName]) {
+        data.auxiliaryInputValues[fieldName] = { value: String(value) };
+      }
+      (data as unknown as Record<string, unknown>)[fieldName] = String(value);
+    }
+
+    return data;
+  }
+
+  function buildSessionAttributes(data: FormInitializationResponse): Record<string, string> {
+    return Object.entries(data.auxiliaryInputValues).reduce(
+      (acc, [key, { value }]) => {
+        acc[key] = value || "";
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+  }
 
   const refetch = useCallback(async () => {
     if (!params) return;

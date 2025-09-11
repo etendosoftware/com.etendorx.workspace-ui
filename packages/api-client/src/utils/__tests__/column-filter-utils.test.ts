@@ -186,31 +186,22 @@ describe("ColumnFilterUtils", () => {
     ];
 
     it("should create criteria for single selection", () => {
-      const columnFilters: ColumnFilterState[] = [
-        createMockFilterState("status", [singleFilterOption]),
-      ];
+      const columnFilters: ColumnFilterState[] = [createMockFilterState("status", [singleFilterOption])];
 
       const criteria = ColumnFilterUtils.createColumnFilterCriteria(columnFilters);
 
-      expect(criteria).toEqual([
-        createMockCriteria("status", "equals", "A"),
-      ]);
+      expect(criteria).toEqual([createMockCriteria("status", "equals", "A")]);
     });
 
     it("should create OR criteria for multiple selections", () => {
-      const columnFilters: ColumnFilterState[] = [
-        createMockFilterState("status", multipleFilterOptions, true),
-      ];
+      const columnFilters: ColumnFilterState[] = [createMockFilterState("status", multipleFilterOptions, true)];
 
       const criteria = ColumnFilterUtils.createColumnFilterCriteria(columnFilters);
 
       expect(criteria).toEqual([
         {
           operator: "or",
-          criteria: [
-            createMockCriteria("status", "equals", "A"),
-            createMockCriteria("status", "equals", "I"),
-          ],
+          criteria: [createMockCriteria("status", "equals", "A"), createMockCriteria("status", "equals", "I")],
         },
       ]);
     });

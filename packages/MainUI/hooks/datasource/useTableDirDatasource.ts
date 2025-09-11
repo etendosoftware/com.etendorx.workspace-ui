@@ -31,10 +31,9 @@ import {
 } from "./constants";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
-// Local fallback to avoid importing UI components (and Next server modules) in hooks/tests
-const FALLBACK_RESULT: Record<string, EntityValue> = {} as any;
+const FALLBACK_RESULT: Record<string, EntityValue> = {} as Record<string, EntityValue>;
 
-export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 20 }: UseTableDirDatasourceParams) => {
+export const useTableDirDatasource = ({ field, pageSize = 75, initialPageSize = 75 }: UseTableDirDatasourceParams) => {
   const { getValues, watch } = useFormContext();
   const { tab, parentRecord } = useTabContext();
   const windowId = tab.window;
@@ -98,6 +97,48 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
     [tab.fields]
   );
 
+  const buildRequestBody = useCallback(
+    (startRow: number, endRow: number, currentValue: typeof value) => {
+      const formValues = transformFormValues(getValues());
+      const invoiceValue = transformFormValues(invoiceContext);
+      const baseBody = {
+        _startRow: startRow.toString(),
+        _endRow: endRow.toString(),
+        _operationType: "fetch",
+        ...field.selector,
+        moduleId: field.module,
+        windowId,
+        tabId: field.tab,
+        inpTabId: field.tab,
+        inpwindowId: windowId,
+        inpTableId: field.column.table,
+        initiatorField: field.hqlName,
+        _constructor: "AdvancedCriteria",
+        _OrExpression: "true",
+        ...(typeof currentValue !== "undefined" ? { _currentValue: currentValue } : {}),
+      };
+
+      if (isProductField) {
+        Object.assign(baseBody, {
+          _noCount: "true",
+          ...(selectorId && { _selectorDefinitionId: selectorId }),
+          ...formValues,
+          ...invoiceValue,
+        });
+      } else {
+        Object.assign(baseBody, {
+          _textMatchStyle: "substring",
+          ...parentData,
+          ...invoiceValue,
+          ...formValues,
+        });
+      }
+
+      return baseBody;
+    },
+    [field, windowId, selectorId, isProductField, parentData, invoiceContext, transformFormValues, getValues]
+  );
+
   const buildSearchCriteria = useCallback(
     (search: string, isProduct: boolean) => {
       const dummyId = new Date().getTime();
@@ -139,6 +180,63 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
     [field.selector]
   );
 
+  const applySearchCriteria = useCallback(
+    (body: URLSearchParams, search: string) => {
+      const { dummyId, criteria } = buildSearchCriteria(search, isProductField);
+
+      if (isProductField) {
+        body.set("criteria", JSON.stringify({ fieldName: "_dummy", operator: "equals", value: dummyId }));
+        body.set("operator", "or");
+      }
+
+      for (const criterion of criteria) {
+        body.append("criteria", JSON.stringify(criterion));
+      }
+    },
+    [buildSearchCriteria, isProductField]
+  );
+
+  const processApiResponse = useCallback(
+    (data: { response?: { data?: Record<string, string>[] } }, reset: boolean) => {
+      if (!data?.response?.data) {
+        throw new Error(JSON.stringify(data));
+      }
+
+      const responseData = data.response.data;
+
+      if (!responseData.length || responseData.length < pageSize) {
+        setHasMore(false);
+      }
+
+      if (reset) {
+        setRecords(responseData);
+      } else {
+        const recordMap = new Map();
+
+        for (const record of records) {
+          const recordId = record.id || JSON.stringify(record);
+          if (!recordMap.has(recordId)) {
+            recordMap.set(recordId, record);
+          }
+        }
+
+        for (const record of responseData) {
+          const recordId = record.id || JSON.stringify(record);
+          if (!recordMap.has(recordId)) {
+            recordMap.set(recordId, record);
+          }
+        }
+
+        setRecords(Array.from(recordMap.values()));
+      }
+
+      if (!reset) {
+        setCurrentPage((prev) => prev + 1);
+      }
+    },
+    [pageSize, records]
+  );
+
   const fetch = useCallback(
     async (_currentValue: typeof value, reset = false, search = "") => {
       try {
@@ -153,53 +251,12 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
 
         const startRow = reset ? 0 : currentPage * pageSize;
         const endRow = reset ? initialPageSize : startRow + pageSize;
-        const formValues = transformFormValues(getValues());
-        const invoiceValue = transformFormValues(invoiceContext);
-        const baseBody = {
-          _startRow: startRow.toString(),
-          _endRow: endRow.toString(),
-          _operationType: "fetch",
-          ...field.selector,
-          moduleId: field.module,
-          windowId,
-          tabId: field.tab,
-          inpTabId: field.tab,
-          inpwindowId: windowId,
-          inpTableId: field.column.table,
-          initiatorField: field.hqlName,
-          _constructor: "AdvancedCriteria",
-          _OrExpression: "true",
-          ...(typeof _currentValue !== "undefined" ? { _currentValue } : {}),
-        };
-        if (isProductField) {
-          Object.assign(baseBody, {
-            _noCount: "true",
-            ...(selectorId && { _selectorDefinitionId: selectorId }),
-            ...invoiceValue,
-            ...formValues,
-          });
-        } else {
-          Object.assign(baseBody, {
-            _textMatchStyle: "substring",
-            ...parentData,
-            ...invoiceValue,
-            ...formValues,
-          });
-        }
 
+        const baseBody = buildRequestBody(startRow, endRow, _currentValue);
         const body = new URLSearchParams(baseBody);
 
         if (search) {
-          const { dummyId, criteria } = buildSearchCriteria(search, isProductField);
-
-          if (isProductField) {
-            body.set("criteria", JSON.stringify({ fieldName: "_dummy", operator: "equals", value: dummyId }));
-            body.set("operator", "or");
-          }
-
-          for (const criterion of criteria) {
-            body.append("criteria", JSON.stringify(criterion));
-          }
+          applySearchCriteria(body, search);
         }
 
         const { data } = await datasource.client.request(`/api/datasource/${field.selector?.datasourceName ?? ""}`, {
@@ -207,34 +264,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
           body,
         });
 
-        if (data?.response?.data) {
-          if (!data.response.data.length || data.response.data.length < pageSize) {
-            setHasMore(false);
-          }
-
-          if (reset) {
-            setRecords(data.response.data);
-          } else {
-            const recordMap = new Map();
-
-            for (const record of records) {
-              const recordId = record.id || JSON.stringify(record);
-              recordMap.set(recordId, record);
-            }
-            for (const record of data.response.data) {
-              const recordId = record.id || JSON.stringify(record);
-              recordMap.set(recordId, record);
-            }
-
-            setRecords(Array.from(recordMap.values()));
-          }
-
-          if (!reset) {
-            setCurrentPage((prev) => prev + 1);
-          }
-        } else {
-          throw new Error(data);
-        }
+        processApiResponse(data, reset);
       } catch (err) {
         logger.warn(err);
 
@@ -247,22 +277,7 @@ export const useTableDirDatasource = ({ field, pageSize = 20, initialPageSize = 
         setLoading(false);
       }
     },
-    [
-      field,
-      tab,
-      currentPage,
-      pageSize,
-      initialPageSize,
-      selectorId,
-      windowId,
-      isProductField,
-      invoiceContext,
-      parentData,
-      transformFormValues,
-      buildSearchCriteria,
-      getValues,
-      records,
-    ]
+    [field, tab, currentPage, pageSize, initialPageSize, buildRequestBody, applySearchCriteria, processApiResponse]
   );
 
   const search = useCallback(

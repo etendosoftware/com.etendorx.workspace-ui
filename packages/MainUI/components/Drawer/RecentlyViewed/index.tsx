@@ -161,11 +161,10 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
 
           {open && item.children && (
             <div className={`transition-transform duration-300 flex justify-center ${expanded ? "rotate-180" : ""}`}>
-              <ChevronDown />
+              <ChevronDown data-testid="ChevronDown__eddcab" />
             </div>
           )}
         </button>
-
         {expanded && open && (
           <div className="py-2 pl-4 flex flex-wrap gap-2 w-full">
             {localRecentItems.map((recentItem) => (
@@ -188,7 +187,8 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
             anchorEl={anchorEl}
             offsetX={62}
             offsetY={-110}
-            onClose={handleCloseMenu}>
+            onClose={handleCloseMenu}
+            data-testid="MenuLibrary__eddcab">
             <div
               className="border-b border-transparent-neutral-5 h-13 flex items-center px-6 bg-neutral-50 
                 font-inter font-semibold text-[14px] leading-[20px] tracking-[0.15px] text-baseline-80">
@@ -207,6 +207,7 @@ export const RecentlyViewed = forwardRef<{ handleWindowAccess: (item: Menu) => v
                 isExpanded={false}
                 parentId={subitem.id}
                 windowId={windowId}
+                data-testid="DrawerSection__eddcab"
               />
             ))}
           </MenuLibrary>

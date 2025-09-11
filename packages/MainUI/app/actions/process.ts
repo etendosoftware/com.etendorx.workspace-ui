@@ -28,7 +28,6 @@ export async function executeProcess(
   actionHandler?: string
 ): Promise<ExecuteProcessResult> {
   try {
-
     if (!token) {
       logger.error?.("executeProcess: No authentication token provided");
       return { success: false, error: "Authentication required" };
@@ -38,27 +37,26 @@ export async function executeProcess(
     const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
     const queryParams = new URLSearchParams();
     queryParams.set("processId", processId);
-    
+
     if (windowId) {
       queryParams.set("windowId", windowId);
     }
-    
+
     if (reportId !== undefined) {
       queryParams.set("reportId", reportId);
     }
-    
+
     if (actionHandler) {
       queryParams.set("_action", actionHandler);
     }
-    
-    const apiUrl = `${baseUrl}/api/erp?${queryParams.toString()}`;
 
+    const apiUrl = `${baseUrl}/api/erp?${queryParams.toString()}`;
 
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json;charset=UTF-8",
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(parameters ?? {}),
       credentials: "include",

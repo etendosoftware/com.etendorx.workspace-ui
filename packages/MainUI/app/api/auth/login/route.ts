@@ -113,9 +113,12 @@ export async function POST(request: NextRequest) {
 
     const erpResponse = await fetchErpLogin(erpLoginUrl, body, cookieHeader || undefined, userToken || undefined);
 
+    if (!erpResponse || !erpResponse.ok) {
+      throw new Error("ERP login failed", { cause: erpResponse });
+    }
+
     const data = await erpResponse.json().catch((jsonError) => {
-      console.error("JSON parse error:", jsonError);
-      throw new Error("Invalid response from Etendo Classic backend");
+      throw new Error("Invalid response from Etendo Classic backend", { cause: jsonError });
     });
 
     storeCookieForToken(erpResponse, data);
@@ -125,10 +128,32 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json(data, { status: 200 });
   } catch (error) {
-    console.error("API Route /api/auth/login Error:", error);
-
-    const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
-
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return handleLoginError(error);
   }
+}
+
+/**
+ * Handles errors in the login process and returns appropriate response
+ */
+function handleLoginError(error: unknown): NextResponse {
+  console.error("API Route /api/auth/login Error:", error);
+
+  const cause = error instanceof Error ? error.cause : null;
+
+  const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
+
+  const statusCode = getErrorStatusCode(cause);
+
+  return NextResponse.json({ error: errorMessage }, { status: statusCode });
+}
+
+/**
+ * Extracts status code from error cause or defaults to 500
+ */
+function getErrorStatusCode(cause: unknown): number {
+  if (cause && typeof cause === "object" && "status" in cause && typeof cause.status === "number") {
+    return cause.status;
+  }
+
+  return 500;
 }

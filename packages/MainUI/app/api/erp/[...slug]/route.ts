@@ -14,16 +14,15 @@ const getCachedErpData = unstable_cache(
 
     const headers: Record<string, string> = {
       Authorization: `Bearer ${userToken}`,
-      Accept: "application/json",
+      Accept: slug.includes("copilot") ? "text/event-stream" : "application/json",
     };
 
-    // Only add Content-Type for requests with body
     if (method !== "GET" && body) {
       headers["Content-Type"] = contentType;
     }
 
     const response = await fetch(erpUrl, {
-      method: method, // Use the actual method instead of hardcoded POST
+      method: method,
       headers,
       body: method === "GET" ? undefined : body,
     });
@@ -33,9 +32,14 @@ const getCachedErpData = unstable_cache(
       throw new Error(`ERP request failed for slug ${slug}: ${response.status} ${response.statusText}. ${errorText}`);
     }
 
+    const responseContentType = response.headers.get("content-type");
+    if (responseContentType?.includes("text/event-stream")) {
+      return { stream: response.body, headers: response.headers };
+    }
+
     return response.json();
   },
-  ["erp_logic_v1"] // Base key for this function
+  ["erp_logic_v1"]
 );
 
 /**
@@ -62,11 +66,12 @@ function buildErpHeaders(
   request: Request,
   method: string,
   requestBody: string | undefined,
-  contentType: string
+  contentType: string,
+  slug?: string
 ): Record<string, string> {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${userToken}`,
-    Accept: "application/json",
+    Accept: slug?.includes("copilot") ? "text/event-stream" : "application/json",
   };
 
   if (method !== "GET" && requestBody) {
@@ -110,6 +115,11 @@ async function handleMutationRequest(
     throw new Error(`ERP request failed: ${response.status} ${response.statusText}`);
   }
 
+  const responseContentType = response.headers.get("content-type");
+  if (responseContentType?.includes("text/event-stream")) {
+    return { stream: response.body, headers: response.headers };
+  }
+
   return response.json();
 }
 
@@ -118,7 +128,6 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
     const resolvedParams = await params;
     console.log(`API Route /api/erp/${resolvedParams.slug.join("/")} - Method: ${method}`);
 
-    // Extract user token for authentication with ERP
     const userToken = extractBearerToken(request);
     if (!userToken) {
       return NextResponse.json({ error: "Unauthorized - Missing Bearer token" }, { status: 401 });
@@ -126,7 +135,6 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 
     const slug = resolvedParams.slug.join("/");
 
-    // Build ERP URL and always append query parameters if present
     let erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, slug);
     const url = new URL(request.url);
     if (url.search) {
@@ -139,12 +147,23 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
     let data: unknown;
     if (isMutationRoute(slug, method)) {
       // Don't cache mutations or non-GET requests, make direct request
-      const headers = buildErpHeaders(userToken, request, method, requestBody, contentType);
+      const headers = buildErpHeaders(userToken, request, method, requestBody, contentType, slug);
       data = await handleMutationRequest(erpUrl, method, headers, requestBody);
     } else {
-      // Use cache for read operations (GET requests only)
       const queryParams = method === "GET" ? new URL(request.url).search : "";
       data = await getCachedErpData(userToken, slug, method, requestBody || "", contentType, queryParams);
+    }
+
+    // Handle streaming responses for copilot
+    if (slug.includes("copilot") && data && typeof data === "object" && "stream" in data) {
+      const streamData = data as { stream: ReadableStream; headers: Headers };
+      return new Response(streamData.stream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      });
     }
 
     return NextResponse.json(data);

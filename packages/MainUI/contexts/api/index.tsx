@@ -82,10 +82,11 @@ export default function ApiProvider({ children, url }: React.PropsWithChildren<{
           description={t("errors.networkError.description")}
           showRetry={true}
           onRetry={healthCheck}
+          data-testid="ErrorDisplay__b02100"
         />
       </div>
     );
   }
 
-  return <Loading />;
+  return <Loading data-testid="Loading__b02100" />;
 }

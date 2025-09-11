@@ -16,73 +16,49 @@
  */
 
 import type { IAssistant } from "@workspaceui/api-client/src/api/copilot";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useCopilotClient } from "./useCopilotClient";
-import { logger } from "@/utils/logger";
 
 export const useAssistants = () => {
   const [selectedOption, setSelectedOption] = useState<IAssistant | null>(null);
   const [assistants, setAssistants] = useState<IAssistant[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const copilotClient = useCopilotClient();
 
-  const getAssistants = useCallback(
-    async (retryCount = 0) => {
-      if (!copilotClient.isReady) {
-        logger.log("CopilotClient not ready yet, skipping getAssistants");
-        return;
-      }
+  const getAssistants = useCallback(async () => {
+    try {
+      const data = await copilotClient.getAssistants();
 
-      setLoading(true);
-      setError(null);
-
-      try {
-        logger.log("Fetching assistants...");
-        const data = await copilotClient.getAssistants();
-
+      if (data.length > 0) {
+        setSelectedOption(data[0]);
         setAssistants(data);
-
-        if (data.length > 0) {
-          setSelectedOption(data[0]);
-        } else {
-          setSelectedOption(null);
-          console.warn("No assistants available from backend");
-        }
-      } catch (err) {
-        if (retryCount < 2) {
-          setTimeout(() => getAssistants(retryCount + 1), 1000);
-          return;
-        }
-
-        setError(err instanceof Error ? err.message : "Failed to load assistants");
-        console.error("Error loading assistants:", err);
-      } finally {
-        setLoading(false);
+      } else {
+        setSelectedOption(null);
+        setAssistants([]);
       }
-    },
-    [copilotClient]
-  );
-
-  // Auto-fetch assistants when client is ready
-  useEffect(() => {
-    if (copilotClient.isReady) {
-      getAssistants();
+    } catch (error) {
+      console.error("Error loading assistants:", error);
+      setSelectedOption(null);
+      setAssistants([]);
     }
-  }, [copilotClient.isReady, getAssistants]);
+  }, [copilotClient]);
 
-  const handleOptionSelected = (value: IAssistant | null) => {
+  const invalidateCache = useCallback(() => {
+    setAssistants([]);
+    setSelectedOption(null);
+  }, []);
+
+  const handleOptionSelected = useCallback((value: IAssistant | null) => {
     setSelectedOption(value);
-  };
+  }, []);
 
   return {
     selectedOption,
     assistants,
-    loading,
-    error,
     getAssistants,
+    invalidateCache,
     handleOptionSelected,
     hasAssistants: assistants.length > 0,
+    isReady: copilotClient.isReady,
   };
 };

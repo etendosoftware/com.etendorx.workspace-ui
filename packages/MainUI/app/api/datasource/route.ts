@@ -67,11 +67,20 @@ async function fetchDatasource(
     body: formData,
   });
 
-  if (!response.ok) {
-    throw new Error(`ERP Datasource request failed: ${response.statusText}`);
+  // Read body ONCE and reuse it (avoid double consumption of stream)
+  const raw = await response.text();
+  let parsed: unknown;
+  try {
+    parsed = raw ? JSON.parse(raw) : null;
+  } catch {
+    parsed = { text: raw };
   }
-  const data = await response.json();
-  return { response, data };
+
+  if (!response.ok) {
+    // return a small wrapper so the caller can forward status and body
+    return { response, data: parsed, __error: true, status: response.status, body: parsed } as const;
+  }
+  return { response, data: parsed } as const;
 }
 
 async function fetchDatasourceJson(
@@ -109,11 +118,19 @@ async function fetchDatasourceJson(
     body: JSON.stringify(processedParams),
   });
 
-  if (!response.ok) {
-    throw new Error(`ERP Datasource JSON request failed: ${response.statusText}`);
+  // Read body ONCE and reuse it (avoid double consumption of stream)
+  const raw = await response.text();
+  let parsed: unknown;
+  try {
+    parsed = raw ? JSON.parse(raw) : null;
+  } catch {
+    parsed = { text: raw };
   }
-  const data = await response.json();
-  return { response, data };
+
+  if (!response.ok) {
+    return { response, data: parsed, __error: true, status: response.status, body: parsed } as const;
+  }
+  return { response, data: parsed } as const;
 }
 
 function isSmartClientPayload(params: DatasourceRequestParams): params is SmartClientPayload {

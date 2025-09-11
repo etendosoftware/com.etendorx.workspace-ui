@@ -1,20 +1,3 @@
-/*
- *************************************************************************
- * The contents of this file are subject to the Etendo License
- * (the "License"), you may not use this file except in compliance with
- * the License.
- * You may obtain a copy of the License at
- * https://github.com/etendosoftware/etendo_core/blob/main/legal/Etendo_license.txt
- * Software distributed under the License is distributed on an
- * "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
- * implied. See the License for the specific language governing rights
- * and limitations under the License.
- * All portions are Copyright © 2021–2025 FUTIT SERVICES, S.L
- * All Rights Reserved.
- * Contributor(s): Futit Services S.L.
- *************************************************************************
- */
-
 import type React from "react";
 import type { Column } from "@workspaceui/api-client/src/api/types";
 import {
@@ -23,6 +6,8 @@ import {
   type FilterOption,
 } from "@workspaceui/api-client/src/utils/column-filter-utils";
 import { MultiSelect } from "../Form/FormView/selectors/components/MultiSelect";
+import { useState } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export interface ColumnFilterProps {
   column: Column;
@@ -32,50 +17,72 @@ export interface ColumnFilterProps {
   onLoadMoreOptions?: (searchQuery?: string) => void;
 }
 
-export const ColumnFilter: React.FC<ColumnFilterProps> = ({ column, filterState, onFilterChange, onLoadOptions, onLoadMoreOptions }) => {
-  if (!ColumnFilterUtils.supportsDropdownFilter(column)) {
-    return null;
-  }
+export const ColumnFilter: React.FC<ColumnFilterProps> = ({
+  column,
+  filterState,
+  onFilterChange,
+  onLoadOptions,
+  onLoadMoreOptions,
+}) => {
+  const { t } = useTranslation();
+  const [localSelectedOptions, setLocalSelectedOptions] = useState<FilterOption[]>(filterState?.selectedOptions || []);
+
+  const isBooleanColumn = column.type === "boolean" || column.column?._identifier === "YesNo";
+
+  const supportsDropdown = isBooleanColumn || ColumnFilterUtils.supportsDropdownFilter(column);
+
+  if (!supportsDropdown) return null;
+
+  const booleanOptions: FilterOption[] = [
+    { id: "true", label: t("common.trueText"), value: "true" },
+    { id: "false", label: t("common.falseText"), value: "false" },
+  ];
+
+  const availableOptions = isBooleanColumn
+    ? booleanOptions
+    : (filterState?.availableOptions || []).map((option) => ({
+        id: option.id,
+        label: option.label,
+        value: option.value ?? option.id,
+      }));
+
+  const selectedValues = isBooleanColumn
+    ? localSelectedOptions.map((opt) => opt.id)
+    : (filterState?.selectedOptions || []).map((option) => option.id);
 
   const handleSelectionChange = (selectedIds: string[]) => {
-    const selectedOptions = (filterState?.availableOptions || []).filter((option) => selectedIds.includes(option.id));
+    const selectedOptions = (availableOptions || []).filter((option) => selectedIds.includes(option.id));
+
+    if (isBooleanColumn) {
+      setLocalSelectedOptions(selectedOptions);
+    }
+
     onFilterChange(selectedOptions);
   };
 
   const handleSearchChange = (searchQuery: string) => {
-    if (onLoadOptions) {
-      onLoadOptions(searchQuery);
-    }
+    if (onLoadOptions && !isBooleanColumn) onLoadOptions(searchQuery);
   };
 
   const handleLoadMore = () => {
-    if (onLoadMoreOptions && ColumnFilterUtils.isTableDirColumn(column)) {
-      // Pass current search query for consistent pagination
+    if (onLoadMoreOptions && ColumnFilterUtils.isTableDirColumn(column) && !isBooleanColumn) {
       onLoadMoreOptions(filterState?.searchQuery);
     }
   };
-
-  const selectedValues = (filterState?.selectedOptions || []).map((option) => option.id);
-  const availableOptions = (filterState?.availableOptions || []).map((option) => ({
-    id: option.id,
-    label: option.label,
-  }));
-
-  const supportsSearch = ColumnFilterUtils.isTableDirColumn(column) || ColumnFilterUtils.isSelectColumn(column);
-  const supportsLoadMore = ColumnFilterUtils.isTableDirColumn(column); // Only table dir supports server-side pagination for now
 
   return (
     <MultiSelect
       options={availableOptions}
       selectedValues={selectedValues}
       onSelectionChange={handleSelectionChange}
-      onSearch={supportsSearch ? handleSearchChange : undefined}
-      onFocus={onLoadOptions}
-      onLoadMore={supportsLoadMore ? handleLoadMore : undefined}
+      onSearch={!isBooleanColumn ? handleSearchChange : undefined}
+      onFocus={!isBooleanColumn ? onLoadOptions : undefined}
+      onLoadMore={!isBooleanColumn ? handleLoadMore : undefined}
       loading={filterState?.loading || false}
       hasMore={filterState?.hasMore || false}
       placeholder={`Filter ${column.name || column.columnName}...`}
       maxHeight={200}
+      data-testid="MultiSelect__a8fea9"
     />
   );
 };

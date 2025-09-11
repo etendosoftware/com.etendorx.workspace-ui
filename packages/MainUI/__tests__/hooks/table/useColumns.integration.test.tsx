@@ -22,16 +22,25 @@ import type { Tab, Field, GridProps } from "@workspaceui/api-client/src/api/type
 // Mock the dependencies
 jest.mock("@/utils/tableColumns", () => ({
   parseColumns: jest.fn((fields) =>
-    fields.map((field: Field) => ({
-      id: field.name,
-      header: field.name,
-      accessorFn: (row: Record<string, unknown>) => row[field.name],
-      columnName: field.name,
-      name: field.name,
-      _identifier: field.name,
-      fieldId: field.id,
-      column: field.column || {},
-    }))
+    fields.map((field: Field) => {
+      const column: any = {
+        id: field.name,
+        header: field.name,
+        accessorFn: (row: Record<string, unknown>) => row[field.name],
+        columnName: field.name,
+        name: field.name,
+        _identifier: field.name,
+        fieldId: field.id,
+        column: field.column || {},
+      };
+
+      if (field.etmetaCustomjs) {
+        // Simular la creación de Cell a partir de custom JS
+        column.Cell = new Function("record", `return (${field.etmetaCustomjs})(record)`);
+      }
+
+      return column;
+    })
   ),
 }));
 

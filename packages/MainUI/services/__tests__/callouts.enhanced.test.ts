@@ -88,7 +88,7 @@ describe("Enhanced GlobalCalloutManager Event System", () => {
       await calloutPromise;
 
       // Wait for events to be processed
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       // calloutEnd should be called after completion
       expect(endListener).toHaveBeenCalledWith({ allCompleted: true });
@@ -120,7 +120,7 @@ describe("Enhanced GlobalCalloutManager Event System", () => {
       await Promise.all([callout1, callout2]);
 
       // Wait for events to be processed
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       // Verify events were emitted
       expect(startListener).toHaveBeenCalledWith({ queueLength: 2 });
@@ -149,7 +149,7 @@ describe("Enhanced GlobalCalloutManager Event System", () => {
       }
 
       // Wait for events to be processed
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       // Events should still be emitted despite error
       expect(startListener).toHaveBeenCalledWith({ queueLength: 1 });
@@ -214,7 +214,7 @@ describe("Enhanced GlobalCalloutManager Event System", () => {
       await calloutPromise;
 
       // Wait for events to be processed
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       const completedState = globalCalloutManager.getState();
       expect(completedState.isRunning).toBe(false);
@@ -294,7 +294,7 @@ describe("Enhanced GlobalCalloutManager Event System", () => {
       await calloutPromise;
 
       // Wait for events to be processed
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(checkStatus()).toBe(false);
     });

@@ -46,6 +46,7 @@ const PAGE_SIZE = 100;
  */
 function WindowReferenceGrid({
   parameter,
+  parameters,
   onSelectionChange,
   tabId,
   entityName,
@@ -61,6 +62,11 @@ function WindowReferenceGrid({
 
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
+
+  // Stable values to avoid unnecessary re-renders
+  const processId = processConfig?.processId;
+  const processDefaults = processConfig?.defaults;
+  const filterExpressions = processConfig?.filterExpressions;
 
   const datasourceOptions = useMemo(() => {
     const processId = processConfig?.processId;
@@ -86,21 +92,30 @@ function WindowReferenceGrid({
       options[invoiceCurrency] = recordValues?.inpcCurrencyId || "";
     }
 
-    if (processConfig?.defaults) {
-      for (const [key, value] of Object.entries(processConfig.defaults)) {
-        options[key] = value.value;
+    if (processDefaults) {
+      for (const [key, value] of Object.entries(processDefaults)) {
+        // Handle different value structures
+        const actualValue = typeof value === "object" && value !== null && "value" in value ? value.value : value;
 
+        // Find the corresponding parameter by name to get its dBColumnName
+        const matchingParameter = Object.values(parameters).find((param) => param.name === key);
+        const datasourceFieldName = matchingParameter?.dBColumnName || key;
+
+        // Set the value using the datasource field name (e.g., ad_org_id instead of Legal Entity Organization)
+        options[datasourceFieldName] = actualValue;
+
+        // Also handle defaultKeys mapping if provided
         if (defaultKeys && key in defaultKeys) {
           const defaultKey = defaultKeys[key as keyof typeof defaultKeys];
-          options[defaultKey] = value.value;
+          options[defaultKey] = actualValue;
         }
       }
     }
 
     let criteria: Array<{ fieldName: string; operator: string; value: EntityValue }> = [];
 
-    if (processConfig?.filterExpressions?.grid) {
-      const filterCriteria = Object.entries(processConfig.filterExpressions.grid).map(([fieldName, value]) => ({
+    if (filterExpressions?.grid) {
+      const filterCriteria = Object.entries(filterExpressions.grid).map(([fieldName, value]) => ({
         fieldName,
         operator: "equals",
         value: value === "true" ? true : value === "false" ? false : value,
@@ -114,7 +129,7 @@ function WindowReferenceGrid({
     }
 
     return options;
-  }, [tabId, parameter.tab, processConfig, recordValues]);
+  }, [tabId, parameter.tab, processId, processDefaults, filterExpressions, recordValues]);
 
   const fields = useMemo(() => {
     if (windowReferenceTab?.fields) {
@@ -276,10 +291,12 @@ function WindowReferenceGrid({
     data: records,
     getRowId: (row) => String(row.id),
     renderTopToolbar,
-    renderBottomToolbar: hasMoreRecords ? () => <LoadMoreButton fetchMore={fetchMore} /> : undefined,
+    renderBottomToolbar: hasMoreRecords
+      ? () => <LoadMoreButton fetchMore={fetchMore} data-testid="LoadMoreButton__ce8544" />
+      : undefined,
     renderEmptyRowsFallback: () => (
       <div className="flex justify-center items-center p-8 text-gray-500">
-        <EmptyState maxWidth={MAX_WIDTH} />
+        <EmptyState maxWidth={MAX_WIDTH} data-testid="EmptyState__ce8544" />
       </div>
     ),
     initialState: {
@@ -300,17 +317,25 @@ function WindowReferenceGrid({
   if (isLoading) {
     return (
       <div className="p-4 flex justify-center">
-        <Loading />
+        <Loading data-testid="Loading__ce8544" />
       </div>
     );
   }
 
   if (error) {
-    return <ErrorDisplay title={t("errors.missingData")} description={error?.message} showRetry onRetry={refetch} />;
+    return (
+      <ErrorDisplay
+        title={t("errors.missingData")}
+        description={error?.message}
+        showRetry
+        onRetry={refetch}
+        data-testid="ErrorDisplay__ce8544"
+      />
+    );
   }
 
   if ((fields.length === 0 && !tabLoading) || !records || records.length === 0) {
-    return <EmptyState maxWidth={MAX_WIDTH} />;
+    return <EmptyState maxWidth={MAX_WIDTH} data-testid="EmptyState__ce8544" />;
   }
 
   return (
@@ -319,7 +344,7 @@ function WindowReferenceGrid({
         datasourceLoading ? "opacity-40 cursor-wait cursor-to-children" : "opacity-100"
       }`}
       ref={contentRef}>
-      <MaterialReactTable table={table} />
+      <MaterialReactTable table={table} data-testid="MaterialReactTable__ce8544" />
     </div>
   );
 }
