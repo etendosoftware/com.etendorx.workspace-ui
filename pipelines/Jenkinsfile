@@ -346,35 +346,51 @@ exit 0
               def branchCurrent = "${GIT_BRANCH}"
               def branchMain = "main"
 
-              def getCoverageWithRetry = { branch ->
+              def getCoverageWithRetry = { branch, checkCommit ->
                 int maxRetries = 4
                 int attempt = 0
                 float coverage = -1
                 while (attempt < maxRetries) {
-                  def response = sh(
-                    script: "curl -s -u ${SONAR_TOKEN}: \"${SONAR_SERVER}/api/measures/component?component=${sonarProjectKey}&branch=${branch}&metricKeys=coverage\"",
+                  def analysisResp = sh(
+                    script: "curl -s -u ${SONAR_TOKEN}: \"${SONAR_SERVER}/api/project_analyses/search?project=${sonarProjectKey}&branch=${branch}\"",
                     returnStdout: true
                   ).trim()
-                  def json = readJSON text: response
-                  def measures = json?.component?.measures ?: []
-                  def covStr = measures.find { it.metric == 'coverage' }?.value
-                  if (covStr) {
-                    coverage = covStr.toFloat()
-                    break
-                  } else {
-                    echo "Coverage not available for branch '${branch}' (attempt ${attempt + 1}/${maxRetries}), waiting 1 minute before retrying..."
+                  def analysisJson = readJSON text: analysisResp
+                  def lastAnalysis = analysisJson?.analyses ? analysisJson.analyses[0] : null
+                  def lastRevision = lastAnalysis?.revision ?: null
+                  if (!checkCommit || (lastRevision && lastRevision == GIT_COMMIT)) {
+                    def response = sh(
+                      script: "curl -s -u ${SONAR_TOKEN}: \"${SONAR_SERVER}/api/measures/component?component=${sonarProjectKey}&branch=${branch}&metricKeys=coverage\"",
+                      returnStdout: true
+                    ).trim()
+                    def json = readJSON text: response
+                    def measures = json?.component?.measures ?: []
+                    def covStr = measures.find { it.metric == 'coverage' }?.value
+                    if (covStr) {
+                      coverage = covStr.toFloat()
+                      break
+                    } else {
+                      echo "Coverage not available for branch '${branch}' (attempt ${attempt + 1}/${maxRetries}), waiting 1 minute before retrying..."
+                      sleep(time: 1, unit: 'MINUTES')
+                    }
+                  } else if (checkCommit) {
+                    echo "Latest analysis for branch '${branch}' does not match current commit (expected: ${GIT_COMMIT}, got: ${lastRevision}). Waiting 1 minute before retrying..."
                     sleep(time: 1, unit: 'MINUTES')
                   }
                   attempt++
                 }
                 if (coverage == -1) {
-                  error("Could not retrieve coverage for branch '${branch}' after ${maxRetries} attempts.")
+                  if (checkCommit) {
+                    error("Could not retrieve coverage for branch '${branch}' and commit '${GIT_COMMIT}' after ${maxRetries} attempts.")
+                  } else {
+                    error("Could not retrieve coverage for branch '${branch}' after ${maxRetries} attempts.")
+                  }
                 }
                 return coverage
               }
 
-              def coverageCurrent = getCoverageWithRetry(branchCurrent)
-              def coverageMain = getCoverageWithRetry(branchMain)
+              def coverageCurrent = getCoverageWithRetry(branchCurrent, true)
+              def coverageMain = getCoverageWithRetry(branchMain, false)
 
               echo "Current branch coverage: ${coverageCurrent}%"
               echo "Main branch coverage: ${coverageMain}%"
