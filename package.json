@@ -8,7 +8,7 @@
   "scripts": {
     "build:all": "pnpm --filter @workspaceui/storybook build && pnpm --filter @workspaceui/mainui build",
     "storybook": "pnpm --filter @workspaceui/storybook storybook",
-    "dev": "pnpm --filter @workspaceui/mainui dev",
+    "dev": "turbo run dev --filter=@workspaceui/mainui",
     "build": "cd packages/MainUI && ./build.sh && cd ../..",
     "clean": "pnpm -r exec -- rm -rf dist node_modules .next && rm -rf node_modules",
     "start": "node dist",
@@ -55,6 +55,7 @@
     "prettier-eslint-cli": "^8.0.1",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
+    "turbo": "^2.5.6",
     "typescript": "^5.2.2"
   },
   "dependencies": {

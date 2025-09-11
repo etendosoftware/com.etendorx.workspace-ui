@@ -17,7 +17,6 @@
 
 import { Box } from "@mui/material";
 import TabIcon from "@mui/icons-material/KeyboardTab";
-import t from "../TextInputAutocomplete.translations.json";
 import { useStyle } from "../TextInputAutocomplete.styles";
 
 export interface SuggestionBoxProps {
@@ -33,7 +32,7 @@ const SuggestionBox = ({ suggestion, value }: SuggestionBoxProps) => {
       <span style={styles.suggestionText}>{suggestion.slice(value.length)}</span>
       <Box sx={sx.tabBox}>
         <TabIcon sx={sx.tabIcon} />
-        <p style={styles.tabText}>{t.tab}</p>
+        <p style={styles.tabText}>Tab</p>
       </Box>
     </Box>
   );
