@@ -30,5 +30,13 @@ export const BooleanSelector = ({ field, isReadOnly }: { field: Field; isReadOnl
     defaultValue: false,
   });
 
-  return <Switch checked={!!value} onCheckedChange={onChange} field={field} disabled={isReadOnly} />;
+  return (
+    <Switch
+      checked={!!value}
+      onCheckedChange={onChange}
+      field={field}
+      disabled={isReadOnly}
+      data-testid="Switch__756a1e"
+    />
+  );
 };

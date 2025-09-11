@@ -42,7 +42,7 @@ export default function MenuItem({ windowId, title, isActive, onSelect }: MenuIt
   };
 
   return (
-    <Tooltip title={title} position="left" containerClassName="w-full">
+    <Tooltip title={title} position="left" containerClassName="w-full" data-testid="Tooltip__6d20d3">
       <button
         type="button"
         key={windowId}
@@ -55,11 +55,17 @@ export default function MenuItem({ windowId, title, isActive, onSelect }: MenuIt
           <div className="truncate flex items-center gap-2">
             <FolderIcon
               className={`min-h-4 min-w-4 h-4 w-4 fill-[var(--color-baseline-60)] hover:fill-[var(--color-dynamic-main)] ${showSelected ? "fill-[var(--color-dynamic-main)]" : ""}`}
+              data-testid="FolderIcon__6d20d3"
             />
             <span className="truncate">{title}</span>
           </div>
         </div>
-        {isActive && <CheckIcon className="min-h-4 min-w-4 h-4 w-4 fill-[var(--color-dynamic-main)]" />}
+        {isActive && (
+          <CheckIcon
+            className="min-h-4 min-w-4 h-4 w-4 fill-[var(--color-dynamic-main)]"
+            data-testid="CheckIcon__6d20d3"
+          />
+        )}
       </button>
     </Tooltip>
   );

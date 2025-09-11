@@ -18,4 +18,6 @@
 import ChevronDown from "../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import { theme } from "@workspaceui/componentlibrary/src/theme";
 
-export const defaultIcon = <ChevronDown fill={theme.palette.baselineColor.neutral[80]} />;
+export const defaultIcon = (
+  <ChevronDown fill={theme.palette.baselineColor.neutral[80]} data-testid="ChevronDown__a9d8f9" />
+);

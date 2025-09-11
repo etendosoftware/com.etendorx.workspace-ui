@@ -67,6 +67,12 @@ export const TextInput = ({
     setIsFocused(false);
     if (props.onBlur) props.onBlur(e);
   };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (props.onKeyDown) {
+      props.onKeyDown(e);
+    }
+  };
   const handleClear = () => {
     if (setValue) {
       setValue(""); // <-- solo si setValue está adaptado
@@ -86,7 +92,6 @@ export const TextInput = ({
           {field.isMandatory && <span className="text-error-main ml-1">*</span>}
         </label>
       )}
-
       <div className={`relative flex items-center w-full ${isDisabled ? "pointer-events-none" : ""}`}>
         {leftIcon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center">
@@ -105,6 +110,7 @@ export const TextInput = ({
           onChange={handleChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
           {...props}
         />
 
@@ -113,13 +119,12 @@ export const TextInput = ({
             type="button"
             onClick={handleClear}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:text-gray-600 transition-colors z-10 flex items-center justify-center">
-            <X className="h-4 w-4 text-gray-400" />
+            <X className="h-4 w-4 text-gray-400" data-testid={`X__${field.id}`} />
           </button>
         )}
 
         {endAdornment}
       </div>
-
       <div className="h-0">{errorText && <p className="text-xs text-red-500 mt-1">{errorText}</p>}</div>
     </div>
   );

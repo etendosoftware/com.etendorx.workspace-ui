@@ -26,7 +26,7 @@ export default function Loading({
 }) {
   return (
     <div className={`h-full mx-auto flex flex-col items-center justify-center ${className}`}>
-      <CircularProgress {...customIconProps} />
+      <CircularProgress {...customIconProps} data-testid="CircularProgress__9b607f" />
     </div>
   );
 }

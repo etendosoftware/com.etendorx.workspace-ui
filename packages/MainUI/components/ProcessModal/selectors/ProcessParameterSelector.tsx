@@ -12,7 +12,7 @@ import { PasswordSelector } from "@/components/Form/FormView/selectors/PasswordS
 import { BooleanSelector } from "@/components/Form/FormView/selectors/BooleanSelector";
 import { NumericSelector } from "@/components/Form/FormView/selectors/NumericSelector";
 import { DateSelector } from "@/components/Form/FormView/selectors/DateSelector";
-import { DatetimeSelector } from "@/components/Form/FormView/selectors/DatetimeSelector";
+import DatetimeSelector from "@/components/Form/FormView/selectors/DatetimeSelector";
 import { SelectSelector } from "@/components/Form/FormView/selectors/SelectSelector";
 import { TableDirSelector } from "@/components/Form/FormView/selectors/TableDirSelector";
 import QuantitySelector from "@/components/Form/FormView/selectors/QuantitySelector";
@@ -111,50 +111,78 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
       // Validate field mapping before rendering
       if (!mappedField.hqlName) {
         logger.warn("Missing hqlName for parameter:", parameter.name);
-        return <GenericSelector parameter={parameter} readOnly={isReadOnly} />;
+        return <GenericSelector parameter={parameter} readOnly={isReadOnly} data-testid="GenericSelector__dac06b" />;
       }
 
       switch (fieldType) {
         case "password":
-          return <PasswordSelector field={mappedField} disabled={isReadOnly} placeholder={parameter.description} />;
+          return (
+            <PasswordSelector
+              field={mappedField}
+              disabled={isReadOnly}
+              placeholder={parameter.description}
+              data-testid="PasswordSelector__dac06b"
+            />
+          );
 
         case "boolean":
-          return <BooleanSelector field={mappedField} isReadOnly={isReadOnly} />;
+          return <BooleanSelector field={mappedField} isReadOnly={isReadOnly} data-testid="BooleanSelector__dac06b" />;
 
         case "numeric":
-          return <NumericSelector field={mappedField} disabled={isReadOnly} placeholder={parameter.description} />;
+          return (
+            <NumericSelector
+              field={mappedField}
+              disabled={isReadOnly}
+              placeholder={parameter.description}
+              data-testid="NumericSelector__dac06b"
+            />
+          );
 
         case "date":
-          return <DateSelector field={mappedField} isReadOnly={isReadOnly} />;
+          return <DateSelector field={mappedField} isReadOnly={isReadOnly} data-testid="DateSelector__dac06b" />;
 
         case "datetime":
-          return <DatetimeSelector field={mappedField} isReadOnly={isReadOnly} />;
+          return (
+            <DatetimeSelector field={mappedField} isReadOnly={isReadOnly} data-testid="DatetimeSelector__dac06b" />
+          );
 
         case "select":
-          return <SelectSelector field={mappedField} isReadOnly={isReadOnly} pageSize={20} initialPageSize={20} />;
+          return (
+            <SelectSelector
+              field={mappedField}
+              isReadOnly={isReadOnly}
+              pageSize={20}
+              initialPageSize={20}
+              data-testid="SelectSelector__dac06b"
+            />
+          );
 
         case "tabledir":
         case "product":
-          return <TableDirSelector field={mappedField} isReadOnly={isReadOnly} />;
+          return (
+            <TableDirSelector field={mappedField} isReadOnly={isReadOnly} data-testid="TableDirSelector__dac06b" />
+          );
 
         case "quantity":
-          return <QuantitySelector field={mappedField} />;
+          return <QuantitySelector field={mappedField} data-testid="QuantitySelector__dac06b" />;
 
         case "list":
           if (!mappedField.refList || mappedField.refList.length === 0) {
             logger.warn("List field without options, falling back to GenericSelector:", parameter.name);
-            return <GenericSelector parameter={parameter} readOnly={isReadOnly} />;
+            return (
+              <GenericSelector parameter={parameter} readOnly={isReadOnly} data-testid="GenericSelector__dac06b" />
+            );
           }
-          return <ListSelector field={mappedField} isReadOnly={isReadOnly} />;
+          return <ListSelector field={mappedField} isReadOnly={isReadOnly} data-testid="ListSelector__dac06b" />;
 
         default:
           // Fallback to GenericSelector for text, window references, and unknown types
-          return <GenericSelector parameter={parameter} readOnly={isReadOnly} />;
+          return <GenericSelector parameter={parameter} readOnly={isReadOnly} data-testid="GenericSelector__dac06b" />;
       }
     } catch (error) {
       logger.error("Error rendering selector for parameter:", parameter.name, error);
       // Fallback to GenericSelector on error
-      return <GenericSelector parameter={parameter} readOnly={isReadOnly} />;
+      return <GenericSelector parameter={parameter} readOnly={isReadOnly} data-testid="GenericSelector__dac06b" />;
     }
   };
 
@@ -166,7 +194,7 @@ export const ProcessParameterSelector = ({ parameter, logicFields }: ProcessPara
             *
           </span>
         )}
-        <Label htmlFor={parameter.name} name={parameter.name} />
+        <Label htmlFor={parameter.name} name={parameter.name} data-testid="Label__dac06b" />
       </div>
       <div className="w-full pb-8">{renderSelector()}</div>
     </div>

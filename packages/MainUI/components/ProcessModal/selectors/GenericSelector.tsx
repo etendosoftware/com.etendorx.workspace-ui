@@ -24,12 +24,11 @@ const GenericSelector = ({ parameter, readOnly }: { parameter: ProcessParameter;
   const { register, watch } = useFormContext();
   const reference = getFieldReference(parameter.reference);
 
-  // Get the identifier for display (if available)
   const identifierValue = watch(`${parameter.name}$_identifier`);
   const fieldValue = watch(parameter.name);
 
   if (reference === FieldType.LIST) {
-    return <RadioSelector parameter={parameter} />;
+    return <RadioSelector parameter={parameter} data-testid="RadioSelector__6d8277" />;
   }
   return (
     <input

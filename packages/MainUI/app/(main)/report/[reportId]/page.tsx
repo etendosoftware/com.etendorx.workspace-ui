@@ -50,19 +50,23 @@ export default function ReportPage() {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" m={4}>
-        <CircularProgress />
+      <Box display="flex" justifyContent="center" m={4} data-testid="Box__ac7390">
+        <CircularProgress data-testid="CircularProgress__ac7390" />
       </Box>
     );
   }
 
   if (error || !metadata) {
-    return <Box m={2}>Report not found</Box>;
+    return (
+      <Box m={2} data-testid="Box__ac7390">
+        Report not found
+      </Box>
+    );
   }
 
   return (
-    <Box m={2}>
-      <DynamicReport metadata={metadata} onSubmit={handleSubmit} />
+    <Box m={2} data-testid="Box__ac7390">
+      <DynamicReport metadata={metadata} onSubmit={handleSubmit} data-testid="DynamicReport__ac7390" />
     </Box>
   );
 }

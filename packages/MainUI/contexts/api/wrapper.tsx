@@ -24,5 +24,9 @@ export default async function ApiProviderWrapper({ children }: React.PropsWithCh
 
   const url = process.env.ETENDO_CLASSIC_URL || FALLBACK_URL;
 
-  return <ApiProvider url={url}>{children}</ApiProvider>;
+  return (
+    <ApiProvider url={url} data-testid="ApiProvider__b68bdd">
+      {children}
+    </ApiProvider>
+  );
 }

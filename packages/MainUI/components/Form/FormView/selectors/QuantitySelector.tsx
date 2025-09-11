@@ -1,7 +1,8 @@
 import type { Field } from "@workspaceui/api-client/src/api/types";
 import { TextInput } from "./components/TextInput";
 import { useFormContext } from "react-hook-form";
-import { useCallback } from "react";
+import { useCallback, useState, useEffect } from "react";
+import { useLanguage } from "@/contexts/language";
 import { validateNumber } from "@workspaceui/componentlibrary/src/utils/quantitySelectorUtil";
 
 interface QuantitySelectorProps {
@@ -12,30 +13,112 @@ interface QuantitySelectorProps {
 
 export const QuantitySelector = ({ field, min, max }: QuantitySelectorProps) => {
   const { watch, setValue } = useFormContext();
+  const { language } = useLanguage();
   const fieldName = field.hqlName;
-  const currentValue = watch(fieldName) ?? "";
+  const formValue = watch(fieldName);
+  const [localValue, setLocalValue] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
+
+  const getDecimalSeparator = useCallback(() => {
+    return language === "es_ES" ? "," : ".";
+  }, [language]);
+
+  const normalizeDecimalInput = useCallback((value: string): string => {
+    return value.replace(",", ".");
+  }, []);
+
+  const formatDisplayValue = useCallback(
+    (value: number): string => {
+      const separator = getDecimalSeparator();
+      return String(value).replace(".", separator);
+    },
+    [getDecimalSeparator]
+  );
+
+  const getDisplayValue = useCallback(() => {
+    if (isFocused) {
+      return localValue;
+    }
+
+    if (formValue !== null && formValue !== undefined) {
+      return formatDisplayValue(Number(formValue));
+    }
+
+    return "";
+  }, [isFocused, localValue, formValue, formatDisplayValue]);
+
+  const displayValue = getDisplayValue();
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(displayValue);
+    }
+  }, [formValue, isFocused, displayValue]);
+
+  const isValidIntermediateValue = useCallback((value: string): boolean => {
+    return /^-?\d*[.,]?\d*$/.test(value);
+  }, []);
 
   const handleSetValue = useCallback(
     (value: string) => {
-      const sanitized = value.replace(/[^\d.]/g, "");
+      const sanitized = value.replace(/[^\d.,-]/g, "");
+
+      setLocalValue(sanitized);
+
       if (sanitized === "") {
         setValue(fieldName, null, { shouldValidate: true });
         return;
       }
-      const { isValid } = validateNumber(sanitized, min ? Number(min) : undefined, max ? Number(max) : undefined);
+
+      if (!isValidIntermediateValue(sanitized)) {
+        return;
+      }
+
+      const normalizedValue = normalizeDecimalInput(sanitized);
+
+      if (normalizedValue.endsWith(".") || normalizedValue === "" || normalizedValue === "-") {
+        return;
+      }
+
+      const { isValid } = validateNumber(normalizedValue, min ? Number(min) : undefined, max ? Number(max) : undefined);
+
       if (isValid) {
-        setValue(fieldName, Number(sanitized), { shouldValidate: true });
+        setValue(fieldName, Number(normalizedValue), { shouldValidate: true });
       }
     },
-    [fieldName, min, max, setValue]
+    [fieldName, min, max, setValue, normalizeDecimalInput, isValidIntermediateValue]
   );
+
+  const handleFocus = useCallback(() => {
+    setIsFocused(true);
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    setIsFocused(false);
+
+    const normalizedValue = normalizeDecimalInput(localValue);
+
+    if (normalizedValue === "" || normalizedValue === "-") {
+      setValue(fieldName, null, { shouldValidate: true });
+      return;
+    }
+
+    const { isValid } = validateNumber(normalizedValue, min ? Number(min) : undefined, max ? Number(max) : undefined);
+
+    if (isValid) {
+      setValue(fieldName, Number(normalizedValue), { shouldValidate: true });
+    }
+  }, [localValue, normalizeDecimalInput, fieldName, setValue, min, max]);
 
   return (
     <TextInput
       field={field}
-      value={currentValue}
+      value={displayValue}
       setValue={handleSetValue}
       onChange={(e) => handleSetValue(e.target.value)}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      data-testid={`TextInput__${field.id}`}
     />
   );
 };

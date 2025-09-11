@@ -39,8 +39,8 @@ export const createProcessMenuButton = (
   anchorEl: HTMLElement | null
 ): ProcessAvailableButton => ({
   key: "process-menu",
-  leftIcon: <ProcessIcon width="1rem" height="1rem" />,
-  rightIcon: <ChevronDownIcon width="1rem" height="1rem" />,
+  leftIcon: <ProcessIcon width="1rem" height="1rem" data-testid="ProcessIcon__987e83" />,
+  rightIcon: <ChevronDownIcon width="1rem" height="1rem" data-testid="ChevronDownIcon__987e83" />,
   text: t("common.processes"),
   anchorEl: anchorEl,
   disabled: !hasSelectedRecord,

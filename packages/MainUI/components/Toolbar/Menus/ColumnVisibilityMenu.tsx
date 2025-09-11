@@ -82,7 +82,7 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
   }, [items, table]);
 
   return (
-    <Menu anchorEl={anchorEl} onClose={onClose} className="w-80">
+    <Menu anchorEl={anchorEl} onClose={onClose} className="w-80" data-testid="Menu__6630cd">
       <DragModalContent
         items={items}
         setItems={setItems}
@@ -91,6 +91,7 @@ const ColumnVisibilityMenu = <T extends MRT_RowData = MRT_RowData>({
         activateAllText={t("navigation.waterfall.activateAll")}
         deactivateAllText={t("navigation.waterfall.deactivateAll")}
         buttonText={t("table.tooltips.columns")}
+        data-testid="DragModalContent__6630cd"
       />
     </Menu>
   );

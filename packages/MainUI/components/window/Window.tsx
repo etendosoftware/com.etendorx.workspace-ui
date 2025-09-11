@@ -39,16 +39,20 @@ export default function Window({ windowId }: { windowId: string }) {
     }
   }, [windowId, windowData, isLoading, error, loadWindowData]);
 
-  if (isLoading) return <Loading />;
-  if (error) return <ErrorDisplay title={error.message} />;
+  if (isLoading) return <Loading data-testid="Loading__56042a" />;
+  if (error) return <ErrorDisplay title={error.message} data-testid="ErrorDisplay__56042a" />;
   if (!windowData)
     return (
-      <ErrorDisplay title={t("errors.windowNotFound.title")} description={t("errors.windowNotFound.description")} />
+      <ErrorDisplay
+        title={t("errors.windowNotFound.title")}
+        description={t("errors.windowNotFound.description")}
+        data-testid="ErrorDisplay__56042a"
+      />
     );
 
   return (
-    <SelectedProvider tabs={windowData.tabs} windowId={windowId}>
-      <TabsContainer />
+    <SelectedProvider tabs={windowData.tabs} windowId={windowId} data-testid="SelectedProvider__56042a">
+      <TabsContainer data-testid="TabsContainer__56042a" />
     </SelectedProvider>
   );
 }

@@ -34,6 +34,7 @@ export const StringSelector = (props: { field: Field } & React.ComponentProps<ty
       setValue={handleSetValue}
       showClearButton={true}
       value={currentValue}
+      data-testid="TextInput__1e890e"
     />
   );
 };

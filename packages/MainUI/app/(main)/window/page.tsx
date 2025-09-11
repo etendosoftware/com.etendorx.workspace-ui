@@ -14,7 +14,7 @@
  * Contributor(s): Futit Services S.L.
  *************************************************************************
  */
-
+// @data-testid-ignore
 "use client";
 import { useEffect } from "react";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
@@ -41,11 +41,16 @@ export default function Page() {
   }, [windowId, windows.length, openWindow]);
 
   if (loading) {
-    return <Loading />;
+    return <Loading data-testid={`Loading__${activeWindow?.windowId ?? windowId ?? "351d9c"}`} />;
   }
 
   if (error) {
-    return <ErrorDisplay title={error?.message ?? t("errors.internalServerError.title")} />;
+    return (
+      <ErrorDisplay
+        title={error?.message ?? t("errors.internalServerError.title")}
+        data-testid={`ErrorDisplay__${activeWindow?.windowId ?? windowId ?? "351d9c"}`}
+      />
+    );
   }
 
   const shouldShowTabs = windows.length > 0;
@@ -53,12 +58,18 @@ export default function Page() {
   return (
     <div className="flex flex-col gap-2 w-full h-full max-h-full p-1 pb-0">
       {shouldShowTabs && (
-        <TabsProvider>
-          <WindowTabs />
+        <TabsProvider data-testid={`TabsProvider__${activeWindow?.windowId ?? windowId ?? "351d9c"}`}>
+          <WindowTabs data-testid={`WindowTabs__${activeWindow?.windowId ?? windowId ?? "351d9c"}`} />
         </TabsProvider>
       )}
-
-      {isHomeRoute || !activeWindow ? <Home /> : <Window windowId={activeWindow.windowId} />}
+      {isHomeRoute || !activeWindow ? (
+        <Home data-testid={`Home__${activeWindow?.windowId ?? windowId ?? "351d9c"}`} />
+      ) : (
+        <Window
+          windowId={activeWindow.windowId}
+          data-testid={`Window__${activeWindow?.windowId ?? windowId ?? "351d9c"}`}
+        />
+      )}
     </div>
   );
 }

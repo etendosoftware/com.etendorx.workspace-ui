@@ -20,6 +20,7 @@
 import { useLanguage } from "@/contexts/language";
 import type { Language } from "@/contexts/types";
 import { UserContext } from "@/contexts/user";
+import { useUserContext } from "@/hooks/useUserContext";
 import { logger } from "@/utils/logger";
 import NotificationIcon from "@workspaceui/componentlibrary/src/assets/icons/bell.svg";
 import AddIcon from "@workspaceui/componentlibrary/src/assets/icons/plus.svg";
@@ -41,6 +42,7 @@ import { useAssistants } from "@/hooks/useAssistants";
 import { useCopilotLabels } from "@/hooks/useCopilotLabels";
 import { useCopilot } from "@/hooks/useCopilot";
 import { buildContextString } from "@/utils/contextUtils";
+import type { ContextItem } from "@/hooks/types";
 import ConfigurationSection from "./Header/ConfigurationSection";
 
 const handleClose = () => {
@@ -61,6 +63,7 @@ const Navigation: React.FC = () => {
     roles,
     languages,
   } = useContext(UserContext);
+  const token = useUserContext();
   const [saveAsDefault, setSaveAsDefault] = useState(false);
   const { language, setLanguage, getFlag } = useLanguage();
   const [anchorEl] = useState<HTMLElement | null>(null);
@@ -68,9 +71,9 @@ const Navigation: React.FC = () => {
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [copilotExpanded, setCopilotExpanded] = useState(false);
   const [pendingContextString, setPendingContextString] = useState<string | null>(null);
-  const [pendingContextItems, setPendingContextItems] = useState<any[]>([]);
+  const [pendingContextItems, setPendingContextItems] = useState<ContextItem[]>([]);
 
-  const { assistants, getAssistants } = useAssistants();
+  const { assistants, getAssistants, invalidateCache, hasAssistants } = useAssistants();
   const { labels, getLabels } = useCopilotLabels();
 
   const { clearUserData } = useContext(UserContext);
@@ -85,13 +88,24 @@ const Navigation: React.FC = () => {
 
   const handleCopilotOpen = useCallback(() => {
     setCopilotOpen(true);
-  }, []);
 
-  const handleCopilotOpenWithContext = useCallback((contextString: string, contextItems: any[]) => {
-    setPendingContextString(contextString);
-    setPendingContextItems(contextItems);
-    setCopilotOpen(true);
-  }, []);
+    if (!hasAssistants) {
+      getAssistants();
+    }
+  }, [hasAssistants, getAssistants]);
+
+  const handleCopilotOpenWithContext = useCallback(
+    (contextString: string, contextItems: ContextItem[]) => {
+      setPendingContextString(contextString);
+      setPendingContextItems(contextItems);
+      setCopilotOpen(true);
+
+      if (!hasAssistants) {
+        getAssistants();
+      }
+    },
+    [hasAssistants, getAssistants]
+  );
 
   const handleCopilotClose = useCallback(() => {
     setCopilotOpen(false);
@@ -153,8 +167,18 @@ const Navigation: React.FC = () => {
 
   useEffect(() => {
     getLabels();
-    getAssistants();
-  }, [getLabels, getAssistants]);
+  }, [getLabels]);
+
+  useEffect(() => {
+    if (token?.token) {
+      if (copilotOpen) {
+        handleCopilotClose();
+      }
+
+      invalidateCache();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token?.token]);
 
   useEffect(() => {
     const handleCopilotWithContext = (event: CustomEvent) => {
@@ -179,7 +203,7 @@ const Navigation: React.FC = () => {
 
   return (
     <>
-      <Nav title={t("common.notImplemented")}>
+      <Nav title={t("common.notImplemented")} data-testid="Nav__120cc9">
         <Waterfall
           menuItems={menuItems}
           backButtonText={t("modal.secondaryButtonLabel")}
@@ -189,18 +213,22 @@ const Navigation: React.FC = () => {
           buttonText={t("navigation.waterfall.buttons")}
           customizeText={t("navigation.waterfall.customize")}
           items={item}
-          icon={<AddIcon />}
+          icon={<AddIcon data-testid="AddIcon__120cc9" />}
           setItems={() => {}}
+          data-testid="Waterfall__120cc9"
         />
-        <ConfigurationSection />
-        <CopilotButton onClick={handleCopilotOpen} tooltip="Copilot" />
-        <NotificationButton notifications={NOTIFICATIONS} icon={<NotificationIcon />}>
+        <ConfigurationSection data-testid="ConfigurationSection__120cc9" />
+        <CopilotButton onClick={handleCopilotOpen} tooltip="Copilot" data-testid="CopilotButton__120cc9" />
+        <NotificationButton
+          notifications={NOTIFICATIONS}
+          icon={<NotificationIcon data-testid="NotificationIcon__120cc9" />}
+          data-testid="NotificationButton__120cc9">
           <NotificationModal
             notifications={NOTIFICATIONS}
             anchorEl={anchorEl}
             onClose={handleClose}
             title={{
-              icon: <NotificationIcon fill="#2E365C" />,
+              icon: <NotificationIcon fill="#2E365C" data-testid="NotificationIcon__120cc9" />,
               label: t("navigation.notificationModal.title"),
             }}
             linkTitle={{
@@ -211,10 +239,11 @@ const Navigation: React.FC = () => {
             emptyStateMessage={t("navigation.notificationModal.emptyStateMessage")}
             emptyStateDescription={t("navigation.notificationModal.emptyStateDescription")}
             actionButtonLabel={t("navigation.notificationModal.actionButtonLabel")}
+            data-testid="NotificationModal__120cc9"
           />
         </NotificationButton>
         <ProfileModal
-          icon={<PersonIcon />}
+          icon={<PersonIcon data-testid="PersonIcon__120cc9" />}
           sections={sections}
           section={""}
           translations={{
@@ -237,6 +266,7 @@ const Navigation: React.FC = () => {
           userName={profile.name}
           userEmail={profile.email}
           userPhotoUrl={profile.image}
+          data-testid="ProfileModal__120cc9"
         />
       </Nav>
       <CopilotPopup
@@ -281,6 +311,7 @@ const Navigation: React.FC = () => {
             typing: t("copilot.messageList.typing"),
           },
         }}
+        data-testid="CopilotPopup__120cc9"
       />
     </>
   );

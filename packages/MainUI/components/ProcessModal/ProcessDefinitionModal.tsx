@@ -44,7 +44,7 @@ import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useForm, useFormState } from "react-hook-form";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
 import CloseIcon from "../../../ComponentLibrary/src/assets/icons/x.svg";
 import Modal from "../Modal";
@@ -53,6 +53,7 @@ import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import { PROCESS_DEFINITION_DATA } from "@/utils/processes/definition/constants";
+import { globalCalloutManager } from "@/services/callouts";
 
 /** Fallback object for record values when no record context exists */
 export const FALLBACK_RESULT = {};
@@ -170,6 +171,19 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       form.reset(availableFormData);
     }
   }, [hasInitialData, availableFormData, form, initialState]);
+
+  // Reactive view into form state (validity / submitting)
+  const { isValid, isSubmitting } = useFormState({ control: form.control });
+
+  // Combine loading states: initialization and callouts (do not include internal param-loading)
+  const isDataLoading = Boolean(
+    initializationLoading || !globalCalloutManager.arePendingCalloutsEmpty() || globalCalloutManager.isCalloutRunning()
+  );
+
+  // If initialization failed, keep the button disabled until user action
+  const initializationBlocksSubmit = Boolean(initializationError);
+  // Only enforce form validity when there are mandatory parameters in the process
+  const hasMandatoryParameters = Object.values(parameters).some((p) => Boolean(p.mandatory));
 
   const handleClose = useCallback(() => {
     if (isPending) return;
@@ -463,6 +477,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
             processConfigLoading={processConfigLoading}
             processConfigError={processConfigError}
             recordValues={recordValues}
+            data-testid="WindowReferenceGrid__761503"
           />
         );
       }
@@ -471,6 +486,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           key={`param-${parameter.id || parameter.name}-${parameter.reference || "default"}`}
           parameter={parameter}
           logicFields={logicFields}
+          data-testid="ProcessParameterSelector__761503"
         />
       );
     });
@@ -484,7 +500,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     if (result?.success) {
       return (
         <span className="flex items-center gap-2">
-          <CheckIcon fill="white" />
+          <CheckIcon fill="white" data-testid="CheckIcon__761503" />
           {t("process.completedSuccessfully")}
         </span>
       );
@@ -492,17 +508,24 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
     return (
       <>
-        {CheckIcon && <CheckIcon fill="white" />}
+        {CheckIcon && <CheckIcon fill="white" data-testid="CheckIcon__761503" />}
         {t("common.execute")}
       </>
     );
   };
 
-  const isActionButtonDisabled = isPending || !!result?.success || (hasWindowReference && gridSelection.length === 0);
+  const isActionButtonDisabled =
+    isPending ||
+    isDataLoading ||
+    initializationBlocksSubmit ||
+    (hasMandatoryParameters && !isValid) ||
+    isSubmitting ||
+    !!result?.success ||
+    (hasWindowReference && gridSelection.length === 0);
 
   return (
-    <Modal open={open} onClose={handleClose}>
-      <FormProvider {...form}>
+    <Modal open={open} onClose={handleClose} data-testid="Modal__761503">
+      <FormProvider {...form} data-testid="FormProvider__761503">
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-5xl max-h-full overflow-hidden flex flex-col">
             {/* Header */}
@@ -515,7 +538,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                 onClick={handleClose}
                 className="p-1 rounded-full hover:bg-(--color-baseline-10)"
                 disabled={isPending}>
-                <CloseIcon />
+                <CloseIcon data-testid="CloseIcon__761503" />
               </button>
             </div>
 
@@ -526,7 +549,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
                   className={`absolute transition-opacity inset-0 flex items-center pointer-events-none justify-center bg-white ${
                     loading || initializationLoading ? "opacity-100" : "opacity-0"
                   }`}>
-                  <Loading />
+                  <Loading data-testid="Loading__761503" />
                 </div>
                 <div className={`transition-opacity ${loading || initializationLoading ? "opacity-0" : "opacity-100"}`}>
                   {renderResponse()}
@@ -574,5 +597,12 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 export default function ProcessDefinitionModal({ button, onSuccess, ...props }: ProcessDefinitionModalProps) {
   if (!button) return null;
 
-  return <ProcessDefinitionModalContent {...props} button={button} onSuccess={onSuccess} />;
+  return (
+    <ProcessDefinitionModalContent
+      {...props}
+      button={button}
+      onSuccess={onSuccess}
+      data-testid="ProcessDefinitionModalContent__761503"
+    />
+  );
 }

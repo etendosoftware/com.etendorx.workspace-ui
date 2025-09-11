@@ -167,7 +167,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   }, [mode, params, parentData, setSession, tab, record]);
 
   function findEntityKeyColumn(fields: Tab["fields"]): Field | undefined {
-    return Object.values(fields).find((field) => field.column.keyColumn);
+    return Object.values(fields).find((field) => field?.column?.keyColumn);
   }
 
   function buildPayload(
