@@ -22,6 +22,7 @@ import type { EntityData, FormMode, Tab, WindowMetadata } from "@workspaceui/api
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { UseFormHandleSubmit } from "react-hook-form";
 import { useUserContext } from "./useUserContext";
+import { normalizeDates } from "@/utils/form/normalizeDates";
 
 export interface UseFormActionParams {
   windowMetadata?: WindowMetadata;
@@ -77,7 +78,11 @@ export const useFormAction = ({
         });
 
         const url = `${tab.entityName}?${queryStringParams}`;
-        const options = { signal: controller.current.signal, method: "POST", body };
+        const options = {
+          signal: controller.current.signal,
+          method: "POST",
+          body: normalizeDates(body) as Record<string, unknown>,
+        };
         const { ok, data } = await Metadata.datasourceServletClient.request(url, options);
 
         if (ok && data?.response?.status === 0 && !controller.current.signal.aborted) {

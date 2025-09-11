@@ -59,7 +59,7 @@ function formatDateForInputSafe(value: string): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-const DatetimeSelector = ({ field, isReadOnly, error, helperText }: DatetimeSelectorProps) => {
+export const DatetimeSelector = ({ field, isReadOnly, error, helperText }: DatetimeSelectorProps) => {
   const { register, getValues, formState } = useFormContext();
   const [isFocused, setIsFocused] = useState(false);
   const value = getValues(field.hqlName);
