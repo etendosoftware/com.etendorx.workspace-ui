@@ -58,8 +58,12 @@ jest.mock("../selectors/GenericSelector", () => {
 });
 
 jest.mock("@/components/Label", () => {
-  return function Label({ name }: any) {
-    return <label data-testid="field-label">{name}</label>;
+  return function Label({ name, htmlFor }: any) {
+    return (
+      <label htmlFor={htmlFor} data-testid="field-label">
+        {name}
+      </label>
+    );
   };
 });
 
