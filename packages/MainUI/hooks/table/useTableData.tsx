@@ -487,6 +487,8 @@ export const useTableData = ({
       }
 
       setColumnFilters(newColumnFilters);
+
+      setAppliedTableFilters(newColumnFilters);
     },
     [columnFilters]
   );
