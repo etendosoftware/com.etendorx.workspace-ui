@@ -389,7 +389,10 @@ exit 0
                 return coverage
               }
 
-              def coverageCurrent = getCoverageWithRetry(branchCurrent, true)
+              // Only check commit on PR branches
+              def prBranchPattern = /^(feature|hotfix)\//
+              def checkCommitCurrent = branchCurrent ==~ prBranchPattern
+              def coverageCurrent = getCoverageWithRetry(branchCurrent, checkCommitCurrent)
               def coverageMain = getCoverageWithRetry(branchMain, false)
 
               echo "Current branch coverage: ${coverageCurrent}%"
