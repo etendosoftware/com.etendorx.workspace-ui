@@ -233,3 +233,86 @@ export const createButtonByType = ({
 export const getButtonStyles = (button: ToolbarButtonMetadata) => {
   return BUTTON_STYLES[button.action as keyof typeof BUTTON_STYLES];
 };
+
+/**
+ * Configuration object for button creation
+ */
+interface ButtonConfig {
+  isFormView: boolean;
+  hasFormChanges: boolean;
+  hasSelectedRecord: boolean;
+  hasParentRecordSelected: boolean;
+  saveButtonState?: SaveButtonState;
+}
+
+/**
+ * Creates toolbar buttons with configuration and styles applied
+ */
+const createSectionButtons = (
+  sectionButtons: ToolbarButtonMetadata[],
+  onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void,
+  config: ButtonConfig
+): ToolbarButton[] => {
+  return sectionButtons.map((button) => {
+    const toolbarButton = createButtonByType({
+      button,
+      onAction,
+      ...config,
+    });
+
+    // Apply button-specific styles if available
+    const styles = getButtonStyles(button);
+    if (styles) {
+      toolbarButton.className = toolbarButton.className ? `${toolbarButton.className} ${styles}` : styles;
+    }
+
+    return toolbarButton;
+  });
+};
+
+/**
+ * Base styles for toolbar sections - memoized to avoid object recreation
+ */
+const SECTION_BASE_STYLES: React.CSSProperties = { display: "flex", alignItems: "center" };
+const SECTION_STYLE: React.CSSProperties = { ...SECTION_BASE_STYLES, gap: "0.25rem" };
+
+export const getToolbarSections = (
+  buttons: ToolbarButtonMetadata[],
+  onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void,
+  isFormView: boolean,
+  isTreeNodeView?: boolean,
+  hasFormChanges = false,
+  hasSelectedRecord = false,
+  hasParentRecordSelected = false,
+  saveButtonState?: SaveButtonState
+): {
+  leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
+  centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
+  rightSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
+} => {
+  const organizedButtons = organizeButtonsBySection(buttons, isFormView, isTreeNodeView);
+
+  // Shared configuration object to avoid parameter repetition
+  const buttonConfig: ButtonConfig = {
+    isFormView,
+    hasFormChanges,
+    hasSelectedRecord,
+    hasParentRecordSelected,
+    saveButtonState,
+  };
+
+  return {
+    leftSection: {
+      buttons: createSectionButtons(organizedButtons.left, onAction, buttonConfig),
+      style: SECTION_STYLE,
+    },
+    centerSection: {
+      buttons: createSectionButtons(organizedButtons.center, onAction, buttonConfig),
+      style: SECTION_STYLE,
+    },
+    rightSection: {
+      buttons: createSectionButtons(organizedButtons.right, onAction, buttonConfig),
+      style: SECTION_STYLE,
+    },
+  };
+};

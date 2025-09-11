@@ -44,12 +44,10 @@ import ProcessMenu from "./Menus/ProcessMenu";
 import SearchPortal from "./SearchPortal";
 import TopToolbar from "./TopToolbar/TopToolbar";
 import ToolbarSkeleton from "../Skeletons/ToolbarSkeleton";
-import { createButtonByType, getButtonStyles, organizeButtonsBySection } from "@/utils/toolbar/utils";
+import { getToolbarSections } from "@/utils/toolbar/utils";
 import { createProcessMenuButton } from "@/utils/toolbar/process-button/utils";
 import type { ToolbarProps } from "./types";
 import type { Tab } from "@workspaceui/api-client/src/api/types";
-
-const BaseSection = { display: "flex", alignItems: "center" };
 
 const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) => {
   const [openIframeModal, setOpenIframeModal] = useState(false);
@@ -165,43 +163,20 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const handleCloseStatusModal = useCallback(() => setActiveModal(null), []);
 
   const toolbarConfig = useMemo(() => {
-    const organizedButtons = organizeButtonsBySection(buttons, isFormView, isTreeNodeView);
     const hasSelectedRecord = !!selectedRecord?.id;
     const hasParentRecordSelected = !hasParentTab || selectedParentItems.length === 1;
 
-    const createSectionButtons = (sectionButtons: ToolbarButtonMetadata[]) =>
-      sectionButtons.map((button) => {
-        const config = createButtonByType({
-          button,
-          onAction: handleAction,
-          isFormView,
-          hasFormChanges,
-          hasSelectedRecord,
-          hasParentRecordSelected,
-          saveButtonState,
-        });
-
-        const styles = getButtonStyles(button);
-        if (styles) {
-          config.className = config.className ? `${config.className} ${styles}` : styles;
-        }
-
-        return config;
-      });
-
     const config = {
-      leftSection: {
-        buttons: createSectionButtons(organizedButtons.left),
-        style: { ...BaseSection, gap: "0.25rem" },
-      },
-      centerSection: {
-        buttons: createSectionButtons(organizedButtons.center),
-        style: { ...BaseSection, gap: "0.25rem" },
-      },
-      rightSection: {
-        buttons: createSectionButtons(organizedButtons.right),
-        style: { ...BaseSection, gap: "0.25rem" },
-      },
+      ...getToolbarSections(
+        buttons,
+        handleAction,
+        isFormView,
+        isTreeNodeView,
+        hasFormChanges,
+        hasSelectedRecord,
+        hasParentRecordSelected,
+        saveButtonState
+      ),
       processButton: createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, anchorEl),
       isItemSelected: hasSelectedRecord,
     };
