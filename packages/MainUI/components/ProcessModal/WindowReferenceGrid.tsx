@@ -128,8 +128,6 @@ function WindowReferenceGrid({
       options.orderBy = "documentNo desc";
     }
 
-    console.debug("WindowReferenceGrid final options:", options);
-
     return options;
   }, [tabId, parameter.tab, processId, processDefaults, filterExpressions, recordValues]);
 
