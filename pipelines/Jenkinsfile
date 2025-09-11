@@ -458,20 +458,20 @@ exit 0
                 <p>${env.ERROR_MESSAGE ?: 'Checks reported issues (see build logs).'}</p>
               </div>
 
-"""
+        """
 
         // If the error mentions the data-testid check include explicit repair steps and docs link
         if (env.ERROR_MESSAGE?.toString()?.toLowerCase()?.contains('data-testid')) {
           bodyHtml += """
 
-              <div class=\"section\">
-                <strong>What happened:</strong>
-                <p>The repository enforces a deterministic <code>data-testid</code> attribute across React components. An automated transformer adds these attributes; if your branch is missing them, the pipeline will attempt to add them and then require you to commit the changes.</p>
-              </div>
+            <div class=\"section\">
+              <strong>What happened:</strong>
+              <p>The repository enforces a deterministic <code>data-testid</code> attribute across React components. An automated transformer adds these attributes; if your branch is missing them, the pipeline will attempt to add them and then require you to commit the changes.</p>
+            </div>
 
-              <div class=\"section\">
-                <strong>How to fix locally:</strong>
-                <pre>
+            <div class=\"section\">
+              <strong>How to fix locally:</strong>
+              <pre>
 # 1) Run the dry-check (shows what would change):
 pnpm run check:data-testid
 
@@ -482,14 +482,14 @@ pnpm run format:fix
 # 3) Review and commit the changes:
 git add -A
 git commit -m "Apply add-data-testid codemod and format"
-                </pre>
-              </div>
+              </pre>
+            </div>
 
-              <div class=\"section\">
-                <strong>Documentation:</strong>
-                <p>See the project guide: <a href=\"${GITHUB_URL}/${OWNER_REPOSITORY}/${REPOSITORY_NAME}/blob/${GIT_BRANCH}/docs/data-testid-check.md\">docs/data-testid-check.md</a></p>
-              </div>
-"""
+            <div class=\"section\">
+              <strong>Documentation:</strong>
+              <p>See the project guide: <a href=\"${GITHUB_URL}/${OWNER_REPOSITORY}/${REPOSITORY_NAME}/blob/${GIT_BRANCH}/docs/data-testid-check.md\">docs/data-testid-check.md</a></p>
+            </div>
+          """
         }
 
         bodyHtml += """
@@ -506,12 +506,12 @@ git commit -m "Apply add-data-testid codemod and format"
               <hr />
             </body>
           </html>
-"""
+        """
 
         mail to: EMAIL_ADDRESS,
-             subject: "🚨 Build UNSTABLE: '${REPOSITORY_NAME}' - ${currentBuild.fullDisplayName}",
-             mimeType: "text/html",
-             body: bodyHtml
+              subject: "🚨 Build UNSTABLE: '${REPOSITORY_NAME}' - ${currentBuild.fullDisplayName}",
+              mimeType: "text/html",
+              body: bodyHtml
       }
     }
     
@@ -538,7 +538,7 @@ git commit -m "Apply add-data-testid codemod and format"
 
             ${env.COMMIT_INFO_TEMPLATE}
 
-            <p>${env.ERROR_MESSAGE}. This failure isn't likely to be caused by failing tests.<br>To more information on the failing run visit: ${env.BUILD_URL}</p>
+            <p><strong>${env.ERROR_MESSAGE}.</strong><br>To more information on the failing run visit: ${env.BUILD_URL}</p>
 
             <p class="footer"><em>Best regards,<br>#EtendoBot 🤖</em></p>
             <p>__________________________________________________________</p>
