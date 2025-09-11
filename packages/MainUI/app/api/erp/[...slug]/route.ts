@@ -17,13 +17,12 @@ const getCachedErpData = unstable_cache(
       Accept: slug.includes("copilot") ? "text/event-stream" : "application/json",
     };
 
-    // Only add Content-Type for requests with body
     if (method !== "GET" && body) {
       headers["Content-Type"] = contentType;
     }
 
     const response = await fetch(erpUrl, {
-      method: method, // Use the actual method instead of hardcoded POST
+      method: method,
       headers,
       body: method === "GET" ? undefined : body,
     });
@@ -33,7 +32,6 @@ const getCachedErpData = unstable_cache(
       throw new Error(`ERP request failed for slug ${slug}: ${response.status} ${response.statusText}. ${errorText}`);
     }
 
-    // Handle different response types based on content-type
     const responseContentType = response.headers.get("content-type");
     if (responseContentType?.includes("text/event-stream")) {
       return { stream: response.body, headers: response.headers };
@@ -41,7 +39,7 @@ const getCachedErpData = unstable_cache(
 
     return response.json();
   },
-  ["erp_logic_v1"] // Base key for this function
+  ["erp_logic_v1"]
 );
 
 /**
@@ -117,7 +115,6 @@ async function handleMutationRequest(
     throw new Error(`ERP request failed: ${response.status} ${response.statusText}`);
   }
 
-  // Handle different response types based on content-type
   const responseContentType = response.headers.get("content-type");
   if (responseContentType?.includes("text/event-stream")) {
     return { stream: response.body, headers: response.headers };
@@ -131,7 +128,6 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
     const resolvedParams = await params;
     console.log(`API Route /api/erp/${resolvedParams.slug.join("/")} - Method: ${method}`);
 
-    // Extract user token for authentication with ERP
     const userToken = extractBearerToken(request);
     if (!userToken) {
       return NextResponse.json({ error: "Unauthorized - Missing Bearer token" }, { status: 401 });
@@ -139,7 +135,6 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 
     const slug = resolvedParams.slug.join("/");
 
-    // Build ERP URL and always append query parameters if present
     let erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, slug);
     const url = new URL(request.url);
     if (url.search) {
@@ -155,7 +150,6 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
       const headers = buildErpHeaders(userToken, request, method, requestBody, contentType, slug);
       data = await handleMutationRequest(erpUrl, method, headers, requestBody);
     } else {
-      // Use cache for read operations (GET requests only)
       const queryParams = method === "GET" ? new URL(request.url).search : "";
       data = await getCachedErpData(userToken, slug, method, requestBody || "", contentType, queryParams);
     }
