@@ -44,7 +44,6 @@ import ChevronUp from "../../../ComponentLibrary/src/assets/icons/chevron-up.svg
 import ChevronDown from "../../../ComponentLibrary/src/assets/icons/chevron-down.svg";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check.svg";
 import { useTableData } from "@/hooks/table/useTableData";
-import { useTreeModeMetadata } from "@/hooks/useTreeModeMetadata";
 
 type RowProps = (props: {
   isDetailPanel?: boolean;
@@ -66,13 +65,11 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
   const { activeWindow, getSelectedRecord } = useMultiWindowURL();
-  const { tab, parentTab, parentRecord, parentRecords } = useTabContext();
+  const { tab, parentTab, parentRecord } = useTabContext();
   const tabId = tab.id;
-  const parentId = String(parentRecord?.id ?? "");
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const hasScrolledToSelection = useRef<boolean>(false);
-  const { treeMetadata, loading: treeMetadataLoading } = useTreeModeMetadata(tab);
 
   // Use the table data hook
   const {
