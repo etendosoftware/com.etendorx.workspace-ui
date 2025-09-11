@@ -14,7 +14,7 @@ const getCachedErpData = unstable_cache(
 
     const headers: Record<string, string> = {
       Authorization: `Bearer ${userToken}`,
-      Accept: "application/json",
+      Accept: slug.includes("copilot") ? "text/event-stream" : "application/json",
     };
 
     // Only add Content-Type for requests with body
@@ -31,6 +31,12 @@ const getCachedErpData = unstable_cache(
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`ERP request failed for slug ${slug}: ${response.status} ${response.statusText}. ${errorText}`);
+    }
+
+    // Handle different response types based on content-type
+    const responseContentType = response.headers.get("content-type");
+    if (responseContentType?.includes("text/event-stream")) {
+      return { stream: response.body, headers: response.headers };
     }
 
     return response.json();
@@ -62,11 +68,12 @@ function buildErpHeaders(
   request: Request,
   method: string,
   requestBody: string | undefined,
-  contentType: string
+  contentType: string,
+  slug?: string
 ): Record<string, string> {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${userToken}`,
-    Accept: "application/json",
+    Accept: slug?.includes("copilot") ? "text/event-stream" : "application/json",
   };
 
   if (method !== "GET" && requestBody) {
@@ -110,6 +117,12 @@ async function handleMutationRequest(
     throw new Error(`ERP request failed: ${response.status} ${response.statusText}`);
   }
 
+  // Handle different response types based on content-type
+  const responseContentType = response.headers.get("content-type");
+  if (responseContentType?.includes("text/event-stream")) {
+    return { stream: response.body, headers: response.headers };
+  }
+
   return response.json();
 }
 
@@ -139,12 +152,24 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
     let data: unknown;
     if (isMutationRoute(slug, method)) {
       // Don't cache mutations or non-GET requests, make direct request
-      const headers = buildErpHeaders(userToken, request, method, requestBody, contentType);
+      const headers = buildErpHeaders(userToken, request, method, requestBody, contentType, slug);
       data = await handleMutationRequest(erpUrl, method, headers, requestBody);
     } else {
       // Use cache for read operations (GET requests only)
       const queryParams = method === "GET" ? new URL(request.url).search : "";
       data = await getCachedErpData(userToken, slug, method, requestBody || "", contentType, queryParams);
+    }
+
+    // Handle streaming responses for copilot
+    if (slug.includes("copilot") && data && typeof data === "object" && "stream" in data) {
+      const streamData = data as { stream: ReadableStream; headers: Headers };
+      return new Response(streamData.stream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      });
     }
 
     return NextResponse.json(data);
