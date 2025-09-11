@@ -367,7 +367,7 @@ exit 0
                     def json = readJSON text: response
                     def measures = json?.component?.measures ?: []
                     def covStr = measures.find { it.metric == 'coverage' }?.value
-                    if (covStr && covStr != "0") {
+                    if (covStr && covStr != "0" && covStr != "0.0") {
                       coverage = covStr.toFloat()
                       break
                     } else {
