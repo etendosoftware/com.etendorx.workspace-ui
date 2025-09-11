@@ -330,7 +330,7 @@ exit 0
     stage('Compare Coverage with Main Branch') { // MARK: Coverage Comparison
       when {
         expression {
-          currentBuild.result == SUCCESS
+          currentBuild.result == SUCCESS && GIT_BRANCH != 'main'
         }
       }
       steps {
@@ -346,55 +346,28 @@ exit 0
               def branchCurrent = "${GIT_BRANCH}"
               def branchMain = "main"
 
-              def getCoverageWithRetry = { branch, checkCommit ->
-                int maxRetries = 4
-                int attempt = 0
-                float coverage = -1
-                while (attempt < maxRetries) {
-                  def analysisResp = sh(
-                    script: "curl -s -u ${SONAR_TOKEN}: \"${SONAR_SERVER}/api/project_analyses/search?project=${sonarProjectKey}&branch=${branch}\"",
-                    returnStdout: true
-                  ).trim()
-                  def analysisJson = readJSON text: analysisResp
-                  def lastAnalysis = analysisJson?.analyses ? analysisJson.analyses[0] : null
-                  def lastRevision = lastAnalysis?.revision ?: null
-                  if (!checkCommit || (lastRevision && lastRevision == GIT_COMMIT)) {
-                    def response = sh(
-                      script: "curl -s -u ${SONAR_TOKEN}: \"${SONAR_SERVER}/api/measures/component?component=${sonarProjectKey}&branch=${branch}&metricKeys=coverage\"",
-                      returnStdout: true
-                    ).trim()
-                    echo "SonarQube coverage API response for branch '${branch}': ${response}"
-                    def json = readJSON text: response
-                    def measures = json?.component?.measures ?: []
-                    def covStr = measures.find { it.metric == 'coverage' }?.value
-                    if (covStr && covStr != "0" && covStr != "0.0") {
-                      coverage = covStr.toFloat()
-                      break
-                    } else {
-                      echo "Coverage is 0 or not available for branch '${branch}' (attempt ${attempt + 1}/${maxRetries}), waiting 40 seconds before retrying..."
-                      sleep(time: 40, unit: 'SECONDS')
-                    }
-                  } else if (checkCommit) {
-                    echo "Latest analysis for branch '${branch}' does not match current commit (expected: ${GIT_COMMIT}, got: ${lastRevision}). Waiting 40 seconds before retrying..."
-                    sleep(time: 40, unit: 'SECONDS')
-                  }
-                  attempt++
-                }
-                if (coverage == -1) {
-                  if (checkCommit) {
-                    error("Could not retrieve coverage for branch '${branch}' and commit '${GIT_COMMIT}' after ${maxRetries} attempts.")
-                  } else {
-                    error("Could not retrieve coverage for branch '${branch}' after ${maxRetries} attempts.")
-                  }
-                }
-                return coverage
-              }
+              def rootDir = pwd()
+              def sonarUtils = load "${rootDir}/pipelines/utils/sonarUtils.groovy"
 
               // Only check commit on PR branches
               def prBranchPattern = /^(feature|hotfix)\//
               def checkCommitCurrent = branchCurrent ==~ prBranchPattern
-              def coverageCurrent = getCoverageWithRetry(branchCurrent, checkCommitCurrent)
-              def coverageMain = getCoverageWithRetry(branchMain, false)
+              def coverageCurrent = sonarUtils.getCoverageWithRetry(
+                branchCurrent,
+                checkCommitCurrent,
+                sonarProjectKey,
+                SONAR_TOKEN,
+                SONAR_SERVER,
+                GIT_COMMIT
+              )
+              def coverageMain = sonarUtils.getCoverageWithRetry(
+                branchMain,
+                false,
+                sonarProjectKey,
+                SONAR_TOKEN,
+                SONAR_SERVER,
+                GIT_COMMIT
+              )
 
               echo "Current branch coverage: ${coverageCurrent}%"
               echo "Main branch coverage: ${coverageMain}%"
