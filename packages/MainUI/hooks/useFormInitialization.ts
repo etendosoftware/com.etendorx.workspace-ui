@@ -33,12 +33,29 @@ import { useCurrentRecord } from "./useCurrentRecord";
 import { buildFormInitializationParams, fetchFormInitialization } from "@/utils/hooks/useFormInitialization/utils";
 import type { RecordData, State, Action } from "@/utils/hooks/useFormInitialization/types";
 
+/**
+ * Initial state for the form initialization reducer
+ */
 const initialState: State = {
   loading: true,
   error: null,
   formInitialization: null,
 };
 
+/**
+ * Reducer function to manage form initialization state
+ * Handles loading, success, and error states during form initialization process
+ *
+ * @param state - Current state of the form initialization
+ * @param action - Action to be processed containing type and optional payload
+ * @returns Updated state based on the action type
+ *
+ * @example
+ * ```typescript
+ * const [state, dispatch] = useReducer(reducer, initialState);
+ * dispatch({ type: "FETCH_START" });
+ * ```
+ */
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "FETCH_START":
@@ -56,6 +73,39 @@ export type useFormInitialization = State & {
   refetch: () => Promise<void>;
 };
 
+/**
+ * Custom hook for managing form initialization in Etendo ERP forms
+ *
+ * This hook handles the complete lifecycle of form initialization including:
+ * - Fetching form metadata and initial values
+ * - Managing loading and error states
+ * - Enriching data with audit fields
+ * - Updating session attributes
+ * - Providing refetch capability
+ *
+ * @param params - Form initialization parameters
+ * @param params.tab - Tab configuration containing fields, entity info, etc.
+ * @param params.mode - Form mode (NEW, EDIT, etc.)
+ * @param params.recordId - Optional record ID for editing existing records
+ *
+ * @returns Object containing:
+ * - `loading` - Boolean indicating if initialization is in progress
+ * - `error` - Error object if initialization failed, null otherwise
+ * - `formInitialization` - Initialized form data and configuration
+ * - `refetch` - Function to re-trigger form initialization
+ *
+ * @example
+ * ```typescript
+ * const { loading, error, formInitialization, refetch } = useFormInitialization({
+ *   tab: currentTab,
+ *   mode: FormMode.EDIT,
+ *   recordId: "12345"
+ * });
+ *
+ * if (loading) return <LoadingSpinner />;
+ * if (error) return <ErrorMessage error={error} />;
+ * ```
+ */
 export function useFormInitialization({ tab, mode, recordId }: FormInitializationParams): useFormInitialization {
   const { setSession } = useUserContext();
   const { parentRecord: parent } = useTabContext();
@@ -74,6 +124,19 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     [tab, mode, recordId, parentId]
   );
 
+  /**
+   * Main fetch function that orchestrates the form initialization process
+   *
+   * This function:
+   * 1. Validates required parameters and finds the entity key column
+   * 2. Builds the payload with form data and parent context
+   * 3. Fetches initialization data from the backend
+   * 4. Enriches the response with audit fields for existing records
+   * 5. Updates session attributes with the new data
+   * 6. Dispatches success or error actions to update component state
+   *
+   * @throws {Error} When entity key column is missing or fetch fails
+   */
   const fetch = useCallback(async () => {
     if (!params) return;
 
@@ -82,10 +145,12 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       if (!entityKeyColumn) throw new Error("Missing key column");
 
       const payload = buildPayload(tab, mode, parentData, entityKeyColumn);
-      const data = await fetchFormInitialization(params, payload);
+      const data: FormInitializationResponse = await fetchFormInitialization(params, payload);
 
       const enrichedData = enrichWithAuditFields(data, record, mode);
+      console.log("enrichedData: ", enrichedData);
       const storedInSessionAttributes = buildSessionAttributes(enrichedData);
+      console.log("storedInSessionAttributes: ", storedInSessionAttributes);
 
       setSession((prev) => ({
         ...prev,
@@ -100,10 +165,49 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     }
   }, [mode, params, parentData, setSession, tab, record]);
 
+  /**
+   * Finds the primary key column field in the tab's field configuration
+   *
+   * The key column is essential for form operations as it identifies the primary
+   * key field used for record identification and database operations.
+   *
+   * @param fields - Object containing all field definitions for the current tab
+   * @returns The field that represents the entity's primary key, or undefined if not found
+   *
+   * @example
+   * ```typescript
+   * const keyField = findEntityKeyColumn(tab.fields);
+   * if (keyField) {
+   *   console.log('Key column:', keyField.columnName);
+   * }
+   * ```
+   */
   function findEntityKeyColumn(fields: Tab["fields"]): Field | undefined {
     return Object.values(fields).find((field) => field?.column?.keyColumn);
   }
 
+  /**
+   * Builds the payload object required for form initialization API call
+   *
+   * Constructs a comprehensive payload containing:
+   * - Parent form data context
+   * - Tab and table identifiers
+   * - Entity key information
+   * - Additional fields specific to the entity and mode
+   * - Window context information
+   *
+   * @param tab - Current tab configuration
+   * @param mode - Form operation mode (NEW, EDIT, etc.)
+   * @param parentData - Data from parent form context
+   * @param entityKeyColumn - Primary key field configuration
+   * @returns Payload object ready for API submission
+   *
+   * @example
+   * ```typescript
+   * const payload = buildPayload(tab, FormMode.NEW, {}, keyColumn);
+   * // Returns: { inpTabId: "123", inpTableId: "456", ... }
+   * ```
+   */
   function buildPayload(
     tab: Tab,
     mode: FormMode,
@@ -125,6 +229,24 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     };
   }
 
+  /**
+   * Enriches form initialization data with audit trail information
+   *
+   * For existing records (non-NEW mode), this function adds audit fields
+   * such as creation date, created by, last updated, and updated by information.
+   * These fields are crucial for tracking record history and compliance.
+   *
+   * @param data - Original form initialization response from the backend
+   * @param record - Current record data containing audit information
+   * @param mode - Form mode to determine if audit fields should be added
+   * @returns Enhanced form initialization data with audit fields included
+   *
+   * @example
+   * ```typescript
+   * const enriched = enrichWithAuditFields(apiResponse, currentRecord, FormMode.EDIT);
+   * // Adds creationDate, createdBy, updated, updatedBy fields
+   * ```
+   */
   function enrichWithAuditFields(
     data: FormInitializationResponse,
     record: RecordData | null,
@@ -149,6 +271,22 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     return data;
   }
 
+  /**
+   * Builds session attributes from auxiliary input values
+   *
+   * Extracts and transforms auxiliary input values from the form initialization
+   * response into a flat key-value object suitable for session storage.
+   * This ensures form field values are properly maintained across user interactions.
+   *
+   * @param data - Form initialization response containing auxiliary input values
+   * @returns Flattened object with field names as keys and their string values
+   *
+   * @example
+   * ```typescript
+   * const sessionAttrs = buildSessionAttributes(formData);
+   * // Returns: { "fieldName1": "value1", "fieldName2": "value2" }
+   * ```
+   */
   function buildSessionAttributes(data: FormInitializationResponse): Record<string, string> {
     return Object.entries(data.auxiliaryInputValues).reduce(
       (acc, [key, { value }]) => {
@@ -159,6 +297,22 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     );
   }
 
+  /**
+   * Refetch function to manually trigger form initialization
+   *
+   * Useful for refreshing form data after external changes or error recovery.
+   * Resets the state to loading and re-runs the complete initialization process.
+   *
+   * @returns Promise that resolves when refetch is complete
+   *
+   * @example
+   * ```typescript
+   * const { refetch } = useFormInitialization(params);
+   *
+   * // Trigger manual refresh
+   * await refetch();
+   * ```
+   */
   const refetch = useCallback(async () => {
     if (!params) return;
     dispatch({ type: "FETCH_START" });
