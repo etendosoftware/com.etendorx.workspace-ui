@@ -17,7 +17,6 @@
 
 import { useTabContext } from "@/contexts/tab";
 import { logger } from "@/utils/logger";
-import { getFieldsToAdd } from "@/utils/form/entityConfig";
 import {
   type FormInitializationParams,
   type FormInitializationResponse,
@@ -30,7 +29,11 @@ import { FieldName } from "./types";
 import useFormParent from "./useFormParent";
 import { useUserContext } from "./useUserContext";
 import { useCurrentRecord } from "./useCurrentRecord";
-import { buildFormInitializationParams, fetchFormInitialization } from "@/utils/hooks/useFormInitialization/utils";
+import {
+  buildFormInitializationPayload,
+  buildFormInitializationParams,
+  fetchFormInitialization,
+} from "@/utils/hooks/useFormInitialization/utils";
 import type { RecordData, State, Action } from "@/utils/hooks/useFormInitialization/types";
 
 /**
@@ -144,13 +147,11 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       const entityKeyColumn = findEntityKeyColumn(tab.fields);
       if (!entityKeyColumn) throw new Error("Missing key column");
 
-      const payload = buildPayload(tab, mode, parentData, entityKeyColumn);
+      const payload = buildFormInitializationPayload(tab, mode, parentData, entityKeyColumn);
       const data: FormInitializationResponse = await fetchFormInitialization(params, payload);
 
       const enrichedData = enrichWithAuditFields(data, record, mode);
-      console.log("enrichedData: ", enrichedData);
       const storedInSessionAttributes = buildSessionAttributes(enrichedData);
-      console.log("storedInSessionAttributes: ", storedInSessionAttributes);
 
       setSession((prev) => ({
         ...prev,
@@ -184,49 +185,6 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
    */
   function findEntityKeyColumn(fields: Tab["fields"]): Field | undefined {
     return Object.values(fields).find((field) => field?.column?.keyColumn);
-  }
-
-  /**
-   * Builds the payload object required for form initialization API call
-   *
-   * Constructs a comprehensive payload containing:
-   * - Parent form data context
-   * - Tab and table identifiers
-   * - Entity key information
-   * - Additional fields specific to the entity and mode
-   * - Window context information
-   *
-   * @param tab - Current tab configuration
-   * @param mode - Form operation mode (NEW, EDIT, etc.)
-   * @param parentData - Data from parent form context
-   * @param entityKeyColumn - Primary key field configuration
-   * @returns Payload object ready for API submission
-   *
-   * @example
-   * ```typescript
-   * const payload = buildPayload(tab, FormMode.NEW, {}, keyColumn);
-   * // Returns: { inpTabId: "123", inpTableId: "456", ... }
-   * ```
-   */
-  function buildPayload(
-    tab: Tab,
-    mode: FormMode,
-    parentData: Record<string, unknown>,
-    entityKeyColumn: NonNullable<Field>
-  ): Record<string, unknown> {
-    const additionalFields = getFieldsToAdd(tab.entityName, mode);
-
-    return {
-      ...parentData,
-      inpKeyName: entityKeyColumn.inputName,
-      inpTabId: tab.id,
-      inpTableId: tab.table,
-      inpkeyColumnId: entityKeyColumn.columnName,
-      keyColumnName: entityKeyColumn.columnName,
-      _entityName: tab.entityName,
-      inpwindowId: tab.window,
-      ...additionalFields,
-    };
   }
 
   /**
