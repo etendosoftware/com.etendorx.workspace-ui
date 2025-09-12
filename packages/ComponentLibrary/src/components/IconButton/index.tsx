@@ -85,7 +85,7 @@ const IconButton = ({
   `;
 
   return (
-    <Tooltip title={tooltip} position={tooltipPosition} containerClassName={containerClassName}>
+    <Tooltip title={tooltip} position={tooltipPosition} containerClassName={containerClassName} disabled={disabled}>
       <button
         ref={ref}
         type="button"

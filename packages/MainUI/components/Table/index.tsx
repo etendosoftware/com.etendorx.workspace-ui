@@ -25,7 +25,7 @@ import {
 } from "material-react-table";
 import { useStyle } from "./styles";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import ColumnVisibilityMenu from "../Toolbar/Menus/ColumnVisibilityMenu";
 import { useDatasourceContext } from "@/contexts/datasourceContext";
 import EmptyState from "./EmptyState";
@@ -35,6 +35,8 @@ import { ErrorDisplay } from "../ErrorDisplay";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabContext } from "@/contexts/tab";
 import { useSelected } from "@/hooks/useSelected";
+import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { logger } from "@/utils/logger";
 import PlusFolderFilledIcon from "../../../ComponentLibrary/src/assets/icons/folder-plus-filled.svg";
 import MinusFolderIcon from "../../../ComponentLibrary/src/assets/icons/folder-minus.svg";
 import CircleFilledIcon from "../../../ComponentLibrary/src/assets/icons/circle-filled.svg";
@@ -62,10 +64,12 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   const { graph } = useSelected();
   const { registerDatasource, unregisterDatasource, registerRefetchFunction } = useDatasourceContext();
   const { registerActions } = useToolbarContext();
+  const { activeWindow, getSelectedRecord } = useMultiWindowURL();
   const { tab, parentTab, parentRecord } = useTabContext();
   const tabId = tab.id;
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const clickTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const hasScrolledToSelection = useRef<boolean>(false);
 
   // Use the table data hook
   const {
@@ -228,13 +232,70 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
     return modifiedColumns;
   }, [baseColumns, shouldUseTreeMode]);
 
+  // Initialize row selection from URL parameters with proper validation and logging
+  const urlBasedRowSelection = useMemo(() => {
+    // Use proper URL state management instead of search params
+    const windowId = activeWindow?.windowId;
+    if (!windowId || windowId !== tab.window) {
+      return {};
+    }
+
+    // Get the selected record from URL for this specific tab
+    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    if (!urlSelectedId) {
+      return {};
+    }
+
+    // Validate that the record exists in current dataset
+    const recordExists = records?.some((record) => String(record.id) === urlSelectedId);
+    if (recordExists) {
+      return { [urlSelectedId]: true };
+    }
+
+    return {};
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records]);
+
+  // Track URL selection changes to detect direct navigation
+  const previousURLSelection = useRef<string | null>(null);
+
+  useEffect(() => {
+    const windowId = activeWindow?.windowId;
+    if (!windowId || windowId !== tab.window) {
+      return;
+    }
+
+    const currentURLSelection = getSelectedRecord(windowId, tab.id);
+
+    // Detect URL-driven navigation (direct links, browser back/forward)
+    if (currentURLSelection !== previousURLSelection.current && currentURLSelection) {
+      const recordExists = records?.some((record) => String(record.id) === currentURLSelection);
+
+      if (recordExists) {
+        logger.info(`[URLNavigation] Detected URL navigation to record: ${currentURLSelection}`);
+      } else {
+        logger.warn(`[URLNavigation] URL navigation to invalid record: ${currentURLSelection}`);
+      }
+      hasScrolledToSelection.current = false;
+    }
+
+    if (currentURLSelection) {
+      previousURLSelection.current = currentURLSelection;
+    }
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records]);
+
   const handleTableSelectionChange = useCallback(
     (recordId: string) => {
+      if (recordId) {
+        logger.debug(`[TableSelection] Selection changed to record: ${recordId} in tab: ${tab.id}`);
+      } else {
+        logger.debug(`[TableSelection] Selection cleared in tab: ${tab.id}`);
+      }
+
       if (onRecordSelection) {
         onRecordSelection(recordId);
       }
     },
-    [onRecordSelection]
+    [onRecordSelection, tab.id]
   );
 
   const rowProps = useCallback<RowProps>(
@@ -250,12 +311,14 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
             return;
           }
 
+          // Clear any existing timeout for this row
           const existingTimeout = clickTimeoutsRef.current.get(rowId);
           if (existingTimeout) {
             clearTimeout(existingTimeout);
             clickTimeoutsRef.current.delete(rowId);
           }
 
+          // Set a new timeout for single click action
           const timeout = setTimeout(() => {
             if (event.ctrlKey || event.metaKey) {
               row.toggleSelected();
@@ -277,24 +340,24 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
           event.stopPropagation();
 
-          const timeout = clickTimeoutsRef.current.get(rowId);
-          if (timeout) {
+          // Cancel ALL pending timeouts to prevent single click execution
+          for (const timeout of clickTimeoutsRef.current.values()) {
             clearTimeout(timeout);
             clickTimeoutsRef.current.delete(rowId);
           }
+          clickTimeoutsRef.current.clear();
 
           const parent = graph.getParent(tab);
           const parentSelection = parent ? graph.getSelected(parent) : undefined;
 
-          if (!isSelected) {
-            row.toggleSelected();
-          }
-
+          // Set graph selection for consistency but avoid triggering URL updates
           graph.setSelected(tab, row.original);
 
           if (parent && parentSelection) {
             setTimeout(() => graph.setSelected(parent, parentSelection), 10);
           }
+
+          // Navigate to form view - this will handle the URL update properly
           setRecordId(record.id);
         },
 
@@ -427,7 +490,10 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
       const canExpand = row.original.showDropIcon === true && isParentNode;
       return canExpand;
     },
-    initialState: { density: "compact" },
+    initialState: {
+      density: "compact",
+      rowSelection: urlBasedRowSelection,
+    },
     renderDetailPanel: undefined,
     onExpandedChange: (newExpanded) => {
       const prevExpanded = expandedRef.current;
@@ -489,6 +555,102 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
   });
 
   useTableSelection(tab, records, table.getState().rowSelection, handleTableSelectionChange);
+
+  // Handle auto-scroll to selected record with virtualization support
+  useLayoutEffect(() => {
+    const windowId = activeWindow?.windowId;
+    if (!windowId || windowId !== tab.window || !displayRecords) {
+      return;
+    }
+
+    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    if (!urlSelectedId) {
+      return;
+    }
+
+    // Always mark as scrolled after first attempt, regardless of whether scroll was needed
+    if (!hasScrolledToSelection.current && displayRecords.length > 0) {
+      hasScrolledToSelection.current = true;
+
+      // Find the index of the selected record in the display records
+      const selectedIndex = displayRecords.findIndex((record) => String(record.id) === urlSelectedId);
+
+      if (selectedIndex >= 0 && tableContainerRef.current) {
+        try {
+          if (tableContainerRef.current) {
+            const containerElement = tableContainerRef.current;
+
+            const estimatedRowHeight = 40; // Approximate row height
+            const headerHeight = 75; // Approximate header height
+            const scrollTop = selectedIndex * estimatedRowHeight - containerElement.clientHeight / 2 + headerHeight;
+
+            // Scroll to the calculated position synchronously after DOM updates
+            containerElement.scrollTo({
+              top: Math.max(0, scrollTop),
+              behavior: "smooth",
+            });
+
+            logger.info(`[TableScroll] Auto-scrolled to record at index ${selectedIndex}: ${urlSelectedId}`);
+          }
+        } catch (error) {
+          logger.error(`[TableScroll] Error scrolling to selected record: ${error}`);
+        }
+      } else {
+        logger.debug(`[TableScroll] Record found but scroll not needed: ${urlSelectedId}`);
+      }
+    }
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, displayRecords, table]);
+
+  // Ensure URL selection is maintained when table data changes
+  useEffect(() => {
+    const windowId = activeWindow?.windowId;
+    if (!windowId || windowId !== tab.window || !records) {
+      return;
+    }
+
+    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    if (!urlSelectedId) {
+      return;
+    }
+
+    // Check if URL selection is still valid with current data
+    const recordExists = records.some((record) => String(record.id) === urlSelectedId);
+    const currentSelection = table.getState().rowSelection;
+    const isCurrentlySelected = currentSelection[urlSelectedId];
+
+    if (recordExists && !isCurrentlySelected) {
+      // Record exists but is not selected - restore URL selection
+      table.setRowSelection({ [urlSelectedId]: true });
+    } else if (!recordExists && isCurrentlySelected) {
+      // Record no longer exists but is still selected - clear selection
+      table.setRowSelection({});
+    }
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table]);
+
+  // Handle browser navigation and direct link access
+  useEffect(() => {
+    const windowId = activeWindow?.windowId;
+    if (!windowId || windowId !== tab.window || !records) {
+      return;
+    }
+
+    const urlSelectedId = getSelectedRecord(windowId, tab.id);
+    if (!urlSelectedId) {
+      return;
+    }
+
+    // Handle case where user navigates directly to a URL with selection
+    const recordExists = records.some((record) => String(record.id) === urlSelectedId);
+    if (recordExists) {
+      const currentSelection = table.getState().rowSelection;
+      const isCurrentlySelected = currentSelection[urlSelectedId];
+
+      if (!isCurrentlySelected) {
+        logger.info(`[URLNavigation] Applying URL selection for direct navigation: ${urlSelectedId}`);
+        table.setRowSelection({ [urlSelectedId]: true });
+      }
+    }
+  }, [activeWindow, getSelectedRecord, tab.id, tab.window, records, table]);
 
   useEffect(() => {
     const handleGraphClear = (eventTab: typeof tab) => {

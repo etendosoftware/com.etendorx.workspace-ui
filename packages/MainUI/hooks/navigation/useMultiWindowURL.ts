@@ -405,6 +405,10 @@ export function useMultiWindowURL() {
 
           return {
             ...w,
+            selectedRecords: {
+              ...w.selectedRecords,
+              [tabId]: recordId,
+            },
             tabFormStates: {
               ...w.tabFormStates,
               [tabId]: {

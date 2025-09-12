@@ -26,9 +26,10 @@ export interface TooltipProps {
   children: React.ReactNode;
   position?: "top" | "bottom" | "left" | "right";
   containerClassName?: string;
+  disabled?: boolean;
 }
 
-const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom", containerClassName }) => {
+const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom", containerClassName, disabled }) => {
   const [visible, setVisible] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
 
@@ -75,7 +76,14 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, position = "bottom",
     };
   }, []);
 
+  useEffect(() => {
+    if (disabled) {
+      hideTooltip();
+    }
+  }, [disabled]);
+
   const showTooltip = () => {
+    if (disabled) return;
     if (showTimer.current) clearTimeout(showTimer.current);
     showTimer.current = window.setTimeout(() => {
       setVisible(true);
