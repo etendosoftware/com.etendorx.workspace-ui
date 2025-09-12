@@ -30,3 +30,6 @@ junit.xml
 .idea/
 .env
 app.log
+
+# Nextjs Turbo
+.turbo/
