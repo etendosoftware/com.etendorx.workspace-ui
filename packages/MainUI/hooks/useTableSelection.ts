@@ -15,6 +15,26 @@
  *************************************************************************
  */
 
+/**
+ * @fileoverview Table Selection Management Hook
+ *
+ * This module provides a comprehensive hook for managing table row selection state in Etendo WorkspaceUI.
+ * It handles synchronization between Material React Table selection state, URL parameters, and the
+ * application's global selection graph. The hook ensures consistent selection behavior across the
+ * multi-window interface and provides debounced URL updates for optimal performance.
+ *
+ * Key Features:
+ * - Bidirectional synchronization between table selection and URL parameters
+ * - Multi-window navigation support with per-window state isolation
+ * - Hierarchical tab selection management (parent-child relationships)
+ * - Debounced URL updates to prevent excessive navigation events
+ * - State reconciliation to handle conflicts between different selection sources
+ * - Performance-optimized selection change detection using alphabetical comparison
+ *
+ * @author Etendo Development Team
+ * @since 2025
+ */
+
 import { useSelected } from "@/hooks/useSelected";
 import { mapBy } from "@/utils/structures";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
@@ -24,6 +44,25 @@ import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useStateReconciliation } from "@/hooks/useStateReconciliation";
 import { debounce } from "@/utils/debounce";
 
+/**
+ * Compares two arrays of strings alphabetically to detect content changes while ignoring order.
+ * This optimization prevents unnecessary re-renders when selection order changes but content remains the same.
+ *
+ * The function sorts both arrays alphabetically before comparison, allowing for efficient detection
+ * of actual selection changes versus simple reordering. This is crucial for performance in scenarios
+ * where multiple rows are selected and their order in the selection state might vary.
+ *
+ * @param arr1 - First array of string IDs to compare
+ * @param arr2 - Second array of string IDs to compare
+ * @returns `true` if both arrays contain the same elements (regardless of order), `false` otherwise
+ *
+ * @example
+ * ```typescript
+ * compareArraysAlphabetically(['1', '3', '2'], ['2', '1', '3']) // returns true
+ * compareArraysAlphabetically(['1', '2'], ['1', '2', '3']) // returns false
+ * compareArraysAlphabetically(['1'], ['2']) // returns false
+ * ```
+ */
 const compareArraysAlphabetically = (arr1: string[], arr2: string[]): boolean => {
   if (arr1.length !== arr2.length) return false;
 
@@ -33,6 +72,31 @@ const compareArraysAlphabetically = (arr1: string[], arr2: string[]): boolean =>
   return sorted1.every((item, index) => item === sorted2[index]);
 };
 
+/**
+ * Processes Material React Table row selection state to extract selected records and identify the last selected item.
+ *
+ * This function converts the boolean-based row selection state from Material React Table into a more usable format
+ * containing the actual EntityData objects and identifying which record was selected last. The last selected record
+ * is used for single-selection scenarios and URL synchronization.
+ *
+ * The function filters out any selections that don't correspond to existing records in the recordsMap,
+ * ensuring data integrity and preventing errors from stale selection states.
+ *
+ * @param rowSelection - Material React Table row selection state (record ID -> boolean mapping)
+ * @param recordsMap - Map of record IDs to EntityData objects for quick lookup
+ * @returns Object containing:
+ *   - `selectedRecords`: Array of EntityData objects that are currently selected
+ *   - `lastSelected`: The last selected EntityData object, or null if no selections exist
+ *
+ * @example
+ * ```typescript
+ * const rowSelection = { '1': true, '3': true, '5': false };
+ * const recordsMap = { '1': {...}, '2': {...}, '3': {...} };
+ * const result = processSelectedRecords(rowSelection, recordsMap);
+ * // result.selectedRecords = [EntityData1, EntityData3]
+ * // result.lastSelected = EntityData3 (last processed)
+ * ```
+ */
 const processSelectedRecords = (
   rowSelection: MRT_RowSelectionState,
   recordsMap: Record<string, EntityData>
@@ -52,6 +116,28 @@ const processSelectedRecords = (
   return { selectedRecords, lastSelected };
 };
 
+/**
+ * Clears selection state for all child tabs when a parent tab's selection changes.
+ *
+ * This function maintains hierarchical consistency in the multi-tab interface by ensuring that
+ * when a parent tab's selection changes, all child tabs lose their current selection. This prevents
+ * orphaned selections and maintains logical data relationships in master-detail scenarios.
+ *
+ * The function operates within window boundaries, only clearing children that belong to the same
+ * window as the current tab. This preserves selections in other windows during multi-window operations.
+ *
+ * @param windowId - The ID of the current window context
+ * @param graph - Selection graph instance for querying tab relationships
+ * @param tab - The parent tab whose children should be cleared
+ * @param currentWindowId - The ID of the window containing the current tab
+ * @param clearSelectedRecord - Function to clear selected record from URL state
+ *
+ * @example
+ * ```typescript
+ * // When sales order selection changes, clear all sales order line selections
+ * clearChildrenRecords(windowId, graph, salesOrderTab, windowId, clearSelectedRecord);
+ * ```
+ */
 const clearChildrenRecords = (
   windowId: string,
   graph: ReturnType<typeof useSelected>["graph"],
@@ -69,6 +155,32 @@ const clearChildrenRecords = (
   }
 };
 
+/**
+ * Updates the global selection graph with the current table selection state.
+ *
+ * This function synchronizes the application's global selection state with the current table selection,
+ * maintaining both single-selection (lastSelected) and multi-selection state in the graph. It handles
+ * the transition between different selection states (empty -> single -> multiple -> empty) and ensures
+ * proper cleanup of previous selections.
+ *
+ * The function manages two types of selections:
+ * - Single selection: Used for navigation, form editing, and URL synchronization
+ * - Multiple selection: Used for bulk operations and multi-record actions
+ *
+ * @param graph - Selection graph instance for managing global selection state
+ * @param tab - The tab whose selection is being updated
+ * @param lastSelected - The most recently selected record, or null if no selection
+ * @param selectedRecords - Array of all currently selected records
+ * @param onSelectionChange - Optional callback function to notify parent components of selection changes
+ *
+ * @example
+ * ```typescript
+ * // Update graph with new selection
+ * updateGraphSelection(graph, tab, record3, [record1, record2, record3], (id) => {
+ *   console.log(`Selection changed to: ${id}`);
+ * });
+ * ```
+ */
 const updateGraphSelection = (
   graph: ReturnType<typeof useSelected>["graph"],
   tab: Tab,
@@ -91,6 +203,40 @@ const updateGraphSelection = (
   }
 };
 
+/**
+ * Custom React hook for managing table row selection state with comprehensive synchronization capabilities.
+ *
+ * This hook provides a complete solution for handling table selection in Etendo WorkspaceUI's multi-window,
+ * multi-tab environment. It manages the complex interactions between:
+ *
+ * - Material React Table selection state (UI layer)
+ * - URL parameters (navigation and bookmarking)
+ * - Global selection graph (application state)
+ * - Parent-child tab relationships (hierarchical data)
+ *
+ * Key Features:
+ * - **Bidirectional Sync**: Keeps URL parameters and table selection in sync
+ * - **Performance Optimized**: Uses debounced URL updates and change detection
+ * - **Multi-Window Support**: Handles selection across multiple browser windows/tabs
+ * - **Hierarchical Management**: Automatically clears child tab selections when parent changes
+ * - **State Reconciliation**: Resolves conflicts between different selection sources
+ * - **Error Handling**: Gracefully handles sync errors and edge cases
+ *
+ * The hook operates only when the current tab belongs to the active window, preventing
+ * cross-window interference while maintaining proper isolation.
+ *
+ * @param tab - Tab metadata containing window information and hierarchical relationships
+ * @param records - Array of EntityData records available for selection in the current table
+ * @param rowSelection - Current Material React Table selection state (record ID -> boolean mapping)
+ * @param onSelectionChange - Optional callback function invoked when selection changes, receives the last selected record ID
+ *
+ * @returns void - This hook manages side effects and doesn't return values
+ *
+ * @see {@link useMultiWindowURL} - For URL parameter management
+ * @see {@link useSelected} - For global selection graph access
+ * @see {@link useStateReconciliation} - For handling selection conflicts
+ * @see {@link debounce} - For performance optimization of URL updates
+ */
 export default function useTableSelection(
   tab: Tab,
   records: EntityData[],
@@ -104,7 +250,7 @@ export default function useTableSelection(
   const windowId = activeWindow?.windowId;
   const currentWindowId = tab.window;
 
-  // Initialize state reconciliation hook
+  // Initialize state reconciliation hook with current context
   const { reconcileStates, handleSyncError } = useStateReconciliation({
     records,
     tab,
@@ -112,7 +258,18 @@ export default function useTableSelection(
     currentWindowId,
   });
 
-  // Create debounced URL update function
+  /**
+   * Creates a debounced function for URL updates to prevent excessive navigation events.
+   *
+   * The debounce delay of 150ms provides a balance between responsiveness and performance,
+   * allowing rapid selection changes without overwhelming the browser's navigation system.
+   * The function handles different selection scenarios:
+   * - Single selection: Updates URL with the selected record ID
+   * - No selection: Clears the record ID from URL
+   * - Multiple selections: URL shows the last selected record for navigation consistency
+   *
+   * Error handling ensures that URL sync failures don't break the selection functionality.
+   */
   const debouncedURLUpdate = useCallback(
     debounce((selectedRecords: EntityData[], windowId: string, tabId: string) => {
       try {
@@ -131,7 +288,18 @@ export default function useTableSelection(
     [setSelectedRecord, clearSelectedRecord, handleSyncError]
   );
 
-  // Bidirectional synchronization check
+  /**
+   * Performs bidirectional synchronization between URL parameters and table selection state.
+   *
+   * This function checks for discrepancies between what the URL indicates should be selected
+   * and what the table actually has selected. It only operates when:
+   * - We have a valid window ID
+   * - The current tab belongs to the active window
+   * - Records are available for validation
+   *
+   * The reconciliation process prioritizes URL state over table state, as URLs represent
+   * user intent for navigation and bookmarking.
+   */
   const performBidirectionalSync = useCallback(() => {
     if (!windowId || windowId !== currentWindowId || records.length === 0) return;
 
@@ -152,6 +320,20 @@ export default function useTableSelection(
     }
   }, [windowId, currentWindowId, tab.id, rowSelection, records, getSelectedRecord, reconcileStates, handleSyncError]);
 
+  /**
+   * Main effect for handling table selection changes and synchronization.
+   *
+   * This effect is the core of the selection management system. It:
+   * 1. Validates that the current tab belongs to the active window
+   * 2. Processes the current selection state into usable format
+   * 3. Detects actual changes using alphabetical comparison for performance
+   * 4. Updates URL parameters with debouncing for optimal performance
+   * 5. Clears child tab selections to maintain hierarchical consistency
+   * 6. Updates the global selection graph with new state
+   *
+   * The effect only runs when selection actually changes (not just reorders),
+   * preventing unnecessary updates and improving performance.
+   */
   useEffect(() => {
     const isCorrectWindow = windowId === currentWindowId;
     if (!isCorrectWindow) {
@@ -190,7 +372,14 @@ export default function useTableSelection(
     debouncedURLUpdate,
   ]);
 
-  // Perform bidirectional sync on mount and when dependencies change
+  /**
+   * Effect for performing bidirectional synchronization on mount and dependency changes.
+   *
+   * This effect ensures that URL and table selection states are properly synchronized
+   * when the component mounts or when key dependencies change. It's essential for
+   * handling direct navigation to URLs with selection parameters and maintaining
+   * consistency across page refreshes.
+   */
   useEffect(() => {
     performBidirectionalSync();
   }, [performBidirectionalSync]);
