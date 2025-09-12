@@ -19,7 +19,7 @@ import { useSelected } from "@/hooks/useSelected";
 import { mapBy } from "@/utils/structures";
 import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_RowSelectionState } from "material-react-table";
-import { useEffect, useRef, useMemo, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useStateReconciliation } from "@/hooks/useStateReconciliation";
 import { debounce } from "@/utils/debounce";
@@ -113,22 +113,21 @@ export default function useTableSelection(
   });
 
   // Create debounced URL update function
-  const debouncedURLUpdate = useMemo(
-    () =>
-      debounce((selectedRecords: EntityData[], windowId: string, tabId: string) => {
-        try {
-          if (selectedRecords.length === 1) {
-            // Single selection: Update URL
-            setSelectedRecord(windowId, tabId, String(selectedRecords[0].id));
-          } else if (selectedRecords.length === 0) {
-            // No selection: Clear URL
-            clearSelectedRecord(windowId, tabId);
-          }
-          // Multiple selections: URL shows last selected (handled by existing logic)
-        } catch (error) {
-          handleSyncError(error as Error, "URL update");
+  const debouncedURLUpdate = useCallback(
+    debounce((selectedRecords: EntityData[], windowId: string, tabId: string) => {
+      try {
+        if (selectedRecords.length === 1) {
+          // Single selection: Update URL
+          setSelectedRecord(windowId, tabId, String(selectedRecords[0].id));
+        } else if (selectedRecords.length === 0) {
+          // No selection: Clear URL
+          clearSelectedRecord(windowId, tabId);
         }
-      }, 150),
+        // Multiple selections: URL shows last selected (handled by existing logic)
+      } catch (error) {
+        handleSyncError(error as Error, "URL update");
+      }
+    }, 150),
     [setSelectedRecord, clearSelectedRecord, handleSyncError]
   );
 
