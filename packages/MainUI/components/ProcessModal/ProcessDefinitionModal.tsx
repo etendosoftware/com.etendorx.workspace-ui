@@ -246,7 +246,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       return;
     }
 
-    // Busca la configuración dinámica según el windowId actual
     const windowConfig = WINDOW_SPECIFIC_KEYS[windowId];
     const extraKey = windowConfig ? { [windowConfig.key]: windowConfig.value(record) } : {};
 
@@ -257,9 +256,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           _buttonValue: "DONE",
           _params: {},
           _entityName: tab.entityName,
-          ...extraKey, // 👈 Se agrega dinámicamente si corresponde
+          ...extraKey,
           ...recordValues,
-          ...form.getValues(), // ya no necesitas la IIFE
+          ...form.getValues(),
           windowId: tab.window,
         };
 

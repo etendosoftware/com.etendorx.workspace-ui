@@ -19,11 +19,6 @@ export const COPY_FROM_ORDER_PROCESS_ID = "8B81D80B06364566B87853FEECAB5DE0";
 export const CREATE_LINES_FROM_ORDER_PROCESS_ID = "AB2EFCAABB7B4EC0A9B30CFB82963FB6";
 export const SERVERS_WINDOW_ID = "97A1BDAE0C074F2EB76B195ACA03E9AF";
 
-/**
- * Configuración de procesos Java y ventanas especiales.
- * Esto permite centralizar toda la lógica dinámica
- * que se utiliza en la construcción de payloads.
- */
 type ProcessDefinition = {
   inpColumnId: string;
   inpPrimaryKeyColumnId: string;
@@ -63,9 +58,6 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
   },
 };
 
-/**
- * Configuración de claves dinámicas asociadas a ventanas.
- */
 export const WINDOW_SPECIFIC_KEYS: Record<string, WindowDefinition> = {
   [SERVERS_WINDOW_ID]: {
     key: "Smfsch_Servers_ID",
