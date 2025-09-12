@@ -599,15 +599,10 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
  * @param props.onSuccess - Success callback
  * @returns JSX.Element | null - Modal component or null if no button provided
  */
-export default function ProcessDefinitionModal({ button, onSuccess, ...props }: ProcessDefinitionModalProps) {
+export default function ProcessDefinitionModal({ button, ...props }: ProcessDefinitionModalProps) {
   if (!button) return null;
 
   return (
-    <ProcessDefinitionModalContent
-      {...props}
-      button={button}
-      onSuccess={onSuccess}
-      data-testid="ProcessDefinitionModalContent__761503"
-    />
+    <ProcessDefinitionModalContent {...props} button={button} data-testid="ProcessDefinitionModalContent__761503" />
   );
 }
