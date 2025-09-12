@@ -157,9 +157,8 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   }, []);
 
   const handleCompleteRefresh = useCallback(async () => {
-    graph.clearSelected(tab);
     refetchDatasource(tab.id);
-  }, [graph, refetchDatasource, tab]);
+  }, [refetchDatasource, tab]);
 
   const handleCloseSearch = useCallback(() => setSearchOpen(false), [setSearchOpen]);
 
