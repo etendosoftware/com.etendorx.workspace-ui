@@ -17,8 +17,27 @@
 
 export const COPY_FROM_ORDER_PROCESS_ID = "8B81D80B06364566B87853FEECAB5DE0";
 export const CREATE_LINES_FROM_ORDER_PROCESS_ID = "AB2EFCAABB7B4EC0A9B30CFB82963FB6";
+export const SERVERS_WINDOW_ID = "97A1BDAE0C074F2EB76B195ACA03E9AF";
 
-export const PROCESS_DEFINITION_DATA = {
+/**
+ * Configuración de procesos Java y ventanas especiales.
+ * Esto permite centralizar toda la lógica dinámica
+ * que se utiliza en la construcción de payloads.
+ */
+type ProcessDefinition = {
+  inpColumnId: string;
+  inpPrimaryKeyColumnId: string;
+  defaultKeys: Record<string, string>;
+  dynamicKeys: Record<string, string>;
+  staticOptions: Record<string, unknown>;
+};
+
+type WindowDefinition = {
+  key: string;
+  value: (record: { id?: string } | null | undefined) => string | null;
+};
+
+export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
   [COPY_FROM_ORDER_PROCESS_ID]: {
     inpColumnId: "C_Order_ID",
     inpPrimaryKeyColumnId: "inpcOrderId",
@@ -41,5 +60,15 @@ export const PROCESS_DEFINITION_DATA = {
     staticOptions: {
       "@Invoice.salesTransaction@": true,
     },
+  },
+};
+
+/**
+ * Configuración de claves dinámicas asociadas a ventanas.
+ */
+export const WINDOW_SPECIFIC_KEYS: Record<string, WindowDefinition> = {
+  [SERVERS_WINDOW_ID]: {
+    key: "Smfsch_Servers_ID",
+    value: (record) => record?.id || null,
   },
 };

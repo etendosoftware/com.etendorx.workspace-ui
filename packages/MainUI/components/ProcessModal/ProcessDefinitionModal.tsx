@@ -52,7 +52,7 @@ import Loading from "../loading";
 import WindowReferenceGrid from "./WindowReferenceGrid";
 import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
-import { PROCESS_DEFINITION_DATA } from "@/utils/processes/definition/constants";
+import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
 import { globalCalloutManager } from "@/services/callouts";
 
 /** Fallback object for record values when no record context exists */
@@ -206,7 +206,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       try {
         const currentAttrs = PROCESS_DEFINITION_DATA[processId as keyof typeof PROCESS_DEFINITION_DATA];
         const currentRecordValue = recordValues?.[currentAttrs.inpPrimaryKeyColumnId];
-
         const payload = {
           [currentAttrs.inpColumnId]: currentRecordValue,
           [currentAttrs.inpPrimaryKeyColumnId]: currentRecordValue,
@@ -246,6 +245,11 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     if (!tab || !processId || !javaClassName) {
       return;
     }
+
+    // Busca la configuración dinámica según el windowId actual
+    const windowConfig = WINDOW_SPECIFIC_KEYS[windowId];
+    const extraKey = windowConfig ? { [windowConfig.key]: windowConfig.value(record) } : {};
+
     startTransition(async () => {
       try {
         const payload = {
@@ -253,11 +257,9 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           _buttonValue: "DONE",
           _params: {},
           _entityName: tab.entityName,
+          ...extraKey, // 👈 Se agrega dinámicamente si corresponde
           ...recordValues,
-          ...(() => {
-            const formValues = form.getValues();
-            return formValues;
-          })(),
+          ...form.getValues(), // ya no necesitas la IIFE
           windowId: tab.window,
         };
 
@@ -269,14 +271,18 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           undefined,
           javaClassName
         );
+
         setResult(res);
         if (res.success) onSuccess?.();
       } catch (error) {
         logger.warn("Error executing direct Java process:", error);
-        setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
+        setResult({
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
       }
     });
-  }, [tab, processId, javaClassName, recordValues, form, onSuccess, startTransition, token, record?.id]);
+  }, [tab, processId, javaClassName, windowId, record, recordValues, form, token, onSuccess]);
 
   /**
    * Main process execution handler - routes to appropriate execution method
