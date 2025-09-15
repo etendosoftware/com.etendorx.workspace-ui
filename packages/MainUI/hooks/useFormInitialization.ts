@@ -33,6 +33,7 @@ import {
   buildFormInitializationPayload,
   buildFormInitializationParams,
   fetchFormInitialization,
+  buildSessionAttributes,
 } from "@/utils/hooks/useFormInitialization/utils";
 import type { RecordData, State, Action } from "@/utils/hooks/useFormInitialization/types";
 
@@ -156,7 +157,6 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       setSession((prev) => ({
         ...prev,
         ...storedInSessionAttributes,
-        ...enrichedData.sessionAttributes,
       }));
 
       dispatch({ type: "FETCH_SUCCESS", payload: enrichedData });
@@ -227,32 +227,6 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     }
 
     return data;
-  }
-
-  /**
-   * Builds session attributes from auxiliary input values
-   *
-   * Extracts and transforms auxiliary input values from the form initialization
-   * response into a flat key-value object suitable for session storage.
-   * This ensures form field values are properly maintained across user interactions.
-   *
-   * @param data - Form initialization response containing auxiliary input values
-   * @returns Flattened object with field names as keys and their string values
-   *
-   * @example
-   * ```typescript
-   * const sessionAttrs = buildSessionAttributes(formData);
-   * // Returns: { "fieldName1": "value1", "fieldName2": "value2" }
-   * ```
-   */
-  function buildSessionAttributes(data: FormInitializationResponse): Record<string, string> {
-    return Object.entries(data.auxiliaryInputValues).reduce(
-      (acc, [key, { value }]) => {
-        acc[key] = value || "";
-        return acc;
-      },
-      {} as Record<string, string>
-    );
   }
 
   /**

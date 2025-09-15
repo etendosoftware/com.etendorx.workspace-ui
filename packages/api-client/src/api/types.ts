@@ -694,6 +694,13 @@ export enum FormMode {
   EDIT = "EDIT",
 }
 
+// New independent mode for session operations
+export const SessionMode = {
+  SETSESSION: "SETSESSION"
+} as const;
+
+export type SessionModeType = typeof SessionMode[keyof typeof SessionMode];
+
 export interface FormInitializationParams {
   tab: Tab;
   mode: FormMode;

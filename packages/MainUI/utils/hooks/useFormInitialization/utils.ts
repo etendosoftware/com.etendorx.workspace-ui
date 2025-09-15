@@ -1,12 +1,23 @@
 import type { ClientOptions } from "@workspaceui/api-client/src/api/client";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import { FormMode, type Tab, type FormInitializationResponse, type Field } from "@workspaceui/api-client/src/api/types";
+import {
+  FormMode,
+  SessionMode,
+  type SessionModeType,
+  type Tab,
+  type FormInitializationResponse,
+  type Field,
+} from "@workspaceui/api-client/src/api/types";
 import { ACTION_FORM_INITIALIZATION } from "./constants";
 import { logger } from "@/utils/logger";
 import { getFieldsToAdd } from "@/utils/form/entityConfig";
+import { extractKeyValuePairs } from "@/utils/commons";
 
-const getRowId = (mode: FormMode, recordId?: string | null): string => {
-  return mode === FormMode.EDIT ? (recordId ?? "null") : "null";
+const getRowId = (mode: FormMode | SessionModeType, recordId?: string | null): string => {
+  if (mode === FormMode.EDIT || mode === SessionMode.SETSESSION) {
+    return recordId ?? "null";
+  }
+  return "null";
 };
 
 /**
@@ -20,7 +31,7 @@ const getRowId = (mode: FormMode, recordId?: string | null): string => {
  * - Window context information
  *
  * @param tab - Current tab configuration
- * @param mode - Form operation mode (NEW, EDIT, etc.)
+ * @param mode - Form operation mode (NEW, EDIT, SETSESSION)
  * @param parentData - Data from parent form context
  * @param entityKeyColumn - Primary key field configuration
  * @returns Payload object ready for API submission
@@ -33,11 +44,14 @@ const getRowId = (mode: FormMode, recordId?: string | null): string => {
  */
 export const buildFormInitializationPayload = (
   tab: Tab,
-  mode: FormMode,
+  mode: FormMode | SessionModeType,
   parentData: Record<string, unknown>,
   entityKeyColumn: NonNullable<Field>
 ): Record<string, unknown> => {
-  const additionalFields = getFieldsToAdd(tab.entityName, mode);
+  const additionalFields =
+    mode === SessionMode.SETSESSION
+      ? {} // No additional fields needed for session sync ¿This is correct?
+      : getFieldsToAdd(tab.entityName, mode as FormMode);
 
   return {
     ...parentData,
@@ -68,7 +82,7 @@ export const buildFormInitializationParams = ({
   parentId,
 }: {
   tab: Tab;
-  mode: FormMode;
+  mode: FormMode | SessionModeType;
   recordId?: string | null;
   parentId?: string | null;
 }): URLSearchParams =>
@@ -91,4 +105,24 @@ export const fetchFormInitialization = async (
     logger.warn("Error fetching initial form data:", error);
     throw new Error("Failed to fetch initial data");
   }
+};
+
+/**
+ * Builds session attributes from auxiliary input values
+ *
+ * Extracts and transforms auxiliary input values from the form initialization
+ * response into a flat key-value object suitable for session storage.
+ * This ensures form field values are properly maintained across user interactions.
+ *
+ * @param data - Form initialization response containing auxiliary input values
+ * @returns Flattened object with field names as keys and their string values
+ *
+ * @example
+ * ```typescript
+ * const sessionAttrs = buildSessionAttributes(formData);
+ * // Returns: { "fieldName1": "value1", "fieldName2": "value2" }
+ * ```
+ */
+export const buildSessionAttributes = (data: FormInitializationResponse): Record<string, string> => {
+  return { ...extractKeyValuePairs(data.auxiliaryInputValues), ...data.sessionAttributes };
 };

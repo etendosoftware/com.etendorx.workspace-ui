@@ -43,6 +43,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useStateReconciliation } from "@/hooks/useStateReconciliation";
 import { debounce } from "@/utils/debounce";
+import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/sessionSync";
 
 /**
  * Compares two arrays of strings alphabetically to detect content changes while ignoring order.
@@ -360,6 +361,14 @@ export default function useTableSelection(
     }
 
     updateGraphSelection(graph, tab, lastSelected, selectedRecords, onSelectionChange);
+
+    if (selectedRecords.length > 0) {
+      syncSelectedRecordsToSession({
+        tab,
+        selectedRecords,
+        parentId: tab.parentTabId, // Use parent tab ID if available
+      });
+    }
   }, [
     graph,
     records,
