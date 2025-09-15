@@ -138,7 +138,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     if (recordId) {
       refetch();
     }
-  }, [recordId, refetch, mode]);
+  }, [recordId, refetch]);
 
   useEffect(() => {
     if (!availableFormData) return;
