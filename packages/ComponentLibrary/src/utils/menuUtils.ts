@@ -16,8 +16,8 @@
  */
 
 import type { Menu } from "@workspaceui/api-client/src/api/types";
-import type { TranslateFunction } from "@workspaceui/mainui/hooks/types";
 import type { RecentItem } from "../components/Drawer/types";
+import type { TranslateFunction } from "../locales/types";
 
 const RECENTLY_VIEWED_ICON = "⌛";
 
