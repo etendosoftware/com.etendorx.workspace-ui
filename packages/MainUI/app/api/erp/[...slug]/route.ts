@@ -6,7 +6,7 @@ import { getErpAuthHeaders } from "../../_utils/forwardConfig";
 // Cached function for generic ERP requests
 const getCachedErpData = unstable_cache(
   async (userToken: string, slug: string, method: string, body: string, contentType: string, queryParams = "") => {
-    let erpUrl;
+    let erpUrl: string;
     if (slug.includes("copilot")) {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
     } else {
@@ -140,11 +140,23 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 
     const slug = resolvedParams.slug.join("/");
 
-    let erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
+    let erpUrl: string;
+    if (slug.startsWith("sws/")) {
+      // If slug already starts with sws/, use it directly
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
+    } else {
+      // Legacy case: add sws/com.etendoerp.metadata. prefix
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
+    }
     const url = new URL(request.url);
     if (url.search) {
       erpUrl += url.search;
     }
+    // Handle kernel requests - replace forward with kernel servlet
+    erpUrl = erpUrl.replace(
+      "com.etendoerp.metadata.forward/org.openbravo.client.kernel",
+      "com.smf.securewebservices.kernel/org.openbravo.client.kernel"
+    );
     erpUrl = erpUrl.replace(
       "com.etendoerp.metadata.meta/forward",
       "com.smf.securewebservices.kernel/org.openbravo.client.kernel"

@@ -75,13 +75,13 @@ function buildKernelUrl(
   }
   kernelParams.set("_action", action);
 
-  return `${baseUrl}/org.openbravo.client.kernel?${kernelParams.toString()}`;
+  return `${baseUrl}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?${kernelParams.toString()}`;
 }
 
 function buildErpUrl(url: URL, params: URLSearchParams): string {
   const baseUrl = normalizeBaseUrl(process.env.ETENDO_CLASSIC_URL);
   const pathname = url.pathname;
-  const isKernelRequest = pathname.includes("/meta/forward/org.openbravo.client.kernel");
+  const isKernelRequest = pathname.includes("/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel");
   const processId = params.get("processId");
   const windowId = params.get("windowId");
   const reportId = params.get("reportId");
@@ -95,11 +95,11 @@ function buildErpUrl(url: URL, params: URLSearchParams): string {
   // Handle FormInitializationComponent special case
   const action = params.get("_action");
   if (action === "org.openbravo.client.application.window.FormInitializationComponent") {
-    return `${baseUrl}/meta/forward/org.openbravo.client.kernel${url.search}`;
+    return `${baseUrl}/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel${url.search}`;
   }
 
   // Default: base ERP URL with query params
-  return `${process.env.ETENDO_CLASSIC_URL}${url.search}`;
+  return `${baseUrl}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel${url.search}`;
 }
 
 async function executeMutation(

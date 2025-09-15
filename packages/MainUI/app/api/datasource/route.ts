@@ -30,7 +30,12 @@ async function fetchDatasource(
   cookieHeader = "",
   csrfToken: string | null = null
 ) {
-  const erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, `.forward/org.openbravo.service.datasource/${entity}`);
+  const erpUrl = joinUrl(
+    process.env.ETENDO_CLASSIC_URL,
+    `sws/com.etendoerp.metadata.forward/org.openbravo.service.datasource/${entity}`
+  );
+
+  console.debug(erpUrl);
 
   // Convert params object to URLSearchParams for the ERP request
   const formData = new URLSearchParams();
