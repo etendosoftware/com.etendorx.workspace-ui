@@ -33,3 +33,5 @@ export type Language = "en_US" | "es_ES";
 export type Translations = {
   [key in Language]: typeof en | typeof es;
 };
+
+export type TranslateFunction = <K extends NestedKeyOf<TranslationKeys>>(key: K) => string;
