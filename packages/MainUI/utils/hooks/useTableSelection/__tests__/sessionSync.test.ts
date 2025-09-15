@@ -31,6 +31,12 @@ describe("syncSelectedRecordsToSession", () => {
     fkField: false,
     selectOnClick: true,
     canSort: true,
+    canFilter: false,
+    showHover: false,
+    filterEditorProperties: {
+      keyProperty: "id",
+    },
+    showIf: "",
   };
 
   const mockField: Field = {
@@ -130,6 +136,7 @@ describe("syncSelectedRecordsToSession", () => {
       tab: mockTab,
       selectedRecords: mockRecords,
       setSession: mockSetSession,
+      setSessionSyncLoading: jest.fn(),
     });
 
     // Should call functions only once (single request)
@@ -162,6 +169,7 @@ describe("syncSelectedRecordsToSession", () => {
       tab: mockTab,
       selectedRecords: mockRecords,
       setSession: mockSetSession,
+      setSessionSyncLoading: jest.fn(),
     });
 
     // Verify payload was modified to include MULTIPLE_ROW_IDS
@@ -187,6 +195,7 @@ describe("syncSelectedRecordsToSession", () => {
       tab: mockTab,
       selectedRecords: singleRecord,
       setSession: mockSetSession,
+      setSessionSyncLoading: jest.fn(),
     });
 
     const mockCall = jest.mocked(formUtils.fetchFormInitialization).mock.calls[0];
@@ -214,6 +223,7 @@ describe("syncSelectedRecordsToSession", () => {
       tab: mockTab,
       selectedRecords: mockRecords,
       setSession: mockSetSession,
+      setSessionSyncLoading: jest.fn(),
     });
 
     expect(mockSetSession).toHaveBeenCalledWith(expect.any(Function));
@@ -242,6 +252,7 @@ describe("syncSelectedRecordsToSession", () => {
         tab: tabWithoutKey,
         selectedRecords: mockRecords,
         setSession: mockSetSession,
+        setSessionSyncLoading: jest.fn(),
       })
     ).resolves.not.toThrow();
 
@@ -258,6 +269,7 @@ describe("syncSelectedRecordsToSession", () => {
         tab: mockTab,
         selectedRecords: mockRecords,
         setSession: mockSetSession,
+        setSessionSyncLoading: jest.fn(),
       })
     ).resolves.not.toThrow();
 
@@ -273,6 +285,7 @@ describe("syncSelectedRecordsToSession", () => {
       tab: mockTab,
       selectedRecords: [],
       setSession: mockSetSession,
+      setSessionSyncLoading: jest.fn(),
     });
 
     expect(mockFetch).not.toHaveBeenCalled();
@@ -294,6 +307,7 @@ describe("syncSelectedRecordsToSession", () => {
       selectedRecords: mockRecords,
       parentId,
       setSession: mockSetSession,
+      setSessionSyncLoading: jest.fn(),
     });
 
     expect(mockBuildParams).toHaveBeenCalledWith(expect.objectContaining({ parentId }));
@@ -310,6 +324,7 @@ describe("syncSelectedRecordsToSession", () => {
       tab: mockTab,
       selectedRecords: mockRecords,
       setSession: mockSetSession,
+      setSessionSyncLoading: jest.fn(),
     });
 
     expect(formUtils.buildFormInitializationPayload).toHaveBeenCalledWith(
@@ -321,5 +336,109 @@ describe("syncSelectedRecordsToSession", () => {
         inputName: "testInput",
       })
     );
+  });
+
+  // Loading State Tests
+  describe("loading state management", () => {
+    it("should set loading state to true at start and false on successful completion", async () => {
+      const mockSetSessionSyncLoading = jest.fn();
+      jest.spyOn(formUtils, "buildFormInitializationParams").mockReturnValue(new URLSearchParams());
+      jest.spyOn(formUtils, "buildFormInitializationPayload").mockReturnValue({});
+      jest.spyOn(formUtils, "buildSessionAttributes").mockReturnValue({});
+      jest.spyOn(formUtils, "fetchFormInitialization").mockResolvedValue(createMockFormInitializationResponse());
+      const mockSetSession = jest.fn();
+
+      await syncSelectedRecordsToSession({
+        tab: mockTab,
+        selectedRecords: mockRecords,
+        setSession: mockSetSession,
+        setSessionSyncLoading: mockSetSessionSyncLoading,
+      });
+
+      // Should set loading to true at start
+      expect(mockSetSessionSyncLoading).toHaveBeenNthCalledWith(1, true);
+      // Should set loading to false at end
+      expect(mockSetSessionSyncLoading).toHaveBeenNthCalledWith(2, false);
+      expect(mockSetSessionSyncLoading).toHaveBeenCalledTimes(2);
+    });
+
+    it("should set loading state to false even when API call fails", async () => {
+      const mockSetSessionSyncLoading = jest.fn();
+      jest.spyOn(formUtils, "buildFormInitializationParams").mockReturnValue(new URLSearchParams());
+      jest.spyOn(formUtils, "buildFormInitializationPayload").mockReturnValue({});
+      jest.spyOn(formUtils, "fetchFormInitialization").mockRejectedValue(new Error("API Error"));
+      const mockSetSession = jest.fn();
+
+      await syncSelectedRecordsToSession({
+        tab: mockTab,
+        selectedRecords: mockRecords,
+        setSession: mockSetSession,
+        setSessionSyncLoading: mockSetSessionSyncLoading,
+      });
+
+      // Should set loading to true at start
+      expect(mockSetSessionSyncLoading).toHaveBeenNthCalledWith(1, true);
+      // Should set loading to false even after error
+      expect(mockSetSessionSyncLoading).toHaveBeenNthCalledWith(2, false);
+      expect(mockSetSessionSyncLoading).toHaveBeenCalledTimes(2);
+    });
+
+    it("should set loading state to false when no key column found", async () => {
+      const mockSetSessionSyncLoading = jest.fn();
+      const tabWithoutKey: Tab = {
+        ...mockTab,
+        fields: {},
+      };
+      const mockSetSession = jest.fn();
+
+      await syncSelectedRecordsToSession({
+        tab: tabWithoutKey,
+        selectedRecords: mockRecords,
+        setSession: mockSetSession,
+        setSessionSyncLoading: mockSetSessionSyncLoading,
+      });
+
+      // Should set loading to true at start
+      expect(mockSetSessionSyncLoading).toHaveBeenNthCalledWith(1, true);
+      // Should set loading to false when exiting early
+      expect(mockSetSessionSyncLoading).toHaveBeenNthCalledWith(2, false);
+      expect(mockSetSessionSyncLoading).toHaveBeenCalledTimes(2);
+    });
+
+    it("should set loading state to false when no records selected", async () => {
+      const mockSetSessionSyncLoading = jest.fn();
+      const mockSetSession = jest.fn();
+
+      await syncSelectedRecordsToSession({
+        tab: mockTab,
+        selectedRecords: [],
+        setSession: mockSetSession,
+        setSessionSyncLoading: mockSetSessionSyncLoading,
+      });
+
+      // Should set loading to true at start
+      expect(mockSetSessionSyncLoading).toHaveBeenNthCalledWith(1, true);
+      // Should set loading to false when exiting early
+      expect(mockSetSessionSyncLoading).toHaveBeenNthCalledWith(2, false);
+      expect(mockSetSessionSyncLoading).toHaveBeenCalledTimes(2);
+    });
+
+    it("should not call setSessionSyncLoading when it is not provided", async () => {
+      jest.spyOn(formUtils, "buildFormInitializationParams").mockReturnValue(new URLSearchParams());
+      jest.spyOn(formUtils, "buildFormInitializationPayload").mockReturnValue({});
+      jest.spyOn(formUtils, "buildSessionAttributes").mockReturnValue({});
+      jest.spyOn(formUtils, "fetchFormInitialization").mockResolvedValue(createMockFormInitializationResponse());
+      const mockSetSession = jest.fn();
+
+      // Should not throw when setSessionSyncLoading is not provided
+      await expect(
+        syncSelectedRecordsToSession({
+          tab: mockTab,
+          selectedRecords: mockRecords,
+          setSession: mockSetSession,
+          setSessionSyncLoading: jest.fn(),
+        })
+      ).resolves.not.toThrow();
+    });
   });
 });
