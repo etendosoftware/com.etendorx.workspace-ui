@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
-import { joinUrl } from "../../_utils/url";
 import { getErpAuthHeaders } from "../../_utils/forwardConfig";
 
 // Cached function for generic ERP requests
 const getCachedErpData = unstable_cache(
   async (userToken: string, slug: string, method: string, body: string, contentType: string, queryParams = "") => {
-    let erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, slug);
+    let erpUrl;
+    if (slug.includes("copilot")) {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
+    } else {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
+    }
+
     if (method === "GET" && queryParams) {
       erpUrl += queryParams;
     }
@@ -135,11 +140,15 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 
     const slug = resolvedParams.slug.join("/");
 
-    let erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, slug);
+    let erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
     const url = new URL(request.url);
     if (url.search) {
       erpUrl += url.search;
     }
+    erpUrl = erpUrl.replace(
+      "com.etendoerp.metadata.meta/forward",
+      "com.smf.securewebservices.kernel/org.openbravo.client.kernel"
+    );
 
     const requestBody = method === "GET" ? undefined : await request.text();
     const contentType = request.headers.get("Content-Type") || "application/json";

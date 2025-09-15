@@ -29,7 +29,7 @@ function validateAndExtractToken(request: NextRequest): string | null {
  * @returns The complete ERP URL with query parameters
  */
 function buildErpUrl(entity: string, requestUrl: URL, body?: string, userToken?: string | null): string {
-  const baseUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/forward/org.openbravo.service.datasource/${entity}`;
+  const baseUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.forward/org.openbravo.service.datasource/${entity}`;
 
   const params = new URLSearchParams(requestUrl.search);
 
