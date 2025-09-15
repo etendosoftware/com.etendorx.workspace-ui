@@ -44,6 +44,7 @@ import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useStateReconciliation } from "@/hooks/useStateReconciliation";
 import { debounce } from "@/utils/debounce";
 import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/sessionSync";
+import { useUserContext } from "@/hooks/useUserContext";
 
 /**
  * Compares two arrays of strings alphabetically to detect content changes while ignoring order.
@@ -246,6 +247,7 @@ export default function useTableSelection(
 ) {
   const { graph } = useSelected();
   const { activeWindow, clearSelectedRecord, setSelectedRecord, getSelectedRecord } = useMultiWindowURL();
+  const { setSession } = useUserContext();
   const previousSelectionRef = useRef<string[]>([]);
 
   const windowId = activeWindow?.windowId;
@@ -367,6 +369,7 @@ export default function useTableSelection(
         tab,
         selectedRecords,
         parentId: tab.parentTabId, // Use parent tab ID if available
+        setSession,
       });
     }
   }, [
