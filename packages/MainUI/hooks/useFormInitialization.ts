@@ -111,7 +111,7 @@ export type useFormInitialization = State & {
  * ```
  */
 export function useFormInitialization({ tab, mode, recordId }: FormInitializationParams): useFormInitialization {
-  const { setSession } = useUserContext();
+  const { setSession, setSessionSyncLoading } = useUserContext();
   const { parentRecord: parent } = useTabContext();
   const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
   const { error, formInitialization, loading } = state;
@@ -145,6 +145,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     if (!params) return;
 
     try {
+      setSessionSyncLoading(true);
       const entityKeyColumn = findEntityKeyColumn(tab.fields);
       if (!entityKeyColumn) throw new Error("Missing key column");
 
@@ -163,6 +164,8 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     } catch (err) {
       logger.warn(err);
       dispatch({ type: "FETCH_ERROR", payload: err instanceof Error ? err : new Error("Unknown error") });
+    } finally {
+      setSessionSyncLoading(false);
     }
   }, [mode, params, parentData, setSession, tab, record]);
 

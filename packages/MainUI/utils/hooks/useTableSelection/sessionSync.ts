@@ -29,6 +29,7 @@ export interface SessionSyncOptions {
   selectedRecords: EntityData[];
   parentId?: string;
   setSession: (updater: (prev: ISession) => ISession) => void;
+  setSessionSyncLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const syncSelectedRecordsToSession = async ({
@@ -36,8 +37,10 @@ export const syncSelectedRecordsToSession = async ({
   selectedRecords,
   parentId,
   setSession,
+  setSessionSyncLoading,
 }: SessionSyncOptions): Promise<void> => {
   try {
+    setSessionSyncLoading(true);
     if (selectedRecords.length === 0) {
       return;
     }
@@ -90,5 +93,7 @@ export const syncSelectedRecordsToSession = async ({
   } catch (error) {
     logger.error("Failed to sync selected records to session:", error);
     // Don't throw - session sync should not break selection functionality
+  } finally {
+    setSessionSyncLoading(false);
   }
 };

@@ -247,7 +247,7 @@ export default function useTableSelection(
 ) {
   const { graph } = useSelected();
   const { activeWindow, clearSelectedRecord, setSelectedRecord, getSelectedRecord } = useMultiWindowURL();
-  const { setSession } = useUserContext();
+  const { setSession, setSessionSyncLoading } = useUserContext();
   const previousSelectionRef = useRef<string[]>([]);
 
   const windowId = activeWindow?.windowId;
@@ -370,6 +370,7 @@ export default function useTableSelection(
         selectedRecords,
         parentId: tab.parentTabId, // Use parent tab ID if available
         setSession,
+        setSessionSyncLoading,
       });
     }
   }, [
