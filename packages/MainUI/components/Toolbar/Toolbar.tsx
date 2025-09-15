@@ -22,6 +22,7 @@ import type { ToolbarButtonMetadata } from "@/hooks/Toolbar/types";
 import { useSelected } from "@/hooks/useSelected";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useSelectedRecords } from "@/hooks/useSelectedRecords";
+import { useUserContext } from "@/hooks/useUserContext";
 import { EMPTY_ARRAY } from "@/utils/defaults";
 import StatusModal from "@workspaceui/componentlibrary/src/components/StatusModal";
 import ConfirmModal from "@workspaceui/componentlibrary/src/components/StatusModal/ConfirmModal";
@@ -69,6 +70,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { graph } = useSelected();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
+  const { isSessionSyncLoading } = useUserContext();
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -182,7 +184,14 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       isItemSelected: hasSelectedRecord,
       processButton:
         processButtons.length > 0
-          ? createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, anchorEl)
+          ? createProcessMenuButton(
+              processButtons.length,
+              hasSelectedRecord,
+              handleMenuToggle,
+              t,
+              anchorEl,
+              isSessionSyncLoading
+            )
           : undefined,
     };
 
@@ -201,6 +210,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     selectedParentItems,
     hasFormChanges,
     saveButtonState,
+    isSessionSyncLoading,
   ]);
 
   if (loading) {
