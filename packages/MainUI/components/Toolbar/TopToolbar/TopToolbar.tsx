@@ -19,7 +19,7 @@ import type { TopToolbarProps } from "../types";
 import ToolbarSection from "../ToolbarSection";
 
 export const TopToolbar = ({ leftSection, centerSection, rightSection, processButton }: TopToolbarProps) => {
-  const isCenterSectionsDisabled = centerSection.buttons.every((button) => button.disabled) && processButton.disabled;
+  const isCenterSectionsDisabled = centerSection.buttons.every((button) => button.disabled) && processButton?.disabled;
   return (
     <div className="h-10 flex justify-between items-center gap-1">
       <ToolbarSection

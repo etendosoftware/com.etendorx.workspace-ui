@@ -166,19 +166,24 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     const hasSelectedRecord = !!selectedRecord?.id;
     const hasParentRecordSelected = !hasParentTab || selectedParentItems.length === 1;
 
+    const baseConfig = getToolbarSections(
+      buttons,
+      handleAction,
+      isFormView,
+      isTreeNodeView,
+      hasFormChanges,
+      hasSelectedRecord,
+      hasParentRecordSelected,
+      saveButtonState
+    );
+
     const config = {
-      ...getToolbarSections(
-        buttons,
-        handleAction,
-        isFormView,
-        isTreeNodeView,
-        hasFormChanges,
-        hasSelectedRecord,
-        hasParentRecordSelected,
-        saveButtonState
-      ),
-      processButton: createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, anchorEl),
+      ...baseConfig,
       isItemSelected: hasSelectedRecord,
+      processButton:
+        processButtons.length > 0
+          ? createProcessMenuButton(processButtons.length, hasSelectedRecord, handleMenuToggle, t, anchorEl)
+          : undefined,
     };
 
     return config;
