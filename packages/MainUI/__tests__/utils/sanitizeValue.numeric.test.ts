@@ -19,14 +19,15 @@ import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import type { Field } from "@workspaceui/api-client/src/api/types";
 
 describe("sanitizeValue numeric field handling", () => {
-  const createMockField = (reference: string): Field => ({
-    id: "test-field",
-    name: "testField",
-    inputName: "testField",
-    column: {
-      reference,
-    },
-  } as Field);
+  const createMockField = (reference: string): Field =>
+    ({
+      id: "test-field",
+      name: "testField",
+      inputName: "testField",
+      column: {
+        reference,
+      },
+    }) as Field;
 
   describe("INTEGER fields", () => {
     const integerField = createMockField(FIELD_REFERENCE_CODES.INTEGER);
