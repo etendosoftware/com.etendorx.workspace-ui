@@ -29,11 +29,16 @@ function validateAndExtractToken(request: NextRequest): string | null {
  * @returns The complete ERP URL with query parameters
  */
 function buildErpUrl(entity: string, requestUrl: URL, body?: string, userToken?: string | null): string {
-  const baseUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.forward/org.openbravo.service.datasource/${entity}`;
-
   const params = new URLSearchParams(requestUrl.search);
-
   const operationType = params.get("_operationType");
+  
+  // Determine if this is an operation (add/update/remove) or a query (fetch)
+  const isOperation = operationType && ['add', 'update', 'remove'].includes(operationType);
+  
+  const baseUrl = isOperation 
+    ? `${process.env.ETENDO_CLASSIC_URL}/org.openbravo.service.datasource/${entity}`
+    : `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.forward/org.openbravo.service.datasource/${entity}`;
+
   if (operationType && !params.has("_startRow") && !params.has("_endRow")) {
     params.set("_startRow", "0");
     params.set("_endRow", "75");

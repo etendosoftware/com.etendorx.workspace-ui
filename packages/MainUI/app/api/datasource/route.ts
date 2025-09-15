@@ -30,10 +30,13 @@ async function fetchDatasource(
   cookieHeader = "",
   csrfToken: string | null = null
 ) {
-  const erpUrl = joinUrl(
-    process.env.ETENDO_CLASSIC_URL,
-    `sws/com.etendoerp.metadata.forward/org.openbravo.service.datasource/${entity}`
-  );
+  // Determine if this is an operation (add/update/remove) or a query (fetch)
+  const operationType = (params as Record<string, unknown>)?._operationType || (params as Record<string, unknown>)?.operationType;
+  const isOperation = operationType && typeof operationType === 'string' && ['add', 'update', 'remove'].includes(operationType);
+  
+  const erpUrl = isOperation 
+    ? joinUrl(process.env.ETENDO_CLASSIC_URL, `org.openbravo.service.datasource/${entity}`)
+    : joinUrl(process.env.ETENDO_CLASSIC_URL, `sws/com.etendoerp.metadata.forward/org.openbravo.service.datasource/${entity}`);
 
   console.debug(erpUrl);
 
@@ -95,7 +98,13 @@ async function fetchDatasourceJson(
   cookieHeader = "",
   csrfToken: string | null = null
 ) {
-  const erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, `/meta/forward/org.openbravo.service.datasource/${entity}`);
+  // Determine if this is an operation (add/update/remove) or a query (fetch)
+  const operationType = (params as Record<string, unknown>)?._operationType || (params as Record<string, unknown>)?.operationType;
+  const isOperation = operationType && typeof operationType === 'string' && ['add', 'update', 'remove'].includes(operationType);
+  
+  const erpUrl = isOperation 
+    ? joinUrl(process.env.ETENDO_CLASSIC_URL, `sws/org.openbravo.service.datasource/${entity}`)
+    : joinUrl(process.env.ETENDO_CLASSIC_URL, `/sws/com.etendoerp.metadata.forward/org.openbravo.service.datasource/${entity}`);
 
   // Process JSON body to sync csrfToken if needed
   let processedParams = params;
