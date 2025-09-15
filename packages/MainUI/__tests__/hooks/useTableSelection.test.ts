@@ -16,14 +16,22 @@
  */
 
 import { renderHook, act, waitFor } from "@testing-library/react";
+import { useSelected } from "@/hooks/useSelected";
+import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
+import { useStateReconciliation } from "@/hooks/useStateReconciliation";
+import { useUserContext } from "@/hooks/useUserContext";
+import { syncSelectedRecordsToSession } from "@/utils/hooks/useTableSelection/sessionSync";
+import { debounce } from "@/utils/debounce";
 import useTableSelection from "../../hooks/useTableSelection";
-import type { EntityData, Tab } from "@workspaceui/api-client/src/api/types";
+import type { Tab, EntityData } from "@workspaceui/api-client/src/api/types";
 import type { MRT_RowSelectionState } from "material-react-table";
 
 // Mock dependencies
 jest.mock("@/hooks/useSelected");
 jest.mock("@/hooks/navigation/useMultiWindowURL");
 jest.mock("@/hooks/useStateReconciliation");
+jest.mock("@/hooks/useUserContext");
+jest.mock("@/utils/hooks/useTableSelection/sessionSync");
 jest.mock("@/utils/debounce");
 jest.mock("@/utils/logger", () => ({
   logger: {
@@ -34,16 +42,12 @@ jest.mock("@/utils/logger", () => ({
   },
 }));
 
-// Import mocked dependencies
-import { useSelected } from "@/hooks/useSelected";
-import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
-import { useStateReconciliation } from "@/hooks/useStateReconciliation";
-import { debounce } from "@/utils/debounce";
-
 // Setup mock implementations
 const mockUseSelected = useSelected as jest.MockedFunction<typeof useSelected>;
 const mockUseMultiWindowURL = useMultiWindowURL as jest.MockedFunction<typeof useMultiWindowURL>;
 const mockUseStateReconciliation = useStateReconciliation as jest.MockedFunction<typeof useStateReconciliation>;
+const mockUseUserContext = useUserContext as jest.MockedFunction<typeof useUserContext>;
+const mockSyncSelectedRecordsToSession = syncSelectedRecordsToSession as jest.MockedFunction<typeof syncSelectedRecordsToSession>;
 const mockDebounce = debounce as jest.MockedFunction<typeof debounce>;
 
 // Mock data
@@ -111,10 +115,19 @@ const createMockStateReconciliation = () => ({
   recordsMap: new Map(),
 });
 
+// Mock user context
+const createMockUserContext = () => ({
+  setSession: jest.fn(),
+  session: {},
+  user: null,
+  isLoading: false,
+});
+
 // Global mock variables accessible to all tests
 let mockGraph: ReturnType<typeof createMockGraph>;
 let mockWindowURL: ReturnType<typeof createMockWindowURL>;
 let mockStateReconciliation: ReturnType<typeof createMockStateReconciliation>;
+let mockUserContext: ReturnType<typeof createMockUserContext>;
 let mockDebouncedFunction: jest.Mock;
 
 // Global setup for all tests
@@ -124,6 +137,7 @@ beforeEach(() => {
   mockGraph = createMockGraph();
   mockWindowURL = createMockWindowURL();
   mockStateReconciliation = createMockStateReconciliation();
+  mockUserContext = createMockUserContext();
   mockDebouncedFunction = jest.fn();
 
   mockUseSelected.mockReturnValue({
@@ -158,6 +172,8 @@ beforeEach(() => {
     openWindowAndSelect: jest.fn(),
   } as ReturnType<typeof useMultiWindowURL>);
   mockUseStateReconciliation.mockReturnValue(mockStateReconciliation);
+  mockUseUserContext.mockReturnValue(mockUserContext);
+  mockSyncSelectedRecordsToSession.mockResolvedValue(undefined);
   mockDebounce.mockReturnValue(mockDebouncedFunction);
 });
 
