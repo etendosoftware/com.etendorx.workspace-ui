@@ -17,8 +17,17 @@ const mockToolbarContext = {
   registerActions: jest.fn(),
 };
 
+// Mock the tab context with custom implementation
+const mockTabContext = {
+  hasFormChanges: false,
+};
+
 jest.mock("@/contexts/ToolbarContext", () => ({
   useToolbarContext: () => mockToolbarContext,
+}));
+
+jest.mock("@/contexts/tab", () => ({
+  useTabContext: () => mockTabContext,
 }));
 
 // Mock dependencies
@@ -168,6 +177,8 @@ describe("StatusBar", () => {
     // Reset mock implementations
     mockToolbarContext.onSave.mockResolvedValue(undefined);
     mockToolbarContext.onBack.mockImplementation(() => {});
+    // Reset tab context mock
+    mockTabContext.hasFormChanges = false;
   });
 
   describe("Rendering", () => {
@@ -256,8 +267,9 @@ describe("StatusBar", () => {
   });
 
   describe("Close Record Functionality", () => {
-    it("calls onSave with false parameter when close button is clicked", async () => {
+    it("calls onSave with false parameter when close button is clicked and there are form changes", async () => {
       const user = userEvent.setup();
+      mockTabContext.hasFormChanges = true;
 
       render(
         <TestWrapper>
@@ -272,8 +284,25 @@ describe("StatusBar", () => {
       expect(mockToolbarContext.onSave).toHaveBeenCalledTimes(1);
     });
 
-    it("calls onBack after successful save", async () => {
+    it("does not call onSave when close button is clicked and there are no form changes", async () => {
       const user = userEvent.setup();
+      mockTabContext.hasFormChanges = false;
+
+      render(
+        <TestWrapper>
+          <StatusBar fields={mockFields} />
+        </TestWrapper>
+      );
+
+      const closeButton = screen.getByTestId("icon-button");
+      await user.click(closeButton);
+
+      expect(mockToolbarContext.onSave).not.toHaveBeenCalled();
+    });
+
+    it("calls onBack after successful save when there are form changes", async () => {
+      const user = userEvent.setup();
+      mockTabContext.hasFormChanges = true;
 
       render(
         <TestWrapper>
@@ -289,11 +318,30 @@ describe("StatusBar", () => {
       });
     });
 
-    it("handles save error gracefully and logs error", async () => {
+    it("calls onBack immediately when there are no form changes", async () => {
+      const user = userEvent.setup();
+      mockTabContext.hasFormChanges = false;
+
+      render(
+        <TestWrapper>
+          <StatusBar fields={mockFields} />
+        </TestWrapper>
+      );
+
+      const closeButton = screen.getByTestId("icon-button");
+      await user.click(closeButton);
+
+      await waitFor(() => {
+        expect(mockToolbarContext.onBack).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("handles save error gracefully and logs error when there are form changes", async () => {
       const user = userEvent.setup();
       const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
       const saveError = new Error("Save failed");
       mockToolbarContext.onSave.mockRejectedValue(saveError);
+      mockTabContext.hasFormChanges = true;
 
       render(
         <TestWrapper>
@@ -313,10 +361,11 @@ describe("StatusBar", () => {
       consoleErrorSpy.mockRestore();
     });
 
-    it("does not call onBack if save fails", async () => {
+    it("does not call onBack if save fails when there are form changes", async () => {
       const user = userEvent.setup();
       const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
       mockToolbarContext.onSave.mockRejectedValue(new Error("Save failed"));
+      mockTabContext.hasFormChanges = true;
 
       render(
         <TestWrapper>
@@ -335,6 +384,26 @@ describe("StatusBar", () => {
       consoleErrorSpy.mockRestore();
     });
 
+    it("calls onBack immediately when there are no form changes (no save error possible)", async () => {
+      const user = userEvent.setup();
+      mockTabContext.hasFormChanges = false;
+
+      render(
+        <TestWrapper>
+          <StatusBar fields={mockFields} />
+        </TestWrapper>
+      );
+
+      const closeButton = screen.getByTestId("icon-button");
+      await user.click(closeButton);
+
+      await waitFor(() => {
+        expect(mockToolbarContext.onBack).toHaveBeenCalledTimes(1);
+      });
+      
+      expect(mockToolbarContext.onSave).not.toHaveBeenCalled();
+    });
+
     it("button is not disabled by default", () => {
       render(
         <TestWrapper>
@@ -346,8 +415,9 @@ describe("StatusBar", () => {
       expect(closeButton).not.toHaveAttribute("disabled");
     });
 
-    it("handles multiple rapid clicks correctly", async () => {
+    it("handles multiple rapid clicks correctly with form changes", async () => {
       const user = userEvent.setup();
+      mockTabContext.hasFormChanges = true;
 
       render(
         <TestWrapper>
@@ -369,11 +439,37 @@ describe("StatusBar", () => {
         expect(mockToolbarContext.onBack).toHaveBeenCalledTimes(3);
       });
     });
+
+    it("handles multiple rapid clicks correctly without form changes", async () => {
+      const user = userEvent.setup();
+      mockTabContext.hasFormChanges = false;
+
+      render(
+        <TestWrapper>
+          <StatusBar fields={mockFields} />
+        </TestWrapper>
+      );
+
+      const closeButton = screen.getByTestId("icon-button");
+
+      // Click multiple times rapidly
+      await user.click(closeButton);
+      await user.click(closeButton);
+      await user.click(closeButton);
+
+      // Should not trigger save, only back
+      expect(mockToolbarContext.onSave).not.toHaveBeenCalled();
+
+      await waitFor(() => {
+        expect(mockToolbarContext.onBack).toHaveBeenCalledTimes(3);
+      });
+    });
   });
 
   describe("State Management", () => {
-    it("manages isSaved state correctly during successful flow", async () => {
+    it("manages isSaved state correctly during successful flow with form changes", async () => {
       const user = userEvent.setup();
+      mockTabContext.hasFormChanges = true;
 
       render(
         <TestWrapper>
@@ -390,6 +486,27 @@ describe("StatusBar", () => {
 
       // State should be reset after component processes the save
       expect(mockToolbarContext.onSave).toHaveBeenCalledWith(false);
+    });
+
+    it("manages isSaved state correctly during successful flow without form changes", async () => {
+      const user = userEvent.setup();
+      mockTabContext.hasFormChanges = false;
+
+      render(
+        <TestWrapper>
+          <StatusBar fields={mockFields} />
+        </TestWrapper>
+      );
+
+      const closeButton = screen.getByTestId("icon-button");
+      await user.click(closeButton);
+
+      await waitFor(() => {
+        expect(mockToolbarContext.onBack).toHaveBeenCalled();
+      });
+
+      // Should not call save when no form changes
+      expect(mockToolbarContext.onSave).not.toHaveBeenCalled();
     });
 
     it("resets isSaved state when component unmounts", () => {
@@ -417,8 +534,9 @@ describe("StatusBar", () => {
       expect(statusBar).toBeInTheDocument();
     });
 
-    it("close button is keyboard accessible", async () => {
+    it("close button is keyboard accessible with form changes", async () => {
       const user = userEvent.setup();
+      mockTabContext.hasFormChanges = true;
 
       render(
         <TestWrapper>
@@ -431,6 +549,27 @@ describe("StatusBar", () => {
 
       await user.keyboard("{Enter}");
       expect(mockToolbarContext.onSave).toHaveBeenCalledWith(false);
+    });
+
+    it("close button is keyboard accessible without form changes", async () => {
+      const user = userEvent.setup();
+      mockTabContext.hasFormChanges = false;
+
+      render(
+        <TestWrapper>
+          <StatusBar fields={mockFields} />
+        </TestWrapper>
+      );
+
+      const closeButton = screen.getByTestId("icon-button");
+      closeButton.focus();
+
+      await user.keyboard("{Enter}");
+      expect(mockToolbarContext.onSave).not.toHaveBeenCalled();
+      
+      await waitFor(() => {
+        expect(mockToolbarContext.onBack).toHaveBeenCalled();
+      });
     });
   });
 
