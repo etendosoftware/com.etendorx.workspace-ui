@@ -20,6 +20,7 @@ import {
   assertRequestBody,
 } from "../../../_test-utils/api-test-utils";
 import { POST } from "../route";
+import { getExpectedDatasourceUrl } from "../../../_test-utils/endpoint-test-utils";
 
 describe("Datasource [entity] JSON pass-through", () => {
   const { setup, cleanup } = setupTestEnvironment();
@@ -47,7 +48,12 @@ describe("Datasource [entity] JSON pass-through", () => {
 
     assertFetchCall(
       fetchMock,
-      "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice?windowId=10&tabId=20&_operationType=add&isc_dataFormat=json",
+      getExpectedDatasourceUrl("Invoice", "add", {
+      windowId: "10",
+      tabId: "20",
+      _operationType: "add",
+      isc_dataFormat: "json"
+    }),
       "POST",
       { "Content-Type": "application/json; charset=utf-8" }
     );

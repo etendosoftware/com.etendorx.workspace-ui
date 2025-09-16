@@ -35,6 +35,7 @@ jest.mock("@/lib/auth", () => ({
 import { createDatasourceTestSuite, assertDatasourceCall } from "../../_test-utils/datasource-test-utils";
 import { setErpSessionCookie } from "../../_utils/sessionStore";
 import { POST } from "../route";
+import { getExpectedDatasourceUrl } from "../../_test-utils/endpoint-test-utils";
 
 const testSuite = createDatasourceTestSuite("Grids: /api/datasource criteria handling", "grid");
 
@@ -63,7 +64,8 @@ testSuite.describe(() => {
     const res = await POST(req as never);
     expect(res.status).toBe(200);
 
-    assertDatasourceCall("http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice", {
+    assertDatasourceCall(getExpectedDatasourceUrl("Invoice", undefined, {
+    }), {
       Authorization: `Bearer ${BEARER_TOKEN}`,
       "Content-Type": "application/x-www-form-urlencoded",
     });

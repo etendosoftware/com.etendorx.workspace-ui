@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { extractBearerToken } from "@/lib/auth";
 import { getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
 import { getErpCsrfToken } from "../../_utils/sessionStore";
+import { getDatasourceUrl } from "../../_utils/endpoints";
 
 // Type definitions for better code clarity
 interface ProcessedRequestData {
@@ -32,12 +33,8 @@ function buildErpUrl(entity: string, requestUrl: URL, body?: string, userToken?:
   const params = new URLSearchParams(requestUrl.search);
   const operationType = params.get("_operationType");
   
-  // Determine if this is an operation (add/update/remove) or a query (fetch)
-  const isOperation = operationType && ['add', 'update', 'remove'].includes(operationType);
-  
-  const baseUrl = isOperation 
-    ? `${process.env.ETENDO_CLASSIC_URL}/org.openbravo.service.datasource/${entity}`
-    : `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.forward/org.openbravo.service.datasource/${entity}`;
+  // Use centralized endpoint configuration
+  const baseUrl = getDatasourceUrl(entity, operationType || undefined);
 
   if (operationType && !params.has("_startRow") && !params.has("_endRow")) {
     params.set("_startRow", "0");

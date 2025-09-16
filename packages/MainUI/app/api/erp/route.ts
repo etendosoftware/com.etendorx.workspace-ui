@@ -6,10 +6,10 @@ import { getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
 // Cached function for ERP requests to the base URL (no slug)
 const getCachedErpData = unstable_cache(
   async (userToken: string, method: string, body: string, contentType: string, queryParams = "") => {
-    let erpUrl = `${process.env.ETENDO_CLASSIC_URL}`;
-    if (method === "GET" && queryParams) {
-      erpUrl += queryParams;
-    }
+    // Create a fake URL object to use buildErpUrl function
+    const fakeUrl = new URL(`http://localhost:3000/api/erp${queryParams}`);
+    const params = fakeUrl.searchParams;
+    const erpUrl = buildErpUrl(fakeUrl, params);
 
     const headers: Record<string, string> = {
       Authorization: `Bearer ${userToken}`,

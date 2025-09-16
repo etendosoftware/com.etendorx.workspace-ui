@@ -4,7 +4,7 @@ import { getUserContext, extractBearerToken } from "@/lib/auth";
 import { shouldCacheDatasource } from "@/app/api/_utils/datasourceCache";
 import { shouldPassthroughJson, getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
 import { executeWithSessionRetry } from "@/app/api/_utils/sessionRetry";
-import { joinUrl } from "../_utils/url";
+import { getDatasourceUrl } from "../_utils/endpoints";
 import type { DatasourceParams } from "@workspaceui/api-client/src/api/types";
 import type { SmartClientPayload } from "@/app/api/_utils/datasource";
 
@@ -30,15 +30,10 @@ async function fetchDatasource(
   cookieHeader = "",
   csrfToken: string | null = null
 ) {
-  // Determine if this is an operation (add/update/remove) or a query (fetch)
-  const operationType = (params as Record<string, unknown>)?._operationType || (params as Record<string, unknown>)?.operationType;
-  const isOperation = operationType && typeof operationType === 'string' && ['add', 'update', 'remove'].includes(operationType);
-  
-  const erpUrl = isOperation 
-    ? joinUrl(process.env.ETENDO_CLASSIC_URL, `org.openbravo.service.datasource/${entity}`)
-    : joinUrl(process.env.ETENDO_CLASSIC_URL, `sws/com.etendoerp.metadata.forward/org.openbravo.service.datasource/${entity}`);
-
-  console.debug(erpUrl);
+  // Use centralized endpoint configuration
+  const operationType =
+    (params as Record<string, unknown>)?._operationType || (params as Record<string, unknown>)?.operationType;
+  const erpUrl = getDatasourceUrl(entity, typeof operationType === 'string' ? operationType : undefined);
 
   // Convert params object to URLSearchParams for the ERP request
   const formData = new URLSearchParams();
@@ -98,13 +93,10 @@ async function fetchDatasourceJson(
   cookieHeader = "",
   csrfToken: string | null = null
 ) {
-  // Determine if this is an operation (add/update/remove) or a query (fetch)
-  const operationType = (params as Record<string, unknown>)?._operationType || (params as Record<string, unknown>)?.operationType;
-  const isOperation = operationType && typeof operationType === 'string' && ['add', 'update', 'remove'].includes(operationType);
-  
-  const erpUrl = isOperation 
-    ? joinUrl(process.env.ETENDO_CLASSIC_URL, `sws/org.openbravo.service.datasource/${entity}`)
-    : joinUrl(process.env.ETENDO_CLASSIC_URL, `/sws/com.etendoerp.metadata.forward/org.openbravo.service.datasource/${entity}`);
+  // Use centralized endpoint configuration
+  const operationType =
+    (params as Record<string, unknown>)?._operationType || (params as Record<string, unknown>)?.operationType;
+  const erpUrl = getDatasourceUrl(entity, typeof operationType === 'string' ? operationType : undefined);
 
   // Process JSON body to sync csrfToken if needed
   let processedParams = params;
