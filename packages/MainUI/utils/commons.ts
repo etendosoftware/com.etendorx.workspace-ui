@@ -74,3 +74,38 @@ export const extractValue = <T extends Record<string, unknown>, K extends keyof 
   }
   return defaultValue;
 };
+
+/**
+ * Extracts and flattens key-value pairs from a nested object structure
+ *
+ * Transforms an object where values contain nested objects with a 'value' property
+ * into a flat key-value record. This is commonly used for form data processing,
+ * session attribute extraction, and API response transformation.
+ *
+ * @template T - Type of the source object containing nested value structures
+ * @param sourceData - Object with nested structure containing 'value' properties
+ * @returns Flat record with string keys and values, empty strings for nullish values
+ *
+ * @example
+ * ```typescript
+ * const formData = {
+ *   fieldA: { value: "hello", meta: "..." },
+ *   fieldB: { value: null, meta: "..." },
+ *   fieldC: { value: 42, meta: "..." }
+ * };
+ *
+ * const flattened = extractKeyValuePairs(formData);
+ * // Returns: { fieldA: "hello", fieldB: "", fieldC: "42" }
+ * ```
+ */
+export const extractKeyValuePairs = <T extends Record<string, { value: unknown }>>(
+  sourceData: T
+): Record<string, string> => {
+  return Object.entries(sourceData).reduce(
+    (accumulator, [key, { value }]) => {
+      accumulator[key] = String(value ?? "");
+      return accumulator;
+    },
+    {} as Record<string, string>
+  );
+};

@@ -52,6 +52,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<IUserContext["user"]>({} as User);
   const [session, setSession] = useState<ISession>({});
+  const [isSessionSyncLoading, setSessionSyncLoading] = useState(false);
   const [currentOrganization, setCurrentOrganization] = useState<CurrentOrganization>();
   const [currentWarehouse, setCurrentWarehouse] = useState<CurrentWarehouse>();
   const [currentRole, setCurrentRole] = useState<CurrentRole>();
@@ -212,6 +213,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
       setSession,
       user,
       prevRole,
+      isSessionSyncLoading,
+      setSessionSyncLoading,
     }),
     [
       login,
@@ -230,6 +233,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       session,
       user,
       prevRole,
+      isSessionSyncLoading,
     ]
   );
 
