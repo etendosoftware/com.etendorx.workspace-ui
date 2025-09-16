@@ -276,16 +276,30 @@ const createSectionButtons = (
 const SECTION_BASE_STYLES: React.CSSProperties = { display: "flex", alignItems: "center" };
 const SECTION_STYLE: React.CSSProperties = { ...SECTION_BASE_STYLES, gap: "0.25rem" };
 
-export const getToolbarSections = (
-  buttons: ToolbarButtonMetadata[],
-  onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void,
-  isFormView: boolean,
-  isTreeNodeView?: boolean,
+/**
+ * Configuration object for getToolbarSections function
+ */
+interface ToolbarSectionsConfig {
+  buttons: ToolbarButtonMetadata[];
+  onAction: (action: string, button: ToolbarButtonMetadata, event?: React.MouseEvent<HTMLElement>) => void;
+  isFormView: boolean;
+  isTreeNodeView?: boolean;
+  hasFormChanges?: boolean;
+  hasSelectedRecord?: boolean;
+  hasParentRecordSelected?: boolean;
+  saveButtonState?: SaveButtonState;
+}
+
+export const getToolbarSections = ({
+  buttons,
+  onAction,
+  isFormView,
+  isTreeNodeView,
   hasFormChanges = false,
   hasSelectedRecord = false,
   hasParentRecordSelected = false,
-  saveButtonState?: SaveButtonState
-): {
+  saveButtonState,
+}: ToolbarSectionsConfig): {
   leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   centerSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
   rightSection: { buttons: ToolbarButton[]; style: React.CSSProperties };

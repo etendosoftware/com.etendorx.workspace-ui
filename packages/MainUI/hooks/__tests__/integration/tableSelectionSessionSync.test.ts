@@ -139,7 +139,7 @@ describe("Table Selection Session Sync Integration", () => {
         id: "test-user",
         name: "Test User",
         username: "testuser",
-      } as Partial<User> as User,
+      } as User,
       login: jest.fn(),
       changeProfile: jest.fn(),
       token: "mock-token",
@@ -158,6 +158,8 @@ describe("Table Selection Session Sync Integration", () => {
       clearUserData: jest.fn(),
       setDefaultConfiguration: jest.fn(),
       languages: [],
+      isSessionSyncLoading: false,
+      setSessionSyncLoading: jest.fn(),
     });
   });
 
@@ -281,8 +283,33 @@ describe("Table Selection Session Sync Integration", () => {
 
     // 1. Set initial session state through mock
     jest.mocked(useUserContext).mockReturnValue({
-      ...jest.mocked(useUserContext)(),
+      setSession: mockSetSession,
       session: initialSessionState,
+      user: {
+        id: "test-user",
+        name: "Test User",
+        username: "testuser",
+      } as User,
+      login: jest.fn(),
+      changeProfile: jest.fn(),
+      token: "mock-token",
+      roles: [],
+      currentRole: undefined,
+      prevRole: undefined,
+      profile: {
+        name: "Test User",
+        email: "test@example.com",
+        image: "",
+      },
+      currentWarehouse: undefined,
+      currentClient: undefined,
+      currentOrganization: undefined,
+      setToken: jest.fn(),
+      clearUserData: jest.fn(),
+      setDefaultConfiguration: jest.fn(),
+      languages: [],
+      isSessionSyncLoading: false,
+      setSessionSyncLoading: jest.fn(),
     });
 
     renderHook(() => useTableSelection(mockTab, mockRecords, rowSelection, jest.fn()));

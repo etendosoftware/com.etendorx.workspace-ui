@@ -138,7 +138,7 @@ describe("useTableSelection - Session Sync Integration", () => {
         id: "test-user",
         name: "Test User",
         username: "testuser",
-      } as Partial<User> as User,
+      } as User,
       login: jest.fn(),
       changeProfile: jest.fn(),
       token: "mock-token",
@@ -157,6 +157,8 @@ describe("useTableSelection - Session Sync Integration", () => {
       clearUserData: jest.fn(),
       setDefaultConfiguration: jest.fn(),
       languages: [],
+      isSessionSyncLoading: false,
+      setSessionSyncLoading: jest.fn(),
     });
   });
 
@@ -303,7 +305,7 @@ describe("useTableSelection - Session Sync Integration", () => {
         id: "test-user",
         name: "Test User",
         username: "testuser",
-      } as Partial<User> as User,
+      } as User,
       login: jest.fn(),
       changeProfile: jest.fn(),
       token: "mock-token",
@@ -322,6 +324,8 @@ describe("useTableSelection - Session Sync Integration", () => {
       clearUserData: jest.fn(),
       setDefaultConfiguration: jest.fn(),
       languages: [],
+      isSessionSyncLoading: false,
+      setSessionSyncLoading: jest.fn(),
     });
 
     const mockRecords: EntityData[] = [{ id: "1", name: "Record 1" }];

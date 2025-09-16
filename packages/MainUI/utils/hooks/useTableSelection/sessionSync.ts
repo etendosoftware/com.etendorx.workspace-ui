@@ -24,6 +24,8 @@ import {
 import { SessionMode, type Tab, type EntityData, type ISession } from "@workspaceui/api-client/src/api/types";
 import { logger } from "@/utils/logger";
 
+const MULTIPLE_ROW_IDS_KEY = "MULTIPLE_ROW_IDS";
+
 export interface SessionSyncOptions {
   tab: Tab;
   selectedRecords: EntityData[];
@@ -76,8 +78,7 @@ export const syncSelectedRecordsToSession = async ({
 
     // Add multiple row IDs to payload when more than one record is selected
     if (selectedRecords.length > 1) {
-      // TODO: use a constant for 'MULTIPLE_ROW_IDS'
-      payload.MULTIPLE_ROW_IDS = allSelectedIds;
+      payload[MULTIPLE_ROW_IDS_KEY] = allSelectedIds;
     }
 
     // Send single request with all selected record information
