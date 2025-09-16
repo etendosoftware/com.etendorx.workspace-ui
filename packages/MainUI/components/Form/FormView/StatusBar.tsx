@@ -21,21 +21,25 @@ import { IconButton } from "@workspaceui/componentlibrary/src/components";
 import CloseIcon from "@workspaceui/componentlibrary/src/assets/icons/x.svg";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useToolbarContext } from "@/contexts/ToolbarContext";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useTabContext } from "@/contexts/tab";
 
 export default function StatusBar({ fields }: { fields: Record<string, Field> }) {
   const [isSaved, setIsSaved] = useState(false);
   const { t } = useTranslation();
   const { onBack, onSave } = useToolbarContext();
+  const { hasFormChanges } = useTabContext();
 
-  const handleCloseRecord = async () => {
+  const handleCloseRecord = useCallback(async () => {
     try {
-      await onSave(false);
+      if (hasFormChanges) {
+        await onSave(false);
+      }
       setIsSaved(true);
     } catch (error) {
       console.error("Error saving record", error);
     }
-  };
+  }, [hasFormChanges, onSave]);
 
   useEffect(() => {
     if (isSaved) {
