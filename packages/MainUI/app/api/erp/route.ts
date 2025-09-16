@@ -75,7 +75,7 @@ function buildKernelUrl(
   }
   kernelParams.set("_action", action);
 
-  return `${baseUrl}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?${kernelParams.toString()}`;
+  return `${baseUrl}/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?${kernelParams.toString()}`;
 }
 
 function buildErpUrl(url: URL, params: URLSearchParams): string {
@@ -98,8 +98,8 @@ function buildErpUrl(url: URL, params: URLSearchParams): string {
     return `${baseUrl}/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel${url.search}`;
   }
 
-  // Default: base ERP URL with query params
-  return `${baseUrl}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel${url.search}`;
+  // Default: base ERP URL with query params  
+  return `${baseUrl}/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel${url.search}`;
 }
 
 async function executeMutation(
@@ -124,9 +124,10 @@ async function executeMutation(
     headers["Content-Type"] = "application/json;charset=UTF-8";
   }
 
-  // Use the combined ERP auth headers (cookie + CSRF token)
+  // Use the combined ERP auth headers (cookie + CSRF token + Bearer)
   const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
-
+  headers.Authorization = `Bearer ${userToken}`;
+  
   if (cookieHeader) {
     headers.Cookie = cookieHeader;
   }
