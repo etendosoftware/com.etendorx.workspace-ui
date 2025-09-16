@@ -54,11 +54,6 @@ const initialState: State = {
  * @param action - Action to be processed containing type and optional payload
  * @returns Updated state based on the action type
  *
- * @example
- * ```typescript
- * const [state, dispatch] = useReducer(reducer, initialState);
- * dispatch({ type: "FETCH_START" });
- * ```
  */
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
@@ -98,17 +93,6 @@ export type useFormInitialization = State & {
  * - `formInitialization` - Initialized form data and configuration
  * - `refetch` - Function to re-trigger form initialization
  *
- * @example
- * ```typescript
- * const { loading, error, formInitialization, refetch } = useFormInitialization({
- *   tab: currentTab,
- *   mode: FormMode.EDIT,
- *   recordId: "12345"
- * });
- *
- * if (loading) return <LoadingSpinner />;
- * if (error) return <ErrorMessage error={error} />;
- * ```
  */
 export function useFormInitialization({ tab, mode, recordId }: FormInitializationParams): useFormInitialization {
   const { setSession, setSessionSyncLoading } = useUserContext();
@@ -178,13 +162,6 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
    * @param fields - Object containing all field definitions for the current tab
    * @returns The field that represents the entity's primary key, or undefined if not found
    *
-   * @example
-   * ```typescript
-   * const keyField = findEntityKeyColumn(tab.fields);
-   * if (keyField) {
-   *   console.log('Key column:', keyField.columnName);
-   * }
-   * ```
    */
   function findEntityKeyColumn(fields: Tab["fields"]): Field | undefined {
     return Object.values(fields).find((field) => field?.column?.keyColumn);
@@ -202,11 +179,6 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
    * @param mode - Form mode to determine if audit fields should be added
    * @returns Enhanced form initialization data with audit fields included
    *
-   * @example
-   * ```typescript
-   * const enriched = enrichWithAuditFields(apiResponse, currentRecord, FormMode.EDIT);
-   * // Adds creationDate, createdBy, updated, updatedBy fields
-   * ```
    */
   function enrichWithAuditFields(
     data: FormInitializationResponse,
@@ -240,13 +212,6 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
    *
    * @returns Promise that resolves when refetch is complete
    *
-   * @example
-   * ```typescript
-   * const { refetch } = useFormInitialization(params);
-   *
-   * // Trigger manual refresh
-   * await refetch();
-   * ```
    */
   const refetch = useCallback(async () => {
     if (!params) return;

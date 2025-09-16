@@ -50,7 +50,7 @@ export const buildFormInitializationPayload = (
 ): Record<string, unknown> => {
   const additionalFields =
     mode === SessionMode.SETSESSION
-      ? {} // No additional fields needed for session sync ¿This is correct?
+      ? {} // No additional fields needed for session sync
       : getFieldsToAdd(tab.entityName, mode as FormMode);
 
   return {
