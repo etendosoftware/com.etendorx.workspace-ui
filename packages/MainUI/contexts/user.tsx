@@ -255,7 +255,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   useEffect(() => {
     const interceptor = (response: Response) => {
-      if (response.status === HTTP_CODES.UNAUTHORIZED || response.status === HTTP_CODES.INTERNAL_SERVER_ERROR) {
+      if (response.status === HTTP_CODES.UNAUTHORIZED) {
         clearUserData();
       }
 

@@ -63,8 +63,6 @@ function WindowReferenceGrid({
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
 
-  // Stable values to avoid unnecessary re-renders
-  const processId = processConfig?.processId;
   const processDefaults = processConfig?.defaults;
   const filterExpressions = processConfig?.filterExpressions;
 
@@ -129,7 +127,18 @@ function WindowReferenceGrid({
     }
 
     return options;
-  }, [tabId, parameter.tab, processId, processDefaults, filterExpressions, recordValues]);
+  }, [
+    processConfig?.processId,
+    parameter.tab,
+    tabId,
+    processDefaults,
+    filterExpressions?.grid,
+    recordValues?.inpadClientId,
+    recordValues?.inpcBpartnerId,
+    recordValues?.inpmPricelistId,
+    recordValues?.inpcCurrencyId,
+    parameters,
+  ]);
 
   const fields = useMemo(() => {
     if (windowReferenceTab?.fields) {
