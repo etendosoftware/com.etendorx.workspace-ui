@@ -1,5 +1,5 @@
 import { SessionMode, FormMode } from "@workspaceui/api-client/src/api/types";
-import type { Tab, FormInitializationResponse, Field, GridProps } from "@workspaceui/api-client/src/api/types";
+import type { FormInitializationResponse } from "@workspaceui/api-client/src/api/types";
 import {
   buildFormInitializationParams,
   buildFormInitializationPayload,
@@ -8,6 +8,7 @@ import {
 } from "../utils";
 import * as utils from "@/utils/form/entityConfig";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { createMockField, createMockTab, setupCommonTestMocks } from "@/utils/tests/mockHelpers";
 
 jest.mock("@/utils/form/entityConfig");
 jest.mock("@workspaceui/api-client/src/api/metadata", () => ({
@@ -37,78 +38,10 @@ jest.mock("@/utils/commons", () => ({
 }));
 
 describe("FormInitialization Utils - SessionMode Support", () => {
-  const mockGridProps: GridProps = {
-    sort: 1,
-    autoExpand: false,
-    editorProps: {
-      displayField: "name",
-      valueField: "id",
-    },
-    displaylength: 20,
-    fkField: false,
-    selectOnClick: true,
-    canSort: true,
-  };
-
-  const mockField: Field = {
-    hqlName: "testField",
-    inputName: "testInput",
-    columnName: "test_column",
-    process: "",
-    shownInStatusBar: false,
-    tab: "test-tab",
-    displayed: true,
-    startnewline: false,
-    showInGridView: true,
-    fieldGroup$_identifier: "test_field_group",
-    fieldGroup: "test_field_group",
-    isMandatory: false,
-    column: { keyColumn: "true" },
-    name: "Test Field",
-    id: "test-field-id",
-    module: "test_module",
-    hasDefaultValue: false,
-    refColumnName: "",
-    targetEntity: "",
-    gridProps: mockGridProps,
-    type: "string",
-    field: [],
-    refList: [],
-    referencedEntity: "",
-    referencedWindowId: "",
-    referencedTabId: "",
-    isReadOnly: false,
-    isDisplayed: true,
-    sequenceNumber: 1,
-    isUpdatable: true,
-    description: "Test Field Description",
-    helpComment: "Test Field Help",
-  };
-
-  const mockTab: Tab = {
-    id: "test-tab",
-    name: "Test Tab",
-    title: "Test Tab Title",
-    window: "test-window",
-    tabLevel: 0,
-    parentTabId: undefined,
-    uIPattern: "STD",
-    table: "test_table",
-    entityName: "TestEntity",
-    fields: {
-      testField: mockField,
-    },
-    parentColumns: [],
-    _identifier: "test_identifier",
-    records: {},
-    hqlfilterclause: "",
-    hqlwhereclause: "",
-    sQLWhereClause: "",
-    module: "test_module",
-  };
+  const mockTab = createMockTab();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    setupCommonTestMocks();
   });
 
   describe("buildFormInitializationParams with SessionMode", () => {
@@ -175,7 +108,7 @@ describe("FormInitialization Utils - SessionMode Support", () => {
   });
 
   describe("buildFormInitializationPayload with SessionMode", () => {
-    const mockEntityKeyColumn: Field = mockField;
+    const mockEntityKeyColumn = createMockField();
 
     beforeEach(() => {
       jest.mocked(utils.getFieldsToAdd).mockReturnValue({});
