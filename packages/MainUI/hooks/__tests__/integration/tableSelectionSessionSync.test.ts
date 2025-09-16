@@ -2,52 +2,13 @@ import { renderHook, act } from "@testing-library/react";
 import useTableSelection from "../../useTableSelection";
 import { useUserContext } from "../../useUserContext";
 import * as sessionSyncModule from "@/utils/hooks/useTableSelection/sessionSync";
+import { setupTableSelectionMocks } from "@/utils/tests/mockHelpers";
 import type { Tab, EntityData, GridProps, Field, User } from "@workspaceui/api-client/src/api/types";
 
-// Mock all dependencies
-jest.mock("../../useUserContext");
-jest.mock("../../useSelected", () => ({
-  useSelected: jest.fn(() => ({
-    graph: {
-      getChildren: jest.fn(() => []),
-      setSelected: jest.fn(),
-      getSelected: jest.fn(() => null),
-      clearSelected: jest.fn(),
-      setSelectedMultiple: jest.fn(),
-      clearSelectedMultiple: jest.fn(),
-    },
-  })),
-}));
-jest.mock("../../navigation/useMultiWindowURL", () => ({
-  useMultiWindowURL: jest.fn(() => ({
-    activeWindow: { windowId: "test-window" },
-    clearSelectedRecord: jest.fn(),
-    setSelectedRecord: jest.fn(),
-    getSelectedRecord: jest.fn(),
-  })),
-}));
-jest.mock("@/hooks/useStateReconciliation", () => ({
-  useStateReconciliation: jest.fn(() => ({
-    reconcileStates: jest.fn(),
-    handleSyncError: jest.fn(),
-  })),
-}));
-jest.mock("@/utils/debounce", () => ({
-  debounce: jest.fn((fn) => fn),
-}));
-jest.mock("@/utils/structures", () => ({
-  mapBy: jest.fn((items: unknown[], key: string) => {
-    const result: Record<string, unknown> = {};
-    for (const item of items) {
-      const keyValue = (item as Record<string, unknown>)[key];
-      result[String(keyValue)] = item;
-    }
-    return result;
-  }),
-}));
-jest.mock("@/utils/commons", () => ({
-  compareArraysAlphabetically: jest.fn(() => false),
-}));
+// Set up common mocks for useTableSelection tests
+setupTableSelectionMocks("../../useUserContext");
+
+// Mock session sync module
 jest.mock("@/utils/hooks/useTableSelection/sessionSync");
 
 describe("Table Selection Session Sync Integration", () => {

@@ -196,3 +196,70 @@ export const createSessionTestCase = (status: number, data: unknown, description
   data,
   description: description || `status ${status}`,
 });
+
+// Test helpers for useTableSelection hook tests
+
+/**
+ * Sets up common mocks for useTableSelection tests
+ * This function consolidates the repeated mock setup code used across multiple test files
+ *
+ * @param userContextPath - The relative path to useUserContext module (e.g., "../useUserContext" or "../../useUserContext")
+ */
+export const setupTableSelectionMocks = (userContextPath: string) => {
+  // Mock useUserContext
+  jest.mock(userContextPath);
+
+  // Mock useSelected
+  jest.mock(userContextPath.replace("useUserContext", "useSelected"), () => ({
+    useSelected: jest.fn(() => ({
+      graph: {
+        getChildren: jest.fn(() => []),
+        setSelected: jest.fn(),
+        getSelected: jest.fn(() => null),
+        clearSelected: jest.fn(),
+        setSelectedMultiple: jest.fn(),
+        clearSelectedMultiple: jest.fn(),
+      },
+    })),
+  }));
+
+  // Mock useMultiWindowURL
+  jest.mock(userContextPath.replace("useUserContext", "navigation/useMultiWindowURL"), () => ({
+    useMultiWindowURL: jest.fn(() => ({
+      activeWindow: { windowId: "test-window" },
+      clearSelectedRecord: jest.fn(),
+      setSelectedRecord: jest.fn(),
+      getSelectedRecord: jest.fn(),
+    })),
+  }));
+
+  // Mock useStateReconciliation
+  jest.mock("@/hooks/useStateReconciliation", () => ({
+    useStateReconciliation: jest.fn(() => ({
+      reconcileStates: jest.fn(),
+      handleSyncError: jest.fn(),
+    })),
+  }));
+
+  // Mock debounce utility
+  jest.mock("@/utils/debounce", () => ({
+    debounce: jest.fn((fn) => fn),
+  }));
+
+  // Mock structures utility
+  jest.mock("@/utils/structures", () => ({
+    mapBy: jest.fn((items: unknown[], key: string) => {
+      const result: Record<string, unknown> = {};
+      for (const item of items) {
+        const keyValue = (item as Record<string, unknown>)[key];
+        result[String(keyValue)] = item;
+      }
+      return result;
+    }),
+  }));
+
+  // Mock commons utility
+  jest.mock("@/utils/commons", () => ({
+    compareArraysAlphabetically: jest.fn(() => false),
+  }));
+};

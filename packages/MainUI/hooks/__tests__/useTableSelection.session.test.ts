@@ -2,52 +2,14 @@ import { renderHook, act } from "@testing-library/react";
 import useTableSelection from "../useTableSelection";
 import * as sessionSync from "@/utils/hooks/useTableSelection/sessionSync";
 import { useUserContext } from "../useUserContext";
+import { setupTableSelectionMocks } from "@/utils/tests/mockHelpers";
 import type { Tab, EntityData, GridProps, Field, User } from "@workspaceui/api-client/src/api/types";
 
+// Set up common mocks for useTableSelection tests
+setupTableSelectionMocks("../useUserContext");
+
+// Mock session sync module
 jest.mock("@/utils/hooks/useTableSelection/sessionSync");
-jest.mock("../useUserContext");
-jest.mock("../useSelected", () => ({
-  useSelected: jest.fn(() => ({
-    graph: {
-      getChildren: jest.fn(() => []),
-      setSelected: jest.fn(),
-      getSelected: jest.fn(() => null),
-      clearSelected: jest.fn(),
-      setSelectedMultiple: jest.fn(),
-      clearSelectedMultiple: jest.fn(),
-    },
-  })),
-}));
-jest.mock("../navigation/useMultiWindowURL", () => ({
-  useMultiWindowURL: jest.fn(() => ({
-    activeWindow: { windowId: "test-window" },
-    clearSelectedRecord: jest.fn(),
-    setSelectedRecord: jest.fn(),
-    getSelectedRecord: jest.fn(),
-  })),
-}));
-jest.mock("@/utils/commons", () => ({
-  compareArraysAlphabetically: jest.fn(() => false), // Indica que las selecciones son diferentes
-}));
-jest.mock("@/utils/structures", () => ({
-  mapBy: jest.fn((items: unknown[], key: string) => {
-    const result: Record<string, unknown> = {};
-    for (const item of items) {
-      const keyValue = (item as Record<string, unknown>)[key];
-      result[String(keyValue)] = item;
-    }
-    return result;
-  }),
-}));
-jest.mock("@/hooks/useStateReconciliation", () => ({
-  useStateReconciliation: jest.fn(() => ({
-    reconcileStates: jest.fn(),
-    handleSyncError: jest.fn(),
-  })),
-}));
-jest.mock("@/utils/debounce", () => ({
-  debounce: jest.fn((fn) => fn),
-}));
 
 describe("useTableSelection - Session Sync Integration", () => {
   const mockSetSession = jest.fn();
