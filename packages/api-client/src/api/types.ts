@@ -696,10 +696,10 @@ export enum FormMode {
 
 // New independent mode for session operations
 export const SessionMode = {
-  SETSESSION: "SETSESSION"
+  SETSESSION: "SETSESSION",
 } as const;
 
-export type SessionModeType = typeof SessionMode[keyof typeof SessionMode];
+export type SessionModeType = (typeof SessionMode)[keyof typeof SessionMode];
 
 export interface FormInitializationParams {
   tab: Tab;

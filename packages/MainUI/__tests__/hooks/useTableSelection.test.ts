@@ -47,7 +47,9 @@ const mockUseSelected = useSelected as jest.MockedFunction<typeof useSelected>;
 const mockUseMultiWindowURL = useMultiWindowURL as jest.MockedFunction<typeof useMultiWindowURL>;
 const mockUseStateReconciliation = useStateReconciliation as jest.MockedFunction<typeof useStateReconciliation>;
 const mockUseUserContext = useUserContext as jest.MockedFunction<typeof useUserContext>;
-const mockSyncSelectedRecordsToSession = syncSelectedRecordsToSession as jest.MockedFunction<typeof syncSelectedRecordsToSession>;
+const mockSyncSelectedRecordsToSession = syncSelectedRecordsToSession as jest.MockedFunction<
+  typeof syncSelectedRecordsToSession
+>;
 const mockDebounce = debounce as jest.MockedFunction<typeof debounce>;
 
 // Mock data
