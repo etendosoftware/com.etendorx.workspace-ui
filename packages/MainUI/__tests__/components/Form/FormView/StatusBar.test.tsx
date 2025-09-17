@@ -400,7 +400,7 @@ describe("StatusBar", () => {
       await waitFor(() => {
         expect(mockToolbarContext.onBack).toHaveBeenCalledTimes(1);
       });
-      
+
       expect(mockToolbarContext.onSave).not.toHaveBeenCalled();
     });
 
@@ -566,7 +566,7 @@ describe("StatusBar", () => {
 
       await user.keyboard("{Enter}");
       expect(mockToolbarContext.onSave).not.toHaveBeenCalled();
-      
+
       await waitFor(() => {
         expect(mockToolbarContext.onBack).toHaveBeenCalled();
       });
