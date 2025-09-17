@@ -116,5 +116,5 @@ export interface TopToolbarProps {
   leftSection: ToolbarSectionConfig;
   centerSection: ToolbarSectionConfig;
   rightSection: ToolbarSectionConfig;
-  processButton: ProcessAvailableButton;
+  processButton?: ProcessAvailableButton;
 }
