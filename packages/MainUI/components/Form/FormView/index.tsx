@@ -45,6 +45,14 @@ const iconMap: Record<string, React.ReactElement> = {
   Dimensions: <FolderIcon data-testid="FolderIcon__1a0853" />,
 };
 
+/**
+ * Processes form data by replacing undefined values with empty strings.
+ * This ensures form fields have consistent string values instead of undefined,
+ * preventing controlled/uncontrolled component issues in React forms.
+ *
+ * @param data - Raw form data with potential undefined values
+ * @returns Processed form data with undefined values converted to empty strings
+ */
 const processFormData = (data: Record<string, EntityValue>): Record<string, EntityValue> => {
   const processedData = { ...data };
 
@@ -88,6 +96,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     [theme.palette.baselineColor.neutral]
   );
 
+  /**
+   * Retrieves the appropriate icon for a form field group/section.
+   * Maps predefined section identifiers to their corresponding icons,
+   * falls back to default info icon for unknown sections.
+   *
+   * @param identifier - String identifier of the form section
+   * @returns React element representing the icon for the section
+   */
   const getIconForGroup = useCallback(
     (identifier: string) => {
       return iconMap[identifier] || defaultIcon;
@@ -95,6 +111,18 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     [defaultIcon]
   );
 
+  /**
+   * Computes the current record data from multiple sources with priority order:
+   * 1. URL-based record selection (highest priority)
+   * 2. Graph-based record selection
+   * 3. Direct recordId parameter
+   * 4. New record state
+   *
+   * Handles multi-window scenarios and maintains consistency between
+   * URL state, graph state, and component props.
+   *
+   * @returns EntityData object representing current record or null if no record
+   */
   const record = useMemo(() => {
     const windowId = activeWindow?.windowId;
     if (!windowId) return null;
@@ -118,6 +146,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     return null;
   }, [activeWindow?.windowId, getSelectedRecord, tab, recordId, graph]);
 
+  /**
+   * Merges record data with form initialization data to create complete form state.
+   * Combines existing record values with server-provided initial values,
+   * giving priority to record data when available.
+   *
+   * @returns Combined form data object ready for form initialization
+   */
   const availableFormData = useMemo(() => {
     return { ...record, ...initialState };
   }, [record, initialState]);
@@ -130,16 +165,38 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
   const resetRef = useRef(reset);
   resetRef.current = reset;
 
+  /**
+   * Creates a stable reference to the form reset function to prevent infinite loops.
+   * The reset function from useForm can change on every render, so this wrapper
+   * provides a stable callback that always calls the latest reset function.
+   *
+   * @param data - Form data to reset the form with
+   */
   const stableReset = useCallback((data: EntityData) => {
     resetRef.current(data);
   }, []);
 
+  /**
+   * useEffect: Refetches form initialization data when recordId or mode changes.
+   * Ensures form data is refreshed when navigating to different records
+   * or switching between edit/view modes.
+   *
+   * Dependencies: recordId, refetch, mode
+   */
   useEffect(() => {
     if (recordId) {
       refetch();
     }
   }, [recordId, refetch, mode]);
 
+  /**
+   * useEffect: Initializes/resets form with processed form data.
+   * Processes data to handle undefined values, resets the form,
+   * and manages initialization state to prevent premature renders.
+   * Uses queueMicrotask to ensure state update occurs after form reset.
+   *
+   * Dependencies: availableFormData, tab.id, stableReset
+   */
   useEffect(() => {
     if (!availableFormData) return;
 
@@ -153,6 +210,15 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     });
   }, [availableFormData, tab.id, stableReset]);
 
+  /**
+   * Enhanced setValue function with controlled dirty state management.
+   * Wraps react-hook-form's setValue to provide consistent behavior
+   * for form field updates with proper dirty state tracking.
+   *
+   * @param name - Field name to update
+   * @param value - New field value
+   * @param options - Additional options including shouldDirty flag (defaults to true)
+   */
   const handleSetValue = useCallback(
     (name: string, value: EntityValue, options?: SetValueConfig) => {
       const { shouldDirty = true, ...rest } = options || {};
@@ -161,6 +227,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     [setValue]
   );
 
+  /**
+   * Handles tab changes in multi-tab forms.
+   * Updates selected tab and ensures the new tab section is expanded
+   * for proper user navigation experience.
+   *
+   * @param newTabId - ID of the tab being switched to
+   */
   const handleTabChange = useCallback((newTabId: string) => {
     setSelectedTab(newTabId);
     setExpandedSections((prev) => {
@@ -171,6 +244,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     });
   }, []);
 
+  /**
+   * Creates a ref callback function for form sections.
+   * Provides a way to store DOM references for form sections,
+   * handling null sectionId by converting it to "_main".
+   *
+   * @param sectionId - ID of the form section (null becomes "_main")
+   * @returns Ref callback function that stores the element reference
+   */
   const handleSectionRef = useCallback(
     (sectionId: string | null) => (el: HTMLElement | null) => {
       const id = String(sectionId || "_main");
@@ -179,6 +260,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     []
   );
 
+  /**
+   * Handles accordion expand/collapse state changes.
+   * Manages which form sections are expanded or collapsed,
+   * and updates the selected tab when a section is expanded.
+   *
+   * @param sectionId - ID of the section being toggled (null becomes "_main")
+   * @param isExpanded - Whether the section is being expanded (true) or collapsed (false)
+   */
   const handleAccordionChange = useCallback((sectionId: string | null, isExpanded: boolean) => {
     const id = String(sectionId || "_main");
 
@@ -194,6 +283,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     }
   }, []);
 
+  /**
+   * Checks if a form section is currently expanded.
+   * Used to determine the visual state of accordion sections
+   * and manage their expand/collapse behavior.
+   *
+   * @param sectionId - ID of the section to check (null becomes "_main")
+   * @returns Boolean indicating if the section is expanded
+   */
   const isSectionExpanded = useCallback(
     (sectionId: string | null) => {
       const id = String(sectionId);
@@ -202,6 +299,14 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     [expandedSections]
   );
 
+  /**
+   * Handles successful form save operations.
+   * Updates form state, graph selection, URL state, and shows success feedback.
+   * Differentiates behavior between EDIT mode (reset form) and CREATE mode (redirect to new record).
+   *
+   * @param data - Saved entity data returned from server
+   * @param showModal - Whether to display success modal to user
+   */
   const onSuccess = useCallback(
     async (data: EntityData, showModal: boolean) => {
       setIsFormInitializing(true);
@@ -239,6 +344,12 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     ]
   );
 
+  /**
+   * Handles form save errors.
+   * Displays error message to user via modal notification.
+   *
+   * @param data - Error message string from server or validation
+   */
   const onError = useCallback(
     (data: string) => {
       showErrorModal(data);
@@ -256,6 +367,12 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     submit: form.handleSubmit,
   });
 
+  /**
+   * Wrapper function for form save operations.
+   * Provides a consistent interface for save operations with modal control.
+   *
+   * @param showModal - Whether to show success modal after successful save
+   */
   const handleSave = useCallback(
     async (showModal: boolean) => {
       await save(showModal);
@@ -265,6 +382,13 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const isLoading = loading || loadingFormInitialization;
 
+  /**
+   * Context value object containing all form view state and handlers.
+   * Provides centralized access to form view functionality for child components
+   * through React Context API. Memoized to prevent unnecessary re-renders.
+   *
+   * @returns FormViewContextValue object with all form view functionality
+   */
   const contextValue: FormViewContextValue = useMemo(
     () => ({
       window: windowMetadata,
