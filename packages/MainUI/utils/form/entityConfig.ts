@@ -95,6 +95,16 @@ export const ENTITY_CONFIGURATIONS: EntityConfig[] = [
       },
     },
   },
+  {
+    entityName: "BusinessPartner",
+    customBehaviors: {
+      NEW: {
+        addFields: {
+          inplastDays: 1000,
+        },
+      },
+    },
+  },
   // Add more entity configurations here as needed
 ];
 

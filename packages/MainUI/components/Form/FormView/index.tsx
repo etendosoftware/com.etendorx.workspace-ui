@@ -187,7 +187,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     if (recordId) {
       refetch();
     }
-  }, [recordId, refetch, mode]);
+  }, [recordId, refetch]);
 
   /**
    * useEffect: Initializes/resets form with processed form data.
