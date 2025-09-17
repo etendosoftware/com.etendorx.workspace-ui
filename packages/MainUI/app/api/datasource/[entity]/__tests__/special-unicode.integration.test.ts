@@ -51,9 +51,9 @@ describe("Save with special/Unicode fields", () => {
     const [dest, init] = (global as any).fetch.mock.calls[0];
     const expectedUrl = getExpectedDatasourceUrl("OrderLine", "add", {
       windowId: "143",
-      tabId: "187", 
+      tabId: "187",
       _operationType: "add",
-      language: "es_ES"
+      language: "es_ES",
     });
     expect(String(dest)).toBe(expectedUrl);
     expect(init.headers.Authorization).toBe("Bearer Bearer-Token-UNICODE");

@@ -147,7 +147,7 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
     } else {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
     }
-    
+
     // Handle kernel requests - replace forward with kernel servlet BEFORE adding query params
     erpUrl = erpUrl.replace(
       "com.etendoerp.metadata.forward/org.openbravo.client.kernel",
@@ -157,7 +157,7 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
       "com.etendoerp.metadata.meta/forward",
       "com.smf.securewebservices.kernel/org.openbravo.client.kernel"
     );
-    
+
     const url = new URL(request.url);
     if (url.search) {
       erpUrl += url.search;

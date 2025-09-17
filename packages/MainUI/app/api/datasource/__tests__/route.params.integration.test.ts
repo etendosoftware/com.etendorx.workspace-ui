@@ -35,8 +35,7 @@ testSuite.describe(() => {
     expect(res.status).toBe(200);
 
     assertDatasourceCall(
-      getExpectedDatasourceUrl("Invoice", undefined, {
-    }),
+      getExpectedDatasourceUrl("Invoice", undefined, {}),
       { Authorization: `Bearer ${BEARER_TOKEN}` },
       {
         _operationType: "fetch",

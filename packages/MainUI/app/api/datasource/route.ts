@@ -43,13 +43,18 @@ function createSuccessResponse(response: Response, data: unknown): DatasourceRes
 
 // Common function to get operation type
 function getOperationType(params: DatasourceRequestParams): string | undefined {
-  const operationType = (params as Record<string, unknown>)?._operationType || 
-                       (params as Record<string, unknown>)?.operationType;
-  return typeof operationType === 'string' ? operationType : undefined;
+  const operationType =
+    (params as Record<string, unknown>)?._operationType || (params as Record<string, unknown>)?.operationType;
+  return typeof operationType === "string" ? operationType : undefined;
 }
 
 // Common function to create headers
-function createHeaders(userToken: string, cookieHeader: string, csrfToken: string | null, contentType: string): Record<string, string> {
+function createHeaders(
+  userToken: string,
+  cookieHeader: string,
+  csrfToken: string | null,
+  contentType: string
+): Record<string, string> {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${userToken}`,
     "Content-Type": contentType,
@@ -133,7 +138,7 @@ async function fetchDatasourceJson(
   const operationType = getOperationType(params);
   const erpUrl = getDatasourceUrl(entity, operationType);
   const headers = createHeaders(userToken, cookieHeader, csrfToken, "application/json");
-  
+
   // Process JSON body to sync csrfToken if needed
   let processedParams = params;
   if (csrfToken && params && typeof params === "object" && "csrfToken" in params) {
@@ -159,22 +164,24 @@ function isSmartClientPayload(params: DatasourceRequestParams): params is SmartC
 }
 
 // Function to validate authentication
-async function validateAuth(request: NextRequest): Promise<{ userToken: string; userContext: unknown; error?: NextResponse }> {
+async function validateAuth(
+  request: NextRequest
+): Promise<{ userToken: string; userContext: unknown; error?: NextResponse }> {
   const userToken = extractBearerToken(request);
   if (!userToken) {
-    return { 
-      userToken: '', 
-      userContext: null, 
-      error: NextResponse.json({ error: "Unauthorized - Missing Bearer token" }, { status: 401 })
+    return {
+      userToken: "",
+      userContext: null,
+      error: NextResponse.json({ error: "Unauthorized - Missing Bearer token" }, { status: 401 }),
     };
   }
 
   const userContext = await getUserContext(request);
   if (!userContext) {
-    return { 
-      userToken, 
-      userContext: null, 
-      error: NextResponse.json({ error: "Unauthorized - Missing user context" }, { status: 401 })
+    return {
+      userToken,
+      userContext: null,
+      error: NextResponse.json({ error: "Unauthorized - Missing user context" }, { status: 401 }),
     };
   }
 
@@ -185,21 +192,20 @@ async function validateAuth(request: NextRequest): Promise<{ userToken: string; 
 function validateRequestBody(body: unknown): { entity: string; params: DatasourceRequestParams; error?: NextResponse } {
   const { entity, params } = body as { entity?: string; params?: DatasourceRequestParams };
   if (!entity) {
-    return { 
-      entity: '', 
-      params: {} as DatasourceRequestParams, 
-      error: NextResponse.json({ error: "Entity is required" }, { status: 400 })
+    return {
+      entity: "",
+      params: {} as DatasourceRequestParams,
+      error: NextResponse.json({ error: "Entity is required" }, { status: 400 }),
     };
   }
-  return { entity, params: params || {} as DatasourceRequestParams };
+  return { entity, params: params || ({} as DatasourceRequestParams) };
 }
 
 // Function to determine request configuration
 function getRequestConfig(request: NextRequest, params: DatasourceRequestParams) {
   const contentType = request.headers.get("Content-Type") || "";
-  const passJson = shouldPassthroughJson(request) && 
-                   contentType.includes("application/json") && 
-                   isSmartClientPayload(params);
+  const passJson =
+    shouldPassthroughJson(request) && contentType.includes("application/json") && isSmartClientPayload(params);
   return { passJson };
 }
 
@@ -233,7 +239,7 @@ export async function POST(request: NextRequest) {
     // 5. Handle non-cached requests with session retry
     const requestFn = async (cookieHeader: string) => {
       const { csrfToken } = getErpAuthHeaders(request, userToken);
-      return passJson 
+      return passJson
         ? await fetchDatasourceJson(userToken, entity, params, cookieHeader, csrfToken)
         : await fetchDatasource(userToken, entity, params, cookieHeader, csrfToken);
     };

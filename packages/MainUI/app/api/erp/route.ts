@@ -98,7 +98,7 @@ function buildErpUrl(url: URL, params: URLSearchParams): string {
     return `${baseUrl}/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel${url.search}`;
   }
 
-  // Default: base ERP URL with query params  
+  // Default: base ERP URL with query params
   return `${baseUrl}/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel${url.search}`;
 }
 
@@ -127,7 +127,7 @@ async function executeMutation(
   // Use the combined ERP auth headers (cookie + CSRF token + Bearer)
   const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
   headers.Authorization = `Bearer ${userToken}`;
-  
+
   if (cookieHeader) {
     headers.Cookie = cookieHeader;
   }

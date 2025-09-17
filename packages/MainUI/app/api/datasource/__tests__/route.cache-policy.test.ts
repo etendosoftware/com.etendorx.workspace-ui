@@ -78,8 +78,7 @@ describe("Datasource cache policy (disabled)", () => {
     expect(res.status).toBe(200);
 
     // ensure fetch was called (direct call to ERP)
-    assertDatasourceCall(getExpectedDatasourceUrl("Invoice", undefined, {
-    }), {
+    assertDatasourceCall(getExpectedDatasourceUrl("Invoice", undefined, {}), {
       Authorization: `Bearer ${BEARER_TOKEN}`,
     });
 

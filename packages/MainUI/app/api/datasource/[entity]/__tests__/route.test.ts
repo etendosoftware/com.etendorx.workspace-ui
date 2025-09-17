@@ -71,15 +71,10 @@ describe("API: /api/datasource/:entity save/update", () => {
     const expectedUrl = getExpectedDatasourceUrl("Invoice", "add", {
       windowId: "167",
       tabId: "263",
-      _operationType: "add"
+      _operationType: "add",
     });
-    
-    const { decoded } = assertErpForwardCall(
-      expectedUrl,
-      `Bearer ${BEARER_TOKEN}`,
-      undefined,
-      "application/json"
-    );
+
+    const { decoded } = assertErpForwardCall(expectedUrl, `Bearer ${BEARER_TOKEN}`, undefined, "application/json");
     expect(decoded).toContain('"operationType":"add"');
     expect(decoded).toContain('"componentId":"isc_OBViewForm_0"');
     expect(decoded).toContain('"csrfToken":"CSRF-TEST-123"'); // Should be replaced with token from session store
@@ -106,13 +101,13 @@ describe("API: /api/datasource/:entity save/update", () => {
 
     await POST(request, { params: { entity: "Order" } } as any);
     const [dest, init] = (global as any).fetch.mock.calls[0];
-    
+
     const expectedUrl = getExpectedDatasourceUrl("Order", "update", {
       windowId: "1",
       tabId: "2",
-      _operationType: "update"
+      _operationType: "update",
     });
-    
+
     expect(String(dest)).toBe(expectedUrl);
     expect(init.headers["Content-Type"]).toBe("application/x-custom");
     expect(init.body).toBe(`${rawBody}&csrfToken=CSRF-TEST-123`);

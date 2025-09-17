@@ -59,10 +59,10 @@ describe("Save error passthrough", () => {
     assertFetchCall(
       global.fetch as jest.Mock,
       getExpectedDatasourceUrl("Order", "add", {
-      windowId: "10",
-      tabId: "20",
-      _operationType: "add"
-    }),
+        windowId: "10",
+        tabId: "20",
+        _operationType: "add",
+      }),
       "POST",
       { Authorization: `Bearer ${BEARER_TOKEN}` }
     );

@@ -49,11 +49,11 @@ describe("Datasource [entity] JSON pass-through", () => {
     assertFetchCall(
       fetchMock,
       getExpectedDatasourceUrl("Invoice", "add", {
-      windowId: "10",
-      tabId: "20",
-      _operationType: "add",
-      isc_dataFormat: "json"
-    }),
+        windowId: "10",
+        tabId: "20",
+        _operationType: "add",
+        isc_dataFormat: "json",
+      }),
       "POST",
       { "Content-Type": "application/json; charset=utf-8" }
     );

@@ -32,7 +32,7 @@ function validateAndExtractToken(request: NextRequest): string | null {
 function buildErpUrl(entity: string, requestUrl: URL, body?: string, userToken?: string | null): string {
   const params = new URLSearchParams(requestUrl.search);
   const operationType = params.get("_operationType");
-  
+
   // Use centralized endpoint configuration
   const baseUrl = getDatasourceUrl(entity, operationType || undefined);
 

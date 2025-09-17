@@ -99,7 +99,9 @@ describe("API: /api/erp base forward", () => {
     const req = makeRequest(url, "token-abc", '{"k":"v"}');
     await POST(req as any);
     const [dest, init] = (global as any).fetch.mock.calls[0];
-    expect(String(dest)).toBe("http://erp.example/etendo/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?foo=bar&x=1");
+    expect(String(dest)).toBe(
+      "http://erp.example/etendo/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?foo=bar&x=1"
+    );
     expect(init.method).toBe("POST");
     expect(init.headers["Cookie"]).toBeUndefined(); // No session for token-abc
     expect(init.body).toBe('{"k":"v"}');
@@ -118,7 +120,9 @@ describe("API: /api/erp base forward", () => {
     const { GET } = await import("../route");
     await GET(req as any);
     const [dest, init] = (global as any).fetch.mock.calls[0];
-    expect(String(dest)).toBe("http://erp.example/etendo/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?foo=bar&x=1");
+    expect(String(dest)).toBe(
+      "http://erp.example/etendo/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?foo=bar&x=1"
+    );
     expect(init.method).toBe("GET");
     expect(init.headers["Authorization"]).toBe("Bearer get-token");
   });

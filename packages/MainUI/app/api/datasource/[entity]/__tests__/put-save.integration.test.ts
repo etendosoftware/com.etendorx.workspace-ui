@@ -45,10 +45,10 @@ describe("Save via PUT JSON→form conversion", () => {
     const [dest, init] = (global as any).fetch.mock.calls[0];
     expect(String(dest)).toBe(
       getExpectedDatasourceUrl("Invoice", "update", {
-      windowId: "1",
-      tabId: "2",
-      _operationType: "update"
-    })
+        windowId: "1",
+        tabId: "2",
+        _operationType: "update",
+      })
     );
     expect(init.method).toBe("PUT");
     expect(init.headers.Authorization).toBe(`Bearer ${BEARER_TOKEN}`);

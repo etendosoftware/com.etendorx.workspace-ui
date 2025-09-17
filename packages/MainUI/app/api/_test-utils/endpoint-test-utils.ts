@@ -18,7 +18,7 @@ export function getExpectedDatasourceUrl(
 ): string {
   // Use the same logic as the actual implementation
   const baseUrl = getDatasourceUrl(entity, operationType);
-  
+
   if (!queryParams) {
     return baseUrl;
   }
@@ -35,10 +35,10 @@ export function getExpectedDatasourceUrl(
   }
 
   // Add pagination parameters for operations if not present
-  if (operationType && ['add', 'update', 'remove'].includes(operationType)) {
-    if (!params.has('_startRow') && !params.has('_endRow')) {
-      params.set('_startRow', '0');
-      params.set('_endRow', '75');
+  if (operationType && ["add", "update", "remove"].includes(operationType)) {
+    if (!params.has("_startRow") && !params.has("_endRow")) {
+      params.set("_startRow", "0");
+      params.set("_endRow", "75");
     }
   }
 
@@ -55,21 +55,21 @@ export function migrateOldUrlToNew(oldUrl: string): string {
   // Extract entity and query params from old URL
   const url = new URL(oldUrl);
   const pathMatch = url.pathname.match(/\/meta\/forward\/org\.openbravo\.service\.datasource\/(.+)$/);
-  
+
   if (!pathMatch) {
     throw new Error(`Cannot migrate URL: ${oldUrl}`);
   }
 
   const entity = pathMatch[1];
   const params = new URLSearchParams(url.search);
-  const operationType = params.get('_operationType');
+  const operationType = params.get("_operationType");
 
   return getExpectedDatasourceUrl(entity, operationType || undefined, params);
 }
 
 /**
  * Helper to assert fetch calls with correct endpoint URLs
- * @param expectedBaseUrl - Base URL without query parameters 
+ * @param expectedBaseUrl - Base URL without query parameters
  * @param entity - Entity name
  * @param operationType - Operation type
  * @param queryParams - Query parameters
@@ -81,12 +81,12 @@ export function createDatasourceUrlAssertion(
   queryParams?: Record<string, string | number>
 ) {
   const expectedUrl = getExpectedDatasourceUrl(entity, operationType, queryParams);
-  
+
   return {
     expectedUrl,
     assertFetchUrl: () => {
       const [dest] = (global as any).fetch.mock.calls[0];
       expect(String(dest)).toBe(expectedUrl);
-    }
+    },
   };
 }

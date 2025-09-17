@@ -37,8 +37,7 @@ testSuite.describe(() => {
     const res = await POST(req as never);
     expect(res.status).toBe(200);
 
-    assertDatasourceCall(getExpectedDatasourceUrl("Invoice", undefined, {
-    }), {
+    assertDatasourceCall(getExpectedDatasourceUrl("Invoice", undefined, {}), {
       Authorization: `Bearer ${BEARER_TOKEN}`,
       "Content-Type": "application/x-www-form-urlencoded",
     });

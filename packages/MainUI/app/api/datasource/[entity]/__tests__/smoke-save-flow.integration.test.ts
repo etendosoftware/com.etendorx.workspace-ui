@@ -41,10 +41,10 @@ describe("Smoke: save flow via forward servlet", () => {
 
     const { decoded } = assertErpForwardCall(
       getExpectedDatasourceUrl("Invoice", "add", {
-      windowId: "10",
-      tabId: "20",
-      _operationType: "add"
-    }),
+        windowId: "10",
+        tabId: "20",
+        _operationType: "add",
+      }),
       "Bearer Bearer-SMOKE-TOKEN",
       undefined,
       "application/json; charset=utf-8"

@@ -59,9 +59,9 @@ export const useProcessConfig = ({ processId, windowId, tabId, javaClassName }: 
         _action: javaClassName || "org.openbravo.client.application.process.DefaultsProcessActionHandler",
       });
 
-      const requestPayload = { 
+      const requestPayload = {
         ...payload,
-        _buttonValue: "DONE"
+        _buttonValue: "DONE",
       };
 
       try {
