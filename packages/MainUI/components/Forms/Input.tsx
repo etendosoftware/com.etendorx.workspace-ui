@@ -8,7 +8,7 @@ interface InputProps extends ComponentProps<"input"> {
   label?: string;
   required?: boolean;
   icon?: ComponentType<SVGProps<SVGSVGElement>>;
-  clearable?: boolean; // Nueva prop para habilitar/deshabilitar el botón clear
+  clearable?: boolean;
 }
 
 const Input: FC<InputProps> = ({
@@ -21,7 +21,7 @@ const Input: FC<InputProps> = ({
   icon: Icon,
   className,
   id,
-  clearable = true, // Por defecto habilitado
+  clearable = true,
   ...props
 }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -32,11 +32,9 @@ const Input: FC<InputProps> = ({
 
   const inputId = id || generatedId;
 
-  // Verificar si hay contenido para mostrar el botón clear
   const hasValue = value && value.toString().length > 0;
   const showClearButton = clearable && hasValue && !isPassword;
 
-  // Calcular el padding derecho basado en los botones que se muestran
   const getRightPadding = () => {
     if (isPassword) return "pr-12";
     if (showClearButton) return "pr-10";
@@ -94,6 +92,7 @@ const Input: FC<InputProps> = ({
                 isFocused ? "fill-(--color-baseline-100)" : "fill-(--color-transparent-neutral-60)"
               }`}
               data-testid="Icon__ce3099"
+              tabIndex={-1}
             />
           </div>
         )}
@@ -112,6 +111,7 @@ const Input: FC<InputProps> = ({
           <button
             type="button"
             onClick={handleClear}
+            tabIndex={-1}
             className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors">
             <X
               className={`h-4 w-4 transition-colors ${
@@ -125,6 +125,7 @@ const Input: FC<InputProps> = ({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
+            tabIndex={-1}
             className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors">
             {showPassword ? (
               <EyeOff

@@ -343,7 +343,7 @@ exit 0
               def sonarPropertiesFile = "${REPOSITORY_NAME}/sonar-project.properties"
               def sonarProjectKey = sh(script: "grep 'sonar.projectKey' ${sonarPropertiesFile} | cut -d '=' -f2", returnStdout: true).trim()
               echo "SonarQube Project Key: ${sonarProjectKey}"
-              def branchCurrent = "${GIT_BRANCH}"
+              def branchCurrent = URLEncoder.encode(GIT_BRANCH, 'UTF-8') 
               def branchMain = "main"
 
               def rootDir = pwd()
@@ -366,7 +366,7 @@ exit 0
                 sonarProjectKey,
                 SONAR_TOKEN,
                 SONAR_SERVER,
-                GIT_COMMIT
+                null
               )
 
               echo "Current branch coverage: ${coverageCurrent}%"

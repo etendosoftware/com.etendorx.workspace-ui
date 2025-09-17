@@ -40,6 +40,11 @@ export const getFieldReference = (reference?: string): FieldType => {
       return FieldType.DATE;
     case FIELD_REFERENCE_CODES.BOOLEAN:
       return FieldType.BOOLEAN;
+    case FIELD_REFERENCE_CODES.INTEGER:
+    case FIELD_REFERENCE_CODES.NUMERIC:
+    case FIELD_REFERENCE_CODES.DECIMAL:
+      return FieldType.NUMBER;
+    case FIELD_REFERENCE_CODES.QUANTITY_22:
     case FIELD_REFERENCE_CODES.QUANTITY_29:
       return FieldType.QUANTITY;
     case FIELD_REFERENCE_CODES.LIST_17:
@@ -59,8 +64,26 @@ export const getFieldReference = (reference?: string): FieldType => {
 export const sanitizeValue = (value: unknown, field?: Field) => {
   const reference = getFieldReference(field?.column?.reference);
 
+  // Special handling for known numeric fields by name
+  if (field?.inputName === "consumptionDays" || field?.name === "consumptionDays") {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+    const numericValue = Number(value);
+    return Number.isNaN(numericValue) ? value : numericValue;
+  }
+
   if (reference === FieldType.DATE) {
     return value ? String(value).split("-").toReversed().join("-") : null;
+  }
+
+  if (reference === FieldType.QUANTITY || reference === FieldType.NUMBER) {
+    // For numeric fields, preserve numeric values
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+    const numericValue = Number(value);
+    return Number.isNaN(numericValue) ? value : numericValue;
   }
 
   const stringValue = String(value);
@@ -86,7 +109,17 @@ export const buildPayloadByInputName = (values?: Record<string, unknown> | null,
       const field = fields?.[key];
       const newKey = field?.inputName ?? key;
 
-      acc[newKey] = sanitizeValue(value, field);
+      // Special handling for known numeric fields when field metadata is not available
+      if (!field && (key === "consumptionDays" || newKey === "consumptionDays")) {
+        if (value === null || value === undefined || value === "") {
+          acc[newKey] = null;
+        } else {
+          const numericValue = Number(value);
+          acc[newKey] = Number.isNaN(numericValue) ? value : numericValue;
+        }
+      } else {
+        acc[newKey] = sanitizeValue(value, field);
+      }
 
       return acc;
     },
@@ -156,17 +189,25 @@ export const buildFormPayload = ({
   oldValues?: EntityData;
   mode: FormMode;
   csrfToken: string;
-}) => ({
-  dataSource: "isc_OBViewDataSource_0",
-  operationType: mode === FormMode.NEW ? "add" : "update",
-  componentId: "isc_OBViewForm_0",
-  data: {
-    accountingDate: new Date(),
-    ...values,
-  },
-  oldValues,
-  csrfToken,
-});
+}) => {
+  const payload: any = {
+    dataSource: "isc_OBViewDataSource_0",
+    operationType: mode === FormMode.NEW ? "add" : "update",
+    componentId: "isc_OBViewForm_0",
+    data: {
+      accountingDate: new Date(),
+      ...values,
+    },
+    csrfToken,
+  };
+
+  // Only include oldValues for update operations
+  if (mode !== FormMode.NEW && oldValues) {
+    payload.oldValues = oldValues;
+  }
+
+  return payload;
+};
 
 export const formatNumber = (value: number) => new Intl.NumberFormat(navigator.language).format(value);
 

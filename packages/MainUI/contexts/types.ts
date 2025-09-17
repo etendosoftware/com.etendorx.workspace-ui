@@ -75,6 +75,10 @@ export interface IUserContext {
   languages: LanguageOption[];
   session: ISession;
   setSession: React.Dispatch<React.SetStateAction<ISession>>;
+  /** Indicates if session sync operations are loading */
+  isSessionSyncLoading: boolean;
+  /** Setter for session sync loading state */
+  setSessionSyncLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export interface IMetadataContext {

@@ -352,6 +352,7 @@ const DynamicTable = ({ setRecordId, onRecordSelection, isTreeMode = true }: Dyn
 
           // Set graph selection for consistency but avoid triggering URL updates
           graph.setSelected(tab, row.original);
+          graph.setSelectedMultiple(tab, [row.original]);
 
           if (parent && parentSelection) {
             setTimeout(() => graph.setSelected(parent, parentSelection), 10);

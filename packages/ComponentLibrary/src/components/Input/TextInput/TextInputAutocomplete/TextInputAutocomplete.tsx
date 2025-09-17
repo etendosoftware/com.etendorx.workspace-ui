@@ -169,6 +169,22 @@ const TextInputAutoComplete = (props: TextInputProps) => {
                   opacity: isFocused ? 0 : 1,
                   transition: `opacity ${DEFAULT_CONSTANTS.PLACEHOLDER_OPACITY_TRANSITION_DURATION}s`,
                 },
+                "&:-webkit-autofill": {
+                  WebkitBoxShadow: `0 0 0 1000px ${theme.palette.baselineColor.neutral[0]} inset !important`,
+                  WebkitTextFillColor: `${theme.palette.baselineColor.neutral[100]} !important`,
+                  caretColor: `${theme.palette.baselineColor.neutral[100]} !important`,
+                  transition: "background-color 5000s ease-in-out 0s",
+                },
+                "&:-webkit-autofill:hover": {
+                  WebkitBoxShadow: `0 0 0 1000px ${theme.palette.baselineColor.neutral[0]} inset !important`,
+                  WebkitTextFillColor: `${theme.palette.baselineColor.neutral[100]} !important`,
+                  caretColor: `${theme.palette.baselineColor.neutral[100]} !important`,
+                },
+                "&:-webkit-autofill:focus": {
+                  WebkitBoxShadow: `0 0 0 1000px ${theme.palette.baselineColor.neutral[0]} inset !important`,
+                  WebkitTextFillColor: `${theme.palette.baselineColor.neutral[100]} !important`,
+                  caretColor: `${theme.palette.baselineColor.neutral[100]} !important`,
+                },
               },
               ...props.InputProps?.sx,
             },
