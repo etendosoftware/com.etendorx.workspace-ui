@@ -35,6 +35,7 @@ export const API_METADATA_URL = "/sws/com.etendoerp.metadata";
 export const API_DEFAULT_CACHE_DURATION = getDefaultCacheDuration();
 export const AUTH_HEADER_NAME = getAuthHeaderName();
 export const API_FORWARD_PATH = `${API_METADATA_URL}.forward`; //"/meta/forward";
+export const API_IFRAME_FORWARD_PATH = "/meta/legacy"; // For iframe requests that need cookie-based auth
 export const API_KERNEL_SERVLET = `${API_FORWARD_PATH}/org.openbravo.client.kernel`;
 export const API_DATASOURCE_SERVLET = `${API_FORWARD_PATH}/org.openbravo.service.datasource/`;
 
