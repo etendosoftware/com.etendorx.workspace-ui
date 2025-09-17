@@ -25,6 +25,7 @@ import { login as doLogin } from "@workspaceui/api-client/src/api/authentication
 import { changeProfile as doChangeProfile } from "@workspaceui/api-client/src/api/changeProfile";
 import { getSession } from "@workspaceui/api-client/src/api/getSession";
 import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
+import { clearAllErpSessions } from "@/app/api/_utils/sessionStore";
 import { HTTP_CODES } from "@workspaceui/api-client/src/api/constants";
 import type { DefaultConfiguration, IUserContext, Language, LanguageOption } from "./types";
 import type {
@@ -175,6 +176,12 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const login = useCallback(
     async (username: string, password: string) => {
       try {
+        // Clear any existing token and sessions before login to ensure clean state
+        Metadata.setToken("");
+        datasource.setToken("");
+        CopilotClient.setToken("");
+        clearAllErpSessions();
+        
         const loginResponse = await doLogin(username, password);
 
         localStorage.setItem("token", loginResponse.token);

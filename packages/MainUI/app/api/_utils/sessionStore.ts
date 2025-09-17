@@ -82,7 +82,7 @@ export function getErpSessionCookie(token: string | null | undefined): string | 
 
   const v = store.get(keyToken) ?? null;
   if (!v) {
-    throw new Error("No session found for token");
+    return null; // Return null instead of throwing error for graceful degradation
   }
   return v?.cookieHeader ?? null;
 }
@@ -97,4 +97,8 @@ export function getErpCsrfToken(token: string | null | undefined): string | null
 
 export function clearErpSessionCookie(token: string) {
   store.delete(token);
+}
+
+export function clearAllErpSessions() {
+  store.clear();
 }

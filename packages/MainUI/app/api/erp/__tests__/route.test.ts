@@ -99,7 +99,7 @@ describe("API: /api/erp base forward", () => {
     const req = makeRequest(url, "token-abc", '{"k":"v"}');
     await POST(req as any);
     const [dest, init] = (global as any).fetch.mock.calls[0];
-    expect(String(dest)).toBe("http://erp.example/etendo/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?foo=bar&x=1");
+    expect(String(dest)).toBe("http://erp.example/etendo/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?foo=bar&x=1");
     expect(init.method).toBe("POST");
     expect(init.headers["Cookie"]).toBeUndefined(); // No session for token-abc
     expect(init.body).toBe('{"k":"v"}');
@@ -118,7 +118,7 @@ describe("API: /api/erp base forward", () => {
     const { GET } = await import("../route");
     await GET(req as any);
     const [dest, init] = (global as any).fetch.mock.calls[0];
-    expect(String(dest)).toBe("http://erp.example/etendo/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?foo=bar&x=1");
+    expect(String(dest)).toBe("http://erp.example/etendo/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?foo=bar&x=1");
     expect(init.method).toBe("GET");
     expect(init.headers["Authorization"]).toBe("Bearer get-token");
   });
@@ -132,7 +132,7 @@ describe("API: /api/erp base forward", () => {
 
       const [dest, init] = (global as any).fetch.mock.calls[0];
       expect(String(dest)).toBe(
-        "http://erp.example/etendo/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?processId=EC2C48FB84274D3CB3A3F5FD49808926&_action=org.openbravo.client.application.process.ExecuteProcessActionHandler"
+        "http://erp.example/etendo/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?processId=EC2C48FB84274D3CB3A3F5FD49808926&_action=org.openbravo.client.application.process.ExecuteProcessActionHandler"
       );
       expect(init.method).toBe("POST");
       expect(init.headers["Cookie"]).toBeUndefined(); // No session for process-token
@@ -158,7 +158,7 @@ describe("API: /api/erp base forward", () => {
 
       const [dest, init] = (global as any).fetch.mock.calls[0];
       expect(String(dest)).toBe(
-        "http://erp.example/etendo/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?processId=TEST123&_action=com.etendoerp.copilot.process.SyncAssistant"
+        "http://erp.example/etendo/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?processId=TEST123&_action=com.etendoerp.copilot.process.SyncAssistant"
       );
       expect(init.body).toBe(body);
       expect(init.headers["Cookie"]).toBe("JSESSIONID=test-session-id; other=cookie");

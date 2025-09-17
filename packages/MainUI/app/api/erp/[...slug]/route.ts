@@ -145,14 +145,10 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
       // If slug already starts with sws/, use it directly
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else {
-      // Legacy case: add sws/com.etendoerp.metadata. prefix
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
     }
-    const url = new URL(request.url);
-    if (url.search) {
-      erpUrl += url.search;
-    }
-    // Handle kernel requests - replace forward with kernel servlet
+    
+    // Handle kernel requests - replace forward with kernel servlet BEFORE adding query params
     erpUrl = erpUrl.replace(
       "com.etendoerp.metadata.forward/org.openbravo.client.kernel",
       "com.smf.securewebservices.kernel/org.openbravo.client.kernel"
@@ -161,6 +157,11 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
       "com.etendoerp.metadata.meta/forward",
       "com.smf.securewebservices.kernel/org.openbravo.client.kernel"
     );
+    
+    const url = new URL(request.url);
+    if (url.search) {
+      erpUrl += url.search;
+    }
 
     const requestBody = method === "GET" ? undefined : await request.text();
     const contentType = request.headers.get("Content-Type") || "application/json";

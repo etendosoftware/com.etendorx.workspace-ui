@@ -132,7 +132,7 @@ describe("useProcessExecution manual processes integration", () => {
     await waitFor(() => expect(resultEl.textContent).toContain("http://localhost:3000/api"));
 
     const url = new URL(resultEl.textContent || "http://localhost");
-    expect(url.pathname).toContain("/meta/forward");
+    expect(url.pathname).toContain("/meta/legacy");
     expect(url.pathname).toContain("/SalesOrder/Header_Edition.html");
 
     const p = url.searchParams;

@@ -24,56 +24,39 @@ afterAll(() => {
   process.env.ETENDO_CLASSIC_URL = originalEnv;
 });
 
+// Helper function to test datasource endpoints
+const testDatasourceEndpoint = (operation: string | undefined, expectedConfig: any) => {
+  const config = getDatasourceEndpoint('Order', operation);
+  expect(config).toEqual(expectedConfig);
+};
+
+// Helper function to create expected datasource config
+const createExpectedConfig = (useSws: boolean, useForward: boolean) => ({
+  baseUrl: mockBaseUrl,
+  useSws,
+  useForward,
+  service: 'org.openbravo.service.datasource/Order'
+});
+
 describe('Endpoint Configuration', () => {
   describe('getDatasourceEndpoint', () => {
-    it('should return direct URL for add operation', () => {
-      const config = getDatasourceEndpoint('Order', 'add');
-      expect(config).toEqual({
-        baseUrl: mockBaseUrl,
-        useSws: false,
-        useForward: false,
-        service: 'org.openbravo.service.datasource/Order'
-      });
-    });
+    const directUrlConfig = createExpectedConfig(false, false);
+    const swsForwardConfig = createExpectedConfig(true, true);
 
-    it('should return direct URL for update operation', () => {
-      const config = getDatasourceEndpoint('Order', 'update');
-      expect(config).toEqual({
-        baseUrl: mockBaseUrl,
-        useSws: false,
-        useForward: false,
-        service: 'org.openbravo.service.datasource/Order'
-      });
-    });
-
-    it('should return direct URL for remove operation', () => {
-      const config = getDatasourceEndpoint('Order', 'remove');
-      expect(config).toEqual({
-        baseUrl: mockBaseUrl,
-        useSws: false,
-        useForward: false,
-        service: 'org.openbravo.service.datasource/Order'
-      });
+    it.each([
+      ['add', directUrlConfig],
+      ['update', directUrlConfig],
+      ['remove', directUrlConfig],
+    ])('should return direct URL for %s operation', (operation, expectedConfig) => {
+      testDatasourceEndpoint(operation, expectedConfig);
     });
 
     it('should return SWS forward URL for fetch operation', () => {
-      const config = getDatasourceEndpoint('Order', 'fetch');
-      expect(config).toEqual({
-        baseUrl: mockBaseUrl,
-        useSws: true,
-        useForward: true,
-        service: 'org.openbravo.service.datasource/Order'
-      });
+      testDatasourceEndpoint('fetch', swsForwardConfig);
     });
 
     it('should return SWS forward URL when no operation type specified', () => {
-      const config = getDatasourceEndpoint('Order');
-      expect(config).toEqual({
-        baseUrl: mockBaseUrl,
-        useSws: true,
-        useForward: true,
-        service: 'org.openbravo.service.datasource/Order'
-      });
+      testDatasourceEndpoint(undefined, swsForwardConfig);
     });
   });
 
@@ -102,37 +85,30 @@ describe('Endpoint Configuration', () => {
   });
 
   describe('buildEndpointUrl', () => {
-    it('should build direct URL without SWS', () => {
-      const config = {
-        baseUrl: mockBaseUrl,
-        useSws: false,
-        useForward: false,
-        service: 'org.openbravo.service.datasource/Order'
-      };
-      const url = buildEndpointUrl(config);
-      expect(url).toBe('http://localhost:8080/etendo/org.openbravo.service.datasource/Order');
-    });
+    const testCases = [
+      {
+        description: 'direct URL without SWS',
+        config: { useSws: false, useForward: false, service: 'org.openbravo.service.datasource/Order' },
+        expected: 'http://localhost:8080/etendo/org.openbravo.service.datasource/Order'
+      },
+      {
+        description: 'SWS URL without forward',
+        config: { useSws: true, useForward: false, service: 'com.etendoerp.metadata.meta/menu' },
+        expected: 'http://localhost:8080/etendo/sws/com.etendoerp.metadata.meta/menu'
+      },
+      {
+        description: 'SWS URL with forward',
+        config: { useSws: true, useForward: true, service: 'org.openbravo.service.datasource/Order' },
+        expected: 'http://localhost:8080/etendo/sws/com.etendoerp.metadata.forward/org.openbravo.service.datasource/Order'
+      }
+    ];
 
-    it('should build SWS URL without forward', () => {
-      const config = {
-        baseUrl: mockBaseUrl,
-        useSws: true,
-        useForward: false,
-        service: 'com.etendoerp.metadata.meta/menu'
-      };
-      const url = buildEndpointUrl(config);
-      expect(url).toBe('http://localhost:8080/etendo/sws/com.etendoerp.metadata.meta/menu');
-    });
-
-    it('should build SWS URL with forward', () => {
-      const config = {
-        baseUrl: mockBaseUrl,
-        useSws: true,
-        useForward: true,
-        service: 'org.openbravo.service.datasource/Order'
-      };
-      const url = buildEndpointUrl(config);
-      expect(url).toBe('http://localhost:8080/etendo/sws/com.etendoerp.metadata.forward/org.openbravo.service.datasource/Order');
+    testCases.forEach(({ description, config, expected }) => {
+      it(`should build ${description}`, () => {
+        const fullConfig = { baseUrl: mockBaseUrl, ...config };
+        const url = buildEndpointUrl(fullConfig);
+        expect(url).toBe(expected);
+      });
     });
 
     it('should throw error when service is not specified', () => {
