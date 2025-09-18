@@ -175,7 +175,6 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * @param options - Reset options, defaults to keepDirty: false for initial load
    */
   const stableReset = useCallback((data: EntityData, options = { keepDirty: false }) => {
-    console.log('[FormView] Resetting form with options:', options, 'data keys:', Object.keys(data));
     resetRef.current(data, options);
   }, []);
 
@@ -198,7 +197,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
     // Suppress callouts during initial value setting to prevent cascading changes
     globalCalloutManager.suppress();
-    
+
     // Reset with keepDirty: false for initial load to prevent false dirty state
     stableReset(processedData, { keepDirty: false });
 
