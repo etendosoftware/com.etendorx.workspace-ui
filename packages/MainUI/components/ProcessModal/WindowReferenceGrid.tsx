@@ -63,8 +63,54 @@ function WindowReferenceGrid({
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
 
-  const processDefaults = processConfig?.defaults;
-  const filterExpressions = processConfig?.filterExpressions;
+  // Flag para controlar cuando los datos están listos
+  const [isDataReady, setIsDataReady] = useState(false);
+
+  // Guardar referencia de los últimos defaults para evitar recálculos
+  const lastDefaultsRef = useRef<string>("");
+  const lastFilterExpressionsRef = useRef<string>("");
+
+  // Memoizar defaults y filterExpressions con comparación profunda
+  const stableProcessDefaults = useMemo<Record<string, EntityValue>>(() => {
+    const defaults = (processConfig?.defaults as unknown as Record<string, EntityValue>) || {};
+    const defaultsString = JSON.stringify(defaults);
+
+    // Solo actualizar si realmente cambió
+    if (defaultsString !== lastDefaultsRef.current) {
+      lastDefaultsRef.current = defaultsString;
+      return defaults;
+    }
+
+    // Si no cambió, devolver el objeto parseado del último string guardado
+    return lastDefaultsRef.current ? JSON.parse(lastDefaultsRef.current) : {};
+  }, [processConfig?.defaults]);
+
+  const stableFilterExpressions = useMemo(() => {
+    const filters = processConfig?.filterExpressions || {};
+    const filtersString = JSON.stringify(filters);
+
+    // Solo actualizar si realmente cambió
+    if (filtersString !== lastFilterExpressionsRef.current) {
+      lastFilterExpressionsRef.current = filtersString;
+      return filters;
+    }
+
+    // Si no cambió, devolver el objeto parseado del último string guardado
+    return lastFilterExpressionsRef.current ? JSON.parse(lastFilterExpressionsRef.current) : {};
+  }, [processConfig?.filterExpressions]);
+
+  // Controlar cuando los datos están listos para hacer fetch
+  useEffect(() => {
+    // Esperar a que processConfig esté cargado antes de marcar como listo
+    if (!processConfigLoading && processConfig) {
+      // Usar setTimeout para dar tiempo a que todos los estados se estabilicen
+      const timer = setTimeout(() => {
+        setIsDataReady(true);
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [processConfigLoading, processConfig]);
 
   const datasourceOptions = useMemo(() => {
     const processId = processConfig?.processId;
@@ -90,16 +136,20 @@ function WindowReferenceGrid({
       options[invoiceCurrency] = recordValues?.inpcCurrencyId || "";
     }
 
-    if (processDefaults) {
-      for (const [key, value] of Object.entries(processDefaults)) {
+    // Usar los valores estables de defaults
+    if (stableProcessDefaults && Object.keys(stableProcessDefaults).length > 0) {
+      for (const [key, value] of Object.entries(stableProcessDefaults)) {
         // Handle different value structures
-        const actualValue = typeof value === "object" && value !== null && "value" in value ? value.value : value;
+        const actualValue =
+          typeof value === "object" && value !== null && "value" in value
+            ? (value as { value: EntityValue }).value
+            : value;
 
         // Find the corresponding parameter by name to get its dBColumnName
         const matchingParameter = Object.values(parameters).find((param) => param.name === key);
         const datasourceFieldName = matchingParameter?.dBColumnName || key;
 
-        // Set the value using the datasource field name (e.g., ad_org_id instead of Legal Entity Organization)
+        // Set the value using the datasource field name
         options[datasourceFieldName] = actualValue;
 
         // Also handle defaultKeys mapping if provided
@@ -110,20 +160,28 @@ function WindowReferenceGrid({
       }
     }
 
+    // Usar los valores estables de filterExpressions
     let criteria: Array<{ fieldName: string; operator: string; value: EntityValue }> = [];
 
-    if (filterExpressions?.grid) {
-      const filterCriteria = Object.entries(filterExpressions.grid).map(([fieldName, value]) => ({
+    if (stableFilterExpressions?.grid) {
+      const filterCriteria = Object.entries(stableFilterExpressions.grid).map(([fieldName, value]) => ({
         fieldName,
         operator: "equals",
         value: value === "true" ? true : value === "false" ? false : value,
       }));
 
-      criteria = [...criteria, ...filterCriteria];
+      criteria = [
+        ...criteria,
+        ...filterCriteria.map((fc) => ({
+          ...fc,
+          value: fc.value as EntityValue,
+        })),
+      ];
     }
 
     if (criteria.length > 0) {
       options.orderBy = "documentNo desc";
+      options.criteria = criteria as unknown as EntityValue;
     }
 
     return options;
@@ -131,8 +189,8 @@ function WindowReferenceGrid({
     processConfig?.processId,
     parameter.tab,
     tabId,
-    processDefaults,
-    filterExpressions?.grid,
+    stableProcessDefaults,
+    stableFilterExpressions,
     recordValues?.inpadClientId,
     recordValues?.inpcBpartnerId,
     recordValues?.inpmPricelistId,
@@ -145,7 +203,7 @@ function WindowReferenceGrid({
       return Object.values(windowReferenceTab.fields);
     }
     return [];
-  }, [windowReferenceTab]);
+  }, [windowReferenceTab?.fields]);
 
   const columns = useMemo(() => {
     if (fields.length > 0) {
@@ -153,6 +211,9 @@ function WindowReferenceGrid({
     }
     return [];
   }, [fields, t]);
+
+  // Controlar el skip basado en si los datos están listos
+  const shouldSkipFetch = !isDataReady || processConfigLoading || !entityName;
 
   const {
     records,
@@ -165,8 +226,10 @@ function WindowReferenceGrid({
     entity: String(entityName),
     params: datasourceOptions,
     activeColumnFilters: columnFilters,
+    skip: shouldSkipFetch, // Evitar fetch hasta que todo esté listo
   });
 
+  // Reset selection cuando se abre el modal
   useEffect(() => {
     setRowSelection({});
     onSelectionChange([]);
@@ -319,8 +382,11 @@ function WindowReferenceGrid({
     onRowSelectionChange: handleRowSelection,
     onColumnFiltersChange: handleColumnFiltersChange,
   };
+
   const table = useMaterialReactTable(tableOptions);
-  const isLoading = tabLoading || processConfigLoading || datasourceLoading;
+
+  // Mostrar loading mientras no estén listos los datos
+  const isLoading = tabLoading || processConfigLoading || datasourceLoading || !isDataReady;
   const error = tabError || processConfigError || datasourceError;
 
   if (isLoading) {
