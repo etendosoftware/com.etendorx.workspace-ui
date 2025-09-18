@@ -30,6 +30,7 @@ import { useSelected } from "@/hooks/useSelected";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { NEW_RECORD_ID } from "@/utils/url/constants";
 import { FormInitializationProvider } from "@/contexts/FormInitializationContext";
+import { globalCalloutManager } from "@/services/callouts";
 import { useFormAction } from "@/hooks/useFormAction";
 import type { FormViewProps } from "./types";
 import { FormViewContext, type FormViewContextValue } from "./contexts/FormViewContext";
@@ -159,7 +160,7 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
 
   const { fields, groups } = useFormFields(tab, recordId, mode, true, availableFormData);
 
-  const formMethods = useForm({ values: availableFormData as EntityData });
+  const formMethods = useForm({ defaultValues: availableFormData as EntityData });
   const { reset, setValue, formState, ...form } = formMethods;
 
   const resetRef = useRef(reset);
@@ -171,23 +172,15 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
    * provides a stable callback that always calls the latest reset function.
    *
    * @param data - Form data to reset the form with
+   * @param options - Reset options, defaults to keepDirty: false for initial load
    */
-  const stableReset = useCallback((data: EntityData) => {
-    resetRef.current(data);
+  const stableReset = useCallback((data: EntityData, options = { keepDirty: false }) => {
+    console.log('[FormView] Resetting form with options:', options, 'data keys:', Object.keys(data));
+    resetRef.current(data, options);
   }, []);
 
-  /**
-   * useEffect: Refetches form initialization data when recordId or mode changes.
-   * Ensures form data is refreshed when navigating to different records
-   * or switching between edit/view modes.
-   *
-   * Dependencies: recordId, refetch, mode
-   */
-  useEffect(() => {
-    if (recordId) {
-      refetch();
-    }
-  }, [recordId, refetch]);
+  // Note: Form initialization is now handled automatically by useFormInitialization hook
+  // No need for manual refetch here as the hook includes useEffect that triggers on param changes
 
   /**
    * useEffect: Initializes/resets form with processed form data.
@@ -203,10 +196,18 @@ export function FormView({ window: windowMetadata, tab, mode, recordId, setRecor
     setIsFormInitializing(true);
     const processedData = processFormData(availableFormData);
 
-    stableReset(processedData);
+    // Suppress callouts during initial value setting to prevent cascading changes
+    globalCalloutManager.suppress();
+    
+    // Reset with keepDirty: false for initial load to prevent false dirty state
+    stableReset(processedData, { keepDirty: false });
 
     queueMicrotask(() => {
       setIsFormInitializing(false);
+      // Allow callouts after values have settled
+      setTimeout(() => {
+        globalCalloutManager.resume();
+      }, 100); // Delay to allow all values to settle before enabling callouts
     });
   }, [availableFormData, tab.id, stableReset]);
 

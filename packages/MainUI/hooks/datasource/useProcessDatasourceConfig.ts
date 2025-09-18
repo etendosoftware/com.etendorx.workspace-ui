@@ -64,7 +64,6 @@ export const useProcessConfig = ({ processId, windowId, tabId, javaClassName }: 
 
       const requestPayload = {
         ...buildPayload,
-        _buttonValue: "DONE",
         _params: {
           grid: {},
         },

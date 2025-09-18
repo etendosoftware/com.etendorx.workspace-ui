@@ -82,7 +82,7 @@ export function getErpSessionCookie(token: string | null | undefined): string | 
 
   const v = store.get(keyToken) ?? null;
   if (!v) {
-    return null; // Return null instead of throwing error for graceful degradation
+    return null;
   }
   return v?.cookieHeader ?? null;
 }
