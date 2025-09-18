@@ -19,6 +19,7 @@ import { useCallback, useState } from "react";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { logger } from "@/utils/logger";
 import type { EntityValue } from "@workspaceui/api-client/src/api/types";
+import { buildPayloadByInputName } from "@/utils";
 
 export interface ProcessConfigResponse {
   processId: string;
@@ -32,6 +33,7 @@ interface UseProcessConfigProps {
   windowId: string;
   tabId: string;
   javaClassName?: string;
+  gridSelection?: unknown[];
 }
 
 /**
@@ -58,10 +60,14 @@ export const useProcessConfig = ({ processId, windowId, tabId, javaClassName }: 
         windowId,
         _action: javaClassName || "org.openbravo.client.application.process.DefaultsProcessActionHandler",
       });
+      const buildPayload = buildPayloadByInputName(payload);
 
       const requestPayload = {
-        ...payload,
+        ...buildPayload,
         _buttonValue: "DONE",
+        _params: {
+          grid: {},
+        },
       };
 
       try {

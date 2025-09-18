@@ -44,10 +44,23 @@ def getCoverageWithRetry(branch, checkCommit, sonarProjectKey, sonarToken, sonar
     }
   }
   if (coverage == -1) {
-    if (checkCommit) {
-      error("Could not retrieve coverage for branch '${branch}' and commit '${gitCommit}' after ${maxRetries} attempts.")
-    } else {
+    if (!checkCommit) {
+      // If it is the main branch and after the attempts the coverage is 0, return 0
+      def response = sh(
+        script: "curl -s -u ${sonarToken}: \"${sonarServer}/api/measures/component?component=${sonarProjectKey}&branch=${branch}&metricKeys=coverage\"",
+        returnStdout: true
+      ).trim()
+      def json = readJSON text: response
+      def measures = json?.component?.measures ?: []
+      def covStr = measures.find { it.metric == 'coverage' }?.value
+      if (covStr == "0" || covStr == "0.0" || measures.size() == 0) {
+        echo "Final attempt: No coverage info for branch '${branch}', returning 0."
+        return 0.0
+      }
+      // If coverage is not 0 and measures exist, throw error as before
       error("Could not retrieve coverage for branch '${branch}' after ${maxRetries} attempts.")
+    } else {
+      error("Could not retrieve coverage for branch '${branch}' and commit '${gitCommit}' after ${maxRetries} attempts.")
     }
   }
   return coverage
