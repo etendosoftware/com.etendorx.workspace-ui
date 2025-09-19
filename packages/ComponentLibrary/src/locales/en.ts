@@ -41,6 +41,7 @@ const en = {
     noDataAvailable: "No data available",
     record: "record",
     records: "records",
+    version: "Version: ",
   },
   forms: {
     sections: {
@@ -219,7 +220,6 @@ const en = {
       google: "Continue with Google",
     },
     or: "OR",
-    version: "Version: ",
   },
   grid: {
     items: {

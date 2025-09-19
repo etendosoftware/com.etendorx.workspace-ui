@@ -40,6 +40,7 @@ const es = {
     noDataAvailable: "No hay información disponible",
     record: "registro",
     records: "registros",
+    version: "Versión: ",
   },
   forms: {
     sections: {
@@ -222,7 +223,6 @@ const es = {
       google: "Continuar con Google",
     },
     or: "O",
-    version: "Versión: ",
   },
   grid: {
     items: {
