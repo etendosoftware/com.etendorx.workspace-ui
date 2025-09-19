@@ -102,7 +102,7 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
           </Button>
         </form>
         <Version
-          version={`${t("login.version")} ${process.env.NEXT_PUBLIC_APP_VERSION}`}
+          version={`${t("common.version")} ${process.env.NEXT_PUBLIC_APP_VERSION}`}
           customClassNameSpan="mt-0 mb-6"
         />
       </div>
