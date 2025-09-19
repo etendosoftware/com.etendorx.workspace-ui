@@ -10,4 +10,5 @@ export interface AboutModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
+  closeButtonText: string;
 }
