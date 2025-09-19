@@ -29,7 +29,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ aboutUrl, title, isOpen, onClos
       url={aboutUrl}
       handleClose={onClose}
       texts={{
-        closeButtonText: closeButtonText,
+        closeButton: closeButtonText,
       }}
       // NOTE: sizes inherited from the about modal from the previous UI
       customContentClass="!w-[620px] !h-[524px]"

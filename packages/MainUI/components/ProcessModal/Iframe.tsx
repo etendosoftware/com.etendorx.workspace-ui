@@ -206,10 +206,10 @@ const ProcessIframeOpenModal = ({
       handleIframeLoad={handleIframeLoad}
       handleClose={handleClose}
       texts={{
-        loadingText: t("common.loading"),
+        loading: t("common.loading"),
         iframeTitle: t("common.processes"),
-        noDataText: t("common.noDataAvailable"),
-        closeButtonText: t("common.close"),
+        noData: t("common.noDataAvailable"),
+        closeButton: t("common.close"),
       }}
       data-testid="CustomModal__f85edd"
     />

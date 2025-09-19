@@ -31,6 +31,14 @@ import { useLanguage } from "@/contexts/language";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useMenu } from "@/hooks/useMenu";
 import Version from "@workspaceui/componentlibrary/src/components/Version";
+import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces";
+
+const VersionComponent: React.FC<VersionProps> = () => {
+  const { t } = useTranslation();
+  return (
+    <Version version={`${t("common.version")} ${process.env.NEXT_PUBLIC_APP_VERSION}`} data-testid="Version__6c6035" />
+  );
+};
 
 export default function Sidebar() {
   const { t } = useTranslation();
@@ -132,12 +140,7 @@ export default function Sidebar() {
       onProcessClick={handleClick}
       getTranslatedName={getTranslatedName}
       RecentlyViewedComponent={RecentlyViewed}
-      VersionComponent={() => (
-        <Version
-          version={`${t("common.version")} ${process.env.NEXT_PUBLIC_APP_VERSION}`}
-          data-testid="Version__6c6035"
-        />
-      )}
+      VersionComponent={VersionComponent}
       searchContext={searchContext}
       data-testid="Drawer__6c6035"
     />

@@ -1,6 +1,26 @@
-import { execSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+
+/**
+ * Find git executable in common locations
+ */
+function findGitExecutable(): string | null {
+  const commonPaths = [
+    "/usr/bin/git",
+    "/usr/local/bin/git",
+    "/bin/git",
+    "/opt/homebrew/bin/git", // macOS with Homebrew
+  ];
+
+  for (const gitPath of commonPaths) {
+    if (existsSync(gitPath)) {
+      return gitPath;
+    }
+  }
+
+  return null;
+}
 
 /**
  * Generates the application version string combining package.json version with git commit hash.
@@ -21,12 +41,27 @@ export function generateAppVersion(): string {
     // Get git commit hash
     let commitHash = "";
     try {
-      commitHash = execSync("git rev-parse --short HEAD", { encoding: "utf8" }).trim();
+      const gitPath = findGitExecutable();
+      if (gitPath) {
+        // Use spawnSync with explicit arguments array to prevent command injection
+        const result = spawnSync(gitPath, ["rev-parse", "--short", "HEAD"], {
+          encoding: "utf8",
+        });
+
+        if (result.status === 0 && result.stdout) {
+          commitHash = result.stdout.trim();
+        } else {
+          console.warn("Git command failed:", result.stderr);
+        }
+      } else {
+        console.warn("Git executable not found in common locations.");
+      }
     } catch {
       console.warn("Could not get git commit hash, using empty string.");
     }
 
-    return `${version}${commitHash ? ` - ${commitHash}` : ""}`;
+    const versionSuffix = commitHash ? ` - ${commitHash}` : "";
+    return `${version}${versionSuffix}`;
   } catch (error) {
     console.warn("Error generating app version:", error);
     return "unknown - unknown";

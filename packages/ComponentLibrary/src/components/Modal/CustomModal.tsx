@@ -24,10 +24,10 @@ interface CustomModalProps {
   handleIframeLoad?: () => void;
   handleClose: () => void;
   texts: {
-    loadingText?: string;
+    loading?: string;
     iframeTitle?: string;
-    noDataText?: string;
-    closeButtonText: string;
+    noData?: string;
+    closeButton: string;
   };
   customContentClass?: string;
 }
@@ -58,7 +58,7 @@ const CustomModal = ({
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-90">
               <div className="text-center">
                 <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-etendo-main)] border-t-transparent" />
-                <p className="mt-2 font-medium">{texts.loadingText}</p>
+                <p className="mt-2 font-medium">{texts.loading}</p>
               </div>
             </div>
           )}
@@ -66,7 +66,7 @@ const CustomModal = ({
           {!iframeLoading && !url && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-90">
               <div className="text-center">
-                <p className="text-2xl font-medium">{texts.noDataText}</p>
+                <p className="text-2xl font-medium">{texts.noData}</p>
               </div>
             </div>
           )}
@@ -78,7 +78,7 @@ const CustomModal = ({
             type="button"
             onClick={handleClose}
             className="mx-auto rounded bg-[var(--color-etendo-main)] px-4 py-2 font-medium text-white hover:bg-[var(--color-etendo-dark)] focus:outline-none">
-            {texts.closeButtonText}
+            {texts.closeButton}
           </button>
         </div>
       </div>
