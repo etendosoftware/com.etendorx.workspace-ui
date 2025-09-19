@@ -226,13 +226,14 @@ const Navigation: React.FC = () => {
         />
         <ConfigurationSection data-testid="ConfigurationSection__120cc9" />
         <CopilotButton onClick={handleCopilotOpen} tooltip="Copilot" data-testid="CopilotButton__120cc9" />
-        <AboutButton onClick={openAboutModal} tooltip={t("common.about")} />
+        <AboutButton onClick={openAboutModal} tooltip={t("common.about")} data-testid="AboutButton__120cc9" />
         <AboutModal
           aboutUrl={aboutUrl}
           title={t("common.about")}
           isOpen={aboutModalOpen}
           onClose={closeAboutModal}
           closeButtonText={t("common.close")}
+          data-testid="AboutModal__120cc9"
         />
         <NotificationButton
           notifications={NOTIFICATIONS}
