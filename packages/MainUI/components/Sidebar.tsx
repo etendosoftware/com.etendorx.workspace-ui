@@ -30,6 +30,7 @@ import { createSearchIndex, filterItems } from "@workspaceui/componentlibrary/sr
 import { useLanguage } from "@/contexts/language";
 import { useMultiWindowURL } from "@/hooks/navigation/useMultiWindowURL";
 import { useMenu } from "@/hooks/useMenu";
+import Version from "@workspaceui/componentlibrary/src/components/Version";
 
 export default function Sidebar() {
   const { t } = useTranslation();
@@ -131,6 +132,7 @@ export default function Sidebar() {
       onProcessClick={handleClick}
       getTranslatedName={getTranslatedName}
       RecentlyViewedComponent={RecentlyViewed}
+      VersionComponent={() => <Version version={`${t("login.version")} ${process.env.NEXT_PUBLIC_APP_VERSION}`} />}
       searchContext={searchContext}
       data-testid="Drawer__6c6035"
     />
