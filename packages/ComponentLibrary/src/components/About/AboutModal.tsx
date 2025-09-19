@@ -20,7 +20,7 @@ import { Modal, Box, Typography, IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import type { AboutModalProps } from "./types";
 
-const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
+const AboutModal: React.FC<AboutModalProps> = ({ title, isOpen, onClose }) => {
   const modalStyle = {
     position: "absolute" as const,
     top: "50%",
@@ -44,7 +44,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
       <Box sx={modalStyle}>
         <div className="flex justify-between items-center mb-4">
           <Typography id="about-modal-title" variant="h6" component="h2">
-            About
+            {title}
           </Typography>
           <IconButton
             aria-label="close"
