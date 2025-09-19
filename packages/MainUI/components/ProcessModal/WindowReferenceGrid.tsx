@@ -215,7 +215,6 @@ function WindowReferenceGrid({
     skip: shouldSkipFetch,
   });
 
-  // Reset selection cuando se abre el modal
   useEffect(() => {
     setRowSelection({});
     onSelectionChange([]);
