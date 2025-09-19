@@ -8,4 +8,5 @@ export interface AboutButtonProps {
 export interface AboutModalProps {
   isOpen: boolean;
   onClose: () => void;
+  title: string;
 }

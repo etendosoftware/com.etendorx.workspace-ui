@@ -42,6 +42,7 @@ const en = {
     record: "record",
     records: "records",
     version: "Version: ",
+    about: "About",
   },
   forms: {
     sections: {

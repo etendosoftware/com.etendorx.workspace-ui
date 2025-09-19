@@ -41,6 +41,7 @@ const es = {
     record: "registro",
     records: "registros",
     version: "Versión: ",
+    about: "Acerca de",
   },
   forms: {
     sections: {

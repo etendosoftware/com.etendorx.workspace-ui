@@ -224,8 +224,8 @@ const Navigation: React.FC = () => {
         />
         <ConfigurationSection data-testid="ConfigurationSection__120cc9" />
         <CopilotButton onClick={handleCopilotOpen} tooltip="Copilot" data-testid="CopilotButton__120cc9" />
-        <AboutButton onClick={openAboutModal} tooltip={"test"} />
-        <AboutModal isOpen={aboutModalOpen} onClose={closeAboutModal} />
+        <AboutButton onClick={openAboutModal} tooltip={t("common.about")} />
+        <AboutModal title={t("common.about")} isOpen={aboutModalOpen} onClose={closeAboutModal} />
         <NotificationButton
           notifications={NOTIFICATIONS}
           icon={<NotificationIcon data-testid="NotificationIcon__120cc9" />}
