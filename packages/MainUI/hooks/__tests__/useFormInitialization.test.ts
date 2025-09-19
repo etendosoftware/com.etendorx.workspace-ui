@@ -27,11 +27,11 @@ jest.mock("../../contexts/tab", () => ({
   useTabContext: () => ({ parentRecord: null }),
 }));
 jest.mock("../useCurrentRecord", () => ({
-  useCurrentRecord: () => ({ record: null, loading: false }),
+  useCurrentRecord: jest.fn(() => ({ record: null, loading: false })),
 }));
 jest.mock("../useFormParent", () => ({
   __esModule: true,
-  default: () => ({}),
+  default: jest.fn(() => ({})),
 }));
 jest.mock("../../utils/hooks/useFormInitialization/utils");
 
@@ -89,6 +89,14 @@ describe("useFormInitialization loading state", () => {
       })
     );
 
+    // Wait for any initial renders to settle
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    // Clear any calls from initial render
+    mockSetSessionSyncLoading.mockClear();
+
     await act(async () => {
       await result.current.refetch();
     });
@@ -99,11 +107,11 @@ describe("useFormInitialization loading state", () => {
     expect(mockSetSessionSyncLoading).toHaveBeenCalledWith(false);
     // Verify it was called exactly twice (true then false)
     expect(mockSetSessionSyncLoading).toHaveBeenCalledTimes(2);
-  });
+  }, 5000);
 
   test("should reset loading state on error", async () => {
     const testError = new Error("Test error");
-    mockFetchFormInitialization.mockRejectedValueOnce(testError);
+    mockFetchFormInitialization.mockRejectedValue(testError);
 
     const { result } = renderHook(() =>
       useFormInitialization({
@@ -112,6 +120,12 @@ describe("useFormInitialization loading state", () => {
         recordId: "test-record-id",
       })
     );
+
+    // Wait for initial effect to settle and clear calls
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    mockSetSessionSyncLoading.mockClear();
 
     await act(async () => {
       await result.current.refetch();
@@ -140,6 +154,12 @@ describe("useFormInitialization loading state", () => {
         recordId: "test-record-id",
       })
     );
+
+    // Wait for initial effect to settle and clear calls
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    mockSetSessionSyncLoading.mockClear();
 
     await act(async () => {
       await result.current.refetch();

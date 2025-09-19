@@ -34,7 +34,7 @@ export const useCopilotClient = () => {
     }
 
     logger.log("CopilotClient: Initializing with token and API URL:", apiUrlStr);
-    CopilotClient.setBaseUrl(apiUrlStr);
+    CopilotClient.setBaseUrl();
     CopilotClient.setToken(tokenStr);
   }, [token?.token, apiUrl]);
 

@@ -215,7 +215,8 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       dispatch({ type: "FETCH_START" });
       fetch();
     }
-  }, [params, fetch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
   /**
    * Refetch function to manually trigger form initialization
