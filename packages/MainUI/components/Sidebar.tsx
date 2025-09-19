@@ -132,7 +132,12 @@ export default function Sidebar() {
       onProcessClick={handleClick}
       getTranslatedName={getTranslatedName}
       RecentlyViewedComponent={RecentlyViewed}
-      VersionComponent={() => <Version version={`${t("common.version")} ${process.env.NEXT_PUBLIC_APP_VERSION}`} />}
+      VersionComponent={() => (
+        <Version
+          version={`${t("common.version")} ${process.env.NEXT_PUBLIC_APP_VERSION}`}
+          data-testid="Version__6c6035"
+        />
+      )}
       searchContext={searchContext}
       data-testid="Drawer__6c6035"
     />

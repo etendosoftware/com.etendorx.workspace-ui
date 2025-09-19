@@ -211,6 +211,7 @@ const ProcessIframeOpenModal = ({
         noDataText: t("common.noDataAvailable"),
         closeButtonText: t("common.close"),
       }}
+      data-testid="CustomModal__f85edd"
     />
   );
 };
