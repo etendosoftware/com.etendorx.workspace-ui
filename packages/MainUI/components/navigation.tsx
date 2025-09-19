@@ -35,6 +35,7 @@ import {
   AboutModal,
 } from "@workspaceui/componentlibrary/src/components";
 import useAboutModalOpen from "@workspaceui/componentlibrary/src/components/About/hooks/useAboutModalOpen";
+import { useAboutModal } from "@/hooks/about/useAboutModal";
 import type { Item } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
 import Nav from "@workspaceui/componentlibrary/src/components/Nav/Nav";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -77,6 +78,7 @@ const Navigation: React.FC = () => {
   const [pendingContextItems, setPendingContextItems] = useState<ContextItem[]>([]);
 
   const { isOpen: aboutModalOpen, openModal: openAboutModal, closeModal: closeAboutModal } = useAboutModalOpen();
+  const { aboutUrl } = useAboutModal();
 
   const { assistants, getAssistants, invalidateCache, hasAssistants } = useAssistants();
   const { labels, getLabels } = useCopilotLabels();
@@ -225,7 +227,7 @@ const Navigation: React.FC = () => {
         <ConfigurationSection data-testid="ConfigurationSection__120cc9" />
         <CopilotButton onClick={handleCopilotOpen} tooltip="Copilot" data-testid="CopilotButton__120cc9" />
         <AboutButton onClick={openAboutModal} tooltip={t("common.about")} />
-        <AboutModal title={t("common.about")} isOpen={aboutModalOpen} onClose={closeAboutModal} />
+        <AboutModal aboutUrl={aboutUrl} title={t("common.about")} isOpen={aboutModalOpen} onClose={closeAboutModal} />
         <NotificationButton
           notifications={NOTIFICATIONS}
           icon={<NotificationIcon data-testid="NotificationIcon__120cc9" />}

@@ -20,7 +20,7 @@ import { Modal, Box, Typography, IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import type { AboutModalProps } from "./types";
 
-const AboutModal: React.FC<AboutModalProps> = ({ title, isOpen, onClose }) => {
+const AboutModal: React.FC<AboutModalProps> = ({ aboutUrl, title, isOpen, onClose }) => {
   const modalStyle = {
     position: "absolute" as const,
     top: "50%",
@@ -57,7 +57,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ title, isOpen, onClose }) => {
         </div>
         <Box sx={{ width: "100%", height: "calc(100% - 60px)" }}>
           <iframe
-            src="http://localhost:8080/etendo/ad_forms/about.html?IsPopUpCall=1"
+            src={aboutUrl}
             width="100%"
             height="100%"
             style={{ border: "none", borderRadius: "4px" }}

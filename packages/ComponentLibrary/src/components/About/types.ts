@@ -6,6 +6,7 @@ export interface AboutButtonProps {
 }
 
 export interface AboutModalProps {
+  aboutUrl: string;
   isOpen: boolean;
   onClose: () => void;
   title: string;
