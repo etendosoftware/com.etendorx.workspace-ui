@@ -15,13 +15,20 @@
  *************************************************************************
  */
 
-import type { ReactNode } from "react";
+"use client";
+import type { VersionProps } from "../../interfaces";
 
-export interface TabContent {
-  children?: ReactNode;
-  title: string;
-}
-export interface VersionProps {
-  version?: string;
-  customClassNameSpan?: string;
-}
+const Version: React.FC<VersionProps> = ({ version, customClassNameSpan }) => {
+  if (!version) return null;
+
+  return (
+    <footer className="cursor-default">
+      <span
+        className={`font-inter text-(--color-transparent-neutral-70) font-medium text-xs text-center leading-4 tracking-normal my-4 cursor-default block ${customClassNameSpan}`}>
+        {version}
+      </span>
+    </footer>
+  );
+};
+
+export default Version;

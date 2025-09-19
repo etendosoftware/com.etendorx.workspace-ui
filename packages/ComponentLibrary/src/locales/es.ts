@@ -222,6 +222,7 @@ const es = {
       google: "Continuar con Google",
     },
     or: "O",
+    version: "Versión: ",
   },
   grid: {
     items: {

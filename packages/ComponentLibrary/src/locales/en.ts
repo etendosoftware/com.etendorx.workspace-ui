@@ -219,6 +219,7 @@ const en = {
       google: "Continue with Google",
     },
     or: "OR",
+    version: "Version: ",
   },
   grid: {
     items: {
