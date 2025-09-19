@@ -115,56 +115,67 @@ function WindowReferenceGrid({
       pageSize: PAGE_SIZE,
     };
 
-    if (processId === CREATE_LINES_FROM_ORDER_PROCESS_ID && dynamicKeys) {
+    const applyDynamicKeys = () => {
+      if (processId !== CREATE_LINES_FROM_ORDER_PROCESS_ID || !dynamicKeys) return;
+
       const { invoiceClient, invoiceBusinessPartner, invoicePriceList, invoiceCurrency } = dynamicKeys as Record<
         string,
         string
       >;
+
       options[invoiceClient] = recordValues?.inpadClientId || "";
       options[invoiceBusinessPartner] = recordValues?.inpcBpartnerId || "";
       options[invoicePriceList] = recordValues?.inpmPricelistId || "";
       options[invoiceCurrency] = recordValues?.inpcCurrencyId || "";
-    }
+    };
 
-    if (stableProcessDefaults && Object.keys(stableProcessDefaults).length > 0) {
+    const applyStableProcessDefaults = () => {
+      if (!stableProcessDefaults || Object.keys(stableProcessDefaults).length === 0) return;
+
       for (const [key, value] of Object.entries(stableProcessDefaults)) {
         const actualValue =
           typeof value === "object" && value !== null && "value" in value
             ? (value as { value: EntityValue }).value
-            : value;
+            : (value as EntityValue);
 
-        // Find the corresponding parameter by name to get its dBColumnName
         const matchingParameter = Object.values(parameters).find((param) => param.name === key);
         const datasourceFieldName = matchingParameter?.dBColumnName || key;
 
-        // Set the value using the datasource field name
         options[datasourceFieldName] = actualValue;
 
-        // Also handle defaultKeys mapping if provided
         if (defaultKeys && key in defaultKeys) {
           const defaultKey = defaultKeys[key as keyof typeof defaultKeys];
           options[defaultKey] = actualValue;
         }
       }
-    }
+    };
 
-    let criteria: Array<{ fieldName: string; operator: string; value: EntityValue }> = [];
+    const buildCriteria = (): Array<{ fieldName: string; operator: string; value: EntityValue }> => {
+      if (!stableFilterExpressions?.grid) return [];
 
-    if (stableFilterExpressions?.grid) {
-      const filterCriteria = Object.entries(stableFilterExpressions.grid).map(([fieldName, value]) => ({
-        fieldName,
-        operator: "equals",
-        value: value === "true" ? true : value === "false" ? false : value,
-      }));
+      return Object.entries(stableFilterExpressions.grid).map(([fieldName, value]) => {
+        let parsedValue: EntityValue;
 
-      criteria = [
-        ...criteria,
-        ...filterCriteria.map((fc) => ({
-          ...fc,
-          value: fc.value as EntityValue,
-        })),
-      ];
-    }
+        if (value === "true") {
+          parsedValue = true;
+        } else if (value === "false") {
+          parsedValue = false;
+        } else {
+          parsedValue = value as EntityValue;
+        }
+
+        return {
+          fieldName,
+          operator: "equals",
+          value: parsedValue,
+        };
+      });
+    };
+
+    applyDynamicKeys();
+    applyStableProcessDefaults();
+
+    const criteria = buildCriteria();
 
     if (criteria.length > 0) {
       options.orderBy = "documentNo desc";
