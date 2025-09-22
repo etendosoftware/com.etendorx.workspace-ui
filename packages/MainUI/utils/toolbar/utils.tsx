@@ -176,7 +176,6 @@ export const createButtonByType = ({
   });
 
   const getDisableConfig = (): Partial<ToolbarButton> => {
-    console.log("isCopilotInstalled: ", isCopilotInstalled);
     const actionHandlers = {
       [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: () => buildDisableConfig(!(isFormView || hasSelectedRecord)),
       [TOOLBAR_BUTTONS_ACTIONS.DELETE]: () => buildDisableConfig(!hasSelectedRecord),
