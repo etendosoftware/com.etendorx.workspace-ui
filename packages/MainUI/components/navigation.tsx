@@ -275,7 +275,7 @@ const Navigation: React.FC = () => {
         />
       </Nav>
       <CopilotPopup
-        open={copilotOpen}
+        open={copilotOpen && isCopilotInstalled}
         onClose={handleCopilotClose}
         assistants={assistants}
         labels={labels}
