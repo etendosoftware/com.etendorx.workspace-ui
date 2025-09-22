@@ -16,7 +16,8 @@
  */
 
 import type { ILabels } from "@workspaceui/api-client/src/api/copilot";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useContext } from "react";
+import { UserContext } from "@/contexts/user";
 import { useCopilotClient } from "./useCopilotClient";
 
 export const useCopilotLabels = () => {
@@ -24,7 +25,8 @@ export const useCopilotLabels = () => {
   const [areLabelsLoaded, setAreLabelsLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isInstalled, setIsInstalled] = useState<boolean>(false);
+
+  const { setIsCopilotInstalled } = useContext(UserContext);
 
   const copilotClient = useCopilotClient();
 
@@ -35,7 +37,7 @@ export const useCopilotLabels = () => {
 
       try {
         const data = await copilotClient.getLabels();
-        setIsInstalled(true);
+        setIsCopilotInstalled(true);
         if (data) {
           setLabels(data);
           setAreLabelsLoaded(true);
@@ -47,7 +49,7 @@ export const useCopilotLabels = () => {
         }
 
         setError(err instanceof Error ? err.message : "Failed to load labels");
-        setIsInstalled(false);
+        setIsCopilotInstalled(false);
         console.error("Error loading Copilot labels:", err);
       } finally {
         setLoading(false);
@@ -57,7 +59,6 @@ export const useCopilotLabels = () => {
   );
 
   return {
-    isInstalled,
     labels,
     getLabels,
     areLabelsLoaded,

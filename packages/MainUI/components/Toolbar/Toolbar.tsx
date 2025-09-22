@@ -70,7 +70,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
   const { graph } = useSelected();
   const { executeProcess } = useProcessExecution();
   const { t } = useTranslation();
-  const { isSessionSyncLoading } = useUserContext();
+  const { isSessionSyncLoading, isCopilotInstalled } = useUserContext();
   const selectedParentItems = useSelectedRecords(parentTab as Tab);
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -176,6 +176,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
       hasFormChanges: hasFormChanges,
       hasSelectedRecord: hasSelectedRecord,
       hasParentRecordSelected: hasParentRecordSelected,
+      isCopilotInstalled: isCopilotInstalled,
       saveButtonState: saveButtonState,
     });
 
@@ -211,6 +212,7 @@ const ToolbarCmp: React.FC<ToolbarProps> = ({ windowId, isFormView = false }) =>
     hasFormChanges,
     saveButtonState,
     isSessionSyncLoading,
+    isCopilotInstalled,
   ]);
 
   if (loading) {

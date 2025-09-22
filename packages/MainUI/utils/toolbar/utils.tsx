@@ -124,6 +124,7 @@ export const createButtonByType = ({
   hasFormChanges,
   hasSelectedRecord,
   hasParentRecordSelected,
+  isCopilotInstalled,
   saveButtonState,
 }: {
   button: ToolbarButtonMetadata;
@@ -132,6 +133,7 @@ export const createButtonByType = ({
   hasFormChanges: boolean;
   hasSelectedRecord: boolean;
   hasParentRecordSelected: boolean;
+  isCopilotInstalled?: boolean;
   saveButtonState?: SaveButtonState;
 }): ToolbarButton => {
   const buttonKey = button.id || `${button.action}-${button.name}`;
@@ -174,10 +176,11 @@ export const createButtonByType = ({
   });
 
   const getDisableConfig = (): Partial<ToolbarButton> => {
+    console.log("isCopilotInstalled: ", isCopilotInstalled);
     const actionHandlers = {
       [TOOLBAR_BUTTONS_ACTIONS.CANCEL]: () => buildDisableConfig(!(isFormView || hasSelectedRecord)),
       [TOOLBAR_BUTTONS_ACTIONS.DELETE]: () => buildDisableConfig(!hasSelectedRecord),
-      [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () => buildDisableConfig(!hasSelectedRecord),
+      [TOOLBAR_BUTTONS_ACTIONS.COPILOT]: () => buildDisableConfig(!hasSelectedRecord || !isCopilotInstalled),
       [TOOLBAR_BUTTONS_ACTIONS.NEW]: () => buildDisableConfig(!hasParentRecordSelected),
       [TOOLBAR_BUTTONS_ACTIONS.REFRESH]: () => buildDisableConfig(!hasParentRecordSelected),
       [TOOLBAR_BUTTONS_ACTIONS.SAVE]: () => {
@@ -243,6 +246,7 @@ interface ButtonConfig {
   hasSelectedRecord: boolean;
   hasParentRecordSelected: boolean;
   saveButtonState?: SaveButtonState;
+  isCopilotInstalled?: boolean;
 }
 
 /**
@@ -287,6 +291,7 @@ interface ToolbarSectionsConfig {
   hasFormChanges?: boolean;
   hasSelectedRecord?: boolean;
   hasParentRecordSelected?: boolean;
+  isCopilotInstalled?: boolean;
   saveButtonState?: SaveButtonState;
 }
 
@@ -298,6 +303,7 @@ export const getToolbarSections = ({
   hasFormChanges = false,
   hasSelectedRecord = false,
   hasParentRecordSelected = false,
+  isCopilotInstalled = false,
   saveButtonState,
 }: ToolbarSectionsConfig): {
   leftSection: { buttons: ToolbarButton[]; style: React.CSSProperties };
@@ -313,6 +319,7 @@ export const getToolbarSections = ({
     hasSelectedRecord,
     hasParentRecordSelected,
     saveButtonState,
+    isCopilotInstalled,
   };
 
   return {

@@ -79,6 +79,10 @@ export interface IUserContext {
   isSessionSyncLoading: boolean;
   /** Setter for session sync loading state */
   setSessionSyncLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Indicates if Copilot is installed */
+  isCopilotInstalled: boolean;
+  /** Setter for Copilot installed state */
+  setIsCopilotInstalled: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export interface IMetadataContext {

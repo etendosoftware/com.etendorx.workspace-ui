@@ -57,6 +57,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [currentWarehouse, setCurrentWarehouse] = useState<CurrentWarehouse>();
   const [currentRole, setCurrentRole] = useState<CurrentRole>();
   const [currentClient, setCurrentClient] = useState<CurrentClient>();
+  const [isCopilotInstalled, setIsCopilotInstalled] = useState<boolean>(false);
   const prevRole = usePrevious(currentRole);
 
   const [roles, setRoles] = useState<SessionResponse["roles"]>(() => {
@@ -215,6 +216,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
       prevRole,
       isSessionSyncLoading,
       setSessionSyncLoading,
+      isCopilotInstalled,
+      setIsCopilotInstalled,
     }),
     [
       login,
@@ -234,6 +237,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
       user,
       prevRole,
       isSessionSyncLoading,
+      isCopilotInstalled,
+      setIsCopilotInstalled,
     ]
   );
 

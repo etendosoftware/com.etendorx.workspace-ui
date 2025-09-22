@@ -62,6 +62,8 @@ const Navigation: React.FC = () => {
     changeProfile,
     roles,
     languages,
+    isCopilotInstalled,
+    clearUserData,
   } = useContext(UserContext);
   const token = useUserContext();
   const [saveAsDefault, setSaveAsDefault] = useState(false);
@@ -74,9 +76,7 @@ const Navigation: React.FC = () => {
   const [pendingContextItems, setPendingContextItems] = useState<ContextItem[]>([]);
 
   const { assistants, getAssistants, invalidateCache, hasAssistants } = useAssistants();
-  const { isInstalled: copilotInstalled, labels, getLabels } = useCopilotLabels();
-
-  const { clearUserData } = useContext(UserContext);
+  const { labels, getLabels } = useCopilotLabels();
 
   const handleSignOff = useCallback(() => {
     clearUserData();
@@ -220,7 +220,7 @@ const Navigation: React.FC = () => {
         <ConfigurationSection data-testid="ConfigurationSection__120cc9" />
         <CopilotButton
           onClick={handleCopilotOpen}
-          disabled={!copilotInstalled}
+          disabled={!isCopilotInstalled}
           tooltip="Copilot"
           data-testid="CopilotButton__120cc9"
         />
