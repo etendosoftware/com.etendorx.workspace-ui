@@ -28,6 +28,15 @@ export class CopilotUnauthorizedError extends Error {
   }
 }
 
+export class CopilotNotInstalledError extends Error {
+  public response: Response;
+
+  constructor(message: string, response: Response) {
+    super(`Copilot: ${message}`);
+    this.response = response;
+  }
+}
+
 export class CopilotClient {
   public static client = new Client();
   private static currentBaseUrl = "";
@@ -70,9 +79,17 @@ export class CopilotClient {
         throw new CopilotUnauthorizedError("Unauthorized access to Copilot service", response);
       }
 
+      if (!response.ok && response.status === 404) {
+        throw new CopilotNotInstalledError("Copilot service not installed", response);
+      }
+
       return response;
     } catch (error) {
       if (error instanceof CopilotUnauthorizedError) {
+        throw error;
+      }
+      if (error instanceof CopilotNotInstalledError) {
+        console.error("Copilot service is not installed:", error);
         throw error;
       }
       console.error(`CopilotClient request failed for ${endpoint}:`, error);

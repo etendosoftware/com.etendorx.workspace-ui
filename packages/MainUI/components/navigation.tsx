@@ -74,7 +74,7 @@ const Navigation: React.FC = () => {
   const [pendingContextItems, setPendingContextItems] = useState<ContextItem[]>([]);
 
   const { assistants, getAssistants, invalidateCache, hasAssistants } = useAssistants();
-  const { labels, getLabels } = useCopilotLabels();
+  const { isInstalled: copilotInstalled, labels, getLabels } = useCopilotLabels();
 
   const { clearUserData } = useContext(UserContext);
 
@@ -218,7 +218,12 @@ const Navigation: React.FC = () => {
           data-testid="Waterfall__120cc9"
         />
         <ConfigurationSection data-testid="ConfigurationSection__120cc9" />
-        <CopilotButton onClick={handleCopilotOpen} tooltip="Copilot" data-testid="CopilotButton__120cc9" />
+        <CopilotButton
+          onClick={handleCopilotOpen}
+          disabled={!copilotInstalled}
+          tooltip="Copilot"
+          data-testid="CopilotButton__120cc9"
+        />
         <NotificationButton
           notifications={NOTIFICATIONS}
           icon={<NotificationIcon data-testid="NotificationIcon__120cc9" />}

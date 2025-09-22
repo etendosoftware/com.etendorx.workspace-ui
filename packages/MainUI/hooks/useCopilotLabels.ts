@@ -24,6 +24,7 @@ export const useCopilotLabels = () => {
   const [areLabelsLoaded, setAreLabelsLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isInstalled, setIsInstalled] = useState<boolean>(false);
 
   const copilotClient = useCopilotClient();
 
@@ -34,7 +35,7 @@ export const useCopilotLabels = () => {
 
       try {
         const data = await copilotClient.getLabels();
-
+        setIsInstalled(true);
         if (data) {
           setLabels(data);
           setAreLabelsLoaded(true);
@@ -46,6 +47,7 @@ export const useCopilotLabels = () => {
         }
 
         setError(err instanceof Error ? err.message : "Failed to load labels");
+        setIsInstalled(false);
         console.error("Error loading Copilot labels:", err);
       } finally {
         setLoading(false);
@@ -55,10 +57,11 @@ export const useCopilotLabels = () => {
   );
 
   return {
+    isInstalled,
     labels,
+    getLabels,
     areLabelsLoaded,
     loading,
     error,
-    getLabels,
   };
 };

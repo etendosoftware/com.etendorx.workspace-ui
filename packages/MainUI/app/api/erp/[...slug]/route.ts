@@ -4,6 +4,29 @@ import { extractBearerToken } from "@/lib/auth";
 import { joinUrl } from "../../_utils/url";
 import { getErpAuthHeaders } from "../../_utils/forwardConfig";
 
+// Custom error class for ERP requests
+class ErpRequestError extends Error {
+  public readonly status: number;
+  public readonly statusText: string;
+  public readonly slug: string;
+  public readonly errorText: string;
+
+  constructor({
+    message,
+    status,
+    statusText,
+    slug,
+    errorText,
+  }: { message: string; status: number; statusText: string; slug?: string; errorText: string }) {
+    super(message);
+    this.name = "ErpRequestError";
+    this.status = status;
+    this.statusText = statusText;
+    this.slug = slug || "";
+    this.errorText = errorText;
+  }
+}
+
 // Cached function for generic ERP requests
 const getCachedErpData = unstable_cache(
   async (userToken: string, slug: string, method: string, body: string, contentType: string, queryParams = "") => {
@@ -29,7 +52,13 @@ const getCachedErpData = unstable_cache(
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`ERP request failed for slug ${slug}: ${response.status} ${response.statusText}. ${errorText}`);
+      throw new ErpRequestError({
+        message: `ERP request failed for slug ${slug}: ${response.status} ${response.statusText}. ${errorText}`,
+        status: response.status,
+        statusText: response.statusText,
+        slug,
+        errorText,
+      });
     }
 
     const responseContentType = response.headers.get("content-type");
@@ -112,7 +141,13 @@ async function handleMutationRequest(
   });
 
   if (!response.ok) {
-    throw new Error(`ERP request failed: ${response.status} ${response.statusText}`);
+    const errorText = await response.text();
+    throw new ErpRequestError({
+      message: `ERP request failed: ${response.status} ${response.statusText}. ${errorText}`,
+      status: response.status,
+      statusText: response.statusText,
+      errorText,
+    });
   }
 
   const responseContentType = response.headers.get("content-type");
@@ -167,10 +202,11 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
     }
 
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (error: unknown) {
     const resolvedParams = await params;
     console.error(`API Route /api/erp/${resolvedParams.slug.join("/")} Error:`, error);
-    return NextResponse.json({ error: "Failed to fetch ERP data" }, { status: 500 });
+    const errorStatus = error instanceof ErpRequestError ? error.status : 500;
+    return NextResponse.json({ error: "Failed to fetch ERP data" }, { status: errorStatus });
   }
 }
 
