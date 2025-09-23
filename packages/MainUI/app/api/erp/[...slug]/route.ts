@@ -117,7 +117,8 @@ async function handleMutationRequest(
   });
 
   if (!response.ok) {
-    throw new Error(`ERP request failed: ${response.status} ${response.statusText}`);
+    const responseText = await response.text();
+    throw new Error(`ERP request failed: ${response.status} ${response.statusText}. ${responseText}`);
   }
 
   const responseContentType = response.headers.get("content-type");
@@ -125,20 +126,33 @@ async function handleMutationRequest(
     return { stream: response.body, headers: response.headers };
   }
 
-  return response.json();
+  const responseText = await response.text();
+  
+  // Check if response is JavaScript error from Etendo
+  if (responseText.startsWith("OB.KernelUtilities.handleSystemException(")) {
+    // Extract error message from JavaScript
+    const match = responseText.match(/OB\.KernelUtilities\.handleSystemException\('(.+)'\);/);
+    const errorMessage = match ? match[1] : responseText;
+    throw new Error(`Backend error: ${errorMessage}`);
+  }
+  
+  try {
+    return JSON.parse(responseText);
+  } catch {
+    throw new Error(`Invalid JSON response from backend: ${responseText.substring(0, 200)}...`);
+  }
 }
 
 async function handleERPRequest(request: Request, params: Promise<{ slug: string[] }>, method: string) {
   try {
     const resolvedParams = await params;
-    console.log(`API Route /api/erp/${resolvedParams.slug.join("/")} - Method: ${method}`);
+    const slug = resolvedParams.slug.join("/");
+    console.log(`API Route /api/erp/${slug} - Method: ${method}`);
 
     const userToken = extractBearerToken(request);
     if (!userToken) {
       return NextResponse.json({ error: "Unauthorized - Missing Bearer token" }, { status: 401 });
     }
-
-    const slug = resolvedParams.slug.join("/");
 
     let erpUrl: string;
     if (slug.startsWith("sws/")) {
@@ -149,14 +163,14 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 
     const url = new URL(request.url);
 
-    // Generic kernel routing - route all kernel requests through secure web services
+    // Generic kernel routing - route all kernel requests directly to the kernel
     erpUrl = erpUrl.replace(
-      "com.etendoerp.metadata.forward/org.openbravo.client.kernel",
-      "com.smf.securewebservices.kernel/org.openbravo.client.kernel"
+      "sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel",
+      "org.openbravo.client.kernel"
     );
     erpUrl = erpUrl.replace(
-      "com.etendoerp.metadata.meta/forward",
-      "com.smf.securewebservices.kernel/org.openbravo.client.kernel"
+      "sws/com.etendoerp.metadata.meta/forward",
+      "org.openbravo.client.kernel"
     );
 
     if (url.search) {
