@@ -127,7 +127,7 @@ async function handleMutationRequest(
   }
 
   const responseText = await response.text();
-  
+
   // Check if response is JavaScript error from Etendo
   if (responseText.startsWith("OB.KernelUtilities.handleSystemException(")) {
     // Extract error message from JavaScript
@@ -135,7 +135,7 @@ async function handleMutationRequest(
     const errorMessage = match ? match[1] : responseText;
     throw new Error(`Backend error: ${errorMessage}`);
   }
-  
+
   try {
     return JSON.parse(responseText);
   } catch {
@@ -168,10 +168,7 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
       "sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel",
       "org.openbravo.client.kernel"
     );
-    erpUrl = erpUrl.replace(
-      "sws/com.etendoerp.metadata.meta/forward",
-      "org.openbravo.client.kernel"
-    );
+    erpUrl = erpUrl.replace("sws/com.etendoerp.metadata.meta/forward", "org.openbravo.client.kernel");
 
     if (url.search) {
       erpUrl += url.search;

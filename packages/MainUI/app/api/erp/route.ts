@@ -52,23 +52,22 @@ function shouldUseDirectKernelServlet(action: string): boolean {
   if (action.includes("actionhandler")) {
     return true;
   }
-  
+
   // Default handlers and initialization components use secure web services
-  if (action.includes("DefaultsProcessActionHandler") || 
-      action.includes("FormInitializationComponent")) {
+  if (action.includes("DefaultsProcessActionHandler") || action.includes("FormInitializationComponent")) {
     return false;
   }
-  
+
   // ExecuteProcessActionHandler also needs direct access for process execution
   if (action.includes("ExecuteProcessActionHandler")) {
     return true;
   }
-  
+
   // Custom processes (like SyncAssistant, etc.) need direct kernel servlet access
   if (action.includes("process.")) {
     return true;
   }
-  
+
   // Default to secure web services for unknown actions
   return false;
 }
@@ -212,7 +211,6 @@ async function handleERPBaseRequest(request: NextRequest, method: string) {
     const requestBody = method === "GET" ? undefined : await request.text();
     const contentType = request.headers.get("Content-Type") || "application/json";
     const isMutation = method !== "GET";
-
 
     let data: unknown;
     if (isMutation) {
