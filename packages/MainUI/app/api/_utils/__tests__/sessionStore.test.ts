@@ -48,7 +48,7 @@ describe("sessionStore", () => {
     it("should not store when cookie is empty", () => {
       expect(() => setErpSessionCookie(testToken, { cookieHeader: "", csrfToken: "1234" })).toThrow();
 
-      expect(() => getErpSessionCookie(testToken)).toThrow();
+      expect(getErpSessionCookie(testToken)).toBeNull();
     });
 
     it("should overwrite existing cookie for same token", () => {
@@ -80,7 +80,7 @@ describe("sessionStore", () => {
     });
 
     it("should return null for non-existent token", () => {
-      expect(() => getErpSessionCookie("non-existent-token")).toThrow();
+      expect(getErpSessionCookie("non-existent-token")).toBeNull();
     });
 
     it("should return null for null token", () => {
@@ -113,7 +113,7 @@ describe("sessionStore", () => {
       expect(getErpSessionCookie(testToken)).toBe(testCookie);
 
       clearErpSessionCookie(testToken);
-      expect(() => getErpSessionCookie(testToken)).toThrow();
+      expect(getErpSessionCookie(testToken)).toBeNull();
     });
 
     it("should not affect other stored cookies", () => {
@@ -122,7 +122,7 @@ describe("sessionStore", () => {
 
       clearErpSessionCookie(testToken);
 
-      expect(() => getErpSessionCookie(testToken)).toThrow();
+      expect(getErpSessionCookie(testToken)).toBeNull();
       expect(getErpSessionCookie(anotherToken)).toBe(anotherCookie);
     });
 
@@ -150,7 +150,7 @@ describe("sessionStore", () => {
       clearErpSessionCookie(testToken);
 
       // Verify the other remains
-      expect(() => getErpSessionCookie(testToken)).toThrow();
+      expect(getErpSessionCookie(testToken)).toBeNull();
       expect(getErpSessionCookie(anotherToken)).toBe(anotherCookie);
 
       // Update the remaining one
@@ -168,7 +168,7 @@ describe("sessionStore", () => {
       expect(getErpSessionCookie(specialToken)).toBe(testCookie);
 
       clearErpSessionCookie(specialToken);
-      expect(() => getErpSessionCookie(specialToken)).toThrow();
+      expect(getErpSessionCookie(specialToken)).toBeNull();
     });
 
     it("should handle very long token strings", () => {

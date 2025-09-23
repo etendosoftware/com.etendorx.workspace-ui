@@ -73,7 +73,7 @@ describe("ERP slug: query append for mutations", () => {
     );
     await PUT(req, { params: Promise.resolve({ slug: ["meta", "tab", "186"] }) });
     const [dest, init] = (global.fetch as jest.Mock).mock.calls[0];
-    expect(String(dest)).toBe("http://erp.example/etendo/meta/tab/186?language=en_US");
+    expect(String(dest)).toBe("http://erp.example/etendo/sws/com.etendoerp.metadata.meta/tab/186?language=en_US");
     expect(init.method).toBe("PUT");
     expect(init.body).toBe('{"a":1}');
   });
@@ -82,7 +82,7 @@ describe("ERP slug: query append for mutations", () => {
     const req = makeRequest("DELETE", "http://localhost:3000/api/erp/meta/tab/186?lang=es", BEARER_TOKEN, "");
     await DELETE(req, { params: Promise.resolve({ slug: ["meta", "tab", "186"] }) });
     const [dest, init] = (global.fetch as jest.Mock).mock.calls[0];
-    expect(String(dest)).toBe("http://erp.example/etendo/meta/tab/186?lang=es");
+    expect(String(dest)).toBe("http://erp.example/etendo/sws/com.etendoerp.metadata.meta/tab/186?lang=es");
     expect(init.method).toBe("DELETE");
   });
 
@@ -95,7 +95,7 @@ describe("ERP slug: query append for mutations", () => {
     );
     await routeModule.POST(req, { params: Promise.resolve({ slug: ["meta", "window", "143"] }) });
     const [dest, init] = (global.fetch as jest.Mock).mock.calls[0];
-    expect(String(dest)).toBe("http://erp.example/etendo/meta/window/143?language=en_US");
+    expect(String(dest)).toBe("http://erp.example/etendo/sws/com.etendoerp.metadata.meta/window/143?language=en_US");
     expect(init.method).toBe("POST");
     expect(init.body).toBe('{"z":9}');
   });

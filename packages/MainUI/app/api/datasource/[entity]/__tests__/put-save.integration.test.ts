@@ -11,6 +11,7 @@ jest.mock("next/server", () => ({
 import { PUT } from "../route";
 import { createMockApiRequest, setupApiTestEnvironment } from "../../../_test-utils/api-test-utils";
 import { setErpSessionCookie } from "@/app/api/_utils/sessionStore";
+import { getExpectedDatasourceUrl } from "../../../_test-utils/endpoint-test-utils";
 
 describe("Save via PUT JSON→form conversion", () => {
   // Configura entorno y fetch mock una vez para este archivo
@@ -43,7 +44,11 @@ describe("Save via PUT JSON→form conversion", () => {
 
     const [dest, init] = (global as any).fetch.mock.calls[0];
     expect(String(dest)).toBe(
-      "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice?windowId=1&tabId=2&_operationType=update"
+      getExpectedDatasourceUrl("Invoice", "update", {
+        windowId: "1",
+        tabId: "2",
+        _operationType: "update",
+      })
     );
     expect(init.method).toBe("PUT");
     expect(init.headers.Authorization).toBe(`Bearer ${BEARER_TOKEN}`);

@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { extractBearerToken } from "@/lib/auth";
 import { getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
 import { getErpCsrfToken } from "../../_utils/sessionStore";
+import { getDatasourceUrl } from "../../_utils/endpoints";
 
 // Type definitions for better code clarity
 interface ProcessedRequestData {
@@ -29,9 +30,16 @@ function validateAndExtractToken(request: NextRequest): string | null {
  * @returns The complete ERP URL with query parameters
  */
 function buildErpUrl(entity: string, requestUrl: URL, body?: string, userToken?: string | null): string {
-  const baseUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/forward/org.openbravo.service.datasource/${entity}`;
-
   const params = new URLSearchParams(requestUrl.search);
+  const operationType = params.get("_operationType");
+
+  // Use centralized endpoint configuration
+  const baseUrl = getDatasourceUrl(entity, operationType || undefined);
+
+  if (operationType && !params.has("_startRow") && !params.has("_endRow")) {
+    params.set("_startRow", "0");
+    params.set("_endRow", "75");
+  }
 
   if (!body) {
     const csrfToken = getErpCsrfToken(userToken);
@@ -93,13 +101,21 @@ async function processRequestData(
   let processedBody = body;
   if (contentType.includes("application/json") && csrfToken) {
     try {
-      // replace csrfToken in the body
-      processedBody = processedBody.replace(/"csrfToken":\s*".*?"/, `"csrfToken":"${csrfToken}"`);
+      // For JSON content, try to insert/replace csrfToken in the body
+      if (processedBody.includes('"csrfToken"')) {
+        processedBody = processedBody.replace(/"csrfToken":\s*".*?"/, `"csrfToken":"${csrfToken}"`);
+      } else {
+        // If csrfToken is not present, parse and add it
+        const bodyObj = JSON.parse(processedBody);
+        bodyObj.csrfToken = csrfToken;
+        processedBody = JSON.stringify(bodyObj);
+      }
     } catch (error) {
       // If JSON parsing fails, keep the original body
       console.warn("Failed to parse JSON body for CSRF token sync:", error);
     }
-  } else {
+  } else if (processedBody && csrfToken) {
+    // For form data, append as query parameter
     processedBody += `&csrfToken=${csrfToken}`;
   }
 
