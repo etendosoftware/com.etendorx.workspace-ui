@@ -64,6 +64,11 @@ function shouldUseDirectKernelServlet(action: string): boolean {
     return true;
   }
   
+  // Custom processes (like SyncAssistant, etc.) need direct kernel servlet access
+  if (action.includes("process.")) {
+    return true;
+  }
+  
   // Default to secure web services for unknown actions
   return false;
 }
