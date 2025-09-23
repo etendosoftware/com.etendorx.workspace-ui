@@ -108,7 +108,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (userToken) {
-      cookieHeader = getCookieHeader(userToken);
+      cookieHeader = "JSESSIONID=null";
+      // getCookieHeader(userToken);
     }
 
     const erpResponse = await fetchErpLogin(erpLoginUrl, body, cookieHeader || undefined, userToken || undefined);
