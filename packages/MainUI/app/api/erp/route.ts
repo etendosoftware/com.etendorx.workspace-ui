@@ -75,7 +75,17 @@ function buildKernelUrl(
   }
   kernelParams.set("_action", action);
 
-  return `${baseUrl}/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?${kernelParams.toString()}`;
+  let kernelUrl = `${baseUrl}/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?${kernelParams.toString()}`;
+
+  // CopyFromOrdersActionHandler needs direct kernel servlet (remove sws/ prefix)
+  if (action === "org.openbravo.common.actionhandler.CopyFromOrdersActionHandler") {
+    kernelUrl = kernelUrl.replace(
+      "/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel",
+      "/org.openbravo.client.kernel"
+    );
+  }
+
+  return kernelUrl;
 }
 
 function buildErpUrl(url: URL, params: URLSearchParams): string {
@@ -171,6 +181,16 @@ async function handleERPBaseRequest(request: NextRequest, method: string) {
     const requestBody = method === "GET" ? undefined : await request.text();
     const contentType = request.headers.get("Content-Type") || "application/json";
     const isMutation = method !== "GET";
+
+    // 🔍 DEBUG: Track /api/erp payload for CopyFromOrdersActionHandler
+    const action = params.get("_action");
+    if (action === "org.openbravo.common.actionhandler.CopyFromOrdersActionHandler") {
+      console.log("🔍 [API_ERP_DEBUG] /api/erp received CopyFromOrdersActionHandler");
+      console.log("🔍 [API_ERP_DEBUG] Method:", method);
+      console.log("🔍 [API_ERP_DEBUG] Request body length:", requestBody?.length || 0);
+      console.log("🔍 [API_ERP_DEBUG] Request body preview:", requestBody?.substring(0, 1000));
+      console.log("🔍 [API_ERP_DEBUG] Built ERP URL:", erpUrl);
+    }
 
     let data: unknown;
     if (isMutation) {

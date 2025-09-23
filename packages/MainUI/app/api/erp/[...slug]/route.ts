@@ -142,23 +142,30 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 
     let erpUrl: string;
     if (slug.startsWith("sws/")) {
-      // If slug already starts with sws/, use it directly
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
     } else {
       erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
     }
 
-    // Handle kernel requests - replace forward with kernel servlet BEFORE adding query params
-    erpUrl = erpUrl.replace(
-      "com.etendoerp.metadata.forward/org.openbravo.client.kernel",
-      "com.smf.securewebservices.kernel/org.openbravo.client.kernel"
-    );
-    erpUrl = erpUrl.replace(
-      "com.etendoerp.metadata.meta/forward",
-      "com.smf.securewebservices.kernel/org.openbravo.client.kernel"
-    );
-
     const url = new URL(request.url);
+    const action = url.searchParams.get("_action");
+
+    if (action === "org.openbravo.common.actionhandler.CopyFromOrdersActionHandler") {
+      erpUrl = erpUrl.replace(
+        "sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel",
+        "org.openbravo.client.kernel"
+      );
+    } else {
+      erpUrl = erpUrl.replace(
+        "com.etendoerp.metadata.forward/org.openbravo.client.kernel",
+        "com.smf.securewebservices.kernel/org.openbravo.client.kernel"
+      );
+      erpUrl = erpUrl.replace(
+        "com.etendoerp.metadata.meta/forward",
+        "com.smf.securewebservices.kernel/org.openbravo.client.kernel"
+      );
+    }
+
     if (url.search) {
       erpUrl += url.search;
     }
@@ -168,7 +175,6 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 
     let data: unknown;
     if (isMutationRoute(slug, method)) {
-      // Don't cache mutations or non-GET requests, make direct request
       const headers = buildErpHeaders(userToken, request, method, requestBody, contentType, slug);
       data = await handleMutationRequest(erpUrl, method, headers, requestBody);
     } else {
@@ -176,7 +182,6 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
       data = await getCachedErpData(userToken, slug, method, requestBody || "", contentType, queryParams);
     }
 
-    // Handle streaming responses for copilot
     if (slug.includes("copilot") && data && typeof data === "object" && "stream" in data) {
       const streamData = data as { stream: ReadableStream; headers: Headers };
       return new Response(streamData.stream, {

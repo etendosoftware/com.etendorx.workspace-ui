@@ -58,7 +58,7 @@ export const useProcessConfig = ({ processId, windowId, tabId, javaClassName }: 
       const params = new URLSearchParams({
         processId,
         windowId,
-        _action: javaClassName || "org.openbravo.client.application.process.DefaultsProcessActionHandler",
+        _action: "org.openbravo.client.application.process.DefaultsProcessActionHandler",
       });
       const buildPayload = buildPayloadByInputName(payload);
 

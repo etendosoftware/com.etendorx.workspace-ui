@@ -91,7 +91,7 @@ describe("useFormInitialization loading state", () => {
 
     // Wait for any initial renders to settle
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
     // Clear any calls from initial render
@@ -123,7 +123,7 @@ describe("useFormInitialization loading state", () => {
 
     // Wait for initial effect to settle and clear calls
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
     mockSetSessionSyncLoading.mockClear();
 
@@ -157,7 +157,7 @@ describe("useFormInitialization loading state", () => {
 
     // Wait for initial effect to settle and clear calls
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
     mockSetSessionSyncLoading.mockClear();
 
