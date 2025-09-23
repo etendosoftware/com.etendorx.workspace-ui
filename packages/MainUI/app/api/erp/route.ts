@@ -42,6 +42,32 @@ function normalizeBaseUrl(url: string | undefined): string {
   return url?.endsWith("/") ? url.slice(0, -1) : url || "";
 }
 
+/**
+ * Determines if an action should go directly to kernel servlet instead of secure web services
+ * @param action - The action handler class name
+ * @returns true if should use direct kernel servlet
+ */
+function shouldUseDirectKernelServlet(action: string): boolean {
+  // Action handlers (processes that modify data) need direct kernel servlet access
+  if (action.includes("actionhandler")) {
+    return true;
+  }
+  
+  // Default handlers and initialization components use secure web services
+  if (action.includes("DefaultsProcessActionHandler") || 
+      action.includes("FormInitializationComponent")) {
+    return false;
+  }
+  
+  // ExecuteProcessActionHandler also needs direct access for process execution
+  if (action.includes("ExecuteProcessActionHandler")) {
+    return true;
+  }
+  
+  // Default to secure web services for unknown actions
+  return false;
+}
+
 function buildKernelUrl(
   baseUrl: string,
   processId: string | null,
@@ -77,8 +103,8 @@ function buildKernelUrl(
 
   let kernelUrl = `${baseUrl}/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?${kernelParams.toString()}`;
 
-  // CopyFromOrdersActionHandler needs direct kernel servlet (remove sws/ prefix)
-  if (action === "org.openbravo.common.actionhandler.CopyFromOrdersActionHandler") {
+  // Check if this action needs direct kernel servlet access
+  if (action && shouldUseDirectKernelServlet(action)) {
     kernelUrl = kernelUrl.replace(
       "/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel",
       "/org.openbravo.client.kernel"
@@ -182,15 +208,6 @@ async function handleERPBaseRequest(request: NextRequest, method: string) {
     const contentType = request.headers.get("Content-Type") || "application/json";
     const isMutation = method !== "GET";
 
-    // 🔍 DEBUG: Track /api/erp payload for CopyFromOrdersActionHandler
-    const action = params.get("_action");
-    if (action === "org.openbravo.common.actionhandler.CopyFromOrdersActionHandler") {
-      console.log("🔍 [API_ERP_DEBUG] /api/erp received CopyFromOrdersActionHandler");
-      console.log("🔍 [API_ERP_DEBUG] Method:", method);
-      console.log("🔍 [API_ERP_DEBUG] Request body length:", requestBody?.length || 0);
-      console.log("🔍 [API_ERP_DEBUG] Request body preview:", requestBody?.substring(0, 1000));
-      console.log("🔍 [API_ERP_DEBUG] Built ERP URL:", erpUrl);
-    }
 
     let data: unknown;
     if (isMutation) {

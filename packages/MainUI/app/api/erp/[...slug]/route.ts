@@ -148,23 +148,16 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
     }
 
     const url = new URL(request.url);
-    const action = url.searchParams.get("_action");
 
-    if (action === "org.openbravo.common.actionhandler.CopyFromOrdersActionHandler") {
-      erpUrl = erpUrl.replace(
-        "sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel",
-        "org.openbravo.client.kernel"
-      );
-    } else {
-      erpUrl = erpUrl.replace(
-        "com.etendoerp.metadata.forward/org.openbravo.client.kernel",
-        "com.smf.securewebservices.kernel/org.openbravo.client.kernel"
-      );
-      erpUrl = erpUrl.replace(
-        "com.etendoerp.metadata.meta/forward",
-        "com.smf.securewebservices.kernel/org.openbravo.client.kernel"
-      );
-    }
+    // Generic kernel routing - route all kernel requests through secure web services
+    erpUrl = erpUrl.replace(
+      "com.etendoerp.metadata.forward/org.openbravo.client.kernel",
+      "com.smf.securewebservices.kernel/org.openbravo.client.kernel"
+    );
+    erpUrl = erpUrl.replace(
+      "com.etendoerp.metadata.meta/forward",
+      "com.smf.securewebservices.kernel/org.openbravo.client.kernel"
+    );
 
     if (url.search) {
       erpUrl += url.search;
