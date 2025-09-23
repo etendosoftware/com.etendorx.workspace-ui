@@ -68,6 +68,10 @@ function shouldUseDirectKernelServlet(action: string): boolean {
     return true;
   }
 
+  if (action.includes("_action")) {
+    return true;
+  }
+
   // Default to secure web services for unknown actions
   return false;
 }
