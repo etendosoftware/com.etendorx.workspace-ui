@@ -22,6 +22,6 @@ export interface TabContent {
   title: string;
 }
 export interface VersionProps {
-  version?: string;
+  title?: string;
   customClassNameSpan?: string;
 }

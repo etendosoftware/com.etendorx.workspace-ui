@@ -102,7 +102,7 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
           </Button>
         </form>
         <Version
-          version={`${t("common.version")} ${process.env.NEXT_PUBLIC_APP_VERSION}`}
+          title={`Copyright © 2021-${new Date().getFullYear()} FUTIT SERVICES, S.L.`}
           customClassNameSpan="mt-0 mb-6"
           data-testid="Version__602739"
         />

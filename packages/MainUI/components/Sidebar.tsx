@@ -36,7 +36,7 @@ import type { VersionProps } from "@workspaceui/componentlibrary/src/interfaces"
 const VersionComponent: React.FC<VersionProps> = () => {
   const { t } = useTranslation();
   return (
-    <Version version={`${t("common.version")} ${process.env.NEXT_PUBLIC_APP_VERSION}`} data-testid="Version__6c6035" />
+    <Version title={`${t("common.version")} ${process.env.NEXT_PUBLIC_APP_VERSION}`} data-testid="Version__6c6035" />
   );
 };
 
