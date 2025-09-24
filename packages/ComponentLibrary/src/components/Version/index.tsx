@@ -18,14 +18,14 @@
 "use client";
 import type { VersionProps } from "../../interfaces";
 
-const Version: React.FC<VersionProps> = ({ version, customClassNameSpan }) => {
-  if (!version) return null;
+const Version: React.FC<VersionProps> = ({ title, customClassNameSpan }) => {
+  if (!title) return null;
 
   return (
     <footer className="cursor-default">
       <span
         className={`font-inter text-[var(--color-transparent-neutral-70)] font-medium text-xs text-center leading-4 tracking-normal my-4 cursor-default block ${customClassNameSpan}`}>
-        {version}
+        {title}
       </span>
     </footer>
   );
