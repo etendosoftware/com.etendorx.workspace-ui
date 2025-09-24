@@ -15,13 +15,26 @@
  *************************************************************************
  */
 
-import type { ReactNode } from "react";
+"use client";
+import type { AboutModalProps } from "./types";
+import CustomModal from "../Modal/CustomModal";
 
-export interface TabContent {
-  children?: ReactNode;
-  title: string;
-}
-export interface VersionProps {
-  version?: string;
-  customClassNameSpan?: string;
-}
+const AboutModal: React.FC<AboutModalProps> = ({ aboutUrl, title, isOpen, onClose, closeButtonText }) => {
+  return (
+    <CustomModal
+      isOpen={isOpen}
+      title={title}
+      iframeLoading={false}
+      customContent={null}
+      url={aboutUrl}
+      handleClose={onClose}
+      texts={{
+        closeButton: closeButtonText,
+      }}
+      // NOTE: sizes inherited from the about modal from the previous UI
+      customContentClass="!w-[620px] !h-[524px]"
+    />
+  );
+};
+
+export default AboutModal;

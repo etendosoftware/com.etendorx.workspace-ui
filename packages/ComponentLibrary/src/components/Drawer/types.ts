@@ -16,6 +16,7 @@
  */
 
 import type { Menu } from "@workspaceui/api-client/src/api/types";
+import type { VersionProps } from "../../interfaces";
 
 type NavigateFn = (item: Menu) => void;
 
@@ -47,6 +48,7 @@ export interface DrawerProps {
   RecentlyViewedComponent?: any;
   getTranslatedName?: (item: Menu) => string;
   searchContext: SearchContextType;
+  VersionComponent?: React.FC<VersionProps>;
 }
 
 export interface MenuTitleProps {
