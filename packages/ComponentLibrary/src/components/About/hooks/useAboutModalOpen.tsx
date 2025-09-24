@@ -15,13 +15,35 @@
  *************************************************************************
  */
 
-import type { ReactNode } from "react";
+"use client";
+import { useState, useCallback } from "react";
 
-export interface TabContent {
-  children?: ReactNode;
-  title: string;
+interface UseAboutModalOpenReturn {
+  isOpen: boolean;
+  openModal: () => void;
+  closeModal: () => void;
 }
-export interface VersionProps {
-  title?: string;
-  customClassNameSpan?: string;
-}
+
+/**
+ * Custom hook to manage the About modal open/close state
+ * @returns Object containing modal state and control functions
+ */
+export const useAboutModalOpen = (): UseAboutModalOpenReturn => {
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+
+  const openModal = useCallback(() => {
+    setIsOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setIsOpen(false);
+  }, []);
+
+  return {
+    isOpen,
+    openModal,
+    closeModal,
+  };
+};
+
+export default useAboutModalOpen;

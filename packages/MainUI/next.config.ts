@@ -17,9 +17,12 @@
 
 import analyzer from "@next/bundle-analyzer";
 import type { NextConfig } from "next";
+import { generateAppVersion } from "@/utils/version";
 
 const DEBUG_MODE = process.env.DEBUG_MODE === "true" || process.env.NODE_ENV === "development";
 const ANALYZE = process.env.ANALYZE === "true";
+
+const APP_VERSION = generateAppVersion();
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@mui/material", "@mui/system", "@mui/icons-material", "@emotion/react", "@emotion/styled"],
@@ -38,6 +41,9 @@ const nextConfig: NextConfig = {
     removeConsole: !DEBUG_MODE,
   },
   compress: !DEBUG_MODE,
+  env: {
+    NEXT_PUBLIC_APP_VERSION: APP_VERSION,
+  },
   webpack(config) {
     config.optimization = {
       ...config.optimization,

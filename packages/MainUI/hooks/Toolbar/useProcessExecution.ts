@@ -33,6 +33,7 @@ import { useMetadataContext } from "../useMetadataContext";
 import type { ExecuteProcessDefinitionParams, ExecuteProcessParams } from "./types";
 import { getParams } from "@/utils/processes/manual/utils";
 import data from "@/utils/processes/manual/data.json";
+import { API_IFRAME_FORWARD_PATH } from "@workspaceui/api-client/src/api/constants";
 
 export function useProcessExecution() {
   const [loading, setLoading] = useState(false);
@@ -123,7 +124,7 @@ export function useProcessExecution() {
           }
 
           const processAction = data[currentButtonId as keyof typeof data];
-          const baseUrl = `${API_BASE_URL}/meta/legacy${processAction.url}`;
+          const baseUrl = `${API_BASE_URL}${API_IFRAME_FORWARD_PATH}${processAction.url}`;
           const isPostedProcess = currentButtonId === "Posted";
 
           const params = getParams({

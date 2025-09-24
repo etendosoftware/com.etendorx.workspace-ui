@@ -40,6 +40,8 @@ const es = {
     noDataAvailable: "No hay información disponible",
     record: "registro",
     records: "registros",
+    version: "Versión: ",
+    about: "Acerca de",
   },
   forms: {
     sections: {
