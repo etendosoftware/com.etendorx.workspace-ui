@@ -120,6 +120,7 @@
 .toolbar-button-save:disabled,
 .toolbar-button-refresh:disabled,
 .toolbar-button-cancel:disabled,
+.toolbar-button-copilot:disabled,
 .toolbar-button-delete:disabled {
   cursor: default;
   pointer-events: none;
