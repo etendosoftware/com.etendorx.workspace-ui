@@ -109,7 +109,6 @@ export async function POST(request: NextRequest) {
 
     if (userToken) {
       cookieHeader = "JSESSIONID=null";
-      // getCookieHeader(userToken);
     }
 
     const erpResponse = await fetchErpLogin(erpLoginUrl, body, cookieHeader || undefined, userToken || undefined);
