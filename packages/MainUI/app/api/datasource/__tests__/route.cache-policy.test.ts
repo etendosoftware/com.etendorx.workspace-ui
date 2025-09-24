@@ -33,6 +33,7 @@ import {
 } from "../../_test-utils/datasource-test-utils";
 import { setErpSessionCookie } from "../../_utils/sessionStore";
 import { POST } from "../route";
+import { getExpectedDatasourceUrl } from "../../_test-utils/endpoint-test-utils";
 
 // Setup base mocks
 setupDatasourceMocks();
@@ -77,7 +78,7 @@ describe("Datasource cache policy (disabled)", () => {
     expect(res.status).toBe(200);
 
     // ensure fetch was called (direct call to ERP)
-    assertDatasourceCall("http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice", {
+    assertDatasourceCall(getExpectedDatasourceUrl("Invoice", undefined, {}), {
       Authorization: `Bearer ${BEARER_TOKEN}`,
     });
 

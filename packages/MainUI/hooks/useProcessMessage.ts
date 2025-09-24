@@ -15,11 +15,10 @@
  *************************************************************************
  */
 
-import { ApiContext } from "@/contexts/api";
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
-import { useCallback, useContext } from "react";
-import { useUserContext } from "./useUserContext";
+import { useCallback } from "react";
+import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 
 export interface ProcessMessage {
   message: string;
@@ -27,11 +26,9 @@ export interface ProcessMessage {
   title: string;
 }
 
-const urlMessageParam = "/meta/message";
+const urlMessageParam = "?_action=org.openbravo.client.application.window.GetTabMessageActionHandler&";
 
 export function useProcessMessage(tabId: string) {
-  const apiUrl = useContext(ApiContext);
-  const { token } = useUserContext();
   const { t } = useTranslation();
 
   const normalizeMessageType = useCallback(
@@ -109,39 +106,19 @@ export function useProcessMessage(tabId: string) {
   }, []);
 
   const fetchProcessMessage = useCallback(async (): Promise<ProcessMessage | null> => {
-    if (!apiUrl) {
-      logger.warn(apiUrl, "API-URL Error");
-      return null;
-    }
-
     try {
-      const response = await fetch(`${apiUrl}${urlMessageParam}?tabId=${tabId}`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await Metadata.kernelClient.post(`${urlMessageParam}`, { tabId });
 
-      if (!response.ok) {
-        logger.warn(response.status);
+      if (!response?.data) {
+        logger.warn("No data returned from process message endpoint");
         return null;
       }
 
-      const txtResponse = await response.text();
-
-      try {
-        const data = JSON.parse(txtResponse);
-        return processResponseData(data);
-      } catch (error) {
-        logger.warn("Failed to parse JSON:", error);
-        return handleFetchError(error);
-      }
+      return processResponseData(response.data);
     } catch (error) {
       return handleFetchError(error);
     }
-  }, [apiUrl, tabId, token, processResponseData, handleFetchError]);
+  }, [tabId, processResponseData, handleFetchError]);
 
   return { fetchProcessMessage };
 }

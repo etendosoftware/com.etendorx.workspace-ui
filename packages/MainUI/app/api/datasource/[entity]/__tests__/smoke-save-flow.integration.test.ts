@@ -9,6 +9,7 @@ import { POST } from "../route";
 import { createMockApiRequest, setupApiTestEnvironment } from "../../../_test-utils/api-test-utils";
 import { assertErpForwardCall } from "../../../_test-utils/fetch-assertions";
 import { setErpSessionCookie } from "@/app/api/_utils/sessionStore";
+import { getExpectedDatasourceUrl } from "../../../_test-utils/endpoint-test-utils";
 
 describe("Smoke: save flow via forward servlet", () => {
   setupApiTestEnvironment();
@@ -39,7 +40,11 @@ describe("Smoke: save flow via forward servlet", () => {
     expect(res.status).toBe(200);
 
     const { decoded } = assertErpForwardCall(
-      "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice?windowId=10&tabId=20&_operationType=add",
+      getExpectedDatasourceUrl("Invoice", "add", {
+        windowId: "10",
+        tabId: "20",
+        _operationType: "add",
+      }),
       "Bearer Bearer-SMOKE-TOKEN",
       undefined,
       "application/json; charset=utf-8"

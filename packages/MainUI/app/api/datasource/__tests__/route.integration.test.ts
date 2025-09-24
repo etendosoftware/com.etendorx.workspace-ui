@@ -1,33 +1,6 @@
-// Early mocks so route.ts does not load real Next internals (avoids needing global Request)
-jest.mock("next/server", () => ({
-  NextResponse: {
-    json: (body: unknown, init?: { status?: number }) => ({ ok: true, status: init?.status ?? 200, body }),
-  },
-}));
-jest.mock("next/cache", () => ({
-  unstable_cache:
-    (fn: (...args: unknown[]) => unknown) =>
-    (...args: unknown[]) =>
-      fn(...args),
-}));
-// Auth mock before importing route so real auth.ts (which uses cookies()) is not executed
-jest.mock("@/lib/auth", () => ({
-  getUserContext: jest.fn().mockResolvedValue({
-    userId: "100",
-    clientId: "23C5",
-    orgId: "0",
-    roleId: "ROLE",
-    warehouseId: "WH",
-  }),
-  extractBearerToken: jest.fn().mockImplementation((req: any) => {
-    try {
-      const header = req?.headers?.get?.("Authorization") || "";
-      return header.startsWith("Bearer ") ? header.slice(7) : "";
-    } catch {
-      return "";
-    }
-  }),
-}));
+// Early mocks so route.ts does not load real Next internals
+import { setupDatasourceMocks } from "../../_test-utils/common-mocks";
+setupDatasourceMocks();
 /**
  * Integration-like test: Grids POST /api/datasource with criteria array → single JSON array string.
  */
@@ -35,6 +8,7 @@ jest.mock("@/lib/auth", () => ({
 import { createDatasourceTestSuite, assertDatasourceCall } from "../../_test-utils/datasource-test-utils";
 import { setErpSessionCookie } from "../../_utils/sessionStore";
 import { POST } from "../route";
+import { getExpectedDatasourceUrl } from "../../_test-utils/endpoint-test-utils";
 
 const testSuite = createDatasourceTestSuite("Grids: /api/datasource criteria handling", "grid");
 
@@ -63,7 +37,7 @@ testSuite.describe(() => {
     const res = await POST(req as never);
     expect(res.status).toBe(200);
 
-    assertDatasourceCall("http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice", {
+    assertDatasourceCall(getExpectedDatasourceUrl("Invoice", undefined, {}), {
       Authorization: `Bearer ${BEARER_TOKEN}`,
       "Content-Type": "application/x-www-form-urlencoded",
     });
