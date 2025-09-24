@@ -41,6 +41,8 @@ const en = {
     noDataAvailable: "No data available",
     record: "record",
     records: "records",
+    version: "Version: ",
+    about: "About",
   },
   forms: {
     sections: {

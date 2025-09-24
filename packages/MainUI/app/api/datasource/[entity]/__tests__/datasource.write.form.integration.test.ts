@@ -1,4 +1,5 @@
 import { createDatasourceTestSuite, mockFetchFactory } from "@/app/api/_test-utils/datasource-test-utils";
+import { getDatasourceUrl } from "../../../_utils/endpoints";
 
 const suite = createDatasourceTestSuite("BFF /api/datasource/:entity - write form mapping integration", "default");
 
@@ -32,7 +33,7 @@ suite.describe(() => {
     const fetchMock = global.fetch as jest.Mock;
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [dest, init] = fetchMock.mock.calls[0];
-    const expectedUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/forward/org.openbravo.service.datasource/Invoice`;
+    const expectedUrl = getDatasourceUrl("Invoice");
     expect(String(dest)).toBe(expectedUrl);
     expect(init.method).toBe("POST");
     expect(init.headers["Content-Type"]).toBe("application/x-www-form-urlencoded");

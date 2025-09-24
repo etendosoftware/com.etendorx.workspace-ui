@@ -5,6 +5,7 @@
 import { POST } from "../route";
 import { createMockRequest, setupTestEnvironment, assertFetchCall } from "../../../_test-utils/api-test-utils";
 import { setErpSessionCookie } from "@/app/api/_utils/sessionStore";
+import { getExpectedDatasourceUrl } from "../../../_test-utils/endpoint-test-utils";
 
 jest.mock("next/server", () => ({
   NextResponse: {
@@ -57,7 +58,11 @@ describe("Save error passthrough", () => {
 
     assertFetchCall(
       global.fetch as jest.Mock,
-      "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Order?windowId=10&tabId=20&_operationType=add",
+      getExpectedDatasourceUrl("Order", "add", {
+        windowId: "10",
+        tabId: "20",
+        _operationType: "add",
+      }),
       "POST",
       { Authorization: `Bearer ${BEARER_TOKEN}` }
     );

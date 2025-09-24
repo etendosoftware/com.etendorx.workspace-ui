@@ -8,6 +8,7 @@ import Button from "@workspaceui/componentlibrary/src/components/Button/Button";
 import UserIcon from "../../../../ComponentLibrary/src/assets/icons/user.svg";
 import LockIcon from "../../../../ComponentLibrary/src/assets/icons/lock.svg";
 import GoogleIcon from "../../../../ComponentLibrary/src/assets/icons/ilustration/google.svg";
+import Version from "@workspaceui/componentlibrary/src/components/Version";
 
 export default function Login({ title, onSubmit, error }: LoginProps) {
   const [username, setUsername] = useState("");
@@ -100,6 +101,11 @@ export default function Login({ title, onSubmit, error }: LoginProps) {
             {t("login.buttons.google")}
           </Button>
         </form>
+        <Version
+          version={`${t("common.version")} ${process.env.NEXT_PUBLIC_APP_VERSION}`}
+          customClassNameSpan="mt-0 mb-6"
+          data-testid="Version__602739"
+        />
       </div>
       {error && <div className="font-medium text-sm text-(--color-error-main) mt-4">{error}</div>}
     </div>
