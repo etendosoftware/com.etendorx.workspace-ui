@@ -6,10 +6,10 @@ import { getErpAuthHeaders } from "@/app/api/_utils/forwardConfig";
 // Cached function for ERP requests to the base URL (no slug)
 const getCachedErpData = unstable_cache(
   async (userToken: string, method: string, body: string, contentType: string, queryParams = "") => {
-    let erpUrl = `${process.env.ETENDO_CLASSIC_URL}`;
-    if (method === "GET" && queryParams) {
-      erpUrl += queryParams;
-    }
+    // Create a fake URL object to use buildErpUrl function
+    const fakeUrl = new URL(`http://localhost:3000/api/erp${queryParams}`);
+    const params = fakeUrl.searchParams;
+    const erpUrl = buildErpUrl(fakeUrl, params);
 
     const headers: Record<string, string> = {
       Authorization: `Bearer ${userToken}`,
@@ -40,6 +40,40 @@ const getCachedErpData = unstable_cache(
 
 function normalizeBaseUrl(url: string | undefined): string {
   return url?.endsWith("/") ? url.slice(0, -1) : url || "";
+}
+
+/**
+ * Determines if an action should go directly to kernel servlet instead of secure web services
+ * @param action - The action handler class name
+ * @returns true if should use direct kernel servlet
+ */
+function shouldUseDirectKernelServlet(action: string): boolean {
+  // Action handlers (processes that modify data) need direct kernel servlet access
+  if (action.includes("actionhandler")) {
+    return true;
+  }
+
+  // Default handlers and initialization components use secure web services
+  if (action.includes("DefaultsProcessActionHandler") || action.includes("FormInitializationComponent")) {
+    return false;
+  }
+
+  // ExecuteProcessActionHandler also needs direct access for process execution
+  if (action.includes("ExecuteProcessActionHandler")) {
+    return true;
+  }
+
+  // Custom processes (like SyncAssistant, etc.) need direct kernel servlet access
+  if (action.includes("process.")) {
+    return true;
+  }
+
+  if (action.includes("_action")) {
+    return true;
+  }
+
+  // Default to secure web services for unknown actions
+  return false;
 }
 
 function buildKernelUrl(
@@ -75,13 +109,23 @@ function buildKernelUrl(
   }
   kernelParams.set("_action", action);
 
-  return `${baseUrl}/org.openbravo.client.kernel?${kernelParams.toString()}`;
+  let kernelUrl = `${baseUrl}/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel?${kernelParams.toString()}`;
+
+  // Check if this action needs direct kernel servlet access
+  if (action && shouldUseDirectKernelServlet(action)) {
+    kernelUrl = kernelUrl.replace(
+      "/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel",
+      "/org.openbravo.client.kernel"
+    );
+  }
+
+  return kernelUrl;
 }
 
 function buildErpUrl(url: URL, params: URLSearchParams): string {
   const baseUrl = normalizeBaseUrl(process.env.ETENDO_CLASSIC_URL);
   const pathname = url.pathname;
-  const isKernelRequest = pathname.includes("/meta/forward/org.openbravo.client.kernel");
+  const isKernelRequest = pathname.includes("/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel");
   const processId = params.get("processId");
   const windowId = params.get("windowId");
   const reportId = params.get("reportId");
@@ -95,11 +139,11 @@ function buildErpUrl(url: URL, params: URLSearchParams): string {
   // Handle FormInitializationComponent special case
   const action = params.get("_action");
   if (action === "org.openbravo.client.application.window.FormInitializationComponent") {
-    return `${baseUrl}/meta/forward/org.openbravo.client.kernel${url.search}`;
+    return `${baseUrl}/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel${url.search}`;
   }
 
   // Default: base ERP URL with query params
-  return `${process.env.ETENDO_CLASSIC_URL}${url.search}`;
+  return `${baseUrl}/sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel${url.search}`;
 }
 
 async function executeMutation(
@@ -124,8 +168,9 @@ async function executeMutation(
     headers["Content-Type"] = "application/json;charset=UTF-8";
   }
 
-  // Use the combined ERP auth headers (cookie + CSRF token)
+  // Use the combined ERP auth headers (cookie + CSRF token + Bearer)
   const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
+  headers.Authorization = `Bearer ${userToken}`;
 
   if (cookieHeader) {
     headers.Cookie = cookieHeader;

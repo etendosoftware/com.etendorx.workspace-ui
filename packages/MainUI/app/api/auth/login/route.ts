@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     validateEnvironment();
 
     const body = await request.json();
-    const erpLoginUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, "/meta/login");
+    const erpLoginUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, "/sws/login");
 
     const userToken = extractBearerToken(request);
     let cookieHeader: string | null = null;
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (userToken) {
-      cookieHeader = getCookieHeader(userToken);
+      cookieHeader = "JSESSIONID=null";
     }
 
     const erpResponse = await fetchErpLogin(erpLoginUrl, body, cookieHeader || undefined, userToken || undefined);

@@ -12,6 +12,7 @@ import "../../../_test-utils/test-shared-mocks";
 import { POST } from "../route";
 import { assertErpForwardCall } from "../../../_test-utils/fetch-assertions";
 import { setErpSessionCookie } from "@/app/api/_utils/sessionStore";
+import { getExpectedDatasourceUrl } from "../../../_test-utils/endpoint-test-utils";
 
 describe("API: /api/datasource/:entity save/update", () => {
   const OLD_ENV = process.env;
@@ -67,12 +68,13 @@ describe("API: /api/datasource/:entity save/update", () => {
     expect(res.status).toBe(200);
     expect((global as any).fetch).toHaveBeenCalledTimes(1);
 
-    const { decoded } = assertErpForwardCall(
-      "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Invoice?windowId=167&tabId=263&_operationType=add",
-      `Bearer ${BEARER_TOKEN}`,
-      undefined,
-      "application/json"
-    );
+    const expectedUrl = getExpectedDatasourceUrl("Invoice", "add", {
+      windowId: "167",
+      tabId: "263",
+      _operationType: "add",
+    });
+
+    const { decoded } = assertErpForwardCall(expectedUrl, `Bearer ${BEARER_TOKEN}`, undefined, "application/json");
     expect(decoded).toContain('"operationType":"add"');
     expect(decoded).toContain('"componentId":"isc_OBViewForm_0"');
     expect(decoded).toContain('"csrfToken":"CSRF-TEST-123"'); // Should be replaced with token from session store
@@ -99,9 +101,14 @@ describe("API: /api/datasource/:entity save/update", () => {
 
     await POST(request, { params: { entity: "Order" } } as any);
     const [dest, init] = (global as any).fetch.mock.calls[0];
-    expect(String(dest)).toBe(
-      "http://erp.example/etendo/meta/forward/org.openbravo.service.datasource/Order?windowId=1&tabId=2&_operationType=update"
-    );
+
+    const expectedUrl = getExpectedDatasourceUrl("Order", "update", {
+      windowId: "1",
+      tabId: "2",
+      _operationType: "update",
+    });
+
+    expect(String(dest)).toBe(expectedUrl);
     expect(init.headers["Content-Type"]).toBe("application/x-custom");
     expect(init.body).toBe(`${rawBody}&csrfToken=CSRF-TEST-123`);
   });

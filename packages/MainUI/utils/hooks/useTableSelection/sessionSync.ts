@@ -23,6 +23,7 @@ import {
 } from "@/utils/hooks/useFormInitialization/utils";
 import { SessionMode, type Tab, type EntityData, type ISession } from "@workspaceui/api-client/src/api/types";
 import { logger } from "@/utils/logger";
+import { buildPayloadByInputName } from "@/utils";
 
 const MULTIPLE_ROW_IDS_KEY = "MULTIPLE_ROW_IDS";
 
@@ -79,6 +80,9 @@ export const syncSelectedRecordsToSession = async ({
     // Add multiple row IDs to payload when more than one record is selected
     if (selectedRecords.length > 1) {
       payload[MULTIPLE_ROW_IDS_KEY] = allSelectedIds;
+    } else {
+      const record = buildPayloadByInputName(lastSelectedRecord, tab.fields);
+      Object.assign(payload, record);
     }
 
     // Send single request with all selected record information

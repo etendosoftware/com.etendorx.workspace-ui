@@ -24,7 +24,7 @@ import {
   type Tab,
   type Field,
 } from "@workspaceui/api-client/src/api/types";
-import { useCallback, useMemo, useReducer } from "react";
+import { useCallback, useMemo, useReducer, useEffect } from "react";
 import { FieldName } from "./types";
 import useFormParent from "./useFormParent";
 import { useUserContext } from "./useUserContext";
@@ -99,7 +99,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
   const { parentRecord: parent } = useTabContext();
   const [state, dispatch] = useReducer<React.Reducer<State, Action>>(reducer, initialState);
   const { error, formInitialization, loading } = state;
-  const parentData = useFormParent(FieldName.HQL_NAME);
+  const parentData = useFormParent(FieldName.INPUT_NAME);
   const parentId = parent?.id?.toString();
 
   const { record } = useCurrentRecord({
@@ -134,6 +134,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
       if (!entityKeyColumn) throw new Error("Missing key column");
 
       const payload = buildFormInitializationPayload(tab, mode, parentData, entityKeyColumn);
+
       const data: FormInitializationResponse = await fetchFormInitialization(params, payload);
 
       const enrichedData = enrichWithAuditFields(data, record, mode);
@@ -151,7 +152,7 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
     } finally {
       setSessionSyncLoading(false);
     }
-  }, [mode, params, parentData, setSession, tab, record]);
+  }, [params, parentData, setSession, setSessionSyncLoading, tab, mode, record]);
 
   /**
    * Finds the primary key column field in the tab's field configuration
@@ -203,6 +204,19 @@ export function useFormInitialization({ tab, mode, recordId }: FormInitializatio
 
     return data;
   }
+
+  /**
+   * useEffect: Automatically trigger initial form initialization when params change.
+   * This ensures form data is fetched when the component first mounts or when
+   * key parameters (tab, mode, recordId, parentId) change.
+   */
+  useEffect(() => {
+    if (params) {
+      dispatch({ type: "FETCH_START" });
+      fetch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
   /**
    * Refetch function to manually trigger form initialization
