@@ -26,7 +26,7 @@ export interface ProcessMessage {
   title: string;
 }
 
-const urlMessageParam = "/meta/message";
+const urlMessageParam = "?_action=org.openbravo.client.application.window.GetTabMessageActionHandler&";
 
 export function useProcessMessage(tabId: string) {
   const { t } = useTranslation();
@@ -106,12 +106,8 @@ export function useProcessMessage(tabId: string) {
   }, []);
 
   const fetchProcessMessage = useCallback(async (): Promise<ProcessMessage | null> => {
-    const params = new URLSearchParams({
-      tabId: tabId,
-    });
-
     try {
-      const response = await Metadata.client.post(`${urlMessageParam}?${params}`);
+      const response = await Metadata.kernelClient.post(`${urlMessageParam}`, { tabId });
 
       if (!response?.data) {
         logger.warn("No data returned from process message endpoint");
