@@ -8,9 +8,9 @@ jest.mock("@/contexts/user", () => {
 });
 import { UserContext } from "@/contexts/user";
 
-// Keep the forward path deterministic
+// Keep the iframe forward path deterministic
 jest.mock("@workspaceui/api-client/src/api/constants", () => ({
-  API_FORWARD_PATH: "/meta/forward",
+  API_IFRAME_FORWARD_PATH: "/meta/legacy",
 }));
 
 // Use real logger (console-backed); we'll spy on console.debug in tests

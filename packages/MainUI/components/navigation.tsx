@@ -31,7 +31,11 @@ import {
   NotificationButton,
   NotificationModal,
   Waterfall,
+  AboutButton,
+  AboutModal,
 } from "@workspaceui/componentlibrary/src/components";
+import useAboutModalOpen from "@workspaceui/componentlibrary/src/components/About/hooks/useAboutModalOpen";
+import { useAboutModal } from "@/hooks/about/useAboutModal";
 import type { Item } from "@workspaceui/componentlibrary/src/components/DragModal/DragModal.types";
 import Nav from "@workspaceui/componentlibrary/src/components/Nav/Nav";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -62,6 +66,8 @@ const Navigation: React.FC = () => {
     changeProfile,
     roles,
     languages,
+    isCopilotInstalled,
+    clearUserData,
   } = useContext(UserContext);
   const token = useUserContext();
   const [saveAsDefault, setSaveAsDefault] = useState(false);
@@ -73,10 +79,11 @@ const Navigation: React.FC = () => {
   const [pendingContextString, setPendingContextString] = useState<string | null>(null);
   const [pendingContextItems, setPendingContextItems] = useState<ContextItem[]>([]);
 
+  const { isOpen: aboutModalOpen, openModal: openAboutModal, closeModal: closeAboutModal } = useAboutModalOpen();
+  const { aboutUrl } = useAboutModal();
+
   const { assistants, getAssistants, invalidateCache, hasAssistants } = useAssistants();
   const { labels, getLabels } = useCopilotLabels();
-
-  const { clearUserData } = useContext(UserContext);
 
   const handleSignOff = useCallback(() => {
     clearUserData();
@@ -218,7 +225,21 @@ const Navigation: React.FC = () => {
           data-testid="Waterfall__120cc9"
         />
         <ConfigurationSection data-testid="ConfigurationSection__120cc9" />
-        <CopilotButton onClick={handleCopilotOpen} tooltip="Copilot" data-testid="CopilotButton__120cc9" />
+        <CopilotButton
+          onClick={handleCopilotOpen}
+          disabled={!isCopilotInstalled}
+          tooltip="Copilot"
+          data-testid="CopilotButton__120cc9"
+        />
+        <AboutButton onClick={openAboutModal} tooltip={t("common.about")} data-testid="AboutButton__120cc9" />
+        <AboutModal
+          aboutUrl={aboutUrl}
+          title={t("common.about")}
+          isOpen={aboutModalOpen}
+          onClose={closeAboutModal}
+          closeButtonText={t("common.close")}
+          data-testid="AboutModal__120cc9"
+        />
         <NotificationButton
           notifications={NOTIFICATIONS}
           icon={<NotificationIcon data-testid="NotificationIcon__120cc9" />}
@@ -270,7 +291,7 @@ const Navigation: React.FC = () => {
         />
       </Nav>
       <CopilotPopup
-        open={copilotOpen}
+        open={copilotOpen && isCopilotInstalled}
         onClose={handleCopilotClose}
         assistants={assistants}
         labels={labels}
