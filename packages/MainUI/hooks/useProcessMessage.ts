@@ -18,18 +18,17 @@
 import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
 import { useCallback } from "react";
-import { Metadata } from "@workspaceui/api-client/src/api/metadata";
+import { useUserContext } from "./useUserContext";
 
 export interface ProcessMessage {
-  message: string;
+  text: string;
   type: "error" | "success" | "info" | "warning";
   title: string;
 }
 
-const urlMessageParam = "?_action=org.openbravo.client.application.window.GetTabMessageActionHandler&";
-
 export function useProcessMessage(tabId: string) {
   const { t } = useTranslation();
+  const { token } = useUserContext();
 
   const normalizeMessageType = useCallback(
     (messageType: string, message: string): "success" | "error" | "warning" | "info" => {
@@ -81,14 +80,14 @@ export function useProcessMessage(tabId: string) {
         return null;
       }
 
-      if (data.message === "No message found") {
+      if (data.text === "No message found") {
         return null;
       }
 
-      const messageType = normalizeMessageType(data.type || "info", data.message || "");
+      const messageType = normalizeMessageType(data.type || "info", data.text || "");
 
       return {
-        message: data.message || "",
+        text: data.text || "",
         type: messageType,
         title: getMessageTitle(data.title, messageType),
       };
@@ -107,18 +106,27 @@ export function useProcessMessage(tabId: string) {
 
   const fetchProcessMessage = useCallback(async (): Promise<ProcessMessage | null> => {
     try {
-      const response = await Metadata.kernelClient.post(`${urlMessageParam}`, { tabId });
-
-      if (!response?.data) {
-        logger.warn("No data returned from process message endpoint");
-        return null;
-      }
-
-      return processResponseData(response.data);
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      const response: Response & { data?: any } = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?_action=org.openbravo.client.application.window.GetTabMessageActionHandler&language=en_US`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            tabId,
+          }),
+        }
+      );
+      const data = await response.json();
+      return processResponseData(data);
     } catch (error) {
       return handleFetchError(error);
     }
-  }, [tabId, processResponseData, handleFetchError]);
+  }, [token, tabId, processResponseData, handleFetchError]);
 
   return { fetchProcessMessage };
 }
