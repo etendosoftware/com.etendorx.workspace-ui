@@ -25,6 +25,7 @@ import { login as doLogin } from "@workspaceui/api-client/src/api/authentication
 import { changeProfile as doChangeProfile } from "@workspaceui/api-client/src/api/changeProfile";
 import { getSession } from "@workspaceui/api-client/src/api/getSession";
 import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
+import { clearAllErpSessions } from "@/app/api/_utils/sessionStore";
 import { HTTP_CODES } from "@workspaceui/api-client/src/api/constants";
 import type { DefaultConfiguration, IUserContext, Language, LanguageOption } from "./types";
 import type {
@@ -58,6 +59,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [currentRole, setCurrentRole] = useState<CurrentRole>();
   const [currentClient, setCurrentClient] = useState<CurrentClient>();
   const [isCopilotInstalled, setIsCopilotInstalled] = useState<boolean>(false);
+  const [isVerifyingSession, setIsVerifyingSession] = useState(false);
   const prevRole = usePrevious(currentRole);
 
   const [roles, setRoles] = useState<SessionResponse["roles"]>(() => {
@@ -176,6 +178,12 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const login = useCallback(
     async (username: string, password: string) => {
       try {
+        // Clear any existing token and sessions before login to ensure clean state
+        Metadata.setToken("");
+        datasource.setToken("");
+        CopilotClient.setToken("");
+        clearAllErpSessions();
+
         const loginResponse = await doLogin(username, password);
 
         localStorage.setItem("token", loginResponse.token);
@@ -183,16 +191,12 @@ export default function UserProvider(props: React.PropsWithChildren) {
         datasource.setToken(loginResponse.token);
         CopilotClient.setToken(loginResponse.token);
         setToken(loginResponse.token);
-
-        // Fetch and update session info immediately after login
-        const sessionData = await getSession();
-        await updateSessionInfo(sessionData);
       } catch (e) {
         logger.warn("Login or session retrieval error:", e);
         throw e;
       }
     },
-    [setToken, updateSessionInfo]
+    [setToken]
   );
 
   const value = useMemo<IUserContext>(
@@ -244,8 +248,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
 
   useEffect(() => {
     const verifySession = async () => {
+      if (isVerifyingSession) return;
       try {
         if (token) {
+          setIsVerifyingSession(true);
           Metadata.setToken(token);
           datasource.setToken(token);
           CopilotClient.setToken(token);
@@ -255,12 +261,13 @@ export default function UserProvider(props: React.PropsWithChildren) {
       } catch (error) {
         console.error(error);
       } finally {
+        setIsVerifyingSession(false);
         setReady(true);
       }
     };
 
     verifySession().catch(logger.warn);
-  }, [clearUserData, token, updateSessionInfo]);
+  }, [token]);
 
   useEffect(() => {
     const interceptor = (response: Response) => {

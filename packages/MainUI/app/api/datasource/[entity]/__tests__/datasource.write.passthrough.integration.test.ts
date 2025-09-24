@@ -39,7 +39,7 @@ suite.describe(() => {
     expect(res.status).toBe(201);
 
     // Assert fetch called with JSON body and content-type application/json
-    const expectedUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/forward/org.openbravo.service.datasource/Order?isc_dataFormat=json`;
+    const expectedUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.forward/org.openbravo.service.datasource/Order?isc_dataFormat=json`;
 
     assertDatasourceCall(
       expectedUrl,

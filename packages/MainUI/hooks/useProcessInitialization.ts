@@ -35,7 +35,6 @@ const fetchProcessInitialization = async (
   try {
     const { data } = await Metadata.kernelClient.post(`?${params}`, payload);
 
-    // Transform the raw response to our expected structure
     return {
       defaults: data?.defaults || data || {},
       filterExpressions: data?.filterExpressions || {},
@@ -117,19 +116,11 @@ export function useProcessInitialization({
       if (!params || !enabled) return;
 
       try {
-        // Build complete payload with all system context fields
         let payload: Record<string, EntityValue>;
 
         if (record && tab) {
-          // Use buildProcessPayload to include all system context fields
-          const processPayload = buildProcessPayload(
-            record, // Complete record data
-            tab, // Tab metadata for context fields
-            {}, // No process defaults yet (we're fetching them)
-            contextData // Additional context data
-          );
+          const processPayload = buildProcessPayload(record, tab, {}, contextData);
 
-          // Convert to EntityValue compatible format and add process initialization specific fields
           payload = {
             ...Object.fromEntries(
               Object.entries(processPayload).map(([key, value]) => [
@@ -164,13 +155,6 @@ export function useProcessInitialization({
         });
 
         const data = await fetchProcessInitialization(params, payload);
-
-        logger.debug(`Process defaults fetched successfully`, {
-          processId,
-          defaultsCount: Object.keys(data.defaults).length,
-          hasFilterExpressions: Object.keys(data.filterExpressions).length > 0,
-          refreshParent: data.refreshParent,
-        });
 
         dispatch({ type: "FETCH_SUCCESS", payload: data });
       } catch (err) {

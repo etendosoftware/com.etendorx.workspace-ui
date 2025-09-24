@@ -34,6 +34,8 @@ import IconButtonCustom from "./IconButton";
 import CopilotButtonCustom from "./Copilot/CopilotButton";
 import CopilotPopupCustom from "./Copilot/CopilotPopup";
 import RadioGridCustom from "./RadioGrid";
+import AboutButtonComp from "./About/AboutButton";
+import AboutModalComp from "./About/AboutModal";
 
 const Modal = ModalCustom;
 const TextInput = TextInputMUI;
@@ -54,6 +56,8 @@ const IconButton = IconButtonCustom;
 const CopilotButton = CopilotButtonCustom;
 const CopilotPopup = CopilotPopupCustom;
 const RadioGrid = RadioGridCustom;
+const AboutButton = AboutButtonComp;
+const AboutModal = AboutModalComp;
 
 export {
   Modal,
@@ -75,6 +79,8 @@ export {
   CopilotButton,
   CopilotPopup,
   RadioGrid,
+  AboutButton,
+  AboutModal,
 };
 
 // Export Copilot constants from api-client

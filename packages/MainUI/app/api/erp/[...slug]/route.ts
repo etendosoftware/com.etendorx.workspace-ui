@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { extractBearerToken } from "@/lib/auth";
-import { joinUrl } from "../../_utils/url";
 import { getErpAuthHeaders } from "../../_utils/forwardConfig";
 
 // Custom error class for ERP requests
@@ -30,7 +29,13 @@ class ErpRequestError extends Error {
 // Cached function for generic ERP requests
 const getCachedErpData = unstable_cache(
   async (userToken: string, slug: string, method: string, body: string, contentType: string, queryParams = "") => {
-    let erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, slug);
+    let erpUrl: string;
+    if (slug.includes("copilot")) {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/${slug}`;
+    } else {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
+    }
+
     if (method === "GET" && queryParams) {
       erpUrl += queryParams;
     }
@@ -155,23 +160,50 @@ async function handleMutationRequest(
     return { stream: response.body, headers: response.headers };
   }
 
-  return response.json();
+  const responseText = await response.text();
+
+  // Check if response is JavaScript error from Etendo
+  if (responseText.startsWith("OB.KernelUtilities.handleSystemException(")) {
+    // Extract error message from JavaScript
+    const match = responseText.match(/OB\.KernelUtilities\.handleSystemException\('(.+)'\);/);
+    const errorMessage = match ? match[1] : responseText;
+    throw new Error(`Backend error: ${errorMessage}`);
+  }
+
+  try {
+    return JSON.parse(responseText);
+  } catch {
+    throw new Error(`Invalid JSON response from backend: ${responseText.substring(0, 200)}...`);
+  }
 }
 
 async function handleERPRequest(request: Request, params: Promise<{ slug: string[] }>, method: string) {
   try {
     const resolvedParams = await params;
-    console.log(`API Route /api/erp/${resolvedParams.slug.join("/")} - Method: ${method}`);
+    const slug = resolvedParams.slug.join("/");
+    console.log(`API Route /api/erp/${slug} - Method: ${method}`);
 
     const userToken = extractBearerToken(request);
     if (!userToken) {
       return NextResponse.json({ error: "Unauthorized - Missing Bearer token" }, { status: 401 });
     }
 
-    const slug = resolvedParams.slug.join("/");
+    let erpUrl: string;
+    if (slug.startsWith("sws/")) {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/${slug}`;
+    } else {
+      erpUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.${slug}`;
+    }
 
-    let erpUrl = joinUrl(process.env.ETENDO_CLASSIC_URL, slug);
     const url = new URL(request.url);
+
+    // Generic kernel routing - route all kernel requests directly to the kernel
+    erpUrl = erpUrl.replace(
+      "sws/com.etendoerp.metadata.forward/org.openbravo.client.kernel",
+      "org.openbravo.client.kernel"
+    );
+    erpUrl = erpUrl.replace("sws/com.etendoerp.metadata.meta/forward", "org.openbravo.client.kernel");
+
     if (url.search) {
       erpUrl += url.search;
     }
@@ -181,7 +213,6 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
 
     let data: unknown;
     if (isMutationRoute(slug, method)) {
-      // Don't cache mutations or non-GET requests, make direct request
       const headers = buildErpHeaders(userToken, request, method, requestBody, contentType, slug);
       data = await handleMutationRequest(erpUrl, method, headers, requestBody);
     } else {
@@ -189,7 +220,6 @@ async function handleERPRequest(request: Request, params: Promise<{ slug: string
       data = await getCachedErpData(userToken, slug, method, requestBody || "", contentType, queryParams);
     }
 
-    // Handle streaming responses for copilot
     if (slug.includes("copilot") && data && typeof data === "object" && "stream" in data) {
       const streamData = data as { stream: ReadableStream; headers: Headers };
       return new Response(streamData.stream, {

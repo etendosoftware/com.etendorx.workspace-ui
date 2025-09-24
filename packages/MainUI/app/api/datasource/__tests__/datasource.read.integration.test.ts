@@ -22,7 +22,7 @@ suite.describe(() => {
     expect(res).toBeDefined();
     expect(res.status).toBe(200);
 
-    const expectedUrl = `${process.env.ETENDO_CLASSIC_URL}/meta/forward/org.openbravo.service.datasource/Customer`;
+    const expectedUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.forward/org.openbravo.service.datasource/Customer`;
 
     assertDatasourceCall(
       expectedUrl,

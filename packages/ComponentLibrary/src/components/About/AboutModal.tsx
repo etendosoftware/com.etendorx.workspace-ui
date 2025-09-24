@@ -15,15 +15,26 @@
  *************************************************************************
  */
 
-import { Metadata } from "./metadata";
-import type { SessionResponse } from "./types";
+"use client";
+import type { AboutModalProps } from "./types";
+import CustomModal from "../Modal/CustomModal";
 
-export const getSession = async (): Promise<SessionResponse> => {
-  const response = await Metadata.client.request("meta/session");
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-
-  return response.data;
+const AboutModal: React.FC<AboutModalProps> = ({ aboutUrl, title, isOpen, onClose, closeButtonText }) => {
+  return (
+    <CustomModal
+      isOpen={isOpen}
+      title={title}
+      iframeLoading={false}
+      customContent={null}
+      url={aboutUrl}
+      handleClose={onClose}
+      texts={{
+        closeButton: closeButtonText,
+      }}
+      // NOTE: sizes inherited from the about modal from the previous UI
+      customContentClass="!w-[620px] !h-[524px]"
+    />
+  );
 };
+
+export default AboutModal;

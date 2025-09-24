@@ -15,15 +15,20 @@
  *************************************************************************
  */
 
-import { Metadata } from "./metadata";
-import type { SessionResponse } from "./types";
+"use client";
+import type { VersionProps } from "../../interfaces";
 
-export const getSession = async (): Promise<SessionResponse> => {
-  const response = await Metadata.client.request("meta/session");
+const Version: React.FC<VersionProps> = ({ title, customClassNameSpan }) => {
+  if (!title) return null;
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-
-  return response.data;
+  return (
+    <footer className="cursor-default">
+      <span
+        className={`font-inter text-[var(--color-transparent-neutral-70)] font-medium text-xs text-center leading-4 tracking-normal my-4 cursor-default block ${customClassNameSpan}`}>
+        {title}
+      </span>
+    </footer>
+  );
 };
+
+export default Version;

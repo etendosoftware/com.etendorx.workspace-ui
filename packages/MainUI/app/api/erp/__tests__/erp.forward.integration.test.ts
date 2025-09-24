@@ -26,7 +26,7 @@ suite.describe(() => {
     const fetchMock = global.fetch as jest.Mock;
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [dest, init] = fetchMock.mock.calls[0];
-    const expectedUrl = `${process.env.ETENDO_CLASSIC_URL}/some/path?foo=bar`;
+    const expectedUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.some/path?foo=bar`;
     expect(String(dest)).toBe(expectedUrl);
     expect(init.method).toBe("GET");
     expect(init.headers.Authorization).toBe("Bearer token-default");
@@ -70,7 +70,7 @@ suite.describe(() => {
     const fetchMock = global.fetch as jest.Mock;
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [dest, init] = fetchMock.mock.calls[0];
-    const expectedUrl = `${process.env.ETENDO_CLASSIC_URL}/endpoint`;
+    const expectedUrl = `${process.env.ETENDO_CLASSIC_URL}/sws/com.etendoerp.metadata.endpoint`;
     expect(String(dest)).toBe(expectedUrl);
     expect(init.method).toBe("POST");
     expect(init.body).toBe(JSON.stringify(payload));

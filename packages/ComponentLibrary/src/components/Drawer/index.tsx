@@ -44,6 +44,7 @@ const Drawer: React.FC<DrawerProps> = ({
   onReportClick,
   onProcessClick,
   RecentlyViewedComponent,
+  VersionComponent,
   getTranslatedName,
   searchContext,
 }) => {
@@ -122,7 +123,7 @@ const Drawer: React.FC<DrawerProps> = ({
         style={{ width: `${drawerWidth}rem` }}
         className={`h-screen max-h-screen transition-all duration-500 ease-in-out
              bg-(--color-baseline-0) border-none 
-             rounded-tr-xl rounded-br-xl flex flex-col overflow-hidden pb-4  ${open ? "w-[16.25rem]" : "w-[3.5rem]"}`}>
+             rounded-tr-xl rounded-br-xl flex flex-col overflow-hidden ${open ? "w-[16.25rem]" : "w-[3.5rem]"}`}>
         <DrawerHeader logo={logo} title={title} open={open} onClick={handleHeaderClick} tabIndex={-1} />
         {open && (
           <div className="p-2 pb-0">
@@ -160,6 +161,7 @@ const Drawer: React.FC<DrawerProps> = ({
             pendingWindowId={pendingWindowId}
           />
         </div>
+        {open && VersionComponent && <VersionComponent />}
       </div>
     </ResizeHandle>
   );

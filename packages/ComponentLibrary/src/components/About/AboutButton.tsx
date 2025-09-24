@@ -15,15 +15,26 @@
  *************************************************************************
  */
 
-import { Metadata } from "./metadata";
-import type { SessionResponse } from "./types";
+import IconButton from "../IconButton";
+import InfoIcon from "../../assets/icons/info.svg";
+import type { AboutButtonProps } from "./types";
 
-export const getSession = async (): Promise<SessionResponse> => {
-  const response = await Metadata.client.request("meta/session");
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-
-  return response.data;
+const AboutButton: React.FC<AboutButtonProps> = ({
+  onClick,
+  tooltip = "About",
+  disabled = false,
+  iconButtonClassName = "w-10 h-10",
+}) => {
+  return (
+    <IconButton
+      onClick={onClick}
+      tooltip={tooltip}
+      disabled={disabled}
+      className={iconButtonClassName}
+      ariaLabel={tooltip}>
+      <InfoIcon />
+    </IconButton>
+  );
 };
+
+export default AboutButton;

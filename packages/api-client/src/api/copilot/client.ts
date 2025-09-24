@@ -46,7 +46,7 @@ export class CopilotClient {
    * Initializes the CopilotClient with base URL
    * Uses Next.js proxy instead of direct ERP connection
    */
-  public static setBaseUrl(_etendoUrl: string) {
+  public static setBaseUrl() {
     // Use existing ERP proxy route that handles all Classic forwarding
     const proxyUrl =
       typeof window !== "undefined" ? `${window.location.origin}/api/erp` : "http://localhost:3000/api/erp";
@@ -366,7 +366,7 @@ export class CopilotClient {
     interceptor?: Interceptor;
   }) {
     if (config?.baseUrl) {
-      CopilotClient.setBaseUrl(config.baseUrl);
+      CopilotClient.setBaseUrl();
     }
 
     if (config?.token) {

@@ -154,6 +154,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
     // Build base payload with system context fields
     const basePayload = buildProcessPayload(record, tab, {}, {});
+    console.debug(basePayload);
 
     return {
       ...basePayload,
@@ -320,6 +321,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       );
       try {
         const stringFnResult = await executeStringFunction(onProcess, { Metadata }, button.processDefinition, {
+          _buttonValue: "DONE",
           buttonValue: "DONE",
           windowId: tab.window,
           entityName: tab.entityName,

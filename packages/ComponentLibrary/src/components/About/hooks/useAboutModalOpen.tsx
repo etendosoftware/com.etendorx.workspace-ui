@@ -15,15 +15,35 @@
  *************************************************************************
  */
 
-import { Metadata } from "./metadata";
-import type { SessionResponse } from "./types";
+"use client";
+import { useState, useCallback } from "react";
 
-export const getSession = async (): Promise<SessionResponse> => {
-  const response = await Metadata.client.request("meta/session");
+interface UseAboutModalOpenReturn {
+  isOpen: boolean;
+  openModal: () => void;
+  closeModal: () => void;
+}
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
+/**
+ * Custom hook to manage the About modal open/close state
+ * @returns Object containing modal state and control functions
+ */
+export const useAboutModalOpen = (): UseAboutModalOpenReturn => {
+  const [isOpen, setIsOpen] = useState<boolean>(false);
 
-  return response.data;
+  const openModal = useCallback(() => {
+    setIsOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setIsOpen(false);
+  }, []);
+
+  return {
+    isOpen,
+    openModal,
+    closeModal,
+  };
 };
+
+export default useAboutModalOpen;
