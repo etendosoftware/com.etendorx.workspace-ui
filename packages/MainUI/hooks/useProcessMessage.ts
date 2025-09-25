@@ -19,6 +19,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { logger } from "@/utils/logger";
 import { useCallback } from "react";
 import { useUserContext } from "./useUserContext";
+import { useApiContext } from "./useApiContext";
 
 export interface ProcessMessage {
   text: string;
@@ -29,6 +30,7 @@ export interface ProcessMessage {
 export function useProcessMessage(tabId: string) {
   const { t } = useTranslation();
   const { token } = useUserContext();
+  const API_BASE_URL = useApiContext();
 
   const normalizeMessageType = useCallback(
     (messageType: string, message: string): "success" | "error" | "warning" | "info" => {
@@ -108,7 +110,7 @@ export function useProcessMessage(tabId: string) {
     try {
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
       const response: Response & { data?: any } = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?_action=org.openbravo.client.application.window.GetTabMessageActionHandler&language=en_US`,
+        `${API_BASE_URL}/sws/com.smf.securewebservices.kernel/org.openbravo.client.kernel?_action=org.openbravo.client.application.window.GetTabMessageActionHandler&language=en_US`,
         {
           method: "POST",
           credentials: "include",
@@ -126,7 +128,7 @@ export function useProcessMessage(tabId: string) {
     } catch (error) {
       return handleFetchError(error);
     }
-  }, [token, tabId, processResponseData, handleFetchError]);
+  }, [API_BASE_URL, token, tabId, processResponseData, handleFetchError]);
 
   return { fetchProcessMessage };
 }
