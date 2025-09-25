@@ -56,7 +56,7 @@ const ProcessIframeOpenModal = ({
   const handleReceivedMessage = useCallback(
     (message: ProcessMessage) => {
       if (message?.type === "info") return;
-      if (message.message?.toUpperCase().includes("ERROR")) {
+      if (message.text?.toUpperCase().includes("ERROR")) {
         setProcessMessage({
           ...message,
           type: "error",
@@ -78,7 +78,7 @@ const ProcessIframeOpenModal = ({
         setProcessMessage({
           type: "error",
           title: t("errors.internalServerError.title"),
-          message: String(error),
+          text: String(error),
         });
       }
     },
@@ -196,7 +196,7 @@ const ProcessIframeOpenModal = ({
                 <h3 className="mb-1 font-semibold text-lg" style={{ color: messageStyles.textColor }}>
                   {processMessage.title || t("common.processes")}
                 </h3>
-                {processMessage.message && <p className="text-gray-700">{processMessage.message}</p>}
+                {processMessage.text && <p className="text-gray-700">{processMessage.text}</p>}
               </div>
             </div>
           </div>
