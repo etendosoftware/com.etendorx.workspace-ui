@@ -50,7 +50,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   onSetDefaultConfiguration,
   logger,
   translations,
-  onSignOff,
   language,
   languages,
   onLanguageChange,
@@ -303,13 +302,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         {icon}
       </IconButton>
       <Menu anchorEl={anchorEl} onClose={handleClose} className="w-[20.75rem]" data-testid="Menu__75987a">
-        <UserProfile
-          photoUrl={userPhotoUrl}
-          name={userName}
-          email={userEmail}
-          onSignOff={onSignOff}
-          data-testid="UserProfile__75987a"
-        />
+        <UserProfile photoUrl={userPhotoUrl} name={userName} email={userEmail} data-testid="UserProfile__75987a" />
         <div style={styles.toggleSectionStyles}>
           <ToggleSection
             sections={sections}

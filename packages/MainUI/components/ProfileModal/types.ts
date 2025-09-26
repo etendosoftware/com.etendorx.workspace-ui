@@ -97,7 +97,6 @@ export interface ProfileModalProps extends BaseProfileModalProps, SelectionProps
   currentOrganization: CurrentOrganization | undefined;
   roles: SessionResponse["roles"];
   logger: Logger;
-  onSignOff: () => void;
   onLanguageChange: (e: Language) => void;
   language: string | null;
   languages: LanguageOption[];
@@ -110,7 +109,6 @@ export interface UserProfileProps {
   photoUrl: string;
   name: string;
   email: string;
-  onSignOff: () => void;
 }
 
 export interface SelectorListProps {
