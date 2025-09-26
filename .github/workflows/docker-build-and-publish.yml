@@ -33,6 +33,9 @@ jobs:
             BRANCH_NAME="${TAG_NAME#v}"
           elif [ "${{ github.ref_name }}" == "develop" ] && [ "${{ github.event_name }}" == "push" ]; then
             BRANCH_NAME="latest"
+          else
+            # For feature branches, use sanitized branch name
+            BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9._-]/-/g')
           fi
 
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
