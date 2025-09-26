@@ -7,14 +7,33 @@ ARG DEBUG_MODE
 ENV ETENDO_CLASSIC_URL=${ETENDO_CLASSIC_URL}
 ENV DEBUG_MODE=${DEBUG_MODE}
 
-# Rebuild the source code only when needed
-FROM base AS builder
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+# Dependencies layer - cached separately
+FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
+
+# Enable corepack and pnpm
+RUN corepack prepare pnpm@9.15.2 --activate && corepack enable pnpm
+
+# Copy package files for dependency installation
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/MainUI/package.json ./packages/MainUI/
+COPY packages/ComponentLibrary/package.json ./packages/ComponentLibrary/
+COPY packages/api-client/package.json ./packages/api-client/
+COPY packages/storybook/package.json ./packages/storybook/
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Builder layer - only rebuilt when source changes
+FROM deps AS builder
+WORKDIR /app
+
+# Copy source code
 COPY . .
 
-RUN corepack prepare pnpm@9.15.2 --activate && corepack enable pnpm && pnpm install --frozen-lockfile && pnpm build
+# Build application
+RUN pnpm build
 
 RUN ls -la /app/dist
 
