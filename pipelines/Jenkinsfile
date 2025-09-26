@@ -311,6 +311,8 @@ exit 0
                   cd ${REPOSITORY_NAME}
                   ${scannerHome}/bin/sonar-scanner \
                   -Dsonar.branch.name=${GIT_BRANCH} \
+                  -Dsonar.projectVersion=${GIT_COMMIT} \
+                  -Dsonar.scm.revision=${GIT_COMMIT} \
                   -Dsonar.javascript.lcov.reportPaths=coverage-merged/lcov.info
                 """
               }
@@ -349,9 +351,8 @@ exit 0
               def rootDir = pwd()
               def sonarUtils = load "${rootDir}/pipelines/utils/sonarUtils.groovy"
 
-              // Only check commit on PR branches
-              def prBranchPattern = /^(feature|hotfix)\//
-              def checkCommitCurrent = branchCurrent ==~ prBranchPattern
+              def checkCommitCurrent = COMMIT_BRANCH.startsWith('feature/') || COMMIT_BRANCH.startsWith('hotfix/') || COMMIT_BRANCH.startsWith('epic/')
+              echo "Check commit for current branch (${COMMIT_BRANCH}): ${checkCommitCurrent}"
               def coverageCurrent = sonarUtils.getCoverageWithRetry(
                 branchCurrent,
                 checkCommitCurrent,
