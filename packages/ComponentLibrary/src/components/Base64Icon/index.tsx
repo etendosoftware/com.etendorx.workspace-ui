@@ -15,8 +15,6 @@
  *************************************************************************
  */
 
-// import Image from "next/image";
-
 export interface Base64IconProps {
   src: string;
   alt?: string;
