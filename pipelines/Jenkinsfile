@@ -351,8 +351,8 @@ exit 0
               def rootDir = pwd()
               def sonarUtils = load "${rootDir}/pipelines/utils/sonarUtils.groovy"
 
-              def checkCommitCurrent = COMMIT_BRANCH.startsWith('feature/') || COMMIT_BRANCH.startsWith('hotfix/') || COMMIT_BRANCH.startsWith('epic/')
-              echo "Check commit for current branch (${COMMIT_BRANCH}): ${checkCommitCurrent}"
+              def checkCommitCurrent = GIT_BRANCH.startsWith('feature/') || GIT_BRANCH.startsWith('hotfix/') || GIT_BRANCH.startsWith('epic/')
+              echo "Check commit for current branch (${GIT_BRANCH}): ${checkCommitCurrent}"
               def coverageCurrent = sonarUtils.getCoverageWithRetry(
                 branchCurrent,
                 checkCommitCurrent,
