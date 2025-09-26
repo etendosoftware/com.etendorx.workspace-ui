@@ -67,7 +67,6 @@ const Navigation: React.FC = () => {
     roles,
     languages,
     isCopilotInstalled,
-    clearUserData,
   } = useContext(UserContext);
   const token = useUserContext();
   const [saveAsDefault, setSaveAsDefault] = useState(false);
@@ -84,10 +83,6 @@ const Navigation: React.FC = () => {
 
   const { assistants, getAssistants, invalidateCache, hasAssistants } = useAssistants();
   const { labels, getLabels } = useCopilotLabels();
-
-  const handleSignOff = useCallback(() => {
-    clearUserData();
-  }, [clearUserData]);
 
   const handleSaveAsDefaultChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setSaveAsDefault(event.target.checked);
@@ -282,7 +277,6 @@ const Navigation: React.FC = () => {
           changeProfile={changeProfile}
           onSetDefaultConfiguration={setDefaultConfiguration}
           logger={logger}
-          onSignOff={handleSignOff}
           languages={languagesWithFlags}
           userName={profile.name}
           userEmail={profile.email}

@@ -21,11 +21,10 @@ import { createContext, useCallback, useEffect, useMemo, useState } from "react"
 import { logger } from "../utils/logger";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
-import { login as doLogin } from "@workspaceui/api-client/src/api/authentication";
+import { login as doLogin, logout as doLogout } from "@workspaceui/api-client/src/api/authentication";
 import { changeProfile as doChangeProfile } from "@workspaceui/api-client/src/api/changeProfile";
 import { getSession } from "@workspaceui/api-client/src/api/getSession";
 import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
-import { clearAllErpSessions } from "@/app/api/_utils/sessionStore";
 import { HTTP_CODES } from "@workspaceui/api-client/src/api/constants";
 import type { DefaultConfiguration, IUserContext, Language, LanguageOption } from "./types";
 import type {
@@ -182,7 +181,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
         Metadata.setToken("");
         datasource.setToken("");
         CopilotClient.setToken("");
-        clearAllErpSessions();
 
         const loginResponse = await doLogin(username, password);
 
@@ -199,9 +197,23 @@ export default function UserProvider(props: React.PropsWithChildren) {
     [setToken]
   );
 
+  const logout = useCallback(async () => {
+    try {
+      clearUserData();
+      await doLogout();
+      Metadata.setToken("");
+      datasource.setToken("");
+      CopilotClient.setToken("");
+    } catch (error) {
+      logger.warn("Logout error:", error);
+      throw error;
+    }
+  }, [logger]);
+
   const value = useMemo<IUserContext>(
     () => ({
       login,
+      logout,
       roles,
       currentRole,
       profile,
