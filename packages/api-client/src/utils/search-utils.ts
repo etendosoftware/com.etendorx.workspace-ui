@@ -314,7 +314,7 @@ export class LegacyColumnFilterUtils {
   static convertDateFormatForBackend(dateValue: string): string {
     // Pattern for YYYY-MM-DD format (backend expected)
     const yyyyMmDdPattern = /^\d{4}-\d{2}-\d{2}$/;
-    
+
     // If it's already in YYYY-MM-DD format, return as-is
     if (yyyyMmDdPattern.test(dateValue)) {
       return dateValue;

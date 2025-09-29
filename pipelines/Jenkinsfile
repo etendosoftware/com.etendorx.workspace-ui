@@ -183,7 +183,7 @@ spec:
       }
     }
 
-    stage('Check data-testid') { // MARK: Check added data-testid attributes
+    stage('Check data-testid and formatting') { // MARK: Check added data-testid attributes and formatting
       when {
         expression {
           currentBuild.result == SUCCESS
@@ -193,8 +193,8 @@ spec:
         container('compiler') {
           script {
             try {
-              sh "./pipelines/utils/repo-update-scripts/build-update-github.sh ${REPOSITORY_NAME} ${COMMIT_INPROGRESS_STATUS} \"Checking data-testid\" ${ACCESS_TOKEN} ${GIT_COMMIT} ${BUILD_URL} \"${CONTEXT_BUILD}\""
-              echo "-------------------------- Checking data-testid --------------------------"
+              sh "./pipelines/utils/repo-update-scripts/build-update-github.sh ${REPOSITORY_NAME} ${COMMIT_INPROGRESS_STATUS} \"Checking data-testid and formatting\" ${ACCESS_TOKEN} ${GIT_COMMIT} ${BUILD_URL} \"${CONTEXT_BUILD}\""
+              echo "-------------------------- Checking data-testid and formatting --------------------------"
               // Apply codemod and format; if this produces any git changes, mark UNSTABLE
               def shellScript = '''#!/usr/bin/env bash
 set -e
