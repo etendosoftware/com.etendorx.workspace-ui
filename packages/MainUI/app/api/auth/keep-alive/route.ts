@@ -38,8 +38,6 @@ function validateAndExtractToken(request: NextRequest): string | null {
 function processRequestHeaders(userToken: string, cookieHeader: string): ProcessedRequestHeaders {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${userToken}`,
-    "Content-Type": "application/json",
-    Accept: "application/json",
   };
 
   if (cookieHeader) {
@@ -88,7 +86,12 @@ async function handleErpResponse(response: Response): Promise<NextResponse> {
   // Attempt to parse as JSON first
   try {
     const jsonData: SessionValidationResponse = JSON.parse(responseText);
-    return NextResponse.json(jsonData, { status: response.status });
+    const responseStatus = response.status;
+
+    if (response.headers.get("set-cookie")) {
+      return NextResponse.json({ ...jsonData, result: "failed" }, { status: responseStatus });
+    }
+    return NextResponse.json(jsonData, { status: responseStatus });
   } catch {
     // If not valid JSON, return as plain text with error
     return NextResponse.json({ error: "Invalid response format from Etendo Classic" }, { status: 500 });
