@@ -245,6 +245,29 @@ export class SearchUtils {
 }
 
 export class LegacyColumnFilterUtils {
+  /**
+   * Determines if a field is a date/datetime field
+   */
+  static isDateField(fieldName: string, column: Column): boolean {
+    // Check field name patterns
+    const dateFieldPatterns = ["date", "created", "updated", "time", "timestamp"];
+
+    const lowerFieldName = fieldName.toLowerCase();
+    const hasDatePattern = dateFieldPatterns.some((pattern) => lowerFieldName.includes(pattern));
+
+    // Check column type
+    let isDateType = false;
+    if (column.type && typeof column.type === "string") {
+      const lowerType = column.type.toLowerCase();
+      isDateType = lowerType.includes("date") || lowerType.includes("time") || lowerType === "datetime";
+    }
+
+    // Check if it's a date audit field (only date/timestamp fields)
+    const isAuditDateField = ["creationDate", "updated", "created"].includes(fieldName);
+
+    return hasDatePattern || isDateType || isAuditDateField;
+  }
+
   static isNumericField(column: Column): boolean {
     if (column.type && typeof column.type === "string") {
       const lowerType = column.type.toLowerCase();
@@ -283,6 +306,28 @@ export class LegacyColumnFilterUtils {
     }
 
     return String(value);
+  }
+
+  /**
+   * Converts date format from DD-MM-YYYY to YYYY-MM-DD for backend compatibility
+   */
+  static convertDateFormatForBackend(dateValue: string): string {
+    // If it's already in YYYY-MM-DD format, return as-is
+    if (SearchUtils.FULL_DATE_PATTERN.test(dateValue)) {
+      return dateValue;
+    }
+
+    // Pattern for DD-MM-YYYY format
+    const ddMmYyyyPattern = /^(\d{2})-(\d{2})-(\d{4})$/;
+    const match = dateValue.match(ddMmYyyyPattern);
+
+    if (match) {
+      const [, day, month, year] = match;
+      return `${year}-${month}-${day}`;
+    }
+
+    // If no pattern matches, return as-is (let backend handle validation)
+    return dateValue;
   }
 
   private static handleRangeFilter(
@@ -365,8 +410,11 @@ export class LegacyColumnFilterUtils {
       ];
     }
 
-    if (fieldName.toLowerCase().includes("date")) {
-      return SearchUtils.getDateCriteria(fieldName, String(formattedValue));
+    if (LegacyColumnFilterUtils.isDateField(fieldName, column)) {
+      // Convert DD-MM-YYYY format to YYYY-MM-DD format for backend
+      const dateValue = String(formattedValue);
+      const convertedDate = LegacyColumnFilterUtils.convertDateFormatForBackend(dateValue);
+      return SearchUtils.getDateCriteria(fieldName, convertedDate);
     }
 
     if (LegacyColumnFilterUtils.isNumericField(column)) {
