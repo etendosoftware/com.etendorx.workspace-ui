@@ -84,6 +84,10 @@ export interface IUserContext {
   isCopilotInstalled: boolean;
   /** Setter for Copilot installed state */
   setIsCopilotInstalled: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Indicates if session keepalive is currently active */
+  isKeepaliveActive?: boolean;
+  /** Status of last keepalive check */
+  lastKeepaliveStatus?: "success" | "failed" | "pending" | null;
 }
 
 export interface IMetadataContext {

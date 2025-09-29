@@ -26,6 +26,7 @@ import { changeProfile as doChangeProfile } from "@workspaceui/api-client/src/ap
 import { getSession } from "@workspaceui/api-client/src/api/getSession";
 import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
 import { HTTP_CODES } from "@workspaceui/api-client/src/api/constants";
+import { useSessionKeepalive } from "../hooks/useSessionKeepalive";
 import type { DefaultConfiguration, IUserContext, Language, LanguageOption } from "./types";
 import type {
   ISession,
@@ -60,6 +61,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [isCopilotInstalled, setIsCopilotInstalled] = useState<boolean>(false);
   const [isVerifyingSession, setIsVerifyingSession] = useState(false);
   const prevRole = usePrevious(currentRole);
+  const [isKeepaliveEnabled, setIsKeepaliveEnabled] = useState(false);
 
   const [roles, setRoles] = useState<SessionResponse["roles"]>(() => {
     const savedRoles = localStorage.getItem("roles");
@@ -208,7 +210,15 @@ export default function UserProvider(props: React.PropsWithChildren) {
       logger.warn("Logout error:", error);
       throw error;
     }
-  }, [logger]);
+  }, [clearUserData]);
+
+  // Initialize session keepalive after logout is defined
+  const { isActive: isKeepaliveActive, lastCheckStatus } = useSessionKeepalive({
+    token: token,
+    enabled: isKeepaliveEnabled,
+    interval: 60000, // Default: 1 minute
+    onSessionExpired: logout,
+  });
 
   const value = useMemo<IUserContext>(
     () => ({
@@ -234,6 +244,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
       setSessionSyncLoading,
       isCopilotInstalled,
       setIsCopilotInstalled,
+      isKeepaliveActive,
+      lastKeepaliveStatus: lastCheckStatus,
     }),
     [
       login,
@@ -255,6 +267,8 @@ export default function UserProvider(props: React.PropsWithChildren) {
       isSessionSyncLoading,
       isCopilotInstalled,
       setIsCopilotInstalled,
+      isKeepaliveActive,
+      lastCheckStatus,
     ]
   );
 
@@ -279,12 +293,26 @@ export default function UserProvider(props: React.PropsWithChildren) {
     };
 
     verifySession().catch(logger.warn);
-  }, [token]);
+  }, [token, updateSessionInfo]);
+
+  // Manage keepalive activation
+  useEffect(() => {
+    // Enable keepalive when user has a valid token
+    if (token && ready) {
+      setIsKeepaliveEnabled(true);
+      logger.info("Session keepalive activated");
+    } else {
+      setIsKeepaliveEnabled(false);
+      logger.info("Session keepalive deactivated");
+    }
+  }, [token, ready]);
 
   useEffect(() => {
-    const interceptor = (response: Response) => {
+    const interceptor = async (response: Response) => {
       if (response.status === HTTP_CODES.UNAUTHORIZED || response.status === HTTP_CODES.INTERNAL_SERVER_ERROR) {
+        // If unauthorized or internal server error(provisional), clear user data and logout
         clearUserData();
+        await doLogout();
       }
 
       return response;
