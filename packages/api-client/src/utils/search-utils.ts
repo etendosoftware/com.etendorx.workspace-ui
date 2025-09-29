@@ -312,8 +312,11 @@ export class LegacyColumnFilterUtils {
    * Converts date format from DD-MM-YYYY to YYYY-MM-DD for backend compatibility
    */
   static convertDateFormatForBackend(dateValue: string): string {
+    // Pattern for YYYY-MM-DD format (backend expected)
+    const yyyyMmDdPattern = /^\d{4}-\d{2}-\d{2}$/;
+    
     // If it's already in YYYY-MM-DD format, return as-is
-    if (SearchUtils.FULL_DATE_PATTERN.test(dateValue)) {
+    if (yyyyMmDdPattern.test(dateValue)) {
       return dateValue;
     }
 

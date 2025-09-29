@@ -19,7 +19,7 @@ export function formatCellValue(value: unknown, field: Field): string {
   }
 
   // Handle numeric fields (but not if they're already formatted)
-  if (isNumericField(field) && typeof value === 'number') {
+  if (isNumericField(field) && typeof value === "number") {
     return formatNumeric(value, field);
   }
 
@@ -59,13 +59,6 @@ function isUserReference(field: Field): boolean {
   const isAdUserReference = field.referencedEntity === "ADUser";
   const isAuditUserField = field.hqlName && ["createdBy", "updatedBy"].includes(field.hqlName);
   return Boolean(isAdUserReference || isAuditUserField);
-}
-
-/**
- * Checks if a field is a boolean type
- */
-function isBooleanField(field: Field): boolean {
-  return field.column?.reference === FIELD_REFERENCE_CODES.BOOLEAN;
 }
 
 /**
@@ -125,8 +118,7 @@ function formatDateTime(isoString: string, field: Field): string {
       return formatAuditDateTime(date);
     }
 
-    // Default datetime format
-    return formatFullDateTime(date);
+    return formatAuditDateTime(date);
   } catch (error) {
     console.error("Error formatting date:", error);
     return isoString;
@@ -169,28 +161,6 @@ function formatAuditDateTime(date: Date): string {
 }
 
 /**
- * Formats full datetime (DD-MM-YYYY HH:mm:ss)
- */
-function formatFullDateTime(date: Date): string {
-  const dateStr = new Intl.DateTimeFormat("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  })
-    .format(date)
-    .replace(/\//g, "-");
-
-  const timeStr = new Intl.DateTimeFormat("es-AR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).format(date);
-
-  return `${dateStr} ${timeStr}`;
-}
-
-/**
  * Formats a user reference object (for createdBy/updatedBy audit fields)
  */
 function formatUserReference(value: unknown): string {
@@ -198,19 +168,6 @@ function formatUserReference(value: unknown): string {
     const user = value as Record<string, unknown>;
     // Handle user objects with various identifier patterns
     return String(user._identifier || user.name || user.username || user.firstName || user.id || "");
-  }
-  return String(value);
-}
-
-/**
- * Formats a boolean value
- */
-function formatBoolean(value: unknown): string {
-  if (typeof value === "boolean") {
-    return value ? "Yes" : "No";
-  }
-  if (typeof value === "string") {
-    return value === "Y" || value === "true" ? "Yes" : "No";
   }
   return String(value);
 }
