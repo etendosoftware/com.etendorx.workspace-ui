@@ -346,6 +346,8 @@ exit 0
               def sonarProjectKey = sh(script: "grep 'sonar.projectKey' ${sonarPropertiesFile} | cut -d '=' -f2", returnStdout: true).trim()
               echo "SonarQube Project Key: ${sonarProjectKey}"
               def branchCurrent = URLEncoder.encode(GIT_BRANCH, 'UTF-8') 
+              def projectUrl = "${SONAR_SERVER}/dashboard?id=${sonarProjectKey}&branch=${branchCurrent}"
+              echo "Project URL: ${projectUrl}"
               def branchMain = "main"
 
               def rootDir = pwd()
@@ -354,7 +356,7 @@ exit 0
               def checkCommitCurrent = GIT_BRANCH.startsWith('feature/') || GIT_BRANCH.startsWith('hotfix/') || GIT_BRANCH.startsWith('epic/')
               echo "Check commit for current branch (${GIT_BRANCH}): ${checkCommitCurrent}"
               def coverageCurrent = sonarUtils.getCoverageWithRetry(
-                branchCurrent,
+                GIT_BRANCH,
                 checkCommitCurrent,
                 sonarProjectKey,
                 SONAR_TOKEN,
