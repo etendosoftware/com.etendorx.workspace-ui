@@ -5,6 +5,7 @@ import { clearAllErpSessions } from "../../_utils/sessionStore";
 export async function POST() {
   try {
     clearAllErpSessions();
+    return new Response(null, { status: 200 });
   } catch (error) {
     return handleLoginError(error);
   }
