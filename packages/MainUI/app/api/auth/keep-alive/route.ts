@@ -35,11 +35,7 @@ function validateAndExtractToken(request: NextRequest): string | null {
  * @param csrfToken - The CSRF token from the session store
  * @returns Processed headers for the ERP request
  */
-function processRequestHeaders(
-  userToken: string,
-  cookieHeader: string,
-  csrfToken: string | null
-): ProcessedRequestHeaders {
+function processRequestHeaders(userToken: string, cookieHeader: string): ProcessedRequestHeaders {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${userToken}`,
     "Content-Type": "application/json",
@@ -48,10 +44,6 @@ function processRequestHeaders(
 
   if (cookieHeader) {
     headers.Cookie = cookieHeader;
-  }
-
-  if (csrfToken) {
-    headers["X-CSRF-Token"] = csrfToken;
   }
 
   return { headers };
@@ -117,14 +109,14 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     }
 
     // Step 2: Extract auth headers (cookie + CSRF token) using existing utility
-    const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
+    const { cookieHeader } = getErpAuthHeaders(request, userToken);
 
     if (!cookieHeader) {
       return NextResponse.json({ error: "No session found" }, { status: 401 });
     }
 
     // Step 3: Process request headers for ERP compatibility
-    const { headers } = processRequestHeaders(userToken, cookieHeader, csrfToken);
+    const { headers } = processRequestHeaders(userToken, cookieHeader);
 
     // Step 4: Build target URL
     const keepAliveUrl = buildKeepAliveUrl();
