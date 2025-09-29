@@ -49,7 +49,8 @@ function normalizeBaseUrl(url: string | undefined): string {
  */
 function shouldUseDirectKernelServlet(action: string): boolean {
   // Action handlers (processes that modify data) need direct kernel servlet access
-  if (action.includes("actionhandler")) {
+
+  if (action.toLowerCase().includes("actionhandler")) {
     return true;
   }
 

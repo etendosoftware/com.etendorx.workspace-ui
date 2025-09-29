@@ -69,8 +69,12 @@ export class Datasource {
       _operationType: "fetch",
       isImplicitFilterApplied: options.isImplicitFilterApplied ? "true" : "false",
     };
-
-    const formatKey = (key: string) => (isWrappedWithAt(key) ? key : `_${key}`);
+    const formatKey = (key: string) => {
+      if (key === "ad_org_id" || key === "c_currency_id" || key === "issotrx") {
+        return key;
+      }
+      return isWrappedWithAt(key) ? key : `_${key}`;
+    };
     const formatValue = (value: any) => (Array.isArray(value) ? value.join(",") : String(value));
 
     if (options.windowId) params.windowId = options.windowId;

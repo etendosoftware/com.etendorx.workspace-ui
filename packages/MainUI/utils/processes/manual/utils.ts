@@ -110,3 +110,82 @@ export const getParams = ({
 
   return params;
 };
+
+type SourceObject = Record<string, any>;
+type TargetObject = Record<string, any>;
+
+export function mapKeysWithDefaults(source: SourceObject): TargetObject {
+  const keyMap: Record<string, { target: string; default: any }> = {
+    inpdocumentno: { target: "payment_documentno", default: null },
+    inpporeference: { target: "reference_no", default: null },
+    inpcCurrencyId: { target: "c_currency_id", default: null },
+    inpcBpartnerId: { target: "received_from", default: null },
+    inpfinPaymentmethodId: { target: "fin_paymentmethod_id", default: null },
+    fin_payment_id: { target: "fin_payment_id", default: null },
+    inpgrandtotal: { target: "actual_payment", default: 0 },
+    inpdateacct: { target: "payment_date", default: null },
+    inptotallines: { target: "amount_inv_ords", default: 0 },
+    inpissotrx: { target: "issotrx", default: false },
+    inpcOrderId: { target: "c_order_id", default: null },
+    DOCBASETYPE: { target: "DOCBASETYPE", default: "ARR" },
+    inpadOrgId: { target: "ad_org_id", default: null },
+    converted_amount: { target: "conversion_rate", default: 0 },
+    "Action Regarding Document": { target: "document_action", default: null },
+    "Converted Amount": { target: "converted_amount", default: null },
+    "Deposit To": { target: "fin_financial_account_id", default: null },
+  };
+
+  const result: TargetObject = {};
+
+  for (const [key, value] of Object.entries(source)) {
+    let mappedValue = value !== "" && value != null ? value : keyMap[key]?.default;
+    mappedValue = mappedValue === "Y" ? true : mappedValue === "N" ? false : mappedValue;
+
+    if (keyMap[key]) {
+      result[keyMap[key].target] = mappedValue;
+    } else {
+      result[key] = mappedValue;
+    }
+  }
+
+  for (const { target, default: defaultValue } of Object.values(keyMap)) {
+    if (!(target in result)) {
+      result[target] = defaultValue;
+    }
+  }
+
+  function recursiveUpdateSelection(obj: any, parentActualPayment?: number) {
+    if (!obj || typeof obj !== "object") return;
+
+    const currentActualPayment = obj.actual_payment ?? parentActualPayment;
+
+    for (const [key, value] of Object.entries(obj)) {
+      if (key === "_selection" && Array.isArray(value)) {
+        obj[key] = value.map((item: any) => ({
+          ...item,
+          amount: currentActualPayment ?? 0,
+        }));
+      } else if (typeof value === "object") {
+        recursiveUpdateSelection(value, currentActualPayment);
+      }
+    }
+  }
+
+  recursiveUpdateSelection(result);
+
+  return transformDates(result);
+}
+
+export function transformDates(obj: any): any {
+  if (typeof obj === "string") {
+    const dateRegex = /^(\d{2})-(\d{2})-(\d{4})$/;
+    return dateRegex.test(obj) ? obj.replace(dateRegex, "$3-$2-$1") : obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(transformDates);
+  }
+  if (obj && typeof obj === "object") {
+    return Object.fromEntries(Object.entries(obj).map(([key, value]) => [key, transformDates(value)]));
+  }
+  return obj;
+}

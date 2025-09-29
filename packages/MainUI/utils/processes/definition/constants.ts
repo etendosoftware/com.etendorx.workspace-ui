@@ -18,7 +18,7 @@
 export const COPY_FROM_ORDER_PROCESS_ID = "8B81D80B06364566B87853FEECAB5DE0";
 export const CREATE_LINES_FROM_ORDER_PROCESS_ID = "AB2EFCAABB7B4EC0A9B30CFB82963FB6";
 export const SERVERS_WINDOW_ID = "97A1BDAE0C074F2EB76B195ACA03E9AF";
-
+export const ADD_PAYMENT_ORDER_PROCESS_ID = "9BED7889E1034FE68BD85D5D16857320";
 type ProcessDefinition = {
   inpColumnId: string;
   inpPrimaryKeyColumnId: string;
@@ -55,6 +55,13 @@ export const PROCESS_DEFINITION_DATA: Record<string, ProcessDefinition> = {
     staticOptions: {
       "@Invoice.salesTransaction@": true,
     },
+  },
+  [ADD_PAYMENT_ORDER_PROCESS_ID]: {
+    inpColumnId: "C_Order_ID",
+    inpPrimaryKeyColumnId: "inpcOrderId",
+    defaultKeys: {},
+    dynamicKeys: {},
+    staticOptions: {},
   },
 };
 
