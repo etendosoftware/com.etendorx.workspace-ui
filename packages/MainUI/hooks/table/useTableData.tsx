@@ -285,7 +285,11 @@ export const useTableData = ({
 
   // Build query
   const query: DatasourceOptions = useMemo(() => {
-    const fieldName = tab.parentColumns[tab.tabLevel] || tab.parentColumns[tab?.parentColumns?.length - 1] || "id";
+    const fieldName =
+      Array.isArray(tab?.parentColumns) && tab.parentColumns.length > 0
+        ? (tab.parentColumns[tab.tabLevel] ?? tab.parentColumns[tab.parentColumns.length - 1] ?? "id")
+        : "id";
+
     const value = parentId;
     const operator = "equals";
 
