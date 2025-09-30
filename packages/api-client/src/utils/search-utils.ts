@@ -267,7 +267,7 @@ export class LegacyColumnFilterUtils {
 
     // Check for known audit date fields only (these are definitely dates)
     const isAuditDateField = ["creationDate", "updated", "created"].includes(fieldName);
-    
+
     return isAuditDateField;
   }
 
