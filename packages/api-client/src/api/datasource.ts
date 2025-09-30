@@ -64,14 +64,18 @@ export class Datasource {
   }
 
   private buildParams(options: DatasourceParams) {
-    const params: Record<string, any> = {
+    const params: Record<string, unknown> = {
       _noCount: "true",
       _operationType: "fetch",
       isImplicitFilterApplied: options.isImplicitFilterApplied ? "true" : "false",
     };
+    const formatKey = (key: string): string => {
+      const specialKeys = new Set(["ad_org_id", "c_currency_id", "issotrx", "received_from", "c_currency_to_id"]);
 
-    const formatKey = (key: string) => (isWrappedWithAt(key) ? key : `_${key}`);
-    const formatValue = (value: any) => (Array.isArray(value) ? value.join(",") : String(value));
+      return specialKeys.has(key) || isWrappedWithAt(key) ? key : `_${key}`;
+    };
+
+    const formatValue = (value: unknown) => (Array.isArray(value) ? value.join(",") : String(value));
 
     if (options.windowId) params.windowId = options.windowId;
     if (options.tabId) params.tabId = options.tabId;

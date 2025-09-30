@@ -42,7 +42,6 @@ import { executeStringFunction } from "@/utils/functions";
 import { logger } from "@/utils/logger";
 import { FIELD_REFERENCE_CODES } from "@/utils/form/constants";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
-import type { Tab } from "@workspaceui/api-client/src/api/types";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { FormProvider, useForm, useFormState } from "react-hook-form";
 import CheckIcon from "../../../ComponentLibrary/src/assets/icons/check-circle.svg";
@@ -54,6 +53,8 @@ import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
 import { globalCalloutManager } from "@/services/callouts";
+import type { Tab, ProcessParameter } from "@workspaceui/api-client/src/api/types";
+import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 
 /** Fallback object for record values when no record context exists */
 export const FALLBACK_RESULT = {};
@@ -61,6 +62,14 @@ export const FALLBACK_RESULT = {};
 /** Reference ID for window reference field types */
 const WINDOW_REFERENCE_ID = FIELD_REFERENCE_CODES.WINDOW;
 
+export type GridSelectionStructure = {
+  [entityName: string]: {
+    _selection: unknown[];
+    _allRows: unknown[];
+  };
+};
+
+export type GridSelectionUpdater = GridSelectionStructure | ((prev: GridSelectionStructure) => GridSelectionStructure);
 /**
  * ProcessDefinitionModalContent - Core modal component for process execution
  *
@@ -90,14 +99,17 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   const [result, setResult] = useState<ExecuteProcessResult | null>(null);
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
-  const [gridSelection, setGridSelection] = useState<unknown[]>([]);
+  const [gridSelection, setGridSelection] = useState<GridSelectionStructure>({});
 
   const selectedRecords = graph.getSelectedMultiple(tab);
 
-  const windowReferenceTab = parameters.grid?.window?.tabs?.[0] as Tab;
-  const entityName = windowReferenceTab?.entityName || "";
-  const windowId = tab?.window || "";
+  const firstWindowReferenceParam = useMemo(() => {
+    return Object.values(parameters).find((param) => param.reference === WINDOW_REFERENCE_ID);
+  }, [parameters]);
+
+  const windowReferenceTab = firstWindowReferenceParam?.window?.tabs?.[0] as Tab;
   const tabId = windowReferenceTab?.id || "";
+  const windowId = tab?.window || "";
 
   const recordValues: RecordValues | null = useMemo(() => {
     if (!record || !tab?.fields) return FALLBACK_RESULT;
@@ -154,7 +166,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
 
     // Build base payload with system context fields
     const basePayload = buildProcessPayload(record, tab, {}, {});
-    console.debug(basePayload);
 
     return {
       ...basePayload,
@@ -212,11 +223,8 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
           [currentAttrs.inpPrimaryKeyColumnId]: currentRecordValue,
           _buttonValue: "DONE",
           _params: {
-            grid: {
-              _selection: gridSelection,
-            },
+            ...mapKeysWithDefaults({ ...form.getValues(), ...gridSelection }),
           },
-          _entityName: entityName,
           windowId: tab.window,
         };
 
@@ -235,7 +243,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
     });
-  }, [tab, processId, javaClassName, recordValues, gridSelection, entityName, onSuccess, startTransition, token]);
+  }, [tab, processId, recordValues, form, gridSelection, token, javaClassName, onSuccess]);
 
   /**
    * Executes processes directly via servlet using javaClassName
@@ -391,7 +399,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     if (open) {
       setResult(null);
       setParameters(button.processDefinition.parameters);
-      setGridSelection([]);
+      setGridSelection({});
     }
   }, [button.processDefinition.parameters, open]);
 
@@ -458,21 +466,36 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
       </div>
     );
   };
+  console.log({
+    _params: {
+      ...gridSelection,
+      ...mapKeysWithDefaults(form.getValues()),
+    },
+  });
+  const getTabForParameter = useCallback((parameter: ProcessParameter) => {
+    if (parameter.reference !== WINDOW_REFERENCE_ID || !parameter.window?.tabs) {
+      return null;
+    }
+
+    return parameter.window.tabs[0] as Tab;
+  }, []);
 
   const renderParameters = () => {
     if (result?.success) return null;
-
     return Object.values(parameters).map((parameter) => {
       if (parameter.reference === WINDOW_REFERENCE_ID) {
+        const parameterTab = getTabForParameter(parameter);
+        const parameterEntityName = parameterTab?.entityName || "";
+        const parameterTabId = parameterTab?.id || "";
         return (
           <WindowReferenceGrid
             key={`window-ref-${parameter.id || parameter.name}`}
             parameter={parameter}
             parameters={parameters}
             onSelectionChange={setGridSelection}
-            tabId={tabId}
-            entityName={entityName}
-            windowReferenceTab={windowReferenceTab}
+            tabId={parameterTabId}
+            entityName={parameterEntityName}
+            windowReferenceTab={parameterTab || windowReferenceTab}
             processConfig={{
               processId: processConfig?.processId || "",
               ...processConfig,
@@ -528,7 +551,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     (hasMandatoryParameters && !isValid) ||
     isSubmitting ||
     !!result?.success ||
-    (hasWindowReference && gridSelection.length === 0);
+    (hasWindowReference && !gridSelection);
 
   return (
     <Modal open={open} onClose={handleClose} data-testid="Modal__761503">

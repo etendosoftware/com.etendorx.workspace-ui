@@ -36,6 +36,7 @@ import { useDatasource } from "@/hooks/useDatasource";
 import { tableStyles } from "./styles";
 import type { WindowReferenceGridProps } from "./types";
 import { PROCESS_DEFINITION_DATA, CREATE_LINES_FROM_ORDER_PROCESS_ID } from "@/utils/processes/definition/constants";
+import type { GridSelectionStructure } from "./ProcessDefinitionModal";
 
 const MAX_WIDTH = 100;
 const PAGE_SIZE = 100;
@@ -227,9 +228,29 @@ function WindowReferenceGrid({
   });
 
   useEffect(() => {
+    if (!records) return;
+
+    onSelectionChange((prev: GridSelectionStructure) => ({
+      ...prev,
+      [parameter.dBColumnName]: {
+        _selection: [],
+        _allRows: [],
+      },
+    }));
+  }, [records, onSelectionChange, parameter.dBColumnName]);
+
+  // Reset selection on mount or when entity changes
+  useEffect(() => {
     setRowSelection({});
-    onSelectionChange([]);
-  }, [onSelectionChange]);
+    // Call onSelectionChange with the structure for this entityName
+    onSelectionChange((prev: GridSelectionStructure) => ({
+      ...prev,
+      [parameter.dBColumnName]: {
+        _selection: [],
+        _allRows: [],
+      },
+    }));
+  }, [onSelectionChange, entityName, parameter.dBColumnName]);
 
   const handleRowSelection = useCallback(
     (updaterOrValue: MRT_RowSelectionState | ((prev: MRT_RowSelectionState) => MRT_RowSelectionState)) => {
@@ -242,9 +263,16 @@ function WindowReferenceGrid({
         return newSelection[recordId];
       });
 
-      onSelectionChange(selectedItems);
+      // Update with the new structure
+      onSelectionChange((prev: GridSelectionStructure) => ({
+        ...prev,
+        [parameter.dBColumnName]: {
+          _selection: selectedItems,
+          _allRows: records,
+        },
+      }));
     },
-    [records, onSelectionChange, rowSelection]
+    [rowSelection, records, onSelectionChange, parameter.dBColumnName]
   );
 
   const handleColumnFiltersChange = useCallback(
@@ -257,8 +285,15 @@ function WindowReferenceGrid({
 
   const handleClearSelections = useCallback(() => {
     setRowSelection({});
-    onSelectionChange([]);
-  }, [onSelectionChange]);
+    // Clear selections for this entityName
+    onSelectionChange((prev: GridSelectionStructure) => ({
+      ...prev,
+      [parameter.dBColumnName]: {
+        _selection: [],
+        _allRows: records,
+      },
+    }));
+  }, [onSelectionChange, parameter.dBColumnName, records]);
 
   const handleRowClick = useCallback(
     (row: MRT_Row<EntityData>) => {
@@ -271,11 +306,19 @@ function WindowReferenceGrid({
           return newSelection[recordId];
         });
 
-        onSelectionChange(selectedItems);
+        // Update with the new structure
+        onSelectionChange((prev: GridSelectionStructure) => ({
+          ...prev,
+          [parameter.dBColumnName]: {
+            _selection: selectedItems,
+            _allRows: records,
+          },
+        }));
+
         return newSelection;
       });
     },
-    [records, onSelectionChange]
+    [records, onSelectionChange, parameter.dBColumnName]
   );
 
   const renderTopToolbar = useCallback(
