@@ -183,7 +183,7 @@ spec:
       }
     }
 
-    stage('Check data-testid') { // MARK: Check added data-testid attributes
+    stage('Check data-testid and formatting') { // MARK: Check added data-testid attributes and formatting
       when {
         expression {
           currentBuild.result == SUCCESS
@@ -193,15 +193,17 @@ spec:
         container('compiler') {
           script {
             try {
-              sh "./pipelines/utils/repo-update-scripts/build-update-github.sh ${REPOSITORY_NAME} ${COMMIT_INPROGRESS_STATUS} \"Checking data-testid\" ${ACCESS_TOKEN} ${GIT_COMMIT} ${BUILD_URL} \"${CONTEXT_BUILD}\""
-              echo "-------------------------- Checking data-testid --------------------------"
+              sh "./pipelines/utils/repo-update-scripts/build-update-github.sh ${REPOSITORY_NAME} ${COMMIT_INPROGRESS_STATUS} \"Checking data-testid and formatting\" ${ACCESS_TOKEN} ${GIT_COMMIT} ${BUILD_URL} \"${CONTEXT_BUILD}\""
+              echo "-------------------------- Checking data-testid and formatting --------------------------"
               // Apply codemod and format; if this produces any git changes, mark UNSTABLE
-              def shellScript = '''set -e
+              def shellScript = '''#!/usr/bin/env bash
+set -e
 cd ''' + env.REPOSITORY_NAME + '''
 # Apply data-testid codemod (writes files)
-pnpm run apply:data-testid || true
+pnpm run apply:data-testid || echo "❌ Codemod application failed, continuing..."
+
 # Run formatter to restore project style
-pnpm run format:fix || true
+pnpm run format:fix || echo "❌ Formatting failed, continuing..."
 
 # If there are any changes in git working tree, exit with code 2 to indicate UNSTABLE
 PORCELAIN=$(git status --porcelain)
@@ -214,13 +216,13 @@ OMIT_PATTERNS=(
 )
 
 # Build a regex alternation like: package.json|pnpm-lock.yaml|coverage-merged/
-OMIT_REGEX=$(printf "%s|" "\${OMIT_PATTERNS[@]}" | sed 's/|$//')
+OMIT_REGEX=$(printf "%s|" "${OMIT_PATTERNS[@]}" | sed 's/|$//')
 
 # Filter out allowed/expected changes (lockfiles, package manifests, coverage outputs)
 # Note: escape $ so Groovy doesn't attempt to interpolate the shell variables inside the Jenkinsfile string
-FILTERED=$(printf "%s\n" "\$PORCELAIN" | grep -Ev "(^[[:space:]]*[AM][[:space:]]+(\${OMIT_REGEX})$|^[[:space:]]*\\?\\?[[:space:]]+(\${OMIT_REGEX}))" || true)
+FILTERED=$(printf "%s\n" "$PORCELAIN" | grep -Ev "(^[[:space:]]*[AM][[:space:]]+(${OMIT_REGEX})$|^[[:space:]]*\\?\\?[[:space:]]+(${OMIT_REGEX}))" || true)
 if [ -n "$FILTERED" ]; then
-  echo "Uncommitted changes detected after applying codemod and formatting (excluding: ${OMIT_PATTERNS[*]}):"
+  echo "🚨 Uncommitted changes detected after applying codemod and formatting (excluding: ${OMIT_PATTERNS[*]}):"
   printf "%s\n" "$FILTERED"
   exit 2
 fi
@@ -247,8 +249,7 @@ exit 0
                 error(env.ERROR_MESSAGE)
               }
             } catch (Exception e) {
-              env.MAIL_SUBJECT = "Data-testid check failed"
-              env.ERROR_MESSAGE = "Data-testid check failed"
+              env.ERROR_MESSAGE = "Data-testid and/or format check failed"
               echo "Exception occurred: " + e.toString()
               echo "-------------------------- ${env.ERROR_MESSAGE} --------------------------"
               currentBuild.result = FAILED
@@ -406,7 +407,7 @@ exit 0
 
     unstable {
       script {
-        sh "./pipelines/utils/repo-update-scripts/build-update-github.sh ${REPOSITORY_NAME} ${COMMIT_FAILED_STATUS} \"Failed Tests\" ${ACCESS_TOKEN} ${GIT_COMMIT} ${BUILD_URL} \"${CONTEXT_BUILD}\""
+        sh "./pipelines/utils/repo-update-scripts/build-update-github.sh ${REPOSITORY_NAME} ${COMMIT_FAILED_STATUS} \"${env.ERROR_MESSAGE}\" ${ACCESS_TOKEN} ${GIT_COMMIT} ${BUILD_URL} \"${CONTEXT_BUILD}\""
       }
       script {
         // Build the email body dynamically with a more descriptive message.

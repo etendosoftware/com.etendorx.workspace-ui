@@ -43,6 +43,7 @@ export const FIELD_REFERENCE_CODES = {
   // Date and time references
   DATE: "15",
   DATETIME: "16",
+  ABSOLUTE_DATETIME: "478169542A1747BD942DD70C8B45089C",
 
   // Boolean reference
   BOOLEAN: "20",

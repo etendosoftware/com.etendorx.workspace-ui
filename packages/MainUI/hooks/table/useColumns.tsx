@@ -10,6 +10,7 @@ import type { Tab } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Cell } from "material-react-table";
 import type { EntityData } from "@workspaceui/api-client/src/api/types";
 import type { Column } from "@workspaceui/api-client/src/api/types";
+import { FieldType } from "@workspaceui/api-client/src/api/types";
 import { isEntityReference } from "@workspaceui/api-client/src/utils/metadata";
 import { getFieldReference } from "@/utils";
 import { useRedirect } from "@/hooks/navigation/useRedirect";
@@ -28,6 +29,9 @@ interface UseColumnsOptions {
 // Columnas booleanas conocidas
 const BOOLEAN_COLUMNS = ["isOfficialHoliday", "isActive", "isPaid", "stocked", "isGeneric"];
 
+// Audit fields that need special date formatting
+const AUDIT_DATE_COLUMNS = ["creationDate", "updated", "createdBy", "updatedBy"];
+
 export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
   const { handleClickRedirect, handleKeyDownRedirect } = useRedirect();
   const { onColumnFilter, onLoadFilterOptions, onLoadMoreFilterOptions, columnFilterStates } = options || {};
@@ -37,10 +41,17 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     const fieldsAsArray = Object.values(tab.fields);
     let originalColumns = parseColumns(fieldsAsArray);
 
-    // Marcar columnas booleanas automáticamente
+    // Marcar columnas booleanas y audit fields automáticamente
     originalColumns = originalColumns.map((col) => {
       if (BOOLEAN_COLUMNS.includes(col.columnName)) {
         return { ...col, type: "boolean" };
+      }
+      // Mark audit columns for special handling
+      if (AUDIT_DATE_COLUMNS.includes(col.columnName)) {
+        return {
+          ...col,
+          type: col.columnName.includes("Date") || col.columnName === "updated" ? "datetime" : col.type,
+        };
       }
       return col;
     });
@@ -48,6 +59,10 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
     return originalColumns.map((column: Column) => {
       const isReference = isEntityReference(getFieldReference(column.column?.reference));
       const isBooleanColumn = column.type === "boolean" || column.column?._identifier === "YesNo";
+      const isDateColumn =
+        column.type === "datetime" ||
+        AUDIT_DATE_COLUMNS.includes(column.columnName) ||
+        getFieldReference(column.column?.reference) === FieldType.DATE;
       const supportsDropdownFilter = isBooleanColumn || ColumnFilterUtils.supportsDropdownFilter(column);
 
       // --- Inicializar filterState para booleanos si no existe ---
@@ -121,6 +136,16 @@ export const useColumns = (tab: Tab, options?: UseColumnsOptions) => {
               data-testid="ColumnFilter__46c09c"
             />
           ),
+        };
+      }
+
+      // Enable simple text filtering for date columns
+      if (isDateColumn && !supportsDropdownFilter) {
+        columnConfig = {
+          ...columnConfig,
+          enableColumnFilter: true,
+          columnFilterModeOptions: ["contains", "startsWith", "endsWith"],
+          filterFn: "contains",
         };
       }
 
