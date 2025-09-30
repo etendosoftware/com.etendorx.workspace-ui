@@ -260,33 +260,15 @@ export class LegacyColumnFilterUtils {
     // Get reference from the correct location in the column structure
     const columnReference = column.reference || (column as any).column?.reference;
 
-    // Debug logging for documentNo specifically
-    if (fieldName === "documentNo") {
-      console.log("🔍 isDateField check for documentNo:", {
-        fieldName,
-        reference: column.reference,
-        columnReference,
-        type: column.type,
-        realReference: (column as any).column?.reference,
-      });
-    }
-
     // Primary check: Use reference codes for accurate date field identification
     if (columnReference && DATE_REFERENCE_CODES.includes(columnReference)) {
-      console.log("✅ Field classified as DATE via reference code:", fieldName, columnReference);
       return true;
     }
 
     // Check for known audit date fields only (these are definitely dates)
     const isAuditDateField = ["creationDate", "updated", "created"].includes(fieldName);
-    if (isAuditDateField) {
-      console.log("✅ Field classified as DATE via audit field:", fieldName);
-      return true;
-    }
-
-    // Do NOT use column.type as fallback since it's unreliable
-    console.log("❌ Field NOT classified as date:", fieldName, "reference:", columnReference);
-    return false;
+    
+    return isAuditDateField;
   }
 
   static isNumericField(column: Column): boolean {
