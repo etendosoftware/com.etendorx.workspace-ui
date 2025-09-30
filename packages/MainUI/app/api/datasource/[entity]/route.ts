@@ -166,7 +166,6 @@ async function handle(request: NextRequest, context: { params: Promise<{ entity:
 
     // Extract auth headers (cookie + CSRF token)
     const { cookieHeader, csrfToken } = getErpAuthHeaders(request, userToken);
-    // NOTE: csrfToken is null sometimes
     // Step 3: Process request data for ERP compatibility
     const { headers, body } = await processRequestData(request, userToken, cookieHeader, csrfToken);
     const erpUrl = buildErpUrl(entity, requestUrl, body, userToken);
