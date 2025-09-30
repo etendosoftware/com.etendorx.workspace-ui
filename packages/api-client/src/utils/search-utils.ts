@@ -249,23 +249,44 @@ export class LegacyColumnFilterUtils {
    * Determines if a field is a date/datetime field
    */
   static isDateField(fieldName: string, column: Column): boolean {
-    // Check field name patterns
-    const dateFieldPatterns = ["date", "created", "updated", "time", "timestamp"];
+    // Use field reference codes to accurately determine date fields
+    // Reference codes for date/datetime fields from FIELD_REFERENCE_CODES
+    const DATE_REFERENCE_CODES = [
+      "15", // DATE
+      "16", // DATETIME
+      "478169542A1747BD942DD70C8B45089C", // ABSOLUTE_DATETIME
+    ];
 
-    const lowerFieldName = fieldName.toLowerCase();
-    const hasDatePattern = dateFieldPatterns.some((pattern) => lowerFieldName.includes(pattern));
+    // Get reference from the correct location in the column structure
+    const columnReference = column.reference || (column as any).column?.reference;
 
-    // Check column type
-    let isDateType = false;
-    if (column.type && typeof column.type === "string") {
-      const lowerType = column.type.toLowerCase();
-      isDateType = lowerType.includes("date") || lowerType.includes("time") || lowerType === "datetime";
+    // Debug logging for documentNo specifically
+    if (fieldName === "documentNo") {
+      console.log("🔍 isDateField check for documentNo:", {
+        fieldName,
+        reference: column.reference,
+        columnReference,
+        type: column.type,
+        realReference: (column as any).column?.reference,
+      });
     }
 
-    // Check if it's a date audit field (only date/timestamp fields)
-    const isAuditDateField = ["creationDate", "updated", "created"].includes(fieldName);
+    // Primary check: Use reference codes for accurate date field identification
+    if (columnReference && DATE_REFERENCE_CODES.includes(columnReference)) {
+      console.log("✅ Field classified as DATE via reference code:", fieldName, columnReference);
+      return true;
+    }
 
-    return hasDatePattern || isDateType || isAuditDateField;
+    // Check for known audit date fields only (these are definitely dates)
+    const isAuditDateField = ["creationDate", "updated", "created"].includes(fieldName);
+    if (isAuditDateField) {
+      console.log("✅ Field classified as DATE via audit field:", fieldName);
+      return true;
+    }
+
+    // Do NOT use column.type as fallback since it's unreliable
+    console.log("❌ Field NOT classified as date:", fieldName, "reference:", columnReference);
+    return false;
   }
 
   static isNumericField(column: Column): boolean {
