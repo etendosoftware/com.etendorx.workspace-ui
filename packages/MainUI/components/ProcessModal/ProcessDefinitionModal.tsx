@@ -53,8 +53,7 @@ import ProcessParameterSelector from "./selectors/ProcessParameterSelector";
 import type { ProcessDefinitionModalContentProps, ProcessDefinitionModalProps, RecordValues } from "./types";
 import { PROCESS_DEFINITION_DATA, WINDOW_SPECIFIC_KEYS } from "@/utils/processes/definition/constants";
 import { globalCalloutManager } from "@/services/callouts";
-import type { ProcessParameter } from "@workspaceui/api-client/src/api/types";
-import type { Tab } from "@workspaceui/api-client/src/api/types";
+import type { Tab, ProcessParameter } from "@workspaceui/api-client/src/api/types";
 import { mapKeysWithDefaults } from "@/utils/processes/manual/utils";
 
 /** Fallback object for record values when no record context exists */
