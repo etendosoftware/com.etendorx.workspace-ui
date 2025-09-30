@@ -59,6 +59,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [currentClient, setCurrentClient] = useState<CurrentClient>();
   const [isCopilotInstalled, setIsCopilotInstalled] = useState<boolean>(false);
   const [isVerifyingSession, setIsVerifyingSession] = useState(false);
+
+  // Login error states
+  const [loginErrorText, setLoginErrorText] = useState<string>("");
+  const [loginErrorDescription, setLoginErrorDescription] = useState<string>("");
   const prevRole = usePrevious(currentRole);
 
   const [roles, setRoles] = useState<SessionResponse["roles"]>(() => {
@@ -234,6 +238,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
       setSessionSyncLoading,
       isCopilotInstalled,
       setIsCopilotInstalled,
+      loginErrorText,
+      setLoginErrorText,
+      loginErrorDescription,
+      setLoginErrorDescription,
     }),
     [
       login,
@@ -255,6 +263,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
       isSessionSyncLoading,
       isCopilotInstalled,
       setIsCopilotInstalled,
+      loginErrorText,
+      setLoginErrorText,
+      loginErrorDescription,
+      setLoginErrorDescription,
     ]
   );
 

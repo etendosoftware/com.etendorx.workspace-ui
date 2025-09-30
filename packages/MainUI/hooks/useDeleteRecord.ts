@@ -37,22 +37,22 @@ export const useDeleteRecord = ({ windowMetadata, tab, onSuccess, onError }: Use
   const { t } = useTranslation();
 
   const deleteRecord = useCallback(
-    async (recordOrRecords: EntityData | EntityData[]) => {
+    async (recordOrRecords: EntityData | EntityData[]): Promise<{ success: boolean; errorMessage?: string }> => {
       const records = Array.isArray(recordOrRecords) ? recordOrRecords : [recordOrRecords];
 
       if (records.length === 0) {
         onError?.(t("status.noRecordsError"));
-        return false;
+        return { success: false };
       }
 
       if (!tab || !tab.entityName) {
         onError?.(t("status.noEntityError"));
-        return false;
+        return { success: false };
       }
 
       if (!userId) {
         onError?.(t("errors.authentication.message"));
-        return false;
+        return { success: false };
       }
 
       try {
@@ -97,16 +97,12 @@ export const useDeleteRecord = ({ windowMetadata, tab, onSuccess, onError }: Use
 
         setLoading(false);
         onSuccess?.(records.length);
-        return true;
+        return { success: true };
       } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
         setLoading(false);
-
-        if (err instanceof Error && err.name === "AbortError") {
-          return false;
-        }
-
-        onError?.(err instanceof Error ? err.message : String(err));
-        return false;
+        onError?.(errorMessage);
+        return { success: false, errorMessage };
       }
     },
     [tab, windowMetadata, onError, t, onSuccess, userId]

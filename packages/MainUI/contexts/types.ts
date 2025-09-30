@@ -84,6 +84,14 @@ export interface IUserContext {
   isCopilotInstalled: boolean;
   /** Setter for Copilot installed state */
   setIsCopilotInstalled: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Text to show when login fails */
+  loginErrorText: string;
+  /** Setter for login error text */
+  setLoginErrorText: React.Dispatch<React.SetStateAction<string>>;
+  /** Description for login error */
+  loginErrorDescription: string;
+  /** Setter for login error description */
+  setLoginErrorDescription: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export interface IMetadataContext {

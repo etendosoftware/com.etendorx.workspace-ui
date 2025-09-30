@@ -223,6 +223,13 @@ const es = {
       submit: "Acceso",
       google: "Continuar con Google",
     },
+    errors: {
+      csrfToken: {
+        title: "Sesión expirada por inactividad",
+        description:
+          "Has sido desconectado automáticamente por razones de seguridad. Por favor, inicia sesión nuevamente para continuar.",
+      },
+    },
     or: "O",
   },
   grid: {
