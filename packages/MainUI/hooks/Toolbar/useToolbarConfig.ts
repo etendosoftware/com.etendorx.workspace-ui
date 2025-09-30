@@ -31,8 +31,6 @@ import { useSelectedRecords } from "@/hooks/useSelectedRecords";
 import { useSelectedRecord } from "@/hooks/useSelectedRecord";
 import { useRecordContext } from "@/hooks/useRecordContext";
 import type { ToolbarButtonMetadata } from "./types";
-import { useUserContext } from "../useUserContext";
-import { DEFAULT_CSRF_TOKEN_ERROR } from "@/utils/session/constants";
 
 export const useToolbarConfig = ({
   tabId,
@@ -58,7 +56,6 @@ export const useToolbarConfig = ({
   } = useStatusModal();
   const { t } = useTranslation();
   const { onRefresh, onSave, onNew, onBack, onFilter, onColumnFilters, onToggleTreeView } = useToolbarContext();
-  const { logout, setLoginErrorText, setLoginErrorDescription } = useUserContext();
 
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -188,17 +185,9 @@ export const useToolbarConfig = ({
               confirmText,
               onConfirm: async () => {
                 setIsDeleting(true);
-                const deleteRecordResult = await deleteRecord(
+                await deleteRecord(
                   selectedIds.length === 1 && Array.isArray(recordsToDelete) ? recordsToDelete[0] : recordsToDelete
                 );
-                if (!deleteRecordResult.success && deleteRecordResult.errorMessage === DEFAULT_CSRF_TOKEN_ERROR) {
-                  // If the error is related to CSRF token, log out the user to force re-authentication
-                  setTimeout(() => {
-                    logout();
-                    setLoginErrorText(t("login.errors.csrfToken.title"));
-                    setLoginErrorDescription(t("login.errors.csrfToken.description"));
-                  }, 1000);
-                }
               },
               saveLabel: t("common.confirm"),
               secondaryButtonLabel: t("common.cancel"),
@@ -250,9 +239,6 @@ export const useToolbarConfig = ({
       contextItems,
       onColumnFilters,
       onToggleTreeView,
-      logout,
-      setLoginErrorText,
-      setLoginErrorDescription,
     ]
   );
 

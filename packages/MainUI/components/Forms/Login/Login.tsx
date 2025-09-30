@@ -25,7 +25,7 @@ export default function Login({ title, onSubmit }: LoginProps) {
       setShowErrorMessage(true);
       setProgressWidth(100);
 
-      const totalDuration = 5000; // 5 seconds
+      const totalDuration = 7000; // 7 seconds
       const updateInterval = 50; // Update every 50ms
       const decrementValue = (100 / totalDuration) * updateInterval;
 
