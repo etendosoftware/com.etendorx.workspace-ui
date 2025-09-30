@@ -212,7 +212,7 @@ export default function UserProvider(props: React.PropsWithChildren) {
       logger.warn("Logout error:", error);
       throw error;
     }
-  }, [logger]);
+  }, [clearUserData]);
 
   const value = useMemo<IUserContext>(
     () => ({

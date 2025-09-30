@@ -116,6 +116,7 @@ export const useFormAction = ({
       userId,
       windowMetadata,
       logout,
+      t,
       setLoginErrorText,
       setLoginErrorDescription,
     ]

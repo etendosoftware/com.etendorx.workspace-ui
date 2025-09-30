@@ -112,7 +112,7 @@ export const useDeleteRecord = ({ windowMetadata, tab, onSuccess, onError }: Use
         onError?.(errorMessage);
       }
     },
-    [tab, windowMetadata, onError, t, onSuccess, userId, logout, setLoginErrorText, setLoginErrorDescription]
+    [tab, windowMetadata, onError, t, onSuccess, userId, logout, t, setLoginErrorText, setLoginErrorDescription]
   );
 
   return { deleteRecord, loading };
