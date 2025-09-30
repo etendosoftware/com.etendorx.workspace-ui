@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { setErpSessionCookie, getErpSessionCookie } from "@/app/api/_utils/sessionStore";
 import { extractBearerToken } from "@/lib/auth";
 import { joinUrl } from "../../_utils/url";
+import { handleLoginError } from "../../_utils/sessionErrors";
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -130,30 +131,4 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return handleLoginError(error);
   }
-}
-
-/**
- * Handles errors in the login process and returns appropriate response
- */
-function handleLoginError(error: unknown): NextResponse {
-  console.error("API Route /api/auth/login Error:", error);
-
-  const cause = error instanceof Error ? error.cause : null;
-
-  const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
-
-  const statusCode = getErrorStatusCode(cause);
-
-  return NextResponse.json({ error: errorMessage }, { status: statusCode });
-}
-
-/**
- * Extracts status code from error cause or defaults to 500
- */
-function getErrorStatusCode(cause: unknown): number {
-  if (cause && typeof cause === "object" && "status" in cause && typeof cause.status === "number") {
-    return cause.status;
-  }
-
-  return 500;
 }

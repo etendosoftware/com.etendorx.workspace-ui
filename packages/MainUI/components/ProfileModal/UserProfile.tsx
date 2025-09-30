@@ -24,13 +24,15 @@ import BackgroundGradient from "@workspaceui/componentlibrary/src/assets/images/
 import LogoutIcon from "@workspaceui/componentlibrary/src/assets/icons/log-out.svg";
 import IconButton from "@workspaceui/componentlibrary/src/components/IconButton";
 import type { UserProfileProps } from "./types";
+import { useUserContext } from "@/hooks/useUserContext";
 
-const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name, onSignOff }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ photoUrl, name }) => {
   const { styles } = useStyle();
+  const { logout } = useUserContext();
 
-  const handleSignOff = useCallback(() => {
-    onSignOff();
-  }, [onSignOff]);
+  const handleSignOff = useCallback(async () => {
+    await logout();
+  }, [logout]);
 
   return (
     <div className="flex flex-col items-center justify-center h-[9.5rem]">

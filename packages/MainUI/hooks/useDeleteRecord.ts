@@ -21,6 +21,8 @@ import { useUserContext } from "./useUserContext";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useTranslation } from "./useTranslation";
 import { buildDeleteQueryString } from "@/utils";
+import { DEFAULT_CSRF_TOKEN_ERROR } from "@/utils/session/constants";
+
 export interface UseDeleteRecordParams {
   windowMetadata?: WindowMetadata;
   tab: Tab;
@@ -32,27 +34,28 @@ export interface UseDeleteRecordParams {
 export const useDeleteRecord = ({ windowMetadata, tab, onSuccess, onError }: UseDeleteRecordParams) => {
   const [loading, setLoading] = useState(false);
   const controller = useRef<AbortController>(new AbortController());
-  const { user } = useUserContext();
-  const userId = user?.id;
+  const { user, logout, setLoginErrorText, setLoginErrorDescription } = useUserContext();
   const { t } = useTranslation();
 
+  const userId = user?.id;
+
   const deleteRecord = useCallback(
-    async (recordOrRecords: EntityData | EntityData[]) => {
+    async (recordOrRecords: EntityData | EntityData[]): Promise<void> => {
       const records = Array.isArray(recordOrRecords) ? recordOrRecords : [recordOrRecords];
 
       if (records.length === 0) {
         onError?.(t("status.noRecordsError"));
-        return false;
+        return;
       }
 
       if (!tab || !tab.entityName) {
         onError?.(t("status.noEntityError"));
-        return false;
+        return;
       }
 
       if (!userId) {
         onError?.(t("errors.authentication.message"));
-        return false;
+        return;
       }
 
       try {
@@ -77,7 +80,7 @@ export const useDeleteRecord = ({ windowMetadata, tab, onSuccess, onError }: Use
           const { ok, data } = await Metadata.datasourceServletClient.request(url, options);
 
           if (ok && data?.response?.status === 0 && !controller.current.signal.aborted) {
-            return { success: true, record };
+            return;
           }
 
           throw new Error(data?.response?.error?.message || "Delete failed");
@@ -97,19 +100,19 @@ export const useDeleteRecord = ({ windowMetadata, tab, onSuccess, onError }: Use
 
         setLoading(false);
         onSuccess?.(records.length);
-        return true;
       } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
         setLoading(false);
-
-        if (err instanceof Error && err.name === "AbortError") {
-          return false;
+        if (errorMessage === DEFAULT_CSRF_TOKEN_ERROR) {
+          logout();
+          setLoginErrorText(t("login.errors.csrfToken.title"));
+          setLoginErrorDescription(t("login.errors.csrfToken.description"));
+          return;
         }
-
-        onError?.(err instanceof Error ? err.message : String(err));
-        return false;
+        onError?.(errorMessage);
       }
     },
-    [tab, windowMetadata, onError, t, onSuccess, userId]
+    [tab, windowMetadata, onError, t, onSuccess, userId, logout, t, setLoginErrorText, setLoginErrorDescription]
   );
 
   return { deleteRecord, loading };

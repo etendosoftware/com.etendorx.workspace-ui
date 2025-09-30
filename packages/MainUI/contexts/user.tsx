@@ -21,11 +21,10 @@ import { createContext, useCallback, useEffect, useMemo, useState } from "react"
 import { logger } from "../utils/logger";
 import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { datasource } from "@workspaceui/api-client/src/api/datasource";
-import { login as doLogin } from "@workspaceui/api-client/src/api/authentication";
+import { login as doLogin, logout as doLogout } from "@workspaceui/api-client/src/api/authentication";
 import { changeProfile as doChangeProfile } from "@workspaceui/api-client/src/api/changeProfile";
 import { getSession } from "@workspaceui/api-client/src/api/getSession";
 import { CopilotClient } from "@workspaceui/api-client/src/api/copilot/client";
-import { clearAllErpSessions } from "@/app/api/_utils/sessionStore";
 import { HTTP_CODES } from "@workspaceui/api-client/src/api/constants";
 import type { DefaultConfiguration, IUserContext, Language, LanguageOption } from "./types";
 import type {
@@ -60,6 +59,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
   const [currentClient, setCurrentClient] = useState<CurrentClient>();
   const [isCopilotInstalled, setIsCopilotInstalled] = useState<boolean>(false);
   const [isVerifyingSession, setIsVerifyingSession] = useState(false);
+
+  // Login error states
+  const [loginErrorText, setLoginErrorText] = useState<string>("");
+  const [loginErrorDescription, setLoginErrorDescription] = useState<string>("");
   const prevRole = usePrevious(currentRole);
 
   const [roles, setRoles] = useState<SessionResponse["roles"]>(() => {
@@ -182,7 +185,6 @@ export default function UserProvider(props: React.PropsWithChildren) {
         Metadata.setToken("");
         datasource.setToken("");
         CopilotClient.setToken("");
-        clearAllErpSessions();
 
         const loginResponse = await doLogin(username, password);
 
@@ -199,9 +201,23 @@ export default function UserProvider(props: React.PropsWithChildren) {
     [setToken]
   );
 
+  const logout = useCallback(async () => {
+    try {
+      clearUserData();
+      await doLogout();
+      Metadata.setToken("");
+      datasource.setToken("");
+      CopilotClient.setToken("");
+    } catch (error) {
+      logger.warn("Logout error:", error);
+      throw error;
+    }
+  }, [clearUserData]);
+
   const value = useMemo<IUserContext>(
     () => ({
       login,
+      logout,
       roles,
       currentRole,
       profile,
@@ -222,6 +238,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
       setSessionSyncLoading,
       isCopilotInstalled,
       setIsCopilotInstalled,
+      loginErrorText,
+      setLoginErrorText,
+      loginErrorDescription,
+      setLoginErrorDescription,
     }),
     [
       login,
@@ -243,6 +263,10 @@ export default function UserProvider(props: React.PropsWithChildren) {
       isSessionSyncLoading,
       isCopilotInstalled,
       setIsCopilotInstalled,
+      loginErrorText,
+      setLoginErrorText,
+      loginErrorDescription,
+      setLoginErrorDescription,
     ]
   );
 

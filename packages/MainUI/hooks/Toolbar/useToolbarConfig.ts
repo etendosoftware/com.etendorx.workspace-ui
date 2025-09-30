@@ -183,9 +183,9 @@ export const useToolbarConfig = ({
 
             showConfirmModal({
               confirmText,
-              onConfirm: () => {
+              onConfirm: async () => {
                 setIsDeleting(true);
-                deleteRecord(
+                await deleteRecord(
                   selectedIds.length === 1 && Array.isArray(recordsToDelete) ? recordsToDelete[0] : recordsToDelete
                 );
               },

@@ -59,6 +59,7 @@ export interface LanguageOption {
 export interface IUserContext {
   user: User;
   login: (username: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
   // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
   changeProfile: (params: { role?: string; warehouse?: string }) => Promise<LoginResponse | void>;
   token: string | null;
@@ -83,6 +84,14 @@ export interface IUserContext {
   isCopilotInstalled: boolean;
   /** Setter for Copilot installed state */
   setIsCopilotInstalled: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Text to show when login fails */
+  loginErrorText: string;
+  /** Setter for login error text */
+  setLoginErrorText: React.Dispatch<React.SetStateAction<string>>;
+  /** Description for login error */
+  loginErrorDescription: string;
+  /** Setter for login error description */
+  setLoginErrorDescription: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export interface IMetadataContext {
