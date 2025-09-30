@@ -25,3 +25,34 @@ export interface GetParamsProps {
   token: string | null;
   isPostedProcess: boolean;
 }
+
+export type TransformableValue = string | number | boolean | null | undefined | NestedObject | SelectionItem[];
+
+type KeyMapping = {
+  target: string;
+  default: string | number | boolean | null;
+};
+
+// Tipo para el mapa de claves
+
+// Tipo para valores primitivos que pueden estar en los objetos
+export type PrimitiveValue = string | number | boolean | null | undefined;
+
+// Tipo para objetos anidados con _selection
+export type SelectionItem = Record<string, unknown> & {
+  amount?: number;
+};
+
+export type NestedObject = {
+  [key: string]: unknown;
+  _selection?: SelectionItem[];
+  actual_payment?: number;
+};
+
+export type KeyMapConfig = Record<string, KeyMapping>;
+
+// Tipo para el objeto fuente (entrada)
+export type SourceObject = Record<string, PrimitiveValue | NestedObject>;
+
+// Tipo para el objeto objetivo (salida)
+export type TargetObject = Record<string, PrimitiveValue | NestedObject | SelectionItem[]>;

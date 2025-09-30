@@ -98,7 +98,7 @@ export const useTableDirDatasource = ({ field, pageSize = 75, initialPageSize = 
   );
 
   interface BaseBody {
-    [key: string]: any;
+    [key: string]: unknown;
     inpfinPaymentmethodId?: string;
     inpissotrx?: string;
     windowId?: string;
@@ -279,7 +279,7 @@ export const useTableDirDatasource = ({ field, pageSize = 75, initialPageSize = 
         const endRow = reset ? initialPageSize : startRow + pageSize;
 
         const baseBody = buildRequestBody(startRow, endRow, _currentValue);
-        const body = new URLSearchParams(baseBody);
+        const body = new URLSearchParams(baseBody as Record<string, string>);
 
         if (search) {
           applySearchCriteria(body, search);

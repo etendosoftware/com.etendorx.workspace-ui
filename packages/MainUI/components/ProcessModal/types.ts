@@ -19,7 +19,7 @@ import type { ProcessConfigResponse } from "@/hooks/datasource/useProcessDatasou
 import type { EntityData, EntityValue, ProcessParameter, Tab } from "@workspaceui/api-client/src/api/types";
 import type { Field, ProcessAction } from "@workspaceui/api-client/src/api/types";
 import type { MRT_Row, MRT_RowData, MRT_TableBodyRowProps, MRT_TableInstance } from "material-react-table";
-import type { GridSelectionStructure } from "./ProcessDefinitionModal";
+import type { GridSelectionUpdater } from "./ProcessDefinitionModal";
 
 export interface BaseButton extends Field {
   id: string;
@@ -148,7 +148,7 @@ export type RecordValues = { [key: string]: EntityValue };
 export interface WindowReferenceGridProps {
   parameter: ProcessParameter;
   parameters: Record<string, ProcessParameter>; // Added to enable generic parameter mapping
-  onSelectionChange: (selection: GridSelectionStructure) => void;
+  onSelectionChange: (selection: GridSelectionUpdater) => void;
   entityName?: EntityValue;
   recordId?: EntityValue;
   tabId: string;

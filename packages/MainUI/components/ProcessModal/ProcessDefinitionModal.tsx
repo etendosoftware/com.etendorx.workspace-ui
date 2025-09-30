@@ -69,6 +69,8 @@ export type GridSelectionStructure = {
     _allRows: unknown[];
   };
 };
+
+export type GridSelectionUpdater = GridSelectionStructure | ((prev: GridSelectionStructure) => GridSelectionStructure);
 /**
  * ProcessDefinitionModalContent - Core modal component for process execution
  *
@@ -107,7 +109,6 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
   }, [parameters]);
 
   const windowReferenceTab = firstWindowReferenceParam?.window?.tabs?.[0] as Tab;
-  const entityName = windowReferenceTab?.entityName || "";
   const tabId = windowReferenceTab?.id || "";
   const windowId = tab?.window || "";
 
@@ -243,7 +244,7 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
         setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
       }
     });
-  }, [tab, processId, javaClassName, recordValues, gridSelection, entityName, onSuccess, startTransition, token]);
+  }, [tab, processId, recordValues, form, gridSelection, token, javaClassName, onSuccess]);
 
   /**
    * Executes processes directly via servlet using javaClassName

@@ -32,7 +32,16 @@ import {
   DEFAULT_BUSINESS_PARTNER_ID,
   DEFAULT_POSTED,
 } from "@/utils/processes/manual/constants";
-import type { GetParamsProps } from "@/utils/processes/manual/types";
+import type {
+  GetParamsProps,
+  KeyMapConfig,
+  NestedObject,
+  PrimitiveValue,
+  SelectionItem,
+  SourceObject,
+  TargetObject,
+  TransformableValue,
+} from "@/utils/processes/manual/types";
 import data from "@/utils/processes/manual/data.json";
 
 export const getDocumentStatus = (record: Record<string, unknown>) => {
@@ -111,11 +120,8 @@ export const getParams = ({
   return params;
 };
 
-type SourceObject = Record<string, any>;
-type TargetObject = Record<string, any>;
-
 export function mapKeysWithDefaults(source: SourceObject): TargetObject {
-  const keyMap: Record<string, { target: string; default: any }> = {
+  const keyMap: KeyMapConfig = {
     inpdocumentno: { target: "payment_documentno", default: null },
     inpporeference: { target: "reference_no", default: null },
     inpcCurrencyId: { target: "c_currency_id", default: null },
@@ -138,7 +144,8 @@ export function mapKeysWithDefaults(source: SourceObject): TargetObject {
   const result: TargetObject = {};
 
   for (const [key, value] of Object.entries(source)) {
-    let mappedValue = value !== "" && value != null ? value : keyMap[key]?.default;
+    let mappedValue: PrimitiveValue | NestedObject | SelectionItem[] =
+      value !== "" && value != null ? value : keyMap[key]?.default;
     mappedValue = mappedValue === "Y" ? true : mappedValue === "N" ? false : mappedValue;
 
     if (keyMap[key]) {
@@ -154,38 +161,40 @@ export function mapKeysWithDefaults(source: SourceObject): TargetObject {
     }
   }
 
-  function recursiveUpdateSelection(obj: any, parentActualPayment?: number) {
+  function recursiveUpdateSelection(obj: NestedObject, parentActualPayment?: number): void {
     if (!obj || typeof obj !== "object") return;
 
     const currentActualPayment = obj.actual_payment ?? parentActualPayment;
 
     for (const [key, value] of Object.entries(obj)) {
       if (key === "_selection" && Array.isArray(value)) {
-        obj[key] = value.map((item: any) => ({
+        obj[key] = value.map((item: SelectionItem) => ({
           ...item,
           amount: currentActualPayment ?? 0,
         }));
-      } else if (typeof value === "object") {
-        recursiveUpdateSelection(value, currentActualPayment);
+      } else if (value && typeof value === "object" && !Array.isArray(value)) {
+        recursiveUpdateSelection(value as NestedObject, currentActualPayment);
       }
     }
   }
 
-  recursiveUpdateSelection(result);
+  recursiveUpdateSelection(result as NestedObject);
 
-  return transformDates(result);
+  return transformDates(result) as TargetObject;
 }
 
-export function transformDates(obj: any): any {
+export function transformDates(obj: TransformableValue): TransformableValue {
   if (typeof obj === "string") {
     const dateRegex = /^(\d{2})-(\d{2})-(\d{4})$/;
     return dateRegex.test(obj) ? obj.replace(dateRegex, "$3-$2-$1") : obj;
   }
   if (Array.isArray(obj)) {
-    return obj.map(transformDates);
+    return obj.map(transformDates) as SelectionItem[];
   }
   if (obj && typeof obj === "object") {
-    return Object.fromEntries(Object.entries(obj).map(([key, value]) => [key, transformDates(value)]));
+    return Object.fromEntries(
+      Object.entries(obj).map(([key, value]) => [key, transformDates(value as TransformableValue)])
+    ) as NestedObject;
   }
   return obj;
 }

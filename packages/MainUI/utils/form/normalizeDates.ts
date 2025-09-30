@@ -26,7 +26,7 @@ export function normalizeDates(obj: unknown): unknown {
   return obj;
 }
 
-export function transformDates(obj: any): any {
+export function transformDates(obj: unknown): unknown {
   if (typeof obj === "string") {
     const dateRegex = /^(\d{2})-(\d{2})-(\d{4})$/;
     return dateRegex.test(obj) ? obj.replace(dateRegex, "$3-$2-$1") : obj;

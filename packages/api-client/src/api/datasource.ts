@@ -64,7 +64,7 @@ export class Datasource {
   }
 
   private buildParams(options: DatasourceParams) {
-    const params: Record<string, any> = {
+    const params: Record<string, unknown> = {
       _noCount: "true",
       _operationType: "fetch",
       isImplicitFilterApplied: options.isImplicitFilterApplied ? "true" : "false",
@@ -75,7 +75,7 @@ export class Datasource {
       return specialKeys.has(key) || isWrappedWithAt(key) ? key : `_${key}`;
     };
 
-    const formatValue = (value: any) => (Array.isArray(value) ? value.join(",") : String(value));
+    const formatValue = (value: unknown) => (Array.isArray(value) ? value.join(",") : String(value));
 
     if (options.windowId) params.windowId = options.windowId;
     if (options.tabId) params.tabId = options.tabId;
