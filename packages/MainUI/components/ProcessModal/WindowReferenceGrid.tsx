@@ -72,6 +72,13 @@ function WindowReferenceGrid({
 
   const lastDefaultsRef = useRef<string>("");
   const lastFilterExpressionsRef = useRef<string>("");
+  const stableWindowReferenceTabRef = useRef<typeof windowReferenceTab | undefined>(windowReferenceTab);
+
+  // Stabilize windowReferenceTab reference to prevent infinite re-renders
+  if (windowReferenceTab && windowReferenceTab.id !== stableWindowReferenceTabRef.current?.id) {
+    stableWindowReferenceTabRef.current = windowReferenceTab;
+  }
+  const stableWindowReferenceTab = stableWindowReferenceTabRef.current;
 
   const stableProcessDefaults = useMemo<Record<string, EntityValue>>(() => {
     const defaults = (processConfig?.defaults as unknown as Record<string, EntityValue>) || {};
@@ -203,11 +210,11 @@ function WindowReferenceGrid({
   ]);
 
   const fields = useMemo(() => {
-    if (windowReferenceTab?.fields) {
-      return Object.values(windowReferenceTab.fields);
+    if (stableWindowReferenceTab?.fields) {
+      return Object.values(stableWindowReferenceTab.fields);
     }
     return [];
-  }, [windowReferenceTab?.fields]);
+  }, [stableWindowReferenceTab]);
 
   // Parse raw columns with fix for WindowReferenceGrid
   const rawColumns = useMemo(() => {
@@ -418,7 +425,7 @@ function WindowReferenceGrid({
 
   // Create a minimal tab object for useColumns with corrected field hqlNames
   const mockTab = useMemo(() => {
-    if (!windowReferenceTab?.fields) {
+    if (!stableWindowReferenceTab?.fields) {
       return {
         id: tabId,
         fields: {},
@@ -429,7 +436,7 @@ function WindowReferenceGrid({
     // Some processes have correct hqlName (camelCase like 'organization')
     // Others have incorrect hqlName (display name like 'Organization' or 'Order No.')
     const correctedFields = Object.fromEntries(
-      Object.entries(windowReferenceTab.fields).map(([key, field]) => {
+      Object.entries(stableWindowReferenceTab.fields).map(([key, field]) => {
         // Check if hqlName looks like a display name (has spaces, starts with uppercase, etc)
         const isDisplayName =
           field.hqlName.includes(" ") || field.hqlName.includes(".") || /^[A-Z]/.test(field.hqlName);
@@ -448,11 +455,11 @@ function WindowReferenceGrid({
     );
 
     return {
-      ...windowReferenceTab,
-      id: windowReferenceTab.id || tabId,
+      ...stableWindowReferenceTab,
+      id: stableWindowReferenceTab.id || tabId,
       fields: correctedFields,
     } as Tab;
-  }, [windowReferenceTab, tabId]);
+  }, [stableWindowReferenceTab, tabId]);
 
   // Get columns with filter handlers using useColumns
   // Pass options as stable reference to avoid re-creating columns unnecessarily
@@ -500,12 +507,12 @@ function WindowReferenceGrid({
     });
 
     return columnsWithFilters;
-  }, [columnsFromHook, rawColumns, advancedColumnFilters]);
+  }, [columnsFromHook, rawColumns]);
 
   const shouldSkipFetch = !isDataReady || processConfigLoading || !entityName;
 
   const {
-    records,
+    records: rawRecords,
     loading: datasourceLoading,
     error: datasourceError,
     refetch,
@@ -518,6 +525,19 @@ function WindowReferenceGrid({
     activeColumnFilters: appliedTableFilters,
     skip: shouldSkipFetch,
   });
+
+  // Stabilize records reference using JSON comparison to prevent unnecessary re-renders
+  const recordsStringRef = useRef<string>("");
+  const stableRecordsRef = useRef<EntityData[]>([]);
+
+  const records = useMemo(() => {
+    const recordsString = JSON.stringify(rawRecords || []);
+    if (recordsString !== recordsStringRef.current) {
+      recordsStringRef.current = recordsString;
+      stableRecordsRef.current = rawRecords || [];
+    }
+    return stableRecordsRef.current;
+  }, [rawRecords]);
 
   useEffect(() => {
     if (!records) return;
@@ -652,7 +672,7 @@ function WindowReferenceGrid({
     </div>
   );
 
-  const tableOptions: MRT_TableOptions<EntityData> = {
+  const tableOptions: MRT_TableOptions<EntityData> = useMemo(() => ({
     muiTablePaperProps: {
       className: tableStyles.paper,
       style: {
@@ -694,7 +714,7 @@ function WindowReferenceGrid({
     enableColumnActions: true,
     manualFiltering: true,
     columns,
-    data: records,
+    data: records || [],
     getRowId: (row) => String(row.id),
     renderTopToolbar,
     renderBottomToolbar: hasMoreRecords
@@ -715,14 +735,16 @@ function WindowReferenceGrid({
     },
     onRowSelectionChange: handleRowSelection,
     onColumnFiltersChange: handleMRTColumnFiltersChange,
-  };
+  }), [columns, records, rowSelection, columnFilters, hasMoreRecords, renderTopToolbar, fetchMore, handleRowSelection, handleMRTColumnFiltersChange, handleRowClick]);
 
   const table = useMaterialReactTable(tableOptions);
 
-  const isLoading = tabLoading || processConfigLoading || datasourceLoading || !isDataReady;
+  // Separate initial loading from filter/refresh loading
+  // Only show loading spinner on initial load, not on filter changes
+  const isInitialLoading = (tabLoading || processConfigLoading || !isDataReady) && !records;
   const error = tabError || processConfigError || datasourceError;
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <div className="p-4 flex justify-center">
         <Loading data-testid="Loading__ce8544" />
@@ -742,7 +764,10 @@ function WindowReferenceGrid({
     );
   }
 
-  if ((fields.length === 0 && !tabLoading) || !records || records.length === 0) {
+  // Only show EmptyState if there are no fields (configuration error)
+  // If there are fields but no records, show the table with empty state inside
+  // This allows users to clear filters even when no results are found
+  if (fields.length === 0 && !tabLoading) {
     return <EmptyState maxWidth={MAX_WIDTH} data-testid="EmptyState__ce8544" />;
   }
 
