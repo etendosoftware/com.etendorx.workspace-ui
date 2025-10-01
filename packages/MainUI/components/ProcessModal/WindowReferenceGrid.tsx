@@ -672,70 +672,84 @@ function WindowReferenceGrid({
     </div>
   );
 
-  const tableOptions: MRT_TableOptions<EntityData> = useMemo(() => ({
-    muiTablePaperProps: {
-      className: tableStyles.paper,
-      style: {
-        borderRadius: "1rem",
-        boxShadow: "none",
+  const tableOptions: MRT_TableOptions<EntityData> = useMemo(
+    () => ({
+      muiTablePaperProps: {
+        className: tableStyles.paper,
+        style: {
+          borderRadius: "1rem",
+          boxShadow: "none",
+        },
       },
-    },
-    muiTableHeadCellProps: {
-      className: tableStyles.headCell,
-    },
-    muiTableBodyCellProps: {
-      className: tableStyles.bodyCell,
-    },
-    muiTableBodyProps: {
-      className: tableStyles.body,
-    },
-    muiTableBodyRowProps: ({ row }) => {
-      return {
-        onClick: () => handleRowClick(row),
-        className: rowSelection[row.id]
-          ? "bg-blue-50 hover:bg-blue-100 cursor-pointer"
-          : "hover:bg-gray-50 cursor-pointer",
-      };
-    },
-    muiTableContainerProps: {
-      className: tableStyles.container,
-    },
-    layoutMode: "semantic",
-    enableColumnResizing: true,
-    enableGlobalFilter: false,
-    enableRowSelection: true,
-    enableMultiRowSelection: true,
-    positionToolbarAlertBanner: "none",
-    enablePagination: false,
-    enableStickyHeader: true,
-    enableStickyFooter: true,
-    enableColumnFilters: true,
-    enableSorting: true,
-    enableColumnActions: true,
-    manualFiltering: true,
-    columns,
-    data: records || [],
-    getRowId: (row) => String(row.id),
-    renderTopToolbar,
-    renderBottomToolbar: hasMoreRecords
-      ? () => <LoadMoreButton fetchMore={fetchMore} data-testid="LoadMoreButton__ce8544" />
-      : undefined,
-    renderEmptyRowsFallback: () => (
-      <div className="flex justify-center items-center p-8 text-gray-500">
-        <EmptyState maxWidth={MAX_WIDTH} data-testid="EmptyState__ce8544" />
-      </div>
-    ),
-    initialState: {
-      density: "compact",
-    },
-    state: {
+      muiTableHeadCellProps: {
+        className: tableStyles.headCell,
+      },
+      muiTableBodyCellProps: {
+        className: tableStyles.bodyCell,
+      },
+      muiTableBodyProps: {
+        className: tableStyles.body,
+      },
+      muiTableBodyRowProps: ({ row }) => {
+        return {
+          onClick: () => handleRowClick(row),
+          className: rowSelection[row.id]
+            ? "bg-blue-50 hover:bg-blue-100 cursor-pointer"
+            : "hover:bg-gray-50 cursor-pointer",
+        };
+      },
+      muiTableContainerProps: {
+        className: tableStyles.container,
+      },
+      layoutMode: "semantic",
+      enableColumnResizing: true,
+      enableGlobalFilter: false,
+      enableRowSelection: true,
+      enableMultiRowSelection: true,
+      positionToolbarAlertBanner: "none",
+      enablePagination: false,
+      enableStickyHeader: true,
+      enableStickyFooter: true,
+      enableColumnFilters: true,
+      enableSorting: true,
+      enableColumnActions: true,
+      manualFiltering: true,
+      columns,
+      data: records || [],
+      getRowId: (row) => String(row.id),
+      renderTopToolbar,
+      renderBottomToolbar: hasMoreRecords
+        ? () => <LoadMoreButton fetchMore={fetchMore} data-testid="LoadMoreButton__ce8544" />
+        : undefined,
+      renderEmptyRowsFallback: () => (
+        <div className="flex justify-center items-center p-8 text-gray-500">
+          <EmptyState maxWidth={MAX_WIDTH} data-testid="EmptyState__ce8544" />
+        </div>
+      ),
+      initialState: {
+        density: "compact",
+      },
+      state: {
+        rowSelection,
+        columnFilters,
+        showColumnFilters: true,
+      },
+      onRowSelectionChange: handleRowSelection,
+      onColumnFiltersChange: handleMRTColumnFiltersChange,
+    }),
+    [
+      columns,
+      records,
       rowSelection,
       columnFilters,
-      showColumnFilters: true,
-    },
-    onRowSelectionChange: handleRowSelection,
-    onColumnFiltersChange: handleMRTColumnFiltersChange,
-  }), [columns, records, rowSelection, columnFilters, hasMoreRecords, renderTopToolbar, fetchMore, handleRowSelection, handleMRTColumnFiltersChange, handleRowClick]);
+      hasMoreRecords,
+      renderTopToolbar,
+      fetchMore,
+      handleRowSelection,
+      handleMRTColumnFiltersChange,
+      handleRowClick,
+    ]
+  );
 
   const table = useMaterialReactTable(tableOptions);
 
