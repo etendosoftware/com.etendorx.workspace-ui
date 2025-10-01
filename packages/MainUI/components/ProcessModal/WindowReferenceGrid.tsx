@@ -252,18 +252,14 @@ function WindowReferenceGrid({
   const stableRawColumns = useMemo(() => rawColumns, [JSON.stringify(rawColumns.map((c: Column) => c.id))]);
 
   // Use grid column filters hook to avoid code duplication with useTableData
-  const {
-    advancedColumnFilters,
-    handleColumnFilterChange,
-    handleLoadFilterOptions,
-    handleLoadMoreFilterOptions,
-  } = useGridColumnFilters({
-    columns: stableRawColumns,
-    tabId: tabId ? String(tabId) : undefined,
-    entityName: entityName ? String(entityName) : undefined,
-    setAppliedTableFilters,
-    setColumnFilters,
-  });
+  const { advancedColumnFilters, handleColumnFilterChange, handleLoadFilterOptions, handleLoadMoreFilterOptions } =
+    useGridColumnFilters({
+      columns: stableRawColumns,
+      tabId: tabId ? String(tabId) : undefined,
+      entityName: entityName ? String(entityName) : undefined,
+      setAppliedTableFilters,
+      setColumnFilters,
+    });
 
   // Create a minimal tab object for useColumns with corrected field hqlNames
   const mockTab = useMemo(() => {
