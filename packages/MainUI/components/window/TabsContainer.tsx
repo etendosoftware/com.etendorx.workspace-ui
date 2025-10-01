@@ -111,26 +111,24 @@ export default function TabsContainer() {
 
   return (
     <TabRefreshProvider>
-      <>
-        <AppBreadcrumb allTabs={filteredGroupedTabs} data-testid="AppBreadcrumb__895626" />
-        <div className="flex flex-col flex-1 overflow-hidden w-full">
-          {filteredGroupedTabs.map((tabs, index) => {
-            if (tabs.length === 0) return null;
+      <AppBreadcrumb allTabs={filteredGroupedTabs} data-testid="AppBreadcrumb__895626" />
+      <div className="flex flex-col flex-1 overflow-hidden w-full">
+        {filteredGroupedTabs.map((tabs, index) => {
+          if (tabs.length === 0) return null;
 
-            const isTopGroup = index === firstExpandedIndex && firstExpandedIndex !== -1;
+          const isTopGroup = index === firstExpandedIndex && firstExpandedIndex !== -1;
 
-            return (
-              <Tabs
-                key={tabs[0].id}
-                tabs={tabs}
-                isTopGroup={isTopGroup}
-                onTabChange={handleTabChange}
-                data-testid="Tabs__895626"
-              />
-            );
-          })}
-        </div>
-      </>
+          return (
+            <Tabs
+              key={tabs[0].id}
+              tabs={tabs}
+              isTopGroup={isTopGroup}
+              onTabChange={handleTabChange}
+              data-testid="Tabs__895626"
+            />
+          );
+        })}
+      </div>
     </TabRefreshProvider>
   );
 }
