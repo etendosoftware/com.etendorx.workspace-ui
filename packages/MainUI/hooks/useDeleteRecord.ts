@@ -28,7 +28,7 @@ export interface UseDeleteRecordParams {
   windowMetadata?: WindowMetadata;
   tab: Tab;
   onSuccess?: (deletedCount: number) => void;
-  onError?: (error: string) => void;
+  onError?: ({ errorMessage, needToRefresh }: { errorMessage: string; needToRefresh?: boolean }) => void;
   showConfirmation?: boolean;
 }
 
@@ -46,17 +46,17 @@ export const useDeleteRecord = ({ windowMetadata, tab, onSuccess, onError }: Use
       const records = Array.isArray(recordOrRecords) ? recordOrRecords : [recordOrRecords];
 
       if (records.length === 0) {
-        onError?.(t("status.noRecordsError"));
+        onError?.({ errorMessage: t("status.noRecordsError") });
         return;
       }
 
       if (!tab || !tab.entityName) {
-        onError?.(t("status.noEntityError"));
+        onError?.({ errorMessage: t("status.noEntityError") });
         return;
       }
 
       if (!userId) {
-        onError?.(t("errors.authentication.message"));
+        onError?.({ errorMessage: t("errors.authentication.message") });
         return;
       }
 
@@ -89,14 +89,17 @@ export const useDeleteRecord = ({ windowMetadata, tab, onSuccess, onError }: Use
         });
 
         const responses = await Promise.allSettled(deletePromises);
-
         const errors = responses.filter((response) => response.status === "rejected") as PromiseRejectedResult[];
 
         if (errors.length > 0) {
           const errorMessages = errors.map((err) =>
             err.reason instanceof Error ? err.reason.message : String(err.reason)
           );
+          const errorMessage = errorMessages.join("; ");
+          // If some deletions failed but others succeeded, indicate that a refresh may be needed
+          const needToRefresh = responses?.length !== errors.length;
 
+          onError?.({ errorMessage, needToRefresh });
           throw new Error(errorMessages.join("; "));
         }
 
@@ -115,7 +118,7 @@ export const useDeleteRecord = ({ windowMetadata, tab, onSuccess, onError }: Use
           setLoginErrorDescription(t("login.errors.csrfToken.description"));
           return;
         }
-        onError?.(errorMessage);
+        onError?.({ errorMessage });
       }
     },
     [tab, windowMetadata, onError, t, onSuccess, userId, logout, t, setLoginErrorText, setLoginErrorDescription]
