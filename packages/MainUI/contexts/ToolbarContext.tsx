@@ -50,7 +50,7 @@ type ToolbarActions = {
    * Refresh the current view or data.
    * Typically reloads data from the server or resets the current state.
    */
-  refresh: () => void;
+  refresh: () => Promise<void>;
 
   /**
    * Create a new record or navigate to create mode.
@@ -81,7 +81,7 @@ type ToolbarActions = {
 
 type ToolbarContextType = {
   onSave: (showModal: boolean) => Promise<void>;
-  onRefresh: () => void;
+  onRefresh: () => Promise<void>;
   onNew: () => void;
   onBack: () => void;
   onFilter: () => void;
@@ -96,7 +96,7 @@ type ToolbarContextType = {
 
 const initialState: ToolbarActions = {
   save: async () => {},
-  refresh: () => {},
+  refresh: async () => {},
   new: () => {},
   back: () => {},
   filter: () => {},
@@ -106,7 +106,7 @@ const initialState: ToolbarActions = {
 
 const ToolbarContext = createContext<ToolbarContextType>({
   onSave: async () => {},
-  onRefresh: () => {},
+  onRefresh: async () => {},
   onNew: () => {},
   onBack: () => {},
   onFilter: () => {},
