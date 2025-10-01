@@ -400,7 +400,19 @@ function ProcessDefinitionModalContent({ onClose, button, open, onSuccess }: Pro
     if (open) {
       setResult(null);
       setParameters(button.processDefinition.parameters);
-      setGridSelection({});
+
+      // Initialize grid selection structure with empty arrays for all window reference parameters
+      const initialGridSelection: GridSelectionStructure = {};
+      Object.values(button.processDefinition.parameters).forEach((param) => {
+        if (param.reference === WINDOW_REFERENCE_ID) {
+          initialGridSelection[param.dBColumnName] = {
+            _selection: [],
+            _allRows: [],
+          };
+        }
+      });
+
+      setGridSelection(initialGridSelection);
     }
   }, [button.processDefinition.parameters, open]);
 
