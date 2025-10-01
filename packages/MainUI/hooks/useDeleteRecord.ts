@@ -22,6 +22,7 @@ import { Metadata } from "@workspaceui/api-client/src/api/metadata";
 import { useTranslation } from "./useTranslation";
 import { buildDeleteQueryString } from "@/utils";
 import { DEFAULT_CSRF_TOKEN_ERROR } from "@/utils/session/constants";
+import { useTabRefreshContext } from "@/contexts/TabRefreshContext";
 
 export interface UseDeleteRecordParams {
   windowMetadata?: WindowMetadata;
@@ -35,6 +36,7 @@ export const useDeleteRecord = ({ windowMetadata, tab, onSuccess, onError }: Use
   const [loading, setLoading] = useState(false);
   const controller = useRef<AbortController>(new AbortController());
   const { user, logout, setLoginErrorText, setLoginErrorDescription } = useUserContext();
+  const { triggerParentRefreshes } = useTabRefreshContext();
   const { t } = useTranslation();
 
   const userId = user?.id;
@@ -100,6 +102,10 @@ export const useDeleteRecord = ({ windowMetadata, tab, onSuccess, onError }: Use
 
         setLoading(false);
         onSuccess?.(records.length);
+        // If save succeeded and this tab has parents, trigger parent refreshes
+        if (tab?.tabLevel && tab.tabLevel > 0) {
+          await triggerParentRefreshes(tab.tabLevel);
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         setLoading(false);
